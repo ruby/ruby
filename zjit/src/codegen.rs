@@ -107,14 +107,14 @@ fn gen_iseq_entry_point(iseq: IseqPtr) -> *const u8 {
     // Compile the High-level IR
     let cb = ZJITState::get_code_block();
     let (start_ptr, mut branch_iseqs) = match gen_function(cb, iseq, &function) {
-        Some((start_ptr, gc_offsets, branch_iseqs)) => {
+        Some((start_ptr, gc_offsets, jit)) => {
             // Remember the block address to reuse it later
             let payload = get_or_create_iseq_payload(iseq);
             payload.start_ptr = Some(start_ptr);
             payload.gc_offsets.extend(gc_offsets);
 
             // Compile an entry point to the JIT code
-            (gen_entry(cb, iseq, &function, start_ptr), branch_iseqs)
+            (gen_entry(cb, iseq, &function, start_ptr, jit.c_stack_bytes), jit.branch_iseqs)
         },
         None => (None, vec![]),
     };
@@ -145,11 +145,11 @@ fn gen_iseq_entry_point(iseq: IseqPtr) -> *const u8 {
 }
 
 /// Compile a JIT entry
-fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_ptr: CodePtr) -> Option<CodePtr> {
+fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_ptr: CodePtr, c_stack_bytes: usize) -> Option<CodePtr> {
     // Set up registers for CFP, EC, SP, and basic block arguments
     let mut asm = Assembler::new();
     gen_entry_prologue(&mut asm, iseq);
-    gen_entry_params(&mut asm, iseq, function.block(BlockId(0)));
+    gen_entry_params(&mut asm, iseq, function.block(BlockId(0)), c_stack_bytes);
 
     // Jump to the first block using a call instruction
     asm.ccall(function_ptr.raw_ptr(cb) as *const u8, vec![]);
@@ -185,17 +185,17 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<(CodePtr, Vec<(Rc<Branc
 
     // Compile the High-level IR
     let result = gen_function(cb, iseq, &function);
-    if let Some((start_ptr, gc_offsets, branch_iseqs)) = result {
+    if let Some((start_ptr, gc_offsets, jit)) = result {
         payload.start_ptr = Some(start_ptr);
         payload.gc_offsets.extend(gc_offsets);
-        Some((start_ptr, branch_iseqs))
+        Some((start_ptr, jit.branch_iseqs))
     } else {
         None
     }
 }
 
 /// Compile a function
-fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Option<(CodePtr, Vec<CodePtr>, Vec<(Rc<Branch>, IseqPtr)>)> {
+fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Option<(CodePtr, Vec<CodePtr>, JITState)> {
     let c_stack_bytes = aligned_stack_bytes(max_num_params(function).saturating_sub(ALLOC_REGS.len()));
     let mut jit = JITState::new(iseq, function.num_insns(), function.num_blocks(), c_stack_bytes);
     let mut asm = Assembler::new();
@@ -249,7 +249,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
     }
 
     // Generate code if everything can be compiled
-    asm.compile(cb).map(|(start_ptr, gc_offsets)| (start_ptr, gc_offsets, jit.branch_iseqs))
+    asm.compile(cb).map(|(start_ptr, gc_offsets)| (start_ptr, gc_offsets, jit))
 }
 
 /// Compile an instruction
@@ -548,7 +548,7 @@ fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
 }
 
 /// Assign method arguments to basic block arguments at JIT entry
-fn gen_entry_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block) {
+fn gen_entry_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block, c_stack_bytes: usize) {
     let self_param = gen_param(asm, SELF_PARAM_IDX);
     asm.mov(self_param, Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF));
 
@@ -557,12 +557,32 @@ fn gen_entry_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block) {
         asm_comment!(asm, "set method params: {num_params}");
 
         // Allocate registers for basic block arguments
-        let params: Vec<Opnd> = (0..num_params).map(|idx|
-            gen_param(asm, idx + 1) // +1 for self
-        ).collect();
+        for idx in 0..num_params {
+            let param = gen_param(asm, idx + 1); // +1 for self
 
-        // Assign local variables to the basic block arguments
-        for (idx, &param) in params.iter().enumerate() {
+            // Funky offset adjustment to write into the native stack frame of the
+            // HIR function we'll be calling into. This only makes sense in context
+            // of the schedule of instructions in gen_entry() for the JIT entry point.
+            //
+            // The entry point needs to load VALUEs into native stack slots _before_ the
+            // frame containing the slots exists. So, we anticipate the stack frame size
+            // of the Function and subtract offsets based on that.
+            //
+            // native SP at entry point ─────►┌────────────┐   Native SP grows downwards
+            //                                │            │ ↓ on all arches we support.
+            //                         SP-0x8 ├────────────┤
+            //                                │            │
+            // where native SP         SP-0x10├────────────┤
+            // would be while                 │            │
+            // the HIR function ────────────► └────────────┘
+            // is running
+            let param = if let Opnd::Mem(lir::Mem { base, disp, num_bits }) = param {
+                Opnd::Mem(lir::Mem { num_bits, base, disp: disp - c_stack_bytes as i32 - Assembler::frame_size() })
+            } else {
+                param
+            };
+
+            // Assign local variables to the basic block arguments
             let local = gen_entry_param(asm, iseq, idx);
             asm.mov(param, local);
         }
@@ -1093,11 +1113,12 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
 /// Return an operand we use for the basic block argument at a given index
 fn param_opnd(idx: usize) -> Opnd {
     // To simplify the implementation, allocate a fixed register or a stack slot for each basic block argument for now.
+    // Note that this is implemented here as opposed to automatically inside LIR machineries.
     // TODO: Allow allocating arbitrary registers for basic block arguments
     if idx < ALLOC_REGS.len() {
         Opnd::Reg(ALLOC_REGS[idx])
     } else {
-        Opnd::mem(64, NATIVE_STACK_PTR, -((idx - ALLOC_REGS.len() + 1) as i32) * SIZEOF_VALUE_I32)
+        Opnd::mem(64, NATIVE_STACK_PTR, (idx - ALLOC_REGS.len()) as i32 * SIZEOF_VALUE_I32)
     }
 }
 

@@ -206,6 +206,11 @@ impl Assembler
         vec![X1_REG, X9_REG, X10_REG, X11_REG, X12_REG, X13_REG, X14_REG, X15_REG]
     }
 
+    /// How many bytes a call and a [Self::frame_setup] would change native SP
+    pub fn frame_size() -> i32 {
+        0x10
+    }
+
     /// Split platform-specific instructions
     /// The transformations done here are meant to make our lives simpler in later
     /// stages of the compilation pipeline.

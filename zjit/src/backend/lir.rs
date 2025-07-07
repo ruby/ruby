@@ -32,13 +32,13 @@ pub enum MemBase
 pub struct Mem
 {
     // Base register number or instruction index
-    pub(super) base: MemBase,
+    pub base: MemBase,
 
     // Offset relative to the base pointer
-    pub(super) disp: i32,
+    pub disp: i32,
 
     // Size in bits
-    pub(super) num_bits: u8,
+    pub num_bits: u8,
 }
 
 impl fmt::Debug for Mem {
