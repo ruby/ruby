@@ -416,9 +416,11 @@ impl Assembler
             // being used. It is okay not to use their output here.
             #[allow(unused_must_use)]
             match &mut insn {
-                Insn::Add { left, right, .. } => {
+                Insn::Sub { left, right, out } |
+                Insn::Add { left, right, out } => {
                     match (*left, *right) {
                         (Opnd::Reg(_) | Opnd::VReg { .. }, Opnd::Reg(_) | Opnd::VReg { .. }) => {
+                            merge_three_reg_mov(&live_ranges, &mut iterator, left, right, out);
                             asm.push_insn(insn);
                         },
                         (reg_opnd @ (Opnd::Reg(_) | Opnd::VReg { .. }), other_opnd) |
@@ -441,18 +443,7 @@ impl Assembler
                     *left = opnd0;
                     *right = opnd1;
 
-                    // Since these instructions are lowered to an instruction that have 2 input
-                    // registers and an output register, look to merge with an `Insn::Mov` that
-                    // follows which puts the output in another register. For example:
-                    // `Add a, b => out` followed by `Mov c, out` becomes `Add a, b => c`.
-                    if let (Opnd::Reg(_), Opnd::Reg(_), Some(Insn::Mov { dest, src })) = (left, right, iterator.peek().map(|(_, insn)| insn)) {
-                        if live_ranges[out.vreg_idx()].end() == index + 1 {
-                            if out == src && matches!(*dest, Opnd::Reg(_)) {
-                                *out = *dest;
-                                iterator.next(); // Pop merged Insn::Mov
-                            }
-                        }
-                    }
+                    merge_three_reg_mov(&live_ranges, &mut iterator, left, right, out);
 
                     asm.push_insn(insn);
                 }
@@ -699,11 +690,6 @@ impl Assembler
                             asm.store(opnd0, opnd1);
                         }
                     }
-                },
-                Insn::Sub { left, right, .. } => {
-                    *left = split_load_operand(asm, *left);
-                    *right = split_shifted_immediate(asm, *right);
-                    asm.push_insn(insn);
                 },
                 Insn::Mul { left, right, .. } => {
                     *left = split_load_operand(asm, *left);
@@ -1350,6 +1336,36 @@ impl Assembler
     }
 }
 
+/// LIR Instructions that are lowered to an instruction that have 2 input registers and an output
+/// register can look to merge with a succeeding `Insn::Mov`.
+/// For example:
+///
+///     Add out, a, b
+///     Mov c, out
+///
+/// Can become:
+///
+///     Add c, a, b
+///
+/// If a, b, and c are all registers.
+fn merge_three_reg_mov(
+    live_ranges: &Vec<LiveRange>,
+    iterator: &mut std::iter::Peekable<impl Iterator<Item = (usize, Insn)>>,
+    left: &Opnd,
+    right: &Opnd,
+    out: &mut Opnd,
+) {
+    if let (Opnd::Reg(_) | Opnd::VReg{..},
+            Opnd::Reg(_) | Opnd::VReg{..},
+            Some((mov_idx, Insn::Mov { dest, src })))
+            = (left, right, iterator.peek()) {
+        if out == src && live_ranges[out.vreg_idx()].end() == *mov_idx && matches!(*dest, Opnd::Reg(_) | Opnd::VReg{..}) {
+            *out = *dest;
+            iterator.next(); // Pop merged Insn::Mov
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1373,6 +1389,23 @@ mod tests {
             0x0: mov x0, #3
             0x4: mul x0, x9, x0
             0x8: mov x1, x0
+        "});
+    }
+
+    #[test]
+    fn sp_movements_are_single_instruction() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let sp = Opnd::Reg(XZR_REG);
+        let new_sp = asm.add(sp, 0x20.into());
+        asm.mov(sp, new_sp);
+        let new_sp = asm.sub(sp, 0x20.into());
+        asm.mov(sp, new_sp);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm!(cb, "e08300b11f000091e08300f11f000091", {"
+            0x0: add sp, sp, #0x20
+            0x4: sub sp, sp, #0x20
         "});
     }
 
