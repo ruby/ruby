@@ -1,74 +1,74 @@
 #include "internal.h"
 #include "internal/gc.h"
-#include "internal/ractor_safe_set.h"
+#include "internal/concurrent_set.h"
 #include "ruby_atomic.h"
 #include "ruby/atomic.h"
 #include "vm_sync.h"
 
-enum ractor_safe_set_special_values {
-    RACTOR_SAFE_TABLE_EMPTY,
-    RACTOR_SAFE_TABLE_DELETED,
-    RACTOR_SAFE_TABLE_MOVED,
-    RACTOR_SAFE_TABLE_SPECIAL_VALUE_COUNT
+enum concurrent_set_special_values {
+    CONCURRENT_SET_EMPTY,
+    CONCURRENT_SET_DELETED,
+    CONCURRENT_SET_MOVED,
+    CONCURRENT_SET_SPECIAL_VALUE_COUNT
 };
 
-struct ractor_safe_set_entry {
+struct concurrent_set_entry {
     VALUE hash;
     VALUE key;
 };
 
-struct ractor_safe_set {
+struct concurrent_set {
     rb_atomic_t size;
     unsigned int capacity;
     unsigned int deleted_entries;
-    struct rb_ractor_safe_set_funcs *funcs;
-    struct ractor_safe_set_entry *entries;
+    struct rb_concurrent_set_funcs *funcs;
+    struct concurrent_set_entry *entries;
 };
 
 static void
-ractor_safe_set_free(void *ptr)
+concurrent_set_free(void *ptr)
 {
-    struct ractor_safe_set *set = ptr;
+    struct concurrent_set *set = ptr;
     xfree(set->entries);
 }
 
 static size_t
-ractor_safe_set_size(const void *ptr)
+concurrent_set_size(const void *ptr)
 {
-    const struct ractor_safe_set *set = ptr;
-    return sizeof(struct ractor_safe_set) +
-        (set->capacity * sizeof(struct ractor_safe_set_entry));
+    const struct concurrent_set *set = ptr;
+    return sizeof(struct concurrent_set) +
+        (set->capacity * sizeof(struct concurrent_set_entry));
 }
 
-static const rb_data_type_t ractor_safe_set_type = {
-    .wrap_struct_name = "VM/ractor_safe_set",
+static const rb_data_type_t concurrent_set_type = {
+    .wrap_struct_name = "VM/concurrent_set",
     .function = {
         .dmark = NULL,
-        .dfree = ractor_safe_set_free,
-        .dsize = ractor_safe_set_size,
+        .dfree = concurrent_set_free,
+        .dsize = concurrent_set_size,
     },
     .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 VALUE
-rb_ractor_safe_set_new(struct rb_ractor_safe_set_funcs *funcs, int capacity)
+rb_concurrent_set_new(struct rb_concurrent_set_funcs *funcs, int capacity)
 {
-    struct ractor_safe_set *set;
-    VALUE obj = TypedData_Make_Struct(0, struct ractor_safe_set, &ractor_safe_set_type, set);
+    struct concurrent_set *set;
+    VALUE obj = TypedData_Make_Struct(0, struct concurrent_set, &concurrent_set_type, set);
     set->funcs = funcs;
-    set->entries = ZALLOC_N(struct ractor_safe_set_entry, capacity);
+    set->entries = ZALLOC_N(struct concurrent_set_entry, capacity);
     set->capacity = capacity;
     return obj;
 }
 
-struct ractor_safe_set_probe {
+struct concurrent_set_probe {
     int idx;
     int d;
     int mask;
 };
 
 static int
-ractor_safe_set_probe_start(struct ractor_safe_set_probe *probe, struct ractor_safe_set *set, VALUE hash)
+concurrent_set_probe_start(struct concurrent_set_probe *probe, struct concurrent_set *set, VALUE hash)
 {
     RUBY_ASSERT((set->capacity & (set->capacity - 1)) == 0);
     probe->d = 0;
@@ -78,7 +78,7 @@ ractor_safe_set_probe_start(struct ractor_safe_set_probe *probe, struct ractor_s
 }
 
 static int
-ractor_safe_set_probe_next(struct ractor_safe_set_probe *probe)
+concurrent_set_probe_next(struct concurrent_set_probe *probe)
 {
     probe->d++;
     probe->idx = (probe->idx + probe->d) & probe->mask;
@@ -86,20 +86,20 @@ ractor_safe_set_probe_next(struct ractor_safe_set_probe *probe)
 }
 
 static void
-ractor_safe_set_try_resize_without_locking(VALUE old_set_obj, VALUE *set_obj_ptr)
+concurrent_set_try_resize_without_locking(VALUE old_set_obj, VALUE *set_obj_ptr)
 {
     // Check if another thread has already resized.
     if (RUBY_ATOMIC_VALUE_LOAD(*set_obj_ptr) != old_set_obj) {
         return;
     }
 
-    struct ractor_safe_set *old_set = RTYPEDDATA_GET_DATA(old_set_obj);
+    struct concurrent_set *old_set = RTYPEDDATA_GET_DATA(old_set_obj);
 
     // This may overcount by up to the number of threads concurrently attempting to insert
     // GC may also happen between now and the set being rebuilt
     int expected_size = RUBY_ATOMIC_LOAD(old_set->size) - old_set->deleted_entries;
 
-    struct ractor_safe_set_entry *old_entries = old_set->entries;
+    struct concurrent_set_entry *old_entries = old_set->entries;
     int old_capacity = old_set->capacity;
     int new_capacity = old_capacity * 2;
     if (new_capacity > expected_size * 8) {
@@ -110,15 +110,15 @@ ractor_safe_set_try_resize_without_locking(VALUE old_set_obj, VALUE *set_obj_ptr
     }
 
     // May cause GC and therefore deletes, so must hapen first.
-    VALUE new_set_obj = rb_ractor_safe_set_new(old_set->funcs, new_capacity);
-    struct ractor_safe_set *new_set = RTYPEDDATA_GET_DATA(new_set_obj);
+    VALUE new_set_obj = rb_concurrent_set_new(old_set->funcs, new_capacity);
+    struct concurrent_set *new_set = RTYPEDDATA_GET_DATA(new_set_obj);
 
     for (int i = 0; i < old_capacity; i++) {
-        struct ractor_safe_set_entry *entry = &old_entries[i];
-        VALUE key = RUBY_ATOMIC_VALUE_EXCHANGE(entry->key, RACTOR_SAFE_TABLE_MOVED);
-        RUBY_ASSERT(key != RACTOR_SAFE_TABLE_MOVED);
+        struct concurrent_set_entry *entry = &old_entries[i];
+        VALUE key = RUBY_ATOMIC_VALUE_EXCHANGE(entry->key, CONCURRENT_SET_MOVED);
+        RUBY_ASSERT(key != CONCURRENT_SET_MOVED);
 
-        if (key < RACTOR_SAFE_TABLE_SPECIAL_VALUE_COUNT) continue;
+        if (key < CONCURRENT_SET_SPECIAL_VALUE_COUNT) continue;
         if (rb_objspace_garbage_object_p(key)) continue;
 
         VALUE hash = RUBY_ATOMIC_VALUE_LOAD(entry->hash);
@@ -130,13 +130,13 @@ ractor_safe_set_try_resize_without_locking(VALUE old_set_obj, VALUE *set_obj_ptr
         RUBY_ASSERT(hash == old_set->funcs->hash(key));
 
         // Insert key into new_set.
-        struct ractor_safe_set_probe probe;
-        int idx = ractor_safe_set_probe_start(&probe, new_set, hash);
+        struct concurrent_set_probe probe;
+        int idx = concurrent_set_probe_start(&probe, new_set, hash);
 
         while (true) {
-            struct ractor_safe_set_entry *entry = &new_set->entries[idx];
+            struct concurrent_set_entry *entry = &new_set->entries[idx];
 
-            if (entry->key == RACTOR_SAFE_TABLE_EMPTY) {
+            if (entry->key == CONCURRENT_SET_EMPTY) {
                 new_set->size++;
 
                 RUBY_ASSERT(new_set->size < new_set->capacity / 2);
@@ -147,10 +147,10 @@ ractor_safe_set_try_resize_without_locking(VALUE old_set_obj, VALUE *set_obj_ptr
                 break;
             }
             else {
-                RUBY_ASSERT(entry->key >= RACTOR_SAFE_TABLE_SPECIAL_VALUE_COUNT);
+                RUBY_ASSERT(entry->key >= CONCURRENT_SET_SPECIAL_VALUE_COUNT);
             }
 
-            idx = ractor_safe_set_probe_next(&probe);
+            idx = concurrent_set_probe_next(&probe);
         }
     }
 
@@ -160,17 +160,17 @@ ractor_safe_set_try_resize_without_locking(VALUE old_set_obj, VALUE *set_obj_ptr
 }
 
 static void
-ractor_safe_set_try_resize(VALUE old_set_obj, VALUE *set_obj_ptr)
+concurrent_set_try_resize(VALUE old_set_obj, VALUE *set_obj_ptr)
 {
     RB_VM_LOCKING() {
-        ractor_safe_set_try_resize_without_locking(old_set_obj, set_obj_ptr);
+        concurrent_set_try_resize_without_locking(old_set_obj, set_obj_ptr);
     }
 }
 
 VALUE
-rb_ractor_safe_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
+rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
 {
-    RUBY_ASSERT(key >= RACTOR_SAFE_TABLE_SPECIAL_VALUE_COUNT);
+    RUBY_ASSERT(key >= CONCURRENT_SET_SPECIAL_VALUE_COUNT);
 
     bool inserting = false;
     VALUE set_obj;
@@ -178,18 +178,18 @@ rb_ractor_safe_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
   retry:
     set_obj = RUBY_ATOMIC_VALUE_LOAD(*set_obj_ptr);
     RUBY_ASSERT(set_obj);
-    struct ractor_safe_set *set = RTYPEDDATA_GET_DATA(set_obj);
+    struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
 
-    struct ractor_safe_set_probe probe;
+    struct concurrent_set_probe probe;
     VALUE hash = set->funcs->hash(key);
-    int idx = ractor_safe_set_probe_start(&probe, set, hash);
+    int idx = concurrent_set_probe_start(&probe, set, hash);
 
     while (true) {
-        struct ractor_safe_set_entry *entry = &set->entries[idx];
+        struct concurrent_set_entry *entry = &set->entries[idx];
         VALUE curr_key = RUBY_ATOMIC_VALUE_LOAD(entry->key);
 
         switch (curr_key) {
-          case RACTOR_SAFE_TABLE_EMPTY: {
+          case CONCURRENT_SET_EMPTY: {
             // Not in set
             if (!inserting) {
                 key = set->funcs->create(key, data);
@@ -200,13 +200,13 @@ rb_ractor_safe_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
             rb_atomic_t prev_size = RUBY_ATOMIC_FETCH_ADD(set->size, 1);
 
             if (UNLIKELY(prev_size > set->capacity / 2)) {
-                ractor_safe_set_try_resize(set_obj, set_obj_ptr);
+                concurrent_set_try_resize(set_obj, set_obj_ptr);
 
                 goto retry;
             }
 
-            curr_key = RUBY_ATOMIC_VALUE_CAS(entry->key, RACTOR_SAFE_TABLE_EMPTY, key);
-            if (curr_key == RACTOR_SAFE_TABLE_EMPTY) {
+            curr_key = RUBY_ATOMIC_VALUE_CAS(entry->key, CONCURRENT_SET_EMPTY, key);
+            if (curr_key == CONCURRENT_SET_EMPTY) {
                 RUBY_ATOMIC_VALUE_SET(entry->hash, hash);
 
                 RB_GC_GUARD(set_obj);
@@ -220,9 +220,9 @@ rb_ractor_safe_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
                 continue;
             }
           }
-          case RACTOR_SAFE_TABLE_DELETED:
+          case CONCURRENT_SET_DELETED:
             break;
-          case RACTOR_SAFE_TABLE_MOVED:
+          case CONCURRENT_SET_MOVED:
             // Wait
             RB_VM_LOCKING();
 
@@ -234,7 +234,7 @@ rb_ractor_safe_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
                 if (UNLIKELY(rb_objspace_garbage_object_p(curr_key))) {
                     // This is a weakref set, so after marking but before sweeping is complete we may find a matching garbage object.
                     // Skip it and mark it as deleted.
-                    RUBY_ATOMIC_VALUE_CAS(entry->key, curr_key, RACTOR_SAFE_TABLE_DELETED);
+                    RUBY_ATOMIC_VALUE_CAS(entry->key, curr_key, CONCURRENT_SET_DELETED);
 
                     // Fall through and continue our search.
                 }
@@ -248,66 +248,66 @@ rb_ractor_safe_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
           }
         }
 
-        idx = ractor_safe_set_probe_next(&probe);
+        idx = concurrent_set_probe_next(&probe);
     }
 }
 
 VALUE
-rb_ractor_safe_set_delete_by_identity(VALUE set_obj, VALUE key)
+rb_concurrent_set_delete_by_identity(VALUE set_obj, VALUE key)
 {
     // Assume locking and barrier (which there is no assert for).
     ASSERT_vm_locking();
 
-    struct ractor_safe_set *set = RTYPEDDATA_GET_DATA(set_obj);
+    struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
 
     VALUE hash = set->funcs->hash(key);
 
-    struct ractor_safe_set_probe probe;
-    int idx = ractor_safe_set_probe_start(&probe, set, hash);
+    struct concurrent_set_probe probe;
+    int idx = concurrent_set_probe_start(&probe, set, hash);
 
     while (true) {
-        struct ractor_safe_set_entry *entry = &set->entries[idx];
+        struct concurrent_set_entry *entry = &set->entries[idx];
         VALUE curr_key = RUBY_ATOMIC_VALUE_LOAD(entry->key);
 
         switch (curr_key) {
-          case RACTOR_SAFE_TABLE_EMPTY:
+          case CONCURRENT_SET_EMPTY:
             // We didn't find our entry to delete.
             return 0;
-          case RACTOR_SAFE_TABLE_DELETED:
+          case CONCURRENT_SET_DELETED:
             break;
-          case RACTOR_SAFE_TABLE_MOVED:
-            rb_bug("rb_ractor_safe_set_delete_by_identity: moved entry");
+          case CONCURRENT_SET_MOVED:
+            rb_bug("rb_concurrent_set_delete_by_identity: moved entry");
             break;
           default:
             if (key == curr_key) {
-                entry->key = RACTOR_SAFE_TABLE_DELETED;
+                entry->key = CONCURRENT_SET_DELETED;
                 set->deleted_entries++;
                 return curr_key;
             }
             break;
         }
 
-        idx = ractor_safe_set_probe_next(&probe);
+        idx = concurrent_set_probe_next(&probe);
     }
 }
 
 void
-rb_ractor_safe_set_foreach_with_replace(VALUE set_obj, int (*callback)(VALUE *key, void *data), void *data)
+rb_concurrent_set_foreach_with_replace(VALUE set_obj, int (*callback)(VALUE *key, void *data), void *data)
 {
     // Assume locking and barrier (which there is no assert for).
     ASSERT_vm_locking();
 
-    struct ractor_safe_set *set = RTYPEDDATA_GET_DATA(set_obj);
+    struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
 
     for (unsigned int i = 0; i < set->capacity; i++) {
         VALUE key = set->entries[i].key;
 
         switch (key) {
-          case RACTOR_SAFE_TABLE_EMPTY:
-          case RACTOR_SAFE_TABLE_DELETED:
+          case CONCURRENT_SET_EMPTY:
+          case CONCURRENT_SET_DELETED:
             continue;
-          case RACTOR_SAFE_TABLE_MOVED:
-            rb_bug("rb_ractor_safe_set_foreach_with_replace: moved entry");
+          case CONCURRENT_SET_MOVED:
+            rb_bug("rb_concurrent_set_foreach_with_replace: moved entry");
             break;
           default: {
             int ret = callback(&set->entries[i].key, data);
@@ -315,7 +315,7 @@ rb_ractor_safe_set_foreach_with_replace(VALUE set_obj, int (*callback)(VALUE *ke
               case ST_STOP:
                 return;
               case ST_DELETE:
-                set->entries[i].key = RACTOR_SAFE_TABLE_DELETED;
+                set->entries[i].key = CONCURRENT_SET_DELETED;
                 break;
             }
             break;
