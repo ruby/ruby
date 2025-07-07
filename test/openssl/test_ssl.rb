@@ -2041,6 +2041,27 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_get_sigalg
+    # SSL_get0_signature_name() not supported
+    # SSL_get0_peer_signature_name() not supported
+    return unless openssl?(3, 5, 0)
+
+    server_proc = -> (ctx, ssl) {
+      assert_equal('rsa_pss_rsae_sha256', ssl.sigalg)
+      assert_nil(ssl.peer_sigalg)
+
+      readwrite_loop(ctx, ssl)
+    }
+    start_server(server_proc: server_proc) do |port|
+      cli_ctx = OpenSSL::SSL::SSLContext.new
+      server_connect(port, cli_ctx) do |ssl|
+        assert_nil(ssl.sigalg)
+        assert_equal('rsa_pss_rsae_sha256', ssl.peer_sigalg)
+        ssl.puts "abc"; ssl.gets
+      end
+    end
+  end
+
   def test_connect_works_when_setting_dh_callback_to_nil
     omit "AWS-LC does not support DHE ciphersuites" if aws_lc?
 
@@ -2088,6 +2109,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       server_connect(port, ctx) { |ssl|
         cs = ssl.cipher[0]
         assert_match (/\AECDH/), cs
+        # SSL_get0_group_name() is supported on OpenSSL 3.2 or later.
+        assert_equal "secp384r1", ssl.group if openssl?(3, 2, 0)
         assert_equal "secp384r1", ssl.tmp_key.group.curve_name
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
@@ -2127,6 +2150,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
       server_connect(port, ctx) { |ssl|
         assert_equal "TLSv1.3", ssl.ssl_version
+        # SSL_get0_group_name() is supported on OpenSSL 3.2 or later.
+        assert_equal "secp384r1", ssl.group if openssl?(3, 2, 0)
         assert_equal "secp384r1", ssl.tmp_key.group.curve_name
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
