@@ -81,7 +81,7 @@ struct rb_classext_struct {
     VALUE super;
     VALUE fields_obj; // Fields are either ivar or other internal properties stored inline
     struct rb_id_table *m_tbl;
-    struct rb_id_table *const_tbl;
+    VALUE const_tbl;
     struct rb_id_table *callable_m_tbl;
     struct rb_id_table *cc_tbl; /* ID -> [[ci1, cc1], [ci2, cc2] ...] */
     struct rb_id_table *cvc_tbl;
@@ -262,8 +262,8 @@ static inline void RCLASS_WRITE_SUPER(VALUE klass, VALUE super);
 // TODO: rename RCLASS_SET_M_TBL_WORKAROUND (and _WRITE_) to RCLASS_SET_M_TBL with write barrier
 static inline void RCLASS_SET_M_TBL_WORKAROUND(VALUE klass, struct rb_id_table *table, bool check_promoted);
 static inline void RCLASS_WRITE_M_TBL_WORKAROUND(VALUE klass, struct rb_id_table *table, bool check_promoted);
-static inline void RCLASS_SET_CONST_TBL(VALUE klass, struct rb_id_table *table, bool shared);
-static inline void RCLASS_WRITE_CONST_TBL(VALUE klass, struct rb_id_table *table, bool shared);
+static inline void RCLASS_SET_CONST_TBL(VALUE klass, VALUE table, bool shared);
+static inline void RCLASS_WRITE_CONST_TBL(VALUE klass, VALUE table, bool shared);
 static inline void RCLASS_WRITE_CALLABLE_M_TBL(VALUE klass, struct rb_id_table *table);
 static inline void RCLASS_WRITE_CC_TBL(VALUE klass, struct rb_id_table *table);
 static inline void RCLASS_SET_CVC_TBL(VALUE klass, struct rb_id_table *table);
@@ -617,19 +617,19 @@ RCLASS_WRITE_M_TBL_WORKAROUND(VALUE klass, struct rb_id_table *table, bool check
 }
 
 static inline void
-RCLASS_SET_CONST_TBL(VALUE klass, struct rb_id_table *table, bool shared)
+RCLASS_SET_CONST_TBL(VALUE klass, VALUE table, bool shared)
 {
     rb_classext_t *ext = RCLASS_EXT_PRIME(klass);
-    RCLASSEXT_CONST_TBL(ext) = table;
+    RB_OBJ_WRITE(klass, &RCLASSEXT_CONST_TBL(ext), table);
     if (shared)
         RCLASSEXT_SHARED_CONST_TBL(ext) = true;
 }
 
 static inline void
-RCLASS_WRITE_CONST_TBL(VALUE klass, struct rb_id_table *table, bool shared)
+RCLASS_WRITE_CONST_TBL(VALUE klass, VALUE table, bool shared)
 {
     rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
-    RCLASSEXT_CONST_TBL(ext) = table;
+    RB_OBJ_WRITE(klass, &RCLASSEXT_CONST_TBL(ext), table);
     if (shared)
         RCLASSEXT_SHARED_CONST_TBL(ext) = true;
 }
@@ -808,6 +808,12 @@ RCLASS_INITIALIZED_P(VALUE klass)
 {
     VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE));
     return FL_TEST_RAW(klass, RCLASS_IS_INITIALIZED);
+}
+
+static inline VALUE
+rb_const_entry_new(void)
+{
+    return rb_imemo_new(imemo_constentry, 0, sizeof(rb_const_entry_t));
 }
 
 #endif /* INTERNAL_CLASS_H */
