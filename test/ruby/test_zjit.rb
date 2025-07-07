@@ -776,6 +776,11 @@ class TestZJIT < Test::Unit::TestCase
 
       test
     }
+
+    assert_compiles '1', %q{
+      def a(n1,n2,n3,n4,n5,n6,n7,n8,n9) = n1+n9
+      a(2,0,0,0,0,0,0,0,-1)
+    }
   end
 
   def test_opt_aref_with
