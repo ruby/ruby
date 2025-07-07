@@ -87,8 +87,8 @@ rb_id_table_init(struct rb_id_table *tbl, size_t s_capa)
     MEMZERO(tbl, struct rb_id_table, 1);
     if (capa > 0) {
         capa = round_capa(capa);
-        tbl->capa = (int)capa;
         tbl->items = ZALLOC_N(item_t, capa);
+        tbl->capa = (int)capa;
     }
     return tbl;
 }
@@ -341,7 +341,7 @@ managed_id_table_free(void *data)
 static size_t
 managed_id_table_memsize(const void *data)
 {
-    const struct rb_id_table *tbl = (const struct rb_id_table *)data;
+    const struct rb_id_table *tbl = (struct rb_id_table *)data;
     return rb_id_table_memsize(tbl) - sizeof(struct rb_id_table);
 }
 
@@ -376,20 +376,17 @@ rb_managed_id_table_new(size_t capa)
 static enum rb_id_table_iterator_result
 managed_id_table_dup_i(ID id, VALUE val, void *data)
 {
-    struct rb_id_table *new_tbl = (struct rb_id_table *)data;
-    rb_id_table_insert(new_tbl, id, val);
+    VALUE new_table = (VALUE)data;
+    rb_managed_id_table_insert(new_table, id, val);
     return ID_TABLE_CONTINUE;
 }
 
 VALUE
 rb_managed_id_table_dup(VALUE old_table)
 {
-    struct rb_id_table *new_tbl;
-    VALUE obj = TypedData_Make_Struct(0, struct rb_id_table, &managed_id_table_type, new_tbl);
-    struct rb_id_table *old_tbl = managed_id_table_ptr(old_table);
-    rb_id_table_init(new_tbl, old_tbl->num + 1);
-    rb_id_table_foreach(old_tbl, managed_id_table_dup_i, new_tbl);
-    return obj;
+    VALUE new_table = rb_managed_id_table_new(rb_managed_id_table_size(old_table) + 1);
+    rb_managed_id_table_foreach(old_table, managed_id_table_dup_i, (void *)new_table);
+    return new_table;
 }
 
 int
@@ -414,4 +411,118 @@ void
 rb_managed_id_table_foreach(VALUE table, rb_id_table_foreach_func_t *func, void *data)
 {
     rb_id_table_foreach(managed_id_table_ptr(table), func, data);
+}
+
+static enum rb_id_table_iterator_result
+marked_id_table_mark_i(VALUE value, void *ref)
+{
+    rb_gc_mark_movable(value);
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+marked_id_table_mark(void *data)
+{
+    struct rb_id_table *tbl = (struct rb_id_table *)data;
+    rb_id_table_foreach_values(tbl, marked_id_table_mark_i, NULL);
+}
+
+static enum rb_id_table_iterator_result
+marked_id_table_compact_check_i(VALUE value, void *data)
+{
+    if (rb_gc_location(value) != value) {
+        return ID_TABLE_REPLACE;
+    }
+    return ID_TABLE_CONTINUE;
+}
+
+static enum rb_id_table_iterator_result
+marked_id_table_compact_replace_i(VALUE *value, void *data, int existing)
+{
+    *value = rb_gc_location(*value);
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+marked_id_table_compact(void *data)
+{
+    struct rb_id_table *tbl = (struct rb_id_table *)data;
+    rb_id_table_foreach_values_with_replace(tbl, marked_id_table_compact_check_i, marked_id_table_compact_replace_i, NULL);
+}
+
+static const rb_data_type_t marked_id_table_type = {
+    .wrap_struct_name = "VM/marked_id_table",
+    .function = {
+        .dmark = marked_id_table_mark,
+        .dfree = (RUBY_DATA_FUNC)managed_id_table_free,
+        .dsize = managed_id_table_memsize,
+        .dcompact = marked_id_table_compact,
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+};
+
+static inline struct rb_id_table *
+marked_id_table_ptr(VALUE obj)
+{
+    RUBY_ASSERT(RB_TYPE_P(obj, T_DATA));
+    RUBY_ASSERT(rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), &marked_id_table_type));
+
+    return RTYPEDDATA_GET_DATA(obj);
+}
+
+VALUE
+rb_marked_id_table_new(size_t capa)
+{
+    struct rb_id_table *tbl;
+    VALUE obj = TypedData_Make_Struct(0, struct rb_id_table, &marked_id_table_type, tbl);
+    rb_id_table_init(tbl, capa);
+    return obj;
+}
+
+size_t
+rb_marked_id_table_size(VALUE table)
+{
+    return rb_id_table_size(marked_id_table_ptr(table));
+}
+
+static enum rb_id_table_iterator_result
+marked_id_table_dup_i(ID id, VALUE val, void *data)
+{
+    VALUE new_table = (VALUE)data;
+    rb_marked_id_table_insert(new_table, id, val);
+    return ID_TABLE_CONTINUE;
+}
+
+VALUE
+rb_marked_id_table_dup(VALUE old_table)
+{
+    VALUE new_table = rb_marked_id_table_new(rb_marked_id_table_size(old_table) + 1);
+    rb_marked_id_table_foreach(old_table, marked_id_table_dup_i, (void *)new_table);
+    return new_table;
+}
+
+int
+rb_marked_id_table_lookup(VALUE table, ID id, VALUE *valp)
+{
+    return rb_id_table_lookup(marked_id_table_ptr(table), id, valp);
+}
+
+int
+rb_marked_id_table_insert(VALUE table, ID id, VALUE val)
+{
+    int retval = rb_id_table_insert(marked_id_table_ptr(table), id, val);
+    RB_OBJ_WRITTEN(table, Qundef, val);
+    return retval;
+}
+
+int
+rb_marked_id_table_delete(VALUE table, ID id)
+{
+    return rb_id_table_delete(marked_id_table_ptr(table), id);
+}
+
+void
+rb_marked_id_table_foreach(VALUE table, rb_id_table_foreach_func_t *func, void *data)
+{
+    rb_id_table_foreach(marked_id_table_ptr(table), func, data);
 }
