@@ -214,7 +214,7 @@ impl Type {
             Type { bits: bits::ModuleExact, spec: Specialization::Object(val) }
         }
         else if val.builtin_type() == RUBY_T_CLASS {
-            Type { bits: bits::ClassExact, spec: Specialization::Object(val) }
+            Type { bits: bits::Class, spec: Specialization::Object(val) }
         }
         else if val.class_of() == unsafe { rb_cRegexp } {
             Type { bits: bits::RegexpExact, spec: Specialization::Object(val) }
@@ -417,7 +417,7 @@ impl Type {
             return Some(val);
         }
         if self.is_subtype(types::ArrayExact) { return Some(unsafe { rb_cArray }); }
-        if self.is_subtype(types::ClassExact) { return Some(unsafe { rb_cClass }); }
+        if self.is_subtype(types::Class) { return Some(unsafe { rb_cClass }); }
         if self.is_subtype(types::FalseClassExact) { return Some(unsafe { rb_cFalseClass }); }
         if self.is_subtype(types::FloatExact) { return Some(unsafe { rb_cFloat }); }
         if self.is_subtype(types::HashExact) { return Some(unsafe { rb_cHash }); }

@@ -4196,10 +4196,10 @@ mod tests {
         assert_method_hir("test",  expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v3:ClassExact[VMFrozenCore] = Const Value(VALUE(0x1000))
+              v3:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
               v5:HashExact = NewHash
               v7:BasicObject = SendWithoutBlock v3, :core#hash_merge_kwd, v5, v1
-              v8:ClassExact[VMFrozenCore] = Const Value(VALUE(0x1000))
+              v8:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
               v9:StaticSymbol[:b] = Const Value(VALUE(0x1008))
               v10:Fixnum[1] = Const Value(1)
               v12:BasicObject = SendWithoutBlock v8, :core#hash_merge_ptr, v7, v9, v10
@@ -4648,7 +4648,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_putspecialobject, expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v2:ClassExact[VMFrozenCore] = Const Value(VALUE(0x1000))
+              v2:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
               v3:BasicObject = PutSpecialObject CBase
               v4:StaticSymbol[:aliased] = Const Value(VALUE(0x1008))
               v5:StaticSymbol[:__callee__] = Const Value(VALUE(0x1010))
@@ -5889,7 +5889,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, C)
-              v7:ClassExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v7:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               Return v7
         "#]]);
     }
@@ -5905,16 +5905,16 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, String)
-              v15:ClassExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v15:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1010, Class)
-              v18:ClassExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+              v18:Class[VALUE(0x1018)] = Const Value(VALUE(0x1018))
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1020, Module)
-              v21:ClassExact[VALUE(0x1028)] = Const Value(VALUE(0x1028))
+              v21:Class[VALUE(0x1028)] = Const Value(VALUE(0x1028))
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1030, BasicObject)
-              v24:ClassExact[VALUE(0x1038)] = Const Value(VALUE(0x1038))
+              v24:Class[VALUE(0x1038)] = Const Value(VALUE(0x1038))
               v11:ArrayExact = NewArray v15, v18, v21, v24
               Return v11
         "#]]);
@@ -6107,7 +6107,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, Foo::Bar::C)
-              v7:ClassExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v7:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               Return v7
         "#]]);
     }
@@ -6124,7 +6124,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, C)
-              v20:ClassExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v20:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               v4:NilClassExact = Const Value(nil)
               v11:BasicObject = SendWithoutBlock v20, :new
               Return v11
@@ -6147,7 +6147,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, C)
-              v22:ClassExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v22:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               v4:NilClassExact = Const Value(nil)
               v5:Fixnum[1] = Const Value(1)
               v13:BasicObject = SendWithoutBlock v22, :new, v5
