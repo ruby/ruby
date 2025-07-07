@@ -2852,4 +2852,22 @@ EOS
   rescue RuntimeError
     # Ignore.
   end if defined?(fork)
+
+  def test_concurrent_kernel_system_with_ractors_does_not_crash
+    omit "system('ls') is not supported" if windows?
+    assert_ractor <<-RUBY
+      rs = []
+      100.times do
+        rs << Ractor.new do
+          # system uses fork() internally, so does IO.popen and Process.spawn.
+          system("ls > /dev/null")
+        end
+      end
+
+      while rs.any?
+        r, _obj = Ractor.select(*rs)
+        rs.delete(r)
+      end
+    RUBY
+  end
 end

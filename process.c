@@ -4010,6 +4010,7 @@ retry_fork_async_signal_safe(struct rb_process_status *status, int *ep,
 
     while (1) {
         prefork();
+        rb_thread_acquire_fork_lock();
         disable_child_handler_before_fork(&old);
 #ifdef HAVE_WORKING_VFORK
         if (!has_privilege())
@@ -4036,6 +4037,7 @@ retry_fork_async_signal_safe(struct rb_process_status *status, int *ep,
         }
         err = errno;
         disable_child_handler_fork_parent(&old);
+        rb_thread_release_fork_lock();
         if (0 < pid) /* fork succeed, parent process */
             return pid;
         /* fork failed */
