@@ -19775,8 +19775,17 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_arguments_t arguments = { 0 };
             pm_node_t *receiver = NULL;
 
+            // If we do not accept a command call, then we also do not accept a
+            // not without parentheses. In this case we need to reject this
+            // syntax.
             if (!accepts_command_call && !match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
-                pm_parser_err_current(parser, PM_ERR_EXPECT_LPAREN_AFTER_NOT);
+                if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES)) {
+                    pm_parser_err(parser, parser->previous.end, parser->previous.end + 1, PM_ERR_EXPECT_LPAREN_AFTER_NOT_LPAREN);
+                } else {
+                    accept1(parser, PM_TOKEN_NEWLINE);
+                    pm_parser_err_current(parser, PM_ERR_EXPECT_LPAREN_AFTER_NOT_OTHER);
+                }
+
                 return (pm_node_t *) pm_missing_node_create(parser, parser->current.start, parser->current.end);
             }
 
