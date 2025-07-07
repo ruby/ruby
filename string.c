@@ -4411,22 +4411,21 @@ str_casecmp(VALUE str1, VALUE str2)
  *    casecmp?(other_string) -> true, false, or nil
  *
  *  Returns +true+ if +self+ and +other_string+ are equal after
- *  Unicode case folding, otherwise +false+:
- *
- *    'foo'.casecmp?('foo') # => true
- *    'foo'.casecmp?('food') # => false
- *    'food'.casecmp?('foo') # => false
- *    'FOO'.casecmp?('foo') # => true
- *    'foo'.casecmp?('FOO') # => true
- *
- *  Returns +nil+ if the two values are incomparable:
- *
- *    'foo'.casecmp?(1) # => nil
+ *  Unicode case folding, +false+ if unequal, +nil+ if incomparable.
  *
  *  See {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
- *  Related: String#casecmp.
+ *  Examples:
  *
+ *    'foo'.casecmp?('goo')  # => false
+ *    'goo'.casecmp?('foo')  # => false
+ *    'foo'.casecmp?('food') # => false
+ *    'food'.casecmp?('foo') # => false
+ *    'FOO'.casecmp?('foo')  # => true
+ *    'foo'.casecmp?('FOO')  # => true
+ *    'foo'.casecmp?(1)      # => nil
+ *
+ *  Related: see {Comparing}[rdoc-ref:String@Comparing].
  */
 
 static VALUE
