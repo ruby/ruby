@@ -11117,8 +11117,6 @@ rb_str_rjust(int argc, VALUE *argv, VALUE str)
  *
  *  :include: doc/string/center.rdoc
  *
- *  Related: String#ljust, String#rjust.
- *
  */
 
 static VALUE
