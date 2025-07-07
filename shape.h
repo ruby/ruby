@@ -122,6 +122,12 @@ RUBY_SYMBOL_EXPORT_BEGIN
 RUBY_EXTERN rb_shape_tree_t rb_shape_tree;
 RUBY_SYMBOL_EXPORT_END
 
+static inline shape_id_t
+rb_shapes_count(void)
+{
+    return (shape_id_t)RUBY_ATOMIC_LOAD(rb_shape_tree.next_shape_id);
+}
+
 union rb_attr_index_cache {
     uint64_t pack;
     struct {

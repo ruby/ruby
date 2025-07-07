@@ -371,7 +371,7 @@ rb_shape_each_shape_id(each_shape_callback callback, void *data)
 {
     rb_shape_t *start = rb_shape_get_root_shape();
     rb_shape_t *cursor = start;
-    rb_shape_t *end = RSHAPE(rb_shape_tree.next_shape_id);
+    rb_shape_t *end = RSHAPE(rb_shapes_count());
     while (cursor < end) {
         callback((shape_id_t)(cursor - start), data);
         cursor += 1;
@@ -560,7 +560,7 @@ retry:
     if (!res) {
         // If we're not allowed to create a new variation, of if we're out of shapes
         // we return TOO_COMPLEX_SHAPE.
-        if (!new_variations_allowed || rb_shape_tree.next_shape_id > MAX_SHAPE_ID) {
+        if (!new_variations_allowed || rb_shapes_count() > MAX_SHAPE_ID) {
             res = NULL;
         }
         else {
@@ -636,7 +636,7 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
     if (!res) {
         // If we're not allowed to create a new variation, of if we're out of shapes
         // we return TOO_COMPLEX_SHAPE.
-        if (!new_variations_allowed || rb_shape_tree.next_shape_id > MAX_SHAPE_ID) {
+        if (!new_variations_allowed || rb_shapes_count() > MAX_SHAPE_ID) {
             res = NULL;
         }
         else {
@@ -1433,7 +1433,7 @@ rb_shape_root_shape(VALUE self)
 static VALUE
 rb_shape_shapes_available(VALUE self)
 {
-    return INT2NUM(MAX_SHAPE_ID - (rb_shape_tree.next_shape_id - 1));
+    return INT2NUM(MAX_SHAPE_ID - (rb_shapes_count() - 1));
 }
 
 static VALUE
@@ -1441,7 +1441,7 @@ rb_shape_exhaust(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 0, 1);
     int offset = argc == 1 ? NUM2INT(argv[0]) : 0;
-    rb_shape_tree.next_shape_id = MAX_SHAPE_ID - offset + 1;
+    RUBY_ATOMIC_SET(rb_shape_tree.next_shape_id, MAX_SHAPE_ID - offset + 1);
     return Qnil;
 }
 
@@ -1497,7 +1497,7 @@ static VALUE
 rb_shape_find_by_id(VALUE mod, VALUE id)
 {
     shape_id_t shape_id = NUM2UINT(id);
-    if (shape_id >= rb_shape_tree.next_shape_id) {
+    if (shape_id >= rb_shapes_count()) {
         rb_raise(rb_eArgError, "Shape ID %d is out of bounds\n", shape_id);
     }
     return shape_id_t_to_rb_cShape(shape_id);
