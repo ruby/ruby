@@ -25,9 +25,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - vc: 2019
+          - vc: 2022
             os: 2022
-            vcvars: '-vcvars_ver=14.2' # The default version of MSVC in windows-2022 is broken.
             test_task: check
           - vc: 2022
             os: 2025
