@@ -263,7 +263,7 @@ module URI
       unless schemes
         @regexp[:ABS_URI_REF]
       else
-        /(?=#{Regexp.union(*schemes)}:)#{@pattern[:X_ABS_URI]}/x
+        /(?=(?i:#{Regexp.union(*schemes).source}):)#{@pattern[:X_ABS_URI]}/x
       end
     end
 

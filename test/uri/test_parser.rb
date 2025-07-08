@@ -113,4 +113,12 @@ class URI::TestParser < Test::Unit::TestCase
       end
     end
   end
+
+  def test_rfc2822_make_regexp
+    parser = URI::RFC2396_Parser.new
+    regexp = parser.make_regexp("HTTP")
+    assert_match(regexp, "HTTP://EXAMPLE.COM/")
+    assert_match(regexp, "http://example.com/")
+    refute_match(regexp, "https://example.com/")
+  end
 end
