@@ -22,7 +22,8 @@ Gem::Specification.new do |spec|
 
   dir, gemspec = File.split(__FILE__)
   excludes = %W[
-    :^/bin/ :^/test/ :^/spec/ :^/features/ :^/Gemfile :^/Rakefile
+    :^/.git* :^/bin/ :^/test/ :^/spec/ :^/features/ :^/Gemfile :^/Rakefile
+    :^/#{gemspec}
   ]
   spec.files = IO.popen(%w[git ls-files -z --] + excludes, chdir: dir) do |f|
     f.read.split("\x0")
