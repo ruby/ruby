@@ -23,7 +23,7 @@ class TestDelegateClass < Test::Unit::TestCase
 
   def test_systemcallerror_eq
     e = SystemCallError.new(0)
-    assert((SimpleDelegator.new(e) == e) == (e == SimpleDelegator.new(e)), "[ruby-dev:34808]")
+    assert_equal((SimpleDelegator.new(e) == e), (e == SimpleDelegator.new(e)), "[ruby-dev:34808]")
   end
 
   class Myclass < DelegateClass(Array);end
@@ -181,8 +181,8 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_nothing_raised(bug2679) {d.dup[0] += 1}
     assert_raise(FrozenError) {d.clone[0] += 1}
     d.freeze
-    assert(d.clone.frozen?)
-    assert(!d.dup.frozen?)
+    assert_predicate(d.clone, :frozen?)
+    assert_not_predicate(d.dup, :frozen?)
   end
 
   def test_frozen
