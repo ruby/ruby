@@ -6676,4 +6676,106 @@ mod opt_tests {
               Return v8
         "#]]);
     }
+
+    #[test]
+    fn test_guard_false_for_nil_opt() {
+        eval("
+            def test(val) = val.nil?
+
+            test(false)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(FalseClass@0x1000, nil?@0x1008)
+              v7:FalseClassExact = GuardType v1, FalseClassExact
+              v8:FalseClassExact = CCall nil?@0x1010, v7
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_true_for_nil_opt() {
+        eval("
+            def test(val) = val.nil?
+
+            test(true)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(TrueClass@0x1000, nil?@0x1008)
+              v7:TrueClassExact = GuardType v1, TrueClassExact
+              v8:FalseClassExact = CCall nil?@0x1010, v7
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_symbol_for_nil_opt() {
+        eval("
+            def test(val) = val.nil?
+
+            test(:foo)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(Symbol@0x1000, nil?@0x1008)
+              v7:StaticSymbol = GuardType v1, StaticSymbol
+              v8:FalseClassExact = CCall nil?@0x1010, v7
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_fixnum_for_nil_opt() {
+        eval("
+            def test(val) = val.nil?
+
+            test(1)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008)
+              v7:Fixnum = GuardType v1, Fixnum
+              v8:FalseClassExact = CCall nil?@0x1010, v7
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_float_for_nil_opt() {
+        eval("
+            def test(val) = val.nil?
+
+            test(1.0)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(Float@0x1000, nil?@0x1008)
+              v7:Flonum = GuardType v1, Flonum
+              v8:FalseClassExact = CCall nil?@0x1010, v7
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_string_for_nil_opt() {
+        eval("
+            def test(val) = val.nil?
+
+            test('foo')
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(String@0x1000, nil?@0x1008)
+              v7:StringExact = GuardType v1, StringExact
+              v8:FalseClassExact = CCall nil?@0x1010, v7
+              Return v8
+        "#]]);
+    }
 }
