@@ -996,6 +996,7 @@ opt_nil_p
 (CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_nil_p(GET_ISEQ(), cd, recv);
 
