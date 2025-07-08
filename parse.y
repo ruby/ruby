@@ -314,6 +314,7 @@ struct lex_context {
     unsigned int in_argdef: 1;
     unsigned int in_def: 1;
     unsigned int in_class: 1;
+    unsigned int has_trailing_semicolon: 1;
     BITFIELD(enum rb_parser_shareability, shareable_constant_value, 2);
     BITFIELD(enum rescue_context, in_rescue, 2);
     unsigned int cant_return: 1;
@@ -4041,6 +4042,7 @@ arg		: asgn(arg_rhs)
                     {
                         p->ctxt.in_defined = $3.in_defined;
                         $$ = new_defined(p, $4, &@$);
+                        p->ctxt.has_trailing_semicolon = $3.has_trailing_semicolon;
                     /*% ripper: defined!($:4) %*/
                     }
                 | def_endless_method(endless_arg)
@@ -4428,6 +4430,7 @@ primary		: inline_primary
                 {
                     p->ctxt.in_defined = $4.in_defined;
                     $$ = new_defined(p, $5, &@$);
+                    p->ctxt.has_trailing_semicolon = $4.has_trailing_semicolon;
                 /*% ripper: defined!($:5) %*/
                 }
             | keyword_not '(' expr rparen
@@ -6706,7 +6709,14 @@ trailer		: '\n'?
                 | ','
                 ;
 
-term		: ';' {yyerrok;token_flush(p);}
+term		: ';'
+                    {
+                        yyerrok;
+                        token_flush(p);
+                        if (p->ctxt.in_defined) {
+                            p->ctxt.has_trailing_semicolon = 1;
+                        }
+                    }
                 | '\n'
                     {
                         @$.end_pos = @$.beg_pos;
@@ -13013,6 +13023,9 @@ kwd_append(rb_node_kw_arg_t *kwlist, rb_node_kw_arg_t *kw)
 static NODE *
 new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc)
 {
+    int had_trailing_semicolon = p->ctxt.has_trailing_semicolon;
+    p->ctxt.has_trailing_semicolon = 0;
+
     NODE *n = expr;
     while (n) {
         if (nd_type_p(n, NODE_BEGIN)) {
@@ -13025,6 +13038,12 @@ new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc)
             break;
         }
     }
+
+    if (had_trailing_semicolon && !nd_type_p(expr, NODE_BLOCK)) {
+        NODE *block = NEW_BLOCK(expr, loc);
+        return NEW_DEFINED(block, loc);
+    }
+
     return NEW_DEFINED(n, loc);
 }
 
