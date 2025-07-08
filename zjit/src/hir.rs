@@ -1547,7 +1547,7 @@ impl Function {
             } else {
                 let iseq_insn_idx = fun.frame_state(state).insn_idx;
                 let Some(recv_type) = fun.profiled_type_of_at(self_val, iseq_insn_idx) else { return Err(()) };
-                let Some(recv_class) = recv_type.exact_ruby_class() else { return Err(()) };
+                let Some(recv_class) = recv_type.runtime_exact_ruby_class() else { return Err(()) };
                 (recv_class, Some(recv_type.unspecialized()))
             };
 
@@ -6657,6 +6657,23 @@ mod opt_tests {
               PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008)
               v5:Fixnum[2] = Const Value(2)
               Return v5
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_nil_for_nil_opt() {
+        eval("
+            def test(val) = val.nil?
+
+            test(nil)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008)
+              v7:NilClassExact = GuardType v1, NilClassExact
+              v8:TrueClassExact = CCall nil?@0x1010, v7
+              Return v8
         "#]]);
     }
 }
