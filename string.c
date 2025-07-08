@@ -10314,9 +10314,12 @@ rb_str_chomp_string(VALUE str, VALUE rs)
  *  call-seq:
  *    chomp!(line_sep = $/) -> self or nil
  *
- *  Like String#chomp, but modifies +self+ in place;
- *  returns +nil+ if no modification made, +self+ otherwise.
+ *  Like String#chomp, except that:
  *
+ *  - Removes trailing characters from +self+ (not from a copy of +self+).
+ *  - Returns +self+ if any characters are removed, +nil+ otherwise.
+ *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
