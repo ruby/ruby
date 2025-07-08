@@ -33,7 +33,7 @@ require 'securerandom'
 
 class Resolv
 
-  VERSION = "0.6.1"
+  VERSION = "0.6.2"
 
   ##
   # Looks up the first IP address for +name+.
