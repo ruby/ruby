@@ -1350,6 +1350,10 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
         return;
     }
 
+    struct ractor_waiter *waiter = (struct ractor_waiter *)ubf_arg;
+    waiter->wakeup_status = wakeup_none;
+    ccan_list_add_tail(&cr->sync.waiters, &waiter->node);
+
     thread_sched_lock(sched, th);
     {
         // setup sleep

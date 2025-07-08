@@ -845,22 +845,6 @@ ractor_basket_accept(struct ractor_basket *b)
     return v;
 }
 
-// Ractor blocking by receive
-
-enum ractor_wakeup_status {
-    wakeup_none,
-    wakeup_by_send,
-    wakeup_by_interrupt,
-
-    // wakeup_by_close,
-};
-
-struct ractor_waiter {
-    enum ractor_wakeup_status wakeup_status;
-    rb_thread_t *th;
-    struct ccan_list_node node;
-};
-
 #if VM_CHECK_MODE > 0
 static bool
 ractor_waiter_included(rb_ractor_t *cr, rb_thread_t *th)
@@ -888,6 +872,7 @@ wakeup_status_str(enum ractor_wakeup_status wakeup_status)
       case wakeup_none: return "none";
       case wakeup_by_send: return "by_send";
       case wakeup_by_interrupt: return "by_interrupt";
+      case wakeup_invalid: return "wakeup_invalid";
       // case wakeup_by_close: return "by_close";
     }
     rb_bug("unreachable");
@@ -919,6 +904,7 @@ ractor_cond_wait(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
     VALUE locked_by = r->sync.locked_by;
+    VM_ASSERT(locked_by && locked_by != Qnil);
     r->sync.locked_by = Qnil;
 #endif
     rb_native_cond_wait(&r->sync.wakeup_cond, &r->sync.lock);
@@ -936,9 +922,9 @@ ractor_wait_no_gvl(void *ptr)
 
     RACTOR_LOCK_SELF(cr);
     {
-        if (waiter->wakeup_status == wakeup_none) {
-            ractor_cond_wait(cr);
-        }
+        waiter->wakeup_status = wakeup_none;
+        ccan_list_add_tail(&cr->sync.waiters, &waiter->node);
+        ractor_cond_wait(cr);
     }
     RACTOR_UNLOCK_SELF(cr);
     return NULL;
@@ -961,8 +947,11 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
 static void
 rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
 {
-    // ractor lock is acquired
-    rb_native_cond_broadcast(&r->sync.wakeup_cond);
+    RACTOR_LOCK(r);
+    {
+        rb_native_cond_signal(&r->sync.wakeup_cond);
+    }
+    RACTOR_UNLOCK(r);
 }
 #endif
 
@@ -1019,7 +1008,7 @@ ubf_ractor_wait(void *ptr)
         RACTOR_UNLOCK(r);
 
         if (should_wake) {
-            rb_ractor_sched_wakeup(r, waiter->th);
+            rb_ractor_sched_wakeup(r, th);
         }
     }
     rb_native_mutex_lock(&th->interrupt_lock);
@@ -1031,7 +1020,7 @@ ractor_wait(rb_execution_context_t *ec, rb_ractor_t *cr)
     rb_thread_t *th = rb_ec_thread_ptr(ec);
 
     struct ractor_waiter waiter = {
-        .wakeup_status = wakeup_none,
+        .wakeup_status = wakeup_invalid,
         .th = th,
     };
 
@@ -1042,12 +1031,10 @@ ractor_wait(rb_execution_context_t *ec, rb_ractor_t *cr)
     VM_ASSERT(GET_RACTOR() == cr);
     VM_ASSERT(!ractor_waiter_included(cr, th));
 
-    ccan_list_add_tail(&cr->sync.waiters, &waiter.node);
-
     // resume another ready thread and wait for an event
     rb_ractor_sched_wait(ec, cr, ubf_ractor_wait, &waiter);
 
-    if (waiter.wakeup_status == wakeup_none) {
+    if (waiter.wakeup_status == wakeup_none) { // ex: rb_nogvl failed due to interrupt
         ccan_list_del(&waiter.node);
     }
 

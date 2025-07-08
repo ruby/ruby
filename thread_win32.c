@@ -426,7 +426,7 @@ struct cond_event_entry {
 void
 rb_native_cond_signal(rb_nativethread_cond_t *cond)
 {
-    /* cond is guarded by mutex */
+    /* cond needs to be guarded by mutex always */
     struct cond_event_entry *e = cond->next;
     struct cond_event_entry *head = (struct cond_event_entry*)cond;
 
@@ -445,7 +445,7 @@ rb_native_cond_signal(rb_nativethread_cond_t *cond)
 void
 rb_native_cond_broadcast(rb_nativethread_cond_t *cond)
 {
-    /* cond is guarded by mutex */
+    /* cond needs to be guarded by mutex always */
     struct cond_event_entry *e = cond->next;
     struct cond_event_entry *head = (struct cond_event_entry*)cond;
 
