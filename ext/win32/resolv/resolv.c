@@ -13,6 +13,8 @@ w32error_make_error(DWORD e)
     return rb_class_new_instance(1, &code, rb_path2class("Win32::Resolv::Error"));
 }
 
+NORETURN(static void w32error_raise(DWORD e));
+
 static void
 w32error_raise(DWORD e)
 {
