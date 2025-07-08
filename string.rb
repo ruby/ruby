@@ -373,10 +373,9 @@
 # - #eql?: Returns +true+ if the content is the same as the given other string.
 # - #<=>: Returns -1, 0, or 1 as a given other string is smaller than,
 #   equal to, or larger than +self+.
-# - #casecmp: Ignoring case, returns -1, 0, or 1 as a given
-#   other string is smaller than, equal to, or larger than +self+.
-# - #casecmp?: Returns +true+ if the string is equal to a given string after Unicode case folding;
-#   +false+ otherwise.
+# - #casecmp: Ignoring case, returns -1, 0, or 1 as
+#   +self+ is smaller than, equal to, or larger than a given other string.
+# - #casecmp?: Ignoring case, returns whether a given other string is equal to +self+.
 #
 # === Modifying
 #

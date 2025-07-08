@@ -3227,7 +3227,7 @@ mod validation_tests {
     fn one_block_no_terminator() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         assert_matches_err(function.validate(), ValidationError::BlockHasNoTerminator(format!("{:?}", function), entry));
     }
 
@@ -3246,7 +3246,6 @@ mod validation_tests {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
         let side = function.new_block();
-        let exit = function.new_block();
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::IfTrue { val, target: BranchEdge { target: side, args: vec![val, val, val] } });
         assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(format!("{:?}", function), entry, 0, 3));
@@ -3257,7 +3256,6 @@ mod validation_tests {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
         let side = function.new_block();
-        let exit = function.new_block();
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![val, val, val] } });
         assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(format!("{:?}", function), entry, 0, 3));
@@ -3268,7 +3266,6 @@ mod validation_tests {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
         let side = function.new_block();
-        let exit = function.new_block();
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::Jump ( BranchEdge { target: side, args: vec![val, val, val] } ));
         assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(format!("{:?}", function), entry, 0, 3));
