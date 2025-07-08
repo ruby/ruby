@@ -627,6 +627,13 @@ class TestResolvDNS < Test::Unit::TestCase
     assert_operator(2**14, :<, m.to_s.length)
   end
 
+  def test_too_long_address
+    too_long_address_message = [0, 0, 1, 0, 0, 0].pack("n*") + "\x01x" * 129 + [0, 0, 0].pack("cnn")
+    assert_raise_with_message(Resolv::DNS::DecodeError, /name label data exceed 255 octets/) do
+      Resolv::DNS::Message.decode too_long_address_message
+    end
+  end
+
   def assert_no_fd_leak
     socket = assert_throw(self) do |tag|
       Resolv::DNS.stub(:bind_random_port, ->(s, *) {throw(tag, s)}) do
