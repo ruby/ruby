@@ -26,8 +26,7 @@ jobs:
       matrix:
         include:
           - os: 2022
-            vc: 2019
-            vcvars: '14.2' # VS 2022 17.13.x is broken at windows-2022
+            vc: 2022
             test_task: check
           - os: 2025
             vc: 2022
