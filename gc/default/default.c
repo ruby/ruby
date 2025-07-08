@@ -45,15 +45,15 @@
 #endif
 
 #ifdef BUILDING_MODULAR_GC
-# define rb_asan_poison_object(_obj) (0)
-# define rb_asan_unpoison_object(_obj, _newobj_p) (0)
-# define asan_unpoisoning_object(_obj) if (true)
-# define asan_poison_memory_region(_ptr, _size) (0)
-# define asan_unpoison_memory_region(_ptr, _size, _malloc_p) (0)
-# define asan_unpoisoning_memory_region(_ptr, _size) if (true)
+# define rb_asan_poison_object(obj) ((void)(obj))
+# define rb_asan_unpoison_object(obj, newobj_p) ((void)(obj), (void)(newobj_p))
+# define asan_unpoisoning_object(obj) if ((obj) || true)
+# define asan_poison_memory_region(ptr, size) ((void)(ptr), (void)(size))
+# define asan_unpoison_memory_region(ptr, size, malloc_p) ((void)(ptr), (size), (malloc_p))
+# define asan_unpoisoning_memory_region(ptr, size) if ((ptr) || (size) || true)
 
-# define VALGRIND_MAKE_MEM_DEFINED(_ptr, _size) (0)
-# define VALGRIND_MAKE_MEM_UNDEFINED(_ptr, _size) (0)
+# define VALGRIND_MAKE_MEM_DEFINED(ptr, size) ((void)(ptr), (void)(size))
+# define VALGRIND_MAKE_MEM_UNDEFINED(ptr, size) ((void)(ptr), (void)(size))
 #else
 # include "internal/sanitizers.h"
 #endif
