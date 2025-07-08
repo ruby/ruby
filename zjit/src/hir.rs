@@ -16,6 +16,7 @@ use std::{
     slice::Iter
 };
 use crate::hir_type::{Type, types};
+use crate::bitset::BitSet;
 
 /// An index of an [`Insn`] in a [`Function`]. This is a popular
 /// type since this effectively acts as a pointer to an [`Insn`].
@@ -39,11 +40,20 @@ impl std::fmt::Display for InsnId {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct BlockId(pub usize);
 
+impl Into<usize> for BlockId {
+    fn into(self) -> usize {
+        self.0
+    }
+}
+
 impl std::fmt::Display for BlockId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "bb{}", self.0)
     }
 }
+
+type InsnSet = BitSet<InsnId>;
+type BlockSet = BitSet<BlockId>;
 
 fn write_vec<T: std::fmt::Display>(f: &mut std::fmt::Formatter, objs: &Vec<T>) -> std::fmt::Result {
     write!(f, "[")?;
@@ -1252,19 +1262,18 @@ impl Function {
         }
         let rpo = self.rpo();
         // Walk the graph, computing types until fixpoint
-        let mut reachable = vec![false; self.blocks.len()];
-        reachable[self.entry_block.0] = true;
+        let mut reachable = BlockSet::with_capacity(self.blocks.len());
+        reachable.insert(self.entry_block);
         loop {
             let mut changed = false;
-            for block in &rpo {
-                if !reachable[block.0] { continue; }
+            for &block in &rpo {
+                if !reachable.get(block) { continue; }
                 for insn_id in &self.blocks[block.0].insns {
-                    let insn = self.find(*insn_id);
-                    let insn_type = match insn {
+                    let insn_type = match self.find(*insn_id) {
                         Insn::IfTrue { val, target: BranchEdge { target, args } } => {
                             assert!(!self.type_of(val).bit_equal(types::Empty));
                             if self.type_of(val).could_be(Type::from_cbool(true)) {
-                                reachable[target.0] = true;
+                                reachable.insert(target);
                                 for (idx, arg) in args.iter().enumerate() {
                                     let param = self.blocks[target.0].params[idx];
                                     self.insn_types[param.0] = self.type_of(param).union(self.type_of(*arg));
@@ -1275,7 +1284,7 @@ impl Function {
                         Insn::IfFalse { val, target: BranchEdge { target, args } } => {
                             assert!(!self.type_of(val).bit_equal(types::Empty));
                             if self.type_of(val).could_be(Type::from_cbool(false)) {
-                                reachable[target.0] = true;
+                                reachable.insert(target);
                                 for (idx, arg) in args.iter().enumerate() {
                                     let param = self.blocks[target.0].params[idx];
                                     self.insn_types[param.0] = self.type_of(param).union(self.type_of(*arg));
@@ -1284,14 +1293,14 @@ impl Function {
                             continue;
                         }
                         Insn::Jump(BranchEdge { target, args }) => {
-                            reachable[target.0] = true;
+                            reachable.insert(target);
                             for (idx, arg) in args.iter().enumerate() {
                                 let param = self.blocks[target.0].params[idx];
                                 self.insn_types[param.0] = self.type_of(param).union(self.type_of(*arg));
                             }
                             continue;
                         }
-                        _ if insn.has_output() => self.infer_type(*insn_id),
+                        insn if insn.has_output() => self.infer_type(*insn_id),
                         _ => continue,
                     };
                     if !self.type_of(*insn_id).bit_equal(insn_type) {
@@ -1773,11 +1782,11 @@ impl Function {
                 }
             }
         }
-        let mut necessary = vec![false; self.insns.len()];
+        let mut necessary = InsnSet::with_capacity(self.insns.len());
         // Now recursively traverse their data dependencies and mark those as necessary
         while let Some(insn_id) = worklist.pop_front() {
-            if necessary[insn_id.0] { continue; }
-            necessary[insn_id.0] = true;
+            if necessary.get(insn_id) { continue; }
+            necessary.insert(insn_id);
             match self.find(insn_id) {
                 Insn::Const { .. }
                 | Insn::Param { .. }
@@ -1901,7 +1910,7 @@ impl Function {
         }
         // Now remove all unnecessary instructions
         for block_id in &rpo {
-            self.blocks[block_id.0].insns.retain(|insn_id| necessary[insn_id.0]);
+            self.blocks[block_id.0].insns.retain(|&insn_id| necessary.get(insn_id));
         }
     }
 
@@ -1980,7 +1989,7 @@ impl Function {
             VisitSelf,
         }
         let mut result = vec![];
-        let mut seen = HashSet::new();
+        let mut seen = BlockSet::with_capacity(self.blocks.len());
         let mut stack = vec![(start, Action::VisitEdges)];
         while let Some((block, action)) = stack.pop() {
             if action == Action::VisitSelf {
