@@ -443,6 +443,9 @@ impl Assembler
         // Buffered list of PosMarker callbacks to fire if codegen is successful
         let mut pos_markers: Vec<(usize, CodePtr)> = vec![];
 
+        // The write_pos for the last Insn::PatchPoint, if any
+        let mut last_patch_pos: Option<usize> = None;
+
         // For each instruction
         let mut insn_idx: usize = 0;
         while let Some(insn) = self.insns.get(insn_idx) {
@@ -758,6 +761,18 @@ impl Assembler
                 }
 
                 Insn::Joz(..) | Insn::Jonz(..) => unreachable!("Joz/Jonz should be unused for now"),
+
+                Insn::PatchPoint(_) |
+                Insn::PadPatchPoint => {
+                    // If patch points are too close to each other or the end of the block, fill nop instructions
+                    if let Some(last_patch_pos) = last_patch_pos {
+                        let code_size = cb.get_write_pos().saturating_sub(last_patch_pos);
+                        if code_size < cb.jmp_ptr_bytes() {
+                            nop(cb, (cb.jmp_ptr_bytes() - code_size) as u32);
+                        }
+                    }
+                    last_patch_pos = Some(cb.get_write_pos());
+                },
 
                 // Atomically increment a counter at a given memory location
                 Insn::IncrCounter { mem, value } => {

@@ -1,6 +1,7 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
+use crate::asm::Label;
 use crate::backend::current::{Reg, ALLOC_REGS};
 use crate::invariants::track_bop_assumption;
 use crate::gc::get_or_create_iseq_payload;
@@ -235,6 +236,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
                 return None;
             }
         }
+        // Make sure the last patch point has enough space to insert a jump
+        asm.pad_patch_point();
     }
 
     if get_option!(dump_lir) {
@@ -296,7 +299,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Test { val } => gen_test(asm, opnd!(val))?,
         Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state))?,
         Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(jit, asm, opnd!(val), *expected, &function.frame_state(*state))?,
-        Insn::PatchPoint(invariant) => return gen_patch_point(asm, invariant),
+        Insn::PatchPoint { invariant, state } => return gen_patch_point(jit, asm, invariant, &function.frame_state(*state)),
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfun, opnds!(args))?,
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
         Insn::SetGlobal { id, val, state: _ } => return Some(gen_setglobal(asm, *id, opnd!(val))),
@@ -434,12 +437,18 @@ fn gen_invokebuiltin(asm: &mut Assembler, state: &FrameState, bf: &rb_builtin_fu
 }
 
 /// Record a patch point that should be invalidated on a given invariant
-fn gen_patch_point(asm: &mut Assembler, invariant: &Invariant) -> Option<()> {
+fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invariant, state: &FrameState) -> Option<()> {
+    let label = asm.new_label("patch_point").unwrap_label();
     let invariant = invariant.clone();
-    asm.pos_marker(move |code_ptr, _cb| {
+
+    // Compile a side exit. Fill nop instructions if the last patch point is too close.
+    asm.patch_point(build_side_exit(jit, state, Some(label))?);
+    // Remember the current address as a patch point
+    asm.pos_marker(move |code_ptr, cb| {
         match invariant {
             Invariant::BOPRedefined { klass, bop } => {
-                track_bop_assumption(klass, bop, code_ptr);
+                let side_exit_ptr = cb.resolve_label(label);
+                track_bop_assumption(klass, bop, code_ptr, side_exit_ptr);
             }
             _ => {
                 debug!("ZJIT: gen_patch_point: unimplemented invariant {invariant:?}");
@@ -447,7 +456,6 @@ fn gen_patch_point(asm: &mut Assembler, invariant: &Invariant) -> Option<()> {
             }
         }
     });
-    // TODO: Make sure patch points do not overlap with each other.
     Some(())
 }
 
@@ -1110,8 +1118,13 @@ fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
     Some(function)
 }
 
-/// Build a Target::SideExit out of a FrameState
+/// Build a Target::SideExit for non-PatchPoint instructions
 fn side_exit(jit: &mut JITState, state: &FrameState) -> Option<Target> {
+    build_side_exit(jit, state, None)
+}
+
+/// Build a Target::SideExit out of a FrameState
+fn build_side_exit(jit: &mut JITState, state: &FrameState, label: Option<Label>) -> Option<Target> {
     let mut stack = Vec::new();
     for &insn_id in state.stack() {
         stack.push(jit.get_opnd(insn_id)?);
@@ -1127,6 +1140,7 @@ fn side_exit(jit: &mut JITState, state: &FrameState) -> Option<Target> {
         stack,
         locals,
         c_stack_bytes: jit.c_stack_bytes,
+        label,
     };
     Some(target)
 }

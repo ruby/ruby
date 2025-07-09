@@ -3,7 +3,7 @@ use crate::cruby_methods;
 use crate::invariants::Invariants;
 use crate::options::Options;
 use crate::asm::CodeBlock;
-use crate::backend::lir::{Assembler, C_RET_OPND};
+use crate::backend::lir::{asm_comment, Assembler, C_RET_OPND};
 use crate::virtualmem::CodePtr;
 
 #[allow(non_upper_case_globals)]
@@ -141,6 +141,7 @@ impl ZJITState {
     /// Generate a trampoline to propagate a callee's side exit to the caller
     fn gen_exit_trampoline(cb: &mut CodeBlock) -> Option<CodePtr> {
         let mut asm = Assembler::new();
+        asm_comment!(asm, "ZJIT exit trampoline");
         asm.frame_teardown();
         asm.cret(C_RET_OPND);
         asm.compile(cb).map(|(start_ptr, _)| start_ptr)
