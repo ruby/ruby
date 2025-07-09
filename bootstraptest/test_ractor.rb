@@ -358,6 +358,32 @@ assert_equal 'ok', %q{
   r.value
 }
 
+# SystemExit from a Ractor is re-raised
+# [Bug #21505]
+assert_equal '[SystemExit, "exit", true]', %q{
+  r = Ractor.new { exit }
+  begin
+    r.value
+  rescue Ractor::RemoteError => e
+    [e.cause.class,   #=> RuntimeError
+     e.cause.message, #=> 'ok'
+     e.ractor == r]   #=> true
+  end
+}
+
+# SystemExit from a Thread inside a Ractor is re-raised
+# [Bug #21505]
+assert_equal '[SystemExit, "exit", true]', %q{
+  r = Ractor.new { Thread.new { exit }.join }
+  begin
+    r.value
+  rescue Ractor::RemoteError => e
+    [e.cause.class,   #=> RuntimeError
+     e.cause.message, #=> 'ok'
+     e.ractor == r]   #=> true
+  end
+}
+
 # threads in a ractor will killed
 assert_equal '{ok: 3}', %q{
   Ractor.new Ractor.current do |main|
