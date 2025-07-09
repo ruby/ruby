@@ -19565,7 +19565,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 lparen = parser->previous;
 
                 if (newline && accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
-                    expression = (pm_node_t *) pm_parentheses_node_create(parser, &lparen, NULL, &parser->previous, 0);
+                    expression = (pm_node_t *) pm_parentheses_node_create(parser, &lparen, NULL, &parser->previous);
                     lparen = not_provided(parser);
                     rparen = not_provided(parser);
                 } else {
