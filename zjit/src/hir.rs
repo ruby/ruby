@@ -2076,50 +2076,49 @@ impl Function {
     // undefined instruction operands.
     fn validate_definite_assignment(&self) -> Result<(), ValidationError> {
         // // Map of branch instruction -> InsnSet
-        // let mut assigned_out = HashMap::new();
         // Map of block ID -> InsnSet
-        let mut assigned_in = HashMap::new();
+        // Initialize with all missing values at first, to catch if a jump target points to a
+        // missing location.
+        let mut assigned_in = vec![None; self.num_blocks()];
         let rpo = self.rpo();
         // Begin with every block having every variable defined, except for the entry block, which
         // starts with nothing defined.
-        assigned_in.insert(self.entry_block, InsnSet::with_capacity(self.insns.len()));
+        assigned_in[self.entry_block.0] = Some(InsnSet::with_capacity(self.insns.len()));
         for &block in &rpo {
             if block != self.entry_block {
                 let mut all_ones = InsnSet::with_capacity(self.insns.len());
                 all_ones.insert_all();
-                assigned_in.insert(block, all_ones);
+                assigned_in[block.0] = Some(all_ones);
             }
         }
-        // Iterate assigned_in to fixpoint for each block
-        let mut changed = true;
-        while changed {
-            changed = false;
-            for &block in &rpo {
-                let mut assigned = assigned_in[&block].clone();
-                for &param in &self.blocks[block.0].params {
-                    assigned.insert(param);
-                }
-                for &insn_id in &self.blocks[block.0].insns {
-                    let insn_id = self.union_find.borrow().find_const(insn_id);
-                    match self.find(insn_id) {
-                        Insn::Jump(target) | Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } => {
-                            let Some(block_in) = assigned_in.get_mut(&target.target) else {
-                                let fun_string = format!("{:?}", self);
-                                return Err(ValidationError::JumpTargetNotInRPO(fun_string, target.target));
-                            };
-                            changed |= block_in.intersect_with(&assigned);
+        let mut worklist = VecDeque::from(rpo.clone());
+        while let Some(block) = worklist.pop_front() {
+            let mut assigned = assigned_in[block.0].clone().unwrap();
+            for &param in &self.blocks[block.0].params {
+                assigned.insert(param);
+            }
+            for &insn_id in &self.blocks[block.0].insns {
+                let insn_id = self.union_find.borrow().find_const(insn_id);
+                match self.find(insn_id) {
+                    Insn::Jump(target) | Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } => {
+                        let Some(block_in) = assigned_in[target.target.0].as_mut() else {
+                            let fun_string = format!("{:?}", self);
+                            return Err(ValidationError::JumpTargetNotInRPO(fun_string, target.target));
+                        };
+                        // jump target's block_in was modified, we need to queue the block for processing.
+                        if block_in.intersect_with(&assigned) {
+                            worklist.push_back(target.target);
                         }
-                        insn if insn.has_output() => {
-                            assigned.insert(insn_id);
-                        }
-                        _ => {}
+                    }
+                    _ => {
+                        assigned.insert(insn_id);
                     }
                 }
             }
         }
         // Check that each instruction's operands is assigned
         for &block in &rpo {
-            let mut assigned = assigned_in[&block].clone();
+            let mut assigned = assigned_in[block.0].clone().unwrap();
             for &param in &self.blocks[block.0].params {
                 assigned.insert(param);
             }
