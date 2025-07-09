@@ -44,6 +44,7 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
+#include "zjit.h"
 
 VALUE rb_cISeq;
 static VALUE iseqw_new(const rb_iseq_t *iseq);
@@ -402,10 +403,16 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 #if USE_YJIT
             rb_yjit_iseq_update_references(iseq);
 #endif
+#if USE_ZJIT
+            rb_zjit_iseq_update_references(body->zjit_payload);
+#endif
         }
         else {
 #if USE_YJIT
             rb_yjit_iseq_mark(body->yjit_payload);
+#endif
+#if USE_ZJIT
+            rb_zjit_iseq_mark(body->zjit_payload);
 #endif
         }
     }

@@ -1920,7 +1920,7 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
         // For aliasing, having the VM lock hopefully also implies that no one
         // else has an overlapping &mut IseqPayload.
         unsafe {
-            rb_yjit_assert_holding_vm_lock();
+            rb_assert_holding_vm_lock();
             &*(payload as *const IseqPayload)
         }
     };
@@ -2009,7 +2009,7 @@ pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
         // For aliasing, having the VM lock hopefully also implies that no one
         // else has an overlapping &mut IseqPayload.
         unsafe {
-            rb_yjit_assert_holding_vm_lock();
+            rb_assert_holding_vm_lock();
             &*(payload as *const IseqPayload)
         }
     };

@@ -951,6 +951,12 @@ class TestZJIT < Test::Unit::TestCase
     end
   end
 
+  def test_require_rubygems
+    assert_runs 'true', %q{
+      require 'rubygems'
+    }, call_threshold: 2
+  end
+
   def test_module_name_with_guard_passes
     assert_compiles '"Integer"', %q{
       def test(mod)

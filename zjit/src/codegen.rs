@@ -4,7 +4,7 @@ use std::num::NonZeroU32;
 
 use crate::backend::current::{Reg, ALLOC_REGS};
 use crate::invariants::track_bop_assumption;
-use crate::profile::get_or_create_iseq_payload;
+use crate::gc::get_or_create_iseq_payload;
 use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, SP};

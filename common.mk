@@ -9376,6 +9376,7 @@ iseq.$(OBJEXT): {$(VPATH)}vm_debug.h
 iseq.$(OBJEXT): {$(VPATH)}vm_opts.h
 iseq.$(OBJEXT): {$(VPATH)}vm_sync.h
 iseq.$(OBJEXT): {$(VPATH)}yjit.h
+iseq.$(OBJEXT): {$(VPATH)}zjit.h
 jit.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 jit.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 jit.$(OBJEXT): $(CCAN_DIR)/list/list.h
