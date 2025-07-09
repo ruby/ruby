@@ -732,7 +732,8 @@ rb_yjit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line
 void
 rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception)
 {
-    RB_VM_LOCKING() {    rb_vm_barrier();
+    RB_VM_LOCKING() {
+        rb_vm_barrier();
 
         // Compile a block version starting at the current instruction
         uint8_t *rb_yjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception); // defined in Rust
