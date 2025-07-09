@@ -4,6 +4,7 @@ const ENTRY_NUM_BITS: usize = Entry::BITS as usize;
 
 // TODO(max): Make a `SmallBitSet` and `LargeBitSet` and switch between them if `num_bits` fits in
 // `Entry`.
+#[derive(Clone)]
 pub struct BitSet<T: Into<usize> + Copy> {
     entries: Vec<Entry>,
     num_bits: usize,
@@ -27,11 +28,32 @@ impl<T: Into<usize> + Copy> BitSet<T> {
         newly_inserted
     }
 
+    /// Set all bits to 1.
+    pub fn insert_all(&mut self) {
+        for i in 0..self.entries.len() {
+            self.entries[i] = !0;
+        }
+    }
+
     pub fn get(&self, idx: T) -> bool {
         debug_assert!(idx.into() < self.num_bits);
         let entry_idx = idx.into() / ENTRY_NUM_BITS;
         let bit_idx = idx.into() % ENTRY_NUM_BITS;
         (self.entries[entry_idx] & (1 << bit_idx)) != 0
+    }
+
+    /// Modify `self` to only have bits set if they are also set in `other`. Returns true if `self`
+    /// was modified, and false otherwise.
+    /// `self` and `other` must have the same number of bits.
+    pub fn intersect_with(&mut self, other: &Self) -> bool {
+        assert_eq!(self.num_bits, other.num_bits);
+        let mut changed = false;
+        for i in 0..self.entries.len() {
+            let before = self.entries[i];
+            self.entries[i] &= other.entries[i];
+            changed |= self.entries[i] != before;
+        }
+        changed
     }
 }
 

@@ -918,8 +918,9 @@ pub enum ValidationError {
     TerminatorNotAtEnd(String, BlockId, InsnId, usize),
     /// Expected length, actual length
     MismatchedBlockArity(String, BlockId, usize, usize),
-    // The using instruction, and its offending operand.
-    GenDoesNotDominateUse(String, BlockId, InsnId, InsnId)
+    JumpTargetNotInRPO(String, BlockId),
+    // The offending instruction
+    OperandNotDefined(String, BlockId, InsnId),
 }
 
 
@@ -1769,8 +1770,8 @@ impl Function {
         }
     }
 
-    fn worklist_traverse_single_insn(&self, insn_id: InsnId, worklist: &mut VecDeque<InsnId>) {
-        match self.find(insn_id) {
+    fn worklist_traverse_single_insn(&self, insn: Insn, worklist: &mut VecDeque<InsnId>) {
+        match insn {
             Insn::Const { .. }
             | Insn::Param { .. }
             | Insn::PatchPoint(..)
@@ -1910,9 +1911,9 @@ impl Function {
         let mut necessary = InsnSet::with_capacity(self.insns.len());
         // Now recursively traverse their data dependencies and mark those as necessary
         while let Some(insn_id) = worklist.pop_front() {
-            if necessary[insn_id.0] { continue; }
-            necessary[insn_id.0] = true;
-            self.worklist_traverse_single_insn(insn_id, &mut worklist);
+            if necessary.get(insn_id) { continue; }
+            necessary.insert(insn_id);
+            self.worklist_traverse_single_insn(self.find(insn_id), &mut worklist);
         }
         // Now remove all unnecessary instructions
         for block_id in &rpo {
@@ -2071,75 +2072,70 @@ impl Function {
         Ok(())
     }
 
-    // Returns all outgoing BBs, and their def sets, and this BB's outgoing def set.
-    fn validate_use_has_gen_single_bb(&self, block_id: &BlockId, incoming_def_set: &Vec<bool>, check_inputs: bool) -> Result<Vec<(BlockId, Vec<bool>)>, ValidationError> {
-        // TODO: roll our own bitset for more space-efficient implementation?
-        let mut def_set = incoming_def_set.clone();
-        let mut outgoing_bbs = Vec::new();
-        for insn_id in &self.blocks[block_id.0].params {
-            match self.find(*insn_id) {
-                Insn::Param {..} => { def_set[insn_id.0] = true; }
-                _ => {unreachable!("Non-params found in BB params?");}
+    // This performs a dataflow def-analysis over the entire CFG to detect any
+    // undefined instruction operands.
+    fn validate_definite_assignment(&self) -> Result<(), ValidationError> {
+        // // Map of branch instruction -> InsnSet
+        // let mut assigned_out = HashMap::new();
+        // Map of block ID -> InsnSet
+        let mut assigned_in = HashMap::new();
+        let rpo = self.rpo();
+        // Begin with every block having every variable defined, except for the entry block, which
+        // starts with nothing defined.
+        assigned_in.insert(self.entry_block, InsnSet::with_capacity(self.insns.len()));
+        for &block in &rpo {
+            if block != self.entry_block {
+                let mut all_ones = InsnSet::with_capacity(self.insns.len());
+                all_ones.insert_all();
+                assigned_in.insert(block, all_ones);
             }
         }
-        for insn_id in &self.blocks[block_id.0].insns {
-            let mut inputs = VecDeque::new();
-            self.worklist_traverse_single_insn(*insn_id, &mut inputs);
-            // Check that all inputs are previously defined within a BB.
-            if check_inputs {
-                for input in inputs {
-                    if !def_set[input.0] {
-                        return Err(ValidationError::GenDoesNotDominateUse(format!("{:?}", self), *block_id, *insn_id, input));
+        // Iterate assigned_in to fixpoint for each block
+        let mut changed = true;
+        while changed {
+            changed = false;
+            for &block in &rpo {
+                let mut assigned = assigned_in[&block].clone();
+                for &param in &self.blocks[block.0].params {
+                    assigned.insert(param);
+                }
+                for &insn_id in &self.blocks[block.0].insns {
+                    let insn_id = self.union_find.borrow().find_const(insn_id);
+                    match self.find(insn_id) {
+                        Insn::Jump(target) | Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } => {
+                            let Some(block_in) = assigned_in.get_mut(&target.target) else {
+                                let fun_string = format!("{:?}", self);
+                                return Err(ValidationError::JumpTargetNotInRPO(fun_string, target.target));
+                            };
+                            changed |= block_in.intersect_with(&assigned);
+                        }
+                        insn if insn.has_output() => {
+                            assigned.insert(insn_id);
+                        }
+                        _ => {}
                     }
                 }
             }
-            let insn = &self.find(*insn_id);
-            def_set[insn_id.0] = true;
-            match self.find(*insn_id) {
-                Insn::Jump(BranchEdge{target, args: _})
-                | Insn::IfTrue { val: _, target: BranchEdge{target, args: _} }
-                | Insn::IfFalse { val: _, target: BranchEdge{target, args: _}} => {
-                    outgoing_bbs.push((target, def_set.clone()));
-                }
-                _ => {}
-            }
         }
-        Ok(outgoing_bbs)
-    }
-
-    // This performs a dataflow def-analysis over the entire CFG to detect any
-    // undefined instruction operands.
-    fn validate_use_has_gen(&self) -> Result<(), ValidationError> {
-        let false_bitmap: Vec<bool> = self.insns.iter().map(|_| false).collect();
-        let true_bitmap: Vec<bool> = self.insns.iter().map(|_| true).collect();
-        // Block ID -> Def sets for Before the BB
-        let mut bb_to_def_set: Vec<Option<Vec<bool>>> = vec![None; self.blocks.len()];
-        let rpo = self.rpo();
-        let first_block = rpo.first().unwrap();
-        // First block needs manually setting its inputs.
-        bb_to_def_set[first_block.0] = Some(false_bitmap.clone());
-        let mut worklist = VecDeque::from(rpo);
-        while let Some(block_id) = worklist.pop_front() {
-            let def_set_before = bb_to_def_set[block_id.0].as_ref().unwrap_or(&false_bitmap);
-            // Note that we do not check inputs here, as the defs may not have stabilized/propagated yet.
-            let outgoing_bbs_and_defsets = self.validate_use_has_gen_single_bb(&block_id, &def_set_before, false)?;
-            // Merge (set intersect) the after set with all the outgoing before sets.
-            for (outgoing_bb_id, outgoing_defset) in outgoing_bbs_and_defsets {
-                let current_incoming_defset = bb_to_def_set[outgoing_bb_id.0].as_ref().unwrap_or(&true_bitmap);
-                let next_incoming_defset = std::iter::zip(current_incoming_defset, outgoing_defset)
-                    .map(|(x , y) | { x & y})
-                    .collect();
-                // Change detected, the next block needs to go into the worklist.
-                if *current_incoming_defset != next_incoming_defset {
-                    worklist.push_back(outgoing_bb_id);
-                }
-                bb_to_def_set[outgoing_bb_id.0] = Some(next_incoming_defset);
+        // Check that each instruction's operands is assigned
+        for &block in &rpo {
+            let mut assigned = assigned_in[&block].clone();
+            for &param in &self.blocks[block.0].params {
+                assigned.insert(param);
             }
-        }
-        // Finally, check whether the inputs are defined for every instruction
-        for block_id in self.rpo() {
-            let def_set_before: &Vec<bool> = bb_to_def_set[block_id.0].as_ref().unwrap();
-            let _ = self.validate_use_has_gen_single_bb(&block_id, def_set_before, true)?;
+            for &insn_id in &self.blocks[block.0].insns {
+                let insn_id = self.union_find.borrow().find_const(insn_id);
+                let mut operands = VecDeque::new();
+                let insn = self.find(insn_id);
+                self.worklist_traverse_single_insn(insn.clone(), &mut operands);
+                for operand in operands {
+                    if !assigned.get(operand) {
+                        let fun_string = format!("{:?}", self);
+                        return Err(ValidationError::OperandNotDefined(fun_string, block, insn_id));
+                    }
+                }
+                assigned.insert(insn_id);
+            }
         }
         Ok(())
     }
@@ -2147,7 +2143,7 @@ impl Function {
     /// Run all validation passes we have.
     pub fn validate(&self) -> Result<(), ValidationError> {
         self.validate_block_terminators_and_jumps()?;
-        self.validate_use_has_gen()?;
+        self.validate_definite_assignment()?;
         Ok(())
     }
 }
@@ -3287,7 +3283,8 @@ mod validation_tests {
         // Create an instruction without making it belong to anything.
         let dangling = function.new_insn(Insn::Const{val: Const::CBool(true)});
         let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: dangling, state: InsnId(0usize) });
-        assert_matches_err(function.validate_use_has_gen(), ValidationError::GenDoesNotDominateUse(format!("{:?}", function), entry, val, dangling));
+        let fun_string = format!("{:?}", function);
+        assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(fun_string, entry, val));
     }
 
     #[test]
@@ -3307,7 +3304,8 @@ mod validation_tests {
         crate::cruby::with_rubyvm(|| {
             function.infer_types();
         });
-        assert_matches_err(function.validate_use_has_gen(), ValidationError::GenDoesNotDominateUse(format!("{:?}", function), exit, val, v0));
+        let fun_string = format!("{:?}", function);
+        assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(fun_string, exit, val));
     }
 
 }
