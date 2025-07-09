@@ -88,6 +88,10 @@ describe :kernel_raise, shared: true do
     -> { @object.raise(nil) }.should raise_error(TypeError, "exception class/object expected")
   end
 
+  it "raises a TypeError when passed a message and an extra argument" do
+    -> { @object.raise("message", {cause: RuntimeError.new()}) }.should raise_error(TypeError, "exception class/object expected")
+  end
+
   it "raises TypeError when passed a non-Exception object but it responds to #exception method that doesn't return an instance of Exception class" do
     e = Object.new
     def e.exception

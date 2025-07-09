@@ -1175,6 +1175,31 @@ describe "A method" do
   end
 end
 
+context "when passing **nil into a method that accepts keyword arguments" do
+  ruby_version_is ""..."3.4" do
+    it "raises TypeError" do
+      def m(**kw) kw; end
+
+      h = nil
+      -> { m(a: 1, **h) }.should raise_error(TypeError, "no implicit conversion of nil into Hash")
+      -> { m(a: 1, **nil) }.should raise_error(TypeError, "no implicit conversion of nil into Hash")
+    end
+  end
+
+  ruby_version_is "3.4" do
+    it "expands nil using ** into {}" do
+      def m(**kw) kw; end
+
+      h = nil
+      m(**h).should == {}
+      m(a: 1, **h).should == {a: 1}
+
+      m(**nil).should == {}
+      m(a: 1, **nil).should == {a: 1}
+    end
+  end
+end
+
 describe "A method call with a space between method name and parentheses" do
   before(:each) do
     def m(*args)
