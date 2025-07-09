@@ -10131,10 +10131,12 @@ chopped_length(VALUE str)
  *  call-seq:
  *    chop! -> self or nil
  *
- *  Like String#chop, but modifies +self+ in place;
- *  returns +nil+ if +self+ is empty, +self+ otherwise.
+ *  Like String#chop, except that:
  *
- *  Related: String#chomp!.
+ *  - Removes trailing characters from +self+ (not from a copy of +self+).
+ *  - Returns +self+ if any characters are removed, +nil+ otherwise.
+ *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
