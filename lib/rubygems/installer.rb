@@ -228,8 +228,6 @@ class Gem::Installer
       ruby_executable = true
       existing = io.read.slice(/
           ^\s*(
-            gem \s |
-            load \s Gem\.bin_path\( |
             load \s Gem\.activate_bin_path\(
           )
           (['"])(.*?)(\2),
