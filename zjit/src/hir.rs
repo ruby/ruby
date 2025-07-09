@@ -2135,7 +2135,9 @@ impl Function {
                         return Err(ValidationError::OperandNotDefined(format!("{:?}", self), block, unioned_insn_id, operand));
                     }
                 }
-                assigned.insert(insn_id);
+                if insn.has_output() || matches!(insn, Insn::Snapshot {..}) {
+                    assigned.insert(insn_id);
+                }
             }
         }
         Ok(())
@@ -3286,6 +3288,18 @@ mod validation_tests {
         let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: dangling, state: InsnId(0usize) });
         let fun_string = format!("{:?}", function);
         assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(fun_string, entry, val, dangling));
+    }
+
+    #[test]
+    fn using_non_output_insn() {
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let const_ = function.push_insn(function.entry_block, Insn::Const{val: Const::CBool(true)});
+        // Ret is a non-output instruction.
+        let ret = function.push_insn(function.entry_block, Insn::Return { val: const_ });
+        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: ret, state: InsnId(0usize) });
+        let fun_string = format!("{:?}", function);
+        assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(fun_string, entry, val, ret));
     }
 
     #[test]
