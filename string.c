@@ -6689,10 +6689,7 @@ rb_str_clear(VALUE str)
  *  call-seq:
  *    chr -> string
  *
- *  Returns a string containing the first character of +self+:
- *
- *    s = 'foo' # => "foo"
- *    s.chr     # => "f"
+ *  :include: doc/string/chr.rdoc
  *
  */
 
