@@ -771,12 +771,7 @@ if str
   end
 end
 
-if Gem.respond_to?(:activate_bin_path)
 load Gem.activate_bin_path('#{spec.name}', '#{bin_file_name}', version)
-else
-gem #{spec.name.dump}, version
-load Gem.bin_path(#{spec.name.dump}, #{bin_file_name.dump}, version)
-end
 TEXT
   end
 
