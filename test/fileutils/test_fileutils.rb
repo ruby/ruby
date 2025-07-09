@@ -769,7 +769,7 @@ class TestFileUtils < Test::Unit::TestCase
   def test_rm_r_no_permissions
     check_singleton :rm_rf
 
-    return if /mswin|mingw/ =~ RUBY_PLATFORM
+    return if Process.uid == 0 || /mswin|mingw/ =~ RUBY_PLATFORM
 
     mkdir 'tmpdatadir'
     touch 'tmpdatadir/tmpdata'
