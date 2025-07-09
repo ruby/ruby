@@ -2073,9 +2073,8 @@ impl Function {
     }
 
     // This performs a dataflow def-analysis over the entire CFG to detect any
-    // undefined instruction operands.
+    // possibly undefined instruction operands.
     fn validate_definite_assignment(&self) -> Result<(), ValidationError> {
-        // // Map of branch instruction -> InsnSet
         // Map of block ID -> InsnSet
         // Initialize with all missing values at first, to catch if a jump target points to a
         // missing location.
@@ -2091,7 +2090,8 @@ impl Function {
                 assigned_in[block.0] = Some(all_ones);
             }
         }
-        let mut worklist = VecDeque::from(rpo.clone());
+        let mut worklist = VecDeque::with_capacity(self.num_blocks());
+        worklist.push_back(self.entry_block);
         while let Some(block) = worklist.pop_front() {
             let mut assigned = assigned_in[block.0].clone().unwrap();
             for &param in &self.blocks[block.0].params {
