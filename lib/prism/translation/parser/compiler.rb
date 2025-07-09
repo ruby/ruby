@@ -664,13 +664,37 @@ module Prism
         # defined?(a)
         # ^^^^^^^^^^^
         def visit_defined_node(node)
-          builder.keyword_cmd(
-            :defined?,
-            token(node.keyword_loc),
-            token(node.lparen_loc),
-            [visit(node.value)],
-            token(node.rparen_loc)
-          )
+          # Very weird circumstances here where something like:
+          #
+          #     defined?
+          #     (1)
+          #
+          # gets parsed in Ruby as having only the `1` expression but in parser
+          # it gets parsed as having a begin. In this case we need to synthesize
+          # that begin to match parser's behavior.
+          if node.lparen_loc && node.keyword_loc.join(node.lparen_loc).slice.include?("\n")
+            builder.keyword_cmd(
+              :defined?,
+              token(node.keyword_loc),
+              nil,
+              [
+                builder.begin(
+                  token(node.lparen_loc),
+                  visit(node.value),
+                  token(node.rparen_loc)
+                )
+              ],
+              nil
+            )
+          else
+            builder.keyword_cmd(
+              :defined?,
+              token(node.keyword_loc),
+              token(node.lparen_loc),
+              [visit(node.value)],
+              token(node.rparen_loc)
+            )
+          end
         end
 
         # if foo then bar else baz end

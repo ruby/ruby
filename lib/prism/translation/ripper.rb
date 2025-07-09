@@ -1615,8 +1615,23 @@ module Prism
       # defined?(a)
       # ^^^^^^^^^^^
       def visit_defined_node(node)
+        expression = visit(node.value)
+
+        # Very weird circumstances here where something like:
+        #
+        #     defined?
+        #     (1)
+        #
+        # gets parsed in Ruby as having only the `1` expression but in Ripper it
+        # gets parsed as having a parentheses node. In this case we need to
+        # synthesize that node to match Ripper's behavior.
+        if node.lparen_loc && node.keyword_loc.join(node.lparen_loc).slice.include?("\n")
+          bounds(node.lparen_loc.join(node.rparen_loc))
+          expression = on_paren(on_stmts_add(on_stmts_new, expression))
+        end
+
         bounds(node.location)
-        on_defined(visit(node.value))
+        on_defined(expression)
       end
 
       # if foo then bar else baz end
