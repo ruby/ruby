@@ -372,9 +372,9 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_stat
-    tb = Process.clock_gettime(Process::CLOCK_REALTIME)
+    btime = Process.clock_gettime(Process::CLOCK_REALTIME)
     Tempfile.create("stat") {|file|
-      tb = (tb + Process.clock_gettime(Process::CLOCK_REALTIME)) / 2
+      btime = (btime + Process.clock_gettime(Process::CLOCK_REALTIME)) / 2
       file.close
       path = file.path
 
@@ -384,32 +384,32 @@ class TestFile < Test::Unit::TestCase
 
       sleep 2
 
-      t1 = measure_time do
+      mtime = measure_time do
         File.write(path, "bar")
       end
 
       sleep 2
 
-      t2 = measure_time do
+      ctime = measure_time do
         File.chmod(0644, path)
       end
 
       sleep 2
 
-      t3 = measure_time do
+      atime = measure_time do
         File.read(path)
       end
 
       delta = 1
       stat = File.stat(path)
-      assert_in_delta tb, stat.birthtime.to_f, delta
-      assert_in_delta t1, stat.mtime.to_f, delta
+      assert_in_delta btime, stat.birthtime.to_f, delta
+      assert_in_delta mtime, stat.mtime.to_f, delta
       if stat.birthtime != stat.ctime
-        assert_in_delta t2, stat.ctime.to_f, delta
+        assert_in_delta ctime, stat.ctime.to_f, delta
       end
       if /mswin|mingw/ !~ RUBY_PLATFORM && !Bug::File::Fs.noatime?(path)
         # Windows delays updating atime
-        assert_in_delta t3, stat.atime.to_f, delta
+        assert_in_delta atime, stat.atime.to_f, delta
       end
     }
   rescue NotImplementedError
