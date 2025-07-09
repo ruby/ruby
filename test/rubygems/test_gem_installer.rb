@@ -48,7 +48,11 @@ class TestGemInstaller < Gem::InstallerTestCase
           end
         end
 
-        load Gem.activate_bin_path('a', 'executable', version)
+        if Gem.respond_to?(:activate_and_load_bin_path)
+          Gem.activate_and_load_bin_path('a', 'executable', version)
+        else
+          load Gem.activate_bin_path('a', 'executable', version)
+        end
       EOF
 
       wrapper = installer.app_script_text "executable"

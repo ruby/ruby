@@ -228,6 +228,7 @@ class Gem::Installer
       ruby_executable = true
       existing = io.read.slice(/
           ^\s*(
+            Gem\.activate_and_load_bin_path\( |
             load \s Gem\.activate_bin_path\(
           )
           (['"])(.*?)(\2),
@@ -769,7 +770,11 @@ class Gem::Installer
         end
       end
 
-      load Gem.activate_bin_path('#{spec.name}', '#{bin_file_name}', version)
+      if Gem.respond_to?(:activate_and_load_bin_path)
+        Gem.activate_and_load_bin_path('#{spec.name}', '#{bin_file_name}', version)
+      else
+        load Gem.activate_bin_path('#{spec.name}', '#{bin_file_name}', version)
+      end
     TEXT
   end
 

@@ -249,6 +249,16 @@ module Gem
     find_spec_for_exe(name, exec_name, requirements).bin_file exec_name
   end
 
+  def self.find_and_activate_spec_for_exe(name, exec_name, requirements)
+    spec = find_spec_for_exe name, exec_name, requirements
+    Gem::LOADED_SPECS_MUTEX.synchronize do
+      spec.activate
+      finish_resolve
+    end
+    spec
+  end
+  private_class_method :find_and_activate_spec_for_exe
+
   def self.find_spec_for_exe(name, exec_name, requirements)
     raise ArgumentError, "you must supply exec_name" unless exec_name
 
@@ -274,6 +284,35 @@ module Gem
   private_class_method :find_spec_for_exe
 
   ##
+  # Find and load the full path to the executable for gem +name+.  If the
+  # +exec_name+ is not given, an exception will be raised, otherwise the
+  # specified executable's path is returned.  +requirements+ allows
+  # you to specify specific gem versions.
+  #
+  # A side effect of this method is that it will activate the gem that
+  # contains the executable.
+  #
+  # This method should *only* be used in bin stub files.
+
+  def self.activate_and_load_bin_path(name, exec_name = nil, *requirements)
+    spec = find_and_activate_spec_for_exe name, exec_name, requirements
+
+    if spec.name == "bundler"
+      # Make sure there's no version of Bundler in `$LOAD_PATH` that's different
+      # from the version we just activated. If that was the case (it happens
+      # when testing Bundler from ruby/ruby), we would load Bundler extensions
+      # to RubyGems from the copy in `$LOAD_PATH` but then load the binstub from
+      # an installed copy, causing those copies to be mixed and yet more
+      # redefinition warnings.
+      #
+      require_path = $LOAD_PATH.resolve_feature_path("bundler").last.delete_suffix("/bundler.rb")
+      Gem.load_bundler_extensions(spec.version) if spec.full_require_paths.include?(require_path)
+    end
+
+    load spec.bin_file(exec_name)
+  end
+
+  ##
   # Find the full path to the executable for gem +name+.  If the +exec_name+
   # is not given, an exception will be raised, otherwise the
   # specified executable's path is returned.  +requirements+ allows
@@ -285,12 +324,7 @@ module Gem
   # This method should *only* be used in bin stub files.
 
   def self.activate_bin_path(name, exec_name = nil, *requirements) # :nodoc:
-    spec = find_spec_for_exe name, exec_name, requirements
-    Gem::LOADED_SPECS_MUTEX.synchronize do
-      spec.activate
-      finish_resolve
-    end
-    spec.bin_file exec_name
+    find_and_activate_spec_for_exe(name, exec_name, requirements).bin_file exec_name
   end
 
   ##
