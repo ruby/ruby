@@ -974,6 +974,14 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         // Check if opnd is Fixnum
         asm.test(val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
         asm.jz(side_exit(jit, state)?);
+    } else if let Some(expected_class) = guard_type.runtime_exact_ruby_class() {
+        asm_comment!(asm, "guard exact class");
+
+        // Get the class of the value
+        let klass = asm.ccall(rb_yarv_class_of as *const u8, vec![val]);
+
+        asm.cmp(klass, Opnd::Value(expected_class));
+        asm.jne(side_exit(jit, state)?);
     } else {
         unimplemented!("unsupported type: {guard_type}");
     }
