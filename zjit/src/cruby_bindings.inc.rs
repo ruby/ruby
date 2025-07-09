@@ -695,7 +695,9 @@ pub const YARVINSN_zjit_opt_lt: ruby_vminsn_type = 231;
 pub const YARVINSN_zjit_opt_le: ruby_vminsn_type = 232;
 pub const YARVINSN_zjit_opt_gt: ruby_vminsn_type = 233;
 pub const YARVINSN_zjit_opt_ge: ruby_vminsn_type = 234;
-pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 235;
+pub const YARVINSN_zjit_opt_and: ruby_vminsn_type = 235;
+pub const YARVINSN_zjit_opt_or: ruby_vminsn_type = 236;
+pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 237;
 pub type ruby_vminsn_type = u32;
 pub type rb_iseq_callback = ::std::option::Option<
     unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
@@ -1004,6 +1006,7 @@ unsafe extern "C" {
     pub fn rb_BASIC_OP_UNREDEFINED_P(bop: ruby_basic_operators, klass: u32) -> bool;
     pub fn rb_RCLASS_ORIGIN(c: VALUE) -> VALUE;
     pub fn rb_assert_iseq_handle(handle: VALUE);
+    pub fn rb_assert_holding_vm_lock();
     pub fn rb_IMEMO_TYPE_P(imemo: VALUE, imemo_type: imemo_type) -> ::std::os::raw::c_int;
     pub fn rb_assert_cme_handle(handle: VALUE);
     pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;

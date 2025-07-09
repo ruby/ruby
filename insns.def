@@ -1481,6 +1481,7 @@ opt_and
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_and(recv, obj);
 
@@ -1495,6 +1496,7 @@ opt_or
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_or(recv, obj);
 

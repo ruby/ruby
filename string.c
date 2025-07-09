@@ -6666,9 +6666,11 @@ rb_str_replace(VALUE str, VALUE str2)
  *
  *  Removes the contents of +self+:
  *
- *    s = 'foo' # => "foo"
- *    s.clear   # => ""
+ *    s = 'foo'
+ *    s.clear # => ""
+ *    s       # => ""
  *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
@@ -6689,10 +6691,7 @@ rb_str_clear(VALUE str)
  *  call-seq:
  *    chr -> string
  *
- *  Returns a string containing the first character of +self+:
- *
- *    s = 'foo' # => "foo"
- *    s.chr     # => "f"
+ *  :include: doc/string/chr.rdoc
  *
  */
 
@@ -10134,10 +10133,12 @@ chopped_length(VALUE str)
  *  call-seq:
  *    chop! -> self or nil
  *
- *  Like String#chop, but modifies +self+ in place;
- *  returns +nil+ if +self+ is empty, +self+ otherwise.
+ *  Like String#chop, except that:
  *
- *  Related: String#chomp!.
+ *  - Removes trailing characters from +self+ (not from a copy of +self+).
+ *  - Returns +self+ if any characters are removed, +nil+ otherwise.
+ *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE

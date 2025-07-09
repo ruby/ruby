@@ -330,6 +330,42 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_fixnum_and
+    assert_compiles '1', %q{
+      def test(a, b) = a & b
+      test(2, 2)
+      test(2, 2)
+      test(5, 3)
+    }, call_threshold: 2, insns: [:opt_and]
+  end
+
+  def test_fixnum_and_side_exit
+    assert_compiles 'false', %q{
+      def test(a, b) = a & b
+      test(2, 2)
+      test(2, 2)
+      test(true, false)
+    }, call_threshold: 2, insns: [:opt_and]
+  end
+
+  def test_fixnum_or
+    assert_compiles '3', %q{
+      def test(a, b) = a | b
+      test(5, 3)
+      test(5, 3)
+      test(1, 2)
+    }, call_threshold: 2, insns: [:opt_or]
+  end
+
+  def test_fixnum_or_side_exit
+    assert_compiles 'true', %q{
+      def test(a, b) = a | b
+      test(2, 2)
+      test(2, 2)
+      test(true, false)
+    }, call_threshold: 2, insns: [:opt_or]
+  end
+
   def test_opt_not
     assert_compiles('[true, true, false]', <<~RUBY, insns: [:opt_not])
       def test(obj) = !obj
@@ -915,6 +951,12 @@ class TestZJIT < Test::Unit::TestCase
     end
   end
 
+  def test_require_rubygems
+    assert_runs 'true', %q{
+      require 'rubygems'
+    }, call_threshold: 2
+  end
+
   def test_module_name_with_guard_passes
     assert_compiles '"Integer"', %q{
       def test(mod)
@@ -926,7 +968,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_module_name_with_guard_fallthrough
+  def test_module_name_with_guard_side_exit
     # This test demonstrates that the guard side exit works correctly
     # In this case, when we call with a non-Class object, it should fall back to interpreter
     assert_compiles '["String", "Integer", "Bar"]', %q{
@@ -967,7 +1009,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_nil_p]
   end
 
-  def test_nil_value_nil_opt_with_guard_fallthrough
+  def test_nil_value_nil_opt_with_guard_side_exit
     assert_compiles 'false', %q{
       def test(val) = val.nil?
 
@@ -986,7 +1028,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_nil_p]
   end
 
-  def test_true_nil_opt_with_guard_fallthrough
+  def test_true_nil_opt_with_guard_side_exit
     assert_compiles 'true', %q{
       def test(val) = val.nil?
 
@@ -1005,7 +1047,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_nil_p]
   end
 
-  def test_false_nil_opt_with_guard_fallthrough
+  def test_false_nil_opt_with_guard_side_exit
     assert_compiles 'true', %q{
       def test(val) = val.nil?
 
@@ -1024,7 +1066,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_nil_p]
   end
 
-  def test_integer_nil_opt_with_guard_fallthrough
+  def test_integer_nil_opt_with_guard_side_exit
     assert_compiles 'true', %q{
       def test(val) = val.nil?
 
@@ -1043,7 +1085,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_nil_p]
   end
 
-  def test_float_nil_opt_with_guard_fallthrough
+  def test_float_nil_opt_with_guard_side_exit
     assert_compiles 'true', %q{
       def test(val) = val.nil?
 
@@ -1062,7 +1104,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_nil_p]
   end
 
-  def test_symbol_nil_opt_with_guard_fallthrough
+  def test_symbol_nil_opt_with_guard_side_exit
     assert_compiles 'true', %q{
       def test(val) = val.nil?
 
@@ -1081,7 +1123,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_nil_p]
   end
 
-  def test_class_nil_opt_with_guard_fallthrough
+  def test_class_nil_opt_with_guard_side_exit
     assert_compiles 'true', %q{
       def test(val) = val.nil?
 
@@ -1100,7 +1142,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_nil_p]
   end
 
-  def test_module_nil_opt_with_guard_fallthrough
+  def test_module_nil_opt_with_guard_side_exit
     assert_compiles 'true', %q{
       def test(val) = val.nil?
 

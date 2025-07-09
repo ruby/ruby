@@ -766,7 +766,7 @@ VALUE
 rb_object_shape_count(void)
 {
     // next_shape_id starts from 0, so it's the same as the count
-    return ULONG2NUM((unsigned long)rb_shape_tree.next_shape_id);
+    return ULONG2NUM((unsigned long)rb_shapes_count());
 }
 
 bool
@@ -791,14 +791,6 @@ attr_index_t
 rb_yjit_shape_index(shape_id_t shape_id)
 {
     return RSHAPE_INDEX(shape_id);
-}
-
-// Assert that we have the VM lock. Relevant mostly for multi ractor situations.
-// The GC takes the lock before calling us, and this asserts that it indeed happens.
-void
-rb_yjit_assert_holding_vm_lock(void)
-{
-    ASSERT_vm_locking();
 }
 
 // The number of stack slots that vm_sendish() pops for send and invokesuper.
