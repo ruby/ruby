@@ -919,8 +919,8 @@ pub enum ValidationError {
     /// Expected length, actual length
     MismatchedBlockArity(String, BlockId, usize, usize),
     JumpTargetNotInRPO(String, BlockId),
-    // The offending instruction
-    OperandNotDefined(String, BlockId, InsnId),
+    // The offending instruction, and the operand
+    OperandNotDefined(String, BlockId, InsnId, InsnId),
 }
 
 
@@ -2099,7 +2099,8 @@ impl Function {
             }
             for &insn_id in &self.blocks[block.0].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
-                match self.find(insn_id) {
+                let insn = self.find(insn_id);
+                match insn {
                     Insn::Jump(target) | Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } => {
                         let Some(block_in) = assigned_in[target.target.0].as_mut() else {
                             let fun_string = format!("{:?}", self);
@@ -2110,27 +2111,28 @@ impl Function {
                             worklist.push_back(target.target);
                         }
                     }
-                    _ => {
+                    // TODO fix has_output to include snapshots.
+                    _ if insn.has_output() || matches!(insn, Insn::Snapshot {..}) => {
                         assigned.insert(insn_id);
                     }
+                    _ => {}
                 }
             }
         }
-        // Check that each instruction's operands is assigned
+        // Check that each instruction's operands are assigned
         for &block in &rpo {
             let mut assigned = assigned_in[block.0].clone().unwrap();
             for &param in &self.blocks[block.0].params {
                 assigned.insert(param);
             }
             for &insn_id in &self.blocks[block.0].insns {
-                let insn_id = self.union_find.borrow().find_const(insn_id);
+                let unioned_insn_id = self.union_find.borrow().find_const(insn_id);
                 let mut operands = VecDeque::new();
-                let insn = self.find(insn_id);
+                let insn = self.find(unioned_insn_id);
                 self.worklist_traverse_single_insn(insn.clone(), &mut operands);
                 for operand in operands {
                     if !assigned.get(operand) {
-                        let fun_string = format!("{:?}", self);
-                        return Err(ValidationError::OperandNotDefined(fun_string, block, insn_id));
+                        return Err(ValidationError::OperandNotDefined(format!("{:?}", self), block, unioned_insn_id, operand));
                     }
                 }
                 assigned.insert(insn_id);
@@ -3283,28 +3285,52 @@ mod validation_tests {
         let dangling = function.new_insn(Insn::Const{val: Const::CBool(true)});
         let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: dangling, state: InsnId(0usize) });
         let fun_string = format!("{:?}", function);
-        assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(fun_string, entry, val));
+        assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(fun_string, entry, val, dangling));
     }
 
     #[test]
     fn not_dominated_by_diamond() {
+        // This tests that one branch is missing a definition which fails.
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
         let side = function.new_block();
         let exit = function.new_block();
-        let v0 = function.push_insn(side, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
-        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![v0] }));
-        let val = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
-        function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![] } });
-        let v1 = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(4)) });
-        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![v1] }));
-        let param = function.push_insn(exit, Insn::Param { idx: 0 });
-        let val = function.push_insn(exit, Insn::ArrayDup { val: v0, state: InsnId(0usize) });
+        let param1 = function.push_insn(side, Insn::Param { idx: 1 });
+        let v0 = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
+        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
+        let val1 = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
+        function.push_insn(entry, Insn::IfFalse { val: val1, target: BranchEdge { target: side, args: vec![v0] } });
+        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![v0] }));
+        let param0 = function.push_insn(exit, Insn::Param { idx: 0 });
+        let val2 = function.push_insn(exit, Insn::ArrayDup { val: param1, state: param0 });
         crate::cruby::with_rubyvm(|| {
             function.infer_types();
         });
         let fun_string = format!("{:?}", function);
-        assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(fun_string, exit, val));
+        assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(fun_string, exit, val2, param1));
+    }
+
+    #[test]
+    fn dominated_by_diamond() {
+        // This tests that both branches with a definition succeeds.
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let side = function.new_block();
+        let exit = function.new_block();
+        let param1 = function.push_insn(side, Insn::Param { idx: 1 });
+        let v0 = function.push_insn(side, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
+        function.push_insn_id(entry, v0);
+        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![param1] }));
+        let val = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
+        function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![v0] } });
+        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![v0] }));
+        let param0 = function.push_insn(exit, Insn::Param { idx: 0 });
+        let _val = function.push_insn(exit, Insn::ArrayDup { val: param0, state: param0 });
+        crate::cruby::with_rubyvm(|| {
+            function.infer_types();
+        });
+        // Just checking that we don't panic.
+        function.validate_definite_assignment().unwrap();
     }
 
 }
