@@ -391,7 +391,6 @@ class TestFile < Test::Unit::TestCase
       sleep 2
 
       t2 = measure_time do
-        File.read(path)
         File.chmod(0644, path)
       end
 
