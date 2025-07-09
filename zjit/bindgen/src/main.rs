@@ -352,6 +352,9 @@ fn main() {
         .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
 
+        // From jit.c
+        .allowlist_function("rb_assert_holding_vm_lock")
+
         // from vm_sync.h
         .allowlist_function("rb_vm_barrier")
 

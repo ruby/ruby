@@ -792,14 +792,6 @@ rb_yjit_shape_index(shape_id_t shape_id)
     return RSHAPE_INDEX(shape_id);
 }
 
-// Assert that we have the VM lock. Relevant mostly for multi ractor situations.
-// The GC takes the lock before calling us, and this asserts that it indeed happens.
-void
-rb_yjit_assert_holding_vm_lock(void)
-{
-    ASSERT_vm_locking();
-}
-
 // The number of stack slots that vm_sendish() pops for send and invokesuper.
 size_t
 rb_yjit_sendish_sp_pops(const struct rb_callinfo *ci)

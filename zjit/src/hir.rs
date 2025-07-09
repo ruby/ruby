@@ -4,7 +4,7 @@
 #![allow(non_upper_case_globals)]
 
 use crate::{
-    cast::IntoUsize, cruby::*, options::{get_option, DumpHIR}, profile::{get_or_create_iseq_payload, IseqPayload}, state::ZJITState
+    cast::IntoUsize, cruby::*, options::{get_option, DumpHIR}, gc::{get_or_create_iseq_payload, IseqPayload}, state::ZJITState
 };
 use std::{
     cell::RefCell,
@@ -2351,7 +2351,7 @@ impl ProfileOracle {
     /// Map the interpreter-recorded types of the stack onto the HIR operands on our compile-time virtual stack
     fn profile_stack(&mut self, state: &FrameState) {
         let iseq_insn_idx = state.insn_idx;
-        let Some(operand_types) = self.payload.get_operand_types(iseq_insn_idx) else { return };
+        let Some(operand_types) = self.payload.profile.get_operand_types(iseq_insn_idx) else { return };
         let entry = self.types.entry(iseq_insn_idx).or_insert_with(|| vec![]);
         // operand_types is always going to be <= stack size (otherwise it would have an underflow
         // at run-time) so use that to drive iteration.
