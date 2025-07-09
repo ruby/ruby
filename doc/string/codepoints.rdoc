@@ -4,3 +4,6 @@ each codepoint is the integer value for a character:
   'hello'.codepoints     # => [104, 101, 108, 108, 111]
   'тест'.codepoints      # => [1090, 1077, 1089, 1090]
   'こんにちは'.codepoints # => [12371, 12435, 12395, 12385, 12399]
+  ''.codepoints          # => []
+
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
