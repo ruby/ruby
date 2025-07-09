@@ -6666,9 +6666,11 @@ rb_str_replace(VALUE str, VALUE str2)
  *
  *  Removes the contents of +self+:
  *
- *    s = 'foo' # => "foo"
- *    s.clear   # => ""
+ *    s = 'foo'
+ *    s.clear # => ""
+ *    s       # => ""
  *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
