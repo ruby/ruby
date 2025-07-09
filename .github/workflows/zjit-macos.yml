@@ -112,6 +112,7 @@ jobs:
           ../src/bootstraptest/test_class.rb \
           ../src/bootstraptest/test_constant_cache.rb \
           ../src/bootstraptest/test_env.rb \
+          ../src/bootstraptest/test_eval.rb \
           ../src/bootstraptest/test_exception.rb \
           ../src/bootstraptest/test_fiber.rb \
           ../src/bootstraptest/test_finalizer.rb \
@@ -138,7 +139,6 @@ jobs:
           ../src/bootstraptest/test_yjit_30k_ifelse.rb \
           ../src/bootstraptest/test_yjit_30k_methods.rb \
           ../src/bootstraptest/test_yjit_rust_port.rb
-        # ../src/bootstraptest/test_eval.rb \
         # ../src/bootstraptest/test_yjit.rb \
         if: ${{ matrix.test_task == 'btest' }}
 
