@@ -16,6 +16,7 @@ use std::{
     slice::Iter
 };
 use crate::hir_type::{Type, types};
+use crate::bitset::BitSet;
 
 /// An index of an [`Insn`] in a [`Function`]. This is a popular
 /// type since this effectively acts as a pointer to an [`Insn`].
@@ -39,11 +40,20 @@ impl std::fmt::Display for InsnId {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct BlockId(pub usize);
 
+impl Into<usize> for BlockId {
+    fn into(self) -> usize {
+        self.0
+    }
+}
+
 impl std::fmt::Display for BlockId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "bb{}", self.0)
     }
 }
+
+type InsnSet = BitSet<InsnId>;
+type BlockSet = BitSet<BlockId>;
 
 fn write_vec<T: std::fmt::Display>(f: &mut std::fmt::Formatter, objs: &Vec<T>) -> std::fmt::Result {
     write!(f, "[")?;
@@ -1254,19 +1264,18 @@ impl Function {
         }
         let rpo = self.rpo();
         // Walk the graph, computing types until fixpoint
-        let mut reachable = vec![false; self.blocks.len()];
-        reachable[self.entry_block.0] = true;
+        let mut reachable = BlockSet::with_capacity(self.blocks.len());
+        reachable.insert(self.entry_block);
         loop {
             let mut changed = false;
-            for block in &rpo {
-                if !reachable[block.0] { continue; }
+            for &block in &rpo {
+                if !reachable.get(block) { continue; }
                 for insn_id in &self.blocks[block.0].insns {
-                    let insn = self.find(*insn_id);
-                    let insn_type = match insn {
+                    let insn_type = match self.find(*insn_id) {
                         Insn::IfTrue { val, target: BranchEdge { target, args } } => {
                             assert!(!self.type_of(val).bit_equal(types::Empty));
                             if self.type_of(val).could_be(Type::from_cbool(true)) {
-                                reachable[target.0] = true;
+                                reachable.insert(target);
                                 for (idx, arg) in args.iter().enumerate() {
                                     let param = self.blocks[target.0].params[idx];
                                     self.insn_types[param.0] = self.type_of(param).union(self.type_of(*arg));
@@ -1277,7 +1286,7 @@ impl Function {
                         Insn::IfFalse { val, target: BranchEdge { target, args } } => {
                             assert!(!self.type_of(val).bit_equal(types::Empty));
                             if self.type_of(val).could_be(Type::from_cbool(false)) {
-                                reachable[target.0] = true;
+                                reachable.insert(target);
                                 for (idx, arg) in args.iter().enumerate() {
                                     let param = self.blocks[target.0].params[idx];
                                     self.insn_types[param.0] = self.type_of(param).union(self.type_of(*arg));
@@ -1286,14 +1295,14 @@ impl Function {
                             continue;
                         }
                         Insn::Jump(BranchEdge { target, args }) => {
-                            reachable[target.0] = true;
+                            reachable.insert(target);
                             for (idx, arg) in args.iter().enumerate() {
                                 let param = self.blocks[target.0].params[idx];
                                 self.insn_types[param.0] = self.type_of(param).union(self.type_of(*arg));
                             }
                             continue;
                         }
-                        _ if insn.has_output() => self.infer_type(*insn_id),
+                        insn if insn.has_output() => self.infer_type(*insn_id),
                         _ => continue,
                     };
                     if !self.type_of(*insn_id).bit_equal(insn_type) {
@@ -1549,7 +1558,7 @@ impl Function {
             } else {
                 let iseq_insn_idx = fun.frame_state(state).insn_idx;
                 let Some(recv_type) = fun.profiled_type_of_at(self_val, iseq_insn_idx) else { return Err(()) };
-                let Some(recv_class) = recv_type.exact_ruby_class() else { return Err(()) };
+                let Some(recv_class) = recv_type.runtime_exact_ruby_class() else { return Err(()) };
                 (recv_class, Some(recv_type.unspecialized()))
             };
 
@@ -1898,7 +1907,7 @@ impl Function {
                 }
             }
         }
-        let mut necessary = vec![false; self.insns.len()];
+        let mut necessary = InsnSet::with_capacity(self.insns.len());
         // Now recursively traverse their data dependencies and mark those as necessary
         while let Some(insn_id) = worklist.pop_front() {
             if necessary[insn_id.0] { continue; }
@@ -1907,7 +1916,7 @@ impl Function {
         }
         // Now remove all unnecessary instructions
         for block_id in &rpo {
-            self.blocks[block_id.0].insns.retain(|insn_id| necessary[insn_id.0]);
+            self.blocks[block_id.0].insns.retain(|&insn_id| necessary.get(insn_id));
         }
     }
 
@@ -1986,7 +1995,7 @@ impl Function {
             VisitSelf,
         }
         let mut result = vec![];
-        let mut seen = HashSet::new();
+        let mut seen = BlockSet::with_capacity(self.blocks.len());
         let mut stack = vec![(start, Action::VisitEdges)];
         while let Some((block, action)) = stack.pop() {
             if action == Action::VisitSelf {
@@ -4307,10 +4316,10 @@ mod tests {
         assert_method_hir("test",  expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v3:ClassExact[VMFrozenCore] = Const Value(VALUE(0x1000))
+              v3:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
               v5:HashExact = NewHash
               v7:BasicObject = SendWithoutBlock v3, :core#hash_merge_kwd, v5, v1
-              v8:ClassExact[VMFrozenCore] = Const Value(VALUE(0x1000))
+              v8:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
               v9:StaticSymbol[:b] = Const Value(VALUE(0x1008))
               v10:Fixnum[1] = Const Value(1)
               v12:BasicObject = SendWithoutBlock v8, :core#hash_merge_ptr, v7, v9, v10
@@ -4759,7 +4768,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_putspecialobject, expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v2:ClassExact[VMFrozenCore] = Const Value(VALUE(0x1000))
+              v2:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
               v3:BasicObject = PutSpecialObject CBase
               v4:StaticSymbol[:aliased] = Const Value(VALUE(0x1008))
               v5:StaticSymbol[:__callee__] = Const Value(VALUE(0x1010))
@@ -6000,7 +6009,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, C)
-              v7:ClassExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v7:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               Return v7
         "#]]);
     }
@@ -6016,23 +6025,23 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, String)
-              v15:ClassExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v15:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1010, Class)
-              v18:ClassExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+              v18:Class[VALUE(0x1018)] = Const Value(VALUE(0x1018))
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1020, Module)
-              v21:ClassExact[VALUE(0x1028)] = Const Value(VALUE(0x1028))
+              v21:Class[VALUE(0x1028)] = Const Value(VALUE(0x1028))
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1030, BasicObject)
-              v24:ClassExact[VALUE(0x1038)] = Const Value(VALUE(0x1038))
+              v24:Class[VALUE(0x1038)] = Const Value(VALUE(0x1038))
               v11:ArrayExact = NewArray v15, v18, v21, v24
               Return v11
         "#]]);
     }
 
     #[test]
-    fn module_instances_not_class_exact() {
+    fn module_instances_are_module_exact() {
         eval("
             def test = [Enumerable, Kernel]
             test # Warm the constant cache
@@ -6042,11 +6051,29 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, Enumerable)
-              v11:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v11:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1010, Kernel)
-              v14:BasicObject[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+              v14:ModuleExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
               v7:ArrayExact = NewArray v11, v14
+              Return v7
+        "#]]);
+    }
+
+    #[test]
+    fn module_subclasses_are_not_module_exact() {
+        eval("
+            class ModuleSubclass < Module; end
+            MY_MODULE = ModuleSubclass.new
+            def test = MY_MODULE
+            test # Warm the constant cache
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1000, MY_MODULE)
+              v7:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               Return v7
         "#]]);
     }
@@ -6178,7 +6205,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, Kernel)
-              v7:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v7:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               Return v7
         "#]]);
     }
@@ -6200,7 +6227,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, Foo::Bar::C)
-              v7:ClassExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v7:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               Return v7
         "#]]);
     }
@@ -6217,7 +6244,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, C)
-              v20:ClassExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v20:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               v4:NilClassExact = Const Value(nil)
               v11:BasicObject = SendWithoutBlock v20, :new
               Return v11
@@ -6240,7 +6267,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, C)
-              v22:ClassExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v22:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               v4:NilClassExact = Const Value(nil)
               v5:Fixnum[1] = Const Value(1)
               v13:BasicObject = SendWithoutBlock v22, :new, v5
@@ -6750,6 +6777,125 @@ mod opt_tests {
               PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008)
               v5:Fixnum[2] = Const Value(2)
               Return v5
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_nil_for_nil_opt() {
+        eval("
+            def test(val) = val.nil?
+
+            test(nil)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008)
+              v7:NilClassExact = GuardType v1, NilClassExact
+              v8:TrueClassExact = CCall nil?@0x1010, v7
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_false_for_nil_opt() {
+        eval("
+            def test(val) = val.nil?
+
+            test(false)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(FalseClass@0x1000, nil?@0x1008)
+              v7:FalseClassExact = GuardType v1, FalseClassExact
+              v8:FalseClassExact = CCall nil?@0x1010, v7
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_true_for_nil_opt() {
+        eval("
+            def test(val) = val.nil?
+
+            test(true)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(TrueClass@0x1000, nil?@0x1008)
+              v7:TrueClassExact = GuardType v1, TrueClassExact
+              v8:FalseClassExact = CCall nil?@0x1010, v7
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_symbol_for_nil_opt() {
+        eval("
+            def test(val) = val.nil?
+
+            test(:foo)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(Symbol@0x1000, nil?@0x1008)
+              v7:StaticSymbol = GuardType v1, StaticSymbol
+              v8:FalseClassExact = CCall nil?@0x1010, v7
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_fixnum_for_nil_opt() {
+        eval("
+            def test(val) = val.nil?
+
+            test(1)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008)
+              v7:Fixnum = GuardType v1, Fixnum
+              v8:FalseClassExact = CCall nil?@0x1010, v7
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_float_for_nil_opt() {
+        eval("
+            def test(val) = val.nil?
+
+            test(1.0)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(Float@0x1000, nil?@0x1008)
+              v7:Flonum = GuardType v1, Flonum
+              v8:FalseClassExact = CCall nil?@0x1010, v7
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_string_for_nil_opt() {
+        eval("
+            def test(val) = val.nil?
+
+            test('foo')
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(String@0x1000, nil?@0x1008)
+              v7:StringExact = GuardType v1, StringExact
+              v8:FalseClassExact = CCall nil?@0x1010, v7
+              Return v8
         "#]]);
     }
 }

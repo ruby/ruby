@@ -1645,7 +1645,7 @@ RSpec.describe "bundle gem" do
     end
   end
 
-  context "without git config set" do
+  context "without git config github.user set" do
     before do
       git("config --global --unset github.user")
     end
@@ -1664,9 +1664,32 @@ RSpec.describe "bundle gem" do
       end
       it_behaves_like "--github-username option", "gh_user"
     end
+
+    context "when changelog is enabled" do
+      it "sets gemspec changelog_uri, homepage, homepage_uri, source_code_uri to TODOs" do
+        bundle "gem #{gem_name} --changelog"
+
+        expect(generated_gemspec.metadata["changelog_uri"]).
+          to eq("TODO: Put your gem's CHANGELOG.md URL here.")
+        expect(generated_gemspec.homepage).to eq("TODO: Put your gem's website or public repo URL here.")
+        expect(generated_gemspec.metadata["homepage_uri"]).to eq("TODO: Put your gem's website or public repo URL here.")
+        expect(generated_gemspec.metadata["source_code_uri"]).to eq("TODO: Put your gem's public repo URL here.")
+      end
+    end
+
+    context "when changelog is not enabled" do
+      it "sets gemspec homepage, homepage_uri, source_code_uri to TODOs and changelog_uri to nil" do
+        bundle "gem #{gem_name}"
+
+        expect(generated_gemspec.metadata["changelog_uri"]).to be_nil
+        expect(generated_gemspec.homepage).to eq("TODO: Put your gem's website or public repo URL here.")
+        expect(generated_gemspec.metadata["homepage_uri"]).to eq("TODO: Put your gem's website or public repo URL here.")
+        expect(generated_gemspec.metadata["source_code_uri"]).to eq("TODO: Put your gem's public repo URL here.")
+      end
+    end
   end
 
-  context "with git config set" do
+  context "with git config github.user set" do
     context "with github-username option in bundle config settings set to some value" do
       before do
         global_config "BUNDLE_GEM__GITHUB_USERNAME" => "different_username"
@@ -1681,6 +1704,29 @@ RSpec.describe "bundle gem" do
         global_config "BUNDLE_GEM__GITHUB_USERNAME" => "false"
       end
       it_behaves_like "--github-username option", "gh_user"
+    end
+
+    context "when changelog is enabled" do
+      it "sets gemspec changelog_uri, homepage, homepage_uri, source_code_uri based on git username" do
+        bundle "gem #{gem_name} --changelog"
+
+        expect(generated_gemspec.metadata["changelog_uri"]).
+          to eq("https://github.com/bundleuser/#{gem_name}/blob/main/CHANGELOG.md")
+        expect(generated_gemspec.homepage).to eq("https://github.com/bundleuser/#{gem_name}")
+        expect(generated_gemspec.metadata["homepage_uri"]).to eq("https://github.com/bundleuser/#{gem_name}")
+        expect(generated_gemspec.metadata["source_code_uri"]).to eq("https://github.com/bundleuser/#{gem_name}")
+      end
+    end
+
+    context "when changelog is not enabled" do
+      it "sets gemspec source_code_uri, homepage, homepage_uri but not changelog_uri" do
+        bundle "gem #{gem_name}"
+
+        expect(generated_gemspec.metadata["changelog_uri"]).to be_nil
+        expect(generated_gemspec.homepage).to eq("https://github.com/bundleuser/#{gem_name}")
+        expect(generated_gemspec.metadata["homepage_uri"]).to eq("https://github.com/bundleuser/#{gem_name}")
+        expect(generated_gemspec.metadata["source_code_uri"]).to eq("https://github.com/bundleuser/#{gem_name}")
+      end
     end
   end
 
@@ -1939,7 +1985,7 @@ Usage: "bundle gem NAME [OPTIONS]"
       expect(bundled_app("foobar/.github/workflows/main.yml")).to exist
     end
 
-    it "asks about MIT license" do
+    it "asks about MIT license just once" do
       global_config "BUNDLE_GEM__MIT" => nil
 
       bundle "config list"
@@ -1949,9 +1995,10 @@ Usage: "bundle gem NAME [OPTIONS]"
       end
 
       expect(bundled_app("foobar/LICENSE.txt")).to exist
+      expect(out).to include("Using a MIT license means").once
     end
 
-    it "asks about CoC" do
+    it "asks about CoC just once" do
       global_config "BUNDLE_GEM__COC" => nil
 
       bundle "gem foobar" do |input, _, _|
@@ -1959,9 +2006,10 @@ Usage: "bundle gem NAME [OPTIONS]"
       end
 
       expect(bundled_app("foobar/CODE_OF_CONDUCT.md")).to exist
+      expect(out).to include("Codes of conduct can increase contributions to your project").once
     end
 
-    it "asks about CHANGELOG" do
+    it "asks about CHANGELOG just once" do
       global_config "BUNDLE_GEM__CHANGELOG" => nil
 
       bundle "gem foobar" do |input, _, _|
@@ -1969,6 +2017,7 @@ Usage: "bundle gem NAME [OPTIONS]"
       end
 
       expect(bundled_app("foobar/CHANGELOG.md")).to exist
+      expect(out).to include("A changelog is a file which contains").once
     end
   end
 

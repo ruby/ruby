@@ -267,7 +267,7 @@ class Gem::RemoteFetcher
 
   def fetch_s3(uri, mtime = nil, head = false)
     begin
-      public_uri = s3_uri_signer(uri).sign
+      public_uri = s3_uri_signer(uri, head ? "HEAD" : "GET").sign
     rescue Gem::S3URISigner::ConfigurationError, Gem::S3URISigner::InstanceProfileError => e
       raise FetchError.new(e.message, "s3://#{uri.host}")
     end
@@ -275,8 +275,8 @@ class Gem::RemoteFetcher
   end
 
   # we have our own signing code here to avoid a dependency on the aws-sdk gem
-  def s3_uri_signer(uri)
-    Gem::S3URISigner.new(uri)
+  def s3_uri_signer(uri, method)
+    Gem::S3URISigner.new(uri, method)
   end
 
   ##

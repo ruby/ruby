@@ -443,7 +443,7 @@
 #
 # - #*: Returns the concatenation of multiple copies of +self+.
 # - #+: Returns the concatenation of +self+ and a given other string.
-# - #center: Returns a copy of +self+ centered between pad substrings.
+# - #center: Returns a copy of +self+, centered by specified padding.
 # - #concat: Returns the concatenation of +self+ with given other strings.
 # - #prepend: Returns the concatenation of a given other string with +self+.
 # - #ljust: Returns a copy of +self+ of a given length, right-padded with a given other string.

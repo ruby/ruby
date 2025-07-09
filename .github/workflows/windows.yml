@@ -26,8 +26,7 @@ jobs:
       matrix:
         include:
           - os: 2022
-            vc: 2019
-            vcvars: '14.2' # VS 2022 17.13.x is broken at windows-2022
+            vc: 2022
             test_task: check
           - os: 2025
             vc: 2022
@@ -69,14 +68,6 @@ jobs:
           bundler: none
           windows-toolchain: none
 
-      - name: Install tools with scoop
-        run: |
-          Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-          iwr -useb get.scoop.sh | iex
-          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
-          scoop install vcpkg uutils-coreutils cmake@3.31.6
-        shell: pwsh
-
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           sparse-checkout-cone-mode: false
@@ -86,6 +77,26 @@ jobs:
         with:
           srcdir: src
           builddir: build
+
+      - name: Install tools with scoop
+        run: |
+          Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+          iwr -useb get.scoop.sh | iex
+          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
+          scoop install vcpkg uutils-coreutils cmake@3.31.6
+        shell: pwsh
+
+        # vcpkg built-in cache is not working now
+      - name: Restore vcpkg artifact
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: src\vcpkg_installed
+          key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
+
+      - name: Install libraries with vcpkg
+        run: |
+          vcpkg install --vcpkg-root=C:\Users\runneradmin\scoop\apps\vcpkg\current
+        working-directory: src
 
       - name: setup env
         # Available Ruby versions: https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md#ruby
@@ -116,18 +127,6 @@ jobs:
       - name: volume info
         run: Get-Volume
         shell: pwsh
-
-        # vcpkg built-in cache is not working now
-      - name: Restore vcpkg artifact
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: src\vcpkg_installed
-          key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
-
-      - name: Install libraries with vcpkg
-        run: |
-          vcpkg install --vcpkg-root=C:\Users\runneradmin\scoop\apps\vcpkg\current
-        working-directory: src
 
       # TODO: We should use `../src` instead of `D:/a/ruby/ruby/src`
       - name: Configure

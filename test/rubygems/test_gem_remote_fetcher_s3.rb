@@ -18,7 +18,7 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
     @a1.loaded_from = File.join(@gemhome, "specifications", @a1.full_name)
   end
 
-  def assert_fetch_s3(url, signature, token=nil, region="us-east-1", instance_profile_json=nil)
+  def assert_fetch_s3(url, signature, token=nil, region="us-east-1", instance_profile_json=nil, method="GET")
     fetcher = Gem::RemoteFetcher.new nil
     @fetcher = fetcher
     $fetched_uri = nil
@@ -33,9 +33,9 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
       res
     end
 
-    def fetcher.s3_uri_signer(uri)
+    def fetcher.s3_uri_signer(uri, method)
       require "json"
-      s3_uri_signer = Gem::S3URISigner.new(uri)
+      s3_uri_signer = Gem::S3URISigner.new(uri, method)
       def s3_uri_signer.ec2_metadata_credentials_json
         JSON.parse($instance_profile)
       end
@@ -45,10 +45,14 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
       s3_uri_signer
     end
 
-    data = fetcher.fetch_s3 Gem::URI.parse(url)
+    res = fetcher.fetch_s3 Gem::URI.parse(url), nil, (method == "HEAD")
 
-    assert_equal "https://my-bucket.s3.#{region}.amazonaws.com/gems/specs.4.8.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=testuser%2F20190624%2F#{region}%2Fs3%2Faws4_request&X-Amz-Date=20190624T050641Z&X-Amz-Expires=86400#{token ? "&X-Amz-Security-Token=" + token : ""}&X-Amz-SignedHeaders=host&X-Amz-Signature=#{signature}", $fetched_uri.to_s
-    assert_equal "success", data
+    assert_equal "https://my-bucket.s3.#{region}.amazonaws.com/gems/specs.4.8.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=testuser%2F20190624%2F#{region}%2Fs3%2Faws4_request&X-Amz-Date=20190624T051941Z&X-Amz-Expires=86400#{token ? "&X-Amz-Security-Token=" + token : ""}&X-Amz-SignedHeaders=host&X-Amz-Signature=#{signature}", $fetched_uri.to_s
+    if method == "HEAD"
+      assert_equal 200, res.code
+    else
+      assert_equal "success", res
+    end
   ensure
     $fetched_uri = nil
   end
@@ -59,7 +63,23 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
-      assert_fetch_s3 url, "20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b"
+      assert_fetch_s3 url, "b5cb80c1301f7b1c50c4af54f1f6c034f80b56d32f000a855f0a903dc5a8413c"
+    end
+  ensure
+    Gem.configuration[:s3_source] = nil
+  end
+
+  def test_fetch_s3_head_request
+    Gem.configuration[:s3_source] = {
+      "my-bucket" => { id: "testuser", secret: "testpass" },
+    }
+    url = "s3://my-bucket/gems/specs.4.8.gz"
+    Time.stub :now, Time.at(1_561_353_581) do
+      token = nil
+      region = "us-east-1"
+      instance_profile_json = nil
+      method = "HEAD"
+      assert_fetch_s3 url, "a3c6cf9a2db62e85f4e57f8fc8ac8b5ff5c1fdd4aeef55935d05e05174d9c885", token, region, instance_profile_json, method
     end
   ensure
     Gem.configuration[:s3_source] = nil
@@ -71,7 +91,7 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
-      assert_fetch_s3 url, "4afc3010757f1fd143e769f1d1dabd406476a4fc7c120e9884fd02acbb8f26c9", nil, "us-west-2"
+      assert_fetch_s3 url, "ef07487bfd8e3ca594f8fc29775b70c0a0636f51318f95d4f12b2e6e1fd8c716", nil, "us-west-2"
     end
   ensure
     Gem.configuration[:s3_source] = nil
@@ -83,7 +103,7 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
-      assert_fetch_s3 url, "935160a427ef97e7630f799232b8f208c4a4e49aad07d0540572a2ad5fe9f93c", "testtoken"
+      assert_fetch_s3 url, "e709338735f9077edf8f6b94b247171c266a9605975e08e4a519a123c3322625", "testtoken"
     end
   ensure
     Gem.configuration[:s3_source] = nil
@@ -98,7 +118,7 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
-      assert_fetch_s3 url, "20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b"
+      assert_fetch_s3 url, "b5cb80c1301f7b1c50c4af54f1f6c034f80b56d32f000a855f0a903dc5a8413c"
     end
   ensure
     ENV.each_key {|key| ENV.delete(key) if key.start_with?("AWS") }
@@ -114,7 +134,7 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
-      assert_fetch_s3 url, "4afc3010757f1fd143e769f1d1dabd406476a4fc7c120e9884fd02acbb8f26c9", nil, "us-west-2"
+      assert_fetch_s3 url, "ef07487bfd8e3ca594f8fc29775b70c0a0636f51318f95d4f12b2e6e1fd8c716", nil, "us-west-2"
     end
   ensure
     ENV.each_key {|key| ENV.delete(key) if key.start_with?("AWS") }
@@ -130,7 +150,7 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
-      assert_fetch_s3 url, "935160a427ef97e7630f799232b8f208c4a4e49aad07d0540572a2ad5fe9f93c", "testtoken"
+      assert_fetch_s3 url, "e709338735f9077edf8f6b94b247171c266a9605975e08e4a519a123c3322625", "testtoken"
     end
   ensure
     ENV.each_key {|key| ENV.delete(key) if key.start_with?("AWS") }
@@ -140,7 +160,7 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
   def test_fetch_s3_url_creds
     url = "s3://testuser:testpass@my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
-      assert_fetch_s3 url, "20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b"
+      assert_fetch_s3 url, "b5cb80c1301f7b1c50c4af54f1f6c034f80b56d32f000a855f0a903dc5a8413c"
     end
   end
 
@@ -151,7 +171,7 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
 
     url = "s3://my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
-      assert_fetch_s3 url, "20f974027db2f3cd6193565327a7c73457a138efb1a63ea248d185ce6827d41b", nil, "us-east-1",
+      assert_fetch_s3 url, "b5cb80c1301f7b1c50c4af54f1f6c034f80b56d32f000a855f0a903dc5a8413c", nil, "us-east-1",
                       '{"AccessKeyId": "testuser", "SecretAccessKey": "testpass"}'
     end
   ensure
@@ -165,7 +185,7 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
 
     url = "s3://my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
-      assert_fetch_s3 url, "4afc3010757f1fd143e769f1d1dabd406476a4fc7c120e9884fd02acbb8f26c9", nil, "us-west-2",
+      assert_fetch_s3 url, "ef07487bfd8e3ca594f8fc29775b70c0a0636f51318f95d4f12b2e6e1fd8c716", nil, "us-west-2",
                       '{"AccessKeyId": "testuser", "SecretAccessKey": "testpass"}'
     end
   ensure
@@ -179,7 +199,7 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
 
     url = "s3://my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
-      assert_fetch_s3 url, "935160a427ef97e7630f799232b8f208c4a4e49aad07d0540572a2ad5fe9f93c", "testtoken", "us-east-1",
+      assert_fetch_s3 url, "e709338735f9077edf8f6b94b247171c266a9605975e08e4a519a123c3322625", "testtoken", "us-east-1",
                       '{"AccessKeyId": "testuser", "SecretAccessKey": "testpass", "Token": "testtoken"}'
     end
   ensure

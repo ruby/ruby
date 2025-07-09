@@ -1,10 +1,11 @@
 #![allow(non_upper_case_globals)]
-use crate::cruby::{Qfalse, Qnil, Qtrue, VALUE, RUBY_T_ARRAY, RUBY_T_STRING, RUBY_T_HASH, RUBY_T_CLASS};
+use crate::cruby::{Qfalse, Qnil, Qtrue, VALUE, RUBY_T_ARRAY, RUBY_T_STRING, RUBY_T_HASH, RUBY_T_CLASS, RUBY_T_MODULE};
 use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass, rb_cRange, rb_cSet, rb_cRegexp, rb_cClass, rb_cModule};
 use crate::cruby::ClassRelationship;
 use crate::cruby::get_class_name;
 use crate::cruby::ruby_sym_to_rust_string;
 use crate::cruby::rb_mRubyVMFrozenCore;
+use crate::cruby::rb_obj_class;
 use crate::hir::PtrPrintMap;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -145,9 +146,16 @@ fn is_range_exact(val: VALUE) -> bool {
     val.class_of() == unsafe { rb_cRange }
 }
 
-fn is_class_exact(val: VALUE) -> bool {
-    // Objects with RUBY_T_CLASS type and not instances of Module
-    val.builtin_type() == RUBY_T_CLASS && val.class_of() != unsafe { rb_cModule }
+fn is_module_exact(val: VALUE) -> bool {
+    if val.builtin_type() != RUBY_T_MODULE {
+        return false;
+    }
+
+    // For Class and Module instances, `class_of` will return the singleton class of the object.
+    // Using `rb_obj_class` will give us the actual class of the module so we can check if the
+    // object is an instance of Module, or an instance of Module subclass.
+    let klass = unsafe { rb_obj_class(val) };
+    klass == unsafe { rb_cModule }
 }
 
 impl Type {
@@ -202,8 +210,11 @@ impl Type {
         else if is_string_exact(val) {
             Type { bits: bits::StringExact, spec: Specialization::Object(val) }
         }
-        else if is_class_exact(val) {
-            Type { bits: bits::ClassExact, spec: Specialization::Object(val) }
+        else if is_module_exact(val) {
+            Type { bits: bits::ModuleExact, spec: Specialization::Object(val) }
+        }
+        else if val.builtin_type() == RUBY_T_CLASS {
+            Type { bits: bits::Class, spec: Specialization::Object(val) }
         }
         else if val.class_of() == unsafe { rb_cRegexp } {
             Type { bits: bits::RegexpExact, spec: Specialization::Object(val) }
@@ -301,6 +312,7 @@ impl Type {
         if class == unsafe { rb_cFloat } { return true; }
         if class == unsafe { rb_cHash } { return true; }
         if class == unsafe { rb_cInteger } { return true; }
+        if class == unsafe { rb_cModule } { return true; }
         if class == unsafe { rb_cNilClass } { return true; }
         if class == unsafe { rb_cObject } { return true; }
         if class == unsafe { rb_cRange } { return true; }
@@ -405,11 +417,12 @@ impl Type {
             return Some(val);
         }
         if self.is_subtype(types::ArrayExact) { return Some(unsafe { rb_cArray }); }
-        if self.is_subtype(types::ClassExact) { return Some(unsafe { rb_cClass }); }
+        if self.is_subtype(types::Class) { return Some(unsafe { rb_cClass }); }
         if self.is_subtype(types::FalseClassExact) { return Some(unsafe { rb_cFalseClass }); }
         if self.is_subtype(types::FloatExact) { return Some(unsafe { rb_cFloat }); }
         if self.is_subtype(types::HashExact) { return Some(unsafe { rb_cHash }); }
         if self.is_subtype(types::IntegerExact) { return Some(unsafe { rb_cInteger }); }
+        if self.is_subtype(types::ModuleExact) { return Some(unsafe { rb_cModule }); }
         if self.is_subtype(types::NilClassExact) { return Some(unsafe { rb_cNilClass }); }
         if self.is_subtype(types::ObjectExact) { return Some(unsafe { rb_cObject }); }
         if self.is_subtype(types::RangeExact) { return Some(unsafe { rb_cRange }); }
