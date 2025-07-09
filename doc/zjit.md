@@ -28,12 +28,12 @@ in a way that can be easily shared with other team members.
 
 Make sure you have a `--enable-zjit=dev` build, and run `brew install cargo-nextest` first.
 
-### make zjit-test-suite
+### make zjit-check
 
 This command runs all ZJIT tests: `make zjit-test-rust` and `test/ruby/test_zjit.rb`.
 
 ```
-make zjit-test-suite
+make zjit-check
 ```
 
 ### make zjit-test-rust

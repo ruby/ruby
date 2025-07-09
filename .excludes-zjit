@@ -1,0 +1,36 @@
+# ZJIT test exclusions
+# Tests that are currently known to fail with ZJIT enabled
+# Format: one test file per line, relative to repository root
+
+test/ruby/test_env.rb
+test/ruby/test_enumerator.rb
+test/ruby/test_fiber.rb
+test/ruby/test_file_exhaustive.rb
+test/ruby/test_gc.rb
+test/ruby/test_io.rb
+test/ruby/test_keyword.rb
+test/ruby/test_marshal.rb
+test/ruby/test_memory_view.rb
+test/ruby/test_module.rb
+test/ruby/test_namespace.rb
+test/ruby/test_object.rb
+test/ruby/test_object_id.rb
+test/ruby/test_objectspace.rb
+test/ruby/test_optimization.rb
+test/ruby/test_parse.rb
+test/ruby/test_proc.rb
+test/ruby/test_process.rb
+test/ruby/test_ractor.rb
+test/ruby/test_rational.rb
+test/ruby/test_regexp.rb
+test/ruby/test_rubyoptions.rb
+test/ruby/test_settracefunc.rb
+test/ruby/test_super.rb
+test/ruby/test_struct.rb
+test/ruby/test_symbol.rb
+test/ruby/test_syntax.rb
+test/ruby/test_thread.rb
+test/ruby/test_time_tz.rb
+test/ruby/test_variable.rb
+test/ruby/test_vm_dump.rb
+test/ruby/test_yjit.rb

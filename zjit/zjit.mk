@@ -48,40 +48,8 @@ update-zjit-bench:
 	$(Q) $(tooldir)/git-refresh -C $(srcdir) --branch main \
 		https://github.com/Shopify/zjit-bench zjit-bench $(GIT_OPTS)
 
-# List of test files to exclude for ZJIT
-ZJIT_EXCLUDED_TESTS = \
-	test/ruby/test_env.rb \
-	test/ruby/test_enumerator.rb \
-	test/ruby/test_fiber.rb \
-	test/ruby/test_file_exhaustive.rb \
-	test/ruby/test_gc.rb \
-	test/ruby/test_io.rb \
-	test/ruby/test_keyword.rb \
-	test/ruby/test_marshal.rb \
-	test/ruby/test_memory_view.rb \
-	test/ruby/test_module.rb \
-	test/ruby/test_namespace.rb \
-	test/ruby/test_object.rb \
-	test/ruby/test_object_id.rb \
-	test/ruby/test_objectspace.rb \
-	test/ruby/test_optimization.rb \
-	test/ruby/test_parse.rb \
-	test/ruby/test_proc.rb \
-	test/ruby/test_process.rb \
-	test/ruby/test_ractor.rb \
-	test/ruby/test_rational.rb \
-	test/ruby/test_regexp.rb \
-	test/ruby/test_rubyoptions.rb \
-	test/ruby/test_settracefunc.rb \
-	test/ruby/test_super.rb \
-	test/ruby/test_struct.rb \
-	test/ruby/test_symbol.rb \
-	test/ruby/test_syntax.rb \
-	test/ruby/test_thread.rb \
-	test/ruby/test_time_tz.rb \
-	test/ruby/test_variable.rb \
-	test/ruby/test_vm_dump.rb \
-	test/ruby/test_yjit.rb
+# Load test files to exclude for ZJIT from .excludes-zjit file
+ZJIT_EXCLUDED_TESTS = $(shell grep -v '^\#' $(top_srcdir)/.excludes-zjit 2>/dev/null | grep -v '^$$')
 
 # Get all test files in test/ruby directory
 ZJIT_ALL_RUBY_TESTS := $(wildcard $(top_srcdir)/test/ruby/test_*.rb $(top_srcdir)/test/ruby/*/test_*.rb)
@@ -92,7 +60,7 @@ ZJIT_RUBY_TESTS := $(filter-out $(addprefix $(top_srcdir)/,$(ZJIT_EXCLUDED_TESTS
 # Run all Ruby tests with ZJIT enabled (temporarily excluding known failing tests)
 .PHONY: zjit-test-ruby-all
 zjit-test-ruby-all:
-	$(MAKE) test-all RUST_BACKTRACE=1 RUN_OPTS='--zjit --zjit-call-threshold=1' TESTS='../test/ruby/test_integer.rb'
+	$(MAKE) test-all RUST_BACKTRACE=1 RUN_OPTS='--zjit --zjit-call-threshold=1' TESTS='$(ZJIT_RUBY_TESTS)'
 
 # Run only the ZJIT-specific Ruby tests
 .PHONY: zjit-test-ruby
@@ -100,8 +68,8 @@ zjit-test-ruby:
 	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_zjit.rb'
 
 # Gives quick feedback about ZJIT. Not a replacement for a full test run.
-.PHONY: zjit-test-suite
-zjit-test-suite:
+.PHONY: zjit-check
+zjit-check:
 	$(MAKE) zjit-test-rust
 	$(MAKE) zjit-test-ruby
 ZJIT_BINDGEN_DIFF_OPTS =
