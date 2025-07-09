@@ -330,6 +330,42 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_fixnum_and
+    assert_compiles '1', %q{
+      def test(a, b) = a & b
+      test(2, 2)
+      test(2, 2)
+      test(5, 3)
+    }, call_threshold: 2, insns: [:opt_and]
+  end
+
+  def test_fixnum_and_fallthrough
+    assert_compiles 'false', %q{
+      def test(a, b) = a & b
+      test(2, 2)
+      test(2, 2)
+      test(true, false)
+    }, call_threshold: 2, insns: [:opt_and]
+  end
+
+  def test_fixnum_or
+    assert_compiles '3', %q{
+      def test(a, b) = a | b
+      test(5, 3)
+      test(5, 3)
+      test(1, 2)
+    }, call_threshold: 2, insns: [:opt_or]
+  end
+
+  def test_fixnum_or_fallthrough
+    assert_compiles 'true', %q{
+      def test(a, b) = a | b
+      test(2, 2)
+      test(2, 2)
+      test(true, false)
+    }, call_threshold: 2, insns: [:opt_or]
+  end
+
   def test_opt_not
     assert_compiles('[true, true, false]', <<~RUBY, insns: [:opt_not])
       def test(obj) = !obj
