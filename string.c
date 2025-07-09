@@ -9124,23 +9124,7 @@ rb_str_tr_s(VALUE str, VALUE src, VALUE repl)
  *  call-seq:
  *    count(*selectors) -> integer
  *
- *  Returns the total number of characters in +self+
- *  that are specified by the given +selectors+
- *  (see {Multiple Character Selectors}[rdoc-ref:character_selectors.rdoc@Multiple+Character+Selectors]):
- *
- *     a = "hello world"
- *     a.count "lo"                   #=> 5
- *     a.count "lo", "o"              #=> 2
- *     a.count "hello", "^l"          #=> 4
- *     a.count "ej-m"                 #=> 4
- *
- *     "hello^world".count "\\^aeiou" #=> 4
- *     "hello-world".count "a\\-eo"   #=> 4
- *
- *     c = "hello world\\r\\n"
- *     c.count "\\"                   #=> 2
- *     c.count "\\A"                  #=> 0
- *     c.count "X-\\w"                #=> 3
+ *  :include: doc/string/count.rdoc
  */
 
 static VALUE

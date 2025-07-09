@@ -1,0 +1,50 @@
+Returns the total number of characters in +self+ that are specified by the given selectors.
+
+For one 1-character selector,
+returns the count of instances of that character:
+
+  s = 'abracadabra'
+  s.count('a') # => 5
+  s.count('b') # => 2
+  s.count('x') # => 0
+  s.count('')  # => 0
+
+  s = 'тест'
+  s.count('т')  # => 2
+  s.count('е')  # => 1
+
+  s = 'よろしくお願いします'
+  s.count('よ')  # => 1
+  s.count('し')  # => 2
+
+For one multi-character selector,
+returns the count of instances for all specified characters:
+
+  s = 'abracadabra'
+  s.count('ab')     # => 7
+  s.count('abc')    # => 8
+  s.count('abcd')   # => 9
+  s.count('abcdr')  # => 11
+  s.count('abcdrx') # => 11
+
+For multiple selectors,
+forms a single selector that is the intersection of characters in all selectors
+and returns the count of instances for that selector;
+in each pair of calls below, the result is the same:
+
+  s = 'abcdefg'
+
+  s.count('abcde', 'dcbfg') # => 3
+  s.count('bcd')            # => 3
+
+  s.count('abc', 'def')     # => 0
+  s.count('')               # => 0
+
+Selectors may include negations, ranges, and escapes:
+
+    s = "abc\ndef\nghi"
+    s.count('^ifc') # => 8
+    s.count('e-g')  # => 3
+    s.count("\n")   # => 2
+
+Related: see {Querying}[rdoc-ref:String@Querying].
