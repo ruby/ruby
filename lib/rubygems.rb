@@ -637,6 +637,34 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
+  # Load Bundler, making sure to avoid redefinition warnings in platform
+  # constants
+
+  def self.load_bundler
+    require "bundler/version"
+
+    if Bundler::VERSION > "2.6.9"
+      require "bundler"
+    else
+      previous_platforms = {}
+
+      platform_const_list = ["JAVA", "MSWIN", "MSWIN64", "MINGW", "X64_MINGW_LEGACY", "X64_MINGW", "UNIVERSAL_MINGW", "WINDOWS", "X64_LINUX", "X64_LINUX_MUSL"]
+
+      platform_const_list.each do |platform|
+        previous_platforms[platform] = Gem::Platform.const_get(platform)
+        Gem::Platform.send(:remove_const, platform)
+      end
+
+      require "bundler"
+
+      platform_const_list.each do |platform|
+        Gem::Platform.send(:remove_const, platform) if Gem::Platform.const_defined?(platform)
+        Gem::Platform.const_set(platform, previous_platforms[platform])
+      end
+    end
+  end
+
+  ##
   # The file name and line number of the caller of the caller of this method.
   #
   # +depth+ is how many layers up the call stack it should go.
@@ -1144,7 +1172,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     ENV["BUNDLE_GEMFILE"] ||= File.expand_path(path)
     require_relative "rubygems/user_interaction"
-    require_relative "rubygems/bundler_integration"
+    Gem.load_bundler
     begin
       Gem::DefaultUserInteraction.use_ui(ui) do
         Bundler.ui.silence do
