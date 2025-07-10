@@ -90,4 +90,27 @@ mod tests {
         assert_eq!(set.insert(1usize), true);
         assert_eq!(set.insert(1usize), false);
     }
+
+    #[test]
+    fn insert_all_sets_all_bits() {
+        let mut set = BitSet::with_capacity(4);
+        set.insert_all();
+        assert_eq!(set.get(0usize), true);
+        assert_eq!(set.get(1usize), true);
+        assert_eq!(set.get(2usize), true);
+        assert_eq!(set.get(3usize), true);
+    }
+
+    #[test]
+    fn intersect_with() {
+        let mut set = BitSet::with_capacity(4);
+        let zero_mask = BitSet::with_capacity(4);
+        let mut one_mask: BitSet<usize> = BitSet::with_capacity(4);
+        one_mask.insert_all();
+        assert_eq!(set.intersect_with(&zero_mask), false);
+        set.insert(0usize);
+        assert_eq!(set.intersect_with(&one_mask), false);
+        assert_eq!(set.intersect_with(&zero_mask), true);
+        assert_eq!(set.get(0usize), false);
+    }
 }

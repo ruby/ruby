@@ -1785,128 +1785,128 @@ impl Function {
     }
 
     fn worklist_traverse_single_insn(&self, insn: Insn, worklist: &mut VecDeque<InsnId>) {
-            match self.find(insn_id) {
-                Insn::Const { .. }
-                | Insn::Param { .. }
-                | Insn::PatchPoint(..)
-                | Insn::GetLocal { .. }
-                | Insn::PutSpecialObject { .. } =>
-                    {}
-                Insn::GetConstantPath { ic: _, state } => {
-                    worklist.push_back(state);
-                }
-                Insn::ArrayMax { elements, state }
-                | Insn::NewArray { elements, state } => {
-                    worklist.extend(elements);
-                    worklist.push_back(state);
-                }
-                Insn::NewHash { elements, state } => {
-                    for (key, value) in elements {
-                        worklist.push_back(key);
-                        worklist.push_back(value);
-                    }
-                    worklist.push_back(state);
-                }
-                Insn::NewRange { low, high, state, .. } => {
-                    worklist.push_back(low);
-                    worklist.push_back(high);
-                    worklist.push_back(state);
-                }
-                Insn::StringCopy { val, .. }
-                | Insn::StringIntern { val }
-                | Insn::Return { val }
-                | Insn::Throw { val, .. }
-                | Insn::Defined { v: val, .. }
-                | Insn::Test { val }
-                | Insn::SetLocal { val, .. }
-                | Insn::IsNil { val } =>
-                    worklist.push_back(val),
-                Insn::SetGlobal { val, state, .. }
-                | Insn::GuardType { val, state, .. }
-                | Insn::GuardBitEquals { val, state, .. }
-                | Insn::ToArray { val, state }
-                | Insn::ToNewArray { val, state } => {
-                    worklist.push_back(val);
-                    worklist.push_back(state);
-                }
-                Insn::ArraySet { array, val, .. } => {
-                    worklist.push_back(array);
-                    worklist.push_back(val);
-                }
-                Insn::Snapshot { state } => {
-                    worklist.extend(&state.stack);
-                    worklist.extend(&state.locals);
-                }
-                Insn::FixnumAdd { left, right, state }
-                | Insn::FixnumSub { left, right, state }
-                | Insn::FixnumMult { left, right, state }
-                | Insn::FixnumDiv { left, right, state }
-                | Insn::FixnumMod { left, right, state }
-                | Insn::ArrayExtend { left, right, state }
-                => {
-                    worklist.push_back(left);
-                    worklist.push_back(right);
-                    worklist.push_back(state);
-                }
-                Insn::FixnumLt { left, right }
-                | Insn::FixnumLe { left, right }
-                | Insn::FixnumGt { left, right }
-                | Insn::FixnumGe { left, right }
-                | Insn::FixnumEq { left, right }
-                | Insn::FixnumNeq { left, right }
-                | Insn::FixnumAnd { left, right }
-                | Insn::FixnumOr { left, right }
-                => {
-                    worklist.push_back(left);
-                    worklist.push_back(right);
-                }
-                Insn::Jump(BranchEdge { args, .. }) => worklist.extend(args),
-                Insn::IfTrue { val, target: BranchEdge { args, .. } } | Insn::IfFalse { val, target: BranchEdge { args, .. } } => {
-                    worklist.push_back(val);
-                    worklist.extend(args);
-                }
-                Insn::ArrayDup { val, state } | Insn::HashDup { val, state } => {
-                    worklist.push_back(val);
-                    worklist.push_back(state);
-                }
-                Insn::Send { self_val, args, state, .. }
-                | Insn::SendWithoutBlock { self_val, args, state, .. }
-                | Insn::SendWithoutBlockDirect { self_val, args, state, .. } => {
-                    worklist.push_back(self_val);
-                    worklist.extend(args);
-                    worklist.push_back(state);
-                }
-                Insn::InvokeBuiltin { args, state, .. } => {
-                    worklist.extend(args);
-                    worklist.push_back(state)
-                }
-                Insn::CCall { args, .. } => worklist.extend(args),
-                Insn::GetIvar { self_val, state, .. } | Insn::DefinedIvar { self_val, state, .. } => {
-                    worklist.push_back(self_val);
-                    worklist.push_back(state);
-                }
-                Insn::SetIvar { self_val, val, state, .. } => {
-                    worklist.push_back(self_val);
-                    worklist.push_back(val);
-                    worklist.push_back(state);
-                }
-                Insn::ArrayPush { array, val, state } => {
-                    worklist.push_back(array);
-                    worklist.push_back(val);
-                    worklist.push_back(state);
-                }
-                Insn::ObjToString { val, state, .. } => {
-                    worklist.push_back(val);
-                    worklist.push_back(state);
-                }
-                Insn::AnyToString { val, str, state, .. } => {
-                    worklist.push_back(val);
-                    worklist.push_back(str);
-                    worklist.push_back(state);
-                }
-                Insn::GetGlobal { state, .. } |
-                Insn::SideExit { state, .. } => worklist.push_back(state),
+        match insn {
+            Insn::Const { .. }
+            | Insn::Param { .. }
+            | Insn::PatchPoint(..)
+            | Insn::GetLocal { .. }
+            | Insn::PutSpecialObject { .. } =>
+                {}
+            Insn::GetConstantPath { ic: _, state } => {
+                worklist.push_back(state);
             }
+            Insn::ArrayMax { elements, state }
+            | Insn::NewArray { elements, state } => {
+                worklist.extend(elements);
+                worklist.push_back(state);
+            }
+            Insn::NewHash { elements, state } => {
+                for (key, value) in elements {
+                    worklist.push_back(key);
+                    worklist.push_back(value);
+                }
+                worklist.push_back(state);
+            }
+            Insn::NewRange { low, high, state, .. } => {
+                worklist.push_back(low);
+                worklist.push_back(high);
+                worklist.push_back(state);
+            }
+            Insn::StringCopy { val, .. }
+            | Insn::StringIntern { val }
+            | Insn::Return { val }
+            | Insn::Throw { val, .. }
+            | Insn::Defined { v: val, .. }
+            | Insn::Test { val }
+            | Insn::SetLocal { val, .. }
+            | Insn::IsNil { val } =>
+                worklist.push_back(val),
+            Insn::SetGlobal { val, state, .. }
+            | Insn::GuardType { val, state, .. }
+            | Insn::GuardBitEquals { val, state, .. }
+            | Insn::ToArray { val, state }
+            | Insn::ToNewArray { val, state } => {
+                worklist.push_back(val);
+                worklist.push_back(state);
+            }
+            Insn::ArraySet { array, val, .. } => {
+                worklist.push_back(array);
+                worklist.push_back(val);
+            }
+            Insn::Snapshot { state } => {
+                worklist.extend(&state.stack);
+                worklist.extend(&state.locals);
+            }
+            Insn::FixnumAdd { left, right, state }
+            | Insn::FixnumSub { left, right, state }
+            | Insn::FixnumMult { left, right, state }
+            | Insn::FixnumDiv { left, right, state }
+            | Insn::FixnumMod { left, right, state }
+            | Insn::ArrayExtend { left, right, state }
+            => {
+                worklist.push_back(left);
+                worklist.push_back(right);
+                worklist.push_back(state);
+            }
+            Insn::FixnumLt { left, right }
+            | Insn::FixnumLe { left, right }
+            | Insn::FixnumGt { left, right }
+            | Insn::FixnumGe { left, right }
+            | Insn::FixnumEq { left, right }
+            | Insn::FixnumNeq { left, right }
+            | Insn::FixnumAnd { left, right }
+            | Insn::FixnumOr { left, right }
+            => {
+                worklist.push_back(left);
+                worklist.push_back(right);
+            }
+            Insn::Jump(BranchEdge { args, .. }) => worklist.extend(args),
+            Insn::IfTrue { val, target: BranchEdge { args, .. } } | Insn::IfFalse { val, target: BranchEdge { args, .. } } => {
+                worklist.push_back(val);
+                worklist.extend(args);
+            }
+            Insn::ArrayDup { val, state } | Insn::HashDup { val, state } => {
+                worklist.push_back(val);
+                worklist.push_back(state);
+            }
+            Insn::Send { self_val, args, state, .. }
+            | Insn::SendWithoutBlock { self_val, args, state, .. }
+            | Insn::SendWithoutBlockDirect { self_val, args, state, .. } => {
+                worklist.push_back(self_val);
+                worklist.extend(args);
+                worklist.push_back(state);
+            }
+            Insn::InvokeBuiltin { args, state, .. } => {
+                worklist.extend(args);
+                worklist.push_back(state)
+            }
+            Insn::CCall { args, .. } => worklist.extend(args),
+            Insn::GetIvar { self_val, state, .. } | Insn::DefinedIvar { self_val, state, .. } => {
+                worklist.push_back(self_val);
+                worklist.push_back(state);
+            }
+            Insn::SetIvar { self_val, val, state, .. } => {
+                worklist.push_back(self_val);
+                worklist.push_back(val);
+                worklist.push_back(state);
+            }
+            Insn::ArrayPush { array, val, state } => {
+                worklist.push_back(array);
+                worklist.push_back(val);
+                worklist.push_back(state);
+            }
+            Insn::ObjToString { val, state, .. } => {
+                worklist.push_back(val);
+                worklist.push_back(state);
+            }
+            Insn::AnyToString { val, str, state, .. } => {
+                worklist.push_back(val);
+                worklist.push_back(str);
+                worklist.push_back(state);
+            }
+            Insn::GetGlobal { state, .. } |
+            Insn::SideExit { state, .. } => worklist.push_back(state),
+        }
     }
 
     /// Remove instructions that do not have side effects and are not referenced by any other
@@ -2115,8 +2115,7 @@ impl Function {
             }
             for &insn_id in &self.blocks[block.0].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
-                let insn = self.find(insn_id);
-                match insn {
+                match self.find(insn_id) {
                     Insn::Jump(target) | Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } => {
                         let Some(block_in) = assigned_in[target.target.0].as_mut() else {
                             let fun_string = format!("{:?}", self);
@@ -2128,7 +2127,7 @@ impl Function {
                         }
                     }
                     // TODO fix has_output to include snapshots.
-                    _ if insn.has_output() || matches!(insn, Insn::Snapshot {..}) => {
+                    insn if insn.has_output() || matches!(insn, Insn::Snapshot {..}) => {
                         assigned.insert(insn_id);
                     }
                     _ => {}
@@ -2142,15 +2141,15 @@ impl Function {
                 assigned.insert(param);
             }
             for &insn_id in &self.blocks[block.0].insns {
-                let unioned_insn_id = self.union_find.borrow().find_const(insn_id);
+                let insn_id = self.union_find.borrow().find_const(insn_id);
                 let mut operands = VecDeque::new();
-                let insn = self.find(unioned_insn_id);
-                self.worklist_traverse_single_insn(insn.clone(), &mut operands);
+                self.worklist_traverse_single_insn( self.find(insn_id), &mut operands);
                 for operand in operands {
                     if !assigned.get(operand) {
-                        return Err(ValidationError::OperandNotDefined(format!("{:?}", self), block, unioned_insn_id, operand));
+                        return Err(ValidationError::OperandNotDefined(format!("{:?}", self), block, insn_id, operand));
                     }
                 }
+                let insn = self.find(insn_id);
                 if insn.has_output() || matches!(insn, Insn::Snapshot {..}) {
                     assigned.insert(insn_id);
                 }
@@ -3335,9 +3334,9 @@ mod validation_tests {
         let val2 = function.push_insn(exit, Insn::ArrayDup { val: param1, state: param0 });
         crate::cruby::with_rubyvm(|| {
             function.infer_types();
+            let fun_string = format!("{:?}", function);
+            assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(fun_string, exit, val2, param1));
         });
-        let fun_string = format!("{:?}", function);
-        assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(fun_string, exit, val2, param1));
     }
 
     #[test]
@@ -3347,20 +3346,18 @@ mod validation_tests {
         let entry = function.entry_block;
         let side = function.new_block();
         let exit = function.new_block();
-        let param1 = function.push_insn(side, Insn::Param { idx: 1 });
         let v0 = function.push_insn(side, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
         function.push_insn_id(entry, v0);
-        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![param1] }));
+        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         let val = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
-        function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![v0] } });
-        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![v0] }));
-        let param0 = function.push_insn(exit, Insn::Param { idx: 0 });
-        let _val = function.push_insn(exit, Insn::ArrayDup { val: param0, state: param0 });
+        function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![] } });
+        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
+        let _val = function.push_insn(exit, Insn::ArrayDup { val: v0, state: v0 });
         crate::cruby::with_rubyvm(|| {
             function.infer_types();
+            // Just checking that we don't panic.
+            function.validate_definite_assignment().unwrap();
         });
-        // Just checking that we don't panic.
-        function.validate_definite_assignment().unwrap();
     }
 
 }
