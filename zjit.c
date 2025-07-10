@@ -164,7 +164,8 @@ void rb_zjit_profile_disable(const rb_iseq_t *iseq);
 void
 rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception)
 {
-    RB_VM_LOCKING() {    rb_vm_barrier();
+    RB_VM_LOCKING() {
+        rb_vm_barrier();
 
         // Convert ZJIT instructions back to bare instructions
         rb_zjit_profile_disable(iseq);

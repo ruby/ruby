@@ -303,7 +303,9 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
 
     if (NIL_P(name)) {
         // Set the temporary classpath to NULL (anonymous):
-        RB_VM_LOCKING() {    set_sub_temporary_name(mod, 0);}
+        RB_VM_LOCKING() {
+            set_sub_temporary_name(mod, 0);
+        }
     }
     else {
         // Ensure the name is a string:
@@ -320,7 +322,9 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
         name = rb_str_new_frozen(name);
 
         // Set the temporary classpath to the given name:
-        RB_VM_LOCKING() {    set_sub_temporary_name(mod, name);}
+        RB_VM_LOCKING() {
+            set_sub_temporary_name(mod, name);
+        }
     }
 
     return mod;

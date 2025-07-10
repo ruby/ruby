@@ -4,7 +4,7 @@
 #![allow(non_upper_case_globals)]
 
 use crate::{
-    cast::IntoUsize, cruby::*, options::{get_option, DumpHIR}, profile::{get_or_create_iseq_payload, IseqPayload}, state::ZJITState
+    cast::IntoUsize, cruby::*, options::{get_option, DumpHIR}, gc::{get_or_create_iseq_payload, IseqPayload}, state::ZJITState
 };
 use std::{
     cell::RefCell,
@@ -523,7 +523,7 @@ pub enum Insn {
     /// Non-local control flow. See the throw YARV instruction
     Throw { throw_state: u32, val: InsnId },
 
-    /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=
+    /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=, &, |
     FixnumAdd  { left: InsnId, right: InsnId, state: InsnId },
     FixnumSub  { left: InsnId, right: InsnId, state: InsnId },
     FixnumMult { left: InsnId, right: InsnId, state: InsnId },
@@ -535,6 +535,8 @@ pub enum Insn {
     FixnumLe   { left: InsnId, right: InsnId },
     FixnumGt   { left: InsnId, right: InsnId },
     FixnumGe   { left: InsnId, right: InsnId },
+    FixnumAnd  { left: InsnId, right: InsnId },
+    FixnumOr   { left: InsnId, right: InsnId },
 
     // Distinct from `SendWithoutBlock` with `mid:to_s` because does not have a patch point for String to_s being redefined
     ObjToString { val: InsnId, call_info: CallInfo, cd: *const rb_call_data, state: InsnId },
@@ -604,6 +606,8 @@ impl Insn {
             Insn::FixnumLe   { .. } => false,
             Insn::FixnumGt   { .. } => false,
             Insn::FixnumGe   { .. } => false,
+            Insn::FixnumAnd  { .. } => false,
+            Insn::FixnumOr   { .. } => false,
             Insn::GetLocal   { .. } => false,
             Insn::IsNil      { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
@@ -705,6 +709,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumLe   { left, right, .. } => { write!(f, "FixnumLe {left}, {right}") },
             Insn::FixnumGt   { left, right, .. } => { write!(f, "FixnumGt {left}, {right}") },
             Insn::FixnumGe   { left, right, .. } => { write!(f, "FixnumGe {left}, {right}") },
+            Insn::FixnumAnd  { left, right, .. } => { write!(f, "FixnumAnd {left}, {right}") },
+            Insn::FixnumOr   { left, right, .. } => { write!(f, "FixnumOr {left}, {right}") },
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
             Insn::PatchPoint(invariant) => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
@@ -1101,6 +1107,8 @@ impl Function {
             FixnumGe { left, right } => FixnumGe { left: find!(*left), right: find!(*right) },
             FixnumLt { left, right } => FixnumLt { left: find!(*left), right: find!(*right) },
             FixnumLe { left, right } => FixnumLe { left: find!(*left), right: find!(*right) },
+            FixnumAnd { left, right } => FixnumAnd { left: find!(*left), right: find!(*right) },
+            FixnumOr { left, right } => FixnumOr { left: find!(*left), right: find!(*right) },
             ObjToString { val, call_info, cd, state } => ObjToString {
                 val: find!(*val),
                 call_info: call_info.clone(),
@@ -1228,6 +1236,8 @@ impl Function {
             Insn::FixnumLe   { .. } => types::BoolExact,
             Insn::FixnumGt   { .. } => types::BoolExact,
             Insn::FixnumGe   { .. } => types::BoolExact,
+            Insn::FixnumAnd  { .. } => types::Fixnum,
+            Insn::FixnumOr   { .. } => types::Fixnum,
             Insn::PutSpecialObject { .. } => types::BasicObject,
             Insn::SendWithoutBlock { .. } => types::BasicObject,
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
@@ -1447,6 +1457,10 @@ impl Function {
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGt { left, right }, BOP_GT, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == ">=" && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGe { left, right }, BOP_GE, self_val, args[0], state),
+                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "&" && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAnd { left, right }, BOP_AND, self_val, args[0], state),
+                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "|" && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumOr { left, right }, BOP_OR, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, .. } if method_name == "freeze" && args.len() == 0 =>
                         self.try_rewrite_freeze(block, insn_id, self_val),
                     Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, .. } if method_name == "-@" && args.len() == 0 =>
@@ -1771,126 +1785,128 @@ impl Function {
     }
 
     fn worklist_traverse_single_insn(&self, insn: Insn, worklist: &mut VecDeque<InsnId>) {
-        match insn {
-            Insn::Const { .. }
-            | Insn::Param { .. }
-            | Insn::PatchPoint(..)
-            | Insn::GetLocal { .. }
-            | Insn::PutSpecialObject { .. } =>
-                {}
-            Insn::GetConstantPath { ic: _, state } => {
-                worklist.push_back(state);
-            }
-            Insn::ArrayMax { elements, state }
-            | Insn::NewArray { elements, state } => {
-                worklist.extend(elements);
-                worklist.push_back(state);
-            }
-            Insn::NewHash { elements, state } => {
-                for (key, value) in elements {
-                    worklist.push_back(key);
-                    worklist.push_back(value);
+            match self.find(insn_id) {
+                Insn::Const { .. }
+                | Insn::Param { .. }
+                | Insn::PatchPoint(..)
+                | Insn::GetLocal { .. }
+                | Insn::PutSpecialObject { .. } =>
+                    {}
+                Insn::GetConstantPath { ic: _, state } => {
+                    worklist.push_back(state);
                 }
-                worklist.push_back(state);
+                Insn::ArrayMax { elements, state }
+                | Insn::NewArray { elements, state } => {
+                    worklist.extend(elements);
+                    worklist.push_back(state);
+                }
+                Insn::NewHash { elements, state } => {
+                    for (key, value) in elements {
+                        worklist.push_back(key);
+                        worklist.push_back(value);
+                    }
+                    worklist.push_back(state);
+                }
+                Insn::NewRange { low, high, state, .. } => {
+                    worklist.push_back(low);
+                    worklist.push_back(high);
+                    worklist.push_back(state);
+                }
+                Insn::StringCopy { val, .. }
+                | Insn::StringIntern { val }
+                | Insn::Return { val }
+                | Insn::Throw { val, .. }
+                | Insn::Defined { v: val, .. }
+                | Insn::Test { val }
+                | Insn::SetLocal { val, .. }
+                | Insn::IsNil { val } =>
+                    worklist.push_back(val),
+                Insn::SetGlobal { val, state, .. }
+                | Insn::GuardType { val, state, .. }
+                | Insn::GuardBitEquals { val, state, .. }
+                | Insn::ToArray { val, state }
+                | Insn::ToNewArray { val, state } => {
+                    worklist.push_back(val);
+                    worklist.push_back(state);
+                }
+                Insn::ArraySet { array, val, .. } => {
+                    worklist.push_back(array);
+                    worklist.push_back(val);
+                }
+                Insn::Snapshot { state } => {
+                    worklist.extend(&state.stack);
+                    worklist.extend(&state.locals);
+                }
+                Insn::FixnumAdd { left, right, state }
+                | Insn::FixnumSub { left, right, state }
+                | Insn::FixnumMult { left, right, state }
+                | Insn::FixnumDiv { left, right, state }
+                | Insn::FixnumMod { left, right, state }
+                | Insn::ArrayExtend { left, right, state }
+                => {
+                    worklist.push_back(left);
+                    worklist.push_back(right);
+                    worklist.push_back(state);
+                }
+                Insn::FixnumLt { left, right }
+                | Insn::FixnumLe { left, right }
+                | Insn::FixnumGt { left, right }
+                | Insn::FixnumGe { left, right }
+                | Insn::FixnumEq { left, right }
+                | Insn::FixnumNeq { left, right }
+                | Insn::FixnumAnd { left, right }
+                | Insn::FixnumOr { left, right }
+                => {
+                    worklist.push_back(left);
+                    worklist.push_back(right);
+                }
+                Insn::Jump(BranchEdge { args, .. }) => worklist.extend(args),
+                Insn::IfTrue { val, target: BranchEdge { args, .. } } | Insn::IfFalse { val, target: BranchEdge { args, .. } } => {
+                    worklist.push_back(val);
+                    worklist.extend(args);
+                }
+                Insn::ArrayDup { val, state } | Insn::HashDup { val, state } => {
+                    worklist.push_back(val);
+                    worklist.push_back(state);
+                }
+                Insn::Send { self_val, args, state, .. }
+                | Insn::SendWithoutBlock { self_val, args, state, .. }
+                | Insn::SendWithoutBlockDirect { self_val, args, state, .. } => {
+                    worklist.push_back(self_val);
+                    worklist.extend(args);
+                    worklist.push_back(state);
+                }
+                Insn::InvokeBuiltin { args, state, .. } => {
+                    worklist.extend(args);
+                    worklist.push_back(state)
+                }
+                Insn::CCall { args, .. } => worklist.extend(args),
+                Insn::GetIvar { self_val, state, .. } | Insn::DefinedIvar { self_val, state, .. } => {
+                    worklist.push_back(self_val);
+                    worklist.push_back(state);
+                }
+                Insn::SetIvar { self_val, val, state, .. } => {
+                    worklist.push_back(self_val);
+                    worklist.push_back(val);
+                    worklist.push_back(state);
+                }
+                Insn::ArrayPush { array, val, state } => {
+                    worklist.push_back(array);
+                    worklist.push_back(val);
+                    worklist.push_back(state);
+                }
+                Insn::ObjToString { val, state, .. } => {
+                    worklist.push_back(val);
+                    worklist.push_back(state);
+                }
+                Insn::AnyToString { val, str, state, .. } => {
+                    worklist.push_back(val);
+                    worklist.push_back(str);
+                    worklist.push_back(state);
+                }
+                Insn::GetGlobal { state, .. } |
+                Insn::SideExit { state, .. } => worklist.push_back(state),
             }
-            Insn::NewRange { low, high, state, .. } => {
-                worklist.push_back(low);
-                worklist.push_back(high);
-                worklist.push_back(state);
-            }
-            Insn::StringCopy { val, .. }
-            | Insn::StringIntern { val }
-            | Insn::Return { val }
-            | Insn::Throw { val, .. }
-            | Insn::Defined { v: val, .. }
-            | Insn::Test { val }
-            | Insn::SetLocal { val, .. }
-            | Insn::IsNil { val } =>
-                worklist.push_back(val),
-            Insn::SetGlobal { val, state, .. }
-            | Insn::GuardType { val, state, .. }
-            | Insn::GuardBitEquals { val, state, .. }
-            | Insn::ToArray { val, state }
-            | Insn::ToNewArray { val, state } => {
-                worklist.push_back(val);
-                worklist.push_back(state);
-            }
-            Insn::ArraySet { array, val, .. } => {
-                worklist.push_back(array);
-                worklist.push_back(val);
-            }
-            Insn::Snapshot { state } => {
-                worklist.extend(&state.stack);
-                worklist.extend(&state.locals);
-            }
-            Insn::FixnumAdd { left, right, state }
-            | Insn::FixnumSub { left, right, state }
-            | Insn::FixnumMult { left, right, state }
-            | Insn::FixnumDiv { left, right, state }
-            | Insn::FixnumMod { left, right, state }
-            | Insn::ArrayExtend { left, right, state }
-            => {
-                worklist.push_back(left);
-                worklist.push_back(right);
-                worklist.push_back(state);
-            }
-            Insn::FixnumLt { left, right }
-            | Insn::FixnumLe { left, right }
-            | Insn::FixnumGt { left, right }
-            | Insn::FixnumGe { left, right }
-            | Insn::FixnumEq { left, right }
-            | Insn::FixnumNeq { left, right }
-            => {
-                worklist.push_back(left);
-                worklist.push_back(right);
-            }
-            Insn::Jump(BranchEdge { args, .. }) => worklist.extend(args),
-            Insn::IfTrue { val, target: BranchEdge { args, .. } } | Insn::IfFalse { val, target: BranchEdge { args, .. } } => {
-                worklist.push_back(val);
-                worklist.extend(args);
-            }
-            Insn::ArrayDup { val, state } | Insn::HashDup { val, state } => {
-                worklist.push_back(val);
-                worklist.push_back(state);
-            }
-            Insn::Send { self_val, args, state, .. }
-            | Insn::SendWithoutBlock { self_val, args, state, .. }
-            | Insn::SendWithoutBlockDirect { self_val, args, state, .. } => {
-                worklist.push_back(self_val);
-                worklist.extend(args);
-                worklist.push_back(state);
-            }
-            Insn::InvokeBuiltin { args, state, .. } => {
-                worklist.extend(args);
-                worklist.push_back(state)
-            }
-            Insn::CCall { args, .. } => worklist.extend(args),
-            Insn::GetIvar { self_val, state, .. } | Insn::DefinedIvar { self_val, state, .. } => {
-                worklist.push_back(self_val);
-                worklist.push_back(state);
-            }
-            Insn::SetIvar { self_val, val, state, .. } => {
-                worklist.push_back(self_val);
-                worklist.push_back(val);
-                worklist.push_back(state);
-            }
-            Insn::ArrayPush { array, val, state } => {
-                worklist.push_back(array);
-                worklist.push_back(val);
-                worklist.push_back(state);
-            }
-            Insn::ObjToString { val, state, .. } => {
-                worklist.push_back(val);
-                worklist.push_back(state);
-            }
-            Insn::AnyToString { val, str, state, .. } => {
-                worklist.push_back(val);
-                worklist.push_back(str);
-                worklist.push_back(state);
-            }
-            Insn::GetGlobal { state, .. } |
-            Insn::SideExit { state, .. } => worklist.push_back(state),
-        }
     }
 
     /// Remove instructions that do not have side effects and are not referenced by any other
@@ -2430,7 +2446,7 @@ impl ProfileOracle {
     /// Map the interpreter-recorded types of the stack onto the HIR operands on our compile-time virtual stack
     fn profile_stack(&mut self, state: &FrameState) {
         let iseq_insn_idx = state.insn_idx;
-        let Some(operand_types) = self.payload.get_operand_types(iseq_insn_idx) else { return };
+        let Some(operand_types) = self.payload.profile.get_operand_types(iseq_insn_idx) else { return };
         let entry = self.types.entry(iseq_insn_idx).or_insert_with(|| vec![]);
         // operand_types is always going to be <= stack size (otherwise it would have an underflow
         // at run-time) so use that to drive iteration.
@@ -6933,6 +6949,42 @@ mod opt_tests {
               v7:StringExact = GuardType v1, StringExact
               v8:FalseClassExact = CCall nil?@0x1010, v7
               Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_fixnum_and_fixnum() {
+        eval("
+            def test(x, y) = x & y
+
+            test(1, 2)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 28)
+              v8:Fixnum = GuardType v1, Fixnum
+              v9:Fixnum = GuardType v2, Fixnum
+              v10:Fixnum = FixnumAnd v8, v9
+              Return v10
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_fixnum_or_fixnum() {
+        eval("
+            def test(x, y) = x | y
+
+            test(1, 2)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 29)
+              v8:Fixnum = GuardType v1, Fixnum
+              v9:Fixnum = GuardType v2, Fixnum
+              v10:Fixnum = FixnumOr v8, v9
+              Return v10
         "#]]);
     }
 }

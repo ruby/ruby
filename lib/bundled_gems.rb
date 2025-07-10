@@ -25,6 +25,7 @@ module Gem::BUNDLED_GEMS # :nodoc:
     "irb" => "3.5.0",
     "reline" => "3.5.0",
     # "readline" => "3.5.0", # This is wrapper for reline. We don't warn for this.
+    "tsort" => "3.6.0",
   }.freeze
 
   EXACT = {

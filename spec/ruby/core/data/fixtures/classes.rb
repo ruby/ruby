@@ -17,5 +17,12 @@ module DataSpecs
     end
 
     Empty = Data.define()
+
+    DataWithOverriddenInitialize = Data.define(:amount, :unit) do
+      def initialize(*rest, **kw)
+        super
+        ScratchPad.record [:initialize, rest, kw]
+      end
+    end
   end
 end

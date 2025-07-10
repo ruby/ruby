@@ -71,4 +71,44 @@ describe "Data#initialize" do
   it "supports Data with no fields" do
     -> { DataSpecs::Empty.new }.should_not raise_error
   end
+
+  it "can be overridden" do
+    ScratchPad.record []
+
+    measure_class = Data.define(:amount, :unit) do
+      def initialize(*, **)
+        super
+        ScratchPad << :initialize
+      end
+    end
+
+    measure_class.new(42, "m")
+    ScratchPad.recorded.should == [:initialize]
+  end
+
+  context "when it is overridden" do
+    it "is called with keyword arguments when given positional arguments" do
+      ScratchPad.clear
+      DataSpecs::DataWithOverriddenInitialize.new(42, "m")
+      ScratchPad.recorded.should == [:initialize, [], {amount: 42, unit: "m"}]
+    end
+
+    it "is called with keyword arguments when given keyword arguments" do
+      ScratchPad.clear
+      DataSpecs::DataWithOverriddenInitialize.new(amount: 42, unit: "m")
+      ScratchPad.recorded.should == [:initialize, [], {amount: 42, unit: "m"}]
+    end
+
+    it "is called with keyword arguments when given alternative positional arguments" do
+      ScratchPad.clear
+      DataSpecs::DataWithOverriddenInitialize[42, "m"]
+      ScratchPad.recorded.should == [:initialize, [], {amount: 42, unit: "m"}]
+    end
+
+    it "is called with keyword arguments when given alternative keyword arguments" do
+      ScratchPad.clear
+      DataSpecs::DataWithOverriddenInitialize[amount: 42, unit: "m"]
+      ScratchPad.recorded.should == [:initialize, [], {amount: 42, unit: "m"}]
+    end
+  end
 end

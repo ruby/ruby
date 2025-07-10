@@ -245,7 +245,8 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
     if (rb_objspace_garbage_object_p(klass)) return;
 
-    RB_VM_LOCKING() {    if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL)) {
+    RB_VM_LOCKING() {
+        if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL)) {
             // no subclasses
             // check only current class
 
