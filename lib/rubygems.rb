@@ -637,30 +637,27 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # Load Bundler, making sure to avoid redefinition warnings in platform
-  # constants
+  # Load Bundler extensions to RubyGems, making sure to avoid redefinition
+  # warnings in platform constants
 
-  def self.load_bundler
+  def self.load_bundler_extensions
     require "bundler/version"
+    return if Bundler::VERSION >= "2.6.9"
 
-    if Bundler::VERSION > "2.6.9"
-      require "bundler"
-    else
-      previous_platforms = {}
+    previous_platforms = {}
 
-      platform_const_list = ["JAVA", "MSWIN", "MSWIN64", "MINGW", "X64_MINGW_LEGACY", "X64_MINGW", "UNIVERSAL_MINGW", "WINDOWS", "X64_LINUX", "X64_LINUX_MUSL"]
+    platform_const_list = ["JAVA", "MSWIN", "MSWIN64", "MINGW", "X64_MINGW_LEGACY", "X64_MINGW", "UNIVERSAL_MINGW", "WINDOWS", "X64_LINUX", "X64_LINUX_MUSL"]
 
-      platform_const_list.each do |platform|
-        previous_platforms[platform] = Gem::Platform.const_get(platform)
-        Gem::Platform.send(:remove_const, platform)
-      end
+    platform_const_list.each do |platform|
+      previous_platforms[platform] = Gem::Platform.const_get(platform)
+      Gem::Platform.send(:remove_const, platform)
+    end
 
-      require "bundler"
+    require "bundler/rubygems_ext"
 
-      platform_const_list.each do |platform|
-        Gem::Platform.send(:remove_const, platform) if Gem::Platform.const_defined?(platform)
-        Gem::Platform.const_set(platform, previous_platforms[platform])
-      end
+    platform_const_list.each do |platform|
+      Gem::Platform.send(:remove_const, platform) if Gem::Platform.const_defined?(platform)
+      Gem::Platform.const_set(platform, previous_platforms[platform])
     end
   end
 
@@ -1172,7 +1169,8 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     ENV["BUNDLE_GEMFILE"] ||= File.expand_path(path)
     require_relative "rubygems/user_interaction"
-    Gem.load_bundler
+    Gem.load_bundler_extensions
+    require "bundler"
     begin
       Gem::DefaultUserInteraction.use_ui(ui) do
         Bundler.ui.silence do
