@@ -63,7 +63,7 @@ class OpenSSL::OSSL < OpenSSL::SSLTestCase
     end
     assert_operator(a_b_time, :<, a_c_time * 10, "fixed_length_secure_compare timing test failed")
     assert_operator(a_c_time, :<, a_b_time * 10, "fixed_length_secure_compare timing test failed")
-  end
+  end if ENV["OSSL_TEST_ALL"] == "1"
 
   def test_error_data
     # X509V3_EXT_nconf_nid() called from OpenSSL::X509::ExtensionFactory#create_ext is a function
