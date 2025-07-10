@@ -84,7 +84,7 @@ udp_connect(VALUE self, VALUE host, VALUE port)
 {
     struct udp_arg arg = {.io = self};
 
-    arg.res = rsock_addrinfo(host, port, rsock_fd_family(rb_io_descriptor(self)), SOCK_DGRAM, 0);
+    arg.res = rsock_addrinfo(host, port, rsock_fd_family(rb_io_descriptor(self)), SOCK_DGRAM, 0, 0);
 
     int result = (int)rb_ensure(udp_connect_internal, (VALUE)&arg, rsock_freeaddrinfo, (VALUE)arg.res);
     if (!result) {
@@ -129,7 +129,7 @@ udp_bind(VALUE self, VALUE host, VALUE port)
 {
     struct udp_arg arg = {.io = self};
 
-    arg.res = rsock_addrinfo(host, port, rsock_fd_family(rb_io_descriptor(self)), SOCK_DGRAM, 0);
+    arg.res = rsock_addrinfo(host, port, rsock_fd_family(rb_io_descriptor(self)), SOCK_DGRAM, 0, 0);
 
     VALUE result = rb_ensure(udp_bind_internal, (VALUE)&arg, rsock_freeaddrinfo, (VALUE)arg.res);
     if (!result) {
@@ -212,7 +212,7 @@ udp_send(int argc, VALUE *argv, VALUE sock)
     GetOpenFile(sock, arg.fptr);
     arg.sarg.fd = arg.fptr->fd;
     arg.sarg.flags = NUM2INT(flags);
-    arg.res = rsock_addrinfo(host, port, rsock_fd_family(arg.fptr->fd), SOCK_DGRAM, 0);
+    arg.res = rsock_addrinfo(host, port, rsock_fd_family(arg.fptr->fd), SOCK_DGRAM, 0, 0);
     ret = rb_ensure(udp_send_internal, (VALUE)&arg,
                     rsock_freeaddrinfo, (VALUE)arg.res);
     if (!ret) rsock_sys_fail_host_port("sendto(2)", host, port);
