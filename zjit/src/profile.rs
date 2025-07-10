@@ -1,8 +1,6 @@
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
-use std::collections::HashMap;
-
 use crate::{cruby::*, gc::get_or_create_iseq_payload, hir_type::{types::{Empty, Fixnum}, Type}};
 
 /// Ephemeral state for profiling runtime information
@@ -77,30 +75,30 @@ fn profile_insn(profiler: &mut Profiler, opcode: ruby_vminsn_type) {
 /// Profile the Type of top-`n` stack operands
 fn profile_operands(profiler: &mut Profiler, n: usize) {
     let profile = &mut get_or_create_iseq_payload(profiler.iseq).profile;
-    let mut types = if let Some(types) = profile.opnd_types.get(&profiler.insn_idx) {
-        types.clone()
-    } else {
-        vec![Empty; n]
-    };
-
+    let types = &mut profile.opnd_types[profiler.insn_idx];
+    if types.len() <= n {
+        types.resize(n, Empty);
+    }
     for i in 0..n {
         let opnd_type = Type::from_value(profiler.peek_at_stack((n - i - 1) as isize));
         types[i] = types[i].union(opnd_type);
     }
-
-    profile.opnd_types.insert(profiler.insn_idx, types);
 }
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct IseqProfile {
     /// Type information of YARV instruction operands, indexed by the instruction index
-    opnd_types: HashMap<usize, Vec<Type>>,
+    opnd_types: Vec<Vec<Type>>,
 }
 
 impl IseqProfile {
+    pub fn new(iseq_size: u32) -> Self {
+        Self { opnd_types: vec![vec![]; iseq_size as usize] }
+    }
+
     /// Get profiled operand types for a given instruction index
     pub fn get_operand_types(&self, insn_idx: usize) -> Option<&[Type]> {
-        self.opnd_types.get(&insn_idx).map(|types| types.as_slice())
+        self.opnd_types.get(insn_idx).map(|v| &**v)
     }
 
     /// Return true if top-two stack operands are Fixnums
@@ -113,7 +111,7 @@ impl IseqProfile {
 
     /// Run a given callback with every object in IseqProfile
     pub fn each_object(&self, callback: impl Fn(VALUE)) {
-        for types in self.opnd_types.values() {
+        for types in &self.opnd_types {
             for opnd_type in types {
                 if let Some(object) = opnd_type.ruby_object() {
                     callback(object);
