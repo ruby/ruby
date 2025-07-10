@@ -3324,18 +3324,16 @@ mod validation_tests {
         let entry = function.entry_block;
         let side = function.new_block();
         let exit = function.new_block();
-        let param1 = function.push_insn(side, Insn::Param { idx: 1 });
-        let v0 = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
+        let v0 = function.push_insn(side, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
         function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         let val1 = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
-        function.push_insn(entry, Insn::IfFalse { val: val1, target: BranchEdge { target: side, args: vec![v0] } });
-        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![v0] }));
-        let param0 = function.push_insn(exit, Insn::Param { idx: 0 });
-        let val2 = function.push_insn(exit, Insn::ArrayDup { val: param1, state: param0 });
+        function.push_insn(entry, Insn::IfFalse { val: val1, target: BranchEdge { target: side, args: vec![] } });
+        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
+        let val2 = function.push_insn(exit, Insn::ArrayDup { val: v0, state: v0 });
         crate::cruby::with_rubyvm(|| {
             function.infer_types();
             let fun_string = format!("{:?}", function);
-            assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(fun_string, exit, val2, param1));
+            assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(fun_string, exit, val2, v0));
         });
     }
 
