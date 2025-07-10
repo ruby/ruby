@@ -11,7 +11,6 @@ use std::{
     collections::{HashMap, HashSet, VecDeque},
     ffi::{c_int, c_void, CStr},
     mem::{align_of, size_of},
-    num::NonZeroU32,
     ptr,
     slice::Iter
 };
@@ -480,10 +479,10 @@ pub enum Insn {
     /// Check whether an instance variable exists on `self_val`
     DefinedIvar { self_val: InsnId, id: ID, pushval: VALUE, state: InsnId },
 
-    /// Get a local variable from a higher scope
-    GetLocal { level: NonZeroU32, ep_offset: u32 },
-    /// Set a local variable in a higher scope
-    SetLocal { level: NonZeroU32, ep_offset: u32, val: InsnId },
+    /// Get a local variable from a higher scope or the heap
+    GetLocal { level: u32, ep_offset: u32 },
+    /// Set a local variable in a higher scope or the heap
+    SetLocal { level: u32, ep_offset: u32, val: InsnId },
 
     /// Own a FrameState so that instructions can look up their dominating FrameState when
     /// generating deopt side-exits and frame reconstruction metadata. Does not directly generate
@@ -2439,6 +2438,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut visited = HashSet::new();
 
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
+    let iseq_type = unsafe { get_iseq_body_type(iseq) };
     while let Some((incoming_state, block, mut insn_idx)) = queue.pop_front() {
         if visited.contains(&block) { continue; }
         visited.insert(block);
@@ -2682,12 +2682,17 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_getlocal_WC_0 => {
-                    // TODO(alan): This implementation doesn't read from EP, so will miss writes
-                    // from nested ISeqs. This will need to be amended when we add codegen for
-                    // Send.
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    let val = state.getlocal(ep_offset);
-                    state.stack_push(val);
+                    if iseq_type == ISEQ_TYPE_EVAL {
+                        // On eval, the locals are always on the heap, so read the local using EP.
+                        state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 }));
+                    } else {
+                        // TODO(alan): This implementation doesn't read from EP, so will miss writes
+                        // from nested ISeqs. This will need to be amended when we add codegen for
+                        // Send.
+                        let val = state.getlocal(ep_offset);
+                        state.stack_push(val);
+                    }
                 }
                 YARVINSN_setlocal_WC_0 => {
                     // TODO(alan): This implementation doesn't write to EP, where nested scopes
@@ -2696,23 +2701,27 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let val = state.stack_pop()?;
                     state.setlocal(ep_offset, val);
+                    if iseq_type == ISEQ_TYPE_EVAL {
+                        // On eval, the locals are always on the heap, so write the local using EP.
+                        fun.push_insn(block, Insn::SetLocal { val, ep_offset, level: 0 });
+                    }
                 }
                 YARVINSN_getlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level: NonZeroU32::new(1).unwrap() }));
+                    state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level: 1 }));
                 }
                 YARVINSN_setlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level: NonZeroU32::new(1).unwrap() });
+                    fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level: 1 });
                 }
                 YARVINSN_getlocal => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    let level = NonZeroU32::try_from(get_arg(pc, 1).as_u32()).map_err(|_| ParseError::MalformedIseq(insn_idx))?;
+                    let level = get_arg(pc, 1).as_u32();
                     state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level }));
                 }
                 YARVINSN_setlocal => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    let level = NonZeroU32::try_from(get_arg(pc, 1).as_u32()).map_err(|_| ParseError::MalformedIseq(insn_idx))?;
+                    let level = get_arg(pc, 1).as_u32();
                     fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level });
                 }
                 YARVINSN_pop => { state.stack_pop()?; }

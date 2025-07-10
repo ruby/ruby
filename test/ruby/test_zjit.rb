@@ -62,6 +62,22 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_setlocal_on_eval
+    assert_compiles '1', %q{
+      @b = binding
+      eval('a = 1', @b)
+      eval('a', @b)
+    }
+  end
+
+  def test_setlocal_on_eval_with_spill
+    assert_compiles '1', %q{
+      @b = binding
+      eval('a = 1; itself', @b)
+      eval('a', @b)
+    }
+  end
+
   def test_nested_local_access
     assert_compiles '[1, 2, 3]', %q{
       1.times do |l2|
