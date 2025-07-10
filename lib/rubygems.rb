@@ -640,9 +640,8 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Load Bundler extensions to RubyGems, making sure to avoid redefinition
   # warnings in platform constants
 
-  def self.load_bundler_extensions
-    require "bundler/version"
-    return if Bundler::VERSION >= "2.6.9"
+  def self.load_bundler_extensions(version)
+    return unless version <= "2.6.9"
 
     previous_platforms = {}
 
@@ -1169,7 +1168,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     ENV["BUNDLE_GEMFILE"] ||= File.expand_path(path)
     require_relative "rubygems/user_interaction"
-    Gem.load_bundler_extensions
     require "bundler"
     begin
       Gem::DefaultUserInteraction.use_ui(ui) do

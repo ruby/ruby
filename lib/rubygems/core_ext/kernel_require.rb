@@ -64,8 +64,11 @@ module Kernel
           rp
         end
 
-        Kernel.send(:gem, name, Gem::Requirement.default_prerelease) unless
-          resolved_path
+        next if resolved_path
+
+        Kernel.send(:gem, name, Gem::Requirement.default_prerelease)
+
+        Gem.load_bundler_extensions(Gem.loaded_specs[name].version) if name == "bundler"
 
         next
       end
