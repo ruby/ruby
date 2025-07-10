@@ -1,7 +1,6 @@
 Concatenates each object in +objects+ to +self+; returns +self+:
 
   'foo'.concat('bar', 'baz') # => "foobarbaz"
-  ''.codepoints              # => []
 
 For each given object +object+ that is an integer,
 the value is considered a codepoint and converted to a character before concatenation:
