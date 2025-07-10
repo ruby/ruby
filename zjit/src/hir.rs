@@ -926,6 +926,8 @@ pub enum ValidationError {
     JumpTargetNotInRPO(String, BlockId),
     // The offending instruction, and the operand
     OperandNotDefined(String, BlockId, InsnId, InsnId),
+    /// The offending block and instruction
+    DuplicateInstruction(String, BlockId, InsnId),
 }
 
 
@@ -2157,10 +2159,25 @@ impl Function {
         Ok(())
     }
 
+    /// Checks that each instruction('s representative) appears only once in the CFG.
+    fn validate_insn_uniqueness(&self) -> Result<(), ValidationError> {
+        let mut seen = InsnSet::with_capacity(self.insns.len());
+        for block_id in self.rpo() {
+            for &insn_id in &self.blocks[block_id.0].insns {
+                let insn_id = self.union_find.borrow().find_const(insn_id);
+                if !seen.insert(insn_id) {
+                    return Err(ValidationError::DuplicateInstruction(format!("{:?}", self), block_id, insn_id));
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// Run all validation passes we have.
     pub fn validate(&self) -> Result<(), ValidationError> {
         self.validate_block_terminators_and_jumps()?;
         self.validate_definite_assignment()?;
+        self.validate_insn_uniqueness()?;
         Ok(())
     }
 }
@@ -3366,6 +3383,38 @@ mod validation_tests {
         });
     }
 
+    #[test]
+    fn instruction_appears_twice_in_same_block() {
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        function.push_insn_id(entry, val);
+        function.push_insn(entry, Insn::Return { val });
+        assert_matches_err(function.validate(), ValidationError::DuplicateInstruction(format!("{:?}", function), entry, val));
+    }
+
+    #[test]
+    fn instruction_appears_twice_with_different_ids() {
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let val0 = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let val1 = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        function.make_equal_to(val1, val0);
+        function.push_insn(entry, Insn::Return { val: val0 });
+        assert_matches_err(function.validate(), ValidationError::DuplicateInstruction(format!("{:?}", function), entry, val0));
+    }
+
+    #[test]
+    fn instruction_appears_twice_in_different_blocks() {
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let exit = function.new_block();
+        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
+        function.push_insn_id(exit, val);
+        function.push_insn(exit, Insn::Return { val });
+        assert_matches_err(function.validate(), ValidationError::DuplicateInstruction(format!("{:?}", function), exit, val));
+    }
 }
 
 #[cfg(test)]
