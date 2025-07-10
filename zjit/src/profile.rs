@@ -41,44 +41,15 @@ impl Profiler {
 pub extern "C" fn rb_zjit_profile_insn(opcode: ruby_vminsn_type, ec: EcPtr) {
     with_vm_lock(src_loc!(), || {
         let mut profiler = Profiler::new(ec);
-        profile_insn(&mut profiler, opcode);
+        profile_operands(&mut profiler);
     });
 }
 
-/// Profile a YARV instruction
-fn profile_insn(profiler: &mut Profiler, opcode: ruby_vminsn_type) {
-    match opcode {
-        YARVINSN_opt_nil_p => profile_operands(profiler, 1),
-        YARVINSN_opt_plus  => profile_operands(profiler, 2),
-        YARVINSN_opt_minus => profile_operands(profiler, 2),
-        YARVINSN_opt_mult  => profile_operands(profiler, 2),
-        YARVINSN_opt_div   => profile_operands(profiler, 2),
-        YARVINSN_opt_mod   => profile_operands(profiler, 2),
-        YARVINSN_opt_eq    => profile_operands(profiler, 2),
-        YARVINSN_opt_neq   => profile_operands(profiler, 2),
-        YARVINSN_opt_lt    => profile_operands(profiler, 2),
-        YARVINSN_opt_le    => profile_operands(profiler, 2),
-        YARVINSN_opt_gt    => profile_operands(profiler, 2),
-        YARVINSN_opt_ge    => profile_operands(profiler, 2),
-        YARVINSN_opt_and   => profile_operands(profiler, 2),
-        YARVINSN_opt_or    => profile_operands(profiler, 2),
-        YARVINSN_opt_send_without_block => {
-            let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
-            let argc = unsafe { vm_ci_argc((*cd).ci) };
-            // Profile all the arguments and self (+1).
-            profile_operands(profiler, (argc + 1) as usize);
-        }
-        _ => {}
-    }
-}
-
 /// Profile the Type of top-`n` stack operands
-fn profile_operands(profiler: &mut Profiler, n: usize) {
+fn profile_operands(profiler: &mut Profiler) {
     let profile = &mut get_or_create_iseq_payload(profiler.iseq).profile;
     let types = &mut profile.opnd_types[profiler.insn_idx];
-    if types.len() <= n {
-        types.resize(n, Empty);
-    }
+    let n = types.len();
     for i in 0..n {
         let opnd_type = Type::from_value(profiler.peek_at_stack((n - i - 1) as isize));
         types[i] = types[i].union(opnd_type);
@@ -91,9 +62,51 @@ pub struct IseqProfile {
     opnd_types: Vec<Vec<Type>>,
 }
 
+/// Get YARV instruction argument
+fn get_arg(pc: *const VALUE, arg_idx: isize) -> VALUE {
+    unsafe { *(pc.offset(arg_idx + 1)) }
+}
+
 impl IseqProfile {
-    pub fn new(iseq_size: u32) -> Self {
-        Self { opnd_types: vec![vec![]; iseq_size as usize] }
+    pub fn new(iseq: IseqPtr) -> Self {
+        // Pre-size all the operand slots in the opnd_types table so profiling is as fast as possible
+        let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
+        let mut opnd_types = vec![vec![]; iseq_size as usize];
+        let mut insn_idx = 0;
+        while insn_idx < iseq_size {
+            // Get the current pc and opcode
+            let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
+
+            // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
+            let opcode: ruby_vminsn_type = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
+                .try_into()
+                .unwrap();
+            let n = match opcode {
+                YARVINSN_zjit_opt_nil_p => 1,
+                YARVINSN_zjit_opt_plus  => 2,
+                YARVINSN_zjit_opt_minus => 2,
+                YARVINSN_zjit_opt_mult  => 2,
+                YARVINSN_zjit_opt_div   => 2,
+                YARVINSN_zjit_opt_mod   => 2,
+                YARVINSN_zjit_opt_eq    => 2,
+                YARVINSN_zjit_opt_neq   => 2,
+                YARVINSN_zjit_opt_lt    => 2,
+                YARVINSN_zjit_opt_le    => 2,
+                YARVINSN_zjit_opt_gt    => 2,
+                YARVINSN_zjit_opt_ge    => 2,
+                YARVINSN_zjit_opt_and   => 2,
+                YARVINSN_zjit_opt_or    => 2,
+                YARVINSN_zjit_opt_send_without_block => {
+                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                    let argc = unsafe { vm_ci_argc((*cd).ci) };
+                    argc + 1
+                }
+                _ => 0,  // Don't profile
+            };
+            opnd_types[insn_idx as usize].resize(n as usize, Empty);
+            insn_idx += insn_len(opcode as usize);
+        }
+        Self { opnd_types }
     }
 
     /// Get profiled operand types for a given instruction index
