@@ -558,7 +558,7 @@ impl Insn {
     /// Not every instruction returns a value. Return true if the instruction does and false otherwise.
     pub fn has_output(&self) -> bool {
         match self {
-            Insn::ArraySet { .. } | Insn::Snapshot { .. } | Insn::Jump(_)
+            Insn::ArraySet { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
@@ -1193,7 +1193,7 @@ impl Function {
         assert!(self.insns[insn.0].has_output());
         match &self.insns[insn.0] {
             Insn::Param { .. } => unimplemented!("params should not be present in block.insns"),
-            Insn::SetGlobal { .. } | Insn::ArraySet { .. } | Insn::Snapshot { .. } | Insn::Jump(_)
+            Insn::SetGlobal { .. } | Insn::ArraySet { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } =>
@@ -1255,6 +1255,9 @@ impl Function {
             Insn::ObjToString { .. } => types::BasicObject,
             Insn::AnyToString { .. } => types::String,
             Insn::GetLocal { .. } => types::BasicObject,
+            // The type of Snapshot doesn't really matter; it's never materialized. It's used only
+            // as a reference for FrameState, which we use to generate side-exit code.
+            Insn::Snapshot { .. } => types::Any,
         }
     }
 
@@ -2127,8 +2130,7 @@ impl Function {
                             worklist.push_back(target.target);
                         }
                     }
-                    // TODO fix has_output to include snapshots.
-                    insn if insn.has_output() || matches!(insn, Insn::Snapshot {..}) => {
+                    insn if insn.has_output() => {
                         assigned.insert(insn_id);
                     }
                     _ => {}
@@ -2151,7 +2153,7 @@ impl Function {
                         return Err(ValidationError::OperandNotDefined(format!("{:?}", self), block, insn_id, operand));
                     }
                 }
-                if insn.has_output() || matches!(insn, Insn::Snapshot {..}) {
+                if insn.has_output() {
                     assigned.insert(insn_id);
                 }
             }
