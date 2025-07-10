@@ -415,6 +415,44 @@ assert_equal "allocator undefined for Thread", %q{
   end
 }
 
+# many echos
+assert_equal "ok", <<~'RUBY', frozen_string_literal: false
+  port = Ractor::Port.new
+  echo_ractor = Ractor.new port do |port|
+    loop do
+      v = Ractor.receive
+      port << v
+    end
+  end
+
+  10_000.times do |i|
+    echo_ractor << i
+    raise unless port.receive == i
+  end
+  :ok
+RUBY
+
+# many echos threaded
+assert_equal "ok", <<~'RUBY', frozen_string_literal: false
+  4.times.map do
+    Thread.new do
+      port = Ractor::Port.new
+      echo_ractor = Ractor.new port do |port|
+        loop do
+          v = Ractor.receive
+          port << v
+        end
+      end
+
+      10_000.times do |i|
+        echo_ractor << i
+        raise unless port.receive == i
+      end
+    end
+  end.each(&:join)
+  :ok
+RUBY
+
 # send shareable and unshareable objects
 assert_equal "ok", <<~'RUBY', frozen_string_literal: false
   port = Ractor::Port.new
