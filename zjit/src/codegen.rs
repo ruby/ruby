@@ -8,7 +8,7 @@ use crate::gc::get_or_create_iseq_payload;
 use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, SP};
-use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, Invariant, RangeType, SpecialObjectType, SELF_PARAM_IDX};
+use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SELF_PARAM_IDX};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
 use crate::options::get_option;
@@ -308,7 +308,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SetLocal { val, ep_offset, level } => return gen_setlocal_with_ep(asm, opnd!(val), *ep_offset, *level),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(asm, *ic, &function.frame_state(*state)),
         Insn::SetIvar { self_val, id, val, state: _ } => return gen_setivar(asm, opnd!(self_val), *id, opnd!(val)),
-        Insn::SideExit { state, reason: _ } => return gen_side_exit(jit, asm, &function.frame_state(*state)),
+        Insn::SideExit { state, reason } => return gen_side_exit(jit, asm, reason, &function.frame_state(*state)),
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
         Insn::Defined { op_type, obj, pushval, v } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v))?,
@@ -442,7 +442,8 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invarian
     let invariant = invariant.clone();
 
     // Compile a side exit. Fill nop instructions if the last patch point is too close.
-    asm.patch_point(build_side_exit(jit, state, Some(label))?);
+    asm.patch_point(build_side_exit(jit, state, PatchPoint(invariant), Some(label))?);
+
     // Remember the current address as a patch point
     asm.pos_marker(move |code_ptr, cb| {
         match invariant {
@@ -500,8 +501,8 @@ fn gen_setglobal(asm: &mut Assembler, id: ID, val: Opnd) {
 }
 
 /// Side-exit into the interpreter
-fn gen_side_exit(jit: &mut JITState, asm: &mut Assembler, state: &FrameState) -> Option<()> {
-    asm.jmp(side_exit(jit, state)?);
+fn gen_side_exit(jit: &mut JITState, asm: &mut Assembler, reason: &SideExitReason, state: &FrameState) -> Option<()> {
+    asm.jmp(side_exit(jit, state, *reason)?);
     Some(())
 }
 
@@ -886,7 +887,7 @@ fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, righ
     // Add left + right and test for overflow
     let left_untag = asm.sub(left, Opnd::Imm(1));
     let out_val = asm.add(left_untag, right);
-    asm.jo(side_exit(jit, state)?);
+    asm.jo(side_exit(jit, state, FixnumAddOverflow)?);
 
     Some(out_val)
 }
@@ -895,7 +896,7 @@ fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, righ
 fn gen_fixnum_sub(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
     // Subtract left - right and test for overflow
     let val_untag = asm.sub(left, right);
-    asm.jo(side_exit(jit, state)?);
+    asm.jo(side_exit(jit, state, FixnumSubOverflow)?);
     let out_val = asm.add(val_untag, Opnd::Imm(1));
 
     Some(out_val)
@@ -910,7 +911,7 @@ fn gen_fixnum_mult(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, rig
     let out_val = asm.mul(left_untag, right_untag);
 
     // Test for overflow
-    asm.jo_mul(side_exit(jit, state)?);
+    asm.jo_mul(side_exit(jit, state, FixnumMultOverflow)?);
     let out_val = asm.add(out_val, Opnd::UImm(1));
 
     Some(out_val)
@@ -996,7 +997,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
     if guard_type.is_subtype(Fixnum) {
         // Check if opnd is Fixnum
         asm.test(val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
-        asm.jz(side_exit(jit, state)?);
+        asm.jz(side_exit(jit, state, GuardTypeFixnum)?);
     } else if let Some(expected_class) = guard_type.runtime_exact_ruby_class() {
         asm_comment!(asm, "guard exact class");
 
@@ -1004,7 +1005,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         let klass = asm.ccall(rb_yarv_class_of as *const u8, vec![val]);
 
         asm.cmp(klass, Opnd::Value(expected_class));
-        asm.jne(side_exit(jit, state)?);
+        asm.jne(side_exit(jit, state, GuardTypeClassExact)?);
     } else {
         unimplemented!("unsupported type: {guard_type}");
     }
@@ -1014,7 +1015,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
 /// Compile an identity check with a side exit
 fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected: VALUE, state: &FrameState) -> Option<lir::Opnd> {
     asm.cmp(val, Opnd::UImm(expected.into()));
-    asm.jnz(side_exit(jit, state)?);
+    asm.jnz(side_exit(jit, state, GuardBitEquals)?);
     Some(val)
 }
 
@@ -1119,12 +1120,12 @@ fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
 }
 
 /// Build a Target::SideExit for non-PatchPoint instructions
-fn side_exit(jit: &mut JITState, state: &FrameState) -> Option<Target> {
-    build_side_exit(jit, state, None)
+fn side_exit(jit: &mut JITState, state: &FrameState, reason: SideExitReason) -> Option<Target> {
+    build_side_exit(jit, state, reason, None)
 }
 
 /// Build a Target::SideExit out of a FrameState
-fn build_side_exit(jit: &mut JITState, state: &FrameState, label: Option<Label>) -> Option<Target> {
+fn build_side_exit(jit: &mut JITState, state: &FrameState, reason: SideExitReason, label: Option<Label>) -> Option<Target> {
     let mut stack = Vec::new();
     for &insn_id in state.stack() {
         stack.push(jit.get_opnd(insn_id)?);
@@ -1140,6 +1141,7 @@ fn build_side_exit(jit: &mut JITState, state: &FrameState, label: Option<Label>)
         stack,
         locals,
         c_stack_bytes: jit.c_stack_bytes,
+        reason,
         label,
     };
     Some(target)

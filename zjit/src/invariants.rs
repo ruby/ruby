@@ -1,6 +1,6 @@
 use std::{collections::{HashMap, HashSet}};
 
-use crate::{backend::lir::{asm_comment, Assembler}, cruby::{ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag}, hir::{Invariant, PtrPrintMap}, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
+use crate::{backend::lir::{asm_comment, Assembler}, cruby::{ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag}, hir::Invariant, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
 
 #[derive(Debug, Eq, Hash, PartialEq)]
 struct Jump {
@@ -36,14 +36,14 @@ pub extern "C" fn rb_zjit_bop_redefined(klass: RedefinitionFlag, bop: ruby_basic
         let invariants = ZJITState::get_invariants();
         if let Some(jumps) = invariants.bop_patch_points.get(&(klass, bop)) {
             let cb = ZJITState::get_code_block();
+            let bop = Invariant::BOPRedefined { klass, bop };
+            debug!("BOP is redefined: {}", bop);
 
             // Invalidate all patch points for this BOP
-            let bop = Invariant::BOPRedefined { klass, bop };
-            debug!("BOP is redefined: {}", bop.print(&PtrPrintMap::identity()));
             for jump in jumps {
                 cb.with_write_ptr(jump.from, |cb| {
                     let mut asm = Assembler::new();
-                    asm_comment!(asm, "BOP redefined: {}", bop.print(&PtrPrintMap::identity()));
+                    asm_comment!(asm, "BOP is redefined: {}", bop);
                     asm.jmp(jump.to.into());
                     asm.compile(cb).expect("can write existing code");
                 });

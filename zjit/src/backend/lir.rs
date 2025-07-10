@@ -3,6 +3,7 @@ use std::fmt;
 use std::mem::take;
 use crate::codegen::local_size_and_idx_to_ep_offset;
 use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32};
+use crate::hir::SideExitReason;
 use crate::options::{debug, get_option};
 use crate::{cruby::VALUE};
 use crate::backend::current::*;
@@ -284,6 +285,7 @@ pub enum Target
         stack: Vec<Opnd>,
         locals: Vec<Opnd>,
         c_stack_bytes: usize,
+        reason: SideExitReason,
         // Some if the side exit should write this label. We use it for patch points.
         label: Option<Label>,
     },
@@ -1803,8 +1805,8 @@ impl Assembler
         for (idx, target) in targets {
             // Compile a side exit. Note that this is past the split pass and alloc_regs(),
             // so you can't use a VReg or an instruction that needs to be split.
-            if let Target::SideExit { pc, stack, locals, c_stack_bytes, label } = target {
-                asm_comment!(self, "side exit to the interpreter");
+            if let Target::SideExit { pc, stack, locals, c_stack_bytes, reason, label } = target {
+                asm_comment!(self, "Exit: {reason}");
                 let side_exit_label = if let Some(label) = label {
                     Target::Label(label)
                 } else {

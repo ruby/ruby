@@ -7,12 +7,7 @@ use crate::{
     cast::IntoUsize, cruby::*, options::{get_option, DumpHIR}, gc::{get_or_create_iseq_payload, IseqPayload}, state::ZJITState
 };
 use std::{
-    cell::RefCell,
-    collections::{HashMap, HashSet, VecDeque},
-    ffi::{c_int, c_void, CStr},
-    mem::{align_of, size_of},
-    ptr,
-    slice::Iter
+    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_int, c_void, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
 };
 use crate::hir_type::{Type, types};
 use crate::bitset::BitSet;
@@ -145,6 +140,12 @@ pub enum Invariant {
 impl Invariant {
     pub fn print(self, ptr_map: &PtrPrintMap) -> InvariantPrinter {
         InvariantPrinter { inner: self, ptr_map }
+    }
+}
+
+impl Display for Invariant {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.print(&PtrPrintMap::identity()).fmt(f)
     }
 }
 
@@ -402,11 +403,18 @@ impl PtrPrintMap {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum SideExitReason {
     UnknownNewarraySend(vm_opt_newarray_send_type),
     UnknownCallType,
     UnknownOpcode(u32),
+    FixnumAddOverflow,
+    FixnumSubOverflow,
+    FixnumMultOverflow,
+    GuardTypeFixnum,
+    GuardTypeClassExact,
+    GuardBitEquals,
+    PatchPoint(Invariant),
 }
 
 impl std::fmt::Display for SideExitReason {
@@ -419,6 +427,7 @@ impl std::fmt::Display for SideExitReason {
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_PACK) => write!(f, "UnknownNewarraySend(PACK)"),
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_PACK_BUFFER) => write!(f, "UnknownNewarraySend(PACK_BUFFER)"),
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_INCLUDE_P) => write!(f, "UnknownNewarraySend(INCLUDE_P)"),
+            SideExitReason::PatchPoint(invariant) => write!(f, "PatchPoint({invariant})"),
             _ => write!(f, "{self:?}"),
         }
     }
