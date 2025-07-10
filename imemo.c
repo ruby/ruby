@@ -571,7 +571,7 @@ rb_vm_ccs_free(struct rb_class_cc_entries *ccs)
 }
 
 static enum rb_id_table_iterator_result
-cc_table_free_i(VALUE ccs_ptr, void *data)
+cc_tbl_free_i(VALUE ccs_ptr, void *data)
 {
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
     VALUE klass = (VALUE)data;
@@ -583,24 +583,10 @@ cc_table_free_i(VALUE ccs_ptr, void *data)
 }
 
 void
-rb_cc_table_free(VALUE klass)
-{
-    // This can be called and work well only for IClass
-    // And classext_iclass_free uses rb_cc_tbl_free now.
-    // TODO: remove this if it's ok
-    struct rb_id_table *cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
-
-    if (cc_tbl) {
-        rb_id_table_foreach_values(cc_tbl, cc_table_free_i, (void *)klass);
-        rb_id_table_free(cc_tbl);
-    }
-}
-
-void
 rb_cc_tbl_free(struct rb_id_table *cc_tbl, VALUE klass)
 {
     if (!cc_tbl) return;
-    rb_id_table_foreach_values(cc_tbl, cc_table_free_i, (void *)klass);
+    rb_id_table_foreach_values(cc_tbl, cc_tbl_free_i, (void *)klass);
     rb_id_table_free(cc_tbl);
 }
 
