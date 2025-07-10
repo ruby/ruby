@@ -111,13 +111,15 @@ PRISM_FILES = prism/api_node.$(OBJEXT) \
 		prism/prism.$(OBJEXT) \
 		prism_init.$(OBJEXT)
 
-COMMONOBJS    = array.$(OBJEXT) \
+COMMONOBJS    = \
+		array.$(OBJEXT) \
 		ast.$(OBJEXT) \
 		bignum.$(OBJEXT) \
 		class.$(OBJEXT) \
 		compar.$(OBJEXT) \
 		compile.$(OBJEXT) \
 		complex.$(OBJEXT) \
+		concurrent_set.$(OBJEXT) \
 		cont.$(OBJEXT) \
 		debug.$(OBJEXT) \
 		debug_counter.$(OBJEXT) \
@@ -131,8 +133,8 @@ COMMONOBJS    = array.$(OBJEXT) \
 		file.$(OBJEXT) \
 		gc.$(OBJEXT) \
 		hash.$(OBJEXT) \
-		inits.$(OBJEXT) \
 		imemo.$(OBJEXT) \
+		inits.$(OBJEXT) \
 		io.$(OBJEXT) \
 		io_buffer.$(OBJEXT) \
 		iseq.$(OBJEXT) \
@@ -151,7 +153,6 @@ COMMONOBJS    = array.$(OBJEXT) \
 		proc.$(OBJEXT) \
 		process.$(OBJEXT) \
 		ractor.$(OBJEXT) \
-		concurrent_set.$(OBJEXT) \
 		random.$(OBJEXT) \
 		range.$(OBJEXT) \
 		rational.$(OBJEXT) \
@@ -165,11 +166,11 @@ COMMONOBJS    = array.$(OBJEXT) \
 		ruby.$(OBJEXT) \
 		ruby_parser.$(OBJEXT) \
 		scheduler.$(OBJEXT) \
+		set.$(OBJEXT) \
 		shape.$(OBJEXT) \
 		signal.$(OBJEXT) \
 		sprintf.$(OBJEXT) \
 		st.$(OBJEXT) \
-		set.$(OBJEXT) \
 		strftime.$(OBJEXT) \
 		string.$(OBJEXT) \
 		struct.$(OBJEXT) \
