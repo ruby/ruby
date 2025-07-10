@@ -102,15 +102,23 @@ mod tests {
     }
 
     #[test]
-    fn intersect_with() {
-        let mut set = BitSet::with_capacity(4);
-        let zero_mask = BitSet::with_capacity(4);
-        let mut one_mask: BitSet<usize> = BitSet::with_capacity(4);
-        one_mask.insert_all();
-        assert_eq!(set.intersect_with(&zero_mask), false);
-        set.insert(0usize);
-        assert_eq!(set.intersect_with(&one_mask), false);
-        assert_eq!(set.intersect_with(&zero_mask), true);
-        assert_eq!(set.get(0usize), false);
+    #[should_panic]
+    fn intersect_with_panics_with_different_num_bits() {
+        let mut left: BitSet<usize> = BitSet::with_capacity(3);
+        let right = BitSet::with_capacity(4);
+        left.intersect_with(&right);
+    }
+    #[test]
+    fn intersect_with_keeps_only_common_bits() {
+        let mut left = BitSet::with_capacity(3);
+        let mut right = BitSet::with_capacity(3);
+        left.insert(0usize);
+        left.insert(1usize);
+        right.insert(1usize);
+        right.insert(2usize);
+        left.intersect_with(&right);
+        assert_eq!(left.get(0usize), false);
+        assert_eq!(left.get(1usize), true);
+        assert_eq!(left.get(2usize), false);
     }
 }

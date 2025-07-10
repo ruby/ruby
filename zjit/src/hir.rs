@@ -3346,8 +3346,7 @@ mod validation_tests {
         let entry = function.entry_block;
         let side = function.new_block();
         let exit = function.new_block();
-        let v0 = function.push_insn(side, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
-        function.push_insn_id(entry, v0);
+        let v0 = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
         function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         let val = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
         function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![] } });
@@ -3356,7 +3355,7 @@ mod validation_tests {
         crate::cruby::with_rubyvm(|| {
             function.infer_types();
             // Just checking that we don't panic.
-            function.validate_definite_assignment().unwrap();
+            assert!(function.validate_definite_assignment().is_ok());
         });
     }
 
