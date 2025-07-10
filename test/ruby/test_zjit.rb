@@ -973,6 +973,28 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_bop_redefinition
+    assert_runs '[3, :+, 100]', %q{
+      def test
+        1 + 2
+      end
+
+      test # profile opt_plus
+      [test, Integer.class_eval { def +(_) = 100 }, test]
+    }, call_threshold: 2
+  end
+
+  def test_bop_redefinition_with_adjacent_patch_points
+    assert_runs '[15, :+, 100]', %q{
+      def test
+        1 + 2 + 3 + 4 + 5
+      end
+
+      test # profile opt_plus
+      [test, Integer.class_eval { def +(_) = 100 }, test]
+    }, call_threshold: 2
+  end
+
   def test_module_name_with_guard_passes
     assert_compiles '"Integer"', %q{
       def test(mod)

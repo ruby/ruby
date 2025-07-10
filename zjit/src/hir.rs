@@ -548,7 +548,7 @@ pub enum Insn {
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
-    PatchPoint(Invariant),
+    PatchPoint { invariant: Invariant, state: InsnId },
 
     /// Side-exit into the interpreter.
     SideExit { state: InsnId, reason: SideExitReason },
@@ -712,7 +712,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumOr   { left, right, .. } => { write!(f, "FixnumOr {left}, {right}") },
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
-            Insn::PatchPoint(invariant) => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
+            Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::CCall { cfun, args, name, return_type: _, elidable: _ } => {
                 write!(f, "CCall {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
@@ -1362,9 +1362,9 @@ impl Function {
         if self.arguments_likely_fixnums(left, right, state) {
             if bop == BOP_NEQ {
                 // For opt_neq, the interpreter checks that both neq and eq are unchanged.
-                self.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }));
+                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }, state });
             }
-            self.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop }));
+            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop }, state });
             let left = self.coerce_to_fixnum(block, left, state);
             let right = self.coerce_to_fixnum(block, right, state);
             let result = self.push_insn(block, f(left, right));
@@ -1375,11 +1375,11 @@ impl Function {
         }
     }
 
-    fn rewrite_if_frozen(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, klass: u32, bop: u32) {
+    fn rewrite_if_frozen(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, klass: u32, bop: u32, state: InsnId) {
         let self_type = self.type_of(self_val);
         if let Some(obj) = self_type.ruby_object() {
             if obj.is_frozen() {
-                self.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass, bop }));
+                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state });
                 self.make_equal_to(orig_insn_id, self_val);
                 return;
             }
@@ -1387,34 +1387,34 @@ impl Function {
         self.push_insn_id(block, orig_insn_id);
     }
 
-    fn try_rewrite_freeze(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId) {
+    fn try_rewrite_freeze(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, state: InsnId) {
         if self.is_a(self_val, types::StringExact) {
-            self.rewrite_if_frozen(block, orig_insn_id, self_val, STRING_REDEFINED_OP_FLAG, BOP_FREEZE);
+            self.rewrite_if_frozen(block, orig_insn_id, self_val, STRING_REDEFINED_OP_FLAG, BOP_FREEZE, state);
         } else if self.is_a(self_val, types::ArrayExact) {
-            self.rewrite_if_frozen(block, orig_insn_id, self_val, ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE);
+            self.rewrite_if_frozen(block, orig_insn_id, self_val, ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE, state);
         } else if self.is_a(self_val, types::HashExact) {
-            self.rewrite_if_frozen(block, orig_insn_id, self_val, HASH_REDEFINED_OP_FLAG, BOP_FREEZE);
+            self.rewrite_if_frozen(block, orig_insn_id, self_val, HASH_REDEFINED_OP_FLAG, BOP_FREEZE, state);
         } else {
             self.push_insn_id(block, orig_insn_id);
         }
     }
 
-    fn try_rewrite_uminus(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId) {
+    fn try_rewrite_uminus(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, state: InsnId) {
         if self.is_a(self_val, types::StringExact) {
-            self.rewrite_if_frozen(block, orig_insn_id, self_val, STRING_REDEFINED_OP_FLAG, BOP_UMINUS);
+            self.rewrite_if_frozen(block, orig_insn_id, self_val, STRING_REDEFINED_OP_FLAG, BOP_UMINUS, state);
         } else {
             self.push_insn_id(block, orig_insn_id);
         }
     }
 
-    fn try_rewrite_aref(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, idx_val: InsnId) {
+    fn try_rewrite_aref(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, idx_val: InsnId, state: InsnId) {
         let self_type = self.type_of(self_val);
         let idx_type = self.type_of(idx_val);
         if self_type.is_subtype(types::ArrayExact) {
             if let Some(array_obj) = self_type.ruby_object() {
                 if array_obj.is_frozen() {
                     if let Some(idx) = idx_type.fixnum_value() {
-                        self.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop: BOP_AREF }));
+                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop: BOP_AREF }, state });
                         let val = unsafe { rb_yarv_ary_entry_internal(array_obj, idx) };
                         let const_insn = self.push_insn(block, Insn::Const { val: Const::Value(val) });
                         self.make_equal_to(orig_insn_id, const_insn);
@@ -1460,12 +1460,12 @@ impl Function {
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAnd { left, right }, BOP_AND, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "|" && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumOr { left, right }, BOP_OR, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, .. } if method_name == "freeze" && args.len() == 0 =>
-                        self.try_rewrite_freeze(block, insn_id, self_val),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, .. } if method_name == "-@" && args.len() == 0 =>
-                        self.try_rewrite_uminus(block, insn_id, self_val),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, .. } if method_name == "[]" && args.len() == 1 =>
-                        self.try_rewrite_aref(block, insn_id, self_val, args[0]),
+                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "freeze" && args.len() == 0 =>
+                        self.try_rewrite_freeze(block, insn_id, self_val, state),
+                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "-@" && args.len() == 0 =>
+                        self.try_rewrite_uminus(block, insn_id, self_val, state),
+                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "[]" && args.len() == 1 =>
+                        self.try_rewrite_aref(block, insn_id, self_val, args[0], state),
                     Insn::SendWithoutBlock { mut self_val, call_info, cd, args, state } => {
                         let frame_state = self.frame_state(state);
                         let (klass, guard_equal_to) = if let Some(klass) = self.type_of(self_val).runtime_exact_ruby_class() {
@@ -1493,7 +1493,7 @@ impl Function {
                             // TODO(max): Allow non-iseq; cache cme
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        self.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass, method: mid }));
+                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid }, state });
                         let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                         if let Some(expected) = guard_equal_to {
                             self_val = self.push_insn(block, Insn::GuardBitEquals { val: self_val, expected, state });
@@ -1501,7 +1501,7 @@ impl Function {
                         let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, call_info, cd, cme, iseq, args, state });
                         self.make_equal_to(insn_id, send_direct);
                     }
-                    Insn::GetConstantPath { ic, .. } => {
+                    Insn::GetConstantPath { ic, state, .. } => {
                         let idlist: *const ID = unsafe { (*ic).segments };
                         let ice = unsafe { (*ic).entry };
                         if ice.is_null() {
@@ -1513,10 +1513,10 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         // Assume single-ractor mode.
-                        self.push_insn(block, Insn::PatchPoint(Invariant::SingleRactorMode));
+                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
                         // Invalidate output code on any constant writes associated with constants
                         // referenced after the PatchPoint.
-                        self.push_insn(block, Insn::PatchPoint(Invariant::StableConstantNames { idlist }));
+                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::StableConstantNames { idlist }, state });
                         let replacement = self.push_insn(block, Insn::Const { val: Const::Value(unsafe { (*ice).value }) });
                         self.make_equal_to(insn_id, replacement);
                     }
@@ -1612,7 +1612,7 @@ impl Function {
                     // Filter for simple call sites (i.e. no splats etc.)
                     if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
                         // Commit to the replacement. Put PatchPoint.
-                        fun.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass: recv_class, method: method_id }));
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id }, state });
                         if let Some(guard_type) = guard_type {
                             // Guard receiver class
                             self_val = fun.push_insn(block, Insn::GuardType { val: self_val, guard_type, state });
@@ -1787,11 +1787,11 @@ impl Function {
         match insn {
             &Insn::Const { .. }
             | &Insn::Param { .. }
-            | &Insn::PatchPoint(..)
             | &Insn::GetLocal { .. }
             | &Insn::PutSpecialObject { .. } =>
                 {}
-            &Insn::GetConstantPath { ic: _, state } => {
+            &Insn::PatchPoint { state, .. }
+            | &Insn::GetConstantPath { ic: _, state } => {
                 worklist.push_back(state);
             }
             &Insn::ArrayMax { ref elements, state }
@@ -2611,7 +2611,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             break;  // End the block
                         },
                     };
-                    fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }));
+                    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }, state: exit_id });
                     state.stack_push(fun.push_insn(block, insn));
                 }
                 YARVINSN_duparray => {
@@ -5054,7 +5054,11 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              v3:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v14:Fixnum[3] = Const Value(3)
+              v6:Fixnum[3] = Const Value(3)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
               v15:Fixnum[6] = Const Value(6)
               Return v15
@@ -5071,7 +5075,11 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v2:Fixnum[5] = Const Value(5)
+              v3:Fixnum[3] = Const Value(3)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
+              v14:Fixnum[2] = Const Value(2)
+              v6:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
               v15:Fixnum[1] = Const Value(1)
               Return v15
@@ -5088,6 +5096,8 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v2:Fixnum[6] = Const Value(6)
+              v3:Fixnum[7] = Const Value(7)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
               v9:Fixnum[42] = Const Value(42)
               Return v9
@@ -5112,6 +5122,7 @@ mod opt_tests {
               v6:Fixnum[0] = Const Value(0)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
               v16:Fixnum = GuardType v1, Fixnum
+              v21:Fixnum[0] = Const Value(0)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
               v22:Fixnum[0] = Const Value(0)
               Return v22
@@ -5132,6 +5143,8 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              v3:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
               v8:Fixnum[3] = Const Value(3)
               Return v8
@@ -5152,7 +5165,11 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              v3:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
+              v8:Fixnum[2] = Const Value(2)
+              v9:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
               v14:Fixnum[3] = Const Value(3)
               Return v14
@@ -5173,6 +5190,8 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v2:Fixnum[2] = Const Value(2)
+              v3:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
               v8:Fixnum[3] = Const Value(3)
               Return v8
@@ -5193,7 +5212,11 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v2:Fixnum[2] = Const Value(2)
+              v3:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
+              v8:Fixnum[2] = Const Value(2)
+              v9:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
               v14:Fixnum[3] = Const Value(3)
               Return v14
@@ -5214,6 +5237,8 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              v3:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
               v12:Fixnum[4] = Const Value(4)
               Return v12
@@ -5234,6 +5259,8 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v2:Fixnum[2] = Const Value(2)
+              v3:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
               v8:Fixnum[3] = Const Value(3)
               Return v8
@@ -5254,6 +5281,8 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              v3:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
               v8:Fixnum[3] = Const Value(3)
@@ -5275,6 +5304,8 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v2:Fixnum[2] = Const Value(2)
+              v3:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
               v12:Fixnum[4] = Const Value(4)
@@ -6009,6 +6040,8 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v1:NilClassExact = Const Value(nil)
+              v4:ArrayExact = NewArray
               PatchPoint MethodRedefined(Array@0x1000, itself@0x1008)
               v7:Fixnum[1] = Const Value(1)
               Return v7
@@ -6028,9 +6061,11 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v1:NilClassExact = Const Value(nil)
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, M)
-              PatchPoint MethodRedefined(Module@0x1008, name@0x1010)
+              v11:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              PatchPoint MethodRedefined(Module@0x1010, name@0x1018)
               v7:Fixnum[1] = Const Value(1)
               Return v7
         "#]]);
@@ -6047,6 +6082,8 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v1:NilClassExact = Const Value(nil)
+              v4:ArrayExact = NewArray
               PatchPoint MethodRedefined(Array@0x1000, length@0x1008)
               v7:Fixnum[5] = Const Value(5)
               Return v7
@@ -6145,6 +6182,8 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v1:NilClassExact = Const Value(nil)
+              v4:ArrayExact = NewArray
               PatchPoint MethodRedefined(Array@0x1000, size@0x1008)
               v7:Fixnum[5] = Const Value(5)
               Return v7
@@ -6687,7 +6726,9 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+              v5:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
               v11:Fixnum[5] = Const Value(5)
               Return v11
@@ -6702,7 +6743,9 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+              v5:Fixnum[-3] = Const Value(-3)
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
               v11:Fixnum[4] = Const Value(4)
               Return v11
@@ -6717,7 +6760,9 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+              v5:Fixnum[-10] = Const Value(-10)
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
               v11:NilClassExact = Const Value(nil)
               Return v11
@@ -6732,7 +6777,9 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+              v5:Fixnum[10] = Const Value(10)
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
               v11:NilClassExact = Const Value(nil)
               Return v11
@@ -6798,6 +6845,7 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v2:NilClassExact = Const Value(nil)
               PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008)
               v5:Fixnum[1] = Const Value(1)
               Return v5
@@ -6830,6 +6878,7 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
               PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008)
               v5:Fixnum[2] = Const Value(2)
               Return v5
