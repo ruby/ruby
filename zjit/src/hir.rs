@@ -2034,14 +2034,28 @@ impl Function {
         result
     }
 
+    fn assert_validates(&self) {
+        if let Err(err) = self.validate() {
+            eprintln!("Function failed validation.");
+            eprintln!("Err: {err:?}");
+            eprintln!("{}", FunctionPrinter::with_snapshot(self));
+            panic!("Aborting...");
+        }
+    }
+
     /// Run all the optimization passes we have.
     pub fn optimize(&mut self) {
         // Function is assumed to have types inferred already
         self.optimize_direct_sends();
+        #[cfg(debug_assertions)] self.assert_validates();
         self.optimize_c_calls();
+        #[cfg(debug_assertions)] self.assert_validates();
         self.fold_constants();
+        #[cfg(debug_assertions)] self.assert_validates();
         self.clean_cfg();
+        #[cfg(debug_assertions)] self.assert_validates();
         self.eliminate_dead_code();
+        #[cfg(debug_assertions)] self.assert_validates();
 
         // Dump HIR after optimization
         match get_option!(dump_hir_opt) {
