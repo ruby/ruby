@@ -963,21 +963,24 @@ ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
     RUBY_DEBUG_LOG("r:%u wakeup:%s", rb_ractor_id(r), wakeup_status_str(wakeup_status));
 
     struct ractor_waiter *waiter;
-    rb_thread_t *th;
-    do  {
-        RACTOR_LOCK(r);
-        {
-            waiter = ccan_list_pop(&r->sync.waiters, struct ractor_waiter, node);
 
-            if (waiter) {
-                VM_ASSERT(waiter->wakeup_status == wakeup_none);
-                waiter->wakeup_status = wakeup_status;
-                th = waiter->th;
-            }
+    rb_thread_t *threads_to_wake[100];
+    int num_threads = 0;
+
+    RACTOR_LOCK(r);
+    {
+        while (waiter = ccan_list_pop(&r->sync.waiters, struct ractor_waiter, node)) {
+            VM_ASSERT(waiter->wakeup_status == wakeup_none);
+            waiter->wakeup_status = wakeup_status;
+            threads_to_wake[num_threads++] = waiter->th;
+            RUBY_ASSERT(num_threads < 100);
         }
-        RACTOR_UNLOCK(r);
-        if (waiter) rb_ractor_sched_wakeup(r, th);
-    } while (waiter);
+    }
+    RACTOR_UNLOCK(r);
+
+    for (int i = 0; i < num_threads; i++) {
+        rb_ractor_sched_wakeup(r, threads_to_wake[i]);
+    }
 }
 
 static void
