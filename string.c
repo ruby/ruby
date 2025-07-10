@@ -3789,19 +3789,7 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
  *  call-seq:
  *     concat(*objects) -> string
  *
- *  Concatenates each object in +objects+ to +self+ and returns +self+:
- *
- *    s = 'foo'
- *    s.concat('bar', 'baz') # => "foobarbaz"
- *    s                      # => "foobarbaz"
- *
- *  For each given object +object+ that is an Integer,
- *  the value is considered a codepoint and converted to a character before concatenation:
- *
- *    s = 'foo'
- *    s.concat(32, 'bar', 32, 'baz') # => "foo bar baz"
- *
- *  Related: String#<<, which takes a single argument.
+ *  :include: doc/string/concat.rdoc
  */
 static VALUE
 rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
