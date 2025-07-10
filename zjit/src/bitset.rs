@@ -4,6 +4,7 @@ const ENTRY_NUM_BITS: usize = Entry::BITS as usize;
 
 // TODO(max): Make a `SmallBitSet` and `LargeBitSet` and switch between them if `num_bits` fits in
 // `Entry`.
+#[derive(Clone)]
 pub struct BitSet<T: Into<usize> + Copy> {
     entries: Vec<Entry>,
     num_bits: usize,
@@ -27,11 +28,32 @@ impl<T: Into<usize> + Copy> BitSet<T> {
         newly_inserted
     }
 
+    /// Set all bits to 1.
+    pub fn insert_all(&mut self) {
+        for i in 0..self.entries.len() {
+            self.entries[i] = !0;
+        }
+    }
+
     pub fn get(&self, idx: T) -> bool {
         debug_assert!(idx.into() < self.num_bits);
         let entry_idx = idx.into() / ENTRY_NUM_BITS;
         let bit_idx = idx.into() % ENTRY_NUM_BITS;
         (self.entries[entry_idx] & (1 << bit_idx)) != 0
+    }
+
+    /// Modify `self` to only have bits set if they are also set in `other`. Returns true if `self`
+    /// was modified, and false otherwise.
+    /// `self` and `other` must have the same number of bits.
+    pub fn intersect_with(&mut self, other: &Self) -> bool {
+        assert_eq!(self.num_bits, other.num_bits);
+        let mut changed = false;
+        for i in 0..self.entries.len() {
+            let before = self.entries[i];
+            self.entries[i] &= other.entries[i];
+            changed |= self.entries[i] != before;
+        }
+        changed
     }
 }
 
@@ -67,5 +89,36 @@ mod tests {
         let mut set = BitSet::with_capacity(4);
         assert_eq!(set.insert(1usize), true);
         assert_eq!(set.insert(1usize), false);
+    }
+
+    #[test]
+    fn insert_all_sets_all_bits() {
+        let mut set = BitSet::with_capacity(4);
+        set.insert_all();
+        assert_eq!(set.get(0usize), true);
+        assert_eq!(set.get(1usize), true);
+        assert_eq!(set.get(2usize), true);
+        assert_eq!(set.get(3usize), true);
+    }
+
+    #[test]
+    #[should_panic]
+    fn intersect_with_panics_with_different_num_bits() {
+        let mut left: BitSet<usize> = BitSet::with_capacity(3);
+        let right = BitSet::with_capacity(4);
+        left.intersect_with(&right);
+    }
+    #[test]
+    fn intersect_with_keeps_only_common_bits() {
+        let mut left = BitSet::with_capacity(3);
+        let mut right = BitSet::with_capacity(3);
+        left.insert(0usize);
+        left.insert(1usize);
+        right.insert(1usize);
+        right.insert(2usize);
+        left.intersect_with(&right);
+        assert_eq!(left.get(0usize), false);
+        assert_eq!(left.get(1usize), true);
+        assert_eq!(left.get(2usize), false);
     }
 }
