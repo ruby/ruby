@@ -2682,29 +2682,28 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_getlocal_WC_0 => {
+                    let ep_offset = get_arg(pc, 0).as_u32();
                     if iseq_type == ISEQ_TYPE_EVAL {
-                        let ep_offset = get_arg(pc, 0).as_u32();
+                        // On eval, the locals are always on the heap, so read the local using EP.
                         state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 }));
                     } else {
                         // TODO(alan): This implementation doesn't read from EP, so will miss writes
                         // from nested ISeqs. This will need to be amended when we add codegen for
                         // Send.
-                        let ep_offset = get_arg(pc, 0).as_u32();
                         let val = state.getlocal(ep_offset);
                         state.stack_push(val);
                     }
                 }
                 YARVINSN_setlocal_WC_0 => {
+                    // TODO(alan): This implementation doesn't write to EP, where nested scopes
+                    // read, so they'll miss these writes. This will need to be amended when we
+                    // add codegen for Send.
+                    let ep_offset = get_arg(pc, 0).as_u32();
+                    let val = state.stack_pop()?;
+                    state.setlocal(ep_offset, val);
                     if iseq_type == ISEQ_TYPE_EVAL {
-                        let ep_offset = get_arg(pc, 0).as_u32();
-                        fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level: 0 });
-                    } else {
-                        // TODO(alan): This implementation doesn't write to EP, where nested scopes
-                        // read, so they'll miss these writes. This will need to be amended when we
-                        // add codegen for Send.
-                        let ep_offset = get_arg(pc, 0).as_u32();
-                        let val = state.stack_pop()?;
-                        state.setlocal(ep_offset, val);
+                        // On eval, the locals are always on the heap, so write the local using EP.
+                        fun.push_insn(block, Insn::SetLocal { val, ep_offset, level: 0 });
                     }
                 }
                 YARVINSN_getlocal_WC_1 => {
