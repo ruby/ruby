@@ -625,6 +625,8 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
     end
   end
 
+  class Timeout < StandardError; end
+
   def get_result_string(opt = '', timeout: BT.timeout, **argh)
     if BT.ruby
       timeout = BT.apply_timeout_scale(timeout)
@@ -634,7 +636,11 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
         out = IO.popen("#{BT.ruby} -W0 #{opt} #{filename}", **kw)
         pid = out.pid
         th = Thread.new {out.read.tap {Process.waitpid(pid); out.close}}
-        th.value if th.join(timeout)
+        if th.join(timeout)
+          th.value
+        else
+          Timeout.new("timed out after #{timeout} seconds")
+        end
       ensure
         raise Interrupt if $? and $?.signaled? && $?.termsig == Signal.list["INT"]
 
