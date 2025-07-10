@@ -3,7 +3,7 @@
 // usize->pointer casts is viable. It seems like a lot of work for us to participate for not much
 // benefit.
 
-use std::ptr::NonNull;
+use std::{cell::RefCell, ptr::NonNull};
 
 use crate::{backend::ir::Target, stats::yjit_alloc_size, utils::IntoUsize};
 
@@ -36,6 +36,12 @@ pub struct VirtualMemory<A: Allocator> {
     /// granularity.
     page_size_bytes: usize,
 
+    /// Mutable parts.
+    mutable: RefCell<VirtualMemoryMut<A>>,
+}
+
+/// Mutable parts of [`VirtualMemory`].
+pub struct VirtualMemoryMut<A: Allocator> {
     /// Number of bytes that have we have allocated physical memory for starting at
     /// [Self::region_start].
     mapped_region_bytes: usize,
@@ -124,9 +130,11 @@ impl<A: Allocator> VirtualMemory<A> {
             region_size_bytes,
             memory_limit_bytes,
             page_size_bytes,
-            mapped_region_bytes: 0,
-            current_write_page: None,
-            allocator,
+            mutable: RefCell::new(VirtualMemoryMut {
+                mapped_region_bytes: 0,
+                current_write_page: None,
+                allocator,
+            }),
         }
     }
 
@@ -137,7 +145,7 @@ impl<A: Allocator> VirtualMemory<A> {
     }
 
     pub fn mapped_end_ptr(&self) -> CodePtr {
-        self.start_ptr().add_bytes(self.mapped_region_bytes)
+        self.start_ptr().add_bytes(self.mutable.borrow().mapped_region_bytes)
     }
 
     pub fn virtual_end_ptr(&self) -> CodePtr {
@@ -146,7 +154,7 @@ impl<A: Allocator> VirtualMemory<A> {
 
     /// Size of the region in bytes that we have allocated physical memory for.
     pub fn mapped_region_size(&self) -> usize {
-        self.mapped_region_bytes
+        self.mutable.borrow().mapped_region_bytes
     }
 
     /// Size of the region in bytes where writes could be attempted.
@@ -161,19 +169,21 @@ impl<A: Allocator> VirtualMemory<A> {
     }
 
     /// Write a single byte. The first write to a page makes it readable.
-    pub fn write_byte(&mut self, write_ptr: CodePtr, byte: u8) -> Result<(), WriteError> {
+    pub fn write_byte(&self, write_ptr: CodePtr, byte: u8) -> Result<(), WriteError> {
+        let mut mutable = self.mutable.borrow_mut();
+
         let page_size = self.page_size_bytes;
         let raw: *mut u8 = write_ptr.raw_ptr(self) as *mut u8;
         let page_addr = (raw as usize / page_size) * page_size;
 
-        if self.current_write_page == Some(page_addr) {
+        if mutable.current_write_page == Some(page_addr) {
             // Writing within the last written to page, nothing to do
         } else {
             // Switching to a different and potentially new page
             let start = self.region_start.as_ptr();
-            let mapped_region_end = start.wrapping_add(self.mapped_region_bytes);
+            let mapped_region_end = start.wrapping_add(mutable.mapped_region_bytes);
             let whole_region_end = start.wrapping_add(self.region_size_bytes);
-            let alloc = &mut self.allocator;
+            let alloc = &mut mutable.allocator;
 
             assert!((start..=whole_region_end).contains(&mapped_region_end));
 
@@ -185,7 +195,7 @@ impl<A: Allocator> VirtualMemory<A> {
                     return Err(FailedPageMapping);
                 }
 
-                self.current_write_page = Some(page_addr);
+                mutable.current_write_page = Some(page_addr);
             } else if (start..whole_region_end).contains(&raw) &&
                     (page_addr + page_size - start as usize) + yjit_alloc_size() < self.memory_limit_bytes {
                 // Writing to a brand new page
@@ -217,9 +227,9 @@ impl<A: Allocator> VirtualMemory<A> {
                         unreachable!("unknown arch");
                     }
                 }
-                self.mapped_region_bytes = self.mapped_region_bytes + alloc_size;
+                mutable.mapped_region_bytes = mutable.mapped_region_bytes + alloc_size;
 
-                self.current_write_page = Some(page_addr);
+                mutable.current_write_page = Some(page_addr);
             } else {
                 return Err(OutOfBounds);
             }
@@ -233,14 +243,16 @@ impl<A: Allocator> VirtualMemory<A> {
 
     /// Make all the code in the region writeable.
     /// Call this during GC before the phase of updating reference fields.
-    pub fn mark_all_writeable(&mut self) {
-        self.current_write_page = None;
+    pub fn mark_all_writeable(&self) {
+        let mut mutable = self.mutable.borrow_mut();
+
+        mutable.current_write_page = None;
 
         let region_start = self.region_start;
-        let mapped_region_bytes: u32 = self.mapped_region_bytes.try_into().unwrap();
+        let mapped_region_bytes: u32 = mutable.mapped_region_bytes.try_into().unwrap();
 
         // Make mapped region executable
-        if !self.allocator.mark_writable(region_start.as_ptr(), mapped_region_bytes) {
+        if !mutable.allocator.mark_writable(region_start.as_ptr(), mapped_region_bytes) {
             panic!("Cannot make memory region writable: {:?}-{:?}",
                 region_start.as_ptr(),
                 unsafe { region_start.as_ptr().add(mapped_region_bytes as usize)}
@@ -250,18 +262,20 @@ impl<A: Allocator> VirtualMemory<A> {
 
     /// Make all the code in the region executable. Call this at the end of a write session.
     /// See [Self] for usual usage flow.
-    pub fn mark_all_executable(&mut self) {
-        self.current_write_page = None;
+    pub fn mark_all_executable(&self) {
+        let mut mutable = self.mutable.borrow_mut();
+
+        mutable.current_write_page = None;
 
         let region_start = self.region_start;
-        let mapped_region_bytes: u32 = self.mapped_region_bytes.try_into().unwrap();
+        let mapped_region_bytes: u32 = mutable.mapped_region_bytes.try_into().unwrap();
 
         // Make mapped region executable
-        self.allocator.mark_executable(region_start.as_ptr(), mapped_region_bytes);
+        mutable.allocator.mark_executable(region_start.as_ptr(), mapped_region_bytes);
     }
 
     /// Free a range of bytes. start_ptr must be memory page-aligned.
-    pub fn free_bytes(&mut self, start_ptr: CodePtr, size: u32) {
+    pub fn free_bytes(&self, start_ptr: CodePtr, size: u32) {
         assert_eq!(start_ptr.raw_ptr(self) as usize % self.page_size_bytes, 0);
 
         // Bounds check the request. We should only free memory we manage.
@@ -274,7 +288,8 @@ impl<A: Allocator> VirtualMemory<A> {
         // code page, it's more appropriate to check the last byte against the virtual region.
         assert!(virtual_region.contains(&last_byte_to_free));
 
-        self.allocator.mark_unused(start_ptr.raw_ptr(self), size);
+        let mut mutable = self.mutable.borrow_mut();
+        mutable.allocator.mark_unused(start_ptr.raw_ptr(self), size);
     }
 }
 
@@ -403,11 +418,11 @@ pub mod tests {
     #[test]
     #[cfg(target_arch = "x86_64")]
     fn new_memory_is_initialized() {
-        let mut virt = new_dummy_virt_mem();
+        let virt = new_dummy_virt_mem();
 
         virt.write_byte(virt.start_ptr(), 1).unwrap();
         assert!(
-            virt.allocator.memory[..PAGE_SIZE].iter().all(|&byte| byte != 0),
+            virt.mutable.borrow().allocator.memory[..PAGE_SIZE].iter().all(|&byte| byte != 0),
             "Entire page should be initialized",
         );
 
@@ -415,21 +430,21 @@ pub mod tests {
         let three_pages = 3 * PAGE_SIZE;
         virt.write_byte(virt.start_ptr().add_bytes(three_pages), 1).unwrap();
         assert!(
-            virt.allocator.memory[..three_pages].iter().all(|&byte| byte != 0),
+            virt.mutable.borrow().allocator.memory[..three_pages].iter().all(|&byte| byte != 0),
             "Gaps between write requests should be filled",
         );
     }
 
     #[test]
     fn no_redundant_syscalls_when_writing_to_the_same_page() {
-        let mut virt = new_dummy_virt_mem();
+        let virt = new_dummy_virt_mem();
 
         virt.write_byte(virt.start_ptr(), 1).unwrap();
         virt.write_byte(virt.start_ptr(), 0).unwrap();
 
         assert!(
             matches!(
-                virt.allocator.requests[..],
+                virt.mutable.borrow().allocator.requests[..],
                 [MarkWritable { start_idx: 0, length: PAGE_SIZE }],
             )
         );
@@ -438,7 +453,7 @@ pub mod tests {
     #[test]
     fn bounds_checking() {
         use super::WriteError::*;
-        let mut virt = new_dummy_virt_mem();
+        let virt = new_dummy_virt_mem();
 
         let one_past_end = virt.start_ptr().add_bytes(virt.virtual_region_size());
         assert_eq!(Err(OutOfBounds), virt.write_byte(one_past_end, 0));
@@ -451,7 +466,7 @@ pub mod tests {
     fn only_written_to_regions_become_executable() {
         // ... so we catch attempts to read/write/execute never-written-to regions
         const THREE_PAGES: usize = PAGE_SIZE * 3;
-        let mut virt = new_dummy_virt_mem();
+        let virt = new_dummy_virt_mem();
         let page_two_start = virt.start_ptr().add_bytes(PAGE_SIZE * 2);
         virt.write_byte(page_two_start, 1).unwrap();
         virt.mark_all_executable();
@@ -459,7 +474,7 @@ pub mod tests {
         assert!(virt.virtual_region_size() > THREE_PAGES);
         assert!(
             matches!(
-                virt.allocator.requests[..],
+                virt.mutable.borrow().allocator.requests[..],
                 [
                     MarkWritable { start_idx: 0, length: THREE_PAGES },
                     MarkExecutable { start_idx: 0, length: THREE_PAGES },
