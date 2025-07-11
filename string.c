@@ -10782,6 +10782,8 @@ static struct {
 #endif
 
 /*
+ *  :nodoc:
+ *
  *  call-seq:
  *    crypt(salt_str) -> new_string
  *
