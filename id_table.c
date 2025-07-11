@@ -426,7 +426,7 @@ rb_managed_id_table_foreach(VALUE table, rb_id_table_foreach_func_t *func, void 
 }
 
 static enum rb_id_table_iterator_result
-marked_id_table_mark_i(ID key, VALUE value, void *ref)
+marked_id_table_mark_i(VALUE value, void *ref)
 {
     rb_gc_mark_movable(value);
     return ID_TABLE_CONTINUE;
@@ -436,7 +436,7 @@ static void
 marked_id_table_mark(void *data)
 {
     struct rb_id_table *tbl = (struct rb_id_table *)data;
-    rb_id_table_foreach(tbl, marked_id_table_mark_i, NULL);
+    rb_id_table_foreach_values(tbl, marked_id_table_mark_i, NULL);
 }
 
 static enum rb_id_table_iterator_result
