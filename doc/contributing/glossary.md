@@ -8,7 +8,7 @@ Just a list of acronyms I've run across in the Ruby source code and their meanin
 | `bop` | Basic Operator. Relates to methods like `Integer` plus and minus which can be optimized as long as they haven't been redefined. |
 | `cc` | Call Cache.  An inline cache structure for the call site. Stored in the `cd` |
 | `cd` | Call Data. A data structure that points at the `ci` and the `cc`.  `iseq` objects points at the `cd`, and access call information and call caches via this structure |
-| CFG | Control Flow Graph. Graph representation of all paths that might be traversed through a program during execution |
+| CFG | Control Flow Graph. Representation of the program where all control-flow and data dependencies have been made explicit by unrolling the stack and local variables. |
 | `cfp`| Control Frame Pointer. Represents a Ruby stack frame.  Calling a method pushes a new frame (cfp), returning pops a frame. Points at  the `pc`, `sp`, `ep`, and the corresponding `iseq`|
 | `ci` | Call Information.  Refers to an `rb_callinfo` struct. Contains call information about the call site, including number of parameters to be passed, whether it they are keyword arguments or not, etc. Used in conjunction with the `cc` and `cd`. |
 | `cref` | Class reference. A structure pointing to the class reference where `klass_or_self`, visibility scope, and refinements are stored. It also stores a pointer to the next class in the hierarchy referenced by `rb_cref_struct * next`. The Class reference is lexically scoped. |
