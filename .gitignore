@@ -11,7 +11,6 @@
 *.elc
 *.i
 *.ii
-*.inc
 *.log
 *.o
 *.o.tmp
@@ -20,7 +19,6 @@
 *.orig
 *.pch
 *.pdb
-*.rbinc
 *.rej
 *.s
 *.sav
@@ -57,10 +55,12 @@ lcov*.info
 /*-fake.rb
 /*.dll
 /*.exe
+/*.inc
 /*.res
 /*.pc
 /*.rc
 /*_prelude.c
+/.bundle
 /.downloaded-cache
 /.top-enc.mk
 /build*/
@@ -73,7 +73,7 @@ lcov*.info
 /README.v6
 /TAGS
 /archive
-/autom4te*.cache
+/autom4te*.cache/
 /automake
 /benchmark/benchmark-driver
 /beos
@@ -233,6 +233,10 @@ lcov*.info
 
 # for `make test-bundler`
 /.rspec_status
+
+# /rblib/
+/rblib/*.rbbin
+/rblib/*.rbinc
 
 # /tool/
 /tool/config.guess

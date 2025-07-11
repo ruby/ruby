@@ -5484,7 +5484,7 @@ rb_gc_after_fork(rb_pid_t pid)
  *  See also GC.count, GC.malloc_allocated_size and GC.malloc_allocations
  */
 
-#include "gc.rbinc"
+#include "rblib/gc.rbinc"
 
 void
 Init_GC(void)

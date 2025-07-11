@@ -1317,4 +1317,4 @@ rb_is_local_name(VALUE name)
 }
 
 #include "id_table.c"
-#include "symbol.rbinc"
+#include "rblib/symbol.rbinc"

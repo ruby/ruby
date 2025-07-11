@@ -1125,7 +1125,7 @@ ast_location_inspect(rb_execution_context_t *ec, VALUE self)
     return str;
 }
 
-#include "ast.rbinc"
+#include "rblib/ast.rbinc"
 
 void
 Init_ast(void)

@@ -2430,7 +2430,7 @@ marshal_load(rb_execution_context_t *ec, VALUE mod, VALUE source, VALUE proc, VA
     return rb_marshal_load_with_proc(source, proc, RTEST(freeze));
 }
 
-#include "marshal.rbinc"
+#include "rblib/marshal.rbinc"
 
 /*
  * The marshaling library converts collections of Ruby objects into a

@@ -861,5 +861,5 @@ static VALUE yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self) { return Q
 #endif
 
 // Preprocessed yjit.rb generated during build
-#include "yjit.rbinc"
+#include "rblib/yjit.rbinc"
 

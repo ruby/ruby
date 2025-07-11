@@ -4245,7 +4245,7 @@ Init_syserr(void)
 #undef undefined_error
 }
 
-#include "warning.rbinc"
+#include "rblib/warning.rbinc"
 
 /*!
  * \}

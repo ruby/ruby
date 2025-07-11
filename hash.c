@@ -7712,4 +7712,4 @@ Init_Hash(void)
     HASH_ASSERT(sizeof(ar_hint_t) * RHASH_AR_TABLE_MAX_SIZE == sizeof(VALUE));
 }
 
-#include "hash.rbinc"
+#include "rblib/hash.rbinc"

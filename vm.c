@@ -4516,7 +4516,7 @@ void Init_builtin_yjit(void) {}
 #endif
 
 // Whether YJIT is enabled or not, we load yjit_hook.rb to remove Kernel#with_yjit.
-#include "yjit_hook.rbinc"
+#include "rblib/yjit_hook.rbinc"
 
 // Stub for builtin function when not building ZJIT units
 #if !USE_ZJIT
