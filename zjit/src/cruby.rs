@@ -701,6 +701,9 @@ pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
 }
 
 pub fn iseq_name(iseq: IseqPtr) -> String {
+    if iseq.is_null() {
+        return "<NULL>".to_string();
+    }
     let iseq_label = unsafe { rb_iseq_label(iseq) };
     if iseq_label == Qnil {
         "None".to_string()
