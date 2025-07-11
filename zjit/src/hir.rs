@@ -411,9 +411,8 @@ pub enum SideExitReason {
     FixnumAddOverflow,
     FixnumSubOverflow,
     FixnumMultOverflow,
-    GuardTypeFixnum,
-    GuardTypeClassExact,
-    GuardBitEquals,
+    GuardType(Type),
+    GuardBitEquals(VALUE),
     PatchPoint(Invariant),
 }
 
@@ -427,6 +426,8 @@ impl std::fmt::Display for SideExitReason {
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_PACK) => write!(f, "UnknownNewarraySend(PACK)"),
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_PACK_BUFFER) => write!(f, "UnknownNewarraySend(PACK_BUFFER)"),
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_INCLUDE_P) => write!(f, "UnknownNewarraySend(INCLUDE_P)"),
+            SideExitReason::GuardType(guard_type) => write!(f, "GuardType({guard_type})"),
+            SideExitReason::GuardBitEquals(value) => write!(f, "GuardBitEquals({})", value.print(&PtrPrintMap::identity())),
             SideExitReason::PatchPoint(invariant) => write!(f, "PatchPoint({invariant})"),
             _ => write!(f, "{self:?}"),
         }

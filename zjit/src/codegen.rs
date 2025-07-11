@@ -997,7 +997,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
     if guard_type.is_subtype(Fixnum) {
         // Check if opnd is Fixnum
         asm.test(val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
-        asm.jz(side_exit(jit, state, GuardTypeFixnum)?);
+        asm.jz(side_exit(jit, state, GuardType(guard_type))?);
     } else if let Some(expected_class) = guard_type.runtime_exact_ruby_class() {
         asm_comment!(asm, "guard exact class");
 
@@ -1005,7 +1005,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         let klass = asm.ccall(rb_yarv_class_of as *const u8, vec![val]);
 
         asm.cmp(klass, Opnd::Value(expected_class));
-        asm.jne(side_exit(jit, state, GuardTypeClassExact)?);
+        asm.jne(side_exit(jit, state, GuardType(guard_type))?);
     } else {
         unimplemented!("unsupported type: {guard_type}");
     }
@@ -1015,7 +1015,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
 /// Compile an identity check with a side exit
 fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected: VALUE, state: &FrameState) -> Option<lir::Opnd> {
     asm.cmp(val, Opnd::UImm(expected.into()));
-    asm.jnz(side_exit(jit, state, GuardBitEquals)?);
+    asm.jnz(side_exit(jit, state, GuardBitEquals(expected))?);
     Some(val)
 }
 
