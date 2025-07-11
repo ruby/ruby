@@ -879,6 +879,38 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_attr_reader
+    assert_compiles '[4, 4]', %q{
+      class C
+        attr_reader :foo
+
+        def initialize
+          @foo = 4
+        end
+      end
+
+      def test(c) = c.foo
+      c = C.new
+      [test(c), test(c)]
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
+  def test_attr_accessor
+    assert_compiles '[4, 4]', %q{
+      class C
+        attr_accessor :foo
+
+        def initialize
+          @foo = 4
+        end
+      end
+
+      def test(c) = c.foo
+      c = C.new
+      [test(c), test(c)]
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
   def test_uncached_getconstant_path
     assert_compiles RUBY_COPYRIGHT.dump, %q{
       def test = RUBY_COPYRIGHT

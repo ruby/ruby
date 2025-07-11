@@ -1537,22 +1537,31 @@ impl Function {
                         // It allows you to use a faster ISEQ if possible.
                         cme = unsafe { rb_check_overloaded_cme(cme, ci) };
                         let def_type = unsafe { get_cme_def_type(cme) };
-                        if def_type != VM_METHOD_TYPE_ISEQ {
+                        if def_type == VM_METHOD_TYPE_ISEQ {
                             // TODO(max): Allow non-iseq; cache cme
+                            // Only specialize positional-positional calls
+                            // TODO(max): Handle other kinds of parameter passing
+                            let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+                            if !can_direct_send(iseq) {
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            if let Some(profiled_type) = profiled_type {
+                                self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: Type::from_profiled_type(profiled_type), state });
+                            }
+                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, cd, cme, iseq, args, state });
+                            self.make_equal_to(insn_id, send_direct);
+                        } else if def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            if let Some(profiled_type) = profiled_type {
+                                self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: Type::from_profiled_type(profiled_type), state });
+                            }
+                            let id = unsafe { get_cme_def_body_attr_id(cme) };
+                            let getivar = self.push_insn(block, Insn::GetIvar { self_val, id, state });
+                            self.make_equal_to(insn_id, getivar);
+                        } else {
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        // Only specialize positional-positional calls
-                        // TODO(max): Handle other kinds of parameter passing
-                        let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                        if !can_direct_send(iseq) {
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                        if let Some(profiled_type) = profiled_type {
-                            self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: Type::from_profiled_type(profiled_type), state });
-                        }
-                        let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, cd, cme, iseq, args, state });
-                        self.make_equal_to(insn_id, send_direct);
                     }
                     Insn::GetConstantPath { ic, state, .. } => {
                         let idlist: *const ID = unsafe { (*ic).segments };
@@ -7420,6 +7429,62 @@ mod opt_tests {
               v6:BasicObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, BasicObject[class_exact*:Object@VALUE(0x1000)]
               v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1038)
               Return v7
+        "#]]);
+    }
+
+    #[test]
+    fn test_inline_attr_reader() {
+        eval("
+            class C
+              attr_reader :foo
+
+              def initialize
+                @foo = 4
+              end
+            end
+
+            O = C.new
+            def test = O.foo
+            test
+            test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:11:
+            bb0(v0:BasicObject):
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1000, O)
+              v9:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              PatchPoint MethodRedefined(C@0x1010, foo@0x1018, cme:0x1020)
+              v11:BasicObject = GetIvar v9, :@foo
+              Return v11
+        "#]]);
+    }
+
+    #[test]
+    fn test_inline_attr_accessor() {
+        eval("
+            class C
+              attr_accessor :foo
+
+              def initialize
+                @foo = 4
+              end
+            end
+
+            O = C.new
+            def test = O.foo
+            test
+            test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:11:
+            bb0(v0:BasicObject):
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1000, O)
+              v9:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              PatchPoint MethodRedefined(C@0x1010, foo@0x1018, cme:0x1020)
+              v11:BasicObject = GetIvar v9, :@foo
+              Return v11
         "#]]);
     }
 }
