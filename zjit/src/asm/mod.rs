@@ -106,6 +106,10 @@ impl CodeBlock {
         self.write_pos
     }
 
+    pub fn write_mem(&self, write_ptr: CodePtr, byte: u8) -> Result<(), WriteError> {
+        self.mem_block.borrow_mut().write_byte(write_ptr, byte)
+    }
+
     /// Get a (possibly dangling) direct pointer to the current write position
     pub fn get_write_ptr(&self) -> CodePtr {
         self.get_ptr(self.write_pos)

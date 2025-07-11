@@ -188,12 +188,6 @@ pub const ALLOC_REGS: &'static [Reg] = &[
     X12_REG,
 ];
 
-#[derive(Debug, PartialEq)]
-enum EmitError {
-    RetryOnNextPage,
-    OutOfMemory,
-}
-
 impl Assembler
 {
     // Special scratch registers for intermediate processing.
@@ -719,7 +713,7 @@ impl Assembler
 
     /// Emit platform-specific machine code
     /// Returns a list of GC offsets. Can return failure to signal caller to retry.
-    fn arm64_emit(&mut self, cb: &mut CodeBlock) -> Result<Vec<u32>, EmitError> {
+    fn arm64_emit(&mut self, cb: &mut CodeBlock) -> Option<Vec<CodePtr>> {
         /// Determine how many instructions it will take to represent moving
         /// this value into a register. Note that the return value of this
         /// function must correspond to how many instructions are used to
@@ -869,10 +863,8 @@ impl Assembler
             ldr_post(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
         }
 
-        // dbg!(&self.insns);
-
         // List of GC offsets
-        let mut gc_offsets: Vec<u32> = Vec::new();
+        let mut gc_offsets: Vec<CodePtr> = Vec::new();
 
         // Buffered list of PosMarker callbacks to fire if codegen is successful
         let mut pos_markers: Vec<(usize, CodePtr)> = vec![];
@@ -883,11 +875,6 @@ impl Assembler
         // For each instruction
         let mut insn_idx: usize = 0;
         while let Some(insn) = self.insns.get(insn_idx) {
-            //let src_ptr = cb.get_write_ptr();
-            let had_dropped_bytes = cb.has_dropped_bytes();
-            //let old_label_state = cb.get_label_state();
-            let mut insn_gc_offsets: Vec<u32> = Vec::new();
-
             match insn {
                 Insn::Comment(text) => {
                     cb.add_comment(text);
@@ -1025,8 +1012,8 @@ impl Assembler
                             b(cb, InstructionOffset::from_bytes(4 + (SIZEOF_VALUE as i32)));
                             cb.write_bytes(&value.as_u64().to_le_bytes());
 
-                            let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
-                            insn_gc_offsets.push(ptr_offset);
+                            let ptr_offset = cb.get_write_ptr().sub_bytes(SIZEOF_VALUE);
+                            gc_offsets.push(ptr_offset);
                         },
                         Opnd::None => {
                             unreachable!("Attempted to load from None operand");
@@ -1256,25 +1243,12 @@ impl Assembler
                 Insn::LiveReg { .. } => (), // just a reg alloc signal, no code
             };
 
-            // On failure, jump to the next page and retry the current insn
-            if !had_dropped_bytes && cb.has_dropped_bytes() {
-                // Reset cb states before retrying the current Insn
-                //cb.set_label_state(old_label_state);
-
-                // We don't want label references to cross page boundaries. Signal caller for
-                // retry.
-                if !self.label_names.is_empty() {
-                    return Err(EmitError::RetryOnNextPage);
-                }
-            } else {
-                insn_idx += 1;
-                gc_offsets.append(&mut insn_gc_offsets);
-            }
+            insn_idx += 1;
         }
 
         // Error if we couldn't write out everything
         if cb.has_dropped_bytes() {
-            Err(EmitError::OutOfMemory)
+            None
         } else {
             // No bytes dropped, so the pos markers point to valid code
             for (insn_idx, pos) in pos_markers {
@@ -1285,12 +1259,12 @@ impl Assembler
                 }
             }
 
-            Ok(gc_offsets)
+            Some(gc_offsets)
         }
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Option<(CodePtr, Vec<u32>)> {
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Option<(CodePtr, Vec<CodePtr>)> {
         let asm = self.arm64_split();
         let mut asm = asm.alloc_regs(regs)?;
         asm.compile_side_exits()?;
@@ -1302,26 +1276,9 @@ impl Assembler
         }
 
         let start_ptr = cb.get_write_ptr();
-        /*
-        let starting_label_state = cb.get_label_state();
-        let emit_result = match asm.arm64_emit(cb, &mut ocb) {
-            Err(EmitError::RetryOnNextPage) => {
-                // we want to lower jumps to labels to b.cond instructions, which have a 1 MiB
-                // range limit. We can easily exceed the limit in case the jump straddles two pages.
-                // In this case, we retry with a fresh page once.
-                cb.set_label_state(starting_label_state);
-                if cb.next_page(start_ptr, emit_jmp_ptr_with_invalidation) {
-                    asm.arm64_emit(cb, &mut ocb)
-                } else {
-                    Err(EmitError::OutOfMemory)
-                }
-            }
-            result => result
-        };
-        */
-        let emit_result = asm.arm64_emit(cb);
+        let gc_offsets = asm.arm64_emit(cb);
 
-        if let (Ok(gc_offsets), false) = (emit_result, cb.has_dropped_bytes()) {
+        if let (Some(gc_offsets), false) = (gc_offsets, cb.has_dropped_bytes()) {
             cb.link_labels();
 
             // Invalidate icache for newly written out region so we don't run stale code.

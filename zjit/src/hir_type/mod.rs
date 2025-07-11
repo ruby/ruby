@@ -288,6 +288,27 @@ impl Type {
         }
     }
 
+    /// Return a Ruby object that needs to be marked on GC.
+    /// This covers Type and TypeExact unlike ruby_object().
+    pub fn gc_object(&self) -> Option<VALUE> {
+        match self.spec {
+            Specialization::Type(val) |
+            Specialization::TypeExact(val) |
+            Specialization::Object(val) => Some(val),
+            _ => None,
+        }
+    }
+
+    /// Mutable version of gc_object().
+    pub fn gc_object_mut(&mut self) -> Option<&mut VALUE> {
+        match &mut self.spec {
+            Specialization::Type(val) |
+            Specialization::TypeExact(val) |
+            Specialization::Object(val) => Some(val),
+            _ => None,
+        }
+    }
+
     pub fn unspecialized(&self) -> Self {
         Type { spec: Specialization::Any, ..*self }
     }
