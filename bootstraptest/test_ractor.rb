@@ -1455,11 +1455,19 @@ assert_equal "ok", %q{
       loop do
         10_000.times.map { Object.new }
         port << Time.now
+        Ractor.receive
       end
     end
   end
 
-  1_000.times { port.receive }
+  100.times {
+    workers.each do
+      port.receive
+    end
+    workers.each do |w|
+      w.send(nil)
+    end
+  }
   "ok"
 } if !yjit_enabled? && ENV['GITHUB_WORKFLOW'] != 'ModGC' # flaky
 
