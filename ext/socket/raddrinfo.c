@@ -517,7 +517,7 @@ rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hint
 {
     int retry;
     struct getaddrinfo_arg *arg;
-    int err = 0, gai_errno = 0;
+    int err = 0, gai_errno = 0, timedout = 0;
 
 start:
     retry = 0;
@@ -548,6 +548,7 @@ start:
         }
         else if (arg->cancelled) {
             retry = 1;
+            timedout = arg->timedout;
         }
         else {
             // If already interrupted, rb_thread_call_without_gvl2 may return without calling wait_getaddrinfo.
@@ -561,7 +562,7 @@ start:
 
     if (need_free) free_getaddrinfo_arg(arg);
 
-    if (arg->timedout) {
+    if (timedout) {
         VALUE errno_module = rb_const_get(rb_cObject, rb_intern("Errno"));
         VALUE etimedout_error = rb_const_get(errno_module, rb_intern("ETIMEDOUT"));
         rb_raise(etimedout_error, "user specified timeout");
