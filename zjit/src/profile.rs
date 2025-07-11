@@ -113,7 +113,7 @@ impl IseqProfile {
     pub fn each_object(&self, callback: impl Fn(VALUE)) {
         for types in &self.opnd_types {
             for opnd_type in types {
-                if let Some(object) = opnd_type.ruby_object() {
+                if let Some(object) = opnd_type.gc_object() {
                     callback(object);
                 }
             }
@@ -124,7 +124,7 @@ impl IseqProfile {
     pub fn each_object_mut(&mut self, callback: impl Fn(&mut VALUE)) {
         for types in self.opnd_types.iter_mut() {
             for opnd_type in types.iter_mut() {
-                if let Some(object) = opnd_type.ruby_object_mut() {
+                if let Some(object) = opnd_type.gc_object_mut() {
                     callback(object);
                 }
             }
