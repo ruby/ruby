@@ -288,6 +288,14 @@ impl Type {
         }
     }
 
+    /// Return a mutable reference to the object specialization, if any.
+    pub fn ruby_object_mut(&mut self) -> Option<&mut VALUE> {
+        match &mut self.spec {
+            Specialization::Object(val) => Some(val),
+            _ => None,
+        }
+    }
+
     pub fn unspecialized(&self) -> Self {
         Type { spec: Specialization::Any, ..*self }
     }

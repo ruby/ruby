@@ -378,8 +378,7 @@ impl Assembler
     }
 
     /// Emit platform-specific machine code
-    pub fn x86_emit(&mut self, cb: &mut CodeBlock) -> Option<Vec<u32>>
-    {
+    pub fn x86_emit(&mut self, cb: &mut CodeBlock) -> Option<Vec<CodePtr>> {
         /// For some instructions, we want to be able to lower a 64-bit operand
         /// without requiring more registers to be available in the register
         /// allocator. So we just use the SCRATCH0 register temporarily to hold
@@ -435,10 +434,8 @@ impl Assembler
             }
         }
 
-        //dbg!(&self.insns);
-
         // List of GC offsets
-        let mut gc_offsets: Vec<u32> = Vec::new();
+        let mut gc_offsets: Vec<CodePtr> = Vec::new();
 
         // Buffered list of PosMarker callbacks to fire if codegen is successful
         let mut pos_markers: Vec<(usize, CodePtr)> = vec![];
@@ -449,11 +446,6 @@ impl Assembler
         // For each instruction
         let mut insn_idx: usize = 0;
         while let Some(insn) = self.insns.get(insn_idx) {
-            //let src_ptr = cb.get_write_ptr();
-            let had_dropped_bytes = cb.has_dropped_bytes();
-            //let old_label_state = cb.get_label_state();
-            let mut insn_gc_offsets: Vec<u32> = Vec::new();
-
             match insn {
                 Insn::Comment(text) => {
                     cb.add_comment(text);
@@ -553,8 +545,8 @@ impl Assembler
                             // Using movabs because mov might write value in 32 bits
                             movabs(cb, out.into(), val.0 as _);
                             // The pointer immediate is encoded as the last part of the mov written out
-                            let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
-                            insn_gc_offsets.push(ptr_offset);
+                            let ptr_offset = cb.get_write_ptr().sub_bytes(SIZEOF_VALUE);
+                            gc_offsets.push(ptr_offset);
                         }
                         _ => mov(cb, out.into(), opnd.into())
                     }
@@ -811,14 +803,7 @@ impl Assembler
                 Insn::LiveReg { .. } => (), // just a reg alloc signal, no code
             };
 
-            // On failure, jump to the next page and retry the current insn
-            if !had_dropped_bytes && cb.has_dropped_bytes() {
-                // Reset cb states before retrying the current Insn
-                //cb.set_label_state(old_label_state);
-            } else {
-                insn_idx += 1;
-                gc_offsets.append(&mut insn_gc_offsets);
-            }
+            insn_idx += 1;
         }
 
         // Error if we couldn't write out everything
@@ -839,7 +824,7 @@ impl Assembler
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Option<(CodePtr, Vec<u32>)> {
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Option<(CodePtr, Vec<CodePtr>)> {
         let asm = self.x86_split();
         let mut asm = asm.alloc_regs(regs)?;
         asm.compile_side_exits()?;

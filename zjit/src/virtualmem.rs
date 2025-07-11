@@ -74,6 +74,13 @@ impl CodePtr {
         CodePtr(raw + bytes)
     }
 
+    /// Subtract bytes from the CodePtr
+    pub fn sub_bytes(self, bytes: usize) -> Self {
+        let CodePtr(raw) = self;
+        let bytes: u32 = bytes.try_into().unwrap();
+        CodePtr(raw.saturating_sub(bytes))
+    }
+
     /// Note that the raw pointer might be dangling if there hasn't
     /// been any writes to it through the [VirtualMemory] yet.
     pub fn raw_ptr(self, base: &impl CodePtrBase) -> *const u8 {

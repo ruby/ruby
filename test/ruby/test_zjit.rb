@@ -973,6 +973,13 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_require_rubygems_with_auto_compact
+    assert_runs 'true', %q{
+      GC.auto_compact = true
+      require 'rubygems'
+    }, call_threshold: 2
+  end
+
   def test_bop_redefinition
     assert_runs '[3, :+, 100]', %q{
       def test

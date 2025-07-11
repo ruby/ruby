@@ -119,4 +119,15 @@ impl IseqProfile {
             }
         }
     }
+
+    /// Run a given callback with a mutable reference to every object in IseqProfile
+    pub fn each_object_mut(&mut self, callback: impl Fn(&mut VALUE)) {
+        for types in self.opnd_types.iter_mut() {
+            for opnd_type in types.iter_mut() {
+                if let Some(object) = opnd_type.ruby_object_mut() {
+                    callback(object);
+                }
+            }
+        }
+    }
 }

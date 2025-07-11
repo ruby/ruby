@@ -107,10 +107,11 @@ fn gen_iseq_entry_point(iseq: IseqPtr) -> *const u8 {
     // Compile the High-level IR
     let cb = ZJITState::get_code_block();
     let (start_ptr, mut branch_iseqs) = match gen_function(cb, iseq, &function) {
-        Some((start_ptr, branch_iseqs)) => {
+        Some((start_ptr, gc_offsets, branch_iseqs)) => {
             // Remember the block address to reuse it later
             let payload = get_or_create_iseq_payload(iseq);
             payload.start_ptr = Some(start_ptr);
+            payload.gc_offsets.extend(gc_offsets);
 
             // Compile an entry point to the JIT code
             (gen_entry(cb, iseq, &function, start_ptr), branch_iseqs)
@@ -184,14 +185,17 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<(CodePtr, Vec<(Rc<Branc
 
     // Compile the High-level IR
     let result = gen_function(cb, iseq, &function);
-    if let Some((start_ptr, _)) = result {
+    if let Some((start_ptr, gc_offsets, branch_iseqs)) = result {
         payload.start_ptr = Some(start_ptr);
+        payload.gc_offsets.extend(gc_offsets);
+        Some((start_ptr, branch_iseqs))
+    } else {
+        None
     }
-    result
 }
 
 /// Compile a function
-fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Option<(CodePtr, Vec<(Rc<Branch>, IseqPtr)>)> {
+fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Option<(CodePtr, Vec<CodePtr>, Vec<(Rc<Branch>, IseqPtr)>)> {
     let c_stack_bytes = aligned_stack_bytes(max_num_params(function).saturating_sub(ALLOC_REGS.len()));
     let mut jit = JITState::new(iseq, function.num_insns(), function.num_blocks(), c_stack_bytes);
     let mut asm = Assembler::new();
@@ -245,7 +249,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
     }
 
     // Generate code if everything can be compiled
-    asm.compile(cb).map(|(start_ptr, _)| (start_ptr, jit.branch_iseqs))
+    asm.compile(cb).map(|(start_ptr, gc_offsets)| (start_ptr, gc_offsets, jit.branch_iseqs))
 }
 
 /// Compile an instruction
