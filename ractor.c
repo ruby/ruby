@@ -2468,4 +2468,4 @@ rb_ractor_autoload_load(VALUE module, ID name)
     }
 }
 
-#include "ractor.rbinc"
+#include "rblib/ractor.rbinc"

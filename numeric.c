@@ -6531,4 +6531,4 @@ rb_float_new(double d)
     return rb_float_new_inline(d);
 }
 
-#include "numeric.rbinc"
+#include "rblib/numeric.rbinc"

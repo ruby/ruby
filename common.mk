@@ -1214,29 +1214,31 @@ $(srcs_vpath)vm.inc: $(tooldir)/ruby_vm/views/vm.inc.erb $(inc_common_headers) \
   $(tooldir)/ruby_vm/views/_insn_entry.erb $(tooldir)/ruby_vm/views/_trace_instruction.erb \
   $(tooldir)/ruby_vm/views/_zjit_instruction.erb
 
+rblibdir = $(srcdir)/rblib
+
 BUILTIN_RB_SRCS = \
-		$(srcdir)/ast.rb \
-		$(srcdir)/dir.rb \
-		$(srcdir)/gc.rb \
-		$(srcdir)/numeric.rb \
-		$(srcdir)/io.rb \
-		$(srcdir)/marshal.rb \
-		$(srcdir)/pack.rb \
-		$(srcdir)/trace_point.rb \
-		$(srcdir)/warning.rb \
-		$(srcdir)/array.rb \
-		$(srcdir)/hash.rb \
-		$(srcdir)/kernel.rb \
-		$(srcdir)/ractor.rb \
-		$(srcdir)/symbol.rb \
-		$(srcdir)/timev.rb \
-		$(srcdir)/thread_sync.rb \
-		$(srcdir)/nilclass.rb \
-		$(srcdir)/prelude.rb \
-		$(srcdir)/gem_prelude.rb \
-		$(srcdir)/yjit.rb \
-		$(srcdir)/yjit_hook.rb \
-		$(srcdir)/zjit.rb \
+		$(rblibdir)/ast.rb \
+		$(rblibdir)/dir.rb \
+		$(rblibdir)/gc.rb \
+		$(rblibdir)/numeric.rb \
+		$(rblibdir)/io.rb \
+		$(rblibdir)/marshal.rb \
+		$(rblibdir)/pack.rb \
+		$(rblibdir)/trace_point.rb \
+		$(rblibdir)/warning.rb \
+		$(rblibdir)/array.rb \
+		$(rblibdir)/hash.rb \
+		$(rblibdir)/kernel.rb \
+		$(rblibdir)/ractor.rb \
+		$(rblibdir)/symbol.rb \
+		$(rblibdir)/timev.rb \
+		$(rblibdir)/thread_sync.rb \
+		$(rblibdir)/nilclass.rb \
+		$(rblibdir)/prelude.rb \
+		$(rblibdir)/gem_prelude.rb \
+		$(rblibdir)/yjit.rb \
+		$(rblibdir)/yjit_hook.rb \
+		$(rblibdir)/zjit.rb \
 		$(empty)
 BUILTIN_RB_INCS = $(BUILTIN_RB_SRCS:.rb=.rbinc)
 

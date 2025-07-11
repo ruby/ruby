@@ -1704,7 +1704,7 @@ utf8_to_uv(const char *p, long *lenp)
     return uv;
 }
 
-#include "pack.rbinc"
+#include "rblib/pack.rbinc"
 
 void
 Init_pack(void)
