@@ -1,6 +1,6 @@
 use std::{collections::{HashMap, HashSet}};
 
-use crate::{backend::lir::{asm_comment, Assembler}, cruby::{ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag}, hir::Invariant, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
+use crate::{backend::lir::{asm_comment, Assembler}, cruby::{rb_callable_method_entry_t, ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag}, hir::Invariant, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
 
 #[derive(Debug, Eq, Hash, PartialEq)]
 struct Jump {
@@ -20,6 +20,9 @@ pub struct Invariants {
 
     /// Map from a class and its associated basic operator to a set of patch points
     bop_patch_points: HashMap<(RedefinitionFlag, ruby_basic_operators), HashSet<Jump>>,
+
+    /// Map from CME to patch points that assume the method hasn't been redefined
+    cme_patch_points: HashMap<*const rb_callable_method_entry_t, HashSet<Jump>>,
 }
 
 /// Called when a basic operator is redefined. Note that all the blocks assuming
@@ -97,5 +100,47 @@ pub fn track_bop_assumption(
     invariants.bop_patch_points.entry((klass, bop)).or_default().insert(Jump {
         from: patch_point_ptr,
         to: side_exit_ptr,
+    });
+}
+
+/// Track a patch point for a callable method entry (CME).
+pub fn track_cme_assumption(
+    cme: *const rb_callable_method_entry_t,
+    patch_point_ptr: CodePtr,
+    side_exit_ptr: CodePtr
+) {
+    let invariants = ZJITState::get_invariants();
+    invariants.cme_patch_points.entry(cme).or_default().insert(Jump {
+        from: patch_point_ptr,
+        to: side_exit_ptr,
+    });
+}
+
+/// Called when a method is redefined. Invalidates all JIT code that depends on the CME.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_cme_invalidate(cme: *const rb_callable_method_entry_t) {
+    // If ZJIT isn't enabled, do nothing
+    if !zjit_enabled_p() {
+        return;
+    }
+
+    with_vm_lock(src_loc!(), || {
+        let invariants = ZJITState::get_invariants();
+        // Get the CMD's jumps and remove the entry from the map as it has been invalidated
+        if let Some(jumps) = invariants.cme_patch_points.remove(&cme) {
+            let cb = ZJITState::get_code_block();
+            debug!("CME is invalidated: {:?}", cme);
+
+            // Invalidate all patch points for this CME
+            for jump in jumps {
+                cb.with_write_ptr(jump.from, |cb| {
+                    let mut asm = Assembler::new();
+                    asm_comment!(asm, "CME is invalidated: {:?}", cme);
+                    asm.jmp(jump.to.into());
+                    asm.compile(cb).expect("can write existing code");
+                });
+            }
+            cb.mark_all_executable();
+        }
     });
 }
