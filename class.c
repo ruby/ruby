@@ -304,7 +304,7 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
     }
 
     if (RCLASSEXT_SHARED_CONST_TBL(orig)) {
-        RCLASSEXT_CONST_TBL(ext) = RCLASSEXT_CONST_TBL(orig);
+        RB_OBJ_WRITE(klass, &RCLASSEXT_CONST_TBL(ext), RCLASSEXT_CONST_TBL(orig));
         RCLASSEXT_SHARED_CONST_TBL(ext) = true;
     }
     else {
