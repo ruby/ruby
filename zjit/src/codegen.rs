@@ -284,6 +284,10 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
             let iseq_name = iseq_get_location(iseq, 0);
             register_with_perf(iseq_name, start_usize, code_size);
         }
+        if ZJITState::should_log_compiled_iseqs() {
+            let iseq_name = iseq_get_location(iseq, 0);
+            ZJITState::log_compile(iseq_name);
+        }
     }
     result
 }
