@@ -4,7 +4,7 @@ use std::ffi::c_void;
 use crate::{cruby::*, profile::IseqProfile, virtualmem::CodePtr};
 
 /// This is all the data ZJIT stores on an ISEQ. We mark objects in this struct on GC.
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct IseqPayload {
     /// Type information of YARV instruction operands
     pub profile: IseqProfile,
@@ -13,6 +13,12 @@ pub struct IseqPayload {
     pub start_ptr: Option<CodePtr>,
 
     // TODO: Add references to GC offsets in JIT code
+}
+
+impl IseqPayload {
+    fn new(iseq_size: u32) -> Self {
+        Self { profile: IseqProfile::new(iseq_size), start_ptr: None }
+    }
 }
 
 /// Get the payload object associated with an iseq. Create one if none exists.
@@ -26,7 +32,8 @@ pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
             // We drop the payload with Box::from_raw when the GC frees the iseq and calls us.
             // NOTE(alan): Sometimes we read from an iseq without ever writing to it.
             // We allocate in those cases anyways.
-            let new_payload = IseqPayload::default();
+            let iseq_size = get_iseq_encoded_size(iseq);
+            let new_payload = IseqPayload::new(iseq_size);
             let new_payload = Box::into_raw(Box::new(new_payload));
             rb_iseq_set_zjit_payload(iseq, new_payload as VoidPtr);
 
