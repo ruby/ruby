@@ -458,7 +458,8 @@ static const rb_data_type_t marked_id_table_type = {
         .dsize = managed_id_table_memsize,
         .dcompact = marked_id_table_compact,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    // FIXME: RUBY_TYPED_WB_PROTECTED causes [BUG] try to mark T_NONE object somehow.
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE,
 };
 
 static inline struct rb_id_table *
