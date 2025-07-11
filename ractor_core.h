@@ -101,6 +101,20 @@ struct rb_ractor_struct {
     void *newobj_cache;
 }; // rb_ractor_t is defined in vm_core.h
 
+// Ractor blocking by receive
+enum ractor_wakeup_status {
+    wakeup_none,
+    wakeup_by_send,
+    wakeup_by_interrupt,
+    wakeup_invalid, // invalid status, used as sentinel value
+    // wakeup_by_close,
+};
+
+struct ractor_waiter {
+    enum ractor_wakeup_status wakeup_status;
+    rb_thread_t *th;
+    struct ccan_list_node node;
+};
 
 static inline VALUE
 rb_ractor_self(const rb_ractor_t *r)
