@@ -33,6 +33,7 @@ typedef enum {
 // imemo_constentry
 typedef struct rb_const_entry_struct {
     VALUE _imemo_flags;
+    VALUE reserved;
 
     VALUE value;            /* should be mark */
     VALUE file;             /* should be mark */
