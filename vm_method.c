@@ -122,6 +122,7 @@ vm_cme_invalidate(rb_callable_method_entry_t *cme)
     RB_DEBUG_COUNTER_INC(cc_cme_invalidate);
 
     rb_yjit_cme_invalidate(cme);
+    rb_zjit_cme_invalidate(cme);
 }
 
 static int

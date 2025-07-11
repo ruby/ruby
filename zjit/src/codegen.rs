@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use crate::asm::Label;
 use crate::backend::current::{Reg, ALLOC_REGS};
-use crate::invariants::track_bop_assumption;
+use crate::invariants::{track_bop_assumption, track_cme_assumption};
 use crate::gc::{get_or_create_iseq_payload, append_gc_offsets};
 use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
@@ -493,6 +493,10 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invarian
             Invariant::BOPRedefined { klass, bop } => {
                 let side_exit_ptr = cb.resolve_label(label);
                 track_bop_assumption(klass, bop, code_ptr, side_exit_ptr);
+            }
+            Invariant::MethodRedefined { klass: _, method: _, cme } => {
+                let side_exit_ptr = cb.resolve_label(label);
+                track_cme_assumption(cme, code_ptr, side_exit_ptr);
             }
             _ => {
                 debug!("ZJIT: gen_patch_point: unimplemented invariant {invariant:?}");
