@@ -2347,8 +2347,9 @@ ractor_require_protect(VALUE crr_obj, VALUE (*func)(VALUE))
     struct cross_ractor_require *crr;
     TypedData_Get_Struct(crr_obj, struct cross_ractor_require, &cross_ractor_require_data_type, crr);
 
+    const bool silent = crr->silent;
     VALUE debug, errinfo;
-    if (crr->silent) {
+    if (silent) {
         debug = ruby_debug;
         errinfo = rb_errinfo();
     }
@@ -2357,7 +2358,7 @@ ractor_require_protect(VALUE crr_obj, VALUE (*func)(VALUE))
     rb_rescue2(func, (VALUE)crr,
                require_rescue, (VALUE)crr, rb_eException, 0);
 
-    if (crr->silent) {
+    if (silent) {
         ruby_debug = debug;
         rb_set_errinfo(errinfo);
     }
