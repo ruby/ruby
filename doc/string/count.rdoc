@@ -27,24 +27,52 @@ returns the count of instances for all specified characters:
   s.count('abcdr')  # => 11
   s.count('abcdrx') # => 11
 
+Order and repetition do not matter:
+
+  s.count('ba')   == s.count('ab') # => true
+  s.count('baab') == s.count('ab') # => true
+
 For multiple selectors,
 forms a single selector that is the intersection of characters in all selectors
-and returns the count of instances for that selector;
-in each pair of calls below, the result is the same:
+and returns the count of instances for that selector:
 
   s = 'abcdefg'
+  s.count('abcde', 'dcbfg') == s.count('bcd') # => true
+  s.count('abc', 'def')     == s.count('')    # => true
 
-  s.count('abcde', 'dcbfg') # => 3
-  s.count('bcd')            # => 3
+In a character selector, three characters get special treatment:
 
-  s.count('abc', 'def')     # => 0
-  s.count('')               # => 0
+- A caret (<tt>'^'</tt>) functions as a _negation_ operator
+  for the immediately following characters:
 
-Selectors may include negations, ranges, and escapes:
+    s = 'abracadabra'
+    s.count('^bc') # => 8  # Count of all except 'b' and 'c'.
 
-    s = "abc\ndef\nghi"
-    s.count('^ifc') # => 8
-    s.count('e-g')  # => 3
-    s.count("\n")   # => 2
+- A hyphen (<tt>'-'</tt>) between two other characters defines a _range_ of characters:
+
+    s = 'abracadabra'
+    s.count('a-c') # => 8  # Count of all 'a', 'b', and 'c'.
+
+- A backslash (<tt>'\'</tt>) acts as an escape for a caret, a hyphen,
+  or another backslash:
+
+    s = 'abracadabra'
+    s.count('\^bc')           # => 3  # Count of '^', 'b', and 'c'.
+    s.count('a\-c')           # => 6  # Count of 'a', '-', and 'c'.
+    'foo\bar\baz'.count('\\') # => 2  # Count of '\'.
+
+These usages may be mixed:
+
+  s = 'abracadabra'
+  s.count('a-cq-t') # => 10  # Multiple ranges.
+  s.count('ac-d')   # => 7   # Range mixed with plain characters.
+  s.count('^a-c')   # => 3   # Range mixed with negation.
+
+For multiple selectors, all forms may be used, including negations, ranges, and escapes.
+
+  s = 'abracadabra'
+  s.count('^abc', '^def') == s.count('^abcdef') # => true
+  s.count('a-e', 'c-g')   == s.count('cde')     # => true
+  s.count('^abc', 'c-g')  == s.count('defg')    # => true
 
 Related: see {Querying}[rdoc-ref:String@Querying].
