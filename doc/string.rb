@@ -427,6 +427,7 @@
 # - #slice!, #[]=: Removes a substring determined by a given index, start/length, range, regexp, or substring.
 # - #squeeze!: Removes contiguous duplicate characters; returns +self+.
 # - #delete!: Removes characters as determined by the intersection of substring arguments.
+# - #delete_prefix!: Removes leading prefix; returns +self+ if any changes, +nil+ otherwise.
 # - #lstrip!: Removes leading whitespace; returns +self+ if any changes, +nil+ otherwise.
 # - #rstrip!: Removes trailing whitespace; returns +self+ if any changes, +nil+ otherwise.
 # - #strip!: Removes leading and trailing whitespace; returns +self+ if any changes, +nil+ otherwise.
