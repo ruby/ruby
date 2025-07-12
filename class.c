@@ -135,46 +135,42 @@ duplicate_classext_id_table(struct rb_id_table *orig, bool init_missing)
     return tbl;
 }
 
-static rb_const_entry_t *
-duplicate_classext_const_entry(rb_const_entry_t *src, VALUE klass)
+static VALUE
+duplicate_classext_const_entry(VALUE src_value)
 {
+    rb_const_entry_t *src = (rb_const_entry_t *)src_value;
+
     // See also: setup_const_entry (variable.c)
-    rb_const_entry_t *dst = ZALLOC(rb_const_entry_t);
+    VALUE dst_value = rb_const_entry_new();
+    rb_const_entry_t *dst = (rb_const_entry_t *)dst_value;
 
-    dst->flag = src->flag;
-    dst->line = src->line;
-    RB_OBJ_WRITE(klass, &dst->value, src->value);
-    RB_OBJ_WRITE(klass, &dst->file, src->file);
+    MEMCPY(dst, src, rb_const_entry_t, 1);
+    RB_OBJ_WRITTEN(dst_value, Qundef, src->value);
+    RB_OBJ_WRITTEN(dst_value, Qundef, src->file);
 
-    return dst;
+    return dst_value;
 }
 
 static enum rb_id_table_iterator_result
 duplicate_classext_const_tbl_i(ID key, VALUE value, void *data)
 {
-    struct duplicate_id_tbl_data *arg = (struct duplicate_id_tbl_data *)data;
-    rb_const_entry_t *entry = duplicate_classext_const_entry((rb_const_entry_t *)value, arg->klass);
+    VALUE dst = (VALUE)data;
 
-    rb_id_table_insert(arg->tbl, key, (VALUE)entry);
+    VALUE entry = duplicate_classext_const_entry(value);
+    rb_marked_id_table_insert(dst, key, entry);
 
     return ID_TABLE_CONTINUE;
 }
 
-static struct rb_id_table *
-duplicate_classext_const_tbl(struct rb_id_table *src, VALUE klass)
+static VALUE
+duplicate_classext_const_tbl(VALUE src)
 {
-    struct rb_id_table *dst;
+    if (!src) {
+        return 0;
+    }
 
-    if (!src)
-        return NULL;
-
-    dst = rb_id_table_create(rb_id_table_size(src));
-
-    struct duplicate_id_tbl_data data = {
-        .tbl = dst,
-        .klass = klass,
-    };
-    rb_id_table_foreach(src, duplicate_classext_const_tbl_i, (void *)&data);
+    VALUE dst = rb_marked_id_table_new(rb_marked_id_table_size(src));
+    rb_marked_id_table_foreach(src, duplicate_classext_const_tbl_i, (void *)dst);
 
     return dst;
 }
@@ -308,11 +304,11 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
     }
 
     if (RCLASSEXT_SHARED_CONST_TBL(orig)) {
-        RCLASSEXT_CONST_TBL(ext) = RCLASSEXT_CONST_TBL(orig);
+        RB_OBJ_WRITE(klass, &RCLASSEXT_CONST_TBL(ext), RCLASSEXT_CONST_TBL(orig));
         RCLASSEXT_SHARED_CONST_TBL(ext) = true;
     }
     else {
-        RCLASSEXT_CONST_TBL(ext) = duplicate_classext_const_tbl(RCLASSEXT_CONST_TBL(orig), klass);
+        RB_OBJ_WRITE(klass, &RCLASSEXT_CONST_TBL(ext), duplicate_classext_const_tbl(RCLASSEXT_CONST_TBL(orig)));
         RCLASSEXT_SHARED_CONST_TBL(ext) = false;
     }
     /*
@@ -898,27 +894,20 @@ clone_method_i(ID key, VALUE value, void *data)
     return ID_TABLE_CONTINUE;
 }
 
-struct clone_const_arg {
-    VALUE klass;
-    struct rb_id_table *tbl;
-};
-
-static int
-clone_const(ID key, const rb_const_entry_t *ce, struct clone_const_arg *arg)
-{
-    rb_const_entry_t *nce = ALLOC(rb_const_entry_t);
-    MEMCPY(nce, ce, rb_const_entry_t, 1);
-    RB_OBJ_WRITTEN(arg->klass, Qundef, ce->value);
-    RB_OBJ_WRITTEN(arg->klass, Qundef, ce->file);
-
-    rb_id_table_insert(arg->tbl, key, (VALUE)nce);
-    return ID_TABLE_CONTINUE;
-}
-
 static enum rb_id_table_iterator_result
 clone_const_i(ID key, VALUE value, void *data)
 {
-    return clone_const(key, (const rb_const_entry_t *)value, data);
+    VALUE new_table = (VALUE)data;
+    const rb_const_entry_t *ce = (const rb_const_entry_t *)value;
+
+    VALUE nce_value = rb_const_entry_new();
+    rb_const_entry_t *nce = (rb_const_entry_t *)nce_value;
+    MEMCPY(nce, ce, rb_const_entry_t, 1);
+    RB_OBJ_WRITTEN(nce_value, Qundef, ce->value);
+    RB_OBJ_WRITTEN(nce_value, Qundef, ce->file);
+
+    rb_marked_id_table_insert(new_table, key, (VALUE)nce);
+    return ID_TABLE_CONTINUE;
 }
 
 static void
@@ -964,7 +953,6 @@ static void
 copy_tables(VALUE clone, VALUE orig)
 {
     if (RCLASS_CONST_TBL(clone)) {
-        rb_free_const_table(RCLASS_CONST_TBL(clone));
         RCLASS_WRITE_CONST_TBL(clone, 0, false);
     }
     if (RCLASS_CVC_TBL(orig)) {
@@ -982,14 +970,12 @@ copy_tables(VALUE clone, VALUE orig)
     if (!RB_TYPE_P(clone, T_ICLASS)) {
         rb_fields_tbl_copy(clone, orig);
     }
-    if (RCLASS_CONST_TBL(orig)) {
-        struct clone_const_arg arg;
-        struct rb_id_table *const_tbl;
-        struct rb_id_table *orig_tbl = RCLASS_CONST_TBL(orig);
-        arg.tbl = const_tbl = rb_id_table_create(rb_id_table_size(orig_tbl));
-        arg.klass = clone;
-        rb_id_table_foreach(orig_tbl, clone_const_i, &arg);
-        RCLASS_WRITE_CONST_TBL(clone, const_tbl, false);
+
+    VALUE const_table = RCLASS_CONST_TBL(orig);
+    if (const_table) {
+        VALUE new_const_tbl = rb_marked_id_table_new(rb_marked_id_table_size(const_table));
+        rb_marked_id_table_foreach(const_table, clone_const_i, (void *)new_const_tbl);
+        RCLASS_WRITE_CONST_TBL(clone, new_const_tbl, false);
     }
 }
 
@@ -1177,14 +1163,15 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 
         rb_class_set_super(clone, RCLASS_SUPER(klass));
         rb_fields_tbl_copy(clone, klass);
-        if (RCLASS_CONST_TBL(klass)) {
-            struct clone_const_arg arg;
-            struct rb_id_table *table;
-            arg.tbl = table = rb_id_table_create(0);
-            arg.klass = clone;
-            rb_id_table_foreach(RCLASS_CONST_TBL(klass), clone_const_i, &arg);
-            RCLASS_SET_CONST_TBL(clone, table, false);
+
+
+        VALUE const_table = RCLASS_CONST_TBL(klass);
+        if (const_table) {
+            VALUE new_const_tbl = rb_marked_id_table_new(rb_marked_id_table_size(const_table));
+            rb_marked_id_table_foreach(const_table, clone_const_i, (void *)new_const_tbl);
+            RCLASS_WRITE_CONST_TBL(clone, new_const_tbl, false);
         }
+
         if (!UNDEF_P(attach)) {
             rb_singleton_class_attached(clone, attach);
         }
@@ -1669,7 +1656,7 @@ rb_include_class_new(VALUE module, VALUE super)
         RCLASS_SET_CONST_TBL(klass, RCLASS_WRITABLE_CONST_TBL(module), true);
     }
     else {
-        RCLASS_WRITE_CONST_TBL(module, rb_id_table_create(0), false);
+        RCLASS_WRITE_CONST_TBL(module, rb_marked_id_table_new(0), false);
         RCLASS_SET_CONST_TBL(klass, RCLASS_WRITABLE_CONST_TBL(module), true);
     }
 
@@ -1863,9 +1850,10 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
             RUBY_ASSERT(BUILTIN_TYPE(c) == T_MODULE);
         }
 
-        tbl = RCLASS_CONST_TBL(module);
-        if (tbl && rb_id_table_size(tbl))
-            rb_id_table_foreach(tbl, clear_constant_cache_i, NULL);
+        VALUE const_table = RCLASS_CONST_TBL(module);
+        if (const_table) {
+            rb_marked_id_table_foreach(const_table, clear_constant_cache_i, NULL);
+        }
       skip:
         module = RCLASS_SUPER(module);
     }
