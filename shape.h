@@ -28,7 +28,9 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 //              Whether the object is frozen or not.
 //      23 SHAPE_ID_FL_HAS_OBJECT_ID
 //              Whether the object has an `SHAPE_OBJ_ID` transition.
-//      24 SHAPE_ID_FL_TOO_COMPLEX
+//      24 SHAPE_ID_FL_HAS_OLD_ADDRESS
+//              Whether the object has an `SHAPE_OLD_ADDRESS` transition.
+//      25 SHAPE_ID_FL_TOO_COMPLEX
 //              The object is backed by a `st_table`.
 
 enum shape_id_fl_type {
@@ -38,17 +40,14 @@ enum shape_id_fl_type {
 
     SHAPE_ID_FL_FROZEN = RBIMPL_SHAPE_ID_FL(3),
     SHAPE_ID_FL_HAS_OBJECT_ID = RBIMPL_SHAPE_ID_FL(4),
-    SHAPE_ID_FL_TOO_COMPLEX = RBIMPL_SHAPE_ID_FL(5),
+    SHAPE_ID_FL_HAS_OLD_ADDRESS = RBIMPL_SHAPE_ID_FL(5),
+    SHAPE_ID_FL_TOO_COMPLEX = RBIMPL_SHAPE_ID_FL(6),
 
-    SHAPE_ID_FL_NON_CANONICAL_MASK = SHAPE_ID_FL_FROZEN | SHAPE_ID_FL_HAS_OBJECT_ID,
+    SHAPE_ID_FL_NON_CANONICAL_MASK = SHAPE_ID_FL_FROZEN | SHAPE_ID_FL_HAS_OBJECT_ID | SHAPE_ID_FL_HAS_OLD_ADDRESS,
     SHAPE_ID_FLAGS_MASK = SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_NON_CANONICAL_MASK | SHAPE_ID_FL_TOO_COMPLEX,
 
 #undef RBIMPL_SHAPE_ID_FL
 };
-
-// This masks allows to check if a shape_id contains any ivar.
-// It rely on ROOT_SHAPE_WITH_OBJ_ID==1.
-#define SHAPE_ID_HAS_IVAR_MASK (SHAPE_ID_FL_TOO_COMPLEX | (SHAPE_ID_OFFSET_MASK - 1))
 
 // The interpreter doesn't care about frozen status or slot size when reading ivars.
 // So we normalize shape_id by clearing these bits to improve cache hits.
@@ -66,11 +65,17 @@ typedef uint32_t redblack_id_t;
 #define INVALID_SHAPE_ID ((shape_id_t)-1)
 #define ATTR_INDEX_NOT_SET ((attr_index_t)-1)
 
-#define ROOT_SHAPE_ID                   0x0
-#define ROOT_SHAPE_WITH_OBJ_ID          0x1
-#define ROOT_TOO_COMPLEX_SHAPE_ID       (ROOT_SHAPE_ID | SHAPE_ID_FL_TOO_COMPLEX)
-#define ROOT_TOO_COMPLEX_WITH_OBJ_ID    (ROOT_SHAPE_WITH_OBJ_ID | SHAPE_ID_FL_TOO_COMPLEX | SHAPE_ID_FL_HAS_OBJECT_ID)
-#define SPECIAL_CONST_SHAPE_ID          (ROOT_SHAPE_ID | SHAPE_ID_FL_FROZEN)
+#define ROOT_SHAPE_ID                           0x0
+#define ROOT_SHAPE_WITH_OBJ_ID                  0x1
+#define ROOT_SHAPE_WITH_OLD_ADDRESS             0x2
+#define ROOT_SHAPE_WITH_OBJ_ID_AND_OLD_ADDRESS  0x3
+#define ROOT_TOO_COMPLEX_SHAPE_ID               (ROOT_SHAPE_ID | SHAPE_ID_FL_TOO_COMPLEX)
+#define ROOT_TOO_COMPLEX_WITH_OBJ_ID            (ROOT_SHAPE_WITH_OBJ_ID | SHAPE_ID_FL_TOO_COMPLEX | SHAPE_ID_FL_HAS_OBJECT_ID)
+#define SPECIAL_CONST_SHAPE_ID                  (ROOT_SHAPE_ID | SHAPE_ID_FL_FROZEN)
+
+// This masks allows to check if a shape_id contains any ivar.
+// It rely on ROOT_SHAPE_WITH_OBJ_ID_AND_OLD_ADDRESS==3.
+#define SHAPE_ID_HAS_IVAR_MASK (SHAPE_ID_FL_TOO_COMPLEX | (SHAPE_ID_OFFSET_MASK - 3))
 
 typedef struct redblack_node redblack_node_t;
 
@@ -97,6 +102,7 @@ enum shape_type {
     SHAPE_ROOT,
     SHAPE_IVAR,
     SHAPE_OBJ_ID,
+    SHAPE_OLD_ADDRESS,
 };
 
 enum shape_flags {
@@ -217,9 +223,12 @@ shape_id_t rb_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed
 shape_id_t rb_shape_transition_add_ivar(VALUE obj, ID id);
 shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id);
 shape_id_t rb_shape_transition_object_id(VALUE obj);
+shape_id_t rb_shape_transition_old_address(shape_id_t original_shape_id);
 shape_id_t rb_shape_transition_heap(VALUE obj, size_t heap_index);
 shape_id_t rb_shape_object_id(shape_id_t original_shape_id);
+shape_id_t rb_shape_old_address(shape_id_t original_shape_id);
 
+void rb_shape_update_references(shape_id_t shape_id);
 void rb_shape_free_all(void);
 
 shape_id_t rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id);
@@ -242,6 +251,12 @@ static inline bool
 rb_shape_has_object_id(shape_id_t shape_id)
 {
     return shape_id & SHAPE_ID_FL_HAS_OBJECT_ID;
+}
+
+static inline bool
+rb_shape_has_old_address(shape_id_t shape_id)
+{
+    return shape_id & SHAPE_ID_FL_HAS_OLD_ADDRESS;
 }
 
 static inline bool

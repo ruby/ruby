@@ -469,4 +469,43 @@ class TestGCCompact < Test::Unit::TestCase
       assert_equal("hello", obj.instance_variable_get(:@str))
     RUBY
   end
+
+  class FullObject
+    def initialize
+      @a = 1
+      @b = 2
+      @c = 3
+    end
+  end
+
+  def test_object_hash_is_stable_across_compact
+    object_hash_compact_assertions(FullObject)
+  end
+
+  class GenericObject < Array
+    define_method(:hash, Object.instance_method(:hash))
+    define_method(:inspect, Object.instance_method(:inspect))
+  end
+
+  def test_generic_object_hash_is_stable_across_compact
+    object_hash_compact_assertions(GenericObject)
+  end
+
+  def test_class_hash_is_stable_across_compact
+    object_hash_compact_assertions(Class)
+  end
+
+  private
+
+  def object_hash_compact_assertions(klass)
+    objs = 10.times.map { klass.new }
+    hashes = objs.map(&:hash)
+
+    addresses = objs.inspect
+
+    GC.verify_compaction_references(toward: :empty, expand_heap: true)
+
+    refute_equal addresses, objs.inspect # assert at least some objects moved
+    assert_equal hashes, objs.map(&:hash)
+  end
 end

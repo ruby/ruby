@@ -3320,13 +3320,19 @@ rb_gc_obj_optimal_size(VALUE obj)
         return rb_ary_size_as_embedded(obj);
 
       case T_OBJECT:
-        if (rb_shape_obj_too_complex_p(obj)) {
-            return sizeof(struct RObject);
+        {
+            shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+            if (rb_shape_too_complex_p(shape_id)) {
+                return sizeof(struct RObject);
+            }
+            else {
+                attr_index_t fields_count = ROBJECT_FIELDS_COUNT(obj);
+                if (FL_TEST_RAW(obj, RUBY_FL_ADDRESS_SEEN) && !rb_shape_has_old_address(shape_id)) {
+                    fields_count++;
+                }
+                return rb_obj_embedded_size(fields_count);
+            }
         }
-        else {
-            return rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(obj));
-        }
-
       case T_STRING:
         return rb_str_size_as_embedded(obj);
 
@@ -4137,6 +4143,21 @@ rb_gc_update_vm_references(void *objspace)
         rb_yjit_root_update_references();
     }
 #endif
+}
+
+void
+rb_gc_update_moved_object(void *objspace, VALUE dest, VALUE src)
+{
+    if (RB_TYPE_P(dest, T_IMEMO)) {
+        return;
+    }
+
+    if (FL_TEST_RAW(dest, RUBY_FL_ADDRESS_SEEN)) {
+        // Shape references may not have been updated yet.
+        rb_shape_update_references(RBASIC_SHAPE_ID(dest));
+
+        rb_obj_set_stable_address(dest, src);
+    }
 }
 
 void
