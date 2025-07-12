@@ -50,6 +50,8 @@ void rb_yjit_show_usage(int help, int highlight, unsigned int width, int columns
 void rb_yjit_lazy_push_frame(const VALUE *pc);
 void rb_yjit_invalidate_no_singleton_class(VALUE klass);
 void rb_yjit_invalidate_ep_is_bp(const rb_iseq_t *iseq);
+void rb_yjit_mark_all_writeable(void);
+void rb_yjit_mark_all_executable(void);
 
 #else
 // !USE_YJIT

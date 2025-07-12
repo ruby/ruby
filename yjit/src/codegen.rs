@@ -11037,7 +11037,7 @@ impl CodegenGlobals {
                 exec_mem_size,
                 get_option!(mem_size),
             );
-            let mem_block = Rc::new(RefCell::new(mem_block));
+            let mem_block = Rc::new(mem_block);
 
             let freed_pages = Rc::new(None);
 
