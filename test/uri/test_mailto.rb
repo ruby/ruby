@@ -166,6 +166,10 @@ class URI::TestMailTo < Test::Unit::TestCase
       u.to = 'n.@invalid.email'
     end
 
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'n..t@invalid.email'
+    end
+
     # Invalid host emails
     assert_raise(URI::InvalidComponentError) do
       u.to = 'a@.invalid.email'
