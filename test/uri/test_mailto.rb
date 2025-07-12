@@ -165,6 +165,45 @@ class URI::TestMailTo < Test::Unit::TestCase
     assert_raise(URI::InvalidComponentError) do
       u.to = 'n.@invalid.email'
     end
+
+    # Invalid host emails
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@.invalid.email'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@invalid.email.'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@invalid..email'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@-invalid.email'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@invalid-.email'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@invalid.-email'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@invalid.email-'
+    end
+
+    u.to = 'a@'+'invalid'.ljust(63, 'd')+'.email'
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@'+'invalid'.ljust(64, 'd')+'.email'
+    end
+
+    u.to = 'a@invalid.'+'email'.rjust(63, 'e')
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@invalid.'+'email'.rjust(64, 'e')
+    end
   end
 
   def test_to_s
