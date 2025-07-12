@@ -126,9 +126,9 @@ module URI
           end
         end
       else
-        component = self.class.component rescue ::URI::Generic::COMPONENT
+        component = self.component rescue ::URI::Generic::COMPONENT
         raise ArgumentError,
-        "expected Array of or Hash of components of #{self.class} (#{component.join(', ')})"
+              "expected Array of or Hash of components of #{self} (#{component.join(', ')})"
       end
 
       tmp << nil
