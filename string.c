@@ -11380,9 +11380,10 @@ deleted_suffix_length(VALUE str, VALUE suffix)
  *  call-seq:
  *    delete_suffix!(suffix) -> self or nil
  *
- *  Like String#delete_suffix, except that +self+ is modified in place.
- *  Returns +self+ if the suffix is removed, +nil+ otherwise.
+ *  Like String#delete_suffix, except that +self+ is modified in place;
+ *  returns +self+ if the suffix is removed, +nil+ otherwise.
  *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
