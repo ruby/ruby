@@ -210,6 +210,22 @@ class URI::TestMailTo < Test::Unit::TestCase
     end
   end
 
+  def test_email_regexp
+    re = URI::MailTo::EMAIL_REGEXP
+
+    rate = 1000
+    longlabel = '.' + 'invalid'.ljust(63, 'd')
+    endlabel = ''
+    pre = ->(n) {'a@invalid' + longlabel*(n*rate) + endlabel}
+    assert_linear_performance(1..10, pre: pre) do |to|
+      re =~ to or flunk
+    end
+    endlabel = '.' + 'email'.rjust(64, 'd')
+    assert_linear_performance(1..10, pre: pre) do |to|
+      re =~ to and flunk
+    end
+  end
+
   def test_to_s
     u = URI::MailTo.build([nil, 'subject=Ruby'])
 
