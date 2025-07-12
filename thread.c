@@ -1013,7 +1013,7 @@ rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
         .args = args,
         .proc = proc,
     };
-    return thread_create_core(rb_thread_alloc(rb_cThread), &params);;
+    return thread_create_core(rb_thread_alloc(rb_cThread), &params);
 }
 
 
