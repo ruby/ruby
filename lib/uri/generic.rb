@@ -186,18 +186,18 @@ module URI
 
       if arg_check
         self.scheme = scheme
-        self.userinfo = userinfo
         self.hostname = host
         self.port = port
+        self.userinfo = userinfo
         self.path = path
         self.query = query
         self.opaque = opaque
         self.fragment = fragment
       else
         self.set_scheme(scheme)
-        self.set_userinfo(userinfo)
         self.set_host(host)
         self.set_port(port)
+        self.set_userinfo(userinfo)
         self.set_path(path)
         self.query = query
         self.set_opaque(opaque)
@@ -511,7 +511,7 @@ module URI
         user, password = split_userinfo(user)
       end
       @user     = user
-      @password = password if password
+      @password = password
 
       [@user, @password]
     end
@@ -522,7 +522,7 @@ module URI
     # See also URI::Generic.user=.
     #
     def set_user(v)
-      set_userinfo(v, @password)
+      set_userinfo(v, nil)
       v
     end
     protected :set_user
@@ -639,6 +639,7 @@ module URI
     def host=(v)
       check_host(v)
       set_host(v)
+      set_userinfo(nil)
       v
     end
 
@@ -729,6 +730,7 @@ module URI
     def port=(v)
       check_port(v)
       set_port(v)
+      set_userinfo(nil)
       port
     end
 
