@@ -8937,13 +8937,7 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    delete(*selectors) -> new_string
  *
- *  Returns a copy of +self+ with characters specified by +selectors+ removed
- *  (see {Multiple Character Selectors}[rdoc-ref:character_selectors.rdoc@Multiple+Character+Selectors]):
- *
- *     "hello".delete "l","lo"        #=> "heo"
- *     "hello".delete "lo"            #=> "he"
- *     "hello".delete "aeiou", "^e"   #=> "hell"
- *     "hello".delete "ej-m"          #=> "ho"
+ *  :include: doc/string/delete.rdoc
  *
  */
 
