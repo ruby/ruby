@@ -1,0 +1,79 @@
+Returns a new string that is a copy of +self+ with certain characters removed;
+the removed characters are all instances of those specified by the given string +selectors+.
+
+For one 1-character selector,
+removes all instances of that character:
+
+  s = 'abracadabra'
+  s.delete('a') # => "brcdbr"
+  s.delete('b') # => "aracadara"
+  s.delete('x') # => "abracadabra"
+  s.delete('')  # => "abracadabra"
+
+  s = 'тест'
+  s.delete('т') # => "ес"
+  s.delete('е') # => "тст"
+
+  s = 'よろしくお願いします'
+  s.delete('よ') # => "ろしくお願いします"
+  s.delete('し') # => "よろくお願います"
+
+For one multi-character selector,
+removes all instances of the specified characters:
+
+  s = 'abracadabra'
+  s.delete('ab')     # => "rcdr"
+  s.delete('abc')    # => "rdr"
+  s.delete('abcd')   # => "rr"
+  s.delete('abcdr')  # => ""
+  s.delete('abcdrx') # => ""
+
+Order and repetition do not matter:
+
+  s.delete('ba')   == s.delete('ab') # => true
+  s.delete('baab') == s.delete('ab') # => true
+
+For multiple selectors,
+forms a single selector that is the intersection of characters in all selectors
+and removes all instances of characters specified by that selector:
+
+  s = 'abcdefg'
+  s.delete('abcde', 'dcbfg') == s.delete('bcd') # => true
+  s.delete('abc', 'def')     == s.delete('')    # => true
+
+In a character selector, three characters get special treatment:
+
+- A caret (<tt>'^'</tt>) functions as a _negation_ operator
+  for the immediately following characters:
+
+    s = 'abracadabra'
+    s.delete('^bc') # => "bcb"  # Deletes all except 'b' and 'c'.
+
+- A hyphen (<tt>'-'</tt>) between two other characters defines a _range_ of characters:
+
+    s = 'abracadabra'
+    s.delete('a-c') # => "rdr"  # Deletes all 'a', 'b', and 'c'.
+
+- A backslash (<tt>'\'</tt>) acts as an escape for a caret, a hyphen,
+  or another backslash:
+
+    s = 'abracadabra'
+    s.delete('\^bc')           # => "araadara"   # Deletes all '^', 'b', and 'c'.
+    s.delete('a\-c')           # => "brdbr"      # Deletes all 'a', '-', and 'c'.
+    'foo\bar\baz'.delete('\\') # => "foobarbaz"  # Deletes all '\'.
+
+These usages may be mixed:
+
+  s = 'abracadabra'
+  s.delete('a-cq-t') # => "d"         # Multiple ranges.
+  s.delete('ac-d')   # => "brbr"      # Range mixed with plain characters.
+  s.delete('^a-c')   # => "abacaaba"  # Range mixed with negation.
+
+For multiple selectors, all forms may be used, including negations, ranges, and escapes.
+
+  s = 'abracadabra'
+  s.delete('^abc', '^def') == s.delete('^abcdef') # => true
+  s.delete('a-e', 'c-g')   == s.delete('cde')     # => true
+  s.delete('^abc', 'c-g')  == s.delete('defg')    # => true
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
