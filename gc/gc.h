@@ -94,6 +94,8 @@ MODULAR_GC_FN uint32_t rb_gc_rebuild_shape(VALUE obj, size_t heap_id);
 MODULAR_GC_FN void rb_gc_prepare_heap_process_object(VALUE obj);
 MODULAR_GC_FN bool rb_memerror_reentered(void);
 MODULAR_GC_FN bool rb_obj_id_p(VALUE);
+MODULAR_GC_FN void rb_gc_before_updating_jit_code(void);
+MODULAR_GC_FN void rb_gc_after_updating_jit_code(void);
 
 #if USE_MODULAR_GC
 MODULAR_GC_FN bool rb_gc_event_hook_required_p(rb_event_flag_t event);

@@ -590,6 +590,10 @@ impl CodeBlock {
         self.label_refs = state.label_refs;
     }
 
+    pub fn mark_all_writeable(&mut self) {
+        self.mem_block.borrow_mut().mark_all_writeable();
+    }
+
     pub fn mark_all_executable(&mut self) {
         self.mem_block.borrow_mut().mark_all_executable();
     }
