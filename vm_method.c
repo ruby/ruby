@@ -2606,21 +2606,53 @@ rb_mod_public(int argc, VALUE *argv, VALUE module)
  *     protected(method_name, method_name, ...) -> array
  *     protected(array)                         -> array
  *
- *  With no arguments, sets the default visibility for subsequently
- *  defined methods to protected. With arguments, sets the named methods
- *  to have protected visibility.
- *  String arguments are converted to symbols.
- *  An Array of Symbols and/or Strings is also accepted.
- *  If a single argument is passed, it is returned.
- *  If no argument is passed, nil is returned.
- *  If multiple arguments are passed, the arguments are returned as an array.
+ *  Sets the visibility of a section or of a list of method names as protected.
+ *  Accepts no arguments, a splat of method names (symbols or strings) or an
+ *  array of method names. Returns the arguments that it received.
  *
- *  If a method has protected visibility, it is callable only where
- *  <code>self</code> of the context is the same as the method.
- *  (method definition or instance_eval). This behavior is different from
- *  Java's protected method. Usually <code>private</code> should be used.
+ *  == Important difference between protected in other languages
  *
- *  Note that a protected method is slow because it can't use inline cache.
+ *  Protected methods in Ruby are different from other languages such as Java,
+ *  where methods are marked as protected to give access to subclasses. In Ruby,
+ *  subclasses <b>already have access to all methods defined in the parent
+ *  class</b>, even private ones.
+ *
+ *  Marking a method as protected allows <b>different objects of the same
+ *  class</b> to call it.
+ *
+ *  One use case is for comparison methods, such as <code>==</code>, if we want
+ *  to expose a method for comparison between objects of the same class without
+ *  making the method public to objects of other classes.
+ *
+ *  == Performance considerations
+ *
+ *  Protected methods are slower than others because they can't use inline
+ *  cache.
+ *
+ *  == Example
+ *
+ *    class Account
+ *      # Mark balance as protected, so that we can compare between accounts
+ *      # without making it public.
+ *      attr_reader :balance
+ *      protected :balance
+ *
+ *      def initialize(balance)
+ *        @balance = balance
+ *      end
+ *
+ *      def >(other)
+ *        # The invocation to `other.balance` is allowed because `other` is a
+ *        # different object of the same class (Account).
+ *        balance > other.balance
+ *      end
+ *    end
+ *
+ *    account1 = Account.new(100)
+ *    account2 = Account.new(50)
+ *
+ *    account1 > account2  # => true (works)
+ *    account1.balance     # => NoMethodError (fails because balance is not public)
  *
  *  To show a private method on RDoc, use <code>:doc:</code> instead of this.
  */
@@ -3196,4 +3228,3 @@ Init_eval_method(void)
         REPLICATE_METHOD(rb_eException, idRespond_to_missing);
     }
 }
-
