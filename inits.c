@@ -13,7 +13,7 @@
 #include "ruby.h"
 #include "builtin.h"
 static void Init_builtin_prelude(void);
-#include "prelude.rbinc"
+#include "rblib/prelude.rbinc"
 
 #define CALL(n) {void Init_##n(void); Init_##n();}
 

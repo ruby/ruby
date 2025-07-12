@@ -338,4 +338,4 @@ rb_zjit_shape_obj_too_complex_p(VALUE obj)
 }
 
 // Preprocessed zjit.rb generated during build
-#include "zjit.rbinc"
+#include "rblib/zjit.rbinc"

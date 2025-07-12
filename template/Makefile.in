@@ -79,7 +79,7 @@ EXTOUT = @EXTOUT@
 TIMESTAMPDIR  = $(EXTOUT)/.timestamp
 ext_hdrdir = $(EXTOUT)/include
 arch_hdrdir = $(ext_hdrdir)/$(arch)
-VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/missing
+VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/rblib:$(srcdir)/missing
 
 empty =
 CC_VERSION = @CC_VERSION@
