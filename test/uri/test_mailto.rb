@@ -213,17 +213,18 @@ class URI::TestMailTo < Test::Unit::TestCase
   def test_email_regexp
     re = URI::MailTo::EMAIL_REGEXP
 
+    repeat = 10
     longlabel = '.' + 'invalid'.ljust(63, 'd')
     endlabel = ''
-    seq = (1..5).map {|i| 5**i}
-    rehearsal = 100
+    seq = (1..3).map {|i| 10**i}
+    rehearsal = 10
     pre = ->(n) {'a@invalid' + longlabel*(n) + endlabel}
     assert_linear_performance(seq, rehearsal: rehearsal, pre: pre) do |to|
-      re =~ to or flunk
+      repeat.times {re =~ to or flunk}
     end
     endlabel = '.' + 'email'.rjust(64, 'd')
     assert_linear_performance(seq, rehearsal: rehearsal, pre: pre) do |to|
-      re =~ to and flunk
+      repeat.times {re =~ to and flunk}
     end
   end
 
