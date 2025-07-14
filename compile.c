@@ -13234,13 +13234,6 @@ outer_variable_cmp(const void *a, const void *b, void *arg)
 {
     const struct outer_variable_pair *ap = (const struct outer_variable_pair *)a;
     const struct outer_variable_pair *bp = (const struct outer_variable_pair *)b;
-
-    if (!ap->name) {
-        return -1;
-    } else if (!bp->name) {
-        return 1;
-    }
-
     return rb_str_cmp(ap->name, bp->name);
 }
 

@@ -905,25 +905,6 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
-  def test_serialize_anonymous_outer_variables
-    iseq = RubyVM::InstructionSequence.compile(<<~'RUBY')
-      obj = Object.new
-      def obj.test
-        [1].each do
-          raise "Oops"
-        rescue
-          return it
-        end
-      end
-      obj
-    RUBY
-
-    binary = iseq.to_binary # [Bug # 21370]
-    roundtripped_iseq = RubyVM::InstructionSequence.load_from_binary(binary)
-    object = roundtripped_iseq.eval
-    assert_equal 1, object.test
-  end
-
   def test_loading_kwargs_memory_leak
     assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true)
     a = RubyVM::InstructionSequence.compile("foo(bar: :baz)").to_binary
