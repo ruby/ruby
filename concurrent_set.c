@@ -21,7 +21,7 @@ struct concurrent_set {
     rb_atomic_t size;
     unsigned int capacity;
     unsigned int deleted_entries;
-    struct rb_concurrent_set_funcs *funcs;
+    const struct rb_concurrent_set_funcs *funcs;
     struct concurrent_set_entry *entries;
 };
 
@@ -51,7 +51,7 @@ static const rb_data_type_t concurrent_set_type = {
 };
 
 VALUE
-rb_concurrent_set_new(struct rb_concurrent_set_funcs *funcs, int capacity)
+rb_concurrent_set_new(const struct rb_concurrent_set_funcs *funcs, int capacity)
 {
     struct concurrent_set *set;
     VALUE obj = TypedData_Make_Struct(0, struct concurrent_set, &concurrent_set_type, set);
