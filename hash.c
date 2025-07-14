@@ -3942,28 +3942,68 @@ rb_hash_update_i(VALUE key, VALUE value, VALUE hash)
     return ST_CONTINUE;
 }
 
+struct update_call_args {
+    VALUE hash, newvalue, *argv;
+    int argc;
+    bool block_given;
+    bool iterating;
+};
+
 static int
 rb_hash_update_block_callback(st_data_t *key, st_data_t *value, struct update_arg *arg, int existing)
 {
-    st_data_t newvalue = arg->arg;
+    VALUE k = (VALUE)*key, v = (VALUE)*value;
+    struct update_call_args *ua = (void *)arg->arg;
+    VALUE newvalue = ua->newvalue, hash = arg->hash;
 
     if (existing) {
-        newvalue = (st_data_t)rb_yield_values(3, (VALUE)*key, (VALUE)*value, (VALUE)newvalue);
+        hash_iter_lev_inc(hash);
+        ua->iterating = true;
+        newvalue = rb_yield_values(3, k, v, newvalue);
+        hash_iter_lev_dec(hash);
+        ua->iterating = false;
     }
-    else if (RHASH_STRING_KEY_P(arg->hash, *key) && !RB_OBJ_FROZEN(*key)) {
-        *key = rb_hash_key_str(*key);
+    else if (RHASH_STRING_KEY_P(hash, k) && !RB_OBJ_FROZEN(k)) {
+        *key = (st_data_t)rb_hash_key_str(k);
     }
-    *value = newvalue;
+    *value = (st_data_t)newvalue;
     return ST_CONTINUE;
 }
 
 NOINSERT_UPDATE_CALLBACK(rb_hash_update_block_callback)
 
 static int
-rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
+rb_hash_update_block_i(VALUE key, VALUE value, VALUE args)
 {
-    RHASH_UPDATE(hash, key, rb_hash_update_block_callback, value);
+    struct update_call_args *ua = (void *)args;
+    ua->newvalue = value;
+    RHASH_UPDATE(ua->hash, key, rb_hash_update_block_callback, args);
     return ST_CONTINUE;
+}
+
+static VALUE
+rb_hash_update_call(VALUE args)
+{
+    struct update_call_args *arg = (void *)args;
+
+    for (int i = 0; i < arg->argc; i++){
+        VALUE hash = to_hash(arg->argv[i]);
+        if (arg->block_given) {
+            rb_hash_foreach(hash, rb_hash_update_block_i, args);
+        }
+        else {
+            rb_hash_foreach(hash, rb_hash_update_i, arg->hash);
+        }
+    }
+    return arg->hash;
+}
+
+static VALUE
+rb_hash_update_ensure(VALUE args)
+{
+    struct update_call_args *ua = (void *)args;
+    if (ua->iterating) hash_iter_lev_dec(ua->hash);
+    return Qnil;
 }
 
 /*
@@ -4017,20 +4057,17 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
 static VALUE
 rb_hash_update(int argc, VALUE *argv, VALUE self)
 {
-    int i;
-    bool block_given = rb_block_given_p();
+    struct update_call_args args = {
+        .hash = self,
+        .argv = argv,
+        .argc = argc,
+        .block_given = rb_block_given_p(),
+        .iterating = false,
+    };
+    VALUE arg = (VALUE)&args;
 
     rb_hash_modify(self);
-    for (i = 0; i < argc; i++){
-        VALUE hash = to_hash(argv[i]);
-        if (block_given) {
-            rb_hash_foreach(hash, rb_hash_update_block_i, self);
-        }
-        else {
-            rb_hash_foreach(hash, rb_hash_update_i, self);
-        }
-    }
-    return self;
+    return rb_ensure(rb_hash_update_call, arg, rb_hash_update_ensure, arg);
 }
 
 struct update_func_arg {
