@@ -10,8 +10,6 @@
 # For documentation, see class Pathname.
 #
 
-require 'pathname.so'
-
 class Pathname
 
   VERSION = "0.4.0"
