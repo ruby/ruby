@@ -704,7 +704,7 @@ class Socket < BasicSocket
 
     if resolving_family_names.size == 1
       family_name = resolving_family_names.first
-      addrinfos = Addrinfo.getaddrinfo(host, port, family_name, :STREAM, timeout: resolv_timeout)
+      addrinfos = Addrinfo.getaddrinfo(host, port, ADDRESS_FAMILIES[:family_name], :STREAM, timeout: resolv_timeout)
       resolution_store.add_resolved(family_name, addrinfos)
       hostname_resolution_result = nil
       hostname_resolution_notifier = nil
