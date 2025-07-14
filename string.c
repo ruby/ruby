@@ -8188,15 +8188,7 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    downcase(mapping) -> string
  *
- *  Returns a string containing the downcased characters in +self+:
- *
- *     s = 'Hello World!' # => "Hello World!"
- *     s.downcase         # => "hello world!"
- *
- *  The casing may be affected by the given +mapping+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
- *
- *  Related: String#downcase!, String#upcase, String#upcase!.
+ *  :include: doc/string/downcase.rdoc
  *
  */
 
