@@ -108,12 +108,12 @@ module URI
 
     # The Hash of patterns.
     #
-    # See also URI::Parser.initialize_pattern.
+    # See also #initialize_pattern.
     attr_reader :pattern
 
     # The Hash of Regexp.
     #
-    # See also URI::Parser.initialize_regexp.
+    # See also #initialize_regexp.
     attr_reader :regexp
 
     # Returns a split URI against +regexp[:ABS_URI]+.
@@ -244,7 +244,7 @@ module URI
     # If no +block+ given, then returns the result,
     # else it calls +block+ for each element in result.
     #
-    # See also URI::Parser.make_regexp.
+    # See also #make_regexp.
     #
     def extract(str, schemes = nil)
       if block_given?
