@@ -4203,7 +4203,7 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv,
                     ac->flag |= flag;
                 }
             }
-        rb_clear_constant_cache_for_id(id);
+            rb_clear_constant_cache_for_id(id);
         }
         else {
             undefined_constant(mod, ID2SYM(id));

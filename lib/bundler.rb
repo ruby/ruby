@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "bundler/rubygems_ext"
 require_relative "bundler/vendored_fileutils"
 require "pathname"
 require "rbconfig"
@@ -7,7 +8,6 @@ require "rbconfig"
 require_relative "bundler/errors"
 require_relative "bundler/environment_preserver"
 require_relative "bundler/plugin"
-require_relative "bundler/rubygems_ext"
 require_relative "bundler/rubygems_integration"
 require_relative "bundler/version"
 require_relative "bundler/current_ruby"

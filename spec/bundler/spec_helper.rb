@@ -103,7 +103,7 @@ RSpec.configure do |config|
 
     build_repo1
 
-    reset_paths!
+    reset!
   end
 
   config.around :each do |example|
