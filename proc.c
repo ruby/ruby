@@ -22,6 +22,7 @@
 #include "method.h"
 #include "iseq.h"
 #include "vm_core.h"
+#include "ractor_core.h"
 #include "yjit.h"
 
 const rb_cref_t *rb_vm_cref_in_context(VALUE self, VALUE cbase);
@@ -1521,23 +1522,26 @@ rb_sym_to_proc(VALUE sym)
     long index;
     ID id;
 
-    if (!sym_proc_cache) {
-        sym_proc_cache = rb_ary_hidden_new(SYM_PROC_CACHE_SIZE * 2);
-        rb_vm_register_global_object(sym_proc_cache);
-        rb_ary_store(sym_proc_cache, SYM_PROC_CACHE_SIZE*2 - 1, Qnil);
-    }
-
     id = SYM2ID(sym);
-    index = (id % SYM_PROC_CACHE_SIZE) << 1;
 
-    if (RARRAY_AREF(sym_proc_cache, index) == sym) {
-        return RARRAY_AREF(sym_proc_cache, index + 1);
-    }
-    else {
-        proc = sym_proc_new(rb_cProc, ID2SYM(id));
-        RARRAY_ASET(sym_proc_cache, index, sym);
-        RARRAY_ASET(sym_proc_cache, index + 1, proc);
-        return proc;
+    if (rb_ractor_main_p()) {
+        index = (id % SYM_PROC_CACHE_SIZE) << 1;
+        if (!sym_proc_cache) {
+            sym_proc_cache = rb_ary_hidden_new(SYM_PROC_CACHE_SIZE * 2);
+            rb_vm_register_global_object(sym_proc_cache);
+            rb_ary_store(sym_proc_cache, SYM_PROC_CACHE_SIZE*2 - 1, Qnil);
+        }
+        if (RARRAY_AREF(sym_proc_cache, index) == sym) {
+            return RARRAY_AREF(sym_proc_cache, index + 1);
+        }
+        else {
+            proc = sym_proc_new(rb_cProc, ID2SYM(id));
+            RARRAY_ASET(sym_proc_cache, index, sym);
+            RARRAY_ASET(sym_proc_cache, index + 1, proc);
+            return proc;
+        }
+    } else {
+        return sym_proc_new(rb_cProc, ID2SYM(id));
     }
 }
 
