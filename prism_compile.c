@@ -1265,6 +1265,7 @@ pm_new_child_iseq(rb_iseq_t *iseq, pm_scope_node_t *node, VALUE name, const rb_i
             type, ISEQ_COMPILE_DATA(iseq)->option, &error_state);
 
     if (error_state) {
+        pm_scope_node_destroy(node);
         RUBY_ASSERT(ret_iseq == NULL);
         rb_jump_tag(error_state);
     }
