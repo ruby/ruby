@@ -524,6 +524,8 @@ module URI
       ret
     end
 
+    # Returns +uri+ as-is if it is URI, or convert it to URI if it is
+    # a String.
     def convert_to_uri(uri)
       if uri.is_a?(URI::Generic)
         uri
