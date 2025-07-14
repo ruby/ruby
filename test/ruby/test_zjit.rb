@@ -905,6 +905,20 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:defined]
   end
 
+  def test_invokeblock_without_block_after_jit_call
+    assert_compiles '"no block given (yield)"', %q{
+      def test(*arr, &b)
+        arr.class
+        yield
+      end
+      begin
+        test
+      rescue => e
+        e.message
+      end
+    }
+  end
+
   def test_putspecialobject_vm_core_and_cbase
     assert_compiles '10', %q{
       def test
