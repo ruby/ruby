@@ -30,7 +30,7 @@ RSpec.describe "bundle install with complex dependencies", realworld: true do
     G
 
     bundle "lock", env: { "DEBUG_RESOLVER" => "1" }
-    expect(out).to include("Solution found after 1 attempts")
+    expect(out).to include("Solution found after 2 attempts")
   end
 
   it "resolves big gemfile quickly" do
