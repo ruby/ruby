@@ -44,6 +44,7 @@
 #include "ruby/util.h"
 #include "ruby_assert.h"
 #include "vm_sync.h"
+#include "ruby/internal/attr/nonstring.h"
 
 #if defined HAVE_CRYPT_R
 # if defined HAVE_CRYPT_H
@@ -11557,7 +11558,7 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
     encidx = rb_enc_to_index(enc);
 
 #define DEFAULT_REPLACE_CHAR(str) do { \
-        static const char replace[sizeof(str)-1] = str; \
+        RBIMPL_ATTR_NONSTRING() static const char replace[sizeof(str)-1] = str; \
         rep = replace; replen = (int)sizeof(replace); \
     } while (0)
 

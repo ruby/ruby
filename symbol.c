@@ -22,6 +22,7 @@
 #include "symbol.h"
 #include "vm_sync.h"
 #include "builtin.h"
+#include "ruby/internal/attr/nonstring.h"
 
 #if defined(USE_SYMBOL_GC) && !(USE_SYMBOL_GC+0)
 # undef USE_SYMBOL_GC
@@ -155,7 +156,7 @@ rb_id_attrset(ID id)
 
     /* make new symbol and ID */
     if (!(str = lookup_id_str(id))) {
-        static const char id_types[][8] = {
+        RBIMPL_ATTR_NONSTRING() static const char id_types[][8] = {
             "local",
             "instance",
             "invalid",
