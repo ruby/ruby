@@ -280,4 +280,10 @@ class TestData < Test::Unit::TestCase
     assert_not_same(test, loaded)
     assert_predicate(loaded, :frozen?)
   end
+
+  def test_frozen_subclass
+    test = Class.new(Data.define(:a)).freeze.new(a: 0)
+    assert_kind_of(Data, test)
+    assert_equal([:a], test.members)
+  end
 end
