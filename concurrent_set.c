@@ -176,6 +176,61 @@ concurrent_set_try_resize(VALUE old_set_obj, VALUE *set_obj_ptr)
 }
 
 VALUE
+rb_concurrent_set_find(VALUE *set_obj_ptr, VALUE key)
+{
+    RUBY_ASSERT(key >= CONCURRENT_SET_SPECIAL_VALUE_COUNT);
+
+    VALUE set_obj;
+
+  retry:
+    set_obj = RUBY_ATOMIC_VALUE_LOAD(*set_obj_ptr);
+    RUBY_ASSERT(set_obj);
+    struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
+
+    struct concurrent_set_probe probe;
+    VALUE hash = set->funcs->hash(key);
+    int idx = concurrent_set_probe_start(&probe, set, hash);
+
+    while (true) {
+        struct concurrent_set_entry *entry = &set->entries[idx];
+        VALUE curr_key = RUBY_ATOMIC_VALUE_LOAD(entry->key);
+
+        switch (curr_key) {
+          case CONCURRENT_SET_EMPTY:
+            return 0;
+          case CONCURRENT_SET_DELETED:
+            break;
+          case CONCURRENT_SET_MOVED:
+            // Wait
+            RB_VM_LOCKING();
+
+            goto retry;
+          default: {
+            VALUE curr_hash = RUBY_ATOMIC_VALUE_LOAD(entry->hash);
+            if ((curr_hash == hash || curr_hash == 0) && set->funcs->cmp(key, curr_key)) {
+                // We've found a match.
+                if (UNLIKELY(!RB_SPECIAL_CONST_P(curr_key) && rb_objspace_garbage_object_p(curr_key))) {
+                    // This is a weakref set, so after marking but before sweeping is complete we may find a matching garbage object.
+                    // Skip it and mark it as deleted.
+                    RUBY_ATOMIC_VALUE_CAS(entry->key, curr_key, CONCURRENT_SET_DELETED);
+
+                    // Fall through and continue our search.
+                }
+                else {
+                    RB_GC_GUARD(set_obj);
+                    return curr_key;
+                }
+            }
+
+            break;
+          }
+        }
+
+        idx = concurrent_set_probe_next(&probe);
+    }
+}
+
+VALUE
 rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
 {
     RUBY_ASSERT(key >= CONCURRENT_SET_SPECIAL_VALUE_COUNT);
