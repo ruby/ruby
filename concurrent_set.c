@@ -61,6 +61,14 @@ rb_concurrent_set_new(const struct rb_concurrent_set_funcs *funcs, int capacity)
     return obj;
 }
 
+rb_atomic_t
+rb_concurrent_set_size(VALUE set_obj)
+{
+    struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
+
+    return RUBY_ATOMIC_LOAD(set->size);
+}
+
 struct concurrent_set_probe {
     int idx;
     int d;
