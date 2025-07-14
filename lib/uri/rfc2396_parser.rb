@@ -67,7 +67,7 @@ module URI
     #
     # == Synopsis
     #
-    #   URI::Parser.new([opts])
+    #   URI::RFC2396_Parser.new([opts])
     #
     # == Args
     #
@@ -86,7 +86,7 @@ module URI
     #
     # == Examples
     #
-    #   p = URI::Parser.new(:ESCAPED => "(?:%[a-fA-F0-9]{2}|%u[a-fA-F0-9]{4})")
+    #   p = URI::RFC2396_Parser.new(:ESCAPED => "(?:%[a-fA-F0-9]{2}|%u[a-fA-F0-9]{4})")
     #   u = p.parse("http://example.jp/%uABCD") #=> #<URI::HTTP http://example.jp/%uABCD>
     #   URI.parse(u.to_s) #=> raises URI::InvalidURIError
     #
@@ -202,8 +202,7 @@ module URI
     #
     # == Usage
     #
-    #   p = URI::Parser.new
-    #   p.parse("ldap://ldap.example.com/dc=example?user=john")
+    #   URI::RFC2396_PARSER.parse("ldap://ldap.example.com/dc=example?user=john")
     #   #=> #<URI::LDAP ldap://ldap.example.com/dc=example?user=john>
     #
     def parse(uri)
