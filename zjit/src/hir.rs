@@ -2069,9 +2069,9 @@ impl Function {
 
         // Dump HIR after optimization
         match get_option!(dump_hir_opt) {
-            Some(DumpHIR::WithoutSnapshot) => println!("HIR:\n{}", FunctionPrinter::without_snapshot(&self)),
-            Some(DumpHIR::All) => println!("HIR:\n{}", FunctionPrinter::with_snapshot(&self)),
-            Some(DumpHIR::Debug) => println!("HIR:\n{:#?}", &self),
+            Some(DumpHIR::WithoutSnapshot) => println!("Optimized HIR:\n{}", FunctionPrinter::without_snapshot(&self)),
+            Some(DumpHIR::All) => println!("Optimized HIR:\n{}", FunctionPrinter::with_snapshot(&self)),
+            Some(DumpHIR::Debug) => println!("Optimized HIR:\n{:#?}", &self),
             None => {},
         }
     }
@@ -2209,7 +2209,7 @@ impl Function {
 impl<'a> std::fmt::Display for FunctionPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let fun = &self.fun;
-        let iseq_name = iseq_name(fun.iseq);
+        let iseq_name = iseq_get_location(fun.iseq, 0);
         writeln!(f, "fn {iseq_name}:")?;
         for block_id in fun.rpo() {
             write!(f, "{block_id}(")?;
@@ -3169,9 +3169,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     fun.infer_types();
 
     match get_option!(dump_hir_init) {
-        Some(DumpHIR::WithoutSnapshot) => println!("HIR:\n{}", FunctionPrinter::without_snapshot(&fun)),
-        Some(DumpHIR::All) => println!("HIR:\n{}", FunctionPrinter::with_snapshot(&fun)),
-        Some(DumpHIR::Debug) => println!("HIR:\n{:#?}", &fun),
+        Some(DumpHIR::WithoutSnapshot) => println!("Initial HIR:\n{}", FunctionPrinter::without_snapshot(&fun)),
+        Some(DumpHIR::All) => println!("Initial HIR:\n{}", FunctionPrinter::with_snapshot(&fun)),
+        Some(DumpHIR::Debug) => println!("Initial HIR:\n{:#?}", &fun),
         None => {},
     }
 
@@ -3667,7 +3667,7 @@ mod tests {
     fn test_putobject() {
         eval("def test = 123");
         assert_method_hir_with_opcode("test", YARVINSN_putobject, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject):
               v2:Fixnum[123] = Const Value(123)
               Return v2
@@ -3678,7 +3678,7 @@ mod tests {
     fn test_new_array() {
         eval("def test = []");
         assert_method_hir_with_opcode("test", YARVINSN_newarray, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject):
               v3:ArrayExact = NewArray
               Return v3
@@ -3689,7 +3689,7 @@ mod tests {
     fn test_new_array_with_element() {
         eval("def test(a) = [a]");
         assert_method_hir_with_opcode("test", YARVINSN_newarray, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:ArrayExact = NewArray v1
               Return v4
@@ -3700,7 +3700,7 @@ mod tests {
     fn test_new_array_with_elements() {
         eval("def test(a, b) = [a, b]");
         assert_method_hir_with_opcode("test", YARVINSN_newarray, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:ArrayExact = NewArray v1, v2
               Return v5
@@ -3711,7 +3711,7 @@ mod tests {
     fn test_new_range_inclusive_with_one_element() {
         eval("def test(a) = (a..10)");
         assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[10] = Const Value(10)
               v5:RangeExact = NewRange v1 NewRangeInclusive v3
@@ -3723,7 +3723,7 @@ mod tests {
     fn test_new_range_inclusive_with_two_elements() {
         eval("def test(a, b) = (a..b)");
         assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:RangeExact = NewRange v1 NewRangeInclusive v2
               Return v5
@@ -3734,7 +3734,7 @@ mod tests {
     fn test_new_range_exclusive_with_one_element() {
         eval("def test(a) = (a...10)");
         assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[10] = Const Value(10)
               v5:RangeExact = NewRange v1 NewRangeExclusive v3
@@ -3746,7 +3746,7 @@ mod tests {
     fn test_new_range_exclusive_with_two_elements() {
         eval("def test(a, b) = (a...b)");
         assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:RangeExact = NewRange v1 NewRangeExclusive v2
               Return v5
@@ -3757,7 +3757,7 @@ mod tests {
     fn test_array_dup() {
         eval("def test = [1, 2, 3]");
         assert_method_hir_with_opcode("test", YARVINSN_duparray, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject):
               v2:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v4:ArrayExact = ArrayDup v2
@@ -3769,7 +3769,7 @@ mod tests {
     fn test_hash_dup() {
         eval("def test = {a: 1, b: 2}");
         assert_method_hir_with_opcode("test", YARVINSN_duphash, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject):
               v2:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v4:HashExact = HashDup v2
@@ -3781,7 +3781,7 @@ mod tests {
     fn test_new_hash_empty() {
         eval("def test = {}");
         assert_method_hir_with_opcode("test", YARVINSN_newhash, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject):
               v3:HashExact = NewHash
               Return v3
@@ -3792,7 +3792,7 @@ mod tests {
     fn test_new_hash_with_elements() {
         eval("def test(aval, bval) = {a: aval, b: bval}");
         assert_method_hir_with_opcode("test", YARVINSN_newhash, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v4:StaticSymbol[:a] = Const Value(VALUE(0x1000))
               v5:StaticSymbol[:b] = Const Value(VALUE(0x1008))
@@ -3805,7 +3805,7 @@ mod tests {
     fn test_string_copy() {
         eval("def test = \"hello\"");
         assert_method_hir_with_opcode("test", YARVINSN_putchilledstring, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:StringExact = StringCopy v2
@@ -3817,7 +3817,7 @@ mod tests {
     fn test_bignum() {
         eval("def test = 999999999999999999999999999999999999");
         assert_method_hir_with_opcode("test", YARVINSN_putobject, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject):
               v2:Bignum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               Return v2
@@ -3828,7 +3828,7 @@ mod tests {
     fn test_flonum() {
         eval("def test = 1.5");
         assert_method_hir_with_opcode("test", YARVINSN_putobject, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject):
               v2:Flonum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               Return v2
@@ -3839,7 +3839,7 @@ mod tests {
     fn test_heap_float() {
         eval("def test = 1.7976931348623157e+308");
         assert_method_hir_with_opcode("test", YARVINSN_putobject, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject):
               v2:HeapFloat[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               Return v2
@@ -3850,7 +3850,7 @@ mod tests {
     fn test_static_sym() {
         eval("def test = :foo");
         assert_method_hir_with_opcode("test", YARVINSN_putobject, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject):
               v2:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
               Return v2
@@ -3861,7 +3861,7 @@ mod tests {
     fn test_opt_plus() {
         eval("def test = 1+2");
         assert_method_hir_with_opcode("test", YARVINSN_opt_plus, expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
@@ -3876,7 +3876,7 @@ mod tests {
             def test = {}.freeze
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_hash_freeze, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v4:BasicObject = SendWithoutBlock v3, :freeze
@@ -3890,7 +3890,7 @@ mod tests {
             def test = [].freeze
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_ary_freeze, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v4:BasicObject = SendWithoutBlock v3, :freeze
@@ -3904,7 +3904,7 @@ mod tests {
             def test = ''.freeze
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_str_freeze, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v4:BasicObject = SendWithoutBlock v3, :freeze
@@ -3918,7 +3918,7 @@ mod tests {
             def test = -''
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_str_uminus, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v4:BasicObject = SendWithoutBlock v3, :-@
@@ -3935,7 +3935,7 @@ mod tests {
             end
         ");
         assert_method_hir_with_opcodes("test", &[YARVINSN_getlocal_WC_0, YARVINSN_setlocal_WC_0], expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v1:NilClassExact = Const Value(nil)
               v3:Fixnum[1] = Const Value(1)
@@ -3966,7 +3966,7 @@ mod tests {
             &[YARVINSN_getlocal_WC_1, YARVINSN_setlocal_WC_1,
               YARVINSN_getlocal, YARVINSN_setlocal],
             expect![[r#"
-                fn block (3 levels) in <compiled>:
+                fn block (3 levels) in <compiled>@<compiled>:10:
                 bb0(v0:BasicObject):
                   v2:BasicObject = GetLocal l2, EP@4
                   SetLocal l1, EP@3, v2
@@ -3989,7 +3989,7 @@ mod tests {
             def test = defined?(@foo)
         ");
         assert_method_hir_with_opcode("test", YARVINSN_definedivar, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:BasicObject = DefinedIvar v0, :@foo
               Return v3
@@ -4002,7 +4002,7 @@ mod tests {
             def test = return defined?(SeaChange), defined?(favourite), defined?($ruby)
         ");
         assert_method_hir_with_opcode("test", YARVINSN_defined, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:NilClassExact = Const Value(nil)
               v3:BasicObject = Defined constant, v2
@@ -4026,7 +4026,7 @@ mod tests {
             end
         ");
         assert_method_hir_with_opcode("test", YARVINSN_leave, expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:CBool = Test v1
               IfFalse v3, bb1(v0, v1)
@@ -4051,7 +4051,7 @@ mod tests {
             end
         ");
         assert_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject):
               v2:NilClassExact = Const Value(nil)
               v4:CBool = Test v1
@@ -4073,7 +4073,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :+, v2
               Return v5
@@ -4087,7 +4087,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_minus, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :-, v2
               Return v5
@@ -4101,7 +4101,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_mult, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :*, v2
               Return v5
@@ -4115,7 +4115,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_div, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :/, v2
               Return v5
@@ -4129,7 +4129,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_mod, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :%, v2
               Return v5
@@ -4143,7 +4143,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_eq, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :==, v2
               Return v5
@@ -4157,7 +4157,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_neq, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :!=, v2
               Return v5
@@ -4171,7 +4171,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_lt, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :<, v2
               Return v5
@@ -4185,7 +4185,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_le, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :<=, v2
               Return v5
@@ -4199,7 +4199,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_gt, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :>, v2
               Return v5
@@ -4221,7 +4221,7 @@ mod tests {
             test
         ");
         assert_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v1:NilClassExact = Const Value(nil)
               v2:NilClassExact = Const Value(nil)
@@ -4251,7 +4251,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_ge, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :>=, v2
               Return v5
@@ -4271,7 +4271,7 @@ mod tests {
             end
         ");
         assert_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v1:NilClassExact = Const Value(nil)
               v3:TrueClassExact = Const Value(true)
@@ -4296,7 +4296,7 @@ mod tests {
             end
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_send_without_block, expect![[r#"
-            fn test:
+            fn test@<compiled>:6:
             bb0(v0:BasicObject):
               v2:Fixnum[2] = Const Value(2)
               v3:Fixnum[3] = Const Value(3)
@@ -4316,7 +4316,7 @@ mod tests {
             test([1,2,3])
         ");
         assert_method_hir_with_opcode("test", YARVINSN_send, expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = Send v1, 0x1000, :each
               Return v4
@@ -4329,7 +4329,7 @@ mod tests {
 
         // The 2 string literals have the same address because they're deduped.
         assert_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:1:
             bb0(v0:BasicObject):
               v2:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v4:ArrayExact = ArrayDup v2
@@ -4350,7 +4350,7 @@ mod tests {
             def test(a) = foo(*a)
         ");
         assert_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:ArrayExact = ToArray v1
               SideExit UnknownCallType
@@ -4363,7 +4363,7 @@ mod tests {
             def test(a) = foo(&a)
         ");
         assert_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               SideExit UnknownCallType
         "#]]);
@@ -4375,7 +4375,7 @@ mod tests {
             def test(a) = foo(a: 1)
         ");
         assert_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               SideExit UnknownCallType
@@ -4388,7 +4388,7 @@ mod tests {
             def test(a) = foo(**a)
         ");
         assert_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               SideExit UnknownCallType
         "#]]);
@@ -4402,7 +4402,7 @@ mod tests {
             def test = super()
         ");
         assert_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               SideExit UnknownOpcode(invokesuper)
         "#]]);
@@ -4414,7 +4414,7 @@ mod tests {
             def test = super
         ");
         assert_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               SideExit UnknownOpcode(invokesuper)
         "#]]);
@@ -4426,7 +4426,7 @@ mod tests {
             def test(...) = super(...)
         ");
         assert_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               SideExit UnknownOpcode(invokesuperforward)
         "#]]);
@@ -4440,7 +4440,7 @@ mod tests {
             def test(a) = foo **a, b: 1
         ");
         assert_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
               v5:HashExact = NewHash
@@ -4459,7 +4459,7 @@ mod tests {
             def test(*) = foo *, 1
         ");
         assert_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:ArrayExact):
               v4:ArrayExact = ToNewArray v1
               v5:Fixnum[1] = Const Value(1)
@@ -4474,7 +4474,7 @@ mod tests {
             def test(...) = foo(...)
         ");
         assert_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               SideExit UnknownOpcode(sendforward)
         "#]]);
@@ -4487,7 +4487,7 @@ mod tests {
             def test = C.new
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_new, expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v3:BasicObject = GetConstantPath 0x1000
               v4:NilClassExact = Const Value(nil)
@@ -4507,7 +4507,7 @@ mod tests {
         ");
         // TODO(max): Rewrite to nil
         assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX)
               v4:BasicObject = ArrayMax
@@ -4521,7 +4521,7 @@ mod tests {
             def test(a,b) = [a,b].max
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX)
               v6:BasicObject = ArrayMax v1, v2
@@ -4540,7 +4540,7 @@ mod tests {
             end
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v3:NilClassExact = Const Value(nil)
               v4:NilClassExact = Const Value(nil)
@@ -4560,7 +4560,7 @@ mod tests {
             end
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v3:NilClassExact = Const Value(nil)
               v4:NilClassExact = Const Value(nil)
@@ -4580,7 +4580,7 @@ mod tests {
             end
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v3:NilClassExact = Const Value(nil)
               v4:NilClassExact = Const Value(nil)
@@ -4604,7 +4604,7 @@ mod tests {
             end
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v3:NilClassExact = Const Value(nil)
               v4:NilClassExact = Const Value(nil)
@@ -4619,7 +4619,7 @@ mod tests {
             def test(a,b) = [a,b].length
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_length, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:ArrayExact = NewArray v1, v2
               v7:BasicObject = SendWithoutBlock v5, :length
@@ -4633,7 +4633,7 @@ mod tests {
             def test(a,b) = [a,b].size
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_size, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:ArrayExact = NewArray v1, v2
               v7:BasicObject = SendWithoutBlock v5, :size
@@ -4648,7 +4648,7 @@ mod tests {
             test
         ");
         assert_method_hir_with_opcode("test", YARVINSN_getinstancevariable, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:BasicObject = GetIvar v0, :@foo
               Return v3
@@ -4662,7 +4662,7 @@ mod tests {
             test
         ");
         assert_method_hir_with_opcode("test", YARVINSN_setinstancevariable, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               SetIvar v0, :@foo, v2
@@ -4677,7 +4677,7 @@ mod tests {
             test
         ");
         assert_method_hir_with_opcode("test", YARVINSN_setglobal, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               SetGlobal :$foo, v2
@@ -4692,7 +4692,7 @@ mod tests {
             test
         ");
         assert_method_hir_with_opcode("test", YARVINSN_getglobal, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:BasicObject = GetGlobal :$foo
               Return v3
@@ -4705,7 +4705,7 @@ mod tests {
             def test(a) = [*a]
         ");
         assert_method_hir_with_opcode("test", YARVINSN_splatarray, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:ArrayExact = ToNewArray v1
               Return v4
@@ -4718,7 +4718,7 @@ mod tests {
             def test(a) = [1, *a]
         ");
         assert_method_hir_with_opcode("test", YARVINSN_concattoarray, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               v5:ArrayExact = NewArray v3
@@ -4734,7 +4734,7 @@ mod tests {
             def test(a) = [*a, 1]
         ");
         assert_method_hir_with_opcode("test", YARVINSN_pushtoarray, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:ArrayExact = ToNewArray v1
               v5:Fixnum[1] = Const Value(1)
@@ -4749,7 +4749,7 @@ mod tests {
             def test(a) = [*a, 1, 2, 3]
         ");
         assert_method_hir_with_opcode("test", YARVINSN_pushtoarray, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:ArrayExact = ToNewArray v1
               v5:Fixnum[1] = Const Value(1)
@@ -4768,7 +4768,7 @@ mod tests {
             def test(a, b) = a[b] = 1
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_aset, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v4:NilClassExact = Const Value(nil)
               v5:Fixnum[1] = Const Value(1)
@@ -4783,7 +4783,7 @@ mod tests {
             def test(a, b) = a[b]
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_aref, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :[], v2
               Return v5
@@ -4796,7 +4796,7 @@ mod tests {
             def test(a) = a['string lit triggers aref_with']
         ");
         assert_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v5:BasicObject = SendWithoutBlock v1, :[], v3
@@ -4810,7 +4810,7 @@ mod tests {
             def test(x) = x.empty?
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_empty_p, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v1, :empty?
               Return v4
@@ -4823,7 +4823,7 @@ mod tests {
             def test(x) = x.succ
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_succ, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v1, :succ
               Return v4
@@ -4836,7 +4836,7 @@ mod tests {
             def test(x, y) = x & y
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_and, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :&, v2
               Return v5
@@ -4849,7 +4849,7 @@ mod tests {
             def test(x, y) = x | y
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_or, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :|, v2
               Return v5
@@ -4862,7 +4862,7 @@ mod tests {
             def test(x) = !x
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_not, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v1, :!
               Return v4
@@ -4875,7 +4875,7 @@ mod tests {
             def test(regexp, matchee) = regexp =~ matchee
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_regexpmatch2, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :=~, v2
               Return v5
@@ -4892,7 +4892,7 @@ mod tests {
             end
         ");
         assert_method_hir_with_opcode("test", YARVINSN_putspecialobject, expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v2:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
               v3:BasicObject = PutSpecialObject CBase
@@ -4917,7 +4917,7 @@ mod tests {
             end
         ");
         assert_method_hir_with_opcode("reverse_odd", YARVINSN_opt_reverse, expect![[r#"
-            fn reverse_odd:
+            fn reverse_odd@<compiled>:3:
             bb0(v0:BasicObject):
               v1:NilClassExact = Const Value(nil)
               v2:NilClassExact = Const Value(nil)
@@ -4929,7 +4929,7 @@ mod tests {
               Return v12
         "#]]);
         assert_method_hir_with_opcode("reverse_even", YARVINSN_opt_reverse, expect![[r#"
-            fn reverse_even:
+            fn reverse_even@<compiled>:8:
             bb0(v0:BasicObject):
               v1:NilClassExact = Const Value(nil)
               v2:NilClassExact = Const Value(nil)
@@ -4950,7 +4950,7 @@ mod tests {
         def test(x) = x&.itself
         ");
         assert_method_hir_with_opcode("test", YARVINSN_branchnil, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:CBool = IsNil v1
               IfTrue v3, bb1(v0, v1, v1)
@@ -4964,7 +4964,7 @@ mod tests {
     #[test]
     fn test_invokebuiltin_delegate_with_args() {
         assert_method_hir_with_opcode("Float", YARVINSN_opt_invokebuiltin_delegate_leave, expect![[r#"
-            fn Float:
+            fn Float@<internal:kernel>:197:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject):
               v6:BasicObject = InvokeBuiltin rb_f_float, v0, v1, v2
               Jump bb1(v0, v1, v2, v3, v6)
@@ -4976,7 +4976,7 @@ mod tests {
     #[test]
     fn test_invokebuiltin_delegate_without_args() {
         assert_method_hir_with_opcode("class", YARVINSN_opt_invokebuiltin_delegate_leave, expect![[r#"
-            fn class:
+            fn class@<internal:kernel>:20:
             bb0(v0:BasicObject):
               v3:BasicObject = InvokeBuiltin _bi20, v0
               Jump bb1(v0, v3)
@@ -4991,7 +4991,7 @@ mod tests {
         assert!(iseq_contains_opcode(iseq, YARVINSN_invokebuiltin), "iseq GC.start does not contain invokebuiltin");
         let function = iseq_to_hir(iseq).unwrap();
         assert_function_hir(function, expect![[r#"
-            fn start:
+            fn start@<internal:gc>:36:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject):
               v6:FalseClassExact = Const Value(false)
               v8:BasicObject = InvokeBuiltin gc_start_internal, v0, v1, v2, v3, v6
@@ -5005,7 +5005,7 @@ mod tests {
             def test(x) = (x[0, 1] ||= 2)
         ");
         assert_method_hir_with_opcode("test", YARVINSN_dupn, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:NilClassExact = Const Value(nil)
               v4:Fixnum[0] = Const Value(0)
@@ -5027,7 +5027,7 @@ mod tests {
             def test = \"#{1}\"
         ");
         assert_method_hir_with_opcode("test", YARVINSN_objtostring, expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:Fixnum[1] = Const Value(1)
@@ -5044,13 +5044,13 @@ mod tests {
             define_method(:throw_break) { break 2 }
         ");
         assert_method_hir_with_opcode("throw_return", YARVINSN_throw, expect![[r#"
-            fn block in <compiled>:
+            fn block in <compiled>@<compiled>:2:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               Throw TAG_RETURN, v2
         "#]]);
         assert_method_hir_with_opcode("throw_break", YARVINSN_throw, expect![[r#"
-            fn block in <compiled>:
+            fn block in <compiled>@<compiled>:3:
             bb0(v0:BasicObject):
               v2:Fixnum[2] = Const Value(2)
               Throw TAG_BREAK, v2
@@ -5087,7 +5087,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v6:Fixnum[3] = Const Value(3)
               Return v6
@@ -5107,7 +5107,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v11:Fixnum[4] = Const Value(4)
               Return v11
@@ -5122,7 +5122,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
@@ -5143,7 +5143,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v2:Fixnum[5] = Const Value(5)
               v3:Fixnum[3] = Const Value(3)
@@ -5164,7 +5164,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v2:Fixnum[6] = Const Value(6)
               v3:Fixnum[7] = Const Value(7)
@@ -5183,7 +5183,7 @@ mod opt_tests {
             test 1; test 2
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[0] = Const Value(0)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
@@ -5211,7 +5211,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
@@ -5233,7 +5233,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
@@ -5258,7 +5258,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v2:Fixnum[2] = Const Value(2)
               v3:Fixnum[1] = Const Value(1)
@@ -5280,7 +5280,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v2:Fixnum[2] = Const Value(2)
               v3:Fixnum[1] = Const Value(1)
@@ -5305,7 +5305,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
@@ -5327,7 +5327,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v2:Fixnum[2] = Const Value(2)
               v3:Fixnum[2] = Const Value(2)
@@ -5349,7 +5349,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
@@ -5372,7 +5372,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v2:Fixnum[2] = Const Value(2)
               v3:Fixnum[2] = Const Value(2)
@@ -5392,7 +5392,7 @@ mod opt_tests {
             test(2); test(3)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
@@ -5414,34 +5414,34 @@ mod opt_tests {
         ");
 
         assert_optimized_method_hir("rest", expect![[r#"
-            fn rest:
+            fn rest@<compiled>:2:
             bb0(v0:BasicObject, v1:ArrayExact):
               Return v1
         "#]]);
         // extra hidden param for the set of specified keywords
         assert_optimized_method_hir("kw", expect![[r#"
-            fn kw:
+            fn kw@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               Return v1
         "#]]);
         assert_optimized_method_hir("kw_rest", expect![[r#"
-            fn kw_rest:
+            fn kw_rest@<compiled>:4:
             bb0(v0:BasicObject, v1:BasicObject):
               Return v1
         "#]]);
         assert_optimized_method_hir("block", expect![[r#"
-            fn block:
+            fn block@<compiled>:6:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:NilClassExact = Const Value(nil)
               Return v3
         "#]]);
         assert_optimized_method_hir("post", expect![[r#"
-            fn post:
+            fn post@<compiled>:5:
             bb0(v0:BasicObject, v1:ArrayExact, v2:BasicObject):
               Return v2
         "#]]);
         assert_optimized_method_hir("forwardable", expect![[r#"
-            fn forwardable:
+            fn forwardable@<compiled>:7:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:NilClassExact = Const Value(nil)
               Return v3
@@ -5459,7 +5459,7 @@ mod opt_tests {
             test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:5:
             bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
               v6:BasicObject[VALUE(0x1010)] = GuardBitEquals v0, VALUE(0x1010)
@@ -5480,7 +5480,7 @@ mod opt_tests {
             undef :foo
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:5:
             bb0(v0:BasicObject):
               v3:BasicObject = SendWithoutBlock v0, :foo
               Return v3
@@ -5499,7 +5499,7 @@ mod opt_tests {
             test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:6:
             bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
               v6:BasicObject[VALUE(0x1010)] = GuardBitEquals v0, VALUE(0x1010)
@@ -5517,7 +5517,7 @@ mod opt_tests {
             test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v2:Fixnum[3] = Const Value(3)
               PatchPoint MethodRedefined(Object@0x1000, Integer@0x1008)
@@ -5538,7 +5538,7 @@ mod opt_tests {
             test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:5:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
@@ -5563,7 +5563,7 @@ mod opt_tests {
             test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:7:
             bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
               v8:BasicObject[VALUE(0x1010)] = GuardBitEquals v0, VALUE(0x1010)
@@ -5582,7 +5582,7 @@ mod opt_tests {
             test(1,2); test(3,4)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
               v8:Fixnum = GuardType v1, Fixnum
@@ -5599,7 +5599,7 @@ mod opt_tests {
             test(1); test(3)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
@@ -5616,7 +5616,7 @@ mod opt_tests {
             test(1); test(3)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
@@ -5633,7 +5633,7 @@ mod opt_tests {
             test(1,2); test(3,4)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
               v8:Fixnum = GuardType v1, Fixnum
@@ -5650,7 +5650,7 @@ mod opt_tests {
             test(1); test(3)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
@@ -5667,7 +5667,7 @@ mod opt_tests {
             test(1); test(3)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
@@ -5687,7 +5687,7 @@ mod opt_tests {
             test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v5:Fixnum[5] = Const Value(5)
               Return v5
@@ -5704,7 +5704,7 @@ mod opt_tests {
             test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v4:Fixnum[5] = Const Value(5)
               Return v4
@@ -5721,7 +5721,7 @@ mod opt_tests {
             test(1); test(2)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject):
               v6:Fixnum[5] = Const Value(5)
               Return v6
@@ -5737,7 +5737,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v5:Fixnum[5] = Const Value(5)
               Return v5
@@ -5753,7 +5753,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v9:Fixnum[5] = Const Value(5)
               Return v9
@@ -5770,7 +5770,7 @@ mod opt_tests {
             test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v6:Fixnum[5] = Const Value(5)
               Return v6
@@ -5786,7 +5786,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v6:Fixnum[5] = Const Value(5)
               Return v6
@@ -5803,7 +5803,7 @@ mod opt_tests {
             test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v3:Fixnum[5] = Const Value(5)
               Return v3
@@ -5820,7 +5820,7 @@ mod opt_tests {
             test; test
         "#);
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v5:Fixnum[5] = Const Value(5)
               Return v5
@@ -5837,7 +5837,7 @@ mod opt_tests {
             test(1, 2); test(3, 4)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
               v9:Fixnum = GuardType v1, Fixnum
@@ -5857,7 +5857,7 @@ mod opt_tests {
             test(1, 2); test(3, 4)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
               v9:Fixnum = GuardType v1, Fixnum
@@ -5877,7 +5877,7 @@ mod opt_tests {
             test(1, 2); test(3, 4)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
               v9:Fixnum = GuardType v1, Fixnum
@@ -5897,7 +5897,7 @@ mod opt_tests {
             test(1, 2); test(3, 4)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
               v9:Fixnum = GuardType v1, Fixnum
@@ -5918,7 +5918,7 @@ mod opt_tests {
             test(1, 2); test(3, 4)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
               v9:Fixnum = GuardType v1, Fixnum
@@ -5939,7 +5939,7 @@ mod opt_tests {
             test(1, 2); test(3, 4)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
               v9:Fixnum = GuardType v1, Fixnum
@@ -5959,7 +5959,7 @@ mod opt_tests {
             test(1, 2); test(3, 4)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
               v9:Fixnum = GuardType v1, Fixnum
@@ -5979,7 +5979,7 @@ mod opt_tests {
             test(1, 2); test(3, 4)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
               v9:Fixnum = GuardType v1, Fixnum
@@ -5999,7 +5999,7 @@ mod opt_tests {
             test(1, 2); test(3, 4)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
               v9:Fixnum = GuardType v1, Fixnum
@@ -6019,7 +6019,7 @@ mod opt_tests {
             test(1, 2); test(3, 4)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
               v9:Fixnum = GuardType v1, Fixnum
@@ -6039,7 +6039,7 @@ mod opt_tests {
             test(1, 2); test(3, 4)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
@@ -6059,7 +6059,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v3:BasicObject = GetConstantPath 0x1000
               v4:Fixnum[5] = Const Value(5)
@@ -6075,7 +6075,7 @@ mod opt_tests {
             test(1)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008)
               v7:Fixnum = GuardType v1, Fixnum
@@ -6090,7 +6090,7 @@ mod opt_tests {
             def test = [].itself
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:ArrayExact = NewArray
               PatchPoint MethodRedefined(Array@0x1000, itself@0x1008)
@@ -6108,7 +6108,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v1:NilClassExact = Const Value(nil)
               v4:ArrayExact = NewArray
@@ -6129,7 +6129,7 @@ mod opt_tests {
             test
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:4:
             bb0(v0:BasicObject):
               v1:NilClassExact = Const Value(nil)
               PatchPoint SingleRactorMode
@@ -6150,7 +6150,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v1:NilClassExact = Const Value(nil)
               v4:ArrayExact = NewArray
@@ -6168,7 +6168,7 @@ mod opt_tests {
             test # Warm the constant cache
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, C)
@@ -6184,7 +6184,7 @@ mod opt_tests {
             test # Warm the constant cache
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, String)
@@ -6210,7 +6210,7 @@ mod opt_tests {
             test # Warm the constant cache
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, Enumerable)
@@ -6232,7 +6232,7 @@ mod opt_tests {
             test # Warm the constant cache
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:4:
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, MY_MODULE)
@@ -6250,7 +6250,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v1:NilClassExact = Const Value(nil)
               v4:ArrayExact = NewArray
@@ -6269,7 +6269,7 @@ mod opt_tests {
         ");
         // Not specialized
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               v3:Fixnum[0] = Const Value(0)
@@ -6284,7 +6284,7 @@ mod opt_tests {
             def test(x) = 1.zero?
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               PatchPoint MethodRedefined(Integer@0x1000, zero?@0x1008)
@@ -6302,7 +6302,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject):
               v2:NilClassExact = Const Value(nil)
               v4:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -6321,7 +6321,7 @@ mod opt_tests {
             test
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:StringExact = StringCopy v2
@@ -6337,7 +6337,7 @@ mod opt_tests {
             def test = Kernel
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:BasicObject = GetConstantPath 0x1000
               Return v3
@@ -6352,7 +6352,7 @@ mod opt_tests {
             Kernel = 5
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:BasicObject = GetConstantPath 0x1000
               Return v3
@@ -6366,7 +6366,7 @@ mod opt_tests {
             test
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, Kernel)
@@ -6388,7 +6388,7 @@ mod opt_tests {
             test
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:8:
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, Foo::Bar::C)
@@ -6405,7 +6405,7 @@ mod opt_tests {
             test
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, C)
@@ -6428,7 +6428,7 @@ mod opt_tests {
             test
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:7:
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, C)
@@ -6446,7 +6446,7 @@ mod opt_tests {
             def test(a,b) = [a,b].length
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:ArrayExact = NewArray v1, v2
               PatchPoint MethodRedefined(Array@0x1000, length@0x1008)
@@ -6461,7 +6461,7 @@ mod opt_tests {
             def test(a,b) = [a,b].size
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:ArrayExact = NewArray v1, v2
               PatchPoint MethodRedefined(Array@0x1000, size@0x1008)
@@ -6476,7 +6476,7 @@ mod opt_tests {
             def test = @foo
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:BasicObject = GetIvar v0, :@foo
               Return v3
@@ -6489,7 +6489,7 @@ mod opt_tests {
             def test = @foo = 1
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               SetIvar v0, :@foo, v2
@@ -6503,7 +6503,7 @@ mod opt_tests {
             def test = {}.freeze
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -6517,7 +6517,7 @@ mod opt_tests {
             def test = {}.freeze.freeze
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -6532,7 +6532,7 @@ mod opt_tests {
             def test = {}.dup.freeze
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:HashExact = NewHash
               v5:BasicObject = SendWithoutBlock v3, :dup
@@ -6547,7 +6547,7 @@ mod opt_tests {
             def test = {}.freeze(nil)
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:HashExact = NewHash
               v4:NilClassExact = Const Value(nil)
@@ -6562,7 +6562,7 @@ mod opt_tests {
             def test = [].freeze
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -6576,7 +6576,7 @@ mod opt_tests {
             def test = [].freeze.freeze
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -6591,7 +6591,7 @@ mod opt_tests {
             def test = [].dup.freeze
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:ArrayExact = NewArray
               v5:BasicObject = SendWithoutBlock v3, :dup
@@ -6606,7 +6606,7 @@ mod opt_tests {
             def test = [].freeze(nil)
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:ArrayExact = NewArray
               v4:NilClassExact = Const Value(nil)
@@ -6621,7 +6621,7 @@ mod opt_tests {
             def test = ''.freeze
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -6635,7 +6635,7 @@ mod opt_tests {
             def test = ''.freeze.freeze
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -6650,7 +6650,7 @@ mod opt_tests {
             def test = ''.dup.freeze
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:StringExact = StringCopy v2
@@ -6666,7 +6666,7 @@ mod opt_tests {
             def test = ''.freeze(nil)
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:StringExact = StringCopy v2
@@ -6682,7 +6682,7 @@ mod opt_tests {
             def test = -''
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
@@ -6696,7 +6696,7 @@ mod opt_tests {
             def test = -''.freeze
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -6711,7 +6711,7 @@ mod opt_tests {
             def test = -''.dup
         ");
         assert_optimized_method_hir("test",  expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:StringExact = StringCopy v2
@@ -6727,7 +6727,7 @@ mod opt_tests {
             def test = "#{('foo')}"
         "##);
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
@@ -6742,7 +6742,7 @@ mod opt_tests {
             def test = "#{1}"
         "##);
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:Fixnum[1] = Const Value(1)
@@ -6762,7 +6762,7 @@ mod opt_tests {
         ");
 
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v3:NilClassExact = Const Value(nil)
               Return v3
@@ -6779,7 +6779,7 @@ mod opt_tests {
         ");
 
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008)
@@ -6794,7 +6794,7 @@ mod opt_tests {
             def test = [4,5,6].freeze[1]
         "##);
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -6811,7 +6811,7 @@ mod opt_tests {
             def test = [4,5,6].freeze[-3]
         "##);
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -6828,7 +6828,7 @@ mod opt_tests {
             def test = [4,5,6].freeze[-10]
         "##);
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -6845,7 +6845,7 @@ mod opt_tests {
             def test = [4,5,6].freeze[10]
         "##);
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -6867,7 +6867,7 @@ mod opt_tests {
             test
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:4:
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, MY_SET)
@@ -6882,7 +6882,7 @@ mod opt_tests {
             def test = /a/
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:RegexpExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               Return v2
@@ -6895,7 +6895,7 @@ mod opt_tests {
             def test = nil.nil?
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:NilClassExact = Const Value(nil)
               PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008)
@@ -6913,7 +6913,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v2:NilClassExact = Const Value(nil)
               PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008)
@@ -6928,7 +6928,7 @@ mod opt_tests {
             def test = 1.nil?
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008)
@@ -6946,7 +6946,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:3:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008)
@@ -6963,7 +6963,7 @@ mod opt_tests {
             test(nil)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008)
               v7:NilClassExact = GuardType v1, NilClassExact
@@ -6980,7 +6980,7 @@ mod opt_tests {
             test(false)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint MethodRedefined(FalseClass@0x1000, nil?@0x1008)
               v7:FalseClassExact = GuardType v1, FalseClassExact
@@ -6997,7 +6997,7 @@ mod opt_tests {
             test(true)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint MethodRedefined(TrueClass@0x1000, nil?@0x1008)
               v7:TrueClassExact = GuardType v1, TrueClassExact
@@ -7014,7 +7014,7 @@ mod opt_tests {
             test(:foo)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint MethodRedefined(Symbol@0x1000, nil?@0x1008)
               v7:StaticSymbol = GuardType v1, StaticSymbol
@@ -7031,7 +7031,7 @@ mod opt_tests {
             test(1)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008)
               v7:Fixnum = GuardType v1, Fixnum
@@ -7048,7 +7048,7 @@ mod opt_tests {
             test(1.0)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint MethodRedefined(Float@0x1000, nil?@0x1008)
               v7:Flonum = GuardType v1, Flonum
@@ -7065,7 +7065,7 @@ mod opt_tests {
             test('foo')
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint MethodRedefined(String@0x1000, nil?@0x1008)
               v7:StringExact = GuardType v1, StringExact
@@ -7082,7 +7082,7 @@ mod opt_tests {
             test(1, 2)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 28)
               v8:Fixnum = GuardType v1, Fixnum
@@ -7100,7 +7100,7 @@ mod opt_tests {
             test(1, 2)
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test:
+            fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 29)
               v8:Fixnum = GuardType v1, Fixnum
