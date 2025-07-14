@@ -757,7 +757,8 @@ fn gen_send_without_block_direct(
 
     asm_comment!(asm, "switch to new SP register");
     let local_size = unsafe { get_iseq_body_local_table_size(iseq) } as usize;
-    let new_sp = asm.add(SP, ((state.stack().len() + local_size - args.len() + VM_ENV_DATA_SIZE as usize) * SIZEOF_VALUE).into());
+    let sp_offset = (state.stack().len() + local_size - args.len() + VM_ENV_DATA_SIZE as usize) * SIZEOF_VALUE;
+    let new_sp = asm.add(SP, sp_offset.into());
     asm.mov(SP, new_sp);
 
     asm_comment!(asm, "switch to new CFP");
@@ -780,8 +781,13 @@ fn gen_send_without_block_direct(
     // If a callee side-exits, i.e. returns Qundef, propagate the return value to the caller.
     // The caller will side-exit the callee into the interpreter.
     // TODO: Let side exit code pop all JIT frames to optimize away this cmp + je.
+    asm_comment!(asm, "side-exit if callee side-exits");
     asm.cmp(ret, Qundef.into());
     asm.je(ZJITState::get_exit_trampoline().into());
+
+    asm_comment!(asm, "restore SP register for the caller");
+    let new_sp = asm.sub(SP, sp_offset.into());
+    asm.mov(SP, new_sp);
 
     Some(ret)
 }
