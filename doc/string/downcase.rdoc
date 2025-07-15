@@ -1,4 +1,4 @@
-Returns a newstring containing the downcased characters in +self+:
+Returns a new string containing the downcased characters in +self+:
 
    'Hello, World!'.downcase      # => "hello, world!"
    'ТЕСТ'.downcase               # => "тест"
