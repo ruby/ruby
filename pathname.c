@@ -1591,6 +1591,8 @@ Init_pathname(void)
     rb_define_method(rb_cPathname, "delete", path_unlink, 0);
     rb_undef_method(rb_cPathname, "=~");
     rb_define_global_function("Pathname", path_f_pathname, 1);
+
+    rb_provide("pathname.so");
 }
 
 void
