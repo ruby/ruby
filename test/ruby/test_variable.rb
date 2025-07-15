@@ -419,6 +419,7 @@ class TestVariable < Test::Unit::TestCase
         x
       end
     end
+    objs or flunk
   end
 
   def test_local_variables_with_kwarg
@@ -440,7 +441,7 @@ class TestVariable < Test::Unit::TestCase
   end
 
   def test_local_variables_encoding
-    α = 1
+    α = 1 or flunk
     b = binding
     b.eval("".encode("us-ascii"))
     assert_equal(%i[α b], b.local_variables)
