@@ -39,7 +39,7 @@ module Spec
     end
 
     def deprecations
-      err.split("\n").select {|l| l =~ MAJOR_DEPRECATION }.join("\n").split(MAJOR_DEPRECATION)
+      err.split("\n").filter_map {|l| l.sub(MAJOR_DEPRECATION, "") if l.match?(MAJOR_DEPRECATION) }
     end
 
     def run(cmd, *args)
