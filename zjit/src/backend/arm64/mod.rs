@@ -415,13 +415,11 @@ impl Assembler
             // being used. It is okay not to use their output here.
             #[allow(unused_must_use)]
             match &mut insn {
-                Insn::Sub { left, right, out } |
                 Insn::Add { left, right, out } => {
                     match (*left, *right) {
-                        (Opnd::Reg(_) | Opnd::VReg { .. }, Opnd::Reg(_) | Opnd::VReg { .. }) => {
-                            merge_three_reg_mov(&live_ranges, &mut iterator, left, right, out);
-                            asm.push_insn(insn);
-                        }
+                        // When one operand is a register, legalize the other operand
+                        // into possibly an immdiate and swap the order if necessary.
+                        // Only the rhs of ADD can be an immediate, but addition is commutative.
                         (reg_opnd @ (Opnd::Reg(_) | Opnd::VReg { .. }), other_opnd) |
                         (other_opnd, reg_opnd @ (Opnd::Reg(_) | Opnd::VReg { .. })) => {
                             *left = reg_opnd;
@@ -434,10 +432,19 @@ impl Assembler
                         _ => {
                             *left = split_load_operand(asm, *left);
                             *right = split_shifted_immediate(asm, *right);
+                            merge_three_reg_mov(&live_ranges, &mut iterator, left, right, out);
                             asm.push_insn(insn);
                         }
                     }
-                },
+                }
+                Insn::Sub { left, right, out } => {
+                    *left = split_load_operand(asm, *left);
+                    *right = split_shifted_immediate(asm, *right);
+                    // Now `right` is either a register or an immediate,
+                    // both can try to merge with a subsequent mov.
+                    merge_three_reg_mov(&live_ranges, &mut iterator, left, left, out);
+                    asm.push_insn(insn);
+                }
                 Insn::And { left, right, out } |
                 Insn::Or { left, right, out } |
                 Insn::Xor { left, right, out } => {
@@ -1404,6 +1411,21 @@ mod tests {
         assert_disasm!(cb, "ff230091948200b1", "
             0x0: add sp, sp, #8
             0x4: adds x20, x20, #0x20
+        ");
+    }
+
+    #[test]
+    fn sub_imm_reg() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let difference = asm.sub(0x8.into(), Opnd::Reg(X5_REG));
+        asm.load_into(Opnd::Reg(X1_REG), difference);
+
+        asm.compile_with_num_regs(&mut cb, 1);
+        assert_disasm!(cb, "000180d2000005ebe10300aa", "
+            0x0: mov x0, #8
+            0x4: subs x0, x0, x5
+            0x8: mov x1, x0
         ");
     }
 
