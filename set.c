@@ -494,6 +494,14 @@ set_i_initialize(int argc, VALUE *argv, VALUE set)
     rb_check_arity(argc, 0, 1);
 
     if (argc > 0 && (other = argv[0]) != Qnil) {
+        ID id_size = rb_intern("size");
+        if (rb_respond_to(other, id_size)) {
+            VALUE size = rb_funcall(other, id_size, 0);
+            if (RB_TYPE_P(size, T_FLOAT) && RFLOAT_VALUE(size) == INFINITY) {
+                rb_raise(rb_eArgError, "cannot initialize Set from a enumerable with infinite size");
+            }
+        }
+
         if (RB_TYPE_P(other, T_ARRAY)) {
             long i;
             int block_given = rb_block_given_p();

@@ -81,6 +81,16 @@ class TC_Set < Test::Unit::TestCase
 
     s = Set.new(ary) { |o| o * 2 }
     assert_equal([2,4,6], s.sort)
+
+    assert_raise(ArgumentError) {
+      Set.new((1..))
+    }
+    assert_raise(ArgumentError) {
+      Set.new((1..), &:succ)
+    }
+    assert_raise(ArgumentError) {
+      Set.new(1.upto(Float::INFINITY))
+    }
   end
 
   def test_clone
