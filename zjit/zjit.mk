@@ -49,10 +49,14 @@ update-zjit-bench:
 		https://github.com/Shopify/zjit-bench zjit-bench $(GIT_OPTS)
 
 # Gives quick feedback about ZJIT. Not a replacement for a full test run.
-.PHONY: zjit-test-all
-zjit-test-all:
+.PHONY: zjit-check
+zjit-check:
 	$(MAKE) zjit-test
 	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_zjit.rb'
+
+.PHONY: zjit-test-all
+zjit-test-all:
+	$(MAKE) test-all RUST_BACKTRACE=1 TEST_EXCLUDES='--excludes-dir=$(top_srcdir)/test/.excludes-zjit --name=!/memory_leak/' RUN_OPTS='--zjit-call-threshold=1' TESTS='$(top_srcdir)/test/ruby/'
 
 ZJIT_BINDGEN_DIFF_OPTS =
 
