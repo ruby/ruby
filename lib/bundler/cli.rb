@@ -220,7 +220,7 @@ module Bundler
     method_option "local", type: :boolean, banner: "Do not attempt to fetch gems remotely and use the gem cache instead"
     method_option "prefer-local", type: :boolean, banner: "Only attempt to fetch gems remotely if not present locally, even if newer versions are available remotely"
     method_option "no-cache", type: :boolean, banner: "Don't update the existing gem cache."
-    method_option "redownload", type: :boolean, aliases: "--force", banner: "Force downloading every gem."
+    method_option "force", type: :boolean, aliases: "--redownload", banner: "Force reinstalling every gem, even if already installed"
     method_option "no-prune", type: :boolean, banner: "Don't remove stale gems from the cache."
     method_option "path", type: :string, banner: "Specify a different path than the system default ($BUNDLE_PATH or $GEM_HOME).#{" Bundler will remember this value for future installs on this machine" unless Bundler.feature_flag.forget_cli_options?}"
     method_option "quiet", type: :boolean, banner: "Only output warnings and errors."
@@ -232,8 +232,6 @@ module Bundler
     method_option "without", type: :array, banner: "Exclude gems that are part of the specified named group."
     method_option "with", type: :array, banner: "Include gems that are part of the specified named group."
     def install
-      SharedHelpers.major_deprecation(2, "The `--force` option has been renamed to `--redownload`") if ARGV.include?("--force")
-
       %w[clean deployment frozen no-prune path shebang without with].each do |option|
         remembered_flag_deprecation(option)
       end
@@ -263,7 +261,7 @@ module Bundler
     method_option "local", type: :boolean, banner: "Do not attempt to fetch gems remotely and use the gem cache instead"
     method_option "quiet", type: :boolean, banner: "Only output warnings and errors."
     method_option "source", type: :array, banner: "Update a specific source (and all gems associated with it)"
-    method_option "redownload", type: :boolean, aliases: "--force", banner: "Force downloading every gem."
+    method_option "force", type: :boolean, aliases: "--redownload", banner: "Force reinstalling every gem, even if already installed"
     method_option "ruby", type: :boolean, banner: "Update ruby specified in Gemfile.lock"
     method_option "bundler", type: :string, lazy_default: "> 0.a", banner: "Update the locked version of bundler"
     method_option "patch", type: :boolean, banner: "Prefer updating only to next patch version"
@@ -274,7 +272,6 @@ module Bundler
     method_option "conservative", type: :boolean, banner: "Use bundle install conservative update behavior and do not allow shared dependencies to be updated."
     method_option "all", type: :boolean, banner: "Update everything."
     def update(*gems)
-      SharedHelpers.major_deprecation(2, "The `--force` option has been renamed to `--redownload`") if ARGV.include?("--force")
       require_relative "cli/update"
       Bundler.settings.temporary(no_install: false) do
         Update.new(options, gems).run

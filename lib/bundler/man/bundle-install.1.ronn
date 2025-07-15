@@ -6,6 +6,7 @@ bundle-install(1) -- Install the dependencies specified in your Gemfile
 `bundle install` [--binstubs[=DIRECTORY]]
                  [--clean]
                  [--deployment]
+                 [--force]
                  [--frozen]
                  [--full-index]
                  [--gemfile=GEMFILE]
@@ -16,7 +17,6 @@ bundle-install(1) -- Install the dependencies specified in your Gemfile
                  [--path PATH]
                  [--prefer-local]
                  [--quiet]
-                 [--redownload]
                  [--retry=NUMBER]
                  [--shebang=SHEBANG]
                  [--standalone[=GROUP[ GROUP...]]]
@@ -80,9 +80,8 @@ automatically and that requires `bundler` to silently remember them. Since
 
   This option is deprecated in favor of the `deployment` setting.
 
-* `--redownload`, `--force`:
-  Force download every gem, even if the required versions are already available
-  locally.
+* `--force`, `--redownload`:
+  Force reinstalling every gem, even if already installed.
 
 * `--frozen`:
   Do not allow the Gemfile.lock to be updated after this install. Exits

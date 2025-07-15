@@ -179,7 +179,7 @@ module Bundler
 
       normalize_groups if options[:without] || options[:with]
 
-      options[:force] = options[:redownload]
+      options[:force] = options[:redownload] if options[:redownload]
     end
 
     def warn_ambiguous_gems

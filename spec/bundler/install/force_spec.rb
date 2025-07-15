@@ -8,7 +8,7 @@ RSpec.describe "bundle install" do
     G
   end
 
-  shared_examples_for "an option to force redownloading gems" do
+  shared_examples_for "an option to force reinstalling gems" do
     it "re-installs installed gems" do
       myrack_lib = default_bundle_path("gems/myrack-1.0.0/lib/myrack.rb")
 
@@ -58,34 +58,14 @@ RSpec.describe "bundle install" do
   end
 
   describe "with --force" do
-    it_behaves_like "an option to force redownloading gems" do
+    it_behaves_like "an option to force reinstalling gems" do
       let(:flag) { "force" }
-    end
-
-    it "shows a deprecation when single flag passed" do
-      bundle "install --force"
-      expect(err).to include "[DEPRECATED] The `--force` option has been renamed to `--redownload`"
-    end
-
-    it "shows a deprecation when multiple flags passed" do
-      bundle "install --no-color --force"
-      expect(err).to include "[DEPRECATED] The `--force` option has been renamed to `--redownload`"
     end
   end
 
   describe "with --redownload" do
-    it_behaves_like "an option to force redownloading gems" do
+    it_behaves_like "an option to force reinstalling gems" do
       let(:flag) { "redownload" }
-    end
-
-    it "does not show a deprecation when single flag passed" do
-      bundle "install --redownload"
-      expect(err).not_to include "[DEPRECATED] The `--force` option has been renamed to `--redownload`"
-    end
-
-    it "does not show a deprecation when single multiple flags passed" do
-      bundle "install --no-color --redownload"
-      expect(err).not_to include "[DEPRECATED] The `--force` option has been renamed to `--redownload`"
     end
   end
 end

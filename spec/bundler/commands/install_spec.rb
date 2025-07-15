@@ -1105,7 +1105,7 @@ RSpec.describe "bundle install with gem sources" do
       FileUtils.chmod("-x", foo_path)
 
       begin
-        bundle "install --redownload", raise_on_error: false
+        bundle "install --force", raise_on_error: false
       ensure
         FileUtils.chmod("+x", foo_path)
       end
@@ -1141,7 +1141,7 @@ RSpec.describe "bundle install with gem sources" do
       FileUtils.chmod("-w", gem_home)
 
       begin
-        bundle "install --redownload"
+        bundle "install --force"
       ensure
         FileUtils.chmod("+w", gem_home)
       end
@@ -1175,7 +1175,7 @@ RSpec.describe "bundle install with gem sources" do
 
       FileUtils.chmod(0o777, gems_path)
 
-      bundle "install --redownload", raise_on_error: false
+      bundle "install --force", raise_on_error: false
 
       expect(err).to include("Bundler cannot reinstall foo-1.0.0 because there's a previous installation of it at #{gems_path}/foo-1.0.0 that is unsafe to remove")
     end
