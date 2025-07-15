@@ -454,6 +454,7 @@ void free_fast_fallback_getaddrinfo_shared(struct fast_fallback_getaddrinfo_shar
 #endif
 
 unsigned int rsock_value_timeout_to_msec(VALUE);
+void rsock_raise_user_specified_timeout(void);
 
 void rsock_init_basicsocket(void);
 void rsock_init_ipsocket(void);

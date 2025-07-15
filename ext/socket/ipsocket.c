@@ -26,6 +26,14 @@ struct inetsock_arg
     VALUE open_timeout;
 };
 
+void
+rsock_raise_user_specified_timeout()
+{
+    VALUE errno_module = rb_const_get(rb_cObject, rb_intern("Errno"));
+    VALUE etimedout_error = rb_const_get(errno_module, rb_intern("ETIMEDOUT"));
+    rb_raise(etimedout_error, "user specified timeout");
+}
+
 static VALUE
 inetsock_cleanup(VALUE v)
 {
@@ -143,12 +151,7 @@ init_inetsock_internal(VALUE v)
             } else {
                 VALUE elapsed = rb_funcall(current_clocktime(), '-', 1, starts_at);
                 timeout = rb_funcall(open_timeout, '-', 1, elapsed);
-
-                if (rb_funcall(timeout, '<', 1, INT2FIX(0)) == Qtrue) {
-                    VALUE errno_module = rb_const_get(rb_cObject, rb_intern("Errno"));
-                    VALUE etimedout_error = rb_const_get(errno_module, rb_intern("ETIMEDOUT"));
-                    rb_raise(etimedout_error, "user specified timeout");
-                }
+                if (rb_funcall(timeout, '<', 1, INT2FIX(0)) == Qtrue) rsock_raise_user_specified_timeout();
             }
 
             if (status >= 0) {
@@ -1159,11 +1162,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
             }
         }
 
-        if (is_timeout_tv(user_specified_open_timeout_at, now)) {
-            VALUE errno_module = rb_const_get(rb_cObject, rb_intern("Errno"));
-            VALUE etimedout_error = rb_const_get(errno_module, rb_intern("ETIMEDOUT"));
-            rb_raise(etimedout_error, "user specified timeout");
-        }
+        if (is_timeout_tv(user_specified_open_timeout_at, now)) rsock_raise_user_specified_timeout();
 
         if (!any_addrinfos(&resolution_store)) {
             if (!in_progress_fds(arg->connection_attempt_fds_size) &&
@@ -1186,9 +1185,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 resolution_store.is_all_finished) &&
                 (is_timeout_tv(user_specified_connect_timeout_at, now) ||
                 !in_progress_fds(arg->connection_attempt_fds_size))) {
-                VALUE errno_module = rb_const_get(rb_cObject, rb_intern("Errno"));
-                VALUE etimedout_error = rb_const_get(errno_module, rb_intern("ETIMEDOUT"));
-                rb_raise(etimedout_error, "user specified timeout");
+                rsock_raise_user_specified_timeout();
             }
         }
     }
