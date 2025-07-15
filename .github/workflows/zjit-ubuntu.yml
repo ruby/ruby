@@ -40,9 +40,8 @@ jobs:
           - test_task: 'zjit-test'
             configure: '--enable-yjit --enable-zjit=dev'
 
-          - test_task: 'test-all'
+          - test_task: 'zjit-test-all'
             configure: '--enable-zjit=dev'
-            tests: '../src/test/ruby/test_zjit.rb'
 
           - test_task: 'btest'
             configure: '--enable-zjit=dev'
