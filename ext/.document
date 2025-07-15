@@ -76,8 +76,6 @@ openssl/ossl_x509name.c
 openssl/ossl_x509req.c
 openssl/ossl_x509revoked.c
 openssl/ossl_x509store.c
-pathname/lib
-pathname/pathname.c
 psych/lib
 psych/psych.c
 psych/psych_emitter.c
