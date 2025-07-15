@@ -15,7 +15,7 @@
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
 
-#define IMEMO_MASK   0x0f
+#define IMEMO_MASK   0x0f // NOTE: The debug gem mirror this constant.
 
 /* FL_USER0 to FL_USER3 is for type */
 #define IMEMO_FL_USHIFT (FL_USHIFT + 4)
@@ -35,7 +35,7 @@ enum imemo_type {
     imemo_ifunc          =  4, /*!< iterator function */
     imemo_memo           =  5,
     imemo_ment           =  6,
-    imemo_iseq           =  7,
+    imemo_iseq           =  7, // NOTE: The debug gem mirror this constant.
     imemo_tmpbuf         =  8,
     imemo_ast            =  9, // Obsolete due to the universal parser
     imemo_parser_strterm = 10,
