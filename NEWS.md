@@ -140,7 +140,7 @@ The following default gems are updated.
 
 * RubyGems 3.7.0.dev
 * bundler 2.7.0.dev
-* erb 5.0.1
+* erb 5.0.2
 * etc 1.4.6
 * io-console 0.8.1
 * io-nonblock 0.3.2
