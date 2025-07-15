@@ -26,25 +26,25 @@ jobs:
       matrix:
         include:
           - test_task: check
-            os: macos-14
+            os: macos-15
           - test_task: check
-            os: macos-14
+            os: macos-15
             configure_args: '--with-gcc=gcc-14'
           - test_task: check
-            os: macos-14
+            os: macos-15
             configure_args: '--with-jemalloc --with-opt-dir=$(brew --prefix jemalloc)'
           - test_task: check
-            os: macos-14
+            os: macos-15
             configure_args: '--with-gmp'
           - test_task: test-all
             test_opts: --repeat-count=2
-            os: macos-14
-          - test_task: test-bundler-parallel
-            os: macos-14
-          - test_task: test-bundled-gems
-            os: macos-14
-          - test_task: check
             os: macos-15
+          - test_task: test-bundler-parallel
+            os: macos-15
+          - test_task: test-bundled-gems
+            os: macos-15
+          - test_task: check
+            os: macos-14
           - test_task: check
             os: macos-13
       fail-fast: false
