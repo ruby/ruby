@@ -1,8 +1,10 @@
-Returns a copy of +self+ with leading substring <tt>prefix</tt> removed:
+Returns a copy of +self+ with leading substring +prefix+ removed:
 
-  'hello'.delete_prefix('hel')      # => "lo"
-  'hello'.delete_prefix('llo')      # => "hello"
+  'oof'.delete_prefix('o')          # => "of"
+  'oof'.delete_prefix('oo')         # => "f"
+  'oof'.delete_prefix('oof')        # => ""
+  'oof'.delete_prefix('x')          # => "oof"
   'тест'.delete_prefix('те')        # => "ст"
   'こんにちは'.delete_prefix('こん')  # => "にちは"
 
-Related: String#delete_prefix!, String#delete_suffix.
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

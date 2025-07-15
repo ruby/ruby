@@ -69,6 +69,7 @@ rb_call_inits(void)
     CALL(Rational);
     CALL(Complex);
     CALL(MemoryView);
+    CALL(pathname);
     CALL(version);
     CALL(vm_trace);
     CALL(vm_stack_canary);
@@ -98,6 +99,7 @@ rb_call_builtin_inits(void)
     BUILTIN(ast);
     BUILTIN(trace_point);
     BUILTIN(pack);
+    BUILTIN(pathname_builtin);
     BUILTIN(warning);
     BUILTIN(array);
     BUILTIN(hash);

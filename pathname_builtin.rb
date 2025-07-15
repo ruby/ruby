@@ -10,8 +10,6 @@
 # For documentation, see class Pathname.
 #
 
-require 'pathname.so'
-
 class Pathname
 
   VERSION = "0.4.0"
@@ -45,6 +43,34 @@ class Pathname
   private_constant :ABSOLUTE_PATH
 
   # :startdoc:
+
+  # Creates a full path, including any intermediate directories that don't yet
+  # exist.
+  #
+  # See FileUtils.mkpath and FileUtils.mkdir_p
+  def mkpath(mode: nil)
+    path = @path == '/' ? @path : @path.chomp('/')
+
+    stack = []
+    until File.directory?(path) || File.dirname(path) == path
+      stack.push path
+      path = File.dirname(path)
+    end
+
+    stack.reverse_each do |dir|
+      dir = dir == '/' ? dir : dir.chomp('/')
+      if mode
+        Dir.mkdir dir, mode
+        File.chmod mode, dir
+      else
+        Dir.mkdir dir
+      end
+    rescue SystemCallError
+      raise unless File.directory?(dir)
+    end
+
+    self
+  end
 
   # chop_basename(path) -> [pre-basename, basename] or nil
   def chop_basename(path) # :nodoc:
@@ -548,74 +574,6 @@ class Pathname
       Pathname.new('.')
     else
       Pathname.new(File.join(*relpath_names))
-    end
-  end
-end
-
-
-class Pathname    # * Find *
-  #
-  # Iterates over the directory tree in a depth first manner, yielding a
-  # Pathname for each file under "this" directory.
-  #
-  # Returns an Enumerator if no block is given.
-  #
-  # Since it is implemented by the standard library module Find, Find.prune can
-  # be used to control the traversal.
-  #
-  # If +self+ is +.+, yielded pathnames begin with a filename in the
-  # current directory, not +./+.
-  #
-  # See Find.find
-  #
-  def find(ignore_error: true) # :yield: pathname
-    return to_enum(__method__, ignore_error: ignore_error) unless block_given?
-    require 'find'
-    if @path == '.'
-      Find.find(@path, ignore_error: ignore_error) {|f| yield self.class.new(f.delete_prefix('./')) }
-    else
-      Find.find(@path, ignore_error: ignore_error) {|f| yield self.class.new(f) }
-    end
-  end
-end
-
-
-class Pathname    # * FileUtils *
-  # Creates a full path, including any intermediate directories that don't yet
-  # exist.
-  #
-  # See FileUtils.mkpath and FileUtils.mkdir_p
-  def mkpath(mode: nil)
-    require 'fileutils'
-    FileUtils.mkpath(@path, mode: mode)
-    self
-  end
-
-  # Recursively deletes a directory, including all directories beneath it.
-  #
-  # See FileUtils.rm_rf
-  def rmtree(noop: nil, verbose: nil, secure: nil)
-    # The name "rmtree" is borrowed from File::Path of Perl.
-    # File::Path provides "mkpath" and "rmtree".
-    require 'fileutils'
-    FileUtils.rm_rf(@path, noop: noop, verbose: verbose, secure: secure)
-    self
-  end
-end
-
-class Pathname    # * tmpdir *
-  # Creates a tmp directory and wraps the returned path in a Pathname object.
-  #
-  # See Dir.mktmpdir
-  def self.mktmpdir
-    require 'tmpdir' unless defined?(Dir.mktmpdir)
-    if block_given?
-      Dir.mktmpdir do |dir|
-        dir = self.new(dir)
-        yield dir
-      end
-    else
-      self.new(Dir.mktmpdir)
     end
   end
 end

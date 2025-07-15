@@ -548,7 +548,7 @@ fstring_concurrent_set_create(VALUE str, void *data)
     return str;
 }
 
-static struct rb_concurrent_set_funcs fstring_concurrent_set_funcs = {
+static const struct rb_concurrent_set_funcs fstring_concurrent_set_funcs = {
     .hash = fstring_concurrent_set_hash,
     .cmp = fstring_concurrent_set_cmp,
     .create = fstring_concurrent_set_create,
@@ -11300,9 +11300,10 @@ deleted_prefix_length(VALUE str, VALUE prefix)
  *  call-seq:
  *    delete_prefix!(prefix) -> self or nil
  *
- *  Like String#delete_prefix, except that +self+ is modified in place.
- *  Returns +self+ if the prefix is removed, +nil+ otherwise.
+ *  Like String#delete_prefix, except that +self+ is modified in place;
+ *  returns +self+ if the prefix is removed, +nil+ otherwise.
  *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
@@ -11375,9 +11376,10 @@ deleted_suffix_length(VALUE str, VALUE suffix)
  *  call-seq:
  *    delete_suffix!(suffix) -> self or nil
  *
- *  Like String#delete_suffix, except that +self+ is modified in place.
- *  Returns +self+ if the suffix is removed, +nil+ otherwise.
+ *  Like String#delete_suffix, except that +self+ is modified in place;
+ *  returns +self+ if the suffix is removed, +nil+ otherwise.
  *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
