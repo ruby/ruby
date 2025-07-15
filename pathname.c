@@ -1311,6 +1311,8 @@ path_f_pathname(VALUE self, VALUE str)
     return rb_class_new_instance(1, &str, rb_cPathname);
 }
 
+#include "pathname.rbinc"
+
 /*
  *
  * Pathname represents the name of a file or directory on the filesystem,
