@@ -875,7 +875,7 @@ class TestRubyOptions < Test::Unit::TestCase
                  '-e', '$".clear',
                  '-e', '$".unshift Bogus.new',
                  '-e', '(p $"; abort) unless $".size == 1',
-                ], success: false)
+                ], bug7402, success: false)
   end
 
   def test_segv_setproctitle
