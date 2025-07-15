@@ -240,7 +240,7 @@ module Bundler
 
       print_remembered_flag_deprecation("--system", "path.system", "true") if ARGV.include?("--system")
 
-      remembered_negative_flag_deprecation("no-deployment")
+      remembered_flag_deprecation("deployment", negative: true)
 
       require_relative "cli/install"
       Bundler.settings.temporary(no_install: false) do
@@ -743,17 +743,10 @@ module Bundler
       nil
     end
 
-    def remembered_negative_flag_deprecation(name)
-      positive_name = name.gsub(/\Ano-/, "")
-      option = current_command.options[positive_name]
-      flag_name = "--no-" + option.switch_name.gsub(/\A--/, "")
-
-      flag_deprecation(positive_name, flag_name, option)
-    end
-
-    def remembered_flag_deprecation(name)
+    def remembered_flag_deprecation(name, negative: false)
       option = current_command.options[name]
       flag_name = option.switch_name
+      flag_name = "--no-" + flag_name.gsub(/\A--/, "") if negative
 
       flag_deprecation(name, flag_name, option)
     end
