@@ -748,10 +748,6 @@ module Bundler
       flag_name = option.switch_name
       flag_name = "--no-" + flag_name.gsub(/\A--/, "") if negative
 
-      flag_deprecation(name, flag_name, option)
-    end
-
-    def flag_deprecation(name, flag_name, option)
       name_index = ARGV.find {|arg| flag_name == arg.split("=")[0] }
       return unless name_index
 
