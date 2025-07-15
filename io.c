@@ -16049,4 +16049,4 @@ Init_IO(void)
     sym_wait_writable = ID2SYM(rb_intern_const("wait_writable"));
 }
 
-#include "io.rbinc"
+#include "rblib/io.rbinc"

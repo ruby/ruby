@@ -501,7 +501,7 @@ ext_hdrdir = $(EXTOUT)/include
 arch_hdrdir = $(ext_hdrdir)/$(arch)
 top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
-VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/missing;$(win_srcdir)
+VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/rblib;$(srcdir)/missing;$(win_srcdir)
 
 !ifndef GIT
 GIT = git

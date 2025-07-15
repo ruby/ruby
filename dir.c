@@ -3867,4 +3867,4 @@ Init_Dir(void)
     rb_file_const("FNM_SHORTNAME", INT2FIX(FNM_SHORTNAME));
 }
 
-#include "dir.rbinc"
+#include "rblib/dir.rbinc"

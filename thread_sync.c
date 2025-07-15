@@ -1732,4 +1732,4 @@ Init_thread_sync(void)
     rb_provide("thread.rb");
 }
 
-#include "thread_sync.rbinc"
+#include "rblib/thread_sync.rbinc"

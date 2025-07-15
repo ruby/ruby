@@ -4630,8 +4630,8 @@ InitVM_Object(void)
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
 }
 
-#include "kernel.rbinc"
-#include "nilclass.rbinc"
+#include "rblib/kernel.rbinc"
+#include "rblib/nilclass.rbinc"
 
 void
 Init_Object(void)

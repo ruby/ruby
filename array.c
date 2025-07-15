@@ -8875,4 +8875,4 @@ Init_Array(void)
     rb_vm_register_global_object(rb_cArray_empty_frozen);
 }
 
-#include "array.rbinc"
+#include "rblib/array.rbinc"
