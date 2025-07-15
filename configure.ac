@@ -4014,10 +4014,16 @@ AS_IF([test x"$JIT_CARGO_SUPPORT" != "xno" -o \( x"$YJIT_SUPPORT" != "xno" -a x"
     YJIT_LIBS=
     ZJIT_LIBS=
 
+    # There's more processing below to get the feature set for the
+    # top-level crate, so capture at this point for feature set of
+    # just the zjit crate.
+    ZJIT_TEST_FEATURES="${rb_cargo_features}"
+
     AS_IF([test x"${YJIT_SUPPORT}" != x"no"], [
         rb_cargo_features="$rb_cargo_features,yjit"
     ])
     AS_IF([test x"${ZJIT_SUPPORT}" != x"no"], [
+        AC_SUBST(ZJIT_TEST_FEATURES)
         rb_cargo_features="$rb_cargo_features,zjit"
     ])
     # if YJIT and ZJIT release mode
