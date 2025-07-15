@@ -199,6 +199,28 @@ RSpec.describe "major deprecations" do
     pending "fails with a helpful error", bundler: "4"
   end
 
+  context "bundle cache --path=" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      bundle "cache --path=foo", raise_on_error: false
+    end
+
+    it "should print a deprecation warning" do
+      expect(deprecations).to include(
+        "The `--path` flag is deprecated because its semantics are unclear. " \
+        "Use `bundle config cache_path` to configure the path of your cache of gems, " \
+        "and `bundle config path` to configure the path where your gems are installed, " \
+        "and stop using this flag"
+      )
+    end
+
+    pending "fails with a helpful error", bundler: "4"
+  end
+
   describe "bundle config" do
     describe "old list interface" do
       before do

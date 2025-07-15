@@ -414,7 +414,7 @@ module Bundler
     def cache
       print_remembered_flag_deprecation("--all", "cache_all", "true") if ARGV.include?("--all")
 
-      if ARGV.include?("--path")
+      if flag_passed?("--path")
         message =
           "The `--path` flag is deprecated because its semantics are unclear. " \
           "Use `bundle config cache_path` to configure the path of your cache of gems, " \
@@ -747,9 +747,7 @@ module Bundler
       option = current_command.options[name]
       flag_name = option.switch_name
       flag_name = "--no-" + flag_name.gsub(/\A--/, "") if negative
-
-      name_index = ARGV.find {|arg| flag_name == arg.split("=")[0] }
-      return unless name_index
+      return unless flag_passed?(flag_name)
 
       value = options[name]
       value = value.join(" ").to_s if option.type == :array
@@ -770,6 +768,10 @@ module Bundler
         "do. Instead please use `bundle config set #{option_name} " \
         "#{option_value}`, and stop using this flag"
       Bundler::SharedHelpers.major_deprecation 2, message, removed_message: removed_message
+    end
+
+    def flag_passed?(name)
+      ARGV.any? {|arg| name == arg.split("=")[0] }
     end
   end
 end
