@@ -44,6 +44,34 @@ class Pathname
 
   # :startdoc:
 
+  # Creates a full path, including any intermediate directories that don't yet
+  # exist.
+  #
+  # See FileUtils.mkpath and FileUtils.mkdir_p
+  def mkpath(mode: nil)
+    path = @path == '/' ? @path : @path.chomp('/')
+
+    stack = []
+    until File.directory?(path) || File.dirname(path) == path
+      stack.push path
+      path = File.dirname(path)
+    end
+
+    stack.reverse_each do |dir|
+      dir = dir == '/' ? dir : dir.chomp('/')
+      if mode
+        Dir.mkdir dir, mode
+        File.chmod mode, dir
+      else
+        Dir.mkdir dir
+      end
+    rescue SystemCallError
+      raise unless File.directory?(dir)
+    end
+
+    self
+  end
+
   # chop_basename(path) -> [pre-basename, basename] or nil
   def chop_basename(path) # :nodoc:
     base = File.basename(path)
