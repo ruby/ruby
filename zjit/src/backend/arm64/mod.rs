@@ -919,10 +919,28 @@ impl Assembler
                     ldp_post(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, 16));
                 },
                 Insn::Add { left, right, out } => {
-                    adds(cb, out.into(), left.into(), right.into());
+                    // Usually, we issue ADDS, so you could branch on overflow, but ADDS with
+                    // out=31 refers to out=XZR, which discards the sum. So, instead of ADDS
+                    // (aliased to CMN in this case) we issue ADD instead which writes the sum
+                    // to the stack pointer; we assume you got x31 from NATIVE_STACK_POINTER.
+                    let out: A64Opnd = out.into();
+                    if let A64Opnd::Reg(A64Reg { reg_no: 31, .. }) = out {
+                        add(cb, out, left.into(), right.into());
+                    } else {
+                        adds(cb, out, left.into(), right.into());
+                    }
                 },
                 Insn::Sub { left, right, out } => {
-                    subs(cb, out.into(), left.into(), right.into());
+                    // Usually, we issue SUBS, so you could branch on overflow, but SUBS with
+                    // out=31 refers to out=XZR, which discards the result. So, instead of SUBS
+                    // (aliased to CMP in this case) we issue SUB instead which writes the diff
+                    // to the stack pointer; we assume you got x31 from NATIVE_STACK_POINTER.
+                    let out: A64Opnd = out.into();
+                    if let A64Opnd::Reg(A64Reg { reg_no: 31, .. }) = out {
+                        sub(cb, out, left.into(), right.into());
+                    } else {
+                        subs(cb, out, left.into(), right.into());
+                    }
                 },
                 Insn::Mul { left, right, out } => {
                     // If the next instruction is jo (jump on overflow)
@@ -1369,6 +1387,21 @@ mod tests {
             0x0: add sp, sp, #0x20
             0x4: sub sp, sp, #0x20
         "});
+    }
+
+    #[test]
+    fn add_into() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let sp = Opnd::Reg(XZR_REG);
+        asm.add_into(sp, 8.into());
+        asm.add_into(Opnd::Reg(X20_REG), 0x20.into());
+
+        asm.compile_with_num_regs(&mut cb, 0);
+        assert_disasm!(cb, "ff230091948200b1", "
+            0x0: add sp, sp, #8
+            0x4: adds x20, x20, #0x20
+        ");
     }
 
     #[test]
