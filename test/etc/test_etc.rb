@@ -21,7 +21,7 @@ class TestEtc < Test::Unit::TestCase
       assert_instance_of(String, s.shell)
       assert_kind_of(Integer, s.change) if s.respond_to?(:change)
       assert_kind_of(Integer, s.quota) if s.respond_to?(:quota)
-      assert(s.age.is_a?(Integer) || s.age.is_a?(String)) if s.respond_to?(:age)
+      assert(s.age.is_a?(Integer) || s.age.is_a?(String), s.age) if s.respond_to?(:age)
       assert_instance_of(String, s.uclass) if s.respond_to?(:uclass)
       assert_instance_of(String, s.comment) if s.respond_to?(:comment)
       assert_kind_of(Integer, s.expire) if s.respond_to?(:expire)
@@ -160,7 +160,7 @@ class TestEtc < Test::Unit::TestCase
     end
     IO.pipe {|r, w|
       val = w.pathconf(Etc::PC_PIPE_BUF)
-      assert(val.nil? || val.kind_of?(Integer))
+      assert_kind_of(Integer, val) if val
     }
   end if defined?(Etc::PC_PIPE_BUF)
 
@@ -173,28 +173,85 @@ class TestEtc < Test::Unit::TestCase
     assert_operator(File, :absolute_path?, Etc.sysconfdir)
   end if File.method_defined?(:absolute_path?)
 
-  def test_ractor
+  # All Ractor-safe methods should be tested here
+  def test_ractor_parallel
+    omit "This test is flaky and intermittently failing now on ModGC workflow" if ENV['GITHUB_WORKFLOW'] == 'ModGC'
+
+    assert_ractor(<<~RUBY, require: 'etc', timeout: 60)
+      10.times.map do
+        Ractor.new do
+          100.times do
+            raise unless String === Etc.systmpdir
+            raise unless Hash === Etc.uname
+            if defined?(Etc::SC_CLK_TCK)
+              raise unless Integer === Etc.sysconf(Etc::SC_CLK_TCK)
+            end
+            if defined?(Etc::CS_PATH)
+              raise unless String === Etc.confstr(Etc::CS_PATH)
+            end
+            if defined?(Etc::PC_PIPE_BUF)
+              IO.pipe { |r, w|
+                val = w.pathconf(Etc::PC_PIPE_BUF)
+                raise unless val.nil? || val.kind_of?(Integer)
+              }
+            end
+            raise unless Integer === Etc.nprocessors
+          end
+        end
+      end.each(&:join)
+    RUBY
+  end
+
+  def test_ractor_unsafe
+    assert_ractor(<<~RUBY, require: 'etc')
+      r = Ractor.new do
+        begin
+          Etc.passwd
+        rescue => e
+          e.class
+        end
+      end.value
+      assert_equal Ractor::UnsafeError, r
+    RUBY
+  end
+
+  def test_ractor_passwd
+    omit("https://bugs.ruby-lang.org/issues/21115")
     return unless Etc.passwd # => skip test if no platform support
     Etc.endpwent
 
     assert_ractor(<<~RUBY, require: 'etc')
-      ractor = Ractor.new do
+      ractor = Ractor.new port = Ractor::Port.new do |port|
         Etc.passwd do |s|
-          Ractor.yield :sync
-          Ractor.yield s.name
+          port << :sync
+          port << s.name
           break :done
         end
       end
-      ractor.take # => :sync
+      port.receive # => :sync
       assert_raise RuntimeError, /parallel/ do
         Etc.passwd {}
       end
-      name = ractor.take # => first name
-      ractor.take # => :done
+      name = port.receive # => first name
+      ractor.join # => :done
       name2 = Etc.passwd do |s|
         break s.name
       end
       assert_equal(name2, name)
+    RUBY
+  end
+
+  def test_ractor_getgrgid
+    omit("https://bugs.ruby-lang.org/issues/21115")
+
+    assert_ractor(<<~RUBY, require: 'etc')
+      20.times.map do
+        Ractor.new do
+          1000.times do
+            raise unless Etc.getgrgid(Process.gid).gid == Process.gid
+          end
+        end
+      end.each(&:join)
     RUBY
   end
 end
