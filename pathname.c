@@ -1313,6 +1313,8 @@ path_f_pathname(VALUE self, VALUE str)
 
 #include "pathname_builtin.rbinc"
 
+static void init_ids(void);
+
 /*
  *
  * Pathname represents the name of a file or directory on the filesystem,
@@ -1503,8 +1505,13 @@ Init_pathname(void)
     rb_ext_ractor_safe(true);
 #endif
 
+    init_ids();
     InitVM(pathname);
+}
 
+void
+InitVM_pathname(void)
+{
     rb_cPathname = rb_define_class("Pathname", rb_cObject);
     rb_define_method(rb_cPathname, "initialize", path_initialize, 1);
     rb_define_method(rb_cPathname, "freeze", path_freeze, 0);
@@ -1596,7 +1603,7 @@ Init_pathname(void)
 }
 
 void
-InitVM_pathname(void)
+init_ids(void)
 {
 #undef rb_intern
     id_at_path = rb_intern("@path");
