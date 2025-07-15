@@ -7,7 +7,7 @@ use crate::invariants::track_bop_assumption;
 use crate::gc::get_or_create_iseq_payload;
 use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
-use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, SP};
+use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, SideExitContext, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, SP};
 use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SELF_PARAM_IDX};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
@@ -774,7 +774,8 @@ fn gen_send_without_block_direct(
     // TODO: Let side exit code pop all JIT frames to optimize away this cmp + je.
     asm_comment!(asm, "side-exit if callee side-exits");
     asm.cmp(ret, Qundef.into());
-    asm.je(ZJITState::get_exit_trampoline().into());
+    // Restore the C stack pointer on exit
+    asm.je(Target::SideExit { context: None, reason: CalleeSideExit, c_stack_bytes: jit.c_stack_bytes, label: None });
 
     asm_comment!(asm, "restore SP register for the caller");
     let new_sp = asm.sub(SP, sp_offset.into());
@@ -1112,11 +1113,13 @@ fn build_side_exit(jit: &mut JITState, state: &FrameState, reason: SideExitReaso
     }
 
     let target = Target::SideExit {
-        pc: state.pc,
-        stack,
-        locals,
-        c_stack_bytes: jit.c_stack_bytes,
+        context: Some(SideExitContext {
+            pc: state.pc,
+            stack,
+            locals,
+        }),
         reason,
+        c_stack_bytes: jit.c_stack_bytes,
         label,
     };
     Some(target)
