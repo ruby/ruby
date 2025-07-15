@@ -18,3 +18,4 @@ expect-test = "1.5.1"
 [features]
 # Support --yjit-dump-disasm and RubyVM::YJIT.disasm using libcapstone.
 disasm = ["capstone"]
+runtime_checks = []

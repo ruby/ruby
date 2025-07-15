@@ -68,6 +68,12 @@ zjit-bindgen: zjit.$(OBJEXT)
 	ZJIT_SRC_ROOT_PATH='$(top_srcdir)' BINDGEN_JIT_NAME=zjit $(CARGO) run --manifest-path '$(top_srcdir)/zjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
 	$(Q) if [ 'x$(HAVE_GIT)' = xyes ]; then $(GIT) -C "$(top_srcdir)" diff $(ZJIT_BINDGEN_DIFF_OPTS) zjit/src/cruby_bindings.inc.rs; fi
 
+# Build env should roughly match what's used for miniruby to help with caching.
+ZJIT_NEXTEST_ENV := RUBY_BUILD_DIR='$(TOP_BUILD_DIR)' \
+    RUBY_LD_FLAGS='$(LDFLAGS) $(XLDFLAGS) $(MAINLIBS)' \
+    MACOSX_DEPLOYMENT_TARGET=11.0 \
+    CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)'
+
 # We need `cargo nextest` for its one-process-per execution execution model
 # since we can only boot the VM once per process. Normal `cargo test`
 # runs tests in threads and can't handle this.
@@ -75,10 +81,10 @@ zjit-bindgen: zjit.$(OBJEXT)
 # On darwin, it's available through `brew install cargo-nextest`. See
 # https://nexte.st/docs/installation/pre-built-binaries/ otherwise.
 zjit-test: libminiruby.a
-	RUBY_BUILD_DIR='$(TOP_BUILD_DIR)' \
-	    RUBY_LD_FLAGS='$(LDFLAGS) $(XLDFLAGS) $(MAINLIBS)' \
-	    CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
-	    $(CARGO) nextest run --manifest-path '$(top_srcdir)/zjit/Cargo.toml' $(ZJIT_TESTS)
+	$(ZJIT_NEXTEST_ENV) $(CARGO) nextest run \
+		--manifest-path '$(top_srcdir)/zjit/Cargo.toml' \
+		'--features=$(ZJIT_TEST_FEATURES)' \
+		$(ZJIT_TESTS)
 
 # Run a ZJIT test written with Rust #[test] under LLDB
 zjit-test-lldb: libminiruby.a
@@ -88,9 +94,7 @@ zjit-test-lldb: libminiruby.a
 		echo "Many tests only work when it's the only test in the process."; \
 		exit 1; \
 	    fi; \
-	    exe_path=`RUBY_BUILD_DIR='$(TOP_BUILD_DIR)' \
-	    RUBY_LD_FLAGS='$(LDFLAGS) $(XLDFLAGS) $(MAINLIBS)' \
-	    CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
+	    exe_path=`$(ZJIT_NEXTEST_ENV) \
 	    $(CARGO) nextest list --manifest-path '$(top_srcdir)/zjit/Cargo.toml' --message-format json --list-type=binaries-only | \
 	    $(BASERUBY) -rjson -e 'puts JSON.load(STDIN.read).dig("rust-binaries", "zjit", "binary-path")'`; \
 	    exec lldb $$exe_path -- --test-threads=1 $(ZJIT_TESTS)
