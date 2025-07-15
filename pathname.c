@@ -1311,7 +1311,7 @@ path_f_pathname(VALUE self, VALUE str)
     return rb_class_new_instance(1, &str, rb_cPathname);
 }
 
-#include "pathname.rbinc"
+#include "pathname_builtin.rbinc"
 
 /*
  *

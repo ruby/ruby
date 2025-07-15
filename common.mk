@@ -1228,7 +1228,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/array.rb \
 		$(srcdir)/hash.rb \
 		$(srcdir)/kernel.rb \
-		$(srcdir)/pathname.rb \
+		$(srcdir)/pathname_builtin.rb \
 		$(srcdir)/ractor.rb \
 		$(srcdir)/symbol.rb \
 		$(srcdir)/timev.rb \
@@ -11247,7 +11247,7 @@ miniinit.$(OBJEXT): {$(VPATH)}numeric.rb
 miniinit.$(OBJEXT): {$(VPATH)}onigmo.h
 miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
 miniinit.$(OBJEXT): {$(VPATH)}pack.rb
-miniinit.$(OBJEXT): {$(VPATH)}pathname.rb
+miniinit.$(OBJEXT): {$(VPATH)}pathname_builtin.rb
 miniinit.$(OBJEXT): {$(VPATH)}prelude.rb
 miniinit.$(OBJEXT): {$(VPATH)}prism/ast.h
 miniinit.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
@@ -13037,7 +13037,7 @@ pathname.$(OBJEXT): {$(VPATH)}missing.h
 pathname.$(OBJEXT): {$(VPATH)}onigmo.h
 pathname.$(OBJEXT): {$(VPATH)}oniguruma.h
 pathname.$(OBJEXT): {$(VPATH)}pathname.c
-pathname.$(OBJEXT): {$(VPATH)}pathname.rbinc
+pathname.$(OBJEXT): {$(VPATH)}pathname_builtin.rbinc
 pathname.$(OBJEXT): {$(VPATH)}ruby.h
 pathname.$(OBJEXT): {$(VPATH)}st.h
 pathname.$(OBJEXT): {$(VPATH)}subst.h
