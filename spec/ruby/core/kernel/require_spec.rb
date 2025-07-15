@@ -19,6 +19,7 @@ describe "Kernel#require" do
   provided = %w[complex enumerator fiber rational thread ruby2_keywords]
   ruby_version_is "3.5" do
     provided << "set"
+    provided << "pathname"
   end
 
   it "#{provided.join(', ')} are already required" do
@@ -30,6 +31,10 @@ describe "Kernel#require" do
     features.reject! { |feature| feature.end_with?('-fake') }
 
     features.sort.should == provided.sort
+
+    ruby_version_is "3.5" do
+      provided.map! { |f| f == "pathname" ? "pathname.so" : f }
+    end
 
     code = provided.map { |f| "puts require #{f.inspect}\n" }.join
     required = ruby_exe(code, options: '--disable-gems')
