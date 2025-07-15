@@ -331,6 +331,8 @@ module Bundler
     method_option "all", type: :boolean, banner: "Install binstubs for all gems"
     method_option "all-platforms", type: :boolean, default: false, banner: "Install binstubs for all platforms"
     def binstubs(*gems)
+      remembered_flag_deprecation("path", option_name: "bin")
+
       require_relative "cli/binstubs"
       Binstubs.new(options, gems).run
     end
@@ -743,7 +745,7 @@ module Bundler
       nil
     end
 
-    def remembered_flag_deprecation(name, negative: false)
+    def remembered_flag_deprecation(name, negative: false, option_name: nil)
       option = current_command.options[name]
       flag_name = option.switch_name
       flag_name = "--no-" + flag_name.gsub(/\A--/, "") if negative
@@ -753,7 +755,7 @@ module Bundler
       value = value.join(" ").to_s if option.type == :array
       value = "'#{value}'" unless option.type == :boolean
 
-      print_remembered_flag_deprecation(flag_name, name.tr("-", "_"), value)
+      print_remembered_flag_deprecation(flag_name, option_name || name.tr("-", "_"), value)
     end
 
     def print_remembered_flag_deprecation(flag_name, option_name, option_value)
