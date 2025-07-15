@@ -156,10 +156,6 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_pt
 
     // Restore registers for CFP, EC, and SP after use
     asm_comment!(asm, "exit to the interpreter");
-    // On x86_64, maintain 16-byte stack alignment
-    if cfg!(target_arch = "x86_64") {
-        asm.cpop_into(SP);
-    }
     asm.cpop_into(SP);
     asm.cpop_into(EC);
     asm.cpop_into(CFP);
@@ -511,10 +507,6 @@ fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
     asm.cpush(CFP);
     asm.cpush(EC);
     asm.cpush(SP);
-    // On x86_64, maintain 16-byte stack alignment
-    if cfg!(target_arch = "x86_64") {
-        asm.cpush(SP);
-    }
 
     // EC and CFP are passed as arguments
     asm.mov(EC, C_ARG_OPNDS[0]);
@@ -1157,12 +1149,19 @@ fn max_num_params(function: &Function) -> usize {
 /// the function needs to allocate on the stack for the stack frame.
 fn aligned_stack_bytes(num_slots: usize) -> usize {
     // Both x86_64 and arm64 require the stack to be aligned to 16 bytes.
-    // Since SIZEOF_VALUE is 8 bytes, we need to round up the size to the nearest even number.
-    let num_slots = if num_slots % 2 == 0 {
-        num_slots
-    } else {
+    let num_slots = if cfg!(target_arch = "x86_64") && num_slots % 2 == 0 {
+        // On x86_64, since the call instruction bumps the stack pointer by 8 bytes on entry,
+        // we need to round up `num_slots` to an odd number.
         num_slots + 1
+    } else if cfg!(target_arch = "aarch64") && num_slots % 2 == 1 {
+        // On arm64, the stack pointer is always aligned to 16 bytes, so we need to round up
+        // `num_slots`` to an even number.
+        num_slots + 1
+    } else {
+        num_slots
     };
+
+    const _: () = assert!(SIZEOF_VALUE == 8, "aligned_stack_bytes() assumes SIZEOF_VALUE == 8");
     num_slots * SIZEOF_VALUE
 }
 
