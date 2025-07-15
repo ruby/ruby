@@ -1228,6 +1228,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/array.rb \
 		$(srcdir)/hash.rb \
 		$(srcdir)/kernel.rb \
+		$(srcdir)/pathname.rb \
 		$(srcdir)/ractor.rb \
 		$(srcdir)/symbol.rb \
 		$(srcdir)/timev.rb \
@@ -11246,6 +11247,7 @@ miniinit.$(OBJEXT): {$(VPATH)}numeric.rb
 miniinit.$(OBJEXT): {$(VPATH)}onigmo.h
 miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
 miniinit.$(OBJEXT): {$(VPATH)}pack.rb
+miniinit.$(OBJEXT): {$(VPATH)}pathname.rb
 miniinit.$(OBJEXT): {$(VPATH)}prelude.rb
 miniinit.$(OBJEXT): {$(VPATH)}prism/ast.h
 miniinit.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
@@ -12863,16 +12865,20 @@ parser_st.$(OBJEXT): {$(VPATH)}parser_value.h
 parser_st.$(OBJEXT): {$(VPATH)}st.c
 pathname.$(OBJEXT): $(hdrdir)/ruby.h
 pathname.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+pathname.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+pathname.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 pathname.$(OBJEXT): {$(VPATH)}assert.h
 pathname.$(OBJEXT): {$(VPATH)}backward.h
 pathname.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 pathname.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 pathname.$(OBJEXT): {$(VPATH)}backward/2/bool.h
+pathname.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 pathname.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 pathname.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 pathname.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 pathname.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 pathname.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+pathname.$(OBJEXT): {$(VPATH)}builtin.h
 pathname.$(OBJEXT): {$(VPATH)}config.h
 pathname.$(OBJEXT): {$(VPATH)}defines.h
 pathname.$(OBJEXT): {$(VPATH)}encoding.h
@@ -13031,6 +13037,7 @@ pathname.$(OBJEXT): {$(VPATH)}missing.h
 pathname.$(OBJEXT): {$(VPATH)}onigmo.h
 pathname.$(OBJEXT): {$(VPATH)}oniguruma.h
 pathname.$(OBJEXT): {$(VPATH)}pathname.c
+pathname.$(OBJEXT): {$(VPATH)}pathname.rbinc
 pathname.$(OBJEXT): {$(VPATH)}ruby.h
 pathname.$(OBJEXT): {$(VPATH)}st.h
 pathname.$(OBJEXT): {$(VPATH)}subst.h
