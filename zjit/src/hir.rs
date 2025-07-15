@@ -939,6 +939,14 @@ pub enum ValidationError {
     DuplicateInstruction(BlockId, InsnId),
 }
 
+fn can_direct_send(iseq: *const rb_iseq_t) -> bool {
+    if unsafe { rb_get_iseq_flags_has_rest(iseq) } { false }
+    else if unsafe { rb_get_iseq_flags_has_opt(iseq) } { false }
+    else if unsafe { rb_get_iseq_flags_has_kw(iseq) } { false }
+    else if unsafe { rb_get_iseq_flags_has_kwrest(iseq) } { false }
+    else if unsafe { rb_get_iseq_flags_has_block(iseq) } { false }
+    else { true }
+}
 
 /// A [`Function`], which is analogous to a Ruby ISeq, is a control-flow graph of [`Block`]s
 /// containing instructions.
@@ -1507,8 +1515,13 @@ impl Function {
                             // TODO(max): Allow non-iseq; cache cme
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid }, state });
+                        // Only specialize positional-positional calls
+                        // TODO(max): Handle other kinds of parameter passing
                         let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+                        if !can_direct_send(iseq) {
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid }, state });
                         if let Some(expected) = guard_equal_to {
                             self_val = self.push_insn(block, Insn::GuardBitEquals { val: self_val, expected, state });
                         }
@@ -6310,6 +6323,88 @@ mod opt_tests {
               PatchPoint MethodRedefined(Array@0x1008, first@0x1010)
               v11:BasicObject = SendWithoutBlockDirect v6, :first (0x1018)
               Return v11
+        "#]]);
+    }
+
+    #[test]
+    fn dont_specialize_call_to_iseq_with_opt() {
+        eval("
+            def foo(arg=1) = 1
+            def test = foo 1
+            test
+            test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:3:
+            bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              v4:BasicObject = SendWithoutBlock v0, :foo, v2
+              Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn dont_specialize_call_to_iseq_with_block() {
+        eval("
+            def foo(&block) = 1
+            def test = foo {|| }
+            test
+            test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:3:
+            bb0(v0:BasicObject):
+              v3:BasicObject = Send v0, 0x1000, :foo
+              Return v3
+        "#]]);
+    }
+
+    #[test]
+    fn dont_specialize_call_to_iseq_with_rest() {
+        eval("
+            def foo(*args) = 1
+            def test = foo 1
+            test
+            test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:3:
+            bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              v4:BasicObject = SendWithoutBlock v0, :foo, v2
+              Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn dont_specialize_call_to_iseq_with_kw() {
+        eval("
+            def foo(a:) = 1
+            def test = foo(a: 1)
+            test
+            test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:3:
+            bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              SideExit UnknownCallType
+        "#]]);
+    }
+
+    #[test]
+    fn dont_specialize_call_to_iseq_with_kwrest() {
+        eval("
+            def foo(**args) = 1
+            def test = foo(a: 1)
+            test
+            test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:3:
+            bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              SideExit UnknownCallType
         "#]]);
     }
 
