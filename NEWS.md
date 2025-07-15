@@ -111,6 +111,11 @@ Note: We're only listing outstanding class updates.
       waiting on a blocking IO operation when the IO operation is closed.
       [[Feature #21166]]
 
+* Pathname
+
+    * Pathname has been promoted from a default gem to a core class of Ruby.
+      [[Feature #17473]]
+
 ## Stdlib updates
 
 The following bundled gems are promoted from default gems.
@@ -236,3 +241,4 @@ The following bundled gems are updated.
 [Feature #21262]: https://bugs.ruby-lang.org/issues/21262
 [Feature #21287]: https://bugs.ruby-lang.org/issues/21287
 [Feature #21347]: https://bugs.ruby-lang.org/issues/21347
+[Feature #17473]: https://bugs.ruby-lang.org/issues/17473
