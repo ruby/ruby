@@ -167,6 +167,7 @@ fn main() {
         .allowlist_function("rb_gc_mark_movable")
         .allowlist_function("rb_gc_location")
         .allowlist_function("rb_gc_writebarrier")
+        .allowlist_function("rb_gc_writebarrier_remember")
 
         // VALUE variables for Ruby class objects
         // From include/ruby/internal/globals.h
