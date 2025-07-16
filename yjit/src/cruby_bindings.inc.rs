@@ -171,7 +171,6 @@ pub const VM_ENV_DATA_INDEX_SPECVAL: i32 = -1;
 pub const VM_ENV_DATA_INDEX_FLAGS: u32 = 0;
 pub const VM_BLOCK_HANDLER_NONE: u32 = 0;
 pub const SHAPE_ID_NUM_BITS: u32 = 32;
-pub const SHAPE_ID_HAS_IVAR_MASK: u32 = 134742014;
 pub type ID = ::std::os::raw::c_ulong;
 pub type rb_alloc_func_t = ::std::option::Option<unsafe extern "C" fn(klass: VALUE) -> VALUE>;
 pub const RUBY_Qfalse: ruby_special_consts = 0;
@@ -690,6 +689,8 @@ pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
 pub type attr_index_t = u16;
 pub type shape_id_t = u32;
+pub const SHAPE_ID_HAS_IVAR_MASK: _bindgen_ty_37 = 134742014;
+pub type _bindgen_ty_37 = u32;
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
     pub index: u32,
