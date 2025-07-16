@@ -42,7 +42,7 @@ jobs:
 
           - test_task: 'zjit-test-all'
             configure: '--enable-zjit=dev'
-            testopts: '--seed=11831'
+            testopts: '--seed=18140'
 
           - test_task: 'btest'
             configure: '--enable-zjit=dev'
