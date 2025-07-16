@@ -1,10 +1,5 @@
 # -*- mode: makefile-gmake; indent-tabs-mode: t -*-
 
-# Show Cargo progress when doing `make V=1`
-CARGO_VERBOSE_0 = -q
-CARGO_VERBOSE_1 =
-CARGO_VERBOSE = $(CARGO_VERBOSE_$(V))
-
 YJIT_SRC_FILES = $(wildcard \
 	$(top_srcdir)/yjit/Cargo.* \
 	$(top_srcdir)/yjit/src/*.rs \
