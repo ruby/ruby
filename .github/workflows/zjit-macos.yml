@@ -40,6 +40,7 @@ jobs:
 
           - test_task: 'zjit-test-all'
             configure: '--enable-zjit=dev'
+            testopts: '--seed=11831'
 
           - test_task: 'btest'
             configure: '--enable-zjit=dev'
@@ -48,6 +49,7 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.zjit_opts }}
       SPECOPTS: ${{ matrix.specopts }}
+      TESTOPTS: ${{ matrix.testopts }}
 
     runs-on: macos-14
 
@@ -146,6 +148,7 @@ jobs:
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
           RUN_OPTS="$RUN_OPTS"
           SPECOPTS="$SPECOPTS"
+          TESTOPTS="$TESTOPTS"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
