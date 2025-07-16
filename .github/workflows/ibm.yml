@@ -1,0 +1,19 @@
+name: Test IBM runners
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04-ppc64le
+          - os: ubuntu-22.04-ppc64le
+          - os: ubuntu-24.04-ppc64le-p10
+          - os: ubuntu-22.04-ppc64le-p10
+          - os: ubuntu-24.04-s390x
+          - os: ubuntu-22.04-s390x
+    runs-on: ${{ matrix.os }}
+    steps:
+      - run: uname -a
