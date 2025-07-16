@@ -1300,8 +1300,11 @@ hash_ar_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
 
     if (error) return ST_STOP;
 
+    ar_table *tbl = RHASH_AR_TABLE(arg->hash);
     int status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
-    /* TODO: rehash check? rb_raise(rb_eRuntimeError, "rehash occurred during iteration"); */
+    if (!RHASH_AR_TABLE_P(arg->hash) || RHASH_AR_TABLE(arg->hash) != tbl) {
+        rb_raise(rb_eRuntimeError, "rehash occurred during iteration");
+    }
 
     return hash_iter_status_check(status);
 }
