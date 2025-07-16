@@ -1,5 +1,8 @@
 # -*- mode: makefile-gmake; indent-tabs-mode: t -*-
 
+# Put no definitions when ZJIT isn't configured
+ifneq ($(ZJIT_SUPPORT),no)
+
 # Show Cargo progress when doing `make V=1`
 CARGO_VERBOSE_0 = -q
 CARGO_VERBOSE_1 =
@@ -12,6 +15,8 @@ ZJIT_SRC_FILES = $(wildcard \
 	$(top_srcdir)/zjit/src/*/*/*.rs \
 	$(top_srcdir)/zjit/src/*/*/*/*.rs \
 	)
+
+$(RUST_LIB): $(ZJIT_SRC_FILES)
 
 # Because of Cargo cache, if the actual binary is not changed from the
 # previous build, the mtime is preserved as the cached file.
@@ -29,10 +34,6 @@ $(BUILD_ZJIT_LIBS): $(ZJIT_SRC_FILES)
 	$(ECHO) 'building Rust ZJIT (release mode)'
 	+$(Q) $(RUSTC) $(ZJIT_RUSTC_ARGS)
 	$(ZJIT_LIB_TOUCH)
-endif
-
-ifneq ($(ZJIT_SUPPORT),no)
-$(RUST_LIB): $(ZJIT_SRC_FILES)
 endif
 
 # By using ZJIT_BENCH_OPTS instead of RUN_OPTS, you can skip passing the options to `make install`
@@ -110,4 +111,6 @@ libminiruby.a: miniruby$(EXEEXT)
 	$(Q) $(AR) $(ARFLAGS) $@ $(MINIOBJS) $(COMMONOBJS)
 
 libminiruby: libminiruby.a
-endif
+
+endif # ifneq ($(strip $(CARGO)),
+endif # ifneq ($(ZJIT_SUPPORT),no)
