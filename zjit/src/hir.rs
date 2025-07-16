@@ -1382,6 +1382,11 @@ impl Function {
     }
 
     fn try_rewrite_fixnum_op(&mut self, block: BlockId, orig_insn_id: InsnId, f: &dyn Fn(InsnId, InsnId) -> Insn, bop: u32, left: InsnId, right: InsnId, state: InsnId) {
+        if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, INTEGER_REDEFINED_OP_FLAG) } {
+            // If the basic operation is already redefined, we cannot optimize it.
+            self.push_insn_id(block, orig_insn_id);
+            return;
+        }
         if self.arguments_likely_fixnums(left, right, state) {
             if bop == BOP_NEQ {
                 // For opt_neq, the interpreter checks that both neq and eq are unchanged.
@@ -1399,6 +1404,11 @@ impl Function {
     }
 
     fn rewrite_if_frozen(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, klass: u32, bop: u32, state: InsnId) {
+        if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
+            // If the basic operation is already redefined, we cannot optimize it.
+            self.push_insn_id(block, orig_insn_id);
+            return;
+        }
         let self_type = self.type_of(self_val);
         if let Some(obj) = self_type.ruby_object() {
             if obj.is_frozen() {
@@ -1431,6 +1441,11 @@ impl Function {
     }
 
     fn try_rewrite_aref(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, idx_val: InsnId, state: InsnId) {
+        if !unsafe { rb_BASIC_OP_UNREDEFINED_P(BOP_AREF, ARRAY_REDEFINED_OP_FLAG) } {
+            // If the basic operation is already redefined, we cannot optimize it.
+            self.push_insn_id(block, orig_insn_id);
+            return;
+        }
         let self_type = self.type_of(self_val);
         let idx_type = self.type_of(idx_val);
         if self_type.is_subtype(types::ArrayExact) {
@@ -2667,6 +2682,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             break;  // End the block
                         },
                     };
+                    if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, ARRAY_REDEFINED_OP_FLAG) } {
+                        // If the basic operation is already redefined, we cannot optimize it.
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }) });
+                        break;  // End the block
+                    }
                     fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }, state: exit_id });
                     state.stack_push(fun.push_insn(block, insn));
                 }
@@ -5591,6 +5611,25 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_dont_optimize_fixnum_add_if_redefined() {
+        eval("
+            class Integer
+              def +(other)
+                100
+              end
+            end
+            def test(a, b) = a + b
+            test(1,2); test(3,4)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:7:
+            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+              v5:BasicObject = SendWithoutBlock v1, :+, v2
+              Return v5
+        "#]]);
+    }
+
+    #[test]
     fn test_optimize_send_into_fixnum_add_both_profiled() {
         eval("
             def test(a, b) = a + b
@@ -6629,6 +6668,23 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_dont_optimize_hash_freeze_if_redefined() {
+        eval("
+            class Hash
+              def freeze; end
+            end
+            def test = {}.freeze
+        ");
+        assert_optimized_method_hir("test",  expect![[r#"
+            fn test@<compiled>:5:
+            bb0(v0:BasicObject):
+              v3:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v4:BasicObject = SendWithoutBlock v3, :freeze
+              Return v4
+        "#]]);
+    }
+
+    #[test]
     fn test_elide_freeze_with_refrozen_hash() {
         eval("
             def test = {}.freeze.freeze
@@ -6970,6 +7026,44 @@ mod opt_tests {
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
               v11:NilClassExact = Const Value(nil)
               Return v11
+        "#]]);
+    }
+
+    #[test]
+    fn test_dont_optimize_array_aref_if_redefined() {
+        eval(r##"
+            class Array
+              def [](index); end
+            end
+            def test = [4,5,6].freeze[10]
+        "##);
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:5:
+            bb0(v0:BasicObject):
+              v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+              v5:Fixnum[10] = Const Value(10)
+              v7:BasicObject = SendWithoutBlock v3, :[], v5
+              Return v7
+        "#]]);
+    }
+
+    #[test]
+    fn test_dont_optimize_array_max_if_redefined() {
+        eval(r##"
+            class Array
+              def max = 10
+            end
+            def test = [4,5,6].max
+        "##);
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:5:
+            bb0(v0:BasicObject):
+              v2:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v4:ArrayExact = ArrayDup v2
+              PatchPoint MethodRedefined(Array@0x1008, max@0x1010)
+              v9:BasicObject = SendWithoutBlockDirect v4, :max (0x1018)
+              Return v9
         "#]]);
     }
 
