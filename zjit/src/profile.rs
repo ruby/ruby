@@ -89,6 +89,10 @@ fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize
         let opnd_type = Type::from_value(profiler.peek_at_stack((n - i - 1) as isize));
         types[i] = types[i].union(opnd_type);
     }
+    // In the loop above, we probably added a new reference to the profile through
+    // the VALUE in Type. It's messy and relatively slow to conditionally run a
+    // write barrier for each Type, so just remember to re-mark the iseq.
+    unsafe { rb_gc_writebarrier_remember(profiler.iseq.into()) };
 }
 
 #[derive(Debug)]
