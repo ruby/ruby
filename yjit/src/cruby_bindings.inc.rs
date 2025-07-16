@@ -689,6 +689,8 @@ pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
 pub type attr_index_t = u16;
 pub type shape_id_t = u32;
+pub const SHAPE_ID_HAS_IVAR_MASK: _bindgen_ty_37 = 134742014;
+pub type _bindgen_ty_37 = u32;
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
     pub index: u32,
@@ -1120,7 +1122,6 @@ extern "C" {
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;
     pub fn rb_ensure_iv_list_size(obj: VALUE, current_len: u32, newsize: u32);
     pub fn rb_vm_barrier();
-    pub fn rb_str_dup_m(str_: VALUE) -> VALUE;
     pub fn rb_str_byte_substr(str_: VALUE, beg: VALUE, len: VALUE) -> VALUE;
     pub fn rb_str_substr_two_fixnums(
         str_: VALUE,

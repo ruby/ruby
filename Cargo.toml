@@ -22,8 +22,7 @@ path = "jit.rs"
 
 [features]
 disasm = ["yjit?/disasm", "zjit?/disasm"]
-# TODO(GH-642) Turning this on trips a btest failure.
-runtime_checks = [] # ["yjit?/runtime_checks", "zjit?/runtime_checks"]
+runtime_checks = ["yjit?/runtime_checks", "zjit?/runtime_checks"]
 yjit = [ "dep:yjit" ]
 zjit = [ "dep:zjit" ]
 

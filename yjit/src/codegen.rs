@@ -6278,9 +6278,14 @@ fn jit_rb_str_dup(
     let recv_opnd = asm.stack_pop(1);
     let recv_opnd = asm.load(recv_opnd);
 
+    let shape_id_offset = unsafe { rb_shape_id_offset() };
+    let shape_opnd = Opnd::mem(64, recv_opnd, shape_id_offset);
+    asm.test(shape_opnd, Opnd::UImm(SHAPE_ID_HAS_IVAR_MASK as u64));
+    asm.jnz(Target::side_exit(Counter::send_str_dup_exivar));
+
     // Call rb_str_dup
     let stack_ret = asm.stack_push(Type::CString);
-    let ret_opnd = asm.ccall(rb_str_dup_m as *const u8, vec![recv_opnd]);
+    let ret_opnd = asm.ccall(rb_str_dup as *const u8, vec![recv_opnd]);
     asm.mov(stack_ret, ret_opnd);
 
     true

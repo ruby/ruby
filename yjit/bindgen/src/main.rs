@@ -103,6 +103,7 @@ fn main() {
         .allowlist_function("rb_yjit_shape_capacity")
         .allowlist_function("rb_yjit_shape_index")
         .allowlist_var("SHAPE_ID_NUM_BITS")
+        .allowlist_var("SHAPE_ID_HAS_IVAR_MASK")
 
         // From ruby/internal/intern/object.h
         .allowlist_function("rb_obj_is_kind_of")
@@ -228,7 +229,6 @@ fn main() {
         .allowlist_function("rb_obj_as_string_result")
         .allowlist_function("rb_str_byte_substr")
         .allowlist_function("rb_str_substr_two_fixnums")
-        .allowlist_function("rb_str_dup_m")
 
         // From include/ruby/internal/intern/parse.h
         .allowlist_function("rb_backref_get")
