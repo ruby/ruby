@@ -182,7 +182,7 @@ rbimpl_typeddata_flags {
     /**
      * This flag no longer in use
      */
-    RUBY_TYPED_UNUSED           = RUBY_FL_UNUSED6,
+    RUBY_TYPED_UNUSED           = 0,
 
     /**
      * This flag determines whether marking and compaction should be carried out

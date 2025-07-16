@@ -1273,7 +1273,7 @@ VALUE
 rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
 {
     RUBY_ASSERT(!SPECIAL_CONST_P(obj));
-    RUBY_ASSERT(RSHAPE_TYPE_P(target_shape_id, SHAPE_IVAR) || RSHAPE_TYPE_P(target_shape_id, SHAPE_OBJ_ID));
+    RUBY_ASSERT(RSHAPE_EDGE_NAME(target_shape_id));
 
     if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
         ASSERT_vm_locking();
@@ -1886,11 +1886,6 @@ imemo_fields_set(VALUE klass, VALUE fields_obj, shape_id_t target_shape_id, ID f
 static void
 generic_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val)
 {
-    if (!field_name) {
-        field_name = RSHAPE_EDGE_NAME(target_shape_id);
-        RUBY_ASSERT(field_name);
-    }
-
     const VALUE original_fields_obj = generic_fields_lookup(obj, field_name, false);
     VALUE fields_obj = imemo_fields_set(rb_obj_class(obj), original_fields_obj, target_shape_id, field_name, val, false);
 
@@ -2110,6 +2105,11 @@ rb_ivar_set_internal(VALUE obj, ID id, VALUE val)
 void
 rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val)
 {
+    if (!field_name) {
+        field_name = RSHAPE_EDGE_NAME(target_shape_id);
+        RUBY_ASSERT(field_name);
+    }
+
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         obj_field_set(obj, target_shape_id, val);
@@ -2413,8 +2413,10 @@ rb_ivar_count(VALUE obj)
     if (SPECIAL_CONST_P(obj)) return 0;
 
     st_index_t iv_count = 0;
+    shape_id_t shape_id;
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
+        shape_id = RBASIC_SHAPE_ID(obj);
         iv_count = ROBJECT_FIELDS_COUNT(obj);
         break;
 
@@ -2425,11 +2427,12 @@ rb_ivar_count(VALUE obj)
             if (!fields_obj) {
                 return 0;
             }
-            if (rb_shape_obj_too_complex_p(fields_obj)) {
+            shape_id = RBASIC_SHAPE_ID(fields_obj);
+            if (rb_shape_too_complex_p(shape_id)) {
                 iv_count = rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
             }
             else {
-                iv_count = RBASIC_FIELDS_COUNT(fields_obj);
+                iv_count = RSHAPE_LEN(shape_id);
             }
         }
         break;
@@ -2437,32 +2440,35 @@ rb_ivar_count(VALUE obj)
       case T_IMEMO:
         RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
 
-        if (rb_shape_obj_too_complex_p(obj)) {
+        shape_id = RBASIC_SHAPE_ID(obj);
+        if (rb_shape_too_complex_p(shape_id)) {
             iv_count = rb_st_table_size(rb_imemo_fields_complex_tbl(obj));
         }
         else {
-            iv_count = RBASIC_FIELDS_COUNT(obj);
+            iv_count = RSHAPE_LEN(shape_id);
         }
         break;
 
       default:
-        if (rb_obj_exivar_p(obj)) {
+        shape_id = RBASIC_SHAPE_ID(obj);
+        if (rb_shape_too_complex_p(shape_id)) {
+            VALUE fields_obj;
 
-            if (rb_shape_obj_too_complex_p(obj)) {
-                VALUE fields_obj;
-
-                if (rb_gen_fields_tbl_get(obj, 0, &fields_obj)) {
-                    iv_count = rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
-                }
+            if (rb_gen_fields_tbl_get(obj, 0, &fields_obj)) {
+                iv_count = rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
             }
-            else {
-                iv_count = RBASIC_FIELDS_COUNT(obj);
-            }
+        }
+        else {
+            iv_count = RSHAPE_LEN(shape_id);
         }
         break;
     }
 
-    if (rb_shape_obj_has_id(obj)) {
+    if (rb_shape_has_object_id(shape_id)) {
+        iv_count--;
+    }
+
+    if (rb_shape_has_old_address(shape_id)) {
         iv_count--;
     }
 
@@ -4802,3 +4808,53 @@ rb_const_lookup(VALUE klass, ID id)
     return const_lookup(RCLASS_CONST_TBL(klass), id);
 }
 
+st_index_t
+rb_obj_stable_address(VALUE obj)
+{
+    RUBY_ASSERT(FL_ABLE(obj));
+
+    // Only T_OBJECT can have a stable address, all other
+    // types store their fields in another object (imemo/fields),
+    // which can't be resized during compaction.
+    RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
+
+    if (FL_TEST_RAW(obj, RUBY_FL_ADDRESS_SEEN)) {
+        shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+        if (UNLIKELY(rb_shape_has_old_address(shape_id))) {
+            VALUE old_address = rb_obj_field_get(obj, rb_shape_old_address(shape_id));
+#if SIZEOF_LONG == SIZEOF_VOIDP
+            return (st_index_t)NUM2LONG(old_address);
+#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+            return (st_index_t)NUM2LL(old_address);
+#else
+#error "Unexpected VALUE size"
+#endif
+        }
+    }
+    else {
+        FL_SET_RAW(obj, RUBY_FL_ADDRESS_SEEN);
+    }
+
+    return (st_index_t)obj;
+}
+
+void
+rb_obj_set_stable_address(VALUE obj, VALUE old_address)
+{
+    RUBY_ASSERT(FL_ABLE(obj));
+    RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO));
+    RUBY_ASSERT(FL_TEST_RAW(obj, RUBY_FL_ADDRESS_SEEN));
+
+    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+
+    if (!rb_shape_has_old_address(shape_id)) {
+#if SIZEOF_LONG == SIZEOF_VOIDP
+        old_address = LONG2NUM(old_address);
+#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+        old_address = LL2NUM(old_address);
+#else
+#error "Unexpected VALUE size"
+#endif
+        rb_obj_field_set(obj, rb_shape_transition_old_address(shape_id), 0, old_address);
+    }
+}
