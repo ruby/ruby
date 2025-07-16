@@ -7436,6 +7436,7 @@ file.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+file.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
