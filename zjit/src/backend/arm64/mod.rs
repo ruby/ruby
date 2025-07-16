@@ -667,12 +667,7 @@ impl Assembler
                 Insn::URShift { opnd, .. } => {
                     // The operand must be in a register, so
                     // if we get anything else we need to load it first.
-                    let opnd0 = match opnd {
-                        Opnd::Mem(_) => split_load_operand(asm, *opnd),
-                        _ => *opnd
-                    };
-
-                    *opnd = opnd0;
+                    *opnd = split_load_operand(asm, *opnd);
                     asm.push_insn(insn);
                 },
                 Insn::Store { dest, src } => {
