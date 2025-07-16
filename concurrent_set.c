@@ -207,19 +207,19 @@ rb_concurrent_set_find(VALUE *set_obj_ptr, VALUE key)
             goto retry;
           default: {
             VALUE curr_hash = RUBY_ATOMIC_VALUE_LOAD(entry->hash);
-            if ((curr_hash == hash || curr_hash == 0) && set->funcs->cmp(key, curr_key)) {
-                // We've found a match.
-                if (UNLIKELY(!RB_SPECIAL_CONST_P(curr_key) && rb_objspace_garbage_object_p(curr_key))) {
-                    // This is a weakref set, so after marking but before sweeping is complete we may find a matching garbage object.
-                    // Skip it and mark it as deleted.
-                    RUBY_ATOMIC_VALUE_CAS(entry->key, curr_key, CONCURRENT_SET_DELETED);
+            if (curr_hash != 0 && curr_hash != hash) break;
 
-                    // Fall through and continue our search.
-                }
-                else {
-                    RB_GC_GUARD(set_obj);
-                    return curr_key;
-                }
+            if (UNLIKELY(!RB_SPECIAL_CONST_P(curr_key) && rb_objspace_garbage_object_p(curr_key))) {
+                // This is a weakref set, so after marking but before sweeping is complete we may find a matching garbage object.
+                // Skip it and mark it as deleted.
+                RUBY_ATOMIC_VALUE_CAS(entry->key, curr_key, CONCURRENT_SET_DELETED);
+                break;
+            }
+
+            if (set->funcs->cmp(key, curr_key)) {
+                // We've found a match.
+                RB_GC_GUARD(set_obj);
+                return curr_key;
             }
 
             break;
@@ -292,19 +292,19 @@ rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
             goto retry;
           default: {
             VALUE curr_hash = RUBY_ATOMIC_VALUE_LOAD(entry->hash);
-            if ((curr_hash == hash || curr_hash == 0) && set->funcs->cmp(key, curr_key)) {
-                // We've found a match.
-                if (UNLIKELY(!RB_SPECIAL_CONST_P(curr_key) && rb_objspace_garbage_object_p(curr_key))) {
-                    // This is a weakref set, so after marking but before sweeping is complete we may find a matching garbage object.
-                    // Skip it and mark it as deleted.
-                    RUBY_ATOMIC_VALUE_CAS(entry->key, curr_key, CONCURRENT_SET_DELETED);
+            if (curr_hash != 0 && curr_hash != hash) break;
 
-                    // Fall through and continue our search.
-                }
-                else {
-                    RB_GC_GUARD(set_obj);
-                    return curr_key;
-                }
+            if (UNLIKELY(!RB_SPECIAL_CONST_P(curr_key) && rb_objspace_garbage_object_p(curr_key))) {
+                // This is a weakref set, so after marking but before sweeping is complete we may find a matching garbage object.
+                // Skip it and mark it as deleted.
+                RUBY_ATOMIC_VALUE_CAS(entry->key, curr_key, CONCURRENT_SET_DELETED);
+                break;
+            }
+
+            if (set->funcs->cmp(key, curr_key)) {
+                // We've found a match.
+                RB_GC_GUARD(set_obj);
+                return curr_key;
             }
 
             break;
