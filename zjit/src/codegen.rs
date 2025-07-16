@@ -1164,7 +1164,7 @@ fn aligned_stack_bytes(num_slots: usize) -> usize {
         num_slots
     };
 
-    const _: () = assert!(SIZEOF_VALUE == 8, "aligned_stack_bytes() assumes SIZEOF_VALUE == 8");
+    const { assert!(SIZEOF_VALUE == 8, "aligned_stack_bytes() assumes SIZEOF_VALUE == 8"); }
     num_slots * SIZEOF_VALUE
 }
 
