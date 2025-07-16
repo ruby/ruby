@@ -999,6 +999,26 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_profile_under_nested_jit_call
+    assert_compiles '[nil, nil, 3]', %q{
+      def profile
+        1 + 2
+      end
+
+      def jit_call(flag)
+        if flag
+          profile
+        end
+      end
+
+      def entry(flag)
+        jit_call(flag)
+      end
+
+      [entry(false), entry(false), entry(true)]
+    }, call_threshold: 2
+  end
+
   def test_bop_redefinition
     assert_runs '[3, :+, 100]', %q{
       def test

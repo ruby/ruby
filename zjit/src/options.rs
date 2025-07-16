@@ -17,7 +17,7 @@ pub static mut rb_zjit_call_threshold: u64 = 2;
 #[derive(Clone, Copy, Debug)]
 pub struct Options {
     /// Number of times YARV instructions should be profiled.
-    pub num_profiles: u64,
+    pub num_profiles: u8,
 
     /// Enable debug logging
     pub debug: bool,
@@ -51,7 +51,7 @@ pub fn init_options() -> Options {
 /// Note that --help allows only 80 chars per line, including indentation.    80-char limit --> |
 pub const ZJIT_OPTIONS: &'static [(&str, &str)] = &[
     ("--zjit-call-threshold=num", "Number of calls to trigger JIT (default: 2)."),
-    ("--zjit-num-profiles=num",   "Number of profiled calls before JIT (default: 1)."),
+    ("--zjit-num-profiles=num",   "Number of profiled calls before JIT (default: 1, max: 255)."),
 ];
 
 #[derive(Clone, Copy, Debug)]
@@ -158,7 +158,7 @@ fn update_profile_threshold(options: &Options) {
             rb_zjit_profile_threshold = 0;
         } else {
             // Otherwise, profile instructions at least once.
-            rb_zjit_profile_threshold = rb_zjit_call_threshold.saturating_sub(options.num_profiles).max(1);
+            rb_zjit_profile_threshold = rb_zjit_call_threshold.saturating_sub(options.num_profiles as u64).max(1);
         }
     }
 }

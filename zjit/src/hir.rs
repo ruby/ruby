@@ -414,6 +414,7 @@ pub enum SideExitReason {
     GuardType(Type),
     GuardBitEquals(VALUE),
     PatchPoint(Invariant),
+    CalleeSideExit,
 }
 
 impl std::fmt::Display for SideExitReason {

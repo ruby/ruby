@@ -7,7 +7,7 @@ use crate::invariants::track_bop_assumption;
 use crate::gc::get_or_create_iseq_payload;
 use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
-use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, SP};
+use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, SideExitContext, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, SP};
 use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SELF_PARAM_IDX};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
@@ -156,10 +156,6 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_pt
 
     // Restore registers for CFP, EC, and SP after use
     asm_comment!(asm, "exit to the interpreter");
-    // On x86_64, maintain 16-byte stack alignment
-    if cfg!(target_arch = "x86_64") {
-        asm.cpop_into(SP);
-    }
     asm.cpop_into(SP);
     asm.cpop_into(EC);
     asm.cpop_into(CFP);
@@ -511,10 +507,6 @@ fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
     asm.cpush(CFP);
     asm.cpush(EC);
     asm.cpush(SP);
-    // On x86_64, maintain 16-byte stack alignment
-    if cfg!(target_arch = "x86_64") {
-        asm.cpush(SP);
-    }
 
     // EC and CFP are passed as arguments
     asm.mov(EC, C_ARG_OPNDS[0]);
@@ -782,7 +774,8 @@ fn gen_send_without_block_direct(
     // TODO: Let side exit code pop all JIT frames to optimize away this cmp + je.
     asm_comment!(asm, "side-exit if callee side-exits");
     asm.cmp(ret, Qundef.into());
-    asm.je(ZJITState::get_exit_trampoline().into());
+    // Restore the C stack pointer on exit
+    asm.je(Target::SideExit { context: None, reason: CalleeSideExit, c_stack_bytes: jit.c_stack_bytes, label: None });
 
     asm_comment!(asm, "restore SP register for the caller");
     let new_sp = asm.sub(SP, sp_offset.into());
@@ -1120,11 +1113,13 @@ fn build_side_exit(jit: &mut JITState, state: &FrameState, reason: SideExitReaso
     }
 
     let target = Target::SideExit {
-        pc: state.pc,
-        stack,
-        locals,
-        c_stack_bytes: jit.c_stack_bytes,
+        context: Some(SideExitContext {
+            pc: state.pc,
+            stack,
+            locals,
+        }),
         reason,
+        c_stack_bytes: jit.c_stack_bytes,
         label,
     };
     Some(target)
@@ -1157,12 +1152,19 @@ fn max_num_params(function: &Function) -> usize {
 /// the function needs to allocate on the stack for the stack frame.
 fn aligned_stack_bytes(num_slots: usize) -> usize {
     // Both x86_64 and arm64 require the stack to be aligned to 16 bytes.
-    // Since SIZEOF_VALUE is 8 bytes, we need to round up the size to the nearest even number.
-    let num_slots = if num_slots % 2 == 0 {
-        num_slots
-    } else {
+    let num_slots = if cfg!(target_arch = "x86_64") && num_slots % 2 == 0 {
+        // On x86_64, since the call instruction bumps the stack pointer by 8 bytes on entry,
+        // we need to round up `num_slots` to an odd number.
         num_slots + 1
+    } else if cfg!(target_arch = "aarch64") && num_slots % 2 == 1 {
+        // On arm64, the stack pointer is always aligned to 16 bytes, so we need to round up
+        // `num_slots`` to an even number.
+        num_slots + 1
+    } else {
+        num_slots
     };
+
+    const { assert!(SIZEOF_VALUE == 8, "aligned_stack_bytes() assumes SIZEOF_VALUE == 8"); }
     num_slots * SIZEOF_VALUE
 }
 
