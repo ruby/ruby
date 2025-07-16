@@ -1546,6 +1546,7 @@ impl Function {
                         // referenced after the PatchPoint.
                         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::StableConstantNames { idlist }, state });
                         let replacement = self.push_insn(block, Insn::Const { val: Const::Value(unsafe { (*ice).value }) });
+                        self.insn_types[replacement.0] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
                     Insn::ObjToString { val, call_info, cd, state, .. } => {
@@ -6323,6 +6324,26 @@ mod opt_tests {
               v6:ArrayExact = ArrayDup v4
               PatchPoint MethodRedefined(Array@0x1008, first@0x1010)
               v11:BasicObject = SendWithoutBlockDirect v6, :first (0x1018)
+              Return v11
+        "#]]);
+    }
+
+    #[test]
+    fn send_direct_to_module() {
+        eval("
+            module M; end
+            def test = M.class
+            test
+            test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:3:
+            bb0(v0:BasicObject):
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1000, M)
+              v9:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              PatchPoint MethodRedefined(Module@0x1010, class@0x1018)
+              v11:BasicObject = SendWithoutBlockDirect v9, :class (0x1020)
               Return v11
         "#]]);
     }
