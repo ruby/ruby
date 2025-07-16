@@ -421,13 +421,16 @@ impl Assembler
                         (Opnd::Reg(_) | Opnd::VReg { .. }, Opnd::Reg(_) | Opnd::VReg { .. }) => {
                             merge_three_reg_mov(&live_ranges, &mut iterator, left, right, out);
                             asm.push_insn(insn);
-                        },
+                        }
                         (reg_opnd @ (Opnd::Reg(_) | Opnd::VReg { .. }), other_opnd) |
                         (other_opnd, reg_opnd @ (Opnd::Reg(_) | Opnd::VReg { .. })) => {
                             *left = reg_opnd;
                             *right = split_shifted_immediate(asm, other_opnd);
+                            // Now `right` is either a register or an immediate, both can try to
+                            // merge with a subsequent mov.
+                            merge_three_reg_mov(&live_ranges, &mut iterator, left, left, out);
                             asm.push_insn(insn);
-                        },
+                        }
                         _ => {
                             *left = split_load_operand(asm, *left);
                             *right = split_shifted_immediate(asm, *right);
@@ -1381,12 +1384,12 @@ mod tests {
         asm.mov(sp, new_sp);
         let new_sp = asm.sub(sp, 0x20.into());
         asm.mov(sp, new_sp);
-        asm.compile_with_num_regs(&mut cb, 2);
 
-        assert_disasm!(cb, "e08300b11f000091e08300f11f000091", {"
+        asm.compile_with_num_regs(&mut cb, 2);
+        assert_disasm!(cb, "ff830091ff8300d1", "
             0x0: add sp, sp, #0x20
             0x4: sub sp, sp, #0x20
-        "});
+        ");
     }
 
     #[test]
