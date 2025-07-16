@@ -14,7 +14,7 @@
 
     If you want to build from the git repository, you will also need:
 
-    * [autoconf] - 2.67 or later
+    * [autoconf] - 2.70 or later
     * [gperf] - 3.1 or later
         * Usually unneeded; only if you edit some source files using gperf
     * ruby - 3.0 or later
