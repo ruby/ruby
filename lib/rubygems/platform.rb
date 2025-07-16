@@ -90,7 +90,7 @@ class Gem::Platform
     when String then
       cpu, os = arch.sub(/-+$/, "").split("-", 2)
 
-      @cpu = if cpu.match?(/i\d86/)
+      @cpu = if cpu&.match?(/i\d86/)
         "x86"
       else
         cpu
