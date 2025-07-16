@@ -270,6 +270,14 @@ impl From<VALUE> for Opnd {
     }
 }
 
+/// Set of things we need to restore for side exits.
+#[derive(Clone, Debug)]
+pub struct SideExitContext {
+    pub pc: *const VALUE,
+    pub stack: Vec<Opnd>,
+    pub locals: Vec<Opnd>,
+}
+
 /// Branch target (something that we can jump to)
 /// for branch instructions
 #[derive(Clone, Debug)]
@@ -281,12 +289,14 @@ pub enum Target
     Label(Label),
     /// Side exit to the interpreter
     SideExit {
-        pc: *const VALUE,
-        stack: Vec<Opnd>,
-        locals: Vec<Opnd>,
-        c_stack_bytes: usize,
+        /// Context to restore on regular side exits. None for side exits right
+        /// after JIT-to-JIT calls because we restore them before the JIT call.
+        context: Option<SideExitContext>,
+        /// We use this to enrich asm comments.
         reason: SideExitReason,
-        // Some if the side exit should write this label. We use it for patch points.
+        /// The number of bytes we need to adjust the C stack pointer by.
+        c_stack_bytes: usize,
+        /// Some if the side exit should write this label. We use it for patch points.
         label: Option<Label>,
     },
 }
@@ -767,7 +777,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::Label(target) |
             Insn::LeaJumpTarget { target, .. } |
             Insn::PatchPoint(target) => {
-                if let Target::SideExit { stack, locals, .. } = target {
+                if let Target::SideExit { context: Some(SideExitContext { stack, locals, .. }), .. } = target {
                     let stack_idx = self.idx;
                     if stack_idx < stack.len() {
                         let opnd = &stack[stack_idx];
@@ -792,7 +802,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
                     return Some(opnd);
                 }
 
-                if let Target::SideExit { stack, locals, .. } = target {
+                if let Target::SideExit { context: Some(SideExitContext { stack, locals, .. }), .. } = target {
                     let stack_idx = self.idx - 1;
                     if stack_idx < stack.len() {
                         let opnd = &stack[stack_idx];
@@ -923,7 +933,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::Label(target) |
             Insn::LeaJumpTarget { target, .. } |
             Insn::PatchPoint(target) => {
-                if let Target::SideExit { stack, locals, .. } = target {
+                if let Target::SideExit { context: Some(SideExitContext { stack, locals, .. }), .. } = target {
                     let stack_idx = self.idx;
                     if stack_idx < stack.len() {
                         let opnd = &mut stack[stack_idx];
@@ -948,7 +958,7 @@ impl<'a> InsnOpndMutIterator<'a> {
                     return Some(opnd);
                 }
 
-                if let Target::SideExit { stack, locals, .. } = target {
+                if let Target::SideExit { context: Some(SideExitContext { stack, locals, .. }), .. } = target {
                     let stack_idx = self.idx - 1;
                     if stack_idx < stack.len() {
                         let opnd = &mut stack[stack_idx];
@@ -1803,7 +1813,7 @@ impl Assembler
         for (idx, target) in targets {
             // Compile a side exit. Note that this is past the split pass and alloc_regs(),
             // so you can't use a VReg or an instruction that needs to be split.
-            if let Target::SideExit { pc, stack, locals, c_stack_bytes, reason, label } = target {
+            if let Target::SideExit { context, reason, c_stack_bytes, label } = target {
                 asm_comment!(self, "Exit: {reason}");
                 let side_exit_label = if let Some(label) = label {
                     Target::Label(label)
@@ -1823,26 +1833,30 @@ impl Assembler
                     }
                 }
 
-                asm_comment!(self, "write stack slots: {stack:?}");
-                for (idx, &opnd) in stack.iter().enumerate() {
-                    let opnd = split_store_source(self, opnd);
-                    self.store(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), opnd);
+                // Restore the PC and the stack for regular side exits. We don't do this for
+                // side exits right after JIT-to-JIT calls, which restore them before the call.
+                if let Some(SideExitContext { pc, stack, locals }) = context {
+                    asm_comment!(self, "write stack slots: {stack:?}");
+                    for (idx, &opnd) in stack.iter().enumerate() {
+                        let opnd = split_store_source(self, opnd);
+                        self.store(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), opnd);
+                    }
+
+                    asm_comment!(self, "write locals: {locals:?}");
+                    for (idx, &opnd) in locals.iter().enumerate() {
+                        let opnd = split_store_source(self, opnd);
+                        self.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
+                    }
+
+                    asm_comment!(self, "save cfp->pc");
+                    self.load_into(Opnd::Reg(Assembler::SCRATCH_REG), Opnd::const_ptr(pc));
+                    self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::Reg(Assembler::SCRATCH_REG));
+
+                    asm_comment!(self, "save cfp->sp");
+                    self.lea_into(Opnd::Reg(Assembler::SCRATCH_REG), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
+                    let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
+                    self.store(cfp_sp, Opnd::Reg(Assembler::SCRATCH_REG));
                 }
-
-                asm_comment!(self, "write locals: {locals:?}");
-                for (idx, &opnd) in locals.iter().enumerate() {
-                    let opnd = split_store_source(self, opnd);
-                    self.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
-                }
-
-                asm_comment!(self, "save cfp->pc");
-                self.load_into(Opnd::Reg(Assembler::SCRATCH_REG), Opnd::const_ptr(pc));
-                self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::Reg(Assembler::SCRATCH_REG));
-
-                asm_comment!(self, "save cfp->sp");
-                self.lea_into(Opnd::Reg(Assembler::SCRATCH_REG), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
-                let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
-                self.store(cfp_sp, Opnd::Reg(Assembler::SCRATCH_REG));
 
                 if c_stack_bytes > 0 {
                     asm_comment!(self, "restore C stack pointer");

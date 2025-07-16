@@ -929,6 +929,11 @@ unsafe extern "C" {
         file: *const ::std::os::raw::c_char,
         line: ::std::os::raw::c_int,
     );
+    pub fn rb_zjit_iseq_insn_set(
+        iseq: *const rb_iseq_t,
+        insn_idx: ::std::os::raw::c_uint,
+        bare_insn: ruby_vminsn_type,
+    );
     pub fn rb_iseq_get_zjit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
     pub fn rb_iseq_set_zjit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
     pub fn rb_zjit_print_exception();

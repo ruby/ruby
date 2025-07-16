@@ -2815,12 +2815,12 @@ AS_IF([test "$THREAD_MODEL" = pthread], [
     ], [
 	AC_DEFINE(NON_SCALAR_THREAD_ID)
     ])
-    AC_CHECK_FUNCS(sched_yield pthread_attr_setinheritsched \
-	pthread_attr_get_np pthread_attr_getstack pthread_attr_getguardsize \
-	pthread_get_stackaddr_np pthread_get_stacksize_np \
-	thr_stksegment pthread_stackseg_np pthread_getthrds_np \
-	pthread_condattr_setclock \
-	pthread_setname_np pthread_set_name_np)
+    AC_CHECK_FUNCS([sched_yield pthread_attr_setinheritsched
+	pthread_attr_get_np pthread_attr_getstack pthread_attr_getguardsize
+	pthread_get_stackaddr_np pthread_get_stacksize_np
+	thr_stksegment pthread_stackseg_np pthread_getthrds_np
+	pthread_condattr_setclock
+	pthread_setname_np pthread_set_name_np])
     AS_CASE(["$target_os"],[emscripten*],[ac_cv_func_pthread_sigmask=no],[AC_CHECK_FUNCS(pthread_sigmask)])
     AS_CASE(["$target_os"],[aix*],[ac_cv_func_pthread_getattr_np=no],[AC_CHECK_FUNCS(pthread_getattr_np)])
     set_current_thread_name=
@@ -4014,10 +4014,16 @@ AS_IF([test x"$JIT_CARGO_SUPPORT" != "xno" -o \( x"$YJIT_SUPPORT" != "xno" -a x"
     YJIT_LIBS=
     ZJIT_LIBS=
 
+    # There's more processing below to get the feature set for the
+    # top-level crate, so capture at this point for feature set of
+    # just the zjit crate.
+    ZJIT_TEST_FEATURES="${rb_cargo_features}"
+
     AS_IF([test x"${YJIT_SUPPORT}" != x"no"], [
         rb_cargo_features="$rb_cargo_features,yjit"
     ])
     AS_IF([test x"${ZJIT_SUPPORT}" != x"no"], [
+        AC_SUBST(ZJIT_TEST_FEATURES)
         rb_cargo_features="$rb_cargo_features,zjit"
     ])
     # if YJIT and ZJIT release mode

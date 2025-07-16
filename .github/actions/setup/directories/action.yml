@@ -76,7 +76,7 @@ runs:
       shell: bash
       run: |
         echo "git=`command -v git`" >> "$GITHUB_OUTPUT"
-        echo "sudo=`command -v sudo`" >> "$GITHUB_OUTPUT"
+        echo "sudo=`sudo true && command -v sudo`" >> "$GITHUB_OUTPUT"
         echo "autoreconf=`command -v autoreconf`" >> "$GITHUB_OUTPUT"
 
     - if: steps.which.outputs.git

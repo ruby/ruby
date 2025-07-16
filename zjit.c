@@ -295,6 +295,18 @@ rb_zjit_profile_disable(const rb_iseq_t *iseq)
     }
 }
 
+// Update a YARV instruction to a given opcode (to disable ZJIT profiling).
+void
+rb_zjit_iseq_insn_set(const rb_iseq_t *iseq, unsigned int insn_idx, enum ruby_vminsn_type bare_insn)
+{
+#if RUBY_DEBUG
+    int insn = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[insn_idx]);
+    RUBY_ASSERT(vm_zjit_insn_to_bare_insn(insn) == (int)bare_insn);
+#endif
+    const void *const *insn_table = rb_vm_get_insns_address_table();
+    iseq->body->iseq_encoded[insn_idx] = (VALUE)insn_table[bare_insn];
+}
+
 // Get profiling information for ISEQ
 void *
 rb_iseq_get_zjit_payload(const rb_iseq_t *iseq)

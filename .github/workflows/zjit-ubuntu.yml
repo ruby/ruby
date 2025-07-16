@@ -40,9 +40,9 @@ jobs:
           - test_task: 'zjit-test'
             configure: '--enable-yjit --enable-zjit=dev'
 
-          - test_task: 'test-all'
+          - test_task: 'zjit-test-all'
             configure: '--enable-zjit=dev'
-            tests: '../src/test/ruby/test_zjit.rb'
+            testopts: '--seed=11831'
 
           - test_task: 'btest'
             configure: '--enable-zjit=dev'
@@ -52,6 +52,7 @@ jobs:
       RUN_OPTS: ${{ matrix.zjit_opts }}
       YJIT_BENCH_OPTS: ${{ matrix.yjit_bench_opts }}
       SPECOPTS: ${{ matrix.specopts }}
+      TESTOPTS: ${{ matrix.testopts }}
       RUBY_DEBUG: ci
       BUNDLE_JOBS: 8 # for yjit-bench
       RUST_BACKTRACE: 1
@@ -168,6 +169,7 @@ jobs:
         run: >-
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
           RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug SPECOPTS="$SPECOPTS"
+          TESTOPTS="$TESTOPTS"
           ZJIT_BINDGEN_DIFF_OPTS="$ZJIT_BINDGEN_DIFF_OPTS"
         timeout-minutes: 90
         env:
