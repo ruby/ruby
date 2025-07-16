@@ -73,7 +73,7 @@ fn profile_insn(profiler: &mut Profiler, bare_opcode: ruby_vminsn_type) {
     }
 
     // Once we profile the instruction num_profiles times, we stop profiling it.
-    profile.num_profiles[profiler.insn_idx] += 1;
+    profile.num_profiles[profiler.insn_idx] = profile.num_profiles[profiler.insn_idx].saturating_add(1);
     if profile.num_profiles[profiler.insn_idx] == get_option!(num_profiles) {
         unsafe { rb_zjit_iseq_insn_set(profiler.iseq, profiler.insn_idx as u32, bare_opcode); }
     }
