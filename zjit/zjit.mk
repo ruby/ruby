@@ -3,11 +3,6 @@
 # Put no definitions when ZJIT isn't configured
 ifneq ($(ZJIT_SUPPORT),no)
 
-# Show Cargo progress when doing `make V=1`
-CARGO_VERBOSE_0 = -q
-CARGO_VERBOSE_1 =
-CARGO_VERBOSE = $(CARGO_VERBOSE_$(V))
-
 ZJIT_SRC_FILES = $(wildcard \
 	$(top_srcdir)/zjit/Cargo.* \
 	$(top_srcdir)/zjit/src/*.rs \
