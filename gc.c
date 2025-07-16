@@ -2507,6 +2507,9 @@ count_objects(int argc, VALUE *argv, VALUE os)
     }
 
     for (size_t i = 0; i <= T_MASK; i++) {
+        // type_sym can allocate an object,
+        // so we need to create all key symbols in advance
+        // not to disturb the result
         types[i] = type_sym(i);
     }
 
