@@ -1,7 +1,7 @@
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
-use crate::{cruby::*, gc::get_or_create_iseq_payload, hir_type::{types::{Empty, Fixnum}, Type}, options::get_option};
+use crate::{cruby::*, gc::get_or_create_iseq_payload, hir_type::{types::{Empty}, Type}, options::get_option};
 
 /// Ephemeral state for profiling runtime information
 struct Profiler {
@@ -111,14 +111,6 @@ impl IseqProfile {
     /// Get profiled operand types for a given instruction index
     pub fn get_operand_types(&self, insn_idx: usize) -> Option<&[Type]> {
         self.opnd_types.get(insn_idx).map(|v| &**v)
-    }
-
-    /// Return true if top-two stack operands are Fixnums
-    pub fn have_two_fixnums(&self, insn_idx: usize) -> bool {
-        match self.get_operand_types(insn_idx) {
-            Some([left, right]) => left.is_subtype(Fixnum) && right.is_subtype(Fixnum),
-            _ => false,
-        }
     }
 
     /// Run a given callback with every object in IseqProfile
