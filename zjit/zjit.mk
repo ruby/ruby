@@ -56,7 +56,7 @@ zjit-check:
 
 .PHONY: zjit-test-all
 zjit-test-all:
-	$(MAKE) test-all RUST_BACKTRACE=1 TEST_EXCLUDES='--excludes-dir=$(top_srcdir)/test/.excludes-zjit --name=!/memory_leak/' RUN_OPTS='--zjit-call-threshold=1' TESTS='$(top_srcdir)/test/ruby/'
+	$(MAKE) test-all RUST_BACKTRACE=1 TEST_EXCLUDES='--excludes-dir=$(top_srcdir)/test/.excludes-zjit --name=!/memory_leak/' RUN_OPTS='--zjit-call-threshold=1' TESTS='$(top_srcdir)/test/ruby'
 
 ZJIT_BINDGEN_DIFF_OPTS =
 
