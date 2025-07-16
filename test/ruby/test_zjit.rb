@@ -382,6 +382,16 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_or]
   end
 
+  def test_fixnum_mul
+    assert_compiles '12', %q{
+      C = 3
+      def test(n) = C * n
+      test(4)
+      test(4)
+      test(4)
+    }, call_threshold: 2, insns: [:opt_mult]
+  end
+
   def test_opt_not
     assert_compiles('[true, true, false]', <<~RUBY, insns: [:opt_not])
       def test(obj) = !obj

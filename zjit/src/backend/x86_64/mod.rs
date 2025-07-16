@@ -249,8 +249,8 @@ impl Assembler
                                 *opnd = asm.load(*opnd);
                             }
                         },
-                        // We have to load memory operands to avoid corrupting them
-                        Opnd::Mem(_) | Opnd::Reg(_) => {
+                        // We have to load non-reg operands to avoid corrupting them
+                        Opnd::Mem(_) | Opnd::Reg(_) | Opnd::UImm(_) | Opnd::Imm(_) => {
                             *opnd = asm.load(*opnd);
                         },
                         _ => {}
