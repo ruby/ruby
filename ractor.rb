@@ -78,7 +78,7 @@
 #       puts "In ractor: #{data2.object_id}, #{data2[0].object_id}, #{data2[1].object_id}"
 #     end
 #     r.send(data)
-#     r.take
+#     r.join
 #     puts "Outside  : #{data.object_id}, #{data[0].object_id}, #{data[1].object_id}"
 #
 # This will output something like:
@@ -100,7 +100,7 @@
 #       puts "In ractor: #{data_in_ractor.object_id}, #{data_in_ractor[0].object_id}"
 #     end
 #     r.send(data, move: true)
-#     r.take
+#     r.join
 #     puts "Outside: moved? #{Ractor::MovedObject === data}"
 #     puts "Outside: #{data.inspect}"
 #
@@ -135,7 +135,7 @@
 #       puts "I can't see #{cls.tricky}"
 #       cls.tricky = true # doesn't get here, but this would also raise an error
 #     end
-#     r.take
+#     r.join
 #     # I see C
 #     # can not access instance variables of classes/modules from non-main Ractors (RuntimeError)
 #
@@ -149,7 +149,7 @@
 #       puts "GOOD=#{GOOD}"
 #       puts "BAD=#{BAD}"
 #     end
-#     r.take
+#     r.join
 #     # GOOD=good
 #     # can not access non-shareable objects in constant Object::BAD by non-main Ractor. (NameError)
 #
@@ -159,7 +159,7 @@
 #       puts "I see #{C}"
 #       puts "I can't see #{C.tricky}"
 #     end
-#     r.take
+#     r.join
 #     # I see C
 #     # can not access instance variables of classes/modules from non-main Ractors (RuntimeError)
 #
@@ -175,7 +175,7 @@
 #       a = 1
 #       Thread.new {puts "Thread in ractor: a=#{a}"}.join
 #     end
-#     r.take
+#     r.join
 #     # Here "Thread in ractor: a=1" will be printed
 #
 # == Note on code examples
@@ -188,7 +188,7 @@
 #     end
 #
 # It is **only for demonstration purposes** and shouldn't be used in a real code.
-# Most of the time, #take is used to wait for ractors to finish.
+# Most of the time, #join is used to wait for ractors to finish.
 #
 # == Reference
 #
@@ -205,7 +205,7 @@ class Ractor
   # inside the block will refer to the current \Ractor.
   #
   #    r = Ractor.new { puts "Hi, I am #{self.inspect}" }
-  #    r.take
+  #    r.join
   #    # Prints "Hi, I am #<Ractor:#2 test.rb:1 running>"
   #
   # Any +args+ passed are propagated to the block arguments by the same rules as
@@ -217,14 +217,14 @@ class Ractor
   #    r = Ractor.new(arg) {|received_arg|
   #      puts "Received: #{received_arg} (##{received_arg.object_id})"
   #    }
-  #    r.take
+  #    r.join
   #    # Prints:
   #    #   Passing: [1, 2, 3] (#280)
   #    #   Received: [1, 2, 3] (#300)
   #
   # Ractor's +name+ can be set for debugging purposes:
   #
-  #    r = Ractor.new(name: 'my ractor') {}; r.take
+  #    r = Ractor.new(name: 'my ractor') {}; r.join
   #    p r
   #    #=> #<Ractor:#3 my ractor test.rb:1 terminated>
   #
@@ -252,10 +252,10 @@ class Ractor
   # Returns the number of Ractors currently running or blocking (waiting).
   #
   #    Ractor.count                   #=> 1
-  #    r = Ractor.new(name: 'example') { Ractor.yield(1) }
+  #    r = Ractor.new(name: 'example') { Ractor.receive }
   #    Ractor.count                   #=> 2 (main + example ractor)
-  #    r.take                         # wait for Ractor.yield(1)
-  #    r.take                         # wait until r will finish
+  #    r << 42                        # r's Ractor.receive will resume
+  #    r.join                         # wait for r's termination
   #    Ractor.count                   #=> 1
   def self.count
     __builtin_cexpr! %q{
