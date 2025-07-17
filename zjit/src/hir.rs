@@ -1703,7 +1703,7 @@ impl Function {
     fn fold_fixnum_bop(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<i64>) -> InsnId {
         f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
             .filter(|&n| n >= (RUBY_FIXNUM_MIN as i64) && n <= RUBY_FIXNUM_MAX as i64)
-            .map(|n| self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(n as usize)) }))
+            .map(|n| self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_isize(n as isize)) }))
             .unwrap_or(insn_id)
     }
 
@@ -5188,6 +5188,24 @@ mod opt_tests {
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
               v15:Fixnum[1] = Const Value(1)
               Return v15
+        "#]]);
+    }
+
+    #[test]
+    fn test_fold_fixnum_sub_large_negative_result() {
+        eval("
+            def test
+              0 - 1073741825
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:3:
+            bb0(v0:BasicObject):
+              v2:Fixnum[0] = Const Value(0)
+              v3:Fixnum[1073741825] = Const Value(1073741825)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
+              v9:Fixnum[-1073741825] = Const Value(-1073741825)
+              Return v9
         "#]]);
     }
 
