@@ -114,7 +114,10 @@
 #define RUBY_TYPED_PROMOTED1         RUBY_TYPED_PROMOTED1
 /** @endcond */
 
-#define TYPED_DATA_EMBEDDED 2
+#define IS_TYPED_DATA ((VALUE)1)
+#define TYPED_DATA_EMBEDDED ((VALUE)2)
+#define TYPED_DATA_PTR_FLAGS ((VALUE)3)
+#define TYPED_DATA_PTR_MASK (~TYPED_DATA_PTR_FLAGS)
 
 /**
  * @private
@@ -353,18 +356,16 @@ struct RTypedData {
     struct RBasic basic;
 
     /**
+     * This is a `const rb_data_type_t *const` value, with the low bits set:
+     *
+     * 1: Always set, to differentiate RTypedData from RData.
+     * 2: Set if object is embedded.
+     *
      * This field  stores various  information about how  Ruby should  handle a
      * data.   This roughly  resembles a  Ruby level  class (apart  from method
      * definition etc.)
      */
-    const rb_data_type_t *const type;
-
-    /**
-     * This has to be always 1.
-     *
-     * @internal
-     */
-    const VALUE typed_flag;
+    const VALUE type;
 
     /** Pointer to the actual C level struct that you want to wrap. */
     void *data;
@@ -470,8 +471,7 @@ RBIMPL_SYMBOL_EXPORT_END()
 /**
  * Identical to #TypedData_Wrap_Struct,  except it allocates a  new data region
  * internally instead of taking an existing  one.  The allocation is done using
- * ruby_calloc().  Hence  it makes no sense  for `data_type->function.dfree` to
- * be anything other than ::RUBY_TYPED_DEFAULT_FREE.
+ * ruby_calloc().
  *
  * @param      klass          Ruby level class of the object.
  * @param      type           Type name of the C struct.
@@ -525,7 +525,7 @@ RTYPEDDATA_EMBEDDED_P(VALUE obj)
     }
 #endif
 
-    return RTYPEDDATA(obj)->typed_flag & TYPED_DATA_EMBEDDED;
+    return (RTYPEDDATA(obj)->type) & TYPED_DATA_EMBEDDED;
 }
 
 static inline void *
@@ -561,8 +561,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 rbimpl_rtypeddata_p(VALUE obj)
 {
-    VALUE typed_flag = RTYPEDDATA(obj)->typed_flag;
-    return typed_flag != 0 && typed_flag <= 3;
+    return RTYPEDDATA(obj)->type & IS_TYPED_DATA;
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -608,7 +607,7 @@ RTYPEDDATA_TYPE(VALUE obj)
     }
 #endif
 
-    return RTYPEDDATA(obj)->type;
+    return (const struct rb_data_type_struct *)(RTYPEDDATA(obj)->type & TYPED_DATA_PTR_MASK);
 }
 
 /**

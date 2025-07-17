@@ -4,11 +4,11 @@ template = "rubytest."
 # Assume the directory by these environment variables are safe.
 base = [ENV["TMPDIR"], ENV["TMP"], "/tmp"].find do |tmp|
   next unless tmp and tmp.size <= 50 and File.directory?(tmp)
-  # On macOS, the default TMPDIR is very long, inspite of UNIX socket
-  # path length is limited.
+  # On macOS, the default TMPDIR is very long, in spite of UNIX socket
+  # path length being limited.
   #
   # Also Rubygems creates its own temporary directory per tests, and
-  # some tests copy the full path of gemhome there.  In that caes, the
+  # some tests copy the full path of gemhome there.  In that case, the
   # path contains both temporary names twice, and can exceed path name
   # limit very easily.
   tmp

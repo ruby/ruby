@@ -890,6 +890,7 @@ opt_send_without_block
 (CALL_DATA cd)
 (...)
 (VALUE val)
+// attr bool zjit_profile = true;
 // attr bool handles_sp = true;
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
@@ -901,6 +902,32 @@ opt_send_without_block
     if (UNDEF_P(val)) {
         RESTORE_REGS();
         NEXT_INSN();
+    }
+}
+
+/* Jump if "new" method has been defined by user */
+DEFINE_INSN
+opt_new
+(CALL_DATA cd, OFFSET dst)
+()
+()
+// attr bool leaf = false;
+{
+    VALUE argc = vm_ci_argc(cd->ci);
+    VALUE val = TOPN(argc);
+
+    // The bookkeeping slot should be empty.
+    RUBY_ASSERT(TOPN(argc + 1) == Qnil);
+
+    if (vm_method_cfunc_is(GET_ISEQ(), cd, val, rb_class_new_instance_pass_kw)) {
+        RB_DEBUG_COUNTER_INC(opt_new_hit);
+        val = rb_obj_alloc(val);
+        TOPN(argc) = val;
+        TOPN(argc + 1) = val;
+    }
+    else {
+        RB_DEBUG_COUNTER_INC(opt_new_miss);
+        JUMP(dst);
     }
 }
 
@@ -969,6 +996,7 @@ opt_nil_p
 (CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_nil_p(GET_ISEQ(), cd, recv);
 
@@ -1265,6 +1293,7 @@ opt_plus
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_plus(recv, obj);
 
@@ -1279,6 +1308,7 @@ opt_minus
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_minus(recv, obj);
 
@@ -1293,6 +1323,7 @@ opt_mult
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_mult(recv, obj);
 
@@ -1310,6 +1341,7 @@ opt_div
 /* In case of division by zero, it raises. Thus
  * ZeroDivisionError#initialize is called.  */
 // attr bool leaf = false;
+// attr bool zjit_profile = true;
 {
     val = vm_opt_div(recv, obj);
 
@@ -1326,6 +1358,7 @@ opt_mod
 (VALUE val)
 /* Same discussion as opt_div. */
 // attr bool leaf = false;
+// attr bool zjit_profile = true;
 {
     val = vm_opt_mod(recv, obj);
 
@@ -1340,6 +1373,7 @@ opt_eq
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = opt_equality(GET_ISEQ(), recv, obj, cd);
 
@@ -1354,6 +1388,7 @@ opt_neq
 (CALL_DATA cd_eq, CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_neq(GET_ISEQ(), cd, cd_eq, recv, obj);
 
@@ -1368,6 +1403,7 @@ opt_lt
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_lt(recv, obj);
 
@@ -1382,6 +1418,7 @@ opt_le
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_le(recv, obj);
 
@@ -1396,6 +1433,7 @@ opt_gt
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_gt(recv, obj);
 
@@ -1410,6 +1448,7 @@ opt_ge
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_ge(recv, obj);
 
@@ -1442,6 +1481,7 @@ opt_and
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_and(recv, obj);
 
@@ -1456,6 +1496,7 @@ opt_or
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_or(recv, obj);
 

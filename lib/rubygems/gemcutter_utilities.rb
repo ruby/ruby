@@ -263,7 +263,10 @@ module Gem::GemcutterUtilities
       port = server.addr[1].to_s
 
       url_with_port = "#{webauthn_url}?port=#{port}"
-      say "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option."
+      say "You have enabled multi-factor authentication. Please visit the following URL to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option."
+      say ""
+      say url_with_port
+      say ""
 
       threads = [WebauthnListener.listener_thread(host, server), WebauthnPoller.poll_thread(options, host, webauthn_url, credentials)]
       otp_thread = wait_for_otp_thread(*threads)
@@ -316,7 +319,7 @@ module Gem::GemcutterUtilities
   end
 
   def get_scope_params(scope)
-    scope_params = { index_rubygems: true }
+    scope_params = { index_rubygems: true, push_rubygem: true }
 
     if scope
       scope_params = { scope => true }

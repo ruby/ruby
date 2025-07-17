@@ -1920,7 +1920,7 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
         // For aliasing, having the VM lock hopefully also implies that no one
         // else has an overlapping &mut IseqPayload.
         unsafe {
-            rb_yjit_assert_holding_vm_lock();
+            rb_assert_holding_vm_lock();
             &*(payload as *const IseqPayload)
         }
     };
@@ -2009,7 +2009,7 @@ pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
         // For aliasing, having the VM lock hopefully also implies that no one
         // else has an overlapping &mut IseqPayload.
         unsafe {
-            rb_yjit_assert_holding_vm_lock();
+            rb_assert_holding_vm_lock();
             &*(payload as *const IseqPayload)
         }
     };
@@ -2034,13 +2034,6 @@ pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
         let block = unsafe { blockref.as_ref() };
         block_update_references(block, cb, true);
     }
-
-    // Note that we would have returned already if YJIT is off.
-    cb.mark_all_executable();
-
-    CodegenGlobals::get_outlined_cb()
-        .unwrap()
-        .mark_all_executable();
 
     return;
 
@@ -2107,6 +2100,34 @@ pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
             }
         }
 
+    }
+}
+
+/// Mark all code memory as writable.
+/// This function is useful for garbage collectors that update references in JIT-compiled code in
+/// bulk.
+#[no_mangle]
+pub extern "C" fn rb_yjit_mark_all_writeable() {
+    if CodegenGlobals::has_instance() {
+        CodegenGlobals::get_inline_cb().mark_all_writeable();
+
+        CodegenGlobals::get_outlined_cb()
+            .unwrap()
+            .mark_all_writeable();
+    }
+}
+
+/// Mark all code memory as executable.
+/// This function is useful for garbage collectors that update references in JIT-compiled code in
+/// bulk.
+#[no_mangle]
+pub extern "C" fn rb_yjit_mark_all_executable() {
+    if CodegenGlobals::has_instance() {
+        CodegenGlobals::get_inline_cb().mark_all_executable();
+
+        CodegenGlobals::get_outlined_cb()
+            .unwrap()
+            .mark_all_executable();
     }
 }
 
@@ -4158,7 +4179,23 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     }
 
     // For each incoming branch
-    for branchref in block.incoming.0.take().iter() {
+    let mut incoming_branches = block.incoming.0.take();
+
+    // An adjacent branch will write into the start of the block being invalidated, possibly
+    // overwriting the block's exit. If we run out of memory after doing this, any subsequent
+    // incoming branches we rewrite won't be able use the block's exit as a fallback when they
+    // are unable to generate a stub. To avoid this, if there's an incoming branch that's
+    // adjacent to the invalidated block, make sure we process it last.
+    let adjacent_branch_idx = incoming_branches.iter().position(|branchref| {
+        let branch = unsafe { branchref.as_ref() };
+        let target_next = block.start_addr == branch.end_addr.get();
+        target_next
+    });
+    if let Some(adjacent_branch_idx) = adjacent_branch_idx {
+        incoming_branches.swap(adjacent_branch_idx, incoming_branches.len() - 1)
+    }
+
+    for (i, branchref) in incoming_branches.iter().enumerate() {
         let branch = unsafe { branchref.as_ref() };
         let target_idx = if branch.get_target_address(0) == Some(block_start) {
             0
@@ -4198,10 +4235,18 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         let target_next = block.start_addr == branch.end_addr.get();
 
         if target_next {
-            // The new block will no longer be adjacent.
-            // Note that we could be enlarging the branch and writing into the
-            // start of the block being invalidated.
-            branch.gen_fn.set_shape(BranchShape::Default);
+            if stub_addr != block.start_addr {
+                // The new block will no longer be adjacent.
+                // Note that we could be enlarging the branch and writing into the
+                // start of the block being invalidated.
+                branch.gen_fn.set_shape(BranchShape::Default);
+            } else {
+                // The branch target is still adjacent, so the branch must remain
+                // a fallthrough so we don't overwrite the target with a jump.
+                //
+                // This can happen if we're unable to generate a stub and the
+                // target block also exits on entry (block_start == block_entry_exit).
+            }
         }
 
         // Rewrite the branch with the new jump target address
@@ -4210,6 +4255,11 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
 
         if target_next && branch.end_addr > block.end_addr {
             panic!("yjit invalidate rewrote branch past end of invalidated block: {:?} (code_size: {})", branch, block.code_size());
+        }
+        let is_last_incoming_branch = i == incoming_branches.len() - 1;
+        if target_next && branch.end_addr.get() > block_entry_exit && !is_last_incoming_branch {
+            // We might still need to jump to this exit if we run out of memory when rewriting another incoming branch.
+            panic!("yjit invalidate rewrote branch over exit of invalidated block: {:?}", branch);
         }
         if !target_next && branch.code_size() > old_branch_size {
             panic!(

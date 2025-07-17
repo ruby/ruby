@@ -15,11 +15,6 @@ static VALUE object_spec_FL_ABLE(VALUE self, VALUE obj) {
 
 static int object_spec_FL_TEST_flag(VALUE flag_string) {
   char *flag_cstr = StringValueCStr(flag_string);
-#ifndef RUBY_VERSION_IS_3_1
-  if (strcmp(flag_cstr, "FL_TAINT") == 0) {
-    return FL_TAINT;
-  }
-#endif
   if (strcmp(flag_cstr, "FL_FREEZE") == 0) {
     return FL_FREEZE;
   }
@@ -29,22 +24,6 @@ static int object_spec_FL_TEST_flag(VALUE flag_string) {
 static VALUE object_spec_FL_TEST(VALUE self, VALUE obj, VALUE flag) {
   return INT2FIX(FL_TEST(obj, object_spec_FL_TEST_flag(flag)));
 }
-
-#ifndef RUBY_VERSION_IS_3_1
-static VALUE object_spec_OBJ_TAINT(VALUE self, VALUE obj) {
-  OBJ_TAINT(obj);
-  return Qnil;
-}
-
-static VALUE object_spec_OBJ_TAINTED(VALUE self, VALUE obj) {
-  return OBJ_TAINTED(obj) ? Qtrue : Qfalse;
-}
-
-static VALUE object_spec_OBJ_INFECT(VALUE self, VALUE host, VALUE source) {
-  OBJ_INFECT(host, source);
-  return Qnil;
-}
-#endif
 
 static VALUE object_spec_rb_any_to_s(VALUE self, VALUE obj) {
   return rb_any_to_s(obj);
@@ -153,12 +132,6 @@ static VALUE object_specs_rb_obj_method_arity(VALUE self, VALUE obj, VALUE mid) 
 static VALUE object_specs_rb_obj_method(VALUE self, VALUE obj, VALUE method) {
   return rb_obj_method(obj, method);
 }
-
-#ifndef RUBY_VERSION_IS_3_2
-static VALUE object_spec_rb_obj_taint(VALUE self, VALUE obj) {
-  return rb_obj_taint(obj);
-}
-#endif
 
 static VALUE so_require(VALUE self) {
   rb_require("fixtures/foo");
@@ -410,15 +383,20 @@ static VALUE object_spec_custom_alloc_func_p(VALUE self, VALUE klass) {
   return allocator ? Qtrue : Qfalse;
 }
 
+static VALUE object_spec_redefine_frozen(VALUE self) {
+    // The purpose of this spec is to verify that `frozen?`
+    // and `RB_OBJ_FROZEN` do not mutually recurse infinitely.
+    if (RB_OBJ_FROZEN(self)) {
+        return Qtrue;
+    }
+
+    return Qfalse;
+}
+
 void Init_object_spec(void) {
   VALUE cls = rb_define_class("CApiObjectSpecs", rb_cObject);
   rb_define_method(cls, "FL_ABLE", object_spec_FL_ABLE, 1);
   rb_define_method(cls, "FL_TEST", object_spec_FL_TEST, 2);
-#ifndef RUBY_VERSION_IS_3_1
-  rb_define_method(cls, "OBJ_TAINT", object_spec_OBJ_TAINT, 1);
-  rb_define_method(cls, "OBJ_TAINTED", object_spec_OBJ_TAINTED, 1);
-  rb_define_method(cls, "OBJ_INFECT", object_spec_OBJ_INFECT, 2);
-#endif
   rb_define_method(cls, "rb_any_to_s", object_spec_rb_any_to_s, 1);
   rb_define_method(cls, "rb_attr_get", so_attr_get, 2);
   rb_define_method(cls, "rb_obj_instance_variables", object_spec_rb_obj_instance_variables, 1);
@@ -443,15 +421,11 @@ void Init_object_spec(void) {
   rb_define_method(cls, "rb_obj_is_kind_of", so_kind_of, 2);
   rb_define_method(cls, "rb_obj_method_arity", object_specs_rb_obj_method_arity, 2);
   rb_define_method(cls, "rb_obj_method", object_specs_rb_obj_method, 2);
-#ifndef RUBY_VERSION_IS_3_2
-  rb_define_method(cls, "rb_obj_taint", object_spec_rb_obj_taint, 1);
-#endif
   rb_define_method(cls, "rb_require", so_require, 0);
   rb_define_method(cls, "rb_respond_to", so_respond_to, 2);
   rb_define_method(cls, "rb_method_boundp", object_spec_rb_method_boundp, 3);
   rb_define_method(cls, "rb_obj_respond_to", so_obj_respond_to, 3);
   rb_define_method(cls, "rb_special_const_p", object_spec_rb_special_const_p, 1);
-
   rb_define_method(cls, "rb_to_id", so_to_id, 1);
   rb_define_method(cls, "RTEST", object_spec_RTEST, 1);
   rb_define_method(cls, "rb_check_type", so_check_type, 2);
@@ -491,6 +465,9 @@ void Init_object_spec(void) {
   rb_define_method(cls, "custom_alloc_func?", object_spec_custom_alloc_func_p, 1);
   rb_define_method(cls, "not_implemented_method", rb_f_notimplement, -1);
   rb_define_method(cls, "rb_ivar_foreach", object_spec_rb_ivar_foreach, 1);
+
+  cls = rb_define_class("CApiObjectRedefinitionSpecs", rb_cObject);
+  rb_define_method(cls, "frozen?", object_spec_redefine_frozen, 0);
 }
 
 #ifdef __cplusplus

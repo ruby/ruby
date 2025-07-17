@@ -11,11 +11,15 @@
   this_file: 'contains instruction information for yarv instruction sequence.',
   edit: __FILE__,
 } %>
+#ifndef INSNS_INFO_INC
+#define INSNS_INFO_INC 1
 <%= render 'insn_type_chars' %>
 <%= render 'insn_name_info' %>
 <%= render 'insn_len_info' %>
 <%= render 'insn_operand_info' %>
 <%= render 'leaf_helpers' %>
 <%= render 'sp_inc_helpers' %>
+<%= render 'zjit_helpers' %>
 <%= render 'attributes' %>
 <%= render 'comptime_insn_stack_increase' %>
+#endif

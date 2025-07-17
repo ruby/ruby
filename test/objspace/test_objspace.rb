@@ -203,8 +203,9 @@ class TestObjSpace < Test::Unit::TestCase
       assert_equal(line1,    ObjectSpace.allocation_sourceline(o1))
       assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(o1))
       assert_equal(c1,       ObjectSpace.allocation_generation(o1))
-      assert_equal(Class.name, ObjectSpace.allocation_class_path(o1))
-      assert_equal(:new,       ObjectSpace.allocation_method_id(o1))
+      # These assertions fail under coverage measurement: https://bugs.ruby-lang.org/issues/21298
+      #assert_equal(self.class.name, ObjectSpace.allocation_class_path(o1))
+      #assert_equal(__method__,       ObjectSpace.allocation_method_id(o1))
 
       assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(o2))
       assert_equal(line2,    ObjectSpace.allocation_sourceline(o2))
@@ -975,6 +976,13 @@ class TestObjSpace < Test::Unit::TestCase
     class_name = '" little boby table [Bug #20892]'
     json = ObjectSpace.dump(Class.new.tap { |c| c.set_temporary_name(class_name) })
     assert_equal class_name, JSON.parse(json)["name"]
+  end
+
+  def test_dump_include_shareable
+    omit 'Not provided by mmtk' if RUBY_DESCRIPTION.include?("+GC[mmtk]")
+
+    assert_include(ObjectSpace.dump(ENV), '"shareable":true')
+    assert_not_include(ObjectSpace.dump([]), '"shareable":true')
   end
 
   def test_utf8_method_names

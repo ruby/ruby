@@ -937,6 +937,32 @@ class TestSocket < Test::Unit::TestCase
     RUBY
   end
 
+  def test_tcp_socket_open_timeout
+    opts = %w[-rsocket -W1]
+    assert_separately opts, <<~RUBY
+    Addrinfo.define_singleton_method(:getaddrinfo) do |_, _, family, *_|
+      if family == Socket::AF_INET6
+        sleep
+      else
+        [Addrinfo.tcp("127.0.0.1", 12345)]
+      end
+    end
+
+    assert_raise(Errno::ETIMEDOUT) do
+      Socket.tcp("localhost", 12345, open_timeout: 0.01)
+    end
+    RUBY
+  end
+
+  def test_tcp_socket_open_timeout_with_other_timeouts
+    opts = %w[-rsocket -W1]
+    assert_separately opts, <<~RUBY
+    assert_raise(ArgumentError) do
+      Socket.tcp("localhost", 12345, open_timeout: 0.01, resolv_timout: 0.01)
+    end
+    RUBY
+  end
+
   def test_tcp_socket_one_hostname_resolution_succeeded_at_least
     opts = %w[-rsocket -W1]
     assert_separately opts, <<~RUBY

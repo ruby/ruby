@@ -73,6 +73,27 @@ module Psych
         assert_equal s.method, obj.method
       end
 
+      D = Data.define(:foo) unless RUBY_VERSION < "3.2"
+
+      def test_data
+        omit "Data requires ruby >= 3.2" if RUBY_VERSION < "3.2"
+        assert_cycle D.new('bar')
+      end
+
+      def test_data_anon
+        omit "Data requires ruby >= 3.2" if RUBY_VERSION < "3.2"
+        d = Data.define(:foo).new('bar')
+        obj =  Psych.unsafe_load(Psych.dump(d))
+        assert_equal d.foo, obj.foo
+      end
+
+      def test_data_override_method
+        omit "Data requires ruby >= 3.2" if RUBY_VERSION < "3.2"
+        d = Data.define(:method).new('override')
+        obj =  Psych.unsafe_load(Psych.dump(d))
+        assert_equal d.method, obj.method
+      end
+
       def test_exception
         ex = Exception.new 'foo'
         loaded = Psych.unsafe_load(Psych.dump(ex))

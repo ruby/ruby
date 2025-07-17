@@ -66,7 +66,9 @@ module Bundler
 
       Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.feature_flag.plugins?
 
-      definition = Bundler.definition
+      # For install we want to enable strict validation
+      # (rather than some optimizations we perform at app runtime).
+      definition = Bundler.definition(strict: true)
       definition.validate_runtime!
 
       installer = Installer.install(Bundler.root, definition, options)
@@ -158,9 +160,7 @@ module Bundler
       Bundler.settings.set_command_option_if_given :path, options[:path]
 
       if options["standalone"] && Bundler.settings[:path].nil? && !options["local"]
-        Bundler.settings.temporary(path_relative_to_cwd: false) do
-          Bundler.settings.set_command_option :path, "bundle"
-        end
+        Bundler.settings.set_command_option :path, "bundle"
       end
 
       bin_option = options["binstubs"]
@@ -179,7 +179,7 @@ module Bundler
 
       normalize_groups if options[:without] || options[:with]
 
-      options[:force] = options[:redownload]
+      options[:force] = options[:redownload] if options[:redownload]
     end
 
     def warn_ambiguous_gems

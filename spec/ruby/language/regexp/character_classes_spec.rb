@@ -113,7 +113,7 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't matches Unicode marks with [[:alnum:]]" do
-    "\u{36F}".match(/[[:alnum:]]/).should be_nil
+    "\u{3099}".match(/[[:alnum:]]/).should be_nil
   end
 
   it "doesn't match Unicode control characters with [[:alnum:]]" do
@@ -133,7 +133,7 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't matches Unicode marks with [[:alpha:]]" do
-    "\u{36F}".match(/[[:alpha:]]/).should be_nil
+    "\u{3099}".match(/[[:alpha:]]/).should be_nil
   end
 
   it "doesn't match Unicode control characters with [[:alpha:]]" do
@@ -560,6 +560,13 @@ describe "Regexp with character classes" do
 
   it "match Unicode Nl characters with [[:word:]]" do
     "\u{16EE}".match(/[[:word:]]/).to_a.should == ["\u{16EE}"]
+  end
+
+  ruby_bug "#19417", ""..."3.5" do
+    it "matches Unicode join control characters with [[:word:]]" do
+      "\u{200C}".match(/[[:word:]]/).to_a.should == ["\u{200C}"]
+      "\u{200D}".match(/[[:word:]]/).to_a.should == ["\u{200D}"]
+    end
   end
 
   it "doesn't match Unicode No characters with [[:word:]]" do

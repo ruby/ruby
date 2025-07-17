@@ -25,7 +25,7 @@ features = ["is_mmtk_object", "object_pinning", "sticky_immix_non_moving_nursery
 
 # Uncomment the following lines to use mmtk-core from the official repository.
 git = "https://github.com/mmtk/mmtk-core.git"
-rev = "051bc7470feef915c445305301e6113f86d3957b"
+rev = "3d89bb51c191d3077278684ec5059726128d3e2b"
 
 # Uncomment the following line to use mmtk-core from a local repository.
 # path = "../../../mmtk-core"
@@ -35,3 +35,8 @@ default = []
 
 # When moving an object, clear its original copy.
 clear_old_copy = []
+
+# Enable extra assertions in release build.  For debugging.
+extra_assert = []
+
+[workspace]

@@ -79,6 +79,70 @@ module EnvUtil
   end
   module_function :timeout
 
+  class Debugger
+    @list = []
+
+    attr_accessor :name
+
+    def self.register(name, &block)
+      @list << new(name, &block)
+    end
+
+    def initialize(name, &block)
+      @name = name
+      instance_eval(&block)
+    end
+
+    def usable?; false; end
+
+    def start(pid, *args) end
+
+    def dump(pid, timeout: 60, reprieve: timeout&.div(4))
+      dpid = start(pid, *command_file(File.join(__dir__, "dump.#{name}")), out: :err)
+    rescue Errno::ENOENT
+      return
+    else
+      return unless dpid
+      [[timeout, :TERM], [reprieve, :KILL]].find do |t, sig|
+        return EnvUtil.timeout(t) {Process.wait(dpid)}
+      rescue Timeout::Error
+        Process.kill(sig, dpid)
+      end
+      true
+    end
+
+    # sudo -n: --non-interactive
+    PRECOMMAND = (%[sudo -n] if /darwin/ =~ RUBY_PLATFORM)
+
+    def spawn(*args, **opts)
+      super(*PRECOMMAND, *args, **opts)
+    end
+
+    register("gdb") do
+      class << self
+        def usable?; system(*%w[gdb --batch --quiet --nx -ex exit]); end
+        def start(pid, *args, **opts)
+          spawn(*%W[gdb --batch --quiet --pid #{pid}], *args, **opts)
+        end
+        def command_file(file) "--command=#{file}"; end
+      end
+    end
+
+    register("lldb") do
+      class << self
+        def usable?; system(*%w[lldb -Q --no-lldbinit -o exit]); end
+        def start(pid, *args, **opts)
+          spawn(*%W[lldb --batch -Q --attach-pid #{pid}], *args, **opts)
+        end
+        def command_file(file) ["--source", file]; end
+      end
+    end
+
+    def self.search
+      @debugger ||= @list.find(&:usable?)
+    end
+  end
+
   def terminate(pid, signal = :TERM, pgroup = nil, reprieve = 1)
     reprieve = apply_timeout_scale(reprieve) if reprieve
 
@@ -94,17 +158,12 @@ module EnvUtil
       pgroup = pid
     end
 
-    lldb = true if /darwin/ =~ RUBY_PLATFORM
-
+    dumped = false
     while signal = signals.shift
 
-      if lldb and [:ABRT, :KILL].include?(signal)
-        lldb = false
-        # sudo -n: --non-interactive
-        # lldb -p: attach
-        #      -o: run command
-        system(*%W[sudo -n lldb -p #{pid} --batch -o bt\ all -o call\ rb_vmdebug_stack_dump_all_threads() -o quit])
-        true
+      if !dumped and [:ABRT, :KILL].include?(signal)
+        Debugger.search&.dump(pid)
+        dumped = true
       end
 
       begin

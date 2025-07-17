@@ -8,12 +8,10 @@ module Bundler
 
     BOOL_KEYS = %w[
       allow_offline_install
-      auto_clean_without_path
       auto_install
       cache_all
       cache_all_platforms
       clean
-      default_install_uses_path
       deployment
       disable_checksum_validation
       disable_exec_load
@@ -27,6 +25,7 @@ module Bundler
       gem.changelog
       gem.coc
       gem.mit
+      gem.bundle
       git.allow_insecure
       global_gem_cache
       ignore_messages
@@ -35,15 +34,13 @@ module Bundler
       lockfile_checksums
       no_install
       no_prune
-      path_relative_to_cwd
       path.system
       plugins
       prefer_patch
-      print_only_version_number
-      setup_makes_kernel_gem_public
       silence_deprecations
       silence_root_warning
       update_requires_all_flag
+      verbose
     ].freeze
 
     REMEMBERED_KEYS = %w[
@@ -86,6 +83,7 @@ module Bundler
       gemfile
       path
       shebang
+      simulate_version
       system_bindir
       trust-policy
       version
@@ -274,7 +272,7 @@ module Bundler
       def use_system_gems?
         return true if system_path
         return false if explicit_path
-        !Bundler.feature_flag.default_install_uses_path?
+        !Bundler.feature_flag.bundler_4_mode?
       end
 
       def base_path

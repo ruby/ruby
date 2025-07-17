@@ -84,6 +84,8 @@ RUBY_EXTERN VALUE rb_cMethod;                 /**< `Method` class. */
 RUBY_EXTERN VALUE rb_cModule;                 /**< `Module` class. */
 RUBY_EXTERN VALUE rb_cRefinement;             /**< `Refinement` class. */
 RUBY_EXTERN VALUE rb_cNameErrorMesg;          /**< `NameError::Message` class. */
+RUBY_EXTERN VALUE rb_cNamespace;              /**< `Namespace` class. */
+RUBY_EXTERN VALUE rb_mNamespaceRefiner;       /**< `Namespace::Refiner` module. */
 RUBY_EXTERN VALUE rb_cNilClass;               /**< `NilClass` class. */
 RUBY_EXTERN VALUE rb_cNumeric;                /**< `Numeric` class. */
 RUBY_EXTERN VALUE rb_cProc;                   /**< `Proc` class. */
@@ -91,6 +93,7 @@ RUBY_EXTERN VALUE rb_cRandom;                 /**< `Random` class. */
 RUBY_EXTERN VALUE rb_cRange;                  /**< `Range` class. */
 RUBY_EXTERN VALUE rb_cRational;               /**< `Rational` class. */
 RUBY_EXTERN VALUE rb_cRegexp;                 /**< `Regexp` class. */
+RUBY_EXTERN VALUE rb_cSet;                    /**< `Set` class. */
 RUBY_EXTERN VALUE rb_cStat;                   /**< `File::Stat` class. */
 RUBY_EXTERN VALUE rb_cString;                 /**< `String` class. */
 RUBY_EXTERN VALUE rb_cStruct;                 /**< `Struct` class. */

@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 
 describe :regexp_new, shared: true do
   it "requires one argument and creates a new regular expression object" do
@@ -123,140 +123,67 @@ describe :regexp_new_string, shared: true do
     (r.options & Regexp::EXTENDED).should_not == 0
   end
 
-  ruby_version_is ""..."3.2" do
-    it "does not try to convert the second argument to Integer with #to_int method call" do
-      ScratchPad.clear
-      obj = Object.new
-      def obj.to_int() ScratchPad.record(:called) end
+  it "does not try to convert the second argument to Integer with #to_int method call" do
+    ScratchPad.clear
+    obj = Object.new
+    def obj.to_int() ScratchPad.record(:called) end
 
+    -> {
       Regexp.send(@method, "Hi", obj)
+    }.should complain(/expected true or false as ignorecase/, {verbose: true})
 
-      ScratchPad.recorded.should == nil
-    end
+    ScratchPad.recorded.should == nil
   end
 
-  ruby_version_is "3.2" do
-    it "does not try to convert the second argument to Integer with #to_int method call" do
-      ScratchPad.clear
-      obj = Object.new
-      def obj.to_int() ScratchPad.record(:called) end
-
-      -> {
-        Regexp.send(@method, "Hi", obj)
-      }.should complain(/expected true or false as ignorecase/, {verbose: true})
-
-      ScratchPad.recorded.should == nil
-    end
-  end
-
-  ruby_version_is ""..."3.2" do
-    it "treats any non-Integer, non-nil, non-false second argument as IGNORECASE" do
+  it "warns any non-Integer, non-nil, non-false second argument" do
+    r = nil
+    -> {
       r = Regexp.send(@method, 'Hi', Object.new)
-      (r.options & Regexp::IGNORECASE).should_not == 0
-      (r.options & Regexp::MULTILINE).should == 0
-      not_supported_on :opal do
-        (r.options & Regexp::EXTENDED).should == 0
-      end
+    }.should complain(/expected true or false as ignorecase/, {verbose: true})
+    (r.options & Regexp::IGNORECASE).should_not == 0
+    (r.options & Regexp::MULTILINE).should == 0
+    not_supported_on :opal do
+      (r.options & Regexp::EXTENDED).should == 0
     end
   end
 
-  ruby_version_is "3.2" do
-    it "warns any non-Integer, non-nil, non-false second argument" do
-      r = nil
-      -> {
-        r = Regexp.send(@method, 'Hi', Object.new)
-      }.should complain(/expected true or false as ignorecase/, {verbose: true})
-      (r.options & Regexp::IGNORECASE).should_not == 0
-      (r.options & Regexp::MULTILINE).should == 0
-      not_supported_on :opal do
-        (r.options & Regexp::EXTENDED).should == 0
-      end
+  it "accepts a String of supported flags as the second argument" do
+    r = Regexp.send(@method, 'Hi', 'i')
+    (r.options & Regexp::IGNORECASE).should_not == 0
+    (r.options & Regexp::MULTILINE).should == 0
+    not_supported_on :opal do
+      (r.options & Regexp::EXTENDED).should == 0
     end
 
-    it "accepts a String of supported flags as the second argument" do
-      r = Regexp.send(@method, 'Hi', 'i')
-      (r.options & Regexp::IGNORECASE).should_not == 0
-      (r.options & Regexp::MULTILINE).should == 0
-      not_supported_on :opal do
-        (r.options & Regexp::EXTENDED).should == 0
-      end
-
-      r = Regexp.send(@method, 'Hi', 'imx')
-      (r.options & Regexp::IGNORECASE).should_not == 0
-      (r.options & Regexp::MULTILINE).should_not == 0
-      not_supported_on :opal do
-        (r.options & Regexp::EXTENDED).should_not == 0
-      end
-
-      r = Regexp.send(@method, 'Hi', 'mimi')
-      (r.options & Regexp::IGNORECASE).should_not == 0
-      (r.options & Regexp::MULTILINE).should_not == 0
-      not_supported_on :opal do
-        (r.options & Regexp::EXTENDED).should == 0
-      end
-
-      r = Regexp.send(@method, 'Hi', '')
-      (r.options & Regexp::IGNORECASE).should == 0
-      (r.options & Regexp::MULTILINE).should == 0
-      not_supported_on :opal do
-        (r.options & Regexp::EXTENDED).should == 0
-      end
+    r = Regexp.send(@method, 'Hi', 'imx')
+    (r.options & Regexp::IGNORECASE).should_not == 0
+    (r.options & Regexp::MULTILINE).should_not == 0
+    not_supported_on :opal do
+      (r.options & Regexp::EXTENDED).should_not == 0
     end
 
-    it "raises an Argument error if the second argument contains unsupported chars" do
-      -> { Regexp.send(@method, 'Hi', 'e') }.should raise_error(ArgumentError, "unknown regexp option: e")
-      -> { Regexp.send(@method, 'Hi', 'n') }.should raise_error(ArgumentError, "unknown regexp option: n")
-      -> { Regexp.send(@method, 'Hi', 's') }.should raise_error(ArgumentError, "unknown regexp option: s")
-      -> { Regexp.send(@method, 'Hi', 'u') }.should raise_error(ArgumentError, "unknown regexp option: u")
-      -> { Regexp.send(@method, 'Hi', 'j') }.should raise_error(ArgumentError, "unknown regexp option: j")
-      -> { Regexp.send(@method, 'Hi', 'mjx') }.should raise_error(ArgumentError, /unknown regexp option: mjx\b/)
+    r = Regexp.send(@method, 'Hi', 'mimi')
+    (r.options & Regexp::IGNORECASE).should_not == 0
+    (r.options & Regexp::MULTILINE).should_not == 0
+    not_supported_on :opal do
+      (r.options & Regexp::EXTENDED).should == 0
+    end
+
+    r = Regexp.send(@method, 'Hi', '')
+    (r.options & Regexp::IGNORECASE).should == 0
+    (r.options & Regexp::MULTILINE).should == 0
+    not_supported_on :opal do
+      (r.options & Regexp::EXTENDED).should == 0
     end
   end
 
-  ruby_version_is ""..."3.2" do
-    it "ignores the third argument if it is 'e' or 'euc' (case-insensitive)" do
-      -> {
-        Regexp.send(@method, 'Hi', nil, 'e').encoding.should == Encoding::US_ASCII
-        Regexp.send(@method, 'Hi', nil, 'euc').encoding.should == Encoding::US_ASCII
-        Regexp.send(@method, 'Hi', nil, 'E').encoding.should == Encoding::US_ASCII
-        Regexp.send(@method, 'Hi', nil, 'EUC').encoding.should == Encoding::US_ASCII
-      }.should complain(/encoding option is ignored/)
-    end
-
-    it "ignores the third argument if it is 's' or 'sjis' (case-insensitive)" do
-      -> {
-        Regexp.send(@method, 'Hi', nil, 's').encoding.should == Encoding::US_ASCII
-        Regexp.send(@method, 'Hi', nil, 'sjis').encoding.should == Encoding::US_ASCII
-        Regexp.send(@method, 'Hi', nil, 'S').encoding.should == Encoding::US_ASCII
-        Regexp.send(@method, 'Hi', nil, 'SJIS').encoding.should == Encoding::US_ASCII
-      }.should complain(/encoding option is ignored/)
-    end
-
-    it "ignores the third argument if it is 'u' or 'utf8' (case-insensitive)" do
-      -> {
-        Regexp.send(@method, 'Hi', nil, 'u').encoding.should == Encoding::US_ASCII
-        Regexp.send(@method, 'Hi', nil, 'utf8').encoding.should == Encoding::US_ASCII
-        Regexp.send(@method, 'Hi', nil, 'U').encoding.should == Encoding::US_ASCII
-        Regexp.send(@method, 'Hi', nil, 'UTF8').encoding.should == Encoding::US_ASCII
-      }.should complain(/encoding option is ignored/)
-    end
-
-    it "uses US_ASCII encoding if third argument is 'n' or 'none' (case insensitive) and only ascii characters" do
-      Regexp.send(@method, 'Hi', nil, 'n').encoding.should == Encoding::US_ASCII
-      Regexp.send(@method, 'Hi', nil, 'none').encoding.should == Encoding::US_ASCII
-      Regexp.send(@method, 'Hi', nil, 'N').encoding.should == Encoding::US_ASCII
-      Regexp.send(@method, 'Hi', nil, 'NONE').encoding.should == Encoding::US_ASCII
-    end
-
-    it "uses ASCII_8BIT encoding if third argument is 'n' or 'none' (case insensitive) and non-ascii characters" do
-      a = "(?:[\x8E\xA1-\xFE])"
-      str = "\A(?:#{a}|x*)\z"
-
-      Regexp.send(@method, str, nil, 'N').encoding.should == Encoding::BINARY
-      Regexp.send(@method, str, nil, 'n').encoding.should == Encoding::BINARY
-      Regexp.send(@method, str, nil, 'none').encoding.should == Encoding::BINARY
-      Regexp.send(@method, str, nil, 'NONE').encoding.should == Encoding::BINARY
-    end
+  it "raises an Argument error if the second argument contains unsupported chars" do
+    -> { Regexp.send(@method, 'Hi', 'e') }.should raise_error(ArgumentError, "unknown regexp option: e")
+    -> { Regexp.send(@method, 'Hi', 'n') }.should raise_error(ArgumentError, "unknown regexp option: n")
+    -> { Regexp.send(@method, 'Hi', 's') }.should raise_error(ArgumentError, "unknown regexp option: s")
+    -> { Regexp.send(@method, 'Hi', 'u') }.should raise_error(ArgumentError, "unknown regexp option: u")
+    -> { Regexp.send(@method, 'Hi', 'j') }.should raise_error(ArgumentError, "unknown regexp option: j")
+    -> { Regexp.send(@method, 'Hi', 'mjx') }.should raise_error(ArgumentError, /unknown regexp option: mjx\b/)
   end
 
   describe "with escaped characters" do
@@ -622,12 +549,6 @@ describe :regexp_new_regexp, shared: true do
 
     it "sets the encoding to US-ASCII if the Regexp literal has the 'n' option and the source String is ASCII only" do
       Regexp.send(@method, /Hi/n).encoding.should == Encoding::US_ASCII
-    end
-
-    ruby_version_is ''...'3.2' do
-      it "sets the encoding to source String's encoding if the Regexp literal has the 'n' option and the source String is not ASCII only" do
-        Regexp.send(@method, Regexp.new("\\xff", nil, 'n')).encoding.should == Encoding::BINARY
-      end
     end
   end
 end

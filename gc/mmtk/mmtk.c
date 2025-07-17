@@ -24,10 +24,6 @@ struct objspace {
     size_t total_gc_time;
     size_t total_allocated_objects;
 
-    st_table *id_to_obj_tbl;
-    st_table *obj_to_id_tbl;
-    unsigned long long next_object_id;
-
     st_table *finalizer_table;
     struct MMTk_final_job *finalizer_jobs;
     rb_postponed_job_handle_t finalizer_postponed_job;
@@ -63,7 +59,7 @@ struct MMTk_final_job {
             void *data;
         } dfree;
         struct {
-            VALUE object_id;
+            /* HACK: we store the object ID on the 0th element of this array. */
             VALUE finalizer_array;
         } finalize;
     } as;
@@ -133,7 +129,7 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread mutator)
     struct objspace *objspace = rb_gc_get_objspace();
 
     size_t starting_gc_count = objspace->gc_count;
-    int lock_lev = rb_gc_vm_lock();
+    int lock_lev = RB_GC_VM_LOCK();
     int err;
     if ((err = pthread_mutex_lock(&objspace->mutex)) != 0) {
         rb_bug("ERROR: cannot lock objspace->mutex: %s", strerror(err));
@@ -177,7 +173,7 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread mutator)
     if ((err = pthread_mutex_unlock(&objspace->mutex)) != 0) {
         rb_bug("ERROR: cannot release objspace->mutex: %s", strerror(err));
     }
-    rb_gc_vm_unlock(lock_lev);
+    RB_GC_VM_UNLOCK(lock_lev);
 }
 
 static size_t
@@ -227,15 +223,12 @@ rb_mmtk_scan_objspace(void)
         st_foreach(objspace->finalizer_table, pin_value, (st_data_t)objspace);
     }
 
-    st_foreach(objspace->obj_to_id_tbl, gc_mark_tbl_no_pin_i, (st_data_t)objspace);
-
     struct MMTk_final_job *job = objspace->finalizer_jobs;
     while (job != NULL) {
         switch (job->kind) {
           case MMTK_FINAL_JOB_DFREE:
             break;
           case MMTK_FINAL_JOB_FINALIZE:
-            rb_gc_impl_mark(objspace, job->as.finalize.object_id);
             rb_gc_impl_mark(objspace, job->as.finalize.finalizer_array);
             break;
           default:
@@ -291,7 +284,6 @@ make_final_job(struct objspace *objspace, VALUE obj, VALUE table)
     struct MMTk_final_job *job = xmalloc(sizeof(struct MMTk_final_job));
     job->next = objspace->finalizer_jobs;
     job->kind = MMTK_FINAL_JOB_FINALIZE;
-    job->as.finalize.object_id = rb_obj_id((VALUE)obj);
     job->as.finalize.finalizer_array = table;
 
     objspace->finalizer_jobs = job;
@@ -337,39 +329,6 @@ rb_mmtk_update_table_i(VALUE val, void *data)
 }
 
 static int
-rb_mmtk_update_obj_id_tables_obj_to_id_i(st_data_t key, st_data_t val, st_data_t data)
-{
-    RUBY_ASSERT(RB_FL_TEST(key, FL_SEEN_OBJ_ID));
-
-    if (!mmtk_is_reachable((MMTk_ObjectReference)key)) {
-        return ST_DELETE;
-    }
-
-    return ST_CONTINUE;
-}
-
-static int
-rb_mmtk_update_obj_id_tables_id_to_obj_i(st_data_t key, st_data_t val, st_data_t data)
-{
-    RUBY_ASSERT(RB_FL_TEST(val, FL_SEEN_OBJ_ID));
-
-    if (!mmtk_is_reachable((MMTk_ObjectReference)val)) {
-        return ST_DELETE;
-    }
-
-    return ST_CONTINUE;
-}
-
-static void
-rb_mmtk_update_obj_id_tables(void)
-{
-    struct objspace *objspace = rb_gc_get_objspace();
-
-    st_foreach(objspace->obj_to_id_tbl, rb_mmtk_update_obj_id_tables_obj_to_id_i, 0);
-    st_foreach(objspace->id_to_obj_tbl, rb_mmtk_update_obj_id_tables_id_to_obj_i, 0);
-}
-
-static int
 rb_mmtk_global_tables_count(void)
 {
     return RB_GC_VM_WEAK_TABLE_COUNT;
@@ -401,7 +360,6 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_update_global_tables,
     rb_mmtk_global_tables_count,
     rb_mmtk_update_finalizer_table,
-    rb_mmtk_update_obj_id_tables,
 };
 
 // Use max 80% of the available memory by default for MMTk
@@ -430,7 +388,6 @@ rb_gc_impl_objspace_alloc(void)
     return calloc(1, sizeof(struct objspace));
 }
 
-static void objspace_obj_id_init(struct objspace *objspace);
 static void gc_run_finalizers(void *data);
 
 void
@@ -439,8 +396,6 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     struct objspace *objspace = objspace_ptr;
 
     objspace->measure_gc_time = true;
-
-    objspace_obj_id_init(objspace);
 
     objspace->finalizer_table = st_init_numtable();
     objspace->finalizer_postponed_job = rb_postponed_job_preregister(0, gc_run_finalizers, objspace);
@@ -498,6 +453,7 @@ rb_gc_impl_init(void)
 {
     VALUE gc_constants = rb_hash_new();
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(sizeof(VALUE) * 5));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(640));
     // Pretend we have 5 size pools
@@ -794,6 +750,8 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 {
     struct MMTk_ractor_cache *cache = rb_gc_get_ractor_newobj_cache();
 
+    if (SPECIAL_CONST_P(b)) return;
+
     mmtk_object_reference_write_post(cache->mutator, (MMTk_ObjectReference)a);
 }
 
@@ -898,7 +856,7 @@ gc_run_finalizers_get_final(long i, void *data)
 {
     VALUE table = (VALUE)data;
 
-    return RARRAY_AREF(table, i);
+    return RARRAY_AREF(table, i + 1);
 }
 
 static void
@@ -917,17 +875,15 @@ gc_run_finalizers(void *data)
             job->as.dfree.func(job->as.dfree.data);
             break;
           case MMTK_FINAL_JOB_FINALIZE: {
-            VALUE object_id = job->as.finalize.object_id;
             VALUE finalizer_array = job->as.finalize.finalizer_array;
 
             rb_gc_run_obj_finalizer(
-                job->as.finalize.object_id,
-                RARRAY_LEN(finalizer_array),
+                RARRAY_AREF(finalizer_array, 0),
+                RARRAY_LEN(finalizer_array) - 1,
                 gc_run_finalizers_get_final,
                 (void *)finalizer_array
             );
 
-            RB_GC_GUARD(object_id);
             RB_GC_GUARD(finalizer_array);
             break;
           }
@@ -971,6 +927,8 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
 
     RBASIC(obj)->flags |= FL_FINALIZE;
 
+    int lev = RB_GC_VM_LOCK();
+
     if (st_lookup(objspace->finalizer_table, obj, &data)) {
         table = (VALUE)data;
 
@@ -982,6 +940,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
             for (i = 0; i < len; i++) {
                 VALUE recv = RARRAY_AREF(table, i);
                 if (rb_equal(recv, block)) {
+                    RB_GC_VM_UNLOCK(lev);
                     return recv;
                 }
             }
@@ -990,10 +949,12 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
         rb_ary_push(table, block);
     }
     else {
-        table = rb_ary_new3(1, block);
+        table = rb_ary_new3(2, rb_obj_id(obj), block);
         rb_obj_hide(table);
         st_add_direct(objspace->finalizer_table, obj, table);
     }
+
+    RB_GC_VM_UNLOCK(lev);
 
     return block;
 }
@@ -1004,7 +965,11 @@ rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
     struct objspace *objspace = objspace_ptr;
 
     st_data_t data = obj;
+
+    int lev = RB_GC_VM_LOCK();
     st_delete(objspace->finalizer_table, &data, 0);
+    RB_GC_VM_UNLOCK(lev);
+
     FL_UNSET(obj, FL_FINALIZE);
 }
 
@@ -1017,14 +982,17 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 
     if (!FL_TEST(obj, FL_FINALIZE)) return;
 
+    int lev = RB_GC_VM_LOCK();
     if (RB_LIKELY(st_lookup(objspace->finalizer_table, obj, &data))) {
-        table = (VALUE)data;
+        table = rb_ary_dup((VALUE)data);
+        RARRAY_ASET(table, 0, rb_obj_id(dest));
         st_insert(objspace->finalizer_table, dest, table);
         FL_SET(dest, FL_FINALIZE);
     }
     else {
         rb_bug("rb_gc_copy_finalizer: FL_FINALIZE set but not found in finalizer_table: %s", rb_obj_info(obj));
     }
+    RB_GC_VM_UNLOCK(lev);
 }
 
 static int
@@ -1060,90 +1028,6 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     mmtk_free_raw_vec_of_obj_ref(registered_candidates);
 
     gc_run_finalizers(objspace);
-}
-
-// Object ID
-static int
-object_id_cmp(st_data_t x, st_data_t y)
-{
-    if (RB_TYPE_P(x, T_BIGNUM)) {
-        return !rb_big_eql(x, y);
-    }
-    else {
-        return x != y;
-    }
-}
-
-static st_index_t
-object_id_hash(st_data_t n)
-{
-    return FIX2LONG(rb_hash((VALUE)n));
-}
-
-#define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
-#define OBJ_ID_INITIAL (OBJ_ID_INCREMENT)
-
-static const struct st_hash_type object_id_hash_type = {
-    object_id_cmp,
-    object_id_hash,
-};
-
-static void
-objspace_obj_id_init(struct objspace *objspace)
-{
-    objspace->id_to_obj_tbl = st_init_table(&object_id_hash_type);
-    objspace->obj_to_id_tbl = st_init_numtable();
-    objspace->next_object_id = OBJ_ID_INITIAL;
-}
-
-VALUE
-rb_gc_impl_object_id(void *objspace_ptr, VALUE obj)
-{
-    VALUE id;
-    struct objspace *objspace = objspace_ptr;
-
-    unsigned int lev = rb_gc_vm_lock();
-    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) {
-        st_data_t val;
-        if (st_lookup(objspace->obj_to_id_tbl, (st_data_t)obj, &val)) {
-            id = (VALUE)val;
-        }
-        else {
-            rb_bug("rb_gc_impl_object_id: FL_SEEN_OBJ_ID flag set but not found in table");
-        }
-    }
-    else {
-        RUBY_ASSERT(!st_lookup(objspace->obj_to_id_tbl, (st_data_t)obj, NULL));
-
-        id = ULL2NUM(objspace->next_object_id);
-        objspace->next_object_id += OBJ_ID_INCREMENT;
-
-        st_insert(objspace->obj_to_id_tbl, (st_data_t)obj, (st_data_t)id);
-        st_insert(objspace->id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
-        FL_SET(obj, FL_SEEN_OBJ_ID);
-    }
-    rb_gc_vm_unlock(lev);
-
-    return id;
-}
-
-VALUE
-rb_gc_impl_object_id_to_ref(void *objspace_ptr, VALUE object_id)
-{
-    struct objspace *objspace = objspace_ptr;
-
-    VALUE obj;
-    if (st_lookup(objspace->id_to_obj_tbl, object_id, &obj) &&
-            !rb_gc_impl_garbage_object_p(objspace, obj)) {
-        return obj;
-    }
-
-    if (rb_funcall(object_id, rb_intern(">="), 1, ULL2NUM(objspace->next_object_id))) {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not id value", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
-    }
-    else {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is recycled object", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
-    }
 }
 
 // Forking
@@ -1336,7 +1220,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
     n++; \
 } while (0)
 
-    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) SET_ENTRY(object_id, rb_obj_id(obj));
+    if (rb_obj_id_p(obj)) SET_ENTRY(object_id, rb_obj_id(obj));
 
     object_metadata_entries[n].name = 0;
     object_metadata_entries[n].val = 0;

@@ -286,6 +286,10 @@ WARNFLAGS = -W2 -wd4100 -wd4127 -wd4210 -wd4214 -wd4255 -wd4574 \
 !else
 WARNFLAGS = -W2
 !endif
+!if $(MSC_VER) >= 1944
+# https://developercommunity.visualstudio.com/t/warning-C5287:-operands-are-different-e/10877942
+WARNFLAGS = $(WARNFLAGS) -wd5287
+!endif
 !endif
 WERRORFLAG = -WX
 !if !defined(CFLAGS_NO_ARCH)
@@ -493,7 +497,8 @@ ENCOBJS = dmyenc.$(OBJEXT)
 EXTOBJS = dmyext.$(OBJEXT)
 !endif
 
-arch_hdrdir = $(EXTOUT)/include/$(arch)
+ext_hdrdir = $(EXTOUT)/include
+arch_hdrdir = $(ext_hdrdir)/$(arch)
 top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
 VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/missing;$(win_srcdir)
@@ -1468,8 +1473,6 @@ loadpath: verconf.h
 	sed -e '1,/^const char ruby_initial_load_paths/d;/;/,$$d' \
 	    -e '/^^ /!d;s/ *"\\\\0"$$//;s/" *"//g'
 
-RUBYSPEC_CAPIEXT_SRCDIR = $(srcdir)/$(RUBYSPEC_CAPIEXT)
-RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
 RUBYSPEC_CAPIEXT_EXTS =
 
 !if [echo>rubyspec-capiext.mk RUBYSPEC_CAPIEXT_EXTS = \]

@@ -37,7 +37,7 @@ Context-dependent case mapping as described in
 {Table 3-17 (Context Specification for Casing) of the Unicode standard}[https://www.unicode.org/versions/latest/ch03.pdf]
 is currently not supported.
 
-In most cases, case conversions of a string have the same number of characters.
+In most cases, the case conversion of a string has the same number of characters as before.
 There are exceptions (see also +:fold+ below):
 
   s = "\u00DF" # => "ß"
@@ -58,25 +58,18 @@ Case changes may not be reversible:
   s.downcase.upcase  # => "HELLO WORLD!" # Different from original s.
 
 Case changing methods may not maintain Unicode normalization.
-See String#unicode_normalize).
+See String#unicode_normalize.
 
-== Options for Case Mapping
+== Case Mappings
 
 Except for +casecmp+ and +casecmp?+,
 each of the case-mapping methods listed above
-accepts optional arguments, <tt>*options</tt>.
+accepts an optional argument, <tt>mapping</tt>.
 
-The arguments may be:
+The argument is one of:
 
-- +:ascii+ only.
-- +:fold+ only.
-- +:turkic+ or +:lithuanian+ or both.
-
-The options:
-
-- +:ascii+:
-  ASCII-only mapping:
-  uppercase letters ('A'..'Z') are mapped to lowercase letters ('a'..'z);
+- +:ascii+: ASCII-only mapping.
+  Uppercase letters ('A'..'Z') are mapped to lowercase letters ('a'..'z);
   other characters are not changed
 
     s = "Foo \u00D8 \u00F8 Bar" # => "Foo Ø ø Bar"
@@ -85,8 +78,8 @@ The options:
     s.upcase(:ascii)            # => "FOO Ø ø BAR"
     s.downcase(:ascii)          # => "foo Ø ø bar"
 
-- +:turkic+:
-  Full Unicode case mapping, adapted for the Turkic languages
+- +:turkic+: Full Unicode case mapping.
+  For the Turkic languages
   that distinguish dotted and dotless I, for example Turkish and Azeri.
 
     s = 'Türkiye'       # => "Türkiye"
@@ -97,11 +90,8 @@ The options:
     s.downcase          # => "türkiye"
     s.downcase(:turkic) # => "türkıye" # No dot above.
 
-- +:lithuanian+:
-  Not yet implemented.
-
 - +:fold+ (available only for String#downcase, String#downcase!,
-  and Symbol#downcase):
+  and Symbol#downcase).
   Unicode case folding,
   which is more far-reaching than Unicode case mapping.
 

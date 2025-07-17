@@ -50,5 +50,13 @@ describe :data_inspect, shared: true do
 
       a.send(@method).should == "#<data DataSpecs::Measure amount=42, unit=#<data DataSpecs::Measure:...>>"
     end
+
+    it "returns string representation with recursive attribute replaced with ... when an anonymous class" do
+      klass = Class.new(DataSpecs::Measure)
+      a = klass.allocate
+      a.send(:initialize, amount: 42, unit: a)
+
+      a.send(@method).should =~ /#<data amount=42, unit=#<data #<Class:0x.+?>:\.\.\.>>/
+    end
   end
 end

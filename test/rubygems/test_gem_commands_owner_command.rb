@@ -386,9 +386,10 @@ EOF
       end
     end
 
-    assert_match "You have enabled multi-factor authentication. Please visit #{@stub_fetcher.webauthn_url_with_port(server.port)} " \
+    assert_match "You have enabled multi-factor authentication. Please visit the following URL " \
       "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
       "you can re-run the gem signin command with the `--otp [your_code]` option.", @stub_ui.output
+    assert_match @stub_fetcher.webauthn_url_with_port(server.port), @stub_ui.output
     assert_match "You are verified with a security device. You may close the browser window.", @stub_ui.output
     assert_equal "Uvh6T57tkWuUnWYo", @stub_fetcher.last_request["OTP"]
     assert_match response_success, @stub_ui.output
@@ -413,9 +414,10 @@ EOF
     end
 
     assert_match @stub_fetcher.last_request["Authorization"], Gem.configuration.rubygems_api_key
-    assert_match "You have enabled multi-factor authentication. Please visit #{@stub_fetcher.webauthn_url_with_port(server.port)} " \
+    assert_match "You have enabled multi-factor authentication. Please visit the following URL " \
       "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
       "you can re-run the gem signin command with the `--otp [your_code]` option.", @stub_ui.output
+    assert_match @stub_fetcher.webauthn_url_with_port(server.port), @stub_ui.output
     assert_match "ERROR:  Security device verification failed: Something went wrong", @stub_ui.error
     refute_match "You are verified with a security device. You may close the browser window.", @stub_ui.output
     refute_match response_success, @stub_ui.output
@@ -435,9 +437,10 @@ EOF
       end
     end
 
-    assert_match "You have enabled multi-factor authentication. Please visit #{@stub_fetcher.webauthn_url_with_port(server.port)} " \
+    assert_match "You have enabled multi-factor authentication. Please visit the following URL " \
       "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin " \
       "command with the `--otp [your_code]` option.", @stub_ui.output
+    assert_match @stub_fetcher.webauthn_url_with_port(server.port), @stub_ui.output
     assert_match "You are verified with a security device. You may close the browser window.", @stub_ui.output
     assert_equal "Uvh6T57tkWuUnWYo", @stub_fetcher.last_request["OTP"]
     assert_match response_success, @stub_ui.output
@@ -463,16 +466,17 @@ EOF
     end
 
     assert_match @stub_fetcher.last_request["Authorization"], Gem.configuration.rubygems_api_key
-    assert_match "You have enabled multi-factor authentication. Please visit #{@stub_fetcher.webauthn_url_with_port(server.port)} " \
+    assert_match "You have enabled multi-factor authentication. Please visit the following URL " \
       "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin " \
       "command with the `--otp [your_code]` option.", @stub_ui.output
+    assert_match @stub_fetcher.webauthn_url_with_port(server.port), @stub_ui.output
     assert_match "ERROR:  Security device verification failed: The token in the link you used has either expired " \
       "or been used already.", @stub_ui.error
     refute_match "You are verified with a security device. You may close the browser window.", @stub_ui.output
     refute_match response_success, @stub_ui.output
   end
 
-  def test_remove_owners_unathorized_api_key
+  def test_remove_owners_unauthorized_api_key
     response_forbidden = "The API key doesn't have access"
     response_success   = "Owner removed successfully."
 
@@ -537,7 +541,7 @@ EOF
     assert_empty reused_otp_codes
   end
 
-  def test_add_owners_unathorized_api_key
+  def test_add_owners_unauthorized_api_key
     response_forbidden = "The API key doesn't have access"
     response_success   = "Owner added successfully."
 

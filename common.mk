@@ -18,9 +18,10 @@ ECHO = @$(ECHO0)
 
 mflags = $(MFLAGS)
 gnumake_recursive =
+sequential = $(gnumake:yes=-sequential)
 enable_shared = $(ENABLE_SHARED:no=)
 
-UNICODE_VERSION = 15.1.0
+UNICODE_VERSION = 16.0.0
 UNICODE_EMOJI_VERSION_0 = $(UNICODE_VERSION)///
 UNICODE_EMOJI_VERSION_1 = $(UNICODE_EMOJI_VERSION_0:.0///=)
 UNICODE_EMOJI_VERSION = $(UNICODE_EMOJI_VERSION_1:///=)
@@ -46,7 +47,7 @@ RUN_OPTS      = --disable-gems
 # GITPULLOPTIONS = --no-tags
 
 PRISM_SRCDIR = $(srcdir)/prism
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(PRISM_SRCDIR) -I$(UNICODE_HDR_DIR) $(incflags)
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(ext_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(PRISM_SRCDIR) -I$(UNICODE_HDR_DIR) $(incflags)
 
 GEM_HOME =
 GEM_PATH =
@@ -110,13 +111,15 @@ PRISM_FILES = prism/api_node.$(OBJEXT) \
 		prism/prism.$(OBJEXT) \
 		prism_init.$(OBJEXT)
 
-COMMONOBJS    = array.$(OBJEXT) \
+COMMONOBJS    = \
+		array.$(OBJEXT) \
 		ast.$(OBJEXT) \
 		bignum.$(OBJEXT) \
 		class.$(OBJEXT) \
 		compar.$(OBJEXT) \
 		compile.$(OBJEXT) \
 		complex.$(OBJEXT) \
+		concurrent_set.$(OBJEXT) \
 		cont.$(OBJEXT) \
 		debug.$(OBJEXT) \
 		debug_counter.$(OBJEXT) \
@@ -130,8 +133,8 @@ COMMONOBJS    = array.$(OBJEXT) \
 		file.$(OBJEXT) \
 		gc.$(OBJEXT) \
 		hash.$(OBJEXT) \
-		inits.$(OBJEXT) \
 		imemo.$(OBJEXT) \
+		inits.$(OBJEXT) \
 		io.$(OBJEXT) \
 		io_buffer.$(OBJEXT) \
 		iseq.$(OBJEXT) \
@@ -139,11 +142,13 @@ COMMONOBJS    = array.$(OBJEXT) \
 		marshal.$(OBJEXT) \
 		math.$(OBJEXT) \
 		memory_view.$(OBJEXT) \
+		namespace.$(OBJEXT) \
 		node.$(OBJEXT) \
 		node_dump.$(OBJEXT) \
 		numeric.$(OBJEXT) \
 		object.$(OBJEXT) \
 		pack.$(OBJEXT) \
+		pathname.$(OBJEXT) \
 		parse.$(OBJEXT) \
 		parser_st.$(OBJEXT) \
 		proc.$(OBJEXT) \
@@ -162,6 +167,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		ruby.$(OBJEXT) \
 		ruby_parser.$(OBJEXT) \
 		scheduler.$(OBJEXT) \
+		set.$(OBJEXT) \
 		shape.$(OBJEXT) \
 		signal.$(OBJEXT) \
 		sprintf.$(OBJEXT) \
@@ -184,7 +190,9 @@ COMMONOBJS    = array.$(OBJEXT) \
 		weakmap.$(OBJEXT) \
 		$(PRISM_FILES) \
 		$(YJIT_OBJ) \
-		$(YJIT_LIBOBJ) \
+		$(ZJIT_OBJ) \
+		$(JIT_OBJ) \
+		$(RUST_LIBOBJ) \
 		$(COROUTINE_OBJ) \
 		$(DTRACE_OBJ) \
 		$(BUILTIN_ENCOBJS) \
@@ -340,7 +348,17 @@ YJIT_RUSTC_ARGS = --crate-name=yjit \
 	-C opt-level=3 \
 	-C overflow-checks=on \
 	'--out-dir=$(CARGO_TARGET_DIR)/release/' \
-	$(top_srcdir)/yjit/src/lib.rs
+	'$(top_srcdir)/yjit/src/lib.rs'
+
+ZJIT_RUSTC_ARGS = --crate-name=zjit \
+	--crate-type=staticlib \
+	--edition=2024 \
+	-g \
+	-C lto=thin \
+	-C opt-level=3 \
+	-C overflow-checks=on \
+	'--out-dir=$(CARGO_TARGET_DIR)/release/' \
+	'$(top_srcdir)/zjit/src/lib.rs'
 
 all: $(SHOWFLAGS) main
 
@@ -366,6 +384,7 @@ showflags:
 	"	MFLAGS = $(MFLAGS)" \
 	"	RUSTC = $(RUSTC)" \
 	"	YJIT_RUSTC_ARGS = $(YJIT_RUSTC_ARGS)" \
+	"	ZJIT_RUSTC_ARGS = $(ZJIT_RUSTC_ARGS)" \
 	$(MESSAGE_END)
 	-@$(CC_VERSION)
 
@@ -474,17 +493,19 @@ docs: srcs-doc $(DOCTARGETS)
 pkgconfig-data: $(ruby_pc)
 $(ruby_pc): $(srcdir)/template/ruby.pc.in config.status
 
+INSTALL_ALL = all
+
 install-all: pre-install-all do-install-all post-install-all
 pre-install-all:: all pre-install-local pre-install-ext pre-install-gem pre-install-doc
 do-install-all: pre-install-all $(DOT_WAIT) docs
-	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all $(INSTALL_DOC_OPTS)
+	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=$(INSTALL_ALL) $(INSTALL_DOC_OPTS)
 post-install-all:: post-install-local post-install-ext post-install-gem post-install-doc
 	@$(NULLCMD)
 
 install-nodoc: pre-install-nodoc do-install-nodoc post-install-nodoc
 pre-install-nodoc:: pre-install-local pre-install-ext pre-install-gem
 do-install-nodoc: main pre-install-nodoc
-	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all --exclude=doc
+	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=$(INSTALL_ALL) --exclude=doc
 post-install-nodoc:: post-install-local post-install-ext post-install-gem
 
 install-local: pre-install-local do-install-local post-install-local
@@ -559,7 +580,7 @@ what-where-all: no-install-all
 no-install-all: pre-no-install-all dont-install-all post-no-install-all
 pre-no-install-all:: pre-no-install-local pre-no-install-ext pre-no-install-doc
 dont-install-all: $(PROGRAM)
-	$(INSTRUBY) -n --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all $(INSTALL_DOC_OPTS)
+	$(INSTRUBY) -n --make="$(MAKE)" $(INSTRUBY_ARGS) --install=$(INSTALL_ALL) $(INSTALL_DOC_OPTS)
 post-no-install-all:: post-no-install-local post-no-install-ext post-no-install-doc
 	@$(NULLCMD)
 
@@ -719,8 +740,8 @@ clean-local:: clean-runnable
 	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp ChangeLog $(STATIC_RUBY)$(EXEEXT)
 	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D) builtin_binary.inc
 	$(Q)$(RM) $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/*/.time yjit_exit_locations.dump
-	-$(Q)$(RMALL) yjit/target
-	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine yjit \
+	-$(Q)$(RMALL) target
+	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine target \
 	  $(PRISM_BUILD_DIR)/*/ $(PRISM_BUILD_DIR) tmp \
 	2> $(NULL) || $(NULLCMD)
 
@@ -843,6 +864,12 @@ clean-platform distclean-platform realclean-platform:
 	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> $(NULL) || $(NULLCMD)
 
 RUBYSPEC_CAPIEXT = spec/ruby/optional/capi/ext
+RUBYSPEC_CAPIEXT_SRCDIR = $(srcdir)/$(RUBYSPEC_CAPIEXT)
+RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
+
+rubyspec-capiext: build-ext $(DOT_WAIT)
+# make-dependent rules should be included after this and built after build-ext.
+
 clean-spec: PHONY
 	-$(Q) $(RM) $(RUBYSPEC_CAPIEXT)/*.$(OBJEXT) $(RUBYSPEC_CAPIEXT)/*.$(DLEXT)
 	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT) 2> $(NULL) || $(NULLCMD)
@@ -1181,10 +1208,12 @@ $(srcs_vpath)insns.inc: $(tooldir)/ruby_vm/views/insns.inc.erb $(inc_common_head
 $(srcs_vpath)insns_info.inc: $(tooldir)/ruby_vm/views/insns_info.inc.erb $(inc_common_headers) \
   $(tooldir)/ruby_vm/views/_insn_type_chars.erb $(tooldir)/ruby_vm/views/_insn_name_info.erb \
   $(tooldir)/ruby_vm/views/_insn_len_info.erb $(tooldir)/ruby_vm/views/_insn_operand_info.erb \
-  $(tooldir)/ruby_vm/views/_attributes.erb $(tooldir)/ruby_vm/views/_comptime_insn_stack_increase.erb
+  $(tooldir)/ruby_vm/views/_attributes.erb $(tooldir)/ruby_vm/views/_comptime_insn_stack_increase.erb \
+  $(tooldir)/ruby_vm/views/_zjit_helpers.erb
 $(srcs_vpath)vmtc.inc: $(tooldir)/ruby_vm/views/vmtc.inc.erb $(inc_common_headers)
 $(srcs_vpath)vm.inc: $(tooldir)/ruby_vm/views/vm.inc.erb $(inc_common_headers) \
-  $(tooldir)/ruby_vm/views/_insn_entry.erb $(tooldir)/ruby_vm/views/_trace_instruction.erb
+  $(tooldir)/ruby_vm/views/_insn_entry.erb $(tooldir)/ruby_vm/views/_trace_instruction.erb \
+  $(tooldir)/ruby_vm/views/_zjit_instruction.erb
 
 BUILTIN_RB_SRCS = \
 		$(srcdir)/ast.rb \
@@ -1199,6 +1228,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/array.rb \
 		$(srcdir)/hash.rb \
 		$(srcdir)/kernel.rb \
+		$(srcdir)/pathname_builtin.rb \
 		$(srcdir)/ractor.rb \
 		$(srcdir)/symbol.rb \
 		$(srcdir)/timev.rb \
@@ -1208,6 +1238,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/gem_prelude.rb \
 		$(srcdir)/yjit.rb \
 		$(srcdir)/yjit_hook.rb \
+		$(srcdir)/zjit.rb \
 		$(empty)
 BUILTIN_RB_INCS = $(BUILTIN_RB_SRCS:.rb=.rbinc)
 
@@ -1400,8 +1431,8 @@ run: yes-fake miniruby$(EXEEXT) PHONY
 runruby: $(PROGRAM) PHONY
 	RUBY_ON_BUG='gdb -x $(srcdir)/.gdbinit -p' $(RUNRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
-runirb: $(PROGRAM) PHONY
-	RUBY_ON_BUG='gdb -x $(srcdir)/.gdbinit -p' $(RUNRUBY) $(RUNOPT0) -r irb -e 'IRB.start("make runirb")' $(RUNOPT)
+runirb: $(PROGRAM) update-default-gemspecs
+	RUBY_ON_BUG='gdb -x $(srcdir)/.gdbinit -p' $(RUNRUBY) $(RUNOPT0) -rrubygems -r irb -e 'IRB.start("make runirb")' $(RUNOPT)
 
 parse: yes-fake miniruby$(EXEEXT) PHONY
 	$(BTESTRUBY) --dump=parsetree_with_comment,insns $(TESTRUN_SCRIPT)
@@ -1503,7 +1534,7 @@ refresh-gems: update-bundled_gems prepare-gems
 prepare-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=extract-gems)
 extract-gems: $(HAVE_BASERUBY:yes=update-gems)
 
-update-gems$(gnumake:yes=-sequential): PHONY
+update-gems$(sequential): PHONY
 	$(ECHO) Downloading bundled gem files...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -I./tool -rdownloader -answ \
@@ -1517,7 +1548,7 @@ update-gems$(gnumake:yes=-sequential): PHONY
 	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})' \
 	    gems/bundled_gems
 
-extract-gems$(gnumake:yes=-sequential): PHONY
+extract-gems$(sequential): PHONY
 	$(ECHO) Extracting bundled gem files...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool/lib -rfileutils -rbundled_gem -answ \
@@ -1533,19 +1564,7 @@ extract-gems$(gnumake:yes=-sequential): PHONY
 	    -e 'end' \
 	    gems/bundled_gems
 
-extract-gems$(gnumake:yes=-sequential): $(HAVE_GIT:yes=clone-bundled-gems-src)
-
-clone-bundled-gems-src: PHONY
-	$(Q) $(BASERUBY) -C "$(srcdir)" \
-	    -Itool/lib -rbundled_gem -answ \
-	    -e 'BEGIN {git = $$git}' \
-	    -e 'gem, _, repo, rev = *$$F' \
-	    -e 'next if !rev or /^#/=~gem' \
-	    -e 'gemdir = "gems/src/#{gem}"' \
-	    -e 'BundledGem.checkout(gemdir, repo, rev, git: git)' \
-	    -e 'BundledGem.dummy_gemspec("#{gemdir}/#{gem}.gemspec")' \
-	    -- -git="$(GIT)" \
-	    gems/bundled_gems
+extract-gems$(sequential): $(HAVE_GIT:yes=clone-bundled-gems-src)
 
 outdate-bundled-gems: PHONY
 	$(Q) $(BASERUBY) $(tooldir)/$@.rb --make="$(MAKE)" --mflags="$(MFLAGS)" \
@@ -1596,7 +1615,8 @@ yes-install-for-test-bundled-gems: yes-update-default-gemspecs
 		"sinatra" "rack" "tilt" "mustermann" "base64" "compact_index" "rack-test" "logger" "kpeg" "tracer"
 
 test-bundled-gems-fetch: yes-test-bundled-gems-fetch
-yes-test-bundled-gems-fetch:
+yes-test-bundled-gems-fetch: clone-bundled-gems-src
+clone-bundled-gems-src: PHONY
 	$(Q) $(BASERUBY) -C $(srcdir)/gems ../tool/fetch-bundled_gems.rb BUNDLED_GEMS="$(BUNDLED_GEMS)" src bundled_gems
 no-test-bundled-gems-fetch:
 
@@ -1654,12 +1674,8 @@ test-bundler-prepare: $(TEST_RUNNABLE)-test-bundler-prepare
 no-test-bundler-prepare: no-test-bundler-precheck
 yes-test-bundler-prepare: yes-test-bundler-precheck
 	$(ACTIONS_GROUP)
-	$(XRUBY) -C $(srcdir) -Ilib \
-		-e 'ENV["GEM_HOME"] = File.expand_path(".bundle")' \
-		-e 'ENV["BUNDLE_APP_CONFIG"] = File.expand_path(".bundle")' \
-		-e 'ENV["BUNDLE_PATH__SYSTEM"] = "true"' \
-		-e 'ENV["BUNDLE_WITHOUT"] = "lint doc"' \
-		-e 'load "spec/bundler/support/bundle.rb"' -- install --quiet --gemfile=tool/bundler/dev_gems.rb
+	$(XRUBY) -C $(srcdir) -Ilib -r./tool/lib/bundle_env.rb \
+		spec/bin/bundle install --quiet --gemfile=tool/bundler/dev_gems.rb
 	$(ACTIONS_ENDGROUP)
 
 RSPECOPTS = -r formatter_overrides
@@ -1669,8 +1685,7 @@ test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: $(PREPARE_BUNDLER)
 	$(gnumake_recursive)$(XRUBY) \
 		-r./$(arch)-fake \
-		-e "exec(*ARGV)" -- \
-		$(XRUBY) -C $(srcdir) -Ispec/bundler -Ispec/lib .bundle/bin/rspec \
+		-C $(srcdir) -Ispec/bundler -Ispec/lib spec/bin/rspec \
 		-r spec_helper $(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler:
 
@@ -1706,7 +1721,7 @@ UNICODE_FILES = $(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/SpecialCasing.txt \
 		$(empty)
 
-UNICODE_PROPERTY_FILES =  \
+UNICODE_PROPERTY_FILES = \
 		$(UNICODE_SRC_DATA_DIR)/Blocks.txt \
 		$(UNICODE_SRC_DATA_DIR)/DerivedAge.txt \
 		$(UNICODE_SRC_DATA_DIR)/DerivedCoreProperties.txt \
@@ -1716,7 +1731,7 @@ UNICODE_PROPERTY_FILES =  \
 		$(UNICODE_SRC_DATA_DIR)/Scripts.txt \
 		$(empty)
 
-UNICODE_AUXILIARY_FILES =  \
+UNICODE_AUXILIARY_FILES = \
 		$(UNICODE_SRC_DATA_DIR)/auxiliary/GraphemeBreakProperty.txt \
 		$(UNICODE_SRC_DATA_DIR)/auxiliary/GraphemeBreakTest.txt \
 		$(empty)
@@ -1759,29 +1774,45 @@ UNICODE_EMOJI_DOWNLOAD = \
 	    -d $(UNICODE_SRC_EMOJI_DATA_DIR) \
 	    -p emoji/$(UNICODE_EMOJI_VERSION)
 
-update-unicode-files: $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
-$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES):
+update-unicode-files:
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data and property files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
 	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
 
-update-unicode-auxiliary-files: $(UNICODE_AUXILIARY_FILES)
-$(UNICODE_AUXILIARY_FILES):
+update-unicode-auxiliary-files:
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) auxiliary files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/auxiliary"
 	$(Q) $(UNICODE_AUXILIARY_DOWNLOAD) $(UNICODE_AUXILIARY_FILES)
 
-update-unicode-ucd-emoji-files: $(UNICODE_UCD_EMOJI_FILES)
-$(UNICODE_UCD_EMOJI_FILES):
+update-unicode-ucd-emoji-files:
 	$(ECHO) Downloading Unicode UCD emoji $(UNICODE_EMOJI_VERSION) files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/emoji"
 	$(Q) $(UNICODE_UCD_EMOJI_DOWNLOAD) $(UNICODE_UCD_EMOJI_FILES)
 
-update-unicode-emoji-files: $(UNICODE_EMOJI_FILES)
-$(UNICODE_EMOJI_FILES):
+update-unicode-emoji-files:
 	$(ECHO) Downloading Unicode emoji $(UNICODE_EMOJI_VERSION) files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_EMOJI_DATA_DIR)"
 	$(Q) $(UNICODE_EMOJI_DOWNLOAD) $(UNICODE_EMOJI_FILES)
+
+$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES):
+	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data and property files...
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
+	$(Q) $(UNICODE_DOWNLOAD) $@
+
+$(UNICODE_AUXILIARY_FILES):
+	$(ECHO) Downloading Unicode $(UNICODE_VERSION) auxiliary files...
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/auxiliary"
+	$(Q) $(UNICODE_AUXILIARY_DOWNLOAD) $@
+
+$(UNICODE_UCD_EMOJI_FILES):
+	$(ECHO) Downloading Unicode UCD emoji $(UNICODE_EMOJI_VERSION) files...
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/emoji"
+	$(Q) $(UNICODE_UCD_EMOJI_DOWNLOAD) $@
+
+$(UNICODE_EMOJI_FILES):
+	$(ECHO) Downloading Unicode emoji $(UNICODE_EMOJI_VERSION) files...
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_EMOJI_DATA_DIR)"
+	$(Q) $(UNICODE_EMOJI_DOWNLOAD) $@
 
 $(srcdir)/lib/unicode_normalize/tables.rb: \
 	$(UNICODE_SRC_DATA_DIR)/$(HAVE_BASERUBY:yes=.unicode-tables.time)
@@ -2081,12 +2112,14 @@ array.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 array.$(OBJEXT): $(top_srcdir)/internal/gc.h
 array.$(OBJEXT): $(top_srcdir)/internal/hash.h
 array.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+array.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 array.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 array.$(OBJEXT): $(top_srcdir)/internal/object.h
 array.$(OBJEXT): $(top_srcdir)/internal/proc.h
 array.$(OBJEXT): $(top_srcdir)/internal/rational.h
 array.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 array.$(OBJEXT): $(top_srcdir)/internal/serial.h
+array.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 array.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 array.$(OBJEXT): $(top_srcdir)/internal/variable.h
 array.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -2237,6 +2270,7 @@ array.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+array.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -2276,6 +2310,7 @@ array.$(OBJEXT): {$(VPATH)}rubyparser.h
 array.$(OBJEXT): {$(VPATH)}shape.h
 array.$(OBJEXT): {$(VPATH)}st.h
 array.$(OBJEXT): {$(VPATH)}subst.h
+array.$(OBJEXT): {$(VPATH)}thread.h
 array.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 array.$(OBJEXT): {$(VPATH)}thread_native.h
 array.$(OBJEXT): {$(VPATH)}util.h
@@ -2296,12 +2331,14 @@ ast.$(OBJEXT): $(top_srcdir)/internal/complex.h
 ast.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 ast.$(OBJEXT): $(top_srcdir)/internal/gc.h
 ast.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+ast.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 ast.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 ast.$(OBJEXT): $(top_srcdir)/internal/parse.h
 ast.$(OBJEXT): $(top_srcdir)/internal/rational.h
 ast.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 ast.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 ast.$(OBJEXT): $(top_srcdir)/internal/serial.h
+ast.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 ast.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 ast.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 ast.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -2472,6 +2509,7 @@ ast.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+ast.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -2534,10 +2572,12 @@ bignum.$(OBJEXT): $(top_srcdir)/internal/complex.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/gc.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+bignum.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/object.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/serial.h
+bignum.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/variable.h
 bignum.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -2685,6 +2725,7 @@ bignum.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+bignum.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -2738,8 +2779,10 @@ builtin.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/gc.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+builtin.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/serial.h
+builtin.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/variable.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -2909,6 +2952,7 @@ builtin.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+builtin.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -2968,9 +3012,11 @@ class.$(OBJEXT): $(top_srcdir)/internal/eval.h
 class.$(OBJEXT): $(top_srcdir)/internal/gc.h
 class.$(OBJEXT): $(top_srcdir)/internal/hash.h
 class.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+class.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 class.$(OBJEXT): $(top_srcdir)/internal/object.h
 class.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 class.$(OBJEXT): $(top_srcdir)/internal/serial.h
+class.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 class.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 class.$(OBJEXT): $(top_srcdir)/internal/string.h
 class.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -3120,6 +3166,7 @@ class.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+class.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -3171,6 +3218,7 @@ compar.$(OBJEXT): $(top_srcdir)/internal/compar.h
 compar.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 compar.$(OBJEXT): $(top_srcdir)/internal/error.h
 compar.$(OBJEXT): $(top_srcdir)/internal/serial.h
+compar.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 compar.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 compar.$(OBJEXT): $(top_srcdir)/internal/string.h
 compar.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -3314,6 +3362,7 @@ compar.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+compar.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -3366,6 +3415,7 @@ compile.$(OBJEXT): $(top_srcdir)/internal/gc.h
 compile.$(OBJEXT): $(top_srcdir)/internal/hash.h
 compile.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 compile.$(OBJEXT): $(top_srcdir)/internal/io.h
+compile.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 compile.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 compile.$(OBJEXT): $(top_srcdir)/internal/object.h
 compile.$(OBJEXT): $(top_srcdir)/internal/parse.h
@@ -3374,6 +3424,7 @@ compile.$(OBJEXT): $(top_srcdir)/internal/re.h
 compile.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 compile.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 compile.$(OBJEXT): $(top_srcdir)/internal/serial.h
+compile.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 compile.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 compile.$(OBJEXT): $(top_srcdir)/internal/string.h
 compile.$(OBJEXT): $(top_srcdir)/internal/symbol.h
@@ -3552,6 +3603,7 @@ compile.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+compile.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -3626,11 +3678,13 @@ complex.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 complex.$(OBJEXT): $(top_srcdir)/internal/gc.h
 complex.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 complex.$(OBJEXT): $(top_srcdir)/internal/math.h
+complex.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 complex.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 complex.$(OBJEXT): $(top_srcdir)/internal/object.h
 complex.$(OBJEXT): $(top_srcdir)/internal/rational.h
 complex.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 complex.$(OBJEXT): $(top_srcdir)/internal/serial.h
+complex.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 complex.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 complex.$(OBJEXT): $(top_srcdir)/internal/string.h
 complex.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -3780,6 +3834,7 @@ complex.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+complex.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -3823,6 +3878,210 @@ complex.$(OBJEXT): {$(VPATH)}vm_core.h
 complex.$(OBJEXT): {$(VPATH)}vm_debug.h
 complex.$(OBJEXT): {$(VPATH)}vm_opts.h
 complex.$(OBJEXT): {$(VPATH)}vm_sync.h
+concurrent_set.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
+concurrent_set.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
+concurrent_set.$(OBJEXT): $(CCAN_DIR)/list/list.h
+concurrent_set.$(OBJEXT): $(CCAN_DIR)/str/str.h
+concurrent_set.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+concurrent_set.$(OBJEXT): $(top_srcdir)/internal/array.h
+concurrent_set.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+concurrent_set.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+concurrent_set.$(OBJEXT): $(top_srcdir)/internal/concurrent_set.h
+concurrent_set.$(OBJEXT): $(top_srcdir)/internal/gc.h
+concurrent_set.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+concurrent_set.$(OBJEXT): $(top_srcdir)/internal/namespace.h
+concurrent_set.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
+concurrent_set.$(OBJEXT): $(top_srcdir)/internal/serial.h
+concurrent_set.$(OBJEXT): $(top_srcdir)/internal/set_table.h
+concurrent_set.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+concurrent_set.$(OBJEXT): $(top_srcdir)/internal/vm.h
+concurrent_set.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+concurrent_set.$(OBJEXT): {$(VPATH)}assert.h
+concurrent_set.$(OBJEXT): {$(VPATH)}atomic.h
+concurrent_set.$(OBJEXT): {$(VPATH)}backward/2/assume.h
+concurrent_set.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
+concurrent_set.$(OBJEXT): {$(VPATH)}backward/2/bool.h
+concurrent_set.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
+concurrent_set.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
+concurrent_set.$(OBJEXT): {$(VPATH)}backward/2/limits.h
+concurrent_set.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
+concurrent_set.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
+concurrent_set.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+concurrent_set.$(OBJEXT): {$(VPATH)}concurrent_set.c
+concurrent_set.$(OBJEXT): {$(VPATH)}config.h
+concurrent_set.$(OBJEXT): {$(VPATH)}debug_counter.h
+concurrent_set.$(OBJEXT): {$(VPATH)}defines.h
+concurrent_set.$(OBJEXT): {$(VPATH)}encoding.h
+concurrent_set.$(OBJEXT): {$(VPATH)}id.h
+concurrent_set.$(OBJEXT): {$(VPATH)}id_table.h
+concurrent_set.$(OBJEXT): {$(VPATH)}intern.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/abi.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/anyargs.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/arithmetic/double.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/arithmetic/fixnum.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/arithmetic/gid_t.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/arithmetic/int.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/arithmetic/intptr_t.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/arithmetic/long.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/arithmetic/long_long.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/arithmetic/mode_t.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/arithmetic/off_t.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/assume.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/artificial.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/cold.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/const.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/constexpr.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/deprecated.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/diagnose_if.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/enum_extensibility.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/error.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/flag_enum.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/forceinline.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/format.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/maybe_unused.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/noalias.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/warning.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/attr/weakref.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/cast.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/compiler_is/clang.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/compiler_is/gcc.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/compiler_is/intel.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/compiler_is/msvc.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/compiler_is/sunpro.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/compiler_since.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/config.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/constant_p.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/core.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/core/rarray.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/core/rbasic.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/core/rbignum.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/core/robject.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/core/rstruct.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/core/rtypeddata.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/ctype.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/dllexport.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/dosish.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/encoding/coderange.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/encoding/ctype.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/encoding/encoding.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/encoding/pathname.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/encoding/re.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/encoding/sprintf.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/encoding/string.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/encoding/symbol.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/encoding/transcode.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/error.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/eval.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/event.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/fl_type.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/gc.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/glob.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/globals.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/has/attribute.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/has/builtin.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/has/c_attribute.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/has/cpp_attribute.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/has/declspec_attribute.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/has/extension.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/has/feature.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/has/warning.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/array.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/bignum.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/class.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/error.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/file.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/io.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/load.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/marshal.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/numeric.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/object.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/parse.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/proc.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/process.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/random.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/range.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/rational.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/re.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/select.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/set.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/string.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/struct.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/thread.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/time.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/variable.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/intern/vm.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/interpreter.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/iterator.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/memory.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/method.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/module.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/newobj.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/scan_args.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/special_consts.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/static_assert.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/stdalign.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/symbol.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/value.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/value_type.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/variable.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/warning_push.h
+concurrent_set.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+concurrent_set.$(OBJEXT): {$(VPATH)}method.h
+concurrent_set.$(OBJEXT): {$(VPATH)}missing.h
+concurrent_set.$(OBJEXT): {$(VPATH)}node.h
+concurrent_set.$(OBJEXT): {$(VPATH)}onigmo.h
+concurrent_set.$(OBJEXT): {$(VPATH)}oniguruma.h
+concurrent_set.$(OBJEXT): {$(VPATH)}ruby_assert.h
+concurrent_set.$(OBJEXT): {$(VPATH)}ruby_atomic.h
+concurrent_set.$(OBJEXT): {$(VPATH)}rubyparser.h
+concurrent_set.$(OBJEXT): {$(VPATH)}st.h
+concurrent_set.$(OBJEXT): {$(VPATH)}subst.h
+concurrent_set.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+concurrent_set.$(OBJEXT): {$(VPATH)}thread_native.h
+concurrent_set.$(OBJEXT): {$(VPATH)}vm_core.h
+concurrent_set.$(OBJEXT): {$(VPATH)}vm_debug.h
+concurrent_set.$(OBJEXT): {$(VPATH)}vm_opts.h
+concurrent_set.$(OBJEXT): {$(VPATH)}vm_sync.h
 cont.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 cont.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 cont.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -3837,9 +4096,11 @@ cont.$(OBJEXT): $(top_srcdir)/internal/cont.h
 cont.$(OBJEXT): $(top_srcdir)/internal/error.h
 cont.$(OBJEXT): $(top_srcdir)/internal/gc.h
 cont.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+cont.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 cont.$(OBJEXT): $(top_srcdir)/internal/proc.h
 cont.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 cont.$(OBJEXT): $(top_srcdir)/internal/serial.h
+cont.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 cont.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 cont.$(OBJEXT): $(top_srcdir)/internal/string.h
 cont.$(OBJEXT): $(top_srcdir)/internal/thread.h
@@ -4013,6 +4274,7 @@ cont.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+cont.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -4075,8 +4337,10 @@ debug.$(OBJEXT): $(top_srcdir)/internal/class.h
 debug.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 debug.$(OBJEXT): $(top_srcdir)/internal/gc.h
 debug.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+debug.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 debug.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 debug.$(OBJEXT): $(top_srcdir)/internal/serial.h
+debug.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 debug.$(OBJEXT): $(top_srcdir)/internal/signal.h
 debug.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 debug.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -4228,6 +4492,7 @@ debug.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+debug.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -4407,6 +4672,7 @@ debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -4454,9 +4720,11 @@ dir.$(OBJEXT): $(top_srcdir)/internal/file.h
 dir.$(OBJEXT): $(top_srcdir)/internal/gc.h
 dir.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 dir.$(OBJEXT): $(top_srcdir)/internal/io.h
+dir.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 dir.$(OBJEXT): $(top_srcdir)/internal/object.h
 dir.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 dir.$(OBJEXT): $(top_srcdir)/internal/serial.h
+dir.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 dir.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 dir.$(OBJEXT): $(top_srcdir)/internal/string.h
 dir.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -4608,6 +4876,7 @@ dir.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+dir.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -4654,6 +4923,7 @@ dir.$(OBJEXT): {$(VPATH)}vm_core.h
 dir.$(OBJEXT): {$(VPATH)}vm_opts.h
 dln.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 dln.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+dln.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 dln.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 dln.$(OBJEXT): {$(VPATH)}assert.h
 dln.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -4785,6 +5055,7 @@ dln.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+dln.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -4943,6 +5214,7 @@ dln_find.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+dln_find.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -5100,6 +5372,7 @@ dmydln.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+dmydln.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -5969,6 +6242,7 @@ encoding.$(OBJEXT): $(top_srcdir)/internal/inits.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/load.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/object.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/serial.h
+encoding.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/string.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -6119,6 +6393,7 @@ encoding.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+encoding.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -6183,6 +6458,7 @@ enum.$(OBJEXT): $(top_srcdir)/internal/proc.h
 enum.$(OBJEXT): $(top_srcdir)/internal/rational.h
 enum.$(OBJEXT): $(top_srcdir)/internal/re.h
 enum.$(OBJEXT): $(top_srcdir)/internal/serial.h
+enum.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 enum.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 enum.$(OBJEXT): $(top_srcdir)/internal/variable.h
 enum.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -6329,6 +6605,7 @@ enum.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+enum.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -6382,11 +6659,13 @@ enumerator.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/gc.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/hash.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+enumerator.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/range.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/rational.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/serial.h
+enumerator.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/string.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/struct.h
@@ -6537,6 +6816,7 @@ enumerator.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+enumerator.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -6597,10 +6877,12 @@ error.$(OBJEXT): $(top_srcdir)/internal/hash.h
 error.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 error.$(OBJEXT): $(top_srcdir)/internal/io.h
 error.$(OBJEXT): $(top_srcdir)/internal/load.h
+error.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 error.$(OBJEXT): $(top_srcdir)/internal/object.h
 error.$(OBJEXT): $(top_srcdir)/internal/process.h
 error.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 error.$(OBJEXT): $(top_srcdir)/internal/serial.h
+error.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 error.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 error.$(OBJEXT): $(top_srcdir)/internal/string.h
 error.$(OBJEXT): $(top_srcdir)/internal/symbol.h
@@ -6753,6 +7035,7 @@ error.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+error.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -6820,9 +7103,11 @@ eval.$(OBJEXT): $(top_srcdir)/internal/hash.h
 eval.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 eval.$(OBJEXT): $(top_srcdir)/internal/inits.h
 eval.$(OBJEXT): $(top_srcdir)/internal/io.h
+eval.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 eval.$(OBJEXT): $(top_srcdir)/internal/object.h
 eval.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 eval.$(OBJEXT): $(top_srcdir)/internal/serial.h
+eval.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 eval.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 eval.$(OBJEXT): $(top_srcdir)/internal/string.h
 eval.$(OBJEXT): $(top_srcdir)/internal/thread.h
@@ -6997,6 +7282,7 @@ eval.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+eval.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -7150,6 +7436,7 @@ file.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+file.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
@@ -7236,6 +7523,7 @@ file.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+file.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -7298,12 +7586,14 @@ gc.$(OBJEXT): $(top_srcdir)/internal/gc.h
 gc.$(OBJEXT): $(top_srcdir)/internal/hash.h
 gc.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 gc.$(OBJEXT): $(top_srcdir)/internal/io.h
+gc.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 gc.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 gc.$(OBJEXT): $(top_srcdir)/internal/object.h
 gc.$(OBJEXT): $(top_srcdir)/internal/proc.h
 gc.$(OBJEXT): $(top_srcdir)/internal/rational.h
 gc.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 gc.$(OBJEXT): $(top_srcdir)/internal/serial.h
+gc.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 gc.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 gc.$(OBJEXT): $(top_srcdir)/internal/string.h
 gc.$(OBJEXT): $(top_srcdir)/internal/struct.h
@@ -7482,6 +7772,7 @@ gc.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+gc.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -7561,12 +7852,14 @@ goruby.$(OBJEXT): $(top_srcdir)/internal/complex.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/gc.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/parse.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/rational.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/serial.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/variable.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -7736,6 +8029,7 @@ goruby.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+goruby.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -7801,10 +8095,12 @@ hash.$(OBJEXT): $(top_srcdir)/internal/error.h
 hash.$(OBJEXT): $(top_srcdir)/internal/gc.h
 hash.$(OBJEXT): $(top_srcdir)/internal/hash.h
 hash.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+hash.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 hash.$(OBJEXT): $(top_srcdir)/internal/object.h
 hash.$(OBJEXT): $(top_srcdir)/internal/proc.h
 hash.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 hash.$(OBJEXT): $(top_srcdir)/internal/serial.h
+hash.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 hash.$(OBJEXT): $(top_srcdir)/internal/st.h
 hash.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 hash.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -7980,6 +8276,7 @@ hash.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+hash.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -8045,8 +8342,11 @@ imemo.$(OBJEXT): $(top_srcdir)/internal/class.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/gc.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+imemo.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/serial.h
+imemo.$(OBJEXT): $(top_srcdir)/internal/set_table.h
+imemo.$(OBJEXT): $(top_srcdir)/internal/st.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/variable.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -8195,6 +8495,7 @@ imemo.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 imemo.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 imemo.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 imemo.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+imemo.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 imemo.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 imemo.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 imemo.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -8373,6 +8674,7 @@ inits.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+inits.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -8422,11 +8724,13 @@ io.$(OBJEXT): $(top_srcdir)/internal/gc.h
 io.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 io.$(OBJEXT): $(top_srcdir)/internal/inits.h
 io.$(OBJEXT): $(top_srcdir)/internal/io.h
+io.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 io.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 io.$(OBJEXT): $(top_srcdir)/internal/object.h
 io.$(OBJEXT): $(top_srcdir)/internal/process.h
 io.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 io.$(OBJEXT): $(top_srcdir)/internal/serial.h
+io.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 io.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 io.$(OBJEXT): $(top_srcdir)/internal/string.h
 io.$(OBJEXT): $(top_srcdir)/internal/thread.h
@@ -8581,6 +8885,7 @@ io.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+io.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -8647,9 +8952,11 @@ io_buffer.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/gc.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/io.h
+io_buffer.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/serial.h
+io_buffer.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/string.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/thread.h
@@ -8671,6 +8978,7 @@ io_buffer.$(OBJEXT): {$(VPATH)}defines.h
 io_buffer.$(OBJEXT): {$(VPATH)}encoding.h
 io_buffer.$(OBJEXT): {$(VPATH)}fiber/scheduler.h
 io_buffer.$(OBJEXT): {$(VPATH)}id.h
+io_buffer.$(OBJEXT): {$(VPATH)}id_table.h
 io_buffer.$(OBJEXT): {$(VPATH)}intern.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/abi.h
@@ -8796,6 +9104,7 @@ io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -8862,12 +9171,14 @@ iseq.$(OBJEXT): $(top_srcdir)/internal/gc.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/hash.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/io.h
+iseq.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/parse.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/rational.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/serial.h
+iseq.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/string.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/symbol.h
@@ -9043,6 +9354,7 @@ iseq.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+iseq.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -9098,6 +9410,244 @@ iseq.$(OBJEXT): {$(VPATH)}vm_debug.h
 iseq.$(OBJEXT): {$(VPATH)}vm_opts.h
 iseq.$(OBJEXT): {$(VPATH)}vm_sync.h
 iseq.$(OBJEXT): {$(VPATH)}yjit.h
+iseq.$(OBJEXT): {$(VPATH)}zjit.h
+jit.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
+jit.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
+jit.$(OBJEXT): $(CCAN_DIR)/list/list.h
+jit.$(OBJEXT): $(CCAN_DIR)/str/str.h
+jit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+jit.$(OBJEXT): $(top_srcdir)/internal/array.h
+jit.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+jit.$(OBJEXT): $(top_srcdir)/internal/class.h
+jit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+jit.$(OBJEXT): $(top_srcdir)/internal/gc.h
+jit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+jit.$(OBJEXT): $(top_srcdir)/internal/namespace.h
+jit.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
+jit.$(OBJEXT): $(top_srcdir)/internal/serial.h
+jit.$(OBJEXT): $(top_srcdir)/internal/set_table.h
+jit.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+jit.$(OBJEXT): $(top_srcdir)/internal/variable.h
+jit.$(OBJEXT): $(top_srcdir)/internal/vm.h
+jit.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+jit.$(OBJEXT): $(top_srcdir)/prism/defines.h
+jit.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+jit.$(OBJEXT): $(top_srcdir)/prism/node.h
+jit.$(OBJEXT): $(top_srcdir)/prism/options.h
+jit.$(OBJEXT): $(top_srcdir)/prism/pack.h
+jit.$(OBJEXT): $(top_srcdir)/prism/parser.h
+jit.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+jit.$(OBJEXT): $(top_srcdir)/prism/prism.h
+jit.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+jit.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
+jit.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+jit.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+jit.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+jit.$(OBJEXT): $(top_srcdir)/prism/util/pm_integer.h
+jit.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+jit.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+jit.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+jit.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+jit.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+jit.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
+jit.$(OBJEXT): {$(VPATH)}assert.h
+jit.$(OBJEXT): {$(VPATH)}atomic.h
+jit.$(OBJEXT): {$(VPATH)}backward/2/assume.h
+jit.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
+jit.$(OBJEXT): {$(VPATH)}backward/2/bool.h
+jit.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
+jit.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
+jit.$(OBJEXT): {$(VPATH)}backward/2/limits.h
+jit.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
+jit.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
+jit.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+jit.$(OBJEXT): {$(VPATH)}builtin.h
+jit.$(OBJEXT): {$(VPATH)}config.h
+jit.$(OBJEXT): {$(VPATH)}constant.h
+jit.$(OBJEXT): {$(VPATH)}debug_counter.h
+jit.$(OBJEXT): {$(VPATH)}defines.h
+jit.$(OBJEXT): {$(VPATH)}encoding.h
+jit.$(OBJEXT): {$(VPATH)}id.h
+jit.$(OBJEXT): {$(VPATH)}id_table.h
+jit.$(OBJEXT): {$(VPATH)}insns.def
+jit.$(OBJEXT): {$(VPATH)}insns.inc
+jit.$(OBJEXT): {$(VPATH)}insns_info.inc
+jit.$(OBJEXT): {$(VPATH)}intern.h
+jit.$(OBJEXT): {$(VPATH)}internal.h
+jit.$(OBJEXT): {$(VPATH)}internal/abi.h
+jit.$(OBJEXT): {$(VPATH)}internal/anyargs.h
+jit.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
+jit.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
+jit.$(OBJEXT): {$(VPATH)}internal/arithmetic/double.h
+jit.$(OBJEXT): {$(VPATH)}internal/arithmetic/fixnum.h
+jit.$(OBJEXT): {$(VPATH)}internal/arithmetic/gid_t.h
+jit.$(OBJEXT): {$(VPATH)}internal/arithmetic/int.h
+jit.$(OBJEXT): {$(VPATH)}internal/arithmetic/intptr_t.h
+jit.$(OBJEXT): {$(VPATH)}internal/arithmetic/long.h
+jit.$(OBJEXT): {$(VPATH)}internal/arithmetic/long_long.h
+jit.$(OBJEXT): {$(VPATH)}internal/arithmetic/mode_t.h
+jit.$(OBJEXT): {$(VPATH)}internal/arithmetic/off_t.h
+jit.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
+jit.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
+jit.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
+jit.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+jit.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
+jit.$(OBJEXT): {$(VPATH)}internal/assume.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/artificial.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/cold.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/const.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/constexpr.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/deprecated.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/diagnose_if.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/enum_extensibility.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/error.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/flag_enum.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/forceinline.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/format.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/maybe_unused.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/noalias.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/warning.h
+jit.$(OBJEXT): {$(VPATH)}internal/attr/weakref.h
+jit.$(OBJEXT): {$(VPATH)}internal/cast.h
+jit.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
+jit.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
+jit.$(OBJEXT): {$(VPATH)}internal/compiler_is/clang.h
+jit.$(OBJEXT): {$(VPATH)}internal/compiler_is/gcc.h
+jit.$(OBJEXT): {$(VPATH)}internal/compiler_is/intel.h
+jit.$(OBJEXT): {$(VPATH)}internal/compiler_is/msvc.h
+jit.$(OBJEXT): {$(VPATH)}internal/compiler_is/sunpro.h
+jit.$(OBJEXT): {$(VPATH)}internal/compiler_since.h
+jit.$(OBJEXT): {$(VPATH)}internal/config.h
+jit.$(OBJEXT): {$(VPATH)}internal/constant_p.h
+jit.$(OBJEXT): {$(VPATH)}internal/core.h
+jit.$(OBJEXT): {$(VPATH)}internal/core/rarray.h
+jit.$(OBJEXT): {$(VPATH)}internal/core/rbasic.h
+jit.$(OBJEXT): {$(VPATH)}internal/core/rbignum.h
+jit.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
+jit.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
+jit.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
+jit.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+jit.$(OBJEXT): {$(VPATH)}internal/core/robject.h
+jit.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
+jit.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
+jit.$(OBJEXT): {$(VPATH)}internal/core/rstruct.h
+jit.$(OBJEXT): {$(VPATH)}internal/core/rtypeddata.h
+jit.$(OBJEXT): {$(VPATH)}internal/ctype.h
+jit.$(OBJEXT): {$(VPATH)}internal/dllexport.h
+jit.$(OBJEXT): {$(VPATH)}internal/dosish.h
+jit.$(OBJEXT): {$(VPATH)}internal/encoding/coderange.h
+jit.$(OBJEXT): {$(VPATH)}internal/encoding/ctype.h
+jit.$(OBJEXT): {$(VPATH)}internal/encoding/encoding.h
+jit.$(OBJEXT): {$(VPATH)}internal/encoding/pathname.h
+jit.$(OBJEXT): {$(VPATH)}internal/encoding/re.h
+jit.$(OBJEXT): {$(VPATH)}internal/encoding/sprintf.h
+jit.$(OBJEXT): {$(VPATH)}internal/encoding/string.h
+jit.$(OBJEXT): {$(VPATH)}internal/encoding/symbol.h
+jit.$(OBJEXT): {$(VPATH)}internal/encoding/transcode.h
+jit.$(OBJEXT): {$(VPATH)}internal/error.h
+jit.$(OBJEXT): {$(VPATH)}internal/eval.h
+jit.$(OBJEXT): {$(VPATH)}internal/event.h
+jit.$(OBJEXT): {$(VPATH)}internal/fl_type.h
+jit.$(OBJEXT): {$(VPATH)}internal/gc.h
+jit.$(OBJEXT): {$(VPATH)}internal/glob.h
+jit.$(OBJEXT): {$(VPATH)}internal/globals.h
+jit.$(OBJEXT): {$(VPATH)}internal/has/attribute.h
+jit.$(OBJEXT): {$(VPATH)}internal/has/builtin.h
+jit.$(OBJEXT): {$(VPATH)}internal/has/c_attribute.h
+jit.$(OBJEXT): {$(VPATH)}internal/has/cpp_attribute.h
+jit.$(OBJEXT): {$(VPATH)}internal/has/declspec_attribute.h
+jit.$(OBJEXT): {$(VPATH)}internal/has/extension.h
+jit.$(OBJEXT): {$(VPATH)}internal/has/feature.h
+jit.$(OBJEXT): {$(VPATH)}internal/has/warning.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/array.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/bignum.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/class.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/error.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/file.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/io.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/load.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/marshal.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/numeric.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/object.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/parse.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/proc.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/process.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/random.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/range.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/rational.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/re.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/select.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/set.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/string.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/struct.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/thread.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/time.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/variable.h
+jit.$(OBJEXT): {$(VPATH)}internal/intern/vm.h
+jit.$(OBJEXT): {$(VPATH)}internal/interpreter.h
+jit.$(OBJEXT): {$(VPATH)}internal/iterator.h
+jit.$(OBJEXT): {$(VPATH)}internal/memory.h
+jit.$(OBJEXT): {$(VPATH)}internal/method.h
+jit.$(OBJEXT): {$(VPATH)}internal/module.h
+jit.$(OBJEXT): {$(VPATH)}internal/newobj.h
+jit.$(OBJEXT): {$(VPATH)}internal/scan_args.h
+jit.$(OBJEXT): {$(VPATH)}internal/special_consts.h
+jit.$(OBJEXT): {$(VPATH)}internal/static_assert.h
+jit.$(OBJEXT): {$(VPATH)}internal/stdalign.h
+jit.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+jit.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
+jit.$(OBJEXT): {$(VPATH)}internal/symbol.h
+jit.$(OBJEXT): {$(VPATH)}internal/value.h
+jit.$(OBJEXT): {$(VPATH)}internal/value_type.h
+jit.$(OBJEXT): {$(VPATH)}internal/variable.h
+jit.$(OBJEXT): {$(VPATH)}internal/warning_push.h
+jit.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+jit.$(OBJEXT): {$(VPATH)}iseq.h
+jit.$(OBJEXT): {$(VPATH)}jit.c
+jit.$(OBJEXT): {$(VPATH)}method.h
+jit.$(OBJEXT): {$(VPATH)}missing.h
+jit.$(OBJEXT): {$(VPATH)}node.h
+jit.$(OBJEXT): {$(VPATH)}onigmo.h
+jit.$(OBJEXT): {$(VPATH)}oniguruma.h
+jit.$(OBJEXT): {$(VPATH)}prism/ast.h
+jit.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
+jit.$(OBJEXT): {$(VPATH)}prism/version.h
+jit.$(OBJEXT): {$(VPATH)}prism_compile.h
+jit.$(OBJEXT): {$(VPATH)}ruby_assert.h
+jit.$(OBJEXT): {$(VPATH)}ruby_atomic.h
+jit.$(OBJEXT): {$(VPATH)}rubyparser.h
+jit.$(OBJEXT): {$(VPATH)}shape.h
+jit.$(OBJEXT): {$(VPATH)}st.h
+jit.$(OBJEXT): {$(VPATH)}subst.h
+jit.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+jit.$(OBJEXT): {$(VPATH)}thread_native.h
+jit.$(OBJEXT): {$(VPATH)}vm_callinfo.h
+jit.$(OBJEXT): {$(VPATH)}vm_core.h
+jit.$(OBJEXT): {$(VPATH)}vm_debug.h
+jit.$(OBJEXT): {$(VPATH)}vm_opts.h
+jit.$(OBJEXT): {$(VPATH)}vm_sync.h
 load.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 load.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 load.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -9112,18 +9662,21 @@ load.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 load.$(OBJEXT): $(top_srcdir)/internal/complex.h
 load.$(OBJEXT): $(top_srcdir)/internal/dir.h
 load.$(OBJEXT): $(top_srcdir)/internal/error.h
+load.$(OBJEXT): $(top_srcdir)/internal/eval.h
 load.$(OBJEXT): $(top_srcdir)/internal/file.h
 load.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 load.$(OBJEXT): $(top_srcdir)/internal/gc.h
 load.$(OBJEXT): $(top_srcdir)/internal/hash.h
 load.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 load.$(OBJEXT): $(top_srcdir)/internal/load.h
+load.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 load.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 load.$(OBJEXT): $(top_srcdir)/internal/parse.h
 load.$(OBJEXT): $(top_srcdir)/internal/rational.h
 load.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 load.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 load.$(OBJEXT): $(top_srcdir)/internal/serial.h
+load.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 load.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 load.$(OBJEXT): $(top_srcdir)/internal/string.h
 load.$(OBJEXT): $(top_srcdir)/internal/thread.h
@@ -9295,6 +9848,7 @@ load.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+load.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -9477,6 +10031,7 @@ loadpath.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+loadpath.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -9647,6 +10202,7 @@ localeinit.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+localeinit.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -9812,6 +10368,7 @@ main.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+main.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -9861,10 +10418,12 @@ marshal.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/gc.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/hash.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+marshal.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/object.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/serial.h
+marshal.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/string.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/struct.h
@@ -9932,6 +10491,7 @@ marshal.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+marshal.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
@@ -10018,6 +10578,7 @@ marshal.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+marshal.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -10208,6 +10769,7 @@ math.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+math.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -10250,8 +10812,10 @@ memory_view.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/gc.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/hash.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+memory_view.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/serial.h
+memory_view.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/variable.h
 memory_view.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -10399,6 +10963,7 @@ memory_view.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+memory_view.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -10456,15 +11021,18 @@ miniinit.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/bits.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/complex.h
+miniinit.$(OBJEXT): $(top_srcdir)/internal/eval.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/gc.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+miniinit.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/parse.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/rational.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/serial.h
+miniinit.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/variable.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -10551,6 +11119,7 @@ miniinit.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+miniinit.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
@@ -10637,6 +11206,7 @@ miniinit.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+miniinit.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -10678,6 +11248,7 @@ miniinit.$(OBJEXT): {$(VPATH)}numeric.rb
 miniinit.$(OBJEXT): {$(VPATH)}onigmo.h
 miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
 miniinit.$(OBJEXT): {$(VPATH)}pack.rb
+miniinit.$(OBJEXT): {$(VPATH)}pathname_builtin.rb
 miniinit.$(OBJEXT): {$(VPATH)}prelude.rb
 miniinit.$(OBJEXT): {$(VPATH)}prism/ast.h
 miniinit.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
@@ -10701,6 +11272,222 @@ miniinit.$(OBJEXT): {$(VPATH)}vm_opts.h
 miniinit.$(OBJEXT): {$(VPATH)}warning.rb
 miniinit.$(OBJEXT): {$(VPATH)}yjit.rb
 miniinit.$(OBJEXT): {$(VPATH)}yjit_hook.rb
+miniinit.$(OBJEXT): {$(VPATH)}zjit.rb
+namespace.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
+namespace.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
+namespace.$(OBJEXT): $(CCAN_DIR)/list/list.h
+namespace.$(OBJEXT): $(CCAN_DIR)/str/str.h
+namespace.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/array.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/class.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/error.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/eval.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/file.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/gc.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/hash.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/load.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/namespace.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/serial.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/set_table.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/st.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/string.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/variable.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/vm.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+namespace.$(OBJEXT): {$(VPATH)}assert.h
+namespace.$(OBJEXT): {$(VPATH)}atomic.h
+namespace.$(OBJEXT): {$(VPATH)}backward/2/assume.h
+namespace.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
+namespace.$(OBJEXT): {$(VPATH)}backward/2/bool.h
+namespace.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
+namespace.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
+namespace.$(OBJEXT): {$(VPATH)}backward/2/limits.h
+namespace.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
+namespace.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
+namespace.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+namespace.$(OBJEXT): {$(VPATH)}config.h
+namespace.$(OBJEXT): {$(VPATH)}constant.h
+namespace.$(OBJEXT): {$(VPATH)}debug_counter.h
+namespace.$(OBJEXT): {$(VPATH)}defines.h
+namespace.$(OBJEXT): {$(VPATH)}encoding.h
+namespace.$(OBJEXT): {$(VPATH)}id.h
+namespace.$(OBJEXT): {$(VPATH)}id_table.h
+namespace.$(OBJEXT): {$(VPATH)}intern.h
+namespace.$(OBJEXT): {$(VPATH)}internal.h
+namespace.$(OBJEXT): {$(VPATH)}internal/abi.h
+namespace.$(OBJEXT): {$(VPATH)}internal/anyargs.h
+namespace.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
+namespace.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
+namespace.$(OBJEXT): {$(VPATH)}internal/arithmetic/double.h
+namespace.$(OBJEXT): {$(VPATH)}internal/arithmetic/fixnum.h
+namespace.$(OBJEXT): {$(VPATH)}internal/arithmetic/gid_t.h
+namespace.$(OBJEXT): {$(VPATH)}internal/arithmetic/int.h
+namespace.$(OBJEXT): {$(VPATH)}internal/arithmetic/intptr_t.h
+namespace.$(OBJEXT): {$(VPATH)}internal/arithmetic/long.h
+namespace.$(OBJEXT): {$(VPATH)}internal/arithmetic/long_long.h
+namespace.$(OBJEXT): {$(VPATH)}internal/arithmetic/mode_t.h
+namespace.$(OBJEXT): {$(VPATH)}internal/arithmetic/off_t.h
+namespace.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
+namespace.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
+namespace.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
+namespace.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+namespace.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
+namespace.$(OBJEXT): {$(VPATH)}internal/assume.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/artificial.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/cold.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/const.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/constexpr.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/deprecated.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/diagnose_if.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/enum_extensibility.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/error.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/flag_enum.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/forceinline.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/format.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/maybe_unused.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/noalias.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/warning.h
+namespace.$(OBJEXT): {$(VPATH)}internal/attr/weakref.h
+namespace.$(OBJEXT): {$(VPATH)}internal/cast.h
+namespace.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
+namespace.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
+namespace.$(OBJEXT): {$(VPATH)}internal/compiler_is/clang.h
+namespace.$(OBJEXT): {$(VPATH)}internal/compiler_is/gcc.h
+namespace.$(OBJEXT): {$(VPATH)}internal/compiler_is/intel.h
+namespace.$(OBJEXT): {$(VPATH)}internal/compiler_is/msvc.h
+namespace.$(OBJEXT): {$(VPATH)}internal/compiler_is/sunpro.h
+namespace.$(OBJEXT): {$(VPATH)}internal/compiler_since.h
+namespace.$(OBJEXT): {$(VPATH)}internal/config.h
+namespace.$(OBJEXT): {$(VPATH)}internal/constant_p.h
+namespace.$(OBJEXT): {$(VPATH)}internal/core.h
+namespace.$(OBJEXT): {$(VPATH)}internal/core/rarray.h
+namespace.$(OBJEXT): {$(VPATH)}internal/core/rbasic.h
+namespace.$(OBJEXT): {$(VPATH)}internal/core/rbignum.h
+namespace.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
+namespace.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
+namespace.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
+namespace.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+namespace.$(OBJEXT): {$(VPATH)}internal/core/robject.h
+namespace.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
+namespace.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
+namespace.$(OBJEXT): {$(VPATH)}internal/core/rstruct.h
+namespace.$(OBJEXT): {$(VPATH)}internal/core/rtypeddata.h
+namespace.$(OBJEXT): {$(VPATH)}internal/ctype.h
+namespace.$(OBJEXT): {$(VPATH)}internal/dllexport.h
+namespace.$(OBJEXT): {$(VPATH)}internal/dosish.h
+namespace.$(OBJEXT): {$(VPATH)}internal/encoding/coderange.h
+namespace.$(OBJEXT): {$(VPATH)}internal/encoding/ctype.h
+namespace.$(OBJEXT): {$(VPATH)}internal/encoding/encoding.h
+namespace.$(OBJEXT): {$(VPATH)}internal/encoding/pathname.h
+namespace.$(OBJEXT): {$(VPATH)}internal/encoding/re.h
+namespace.$(OBJEXT): {$(VPATH)}internal/encoding/sprintf.h
+namespace.$(OBJEXT): {$(VPATH)}internal/encoding/string.h
+namespace.$(OBJEXT): {$(VPATH)}internal/encoding/symbol.h
+namespace.$(OBJEXT): {$(VPATH)}internal/encoding/transcode.h
+namespace.$(OBJEXT): {$(VPATH)}internal/error.h
+namespace.$(OBJEXT): {$(VPATH)}internal/eval.h
+namespace.$(OBJEXT): {$(VPATH)}internal/event.h
+namespace.$(OBJEXT): {$(VPATH)}internal/fl_type.h
+namespace.$(OBJEXT): {$(VPATH)}internal/gc.h
+namespace.$(OBJEXT): {$(VPATH)}internal/glob.h
+namespace.$(OBJEXT): {$(VPATH)}internal/globals.h
+namespace.$(OBJEXT): {$(VPATH)}internal/has/attribute.h
+namespace.$(OBJEXT): {$(VPATH)}internal/has/builtin.h
+namespace.$(OBJEXT): {$(VPATH)}internal/has/c_attribute.h
+namespace.$(OBJEXT): {$(VPATH)}internal/has/cpp_attribute.h
+namespace.$(OBJEXT): {$(VPATH)}internal/has/declspec_attribute.h
+namespace.$(OBJEXT): {$(VPATH)}internal/has/extension.h
+namespace.$(OBJEXT): {$(VPATH)}internal/has/feature.h
+namespace.$(OBJEXT): {$(VPATH)}internal/has/warning.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/array.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/bignum.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/class.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/error.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/file.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/io.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/load.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/marshal.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/numeric.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/object.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/parse.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/proc.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/process.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/random.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/range.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/rational.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/re.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/select.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/set.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/string.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/struct.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/thread.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/time.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/variable.h
+namespace.$(OBJEXT): {$(VPATH)}internal/intern/vm.h
+namespace.$(OBJEXT): {$(VPATH)}internal/interpreter.h
+namespace.$(OBJEXT): {$(VPATH)}internal/iterator.h
+namespace.$(OBJEXT): {$(VPATH)}internal/memory.h
+namespace.$(OBJEXT): {$(VPATH)}internal/method.h
+namespace.$(OBJEXT): {$(VPATH)}internal/module.h
+namespace.$(OBJEXT): {$(VPATH)}internal/newobj.h
+namespace.$(OBJEXT): {$(VPATH)}internal/scan_args.h
+namespace.$(OBJEXT): {$(VPATH)}internal/special_consts.h
+namespace.$(OBJEXT): {$(VPATH)}internal/static_assert.h
+namespace.$(OBJEXT): {$(VPATH)}internal/stdalign.h
+namespace.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+namespace.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
+namespace.$(OBJEXT): {$(VPATH)}internal/symbol.h
+namespace.$(OBJEXT): {$(VPATH)}internal/value.h
+namespace.$(OBJEXT): {$(VPATH)}internal/value_type.h
+namespace.$(OBJEXT): {$(VPATH)}internal/variable.h
+namespace.$(OBJEXT): {$(VPATH)}internal/warning_push.h
+namespace.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+namespace.$(OBJEXT): {$(VPATH)}method.h
+namespace.$(OBJEXT): {$(VPATH)}missing.h
+namespace.$(OBJEXT): {$(VPATH)}namespace.c
+namespace.$(OBJEXT): {$(VPATH)}node.h
+namespace.$(OBJEXT): {$(VPATH)}onigmo.h
+namespace.$(OBJEXT): {$(VPATH)}oniguruma.h
+namespace.$(OBJEXT): {$(VPATH)}ruby_assert.h
+namespace.$(OBJEXT): {$(VPATH)}ruby_atomic.h
+namespace.$(OBJEXT): {$(VPATH)}rubyparser.h
+namespace.$(OBJEXT): {$(VPATH)}shape.h
+namespace.$(OBJEXT): {$(VPATH)}st.h
+namespace.$(OBJEXT): {$(VPATH)}subst.h
+namespace.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+namespace.$(OBJEXT): {$(VPATH)}thread_native.h
+namespace.$(OBJEXT): {$(VPATH)}util.h
+namespace.$(OBJEXT): {$(VPATH)}vm_core.h
+namespace.$(OBJEXT): {$(VPATH)}vm_debug.h
+namespace.$(OBJEXT): {$(VPATH)}vm_opts.h
+namespace.$(OBJEXT): {$(VPATH)}vm_sync.h
 node.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 node.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 node.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -10712,8 +11499,10 @@ node.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 node.$(OBJEXT): $(top_srcdir)/internal/gc.h
 node.$(OBJEXT): $(top_srcdir)/internal/hash.h
 node.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+node.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 node.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 node.$(OBJEXT): $(top_srcdir)/internal/serial.h
+node.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 node.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 node.$(OBJEXT): $(top_srcdir)/internal/variable.h
 node.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -10860,6 +11649,7 @@ node.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+node.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -10919,12 +11709,14 @@ node_dump.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/gc.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/hash.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+node_dump.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/parse.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/rational.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/serial.h
+node_dump.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/variable.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -11072,6 +11864,7 @@ node_dump.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+node_dump.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 node_dump.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -11133,11 +11926,13 @@ numeric.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/gc.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/hash.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+numeric.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/object.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/rational.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/serial.h
+numeric.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/string.h
 numeric.$(OBJEXT): $(top_srcdir)/internal/util.h
@@ -11287,6 +12082,7 @@ numeric.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+numeric.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -11349,10 +12145,12 @@ object.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 object.$(OBJEXT): $(top_srcdir)/internal/gc.h
 object.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 object.$(OBJEXT): $(top_srcdir)/internal/inits.h
+object.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 object.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 object.$(OBJEXT): $(top_srcdir)/internal/object.h
 object.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 object.$(OBJEXT): $(top_srcdir)/internal/serial.h
+object.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 object.$(OBJEXT): $(top_srcdir)/internal/st.h
 object.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 object.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -11505,6 +12303,7 @@ object.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+object.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -11568,8 +12367,10 @@ pack.$(OBJEXT): $(top_srcdir)/internal/bits.h
 pack.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 pack.$(OBJEXT): $(top_srcdir)/internal/gc.h
 pack.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+pack.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 pack.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 pack.$(OBJEXT): $(top_srcdir)/internal/serial.h
+pack.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 pack.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 pack.$(OBJEXT): $(top_srcdir)/internal/string.h
 pack.$(OBJEXT): $(top_srcdir)/internal/symbol.h
@@ -11719,6 +12520,7 @@ pack.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+pack.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -11784,6 +12586,7 @@ parse.$(OBJEXT): $(top_srcdir)/internal/gc.h
 parse.$(OBJEXT): $(top_srcdir)/internal/hash.h
 parse.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 parse.$(OBJEXT): $(top_srcdir)/internal/io.h
+parse.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 parse.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 parse.$(OBJEXT): $(top_srcdir)/internal/parse.h
 parse.$(OBJEXT): $(top_srcdir)/internal/rational.h
@@ -11791,6 +12594,7 @@ parse.$(OBJEXT): $(top_srcdir)/internal/re.h
 parse.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 parse.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 parse.$(OBJEXT): $(top_srcdir)/internal/serial.h
+parse.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 parse.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 parse.$(OBJEXT): $(top_srcdir)/internal/string.h
 parse.$(OBJEXT): $(top_srcdir)/internal/symbol.h
@@ -11941,6 +12745,7 @@ parse.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+parse.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -12059,6 +12864,184 @@ parser_st.$(OBJEXT): {$(VPATH)}parser_st.c
 parser_st.$(OBJEXT): {$(VPATH)}parser_st.h
 parser_st.$(OBJEXT): {$(VPATH)}parser_value.h
 parser_st.$(OBJEXT): {$(VPATH)}st.c
+pathname.$(OBJEXT): $(hdrdir)/ruby.h
+pathname.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+pathname.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+pathname.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+pathname.$(OBJEXT): {$(VPATH)}assert.h
+pathname.$(OBJEXT): {$(VPATH)}backward.h
+pathname.$(OBJEXT): {$(VPATH)}backward/2/assume.h
+pathname.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
+pathname.$(OBJEXT): {$(VPATH)}backward/2/bool.h
+pathname.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
+pathname.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
+pathname.$(OBJEXT): {$(VPATH)}backward/2/limits.h
+pathname.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
+pathname.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
+pathname.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+pathname.$(OBJEXT): {$(VPATH)}builtin.h
+pathname.$(OBJEXT): {$(VPATH)}config.h
+pathname.$(OBJEXT): {$(VPATH)}defines.h
+pathname.$(OBJEXT): {$(VPATH)}encoding.h
+pathname.$(OBJEXT): {$(VPATH)}intern.h
+pathname.$(OBJEXT): {$(VPATH)}internal/abi.h
+pathname.$(OBJEXT): {$(VPATH)}internal/anyargs.h
+pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
+pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
+pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic/double.h
+pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic/fixnum.h
+pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic/gid_t.h
+pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic/int.h
+pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic/intptr_t.h
+pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic/long.h
+pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic/long_long.h
+pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic/mode_t.h
+pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic/off_t.h
+pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
+pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
+pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
+pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
+pathname.$(OBJEXT): {$(VPATH)}internal/assume.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/artificial.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/cold.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/const.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/constexpr.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/deprecated.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/diagnose_if.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/enum_extensibility.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/error.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/flag_enum.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/forceinline.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/format.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/maybe_unused.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/noalias.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/warning.h
+pathname.$(OBJEXT): {$(VPATH)}internal/attr/weakref.h
+pathname.$(OBJEXT): {$(VPATH)}internal/cast.h
+pathname.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
+pathname.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
+pathname.$(OBJEXT): {$(VPATH)}internal/compiler_is/clang.h
+pathname.$(OBJEXT): {$(VPATH)}internal/compiler_is/gcc.h
+pathname.$(OBJEXT): {$(VPATH)}internal/compiler_is/intel.h
+pathname.$(OBJEXT): {$(VPATH)}internal/compiler_is/msvc.h
+pathname.$(OBJEXT): {$(VPATH)}internal/compiler_is/sunpro.h
+pathname.$(OBJEXT): {$(VPATH)}internal/compiler_since.h
+pathname.$(OBJEXT): {$(VPATH)}internal/config.h
+pathname.$(OBJEXT): {$(VPATH)}internal/constant_p.h
+pathname.$(OBJEXT): {$(VPATH)}internal/core.h
+pathname.$(OBJEXT): {$(VPATH)}internal/core/rarray.h
+pathname.$(OBJEXT): {$(VPATH)}internal/core/rbasic.h
+pathname.$(OBJEXT): {$(VPATH)}internal/core/rbignum.h
+pathname.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
+pathname.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
+pathname.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
+pathname.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+pathname.$(OBJEXT): {$(VPATH)}internal/core/robject.h
+pathname.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
+pathname.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
+pathname.$(OBJEXT): {$(VPATH)}internal/core/rstruct.h
+pathname.$(OBJEXT): {$(VPATH)}internal/core/rtypeddata.h
+pathname.$(OBJEXT): {$(VPATH)}internal/ctype.h
+pathname.$(OBJEXT): {$(VPATH)}internal/dllexport.h
+pathname.$(OBJEXT): {$(VPATH)}internal/dosish.h
+pathname.$(OBJEXT): {$(VPATH)}internal/encoding/coderange.h
+pathname.$(OBJEXT): {$(VPATH)}internal/encoding/ctype.h
+pathname.$(OBJEXT): {$(VPATH)}internal/encoding/encoding.h
+pathname.$(OBJEXT): {$(VPATH)}internal/encoding/pathname.h
+pathname.$(OBJEXT): {$(VPATH)}internal/encoding/re.h
+pathname.$(OBJEXT): {$(VPATH)}internal/encoding/sprintf.h
+pathname.$(OBJEXT): {$(VPATH)}internal/encoding/string.h
+pathname.$(OBJEXT): {$(VPATH)}internal/encoding/symbol.h
+pathname.$(OBJEXT): {$(VPATH)}internal/encoding/transcode.h
+pathname.$(OBJEXT): {$(VPATH)}internal/error.h
+pathname.$(OBJEXT): {$(VPATH)}internal/eval.h
+pathname.$(OBJEXT): {$(VPATH)}internal/event.h
+pathname.$(OBJEXT): {$(VPATH)}internal/fl_type.h
+pathname.$(OBJEXT): {$(VPATH)}internal/gc.h
+pathname.$(OBJEXT): {$(VPATH)}internal/glob.h
+pathname.$(OBJEXT): {$(VPATH)}internal/globals.h
+pathname.$(OBJEXT): {$(VPATH)}internal/has/attribute.h
+pathname.$(OBJEXT): {$(VPATH)}internal/has/builtin.h
+pathname.$(OBJEXT): {$(VPATH)}internal/has/c_attribute.h
+pathname.$(OBJEXT): {$(VPATH)}internal/has/cpp_attribute.h
+pathname.$(OBJEXT): {$(VPATH)}internal/has/declspec_attribute.h
+pathname.$(OBJEXT): {$(VPATH)}internal/has/extension.h
+pathname.$(OBJEXT): {$(VPATH)}internal/has/feature.h
+pathname.$(OBJEXT): {$(VPATH)}internal/has/warning.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/array.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/bignum.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/class.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/error.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/file.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/io.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/load.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/marshal.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/numeric.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/object.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/parse.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/proc.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/process.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/random.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/range.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/rational.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/re.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/select.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/set.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/string.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/struct.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/thread.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/time.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/variable.h
+pathname.$(OBJEXT): {$(VPATH)}internal/intern/vm.h
+pathname.$(OBJEXT): {$(VPATH)}internal/interpreter.h
+pathname.$(OBJEXT): {$(VPATH)}internal/iterator.h
+pathname.$(OBJEXT): {$(VPATH)}internal/memory.h
+pathname.$(OBJEXT): {$(VPATH)}internal/method.h
+pathname.$(OBJEXT): {$(VPATH)}internal/module.h
+pathname.$(OBJEXT): {$(VPATH)}internal/newobj.h
+pathname.$(OBJEXT): {$(VPATH)}internal/scan_args.h
+pathname.$(OBJEXT): {$(VPATH)}internal/special_consts.h
+pathname.$(OBJEXT): {$(VPATH)}internal/static_assert.h
+pathname.$(OBJEXT): {$(VPATH)}internal/stdalign.h
+pathname.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+pathname.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
+pathname.$(OBJEXT): {$(VPATH)}internal/symbol.h
+pathname.$(OBJEXT): {$(VPATH)}internal/value.h
+pathname.$(OBJEXT): {$(VPATH)}internal/value_type.h
+pathname.$(OBJEXT): {$(VPATH)}internal/variable.h
+pathname.$(OBJEXT): {$(VPATH)}internal/warning_push.h
+pathname.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+pathname.$(OBJEXT): {$(VPATH)}missing.h
+pathname.$(OBJEXT): {$(VPATH)}onigmo.h
+pathname.$(OBJEXT): {$(VPATH)}oniguruma.h
+pathname.$(OBJEXT): {$(VPATH)}pathname.c
+pathname.$(OBJEXT): {$(VPATH)}pathname_builtin.rbinc
+pathname.$(OBJEXT): {$(VPATH)}ruby.h
+pathname.$(OBJEXT): {$(VPATH)}st.h
+pathname.$(OBJEXT): {$(VPATH)}subst.h
 prism/api_node.$(OBJEXT): $(hdrdir)/ruby.h
 prism/api_node.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/defines.h
@@ -12218,6 +13201,7 @@ prism/api_node.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+prism/api_node.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 prism/api_node.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -12413,6 +13397,7 @@ prism/api_pack.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+prism/api_pack.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -12622,6 +13607,7 @@ prism/extension.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+prism/extension.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 prism/extension.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -13011,6 +13997,7 @@ prism_init.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+prism_init.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 prism_init.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -13061,10 +14048,12 @@ proc.$(OBJEXT): $(top_srcdir)/internal/eval.h
 proc.$(OBJEXT): $(top_srcdir)/internal/gc.h
 proc.$(OBJEXT): $(top_srcdir)/internal/hash.h
 proc.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+proc.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 proc.$(OBJEXT): $(top_srcdir)/internal/object.h
 proc.$(OBJEXT): $(top_srcdir)/internal/proc.h
 proc.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 proc.$(OBJEXT): $(top_srcdir)/internal/serial.h
+proc.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 proc.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 proc.$(OBJEXT): $(top_srcdir)/internal/string.h
 proc.$(OBJEXT): $(top_srcdir)/internal/symbol.h
@@ -13235,6 +14224,7 @@ proc.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+proc.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -13272,6 +14262,8 @@ proc.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 proc.$(OBJEXT): {$(VPATH)}prism/version.h
 proc.$(OBJEXT): {$(VPATH)}prism_compile.h
 proc.$(OBJEXT): {$(VPATH)}proc.c
+proc.$(OBJEXT): {$(VPATH)}ractor.h
+proc.$(OBJEXT): {$(VPATH)}ractor_core.h
 proc.$(OBJEXT): {$(VPATH)}ruby_assert.h
 proc.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 proc.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -13306,11 +14298,13 @@ process.$(OBJEXT): $(top_srcdir)/internal/gc.h
 process.$(OBJEXT): $(top_srcdir)/internal/hash.h
 process.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 process.$(OBJEXT): $(top_srcdir)/internal/io.h
+process.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 process.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 process.$(OBJEXT): $(top_srcdir)/internal/object.h
 process.$(OBJEXT): $(top_srcdir)/internal/process.h
 process.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 process.$(OBJEXT): $(top_srcdir)/internal/serial.h
+process.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 process.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 process.$(OBJEXT): $(top_srcdir)/internal/string.h
 process.$(OBJEXT): $(top_srcdir)/internal/thread.h
@@ -13464,6 +14458,7 @@ process.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+process.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -13498,6 +14493,7 @@ process.$(OBJEXT): {$(VPATH)}onigmo.h
 process.$(OBJEXT): {$(VPATH)}oniguruma.h
 process.$(OBJEXT): {$(VPATH)}process.c
 process.$(OBJEXT): {$(VPATH)}ractor.h
+process.$(OBJEXT): {$(VPATH)}ractor_core.h
 process.$(OBJEXT): {$(VPATH)}ruby_assert.h
 process.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 process.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -13530,12 +14526,14 @@ ractor.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/gc.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/hash.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/object.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/ractor.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/rational.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/serial.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/string.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/struct.h
@@ -13688,6 +14686,7 @@ ractor.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+ractor.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -13723,6 +14722,7 @@ ractor.$(OBJEXT): {$(VPATH)}ractor.c
 ractor.$(OBJEXT): {$(VPATH)}ractor.h
 ractor.$(OBJEXT): {$(VPATH)}ractor.rbinc
 ractor.$(OBJEXT): {$(VPATH)}ractor_core.h
+ractor.$(OBJEXT): {$(VPATH)}ractor_sync.c
 ractor.$(OBJEXT): {$(VPATH)}ruby_assert.h
 ractor.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 ractor.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -13751,10 +14751,12 @@ random.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 random.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 random.$(OBJEXT): $(top_srcdir)/internal/gc.h
 random.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+random.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 random.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 random.$(OBJEXT): $(top_srcdir)/internal/random.h
 random.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 random.$(OBJEXT): $(top_srcdir)/internal/serial.h
+random.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 random.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 random.$(OBJEXT): $(top_srcdir)/internal/variable.h
 random.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -13901,6 +14903,7 @@ random.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+random.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -14108,6 +15111,7 @@ range.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+range.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -14156,11 +15160,13 @@ rational.$(OBJEXT): $(top_srcdir)/internal/complex.h
 rational.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 rational.$(OBJEXT): $(top_srcdir)/internal/gc.h
 rational.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+rational.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 rational.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 rational.$(OBJEXT): $(top_srcdir)/internal/object.h
 rational.$(OBJEXT): $(top_srcdir)/internal/rational.h
 rational.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 rational.$(OBJEXT): $(top_srcdir)/internal/serial.h
+rational.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 rational.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 rational.$(OBJEXT): $(top_srcdir)/internal/variable.h
 rational.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -14307,6 +15313,7 @@ rational.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+rational.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -14364,11 +15371,13 @@ re.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 re.$(OBJEXT): $(top_srcdir)/internal/gc.h
 re.$(OBJEXT): $(top_srcdir)/internal/hash.h
 re.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+re.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 re.$(OBJEXT): $(top_srcdir)/internal/object.h
 re.$(OBJEXT): $(top_srcdir)/internal/ractor.h
 re.$(OBJEXT): $(top_srcdir)/internal/re.h
 re.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 re.$(OBJEXT): $(top_srcdir)/internal/serial.h
+re.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 re.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 re.$(OBJEXT): $(top_srcdir)/internal/string.h
 re.$(OBJEXT): $(top_srcdir)/internal/time.h
@@ -14520,6 +15529,7 @@ re.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+re.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -14551,6 +15561,8 @@ re.$(OBJEXT): {$(VPATH)}missing.h
 re.$(OBJEXT): {$(VPATH)}node.h
 re.$(OBJEXT): {$(VPATH)}onigmo.h
 re.$(OBJEXT): {$(VPATH)}oniguruma.h
+re.$(OBJEXT): {$(VPATH)}ractor.h
+re.$(OBJEXT): {$(VPATH)}ractor_core.h
 re.$(OBJEXT): {$(VPATH)}re.c
 re.$(OBJEXT): {$(VPATH)}re.h
 re.$(OBJEXT): {$(VPATH)}regenc.h
@@ -14566,6 +15578,7 @@ re.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 re.$(OBJEXT): {$(VPATH)}thread_native.h
 re.$(OBJEXT): {$(VPATH)}util.h
 re.$(OBJEXT): {$(VPATH)}vm_core.h
+re.$(OBJEXT): {$(VPATH)}vm_debug.h
 re.$(OBJEXT): {$(VPATH)}vm_opts.h
 regcomp.$(OBJEXT): $(hdrdir)/ruby.h
 regcomp.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -14695,6 +15708,7 @@ regcomp.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+regcomp.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -14857,6 +15871,7 @@ regenc.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+regenc.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -15018,6 +16033,7 @@ regerror.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+regerror.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -15179,6 +16195,7 @@ regexec.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+regexec.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -15344,6 +16361,7 @@ regparse.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+regparse.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -15506,6 +16524,7 @@ regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -15577,6 +16596,7 @@ ruby.$(OBJEXT): $(top_srcdir)/internal/io.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/load.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/loadpath.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/missing.h
+ruby.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/object.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/parse.h
@@ -15584,6 +16604,7 @@ ruby.$(OBJEXT): $(top_srcdir)/internal/rational.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/serial.h
+ruby.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/string.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/thread.h
@@ -15755,6 +16776,7 @@ ruby.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+ruby.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -15962,6 +16984,7 @@ ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -16007,8 +17030,10 @@ scheduler.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/gc.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+scheduler.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/serial.h
+scheduler.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/thread.h
 scheduler.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -16157,6 +17182,7 @@ scheduler.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+scheduler.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -16202,6 +17228,216 @@ scheduler.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 scheduler.$(OBJEXT): {$(VPATH)}thread_native.h
 scheduler.$(OBJEXT): {$(VPATH)}vm_core.h
 scheduler.$(OBJEXT): {$(VPATH)}vm_opts.h
+set.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
+set.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
+set.$(OBJEXT): $(CCAN_DIR)/list/list.h
+set.$(OBJEXT): $(CCAN_DIR)/str/str.h
+set.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+set.$(OBJEXT): $(top_srcdir)/internal/array.h
+set.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+set.$(OBJEXT): $(top_srcdir)/internal/bits.h
+set.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+set.$(OBJEXT): $(top_srcdir)/internal/error.h
+set.$(OBJEXT): $(top_srcdir)/internal/gc.h
+set.$(OBJEXT): $(top_srcdir)/internal/hash.h
+set.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+set.$(OBJEXT): $(top_srcdir)/internal/namespace.h
+set.$(OBJEXT): $(top_srcdir)/internal/proc.h
+set.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
+set.$(OBJEXT): $(top_srcdir)/internal/serial.h
+set.$(OBJEXT): $(top_srcdir)/internal/set_table.h
+set.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+set.$(OBJEXT): $(top_srcdir)/internal/string.h
+set.$(OBJEXT): $(top_srcdir)/internal/symbol.h
+set.$(OBJEXT): $(top_srcdir)/internal/variable.h
+set.$(OBJEXT): $(top_srcdir)/internal/vm.h
+set.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+set.$(OBJEXT): {$(VPATH)}assert.h
+set.$(OBJEXT): {$(VPATH)}atomic.h
+set.$(OBJEXT): {$(VPATH)}backward/2/assume.h
+set.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
+set.$(OBJEXT): {$(VPATH)}backward/2/bool.h
+set.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
+set.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
+set.$(OBJEXT): {$(VPATH)}backward/2/limits.h
+set.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
+set.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
+set.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+set.$(OBJEXT): {$(VPATH)}config.h
+set.$(OBJEXT): {$(VPATH)}constant.h
+set.$(OBJEXT): {$(VPATH)}defines.h
+set.$(OBJEXT): {$(VPATH)}encoding.h
+set.$(OBJEXT): {$(VPATH)}id.h
+set.$(OBJEXT): {$(VPATH)}id_table.h
+set.$(OBJEXT): {$(VPATH)}intern.h
+set.$(OBJEXT): {$(VPATH)}internal.h
+set.$(OBJEXT): {$(VPATH)}internal/abi.h
+set.$(OBJEXT): {$(VPATH)}internal/anyargs.h
+set.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
+set.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
+set.$(OBJEXT): {$(VPATH)}internal/arithmetic/double.h
+set.$(OBJEXT): {$(VPATH)}internal/arithmetic/fixnum.h
+set.$(OBJEXT): {$(VPATH)}internal/arithmetic/gid_t.h
+set.$(OBJEXT): {$(VPATH)}internal/arithmetic/int.h
+set.$(OBJEXT): {$(VPATH)}internal/arithmetic/intptr_t.h
+set.$(OBJEXT): {$(VPATH)}internal/arithmetic/long.h
+set.$(OBJEXT): {$(VPATH)}internal/arithmetic/long_long.h
+set.$(OBJEXT): {$(VPATH)}internal/arithmetic/mode_t.h
+set.$(OBJEXT): {$(VPATH)}internal/arithmetic/off_t.h
+set.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
+set.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
+set.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
+set.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+set.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
+set.$(OBJEXT): {$(VPATH)}internal/assume.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/artificial.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/cold.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/const.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/constexpr.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/deprecated.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/diagnose_if.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/enum_extensibility.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/error.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/flag_enum.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/forceinline.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/format.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/maybe_unused.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/noalias.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/warning.h
+set.$(OBJEXT): {$(VPATH)}internal/attr/weakref.h
+set.$(OBJEXT): {$(VPATH)}internal/cast.h
+set.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
+set.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
+set.$(OBJEXT): {$(VPATH)}internal/compiler_is/clang.h
+set.$(OBJEXT): {$(VPATH)}internal/compiler_is/gcc.h
+set.$(OBJEXT): {$(VPATH)}internal/compiler_is/intel.h
+set.$(OBJEXT): {$(VPATH)}internal/compiler_is/msvc.h
+set.$(OBJEXT): {$(VPATH)}internal/compiler_is/sunpro.h
+set.$(OBJEXT): {$(VPATH)}internal/compiler_since.h
+set.$(OBJEXT): {$(VPATH)}internal/config.h
+set.$(OBJEXT): {$(VPATH)}internal/constant_p.h
+set.$(OBJEXT): {$(VPATH)}internal/core.h
+set.$(OBJEXT): {$(VPATH)}internal/core/rarray.h
+set.$(OBJEXT): {$(VPATH)}internal/core/rbasic.h
+set.$(OBJEXT): {$(VPATH)}internal/core/rbignum.h
+set.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
+set.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
+set.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
+set.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+set.$(OBJEXT): {$(VPATH)}internal/core/robject.h
+set.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
+set.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
+set.$(OBJEXT): {$(VPATH)}internal/core/rstruct.h
+set.$(OBJEXT): {$(VPATH)}internal/core/rtypeddata.h
+set.$(OBJEXT): {$(VPATH)}internal/ctype.h
+set.$(OBJEXT): {$(VPATH)}internal/dllexport.h
+set.$(OBJEXT): {$(VPATH)}internal/dosish.h
+set.$(OBJEXT): {$(VPATH)}internal/encoding/coderange.h
+set.$(OBJEXT): {$(VPATH)}internal/encoding/ctype.h
+set.$(OBJEXT): {$(VPATH)}internal/encoding/encoding.h
+set.$(OBJEXT): {$(VPATH)}internal/encoding/pathname.h
+set.$(OBJEXT): {$(VPATH)}internal/encoding/re.h
+set.$(OBJEXT): {$(VPATH)}internal/encoding/sprintf.h
+set.$(OBJEXT): {$(VPATH)}internal/encoding/string.h
+set.$(OBJEXT): {$(VPATH)}internal/encoding/symbol.h
+set.$(OBJEXT): {$(VPATH)}internal/encoding/transcode.h
+set.$(OBJEXT): {$(VPATH)}internal/error.h
+set.$(OBJEXT): {$(VPATH)}internal/eval.h
+set.$(OBJEXT): {$(VPATH)}internal/event.h
+set.$(OBJEXT): {$(VPATH)}internal/fl_type.h
+set.$(OBJEXT): {$(VPATH)}internal/gc.h
+set.$(OBJEXT): {$(VPATH)}internal/glob.h
+set.$(OBJEXT): {$(VPATH)}internal/globals.h
+set.$(OBJEXT): {$(VPATH)}internal/has/attribute.h
+set.$(OBJEXT): {$(VPATH)}internal/has/builtin.h
+set.$(OBJEXT): {$(VPATH)}internal/has/c_attribute.h
+set.$(OBJEXT): {$(VPATH)}internal/has/cpp_attribute.h
+set.$(OBJEXT): {$(VPATH)}internal/has/declspec_attribute.h
+set.$(OBJEXT): {$(VPATH)}internal/has/extension.h
+set.$(OBJEXT): {$(VPATH)}internal/has/feature.h
+set.$(OBJEXT): {$(VPATH)}internal/has/warning.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/array.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/bignum.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/class.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/error.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/file.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/io.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/load.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/marshal.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/numeric.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/object.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/parse.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/proc.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/process.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/random.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/range.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/rational.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/re.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/select.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/set.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/string.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/struct.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/thread.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/time.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/variable.h
+set.$(OBJEXT): {$(VPATH)}internal/intern/vm.h
+set.$(OBJEXT): {$(VPATH)}internal/interpreter.h
+set.$(OBJEXT): {$(VPATH)}internal/iterator.h
+set.$(OBJEXT): {$(VPATH)}internal/memory.h
+set.$(OBJEXT): {$(VPATH)}internal/method.h
+set.$(OBJEXT): {$(VPATH)}internal/module.h
+set.$(OBJEXT): {$(VPATH)}internal/newobj.h
+set.$(OBJEXT): {$(VPATH)}internal/scan_args.h
+set.$(OBJEXT): {$(VPATH)}internal/set_table.h
+set.$(OBJEXT): {$(VPATH)}internal/special_consts.h
+set.$(OBJEXT): {$(VPATH)}internal/static_assert.h
+set.$(OBJEXT): {$(VPATH)}internal/stdalign.h
+set.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+set.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
+set.$(OBJEXT): {$(VPATH)}internal/symbol.h
+set.$(OBJEXT): {$(VPATH)}internal/value.h
+set.$(OBJEXT): {$(VPATH)}internal/value_type.h
+set.$(OBJEXT): {$(VPATH)}internal/variable.h
+set.$(OBJEXT): {$(VPATH)}internal/warning_push.h
+set.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+set.$(OBJEXT): {$(VPATH)}method.h
+set.$(OBJEXT): {$(VPATH)}missing.h
+set.$(OBJEXT): {$(VPATH)}node.h
+set.$(OBJEXT): {$(VPATH)}onigmo.h
+set.$(OBJEXT): {$(VPATH)}oniguruma.h
+set.$(OBJEXT): {$(VPATH)}ruby_assert.h
+set.$(OBJEXT): {$(VPATH)}ruby_atomic.h
+set.$(OBJEXT): {$(VPATH)}rubyparser.h
+set.$(OBJEXT): {$(VPATH)}set.c
+set.$(OBJEXT): {$(VPATH)}shape.h
+set.$(OBJEXT): {$(VPATH)}st.h
+set.$(OBJEXT): {$(VPATH)}subst.h
+set.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+set.$(OBJEXT): {$(VPATH)}thread_native.h
+set.$(OBJEXT): {$(VPATH)}vm_core.h
+set.$(OBJEXT): {$(VPATH)}vm_opts.h
 setproctitle.$(OBJEXT): $(hdrdir)/ruby.h
 setproctitle.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 setproctitle.$(OBJEXT): {$(VPATH)}assert.h
@@ -16330,6 +17566,7 @@ setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -16374,9 +17611,11 @@ shape.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 shape.$(OBJEXT): $(top_srcdir)/internal/error.h
 shape.$(OBJEXT): $(top_srcdir)/internal/gc.h
 shape.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+shape.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 shape.$(OBJEXT): $(top_srcdir)/internal/object.h
 shape.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 shape.$(OBJEXT): $(top_srcdir)/internal/serial.h
+shape.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 shape.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 shape.$(OBJEXT): $(top_srcdir)/internal/string.h
 shape.$(OBJEXT): $(top_srcdir)/internal/symbol.h
@@ -16526,6 +17765,7 @@ shape.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+shape.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -16585,8 +17825,10 @@ signal.$(OBJEXT): $(top_srcdir)/internal/error.h
 signal.$(OBJEXT): $(top_srcdir)/internal/eval.h
 signal.$(OBJEXT): $(top_srcdir)/internal/gc.h
 signal.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+signal.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 signal.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 signal.$(OBJEXT): $(top_srcdir)/internal/serial.h
+signal.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 signal.$(OBJEXT): $(top_srcdir)/internal/signal.h
 signal.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 signal.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -16652,6 +17894,7 @@ signal.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+signal.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
@@ -16738,6 +17981,7 @@ signal.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+signal.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -16945,6 +18189,7 @@ sprintf.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+sprintf.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -16987,6 +18232,7 @@ st.$(OBJEXT): $(top_srcdir)/internal/bits.h
 st.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 st.$(OBJEXT): $(top_srcdir)/internal/hash.h
 st.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
+st.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 st.$(OBJEXT): $(top_srcdir)/internal/st.h
 st.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 st.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -17118,6 +18364,7 @@ st.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+st.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -17295,6 +18542,7 @@ strftime.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+strftime.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -17342,18 +18590,21 @@ string.$(OBJEXT): $(top_srcdir)/internal/bits.h
 string.$(OBJEXT): $(top_srcdir)/internal/class.h
 string.$(OBJEXT): $(top_srcdir)/internal/compar.h
 string.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+string.$(OBJEXT): $(top_srcdir)/internal/concurrent_set.h
 string.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 string.$(OBJEXT): $(top_srcdir)/internal/error.h
 string.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 string.$(OBJEXT): $(top_srcdir)/internal/gc.h
 string.$(OBJEXT): $(top_srcdir)/internal/hash.h
 string.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+string.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 string.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 string.$(OBJEXT): $(top_srcdir)/internal/object.h
 string.$(OBJEXT): $(top_srcdir)/internal/proc.h
 string.$(OBJEXT): $(top_srcdir)/internal/re.h
 string.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 string.$(OBJEXT): $(top_srcdir)/internal/serial.h
+string.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 string.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 string.$(OBJEXT): $(top_srcdir)/internal/string.h
 string.$(OBJEXT): $(top_srcdir)/internal/transcode.h
@@ -17418,6 +18669,7 @@ string.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+string.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
@@ -17505,6 +18757,7 @@ string.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+string.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -17547,6 +18800,7 @@ string.$(OBJEXT): {$(VPATH)}shape.h
 string.$(OBJEXT): {$(VPATH)}st.h
 string.$(OBJEXT): {$(VPATH)}string.c
 string.$(OBJEXT): {$(VPATH)}subst.h
+string.$(OBJEXT): {$(VPATH)}thread.h
 string.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 string.$(OBJEXT): {$(VPATH)}thread_native.h
 string.$(OBJEXT): {$(VPATH)}util.h
@@ -17598,10 +18852,12 @@ struct.$(OBJEXT): $(top_srcdir)/internal/error.h
 struct.$(OBJEXT): $(top_srcdir)/internal/gc.h
 struct.$(OBJEXT): $(top_srcdir)/internal/hash.h
 struct.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+struct.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 struct.$(OBJEXT): $(top_srcdir)/internal/object.h
 struct.$(OBJEXT): $(top_srcdir)/internal/proc.h
 struct.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 struct.$(OBJEXT): $(top_srcdir)/internal/serial.h
+struct.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 struct.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 struct.$(OBJEXT): $(top_srcdir)/internal/string.h
 struct.$(OBJEXT): $(top_srcdir)/internal/struct.h
@@ -17753,6 +19009,7 @@ struct.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+struct.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -17811,9 +19068,11 @@ symbol.$(OBJEXT): $(top_srcdir)/internal/error.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/gc.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/hash.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+symbol.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/object.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/serial.h
+symbol.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/string.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/symbol.h
@@ -17880,6 +19139,7 @@ symbol.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+symbol.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
@@ -17966,6 +19226,7 @@ symbol.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+symbol.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -18033,10 +19294,12 @@ thread.$(OBJEXT): $(top_srcdir)/internal/gc.h
 thread.$(OBJEXT): $(top_srcdir)/internal/hash.h
 thread.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 thread.$(OBJEXT): $(top_srcdir)/internal/io.h
+thread.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 thread.$(OBJEXT): $(top_srcdir)/internal/object.h
 thread.$(OBJEXT): $(top_srcdir)/internal/proc.h
 thread.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 thread.$(OBJEXT): $(top_srcdir)/internal/serial.h
+thread.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 thread.$(OBJEXT): $(top_srcdir)/internal/signal.h
 thread.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 thread.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -18214,6 +19477,7 @@ thread.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+thread.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -18287,10 +19551,12 @@ time.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 time.$(OBJEXT): $(top_srcdir)/internal/gc.h
 time.$(OBJEXT): $(top_srcdir)/internal/hash.h
 time.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+time.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 time.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 time.$(OBJEXT): $(top_srcdir)/internal/rational.h
 time.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 time.$(OBJEXT): $(top_srcdir)/internal/serial.h
+time.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 time.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 time.$(OBJEXT): $(top_srcdir)/internal/string.h
 time.$(OBJEXT): $(top_srcdir)/internal/time.h
@@ -18440,6 +19706,7 @@ time.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+time.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -18510,6 +19777,7 @@ transcode.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 transcode.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 transcode.$(OBJEXT): {$(VPATH)}config.h
 transcode.$(OBJEXT): {$(VPATH)}constant.h
+transcode.$(OBJEXT): {$(VPATH)}debug_counter.h
 transcode.$(OBJEXT): {$(VPATH)}defines.h
 transcode.$(OBJEXT): {$(VPATH)}encoding.h
 transcode.$(OBJEXT): {$(VPATH)}id.h
@@ -18639,6 +19907,7 @@ transcode.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+transcode.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -18673,6 +19942,8 @@ transcode.$(OBJEXT): {$(VPATH)}st.h
 transcode.$(OBJEXT): {$(VPATH)}subst.h
 transcode.$(OBJEXT): {$(VPATH)}transcode.c
 transcode.$(OBJEXT): {$(VPATH)}transcode_data.h
+transcode.$(OBJEXT): {$(VPATH)}vm_debug.h
+transcode.$(OBJEXT): {$(VPATH)}vm_sync.h
 util.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 util.$(OBJEXT): $(top_srcdir)/internal/array.h
 util.$(OBJEXT): $(top_srcdir)/internal/compilers.h
@@ -18695,6 +19966,7 @@ util.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 util.$(OBJEXT): {$(VPATH)}config.h
 util.$(OBJEXT): {$(VPATH)}defines.h
 util.$(OBJEXT): {$(VPATH)}dtoa.c
+util.$(OBJEXT): {$(VPATH)}id_table.h
 util.$(OBJEXT): {$(VPATH)}intern.h
 util.$(OBJEXT): {$(VPATH)}internal.h
 util.$(OBJEXT): {$(VPATH)}internal/abi.h
@@ -18811,6 +20083,7 @@ util.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+util.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -18858,10 +20131,12 @@ variable.$(OBJEXT): $(top_srcdir)/internal/eval.h
 variable.$(OBJEXT): $(top_srcdir)/internal/gc.h
 variable.$(OBJEXT): $(top_srcdir)/internal/hash.h
 variable.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+variable.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 variable.$(OBJEXT): $(top_srcdir)/internal/object.h
 variable.$(OBJEXT): $(top_srcdir)/internal/re.h
 variable.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 variable.$(OBJEXT): $(top_srcdir)/internal/serial.h
+variable.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 variable.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 variable.$(OBJEXT): $(top_srcdir)/internal/string.h
 variable.$(OBJEXT): $(top_srcdir)/internal/symbol.h
@@ -19012,6 +20287,7 @@ variable.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+variable.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -19074,9 +20350,11 @@ version.$(OBJEXT): $(top_srcdir)/internal/cmdlineopt.h
 version.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 version.$(OBJEXT): $(top_srcdir)/internal/gc.h
 version.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+version.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 version.$(OBJEXT): $(top_srcdir)/internal/parse.h
 version.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 version.$(OBJEXT): $(top_srcdir)/internal/serial.h
+version.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 version.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 version.$(OBJEXT): $(top_srcdir)/internal/variable.h
 version.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -19225,6 +20503,7 @@ version.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+version.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -19295,6 +20574,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/hash.h
 vm.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 vm.$(OBJEXT): $(top_srcdir)/internal/inits.h
 vm.$(OBJEXT): $(top_srcdir)/internal/missing.h
+vm.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 vm.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 vm.$(OBJEXT): $(top_srcdir)/internal/object.h
 vm.$(OBJEXT): $(top_srcdir)/internal/parse.h
@@ -19305,6 +20585,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/re.h
 vm.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 vm.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 vm.$(OBJEXT): $(top_srcdir)/internal/serial.h
+vm.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 vm.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm.$(OBJEXT): $(top_srcdir)/internal/string.h
 vm.$(OBJEXT): $(top_srcdir)/internal/struct.h
@@ -19483,6 +20764,7 @@ vm.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+vm.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -19553,6 +20835,7 @@ vm.$(OBJEXT): {$(VPATH)}vm_sync.h
 vm.$(OBJEXT): {$(VPATH)}vmtc.inc
 vm.$(OBJEXT): {$(VPATH)}yjit.h
 vm.$(OBJEXT): {$(VPATH)}yjit_hook.rbinc
+vm.$(OBJEXT): {$(VPATH)}zjit.h
 vm_backtrace.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 vm_backtrace.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 vm_backtrace.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -19566,8 +20849,10 @@ vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/error.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/gc.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/serial.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/string.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -19738,6 +21023,7 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -19797,8 +21083,10 @@ vm_dump.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/gc.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+vm_dump.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/serial.h
+vm_dump.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/variable.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -19967,6 +21255,7 @@ vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -20028,8 +21317,10 @@ vm_sync.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 vm_sync.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 vm_sync.$(OBJEXT): $(top_srcdir)/internal/gc.h
 vm_sync.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+vm_sync.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 vm_sync.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 vm_sync.$(OBJEXT): $(top_srcdir)/internal/serial.h
+vm_sync.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 vm_sync.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm_sync.$(OBJEXT): $(top_srcdir)/internal/thread.h
 vm_sync.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -20178,6 +21469,7 @@ vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -20238,8 +21530,10 @@ vm_trace.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/gc.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/hash.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+vm_trace.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/serial.h
+vm_trace.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/thread.h
@@ -20412,6 +21706,7 @@ vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -20475,9 +21770,11 @@ weakmap.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 weakmap.$(OBJEXT): $(top_srcdir)/internal/gc.h
 weakmap.$(OBJEXT): $(top_srcdir)/internal/hash.h
 weakmap.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+weakmap.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 weakmap.$(OBJEXT): $(top_srcdir)/internal/proc.h
 weakmap.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 weakmap.$(OBJEXT): $(top_srcdir)/internal/serial.h
+weakmap.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 weakmap.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 weakmap.$(OBJEXT): $(top_srcdir)/internal/vm.h
 weakmap.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -20496,6 +21793,7 @@ weakmap.$(OBJEXT): {$(VPATH)}config.h
 weakmap.$(OBJEXT): {$(VPATH)}defines.h
 weakmap.$(OBJEXT): {$(VPATH)}encoding.h
 weakmap.$(OBJEXT): {$(VPATH)}id.h
+weakmap.$(OBJEXT): {$(VPATH)}id_table.h
 weakmap.$(OBJEXT): {$(VPATH)}intern.h
 weakmap.$(OBJEXT): {$(VPATH)}internal.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/abi.h
@@ -20621,6 +21919,7 @@ weakmap.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+weakmap.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 weakmap.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -20679,9 +21978,11 @@ yjit.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/gc.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/hash.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+yjit.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/serial.h
+yjit.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/string.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -20855,6 +22156,7 @@ yjit.$(OBJEXT): {$(VPATH)}internal/intern/re.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/select.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+yjit.$(OBJEXT): {$(VPATH)}internal/intern/set.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/string.h
@@ -20912,4 +22214,255 @@ yjit.$(OBJEXT): {$(VPATH)}vm_sync.h
 yjit.$(OBJEXT): {$(VPATH)}yjit.c
 yjit.$(OBJEXT): {$(VPATH)}yjit.h
 yjit.$(OBJEXT): {$(VPATH)}yjit.rbinc
+yjit.$(OBJEXT): {$(VPATH)}zjit.h
+zjit.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
+zjit.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
+zjit.$(OBJEXT): $(CCAN_DIR)/list/list.h
+zjit.$(OBJEXT): $(CCAN_DIR)/str/str.h
+zjit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/array.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/bignum.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/bits.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/class.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/compile.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/cont.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/gc.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/hash.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/numeric.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/serial.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/string.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/variable.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/vm.h
+zjit.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/defines.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/node.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/options.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/pack.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/parser.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/prism.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_integer.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+zjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
+zjit.$(OBJEXT): {$(VPATH)}assert.h
+zjit.$(OBJEXT): {$(VPATH)}atomic.h
+zjit.$(OBJEXT): {$(VPATH)}backward/2/assume.h
+zjit.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
+zjit.$(OBJEXT): {$(VPATH)}backward/2/bool.h
+zjit.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
+zjit.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
+zjit.$(OBJEXT): {$(VPATH)}backward/2/limits.h
+zjit.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
+zjit.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
+zjit.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+zjit.$(OBJEXT): {$(VPATH)}builtin.h
+zjit.$(OBJEXT): {$(VPATH)}config.h
+zjit.$(OBJEXT): {$(VPATH)}constant.h
+zjit.$(OBJEXT): {$(VPATH)}debug.h
+zjit.$(OBJEXT): {$(VPATH)}debug_counter.h
+zjit.$(OBJEXT): {$(VPATH)}defines.h
+zjit.$(OBJEXT): {$(VPATH)}encoding.h
+zjit.$(OBJEXT): {$(VPATH)}id.h
+zjit.$(OBJEXT): {$(VPATH)}id_table.h
+zjit.$(OBJEXT): {$(VPATH)}insns.def
+zjit.$(OBJEXT): {$(VPATH)}insns.inc
+zjit.$(OBJEXT): {$(VPATH)}insns_info.inc
+zjit.$(OBJEXT): {$(VPATH)}intern.h
+zjit.$(OBJEXT): {$(VPATH)}internal.h
+zjit.$(OBJEXT): {$(VPATH)}internal/abi.h
+zjit.$(OBJEXT): {$(VPATH)}internal/anyargs.h
+zjit.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
+zjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
+zjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/double.h
+zjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/fixnum.h
+zjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/gid_t.h
+zjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/int.h
+zjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/intptr_t.h
+zjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/long.h
+zjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/long_long.h
+zjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/mode_t.h
+zjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/off_t.h
+zjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
+zjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
+zjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
+zjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+zjit.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
+zjit.$(OBJEXT): {$(VPATH)}internal/assume.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/artificial.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/cold.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/const.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/constexpr.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/deprecated.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/diagnose_if.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/enum_extensibility.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/error.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/flag_enum.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/forceinline.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/format.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/maybe_unused.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/noalias.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/warning.h
+zjit.$(OBJEXT): {$(VPATH)}internal/attr/weakref.h
+zjit.$(OBJEXT): {$(VPATH)}internal/cast.h
+zjit.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
+zjit.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
+zjit.$(OBJEXT): {$(VPATH)}internal/compiler_is/clang.h
+zjit.$(OBJEXT): {$(VPATH)}internal/compiler_is/gcc.h
+zjit.$(OBJEXT): {$(VPATH)}internal/compiler_is/intel.h
+zjit.$(OBJEXT): {$(VPATH)}internal/compiler_is/msvc.h
+zjit.$(OBJEXT): {$(VPATH)}internal/compiler_is/sunpro.h
+zjit.$(OBJEXT): {$(VPATH)}internal/compiler_since.h
+zjit.$(OBJEXT): {$(VPATH)}internal/config.h
+zjit.$(OBJEXT): {$(VPATH)}internal/constant_p.h
+zjit.$(OBJEXT): {$(VPATH)}internal/core.h
+zjit.$(OBJEXT): {$(VPATH)}internal/core/rarray.h
+zjit.$(OBJEXT): {$(VPATH)}internal/core/rbasic.h
+zjit.$(OBJEXT): {$(VPATH)}internal/core/rbignum.h
+zjit.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
+zjit.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
+zjit.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
+zjit.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+zjit.$(OBJEXT): {$(VPATH)}internal/core/robject.h
+zjit.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
+zjit.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
+zjit.$(OBJEXT): {$(VPATH)}internal/core/rstruct.h
+zjit.$(OBJEXT): {$(VPATH)}internal/core/rtypeddata.h
+zjit.$(OBJEXT): {$(VPATH)}internal/ctype.h
+zjit.$(OBJEXT): {$(VPATH)}internal/dllexport.h
+zjit.$(OBJEXT): {$(VPATH)}internal/dosish.h
+zjit.$(OBJEXT): {$(VPATH)}internal/encoding/coderange.h
+zjit.$(OBJEXT): {$(VPATH)}internal/encoding/ctype.h
+zjit.$(OBJEXT): {$(VPATH)}internal/encoding/encoding.h
+zjit.$(OBJEXT): {$(VPATH)}internal/encoding/pathname.h
+zjit.$(OBJEXT): {$(VPATH)}internal/encoding/re.h
+zjit.$(OBJEXT): {$(VPATH)}internal/encoding/sprintf.h
+zjit.$(OBJEXT): {$(VPATH)}internal/encoding/string.h
+zjit.$(OBJEXT): {$(VPATH)}internal/encoding/symbol.h
+zjit.$(OBJEXT): {$(VPATH)}internal/encoding/transcode.h
+zjit.$(OBJEXT): {$(VPATH)}internal/error.h
+zjit.$(OBJEXT): {$(VPATH)}internal/eval.h
+zjit.$(OBJEXT): {$(VPATH)}internal/event.h
+zjit.$(OBJEXT): {$(VPATH)}internal/fl_type.h
+zjit.$(OBJEXT): {$(VPATH)}internal/gc.h
+zjit.$(OBJEXT): {$(VPATH)}internal/glob.h
+zjit.$(OBJEXT): {$(VPATH)}internal/globals.h
+zjit.$(OBJEXT): {$(VPATH)}internal/has/attribute.h
+zjit.$(OBJEXT): {$(VPATH)}internal/has/builtin.h
+zjit.$(OBJEXT): {$(VPATH)}internal/has/c_attribute.h
+zjit.$(OBJEXT): {$(VPATH)}internal/has/cpp_attribute.h
+zjit.$(OBJEXT): {$(VPATH)}internal/has/declspec_attribute.h
+zjit.$(OBJEXT): {$(VPATH)}internal/has/extension.h
+zjit.$(OBJEXT): {$(VPATH)}internal/has/feature.h
+zjit.$(OBJEXT): {$(VPATH)}internal/has/warning.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/array.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/bignum.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/class.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/error.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/file.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/io.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/load.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/marshal.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/numeric.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/object.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/parse.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/proc.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/process.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/random.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/range.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/rational.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/re.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/select.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/string.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/struct.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/thread.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/time.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/variable.h
+zjit.$(OBJEXT): {$(VPATH)}internal/intern/vm.h
+zjit.$(OBJEXT): {$(VPATH)}internal/interpreter.h
+zjit.$(OBJEXT): {$(VPATH)}internal/iterator.h
+zjit.$(OBJEXT): {$(VPATH)}internal/memory.h
+zjit.$(OBJEXT): {$(VPATH)}internal/method.h
+zjit.$(OBJEXT): {$(VPATH)}internal/module.h
+zjit.$(OBJEXT): {$(VPATH)}internal/newobj.h
+zjit.$(OBJEXT): {$(VPATH)}internal/numeric.h
+zjit.$(OBJEXT): {$(VPATH)}internal/scan_args.h
+zjit.$(OBJEXT): {$(VPATH)}internal/special_consts.h
+zjit.$(OBJEXT): {$(VPATH)}internal/static_assert.h
+zjit.$(OBJEXT): {$(VPATH)}internal/stdalign.h
+zjit.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+zjit.$(OBJEXT): {$(VPATH)}internal/stdckdint.h
+zjit.$(OBJEXT): {$(VPATH)}internal/symbol.h
+zjit.$(OBJEXT): {$(VPATH)}internal/value.h
+zjit.$(OBJEXT): {$(VPATH)}internal/value_type.h
+zjit.$(OBJEXT): {$(VPATH)}internal/variable.h
+zjit.$(OBJEXT): {$(VPATH)}internal/warning_push.h
+zjit.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+zjit.$(OBJEXT): {$(VPATH)}iseq.h
+zjit.$(OBJEXT): {$(VPATH)}method.h
+zjit.$(OBJEXT): {$(VPATH)}missing.h
+zjit.$(OBJEXT): {$(VPATH)}node.h
+zjit.$(OBJEXT): {$(VPATH)}onigmo.h
+zjit.$(OBJEXT): {$(VPATH)}oniguruma.h
+zjit.$(OBJEXT): {$(VPATH)}prism/ast.h
+zjit.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
+zjit.$(OBJEXT): {$(VPATH)}prism/version.h
+zjit.$(OBJEXT): {$(VPATH)}prism_compile.h
+zjit.$(OBJEXT): {$(VPATH)}probes.dmyh
+zjit.$(OBJEXT): {$(VPATH)}probes.h
+zjit.$(OBJEXT): {$(VPATH)}probes_helper.h
+zjit.$(OBJEXT): {$(VPATH)}ruby_assert.h
+zjit.$(OBJEXT): {$(VPATH)}ruby_atomic.h
+zjit.$(OBJEXT): {$(VPATH)}rubyparser.h
+zjit.$(OBJEXT): {$(VPATH)}shape.h
+zjit.$(OBJEXT): {$(VPATH)}st.h
+zjit.$(OBJEXT): {$(VPATH)}subst.h
+zjit.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+zjit.$(OBJEXT): {$(VPATH)}thread_native.h
+zjit.$(OBJEXT): {$(VPATH)}vm_callinfo.h
+zjit.$(OBJEXT): {$(VPATH)}vm_core.h
+zjit.$(OBJEXT): {$(VPATH)}vm_debug.h
+zjit.$(OBJEXT): {$(VPATH)}vm_insnhelper.h
+zjit.$(OBJEXT): {$(VPATH)}vm_opts.h
+zjit.$(OBJEXT): {$(VPATH)}vm_sync.h
+zjit.$(OBJEXT): {$(VPATH)}zjit.c
+zjit.$(OBJEXT): {$(VPATH)}zjit.h
+zjit.$(OBJEXT): {$(VPATH)}zjit.rbinc
 # AUTOGENERATED DEPENDENCIES END

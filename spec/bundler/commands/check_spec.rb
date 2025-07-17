@@ -57,7 +57,7 @@ RSpec.describe "bundle check" do
 
     bundle :check, raise_on_error: false
     expect(err).to include("The following gems are missing")
-    expect(err).to include(" * rake (13.2.1)")
+    expect(err).to include(" * rake (#{rake_version})")
     expect(err).to include(" * actionpack (2.3.2)")
     expect(err).to include(" * activerecord (2.3.2)")
     expect(err).to include(" * actionmailer (2.3.2)")
@@ -76,7 +76,7 @@ RSpec.describe "bundle check" do
     expect(exitstatus).to be > 0
     expect(err).to include("The following gems are missing")
     expect(err).to include(" * rails (2.3.2)")
-    expect(err).to include(" * rake (13.2.1)")
+    expect(err).to include(" * rake (#{rake_version})")
     expect(err).to include(" * actionpack (2.3.2)")
     expect(err).to include(" * activerecord (2.3.2)")
     expect(err).to include(" * actionmailer (2.3.2)")
@@ -123,7 +123,7 @@ RSpec.describe "bundle check" do
     expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
   end
 
-  it "remembers --without option from install", bundler: "< 3" do
+  it "remembers --without option from install" do
     gemfile <<-G
       source "https://gem.repo1"
       group :foo do
@@ -272,7 +272,7 @@ RSpec.describe "bundle check" do
     expect(last_command).to be_failure
   end
 
-  context "--path", bundler: "< 3" do
+  context "--path" do
     context "after installing gems in the proper directory" do
       before do
         gemfile <<-G

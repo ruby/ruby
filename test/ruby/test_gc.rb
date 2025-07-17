@@ -393,12 +393,10 @@ class TestGc < Test::Unit::TestCase
 
       # Create some objects and place it in a WeakMap
       wmap = ObjectSpace::WeakMap.new
-      ary = Array.new(count)
-      enum = count.times
-      enum.each.with_index do |i|
+      ary = Array.new(count) do |i|
         obj = Object.new
-        ary[i] = obj
         wmap[obj] = nil
+        obj
       end
 
       # Run full GC to collect stats about weak references
@@ -411,6 +409,8 @@ class TestGc < Test::Unit::TestCase
       before_weak_references_count = GC.latest_gc_info(:weak_references_count)
       before_retained_weak_references_count = GC.latest_gc_info(:retained_weak_references_count)
 
+      # Clear ary, so if ary itself is somewhere on the stack, it won't hold all references
+      ary.clear
       ary = nil
 
       # Free ary, which should empty out the wmap
@@ -419,7 +419,7 @@ class TestGc < Test::Unit::TestCase
       GC.start
 
       # Sometimes the WeakMap has a few elements, which might be held on by registers.
-      assert_operator(wmap.size, :<=, 2)
+      assert_operator(wmap.size, :<=, count / 1000)
 
       assert_operator(GC.latest_gc_info(:weak_references_count), :<=, before_weak_references_count - count + error_tolerance)
       assert_operator(GC.latest_gc_info(:retained_weak_references_count), :<=, before_retained_weak_references_count - count + error_tolerance)
@@ -701,7 +701,14 @@ class TestGc < Test::Unit::TestCase
         allocate_large_object
       end
 
-      assert_operator(GC.stat(:heap_available_slots), :<, COUNT * 2)
+      # Running GC here is required to prevent this test from being flaky because
+      # the heap for the small transient objects may not have been cleared by the
+      # GC causing heap_available_slots to be slightly over 2 * COUNT.
+      GC.start
+
+      heap_available_slots = GC.stat(:heap_available_slots)
+
+      assert_operator(heap_available_slots, :<, COUNT * 2, "GC.stat: #{GC.stat}\nGC.stat_heap: #{GC.stat_heap}")
     RUBY
   end
 
@@ -753,7 +760,7 @@ class TestGc < Test::Unit::TestCase
         ObjectSpace.define_finalizer(Object.new, f)
       end
     end;
-    out, err, status = assert_in_out_err(["-e", src], "", [], [], bug10595, signal: :SEGV) do |*result|
+    out, err, status = assert_in_out_err(["-e", src], "", [], [], bug10595, signal: :SEGV, timeout: 100) do |*result|
       break result
     end
     unless /mswin|mingw/ =~ RUBY_PLATFORM

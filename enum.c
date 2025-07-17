@@ -324,7 +324,8 @@ enum_count(int argc, VALUE *argv, VALUE obj)
 
 NORETURN(static void found(VALUE i, VALUE memop));
 static void
-found(VALUE i, VALUE memop) {
+found(VALUE i, VALUE memop)
+{
     struct MEMO *memo = MEMO_CAST(memop);
     MEMO_V1_SET(memo, i);
     memo->u3.cnt = 1;
@@ -1214,14 +1215,15 @@ tally_up(st_data_t *group, st_data_t *value, st_data_t arg, int existing)
         RB_OBJ_WRITTEN(hash, Qundef, tally);
     }
     *value = (st_data_t)tally;
-    if (!SPECIAL_CONST_P(*group)) RB_OBJ_WRITTEN(hash, Qundef, *group);
     return ST_CONTINUE;
 }
 
 static VALUE
 rb_enum_tally_up(VALUE hash, VALUE group)
 {
-    rb_hash_stlike_update(hash, group, tally_up, (st_data_t)hash);
+    if (!rb_hash_stlike_update(hash, group, tally_up, (st_data_t)hash)) {
+        RB_OBJ_WRITTEN(hash, Qundef, group);
+    }
     return hash;
 }
 
@@ -3703,6 +3705,17 @@ drop_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *
  *  With no block given, returns an Enumerator.
  *
+ *    e = (1..4).drop_while
+ *    p e #=> #<Enumerator: 1..4:drop_while>
+ *    i = e.next; p i; e.feed(i < 3) #=> 1
+ *    i = e.next; p i; e.feed(i < 3) #=> 2
+ *    i = e.next; p i; e.feed(i < 3) #=> 3
+ *    begin
+ *      e.next
+ *    rescue StopIteration
+ *      p $!.result #=> [3, 4]
+ *    end
+ *
  */
 
 static VALUE
@@ -5106,6 +5119,82 @@ enum_compact(VALUE obj)
  * - Sometimes show the use of a Hash-like class.
  *   For some methods, though, the usage would not make sense,
  *   and so it is not shown.  Example: #tally would find exactly one of each Hash entry.
+ *
+ * == Extended Methods
+ *
+ * A Enumerable class may define extended methods. This section describes the standard
+ * behavior of extension methods for reference purposes.
+ *
+ * === #size
+ *
+ * \Enumerator has a #size method.
+ * It uses the size function argument passed to +Enumerator.new+.
+ *
+ *   e = Enumerator.new(-> { 3 }) {|y| p y; y.yield :a; y.yield :b; y.yield :c; :z }
+ *   p e.size #=> 3
+ *   p e.next #=> :a
+ *   p e.next #=> :b
+ *   p e.next #=> :c
+ *   begin
+ *     e.next
+ *   rescue StopIteration
+ *     p $!.result #=> :z
+ *   end
+ *
+ * The result of the size function should represent the number of iterations
+ * (i.e., the number of times Enumerator::Yielder#yield is called).
+ * In the above example, the block calls #yield three times, and
+ * the size function, +-> { 3 }+, returns 3 accordingly.
+ * The result of the size function can be an integer, +Float::INFINITY+,
+ * or +nil+.
+ * An integer means the exact number of times #yield will be called,
+ * as shown above.
+ * +Float::INFINITY+ indicates an infinite number of #yield calls.
+ * +nil+ means the number of #yield calls is difficult or impossible to
+ * determine.
+ *
+ * Many iteration methods return an \Enumerator object with an
+ * appropriate size function if no block is given.
+ *
+ * Examples:
+ *
+ *   ["a", "b", "c"].each.size #=> 3
+ *   {a: "x", b: "y", c: "z"}.each.size #=> 3
+ *   (0..20).to_a.permutation.size #=> 51090942171709440000
+ *   loop.size #=> Float::INFINITY
+ *   (1..100).drop_while.size #=> nil  # size depends on the block's behavior
+ *   STDIN.each.size #=> nil # cannot be computed without consuming input
+ *   File.open("/etc/resolv.conf").each.size #=> nil # cannot be computed without reading the file
+ *
+ * The behavior of #size for Range-based enumerators depends on the #begin element:
+ *
+ * - If the #begin element is an Integer, the #size method returns an Integer or +Float::INFINITY+.
+ * - If the #begin element is an object with a #succ method (other than Integer), #size returns +nil+.
+ *   (Computing the size would require repeatedly calling #succ, which may be too slow.)
+ * - If the #begin element does not have a #succ method, #size raises a TypeError.
+ *
+ * Examples:
+ *
+ *   (10..42).each.size #=> 33
+ *   (10..42.9).each.size #=> 33 (the #end element may be a non-integer numeric)
+ *   (10..).each.size #=> Float::INFINITY
+ *   ("a".."z").each.size #=> nil
+ *   ("a"..).each.size #=> nil
+ *   (1.0..9.0).each.size # raises TypeError (Float does not have #succ)
+ *   (..10).each.size # raises TypeError (beginless range has nil as its #begin)
+ *
+ * The \Enumerable module itself does not define a #size method.
+ * A class that includes \Enumerable may define its own #size method.
+ * It is recommended that such a #size method be consistent with
+ * Enumerator#size.
+ *
+ * Array and Hash implement #size and return values consistent with
+ * Enumerator#size.
+ * IO and Dir do not define #size, which is also consistent because the
+ * corresponding enumerator's size function returns +nil+.
+ *
+ * However, it is not strictly required for a class's #size method to match Enumerator#size.
+ * For example, File#size returns the number of bytes in the file, not the number of lines.
  *
  */
 

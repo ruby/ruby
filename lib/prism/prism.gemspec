@@ -88,6 +88,7 @@ Gem::Specification.new do |spec|
     "lib/prism/pattern.rb",
     "lib/prism/polyfill/append_as_bytes.rb",
     "lib/prism/polyfill/byteindex.rb",
+    "lib/prism/polyfill/scan_byte.rb",
     "lib/prism/polyfill/unpack1.rb",
     "lib/prism/polyfill/warn.rb",
     "lib/prism/reflection.rb",

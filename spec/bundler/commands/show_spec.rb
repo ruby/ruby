@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle show", bundler: "< 3" do
+RSpec.describe "bundle show" do
   context "with a standard Gemfile" do
     before :each do
       install_gemfile <<-G
@@ -219,6 +219,6 @@ RSpec.describe "bundle show", bundler: "< 3" do
   end
 end
 
-RSpec.describe "bundle show", bundler: "3" do
+RSpec.describe "bundle show", bundler: "4" do
   pending "shows a friendly error about the command removal"
 end

@@ -1104,7 +1104,7 @@ class Net::HTTPResponse
     '3' => Net::HTTPRedirection,
     '4' => Net::HTTPClientError,
     '5' => Net::HTTPServerError
-  }
+  }.freeze
   CODE_TO_OBJ = {
     '100' => Net::HTTPContinue,
     '101' => Net::HTTPSwitchProtocol,
@@ -1170,5 +1170,5 @@ class Net::HTTPResponse
     '508' => Net::HTTPLoopDetected,
     '510' => Net::HTTPNotExtended,
     '511' => Net::HTTPNetworkAuthenticationRequired,
-  }
+  }.freeze
 end

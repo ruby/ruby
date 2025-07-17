@@ -55,7 +55,7 @@ jobs:
           echo $PREVIOUS_RELEASE_TAG
           tool/gen-github-release.rb $PREVIOUS_RELEASE_TAG $RELEASE_TAG --no-dry-run
         env:
-          GITHUB_TOKEN: ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.MATZBOT_AUTO_UPDATE_TOKEN }}
 
       - name: Update versions index
         run: |

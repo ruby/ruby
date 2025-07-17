@@ -2,7 +2,7 @@
 
 module Psych
   # The version of Psych you are using
-  VERSION = '5.2.3'
+  VERSION = '5.2.6'
 
   if RUBY_ENGINE == 'jruby'
     DEFAULT_SNAKEYAML_VERSION = '2.9'.freeze

@@ -36,22 +36,11 @@ describe :stringio_each_separator, shared: true do
     seen.should == ["2 1 2 1 2"]
   end
 
-  version_is StringIO::VERSION, ""..."3.0.4" do #ruby_version_is ""..."3.2" do
-    it "yields each paragraph with two separation characters when passed an empty String as separator" do
-      seen = []
-      io = StringIO.new("para1\n\npara2\n\n\npara3")
-      io.send(@method, "") {|s| seen << s}
-      seen.should == ["para1\n\n", "para2\n\n", "para3"]
-    end
-  end
-
-  version_is StringIO::VERSION, "3.0.4" do #ruby_version_is "3.2" do
-    it "yields each paragraph with all separation characters when passed an empty String as separator" do
-      seen = []
-      io = StringIO.new("para1\n\npara2\n\n\npara3")
-      io.send(@method, "") {|s| seen << s}
-      seen.should == ["para1\n\n", "para2\n\n\n", "para3"]
-    end
+  it "yields each paragraph with all separation characters when passed an empty String as separator" do
+    seen = []
+    io = StringIO.new("para1\n\npara2\n\n\npara3")
+    io.send(@method, "") {|s| seen << s}
+    seen.should == ["para1\n\n", "para2\n\n\n", "para3"]
   end
 end
 
@@ -159,5 +148,62 @@ describe :stringio_each_limit, shared: true do
     seen = []
     @io.send(@method, 4) { |s| seen << s }
     seen.should == ["a b ", "c d ", "e\n", "1 2 ", "3 4 ", "5"]
+  end
+end
+
+describe :stringio_each_separator_and_limit, shared: true do
+  before :each do
+    @io = StringIO.new("this>is>an>example")
+  end
+
+  it "returns the data read until the limit is consumed or the separator is met" do
+    @io.send(@method, '>', 8) { |s| break s }.should == "this>"
+    @io.send(@method, '>', 2) { |s| break s }.should == "is"
+    @io.send(@method, '>', 10) { |s| break s }.should == ">"
+    @io.send(@method, '>', 6) { |s| break s }.should == "an>"
+    @io.send(@method, '>', 5) { |s| break s }.should == "examp"
+  end
+
+  it "truncates the multi-character separator at the end to meet the limit" do
+    @io.send(@method, "is>an", 7) { |s| break s }.should == "this>is"
+  end
+
+  it "does not change $_" do
+    $_ = "test"
+    @io.send(@method, '>', 8) { |s| s }
+    $_.should == "test"
+  end
+
+  it "updates self's lineno by one" do
+    @io.send(@method, '>', 3) { |s| break s }
+    @io.lineno.should eql(1)
+
+    @io.send(@method, '>', 3) { |s| break s }
+    @io.lineno.should eql(2)
+
+    @io.send(@method, '>', 3) { |s| break s }
+    @io.lineno.should eql(3)
+  end
+
+  it "tries to convert the passed separator to a String using #to_str" do # TODO
+    obj = mock('to_str')
+    obj.should_receive(:to_str).and_return('>')
+
+    seen = []
+    @io.send(@method, obj, 5) { |s| seen << s }
+    seen.should == ["this>", "is>", "an>", "examp", "le"]
+  end
+
+  it "does not raise TypeError if passed separator is nil" do
+    @io.send(@method, nil, 5) { |s| break s }.should == "this>"
+  end
+
+  it "tries to convert the passed limit to an Integer using #to_int" do # TODO
+    obj = mock('to_int')
+    obj.should_receive(:to_int).and_return(5)
+
+    seen = []
+    @io.send(@method, '>', obj) { |s| seen << s }
+    seen.should == ["this>", "is>", "an>", "examp", "le"]
   end
 end

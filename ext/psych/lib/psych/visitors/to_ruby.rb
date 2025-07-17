@@ -96,11 +96,11 @@ module Psych
           Float(@ss.tokenize(o.value))
         when "!ruby/regexp"
           klass = class_loader.regexp
-          o.value =~ /^\/(.*)\/([mixn]*)$/m
-          source  = $1
+          matches = /^\/(?<string>.*)\/(?<options>[mixn]*)$/m.match(o.value)
+          source  = matches[:string].gsub('\/', '/')
           options = 0
           lang    = nil
-          $2&.each_char do |option|
+          matches[:options].each_char do |option|
             case option
             when 'x' then options |= Regexp::EXTENDED
             when 'i' then options |= Regexp::IGNORECASE
@@ -196,6 +196,32 @@ module Psych
             register(o, s)
             s
           end
+
+        when /^!ruby\/data(-with-ivars)?(?::(.*))?$/
+          data = register(o, resolve_class($2).allocate) if $2
+          members = {}
+
+          if $1 # data-with-ivars
+            ivars   = {}
+            o.children.each_slice(2) do |type, vars|
+              case accept(type)
+              when 'members'
+                revive_data_members(members, vars)
+                data ||= allocate_anon_data(o, members)
+              when 'ivars'
+                revive_hash(ivars, vars)
+              end
+            end
+            ivars.each do |ivar, v|
+              data.instance_variable_set ivar, v
+            end
+          else
+            revive_data_members(members, o)
+          end
+          data ||= allocate_anon_data(o, members)
+          init_struct(data, **members)
+          data.freeze
+          data
 
         when /^!ruby\/object:?(.*)?$/
           name = $1 || 'Object'
@@ -338,6 +364,20 @@ module Psych
         list = register(object, [])
         object.children.each { |c| list.push accept c }
         list
+      end
+
+      def allocate_anon_data node, members
+        klass = class_loader.data.define(*members.keys)
+        register(node, klass.allocate)
+      end
+
+      def revive_data_members hash, o
+        o.children.each_slice(2) do |k,v|
+          name  = accept(k)
+          value = accept(v)
+          hash[class_loader.symbolize(name)] = value
+        end
+        hash
       end
 
       def revive_hash hash, o, tagged= false

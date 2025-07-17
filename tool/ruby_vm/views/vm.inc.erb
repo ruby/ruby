@@ -25,6 +25,10 @@
 <%= render 'insn_entry', locals: { insn: insn } -%>
 % end
 %
+% RubyVM::ZJITInstructions.to_a.each do |insn|
+<%= render 'zjit_instruction', locals: { insn: insn } -%>
+% end
+%
 % RubyVM::TraceInstructions.to_a.each do |insn|
 <%= render 'trace_instruction', locals: { insn: insn } -%>
 % end

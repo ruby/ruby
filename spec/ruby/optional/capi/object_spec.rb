@@ -691,6 +691,16 @@ describe "CApiObject" do
     end
   end
 
+  describe "redefining frozen? works" do
+    it "allows an object to override frozen?" do
+      obj = CApiObjectRedefinitionSpecs.new
+
+      obj.frozen?.should == false
+      obj.freeze
+      obj.frozen?.should == true
+    end
+  end
+
   describe "rb_obj_taint" do
   end
 
@@ -888,7 +898,7 @@ describe "CApiObject" do
       end
     end
 
-    # The `generic_iv_tbl` table and `*_generic_ivar` functions are for mutable
+    # The `generic_fields_tbl` table and `*_generic_ivar` functions are for mutable
     # objects which do not store ivars directly in MRI such as RString, because
     # there is no member iv_index_tbl (ivar table) such as in RObject and RClass.
 

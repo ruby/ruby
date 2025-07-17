@@ -2109,39 +2109,6 @@ rb_float_denominator(VALUE self)
 
 /*
  * call-seq:
- *   to_r  ->  (0/1)
- *
- * Returns zero as a Rational:
- *
- *   nil.to_r # => (0/1)
- *
- */
-static VALUE
-nilclass_to_r(VALUE self)
-{
-    return rb_rational_new1(INT2FIX(0));
-}
-
-/*
- * call-seq:
- *   rationalize(eps = nil)  ->  (0/1)
- *
- * Returns zero as a Rational:
- *
- *   nil.rationalize # => (0/1)
- *
- * Argument +eps+ is ignored.
- *
- */
-static VALUE
-nilclass_rationalize(int argc, VALUE *argv, VALUE self)
-{
-    rb_check_arity(argc, 0, 1);
-    return nilclass_to_r(self);
-}
-
-/*
- * call-seq:
  *    int.to_r  ->  rational
  *
  * Returns the value as a rational.
@@ -2823,8 +2790,6 @@ Init_Rational(void)
     rb_define_method(rb_cFloat, "numerator", rb_float_numerator, 0);
     rb_define_method(rb_cFloat, "denominator", rb_float_denominator, 0);
 
-    rb_define_method(rb_cNilClass, "to_r", nilclass_to_r, 0);
-    rb_define_method(rb_cNilClass, "rationalize", nilclass_rationalize, -1);
     rb_define_method(rb_cInteger, "to_r", integer_to_r, 0);
     rb_define_method(rb_cInteger, "rationalize", integer_rationalize, -1);
     rb_define_method(rb_cFloat, "to_r", float_to_r, 0);

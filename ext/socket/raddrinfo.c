@@ -293,10 +293,22 @@ rb_freeaddrinfo(struct rb_addrinfo *ai)
     xfree(ai);
 }
 
+unsigned int
+rsock_value_timeout_to_msec(VALUE timeout)
+{
+    double seconds = NUM2DBL(timeout);
+    if (seconds < 0) rb_raise(rb_eArgError, "timeout must not be negative");
+
+    double msec = seconds * 1000.0;
+    if (msec > UINT_MAX) rb_raise(rb_eArgError, "timeout too large");
+
+    return (unsigned int)(msec + 0.5);
+}
+
 #if GETADDRINFO_IMPL == 0
 
 static int
-rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai)
+rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai, unsigned int _timeout)
 {
     return getaddrinfo(hostp, portp, hints, ai);
 }
@@ -334,7 +346,7 @@ fork_safe_getaddrinfo(void *arg)
 }
 
 static int
-rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai)
+rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai, unsigned int _timeout)
 {
     struct getaddrinfo_arg arg;
     MEMZERO(&arg, struct getaddrinfo_arg, 1);
@@ -352,13 +364,14 @@ struct getaddrinfo_arg
     char *node, *service;
     struct addrinfo hints;
     struct addrinfo *ai;
-    int err, gai_errno, refcount, done, cancelled;
+    int err, gai_errno, refcount, done, cancelled, timedout;
     rb_nativethread_lock_t lock;
     rb_nativethread_cond_t cond;
+    unsigned int timeout;
 };
 
 static struct getaddrinfo_arg *
-allocate_getaddrinfo_arg(const char *hostp, const char *portp, const struct addrinfo *hints)
+allocate_getaddrinfo_arg(const char *hostp, const char *portp, const struct addrinfo *hints, unsigned int timeout)
 {
     size_t hostp_offset = sizeof(struct getaddrinfo_arg);
     size_t portp_offset = hostp_offset + (hostp ? strlen(hostp) + 1 : 0);
@@ -392,7 +405,8 @@ allocate_getaddrinfo_arg(const char *hostp, const char *portp, const struct addr
     arg->ai = NULL;
 
     arg->refcount = 2;
-    arg->done = arg->cancelled = 0;
+    arg->done = arg->cancelled = arg->timedout = 0;
+    arg->timeout = timeout;
 
     rb_nativethread_lock_initialize(&arg->lock);
     rb_native_cond_initialize(&arg->cond);
@@ -451,7 +465,16 @@ wait_getaddrinfo(void *ptr)
     struct getaddrinfo_arg *arg = (struct getaddrinfo_arg *)ptr;
     rb_nativethread_lock_lock(&arg->lock);
     while (!arg->done && !arg->cancelled) {
-        rb_native_cond_wait(&arg->cond, &arg->lock);
+        unsigned long msec = arg->timeout;
+        if (msec > 0) {
+            rb_native_cond_timedwait(&arg->cond, &arg->lock, msec);
+            if (!arg->done) {
+                arg->cancelled = 1;
+                arg->timedout = 1;
+            }
+        } else {
+            rb_native_cond_wait(&arg->cond, &arg->lock);
+        }
     }
     rb_nativethread_lock_unlock(&arg->lock);
     return 0;
@@ -490,16 +513,16 @@ fork_safe_do_getaddrinfo(void *ptr)
 }
 
 static int
-rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai)
+rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai, unsigned int timeout)
 {
     int retry;
     struct getaddrinfo_arg *arg;
-    int err = 0, gai_errno = 0;
+    int err = 0, gai_errno = 0, timedout = 0;
 
 start:
     retry = 0;
 
-    arg = allocate_getaddrinfo_arg(hostp, portp, hints);
+    arg = allocate_getaddrinfo_arg(hostp, portp, hints, timeout);
     if (!arg) {
         return EAI_MEMORY;
     }
@@ -525,6 +548,7 @@ start:
         }
         else if (arg->cancelled) {
             retry = 1;
+            timedout = arg->timedout;
         }
         else {
             // If already interrupted, rb_thread_call_without_gvl2 may return without calling wait_getaddrinfo.
@@ -537,6 +561,8 @@ start:
     rb_nativethread_lock_unlock(&arg->lock);
 
     if (need_free) free_getaddrinfo_arg(arg);
+
+    if (timedout) rsock_raise_user_specified_timeout();
 
     // If the current thread is interrupted by asynchronous exception, the following raises the exception.
     // But if the current thread is interrupted by timer thread, the following returns; we need to manually retry.
@@ -715,7 +741,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
 {
     int retry;
     struct getnameinfo_arg *arg;
-    int err, gni_errno = 0;
+    int err = 0, gni_errno = 0;
 
 start:
     retry = 0;
@@ -941,7 +967,7 @@ rb_scheduler_getaddrinfo(VALUE scheduler, VALUE host, const char *service,
 }
 
 struct rb_addrinfo*
-rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack)
+rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, unsigned int timeout)
 {
     struct rb_addrinfo* res = NULL;
     struct addrinfo *ai;
@@ -976,7 +1002,7 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
         }
 
         if (!resolved) {
-            error = rb_getaddrinfo(hostp, portp, hints, &ai);
+            error = rb_getaddrinfo(hostp, portp, hints, &ai, timeout);
             if (error == 0) {
                 res = (struct rb_addrinfo *)xmalloc(sizeof(struct rb_addrinfo));
                 res->allocated_by_malloc = 0;
@@ -1009,7 +1035,7 @@ rsock_fd_family(int fd)
 }
 
 struct rb_addrinfo*
-rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags)
+rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags, unsigned int timeout)
 {
     struct addrinfo hints;
 
@@ -1017,7 +1043,7 @@ rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags)
     hints.ai_family = family;
     hints.ai_socktype = socktype;
     hints.ai_flags = flags;
-    return rsock_getaddrinfo(host, port, &hints, 1);
+    return rsock_getaddrinfo(host, port, &hints, 1, timeout);
 }
 
 VALUE
@@ -1211,6 +1237,7 @@ addrinfo_memsize(const void *ptr)
 static const rb_data_type_t addrinfo_type = {
     "socket/addrinfo",
     {addrinfo_mark, addrinfo_free, addrinfo_memsize,},
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1248,7 +1275,7 @@ alloc_addrinfo(void)
 }
 
 static void
-init_addrinfo(rb_addrinfo_t *rai, struct sockaddr *sa, socklen_t len,
+init_addrinfo(VALUE self, rb_addrinfo_t *rai, struct sockaddr *sa, socklen_t len,
               int pfamily, int socktype, int protocol,
               VALUE canonname, VALUE inspectname)
 {
@@ -1260,8 +1287,8 @@ init_addrinfo(rb_addrinfo_t *rai, struct sockaddr *sa, socklen_t len,
     rai->pfamily = pfamily;
     rai->socktype = socktype;
     rai->protocol = protocol;
-    rai->canonname = canonname;
-    rai->inspectname = inspectname;
+    RB_OBJ_WRITE(self, &rai->canonname, canonname);
+    RB_OBJ_WRITE(self, &rai->inspectname, inspectname);
 }
 
 VALUE
@@ -1274,7 +1301,7 @@ rsock_addrinfo_new(struct sockaddr *addr, socklen_t len,
 
     a = addrinfo_s_allocate(rb_cAddrinfo);
     DATA_PTR(a) = rai = alloc_addrinfo();
-    init_addrinfo(rai, addr, len, family, socktype, protocol, canonname, inspectname);
+    init_addrinfo(a, rai, addr, len, family, socktype, protocol, canonname, inspectname);
     return a;
 }
 
@@ -1299,7 +1326,8 @@ call_getaddrinfo(VALUE node, VALUE service,
         hints.ai_flags = NUM2INT(flags);
     }
 
-    res = rsock_getaddrinfo(node, service, &hints, socktype_hack);
+    unsigned int t = NIL_P(timeout) ? 0 : rsock_value_timeout_to_msec(timeout);
+    res = rsock_getaddrinfo(node, service, &hints, socktype_hack, t);
 
     if (res == NULL)
         rb_raise(rb_eSocket, "host not found");
@@ -1309,7 +1337,7 @@ call_getaddrinfo(VALUE node, VALUE service,
 static VALUE make_inspectname(VALUE node, VALUE service, struct addrinfo *res);
 
 static void
-init_addrinfo_getaddrinfo(rb_addrinfo_t *rai, VALUE node, VALUE service,
+init_addrinfo_getaddrinfo(VALUE self, rb_addrinfo_t *rai, VALUE node, VALUE service,
                           VALUE family, VALUE socktype, VALUE protocol, VALUE flags,
                           VALUE inspectnode, VALUE inspectservice)
 {
@@ -1323,7 +1351,7 @@ init_addrinfo_getaddrinfo(rb_addrinfo_t *rai, VALUE node, VALUE service,
         OBJ_FREEZE(canonname);
     }
 
-    init_addrinfo(rai, res->ai->ai_addr, res->ai->ai_addrlen,
+    init_addrinfo(self, rai, res->ai->ai_addr, res->ai->ai_addrlen,
                   NUM2INT(family), NUM2INT(socktype), NUM2INT(protocol),
                   canonname, inspectname);
 
@@ -1435,7 +1463,7 @@ addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE
 
 #ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 static void
-init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
+init_unix_addrinfo(VALUE self, rb_addrinfo_t *rai, VALUE path, int socktype)
 {
     struct sockaddr_un un;
     socklen_t len;
@@ -1451,7 +1479,7 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
     memcpy((void*)&un.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
 
     len = rsock_unix_sockaddr_len(path);
-    init_addrinfo(rai, (struct sockaddr *)&un, len,
+    init_addrinfo(self, rai, (struct sockaddr *)&un, len,
                   PF_UNIX, socktype, 0, Qnil, Qnil);
 }
 
@@ -1555,7 +1583,7 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
             flags |= AI_NUMERICSERV;
 #endif
 
-            init_addrinfo_getaddrinfo(rai, numericnode, service,
+            init_addrinfo_getaddrinfo(self, rai, numericnode, service,
                     INT2NUM(i_pfamily ? i_pfamily : af), INT2NUM(i_socktype), INT2NUM(i_protocol),
                     INT2NUM(flags),
                     nodename, service);
@@ -1567,7 +1595,7 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
           {
             VALUE path = rb_ary_entry(sockaddr_ary, 1);
             StringValue(path);
-            init_unix_addrinfo(rai, path, SOCK_STREAM);
+            init_unix_addrinfo(self, rai, path, SOCK_STREAM);
             break;
           }
 #endif
@@ -1580,7 +1608,7 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
         StringValue(sockaddr_arg);
         sockaddr_ptr = (struct sockaddr *)RSTRING_PTR(sockaddr_arg);
         sockaddr_len = RSTRING_SOCKLEN(sockaddr_arg);
-        init_addrinfo(rai, sockaddr_ptr, sockaddr_len,
+        init_addrinfo(self, rai, sockaddr_ptr, sockaddr_len,
                       i_pfamily, i_socktype, i_protocol,
                       canonname, inspectname);
     }
@@ -2169,7 +2197,7 @@ addrinfo_mload(VALUE self, VALUE ary)
     }
 
     DATA_PTR(self) = rai = alloc_addrinfo();
-    init_addrinfo(rai, &ss.addr, len,
+    init_addrinfo(self, rai, &ss.addr, len,
                   pfamily, socktype, protocol,
                   canonname, inspectname);
     return self;
@@ -2937,7 +2965,7 @@ addrinfo_s_unix(int argc, VALUE *argv, VALUE self)
 
     addr = addrinfo_s_allocate(rb_cAddrinfo);
     DATA_PTR(addr) = rai = alloc_addrinfo();
-    init_unix_addrinfo(rai, path, socktype);
+    init_unix_addrinfo(self, rai, path, socktype);
     return addr;
 }
 
@@ -3038,22 +3066,13 @@ free_fast_fallback_getaddrinfo_shared(struct fast_fallback_getaddrinfo_shared **
     *shared = NULL;
 }
 
-void
-free_fast_fallback_getaddrinfo_entry(struct fast_fallback_getaddrinfo_entry **entry)
-{
-    if ((*entry)->ai) {
-        freeaddrinfo((*entry)->ai);
-        (*entry)->ai = NULL;
-    }
-    *entry = NULL;
-}
-
 static void *
 do_fast_fallback_getaddrinfo(void *ptr)
 {
     struct fast_fallback_getaddrinfo_entry *entry = (struct fast_fallback_getaddrinfo_entry *)ptr;
     struct fast_fallback_getaddrinfo_shared *shared = entry->shared;
-    int err = 0, need_free = 0, shared_need_free = 0;
+    int err = 0, shared_need_free = 0;
+    struct addrinfo *ai = NULL;
 
     sigset_t set;
     sigemptyset(&set);
@@ -3102,14 +3121,15 @@ do_fast_fallback_getaddrinfo(void *ptr)
             entry->err = errno;
             entry->has_syserr = true;
         }
-        if (--(entry->refcount) == 0) need_free = 1;
+        if (--(entry->refcount) == 0) {
+            ai = entry->ai;
+            entry->ai = NULL;
+        }
         if (--(shared->refcount) == 0) shared_need_free = 1;
     }
     rb_nativethread_lock_unlock(&shared->lock);
 
-    if (need_free && entry) {
-        free_fast_fallback_getaddrinfo_entry(&entry);
-    }
+    if (ai) freeaddrinfo(ai);
     if (shared_need_free && shared) {
         free_fast_fallback_getaddrinfo_shared(&shared);
     }

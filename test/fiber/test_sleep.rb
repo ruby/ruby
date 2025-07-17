@@ -35,13 +35,13 @@ class TestFiberSleep < Test::Unit::TestCase
       scheduler = Scheduler.new
       Fiber.set_scheduler scheduler
       Fiber.schedule do
-        seconds = sleep(2)
+        seconds = sleep(1.1)
       end
     end
 
     thread.join
 
-    assert_operator seconds, :>=, 2, "actual: %p" % seconds
+    assert_operator seconds, :>=, 1, "actual: %p" % seconds
   end
 
   def test_broken_sleep

@@ -21,7 +21,7 @@ describe "Array#fetch_values" do
 
     describe "with unmatched indexes" do
       it "raises a index error if no block is provided" do
-        -> { @array.fetch_values(0, 1, 44) }.should raise_error(IndexError)
+        -> { @array.fetch_values(0, 1, 44) }.should raise_error(IndexError, "index 44 outside of array bounds: -3...3")
       end
 
       it "returns the default value from block" do
@@ -42,8 +42,14 @@ describe "Array#fetch_values" do
       @array.fetch_values(obj).should == [:c]
     end
 
+    it "does not support a Range object as argument" do
+      -> {
+        @array.fetch_values(1..2)
+      }.should raise_error(TypeError, "no implicit conversion of Range into Integer")
+    end
+
     it "raises a TypeError when the passed argument can't be coerced to Integer" do
-      -> { [].fetch_values("cat") }.should raise_error(TypeError)
+      -> { [].fetch_values("cat") }.should raise_error(TypeError, "no implicit conversion of String into Integer")
     end
   end
 end

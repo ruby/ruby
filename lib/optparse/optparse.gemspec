@@ -25,8 +25,9 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
 
-  spec.files         = Dir["{doc,lib,misc}/**/{*,.document}"] +
-                       %w[README.md ChangeLog COPYING .document .rdoc_options]
+  dir, gemspec = File.split(__FILE__)
+  excludes = %W[#{gemspec} rakelib test/ Gemfile Rakefile .git* .editor*].map {|n| ":^"+n}
+  spec.files = IO.popen(%w[git ls-files -z --] + excludes, chdir: dir, &:read).split("\x0")
   spec.bindir        = "exe"
   spec.executables   = []
   spec.require_paths = ["lib"]

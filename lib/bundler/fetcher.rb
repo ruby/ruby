@@ -2,7 +2,6 @@
 
 require_relative "vendored_persistent"
 require_relative "vendored_timeout"
-require "cgi"
 require_relative "vendored_securerandom"
 require "zlib"
 
@@ -73,19 +72,57 @@ module Bundler
       end
     end
 
+    HTTP_ERRORS = (Downloader::HTTP_RETRYABLE_ERRORS + Downloader::HTTP_NON_RETRYABLE_ERRORS).freeze
+    deprecate_constant :HTTP_ERRORS
+
+    NET_ERRORS = [
+      :HTTPBadGateway,
+      :HTTPBadRequest,
+      :HTTPFailedDependency,
+      :HTTPForbidden,
+      :HTTPInsufficientStorage,
+      :HTTPMethodNotAllowed,
+      :HTTPMovedPermanently,
+      :HTTPNoContent,
+      :HTTPNotFound,
+      :HTTPNotImplemented,
+      :HTTPPreconditionFailed,
+      :HTTPRequestEntityTooLarge,
+      :HTTPRequestURITooLong,
+      :HTTPUnauthorized,
+      :HTTPUnprocessableEntity,
+      :HTTPUnsupportedMediaType,
+      :HTTPVersionNotSupported,
+    ].freeze
+    deprecate_constant :NET_ERRORS
+
     # Exceptions classes that should bypass retry attempts. If your password didn't work the
     # first time, it's not going to the third time.
-    NET_ERRORS = [:HTTPBadGateway, :HTTPBadRequest, :HTTPFailedDependency,
-                  :HTTPForbidden, :HTTPInsufficientStorage, :HTTPMethodNotAllowed,
-                  :HTTPMovedPermanently, :HTTPNoContent, :HTTPNotFound,
-                  :HTTPNotImplemented, :HTTPPreconditionFailed, :HTTPRequestEntityTooLarge,
-                  :HTTPRequestURITooLong, :HTTPUnauthorized, :HTTPUnprocessableEntity,
-                  :HTTPUnsupportedMediaType, :HTTPVersionNotSupported].freeze
-    FAIL_ERRORS = begin
-      fail_errors = [AuthenticationRequiredError, BadAuthenticationError, AuthenticationForbiddenError, FallbackError, SecurityError]
-      fail_errors << Gem::Requirement::BadRequirementError
-      fail_errors.concat(NET_ERRORS.map {|e| Gem::Net.const_get(e) })
-    end.freeze
+    FAIL_ERRORS = [
+      AuthenticationRequiredError,
+      BadAuthenticationError,
+      AuthenticationForbiddenError,
+      FallbackError,
+      SecurityError,
+      Gem::Requirement::BadRequirementError,
+      Gem::Net::HTTPBadGateway,
+      Gem::Net::HTTPBadRequest,
+      Gem::Net::HTTPFailedDependency,
+      Gem::Net::HTTPForbidden,
+      Gem::Net::HTTPInsufficientStorage,
+      Gem::Net::HTTPMethodNotAllowed,
+      Gem::Net::HTTPMovedPermanently,
+      Gem::Net::HTTPNoContent,
+      Gem::Net::HTTPNotFound,
+      Gem::Net::HTTPNotImplemented,
+      Gem::Net::HTTPPreconditionFailed,
+      Gem::Net::HTTPRequestEntityTooLarge,
+      Gem::Net::HTTPRequestURITooLong,
+      Gem::Net::HTTPUnauthorized,
+      Gem::Net::HTTPUnprocessableEntity,
+      Gem::Net::HTTPUnsupportedMediaType,
+      Gem::Net::HTTPVersionNotSupported,
+    ].freeze
 
     class << self
       attr_accessor :disable_endpoint, :api_timeout, :redirect_limit, :max_retries
@@ -293,13 +330,6 @@ module Bundler
       paths = Bundler.rubygems.spec_cache_dirs.map {|dir| File.join(dir, spec_file_name) }
       paths.find {|path| File.file? path }
     end
-
-    HTTP_ERRORS = [
-      Gem::Timeout::Error, EOFError, SocketError, Errno::ENETDOWN, Errno::ENETUNREACH,
-      Errno::EINVAL, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EAGAIN,
-      Gem::Net::HTTPBadResponse, Gem::Net::HTTPHeaderSyntaxError, Gem::Net::ProtocolError,
-      Gem::Net::HTTP::Persistent::Error, Zlib::BufError, Errno::EHOSTUNREACH
-    ].freeze
 
     def bundler_cert_store
       store = OpenSSL::X509::Store.new

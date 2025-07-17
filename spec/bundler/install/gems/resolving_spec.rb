@@ -305,11 +305,10 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         it "gives a meaningful error if we're in frozen mode" do
           expect do
-            bundle "install --verbose", env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+            bundle "install", env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
           end.not_to change { lockfile }
 
-          expect(err).to include("parallel_tests-3.8.0 requires ruby version >= #{next_ruby_minor}")
-          expect(err).not_to include("That means the author of parallel_tests (3.8.0) has removed it.")
+          expect(err).to eq("parallel_tests-3.8.0 requires ruby version >= #{next_ruby_minor}, which is incompatible with the current version, #{Gem.ruby_version}")
         end
       end
 
@@ -540,9 +539,18 @@ RSpec.describe "bundle install with install-time dependencies" do
           lockfile original_lockfile
         end
 
-        it "keeps both variants in the lockfile, and uses the generic one since it's compatible" do
+        it "keeps both variants in the lockfile when installing, and uses the generic one since it's compatible" do
           simulate_platform "x86_64-linux" do
             bundle "install --verbose"
+
+            expect(lockfile).to eq(original_lockfile)
+            expect(the_bundle).to include_gems("nokogiri 1.16.3")
+          end
+        end
+
+        it "keeps both variants in the lockfile when updating, and uses the generic one since it's compatible" do
+          simulate_platform "x86_64-linux" do
+            bundle "update --verbose"
 
             expect(lockfile).to eq(original_lockfile)
             expect(the_bundle).to include_gems("nokogiri 1.16.3")

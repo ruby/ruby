@@ -22,7 +22,7 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 #include <stdbool.h>
 
-#define STRSCAN_VERSION "3.1.2"
+#define STRSCAN_VERSION "3.1.6.dev"
 
 /* =======================================================================
                          Data Type Definitions
@@ -209,7 +209,7 @@ strscan_memsize(const void *ptr)
 static const rb_data_type_t strscanner_type = {
     "StringScanner",
     {strscan_mark, strscan_free, strscan_memsize},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static VALUE
@@ -273,7 +273,7 @@ strscan_initialize(int argc, VALUE *argv, VALUE self)
         p->fixed_anchor_p = false;
     }
     StringValue(str);
-    p->str = str;
+    RB_OBJ_WRITE(self, &p->str, str);
 
     return self;
 }
@@ -303,7 +303,7 @@ strscan_init_copy(VALUE vself, VALUE vorig)
     orig = check_strscan(vorig);
     if (self != orig) {
 	self->flags = orig->flags;
-	self->str = orig->str;
+	RB_OBJ_WRITE(vself, &self->str, orig->str);
 	self->prev = orig->prev;
 	self->curr = orig->curr;
 	if (rb_reg_region_copy(&self->regs, &orig->regs))
@@ -467,7 +467,7 @@ strscan_set_string(VALUE self, VALUE str)
     struct strscanner *p = check_strscan(self);
 
     StringValue(str);
-    p->str = str;
+    RB_OBJ_WRITE(self, &p->str, str);
     p->curr = 0;
     CLEAR_MATCH_STATUS(p);
     return str;
@@ -524,7 +524,7 @@ strscan_get_pos(VALUE self)
     struct strscanner *p;
 
     GET_SCANNER(self, p);
-    return INT2FIX(p->curr);
+    return LONG2NUM(p->curr);
 }
 
 /*
@@ -554,7 +554,7 @@ strscan_set_pos(VALUE self, VALUE v)
     long i;
 
     GET_SCANNER(self, p);
-    i = NUM2INT(v);
+    i = NUM2LONG(v);
     if (i < 0) i += S_LEN(p);
     if (i < 0) rb_raise(rb_eRangeError, "index out of range");
     if (i > S_LEN(p)) rb_raise(rb_eRangeError, "index out of range");
@@ -712,7 +712,7 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
 
     if (RB_TYPE_P(pattern, T_REGEXP)) {
         OnigPosition ret;
-        p->regex = pattern;
+        RB_OBJ_WRITE(self, &p->regex, pattern);
         ret = rb_reg_onig_match(p->regex,
                                 p->str,
                                 headonly ? strscan_match : strscan_search,
@@ -2211,7 +2211,10 @@ named_captures_iter(const OnigUChar *name,
     VALUE value = RUBY_Qnil;
     int i;
     for (i = 0; i < back_num; i++) {
-        value = strscan_aref(data->self, INT2NUM(back_refs[i]));
+        VALUE v = strscan_aref(data->self, INT2NUM(back_refs[i]));
+        if (!RB_NIL_P(v)) {
+            value = v;
+        }
     }
     rb_hash_aset(data->captures, key, value);
     return 0;

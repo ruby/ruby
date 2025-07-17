@@ -128,6 +128,7 @@ init.o: $(hdrdir)/ruby/internal/intern/re.h
 init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 init.o: $(hdrdir)/ruby/internal/intern/select.h
 init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+init.o: $(hdrdir)/ruby/internal/intern/set.h
 init.o: $(hdrdir)/ruby/internal/intern/signal.h
 init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 init.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -289,6 +290,7 @@ leap_second.o: $(hdrdir)/ruby/internal/intern/re.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/ruby.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/select.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+leap_second.o: $(hdrdir)/ruby/internal/intern/set.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/signal.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -453,6 +455,7 @@ new.o: $(hdrdir)/ruby/internal/intern/re.h
 new.o: $(hdrdir)/ruby/internal/intern/ruby.h
 new.o: $(hdrdir)/ruby/internal/intern/select.h
 new.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+new.o: $(hdrdir)/ruby/internal/intern/set.h
 new.o: $(hdrdir)/ruby/internal/intern/signal.h
 new.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 new.o: $(hdrdir)/ruby/internal/intern/string.h

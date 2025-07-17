@@ -1,10 +1,16 @@
 prelude: |
   def a = nil
 benchmark:
+  rationalize:
+    nil.rationalize
+  to_c: |
+    nil.to_c
   to_i: |
     nil.to_i
   to_f: |
     nil.to_f
+  to_r: |
+    nil.to_r
   splat: |
     a(*nil)
 loop_count: 100000

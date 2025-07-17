@@ -114,6 +114,10 @@ pid = $$
 pwd = Dir.pwd
 
 at_exit do
+  # Some tests leave GC.stress enabled, causing slow coverage processing.
+  # Reset it here to avoid performance issues.
+  GC.stress = false
+
   exit_exc = $!
 
   Dir.chdir(pwd) do

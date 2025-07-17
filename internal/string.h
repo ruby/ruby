@@ -30,6 +30,7 @@ enum ruby_rstring_private_flags {
 #endif
 
 /* string.c */
+VALUE rb_str_dup_m(VALUE str);
 VALUE rb_fstring(VALUE);
 VALUE rb_fstring_cstr(const char *str);
 VALUE rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc);
@@ -83,6 +84,9 @@ VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb
 RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_fstring_new(const char *ptr, long len);
+void rb_gc_free_fstring(VALUE obj);
+bool rb_obj_is_fstring_table(VALUE obj);
+void Init_fstring_table();
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
 VALUE rb_str_opt_plus(VALUE x, VALUE y);
 VALUE rb_str_concat_literals(size_t num, const VALUE *strary);

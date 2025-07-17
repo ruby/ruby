@@ -127,6 +127,7 @@ call_without_gvl.o: $(hdrdir)/ruby/internal/intern/re.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/ruby.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/select.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+call_without_gvl.o: $(hdrdir)/ruby/internal/intern/set.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/signal.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/string.h

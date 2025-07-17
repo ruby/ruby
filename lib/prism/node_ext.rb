@@ -1,7 +1,10 @@
 # frozen_string_literal: true
+# :markup: markdown
 
+#--
 # Here we are reopening the prism module to provide methods on nodes that aren't
 # templated and are meant as convenience methods.
+#++
 module Prism
   class Node
     def deprecated(*replacements) # :nodoc:

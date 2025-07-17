@@ -262,6 +262,15 @@ retry:
     }
 }
 
+static bool
+is_internal_location(const rb_iseq_t *iseq)
+{
+    static const char prefix[] = "<internal:";
+    const size_t prefix_len = sizeof(prefix) - 1;
+    VALUE file = rb_iseq_path(iseq);
+    return strncmp(prefix, RSTRING_PTR(file), prefix_len) == 0;
+}
+
 // Return true if a given location is a C method or supposed to behave like one.
 static inline bool
 location_cfunc_p(rb_backtrace_location_t *loc)
@@ -272,7 +281,7 @@ location_cfunc_p(rb_backtrace_location_t *loc)
       case VM_METHOD_TYPE_CFUNC:
         return true;
       case VM_METHOD_TYPE_ISEQ:
-        return rb_iseq_attr_p(loc->cme->def->body.iseq.iseqptr, BUILTIN_ATTR_C_TRACE);
+        return is_internal_location(loc->cme->def->body.iseq.iseqptr);
       default:
         return false;
     }
@@ -452,6 +461,7 @@ location_format(VALUE file, int lineno, VALUE name)
     else {
         rb_str_catf(s, "'%s'", RSTRING_PTR(name));
     }
+    RB_GC_GUARD(name);
     return s;
 }
 
@@ -605,15 +615,6 @@ backtrace_size(const rb_execution_context_t *ec)
 }
 
 static bool
-is_internal_location(const rb_control_frame_t *cfp)
-{
-    static const char prefix[] = "<internal:";
-    const size_t prefix_len = sizeof(prefix) - 1;
-    VALUE file = rb_iseq_path(cfp->iseq);
-    return strncmp(prefix, RSTRING_PTR(file), prefix_len) == 0;
-}
-
-static bool
 is_rescue_or_ensure_frame(const rb_control_frame_t *cfp)
 {
     enum rb_iseq_type type = ISEQ_BODY(cfp->iseq)->type;
@@ -621,11 +622,11 @@ is_rescue_or_ensure_frame(const rb_control_frame_t *cfp)
 }
 
 static void
-bt_update_cfunc_loc(unsigned long cfunc_counter, rb_backtrace_location_t *cfunc_loc, const rb_iseq_t *iseq, const VALUE *pc)
+bt_backpatch_loc(unsigned long backpatch_counter, rb_backtrace_location_t *loc, const rb_iseq_t *iseq, const VALUE *pc)
 {
-    for (; cfunc_counter > 0; cfunc_counter--, cfunc_loc--) {
-        cfunc_loc->iseq = iseq;
-        cfunc_loc->pc = pc;
+    for (; backpatch_counter > 0; backpatch_counter--, loc--) {
+        loc->iseq = iseq;
+        loc->pc = pc;
     }
 }
 
@@ -648,7 +649,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
     rb_backtrace_t *bt = NULL;
     VALUE btobj = Qnil;
     rb_backtrace_location_t *loc = NULL;
-    unsigned long cfunc_counter = 0;
+    unsigned long backpatch_counter = 0;
     bool skip_next_frame = FALSE;
 
     // In the case the thread vm_stack or cfp is not initialized, there is no backtrace.
@@ -691,26 +692,41 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                 if (start_frame > 0) {
                     start_frame--;
                 }
-                else if (!(skip_internal && is_internal_location(cfp))) {
+                else {
+                    bool internal = is_internal_location(cfp->iseq);
+                    if (skip_internal && internal) continue;
                     if (!skip_next_frame) {
                         const rb_iseq_t *iseq = cfp->iseq;
                         const VALUE *pc = cfp->pc;
+                        if (internal && backpatch_counter > 0) {
+                            // To keep only one internal frame, discard the previous backpatch frames
+                            bt->backtrace_size -= backpatch_counter;
+                            backpatch_counter = 0;
+                        }
                         loc = &bt->backtrace[bt->backtrace_size++];
                         RB_OBJ_WRITE(btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
-                        // Ruby methods with `Primitive.attr! :c_trace` should behave like C methods
-                        if (rb_iseq_attr_p(cfp->iseq, BUILTIN_ATTR_C_TRACE)) {
-                            loc->iseq = NULL;
-                            loc->pc = NULL;
-                            cfunc_counter++;
+                        // internal frames (`<internal:...>`) should behave like C methods
+                        if (internal) {
+                            // Typically, these iseq and pc are not needed because they will be backpatched later.
+                            // But when the call stack starts with an internal frame (i.e., prelude.rb),
+                            // they will be used to show the `<internal:...>` location.
+                            RB_OBJ_WRITE(btobj, &loc->iseq, iseq);
+                            loc->pc = pc;
+                            backpatch_counter++;
                         }
                         else {
                             RB_OBJ_WRITE(btobj, &loc->iseq, iseq);
-                            loc->pc = pc;
-                            bt_update_cfunc_loc(cfunc_counter, loc-1, iseq, pc);
-                            if (do_yield) {
-                                bt_yield_loc(loc - cfunc_counter, cfunc_counter+1, btobj);
+                            if ((VM_FRAME_TYPE(cfp) & VM_FRAME_MAGIC_MASK) == VM_FRAME_MAGIC_DUMMY) {
+                                loc->pc = NULL; // means location.first_lineno
                             }
-                            cfunc_counter = 0;
+                            else {
+                                loc->pc = pc;
+                            }
+                            bt_backpatch_loc(backpatch_counter, loc-1, iseq, pc);
+                            if (do_yield) {
+                                bt_yield_loc(loc - backpatch_counter, backpatch_counter+1, btobj);
+                            }
+                            backpatch_counter = 0;
                         }
                     }
                     skip_next_frame = is_rescue_or_ensure_frame(cfp);
@@ -727,21 +743,21 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                 RB_OBJ_WRITE(btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
                 loc->iseq = NULL;
                 loc->pc = NULL;
-                cfunc_counter++;
+                backpatch_counter++;
             }
         }
     }
 
     // When a backtrace entry corresponds to a method defined in C (e.g. rb_define_method), the reported file:line
     // is the one of the caller Ruby frame, so if the last entry is a C frame we find the caller Ruby frame here.
-    if (cfunc_counter > 0) {
+    if (backpatch_counter > 0) {
         for (; cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
-            if (cfp->iseq && cfp->pc && !(skip_internal && is_internal_location(cfp))) {
+            if (cfp->iseq && cfp->pc && !(skip_internal && is_internal_location(cfp->iseq))) {
                 VM_ASSERT(!skip_next_frame); // ISEQ_TYPE_RESCUE/ISEQ_TYPE_ENSURE should have a caller Ruby ISEQ, not a cfunc
-                bt_update_cfunc_loc(cfunc_counter, loc, cfp->iseq, cfp->pc);
+                bt_backpatch_loc(backpatch_counter, loc, cfp->iseq, cfp->pc);
                 RB_OBJ_WRITTEN(btobj, Qundef, cfp->iseq);
                 if (do_yield) {
-                    bt_yield_loc(loc - cfunc_counter, cfunc_counter, btobj);
+                    bt_yield_loc(loc - backpatch_counter, backpatch_counter, btobj);
                 }
                 break;
             }
@@ -801,22 +817,6 @@ rb_backtrace_to_str_ary(VALUE self)
         RB_OBJ_WRITE(self, &bt->strary, backtrace_to_str_ary(self));
     }
     return bt->strary;
-}
-
-void
-rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self)
-{
-    rb_backtrace_t *bt;
-    rb_backtrace_location_t *loc;
-
-    TypedData_Get_Struct(self, rb_backtrace_t, &backtrace_data_type, bt);
-    VM_ASSERT(bt->backtrace_size > 0);
-
-    loc = &bt->backtrace[0];
-
-    VM_ASSERT(!loc->cme || loc->cme->def->type == VM_METHOD_TYPE_ISEQ);
-
-    loc->pc = NULL; // means location.first_lineno
 }
 
 static VALUE
@@ -1493,9 +1493,8 @@ RUBY_SYMBOL_EXPORT_END
 struct rb_debug_inspector_struct {
     rb_execution_context_t *ec;
     rb_control_frame_t *cfp;
-    VALUE backtrace;
     VALUE contexts; /* [[klass, binding, iseq, cfp], ...] */
-    long backtrace_size;
+    VALUE raw_backtrace;
 };
 
 enum {
@@ -1504,18 +1503,22 @@ enum {
     CALLER_BINDING_BINDING,
     CALLER_BINDING_ISEQ,
     CALLER_BINDING_CFP,
+    CALLER_BINDING_LOC,
     CALLER_BINDING_DEPTH,
 };
 
 struct collect_caller_bindings_data {
     VALUE ary;
     const rb_execution_context_t *ec;
+    VALUE btobj;
+    rb_backtrace_t *bt;
 };
 
 static void
-collect_caller_bindings_init(void *arg, size_t size)
+collect_caller_bindings_init(void *arg, size_t num_frames)
 {
-    /* */
+    struct collect_caller_bindings_data *data = (struct collect_caller_bindings_data *)arg;
+    data->btobj = backtrace_alloc_capa(num_frames, &data->bt);
 }
 
 static VALUE
@@ -1553,6 +1556,14 @@ collect_caller_bindings_iseq(void *arg, const rb_control_frame_t *cfp)
     rb_ary_store(frame, CALLER_BINDING_BINDING, GC_GUARDED_PTR(cfp)); /* create later */
     rb_ary_store(frame, CALLER_BINDING_ISEQ, cfp->iseq ? (VALUE)cfp->iseq : Qnil);
     rb_ary_store(frame, CALLER_BINDING_CFP, GC_GUARDED_PTR(cfp));
+
+    rb_backtrace_location_t *loc = &data->bt->backtrace[data->bt->backtrace_size++];
+    RB_OBJ_WRITE(data->btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
+    RB_OBJ_WRITE(data->btobj, &loc->iseq, cfp->iseq);
+    loc->pc = cfp->pc;
+    VALUE vloc = location_create(loc, (void *)data->btobj);
+    rb_ary_store(frame, CALLER_BINDING_LOC, vloc);
+
     rb_ary_store(frame, CALLER_BINDING_DEPTH, INT2FIX(frame_depth(data->ec, cfp)));
 
     rb_ary_push(data->ary, frame);
@@ -1569,6 +1580,14 @@ collect_caller_bindings_cfunc(void *arg, const rb_control_frame_t *cfp, ID mid)
     rb_ary_store(frame, CALLER_BINDING_BINDING, Qnil); /* not available */
     rb_ary_store(frame, CALLER_BINDING_ISEQ, Qnil); /* not available */
     rb_ary_store(frame, CALLER_BINDING_CFP, GC_GUARDED_PTR(cfp));
+
+    rb_backtrace_location_t *loc = &data->bt->backtrace[data->bt->backtrace_size++];
+    RB_OBJ_WRITE(data->btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
+    loc->iseq = NULL;
+    loc->pc = NULL;
+    VALUE vloc = location_create(loc, (void *)data->btobj);
+    rb_ary_store(frame, CALLER_BINDING_LOC, vloc);
+
     rb_ary_store(frame, CALLER_BINDING_DEPTH, INT2FIX(frame_depth(data->ec, cfp)));
 
     rb_ary_push(data->ary, frame);
@@ -1617,15 +1636,19 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
     rb_execution_context_t *ec = GET_EC();
     enum ruby_tag_type state;
     volatile VALUE MAYBE_UNUSED(result);
+    int i;
 
     /* escape all env to heap */
     rb_vm_stack_to_heap(ec);
 
     dbg_context.ec = ec;
     dbg_context.cfp = dbg_context.ec->cfp;
-    dbg_context.backtrace = rb_ec_backtrace_location_ary(ec, RUBY_BACKTRACE_START, RUBY_ALL_BACKTRACE_LINES, FALSE);
-    dbg_context.backtrace_size = RARRAY_LEN(dbg_context.backtrace);
     dbg_context.contexts = collect_caller_bindings(ec);
+    dbg_context.raw_backtrace = rb_ary_new();
+    for (i=0; i<RARRAY_LEN(dbg_context.contexts); i++) {
+        VALUE frame = rb_ary_entry(dbg_context.contexts, i);
+        rb_ary_push(dbg_context.raw_backtrace, rb_ary_entry(frame, CALLER_BINDING_LOC));
+    }
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
@@ -1645,7 +1668,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
 static VALUE
 frame_get(const rb_debug_inspector_t *dc, long index)
 {
-    if (index < 0 || index >= dc->backtrace_size) {
+    if (index < 0 || index >= RARRAY_LEN(dc->contexts)) {
         rb_raise(rb_eArgError, "no such frame");
     }
     return rb_ary_entry(dc->contexts, index);
@@ -1698,7 +1721,7 @@ rb_debug_inspector_current_depth(void)
 VALUE
 rb_debug_inspector_backtrace_locations(const rb_debug_inspector_t *dc)
 {
-    return dc->backtrace;
+    return dc->raw_backtrace;
 }
 
 static int

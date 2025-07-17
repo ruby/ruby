@@ -1,14 +1,21 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-DOCTOR" "1" "March 2025" ""
+.TH "BUNDLE\-DOCTOR" "1" "July 2025" ""
 .SH "NAME"
 \fBbundle\-doctor\fR \- Checks the bundle for common problems
 .SH "SYNOPSIS"
-\fBbundle doctor\fR [\-\-quiet] [\-\-gemfile=GEMFILE]
+\fBbundle doctor [diagnose]\fR [\-\-quiet] [\-\-gemfile=GEMFILE] [\-\-ssl]
+.br
+\fBbundle doctor ssl\fR [\-\-host=HOST] [\-\-tls\-version=VERSION] [\-\-verify\-mode=MODE]
+.br
+\fBbundle doctor\fR help [COMMAND]
 .SH "DESCRIPTION"
+You can diagnose common Bundler problems with this command such as checking gem environment or SSL/TLS issue\.
+.SH "SUB\-COMMANDS"
+.SS "diagnose (default command)"
 Checks your Gemfile and gem environment for common problems\. If issues are detected, Bundler prints them and exits status 1\. Otherwise, Bundler prints a success message and exits status 0\.
 .P
-Examples of common problems caught by bundle\-doctor include:
+Examples of common problems caught include:
 .IP "\(bu" 4
 Invalid Bundler settings
 .IP "\(bu" 4
@@ -20,11 +27,43 @@ Uninstalled gems
 .IP "\(bu" 4
 Missing dependencies
 .IP "" 0
-.SH "OPTIONS"
+.P
+\fBOPTIONS\fR
 .TP
 \fB\-\-quiet\fR
 Only output warnings and errors\.
 .TP
 \fB\-\-gemfile=GEMFILE\fR
 The location of the Gemfile(5) which Bundler should use\. This defaults to a Gemfile(5) in the current working directory\. In general, Bundler will assume that the location of the Gemfile(5) is also the project's root and will try to find \fBGemfile\.lock\fR and \fBvendor/cache\fR relative to this location\.
+.TP
+\fB\-\-ssl\fR
+Diagnose common SSL problems when connecting to https://rubygems\.org\.
+.IP
+This flag runs the \fBbundle doctor ssl\fR subcommand with default values underneath\.
+.SS "ssl"
+If you've experienced issues related to SSL certificates and/or TLS versions while connecting to https://rubygems\.org, this command can help troubleshoot common problems\. The diagnostic will perform a few checks such as:
+.IP "\(bu" 4
+Verify the Ruby OpenSSL version installed on your system\.
+.IP "\(bu" 4
+Check the OpenSSL library version used for compilation\.
+.IP "\(bu" 4
+Ensure CA certificates are correctly setup on your machine\.
+.IP "\(bu" 4
+Open a TLS connection and verify the outcome\.
+.IP "" 0
+.P
+\fBOPTIONS\fR
+.TP
+\fB\-\-host=HOST\fR
+Perform the diagnostic on HOST\. Defaults to \fBrubygems\.org\fR\.
+.TP
+\fB\-\-tls\-version=VERSION\fR
+Specify the TLS version when opening the connection to HOST\.
+.IP
+Accepted values are: \fB1\.1\fR or \fB1\.2\fR\.
+.TP
+\fB\-\-verify\-mode=MODE\fR
+Specify the TLS verify mode when opening the connection to HOST\. Defaults to \fBSSL_VERIFY_PEER\fR\.
+.IP
+Accepted values are: \fBCLIENT_ONCE\fR, \fBFAIL_IF_NO_PEER_CERT\fR, \fBNONE\fR, \fBPEER\fR\.
 

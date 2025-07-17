@@ -48,7 +48,7 @@ module JSON
         end
       end
 
-      # TODO: exact :create_additions support to another gem for version 3.0
+      # TODO: exctract :create_additions support to another gem for version 3.0
       def create_additions_proc(opts)
         if opts[:symbolize_names]
           raise ArgumentError, "options :symbolize_names and :create_additions cannot be  used in conjunction"
@@ -123,7 +123,7 @@ module JSON
     # Otherwise, calls JSON.generate with +object+ and +opts+ (see method #generate):
     #   ruby = [0, 1, nil]
     #   JSON[ruby] # => '[0,1,null]'
-    def [](object, opts = {})
+    def [](object, opts = nil)
       if object.is_a?(String)
         return JSON.parse(object, opts)
       elsif object.respond_to?(:to_str)
@@ -172,7 +172,7 @@ module JSON
         end
       end
       self.state = generator::State
-      const_set :State, self.state
+      const_set :State, state
     ensure
       $VERBOSE = old
     end
@@ -220,31 +220,23 @@ module JSON
     Thread.current[:"JSON.create_id"] || 'json_class'
   end
 
-  NaN           = 0.0/0
+  NaN           = Float::NAN
 
-  Infinity      = 1.0/0
+  Infinity      = Float::INFINITY
 
   MinusInfinity = -Infinity
 
   # The base exception for JSON errors.
-  class JSONError < StandardError
-    def self.wrap(exception)
-      obj = new("Wrapped(#{exception.class}): #{exception.message.inspect}")
-      obj.set_backtrace exception.backtrace
-      obj
-    end
-  end
+  class JSONError < StandardError; end
 
   # This exception is raised if a parser error occurs.
-  class ParserError < JSONError; end
+  class ParserError < JSONError
+    attr_reader :line, :column
+  end
 
   # This exception is raised if the nesting of parsed data structures is too
   # deep.
   class NestingError < ParserError; end
-
-  # :stopdoc:
-  class CircularDatastructure < NestingError; end
-  # :startdoc:
 
   # This exception is raised if a generator or unparser error occurs.
   class GeneratorError < JSONError
@@ -276,7 +268,7 @@ module JSON
   # to string interpolation.
   #
   # Note: no validation is performed on the provided string. It is the
-  # responsability of the caller to ensure the string contains valid JSON.
+  # responsibility of the caller to ensure the string contains valid JSON.
   Fragment = Struct.new(:json) do
     def initialize(json)
       unless string = String.try_convert(json)
@@ -498,7 +490,7 @@ module JSON
   #   }
   #
   def pretty_generate(obj, opts = nil)
-    return state.generate(obj) if State === opts
+    return opts.generate(obj) if State === opts
 
     options = PRETTY_GENERATE_OPTIONS
 
@@ -929,6 +921,68 @@ module JSON
     end
   end
 
+  # :stopdoc:
+  # All these were meant to be deprecated circa 2009, but were just set as undocumented
+  # so usage still exist in the wild.
+  def unparse(...)
+    if RUBY_VERSION >= "3.0"
+      warn "JSON.unparse is deprecated and will be removed in json 3.0.0, just use JSON.generate", uplevel: 1, category: :deprecated
+    else
+      warn "JSON.unparse is deprecated and will be removed in json 3.0.0, just use JSON.generate", uplevel: 1
+    end
+    generate(...)
+  end
+  module_function :unparse
+
+  def fast_unparse(...)
+    if RUBY_VERSION >= "3.0"
+      warn "JSON.fast_unparse is deprecated and will be removed in json 3.0.0, just use JSON.generate", uplevel: 1, category: :deprecated
+    else
+      warn "JSON.fast_unparse is deprecated and will be removed in json 3.0.0, just use JSON.generate", uplevel: 1
+    end
+    generate(...)
+  end
+  module_function :fast_unparse
+
+  def pretty_unparse(...)
+    if RUBY_VERSION >= "3.0"
+      warn "JSON.pretty_unparse is deprecated and will be removed in json 3.0.0, just use JSON.pretty_generate", uplevel: 1, category: :deprecated
+    else
+      warn "JSON.pretty_unparse is deprecated and will be removed in json 3.0.0, just use JSON.pretty_generate", uplevel: 1
+    end
+    pretty_generate(...)
+  end
+  module_function :fast_unparse
+
+  def restore(...)
+    if RUBY_VERSION >= "3.0"
+      warn "JSON.restore is deprecated and will be removed in json 3.0.0, just use JSON.load", uplevel: 1, category: :deprecated
+    else
+      warn "JSON.restore is deprecated and will be removed in json 3.0.0, just use JSON.load", uplevel: 1
+    end
+    load(...)
+  end
+  module_function :restore
+
+  class << self
+    private
+
+    def const_missing(const_name)
+      case const_name
+      when :PRETTY_STATE_PROTOTYPE
+        if RUBY_VERSION >= "3.0"
+          warn "JSON::PRETTY_STATE_PROTOTYPE is deprecated and will be removed in json 3.0.0, just use JSON.pretty_generate", uplevel: 1, category: :deprecated
+        else
+          warn "JSON::PRETTY_STATE_PROTOTYPE is deprecated and will be removed in json 3.0.0, just use JSON.pretty_generate", uplevel: 1
+        end
+        state.new(PRETTY_GENERATE_OPTIONS)
+      else
+        super
+      end
+    end
+  end
+  # :startdoc:
+
   # JSON::Coder holds a parser and generator configuration.
   #
   #   module MyApp
@@ -1011,8 +1065,14 @@ module ::Kernel
   # Outputs _objs_ to STDOUT as JSON strings in the shortest form, that is in
   # one line.
   def j(*objs)
+    if RUBY_VERSION >= "3.0"
+      warn "Kernel#j is deprecated and will be removed in json 3.0.0", uplevel: 1, category: :deprecated
+    else
+      warn "Kernel#j is deprecated and will be removed in json 3.0.0", uplevel: 1
+    end
+
     objs.each do |obj|
-      puts JSON::generate(obj, :allow_nan => true, :max_nesting => false)
+      puts JSON.generate(obj, :allow_nan => true, :max_nesting => false)
     end
     nil
   end
@@ -1020,8 +1080,14 @@ module ::Kernel
   # Outputs _objs_ to STDOUT as JSON strings in a pretty format, with
   # indentation and over many lines.
   def jj(*objs)
+    if RUBY_VERSION >= "3.0"
+      warn "Kernel#jj is deprecated and will be removed in json 3.0.0", uplevel: 1, category: :deprecated
+    else
+      warn "Kernel#jj is deprecated and will be removed in json 3.0.0", uplevel: 1
+    end
+
     objs.each do |obj|
-      puts JSON::pretty_generate(obj, :allow_nan => true, :max_nesting => false)
+      puts JSON.pretty_generate(obj, :allow_nan => true, :max_nesting => false)
     end
     nil
   end
@@ -1032,16 +1098,7 @@ module ::Kernel
   #
   # The _opts_ argument is passed through to generate/parse respectively. See
   # generate and parse for their documentation.
-  def JSON(object, *args)
-    if object.is_a?(String)
-      return JSON.parse(object, args.first)
-    elsif object.respond_to?(:to_str)
-      str = object.to_str
-      if str.is_a?(String)
-        return JSON.parse(object.to_str, args.first)
-      end
-    end
-
-    JSON.generate(object, args.first)
+  def JSON(object, opts = nil)
+    JSON[object, opts]
   end
 end

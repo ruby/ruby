@@ -283,12 +283,8 @@ class TestClass < Test::Unit::TestCase
     assert_raise(TypeError, bug6863) { Class.new(Class.allocate) }
 
     allocator = Class.instance_method(:allocate)
-    assert_raise_with_message(TypeError, /prohibited/) {
-      allocator.bind(Rational).call
-    }
-    assert_raise_with_message(TypeError, /prohibited/) {
-      allocator.bind_call(Rational)
-    }
+    assert_nothing_raised { allocator.bind(Rational).call }
+    assert_nothing_raised { allocator.bind_call(Rational) }
   end
 
   def test_nonascii_name
@@ -840,5 +836,13 @@ CODE
     klass.new.freeze
     klass.define_method(:bar) {}
     assert_equal klass, klass.remove_method(:bar), '[Bug #19164]'
+  end
+
+  def test_method_table_assignment_just_after_class_init
+    assert_normal_exit "#{<<~"begin;"}\n#{<<~'end;'}", 'm_tbl assignment should be done only when Class object is not promoted'
+    begin;
+      GC.stress = true
+      class C; end
+    end;
   end
 end

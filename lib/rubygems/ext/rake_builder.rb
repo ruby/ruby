@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../shellwords"
-
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -22,7 +20,7 @@ class Gem::Ext::RakeBuilder < Gem::Ext::Builder
     rake = ENV["rake"]
 
     if rake
-      rake = Shellwords.split(rake)
+      rake = shellsplit(rake)
     else
       begin
         rake = ruby << "-rrubygems" << Gem.bin_path("rake", "rake")

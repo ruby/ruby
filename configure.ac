@@ -1006,7 +1006,7 @@ AS_IF([test "x$OPT_DIR" != x], [
     save_IFS="$IFS" IFS="$PATH_SEPARATOR" val= PWD=
     for dir in $OPT_DIR; do
         test -z "$dir" && continue
-        dir=`eval $CHDIR '"$dir"' && pwd` || continue
+        dir=`eval $CHDIR '"$dir"' 2>/dev/null && pwd` || continue
         val="${val:+$val$PATH_SEPARATOR}$dir"
     done
     IFS="$save_IFS" OPT_DIR="$val"
@@ -1250,8 +1250,6 @@ main()
 		ac_cv_func_gmtime_r=yes
 		rb_cv_large_fd_select=yes
 		ac_cv_type_struct_timeval=yes
-                ac_cv_func_clock_gettime=yes
-                ac_cv_func_clock_getres=yes
 		ac_cv_func_malloc_usable_size=no
 		ac_cv_type_off_t=yes
 		ac_cv_sizeof_off_t=8
@@ -1745,6 +1743,18 @@ AS_IF([test "$GCC" = yes], [
 		    [rb_cv_gcc_atomic_builtins=no])])
     AS_IF([test "$rb_cv_gcc_atomic_builtins" = yes], [
 	AC_DEFINE(HAVE_GCC_ATOMIC_BUILTINS)
+	AC_CACHE_CHECK([for 64bit __atomic builtins], [rb_cv_gcc_atomic_builtins_64], [
+	    AC_LINK_IFELSE([AC_LANG_PROGRAM([[@%:@include <stdint.h>
+			uint64_t atomic_var;]],
+			[[
+			    __atomic_load_n(&atomic_var, __ATOMIC_RELAXED);
+			    __atomic_store_n(&atomic_var, 0, __ATOMIC_RELAXED);
+			]])],
+			[rb_cv_gcc_atomic_builtins_64=yes],
+			[rb_cv_gcc_atomic_builtins_64=no])])
+	AS_IF([test "$rb_cv_gcc_atomic_builtins_64" = yes], [
+	    AC_DEFINE(HAVE_GCC_ATOMIC_BUILTINS_64)
+	])
     ])
 
     AC_CACHE_CHECK([for __sync builtins], [rb_cv_gcc_sync_builtins], [
@@ -3859,42 +3869,55 @@ AC_SUBST(INSTALL_STATIC_LIBRARY)
 [begin]_group "JIT section" && {
 AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
 
-dnl check if rustc is recent enough to build YJIT (rustc >= 1.58.0)
-YJIT_RUSTC_OK=no
+dnl check if rustc is recent enough to build YJIT/ZJIT (rustc >= 1.58.0)
+JIT_RUSTC_OK=no
 AS_IF([test "$RUSTC" != "no"],
-    AC_MSG_CHECKING([whether ${RUSTC} works for YJIT])
-    YJIT_TARGET_ARCH=
+    AC_MSG_CHECKING([whether ${RUSTC} works for YJIT/ZJIT])
+    JIT_TARGET_ARCH=
     AS_CASE(["$target_cpu"],
-        [arm64|aarch64], [YJIT_TARGET_ARCH=aarch64],
-        [x86_64], [YJIT_TARGET_ARCH=x86_64],
+        [arm64|aarch64], [JIT_TARGET_ARCH=aarch64],
+        [x86_64], [JIT_TARGET_ARCH=x86_64],
     )
     dnl Fails in case rustc target doesn't match ruby target.
     dnl Can happen on Rosetta, for example.
-    AS_IF([echo "#[cfg(target_arch = \"$YJIT_TARGET_ARCH\")] fn main() { let x = 1; format!(\"{x}\"); }" |
+    AS_IF([echo "#[cfg(target_arch = \"$JIT_TARGET_ARCH\")] fn main() { let x = 1; format!(\"{x}\"); }" |
             $RUSTC - --emit asm=/dev/null 2>/dev/null],
-        [YJIT_RUSTC_OK=yes]
+        [JIT_RUSTC_OK=yes]
     )
-    AC_MSG_RESULT($YJIT_RUSTC_OK)
+    AC_MSG_RESULT($JIT_RUSTC_OK)
 )
 
-dnl check if we can build YJIT on this target platform
+dnl check if we can build YJIT/ZJIT on this target platform
 dnl we can't easily cross-compile with rustc so we don't support that
-YJIT_TARGET_OK=no
+JIT_TARGET_OK=no
 AS_IF([test "$cross_compiling" = no],
     AS_CASE(["$target_cpu-$target_os"],
         [*android*], [
-            YJIT_TARGET_OK=no
+            JIT_TARGET_OK=no
         ],
         [arm64-darwin*|aarch64-darwin*|x86_64-darwin*], [
-            YJIT_TARGET_OK=yes
+            JIT_TARGET_OK=yes
         ],
         [arm64-*linux*|aarch64-*linux*|x86_64-*linux*], [
-            YJIT_TARGET_OK=yes
+            JIT_TARGET_OK=yes
         ],
         [arm64-*bsd*|aarch64-*bsd*|x86_64-*bsd*], [
-            YJIT_TARGET_OK=yes
+            JIT_TARGET_OK=yes
         ]
     )
+)
+
+dnl build ZJIT in release mode if rustc >= 1.58.0 is present and we are on a supported platform
+AC_ARG_ENABLE(zjit,
+    AS_HELP_STRING([--enable-zjit],
+    [enable in-process JIT compiler that requires Rust build tools. enabled by default on supported platforms if rustc 1.58.0+ is available]),
+    [ZJIT_SUPPORT=$enableval],
+    [AS_CASE(["$JIT_TARGET_OK:$JIT_RUSTC_OK:$YJIT_SUPPORT"],
+        [yes:yes:no], [
+            ZJIT_SUPPORT=yes
+        ],
+        [ZJIT_SUPPORT=no]
+    )]
 )
 
 dnl build YJIT in release mode if rustc >= 1.58.0 is present and we are on a supported platform
@@ -3902,8 +3925,8 @@ AC_ARG_ENABLE(yjit,
     AS_HELP_STRING([--enable-yjit],
     [enable in-process JIT compiler that requires Rust build tools. enabled by default on supported platforms if rustc 1.58.0+ is available]),
     [YJIT_SUPPORT=$enableval],
-    [AS_CASE(["$YJIT_TARGET_OK:$YJIT_RUSTC_OK"],
-        [yes:yes], [
+    [AS_CASE(["$JIT_TARGET_OK:$JIT_RUSTC_OK:$ZJIT_SUPPORT"],
+        [yes:yes:no], [
             YJIT_SUPPORT=yes
         ],
         [YJIT_SUPPORT=no]
@@ -3913,6 +3936,7 @@ AC_ARG_ENABLE(yjit,
 CARGO=
 CARGO_BUILD_ARGS=
 YJIT_LIBS=
+JIT_CARGO_SUPPORT=no
 AS_CASE(["${YJIT_SUPPORT}"],
 [yes|dev|stats|dev_nodebug], [
     AS_IF([test x"$RUSTC" = "xno"],
@@ -3921,36 +3945,26 @@ AS_CASE(["${YJIT_SUPPORT}"],
 
     AS_CASE(["${YJIT_SUPPORT}"],
     [yes], [
-	rb_rust_target_subdir=release
     ],
     [dev], [
-	rb_rust_target_subdir=debug
-	CARGO_BUILD_ARGS='--features disasm,runtime_checks'
+        rb_cargo_features='disasm,runtime_checks'
+        JIT_CARGO_SUPPORT=dev
 	AC_DEFINE(RUBY_DEBUG, 1)
     ],
     [dev_nodebug], [
-	rb_rust_target_subdir=dev_nodebug
-	CARGO_BUILD_ARGS='--profile dev_nodebug --features disasm'
+        rb_cargo_features='disasm'
+        JIT_CARGO_SUPPORT=dev_nodebug
 	AC_DEFINE(YJIT_STATS, 1)
     ],
     [stats], [
-	rb_rust_target_subdir=stats
-	CARGO_BUILD_ARGS='--profile stats'
+        JIT_CARGO_SUPPORT=stats
 	AC_DEFINE(YJIT_STATS, 1)
     ])
 
-    AS_IF([test -n "${CARGO_BUILD_ARGS}"], [
-             AC_CHECK_TOOL(CARGO, [cargo], [no])
-             AS_IF([test x"$CARGO" = "xno"],
-                AC_MSG_ERROR([cargo is required. Installation instructions available at https://www.rust-lang.org/tools/install])
-             ]))
-
-    YJIT_LIBS="yjit/target/${rb_rust_target_subdir}/libyjit.a"
-    AS_CASE(["$target_os"],[openbsd*],[
-        # Link libc++abi (which requires libpthread) for _Unwind_* functions needed by yjit
-        LDFLAGS="$LDFLAGS -lpthread -lc++abi"
-    ])
+    YJIT_LIBS="target/release/libyjit.a"
+    RUST_LIB='$(YJIT_LIBS)'
     YJIT_OBJ='yjit.$(OBJEXT)'
+    JIT_OBJ='jit.$(OBJEXT)'
     AS_IF([test x"$YJIT_SUPPORT" != "xyes" ], [
         AC_DEFINE_UNQUOTED(YJIT_SUPPORT, [$YJIT_SUPPORT])
     ])
@@ -3959,13 +3973,95 @@ AS_CASE(["${YJIT_SUPPORT}"],
     AC_DEFINE(USE_YJIT, 0)
 ])
 
+ZJIT_LIBS=
+AS_CASE(["${ZJIT_SUPPORT}"],
+[yes|dev|dev_nodebug], [
+    AS_IF([test x"$RUSTC" = "xno"],
+        AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
+    )
+
+    AS_CASE(["${ZJIT_SUPPORT}"],
+    [yes], [
+    ],
+    [dev], [
+        rb_cargo_features="$rb_cargo_features,disasm"
+        JIT_CARGO_SUPPORT=dev
+	AC_DEFINE(RUBY_DEBUG, 1)
+    ],
+    [dev_nodebug], [
+        rb_cargo_features="$rb_cargo_features,disasm"
+        JIT_CARGO_SUPPORT=dev_nodebug
+    ])
+
+    ZJIT_LIBS="target/release/libzjit.a"
+    RUST_LIB='$(ZJIT_LIBS)'
+    ZJIT_OBJ='zjit.$(OBJEXT)'
+    JIT_OBJ='jit.$(OBJEXT)'
+    AS_IF([test x"$ZJIT_SUPPORT" != "xyes" ], [
+        AC_DEFINE_UNQUOTED(ZJIT_SUPPORT, [$ZJIT_SUPPORT])
+    ])
+    AC_DEFINE(USE_ZJIT, 1)
+], [
+    AC_DEFINE(USE_ZJIT, 0)
+])
+
+# if YJIT+ZJIT release build, or any build that requires Cargo
+AS_IF([test x"$JIT_CARGO_SUPPORT" != "xno" -o \( x"$YJIT_SUPPORT" != "xno" -a x"$ZJIT_SUPPORT" != "xno" \)], [
+    AC_CHECK_TOOL(CARGO, [cargo], [no])
+    AS_IF([test x"$CARGO" = "xno"],
+        AC_MSG_ERROR([cargo is required. Installation instructions available at https://www.rust-lang.org/tools/install]))
+
+    YJIT_LIBS=
+    ZJIT_LIBS=
+
+    # There's more processing below to get the feature set for the
+    # top-level crate, so capture at this point for feature set of
+    # just the zjit crate.
+    ZJIT_TEST_FEATURES="${rb_cargo_features}"
+
+    AS_IF([test x"${YJIT_SUPPORT}" != x"no"], [
+        rb_cargo_features="$rb_cargo_features,yjit"
+    ])
+    AS_IF([test x"${ZJIT_SUPPORT}" != x"no"], [
+        AC_SUBST(ZJIT_TEST_FEATURES)
+        rb_cargo_features="$rb_cargo_features,zjit"
+    ])
+    # if YJIT and ZJIT release mode
+    AS_IF([test "${YJIT_SUPPORT}:${ZJIT_SUPPORT}" = "yes:yes"], [
+        JIT_CARGO_SUPPORT=release
+    ])
+    CARGO_BUILD_ARGS="--profile ${JIT_CARGO_SUPPORT} --features ${rb_cargo_features}"
+    AS_IF([test "${JIT_CARGO_SUPPORT}" = "dev"], [
+        RUST_LIB="target/debug/libjit.a"
+    ], [
+        RUST_LIB="target/${JIT_CARGO_SUPPORT}/libjit.a"
+    ])
+])
+
+# In case either we're linking rust code
+AS_IF([test -n "$RUST_LIB"], [
+    AS_CASE(["$target_os"],[openbsd*],[
+        # Link libc++abi (which requires libpthread) for _Unwind_* functions needed by rust stdlib
+        LDFLAGS="$LDFLAGS -lpthread -lc++abi"
+    ])
+
+    # absolute path to stop the "target" dir in src dir from interfering through VPATH
+    RUST_LIB="$(pwd)/${RUST_LIB}"
+])
+
 dnl These variables end up in ::RbConfig::CONFIG
-AC_SUBST(YJIT_SUPPORT)dnl what flavor of YJIT the Ruby build includes
 AC_SUBST(RUSTC)dnl Rust compiler command
 AC_SUBST(CARGO)dnl Cargo command for Rust builds
 AC_SUBST(CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
-AC_SUBST(YJIT_LIBS)dnl for optionally building the Rust parts of YJIT
+AC_SUBST(YJIT_SUPPORT)dnl what flavor of YJIT the Ruby build includes
+AC_SUBST(YJIT_LIBS)dnl the .a library of YJIT
 AC_SUBST(YJIT_OBJ)dnl for optionally building the C parts of YJIT
+AC_SUBST(ZJIT_SUPPORT)dnl what flavor of ZJIT the Ruby build includes
+AC_SUBST(ZJIT_LIBS)dnl path to the .a library of ZJIT
+AC_SUBST(ZJIT_OBJ)dnl for optionally building the C parts of ZJIT
+AC_SUBST(JIT_OBJ)dnl for optionally building C glue code for Rust FFI
+AC_SUBST(RUST_LIB)dnl path to the rust .a library that contains either or both JITs
+AC_SUBST(JIT_CARGO_SUPPORT)dnl "no" or the cargo profile of the rust code
 }
 
 [begin]_group "build section" && {
@@ -4688,6 +4784,7 @@ config_summary "hardenflags"         "$hardenflags"
 config_summary "strip command"       "$STRIP"
 config_summary "install doc"         "$DOCTARGETS"
 config_summary "YJIT support"        "$YJIT_SUPPORT"
+config_summary "ZJIT support"        "$ZJIT_SUPPORT"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"
 config_summary "static-linked-ext"   ${EXTSTATIC:+"yes"}

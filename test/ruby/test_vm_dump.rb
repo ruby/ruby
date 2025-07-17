@@ -5,8 +5,6 @@ return unless /darwin/ =~ RUBY_PLATFORM
 
 class TestVMDump < Test::Unit::TestCase
   def assert_darwin_vm_dump_works(args, timeout=nil)
-    pend "macOS 15 is not working with this assertion" if macos?(15)
-
     assert_in_out_err(args, "", [], /^\[IMPORTANT\]/, timeout: timeout || 300)
   end
 

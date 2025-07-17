@@ -8,7 +8,7 @@ class TestObjectSpace < Test::Unit::TestCase
     line = $1.to_i
     code = <<"End"
     define_method("test_id2ref_#{line}") {\
-      o = ObjectSpace._id2ref(obj.object_id);\
+      o = EnvUtil.suppress_warning { ObjectSpace._id2ref(obj.object_id) }
       assert_same(obj, o, "didn't round trip: \#{obj.inspect}");\
     }
 End
@@ -57,20 +57,20 @@ End
 
   def test_id2ref_invalid_argument
     msg = /no implicit conversion/
-    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(nil)}
-    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(false)}
-    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(true)}
-    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(:a)}
-    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref("0")}
-    assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(Object.new)}
+    assert_raise_with_message(TypeError, msg) { EnvUtil.suppress_warning { ObjectSpace._id2ref(nil) } }
+    assert_raise_with_message(TypeError, msg) { EnvUtil.suppress_warning { ObjectSpace._id2ref(false) } }
+    assert_raise_with_message(TypeError, msg) { EnvUtil.suppress_warning { ObjectSpace._id2ref(true) } }
+    assert_raise_with_message(TypeError, msg) { EnvUtil.suppress_warning { ObjectSpace._id2ref(:a) } }
+    assert_raise_with_message(TypeError, msg) { EnvUtil.suppress_warning { ObjectSpace._id2ref("0") } }
+    assert_raise_with_message(TypeError, msg) { EnvUtil.suppress_warning { ObjectSpace._id2ref(Object.new) } }
   end
 
   def test_id2ref_invalid_symbol_id
     # RB_STATIC_SYM_P checks for static symbols by checking that the bottom
     # 8 bits of the object is equal to RUBY_SYMBOL_FLAG, so we need to make
     # sure that the bottom 8 bits remain unchanged.
-    msg = /is not symbol id value/
-    assert_raise_with_message(RangeError, msg) { ObjectSpace._id2ref(:a.object_id + 256) }
+    msg = /is not a symbol id value/
+    assert_raise_with_message(RangeError, msg) { EnvUtil.suppress_warning { ObjectSpace._id2ref(:a.object_id + 256) } }
   end
 
   def test_count_objects
@@ -94,7 +94,7 @@ End
   end
 
   def test_finalizer
-    assert_in_out_err(["-e", <<-END], "", %w(:ok :ok :ok :ok), [])
+    assert_in_out_err(["-e", <<-END], "", %w(:ok :ok :ok), [])
       a = []
       ObjectSpace.define_finalizer(a) { p :ok }
       b = a.dup
@@ -135,6 +135,25 @@ End
     assert_raise_with_message(ArgumentError, /C\u{3042}/) {
       ObjectSpace.define_finalizer(o, c)
     }
+  end
+
+  def test_finalizer_copy
+    assert_in_out_err(["-e", <<~'RUBY'], "", %w(:ok), [])
+      def fin
+        ids = Set.new
+        ->(id) { puts "object_id (#{id}) reused" unless ids.add?(id) }
+      end
+
+      OBJ = Object.new
+      ObjectSpace.define_finalizer(OBJ, fin)
+      OBJ.freeze
+
+      10.times do
+        OBJ.clone
+      end
+
+      p :ok
+    RUBY
   end
 
   def test_finalizer_with_super

@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
 
   spec.summary = "TODO: Write a short summary, because RubyGems requires one."
   spec.description = "TODO: Write a longer description or delete this line."
-  spec.homepage = "TODO: Put your gem's website or public repo URL here."
+  spec.homepage = "<%= config[:homepage_uri] %>"
 <%- if config[:mit] -%>
   spec.license = "MIT"
 <%- end -%>
@@ -20,10 +20,11 @@ Gem::Specification.new do |spec|
 <%- end -%>
 
   spec.metadata["allowed_push_host"] = "TODO: Set to your gem server 'https://example.com'"
-
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "TODO: Put your gem's public repo URL here."
-  spec.metadata["changelog_uri"] = "TODO: Put your gem's CHANGELOG.md URL here."
+  spec.metadata["source_code_uri"] = "<%= config[:source_code_uri] %>"
+  <%- if config[:changelog] -%>
+    spec.metadata["changelog_uri"] = "<%= config[:changelog_uri] %>"
+  <%- end -%>
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
@@ -31,7 +32,7 @@ Gem::Specification.new do |spec|
   spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) do |ls|
     ls.readlines("\x0", chomp: true).reject do |f|
       (f == gemspec) ||
-        f.start_with?(*%w[bin/ test/ spec/ features/ .git <%= config[:ci_config_path] %>appveyor Gemfile])
+        f.start_with?(*%w[<%= config[:ignore_paths].join(" ") %>])
     end
   end
   spec.bindir = "exe"

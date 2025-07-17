@@ -14,8 +14,6 @@ module Bundler
     require_relative "resolver/root"
     require_relative "resolver/strategy"
 
-    include GemHelpers
-
     def initialize(base, gem_version_promoter, most_specific_locked_platform = nil)
       @source_requirements = base.source_requirements
       @base = base
@@ -273,7 +271,7 @@ module Bundler
           next groups if platform_specs.all?(&:empty?)
         end
 
-        ruby_specs = select_best_platform_match(specs, Gem::Platform::RUBY)
+        ruby_specs = MatchPlatform.select_best_platform_match(specs, Gem::Platform::RUBY)
         ruby_group = Resolver::SpecGroup.new(ruby_specs)
 
         unless ruby_group.empty?
@@ -312,6 +310,16 @@ module Bundler
       "Gemfile"
     end
 
+    def raise_incomplete!(incomplete_specs)
+      raise_not_found!(@base.get_package(incomplete_specs.first.name))
+    end
+
+    def sort_versions_by_preferred(package, versions)
+      @gem_version_promoter.sort_versions(package, versions)
+    end
+
+    private
+
     def raise_not_found!(package)
       name = package.name
       source = source_for(name)
@@ -347,12 +355,6 @@ module Bundler
 
       raise GemNotFound, message
     end
-
-    def sort_versions_by_preferred(package, versions)
-      @gem_version_promoter.sort_versions(package, versions)
-    end
-
-    private
 
     def filtered_versions_for(package)
       @gem_version_promoter.filter_versions(package, @all_versions[package])

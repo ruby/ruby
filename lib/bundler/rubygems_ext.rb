@@ -13,15 +13,6 @@ require "rubygems" unless defined?(Gem)
 # `Gem::Source` from the redefined `Gem::Specification#source`.
 require "rubygems/source"
 
-# Cherry-pick fixes to `Gem.ruby_version` to be useful for modern Bundler
-# versions and ignore patchlevels
-# (https://github.com/rubygems/rubygems/pull/5472,
-# https://github.com/rubygems/rubygems/pull/5486). May be removed once RubyGems
-# 3.3.12 support is dropped.
-unless Gem.ruby_version.to_s == RUBY_VERSION || RUBY_PATCHLEVEL == -1
-  Gem.instance_variable_set(:@ruby_version, Gem::Version.new(RUBY_VERSION))
-end
-
 module Gem
   # Can be removed once RubyGems 3.5.11 support is dropped
   unless Gem.respond_to?(:freebsd_platform?)
@@ -61,81 +52,122 @@ module Gem
   require "rubygems/platform"
 
   class Platform
-    JAVA  = Gem::Platform.new("java")
-    MSWIN = Gem::Platform.new("mswin32")
-    MSWIN64 = Gem::Platform.new("mswin64")
-    MINGW = Gem::Platform.new("x86-mingw32")
-    X64_MINGW = [Gem::Platform.new("x64-mingw32"),
-                 Gem::Platform.new("x64-mingw-ucrt")].freeze
-    UNIVERSAL_MINGW = Gem::Platform.new("universal-mingw")
-    WINDOWS = [MSWIN, MSWIN64, UNIVERSAL_MINGW].flatten.freeze
-    X64_LINUX = Gem::Platform.new("x86_64-linux")
-    X64_LINUX_MUSL = Gem::Platform.new("x86_64-linux-musl")
+    # Can be removed once RubyGems 3.6.9 support is dropped
+    unless respond_to?(:generic)
+      JAVA  = Gem::Platform.new("java") # :nodoc:
+      MSWIN = Gem::Platform.new("mswin32") # :nodoc:
+      MSWIN64 = Gem::Platform.new("mswin64") # :nodoc:
+      MINGW = Gem::Platform.new("x86-mingw32") # :nodoc:
+      X64_MINGW_LEGACY = Gem::Platform.new("x64-mingw32") # :nodoc:
+      X64_MINGW = Gem::Platform.new("x64-mingw-ucrt") # :nodoc:
+      UNIVERSAL_MINGW = Gem::Platform.new("universal-mingw") # :nodoc:
+      WINDOWS = [MSWIN, MSWIN64, UNIVERSAL_MINGW].freeze # :nodoc:
+      X64_LINUX = Gem::Platform.new("x86_64-linux") # :nodoc:
+      X64_LINUX_MUSL = Gem::Platform.new("x86_64-linux-musl") # :nodoc:
 
-    if X64_LINUX === X64_LINUX_MUSL
-      remove_method :===
+      GENERICS = [JAVA, *WINDOWS].freeze # :nodoc:
+      private_constant :GENERICS
 
-      def ===(other)
-        return nil unless Gem::Platform === other
+      GENERIC_CACHE = GENERICS.each_with_object({}) {|g, h| h[g] = g } # :nodoc:
+      private_constant :GENERIC_CACHE
 
-        # universal-mingw32 matches x64-mingw-ucrt
-        return true if (@cpu == "universal" || other.cpu == "universal") &&
-                       @os.start_with?("mingw") && other.os.start_with?("mingw")
+      class << self
+        ##
+        # Returns the generic platform for the given platform.
 
-        # cpu
-        ([nil,"universal"].include?(@cpu) || [nil, "universal"].include?(other.cpu) || @cpu == other.cpu ||
-        (@cpu == "arm" && other.cpu.start_with?("armv"))) &&
+        def generic(platform)
+          return Gem::Platform::RUBY if platform.nil? || platform == Gem::Platform::RUBY
 
-          # os
-          @os == other.os &&
+          GENERIC_CACHE[platform] ||= begin
+            found = GENERICS.find do |match|
+              platform === match
+            end
+            found || Gem::Platform::RUBY
+          end
+        end
 
-          # version
-          (
-            (@os != "linux" && (@version.nil? || other.version.nil?)) ||
-            (@os == "linux" && (normalized_linux_version_ext == other.normalized_linux_version_ext || ["musl#{@version}", "musleabi#{@version}", "musleabihf#{@version}"].include?(other.version))) ||
-            @version == other.version
-          )
-      end
+        ##
+        # Returns the platform specificity match for the given spec platform and user platform.
 
-      # This is a copy of RubyGems 3.3.23 or higher `normalized_linux_method`.
-      # Once only 3.3.23 is supported, we can use the method in RubyGems.
-      def normalized_linux_version_ext
-        return nil unless @version
+        def platform_specificity_match(spec_platform, user_platform)
+          return -1 if spec_platform == user_platform
+          return 1_000_000 if spec_platform.nil? || spec_platform == Gem::Platform::RUBY || user_platform == Gem::Platform::RUBY
 
-        without_gnu_nor_abi_modifiers = @version.sub(/\Agnu/, "").sub(/eabi(hf)?\Z/, "")
-        return nil if without_gnu_nor_abi_modifiers.empty?
+          os_match(spec_platform, user_platform) +
+            cpu_match(spec_platform, user_platform) * 10 +
+            version_match(spec_platform, user_platform) * 100
+        end
 
-        without_gnu_nor_abi_modifiers
-      end
-    end
-  end
+        ##
+        # Sorts and filters the best platform match for the given matching specs and platform.
 
-  Platform.singleton_class.module_eval do
-    unless Platform.singleton_methods.include?(:match_spec?)
-      def match_spec?(spec)
-        match_gem?(spec.platform, spec.name)
-      end
+        def sort_and_filter_best_platform_match(matching, platform)
+          return matching if matching.one?
 
-      def match_gem?(platform, gem_name)
-        match_platforms?(platform, Gem.platforms)
-      end
-    end
+          exact = matching.select {|spec| spec.platform == platform }
+          return exact if exact.any?
 
-    match_platforms_defined = Gem::Platform.respond_to?(:match_platforms?, true)
+          sorted_matching = sort_best_platform_match(matching, platform)
+          exemplary_spec = sorted_matching.first
 
-    if !match_platforms_defined || Gem::Platform.send(:match_platforms?, Gem::Platform::X64_LINUX_MUSL, [Gem::Platform::X64_LINUX])
+          sorted_matching.take_while {|spec| same_specificity?(platform, spec, exemplary_spec) && same_deps?(spec, exemplary_spec) }
+        end
 
-      private
+        ##
+        # Sorts the best platform match for the given matching specs and platform.
 
-      remove_method :match_platforms? if match_platforms_defined
+        def sort_best_platform_match(matching, platform)
+          matching.sort_by.with_index do |spec, i|
+            [
+              platform_specificity_match(spec.platform, platform),
+              i, # for stable sort
+            ]
+          end
+        end
 
-      def match_platforms?(platform, platforms)
-        platforms.any? do |local_platform|
-          platform.nil? ||
-            local_platform == platform ||
-            (local_platform != Gem::Platform::RUBY && platform =~ local_platform)
+        private
+
+        def same_specificity?(platform, spec, exemplary_spec)
+          platform_specificity_match(spec.platform, platform) == platform_specificity_match(exemplary_spec.platform, platform)
+        end
+
+        def same_deps?(spec, exemplary_spec)
+          spec.required_ruby_version == exemplary_spec.required_ruby_version &&
+            spec.required_rubygems_version == exemplary_spec.required_rubygems_version &&
+            spec.dependencies.sort == exemplary_spec.dependencies.sort
+        end
+
+        def os_match(spec_platform, user_platform)
+          if spec_platform.os == user_platform.os
+            0
+          else
+            1
+          end
+        end
+
+        def cpu_match(spec_platform, user_platform)
+          if spec_platform.cpu == user_platform.cpu
+            0
+          elsif spec_platform.cpu == "arm" && user_platform.cpu.to_s.start_with?("arm")
+            0
+          elsif spec_platform.cpu.nil? || spec_platform.cpu == "universal"
+            1
+          else
+            2
+          end
+        end
+
+        def version_match(spec_platform, user_platform)
+          if spec_platform.version == user_platform.version
+            0
+          elsif spec_platform.version.nil?
+            1
+          else
+            2
+          end
         end
       end
+
     end
   end
 
@@ -143,9 +175,6 @@ module Gem
 
   # Can be removed once RubyGems 3.5.14 support is dropped
   VALIDATES_FOR_RESOLUTION = Specification.new.respond_to?(:validate_for_resolution).freeze
-
-  # Can be removed once RubyGems 3.3.15 support is dropped
-  FLATTENS_REQUIRED_PATHS = Specification.new.respond_to?(:flatten_require_paths).freeze
 
   class Specification
     # Can be removed once RubyGems 3.5.15 support is dropped
@@ -158,7 +187,6 @@ module Gem
     require_relative "match_platform"
 
     include ::Bundler::MatchMetadata
-    include ::Bundler::MatchPlatform
 
     attr_accessor :remote, :relative_loaded_from
 
@@ -214,23 +242,6 @@ module Gem
       full_gem_path
     end
 
-    unless const_defined?(:LATEST_RUBY_WITHOUT_PATCH_VERSIONS)
-      LATEST_RUBY_WITHOUT_PATCH_VERSIONS = Gem::Version.new("2.1")
-
-      alias_method :rg_required_ruby_version=, :required_ruby_version=
-      def required_ruby_version=(req)
-        self.rg_required_ruby_version = req
-
-        @required_ruby_version.requirements.map! do |op, v|
-          if v >= LATEST_RUBY_WITHOUT_PATCH_VERSIONS && v.release.segments.size == 4
-            [op == "~>" ? "=" : op, Gem::Version.new(v.segments.tap {|s| s.delete_at(3) }.join("."))]
-          else
-            [op, v]
-          end
-        end
-      end
-    end
-
     def insecurely_materialized?
       false
     end
@@ -272,25 +283,16 @@ module Gem
       end
     end
 
-    unless FLATTENS_REQUIRED_PATHS
-      def flatten_require_paths
-        return unless raw_require_paths.first.is_a?(Array)
+    if Gem.rubygems_version < Gem::Version.new("3.5.22")
+      module FixPathSourceMissingExtensions
+        def missing_extensions?
+          return false if %w[Bundler::Source::Path Bundler::Source::Gemspec].include?(source.class.name)
 
-        warn "#{name} #{version} includes a gemspec with `require_paths` set to an array of arrays. Newer versions of this gem might've already fixed this"
-        raw_require_paths.flatten!
-      end
-
-      class << self
-        module RequirePathFlattener
-          def from_yaml(input)
-            spec = super(input)
-            spec.flatten_require_paths
-            spec
-          end
+          super
         end
-
-        prepend RequirePathFlattener
       end
+
+      prepend FixPathSourceMissingExtensions
     end
 
     private
@@ -401,6 +403,11 @@ module Gem
         @ignored = missing_extensions?
       end
     end
+
+    # Can be removed once RubyGems 3.6.9 support is dropped
+    unless new.respond_to?(:installable_on_platform?)
+      include(::Bundler::MatchPlatform)
+    end
   end
 
   require "rubygems/name_tuple"
@@ -470,16 +477,5 @@ module Gem
     end
 
     Package::TarReader::Entry.prepend(FixFullNameEncoding)
-  end
-
-  require "rubygems/uri"
-
-  # Can be removed once RubyGems 3.3.15 support is dropped
-  unless Gem::Uri.respond_to?(:redact)
-    class Uri
-      def self.redact(uri)
-        new(uri).redacted
-      end
-    end
   end
 end

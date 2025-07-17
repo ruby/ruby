@@ -60,7 +60,7 @@ class TestRbConfig < Test::Unit::TestCase
         [sizeof_int, fixnum_max]
       end
 
-      sizeof_int, fixnum_max = r.take
+      sizeof_int, fixnum_max = r.value
 
       assert_kind_of Integer, sizeof_int, "RbConfig::SIZEOF['int'] should be an Integer"
       assert_kind_of Integer, fixnum_max, "RbConfig::LIMITS['FIXNUM_MAX'] should be an Integer"

@@ -3826,7 +3826,7 @@ __END__
       end
 
       tempfiles = []
-      (0..fd_setsize+1).map {|i|
+      (0...fd_setsize).map {|i|
         tempfiles << Tempfile.create("test_io_select_with_many_files")
       }
 
@@ -4262,6 +4262,23 @@ __END__
     end
   end if Socket.const_defined?(:MSG_OOB)
 
+  def test_select_timeout
+    assert_equal(nil, IO.select(nil,nil,nil,0))
+    assert_equal(nil, IO.select(nil,nil,nil,0.0))
+    assert_raise(TypeError) { IO.select(nil,nil,nil,"invalid-timeout") }
+    assert_raise(ArgumentError) { IO.select(nil,nil,nil,-1) }
+    assert_raise(ArgumentError) { IO.select(nil,nil,nil,-0.1) }
+    assert_raise(ArgumentError) { IO.select(nil,nil,nil,-Float::INFINITY) }
+    assert_raise(RangeError) { IO.select(nil,nil,nil,Float::NAN) }
+    IO.pipe {|r, w|
+      w << "x"
+      ret = [[r], [], []]
+      assert_equal(ret, IO.select([r],nil,nil,0.1))
+      assert_equal(ret, IO.select([r],nil,nil,1))
+      assert_equal(ret, IO.select([r],nil,nil,Float::INFINITY))
+    }
+  end
+
   def test_recycled_fd_close
     dot = -'.'
     IO.pipe do |sig_rd, sig_wr|
@@ -4397,6 +4414,31 @@ __END__
       ensure
         thread&.join
       end
+    RUBY
+  end
+
+  def test_fork_close
+    omit "fork is not supported" unless Process.respond_to?(:fork)
+
+    assert_separately([], <<~'RUBY')
+      r, w = IO.pipe
+
+      thread = Thread.new do
+        r.read
+      end
+
+      Thread.pass until thread.status == "sleep"
+
+      pid = fork do
+        r.close
+      end
+
+      w.close
+
+      status = Process.wait2(pid).last
+      thread.join
+
+      assert_predicate(status, :success?)
     RUBY
   end
 end

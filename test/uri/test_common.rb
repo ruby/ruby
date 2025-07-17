@@ -75,7 +75,7 @@ class URI::TestCommon < Test::Unit::TestCase
     return unless defined?(Ractor)
     assert_ractor(<<~RUBY, require: 'uri')
       r = Ractor.new { URI.parse("https://ruby-lang.org/").inspect }
-      assert_equal(URI.parse("https://ruby-lang.org/").inspect, r.take)
+      assert_equal(URI.parse("https://ruby-lang.org/").inspect, r.value)
     RUBY
   end
 
@@ -113,17 +113,18 @@ class URI::TestCommon < Test::Unit::TestCase
 
   def test_register_scheme_with_symbols
     # Valid schemes from https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml
-    some_uri_class = Class.new(URI::Generic)
-    assert_raise(NameError) { URI.register_scheme 'ms-search', some_uri_class }
-    assert_raise(NameError) { URI.register_scheme 'microsoft.windows.camera', some_uri_class }
-    assert_raise(NameError) { URI.register_scheme 'coaps+ws', some_uri_class }
+    list = []
+    %w[ms-search microsoft.windows.camera coaps+ws].each {|name|
+      list << [name, URI.register_scheme(name, Class.new(URI::Generic))]
+    }
 
-    ms_search_class = Class.new(URI::Generic)
-    URI.register_scheme 'MS_SEARCH', ms_search_class
-    begin
-      assert_equal URI::Generic, URI.parse('ms-search://localhost').class
-    ensure
-      URI.const_get(:Schemes).send(:remove_const, :MS_SEARCH)
+    list.each do |scheme, uri_class|
+      assert_equal uri_class, URI.parse("#{scheme}://localhost").class
+    end
+  ensure
+    schemes = URI.const_get(:Schemes)
+    list.each do |scheme, |
+      schemes.send(:remove_const, schemes.escape(scheme))
     end
   end
 

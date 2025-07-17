@@ -101,9 +101,8 @@ RSpec.describe "bundle lock" do
 
   let(:gemfile_with_rails_weakling_and_foo_from_repo4) do
     build_repo4 do
-      FileUtils.cp rake_path, "#{gem_repo4}/gems/"
-
       build_gem "rake", "10.0.1"
+      build_gem "rake", rake_version
 
       %w[2.3.1 2.3.2].each do |version|
         build_gem "rails", version do |s|
@@ -1257,11 +1256,6 @@ RSpec.describe "bundle lock" do
       end
 
       build_gem "raygun-apm", "1.0.78" do |s|
-        s.platform = "x64-mingw32"
-        s.required_ruby_version = "< #{next_ruby_minor}.dev"
-      end
-
-      build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x64-mingw-ucrt"
         s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
@@ -1346,60 +1340,46 @@ RSpec.describe "bundle lock" do
     L
   end
 
-  it "does not crash on conflicting ruby requirements between platform versions in two different gems" do
+  it "refuses to add platforms incompatible with the lockfile" do
     build_repo4 do
-      build_gem "unf_ext", "0.0.8.2"
-
-      build_gem "unf_ext", "0.0.8.2" do |s|
-        s.required_ruby_version = [">= 2.4", "< #{previous_ruby_minor}"]
-        s.platform = "x64-mingw32"
-      end
-
-      build_gem "unf_ext", "0.0.8.2" do |s|
-        s.required_ruby_version = [">= #{previous_ruby_minor}", "< #{current_ruby_minor}"]
-        s.platform = "x64-mingw-ucrt"
-      end
-
-      build_gem "google-protobuf", "3.21.12"
-
-      build_gem "google-protobuf", "3.21.12" do |s|
-        s.required_ruby_version = [">= 2.5", "< #{previous_ruby_minor}"]
-        s.platform = "x64-mingw32"
-      end
-
-      build_gem "google-protobuf", "3.21.12" do |s|
-        s.required_ruby_version = [">= #{previous_ruby_minor}", "< #{current_ruby_minor}"]
-        s.platform = "x64-mingw-ucrt"
+      build_gem "sorbet-static", "0.5.11989" do |s|
+        s.platform = "x86_64-linux"
       end
     end
 
     gemfile <<~G
       source "https://gem.repo4"
 
-      gem "google-protobuf"
-      gem "unf_ext"
+      gem "sorbet-static"
     G
 
     lockfile <<~L
       GEM
         remote: https://gem.repo4/
         specs:
-          google-protobuf (3.21.12)
-          unf_ext (0.0.8.2)
+          sorbet-static (0.5.11989-x86_64-linux)
 
       PLATFORMS
-        x64-mingw-ucrt
-        x64-mingw32
+        x86_64-linux
 
       DEPENDENCIES
-        google-protobuf
-        unf_ext
+        sorbet-static
 
       BUNDLED WITH
          #{Bundler::VERSION}
     L
 
-    bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s, "DEBUG_RESOLVER" => "1" }
+    simulate_platform "x86_64-linux" do
+      bundle "lock --add-platform ruby", raise_on_error: false
+    end
+
+    nice_error = <<~E.strip
+      Could not find gems matching 'sorbet-static' valid for all resolution platforms (x86_64-linux, ruby) in rubygems repository https://gem.repo4/ or installed locally.
+
+      The source contains the following gems matching 'sorbet-static':
+        * sorbet-static-0.5.11989-x86_64-linux
+    E
+    expect(err).to include(nice_error)
   end
 
   it "respects lower bound ruby requirements" do
@@ -1621,6 +1601,64 @@ RSpec.describe "bundle lock" do
 
         DEPENDENCIES
           debug
+        #{checksums}
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
+
+  context "when a system gem has incorrect dependencies, different from remote gems" do
+    before do
+      build_repo4 do
+        build_gem "foo", "1.0.0" do |s|
+          s.add_dependency "bar"
+        end
+
+        build_gem "bar", "1.0.0"
+      end
+
+      system_gems "foo-1.0.0", gem_repo: gem_repo4, path: default_bundle_path
+
+      # simulate gemspec with wrong empty dependencies
+      foo_gemspec_path = default_bundle_path("specifications/foo-1.0.0.gemspec")
+      foo_gemspec = Gem::Specification.load(foo_gemspec_path.to_s)
+      foo_gemspec.dependencies.clear
+      File.write(foo_gemspec_path, foo_gemspec.to_ruby)
+    end
+
+    it "generates a lockfile using remote dependencies, and prints a warning" do
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "foo"
+      G
+
+      checksums = checksums_section_when_enabled do |c|
+        c.checksum gem_repo4, "foo", "1.0.0"
+        c.checksum gem_repo4, "bar", "1.0.0"
+      end
+
+      simulate_platform "x86_64-linux" do
+        bundle "lock --verbose"
+      end
+
+      expect(err).to eq("Local specification for foo-1.0.0 has different dependencies than the remote gem, ignoring it")
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            bar (1.0.0)
+            foo (1.0.0)
+              bar
+
+        PLATFORMS
+          ruby
+          x86_64-linux
+
+        DEPENDENCIES
+          foo
         #{checksums}
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -2359,6 +2397,267 @@ RSpec.describe "bundle lock" do
         BUNDLED WITH
            #{Bundler::VERSION}
       L
+    end
+  end
+
+  describe "--normalize-platforms on linux" do
+    let(:normalized_lockfile) do
+      <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            irb (1.0.0)
+            irb (1.0.0-x86_64-linux)
+
+        PLATFORMS
+          ruby
+          x86_64-linux
+
+        DEPENDENCIES
+          irb
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    before do
+      build_repo4 do
+        build_gem "irb", "1.0.0"
+
+        build_gem "irb", "1.0.0" do |s|
+          s.platform = "x86_64-linux"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "irb"
+      G
+    end
+
+    context "when already normalized" do
+      before do
+        lockfile normalized_lockfile
+      end
+
+      it "is a noop" do
+        simulate_platform "x86_64-linux" do
+          bundle "lock --normalize-platforms"
+        end
+
+        expect(lockfile).to eq(normalized_lockfile)
+      end
+    end
+
+    context "when not already normalized" do
+      before do
+        lockfile <<~L
+          GEM
+            remote: https://gem.repo4/
+            specs:
+              irb (1.0.0)
+
+          PLATFORMS
+             ruby
+
+          DEPENDENCIES
+            irb
+
+          BUNDLED WITH
+             #{Bundler::VERSION}
+        L
+      end
+
+      it "normalizes the list of platforms and native gems in the lockfile" do
+        simulate_platform "x86_64-linux" do
+          bundle "lock --normalize-platforms"
+        end
+
+        expect(lockfile).to eq(normalized_lockfile)
+      end
+    end
+  end
+
+  describe "--normalize-platforms on darwin" do
+    let(:normalized_lockfile) do
+      <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            irb (1.0.0)
+            irb (1.0.0-arm64-darwin)
+
+        PLATFORMS
+          arm64-darwin
+          ruby
+
+        DEPENDENCIES
+          irb
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    before do
+      build_repo4 do
+        build_gem "irb", "1.0.0"
+
+        build_gem "irb", "1.0.0" do |s|
+          s.platform = "arm64-darwin"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "irb"
+      G
+    end
+
+    context "when already normalized" do
+      before do
+        lockfile normalized_lockfile
+      end
+
+      it "is a noop" do
+        simulate_platform "arm64-darwin-23" do
+          bundle "lock --normalize-platforms"
+        end
+
+        expect(lockfile).to eq(normalized_lockfile)
+      end
+    end
+
+    context "when having only ruby" do
+      before do
+        lockfile <<~L
+          GEM
+            remote: https://gem.repo4/
+            specs:
+              irb (1.0.0)
+
+          PLATFORMS
+             ruby
+
+          DEPENDENCIES
+            irb
+
+          BUNDLED WITH
+             #{Bundler::VERSION}
+        L
+      end
+
+      it "normalizes the list of platforms and native gems in the lockfile" do
+        simulate_platform "arm64-darwin-23" do
+          bundle "lock --normalize-platforms"
+        end
+
+        expect(lockfile).to eq(normalized_lockfile)
+      end
+    end
+
+    context "when having only the current platform with version" do
+      before do
+        lockfile <<~L
+          GEM
+            remote: https://gem.repo4/
+            specs:
+              irb (1.0.0-arm64-darwin)
+
+          PLATFORMS
+             arm64-darwin-23
+
+          DEPENDENCIES
+            irb
+
+          BUNDLED WITH
+             #{Bundler::VERSION}
+        L
+      end
+
+      it "normalizes the list of platforms by removing version" do
+        simulate_platform "arm64-darwin-23" do
+          bundle "lock --normalize-platforms"
+        end
+
+        expect(lockfile).to eq(normalized_lockfile)
+      end
+    end
+
+    context "when having other platforms with version" do
+      before do
+        lockfile <<~L
+          GEM
+            remote: https://gem.repo4/
+            specs:
+              irb (1.0.0-arm64-darwin)
+
+          PLATFORMS
+             arm64-darwin-22
+
+          DEPENDENCIES
+            irb
+
+          BUNDLED WITH
+             #{Bundler::VERSION}
+        L
+      end
+
+      it "normalizes the list of platforms by removing version" do
+        simulate_platform "arm64-darwin-23" do
+          bundle "lock --normalize-platforms"
+        end
+
+        expect(lockfile).to eq(normalized_lockfile)
+      end
+    end
+  end
+
+  describe "--normalize-platforms with gems without generic variant" do
+    let(:original_lockfile) do
+      <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            sorbet-static (1.0-x86_64-linux)
+
+        PLATFORMS
+          ruby
+          x86_64-linux
+
+        DEPENDENCIES
+          sorbet-static
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    before do
+      build_repo4 do
+        build_gem "sorbet-static" do |s|
+          s.platform = "x86_64-linux"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "sorbet-static"
+      G
+
+      lockfile original_lockfile
+    end
+
+    it "removes invalid platforms" do
+      simulate_platform "x86_64-linux" do
+        bundle "lock --normalize-platforms"
+      end
+
+      expect(lockfile).to eq(original_lockfile.gsub(/^  ruby\n/m, ""))
     end
   end
 end

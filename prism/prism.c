@@ -13143,14 +13143,6 @@ match8(const pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, 
 }
 
 /**
- * Returns true if the current token is any of the nine given types.
- */
-static inline bool
-match9(const pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, pm_token_type_t type3, pm_token_type_t type4, pm_token_type_t type5, pm_token_type_t type6, pm_token_type_t type7, pm_token_type_t type8, pm_token_type_t type9) {
-    return match1(parser, type1) || match1(parser, type2) || match1(parser, type3) || match1(parser, type4) || match1(parser, type5) || match1(parser, type6) || match1(parser, type7) || match1(parser, type8) || match1(parser, type9);
-}
-
-/**
  * If the current token is of the specified type, lex forward by one token and
  * return true. Otherwise, return false. For example:
  *
@@ -17412,6 +17404,14 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
             // If we found a label, we need to immediately return to the caller.
             if (pm_symbol_node_label_p(node)) return node;
 
+            // Call nodes (arithmetic operations) are not allowed in patterns
+            if (PM_NODE_TYPE(node) == PM_CALL_NODE) {
+                pm_parser_err_node(parser, node, diag_id);
+                pm_missing_node_t *missing_node = pm_missing_node_create(parser, node->location.start, node->location.end);
+                pm_node_destroy(parser, node);
+                return (pm_node_t *) missing_node;
+            }
+
             // Now that we have a primitive, we need to check if it's part of a range.
             if (accept2(parser, PM_TOKEN_DOT_DOT, PM_TOKEN_DOT_DOT_DOT)) {
                 pm_token_t operator = parser->previous;
@@ -17694,7 +17694,7 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
         // Gather up all of the patterns into the list.
         while (accept1(parser, PM_TOKEN_COMMA)) {
             // Break early here in case we have a trailing comma.
-            if (match9(parser, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_SEMICOLON, PM_TOKEN_NEWLINE, PM_TOKEN_EOF,PM_TOKEN_KEYWORD_AND, PM_TOKEN_KEYWORD_OR)) {
+            if (match7(parser, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_SEMICOLON, PM_TOKEN_KEYWORD_AND, PM_TOKEN_KEYWORD_OR)) {
                 node = (pm_node_t *) pm_implicit_rest_node_create(parser, &parser->previous);
                 pm_node_list_append(&nodes, node);
                 trailing_rest = true;
@@ -19774,6 +19774,20 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_token_t message = parser->previous;
             pm_arguments_t arguments = { 0 };
             pm_node_t *receiver = NULL;
+
+            // If we do not accept a command call, then we also do not accept a
+            // not without parentheses. In this case we need to reject this
+            // syntax.
+            if (!accepts_command_call && !match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
+                if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES)) {
+                    pm_parser_err(parser, parser->previous.end, parser->previous.end + 1, PM_ERR_EXPECT_LPAREN_AFTER_NOT_LPAREN);
+                } else {
+                    accept1(parser, PM_TOKEN_NEWLINE);
+                    pm_parser_err_current(parser, PM_ERR_EXPECT_LPAREN_AFTER_NOT_OTHER);
+                }
+
+                return (pm_node_t *) pm_missing_node_create(parser, parser->current.start, parser->current.end);
+            }
 
             accept1(parser, PM_TOKEN_NEWLINE);
 
@@ -22676,7 +22690,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
             }
 
             search_shebang = false;
-        } else if (options->main_script && !parser->parsing_eval) {
+        } else if (options != NULL && options->main_script && !parser->parsing_eval) {
             search_shebang = true;
         }
     }

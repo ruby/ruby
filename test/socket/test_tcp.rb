@@ -73,6 +73,30 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     end
   end
 
+  def test_tcp_initialize_open_timeout
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.connect_address.ip_port
+    server.close
+
+    assert_raise(Errno::ETIMEDOUT) do
+      TCPSocket.new(
+        "localhost",
+        port,
+        open_timeout: 0.01,
+        fast_fallback: true,
+        test_mode_settings: { delay: { ipv4: 1000 } }
+      )
+    end
+  end
+
+  def test_initialize_open_timeout_with_other_timeouts
+    assert_raise(ArgumentError) do
+      TCPSocket.new("localhost", 12345, open_timeout: 0.01, resolv_timeout: 0.01)
+    end
+  end
+
   def test_initialize_connect_timeout
     assert_raise(IO::TimeoutError, Errno::ENETUNREACH, Errno::EACCES) do
       TCPSocket.new("192.0.2.1", 80, connect_timeout: 0)

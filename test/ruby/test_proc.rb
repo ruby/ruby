@@ -1637,6 +1637,10 @@ class TestProc < Test::Unit::TestCase
     assert_equal(3, b.local_variable_get(:when))
     assert_equal(4, b.local_variable_get(:begin))
     assert_equal(5, b.local_variable_get(:end))
+
+    assert_raise_with_message(NameError, /local variable \Wdefault\W/) {
+      binding.local_variable_get(:default)
+    }
   end
 
   def test_local_variable_set
@@ -1651,7 +1655,7 @@ class TestProc < Test::Unit::TestCase
 
   def test_numparam_is_not_local_variables
     "foo".tap do
-      _9
+      _9 and flunk
       assert_equal([], binding.local_variables)
       assert_raise(NameError) { binding.local_variable_get(:_9) }
       assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
@@ -1670,7 +1674,7 @@ class TestProc < Test::Unit::TestCase
       assert_raise(NameError) { binding.local_variable_get(:_9) }
       assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
       "bar".tap do
-        _9
+        _9 and flunk
         assert_equal([], binding.local_variables)
         assert_raise(NameError) { binding.local_variable_get(:_9) }
         assert_raise(NameError) { binding.local_variable_set(:_9, 1) }

@@ -1,10 +1,10 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-UPDATE" "1" "March 2025" ""
+.TH "BUNDLE\-UPDATE" "1" "July 2025" ""
 .SH "NAME"
 \fBbundle\-update\fR \- Update your gems to the latest available versions
 .SH "SYNOPSIS"
-\fBbundle update\fR \fI*gems\fR [\-\-all] [\-\-group=NAME] [\-\-source=NAME] [\-\-local] [\-\-ruby] [\-\-bundler[=VERSION]] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-jobs=NUMBER] [\-\-quiet] [\-\-patch|\-\-minor|\-\-major] [\-\-pre] [\-\-redownload] [\-\-strict] [\-\-conservative]
+\fBbundle update\fR \fI*gems\fR [\-\-all] [\-\-group=NAME] [\-\-source=NAME] [\-\-local] [\-\-ruby] [\-\-bundler[=VERSION]] [\-\-force] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-jobs=NUMBER] [\-\-quiet] [\-\-patch|\-\-minor|\-\-major] [\-\-pre] [\-\-strict] [\-\-conservative]
 .SH "DESCRIPTION"
 Update the gems specified (all gems, if \fB\-\-all\fR flag is used), ignoring the previously installed gems specified in the \fBGemfile\.lock\fR\. In general, you should use bundle install(1) \fIbundle\-install\.1\.html\fR to install the same exact gems and versions across machines\.
 .P
@@ -29,6 +29,9 @@ Update the locked version of Ruby to the current version of Ruby\.
 \fB\-\-bundler[=BUNDLER]\fR
 Update the locked version of bundler to the invoked bundler version\.
 .TP
+\fB\-\-force\fR, \fB\-\-redownload\fR
+Force reinstalling every gem, even if already installed\.
+.TP
 \fB\-\-full\-index\fR
 Fall back to using the single\-file index of all gems\.
 .TP
@@ -43,9 +46,6 @@ Retry failed network or git requests for \fInumber\fR times\.
 .TP
 \fB\-\-quiet\fR
 Only output warnings and errors\.
-.TP
-\fB\-\-redownload\fR, \fB\-\-force\fR
-Force downloading every gem\.
 .TP
 \fB\-\-patch\fR
 Prefer updating only to next patch version\.

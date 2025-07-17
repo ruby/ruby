@@ -1,0 +1,21 @@
+[package]
+name = "zjit"
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.85.0" # Minimally supported rust version
+publish = false         # Don't publish to crates.io
+
+[dependencies]
+# No required dependencies to simplify build process. TODO: Link to yet to be
+# written rationale. Optional For development and testing purposes
+capstone = { version = "0.13.0", optional = true }
+
+[dev-dependencies]
+expect-test = "1.5.1"
+
+# NOTE: Development builds select a set of these via configure.ac
+# For debugging, `make V=1` shows exact cargo invocation.
+[features]
+# Support --yjit-dump-disasm and RubyVM::YJIT.disasm using libcapstone.
+disasm = ["capstone"]
+runtime_checks = []

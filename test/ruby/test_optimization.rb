@@ -1215,4 +1215,55 @@ class TestRubyOptimization < Test::Unit::TestCase
       end
     RUBY
   end
+
+  def test_opt_new_with_safe_navigation
+    payload = nil
+    assert_nil payload&.new
+  end
+
+  def test_opt_new
+    pos_initialize = "
+      def initialize a, b
+        @a = a
+        @b = b
+      end
+    "
+    kw_initialize = "
+      def initialize a:, b:
+        @a = a
+        @b = b
+      end
+    "
+    kw_hash_initialize = "
+      def initialize a, **kw
+        @a = a
+        @b = kw[:b]
+      end
+    "
+    pos_prelude = "class OptNewFoo; #{pos_initialize}; end;"
+    kw_prelude = "class OptNewFoo; #{kw_initialize}; end;"
+    kw_hash_prelude = "class OptNewFoo; #{kw_hash_initialize}; end;"
+    [
+      "#{pos_prelude} OptNewFoo.new 1, 2",
+      "#{pos_prelude} a = 1; b = 2; OptNewFoo.new a, b",
+      "#{pos_prelude} def optnew_foo(a, b) = OptNewFoo.new(a, b); optnew_foo 1, 2",
+      "#{pos_prelude} def optnew_foo(*a) = OptNewFoo.new(*a); optnew_foo 1, 2",
+      "#{pos_prelude} def optnew_foo(...) = OptNewFoo.new(...); optnew_foo 1, 2",
+      "#{kw_prelude} def optnew_foo(**a) = OptNewFoo.new(**a); optnew_foo a: 1, b: 2",
+      "#{kw_hash_prelude} def optnew_foo(*a, **b) = OptNewFoo.new(*a, **b); optnew_foo 1, b: 2",
+    ].each do |code|
+      iseq = RubyVM::InstructionSequence.compile(code)
+      insn = iseq.disasm
+      assert_match(/opt_new/, insn)
+      assert_match(/OptNewFoo:.+@a=1, @b=2/, iseq.eval.inspect)
+    end
+    [
+      'def optnew_foo(&) = OptNewFoo.new(&)',
+      'def optnew_foo(a, ...) = OptNewFoo.new(a, ...)',
+    ].each do |code|
+      iseq = RubyVM::InstructionSequence.compile(code)
+      insn = iseq.disasm
+      assert_no_match(/opt_new/, insn)
+    end
+  end
 end

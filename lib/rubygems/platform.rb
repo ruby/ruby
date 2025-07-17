@@ -88,56 +88,45 @@ class Gem::Platform
     when Array then
       @cpu, @os, @version = arch
     when String then
-      arch = arch.split "-"
+      cpu, os = arch.sub(/-+$/, "").split("-", 2)
 
-      if arch.length > 2 && !arch.last.match?(/\d+(\.\d+)?$/) # reassemble x86-linux-{libc}
-        extra = arch.pop
-        arch.last << "-#{extra}"
+      @cpu = if cpu&.match?(/i\d86/)
+        "x86"
+      else
+        cpu
       end
 
-      cpu = arch.shift
-
-      @cpu = case cpu
-             when /i\d86/ then "x86"
-             else cpu
-      end
-
-      if arch.length == 2 && arch.last.match?(/^\d+(\.\d+)?$/) # for command-line
-        @os, @version = arch
-        return
-      end
-
-      os, = arch
       if os.nil?
         @cpu = nil
         os = cpu
       end # legacy jruby
 
       @os, @version = case os
-                      when /aix(\d+)?/ then             ["aix",       $1]
-                      when /cygwin/ then                ["cygwin",    nil]
-                      when /darwin(\d+)?/ then          ["darwin",    $1]
-                      when /^macruby$/ then             ["macruby",   nil]
-                      when /freebsd(\d+)?/ then         ["freebsd",   $1]
-                      when /^java$/, /^jruby$/ then     ["java",      nil]
-                      when /^java([\d.]*)/ then         ["java",      $1]
-                      when /^dalvik(\d+)?$/ then        ["dalvik",    $1]
-                      when /^dotnet$/ then              ["dotnet",    nil]
-                      when /^dotnet([\d.]*)/ then       ["dotnet",    $1]
-                      when /linux-?(\w+)?/ then         ["linux",     $1]
-                      when /mingw32/ then               ["mingw32",   nil]
-                      when /mingw-?(\w+)?/ then         ["mingw",     $1]
-                      when /(mswin\d+)(\_(\d+))?/ then
+                      when /aix-?(\d+)?/ then                ["aix",     $1]
+                      when /cygwin/ then                     ["cygwin",  nil]
+                      when /darwin-?(\d+)?/ then             ["darwin",  $1]
+                      when "macruby" then                    ["macruby", nil]
+                      when /^macruby-?(\d+(?:\.\d+)*)?/ then ["macruby", $1]
+                      when /freebsd-?(\d+)?/ then            ["freebsd", $1]
+                      when "java", "jruby" then              ["java",    nil]
+                      when /^java-?(\d+(?:\.\d+)*)?/ then    ["java",    $1]
+                      when /^dalvik-?(\d+)?$/ then           ["dalvik",  $1]
+                      when /^dotnet$/ then                   ["dotnet",  nil]
+                      when /^dotnet-?(\d+(?:\.\d+)*)?/ then  ["dotnet",  $1]
+                      when /linux-?(\w+)?/ then              ["linux",   $1]
+                      when /mingw32/ then                    ["mingw32", nil]
+                      when /mingw-?(\w+)?/ then              ["mingw",   $1]
+                      when /(mswin\d+)(?:[_-](\d+))?/ then
                         os = $1
-                        version = $3
-                        @cpu = "x86" if @cpu.nil? && os =~ /32$/
+                        version = $2
+                        @cpu = "x86" if @cpu.nil? && os.end_with?("32")
                         [os, version]
-                      when /netbsdelf/ then             ["netbsdelf", nil]
-                      when /openbsd(\d+\.\d+)?/ then    ["openbsd",   $1]
-                      when /solaris(\d+\.\d+)?/ then    ["solaris",   $1]
-                      when /wasi/ then                  ["wasi",      nil]
+                      when /netbsdelf/ then                  ["netbsdelf", nil]
+                      when /openbsd-?(\d+\.\d+)?/ then       ["openbsd",   $1]
+                      when /solaris-?(\d+\.\d+)?/ then       ["solaris",   $1]
+                      when /wasi/ then                       ["wasi",      nil]
                       # test
-                      when /^(\w+_platform)(\d+)?/ then [$1,          $2]
+                      when /^(\w+_platform)-?(\d+)?/ then    [$1,          $2]
                       else ["unknown", nil]
       end
     when Gem::Platform then
@@ -154,7 +143,7 @@ class Gem::Platform
   end
 
   def to_s
-    to_a.compact.join "-"
+    to_a.compact.join(@cpu.nil? ? "" : "-")
   end
 
   ##
@@ -266,4 +255,118 @@ class Gem::Platform
   # This will be replaced with Gem::Platform::local.
 
   CURRENT = "current"
+
+  JAVA  = Gem::Platform.new("java") # :nodoc:
+  MSWIN = Gem::Platform.new("mswin32") # :nodoc:
+  MSWIN64 = Gem::Platform.new("mswin64") # :nodoc:
+  MINGW = Gem::Platform.new("x86-mingw32") # :nodoc:
+  X64_MINGW_LEGACY = Gem::Platform.new("x64-mingw32") # :nodoc:
+  X64_MINGW = Gem::Platform.new("x64-mingw-ucrt") # :nodoc:
+  UNIVERSAL_MINGW = Gem::Platform.new("universal-mingw") # :nodoc:
+  WINDOWS = [MSWIN, MSWIN64, UNIVERSAL_MINGW].freeze # :nodoc:
+  X64_LINUX = Gem::Platform.new("x86_64-linux") # :nodoc:
+  X64_LINUX_MUSL = Gem::Platform.new("x86_64-linux-musl") # :nodoc:
+
+  GENERICS = [JAVA, *WINDOWS].freeze # :nodoc:
+  private_constant :GENERICS
+
+  GENERIC_CACHE = GENERICS.each_with_object({}) {|g, h| h[g] = g } # :nodoc:
+  private_constant :GENERIC_CACHE
+
+  class << self
+    ##
+    # Returns the generic platform for the given platform.
+
+    def generic(platform)
+      return Gem::Platform::RUBY if platform.nil? || platform == Gem::Platform::RUBY
+
+      GENERIC_CACHE[platform] ||= begin
+        found = GENERICS.find do |match|
+          platform === match
+        end
+        found || Gem::Platform::RUBY
+      end
+    end
+
+    ##
+    # Returns the platform specificity match for the given spec platform and user platform.
+
+    def platform_specificity_match(spec_platform, user_platform)
+      return -1 if spec_platform == user_platform
+      return 1_000_000 if spec_platform.nil? || spec_platform == Gem::Platform::RUBY || user_platform == Gem::Platform::RUBY
+
+      os_match(spec_platform, user_platform) +
+        cpu_match(spec_platform, user_platform) * 10 +
+        version_match(spec_platform, user_platform) * 100
+    end
+
+    ##
+    # Sorts and filters the best platform match for the given matching specs and platform.
+
+    def sort_and_filter_best_platform_match(matching, platform)
+      return matching if matching.one?
+
+      exact = matching.select {|spec| spec.platform == platform }
+      return exact if exact.any?
+
+      sorted_matching = sort_best_platform_match(matching, platform)
+      exemplary_spec = sorted_matching.first
+
+      sorted_matching.take_while {|spec| same_specificity?(platform, spec, exemplary_spec) && same_deps?(spec, exemplary_spec) }
+    end
+
+    ##
+    # Sorts the best platform match for the given matching specs and platform.
+
+    def sort_best_platform_match(matching, platform)
+      matching.sort_by.with_index do |spec, i|
+        [
+          platform_specificity_match(spec.platform, platform),
+          i, # for stable sort
+        ]
+      end
+    end
+
+    private
+
+    def same_specificity?(platform, spec, exemplary_spec)
+      platform_specificity_match(spec.platform, platform) == platform_specificity_match(exemplary_spec.platform, platform)
+    end
+
+    def same_deps?(spec, exemplary_spec)
+      spec.required_ruby_version == exemplary_spec.required_ruby_version &&
+        spec.required_rubygems_version == exemplary_spec.required_rubygems_version &&
+        spec.dependencies.sort == exemplary_spec.dependencies.sort
+    end
+
+    def os_match(spec_platform, user_platform)
+      if spec_platform.os == user_platform.os
+        0
+      else
+        1
+      end
+    end
+
+    def cpu_match(spec_platform, user_platform)
+      if spec_platform.cpu == user_platform.cpu
+        0
+      elsif spec_platform.cpu == "arm" && user_platform.cpu.to_s.start_with?("arm")
+        0
+      elsif spec_platform.cpu.nil? || spec_platform.cpu == "universal"
+        1
+      else
+        2
+      end
+    end
+
+    def version_match(spec_platform, user_platform)
+      if spec_platform.version == user_platform.version
+        0
+      elsif spec_platform.version.nil?
+        1
+      else
+        2
+      end
+    end
+  end
 end

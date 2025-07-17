@@ -56,7 +56,7 @@ static VALUE sGroup;
 #endif
 RUBY_EXTERN char *getlogin(void);
 
-#define RUBY_ETC_VERSION "1.4.5"
+#define RUBY_ETC_VERSION "1.4.6"
 
 #define SYMBOL_LIT(str) ID2SYM(rb_intern_const(str ""))
 
@@ -1310,5 +1310,9 @@ Init_etc(void)
 #endif
     rb_extend_object(sGroup, rb_mEnumerable);
     rb_define_singleton_method(sGroup, "each", etc_each_group, 0);
+#endif
+
+#if defined(HAVE_GETPWENT) || defined(HAVE_GETGRENT)
+    (void)safe_setup_str;
 #endif
 }

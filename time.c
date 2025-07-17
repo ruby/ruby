@@ -249,6 +249,7 @@ divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
 #   define FIXWV2WINT(w) FIX2LONG(WIDEVAL_GET(w))
 #endif
 
+#define SIZEOF_WIDEINT SIZEOF_INT64_T
 #define POSFIXWVABLE(wi) ((wi) < FIXWV_MAX+1)
 #define NEGFIXWVABLE(wi) ((wi) >= FIXWV_MIN)
 #define FIXWV_P(w) FIXWINT_P(WIDEVAL_GET(w))
@@ -1891,7 +1892,7 @@ time_mark(void *ptr)
 {
     struct time_object *tobj = ptr;
     if (!FIXWV_P(tobj->timew)) {
-        rb_gc_mark_movable(WIDEVAL_GET(tobj->timew));
+        rb_gc_mark_movable(w2v(tobj->timew));
     }
     rb_gc_mark_movable(tobj->vtm.year);
     rb_gc_mark_movable(tobj->vtm.subsecx);
@@ -1904,7 +1905,7 @@ time_compact(void *ptr)
 {
     struct time_object *tobj = ptr;
     if (!FIXWV_P(tobj->timew)) {
-        WIDEVAL_GET(tobj->timew) = rb_gc_location(WIDEVAL_GET(tobj->timew));
+        WIDEVAL_GET(tobj->timew) = WIDEVAL_WRAP(rb_gc_location(w2v(tobj->timew)));
     }
 
     tobj->vtm.year = rb_gc_location(tobj->vtm.year);
@@ -1968,11 +1969,11 @@ time_modify(VALUE time)
 }
 
 static wideval_t
-timenano2timew(time_t sec, long nsec)
+timenano2timew(wideint_t sec, long nsec)
 {
     wideval_t timew;
 
-    timew = rb_time_magnify(TIMET2WV(sec));
+    timew = rb_time_magnify(WINT2WV(sec));
     if (nsec)
         timew = wadd(timew, wmulquoll(WINT2WV(nsec), TIME_SCALE, 1000000000));
     return timew;
@@ -2306,14 +2307,14 @@ utc_offset_arg(VALUE arg)
 
 static void
 zone_set_offset(VALUE zone, struct time_object *tobj,
-                wideval_t tlocal, wideval_t tutc)
+                wideval_t tlocal, wideval_t tutc, VALUE time)
 {
     /* tlocal and tutc must be unmagnified and in seconds */
     wideval_t w = wsub(tlocal, tutc);
     VALUE off = w2v(w);
     validate_utc_offset(off);
-    tobj->vtm.utc_offset = off;
-    tobj->vtm.zone = zone;
+    RB_OBJ_WRITE(time, &tobj->vtm.utc_offset, off);
+    RB_OBJ_WRITE(time, &tobj->vtm.zone, zone);
     TZMODE_SET_LOCALTIME(tobj);
 }
 
@@ -2428,7 +2429,7 @@ zone_timelocal(VALUE zone, VALUE time)
     if (UNDEF_P(utc)) return 0;
 
     s = extract_time(utc);
-    zone_set_offset(zone, tobj, t, s);
+    zone_set_offset(zone, tobj, t, s, time);
     s = rb_time_magnify(s);
     if (tobj->vtm.subsecx != INT2FIX(0)) {
         s = wadd(s, v2w(tobj->vtm.subsecx));
@@ -2457,7 +2458,7 @@ zone_localtime(VALUE zone, VALUE time)
 
     s = extract_vtm(local, time, tobj, subsecx);
     tobj->vtm.tm_got = 1;
-    zone_set_offset(zone, tobj, s, t);
+    zone_set_offset(zone, tobj, s, t, time);
     zone_set_dst(zone, tobj, tm);
 
     RB_GC_GUARD(time);
@@ -2747,15 +2748,15 @@ only_year:
 }
 
 static void
-subsec_normalize(time_t *secp, long *subsecp, const long maxsubsec)
+subsec_normalize(wideint_t *secp, long *subsecp, const long maxsubsec)
 {
-    time_t sec = *secp;
+    wideint_t sec = *secp;
     long subsec = *subsecp;
     long sec2;
 
     if (UNLIKELY(subsec >= maxsubsec)) { /* subsec positive overflow */
         sec2 = subsec / maxsubsec;
-        if (TIMET_MAX - sec2 < sec) {
+        if (WIDEINT_MAX - sec2 < sec) {
             rb_raise(rb_eRangeError, "out of Time range");
         }
         subsec -= sec2 * maxsubsec;
@@ -2763,29 +2764,18 @@ subsec_normalize(time_t *secp, long *subsecp, const long maxsubsec)
     }
     else if (UNLIKELY(subsec < 0)) {    /* subsec negative overflow */
         sec2 = NDIV(subsec, maxsubsec); /* negative div */
-        if (sec < TIMET_MIN - sec2) {
+        if (sec < WIDEINT_MIN - sec2) {
             rb_raise(rb_eRangeError, "out of Time range");
         }
         subsec -= sec2 * maxsubsec;
         sec += sec2;
     }
-#ifndef NEGATIVE_TIME_T
-    if (sec < 0)
-        rb_raise(rb_eArgError, "time must be positive");
-#endif
     *secp = sec;
     *subsecp = subsec;
 }
 
 #define time_usec_normalize(secp, usecp) subsec_normalize(secp, usecp, 1000000)
 #define time_nsec_normalize(secp, nsecp) subsec_normalize(secp, nsecp, 1000000000)
-
-static wideval_t
-nsec2timew(time_t sec, long nsec)
-{
-    time_nsec_normalize(&sec, &nsec);
-    return timenano2timew(sec, nsec);
-}
 
 static VALUE
 time_new_timew(VALUE klass, wideval_t timew)
@@ -2800,25 +2790,39 @@ time_new_timew(VALUE klass, wideval_t timew)
     return time;
 }
 
+static wideint_t
+TIMETtoWIDEINT(time_t t)
+{
+#if SIZEOF_TIME_T * CHAR_BIT - (SIGNEDNESS_OF_TIME_T < 0) > \
+    SIZEOF_WIDEINT * CHAR_BIT - 1
+    /* compare in bit size without sign bit */
+    if (t > WIDEINT_MAX) rb_raise(rb_eArgError, "out of Time range");
+#endif
+    return (wideint_t)t;
+}
+
 VALUE
 rb_time_new(time_t sec, long usec)
 {
-    time_usec_normalize(&sec, &usec);
-    return time_new_timew(rb_cTime, timenano2timew(sec, usec * 1000));
+    wideint_t isec = TIMETtoWIDEINT(sec);
+    time_usec_normalize(&isec, &usec);
+    return time_new_timew(rb_cTime, timenano2timew(isec, usec * 1000));
 }
 
 /* returns localtime time object */
 VALUE
 rb_time_nano_new(time_t sec, long nsec)
 {
-    return time_new_timew(rb_cTime, nsec2timew(sec, nsec));
+    wideint_t isec = TIMETtoWIDEINT(sec);
+    time_nsec_normalize(&isec, &nsec);
+    return time_new_timew(rb_cTime, timenano2timew(isec, nsec));
 }
 
 VALUE
 rb_time_timespec_new(const struct timespec *ts, int offset)
 {
     struct time_object *tobj;
-    VALUE time = time_new_timew(rb_cTime, nsec2timew(ts->tv_sec, ts->tv_nsec));
+    VALUE time = rb_time_nano_new(ts->tv_sec, ts->tv_nsec);
 
     if (-86400 < offset && offset <  86400) { /* fixoff */
         GetTimeval(time, tobj);
@@ -4084,7 +4088,9 @@ time_init_copy(VALUE copy, VALUE time)
     if (!OBJ_INIT_COPY(copy, time)) return copy;
     GetTimeval(time, tobj);
     GetNewTimeval(copy, tcopy);
-    MEMCPY(tcopy, tobj, struct time_object, 1);
+
+    time_set_timew(copy, tcopy, tobj->timew);
+    time_set_vtm(copy, tcopy, tobj->vtm);
 
     return copy;
 }
@@ -5748,7 +5754,7 @@ end_submicro: ;
     }
     if (!NIL_P(zone)) {
         zone = mload_zone(time, zone);
-        tobj->vtm.zone = zone;
+        RB_OBJ_WRITE(time, &tobj->vtm.zone, zone);
         zone_localtime(zone, time);
     }
 
@@ -5794,8 +5800,10 @@ tm_from_time(VALUE klass, VALUE time)
     tm = time_s_alloc(klass);
     ttm = RTYPEDDATA_GET_DATA(tm);
     v = &vtm;
-    GMTIMEW(ttm->timew = tobj->timew, v);
-    ttm->timew = wsub(ttm->timew, v->subsecx);
+
+    WIDEVALUE timew = tobj->timew;
+    GMTIMEW(timew, v);
+    time_set_timew(tm, ttm, wsub(timew, v->subsecx));
     v->subsecx = INT2FIX(0);
     v->zone = Qnil;
     time_set_vtm(tm, ttm, *v);

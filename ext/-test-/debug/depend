@@ -128,6 +128,7 @@ init.o: $(hdrdir)/ruby/internal/intern/re.h
 init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 init.o: $(hdrdir)/ruby/internal/intern/select.h
 init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+init.o: $(hdrdir)/ruby/internal/intern/set.h
 init.o: $(hdrdir)/ruby/internal/intern/signal.h
 init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 init.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -288,6 +289,7 @@ inspector.o: $(hdrdir)/ruby/internal/intern/re.h
 inspector.o: $(hdrdir)/ruby/internal/intern/ruby.h
 inspector.o: $(hdrdir)/ruby/internal/intern/select.h
 inspector.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+inspector.o: $(hdrdir)/ruby/internal/intern/set.h
 inspector.o: $(hdrdir)/ruby/internal/intern/signal.h
 inspector.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 inspector.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -448,6 +450,7 @@ profile_frames.o: $(hdrdir)/ruby/internal/intern/re.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/ruby.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/select.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+profile_frames.o: $(hdrdir)/ruby/internal/intern/set.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/signal.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/string.h

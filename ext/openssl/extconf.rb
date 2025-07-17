@@ -38,7 +38,7 @@ Logging::message "=== OpenSSL for Ruby configurator ===\n"
 
 $defs.push("-D""OPENSSL_SUPPRESS_DEPRECATED")
 
-have_func("rb_io_descriptor")
+have_func("rb_io_descriptor", "ruby/io.h")
 have_func("rb_io_maybe_wait(0, Qnil, Qnil, Qnil)", "ruby/io.h") # Ruby 3.1
 have_func("rb_io_timeout", "ruby/io.h")
 
@@ -134,6 +134,11 @@ ssl_h = "openssl/ssl.h".freeze
 
 # compile options
 have_func("RAND_egd()", "openssl/rand.h")
+
+# added in OpenSSL 1.0.2, not in LibreSSL yet
+have_func("SSL_CTX_set1_sigalgs_list(NULL, NULL)", ssl_h)
+# added in OpenSSL 1.0.2, not in LibreSSL or AWS-LC yet
+have_func("SSL_CTX_set1_client_sigalgs_list(NULL, NULL)", ssl_h)
 
 # added in 1.1.0, currently not in LibreSSL
 have_func("EVP_PBE_scrypt(\"\", 0, (unsigned char *)\"\", 0, 0, 0, 0, 0, NULL, 0)", evp_h)

@@ -9,7 +9,7 @@ class TestFiberIO < Test::Unit::TestCase
     omit unless defined?(UNIXSocket)
 
     i, o = UNIXSocket.pair
-    if RUBY_PLATFORM=~/mswin|mingw/
+    if RUBY_PLATFORM =~ /mswin|mingw/
       i.nonblock = true
       o.nonblock = true
     end
@@ -44,7 +44,7 @@ class TestFiberIO < Test::Unit::TestCase
     16.times.map do
       Thread.new do
         i, o = UNIXSocket.pair
-        if RUBY_PLATFORM=~/mswin|mingw/
+        if RUBY_PLATFORM =~ /mswin|mingw/
           i.nonblock = true
           o.nonblock = true
         end
@@ -67,7 +67,7 @@ class TestFiberIO < Test::Unit::TestCase
 
   def test_epipe_on_read
     omit unless defined?(UNIXSocket)
-    omit "nonblock=true isn't properly supported on Windows" if RUBY_PLATFORM=~/mswin|mingw/
+    omit "nonblock=true isn't properly supported on Windows" if RUBY_PLATFORM =~ /mswin|mingw/
 
     i, o = UNIXSocket.pair
 
@@ -242,38 +242,37 @@ class TestFiberIO < Test::Unit::TestCase
     # Windows has UNIXSocket, but only with VS 2019+
     omit "UNIXSocket is not defined!" unless defined?(UNIXSocket)
 
-    i, o = Socket.pair(:UNIX, :STREAM)
-    if RUBY_PLATFORM=~/mswin|mingw/
-      i.nonblock = true
-      o.nonblock = true
-    end
-
-    reading_thread = Thread.new do
-      Thread.current.report_on_exception = false
-      i.wait_readable
-    end
-
-    fs_thread = Thread.new do
-      # Wait until the reading thread is blocked on read:
-      Thread.pass until reading_thread.status == "sleep"
-
-      scheduler = Scheduler.new
-      Fiber.set_scheduler scheduler
-      Fiber.schedule do
-        i.close
+    Socket.pair(:UNIX, :STREAM) do |i, o|
+      if RUBY_PLATFORM =~ /mswin|mingw/
+        i.nonblock = true
+        o.nonblock = true
       end
+
+      reading_thread = Thread.new do
+        Thread.current.report_on_exception = false
+        i.wait_readable
+      end
+
+      scheduler_thread = Thread.new do
+        # Wait until the reading thread is blocked on read:
+        Thread.pass until reading_thread.status == "sleep"
+
+        scheduler = Scheduler.new
+        Fiber.set_scheduler scheduler
+        Fiber.schedule do
+          i.close
+        end
+      end
+
+      assert_raise(IOError) { reading_thread.join }
+      refute_nil scheduler_thread.join(5), "expected thread to terminate within 5 seconds"
+
+      assert_predicate(i, :closed?)
+    ensure
+      scheduler_thread&.kill
+      scheduler_thread&.join rescue nil
+      reading_thread&.kill
+      reading_thread&.join rescue nil
     end
-
-    assert_raise(IOError) { reading_thread.join }
-    refute_nil fs_thread.join(5), "expected thread to terminate within 5 seconds"
-
-    assert_predicate(i, :closed?)
-  ensure
-    fs_thread&.kill
-    fs_thread&.join rescue nil
-    reading_thread&.kill
-    reading_thread&.join rescue nil
-    i&.close
-    o&.close
   end
 end

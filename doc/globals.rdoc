@@ -137,7 +137,7 @@ English - <tt>$DEFAULT_INPUT</tt>.
 
 An output stream, initially <tt>$stdout</tt>.
 
-English - <tt>$DEFAULT_OUTPUT
+English - <tt>$DEFAULT_OUTPUT</tt>
 
 === <tt>$.</tt> (Input Position)
 

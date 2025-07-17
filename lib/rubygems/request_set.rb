@@ -181,13 +181,10 @@ class Gem::RequestSet
 
     # Install requested gems after they have been downloaded
     sorted_requests.each do |req|
-      if req.installed?
+      if req.installed? && @always_install.none? {|spec| spec == req.spec.spec }
         req.spec.spec.build_extensions
-
-        if @always_install.none? {|spec| spec == req.spec.spec }
-          yield req, nil if block_given?
-          next
-        end
+        yield req, nil if block_given?
+        next
       end
 
       spec =

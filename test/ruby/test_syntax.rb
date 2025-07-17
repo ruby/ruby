@@ -1946,6 +1946,15 @@ eom
     end
     assert_valid_syntax('proc {def foo(_);end;it}')
     assert_syntax_error('p { [it **2] }', /unexpected \*\*/)
+    assert_equal(1, eval('1.then { raise rescue it }'))
+    assert_equal(2, eval('1.then { 2.then { raise rescue it } }'))
+    assert_equal(3, eval('3.then { begin; raise; rescue; it; end }'))
+    assert_equal(4, eval('4.tap { begin; raise ; rescue; raise rescue it; end; }'))
+    assert_equal(5, eval('a = 0; 5.then { begin; nil; ensure; a = it; end }; a'))
+    assert_equal(6, eval('a = 0; 6.then { begin; nil; rescue; ensure; a = it; end }; a'))
+    assert_equal(7, eval('a = 0; 7.then { begin; raise; ensure; a = it; end } rescue a'))
+    assert_equal(8, eval('a = 0; 8.then { begin; raise; rescue; ensure; a = it; end }; a'))
+    assert_equal(/9/, eval('9.then { /#{it}/o }'))
   end
 
   def test_it_with_splat_super_method

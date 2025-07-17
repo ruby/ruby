@@ -26,8 +26,8 @@ module Bundler
         end
 
       message = "Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle #{new_args.join(" ")}` instead."
-      removed_message = "Using the `config` command without a subcommand [list, get, set, unset] is has been removed. Use `bundle #{new_args.join(" ")}` instead."
-      SharedHelpers.major_deprecation 3, message, removed_message: removed_message
+      removed_message = "Using the `config` command without a subcommand [list, get, set, unset] has been removed. Use `bundle #{new_args.join(" ")}` instead."
+      SharedHelpers.major_deprecation 4, message, removed_message: removed_message
 
       Base.new(options, name, value, self).run
     end

@@ -45,6 +45,7 @@
 #include "ruby_atomic.h"
 #include "vm_core.h"
 #include "ractor_core.h"
+#include "ruby/internal/attr/nonstring.h"
 
 #ifdef NEED_RUBY_ATOMIC_OPS
 rb_atomic_t
@@ -402,7 +403,6 @@ interrupt_init(int argc, VALUE *argv, VALUE self)
     return rb_call_super(2, args);
 }
 
-void rb_malloc_info_show_results(void); /* gc.c */
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
 static void reset_sigmask(int sig);
 #endif
@@ -413,7 +413,6 @@ ruby_default_signal(int sig)
 #if USE_DEBUG_COUNTER
     rb_debug_counter_show_results("killed by signal.");
 #endif
-    rb_malloc_info_show_results();
 
     signal(sig, SIG_DFL);
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
@@ -665,6 +664,10 @@ ruby_nativethread_signal(int signum, sighandler_t handler)
 #endif
 #endif
 
+#if !defined(POSIX_SIGNAL) && !defined(SIG_GET)
+static rb_nativethread_lock_t sig_check_lock;
+#endif
+
 static int
 signal_ignored(int sig)
 {
@@ -674,9 +677,16 @@ signal_ignored(int sig)
     (void)VALGRIND_MAKE_MEM_DEFINED(&old, sizeof(old));
     if (sigaction(sig, NULL, &old) < 0) return FALSE;
     func = old.sa_handler;
+#elif defined SIG_GET
+    // https://learn.microsoft.com/en-us/cpp/c-runtime-library/signal-action-constants
+    // SIG_GET: Returns the current value of the signal.
+    func = signal(sig, SIG_GET);
 #else
-    sighandler_t old = signal(sig, SIG_DFL);
+    sighandler_t old;
+    rb_native_mutex_lock(&sig_check_lock);
+    old = signal(sig, SIG_DFL);
     signal(sig, old);
+    rb_native_mutex_unlock(&sig_check_lock);
     func = old;
 #endif
     if (func == SIG_IGN) return 1;
@@ -708,7 +718,7 @@ sighandler(int sig)
 int
 rb_signal_buff_size(void)
 {
-    return signal_buff.size;
+    return RUBY_ATOMIC_LOAD(signal_buff.size);
 }
 
 static void
@@ -736,7 +746,7 @@ rb_get_next_signal(void)
 {
     int i, sig = 0;
 
-    if (signal_buff.size != 0) {
+    if (rb_signal_buff_size() != 0) {
         for (i=1; i<RUBY_NSIG; i++) {
             if (signal_buff.cnt[i] > 0) {
                 ATOMIC_DEC(signal_buff.cnt[i]);
@@ -760,7 +770,6 @@ static const char *received_signal;
 #endif
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
-NORETURN(void rb_ec_stack_overflow(rb_execution_context_t *ec, int crit));
 # if defined __HAIKU__
 #   define USE_UCONTEXT_REG 1
 # elif !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
@@ -846,13 +855,17 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
     if (sp_page == fault_page || sp_page == fault_page + 1 ||
         (sp_page <= fault_page && fault_page <= bp_page)) {
         rb_execution_context_t *ec = GET_EC();
-        int crit = FALSE;
+        ruby_stack_overflow_critical_level crit = rb_stack_overflow_signal;
         int uplevel = roomof(pagesize, sizeof(*ec->tag)) / 2; /* XXX: heuristic */
         while ((uintptr_t)ec->tag->buf / pagesize <= fault_page + 1) {
             /* drop the last tag if it is close to the fault,
              * otherwise it can cause stack overflow again at the same
              * place. */
-            if ((crit = (!ec->tag->prev || !--uplevel)) != FALSE) break;
+            if (!ec->tag->prev || !--uplevel) {
+                crit = rb_stack_overflow_fatal;
+                break;
+            }
+            rb_vm_tag_jmpbuf_deinit(&ec->tag->buf);
             ec->tag = ec->tag->prev;
         }
         reset_sigmask(sig);
@@ -867,7 +880,7 @@ check_stack_overflow(int sig, const void *addr)
     rb_thread_t *th = GET_THREAD();
     if (ruby_stack_overflowed_p(th, addr)) {
         reset_sigmask(sig);
-        rb_ec_stack_overflow(th->ec, FALSE);
+        rb_ec_stack_overflow(th->ec, 1);
     }
 }
 # endif
@@ -975,7 +988,7 @@ check_reserved_signal_(const char *name, size_t name_len, int signo)
     if (prev) {
         ssize_t RB_UNUSED_VAR(err);
         static const int stderr_fd = 2;
-#define NOZ(name, str) name[sizeof(str)-1] = str
+#define NOZ(name, str) RBIMPL_ATTR_NONSTRING() name[sizeof(str)-1] = str
         static const char NOZ(msg1, " received in ");
         static const char NOZ(msg2, " handler\n");
 
@@ -1502,6 +1515,9 @@ Init_signal(void)
     rb_define_method(rb_eSignal, "signo", esignal_signo, 0);
     rb_alias(rb_eSignal, rb_intern_const("signm"), rb_intern_const("message"));
     rb_define_method(rb_eInterrupt, "initialize", interrupt_init, -1);
+#if !defined(POSIX_SIGNAL) && !defined(SIG_GET)
+    rb_native_mutex_initialize(&sig_check_lock);
+#endif
 
     // It should be ready to call rb_signal_exec()
     VM_ASSERT(GET_THREAD()->pending_interrupt_queue);
@@ -1553,4 +1569,12 @@ Init_signal(void)
 #endif
 
     rb_enable_interrupt();
+}
+
+void
+rb_signal_atfork(void)
+{
+#if defined(HAVE_WORKING_FORK) && !defined(POSIX_SIGNAL) && !defined(SIG_GET)
+    rb_native_mutex_initialize(&sig_check_lock);
+#endif
 }

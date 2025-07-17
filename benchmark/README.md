@@ -40,7 +40,7 @@ Usage: benchmark-driver [options] RUBY|YAML...
         --filter REGEXP              Filter out benchmarks with given regexp
         --run-duration SECONDS       Warmup estimates loop_count to run for this duration (default: 3)
         --timeout SECONDS            Timeout ruby command execution with timeout(1)
-    -v, --verbose                    Verbose mode. Multiple -v options increase visilibity (max: 2)
+    -v, --verbose                    Verbose mode. Multiple -v options increase visibility (max: 2)
 ```
 
 ## make benchmark

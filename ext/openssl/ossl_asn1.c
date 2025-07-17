@@ -36,7 +36,7 @@ asn1time_to_time(const ASN1_TIME *time)
 	    ossl_raise(rb_eTypeError, "bad UTCTIME format: \"%s\"",
 		    time->data);
 	}
-	if (tm.tm_year < 69) {
+	if (tm.tm_year < 50) {
 	    tm.tm_year += 2000;
 	} else {
 	    tm.tm_year += 1900;
@@ -797,10 +797,12 @@ int_ossl_asn1_decode0_cons(unsigned char **pp, long max_len, long length,
 	*num_read += inner_read;
 	available_len -= inner_read;
 
-	if (indefinite &&
-	    ossl_asn1_tag(value) == V_ASN1_EOC &&
-	    ossl_asn1_get_tag_class(value) == sym_UNIVERSAL) {
-	    break;
+	if (indefinite) {
+            if (ossl_asn1_tag(value) == V_ASN1_EOC &&
+                ossl_asn1_get_tag_class(value) == sym_UNIVERSAL)
+                break;
+            if (available_len == 0)
+                ossl_raise(eASN1Error, "EOC missing in indefinite length encoding");
 	}
 	rb_ary_push(ary, value);
     }

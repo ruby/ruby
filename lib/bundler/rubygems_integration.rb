@@ -214,16 +214,11 @@ module Bundler
           e.requirement = dep.requirement
           raise e
         end
-
-        # backwards compatibility shim, see https://github.com/rubygems/bundler/issues/5102
-        kernel_class.send(:public, :gem) if Bundler.feature_flag.setup_makes_kernel_gem_public?
       end
     end
 
     # Used to give better error messages when activating specs outside of the current bundle
     def replace_bin_path(specs_by_name)
-      gem_class = (class << Gem; self; end)
-
       redefine_method(gem_class, :find_spec_for_exe) do |gem_name, *args|
         exec_name = args.first
         raise ArgumentError, "you must supply exec_name" unless exec_name
@@ -345,8 +340,12 @@ module Bundler
         Gem::Specification.all = specs
       end
 
-      redefine_method((class << Gem; self; end), :finish_resolve) do |*|
+      redefine_method(gem_class, :finish_resolve) do |*|
         []
+      end
+
+      redefine_method(gem_class, :load_plugins) do |*|
+        load_plugin_files specs.flat_map(&:plugins)
       end
     end
 
@@ -446,6 +445,12 @@ module Bundler
 
     def default_stubs
       Gem::Specification.default_stubs("*.gemspec")
+    end
+
+    private
+
+    def gem_class
+      class << Gem; self; end
     end
   end
 

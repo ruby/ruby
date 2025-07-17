@@ -151,7 +151,7 @@ RSpec.describe "bundle clean" do
     bundle :clean
 
     digest = Digest(:SHA1).hexdigest(git_path.to_s)
-    cache_path = Bundler::VERSION.start_with?("2.") ? vendored_gems("cache/bundler/git/foo-1.0-#{digest}") : home(".bundle/cache/git/foo-1.0-#{digest}")
+    cache_path = Bundler.feature_flag.global_gem_cache? ? home(".bundle/cache/git/foo-1.0-#{digest}") : vendored_gems("cache/bundler/git/foo-1.0-#{digest}")
     expect(cache_path).to exist
   end
 
@@ -383,7 +383,7 @@ RSpec.describe "bundle clean" do
     expect(out).to include("myrack (1.0.0)").and include("thin (1.0)")
   end
 
-  it "--clean should override the bundle setting on install", bundler: "< 3" do
+  it "--clean should override the bundle setting on install" do
     gemfile <<-G
       source "https://gem.repo1"
 
@@ -405,7 +405,7 @@ RSpec.describe "bundle clean" do
     should_not_have_gems "thin-1.0"
   end
 
-  it "--clean should override the bundle setting on update", bundler: "< 3" do
+  it "--clean should override the bundle setting on update" do
     build_repo2
 
     gemfile <<-G
@@ -427,7 +427,7 @@ RSpec.describe "bundle clean" do
     should_not_have_gems "foo-1.0"
   end
 
-  it "automatically cleans when path has not been set", bundler: "3" do
+  it "automatically cleans when path has not been set", bundler: "4" do
     build_repo2
 
     install_gemfile <<-G
@@ -625,7 +625,7 @@ RSpec.describe "bundle clean" do
     expect(out).to eq("1.0")
   end
 
-  it "when using --force, it doesn't remove default gem binaries", :realworld do
+  it "when using --force, it doesn't remove default gem binaries" do
     default_irb_version = ruby "gem 'irb', '< 999999'; require 'irb'; puts IRB::VERSION", raise_on_error: false
     skip "irb isn't a default gem" if default_irb_version.empty?
 
@@ -633,8 +633,6 @@ RSpec.describe "bundle clean" do
     build_gem "irb", default_irb_version, to_system: true, default: true do |s|
       s.executables = "irb"
     end
-
-    realworld_system_gems "tsort --version 0.1.0", "pathname --version 0.1.0", "set --version 1.0.1"
 
     install_gemfile <<-G
       source "https://gem.repo2"

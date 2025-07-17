@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle viz", bundler: "< 3", if: Bundler.which("dot") do
+RSpec.describe "bundle viz", if: Bundler.which("dot") do
   before do
-    realworld_system_gems "ruby-graphviz --version 1.2.5"
+    base_system_gems "rexml", "ruby-graphviz"
   end
 
   it "graphs gems from the Gemfile" do
@@ -71,7 +71,7 @@ RSpec.describe "bundle viz", bundler: "< 3", if: Bundler.which("dot") do
 
   context "with another gem that has a graphviz file" do
     before do
-      build_repo4 do
+      update_repo4 do
         build_gem "graphviz", "999" do |s|
           s.write("lib/graphviz.rb", "abort 'wrong graphviz gem loaded'")
         end

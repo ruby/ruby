@@ -1,10 +1,6 @@
 require_relative '../../spec_helper'
 require_relative '../../fixtures/io'
 
-ruby_version_is ''...'3.2' do
-  require 'io/wait'
-end
-
 describe "IO#wait_writable" do
   it "waits for the IO to become writable with no timeout" do
     STDOUT.wait_writable.should == STDOUT

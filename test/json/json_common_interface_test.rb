@@ -91,6 +91,30 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
 
   def test_pretty_generate
     assert_equal "[\n  1,\n  2,\n  3\n]", JSON.pretty_generate([ 1, 2, 3 ])
+    assert_equal <<~JSON.strip, JSON.pretty_generate({ a: { b: "f"}, c: "d"})
+      {
+        "a": {
+          "b": "f"
+        },
+        "c": "d"
+      }
+    JSON
+
+    # Cause the state to be spilled on the heap.
+    o = Object.new
+    def o.to_s
+      "Object"
+    end
+    actual = JSON.pretty_generate({ a: { b: o}, c: "d", e: "f"})
+    assert_equal <<~JSON.strip, actual
+      {
+        "a": {
+          "b": "Object"
+        },
+        "c": "d",
+        "e": "f"
+      }
+    JSON
   end
 
   def test_load

@@ -151,6 +151,7 @@ ancdata.o: $(hdrdir)/ruby/internal/intern/re.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/ruby.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/select.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+ancdata.o: $(hdrdir)/ruby/internal/intern/set.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/signal.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -192,6 +193,7 @@ ancdata.o: $(top_srcdir)/ccan/check_type/check_type.h
 ancdata.o: $(top_srcdir)/ccan/container_of/container_of.h
 ancdata.o: $(top_srcdir)/ccan/list/list.h
 ancdata.o: $(top_srcdir)/ccan/str/str.h
+ancdata.o: $(top_srcdir)/id_table.h
 ancdata.o: $(top_srcdir)/internal.h
 ancdata.o: $(top_srcdir)/internal/array.h
 ancdata.o: $(top_srcdir)/internal/basic_operators.h
@@ -200,8 +202,10 @@ ancdata.o: $(top_srcdir)/internal/error.h
 ancdata.o: $(top_srcdir)/internal/gc.h
 ancdata.o: $(top_srcdir)/internal/imemo.h
 ancdata.o: $(top_srcdir)/internal/io.h
+ancdata.o: $(top_srcdir)/internal/namespace.h
 ancdata.o: $(top_srcdir)/internal/sanitizers.h
 ancdata.o: $(top_srcdir)/internal/serial.h
+ancdata.o: $(top_srcdir)/internal/set_table.h
 ancdata.o: $(top_srcdir)/internal/static_assert.h
 ancdata.o: $(top_srcdir)/internal/string.h
 ancdata.o: $(top_srcdir)/internal/thread.h
@@ -362,6 +366,7 @@ basicsocket.o: $(hdrdir)/ruby/internal/intern/re.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/ruby.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/select.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+basicsocket.o: $(hdrdir)/ruby/internal/intern/set.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/signal.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -403,6 +408,7 @@ basicsocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 basicsocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 basicsocket.o: $(top_srcdir)/ccan/list/list.h
 basicsocket.o: $(top_srcdir)/ccan/str/str.h
+basicsocket.o: $(top_srcdir)/id_table.h
 basicsocket.o: $(top_srcdir)/internal.h
 basicsocket.o: $(top_srcdir)/internal/array.h
 basicsocket.o: $(top_srcdir)/internal/basic_operators.h
@@ -411,8 +417,10 @@ basicsocket.o: $(top_srcdir)/internal/error.h
 basicsocket.o: $(top_srcdir)/internal/gc.h
 basicsocket.o: $(top_srcdir)/internal/imemo.h
 basicsocket.o: $(top_srcdir)/internal/io.h
+basicsocket.o: $(top_srcdir)/internal/namespace.h
 basicsocket.o: $(top_srcdir)/internal/sanitizers.h
 basicsocket.o: $(top_srcdir)/internal/serial.h
+basicsocket.o: $(top_srcdir)/internal/set_table.h
 basicsocket.o: $(top_srcdir)/internal/static_assert.h
 basicsocket.o: $(top_srcdir)/internal/string.h
 basicsocket.o: $(top_srcdir)/internal/thread.h
@@ -573,6 +581,7 @@ constants.o: $(hdrdir)/ruby/internal/intern/re.h
 constants.o: $(hdrdir)/ruby/internal/intern/ruby.h
 constants.o: $(hdrdir)/ruby/internal/intern/select.h
 constants.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+constants.o: $(hdrdir)/ruby/internal/intern/set.h
 constants.o: $(hdrdir)/ruby/internal/intern/signal.h
 constants.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 constants.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -614,6 +623,7 @@ constants.o: $(top_srcdir)/ccan/check_type/check_type.h
 constants.o: $(top_srcdir)/ccan/container_of/container_of.h
 constants.o: $(top_srcdir)/ccan/list/list.h
 constants.o: $(top_srcdir)/ccan/str/str.h
+constants.o: $(top_srcdir)/id_table.h
 constants.o: $(top_srcdir)/internal.h
 constants.o: $(top_srcdir)/internal/array.h
 constants.o: $(top_srcdir)/internal/basic_operators.h
@@ -622,8 +632,10 @@ constants.o: $(top_srcdir)/internal/error.h
 constants.o: $(top_srcdir)/internal/gc.h
 constants.o: $(top_srcdir)/internal/imemo.h
 constants.o: $(top_srcdir)/internal/io.h
+constants.o: $(top_srcdir)/internal/namespace.h
 constants.o: $(top_srcdir)/internal/sanitizers.h
 constants.o: $(top_srcdir)/internal/serial.h
+constants.o: $(top_srcdir)/internal/set_table.h
 constants.o: $(top_srcdir)/internal/static_assert.h
 constants.o: $(top_srcdir)/internal/string.h
 constants.o: $(top_srcdir)/internal/thread.h
@@ -785,6 +797,7 @@ ifaddr.o: $(hdrdir)/ruby/internal/intern/re.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/ruby.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/select.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+ifaddr.o: $(hdrdir)/ruby/internal/intern/set.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/signal.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -826,6 +839,7 @@ ifaddr.o: $(top_srcdir)/ccan/check_type/check_type.h
 ifaddr.o: $(top_srcdir)/ccan/container_of/container_of.h
 ifaddr.o: $(top_srcdir)/ccan/list/list.h
 ifaddr.o: $(top_srcdir)/ccan/str/str.h
+ifaddr.o: $(top_srcdir)/id_table.h
 ifaddr.o: $(top_srcdir)/internal.h
 ifaddr.o: $(top_srcdir)/internal/array.h
 ifaddr.o: $(top_srcdir)/internal/basic_operators.h
@@ -834,8 +848,10 @@ ifaddr.o: $(top_srcdir)/internal/error.h
 ifaddr.o: $(top_srcdir)/internal/gc.h
 ifaddr.o: $(top_srcdir)/internal/imemo.h
 ifaddr.o: $(top_srcdir)/internal/io.h
+ifaddr.o: $(top_srcdir)/internal/namespace.h
 ifaddr.o: $(top_srcdir)/internal/sanitizers.h
 ifaddr.o: $(top_srcdir)/internal/serial.h
+ifaddr.o: $(top_srcdir)/internal/set_table.h
 ifaddr.o: $(top_srcdir)/internal/static_assert.h
 ifaddr.o: $(top_srcdir)/internal/string.h
 ifaddr.o: $(top_srcdir)/internal/thread.h
@@ -996,6 +1012,7 @@ init.o: $(hdrdir)/ruby/internal/intern/re.h
 init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 init.o: $(hdrdir)/ruby/internal/intern/select.h
 init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+init.o: $(hdrdir)/ruby/internal/intern/set.h
 init.o: $(hdrdir)/ruby/internal/intern/signal.h
 init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 init.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -1037,6 +1054,7 @@ init.o: $(top_srcdir)/ccan/check_type/check_type.h
 init.o: $(top_srcdir)/ccan/container_of/container_of.h
 init.o: $(top_srcdir)/ccan/list/list.h
 init.o: $(top_srcdir)/ccan/str/str.h
+init.o: $(top_srcdir)/id_table.h
 init.o: $(top_srcdir)/internal.h
 init.o: $(top_srcdir)/internal/array.h
 init.o: $(top_srcdir)/internal/basic_operators.h
@@ -1045,8 +1063,10 @@ init.o: $(top_srcdir)/internal/error.h
 init.o: $(top_srcdir)/internal/gc.h
 init.o: $(top_srcdir)/internal/imemo.h
 init.o: $(top_srcdir)/internal/io.h
+init.o: $(top_srcdir)/internal/namespace.h
 init.o: $(top_srcdir)/internal/sanitizers.h
 init.o: $(top_srcdir)/internal/serial.h
+init.o: $(top_srcdir)/internal/set_table.h
 init.o: $(top_srcdir)/internal/static_assert.h
 init.o: $(top_srcdir)/internal/string.h
 init.o: $(top_srcdir)/internal/thread.h
@@ -1207,6 +1227,7 @@ ipsocket.o: $(hdrdir)/ruby/internal/intern/re.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/ruby.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/select.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+ipsocket.o: $(hdrdir)/ruby/internal/intern/set.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/signal.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -1248,6 +1269,7 @@ ipsocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 ipsocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 ipsocket.o: $(top_srcdir)/ccan/list/list.h
 ipsocket.o: $(top_srcdir)/ccan/str/str.h
+ipsocket.o: $(top_srcdir)/id_table.h
 ipsocket.o: $(top_srcdir)/internal.h
 ipsocket.o: $(top_srcdir)/internal/array.h
 ipsocket.o: $(top_srcdir)/internal/basic_operators.h
@@ -1256,8 +1278,10 @@ ipsocket.o: $(top_srcdir)/internal/error.h
 ipsocket.o: $(top_srcdir)/internal/gc.h
 ipsocket.o: $(top_srcdir)/internal/imemo.h
 ipsocket.o: $(top_srcdir)/internal/io.h
+ipsocket.o: $(top_srcdir)/internal/namespace.h
 ipsocket.o: $(top_srcdir)/internal/sanitizers.h
 ipsocket.o: $(top_srcdir)/internal/serial.h
+ipsocket.o: $(top_srcdir)/internal/set_table.h
 ipsocket.o: $(top_srcdir)/internal/static_assert.h
 ipsocket.o: $(top_srcdir)/internal/string.h
 ipsocket.o: $(top_srcdir)/internal/thread.h
@@ -1418,6 +1442,7 @@ option.o: $(hdrdir)/ruby/internal/intern/re.h
 option.o: $(hdrdir)/ruby/internal/intern/ruby.h
 option.o: $(hdrdir)/ruby/internal/intern/select.h
 option.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+option.o: $(hdrdir)/ruby/internal/intern/set.h
 option.o: $(hdrdir)/ruby/internal/intern/signal.h
 option.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 option.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -1459,6 +1484,7 @@ option.o: $(top_srcdir)/ccan/check_type/check_type.h
 option.o: $(top_srcdir)/ccan/container_of/container_of.h
 option.o: $(top_srcdir)/ccan/list/list.h
 option.o: $(top_srcdir)/ccan/str/str.h
+option.o: $(top_srcdir)/id_table.h
 option.o: $(top_srcdir)/internal.h
 option.o: $(top_srcdir)/internal/array.h
 option.o: $(top_srcdir)/internal/basic_operators.h
@@ -1467,8 +1493,10 @@ option.o: $(top_srcdir)/internal/error.h
 option.o: $(top_srcdir)/internal/gc.h
 option.o: $(top_srcdir)/internal/imemo.h
 option.o: $(top_srcdir)/internal/io.h
+option.o: $(top_srcdir)/internal/namespace.h
 option.o: $(top_srcdir)/internal/sanitizers.h
 option.o: $(top_srcdir)/internal/serial.h
+option.o: $(top_srcdir)/internal/set_table.h
 option.o: $(top_srcdir)/internal/static_assert.h
 option.o: $(top_srcdir)/internal/string.h
 option.o: $(top_srcdir)/internal/thread.h
@@ -1629,6 +1657,7 @@ raddrinfo.o: $(hdrdir)/ruby/internal/intern/re.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/ruby.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/select.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+raddrinfo.o: $(hdrdir)/ruby/internal/intern/set.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/signal.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -1670,6 +1699,7 @@ raddrinfo.o: $(top_srcdir)/ccan/check_type/check_type.h
 raddrinfo.o: $(top_srcdir)/ccan/container_of/container_of.h
 raddrinfo.o: $(top_srcdir)/ccan/list/list.h
 raddrinfo.o: $(top_srcdir)/ccan/str/str.h
+raddrinfo.o: $(top_srcdir)/id_table.h
 raddrinfo.o: $(top_srcdir)/internal.h
 raddrinfo.o: $(top_srcdir)/internal/array.h
 raddrinfo.o: $(top_srcdir)/internal/basic_operators.h
@@ -1678,8 +1708,10 @@ raddrinfo.o: $(top_srcdir)/internal/error.h
 raddrinfo.o: $(top_srcdir)/internal/gc.h
 raddrinfo.o: $(top_srcdir)/internal/imemo.h
 raddrinfo.o: $(top_srcdir)/internal/io.h
+raddrinfo.o: $(top_srcdir)/internal/namespace.h
 raddrinfo.o: $(top_srcdir)/internal/sanitizers.h
 raddrinfo.o: $(top_srcdir)/internal/serial.h
+raddrinfo.o: $(top_srcdir)/internal/set_table.h
 raddrinfo.o: $(top_srcdir)/internal/static_assert.h
 raddrinfo.o: $(top_srcdir)/internal/string.h
 raddrinfo.o: $(top_srcdir)/internal/thread.h
@@ -1840,6 +1872,7 @@ socket.o: $(hdrdir)/ruby/internal/intern/re.h
 socket.o: $(hdrdir)/ruby/internal/intern/ruby.h
 socket.o: $(hdrdir)/ruby/internal/intern/select.h
 socket.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+socket.o: $(hdrdir)/ruby/internal/intern/set.h
 socket.o: $(hdrdir)/ruby/internal/intern/signal.h
 socket.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 socket.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -1881,6 +1914,7 @@ socket.o: $(top_srcdir)/ccan/check_type/check_type.h
 socket.o: $(top_srcdir)/ccan/container_of/container_of.h
 socket.o: $(top_srcdir)/ccan/list/list.h
 socket.o: $(top_srcdir)/ccan/str/str.h
+socket.o: $(top_srcdir)/id_table.h
 socket.o: $(top_srcdir)/internal.h
 socket.o: $(top_srcdir)/internal/array.h
 socket.o: $(top_srcdir)/internal/basic_operators.h
@@ -1889,8 +1923,10 @@ socket.o: $(top_srcdir)/internal/error.h
 socket.o: $(top_srcdir)/internal/gc.h
 socket.o: $(top_srcdir)/internal/imemo.h
 socket.o: $(top_srcdir)/internal/io.h
+socket.o: $(top_srcdir)/internal/namespace.h
 socket.o: $(top_srcdir)/internal/sanitizers.h
 socket.o: $(top_srcdir)/internal/serial.h
+socket.o: $(top_srcdir)/internal/set_table.h
 socket.o: $(top_srcdir)/internal/static_assert.h
 socket.o: $(top_srcdir)/internal/string.h
 socket.o: $(top_srcdir)/internal/thread.h
@@ -2051,6 +2087,7 @@ sockssocket.o: $(hdrdir)/ruby/internal/intern/re.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/ruby.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/select.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+sockssocket.o: $(hdrdir)/ruby/internal/intern/set.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/signal.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -2092,6 +2129,7 @@ sockssocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 sockssocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 sockssocket.o: $(top_srcdir)/ccan/list/list.h
 sockssocket.o: $(top_srcdir)/ccan/str/str.h
+sockssocket.o: $(top_srcdir)/id_table.h
 sockssocket.o: $(top_srcdir)/internal.h
 sockssocket.o: $(top_srcdir)/internal/array.h
 sockssocket.o: $(top_srcdir)/internal/basic_operators.h
@@ -2100,8 +2138,10 @@ sockssocket.o: $(top_srcdir)/internal/error.h
 sockssocket.o: $(top_srcdir)/internal/gc.h
 sockssocket.o: $(top_srcdir)/internal/imemo.h
 sockssocket.o: $(top_srcdir)/internal/io.h
+sockssocket.o: $(top_srcdir)/internal/namespace.h
 sockssocket.o: $(top_srcdir)/internal/sanitizers.h
 sockssocket.o: $(top_srcdir)/internal/serial.h
+sockssocket.o: $(top_srcdir)/internal/set_table.h
 sockssocket.o: $(top_srcdir)/internal/static_assert.h
 sockssocket.o: $(top_srcdir)/internal/string.h
 sockssocket.o: $(top_srcdir)/internal/thread.h
@@ -2262,6 +2302,7 @@ tcpserver.o: $(hdrdir)/ruby/internal/intern/re.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/ruby.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/select.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+tcpserver.o: $(hdrdir)/ruby/internal/intern/set.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/signal.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -2303,6 +2344,7 @@ tcpserver.o: $(top_srcdir)/ccan/check_type/check_type.h
 tcpserver.o: $(top_srcdir)/ccan/container_of/container_of.h
 tcpserver.o: $(top_srcdir)/ccan/list/list.h
 tcpserver.o: $(top_srcdir)/ccan/str/str.h
+tcpserver.o: $(top_srcdir)/id_table.h
 tcpserver.o: $(top_srcdir)/internal.h
 tcpserver.o: $(top_srcdir)/internal/array.h
 tcpserver.o: $(top_srcdir)/internal/basic_operators.h
@@ -2311,8 +2353,10 @@ tcpserver.o: $(top_srcdir)/internal/error.h
 tcpserver.o: $(top_srcdir)/internal/gc.h
 tcpserver.o: $(top_srcdir)/internal/imemo.h
 tcpserver.o: $(top_srcdir)/internal/io.h
+tcpserver.o: $(top_srcdir)/internal/namespace.h
 tcpserver.o: $(top_srcdir)/internal/sanitizers.h
 tcpserver.o: $(top_srcdir)/internal/serial.h
+tcpserver.o: $(top_srcdir)/internal/set_table.h
 tcpserver.o: $(top_srcdir)/internal/static_assert.h
 tcpserver.o: $(top_srcdir)/internal/string.h
 tcpserver.o: $(top_srcdir)/internal/thread.h
@@ -2473,6 +2517,7 @@ tcpsocket.o: $(hdrdir)/ruby/internal/intern/re.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/ruby.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/select.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+tcpsocket.o: $(hdrdir)/ruby/internal/intern/set.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/signal.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -2514,6 +2559,7 @@ tcpsocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 tcpsocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 tcpsocket.o: $(top_srcdir)/ccan/list/list.h
 tcpsocket.o: $(top_srcdir)/ccan/str/str.h
+tcpsocket.o: $(top_srcdir)/id_table.h
 tcpsocket.o: $(top_srcdir)/internal.h
 tcpsocket.o: $(top_srcdir)/internal/array.h
 tcpsocket.o: $(top_srcdir)/internal/basic_operators.h
@@ -2522,8 +2568,10 @@ tcpsocket.o: $(top_srcdir)/internal/error.h
 tcpsocket.o: $(top_srcdir)/internal/gc.h
 tcpsocket.o: $(top_srcdir)/internal/imemo.h
 tcpsocket.o: $(top_srcdir)/internal/io.h
+tcpsocket.o: $(top_srcdir)/internal/namespace.h
 tcpsocket.o: $(top_srcdir)/internal/sanitizers.h
 tcpsocket.o: $(top_srcdir)/internal/serial.h
+tcpsocket.o: $(top_srcdir)/internal/set_table.h
 tcpsocket.o: $(top_srcdir)/internal/static_assert.h
 tcpsocket.o: $(top_srcdir)/internal/string.h
 tcpsocket.o: $(top_srcdir)/internal/thread.h
@@ -2684,6 +2732,7 @@ udpsocket.o: $(hdrdir)/ruby/internal/intern/re.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/ruby.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/select.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+udpsocket.o: $(hdrdir)/ruby/internal/intern/set.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/signal.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -2725,6 +2774,7 @@ udpsocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 udpsocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 udpsocket.o: $(top_srcdir)/ccan/list/list.h
 udpsocket.o: $(top_srcdir)/ccan/str/str.h
+udpsocket.o: $(top_srcdir)/id_table.h
 udpsocket.o: $(top_srcdir)/internal.h
 udpsocket.o: $(top_srcdir)/internal/array.h
 udpsocket.o: $(top_srcdir)/internal/basic_operators.h
@@ -2733,8 +2783,10 @@ udpsocket.o: $(top_srcdir)/internal/error.h
 udpsocket.o: $(top_srcdir)/internal/gc.h
 udpsocket.o: $(top_srcdir)/internal/imemo.h
 udpsocket.o: $(top_srcdir)/internal/io.h
+udpsocket.o: $(top_srcdir)/internal/namespace.h
 udpsocket.o: $(top_srcdir)/internal/sanitizers.h
 udpsocket.o: $(top_srcdir)/internal/serial.h
+udpsocket.o: $(top_srcdir)/internal/set_table.h
 udpsocket.o: $(top_srcdir)/internal/static_assert.h
 udpsocket.o: $(top_srcdir)/internal/string.h
 udpsocket.o: $(top_srcdir)/internal/thread.h
@@ -2895,6 +2947,7 @@ unixserver.o: $(hdrdir)/ruby/internal/intern/re.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/ruby.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/select.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+unixserver.o: $(hdrdir)/ruby/internal/intern/set.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/signal.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -2936,6 +2989,7 @@ unixserver.o: $(top_srcdir)/ccan/check_type/check_type.h
 unixserver.o: $(top_srcdir)/ccan/container_of/container_of.h
 unixserver.o: $(top_srcdir)/ccan/list/list.h
 unixserver.o: $(top_srcdir)/ccan/str/str.h
+unixserver.o: $(top_srcdir)/id_table.h
 unixserver.o: $(top_srcdir)/internal.h
 unixserver.o: $(top_srcdir)/internal/array.h
 unixserver.o: $(top_srcdir)/internal/basic_operators.h
@@ -2944,8 +2998,10 @@ unixserver.o: $(top_srcdir)/internal/error.h
 unixserver.o: $(top_srcdir)/internal/gc.h
 unixserver.o: $(top_srcdir)/internal/imemo.h
 unixserver.o: $(top_srcdir)/internal/io.h
+unixserver.o: $(top_srcdir)/internal/namespace.h
 unixserver.o: $(top_srcdir)/internal/sanitizers.h
 unixserver.o: $(top_srcdir)/internal/serial.h
+unixserver.o: $(top_srcdir)/internal/set_table.h
 unixserver.o: $(top_srcdir)/internal/static_assert.h
 unixserver.o: $(top_srcdir)/internal/string.h
 unixserver.o: $(top_srcdir)/internal/thread.h
@@ -3106,6 +3162,7 @@ unixsocket.o: $(hdrdir)/ruby/internal/intern/re.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/ruby.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/select.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+unixsocket.o: $(hdrdir)/ruby/internal/intern/set.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/signal.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -3147,6 +3204,7 @@ unixsocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 unixsocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 unixsocket.o: $(top_srcdir)/ccan/list/list.h
 unixsocket.o: $(top_srcdir)/ccan/str/str.h
+unixsocket.o: $(top_srcdir)/id_table.h
 unixsocket.o: $(top_srcdir)/internal.h
 unixsocket.o: $(top_srcdir)/internal/array.h
 unixsocket.o: $(top_srcdir)/internal/basic_operators.h
@@ -3155,8 +3213,10 @@ unixsocket.o: $(top_srcdir)/internal/error.h
 unixsocket.o: $(top_srcdir)/internal/gc.h
 unixsocket.o: $(top_srcdir)/internal/imemo.h
 unixsocket.o: $(top_srcdir)/internal/io.h
+unixsocket.o: $(top_srcdir)/internal/namespace.h
 unixsocket.o: $(top_srcdir)/internal/sanitizers.h
 unixsocket.o: $(top_srcdir)/internal/serial.h
+unixsocket.o: $(top_srcdir)/internal/set_table.h
 unixsocket.o: $(top_srcdir)/internal/static_assert.h
 unixsocket.o: $(top_srcdir)/internal/string.h
 unixsocket.o: $(top_srcdir)/internal/thread.h

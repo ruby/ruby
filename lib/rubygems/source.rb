@@ -67,28 +67,11 @@ class Gem::Source
 
   ##
   # Returns a Set that can fetch specifications from this source.
-
-  def dependency_resolver_set # :nodoc:
-    return Gem::Resolver::IndexSet.new self if uri.scheme == "file"
-
-    fetch_uri = if uri.host == "rubygems.org"
-      index_uri = uri.dup
-      index_uri.host = "index.rubygems.org"
-      index_uri
-    else
-      uri
-    end
-
-    bundler_api_uri = enforce_trailing_slash(fetch_uri) + "versions"
-
-    begin
-      fetcher = Gem::RemoteFetcher.fetcher
-      response = fetcher.fetch_path bundler_api_uri, nil, true
-    rescue Gem::RemoteFetcher::FetchError
-      Gem::Resolver::IndexSet.new self
-    else
-      Gem::Resolver::APISet.new response.uri + "./info/"
-    end
+  #
+  # The set will optionally fetch prereleases if requested.
+  #
+  def dependency_resolver_set(prerelease = false)
+    new_dependency_resolver_set.tap {|set| set.prerelease = prerelease }
   end
 
   def hash # :nodoc:
@@ -233,6 +216,29 @@ class Gem::Source
   end
 
   private
+
+  def new_dependency_resolver_set
+    return Gem::Resolver::IndexSet.new self if uri.scheme == "file"
+
+    fetch_uri = if uri.host == "rubygems.org"
+      index_uri = uri.dup
+      index_uri.host = "index.rubygems.org"
+      index_uri
+    else
+      uri
+    end
+
+    bundler_api_uri = enforce_trailing_slash(fetch_uri) + "versions"
+
+    begin
+      fetcher = Gem::RemoteFetcher.fetcher
+      response = fetcher.fetch_path bundler_api_uri, nil, true
+    rescue Gem::RemoteFetcher::FetchError
+      Gem::Resolver::IndexSet.new self
+    else
+      Gem::Resolver::APISet.new response.uri + "./info/"
+    end
+  end
 
   def enforce_trailing_slash(uri)
     uri.merge(uri.path.gsub(%r{/+$}, "") + "/")

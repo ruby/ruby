@@ -5,25 +5,37 @@ GIT
     molinillo (0.8.0)
 
 GIT
+  remote: https://github.com/hsbt/net-http-persistent.git
+  revision: 9b6fbd733cf35596dfe7f80c0c154f9f3d17dbdb
+  ref: 9b6fbd733cf35596dfe7f80c0c154f9f3d17dbdb
+  specs:
+    net-http-persistent (4.0.6)
+      connection_pool (~> 2.2, >= 2.2.4)
+
+GIT
   remote: https://github.com/jhawthorn/pub_grub.git
   revision: df6add45d1b4d122daff2f959c9bd1ca93d14261
   ref: df6add45d1b4d122daff2f959c9bd1ca93d14261
   specs:
     pub_grub (0.5.0)
 
+GIT
+  remote: https://github.com/ruby/net-http.git
+  revision: d8fd39c589279b1aaec85a7c8de9b3e199c72efe
+  ref: d8fd39c589279b1aaec85a7c8de9b3e199c72efe
+  specs:
+    net-http (0.6.0)
+      uri
+
 GEM
   remote: https://rubygems.org/
   specs:
     connection_pool (2.4.1)
     fileutils (1.7.3)
-    net-http (0.6.0)
-      uri
-    net-http-persistent (4.0.4)
-      connection_pool (~> 2.2)
     net-protocol (0.2.2)
       timeout
     optparse (0.6.0)
-    resolv (0.6.0)
+    resolv (0.6.2)
     securerandom (0.4.1)
     thor (1.3.2)
     timeout (0.4.3)
@@ -41,12 +53,12 @@ PLATFORMS
 DEPENDENCIES
   fileutils (= 1.7.3)
   molinillo!
-  net-http (= 0.6.0)
-  net-http-persistent (= 4.0.4)
+  net-http!
+  net-http-persistent!
   net-protocol (= 0.2.2)
   optparse (= 0.6.0)
   pub_grub!
-  resolv (= 0.6.0)
+  resolv (= 0.6.2)
   securerandom (= 0.4.1)
   thor (= 1.3.2)
   timeout (= 0.4.3)
@@ -57,12 +69,12 @@ CHECKSUMS
   connection_pool (2.4.1) sha256=0f40cf997091f1f04ff66da67eabd61a9fe0d4928b9a3645228532512fab62f4
   fileutils (1.7.3) sha256=57271e854b694a87755d76f836f5c57b2c9538ebbaf4b2154bb66addf15eb5da
   molinillo (0.8.0)
-  net-http (0.6.0) sha256=9621b20c137898af9d890556848c93603716cab516dc2c89b01a38b894e259fb
-  net-http-persistent (4.0.4) sha256=b62b7e528f72890f5cd67e7f687eeae55cf9f2cda22fd659494363da2fa7f4b2
+  net-http (0.6.0)
+  net-http-persistent (4.0.6)
   net-protocol (0.2.2) sha256=aa73e0cba6a125369de9837b8d8ef82a61849360eba0521900e2c3713aa162a8
   optparse (0.6.0) sha256=25e90469c1cd44048a89dc01c1dde9d5f0bdf717851055fb18237780779b068c
   pub_grub (0.5.0)
-  resolv (0.6.0) sha256=b8b73f7734d4102ef9f75bad281d8fd1c434f8588b6aba17832ddc16fe679fab
+  resolv (0.6.2) sha256=61efe545cedddeb1b14f77e51f85c85ca66af5098fdbf567fadf32c34590fb14
   securerandom (0.4.1) sha256=cc5193d414a4341b6e225f0cb4446aceca8e50d5e1888743fac16987638ea0b1
   thor (1.3.2) sha256=eef0293b9e24158ccad7ab383ae83534b7ad4ed99c09f96f1a6b036550abbeda
   timeout (0.4.3) sha256=9509f079b2b55fe4236d79633bd75e34c1c1e7e3fb4b56cb5fda61f80a0fe30e
@@ -70,4 +82,4 @@ CHECKSUMS
   uri (1.0.3) sha256=e9f2244608eea2f7bc357d954c65c910ce0399ca5e18a7a29207ac22d8767011
 
 BUNDLED WITH
-   2.7.0.dev
+   2.8.0.dev

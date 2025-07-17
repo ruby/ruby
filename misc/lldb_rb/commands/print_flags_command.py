@@ -11,13 +11,13 @@ class PrintFlagsCommand(RbBaseCommand):
 
     # call is where our command logic will be implemented
     def call(self, debugger, command, exe_ctx, result):
-        rclass_t = self.target.FindFirstType("struct RBasic")
+        rclass_t = self.target.FindFirstType("::RBasic")
         rcass_ptr = self.target.EvaluateExpression(command).Cast(rclass_t.GetPointerType())
         obj_flags = rcass_ptr.GetValueForExpressionPath("->flags").GetValueAsUnsigned()
 
         flags = [
             "RUBY_FL_WB_PROTECTED", "RUBY_FL_PROMOTED", "RUBY_FL_FINALIZE",
-            "RUBY_FL_SHAREABLE", "RUBY_FL_EXIVAR", "RUBY_FL_FREEZE",
+            "RUBY_FL_SHAREABLE", "RUBY_FL_FREEZE",
             "RUBY_FL_USER0", "RUBY_FL_USER1", "RUBY_FL_USER2", "RUBY_FL_USER3", "RUBY_FL_USER4",
             "RUBY_FL_USER5", "RUBY_FL_USER6", "RUBY_FL_USER7", "RUBY_FL_USER8", "RUBY_FL_USER9",
             "RUBY_FL_USER10", "RUBY_FL_USER11", "RUBY_FL_USER12", "RUBY_FL_USER13", "RUBY_FL_USER14",

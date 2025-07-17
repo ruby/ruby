@@ -71,6 +71,11 @@ module TestNetHTTPUtils
         socket.write "HTTP/1.1 100 Continue\r\n\r\n"
       end
 
+      # Set default Content-Type if not provided
+      if !headers['Content-Type'] && (method == 'POST' || method == 'PUT' || method == 'PATCH')
+        headers['Content-Type'] = 'application/octet-stream'
+      end
+
       req = Request.new(method, path, headers, socket)
       if @procs.key?(req.path) || @procs.key?("#{req.path}/")
         proc = @procs[req.path] || @procs["#{req.path}/"]
@@ -306,16 +311,18 @@ module TestNetHTTPUtils
     scheme = headers['X-Request-Scheme'] || 'http'
     host = @config['host']
     port = socket.addr[1]
-    charset = parse_content_type(headers['Content-Type'])[1]
+    content_type = headers['Content-Type'] || 'application/octet-stream'
+    charset = parse_content_type(content_type)[1]
     path = "#{scheme}://#{host}:#{port}#{path}"
     path = path.encode(charset) if charset
-    response = "HTTP/1.1 200 OK\r\nContent-Type: #{headers['Content-Type']}\r\nContent-Length: #{body.bytesize}\r\nX-request-uri: #{path}\r\n\r\n#{body}"
+    response = "HTTP/1.1 200 OK\r\nContent-Type: #{content_type}\r\nContent-Length: #{body.bytesize}\r\nX-request-uri: #{path}\r\n\r\n#{body}"
     socket.print(response)
   end
 
   def handle_patch(path, headers, socket)
     body = socket.read(headers['Content-Length'].to_i)
-    response = "HTTP/1.1 200 OK\r\nContent-Type: #{headers['Content-Type']}\r\nContent-Length: #{body.bytesize}\r\n\r\n#{body}"
+    content_type = headers['Content-Type'] || 'application/octet-stream'
+    response = "HTTP/1.1 200 OK\r\nContent-Type: #{content_type}\r\nContent-Length: #{body.bytesize}\r\n\r\n#{body}"
     socket.print(response)
   end
 

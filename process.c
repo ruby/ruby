@@ -114,6 +114,7 @@ int initgroups(const char *, rb_gid_t);
 #include "ruby/st.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
+#include "ractor_core.h"
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "ruby/ractor.h"
@@ -4120,9 +4121,13 @@ rb_fork_async_signal_safe(int *status,
 rb_pid_t
 rb_fork_ruby(int *status)
 {
+    if (UNLIKELY(!rb_ractor_main_p())) {
+        rb_raise(rb_eRactorIsolationError, "can not fork from non-main Ractors");
+    }
+
     struct rb_process_status child = {.status = 0};
     rb_pid_t pid;
-    int try_gc = 1, err;
+    int try_gc = 1, err = 0;
     struct child_handler_disabler_state old;
 
     do {
@@ -4132,8 +4137,10 @@ rb_fork_ruby(int *status)
         rb_thread_acquire_fork_lock();
         disable_child_handler_before_fork(&old);
 
-        child.pid = pid = rb_fork();
-        child.error = err = errno;
+        RB_VM_LOCKING() {
+            child.pid = pid = rb_fork();
+            child.error = err = errno;
+        }
 
         disable_child_handler_fork_parent(&old); /* yes, bad name */
         if (
@@ -8752,9 +8759,9 @@ static VALUE rb_mProcID_Syscall;
 static VALUE
 proc_warmup(VALUE _)
 {
-    RB_VM_LOCK_ENTER();
-    rb_gc_prepare_heap();
-    RB_VM_LOCK_LEAVE();
+    RB_VM_LOCKING() {
+        rb_gc_prepare_heap();
+    }
     return Qtrue;
 }
 

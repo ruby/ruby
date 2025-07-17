@@ -276,15 +276,20 @@ class PP < PrettyPrint
     def seplist(list, sep=nil, iter_method=:each) # :yield: element
       sep ||= lambda { comma_breakable }
       first = true
+      kwsplat = EMPTY_KWHASH
       list.__send__(iter_method) {|*v|
         if first
           first = false
         else
           sep.call
         end
-        RUBY_VERSION >= "3.0" ? yield(*v, **{}) : yield(*v)
+        kwsplat ? yield(*v, **kwsplat) : yield(*v)
       }
     end
+    EMPTY_KWHASH = if RUBY_VERSION >= "3.0"
+      {}.freeze
+    end
+    private_constant :EMPTY_KWHASH
 
     # A present standard failsafe for pretty printing any given Object
     def pp_object(obj)
@@ -434,6 +439,23 @@ class Hash # :nodoc:
 
   def pretty_print_cycle(q) # :nodoc:
     q.text(empty? ? '{}' : '{...}')
+  end
+end
+
+class Set # :nodoc:
+  def pretty_print(pp)  # :nodoc:
+    pp.group(1, '#<Set:', '>') {
+      pp.breakable
+      pp.group(1, '{', '}') {
+        pp.seplist(self) { |o|
+          pp.pp o
+        }
+      }
+    }
+  end
+
+  def pretty_print_cycle(pp)    # :nodoc:
+    pp.text sprintf('#<Set: {%s}>', empty? ? '' : '...')
   end
 end
 

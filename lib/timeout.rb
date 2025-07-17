@@ -123,6 +123,9 @@ module Timeout
 
   def self.ensure_timeout_thread_created
     unless @timeout_thread and @timeout_thread.alive?
+      # If the Mutex is already owned we are in a signal handler.
+      # In that case, just return and let the main thread create the @timeout_thread.
+      return if TIMEOUT_THREAD_MUTEX.owned?
       TIMEOUT_THREAD_MUTEX.synchronize do
         unless @timeout_thread and @timeout_thread.alive?
           @timeout_thread = create_timeout_thread

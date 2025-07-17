@@ -92,6 +92,40 @@ module URI
   end
 
   module Schemes # :nodoc:
+    class << self
+      ReservedChars = ".+-"
+      EscapedChars = "\u01C0\u01C1\u01C2"
+      # Use Lo category chars as escaped chars for TruffleRuby, which
+      # does not allow Symbol categories as identifiers.
+
+      def escape(name)
+        unless name and name.ascii_only?
+          return nil
+        end
+        name.upcase.tr(ReservedChars, EscapedChars)
+      end
+
+      def unescape(name)
+        name.tr(EscapedChars, ReservedChars).encode(Encoding::US_ASCII).upcase
+      end
+
+      def find(name)
+        const_get(name, false) if name and const_defined?(name, false)
+      end
+
+      def register(name, klass)
+        unless scheme = escape(name)
+          raise ArgumentError, "invalid character as scheme - #{name}"
+        end
+        const_set(scheme, klass)
+      end
+
+      def list
+        constants.map { |name|
+          [unescape(name.to_s), const_get(name)]
+        }.to_h
+      end
+    end
   end
   private_constant :Schemes
 
@@ -104,7 +138,7 @@ module URI
   # Note that after calling String#upcase on +scheme+, it must be a valid
   # constant name.
   def self.register_scheme(scheme, klass)
-    Schemes.const_set(scheme.to_s.upcase, klass)
+    Schemes.register(scheme, klass)
   end
 
   # Returns a hash of the defined schemes:
@@ -122,14 +156,14 @@ module URI
   #
   # Related: URI.register_scheme.
   def self.scheme_list
-    Schemes.constants.map { |name|
-      [name.to_s.upcase, Schemes.const_get(name)]
-    }.to_h
+    Schemes.list
   end
 
+  # :stopdoc:
   INITIAL_SCHEMES = scheme_list
   private_constant :INITIAL_SCHEMES
   Ractor.make_shareable(INITIAL_SCHEMES) if defined?(Ractor)
+  # :startdoc:
 
   # Returns a new object constructed from the given +scheme+, +arguments+,
   # and +default+:
@@ -148,12 +182,10 @@ module URI
   #   # => #<URI::HTTP foo://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top>
   #
   def self.for(scheme, *arguments, default: Generic)
-    const_name = scheme.to_s.upcase
+    const_name = Schemes.escape(scheme)
 
     uri_class = INITIAL_SCHEMES[const_name]
-    uri_class ||= if /\A[A-Z]\w*\z/.match?(const_name) && Schemes.const_defined?(const_name, false)
-      Schemes.const_get(const_name, false)
-    end
+    uri_class ||= Schemes.find(const_name)
     uri_class ||= default
 
     return uri_class.new(scheme, *arguments)
@@ -407,6 +439,8 @@ module URI
     _decode_uri_component(/%\h\h/, str, enc)
   end
 
+  # Returns a string derived from the given string +str+ with
+  # URI-encoded characters matching +regexp+ according to +table+.
   def self._encode_uri_component(regexp, table, str, enc)
     str = str.to_s.dup
     if str.encoding != Encoding::ASCII_8BIT
@@ -421,6 +455,8 @@ module URI
   end
   private_class_method :_encode_uri_component
 
+  # Returns a string decoding characters matching +regexp+ from the
+  # given \URL-encoded string +str+.
   def self._decode_uri_component(regexp, str, enc)
     raise ArgumentError, "invalid %-encoding (#{str})" if /%(?!\h\h)/.match?(str)
     str.b.gsub(regexp, TBLDECWWWCOMP_).force_encoding(enc)
@@ -859,12 +895,15 @@ module Kernel
   # Returns a \URI object derived from the given +uri+,
   # which may be a \URI string or an existing \URI object:
   #
+  #   require 'uri'
   #   # Returns a new URI.
   #   uri = URI('http://github.com/ruby/ruby')
   #   # => #<URI::HTTP http://github.com/ruby/ruby>
   #   # Returns the given URI.
   #   URI(uri)
   #   # => #<URI::HTTP http://github.com/ruby/ruby>
+  #
+  # You must require 'uri' to use this method.
   #
   def URI(uri)
     if uri.is_a?(URI::Generic)

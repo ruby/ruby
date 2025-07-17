@@ -7,7 +7,7 @@ class TestPsychRactor < Test::Unit::TestCase
       obj = {foo: [42]}
       obj2 = Ractor.new(obj) do |obj|
         Psych.unsafe_load(Psych.dump(obj))
-      end.take
+      end.value
       assert_equal obj, obj2
     RUBY
   end
@@ -33,7 +33,7 @@ class TestPsychRactor < Test::Unit::TestCase
           val * 2
         end
         Psych.load('--- !!omap hello')
-      end.take
+      end.value
       assert_equal 'hellohello', r
       assert_equal 'hello', Psych.load('--- !!omap hello')
     RUBY
@@ -43,7 +43,7 @@ class TestPsychRactor < Test::Unit::TestCase
     assert_ractor(<<~RUBY, require_relative: 'helper')
       r = Ractor.new do
         Psych.libyaml_version.join('.') == Psych::LIBYAML_VERSION
-      end.take
+      end.value
       assert_equal true, r
     RUBY
   end

@@ -87,7 +87,7 @@ __bmdv_ractors << Ractor.new(__bmdv_loop_after - __bmdv_loop_before) { |__bmdv_l
 <% end %>
 
 # Wait for all Ractors before executing code to write results
-__bmdv_ractors.map!(&:take)
+__bmdv_ractors.map!(&:value)
 
 <% results.each do |result| %>
 File.write(<%= result.dump %>, __bmdv_ractors.shift)

@@ -29,6 +29,7 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
+#include "zjit.h"
 
 // For mmapp(), sysconf()
 #ifndef _WIN32
@@ -40,7 +41,7 @@
 
 // Field offsets for the RObject struct
 enum robject_offsets {
-    ROBJECT_OFFSET_AS_HEAP_IVPTR = offsetof(struct RObject, as.heap.ivptr),
+    ROBJECT_OFFSET_AS_HEAP_FIELDS = offsetof(struct RObject, as.heap.fields),
     ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary),
 };
 
@@ -396,12 +397,6 @@ rb_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value)
     ec->cfp->sp++;
 }
 
-unsigned int
-rb_iseq_encoded_size(const rb_iseq_t *iseq)
-{
-    return iseq->body->iseq_size;
-}
-
 // TODO(alan): consider using an opaque pointer for the payload rather than a void pointer
 void *
 rb_iseq_get_yjit_payload(const rb_iseq_t *iseq)
@@ -437,40 +432,6 @@ rb_iseq_reset_jit_func(const rb_iseq_t *iseq)
     iseq->body->jit_exception_calls = 0;
 }
 
-// Get the PC for a given index in an iseq
-VALUE *
-rb_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx)
-{
-    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    RUBY_ASSERT_ALWAYS(insn_idx < iseq->body->iseq_size);
-    VALUE *encoded = iseq->body->iseq_encoded;
-    VALUE *pc = &encoded[insn_idx];
-    return pc;
-}
-
-// Get the opcode given a program counter. Can return trace opcode variants.
-int
-rb_iseq_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
-{
-    // YJIT should only use iseqs after AST to bytecode compilation
-    RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
-
-    const VALUE at_pc = *pc;
-    return rb_vm_insn_addr2opcode((const void *)at_pc);
-}
-
-unsigned long
-rb_RSTRING_LEN(VALUE str)
-{
-    return RSTRING_LEN(str);
-}
-
-char *
-rb_RSTRING_PTR(VALUE str)
-{
-    return RSTRING_PTR(str);
-}
-
 rb_proc_t *
 rb_yjit_get_proc_ptr(VALUE procv)
 {
@@ -484,264 +445,13 @@ rb_yjit_get_proc_ptr(VALUE procv)
 // Bindgen's temp/anon name isn't guaranteed stable.
 typedef struct rb_iseq_param_keyword rb_seq_param_keyword_struct;
 
-const char *
-rb_insn_name(VALUE insn)
-{
-    return insn_name(insn);
-}
-
-unsigned int
-rb_vm_ci_argc(const struct rb_callinfo *ci)
-{
-    return vm_ci_argc(ci);
-}
-
-ID
-rb_vm_ci_mid(const struct rb_callinfo *ci)
-{
-    return vm_ci_mid(ci);
-}
-
-unsigned int
-rb_vm_ci_flag(const struct rb_callinfo *ci)
-{
-    return vm_ci_flag(ci);
-}
-
-const struct rb_callinfo_kwarg *
-rb_vm_ci_kwarg(const struct rb_callinfo *ci)
-{
-    return vm_ci_kwarg(ci);
-}
-
-int
-rb_get_cikw_keyword_len(const struct rb_callinfo_kwarg *cikw)
-{
-    return cikw->keyword_len;
-}
-
-VALUE
-rb_get_cikw_keywords_idx(const struct rb_callinfo_kwarg *cikw, int idx)
-{
-    return cikw->keywords[idx];
-}
-
-rb_method_visibility_t
-rb_METHOD_ENTRY_VISI(const rb_callable_method_entry_t *me)
-{
-    return METHOD_ENTRY_VISI(me);
-}
-
-rb_method_type_t
-rb_get_cme_def_type(const rb_callable_method_entry_t *cme)
-{
-    if (UNDEFINED_METHOD_ENTRY_P(cme)) {
-        return VM_METHOD_TYPE_UNDEF;
-    }
-    else {
-        return cme->def->type;
-    }
-}
-
-ID
-rb_get_cme_def_body_attr_id(const rb_callable_method_entry_t *cme)
-{
-    return cme->def->body.attr.id;
-}
-
 ID rb_get_symbol_id(VALUE namep);
-
-enum method_optimized_type
-rb_get_cme_def_body_optimized_type(const rb_callable_method_entry_t *cme)
-{
-    return cme->def->body.optimized.type;
-}
-
-unsigned int
-rb_get_cme_def_body_optimized_index(const rb_callable_method_entry_t *cme)
-{
-    return cme->def->body.optimized.index;
-}
-
-rb_method_cfunc_t *
-rb_get_cme_def_body_cfunc(const rb_callable_method_entry_t *cme)
-{
-    return UNALIGNED_MEMBER_PTR(cme->def, body.cfunc);
-}
-
-uintptr_t
-rb_get_def_method_serial(const rb_method_definition_t *def)
-{
-    return def->method_serial;
-}
-
-ID
-rb_get_def_original_id(const rb_method_definition_t *def)
-{
-    return def->original_id;
-}
-
-int
-rb_get_mct_argc(const rb_method_cfunc_t *mct)
-{
-    return mct->argc;
-}
-
-void *
-rb_get_mct_func(const rb_method_cfunc_t *mct)
-{
-    return (void*)(uintptr_t)mct->func; // this field is defined as type VALUE (*func)(ANYARGS)
-}
-
-const rb_iseq_t *
-rb_get_def_iseq_ptr(rb_method_definition_t *def)
-{
-    return def_iseq_ptr(def);
-}
 
 VALUE
 rb_get_def_bmethod_proc(rb_method_definition_t *def)
 {
     RUBY_ASSERT(def->type == VM_METHOD_TYPE_BMETHOD);
     return def->body.bmethod.proc;
-}
-
-const rb_iseq_t *
-rb_get_iseq_body_local_iseq(const rb_iseq_t *iseq)
-{
-    return iseq->body->local_iseq;
-}
-
-const rb_iseq_t *
-rb_get_iseq_body_parent_iseq(const rb_iseq_t *iseq)
-{
-    return iseq->body->parent_iseq;
-}
-
-unsigned int
-rb_get_iseq_body_local_table_size(const rb_iseq_t *iseq)
-{
-    return iseq->body->local_table_size;
-}
-
-VALUE *
-rb_get_iseq_body_iseq_encoded(const rb_iseq_t *iseq)
-{
-    return iseq->body->iseq_encoded;
-}
-
-unsigned
-rb_get_iseq_body_stack_max(const rb_iseq_t *iseq)
-{
-    return iseq->body->stack_max;
-}
-
-enum rb_iseq_type
-rb_get_iseq_body_type(const rb_iseq_t *iseq)
-{
-    return iseq->body->type;
-}
-
-bool
-rb_get_iseq_flags_has_lead(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.flags.has_lead;
-}
-
-bool
-rb_get_iseq_flags_has_opt(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.flags.has_opt;
-}
-
-bool
-rb_get_iseq_flags_has_kw(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.flags.has_kw;
-}
-
-bool
-rb_get_iseq_flags_has_post(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.flags.has_post;
-}
-
-bool
-rb_get_iseq_flags_has_kwrest(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.flags.has_kwrest;
-}
-
-bool
-rb_get_iseq_flags_anon_kwrest(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.flags.anon_kwrest;
-}
-
-bool
-rb_get_iseq_flags_has_rest(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.flags.has_rest;
-}
-
-bool
-rb_get_iseq_flags_ruby2_keywords(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.flags.ruby2_keywords;
-}
-
-bool
-rb_get_iseq_flags_has_block(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.flags.has_block;
-}
-
-bool
-rb_get_iseq_flags_ambiguous_param0(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.flags.ambiguous_param0;
-}
-
-bool
-rb_get_iseq_flags_accepts_no_kwarg(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.flags.accepts_no_kwarg;
-}
-
-bool
-rb_get_iseq_flags_forwardable(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.flags.forwardable;
-}
-
-const rb_seq_param_keyword_struct *
-rb_get_iseq_body_param_keyword(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.keyword;
-}
-
-unsigned
-rb_get_iseq_body_param_size(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.size;
-}
-
-int
-rb_get_iseq_body_param_lead_num(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.lead_num;
-}
-
-int
-rb_get_iseq_body_param_opt_num(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.opt_num;
-}
-
-const VALUE *
-rb_get_iseq_body_param_opt_table(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.opt_table;
 }
 
 VALUE
@@ -789,30 +499,6 @@ rb_yjit_str_simple_append(VALUE str1, VALUE str2)
     return rb_str_cat(str1, RSTRING_PTR(str2), RSTRING_LEN(str2));
 }
 
-struct rb_control_frame_struct *
-rb_get_ec_cfp(const rb_execution_context_t *ec)
-{
-    return ec->cfp;
-}
-
-const rb_iseq_t *
-rb_get_cfp_iseq(struct rb_control_frame_struct *cfp)
-{
-    return cfp->iseq;
-}
-
-VALUE *
-rb_get_cfp_pc(struct rb_control_frame_struct *cfp)
-{
-    return (VALUE*)cfp->pc;
-}
-
-VALUE *
-rb_get_cfp_sp(struct rb_control_frame_struct *cfp)
-{
-    return cfp->sp;
-}
-
 void
 rb_set_cfp_pc(struct rb_control_frame_struct *cfp, const VALUE *pc)
 {
@@ -825,36 +511,7 @@ rb_set_cfp_sp(struct rb_control_frame_struct *cfp, VALUE *sp)
     cfp->sp = sp;
 }
 
-VALUE
-rb_get_cfp_self(struct rb_control_frame_struct *cfp)
-{
-    return cfp->self;
-}
-
-VALUE *
-rb_get_cfp_ep(struct rb_control_frame_struct *cfp)
-{
-    return (VALUE*)cfp->ep;
-}
-
-const VALUE *
-rb_get_cfp_ep_level(struct rb_control_frame_struct *cfp, uint32_t lv)
-{
-    uint32_t i;
-    const VALUE *ep = (VALUE*)cfp->ep;
-    for (i = 0; i < lv; i++) {
-        ep = VM_ENV_PREV_EP(ep);
-    }
-    return ep;
-}
-
 extern VALUE *rb_vm_base_ptr(struct rb_control_frame_struct *cfp);
-
-VALUE
-rb_yarv_class_of(VALUE obj)
-{
-    return rb_class_of(obj);
-}
 
 // YJIT needs this function to never allocate and never raise
 VALUE
@@ -868,13 +525,6 @@ VALUE
 rb_str_neq_internal(VALUE str1, VALUE str2)
 {
     return rb_str_eql_internal(str1, str2) == Qtrue ? Qfalse : Qtrue;
-}
-
-// YJIT needs this function to never allocate and never raise
-VALUE
-rb_yarv_ary_entry_internal(VALUE ary, long offset)
-{
-    return rb_ary_entry_internal(ary, offset);
 }
 
 extern VALUE rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
@@ -989,33 +639,6 @@ rb_yjit_iseq_inspect(const rb_iseq_t *iseq)
     return buf;
 }
 
-// The FL_TEST() macro
-VALUE
-rb_FL_TEST(VALUE obj, VALUE flags)
-{
-    return RB_FL_TEST(obj, flags);
-}
-
-// The FL_TEST_RAW() macro, normally an internal implementation detail
-VALUE
-rb_FL_TEST_RAW(VALUE obj, VALUE flags)
-{
-    return FL_TEST_RAW(obj, flags);
-}
-
-// The RB_TYPE_P macro
-bool
-rb_RB_TYPE_P(VALUE obj, enum ruby_value_type t)
-{
-    return RB_TYPE_P(obj, t);
-}
-
-long
-rb_RSTRUCT_LEN(VALUE st)
-{
-    return RSTRUCT_LEN(st);
-}
-
 // There are RSTRUCT_SETs in ruby/internal/core/rstruct.h and internal/struct.h
 // with different types (int vs long) for k. Here we use the one from ruby/internal/core/rstruct.h,
 // which takes an int.
@@ -1023,24 +646,6 @@ void
 rb_RSTRUCT_SET(VALUE st, int k, VALUE v)
 {
     RSTRUCT_SET(st, k, v);
-}
-
-const struct rb_callinfo *
-rb_get_call_data_ci(const struct rb_call_data *cd)
-{
-    return cd->ci;
-}
-
-bool
-rb_BASIC_OP_UNREDEFINED_P(enum ruby_basic_operators bop, uint32_t klass)
-{
-    return BASIC_OP_UNREDEFINED_P(bop, klass);
-}
-
-VALUE
-rb_RCLASS_ORIGIN(VALUE c)
-{
-    return RCLASS_ORIGIN(c);
 }
 
 // Return the string encoding index
@@ -1056,30 +661,10 @@ rb_yjit_multi_ractor_p(void)
     return rb_multi_ractor_p();
 }
 
-// For debug builds
-void
-rb_assert_iseq_handle(VALUE handle)
-{
-    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(handle, imemo_iseq));
-}
-
-int
-rb_IMEMO_TYPE_P(VALUE imemo, enum imemo_type imemo_type)
-{
-    return IMEMO_TYPE_P(imemo, imemo_type);
-}
-
 bool
 rb_yjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
 {
     return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
-}
-
-void
-rb_assert_cme_handle(VALUE handle)
-{
-    RUBY_ASSERT_ALWAYS(!rb_objspace_garbage_object_p(handle));
-    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(handle, imemo_ment));
 }
 
 // Used for passing a callback and other data over rb_objspace_each_objects
@@ -1147,21 +732,20 @@ rb_yjit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line
 void
 rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception)
 {
-    RB_VM_LOCK_ENTER();
-    rb_vm_barrier();
+    RB_VM_LOCKING() {
+        rb_vm_barrier();
 
-    // Compile a block version starting at the current instruction
-    uint8_t *rb_yjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception); // defined in Rust
-    uintptr_t code_ptr = (uintptr_t)rb_yjit_iseq_gen_entry_point(iseq, ec, jit_exception);
+        // Compile a block version starting at the current instruction
+        uint8_t *rb_yjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception); // defined in Rust
+        uintptr_t code_ptr = (uintptr_t)rb_yjit_iseq_gen_entry_point(iseq, ec, jit_exception);
 
-    if (jit_exception) {
-        iseq->body->jit_exception = (rb_jit_func_t)code_ptr;
-    }
-    else {
-        iseq->body->jit_entry = (rb_jit_func_t)code_ptr;
-    }
-
-    RB_VM_LOCK_LEAVE();
+        if (jit_exception) {
+            iseq->body->jit_exception = (rb_jit_func_t)code_ptr;
+        }
+        else {
+            iseq->body->jit_entry = (rb_jit_func_t)code_ptr;
+        }
+}
 }
 
 // GC root for interacting with the GC
@@ -1182,15 +766,31 @@ VALUE
 rb_object_shape_count(void)
 {
     // next_shape_id starts from 0, so it's the same as the count
-    return ULONG2NUM((unsigned long)GET_SHAPE_TREE()->next_shape_id);
+    return ULONG2NUM((unsigned long)rb_shapes_count());
 }
 
-// Assert that we have the VM lock. Relevant mostly for multi ractor situations.
-// The GC takes the lock before calling us, and this asserts that it indeed happens.
-void
-rb_yjit_assert_holding_vm_lock(void)
+bool
+rb_yjit_shape_too_complex_p(shape_id_t shape_id)
 {
-    ASSERT_vm_locking();
+    return rb_shape_too_complex_p(shape_id);
+}
+
+bool
+rb_yjit_shape_obj_too_complex_p(VALUE obj)
+{
+    return rb_shape_obj_too_complex_p(obj);
+}
+
+attr_index_t
+rb_yjit_shape_capacity(shape_id_t shape_id)
+{
+    return RSHAPE_CAPACITY(shape_id);
+}
+
+attr_index_t
+rb_yjit_shape_index(shape_id_t shape_id)
+{
+    return RSHAPE_INDEX(shape_id);
 }
 
 // The number of stack slots that vm_sendish() pops for send and invokesuper.
@@ -1262,3 +862,4 @@ static VALUE yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self) { return Q
 
 // Preprocessed yjit.rb generated during build
 #include "yjit.rbinc"
+

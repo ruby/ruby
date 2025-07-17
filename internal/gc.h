@@ -201,6 +201,7 @@ RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 static inline void *ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
 static inline void *ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 static inline void ruby_sized_xfree_inlined(void *ptr, size_t size);
+void rb_gc_obj_id_moved(VALUE obj);
 
 void *rb_gc_ractor_cache_alloc(rb_ractor_t *ractor);
 void rb_gc_ractor_cache_free(void *cache);
@@ -262,6 +263,26 @@ const char *rb_gc_active_gc_name(void);
 int rb_gc_modular_gc_loaded_p(void);
 
 RUBY_SYMBOL_EXPORT_END
+
+static inline VALUE
+rb_obj_atomic_write(
+    VALUE a, VALUE *slot, VALUE b,
+    RBIMPL_ATTR_MAYBE_UNUSED()
+    const char *filename,
+    RBIMPL_ATTR_MAYBE_UNUSED()
+    int line)
+{
+#ifdef RGENGC_LOGGING_WRITE
+    RGENGC_LOGGING_WRITE(a, slot, b, filename, line);
+#endif
+
+    RUBY_ATOMIC_VALUE_SET(*slot, b);
+
+    rb_obj_written(a, RUBY_Qundef /* ignore `oldv' now */, b, filename, line);
+    return a;
+}
+#define RB_OBJ_ATOMIC_WRITE(old, slot, young) \
+    RBIMPL_CAST(rb_obj_atomic_write((VALUE)(old), (VALUE *)(slot), (VALUE)(young), __FILE__, __LINE__))
 
 int rb_ec_stack_check(struct rb_execution_context_struct *ec);
 void rb_gc_writebarrier_remember(VALUE obj);

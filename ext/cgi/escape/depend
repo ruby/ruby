@@ -138,6 +138,7 @@ escape.o: $(hdrdir)/ruby/internal/intern/re.h
 escape.o: $(hdrdir)/ruby/internal/intern/ruby.h
 escape.o: $(hdrdir)/ruby/internal/intern/select.h
 escape.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+escape.o: $(hdrdir)/ruby/internal/intern/set.h
 escape.o: $(hdrdir)/ruby/internal/intern/signal.h
 escape.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 escape.o: $(hdrdir)/ruby/internal/intern/string.h

@@ -23,6 +23,9 @@ typedef struct ruby_cmdline_options {
     ruby_features_t warn;
     unsigned int dump;
     long backtrace_length_limit;
+#if USE_ZJIT
+    void *zjit;
+#endif
 
     const char *crash_report;
 

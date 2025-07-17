@@ -46,7 +46,6 @@ module SyncDefaultGems
     resolv: "ruby/resolv",
     rubygems: 'rubygems/rubygems',
     securerandom: "ruby/securerandom",
-    set: "ruby/set",
     shellwords: "ruby/shellwords",
     singleton: "ruby/singleton",
     stringio: 'ruby/stringio',
@@ -137,9 +136,11 @@ module SyncDefaultGems
       cp_r("#{upstream}/bundler/spec", "spec/bundler")
       rm_rf("spec/bundler/bin")
 
-      parallel_tests_content = File.read("#{upstream}/bundler/bin/parallel_rspec").gsub("../spec", "../bundler")
-      File.write("spec/bin/parallel_rspec", parallel_tests_content)
-      chmod("+x", "spec/bin/parallel_rspec")
+      ["bundle", "parallel_rspec", "rspec"].each do |binstub|
+        content = File.read("#{upstream}/bundler/bin/#{binstub}").gsub("../spec", "../bundler")
+        File.write("spec/bin/#{binstub}", content)
+        chmod("+x", "spec/bin/#{binstub}")
+      end
 
       %w[dev_gems test_gems rubocop_gems standard_gems].each do |gemfile|
         ["rb.lock", "rb"].each do |ext|
@@ -237,12 +238,13 @@ module SyncDefaultGems
     when "cgi"
       rm_rf(%w[lib/cgi.rb lib/cgi ext/cgi test/cgi])
       cp_r("#{upstream}/ext/cgi", "ext")
-      cp_r("#{upstream}/lib/cgi", "lib")
-      cp_r("#{upstream}/lib/cgi.rb", "lib")
+      mkdir_p("lib/cgi")
+      cp_r("#{upstream}/lib/cgi/escape.rb", "lib/cgi")
+      mkdir_p("test/cgi")
+      cp_r("#{upstream}/test/cgi/test_cgi_escape.rb", "test/cgi")
+      cp_r("#{upstream}/test/cgi/update_env.rb", "test/cgi")
       rm_rf("lib/cgi/escape.jar")
-      cp_r("#{upstream}/test/cgi", "test")
-      cp_r("#{upstream}/cgi.gemspec", "lib/cgi")
-      `git checkout ext/cgi/escape/depend`
+      `git checkout lib/cgi.rb lib/cgi/util.rb ext/cgi/escape/depend`
     when "openssl"
       rm_rf(%w[ext/openssl test/openssl])
       cp_r("#{upstream}/ext/openssl", "ext")
@@ -274,7 +276,7 @@ module SyncDefaultGems
       rm_rf(%w[lib/erb* test/erb libexec/erb])
       cp_r("#{upstream}/lib/erb.rb", "lib")
       cp_r("#{upstream}/test/erb", "test")
-      cp_r("#{upstream}/erb.gemspec", "lib")
+      cp_r("#{upstream}/erb.gemspec", "lib/erb")
       cp_r("#{upstream}/libexec/erb", "libexec")
     when "pathname"
       rm_rf(%w[ext/pathname test/pathname])
@@ -295,9 +297,6 @@ module SyncDefaultGems
       cp_r("#{upstream}/test/digest", "test")
       cp_r("#{upstream}/digest.gemspec", "ext/digest")
       `git checkout ext/digest/depend ext/digest/*/depend`
-    when "set"
-      sync_lib gem, upstream
-      cp_r(Dir.glob("#{upstream}/test/*"), "test/set")
     when "optparse"
       sync_lib gem, upstream
       rm_rf(%w[doc/optparse])
@@ -368,8 +367,7 @@ module SyncDefaultGems
   end
 
   def check_prerelease_version(gem)
-    return if gem == "rubygems"
-    return if gem == "mmtk"
+    return if ["rubygems", "mmtk", "cgi"].include?(gem)
 
     gem = gem.downcase
 

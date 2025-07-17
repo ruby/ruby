@@ -198,47 +198,16 @@ ossl_cipher_reset(VALUE self)
 }
 
 static VALUE
-ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
+ossl_cipher_init(VALUE self, int enc)
 {
     EVP_CIPHER_CTX *ctx;
-    unsigned char key[EVP_MAX_KEY_LENGTH], *p_key = NULL;
-    unsigned char iv[EVP_MAX_IV_LENGTH], *p_iv = NULL;
-    VALUE pass, init_v;
 
-    if(rb_scan_args(argc, argv, "02", &pass, &init_v) > 0){
-	/*
-	 * oops. this code mistakes salt for IV.
-	 * We deprecated the arguments for this method, but we decided
-	 * keeping this behaviour for backward compatibility.
-	 */
-	VALUE cname  = rb_class_path(rb_obj_class(self));
-	rb_warn("arguments for %"PRIsVALUE"#encrypt and %"PRIsVALUE"#decrypt were deprecated; "
-                "use %"PRIsVALUE"#pkcs5_keyivgen to derive key and IV",
-                cname, cname, cname);
-	StringValue(pass);
-	GetCipher(self, ctx);
-	if (NIL_P(init_v)) memcpy(iv, "OpenSSL for Ruby rulez!", sizeof(iv));
-	else{
-	    StringValue(init_v);
-	    if (EVP_MAX_IV_LENGTH > RSTRING_LEN(init_v)) {
-		memset(iv, 0, EVP_MAX_IV_LENGTH);
-		memcpy(iv, RSTRING_PTR(init_v), RSTRING_LEN(init_v));
-	    }
-	    else memcpy(iv, RSTRING_PTR(init_v), sizeof(iv));
-	}
-	EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), EVP_md5(), iv,
-		       (unsigned char *)RSTRING_PTR(pass), RSTRING_LENINT(pass), 1, key, NULL);
-	p_key = key;
-	p_iv = iv;
-    }
-    else {
-	GetCipher(self, ctx);
-    }
-    if (EVP_CipherInit_ex(ctx, NULL, NULL, p_key, p_iv, mode) != 1) {
-	ossl_raise(eCipherError, NULL);
+    GetCipher(self, ctx);
+    if (EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, enc) != 1) {
+        ossl_raise(eCipherError, "EVP_CipherInit_ex");
     }
 
-    rb_ivar_set(self, id_key_set, p_key ? Qtrue : Qfalse);
+    rb_ivar_set(self, id_key_set, Qfalse);
 
     return self;
 }
@@ -256,9 +225,9 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
  *  Internally calls EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, 1).
  */
 static VALUE
-ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
+ossl_cipher_encrypt(VALUE self)
 {
-    return ossl_cipher_init(argc, argv, self, 1);
+    return ossl_cipher_init(self, 1);
 }
 
 /*
@@ -274,9 +243,9 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
  *  Internally calls EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, 0).
  */
 static VALUE
-ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
+ossl_cipher_decrypt(VALUE self)
 {
-    return ossl_cipher_init(argc, argv, self, 0);
+    return ossl_cipher_init(self, 0);
 }
 
 /*
@@ -1064,8 +1033,8 @@ Init_ossl_cipher(void)
     rb_define_module_function(cCipher, "ciphers", ossl_s_ciphers, 0);
     rb_define_method(cCipher, "initialize", ossl_cipher_initialize, 1);
     rb_define_method(cCipher, "reset", ossl_cipher_reset, 0);
-    rb_define_method(cCipher, "encrypt", ossl_cipher_encrypt, -1);
-    rb_define_method(cCipher, "decrypt", ossl_cipher_decrypt, -1);
+    rb_define_method(cCipher, "encrypt", ossl_cipher_encrypt, 0);
+    rb_define_method(cCipher, "decrypt", ossl_cipher_decrypt, 0);
     rb_define_method(cCipher, "pkcs5_keyivgen", ossl_cipher_pkcs5_keyivgen, -1);
     rb_define_method(cCipher, "update", ossl_cipher_update, -1);
     rb_define_method(cCipher, "final", ossl_cipher_final, 0);

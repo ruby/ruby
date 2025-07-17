@@ -4,8 +4,6 @@ require_relative "lockfile_parser"
 
 module Bundler
   class Definition
-    include GemHelpers
-
     class << self
       # Do not create or modify a lockfile (Makes #lock a noop)
       attr_accessor :no_lock
@@ -62,6 +60,7 @@ module Bundler
 
       if unlock == true
         @unlocking_all = true
+        strict = false
         @unlocking_bundler = false
         @unlocking = unlock
         @sources_to_unlock = []
@@ -70,6 +69,7 @@ module Bundler
         conservative = false
       else
         @unlocking_all = false
+        strict = unlock.delete(:strict)
         @unlocking_bundler = unlock.delete(:bundler)
         @unlocking = unlock.any? {|_k, v| !Array(v).empty? }
         @sources_to_unlock = unlock.delete(:sources) || []
@@ -99,7 +99,7 @@ module Bundler
 
       if lockfile_exists?
         @lockfile_contents = Bundler.read_file(lockfile)
-        @locked_gems = LockfileParser.new(@lockfile_contents)
+        @locked_gems = LockfileParser.new(@lockfile_contents, strict: strict)
         @locked_platforms = @locked_gems.platforms
         @most_specific_locked_platform = @locked_gems.most_specific_locked_platform
         @platforms = @locked_platforms.dup
@@ -257,7 +257,7 @@ module Bundler
     rescue BundlerError => e
       @resolve = nil
       @resolver = nil
-      @resolution_packages = nil
+      @resolution_base = nil
       @source_requirements = nil
       @specs = nil
 
@@ -282,7 +282,7 @@ module Bundler
     end
 
     def filter_relevant(dependencies)
-      platforms_array = [generic_local_platform].freeze
+      platforms_array = [Bundler.generic_local_platform].freeze
       dependencies.select do |d|
         d.should_include? && !d.gem_platforms(platforms_array).empty?
       end
@@ -337,11 +337,7 @@ module Bundler
           end
         end
       else
-        if lockfile_exists?
-          Bundler.ui.debug "Found changes from the lockfile, re-resolving dependencies because #{change_reason}"
-        else
-          Bundler.ui.debug "Resolving dependencies because there's no lockfile"
-        end
+        Bundler.ui.debug resolve_needed_reason
 
         start_resolution
       end
@@ -460,12 +456,12 @@ module Bundler
       return if current_platform_locked? || @platforms.include?(Gem::Platform::RUBY)
 
       raise ProductionError, "Your bundle only supports platforms #{@platforms.map(&:to_s)} " \
-        "but your local platform is #{local_platform}. " \
-        "Add the current platform to the lockfile with\n`bundle lock --add-platform #{local_platform}` and try again."
+        "but your local platform is #{Bundler.local_platform}. " \
+        "Add the current platform to the lockfile with\n`bundle lock --add-platform #{Bundler.local_platform}` and try again."
     end
 
     def normalize_platforms
-      @platforms = resolve.normalize_platforms!(current_dependencies, platforms)
+      resolve.normalize_platforms!(current_dependencies, platforms)
 
       @resolve = SpecSet.new(resolve.for(current_dependencies, @platforms))
     end
@@ -537,9 +533,7 @@ module Bundler
 
       return unless added.any? || deleted.any? || changed.any? || resolve_needed?
 
-      reason = resolve_needed? ? change_reason : "some dependencies were deleted from your gemfile"
-
-      msg = String.new("#{reason.capitalize.strip}, but ")
+      msg = String.new("#{change_reason.capitalize.strip}, but ")
       msg << "the lockfile " unless msg.start_with?("Your lockfile")
       msg << "can't be updated because #{update_refused_reason}"
       msg << "\n\nYou have added to the Gemfile:\n" << added.join("\n") if added.any?
@@ -574,7 +568,7 @@ module Bundler
     end
 
     def should_add_extra_platforms?
-      !lockfile_exists? && generic_local_platform_is_ruby? && !Bundler.settings[:force_ruby_platform]
+      !lockfile_exists? && Bundler::MatchPlatform.generic_local_platform_is_ruby? && !Bundler.settings[:force_ruby_platform]
     end
 
     def lockfile_exists?
@@ -620,7 +614,7 @@ module Bundler
     end
 
     def resolver
-      @resolver ||= Resolver.new(resolution_packages, gem_version_promoter, @most_specific_locked_platform)
+      @resolver ||= Resolver.new(resolution_base, gem_version_promoter, @most_specific_locked_platform)
     end
 
     def expanded_dependencies
@@ -634,15 +628,15 @@ module Bundler
       [Dependency.new("bundler", @unlocking_bundler)] + dependencies
     end
 
-    def resolution_packages
-      @resolution_packages ||= begin
+    def resolution_base
+      @resolution_base ||= begin
         last_resolve = converge_locked_specs
         remove_invalid_platforms!
-        new_resolution_platforms = @current_platform_missing ? @new_platforms + [local_platform] : @new_platforms
-        packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @unlocking_all || @gems_to_unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: new_resolution_platforms)
-        packages = additional_base_requirements_to_prevent_downgrades(packages)
-        packages = additional_base_requirements_to_force_updates(packages)
-        packages
+        new_resolution_platforms = @current_platform_missing ? @new_platforms + [Bundler.local_platform] : @new_platforms
+        base = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @unlocking_all || @gems_to_unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: new_resolution_platforms)
+        base = additional_base_requirements_to_prevent_downgrades(base)
+        base = additional_base_requirements_to_force_updates(base)
+        base
       end
     end
 
@@ -717,8 +711,7 @@ module Bundler
         still_incomplete_specs = resolve.incomplete_specs
 
         if still_incomplete_specs == incomplete_specs
-          package = resolution_packages.get_package(incomplete_specs.first.name)
-          resolver.raise_not_found! package
+          resolver.raise_incomplete! incomplete_specs
         end
 
         incomplete_specs = still_incomplete_specs
@@ -740,24 +733,32 @@ module Bundler
     end
 
     def reresolve_without(incomplete_specs)
-      resolution_packages.delete(incomplete_specs)
+      resolution_base.delete(incomplete_specs)
       @resolve = start_resolution
     end
 
     def start_resolution
-      local_platform_needed_for_resolvability = @most_specific_non_local_locked_platform && !@platforms.include?(local_platform)
-      @platforms << local_platform if local_platform_needed_for_resolvability
+      local_platform_needed_for_resolvability = @most_specific_non_local_locked_platform && !@platforms.include?(Bundler.local_platform)
+      @platforms << Bundler.local_platform if local_platform_needed_for_resolvability
       add_platform(Gem::Platform::RUBY) if RUBY_ENGINE == "truffleruby"
 
       result = SpecSet.new(resolver.start)
 
       @resolved_bundler_version = result.find {|spec| spec.name == "bundler" }&.version
 
+      @new_platforms.each do |platform|
+        incomplete_specs = result.incomplete_specs_for_platform(current_dependencies, platform)
+
+        if incomplete_specs.any?
+          resolver.raise_incomplete! incomplete_specs
+        end
+      end
+
       if @most_specific_non_local_locked_platform
-        if spec_set_incomplete_for_platform?(result, @most_specific_non_local_locked_platform)
+        if result.incomplete_for_platform?(current_dependencies, @most_specific_non_local_locked_platform)
           @platforms.delete(@most_specific_non_local_locked_platform)
         elsif local_platform_needed_for_resolvability
-          @platforms.delete(local_platform)
+          @platforms.delete(Bundler.local_platform)
         end
       end
 
@@ -776,17 +777,17 @@ module Bundler
 
     def current_platform_locked?
       @platforms.any? do |bundle_platform|
-        generic_local_platform == bundle_platform || local_platform === bundle_platform
+        Bundler.generic_local_platform == bundle_platform || Bundler.local_platform === bundle_platform
       end
     end
 
     def add_current_platform
-      return if @platforms.include?(local_platform)
+      return if @platforms.include?(Bundler.local_platform)
 
       @most_specific_non_local_locked_platform = find_most_specific_locked_platform
       return if @most_specific_non_local_locked_platform
 
-      @platforms << local_platform
+      @platforms << Bundler.local_platform
       true
     end
 
@@ -796,22 +797,47 @@ module Bundler
       @most_specific_locked_platform
     end
 
-    def change_reason
-      if unlocking?
-        unlock_targets = if @gems_to_unlock.any?
-          ["gems", @gems_to_unlock]
-        elsif @sources_to_unlock.any?
-          ["sources", @sources_to_unlock]
-        end
-
-        unlock_reason = if unlock_targets
-          "#{unlock_targets.first}: (#{unlock_targets.last.join(", ")})"
+    def resolve_needed_reason
+      if lockfile_exists?
+        if unlocking?
+          "Re-resolving dependencies because #{unlocking_reason}"
         else
-          @unlocking_ruby ? "ruby" : ""
+          "Found changes from the lockfile, re-resolving dependencies because #{lockfile_changed_reason}"
         end
-
-        return "bundler is unlocking #{unlock_reason}"
+      else
+        "Resolving dependencies because there's no lockfile"
       end
+    end
+
+    def change_reason
+      if resolve_needed?
+        if unlocking?
+          unlocking_reason
+        else
+          lockfile_changed_reason
+        end
+      else
+        "some dependencies were deleted from your gemfile"
+      end
+    end
+
+    def unlocking_reason
+      unlock_targets = if @gems_to_unlock.any?
+        ["gems", @gems_to_unlock]
+      elsif @sources_to_unlock.any?
+        ["sources", @sources_to_unlock]
+      end
+
+      unlock_reason = if unlock_targets
+        "#{unlock_targets.first}: (#{unlock_targets.last.join(", ")})"
+      else
+        @unlocking_ruby ? "ruby" : ""
+      end
+
+      "bundler is unlocking #{unlock_reason}"
+    end
+
+    def lockfile_changed_reason
       [
         [@source_changes, "the list of sources changed"],
         [@dependency_changes, "the dependencies in your gemfile changed"],
@@ -1011,16 +1037,15 @@ module Bundler
         lockfile_source = s.source
 
         if dep
-          gemfile_source = dep.source || default_source
+          replacement_source = dep.source
 
-          deps << dep if !dep.source || lockfile_source.include?(dep.source) || new_deps.include?(dep)
-
-          # Replace the locked dependency's source with the equivalent source from the Gemfile
-          s.source = gemfile_source
+          deps << dep if !replacement_source || lockfile_source.include?(replacement_source) || new_deps.include?(dep)
         else
-          # Replace the locked dependency's source with the default source, if the locked source is no longer in the Gemfile
-          s.source = default_source unless sources.get(lockfile_source)
+          replacement_source = sources.get(lockfile_source)
         end
+
+        # Replace the locked dependency's source with the equivalent source from the Gemfile
+        s.source = replacement_source || default_source
 
         source = s.source
         next if @sources_to_unlock.include?(source.name)
@@ -1105,27 +1130,27 @@ module Bundler
       current == proposed
     end
 
-    def additional_base_requirements_to_prevent_downgrades(resolution_packages)
-      return resolution_packages unless @locked_gems && !sources.expired_sources?(@locked_gems.sources)
+    def additional_base_requirements_to_prevent_downgrades(resolution_base)
+      return resolution_base unless @locked_gems && !sources.expired_sources?(@locked_gems.sources)
       @originally_locked_specs.each do |locked_spec|
         next if locked_spec.source.is_a?(Source::Path)
 
         name = locked_spec.name
         next if @changed_dependencies.include?(name)
 
-        resolution_packages.base_requirements[name] = Gem::Requirement.new(">= #{locked_spec.version}")
+        resolution_base.base_requirements[name] = Gem::Requirement.new(">= #{locked_spec.version}")
       end
-      resolution_packages
+      resolution_base
     end
 
-    def additional_base_requirements_to_force_updates(resolution_packages)
-      return resolution_packages if @explicit_unlocks.empty?
+    def additional_base_requirements_to_force_updates(resolution_base)
+      return resolution_base if @explicit_unlocks.empty?
       full_update = dup_for_full_unlock.resolve
       @explicit_unlocks.each do |name|
         version = full_update.version_for(name)
-        resolution_packages.base_requirements[name] = Gem::Requirement.new("= #{version}") if version
+        resolution_base.base_requirements[name] = Gem::Requirement.new("= #{version}") if version
       end
-      resolution_packages
+      resolution_base
     end
 
     def dup_for_full_unlock
@@ -1142,25 +1167,16 @@ module Bundler
     def remove_invalid_platforms!
       return if Bundler.frozen_bundle?
 
-      @originally_invalid_platforms = platforms.select do |platform|
-        next if local_platform == platform ||
-                @new_platforms.include?(platform)
+      skips = (@new_platforms + [Bundler.local_platform]).uniq
 
-        # We should probably avoid removing non-ruby platforms, since that means
-        # lockfile will no longer install on those platforms, so a error to give
-        # heads up to the user may be better. However, we have tests expecting
-        # non ruby platform autoremoval to work, so leaving that in place for
-        # now.
-        next if @dependency_changes && platform != Gem::Platform::RUBY
+      # We should probably avoid removing non-ruby platforms, since that means
+      # lockfile will no longer install on those platforms, so a error to give
+      # heads up to the user may be better. However, we have tests expecting
+      # non ruby platform autoremoval to work, so leaving that in place for
+      # now.
+      skips |= platforms - [Gem::Platform::RUBY] if @dependency_changes
 
-        spec_set_incomplete_for_platform?(@originally_locked_specs, platform)
-      end
-
-      @platforms -= @originally_invalid_platforms
-    end
-
-    def spec_set_incomplete_for_platform?(spec_set, platform)
-      spec_set.incomplete_for_platform?(current_dependencies, platform)
+      @originally_invalid_platforms = @originally_locked_specs.remove_invalid_platforms!(current_dependencies, platforms, skips: skips)
     end
 
     def source_map

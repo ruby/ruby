@@ -1,0 +1,100 @@
+name: parse.y
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
+jobs:
+  make:
+    strategy:
+      matrix:
+        include:
+          - test_task: check
+          - test_task: test-bundler-parallel
+          - test_task: test-bundled-gems
+      fail-fast: false
+
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+      RUBY_DEBUG: ci
+      SETARCH: ${{ matrix.arch && format('setarch {0}', matrix.arch) }}
+
+    runs-on: ubuntu-22.04
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.head_commit.message, 'Document')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.title, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+
+      - uses: ./.github/actions/setup/ubuntu
+
+      - uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.245.0
+        with:
+          ruby-version: '3.1'
+          bundler: none
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+          clean: true
+          dummy-files: ${{ matrix.test_task == 'check' }}
+
+      - name: Run configure
+        run: ../src/configure -C --disable-install-doc cppflags=-DRUBY_DEBUG --with-parser=parse.y
+
+      - run: make
+
+      - run: make TESTRUN_SCRIPT='-e "exit !RUBY_DESCRIPTION.include?(%[+PRISM])"' run
+
+      - name: make ${{ matrix.test_task }}
+        run: make -s ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS" SPECOPTS="$SPECOPTS"
+        env:
+          RUBY_TESTOPTS: ${{ matrix.testopts }}
+          EXCLUDES: '../src/test/.excludes-parsey'
+          RUN_OPTS: ${{ matrix.run_opts || '--parser=parse.y' }}
+          SPECOPTS: ${{ matrix.specopts || '-T --parser=parse.y' }}
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+
+      - uses: ./.github/actions/slack
+        with:
+          label: ${{ matrix.run_opts }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}
+
+defaults:
+  run:
+    working-directory: build

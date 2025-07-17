@@ -1265,6 +1265,7 @@ pm_new_child_iseq(rb_iseq_t *iseq, pm_scope_node_t *node, VALUE name, const rb_i
             type, ISEQ_COMPILE_DATA(iseq)->option, &error_state);
 
     if (error_state) {
+        pm_scope_node_destroy(node);
         RUBY_ASSERT(ret_iseq == NULL);
         rb_jump_tag(error_state);
     }
@@ -1854,7 +1855,6 @@ pm_setup_args_dup_rest_p(const pm_node_t *node)
     switch (PM_NODE_TYPE(node)) {
       case PM_BACK_REFERENCE_READ_NODE:
       case PM_CLASS_VARIABLE_READ_NODE:
-      case PM_CONSTANT_PATH_NODE:
       case PM_CONSTANT_READ_NODE:
       case PM_FALSE_NODE:
       case PM_FLOAT_NODE:
@@ -1873,8 +1873,24 @@ pm_setup_args_dup_rest_p(const pm_node_t *node)
       case PM_SYMBOL_NODE:
       case PM_TRUE_NODE:
         return false;
+      case PM_CONSTANT_PATH_NODE: {
+        const pm_constant_path_node_t *cast = (const pm_constant_path_node_t *) node;
+        if (cast->parent != NULL) {
+            return pm_setup_args_dup_rest_p(cast->parent);
+        }
+        return false;
+      }
       case PM_IMPLICIT_NODE:
         return pm_setup_args_dup_rest_p(((const pm_implicit_node_t *) node)->value);
+      case PM_ARRAY_NODE: {
+        const pm_array_node_t *cast = (const pm_array_node_t *) node;
+        for (size_t index = 0; index < cast->elements.size; index++) {
+            if (pm_setup_args_dup_rest_p(cast->elements.nodes[index])) {
+                return true;
+            }
+        }
+        return false;
+      }
       default:
         return true;
     }
@@ -3496,7 +3512,7 @@ pm_compile_builtin_mandatory_only_method(rb_iseq_t *iseq, pm_scope_node_t *scope
     pm_scope_node_init(&def.base, &next_scope_node, scope_node);
 
     int error_state;
-    ISEQ_BODY(iseq)->mandatory_only_iseq = pm_iseq_new_with_opt(
+    const rb_iseq_t *mandatory_only_iseq = pm_iseq_new_with_opt(
         &next_scope_node,
         rb_iseq_base_label(iseq),
         rb_iseq_path(iseq),
@@ -3508,6 +3524,7 @@ pm_compile_builtin_mandatory_only_method(rb_iseq_t *iseq, pm_scope_node_t *scope
         ISEQ_COMPILE_DATA(iseq)->option,
         &error_state
     );
+    RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->mandatory_only_iseq, (VALUE)mandatory_only_iseq);
 
     if (error_state) {
         RUBY_ASSERT(ISEQ_BODY(iseq)->mandatory_only_iseq == NULL);
@@ -3620,6 +3637,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     if (message_loc->start == NULL) message_loc = &call_node->base.location;
 
     const pm_node_location_t location = PM_LOCATION_START_LOCATION(scope_node->parser, message_loc, call_node->base.node_id);
+
     LABEL *else_label = NEW_LABEL(location.line);
     LABEL *end_label = NEW_LABEL(location.line);
     LABEL *retry_end_l = NEW_LABEL(location.line);
@@ -3657,6 +3675,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
         add_trace_branch_coverage(iseq, ret, &code_location, node_id, 0, "then", branches);
     }
+
+    LINK_ELEMENT *opt_new_prelude = LAST_ELEMENT(ret);
 
     int flags = 0;
     struct rb_callinfo_kwarg *kw_arg = NULL;
@@ -3714,7 +3734,50 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         PUSH_INSN(ret, location, splatkw);
     }
 
-    PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
+    LABEL *not_basic_new = NEW_LABEL(location.line);
+    LABEL *not_basic_new_finish = NEW_LABEL(location.line);
+
+    bool inline_new = ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction &&
+        method_id == rb_intern("new") &&
+        call_node->block == NULL &&
+        (flags & VM_CALL_ARGS_BLOCKARG) == 0;
+
+    if (inline_new) {
+        if (LAST_ELEMENT(ret) == opt_new_prelude) {
+            PUSH_INSN(ret, location, putnil);
+            PUSH_INSN(ret, location, swap);
+        }
+        else {
+            ELEM_INSERT_NEXT(opt_new_prelude, &new_insn_body(iseq, location.line, location.node_id, BIN(swap), 0)->link);
+            ELEM_INSERT_NEXT(opt_new_prelude, &new_insn_body(iseq, location.line, location.node_id, BIN(putnil), 0)->link);
+        }
+
+        // Jump unless the receiver uses the "basic" implementation of "new"
+        VALUE ci;
+        if (flags & VM_CALL_FORWARDING) {
+            ci = (VALUE)new_callinfo(iseq, method_id, orig_argc + 1, flags, kw_arg, 0);
+        }
+        else {
+            ci = (VALUE)new_callinfo(iseq, method_id, orig_argc, flags, kw_arg, 0);
+        }
+
+        PUSH_INSN2(ret, location, opt_new, ci, not_basic_new);
+        LABEL_REF(not_basic_new);
+        // optimized path
+        PUSH_SEND_R(ret, location, rb_intern("initialize"), INT2FIX(orig_argc), block_iseq, INT2FIX(flags | VM_CALL_FCALL), kw_arg);
+        PUSH_INSNL(ret, location, jump, not_basic_new_finish);
+
+        PUSH_LABEL(ret, not_basic_new);
+        // Fall back to normal send
+        PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
+        PUSH_INSN(ret, location, swap);
+
+        PUSH_LABEL(ret, not_basic_new_finish);
+        PUSH_INSN(ret, location, pop);
+    }
+    else {
+        PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
+    }
 
     if (block_iseq && ISEQ_BODY(block_iseq)->catch_table) {
         pm_compile_retry_end_label(iseq, ret, retry_end_l);
@@ -5117,6 +5180,20 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
 
         break;
       }
+      case PM_SPLAT_NODE: {
+        // Splat nodes capture all values into an array. They can be used
+        // as targets in assignments or for loops.
+        //
+        //     for *x in []; end
+        //
+        const pm_splat_node_t *cast = (const pm_splat_node_t *) node;
+
+        if (cast->expression != NULL) {
+            pm_compile_target_node(iseq, cast->expression, parents, writes, cleanup, scope_node, state);
+        }
+
+        break;
+      }
       default:
         rb_bug("Unexpected node type: %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
         break;
@@ -5230,7 +5307,8 @@ pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *c
       case PM_INSTANCE_VARIABLE_TARGET_NODE:
       case PM_CONSTANT_PATH_TARGET_NODE:
       case PM_CALL_TARGET_NODE:
-      case PM_INDEX_TARGET_NODE: {
+      case PM_INDEX_TARGET_NODE:
+      case PM_SPLAT_NODE: {
         // For other targets, we need to potentially compile the parent or
         // owning expression of this target, then retrieve the value, expand it,
         // and then compile the necessary writes.
@@ -9605,7 +9683,19 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // -> { it }
         //      ^^
         if (!popped) {
-            PUSH_GETLOCAL(ret, location, scope_node->local_table_for_iseq_size, 0);
+            pm_scope_node_t *current_scope_node = scope_node;
+            int level = 0;
+
+            while (current_scope_node) {
+                if (current_scope_node->parameters && PM_NODE_TYPE_P(current_scope_node->parameters, PM_IT_PARAMETERS_NODE)) {
+                    PUSH_GETLOCAL(ret, location, current_scope_node->local_table_for_iseq_size, level);
+                    return;
+                }
+
+                current_scope_node = current_scope_node->previous;
+                level++;
+            }
+            rb_bug("Local `it` does not exist");
         }
 
         return;
@@ -10534,7 +10624,9 @@ pm_parse_errors_format_sort(const pm_parser_t *parser, const pm_list_t *error_li
     if (errors == NULL) return NULL;
 
     int32_t start_line = parser->start_line;
-    for (pm_diagnostic_t *error = (pm_diagnostic_t *) error_list->head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
+    pm_diagnostic_t *finish = (pm_diagnostic_t * )error_list->tail->next;
+
+    for (pm_diagnostic_t *error = (pm_diagnostic_t *) error_list->head; error != finish; error = (pm_diagnostic_t *) error->node.next) {
         pm_line_column_t start = pm_newline_list_line_column(newline_list, error->location.start, start_line);
         pm_line_column_t end = pm_newline_list_line_column(newline_list, error->location.end, start_line);
 

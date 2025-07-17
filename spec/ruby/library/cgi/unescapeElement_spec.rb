@@ -1,5 +1,11 @@
 require_relative '../../spec_helper'
-require 'cgi'
+
+ruby_version_is ""..."3.5" do
+  require 'cgi'
+end
+ruby_version_is "3.5" do
+  require 'cgi/escape'
+end
 
 describe "CGI.unescapeElement when passed String, elements, ..." do
   it "unescapes only the tags of the passed elements in the passed String" do

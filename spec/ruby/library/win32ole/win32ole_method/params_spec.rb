@@ -2,12 +2,12 @@ require_relative "../../../spec_helper"
 platform_is :windows do
   require 'win32ole'
 
-  describe "WIN32OLE_METHOD#params" do
+  describe "WIN32OLE::Method#params" do
     before :each do
-      ole_type = WIN32OLE_TYPE.new("Microsoft Scripting Runtime", "File")
-      @m_file_name = WIN32OLE_METHOD.new(ole_type, "name")
-      ole_type = WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "Shell")
-      @m_browse_for_folder = WIN32OLE_METHOD.new(ole_type, "BrowseForFolder")
+      ole_type = WIN32OLE::Type.new("Microsoft Scripting Runtime", "File")
+      @m_file_name = WIN32OLE::Method.new(ole_type, "name")
+      ole_type = WIN32OLE::Type.new("Microsoft Shell Controls And Automation", "Shell")
+      @m_browse_for_folder = WIN32OLE::Method.new(ole_type, "BrowseForFolder")
     end
 
     it "raises ArgumentError if argument is given" do
@@ -19,8 +19,8 @@ platform_is :windows do
       @m_file_name.params.should be_empty
     end
 
-    it "returns 4-element array of WIN32OLE_PARAM for Shell's 'BrowseForFolder' method" do
-      @m_browse_for_folder.params.all? { |p| p.kind_of? WIN32OLE_PARAM }.should be_true
+    it "returns 4-element array of WIN32OLE::Param for Shell's 'BrowseForFolder' method" do
+      @m_browse_for_folder.params.all? { |p| p.kind_of? WIN32OLE::Param }.should be_true
       @m_browse_for_folder.params.size == 4
     end
 

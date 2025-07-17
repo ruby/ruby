@@ -504,6 +504,7 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
         INIT_IMEMO_TYPE_ID(imemo_callinfo);
         INIT_IMEMO_TYPE_ID(imemo_callcache);
         INIT_IMEMO_TYPE_ID(imemo_constcache);
+        INIT_IMEMO_TYPE_ID(imemo_fields);
 #undef INIT_IMEMO_TYPE_ID
     }
 
@@ -792,7 +793,7 @@ objspace_internal_super_of(VALUE self, VALUE obj)
       case T_MODULE:
       case T_CLASS:
       case T_ICLASS:
-        super = RCLASS_SUPER(obj);
+        super = rb_class_super_of(obj);
         break;
       default:
         rb_raise(rb_eArgError, "class or module is expected");

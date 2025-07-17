@@ -1308,6 +1308,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_match(/\A[[:space:]]+\z/, "\r\n\v\f\r\s\u0085")
     assert_match(/\A[[:ascii:]]+\z/, "\x00\x7F")
     assert_no_match(/[[:ascii:]]/, "\x80\xFF")
+
+    assert_match(/[[:word:]]/, "\u{200C}")
+    assert_match(/[[:word:]]/, "\u{200D}")
   end
 
   def test_cclass_R
@@ -1522,6 +1525,107 @@ class TestRegexp < Test::Unit::TestCase
                        "IDEOGRAPHIC DESCRIPTION CHARACTER SUBTRACTION")
     assert_unicode_age("\u{2EBF0}".."\u{2EE5D}",
                        "CJK UNIFIED IDEOGRAPH-2EBF0..CJK UNIFIED IDEOGRAPH-2EE5D")
+  end
+
+  def test_unicode_age_16_0
+    @matches   = %w"16.0"
+    @unmatches = %w"15.1"
+
+    # https://www.unicode.org/Public/16.0.0/ucd/DerivedAge.txt
+    assert_unicode_age("\u{0897}",
+                       "ARABIC PEPET")
+    assert_unicode_age("\u{1B4E}".."\u{1B4F}",
+                       "BALINESE INVERTED CARIK SIKI..BALINESE INVERTED CARIK PAREREN")
+    assert_unicode_age("\u{1B7F}",
+                       "BALINESE PANTI BAWAK")
+    assert_unicode_age("\u{1C89}".."\u{1C8A}",
+                       "CYRILLIC CAPITAL LETTER TJE..CYRILLIC SMALL LETTER TJE")
+    assert_unicode_age("\u{2427}".."\u{2429}",
+                       "SYMBOL FOR DELETE SQUARE CHECKER BOARD FORM..SYMBOL FOR DELETE MEDIUM SHADE FORM")
+    assert_unicode_age("\u{31E4}".."\u{31E5}",
+                       "CJK STROKE HXG..CJK STROKE SZP")
+    assert_unicode_age("\u{A7CB}".."\u{A7CD}",
+                       "LATIN CAPITAL LETTER RAMS HORN..LATIN SMALL LETTER S WITH DIAGONAL STROKE")
+    assert_unicode_age("\u{A7DA}".."\u{A7DC}",
+                       "LATIN CAPITAL LETTER LAMBDA..LATIN CAPITAL LETTER LAMBDA WITH STROKE")
+    assert_unicode_age("\u{105C0}".."\u{105F3}",
+                       "TODHRI LETTER A..TODHRI LETTER OO")
+    assert_unicode_age("\u{10D40}".."\u{10D65}",
+                       "GARAY DIGIT ZERO..GARAY CAPITAL LETTER OLD NA")
+    assert_unicode_age("\u{10D69}".."\u{10D85}",
+                       "GARAY VOWEL SIGN E..GARAY SMALL LETTER OLD NA")
+    assert_unicode_age("\u{10D8E}".."\u{10D8F}",
+                       "GARAY PLUS SIGN..GARAY MINUS SIGN")
+    assert_unicode_age("\u{10EC2}".."\u{10EC4}",
+                       "ARABIC LETTER DAL WITH TWO DOTS VERTICALLY BELOW..ARABIC LETTER KAF WITH TWO DOTS VERTICALLY BELOW")
+    assert_unicode_age("\u{10EFC}",
+                       "ARABIC COMBINING ALEF OVERLAY")
+    assert_unicode_age("\u{11380}".."\u{11389}",
+                       "TULU-TIGALARI LETTER A..TULU-TIGALARI LETTER VOCALIC LL")
+    assert_unicode_age("\u{1138B}",
+                       "TULU-TIGALARI LETTER EE")
+    assert_unicode_age("\u{1138E}",
+                       "TULU-TIGALARI LETTER AI")
+    assert_unicode_age("\u{11390}".."\u{113B5}",
+                       "TULU-TIGALARI LETTER OO..TULU-TIGALARI LETTER LLLA")
+    assert_unicode_age("\u{113B7}".."\u{113C0}",
+                       "TULU-TIGALARI SIGN AVAGRAHA..TULU-TIGALARI VOWEL SIGN VOCALIC LL")
+    assert_unicode_age("\u{113C2}",
+                       "TULU-TIGALARI VOWEL SIGN EE")
+    assert_unicode_age("\u{113C5}",
+                       "TULU-TIGALARI VOWEL SIGN AI")
+    assert_unicode_age("\u{113C7}".."\u{113CA}",
+                       "TULU-TIGALARI VOWEL SIGN OO..TULU-TIGALARI SIGN CANDRA ANUNASIKA")
+    assert_unicode_age("\u{113CC}".."\u{113D5}",
+                       "TULU-TIGALARI SIGN ANUSVARA..TULU-TIGALARI DOUBLE DANDA")
+    assert_unicode_age("\u{113D7}".."\u{113D8}",
+                       "TULU-TIGALARI SIGN OM PUSHPIKA..TULU-TIGALARI SIGN SHRII PUSHPIKA")
+    assert_unicode_age("\u{113E1}".."\u{113E2}",
+                       "TULU-TIGALARI VEDIC TONE SVARITA..TULU-TIGALARI VEDIC TONE ANUDATTA")
+    assert_unicode_age("\u{116D0}".."\u{116E3}",
+                       "MYANMAR PAO DIGIT ZERO..MYANMAR EASTERN PWO KAREN DIGIT NINE")
+    assert_unicode_age("\u{11BC0}".."\u{11BE1}",
+                       "SUNUWAR LETTER DEVI..SUNUWAR SIGN PVO")
+    assert_unicode_age("\u{11BF0}".."\u{11BF9}",
+                       "SUNUWAR DIGIT ZERO..SUNUWAR DIGIT NINE")
+    assert_unicode_age("\u{11F5A}",
+                       "KAWI SIGN NUKTA")
+    assert_unicode_age("\u{13460}".."\u{143FA}",
+                       "EGYPTIAN HIEROGLYPH-13460..EGYPTIAN HIEROGLYPH-143FA")
+    assert_unicode_age("\u{16100}".."\u{16139}",
+                       "GURUNG KHEMA LETTER A..GURUNG KHEMA DIGIT NINE")
+    assert_unicode_age("\u{16D40}".."\u{16D79}",
+                       "KIRAT RAI SIGN ANUSVARA..KIRAT RAI DIGIT NINE")
+    assert_unicode_age("\u{18CFF}",
+                       "KHITAN SMALL SCRIPT CHARACTER-18CFF")
+    assert_unicode_age("\u{1CC00}".."\u{1CCF9}",
+                       "UP-POINTING GO-KART..OUTLINED DIGIT NINE")
+    assert_unicode_age("\u{1CD00}".."\u{1CEB3}",
+                       "BLOCK OCTANT-3..BLACK RIGHT TRIANGLE CARET")
+    assert_unicode_age("\u{1E5D0}".."\u{1E5FA}",
+                       "OL ONAL LETTER O..OL ONAL DIGIT NINE")
+    assert_unicode_age("\u{1E5FF}",
+                       "OL ONAL ABBREVIATION SIGN")
+    assert_unicode_age("\u{1F8B2}".."\u{1F8BB}",
+                       "RIGHTWARDS ARROW WITH LOWER HOOK..SOUTH WEST ARROW FROM BAR")
+    assert_unicode_age("\u{1F8C0}".."\u{1F8C1}",
+                       "LEFTWARDS ARROW FROM DOWNWARDS ARROW..RIGHTWARDS ARROW FROM DOWNWARDS ARROW")
+    assert_unicode_age("\u{1FA89}",
+                       "HARP")
+    assert_unicode_age("\u{1FA8F}",
+                       "SHOVEL")
+    assert_unicode_age("\u{1FABE}",
+                       "LEAFLESS TREE")
+    assert_unicode_age("\u{1FAC6}",
+                       "FINGERPRINT")
+    assert_unicode_age("\u{1FADC}",
+                       "ROOT VEGETABLE")
+    assert_unicode_age("\u{1FADF}",
+                       "SPLATTER")
+    assert_unicode_age("\u{1FAE9}",
+                       "FACE WITH BAGS UNDER EYES")
+    assert_unicode_age("\u{1FBCB}".."\u{1FBEF}",
+                       "WHITE CROSS MARK..TOP LEFT JUSTIFIED LOWER RIGHT QUARTER BLACK CIRCLE")
   end
 
   UnicodeAgeRegexps = Hash.new do |h, age|
@@ -1772,6 +1876,12 @@ class TestRegexp < Test::Unit::TestCase
         Regexp.new("((?(1)x|x|)x)+")
       end
     end;
+  end
+
+  def test_too_big_number_for_repeat_range
+    assert_raise_with_message(SyntaxError, /too big number for repeat range/) do
+      eval(%[/|{1000000}/])
+    end
   end
 
   # This assertion is for porting x2() tests in testpy.py of Onigmo.

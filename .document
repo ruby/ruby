@@ -22,6 +22,7 @@ marshal.rb
 numeric.rb
 nilclass.rb
 pack.rb
+pathname_builtin.rb
 ractor.rb
 string.rb
 symbol.rb
@@ -30,6 +31,7 @@ thread_sync.rb
 trace_point.rb
 warning.rb
 yjit.rb
+zjit.rb
 
 # Errno::*
 known_errors.inc

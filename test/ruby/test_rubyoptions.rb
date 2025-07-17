@@ -260,6 +260,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_parser_flag
+    omit if ENV["RUBYOPT"]&.include?("--parser=")
+
     assert_in_out_err(%w(--parser=prism -e) + ["puts :hi"], "", %w(hi), [])
     assert_in_out_err(%w(--parser=prism --dump=parsetree -e _=:hi), "", /"hi"/, [])
 
@@ -785,6 +787,12 @@ class TestRubyOptions < Test::Unit::TestCase
     unless /mswin|mingw/ =~ RUBY_PLATFORM
       opts[:rlimit_core] = 0
     end
+    opts[:failed] = proc do |status, message = "", out = ""|
+      if (sig = status.termsig) && Signal.list["SEGV"] == sig
+        out = ""
+      end
+      Test::Unit::CoreAssertions::FailDesc[status, message]
+    end
     ExecOptions = opts.freeze
 
     # The regexp list that should match the entire stderr output.
@@ -834,8 +842,6 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, **opt, &block)
-    pend "macOS 15 is not working with this assertion" if macos?(15)
-
     # We want YJIT to be enabled in the subprocess if it's enabled for us
     # so that the Ruby description matches.
     env = Hash === args.first ? args.shift : {}
@@ -847,7 +853,11 @@ class TestRubyOptions < Test::Unit::TestCase
     args.unshift(env)
 
     test_stdin = ""
-    tests = [//, list] unless block
+    if !block
+      tests = [//, list, message]
+    elsif message
+      tests = [[], [], message]
+    end
 
     assert_in_out_err(args, test_stdin, *tests, encoding: "ASCII-8BIT",
                       **SEGVTest::ExecOptions, **opt, &block)
@@ -860,13 +870,12 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_segv_loaded_features
     bug7402 = '[ruby-core:49573]'
 
-    status = assert_segv(['-e', "END {#{SEGVTest::KILL_SELF}}",
-                          '-e', 'class Bogus; def to_str; exit true; end; end',
-                          '-e', '$".clear',
-                          '-e', '$".unshift Bogus.new',
-                          '-e', '(p $"; abort) unless $".size == 1',
-                         ])
-    assert_not_predicate(status, :success?, "segv but success #{bug7402}")
+    assert_segv(['-e', "END {#{SEGVTest::KILL_SELF}}",
+                 '-e', 'class Bogus; def to_str; exit true; end; end',
+                 '-e', '$".clear',
+                 '-e', '$".unshift Bogus.new',
+                 '-e', '(p $"; abort) unless $".size == 1',
+                ], bug7402, success: false)
   end
 
   def test_segv_setproctitle
@@ -879,8 +888,6 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def assert_crash_report(path, cmd = nil, &block)
-    pend "macOS 15 is not working with this assertion" if macos?(15)
-
     Dir.mktmpdir("ruby_crash_report") do |dir|
       list = SEGVTest::ExpectedStderrList
       if cmd

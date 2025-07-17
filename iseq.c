@@ -31,6 +31,7 @@
 #include "internal/io.h"
 #include "internal/ruby_parser.h"
 #include "internal/sanitizers.h"
+#include "internal/set_table.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
@@ -43,6 +44,7 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
+#include "zjit.h"
 
 VALUE rb_cISeq;
 static VALUE iseqw_new(const rb_iseq_t *iseq);
@@ -110,14 +112,14 @@ remove_from_constant_cache(ID id, IC ic)
     st_data_t ic_data = (st_data_t)ic;
 
     if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
-        st_table *ics = (st_table *)lookup_result;
-        st_delete(ics, &ic_data, NULL);
+        set_table *ics = (set_table *)lookup_result;
+        set_table_delete(ics, &ic_data);
 
         if (ics->num_entries == 0 &&
                 // See comment in vm_track_constant_cache on why we need this check
                 id != vm->inserting_constant_cache_id) {
             rb_id_table_delete(vm->constant_cache, id);
-            st_free_table(ics);
+            set_free_table(ics);
         }
     }
 }
@@ -401,10 +403,16 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 #if USE_YJIT
             rb_yjit_iseq_update_references(iseq);
 #endif
+#if USE_ZJIT
+            rb_zjit_iseq_update_references(body->zjit_payload);
+#endif
         }
         else {
 #if USE_YJIT
             rb_yjit_iseq_mark(body->yjit_payload);
+#endif
+#if USE_ZJIT
+            rb_zjit_iseq_mark(body->zjit_payload);
 #endif
         }
     }
@@ -601,11 +609,11 @@ set_relation(rb_iseq_t *iseq, const rb_iseq_t *piseq)
         body->local_iseq = iseq;
     }
     else if (piseq) {
-        body->local_iseq = ISEQ_BODY(piseq)->local_iseq;
+        RB_OBJ_WRITE(iseq, &body->local_iseq, ISEQ_BODY(piseq)->local_iseq);
     }
 
     if (piseq) {
-        body->parent_iseq = piseq;
+        RB_OBJ_WRITE(iseq, &body->parent_iseq, piseq);
     }
 
     if (type == ISEQ_TYPE_MAIN) {
@@ -1326,6 +1334,15 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     ln = NUM2INT(line);
     StringValueCStr(file);
 
+    bool parse_file = false;
+    if (RB_TYPE_P(src, T_FILE)) {
+        parse_file = true;
+        src = rb_io_path(src);
+    }
+    else {
+        src = StringValue(src);
+    }
+
     pm_parse_result_t result = { 0 };
     pm_options_line_set(&result.options, NUM2INT(line));
     pm_options_scopes_init(&result.options, 1);
@@ -1348,15 +1365,14 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     VALUE script_lines;
     VALUE error;
 
-    if (RB_TYPE_P(src, T_FILE)) {
-        VALUE filepath = rb_io_path(src);
-        error = pm_load_parse_file(&result, filepath, ruby_vm_keep_script_lines ? &script_lines : NULL);
-        RB_GC_GUARD(filepath);
+    if (parse_file) {
+        error = pm_load_parse_file(&result, src, ruby_vm_keep_script_lines ? &script_lines : NULL);
     }
     else {
-        src = StringValue(src);
         error = pm_parse_string(&result, src, file, ruby_vm_keep_script_lines ? &script_lines : NULL);
     }
+
+    RB_GC_GUARD(src);
 
     if (error == Qnil) {
         int error_state;
@@ -1529,7 +1545,6 @@ iseqw_new(const rb_iseq_t *iseq)
 
         /* cache a wrapper object */
         RB_OBJ_WRITE((VALUE)iseq, &iseq->wrapper, obj);
-        RB_OBJ_FREEZE((VALUE)iseq);
 
         return obj;
     }
@@ -1842,7 +1857,8 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
         rb_vm_pop_frame(ec);
         RB_GC_GUARD(v);
         return ret;
-    } else {
+    }
+    else {
         pm_parse_result_free(&result);
         rb_vm_pop_frame(ec);
         RB_GC_GUARD(v);
@@ -2375,6 +2391,8 @@ rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos)
     }
 }
 
+// Clear tracing event flags and turn off tracing for a given instruction as needed.
+// This is currently used after updating a one-shot line coverage for the current instruction.
 void
 rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t reset)
 {
@@ -2915,7 +2933,7 @@ rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq)
     attr_index_t count = (attr_index_t)rb_id_table_size(iv_names);
 
     VALUE superclass = rb_class_superclass(klass);
-    count += RCLASS_EXT(superclass)->max_iv_count;
+    count += RCLASS_MAX_IV_COUNT(superclass);
 
     rb_id_table_free(iv_names);
 
@@ -3281,7 +3299,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     VALUE exception = rb_ary_new(); /* [[....]] */
     VALUE misc = rb_hash_new();
 
-    static ID insn_syms[VM_INSTRUCTION_SIZE/2]; /* w/o-trace only */
+    static ID insn_syms[VM_BARE_INSTRUCTION_SIZE]; /* w/o-trace only */
     struct st_table *labels_table = st_init_numtable();
     VALUE labels_wrapper = TypedData_Wrap_Struct(0, &label_wrapper, labels_table);
 
@@ -3743,17 +3761,21 @@ rb_iseq_defined_string(enum defined_type type)
     return rb_fstring_cstr(estr);
 }
 
-/* A map from encoded_insn to insn_data: decoded insn number, its len,
- * non-trace version of encoded insn, and trace version. */
-
+// A map from encoded_insn to insn_data: decoded insn number, its len,
+// decoded ZJIT insn number, non-trace version of encoded insn,
+// trace version, and zjit version.
 static st_table *encoded_insn_data;
 typedef struct insn_data_struct {
     int insn;
     int insn_len;
     void *notrace_encoded_insn;
     void *trace_encoded_insn;
+#if USE_ZJIT
+    int zjit_insn;
+    void *zjit_encoded_insn;
+#endif
 } insn_data_t;
-static insn_data_t insn_data[VM_INSTRUCTION_SIZE/2];
+static insn_data_t insn_data[VM_BARE_INSTRUCTION_SIZE];
 
 void
 rb_free_encoded_insn_data(void)
@@ -3761,6 +3783,8 @@ rb_free_encoded_insn_data(void)
     st_free_table(encoded_insn_data);
 }
 
+// Initialize a table to decode bare, trace, and zjit instructions.
+// This function also determines which instructions are used when TracePoint is enabled.
 void
 rb_vm_encoded_insn_data_table_init(void)
 {
@@ -3768,32 +3792,42 @@ rb_vm_encoded_insn_data_table_init(void)
     const void * const *table = rb_vm_get_insns_address_table();
 #define INSN_CODE(insn) ((VALUE)table[insn])
 #else
-#define INSN_CODE(insn) (insn)
+#define INSN_CODE(insn) ((VALUE)(insn))
 #endif
-    st_data_t insn;
-    encoded_insn_data = st_init_numtable_with_size(VM_INSTRUCTION_SIZE / 2);
+    encoded_insn_data = st_init_numtable_with_size(VM_BARE_INSTRUCTION_SIZE);
 
-    for (insn = 0; insn < VM_INSTRUCTION_SIZE/2; insn++) {
-        st_data_t key1 = (st_data_t)INSN_CODE(insn);
-        st_data_t key2 = (st_data_t)INSN_CODE(insn + VM_INSTRUCTION_SIZE/2);
-
-        insn_data[insn].insn = (int)insn;
+    for (int insn = 0; insn < VM_BARE_INSTRUCTION_SIZE; insn++) {
+        insn_data[insn].insn = insn;
         insn_data[insn].insn_len = insn_len(insn);
 
-        if (insn != BIN(opt_invokebuiltin_delegate_leave)) {
-            insn_data[insn].notrace_encoded_insn = (void *) key1;
-            insn_data[insn].trace_encoded_insn = (void *) key2;
-        }
-        else {
-            insn_data[insn].notrace_encoded_insn = (void *) INSN_CODE(BIN(opt_invokebuiltin_delegate));
-            insn_data[insn].trace_encoded_insn = (void *) INSN_CODE(BIN(opt_invokebuiltin_delegate) + VM_INSTRUCTION_SIZE/2);
-        }
+        // When tracing :return events, we convert opt_invokebuiltin_delegate_leave + leave into
+        // opt_invokebuiltin_delegate + trace_leave, presumably because we don't want to fire
+        // :return events before invokebuiltin. https://github.com/ruby/ruby/pull/3256
+        int notrace_insn = (insn != BIN(opt_invokebuiltin_delegate_leave)) ? insn : BIN(opt_invokebuiltin_delegate);
+        insn_data[insn].notrace_encoded_insn = (void *)INSN_CODE(notrace_insn);
+        insn_data[insn].trace_encoded_insn = (void *)INSN_CODE(notrace_insn + VM_BARE_INSTRUCTION_SIZE);
 
+        st_data_t key1 = (st_data_t)INSN_CODE(insn);
+        st_data_t key2 = (st_data_t)INSN_CODE(insn + VM_BARE_INSTRUCTION_SIZE);
         st_add_direct(encoded_insn_data, key1, (st_data_t)&insn_data[insn]);
         st_add_direct(encoded_insn_data, key2, (st_data_t)&insn_data[insn]);
+
+#if USE_ZJIT
+        int zjit_insn = vm_bare_insn_to_zjit_insn(insn);
+        insn_data[insn].zjit_insn = zjit_insn;
+        insn_data[insn].zjit_encoded_insn = (insn != zjit_insn) ? (void *)INSN_CODE(zjit_insn) : 0;
+
+        if (insn != zjit_insn) {
+            st_data_t key3 = (st_data_t)INSN_CODE(zjit_insn);
+            st_add_direct(encoded_insn_data, key3, (st_data_t)&insn_data[insn]);
+        }
+#endif
     }
 }
 
+// Decode an insn address to an insn. This returns bare instructions
+// even if they're trace/zjit instructions. Use rb_vm_insn_addr2opcode
+// to decode trace/zjit instructions as is.
 int
 rb_vm_insn_addr2insn(const void *addr)
 {
@@ -3808,7 +3842,8 @@ rb_vm_insn_addr2insn(const void *addr)
     rb_bug("rb_vm_insn_addr2insn: invalid insn address: %p", addr);
 }
 
-// Unlike rb_vm_insn_addr2insn, this function can return trace opcode variants.
+// Decode an insn address to an insn. Unlike rb_vm_insn_addr2insn,
+// this function can return trace/zjit opcode variants.
 int
 rb_vm_insn_addr2opcode(const void *addr)
 {
@@ -3819,15 +3854,22 @@ rb_vm_insn_addr2opcode(const void *addr)
         insn_data_t *e = (insn_data_t *)val;
         int opcode = e->insn;
         if (addr == e->trace_encoded_insn) {
-            opcode += VM_INSTRUCTION_SIZE/2;
+            opcode += VM_BARE_INSTRUCTION_SIZE;
         }
+#if USE_ZJIT
+        else if (addr == e->zjit_encoded_insn) {
+            opcode = e->zjit_insn;
+        }
+#endif
         return opcode;
     }
 
     rb_bug("rb_vm_insn_addr2opcode: invalid insn address: %p", addr);
 }
 
-// Decode `ISEQ_BODY(iseq)->iseq_encoded[i]` to an insn.
+// Decode `ISEQ_BODY(iseq)->iseq_encoded[i]` to an insn. This returns
+// bare instructions even if they're trace/zjit instructions. Use
+// rb_vm_insn_addr2opcode to decode trace/zjit instructions as is.
 int
 rb_vm_insn_decode(const VALUE encoded)
 {
@@ -3839,6 +3881,7 @@ rb_vm_insn_decode(const VALUE encoded)
     return insn;
 }
 
+// Turn on or off tracing for a given instruction address
 static inline int
 encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon, bool remain_current_trace)
 {
@@ -3857,6 +3900,7 @@ encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon, 
     rb_bug("trace_instrument: invalid insn address: %p", (void *)*iseq_encoded_insn);
 }
 
+// Turn off tracing for an instruction at pos after tracing event flags are cleared
 void
 rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, size_t pos)
 {

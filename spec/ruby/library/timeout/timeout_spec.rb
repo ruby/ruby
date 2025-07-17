@@ -39,4 +39,12 @@ describe "Timeout.timeout" do
       42
     end.should == 42
   end
+
+  ruby_version_is "3.4" do
+    it "raises an ArgumentError when provided with a negative duration" do
+      -> {
+        Timeout.timeout(-1)
+      }.should raise_error(ArgumentError, "Timeout sec must be a non-negative number")
+    end
+  end
 end

@@ -140,6 +140,7 @@ object_tracing.o: $(hdrdir)/ruby/internal/intern/re.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/ruby.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/select.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+object_tracing.o: $(hdrdir)/ruby/internal/intern/set.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/signal.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -177,14 +178,17 @@ object_tracing.o: $(top_srcdir)/ccan/check_type/check_type.h
 object_tracing.o: $(top_srcdir)/ccan/container_of/container_of.h
 object_tracing.o: $(top_srcdir)/ccan/list/list.h
 object_tracing.o: $(top_srcdir)/ccan/str/str.h
+object_tracing.o: $(top_srcdir)/id_table.h
 object_tracing.o: $(top_srcdir)/internal.h
 object_tracing.o: $(top_srcdir)/internal/array.h
 object_tracing.o: $(top_srcdir)/internal/basic_operators.h
 object_tracing.o: $(top_srcdir)/internal/compilers.h
 object_tracing.o: $(top_srcdir)/internal/gc.h
 object_tracing.o: $(top_srcdir)/internal/imemo.h
+object_tracing.o: $(top_srcdir)/internal/namespace.h
 object_tracing.o: $(top_srcdir)/internal/sanitizers.h
 object_tracing.o: $(top_srcdir)/internal/serial.h
+object_tracing.o: $(top_srcdir)/internal/set_table.h
 object_tracing.o: $(top_srcdir)/internal/static_assert.h
 object_tracing.o: $(top_srcdir)/internal/vm.h
 object_tracing.o: $(top_srcdir)/internal/warnings.h
@@ -340,6 +344,7 @@ objspace.o: $(hdrdir)/ruby/internal/intern/re.h
 objspace.o: $(hdrdir)/ruby/internal/intern/ruby.h
 objspace.o: $(hdrdir)/ruby/internal/intern/select.h
 objspace.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+objspace.o: $(hdrdir)/ruby/internal/intern/set.h
 objspace.o: $(hdrdir)/ruby/internal/intern/signal.h
 objspace.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 objspace.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -391,8 +396,10 @@ objspace.o: $(top_srcdir)/internal/compilers.h
 objspace.o: $(top_srcdir)/internal/gc.h
 objspace.o: $(top_srcdir)/internal/hash.h
 objspace.o: $(top_srcdir)/internal/imemo.h
+objspace.o: $(top_srcdir)/internal/namespace.h
 objspace.o: $(top_srcdir)/internal/sanitizers.h
 objspace.o: $(top_srcdir)/internal/serial.h
+objspace.o: $(top_srcdir)/internal/set_table.h
 objspace.o: $(top_srcdir)/internal/static_assert.h
 objspace.o: $(top_srcdir)/internal/variable.h
 objspace.o: $(top_srcdir)/internal/vm.h
@@ -552,6 +559,7 @@ objspace_dump.o: $(hdrdir)/ruby/internal/intern/re.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/ruby.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/select.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+objspace_dump.o: $(hdrdir)/ruby/internal/intern/set.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/signal.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -603,8 +611,10 @@ objspace_dump.o: $(top_srcdir)/internal/gc.h
 objspace_dump.o: $(top_srcdir)/internal/hash.h
 objspace_dump.o: $(top_srcdir)/internal/imemo.h
 objspace_dump.o: $(top_srcdir)/internal/io.h
+objspace_dump.o: $(top_srcdir)/internal/namespace.h
 objspace_dump.o: $(top_srcdir)/internal/sanitizers.h
 objspace_dump.o: $(top_srcdir)/internal/serial.h
+objspace_dump.o: $(top_srcdir)/internal/set_table.h
 objspace_dump.o: $(top_srcdir)/internal/static_assert.h
 objspace_dump.o: $(top_srcdir)/internal/string.h
 objspace_dump.o: $(top_srcdir)/internal/variable.h

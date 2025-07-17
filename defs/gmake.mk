@@ -365,7 +365,7 @@ $(srcdir)/.bundle/.timestamp:
 define build-gem
 $(srcdir)/gems/src/$(1)/.git: | $(srcdir)/gems/src
 	$(ECHO) Cloning $(4)
-	$(Q) $(GIT) clone $(4) $$(@D)
+	$(Q) $(GIT) clone --depth=1 --no-tags $(4) $$(@D)
 
 $(bundled-gem-revision): \
 	$(if $(if $(wildcard $$(@)),$(filter $(3),$(shell cat $$(@)))),,PHONY) \
@@ -442,6 +442,8 @@ $(REVISION_H): PHONY
 endif
 
 include $(top_srcdir)/yjit/yjit.mk
+include $(top_srcdir)/zjit/zjit.mk
+include $(top_srcdir)/defs/jit.mk
 
 # Query on the generated rdoc
 #
@@ -505,7 +507,8 @@ update-deps:
 
 # order-only-prerequisites doesn't work for $(RUBYSPEC_CAPIEXT)
 # because the same named directory exists in the source tree.
-$(RUBYSPEC_CAPIEXT)/%.$(DLEXT): $(srcdir)/$(RUBYSPEC_CAPIEXT)/%.c $(srcdir)/$(RUBYSPEC_CAPIEXT)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
+$(RUBYSPEC_CAPIEXT)/%.$(DLEXT): $(srcdir)/$(RUBYSPEC_CAPIEXT)/%.c $(RUBYSPEC_CAPIEXT_DEPS) \
+	| build-ext
 	$(ECHO) building $@
 	$(Q) $(MAKEDIRS) $(@D)
 	$(Q) $(DLDSHARED) -L. $(XDLDFLAGS) $(XLDFLAGS) $(LDFLAGS) $(INCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ $< $(LIBRUBYARG)
@@ -519,7 +522,6 @@ rubyspec-capiext: $(RUBYSPEC_CAPIEXT_SO)
 	@ $(NULLCMD)
 
 ifeq ($(ENABLE_SHARED),yes)
-ruby: $(if $(LIBRUBY_SO_UPDATE),$(RUBYSPEC_CAPIEXT_SO))
 exts: rubyspec-capiext
 endif
 

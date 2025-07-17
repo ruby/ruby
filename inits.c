@@ -63,18 +63,22 @@ rb_call_inits(void)
     CALL(ISeq);
     CALL(Thread);
     CALL(signal);
+    CALL(Cont);
     CALL(Fiber_Scheduler);
     CALL(process);
-    CALL(Cont);
     CALL(Rational);
     CALL(Complex);
     CALL(MemoryView);
+    CALL(pathname);
     CALL(version);
     CALL(vm_trace);
     CALL(vm_stack_canary);
     CALL(ast);
     CALL(shape);
     CALL(Prism);
+    CALL(unicode_version);
+    CALL(Set);
+    CALL(Namespace);
 
     // enable builtin loading
     CALL(builtin);
@@ -95,6 +99,7 @@ rb_call_builtin_inits(void)
     BUILTIN(ast);
     BUILTIN(trace_point);
     BUILTIN(pack);
+    BUILTIN(pathname_builtin);
     BUILTIN(warning);
     BUILTIN(array);
     BUILTIN(hash);
@@ -103,6 +108,7 @@ rb_call_builtin_inits(void)
     BUILTIN(thread_sync);
     BUILTIN(nilclass);
     BUILTIN(marshal);
+    BUILTIN(zjit);
     Init_builtin_prelude();
 }
 #undef CALL

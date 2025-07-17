@@ -50,10 +50,6 @@
  *           The object has its instance variables embedded (the array of
  *           instance variables directly follow the object, rather than being
  *           on a separately allocated buffer).
- * if !SHAPE_IN_BASIC_FLAGS
- * 4-19: SHAPE_FLAG_MASK
- *           Shape ID for the object.
- * endif
  */
 
 /*!
@@ -87,6 +83,7 @@ static VALUE rb_cFalseClass_to_s;
 #define id_init_dup         idInitialize_dup
 #define id_const_missing    idConst_missing
 #define id_to_f             idTo_f
+static ID id_instance_variables_to_inspect;
 
 #define CLASS_OR_MODULE_P(obj) \
     (!SPECIAL_CONST_P(obj) && \
@@ -95,9 +92,9 @@ static VALUE rb_cFalseClass_to_s;
 /*! \endcond */
 
 size_t
-rb_obj_embedded_size(uint32_t numiv)
+rb_obj_embedded_size(uint32_t fields_count)
 {
-    return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * numiv);
+    return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * fields_count);
 }
 
 VALUE
@@ -121,7 +118,7 @@ rb_obj_reveal(VALUE obj, VALUE klass)
 VALUE
 rb_class_allocate_instance(VALUE klass)
 {
-    uint32_t index_tbl_num_entries = RCLASS_EXT(klass)->max_iv_count;
+    uint32_t index_tbl_num_entries = RCLASS_MAX_IV_COUNT(klass);
 
     size_t size = rb_obj_embedded_size(index_tbl_num_entries);
     if (!rb_gc_size_allocatable_p(size)) {
@@ -132,15 +129,14 @@ rb_class_allocate_instance(VALUE klass)
               T_OBJECT | ROBJECT_EMBED | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0), size, 0);
     VALUE obj = (VALUE)o;
 
-    RUBY_ASSERT(rb_shape_get_shape(obj)->type == SHAPE_ROOT);
+    RUBY_ASSERT(RSHAPE_TYPE_P(RBASIC_SHAPE_ID(obj), SHAPE_ROOT));
 
-    // Set the shape to the specific T_OBJECT shape.
-    ROBJECT_SET_SHAPE_ID(obj, (shape_id_t)(rb_gc_heap_id_for_size(size) + FIRST_T_OBJECT_SHAPE_ID));
+    RBASIC_SET_SHAPE_ID(obj, rb_shape_root(rb_gc_heap_id_for_size(size)));
 
 #if RUBY_DEBUG
-    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
-    VALUE *ptr = ROBJECT_IVPTR(obj);
-    for (size_t i = 0; i < ROBJECT_IV_CAPACITY(obj); i++) {
+    RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
+    VALUE *ptr = ROBJECT_FIELDS(obj);
+    for (size_t i = 0; i < ROBJECT_FIELDS_CAPACITY(obj); i++) {
         ptr[i] = Qundef;
     }
 #endif
@@ -151,7 +147,7 @@ rb_class_allocate_instance(VALUE klass)
 VALUE
 rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
 {
-    VALUE ignored_flags = RUBY_FL_PROMOTED | RUBY_FL_SEEN_OBJ_ID;
+    VALUE ignored_flags = RUBY_FL_PROMOTED;
     RBASIC(obj)->flags = (type & ~ignored_flags) | (RBASIC(obj)->flags & ignored_flags);
     RBASIC_SET_CLASS(obj, klass);
     return obj;
@@ -327,64 +323,48 @@ void
 rb_obj_copy_ivar(VALUE dest, VALUE obj)
 {
     RUBY_ASSERT(!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE));
-
     RUBY_ASSERT(BUILTIN_TYPE(dest) == BUILTIN_TYPE(obj));
-    rb_shape_t * src_shape = rb_shape_get_shape(obj);
 
-    if (rb_shape_obj_too_complex(obj)) {
-        // obj is TOO_COMPLEX so we can copy its iv_hash
-        st_table *table = st_copy(ROBJECT_IV_HASH(obj));
-        rb_obj_convert_to_too_complex(dest, table);
-
-        return;
-    }
-
-    uint32_t src_num_ivs = RBASIC_IV_COUNT(obj);
-    rb_shape_t * shape_to_set_on_dest = src_shape;
-    VALUE * src_buf;
-    VALUE * dest_buf;
-
+    unsigned long src_num_ivs = rb_ivar_count(obj);
     if (!src_num_ivs) {
         return;
     }
 
-    // The copy should be mutable, so we don't want the frozen shape
-    if (rb_shape_frozen_shape_p(src_shape)) {
-        shape_to_set_on_dest = rb_shape_get_parent(src_shape);
+    shape_id_t src_shape_id = RBASIC_SHAPE_ID(obj);
+
+    if (rb_shape_too_complex_p(src_shape_id)) {
+        rb_shape_copy_complex_ivars(dest, obj, src_shape_id, ROBJECT_FIELDS_HASH(obj));
+        return;
     }
 
-    src_buf = ROBJECT_IVPTR(obj);
-    dest_buf = ROBJECT_IVPTR(dest);
+    shape_id_t dest_shape_id = src_shape_id;
+    shape_id_t initial_shape_id = RBASIC_SHAPE_ID(dest);
 
-    rb_shape_t * initial_shape = rb_shape_get_shape(dest);
+    RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
 
-    if (initial_shape->heap_index != src_shape->heap_index) {
-        RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);
+    dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
+    if (UNLIKELY(rb_shape_too_complex_p(dest_shape_id))) {
+        st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
+        rb_obj_copy_ivs_to_hash_table(obj, table);
+        rb_obj_init_too_complex(dest, table);
 
-        shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
-        if (UNLIKELY(rb_shape_id(shape_to_set_on_dest) == OBJ_TOO_COMPLEX_SHAPE_ID)) {
-            st_table * table = rb_st_init_numtable_with_size(src_num_ivs);
-            rb_obj_copy_ivs_to_hash_table(obj, table);
-            rb_obj_convert_to_too_complex(dest, table);
-
-            return;
-        }
+        return;
     }
 
-    RUBY_ASSERT(src_num_ivs <= shape_to_set_on_dest->capacity || rb_shape_id(shape_to_set_on_dest) == OBJ_TOO_COMPLEX_SHAPE_ID);
-    if (initial_shape->capacity < shape_to_set_on_dest->capacity) {
-        rb_ensure_iv_list_size(dest, initial_shape->capacity, shape_to_set_on_dest->capacity);
-        dest_buf = ROBJECT_IVPTR(dest);
+    VALUE *src_buf = ROBJECT_FIELDS(obj);
+    VALUE *dest_buf = ROBJECT_FIELDS(dest);
+
+    attr_index_t initial_capa = RSHAPE_CAPACITY(initial_shape_id);
+    attr_index_t dest_capa = RSHAPE_CAPACITY(dest_shape_id);
+
+    RUBY_ASSERT(src_num_ivs <= dest_capa);
+    if (initial_capa < dest_capa) {
+        rb_ensure_iv_list_size(dest, 0, dest_capa);
+        dest_buf = ROBJECT_FIELDS(dest);
     }
 
-    MEMCPY(dest_buf, src_buf, VALUE, src_num_ivs);
-
-    // Fire write barriers
-    for (uint32_t i = 0; i < src_num_ivs; i++) {
-        RB_OBJ_WRITTEN(dest, Qundef, dest_buf[i]);
-    }
-
-    rb_shape_set_shape(dest, shape_to_set_on_dest);
+    rb_shape_copy_fields(dest, dest_buf, dest_shape_id, src_buf, src_shape_id);
+    rb_obj_set_shape_id(dest, dest_shape_id);
 }
 
 static void
@@ -393,14 +373,25 @@ init_copy(VALUE dest, VALUE obj)
     if (OBJ_FROZEN(dest)) {
         rb_raise(rb_eTypeError, "[bug] frozen object (%s) allocated", rb_obj_classname(dest));
     }
-    RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
+    RBASIC(dest)->flags &= ~T_MASK;
     // Copies the shape id from obj to dest
-    RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR);
-    rb_gc_copy_attributes(dest, obj);
-    rb_copy_generic_ivar(dest, obj);
-    if (RB_TYPE_P(obj, T_OBJECT)) {
-        rb_obj_copy_ivar(dest, obj);
+    RBASIC(dest)->flags |= RBASIC(obj)->flags & T_MASK;
+    switch (BUILTIN_TYPE(obj)) {
+        case T_IMEMO:
+          rb_bug("Unreachable");
+          break;
+        case T_CLASS:
+        case T_MODULE:
+          // noop: handled in class.c: rb_mod_init_copy
+          break;
+        case T_OBJECT:
+          rb_obj_copy_ivar(dest, obj);
+          break;
+        default:
+          rb_copy_generic_ivar(dest, obj);
+          break;
     }
+    rb_gc_copy_attributes(dest, obj);
 }
 
 static VALUE immutable_obj_clone(VALUE obj, VALUE kwfreeze);
@@ -506,13 +497,8 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         }
 
         if (RB_OBJ_FROZEN(obj)) {
-            rb_shape_t * next_shape = rb_shape_transition_shape_frozen(clone);
-            if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-                rb_evict_ivars_to_hash(clone);
-            }
-            else {
-                rb_shape_set_shape(clone, next_shape);
-            }
+            shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
+            rb_obj_set_shape_id(clone, next_shape_id);
         }
         break;
       case Qtrue: {
@@ -527,16 +513,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         argv[0] = obj;
         argv[1] = freeze_true_hash;
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
-        RBASIC(clone)->flags |= FL_FREEZE;
-        rb_shape_t * next_shape = rb_shape_transition_shape_frozen(clone);
-        // If we're out of shapes, but we want to freeze, then we need to
-        // evacuate this clone to a hash
-        if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-            rb_evict_ivars_to_hash(clone);
-        }
-        else {
-            rb_shape_set_shape(clone, next_shape);
-        }
+        OBJ_FREEZE(clone);
         break;
       }
       case Qfalse: {
@@ -755,11 +732,17 @@ rb_inspect(VALUE obj)
 static int
 inspect_i(ID id, VALUE value, st_data_t a)
 {
-    VALUE str = (VALUE)a;
+    VALUE *args = (VALUE *)a, str = args[0], ivars = args[1];
 
     /* need not to show internal data */
     if (CLASS_OF(value) == 0) return ST_CONTINUE;
     if (!rb_is_instance_id(id)) return ST_CONTINUE;
+    if (!NIL_P(ivars)) {
+        VALUE name = ID2SYM(id);
+        for (long i = 0; RARRAY_AREF(ivars, i) != name; ) {
+            if (++i >= RARRAY_LEN(ivars)) return ST_CONTINUE;
+        }
+    }
     if (RSTRING_PTR(str)[0] == '-') { /* first element */
         RSTRING_PTR(str)[0] = '#';
         rb_str_cat2(str, " ");
@@ -774,13 +757,15 @@ inspect_i(ID id, VALUE value, st_data_t a)
 }
 
 static VALUE
-inspect_obj(VALUE obj, VALUE str, int recur)
+inspect_obj(VALUE obj, VALUE a, int recur)
 {
+    VALUE *args = (VALUE *)a, str = args[0];
+
     if (recur) {
         rb_str_cat2(str, " ...");
     }
     else {
-        rb_ivar_foreach(obj, inspect_i, str);
+        rb_ivar_foreach(obj, inspect_i, a);
     }
     rb_str_cat2(str, ">");
     RSTRING_PTR(str)[0] = '#';
@@ -813,17 +798,47 @@ inspect_obj(VALUE obj, VALUE str, int recur)
  *       end
  *     end
  *     Bar.new.inspect                  #=> "#<Bar:0x0300c868 @bar=1>"
+ *
+ * If _obj_ responds to +instance_variables_to_inspect+, then only
+ * the instance variables listed in the returned array will be included
+ * in the inspect string.
+ *
+ *
+ *     class DatabaseConfig
+ *       def initialize(host, user, password)
+ *         @host = host
+ *         @user = user
+ *         @password = password
+ *       end
+ *
+ *     private
+ *       def instance_variables_to_inspect = [:@host, :@user]
+ *     end
+ *
+ *     conf = DatabaseConfig.new("localhost", "root", "hunter2")
+ *     conf.inspect #=> #<DatabaseConfig:0x0000000104def350 @host="localhost", @user="root">
  */
 
 static VALUE
 rb_obj_inspect(VALUE obj)
 {
-    if (rb_ivar_count(obj) > 0) {
-        VALUE str;
+    VALUE ivars = rb_check_funcall(obj, id_instance_variables_to_inspect, 0, 0);
+    st_index_t n = 0;
+    if (UNDEF_P(ivars)) {
+        n = rb_ivar_count(obj);
+        ivars = Qnil;
+    }
+    else if (!NIL_P(ivars)) {
+        Check_Type(ivars, T_ARRAY);
+        n = RARRAY_LEN(ivars);
+    }
+    if (n > 0) {
         VALUE c = rb_class_name(CLASS_OF(obj));
-
-        str = rb_sprintf("-<%"PRIsVALUE":%p", c, (void*)obj);
-        return rb_exec_recursive(inspect_obj, obj, str);
+        VALUE args[2] = {
+            rb_sprintf("-<%"PRIsVALUE":%p", c, (void*)obj),
+            ivars
+        };
+        return rb_exec_recursive(inspect_obj, obj, (VALUE)args);
     }
     else {
         return rb_any_to_s(obj);
@@ -2080,11 +2095,11 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
     else {
         super = argv[0];
         rb_check_inheritable(super);
-        if (super != rb_cBasicObject && !RCLASS_SUPER(super)) {
+        if (!RCLASS_INITIALIZED_P(super)) {
             rb_raise(rb_eTypeError, "can't inherit uninitialized class");
         }
     }
-    RCLASS_SET_SUPER(klass, super);
+    rb_class_set_super(klass, super);
     rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_class_inherited(super, klass);
     rb_mod_initialize_exec(klass);
@@ -2126,17 +2141,6 @@ static VALUE class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass);
  */
 
 static VALUE
-rb_class_alloc_m(VALUE klass)
-{
-    rb_alloc_func_t allocator = class_get_alloc_func(klass);
-    if (!rb_obj_respond_to(klass, rb_intern("allocate"), 1)) {
-        rb_raise(rb_eTypeError, "calling %"PRIsVALUE".allocate is prohibited",
-                 klass);
-    }
-    return class_call_alloc_func(allocator, klass);
-}
-
-static VALUE
 rb_class_alloc(VALUE klass)
 {
     rb_alloc_func_t allocator = class_get_alloc_func(klass);
@@ -2148,7 +2152,7 @@ class_get_alloc_func(VALUE klass)
 {
     rb_alloc_func_t allocator;
 
-    if (RCLASS_SUPER(klass) == 0 && klass != rb_cBasicObject) {
+    if (!RCLASS_INITIALIZED_P(klass)) {
         rb_raise(rb_eTypeError, "can't instantiate uninitialized class");
     }
     if (RCLASS_SINGLETON_P(klass)) {
@@ -2255,19 +2259,22 @@ rb_class_superclass(VALUE klass)
 {
     RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
 
-    VALUE super = RCLASS_SUPER(klass);
+    VALUE *superclasses = RCLASS_SUPERCLASSES(klass);
+    size_t superclasses_depth = RCLASS_SUPERCLASS_DEPTH(klass);
 
-    if (!super) {
-        if (klass == rb_cBasicObject) return Qnil;
+    if (klass == rb_cBasicObject) return Qnil;
+
+    if (!superclasses) {
+        RUBY_ASSERT(!RCLASS_SUPER(klass));
         rb_raise(rb_eTypeError, "uninitialized class");
     }
 
-    if (!RCLASS_SUPERCLASS_DEPTH(klass)) {
+    if (!superclasses_depth) {
         return Qnil;
     }
     else {
-        super = RCLASS_SUPERCLASSES(klass)[RCLASS_SUPERCLASS_DEPTH(klass) - 1];
-        RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
+        VALUE super = superclasses[superclasses_depth - 1];
+        RUBY_ASSERT(RB_TYPE_P(super, T_CLASS));
         return super;
     }
 }
@@ -2275,7 +2282,7 @@ rb_class_superclass(VALUE klass)
 VALUE
 rb_class_get_superclass(VALUE klass)
 {
-    return RCLASS(klass)->super;
+    return RCLASS_SUPER(klass);
 }
 
 static const char bad_instance_name[] = "'%1$s' is not allowed as an instance variable name";
@@ -4586,8 +4593,8 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "deprecate_constant", rb_mod_deprecate_constant, -1); /* in variable.c */
     rb_define_method(rb_cModule, "singleton_class?", rb_mod_singleton_p, 0);
 
-    rb_define_method(rb_singleton_class(rb_cClass), "allocate", rb_class_alloc_m, 0);
-    rb_define_method(rb_cClass, "allocate", rb_class_alloc_m, 0);
+    rb_define_method(rb_singleton_class(rb_cClass), "allocate", rb_class_alloc, 0);
+    rb_define_method(rb_cClass, "allocate", rb_class_alloc, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance_pass_kw, -1);
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
@@ -4630,6 +4637,7 @@ void
 Init_Object(void)
 {
     id_dig = rb_intern_const("dig");
+    id_instance_variables_to_inspect = rb_intern_const("instance_variables_to_inspect");
     InitVM(Object);
 }
 

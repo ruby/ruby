@@ -2,10 +2,16 @@
 
 module Spec
   module Platforms
-    include Bundler::GemHelpers
-
     def not_local
       generic_local_platform == Gem::Platform::RUBY ? "java" : Gem::Platform::RUBY
+    end
+
+    def local_platform
+      Bundler.local_platform
+    end
+
+    def generic_local_platform
+      Gem::Platform.generic(local_platform)
     end
 
     def local_tag
@@ -61,7 +67,7 @@ module Spec
     end
 
     def generic_default_locked_platform
-      return unless generic_local_platform_is_ruby?
+      return unless Bundler::MatchPlatform.generic_local_platform_is_ruby?
 
       Gem::Platform::RUBY
     end

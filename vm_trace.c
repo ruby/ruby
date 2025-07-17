@@ -453,6 +453,7 @@ rb_exec_event_hooks(rb_trace_arg_t *trace_arg, rb_hook_list_t *hooks, int pop_p)
             if (state) {
                 if (pop_p) {
                     if (VM_FRAME_FINISHED_P(ec->cfp)) {
+                        rb_vm_tag_jmpbuf_deinit(&ec->tag->buf);
                         ec->tag = ec->tag->prev;
                     }
                     rb_vm_pop_frame(ec);
