@@ -1762,9 +1762,14 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                     break;
                 }
 
-                orig_argc += 2;
+                if (has_splat) {
+                    // If we already have a splat, we're concatenating to existing array
+                    orig_argc += 1;
+                } else {
+                    orig_argc += 2;
+                }
 
-                *flags |= VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_SPLAT_MUT | VM_CALL_ARGS_BLOCKARG | VM_CALL_KW_SPLAT;
+                *flags |= VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_KW_SPLAT;
 
                 // Forwarding arguments nodes are treated as foo(*, **, &)
                 // So foo(...) equals foo(*, **, &) and as such the local
@@ -1773,7 +1778,13 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                 // Push the *
                 pm_local_index_t mult_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_MULT, 0);
                 PUSH_GETLOCAL(ret, location, mult_local.index, mult_local.level);
-                PUSH_INSN1(ret, location, splatarray, Qtrue);
+
+                if (has_splat) {
+                    // If we already have a splat, we need to concatenate arrays
+                    PUSH_INSN(ret, location, concattoarray);
+                } else {
+                    PUSH_INSN1(ret, location, splatarray, Qfalse);
+                }
 
                 // Push the **
                 pm_local_index_t pow_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_POW, 0);
@@ -1782,7 +1793,6 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                 // Push the &
                 pm_local_index_t and_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_AND, 0);
                 PUSH_INSN2(ret, location, getblockparamproxy, INT2FIX(and_local.index + VM_ENV_DATA_SIZE - 1), INT2FIX(and_local.level));
-                PUSH_INSN(ret, location, splatkw);
 
                 break;
               }
