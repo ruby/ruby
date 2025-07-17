@@ -22830,7 +22830,7 @@ pm_parse(pm_parser_t *parser) {
  * otherwise return true.
  */
 static bool
-pm_parse_stream_read(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets) {
+pm_parse_stream_read(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof) {
 #define LINE_SIZE 4096
     char line[LINE_SIZE];
 
@@ -22865,6 +22865,12 @@ pm_parse_stream_read(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t 
             case 9:
                 if (strncmp(line, "__END__\r\n", 9) == 0) return false;
                 break;
+        }
+
+        // All data should be read via gets.  If the string returned by gets
+        // _doesn't_ end with a newline, then we assume we hit EOF condition.
+        if (stream_feof(stream)) {
+            break;
         }
     }
 
@@ -22901,16 +22907,17 @@ pm_parse_stream_unterminated_heredoc_p(pm_parser_t *parser) {
  * can stream stdin in to Ruby so we need to support a streaming API.
  */
 PRISM_EXPORTED_FUNCTION pm_node_t *
-pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, const pm_options_t *options) {
+pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options) {
     pm_buffer_init(buffer);
 
-    bool eof = pm_parse_stream_read(buffer, stream, stream_fgets);
+    bool eof = pm_parse_stream_read(buffer, stream, stream_fgets, stream_feof);
+
     pm_parser_init(parser, (const uint8_t *) pm_buffer_value(buffer), pm_buffer_length(buffer), options);
     pm_node_t *node = pm_parse(parser);
 
     while (!eof && parser->error_list.size > 0 && (parser->lex_modes.index > 0 || pm_parse_stream_unterminated_heredoc_p(parser))) {
         pm_node_destroy(parser, node);
-        eof = pm_parse_stream_read(buffer, stream, stream_fgets);
+        eof = pm_parse_stream_read(buffer, stream, stream_fgets, stream_feof);
 
         pm_parser_free(parser);
         pm_parser_init(parser, (const uint8_t *) pm_buffer_value(buffer), pm_buffer_length(buffer), options);
@@ -23002,13 +23009,13 @@ pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, cons
  * given stream into to the given buffer.
  */
 PRISM_EXPORTED_FUNCTION void
-pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, const char *data) {
+pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const char *data) {
     pm_parser_t parser;
     pm_options_t options = { 0 };
     pm_options_read(&options, data);
 
     pm_buffer_t parser_buffer;
-    pm_node_t *node = pm_parse_stream(&parser, &parser_buffer, stream, stream_fgets, &options);
+    pm_node_t *node = pm_parse_stream(&parser, &parser_buffer, stream, stream_fgets, stream_feof, &options);
     pm_serialize_header(buffer);
     pm_serialize_content(&parser, node, buffer);
     pm_buffer_append_byte(buffer, '\0');
