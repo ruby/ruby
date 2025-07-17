@@ -133,6 +133,21 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_send_with_six_args
+    assert_compiles '[1, 2, 3, 4, 5, 6]', %q{
+      def foo(a1, a2, a3, a4, a5, a6)
+        [a1, a2, a3, a4, a5, a6]
+      end
+
+      def test
+        foo(1, 2, 3, 4, 5, 6)
+      end
+
+      test # profile send
+      test
+    }, call_threshold: 2
+  end
+
   def test_invokebuiltin
     omit 'Test fails at the moment due to not handling optional parameters'
     assert_compiles '["."]', %q{
