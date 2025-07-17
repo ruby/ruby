@@ -402,6 +402,7 @@ rb_concurrent_set_foreach_with_replace(VALUE set_obj, int (*callback)(VALUE *key
                 return;
               case ST_DELETE:
                 set->entries[i].key = CONCURRENT_SET_DELETED;
+                set->deleted_entries++;
                 break;
             }
             break;
