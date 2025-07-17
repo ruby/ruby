@@ -4,7 +4,7 @@ use std::rc::Rc;
 use crate::asm::Label;
 use crate::backend::current::{Reg, ALLOC_REGS};
 use crate::invariants::track_bop_assumption;
-use crate::gc::get_or_create_iseq_payload;
+use crate::gc::{get_or_create_iseq_payload, append_gc_offsets};
 use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, SideExitContext, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, SP};
@@ -111,7 +111,7 @@ fn gen_iseq_entry_point(iseq: IseqPtr) -> *const u8 {
             // Remember the block address to reuse it later
             let payload = get_or_create_iseq_payload(iseq);
             payload.start_ptr = Some(start_ptr);
-            payload.gc_offsets.extend(gc_offsets);
+            append_gc_offsets(iseq, &gc_offsets);
 
             // Compile an entry point to the JIT code
             (gen_entry(cb, iseq, &function, start_ptr, jit.c_stack_bytes), jit.branch_iseqs)
@@ -183,7 +183,7 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<(CodePtr, Vec<(Rc<Branc
     let result = gen_function(cb, iseq, &function);
     if let Some((start_ptr, gc_offsets, jit)) = result {
         payload.start_ptr = Some(start_ptr);
-        payload.gc_offsets.extend(gc_offsets);
+        append_gc_offsets(iseq, &gc_offsets);
         Some((start_ptr, jit.branch_iseqs))
     } else {
         None
@@ -989,7 +989,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
 
 /// Compile an identity check with a side exit
 fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected: VALUE, state: &FrameState) -> Option<lir::Opnd> {
-    asm.cmp(val, Opnd::UImm(expected.into()));
+    asm.cmp(val, Opnd::Value(expected));
     asm.jnz(side_exit(jit, state, GuardBitEquals(expected))?);
     Some(val)
 }
