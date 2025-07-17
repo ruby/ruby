@@ -103,8 +103,8 @@ fn gen_iseq_entry_point(iseq: IseqPtr) -> *const u8 {
     let code_ptr = gen_iseq_entry_point_body(cb, iseq);
 
     // Always mark the code region executable if asm.compile() has been used.
-    // We need to do this even if code_ptr is null because, even if gen_entry()
-    // or gen_iseq() fails, gen_function() has used asm.compile().
+    // We need to do this even if code_ptr is null because, whether gen_entry()
+    // or gen_iseq() fails or not, gen_function() has already used asm.compile().
     cb.mark_all_executable();
 
     code_ptr
