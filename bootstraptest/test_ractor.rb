@@ -145,28 +145,47 @@ assert_equal '[:ok, :ok, :ok]', %q{
   }.map(&:value)
 }
 
-# Ractor.make_shareable issue for locals in proc [Bug #18023]
-assert_equal '[:a, :b, :c, :d, :e]', %q{
-  v1, v2, v3, v4, v5 = :a, :b, :c, :d, :e
-  closure = Ractor.current.instance_eval{ Proc.new { [v1, v2, v3, v4, v5] } }
-
-  Ractor.make_shareable(closure).call
+assert_equal "42", %q{
+  a = 42
+  Ractor.shareable_lambda{ a }.call
 }
 
 # Ractor.make_shareable issue for locals in proc [Bug #18023]
-assert_equal '[:a, :b, :c, :d, :e, :f, :g]', %q{
-  a = :a
-  closure = Ractor.current.instance_eval do
-    -> {
-      b, c, d = :b, :c, :d
-      -> {
-        e, f, g = :e, :f, :g
-        -> { [a, b, c, d, e, f, g] }
-      }.call
-    }.call
+assert_equal '[:a, :b, :c, :d, :e]', %q{
+  v1, v2, v3, v4, v5 = :a, :b, :c, :d, :e
+  closure = Proc.new { [v1, v2, v3, v4, v5] }
+  Ractor.shareable_proc(&closure).call
+}
+
+# Ractor::IsolationError cases
+assert_equal '3', %q{
+  ok = 0
+
+  begin
+    a = 1
+    Ractor.shareable_proc{a}
+    a = 2
+  rescue Ractor::IsolationError => e
+    ok += 1
   end
 
-  Ractor.make_shareable(closure).call
+  begin
+    cond = false
+    a = 1
+    a = 2 if cond
+    Ractor.shareable_proc{a}
+  rescue Ractor::IsolationError => e
+    ok += 1
+  end
+
+  begin
+    1.times{|i|
+      i = 2
+      Ractor.shareable_proc{i}
+    }
+  rescue Ractor::IsolationError => e
+    ok += 1
+  end
 }
 
 ###
@@ -967,7 +986,7 @@ assert_equal 'can not access non-shareable objects in constant C::CONST by non-m
   end
   RUBY
 
-# Constant cache should care about non-sharable constants
+# Constant cache should care about non-shareable constants
 assert_equal "can not access non-shareable objects in constant Object::STR by non-main Ractor.", <<~'RUBY', frozen_string_literal: false
   STR = "hello"
   def str; STR; end
@@ -1137,41 +1156,17 @@ assert_equal 'true', %q{
   [a.frozen?, a[0].frozen?] == [true, false]
 }
 
-# Ractor.make_shareable(a_proc) makes a proc shareable.
+# Ractor.make_shareable(a_proc) is not supported now.
 assert_equal 'true', %q{
-  a = [1, [2, 3], {a: "4"}]
+  pr = Proc.new{}
 
-  pr = Ractor.current.instance_eval do
-    Proc.new do
-      a
-    end
+  begin
+    Ractor.make_shareable(pr)
+  rescue Ractor::Error
+    true
+  else
+    false
   end
-
-  Ractor.make_shareable(a) # referred value should be shareable
-  Ractor.make_shareable(pr)
-  Ractor.shareable?(pr)
-}
-
-# Ractor.make_shareable(a_proc) makes inner structure shareable and freezes it
-assert_equal 'true,true,true,true', %q{
-  class Proc
-    attr_reader :obj
-    def initialize
-      @obj = Object.new
-    end
-  end
-
-  pr = Ractor.current.instance_eval do
-    Proc.new {}
-  end
-
-  results = []
-  Ractor.make_shareable(pr)
-  results << Ractor.shareable?(pr)
-  results << pr.frozen?
-  results << Ractor.shareable?(pr.obj)
-  results << pr.obj.frozen?
-  results.map(&:to_s).join(',')
 }
 
 # Ractor.shareable?(recursive_objects)
@@ -1202,48 +1197,14 @@ assert_equal '[C, M]', %q{
   Ractor.make_shareable(ary = [C, M])
 }
 
-# Ractor.make_shareable with curried proc checks isolation of original proc
-assert_equal 'isolation error', %q{
-  a = Object.new
-  orig = proc { a }
-  curried = orig.curry
-
-  begin
-    Ractor.make_shareable(curried)
-  rescue Ractor::IsolationError
-    'isolation error'
-  else
-    'no error'
-  end
-}
-
 # define_method() can invoke different Ractor's proc if the proc is shareable.
 assert_equal '1', %q{
   class C
     a = 1
-    define_method "foo", Ractor.make_shareable(Proc.new{ a })
-    a = 2
+    define_method "foo", Ractor.shareable_proc{ a }
   end
 
   Ractor.new{ C.new.foo }.value
-}
-
-# Ractor.make_shareable(a_proc) makes a proc shareable.
-assert_equal 'can not make a Proc shareable because it accesses outer variables (a).', %q{
-  a = b = nil
-  pr = Ractor.current.instance_eval do
-    Proc.new do
-      c = b # assign to a is okay because c is block local variable
-      # reading b is okay
-      a = b # assign to a is not allowed #=> Ractor::Error
-    end
-  end
-
-  begin
-    Ractor.make_shareable(pr)
-  rescue => e
-    e.message
-  end
 }
 
 # Ractor.make_shareable(obj, copy: true) makes copied shareable object.
@@ -1470,42 +1431,6 @@ assert_equal "ok", %q{
   }
   "ok"
 } if !yjit_enabled? && ENV['GITHUB_WORKFLOW'] != 'ModGC' # flaky
-
-assert_equal "ok", %q{
-  def foo(*); ->{ super }; end
-  begin
-    Ractor.make_shareable(foo)
-  rescue Ractor::IsolationError
-    "ok"
-  end
-}
-
-assert_equal "ok", %q{
-  def foo(**); ->{ super }; end
-  begin
-    Ractor.make_shareable(foo)
-  rescue Ractor::IsolationError
-    "ok"
-  end
-}
-
-assert_equal "ok", %q{
-  def foo(...); ->{ super }; end
-  begin
-    Ractor.make_shareable(foo)
-  rescue Ractor::IsolationError
-    "ok"
-  end
-}
-
-assert_equal "ok", %q{
-  def foo((x), (y)); ->{ super }; end
-  begin
-    Ractor.make_shareable(foo([], []))
-  rescue Ractor::IsolationError
-    "ok"
-  end
-}
 
 # check method cache invalidation
 assert_equal "ok", %q{

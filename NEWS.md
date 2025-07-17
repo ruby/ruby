@@ -117,6 +117,10 @@ Note: We're only listing outstanding class updates.
 
     * `Ractor#close_incoming` and `Ractor#close_outgoing` were removed.
 
+    * `Ractor.sharealbe_proc` and `Ractor.shareable_lambda` is introduced
+      to make shareable Proc or lambda.
+      [[Feature #21550]], [[Feature #21557]]
+
 * `Set`
 
     * `Set` is now a core class, instead of an autoloaded stdlib class.
@@ -316,3 +320,5 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21347]: https://bugs.ruby-lang.org/issues/21347
 [Feature #21360]: https://bugs.ruby-lang.org/issues/21360
 [Feature #21527]: https://bugs.ruby-lang.org/issues/21527
+[Feature #21550]: https://bugs.ruby-lang.org/issues/21550
+[Feature #21557]: https://bugs.ruby-lang.org/issues/21557

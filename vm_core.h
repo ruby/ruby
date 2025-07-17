@@ -496,6 +496,12 @@ struct rb_iseq_constant_body {
 
     const ID *local_table;		/* must free */
 
+    enum lvar_state {
+        lvar_uninitialized,
+        lvar_initialized,
+        lvar_reassigned,
+    } *lvar_states;
+
     /* catch table */
     struct iseq_catch_table *catch_table;
 
@@ -1285,8 +1291,8 @@ typedef struct {
 
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_proc_isolate(VALUE self);
-VALUE rb_proc_isolate_bang(VALUE self);
-VALUE rb_proc_ractor_make_shareable(VALUE self);
+VALUE rb_proc_isolate_bang(VALUE self, VALUE replace_self);
+VALUE rb_proc_ractor_make_shareable(VALUE proc, VALUE replace_self);
 RUBY_SYMBOL_EXPORT_END
 
 typedef struct {
