@@ -262,8 +262,6 @@ set_id_entry(rb_symbols_t *symbols, rb_id_serial_t num, VALUE str, VALUE sym)
 static VALUE
 sym_set_create(VALUE sym, void *data)
 {
-    ASSERT_vm_locking();
-
     bool create_dynamic_symbol = (bool)data;
 
     struct sym_set_static_sym_entry *static_sym_entry = sym_set_static_sym_untag(sym);
@@ -309,7 +307,9 @@ sym_set_create(VALUE sym, void *data)
         }
         new_static_sym_entry->sym = static_sym;
 
-        set_id_entry(&ruby_global_symbols, rb_id_to_serial(STATIC_SYM2ID(static_sym)), str, static_sym);
+        RB_VM_LOCKING() {
+            set_id_entry(&ruby_global_symbols, rb_id_to_serial(STATIC_SYM2ID(static_sym)), str, static_sym);
+        }
 
         return sym_set_static_sym_tag(new_static_sym_entry);
     }
@@ -979,12 +979,7 @@ rb_gc_free_dsymbol(VALUE sym)
 VALUE
 rb_str_intern(VALUE str)
 {
-    VALUE sym = 0;
-
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        sym = sym_find_or_insert_dynamic_symbol(symbols, str);
-    }
-    return sym;
+    return sym_find_or_insert_dynamic_symbol(&ruby_global_symbols, str);
 }
 
 ID
