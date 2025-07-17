@@ -96,8 +96,22 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
     code_ptr
 }
 
-/// Compile an entry point for a given ISEQ
+/// See [gen_iseq_entry_point_body]. This wrapper is to make sure cb.mark_all_executable()
+/// is called even if gen_iseq_entry_point_body() partially fails and returns a null pointer.
 fn gen_iseq_entry_point(iseq: IseqPtr) -> *const u8 {
+    let cb = ZJITState::get_code_block();
+    let code_ptr = gen_iseq_entry_point_body(cb, iseq);
+
+    // Always mark the code region executable if asm.compile() has been used.
+    // We need to do this even if code_ptr is null because, even if gen_entry()
+    // or gen_iseq() fails, gen_function() has used asm.compile().
+    cb.mark_all_executable();
+
+    code_ptr
+}
+
+/// Compile an entry point for a given ISEQ
+fn gen_iseq_entry_point_body(cb: &mut CodeBlock, iseq: IseqPtr) -> *const u8 {
     // Compile ISEQ into High-level IR
     let function = match compile_iseq(iseq) {
         Some(function) => function,
@@ -105,7 +119,6 @@ fn gen_iseq_entry_point(iseq: IseqPtr) -> *const u8 {
     };
 
     // Compile the High-level IR
-    let cb = ZJITState::get_code_block();
     let (start_ptr, mut branch_iseqs) = match gen_function(cb, iseq, &function) {
         Some((start_ptr, gc_offsets, jit)) => {
             // Remember the block address to reuse it later
@@ -136,9 +149,6 @@ fn gen_iseq_entry_point(iseq: IseqPtr) -> *const u8 {
             return std::ptr::null();
         }
     }
-
-    // Always mark the code region executable if asm.compile() has been used
-    cb.mark_all_executable();
 
     // Return a JIT code address or a null pointer
     start_ptr.map(|start_ptr| start_ptr.raw_ptr(cb)).unwrap_or(std::ptr::null())
