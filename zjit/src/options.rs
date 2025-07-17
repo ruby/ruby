@@ -33,6 +33,9 @@ pub struct Options {
 
     /// Dump all compiled machine code.
     pub dump_disasm: bool,
+
+    /// Dump code map to /tmp for performance profilers.
+    pub perf: bool,
 }
 
 /// Return an Options with default values
@@ -44,6 +47,7 @@ pub fn init_options() -> Options {
         dump_hir_opt: None,
         dump_lir: false,
         dump_disasm: false,
+        perf: false,
     }
 }
 
@@ -142,6 +146,8 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
         ("dump-lir", "") => options.dump_lir = true,
 
         ("dump-disasm", "") => options.dump_disasm = true,
+
+        ("perf", "") => options.perf = true,
 
         _ => return None, // Option name not recognized
     }
