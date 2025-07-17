@@ -562,11 +562,7 @@ start:
 
     if (need_free) free_getaddrinfo_arg(arg);
 
-    if (timedout) {
-        VALUE errno_module = rb_const_get(rb_cObject, rb_intern("Errno"));
-        VALUE etimedout_error = rb_const_get(errno_module, rb_intern("ETIMEDOUT"));
-        rb_raise(etimedout_error, "user specified timeout");
-    }
+    if (timedout) rsock_raise_user_specified_timeout();
 
     // If the current thread is interrupted by asynchronous exception, the following raises the exception.
     // But if the current thread is interrupted by timer thread, the following returns; we need to manually retry.

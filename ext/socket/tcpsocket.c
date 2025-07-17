@@ -35,6 +35,7 @@
  *
  * [:resolv_timeout] Specifies the timeout in seconds from when the hostname resolution starts.
  * [:connect_timeout] This method sequentially attempts connecting to all candidate destination addresses.<br>The +connect_timeout+ specifies the timeout in seconds from the start of the connection attempt to the last candidate.<br>By default, all connection attempts continue until the timeout occurs.<br>When +fast_fallback:false+ is explicitly specified,<br>a timeout is set for each connection attempt and any connection attempt that exceeds its timeout will be canceled.
+ * [:open_timeout] Specifies the timeout in seconds from the start of the method execution.<br>If this timeout is reached while there are still addresses that have not yet been attempted for connection, no further attempts will be made.<br>If this option is specified together with other timeout options, an +ArgumentError+ will be raised.
  * [:fast_fallback] Enables the Happy Eyeballs Version 2 algorithm (enabled by default).
  */
 static VALUE
@@ -43,29 +44,32 @@ tcp_init(int argc, VALUE *argv, VALUE sock)
     VALUE remote_host, remote_serv;
     VALUE local_host, local_serv;
     VALUE opt;
-    static ID keyword_ids[4];
-    VALUE kwargs[4];
+    static ID keyword_ids[5];
+    VALUE kwargs[5];
     VALUE resolv_timeout = Qnil;
     VALUE connect_timeout = Qnil;
+    VALUE open_timeout = Qnil;
     VALUE fast_fallback = Qnil;
     VALUE test_mode_settings = Qnil;
 
     if (!keyword_ids[0]) {
         CONST_ID(keyword_ids[0], "resolv_timeout");
         CONST_ID(keyword_ids[1], "connect_timeout");
-        CONST_ID(keyword_ids[2], "fast_fallback");
-        CONST_ID(keyword_ids[3], "test_mode_settings");
+        CONST_ID(keyword_ids[2], "open_timeout");
+        CONST_ID(keyword_ids[3], "fast_fallback");
+        CONST_ID(keyword_ids[4], "test_mode_settings");
     }
 
     rb_scan_args(argc, argv, "22:", &remote_host, &remote_serv,
                         &local_host, &local_serv, &opt);
 
     if (!NIL_P(opt)) {
-        rb_get_kwargs(opt, keyword_ids, 0, 4, kwargs);
+        rb_get_kwargs(opt, keyword_ids, 0, 5, kwargs);
         if (kwargs[0] != Qundef) { resolv_timeout = kwargs[0]; }
         if (kwargs[1] != Qundef) { connect_timeout = kwargs[1]; }
-        if (kwargs[2] != Qundef) { fast_fallback = kwargs[2]; }
-        if (kwargs[3] != Qundef) { test_mode_settings = kwargs[3]; }
+        if (kwargs[2] != Qundef) { open_timeout = kwargs[2]; }
+        if (kwargs[3] != Qundef) { fast_fallback = kwargs[3]; }
+        if (kwargs[4] != Qundef) { test_mode_settings = kwargs[4]; }
     }
 
     if (fast_fallback == Qnil) {
@@ -75,8 +79,8 @@ tcp_init(int argc, VALUE *argv, VALUE sock)
 
     return rsock_init_inetsock(sock, remote_host, remote_serv,
                                local_host, local_serv, INET_CLIENT,
-                               resolv_timeout, connect_timeout, fast_fallback,
-                               test_mode_settings);
+                               resolv_timeout, connect_timeout, open_timeout,
+                               fast_fallback, test_mode_settings);
 }
 
 static VALUE
