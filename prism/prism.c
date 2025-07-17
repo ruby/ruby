@@ -19524,7 +19524,15 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_do_loop_stack_push(parser, false);
                 statements = (pm_node_t *) pm_statements_node_create(parser);
 
-                pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_DEFINED + 1, binding_power < PM_BINDING_POWER_COMPOSITION, false, PM_ERR_DEF_ENDLESS, (uint16_t) (depth + 1));
+                // In endless method bodies, we need to handle command calls carefully.
+                // We want to allow command calls in assignment context but maintain
+                // the same binding power to avoid changing how operators are parsed.
+                // Note that we're intentionally NOT allowing code like `private def foo = puts "Hello"`
+                // because the original parser, parse.y, can't handle it and we want to maintain the same behavior
+                bool allow_command_call = (binding_power == PM_BINDING_POWER_ASSIGNMENT) ||
+                                         (binding_power < PM_BINDING_POWER_COMPOSITION);
+
+                pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_DEFINED + 1, allow_command_call, false, PM_ERR_DEF_ENDLESS, (uint16_t) (depth + 1));
 
                 if (accept1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
                     context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
