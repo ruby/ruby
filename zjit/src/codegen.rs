@@ -172,7 +172,16 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_pt
     asm.frame_teardown();
     asm.cret(C_RET_OPND);
 
-    asm.compile(cb).map(|(start_ptr, _)| start_ptr)
+    let result = asm.compile(cb).map(|(start_ptr, _)| start_ptr);
+    if let Some(start_addr) = result {
+        if get_option!(perf) {
+            let start_ptr = start_addr.raw_ptr(cb) as usize;
+            let end_ptr = cb.get_write_ptr().raw_ptr(cb) as usize;
+            let code_size = end_ptr - start_ptr;
+            register_with_perf("entry".into(), start_ptr, code_size);
+        }
+    }
+    result
 }
 
 /// Compile an ISEQ into machine code
