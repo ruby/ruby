@@ -210,6 +210,10 @@ rsock_init_inetsock(
     VALUE resolv_timeout, VALUE connect_timeout, VALUE open_timeout,
     VALUE _fast_fallback, VALUE _test_mode_settings
 ) {
+    if (!NIL_P(open_timeout) && (!NIL_P(resolv_timeout) || !NIL_P(connect_timeout))) {
+        rb_raise(rb_eArgError, "Cannot specify open_timeout along with connect_timeout or resolv_timeout");
+    }
+
     struct inetsock_arg arg;
     arg.self = self;
     arg.io = Qnil;
