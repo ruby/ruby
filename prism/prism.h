@@ -88,16 +88,24 @@ PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse(pm_parser_t *parser);
 typedef char * (pm_parse_stream_fgets_t)(char *string, int size, void *stream);
 
 /**
+ * This function is used in pm_parse_stream to check whether a stream is EOF.
+ * It closely mirrors that of feof so that feof can be used as the
+ * default implementation.
+ */
+typedef int (pm_parse_stream_feof_t)(void *stream);
+
+/**
  * Parse a stream of Ruby source and return the tree.
  *
  * @param parser The parser to use.
  * @param buffer The buffer to use.
  * @param stream The stream to parse.
  * @param stream_fgets The function to use to read from the stream.
+ * @param stream_feof The function to use to determine if the stream has hit eof.
  * @param options The optional options to use when parsing.
  * @return The AST representing the source.
  */
-PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, const pm_options_t *options);
+PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options);
 
 // We optionally support serializing to a binary string. For systems that don't
 // want or need this functionality, it can be turned off with the
@@ -111,9 +119,10 @@ PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t *parser, pm_buff
  * @param buffer The buffer to serialize to.
  * @param stream The stream to parse.
  * @param stream_fgets The function to use to read from the stream.
+ * @param stream_feof The function to use to tell if the stream has hit eof.
  * @param data The optional data to pass to the parser.
  */
-PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, const char *data);
+PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const char *data);
 
 /**
  * Serialize the given list of comments to the given buffer.

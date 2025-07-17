@@ -86,6 +86,7 @@ module Prism
     end
 
     callback :pm_parse_stream_fgets_t, [:pointer, :int, :pointer], :pointer
+    callback :pm_parse_stream_feof_t, [:pointer], :int
     enum :pm_string_init_result_t, %i[PM_STRING_INIT_SUCCESS PM_STRING_INIT_ERROR_GENERIC PM_STRING_INIT_ERROR_DIRECTORY]
     enum :pm_string_query_t, [:PM_STRING_QUERY_ERROR, -1, :PM_STRING_QUERY_FALSE, :PM_STRING_QUERY_TRUE]
 
@@ -101,7 +102,7 @@ module Prism
       "pm_string_query_local",
       "pm_string_query_constant",
       "pm_string_query_method_name",
-      [:pm_parse_stream_fgets_t]
+      [:pm_parse_stream_fgets_t, :pm_parse_stream_feof_t]
     )
 
     load_exported_functions_from(
@@ -281,12 +282,14 @@ module Prism
           end
         }
 
+        eof_callback = -> (_) { stream.eof?  }
+
         # In the pm_serialize_parse_stream function it accepts a pointer to the
         # IO object as a void* and then passes it through to the callback as the
         # third argument, but it never touches it itself. As such, since we have
         # access to the IO object already through the closure of the lambda, we
         # can pass a null pointer here and not worry.
-        LibRubyParser.pm_serialize_parse_stream(buffer.pointer, nil, callback, dump_options(options))
+        LibRubyParser.pm_serialize_parse_stream(buffer.pointer, nil, callback, eof_callback, dump_options(options))
         Prism.load(source, buffer.read, options.fetch(:freeze, false))
       end
     end
