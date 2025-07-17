@@ -157,6 +157,7 @@ fn gen_iseq_entry_point_body(cb: &mut CodeBlock, iseq: IseqPtr) -> *const u8 {
 fn register_with_perf(iseq_name: String, start_ptr: usize, code_size: usize) {
     use std::io::Write;
     let perf_map = format!("/tmp/perf-{}.map", std::process::id());
+    // TODO(max): Remove this line
     debug!("Registering JIT code in perf map: {perf_map}");
     let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(&perf_map) else {
         debug!("Failed to open perf map file: {perf_map}");
