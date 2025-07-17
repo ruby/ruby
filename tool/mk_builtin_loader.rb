@@ -289,9 +289,18 @@ def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_nam
   # locals is nil outside methods
   locals&.reverse_each&.with_index{|param, i|
     next unless Symbol === param
+
+    # special keyword parameters
+    case param
+    when :self
+      param = :self_keyword_parameter
+    end
+
     next unless local_candidates.include?(param.to_s)
+
     f.puts "VALUE *const #{param}__ptr = (VALUE *)&ec->cfp->ep[#{-3 - i}];"
     f.puts "MAYBE_UNUSED(const VALUE) #{param} = *#{param}__ptr;"
+
     lineno += 1
   }
   f.puts "#line #{body_lineno} \"#{line_file}\""

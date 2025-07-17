@@ -94,6 +94,13 @@ Note: We're only listing outstanding class updates.
 
     * `Ractor#close_incoming` and `Ractor#close_outgoing` were removed.
 
+    * `Ractor.sharealbe_proc` and `Ractor.shareable_lambda` is introduced
+      to make shareable Proc or lambda.
+      [[Feature #21039]]
+
+    * `Ractor.make_shaerable(a_proc)` is no longer supported.
+      [[Feature #21039]]
+
 * Set
 
     * Set is now a core class, instead of an autoloaded stdlib class.
@@ -195,6 +202,9 @@ The following bundled gems are updated.
 
     [[Feature #21262]]
 
+* `Ractor.make_sharealbe(a_proc)` is no longer supported. Use `Ractor.shareable_proc` instead.
+  [[[Feature #21039]]
+
 ## Stdlib compatibility issues
 
 * CGI library is removed from the default gems. Now we only provide `cgi/escape` for
@@ -243,3 +253,4 @@ The following bundled gems are updated.
 [Feature #21262]: https://bugs.ruby-lang.org/issues/21262
 [Feature #21287]: https://bugs.ruby-lang.org/issues/21287
 [Feature #21347]: https://bugs.ruby-lang.org/issues/21347
+[Feature #21039]: https://bugs.ruby-lang.org/issues/21039

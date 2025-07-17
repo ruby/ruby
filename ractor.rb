@@ -1,5 +1,3 @@
-# \Ractor is an Actor-model abstraction for Ruby that provides thread-safe parallel execution.
-#
 # Ractor.new makes a new \Ractor, which can run in parallel.
 #
 #     # The simplest ractor
@@ -610,6 +608,45 @@ class Ractor
   #
   def unmonitor port
     __builtin_ractor_unmonitor(port)
+  end
+
+  #
+  # call-seq:
+  #   Ractor.sharable_proc(self: nil){} -> sharable proc
+  #
+  # It returns shareable Proc object. The Proc object is
+  # shareable and the self in a block will be replaced with
+  # the value passed via `self:` keyword.
+  #
+  # In a shareable Proc, the outer variables are read-only
+  # and the outer variables should point only shareable objects.
+  #
+  #     a = 42
+  #     b = []
+  #     Ractor.shareable_proc{ p a }.call # ok
+  #     Ractor.shareable_proc{ p b }
+  #     #=> can not make shareable Proc because it can refer unshareable object [] from variable 'b' (Ractor::IsolationError)
+  #
+  def self.shareable_proc self: nil
+    Primitive.attr! :use_block
+
+    __builtin_cexpr!(%Q{
+      ractor_shareable_proc(ec, self_keyword_parameter, false)
+    })
+  end
+
+  #
+  # call-seq:
+  #   Ractor.sharable_proc{} -> sharable proc
+  #
+  # Same as Ractor.sharable_proc, but returns lambda proc.
+  #
+  def self.shareable_lambda self: nil
+    Primitive.attr! :use_block
+
+    __builtin_cexpr!(%Q{
+      ractor_shareable_proc(ec, self_keyword_parameter, true)
+    })
   end
 
   class Port
