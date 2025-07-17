@@ -112,6 +112,7 @@ fn gen_iseq_entry_point(iseq: IseqPtr) -> *const u8 {
             let payload = get_or_create_iseq_payload(iseq);
             payload.start_ptr = Some(start_ptr);
             payload.gc_offsets.extend(gc_offsets);
+            unsafe { rb_gc_writebarrier_remember(iseq.into()) };
 
             // Compile an entry point to the JIT code
             (gen_entry(cb, iseq, &function, start_ptr, jit.c_stack_bytes), jit.branch_iseqs)
@@ -184,6 +185,7 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<(CodePtr, Vec<(Rc<Branc
     if let Some((start_ptr, gc_offsets, jit)) = result {
         payload.start_ptr = Some(start_ptr);
         payload.gc_offsets.extend(gc_offsets);
+        unsafe { rb_gc_writebarrier_remember(iseq.into()) };
         Some((start_ptr, jit.branch_iseqs))
     } else {
         None
