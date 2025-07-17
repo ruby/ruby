@@ -139,8 +139,7 @@ class TestISeq < Test::Unit::TestCase
   def test_lambda_with_ractor_roundtrip
     iseq = compile(<<~EOF, __LINE__+1)
       x = 42
-      y = nil.instance_eval{ lambda { x } }
-      Ractor.make_shareable(y)
+      y = Ractor.shareable_lambda{x}
       y.call
     EOF
     assert_equal(42, ISeq.load_from_binary(iseq_to_binary(iseq)).eval)
@@ -158,22 +157,18 @@ class TestISeq < Test::Unit::TestCase
 
   def test_ractor_unshareable_outer_variable
     name = "\u{2603 26a1}"
-    y = nil.instance_eval do
-      eval("proc {#{name} = nil; proc {|x| #{name} = x}}").call
-    end
     assert_raise_with_message(ArgumentError, /\(#{name}\)/) do
-      Ractor.make_shareable(y)
+      eval("#{name} = nil; Ractor.shareable_proc{#{name} = nil}")
     end
-    y = nil.instance_eval do
-      eval("proc {#{name} = []; proc {|x| #{name}}}").call
+
+    assert_raise_with_message(Ractor::IsolationError, /\'#{name}\'/) do
+      eval("#{name} = []; Ractor.shareable_proc{#{name}}")
     end
-    assert_raise_with_message(Ractor::IsolationError, /'#{name}'/) do
-      Ractor.make_shareable(y)
-    end
+
     obj = Object.new
-    def obj.foo(*) nil.instance_eval{ ->{super} } end
-    assert_raise_with_message(Ractor::IsolationError, /refer unshareable object \[\] from variable '\*'/) do
-      Ractor.make_shareable(obj.foo(*[]))
+    def obj.foo(*) Ractor.shareable_proc{super} end
+    assert_raise_with_message(Ractor::IsolationError, /cannot make a shareable Proc because it can refer unshareable object \[\]/) do
+      obj.foo(*[])
     end
   end
 

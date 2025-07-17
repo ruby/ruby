@@ -102,6 +102,7 @@ pm_iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int node
     else {
         ADD_ELEM(seq, (LINK_ELEMENT *) new_insn_body(iseq, line, node_id, BIN(setlocal), 2, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level)));
     }
+    update_lvar_state(iseq, level, idx);
     if (level > 0) access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qtrue);
 }
 
@@ -6796,6 +6797,8 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
 
     // FIXME: args?
     iseq_set_local_table(iseq, local_table_for_iseq, 0);
+    iseq_set_parameters_lvar_state(iseq);
+
     scope_node->local_table_for_iseq_size = local_table_for_iseq->size;
 
     if (keyword != NULL) {

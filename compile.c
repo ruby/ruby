@@ -494,6 +494,7 @@ static int iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const anchor, const 
 static int iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_set_exception_table(rb_iseq_t *iseq);
 static int iseq_set_optargs_table(rb_iseq_t *iseq);
+static int iseq_set_parameters_lvar_state(const rb_iseq_t *iseq);
 
 static int compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, VALUE needstr, bool ignore);
 static int compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int method_call_keywords, int popped);
@@ -876,6 +877,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
         /* iseq type of top, method, class, block */
         iseq_set_local_table(iseq, RNODE_SCOPE(node)->nd_tbl, (NODE *)RNODE_SCOPE(node)->nd_args);
         iseq_set_arguments(iseq, ret, (NODE *)RNODE_SCOPE(node)->nd_args);
+        iseq_set_parameters_lvar_state(iseq);
 
         switch (ISEQ_BODY(iseq)->type) {
           case ISEQ_TYPE_BLOCK:
@@ -1715,6 +1717,7 @@ iseq_set_exception_local_table(rb_iseq_t *iseq)
 {
     ISEQ_BODY(iseq)->local_table_size = numberof(rb_iseq_shared_exc_local_tbl);
     ISEQ_BODY(iseq)->local_table = rb_iseq_shared_exc_local_tbl;
+    ISEQ_BODY(iseq)->lvar_states = NULL; // $! is read-only, so don't need lvar_states
     return COMPILE_OK;
 }
 
@@ -1862,6 +1865,46 @@ iseq_lvar_id(const rb_iseq_t *iseq, int idx, int level)
 }
 
 static void
+update_lvar_state(const rb_iseq_t *iseq, int level, int idx)
+{
+    for (int i=0; i<level; i++) {
+        iseq = ISEQ_BODY(iseq)->parent_iseq;
+    }
+
+    enum lvar_state *states = ISEQ_BODY(iseq)->lvar_states;
+    int table_idx = ISEQ_BODY(iseq)->local_table_size - idx;
+    switch (states[table_idx]) {
+      case lvar_uninitialized:
+        states[table_idx] = lvar_initialized;
+        break;
+      case lvar_initialized:
+        states[table_idx] = lvar_reassigned;
+        break;
+      case lvar_reassigned:
+        /* nothing */
+        break;
+      default:
+        rb_bug("unreachable");
+    }
+}
+
+static int
+iseq_set_parameters_lvar_state(const rb_iseq_t *iseq)
+{
+    for (unsigned int i=0; i<ISEQ_BODY(iseq)->param.size; i++) {
+        ISEQ_BODY(iseq)->lvar_states[i] = lvar_initialized;
+    }
+
+    int lead_num = ISEQ_BODY(iseq)->param.lead_num;
+    int opt_num = ISEQ_BODY(iseq)->param.opt_num;
+    for (int i=0; i<opt_num; i++) {
+        ISEQ_BODY(iseq)->lvar_states[lead_num + i] = lvar_uninitialized;
+    }
+
+    return COMPILE_OK;
+}
+
+static void
 iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const line_node, int idx, int level)
 {
     if (iseq_local_block_param_p(iseq, idx, level)) {
@@ -1882,6 +1925,7 @@ iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const lin
     else {
         ADD_INSN2(seq, line_node, setlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
     }
+    update_lvar_state(iseq, level, idx);
     if (level > 0) access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qtrue);
 }
 
@@ -2212,6 +2256,14 @@ iseq_set_local_table(rb_iseq_t *iseq, const rb_ast_id_table_t *tbl, const NODE *
         ID *ids = ALLOC_N(ID, size);
         MEMCPY(ids, tbl->ids + offset, ID, size);
         ISEQ_BODY(iseq)->local_table = ids;
+
+        enum lvar_state *states = ALLOC_N(enum lvar_state, size);
+        // fprintf(stderr, "iseq:%p states:%p size:%d\n", iseq, states, (int)size);
+        for (unsigned int i=0; i<size; i++) {
+            states[i] = lvar_uninitialized;
+            // fprintf(stderr, "id:%s\n", rb_id2name(ISEQ_BODY(iseq)->local_table[i]));
+        }
+        ISEQ_BODY(iseq)->lvar_states = states;
     }
     ISEQ_BODY(iseq)->local_table_size = size;
 
@@ -12379,7 +12431,7 @@ typedef uint32_t ibf_offset_t;
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
 #ifdef RUBY_DEVEL
-#define IBF_DEVEL_VERSION 4
+#define IBF_DEVEL_VERSION 5
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
@@ -13190,7 +13242,7 @@ ibf_dump_local_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
     return ibf_dump_write(dump, table, sizeof(ID) * size);
 }
 
-static ID *
+static const ID *
 ibf_load_local_table(const struct ibf_load *load, ibf_offset_t local_table_offset, int size)
 {
     if (size > 0) {
@@ -13200,10 +13252,39 @@ ibf_load_local_table(const struct ibf_load *load, ibf_offset_t local_table_offse
         for (i=0; i<size; i++) {
             table[i] = ibf_load_id(load, table[i]);
         }
-        return table;
+
+        if (size == 1 && table[0] == idERROR_INFO) {
+            xfree(table);
+            return rb_iseq_shared_exc_local_tbl;
+        }
+        else {
+            return table;
+        }
     }
     else {
         return NULL;
+    }
+}
+
+static ibf_offset_t
+ibf_dump_lvar_states(struct ibf_dump *dump, const rb_iseq_t *iseq)
+{
+    const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+    const int size = body->local_table_size;
+    IBF_W_ALIGN(enum lvar_state);
+    return ibf_dump_write(dump, body->lvar_states, body->lvar_states ? size : 0);
+}
+
+static enum lvar_state *
+ibf_load_lvar_states(const struct ibf_load *load, ibf_offset_t lvar_states_offset, int size, const ID *local_table)
+{
+    if (local_table == rb_iseq_shared_exc_local_tbl ||
+        size <= 0) {
+        return NULL;
+    }
+    else {
+        enum lvar_state *states = IBF_R(lvar_states_offset, enum lvar_state, size);
+        return states;
     }
 }
 
@@ -13480,6 +13561,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ruby_xfree(positions);
 
     const ibf_offset_t local_table_offset = ibf_dump_local_table(dump, iseq);
+    const ibf_offset_t lvar_states_offset = ibf_dump_lvar_states(dump, iseq);
     const unsigned int catch_table_size =   body->catch_table ? body->catch_table->size : 0;
     const ibf_offset_t catch_table_offset = ibf_dump_catch_table(dump, iseq);
     const int parent_iseq_index =           ibf_dump_iseq(dump, ISEQ_BODY(iseq)->parent_iseq);
@@ -13547,6 +13629,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(insns_info_positions_offset));
     ibf_dump_write_small_value(dump, body->insns_info.size);
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(local_table_offset));
+    ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(lvar_states_offset));
     ibf_dump_write_small_value(dump, catch_table_size);
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(catch_table_offset));
     ibf_dump_write_small_value(dump, parent_iseq_index);
@@ -13658,6 +13741,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const ibf_offset_t insns_info_positions_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
     const unsigned int insns_info_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const ibf_offset_t local_table_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
+    const ibf_offset_t lvar_states_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
     const unsigned int catch_table_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const ibf_offset_t catch_table_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
     const int parent_iseq_index = (int)ibf_load_small_value(load, &reading_pos);
@@ -13774,6 +13858,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->insns_info.body      = ibf_load_insns_info_body(load, insns_info_body_offset, insns_info_size);
     load_body->insns_info.positions = ibf_load_insns_info_positions(load, insns_info_positions_offset, insns_info_size);
     load_body->local_table          = ibf_load_local_table(load, local_table_offset, local_table_size);
+    load_body->lvar_states          = ibf_load_lvar_states(load, lvar_states_offset, local_table_size, load_body->local_table);
     ibf_load_catch_table(load, catch_table_offset, catch_table_size, iseq);
 
     const rb_iseq_t *parent_iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)parent_iseq_index);
