@@ -63,7 +63,7 @@ enum DistributionKind {
 pub struct DistributionSummary<T: Copy + PartialEq + Default + std::fmt::Debug, const N: usize> {
     kind: DistributionKind,
     buckets: [T; N],
-    // TODO(max): Determined if we need some notion of stability
+    // TODO(max): Determine if we need some notion of stability
 }
 
 const SKEW_THRESHOLD: f64 = 0.75;
