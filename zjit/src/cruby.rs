@@ -602,12 +602,6 @@ impl VALUE {
         let k: isize = item.wrapping_add(item.wrapping_add(1));
         VALUE(k as usize)
     }
-
-    /// Top self is the Ruby global object, where top-level method definitions go. Return true if
-    /// this is the top-level self and false otherwise.
-    pub fn is_top_self(self) -> bool {
-        self == unsafe { rb_vm_top_self() }
-    }
 }
 
 impl From<IseqPtr> for VALUE {
