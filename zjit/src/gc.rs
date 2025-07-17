@@ -90,6 +90,23 @@ pub extern "C" fn rb_zjit_iseq_mark(payload: *mut c_void) {
     }
 }
 
+/// Append a set of gc_offsets to the iseq's payload
+pub fn append_gc_offsets(iseq: IseqPtr, offsets: &Vec<CodePtr>) {
+    let payload = get_or_create_iseq_payload(iseq);
+    payload.gc_offsets.extend(offsets);
+
+    // Call writebarrier on each newly added value
+    let cb = ZJITState::get_code_block();
+    for &offset in offsets.iter() {
+        let value_ptr: *const u8 = offset.raw_ptr(cb);
+        let value_ptr = value_ptr as *const VALUE;
+        unsafe {
+            let object = value_ptr.read_unaligned();
+            rb_gc_writebarrier(iseq.into(), object);
+        }
+    }
+}
+
 /// GC callback for updating GC objects in the per-iseq payload.
 /// This is a mirror of [rb_zjit_iseq_mark].
 #[unsafe(no_mangle)]
