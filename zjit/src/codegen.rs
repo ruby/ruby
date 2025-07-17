@@ -193,7 +193,7 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_pt
             let end_ptr = cb.get_write_ptr().raw_ptr(cb) as usize;
             let code_size = end_ptr - start_ptr;
             let iseq_name = iseq_get_location(iseq, 0);
-            register_with_perf(format!("entry for {iseq_name}", start_ptr, code_size);
+            register_with_perf(format!("entry for {iseq_name}"), start_ptr, code_size);
         }
     }
     result
