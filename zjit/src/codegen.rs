@@ -154,19 +154,6 @@ fn gen_iseq_entry_point_body(cb: &mut CodeBlock, iseq: IseqPtr) -> *const u8 {
     start_ptr.map(|start_ptr| start_ptr.raw_ptr(cb)).unwrap_or(std::ptr::null())
 }
 
-fn register_with_perf(iseq_name: String, start_ptr: usize, code_size: usize) {
-    use std::io::Write;
-    let perf_map = format!("/tmp/perf-{}.map", std::process::id());
-    let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(&perf_map) else {
-        debug!("Failed to open perf map file: {perf_map}");
-        return;
-    };
-    let Ok(_) = writeln!(file, "{:#x} {:#x} zjit::{}", start_ptr, code_size, iseq_name) else {
-        debug!("Failed to write {iseq_name} to perf map file: {perf_map}");
-        return;
-    };
-}
-
 /// Compile a JIT entry
 fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_ptr: CodePtr, c_stack_bytes: usize) -> Option<CodePtr> {
     // Set up registers for CFP, EC, SP, and basic block arguments
@@ -185,17 +172,7 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_pt
     asm.frame_teardown();
     asm.cret(C_RET_OPND);
 
-    let result = asm.compile(cb).map(|(start_ptr, _)| start_ptr);
-    if let Some(start_addr) = result {
-        if get_option!(perf) {
-            let start_ptr = start_addr.raw_ptr(cb) as usize;
-            let end_ptr = cb.get_write_ptr().raw_ptr(cb) as usize;
-            let code_size = end_ptr - start_ptr;
-            let iseq_name = iseq_get_location(iseq, 0);
-            register_with_perf(iseq_name, start_ptr, code_size);
-        }
-    }
-    result
+    asm.compile(cb).map(|(start_ptr, _)| start_ptr)
 }
 
 /// Compile an ISEQ into machine code
@@ -221,6 +198,20 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<(CodePtr, Vec<(Rc<Branc
     } else {
         None
     }
+}
+
+/// Write an entry to the perf map in /tmp
+fn register_with_perf(iseq_name: String, start_ptr: usize, code_size: usize) {
+    use std::io::Write;
+    let perf_map = format!("/tmp/perf-{}.map", std::process::id());
+    let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(&perf_map) else {
+        debug!("Failed to open perf map file: {perf_map}");
+        return;
+    };
+    let Ok(_) = writeln!(file, "{:#x} {:#x} zjit::{}", start_ptr, code_size, iseq_name) else {
+        debug!("Failed to write {iseq_name} to perf map file: {perf_map}");
+        return;
+    };
 }
 
 /// Compile a function
@@ -278,7 +269,17 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
     }
 
     // Generate code if everything can be compiled
-    asm.compile(cb).map(|(start_ptr, gc_offsets)| (start_ptr, gc_offsets, jit))
+    let result = asm.compile(cb).map(|(start_ptr, gc_offsets)| (start_ptr, gc_offsets, jit));
+    if let Some((start_ptr, _, _)) = result {
+        if get_option!(perf) {
+            let start_usize = start_ptr.raw_ptr(cb) as usize;
+            let end_usize = cb.get_write_ptr().raw_ptr(cb) as usize;
+            let code_size = end_usize - start_usize;
+            let iseq_name = iseq_get_location(iseq, 0);
+            register_with_perf(iseq_name, start_usize, code_size);
+        }
+    }
+    result
 }
 
 /// Compile an instruction
