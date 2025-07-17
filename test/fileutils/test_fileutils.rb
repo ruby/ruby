@@ -1812,6 +1812,14 @@ class TestFileUtils < Test::Unit::TestCase
     assert_file_not_exist 'data/tmpdir'
   end if have_file_perm?
 
+  def test_remove_dir_with_file
+    File.write('data/tmpfile', 'dummy')
+    assert_raise(Errno::ENOTDIR) { remove_dir 'data/tmpfile' }
+    assert_file_exist 'data/tmpfile'
+  ensure
+    File.unlink('data/tmpfile') if File.exist?('data/tmpfile')
+  end
+
   def test_compare_file
     check_singleton :compare_file
     # FIXME

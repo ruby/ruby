@@ -1487,7 +1487,8 @@ module FileUtils
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
   def remove_dir(path, force = false)
-    remove_entry path, force   # FIXME?? check if it is a directory
+    raise Errno::ENOTDIR, path unless File.directory?(path)
+    remove_entry path, force
   end
   module_function :remove_dir
 
