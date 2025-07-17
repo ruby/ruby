@@ -163,7 +163,7 @@ fn register_with_perf(iseq_name: String, start_ptr: usize, code_size: usize) {
         debug!("Failed to open perf map file: {perf_map}");
         return;
     };
-    let Ok(_) = write!(file, "{:x} {:x} zjit::{}\n", start_ptr, code_size, iseq_name) else {
+    let Ok(_) = write!(file, "{:#x} {:#x} zjit::{}\n", start_ptr, code_size, iseq_name) else {
         debug!("Failed to write {iseq_name} to perf map file: {perf_map}");
         return;
     };
