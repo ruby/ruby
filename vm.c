@@ -1415,12 +1415,14 @@ rb_proc_isolate(VALUE self)
 }
 
 VALUE
-rb_proc_ractor_make_shareable(VALUE self)
+rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
 {
     const rb_iseq_t *iseq = vm_proc_iseq(self);
 
     if (iseq) {
         rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
+        RB_OBJ_WRITE(self, &proc->block.as.captured.self, replace_self);
+
         if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
 
         if (!rb_ractor_shareable_p(vm_block_self(&proc->block))) {
@@ -1441,6 +1443,8 @@ rb_proc_ractor_make_shareable(VALUE self)
     }
 
     rb_obj_freeze(self);
+    FL_SET_RAW(self, RUBY_FL_SHAREABLE);
+
     return self;
 }
 

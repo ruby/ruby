@@ -1349,13 +1349,7 @@ make_shareable_check_shareable(VALUE obj)
         return traverse_skip;
     }
     else if (!allow_frozen_shareable_p(obj)) {
-        if (rb_obj_is_proc(obj)) {
-            rb_proc_ractor_make_shareable(obj);
-            return traverse_cont;
-        }
-        else {
-            rb_raise(rb_eRactorError, "can not make shareable object for %+"PRIsVALUE, obj);
-        }
+        rb_raise(rb_eRactorError, "can not make shareable object for %+"PRIsVALUE, obj);
     }
 
     switch (TYPE(obj)) {
@@ -2248,6 +2242,23 @@ ractor_local_value_store_if_absent(rb_execution_context_t *ec, VALUE self, VALUE
     }
 
     return rb_mutex_synchronize(cr->local_storage_store_lock, ractor_local_value_store_i, (VALUE)&data);
+}
+
+// sharable_proc
+
+static VALUE
+ractor_shareable_proc(rb_execution_context_t *ec, VALUE replace_self, bool is_lambda)
+{
+    if (!rb_literal_block_given_p(ec->cfp, false)) {
+        rb_raise(rb_eArgError, "requires a literal block");
+    }
+    else if (!rb_ractor_shareable_p(replace_self)) {
+        rb_raise(rb_eRactorIsolationError, "self should be shareable: %" PRIsVALUE, replace_self);
+    }
+    else {
+        VALUE proc = is_lambda ? rb_block_lambda() : rb_block_proc();
+        return rb_proc_ractor_make_shareable(proc, replace_self);
+    }
 }
 
 // Ractor#require

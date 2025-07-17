@@ -1283,7 +1283,7 @@ typedef struct {
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_proc_isolate(VALUE self);
 VALUE rb_proc_isolate_bang(VALUE self);
-VALUE rb_proc_ractor_make_shareable(VALUE self);
+VALUE rb_proc_ractor_make_shareable(VALUE proc, VALUE replace_self);
 RUBY_SYMBOL_EXPORT_END
 
 typedef struct {
@@ -2246,6 +2246,8 @@ void rb_vm_postponed_job_atfork(void); /* vm_trace.c */
 void rb_vm_postponed_job_free(void); /* vm_trace.c */
 size_t rb_vm_memsize_postponed_job_queue(void); /* vm_trace.c */
 void rb_vm_postponed_job_queue_init(rb_vm_t *vm); /* vm_trace.c */
+
+bool rb_literal_block_given_p(rb_control_frame_t *cfp, bool allow_lambda); /* proc.c */
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

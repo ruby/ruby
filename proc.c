@@ -868,35 +868,45 @@ rb_block_lambda(void)
     return proc_new(rb_cProc, TRUE);
 }
 
-static void
-f_lambda_filter_non_literal(void)
+bool
+rb_literal_block_given_p(rb_control_frame_t *cfp, bool allow_lambda)
 {
-    rb_control_frame_t *cfp = GET_EC()->cfp;
     VALUE block_handler = rb_vm_frame_block_handler(cfp);
 
     if (block_handler == VM_BLOCK_HANDLER_NONE) {
-        // no block error raised else where
-        return;
+        return false;
     }
 
     switch (vm_block_handler_type(block_handler)) {
       case block_handler_type_iseq:
         if (RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)->ep == VM_BH_TO_ISEQ_BLOCK(block_handler)->ep) {
-            return;
+            return true;
         }
         break;
       case block_handler_type_symbol:
-        return;
+        return true;
       case block_handler_type_proc:
-        if (rb_proc_lambda_p(VM_BH_TO_PROC(block_handler))) {
-            return;
+        if (allow_lambda && rb_proc_lambda_p(VM_BH_TO_PROC(block_handler))) {
+            return true;
         }
         break;
       case block_handler_type_ifunc:
         break;
     }
 
-    rb_raise(rb_eArgError, "the lambda method requires a literal block");
+    return false;
+}
+
+static void
+f_lambda_filter_non_literal(void)
+{
+    rb_control_frame_t *cfp = GET_EC()->cfp;
+    if (!rb_block_given_p() || rb_literal_block_given_p(cfp, true)) {
+        return;
+    }
+    else {
+        rb_raise(rb_eArgError, "the lambda method requires a literal block");
+    }
 }
 
 /*
