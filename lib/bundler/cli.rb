@@ -220,7 +220,7 @@ module Bundler
     method_option "local", type: :boolean, banner: "Do not attempt to fetch gems remotely and use the gem cache instead"
     method_option "prefer-local", type: :boolean, banner: "Only attempt to fetch gems remotely if not present locally, even if newer versions are available remotely"
     method_option "no-cache", type: :boolean, banner: "Don't update the existing gem cache."
-    method_option "redownload", type: :boolean, aliases: "--force", banner: "Force downloading every gem."
+    method_option "force", type: :boolean, aliases: "--redownload", banner: "Force reinstalling every gem, even if already installed"
     method_option "no-prune", type: :boolean, banner: "Don't remove stale gems from the cache."
     method_option "path", type: :string, banner: "Specify a different path than the system default ($BUNDLE_PATH or $GEM_HOME).#{" Bundler will remember this value for future installs on this machine" unless Bundler.feature_flag.forget_cli_options?}"
     method_option "quiet", type: :boolean, banner: "Only output warnings and errors."
@@ -232,15 +232,13 @@ module Bundler
     method_option "without", type: :array, banner: "Exclude gems that are part of the specified named group."
     method_option "with", type: :array, banner: "Include gems that are part of the specified named group."
     def install
-      SharedHelpers.major_deprecation(2, "The `--force` option has been renamed to `--redownload`") if ARGV.include?("--force")
-
       %w[clean deployment frozen no-prune path shebang without with].each do |option|
         remembered_flag_deprecation(option)
       end
 
       print_remembered_flag_deprecation("--system", "path.system", "true") if ARGV.include?("--system")
 
-      remembered_negative_flag_deprecation("no-deployment")
+      remembered_flag_deprecation("deployment", negative: true)
 
       require_relative "cli/install"
       Bundler.settings.temporary(no_install: false) do
@@ -263,7 +261,7 @@ module Bundler
     method_option "local", type: :boolean, banner: "Do not attempt to fetch gems remotely and use the gem cache instead"
     method_option "quiet", type: :boolean, banner: "Only output warnings and errors."
     method_option "source", type: :array, banner: "Update a specific source (and all gems associated with it)"
-    method_option "redownload", type: :boolean, aliases: "--force", banner: "Force downloading every gem."
+    method_option "force", type: :boolean, aliases: "--redownload", banner: "Force reinstalling every gem, even if already installed"
     method_option "ruby", type: :boolean, banner: "Update ruby specified in Gemfile.lock"
     method_option "bundler", type: :string, lazy_default: "> 0.a", banner: "Update the locked version of bundler"
     method_option "patch", type: :boolean, banner: "Prefer updating only to next patch version"
@@ -274,7 +272,6 @@ module Bundler
     method_option "conservative", type: :boolean, banner: "Use bundle install conservative update behavior and do not allow shared dependencies to be updated."
     method_option "all", type: :boolean, banner: "Update everything."
     def update(*gems)
-      SharedHelpers.major_deprecation(2, "The `--force` option has been renamed to `--redownload`") if ARGV.include?("--force")
       require_relative "cli/update"
       Bundler.settings.temporary(no_install: false) do
         Update.new(options, gems).run
@@ -331,6 +328,8 @@ module Bundler
     method_option "all", type: :boolean, banner: "Install binstubs for all gems"
     method_option "all-platforms", type: :boolean, default: false, banner: "Install binstubs for all platforms"
     def binstubs(*gems)
+      remembered_flag_deprecation("path", option_name: "bin")
+
       require_relative "cli/binstubs"
       Binstubs.new(options, gems).run
     end
@@ -414,7 +413,7 @@ module Bundler
     def cache
       print_remembered_flag_deprecation("--all", "cache_all", "true") if ARGV.include?("--all")
 
-      if ARGV.include?("--path")
+      if flag_passed?("--path")
         message =
           "The `--path` flag is deprecated because its semantics are unclear. " \
           "Use `bundle config cache_path` to configure the path of your cache of gems, " \
@@ -743,30 +742,17 @@ module Bundler
       nil
     end
 
-    def remembered_negative_flag_deprecation(name)
-      positive_name = name.gsub(/\Ano-/, "")
-      option = current_command.options[positive_name]
-      flag_name = "--no-" + option.switch_name.gsub(/\A--/, "")
-
-      flag_deprecation(positive_name, flag_name, option)
-    end
-
-    def remembered_flag_deprecation(name)
+    def remembered_flag_deprecation(name, negative: false, option_name: nil)
       option = current_command.options[name]
       flag_name = option.switch_name
-
-      flag_deprecation(name, flag_name, option)
-    end
-
-    def flag_deprecation(name, flag_name, option)
-      name_index = ARGV.find {|arg| flag_name == arg.split("=")[0] }
-      return unless name_index
+      flag_name = "--no-" + flag_name.gsub(/\A--/, "") if negative
+      return unless flag_passed?(flag_name)
 
       value = options[name]
       value = value.join(" ").to_s if option.type == :array
       value = "'#{value}'" unless option.type == :boolean
 
-      print_remembered_flag_deprecation(flag_name, name.tr("-", "_"), value)
+      print_remembered_flag_deprecation(flag_name, option_name || name.tr("-", "_"), value)
     end
 
     def print_remembered_flag_deprecation(flag_name, option_name, option_value)
@@ -781,6 +767,10 @@ module Bundler
         "do. Instead please use `bundle config set #{option_name} " \
         "#{option_value}`, and stop using this flag"
       Bundler::SharedHelpers.major_deprecation 2, message, removed_message: removed_message
+    end
+
+    def flag_passed?(name)
+      ARGV.any? {|arg| name == arg.split("=")[0] }
     end
   end
 end
