@@ -362,6 +362,10 @@ describe :kernel_sprintf, shared: true do
         obj.should_receive(:inspect).and_return("<inspect-result>")
         @method.call("%p", obj).should == "<inspect-result>"
       end
+
+      it "substitutes 'nil' for nil" do
+        @method.call("%p", nil).should == "nil"
+      end
     end
 
     describe "s" do

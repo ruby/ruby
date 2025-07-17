@@ -520,6 +520,7 @@ make_counters! {
     opt_aset_not_hash,
 
     opt_aref_with_qundef,
+    opt_aset_with_qundef,
 
     opt_case_dispatch_megamorphic,
 

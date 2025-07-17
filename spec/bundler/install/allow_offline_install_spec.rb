@@ -43,7 +43,7 @@ RSpec.describe "bundle install with :allow_offline_install" do
       G
 
       bundle :update, artifice: "fail", all: true
-      expect(last_command.stdboth).to include "Using the cached data for the new index because of a network error"
+      expect(stdboth).to include "Using the cached data for the new index because of a network error"
 
       expect(the_bundle).to include_gems("myrack-obama 1.0", "myrack 1.0.0")
     end

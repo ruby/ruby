@@ -30,11 +30,12 @@ socks_init(VALUE sock, VALUE host, VALUE port)
     static int init = 0;
 
     if (init == 0) {
-        SOCKSinit("ruby");
+        char progname[] = "ruby";
+        SOCKSinit(progname);
         init = 1;
     }
 
-    return rsock_init_inetsock(sock, host, port, Qnil, Qnil, INET_SOCKS, Qnil, Qnil, Qfalse, Qnil);
+    return rsock_init_inetsock(sock, host, port, Qnil, Qnil, INET_SOCKS, Qnil, Qnil, Qnil, Qfalse, Qnil);
 }
 
 #ifdef SOCKS5

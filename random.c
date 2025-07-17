@@ -438,23 +438,17 @@ random_init(int argc, VALUE *argv, VALUE obj)
 # define USE_DEV_URANDOM 0
 #endif
 
-#ifdef HAVE_GETENTROPY
-# define MAX_SEED_LEN_PER_READ 256
-static int
-fill_random_bytes_urandom(void *seed, size_t size)
-{
-     unsigned char *p = (unsigned char *)seed;
-     while (size) {
-        size_t len = size < MAX_SEED_LEN_PER_READ ? size : MAX_SEED_LEN_PER_READ;
-        if (getentropy(p, len) != 0) {
-            return -1;
-        }
-        p += len;
-        size -= len;
-     }
-     return 0;
-}
-#elif USE_DEV_URANDOM
+#if ! defined HAVE_GETRANDOM && defined __linux__ && defined __NR_getrandom
+# ifndef GRND_NONBLOCK
+#   define GRND_NONBLOCK 0x0001	/* not defined in musl libc */
+# endif
+# define getrandom(ptr, size, flags) \
+    (ssize_t)syscall(__NR_getrandom, (ptr), (size), (flags))
+# define HAVE_GETRANDOM 1
+#endif
+
+/* fill random bytes by reading random device directly */
+#if USE_DEV_URANDOM
 static int
 fill_random_bytes_urandom(void *seed, size_t size)
 {
@@ -494,15 +488,7 @@ fill_random_bytes_urandom(void *seed, size_t size)
 # define fill_random_bytes_urandom(seed, size) -1
 #endif
 
-#if ! defined HAVE_GETRANDOM && defined __linux__ && defined __NR_getrandom
-# ifndef GRND_NONBLOCK
-#   define GRND_NONBLOCK 0x0001	/* not defined in musl libc */
-# endif
-# define getrandom(ptr, size, flags) \
-    (ssize_t)syscall(__NR_getrandom, (ptr), (size), (flags))
-# define HAVE_GETRANDOM 1
-#endif
-
+/* fill random bytes by library */
 #if 0
 #elif defined MAC_OS_X_VERSION_10_7 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
 
@@ -520,7 +506,7 @@ fill_random_bytes_urandom(void *seed, size_t size)
 # endif
 
 static int
-fill_random_bytes_syscall(void *seed, size_t size, int unused)
+fill_random_bytes_lib(void *seed, size_t size)
 {
 #if USE_COMMON_RANDOM
     CCRNGStatus status = CCRandomGenerateBytes(seed, size);
@@ -547,18 +533,16 @@ fill_random_bytes_syscall(void *seed, size_t size, int unused)
     }
     return 0;
 }
-#elif defined(HAVE_ARC4RANDOM_BUF)
+#elif defined(HAVE_ARC4RANDOM_BUF) && \
+    ((defined(__OpenBSD__) && OpenBSD >= 201411) || \
+     (defined(__NetBSD__)  && __NetBSD_Version__ >= 700000000) || \
+     (defined(__FreeBSD__) && __FreeBSD_version >= 1200079))
+// [Bug #15039] arc4random_buf(3) should used only if we know it is fork-safe
 static int
-fill_random_bytes_syscall(void *buf, size_t size, int unused)
+fill_random_bytes_lib(void *buf, size_t size)
 {
-#if (defined(__OpenBSD__) && OpenBSD >= 201411) || \
-    (defined(__NetBSD__)  && __NetBSD_Version__ >= 700000000) || \
-    (defined(__FreeBSD__) && __FreeBSD_version >= 1200079)
     arc4random_buf(buf, size);
     return 0;
-#else
-    return -1;
-#endif
 }
 #elif defined(_WIN32)
 
@@ -638,11 +622,17 @@ fill_random_bytes_bcrypt(void *seed, size_t size)
 }
 
 static int
-fill_random_bytes_syscall(void *seed, size_t size, int unused)
+fill_random_bytes_lib(void *seed, size_t size)
 {
     if (fill_random_bytes_bcrypt(seed, size) == 0) return 0;
     return fill_random_bytes_crypt(seed, size);
 }
+#else
+# define fill_random_bytes_lib(seed, size) -1
+#endif
+
+/* fill random bytes by dedicated syscall */
+#if 0
 #elif defined HAVE_GETRANDOM
 static int
 fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
@@ -666,6 +656,31 @@ fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
     }
     return -1;
 }
+#elif defined(HAVE_GETENTROPY)
+/*
+ * The Open Group Base Specifications Issue 8 - IEEE Std 1003.1-2024
+ * https://pubs.opengroup.org/onlinepubs/9799919799/functions/getentropy.html
+ *
+ * NOTE: `getentropy`(3) on Linux is implemented using `getrandom`(2),
+ * prefer the latter over this if both are defined.
+ */
+#ifndef GETENTROPY_MAX
+# define GETENTROPY_MAX 256
+#endif
+static int
+fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
+{
+    unsigned char *p = (unsigned char *)seed;
+    while (size) {
+        size_t len = size < GETENTROPY_MAX ? size : GETENTROPY_MAX;
+        if (getentropy(p, len) != 0) {
+            return -1;
+        }
+        p += len;
+        size -= len;
+    }
+    return 0;
+}
 #else
 # define fill_random_bytes_syscall(seed, size, need_secure) -1
 #endif
@@ -675,6 +690,7 @@ ruby_fill_random_bytes(void *seed, size_t size, int need_secure)
 {
     int ret = fill_random_bytes_syscall(seed, size, need_secure);
     if (ret == 0) return ret;
+    if (fill_random_bytes_lib(seed, size) == 0) return 0;
     return fill_random_bytes_urandom(seed, size);
 }
 

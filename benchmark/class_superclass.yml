@@ -1,0 +1,23 @@
+prelude: |
+  class SimpleClass; end
+  class OneModuleClass
+    1.times { include Module.new }
+  end
+  class MediumClass
+    10.times { include Module.new }
+  end
+  class LargeClass
+    100.times { include Module.new }
+  end
+benchmark:
+  object_class_superclass: |
+    Object.superclass
+  simple_class_superclass: |
+    SimpleClass.superclass
+  one_module_class: |
+    OneModuleClass.superclass
+  medium_class_superclass: |
+    MediumClass.superclass
+  large_class_superclass: |
+    LargeClass.superclass
+loop_count: 20000000

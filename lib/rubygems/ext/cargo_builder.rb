@@ -158,6 +158,10 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
   # mkmf work properly.
   def linker_args
     cc_flag = self.class.shellsplit(makefile_config("CC"))
+    # Avoid to ccache like tool from Rust build
+    # see https://github.com/rubygems/rubygems/pull/8521#issuecomment-2689854359
+    # ex. CC="ccache gcc" or CC="sccache clang --any --args"
+    cc_flag.shift if cc_flag.size >= 2 && !cc_flag[1].start_with?("-")
     linker = cc_flag.shift
     link_args = cc_flag.flat_map {|a| ["-C", "link-arg=#{a}"] }
 

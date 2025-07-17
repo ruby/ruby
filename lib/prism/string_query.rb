@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 module Prism
   # Query methods that allow categorizing strings based on their context for

@@ -26,7 +26,7 @@ RSpec.describe "bundle install with git sources" do
       expect(out).to eq("WIN")
     end
 
-    it "caches the git repo", bundler: "< 3" do
+    it "caches the git repo" do
       expect(Dir["#{default_bundle_path}/cache/bundler/git/foo-1.0-*"]).to have_attributes size: 1
     end
 
@@ -1151,6 +1151,30 @@ RSpec.describe "bundle install with git sources" do
 
       expect(the_bundle).to include_gem "rails 7.1.4", "activesupport 7.1.4"
     end
+
+    it "doesn't explode when adding an explicit ref to a git gem with dependencies" do
+      lib_root = lib_path("rails")
+
+      build_lib "activesupport", "7.1.4", path: lib_root.join("activesupport")
+      build_git "rails", "7.1.4", path: lib_root do |s|
+        s.add_dependency "activesupport", "= 7.1.4"
+      end
+
+      old_revision = revision_for(lib_root)
+      update_git "rails", "7.1.4", path: lib_root
+
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "rails", "7.1.4", :git => "#{lib_root}"
+      G
+
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "rails", :git => "#{lib_root}", :ref => "#{old_revision}"
+      G
+
+      expect(the_bundle).to include_gem "rails 7.1.4", "activesupport 7.1.4"
+    end
   end
 
   describe "bundle install after the remote has been updated" do
@@ -1649,7 +1673,7 @@ In Gemfile:
           end
         G
 
-        expect(last_command.stdboth).to_not include("password1")
+        expect(stdboth).to_not include("password1")
         expect(out).to include("Fetching https://user1@github.com/company/private-repo")
       end
     end
@@ -1665,7 +1689,7 @@ In Gemfile:
           end
         G
 
-        expect(last_command.stdboth).to_not include("oauth_token")
+        expect(stdboth).to_not include("oauth_token")
         expect(out).to include("Fetching https://x-oauth-basic@github.com/company/private-repo")
       end
     end

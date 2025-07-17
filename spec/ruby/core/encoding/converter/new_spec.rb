@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../../../spec_helper'
 
 describe "Encoding::Converter.new" do

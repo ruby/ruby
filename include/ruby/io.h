@@ -66,6 +66,21 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 struct stat;
 struct timeval;
 
+#if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC)
+# define RUBY_USE_STATX 0
+#elif defined(HAVE_STRUCT_STATX_STX_BTIME)
+# define RUBY_USE_STATX 1
+struct statx;
+#else
+# define RUBY_USE_STATX 0
+#endif
+
+#if RUBY_USE_STATX
+typedef struct statx rb_io_stat_data;
+#else
+typedef struct stat rb_io_stat_data;
+#endif
+
 /**
  * Indicates that a timeout has occurred while performing an IO operation.
  */
@@ -1097,6 +1112,18 @@ int rb_io_read_pending(rb_io_t *fptr);
  * @return     Allocated new instance of ::rb_cStat.
  */
 VALUE rb_stat_new(const struct stat *st);
+
+#if RUBY_USE_STATX
+/**
+ * Constructs an instance of ::rb_cStat from the passed information.
+ *
+ * @param[in]  st  A stat.
+ * @return     Allocated new instance of ::rb_cStat.
+ */
+VALUE rb_statx_new(const rb_io_stat_data *st);
+#else
+# define rb_statx_new rb_stat_new
+#endif
 
 /* gc.c */
 

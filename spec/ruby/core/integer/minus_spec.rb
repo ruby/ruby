@@ -40,4 +40,21 @@ describe "Integer#-" do
       -> { @bignum - :symbol }.should raise_error(TypeError)
     end
   end
+
+  it "coerces the RHS and calls #coerce" do
+    obj = mock("integer plus")
+    obj.should_receive(:coerce).with(5).and_return([5, 10])
+    (5 - obj).should == -5
+  end
+
+  it "coerces the RHS and calls #coerce even if it's private" do
+    obj = Object.new
+    class << obj
+      private def coerce(n)
+        [n, 10]
+      end
+    end
+
+    (5 - obj).should == -5
+  end
 end

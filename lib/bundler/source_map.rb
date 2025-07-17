@@ -23,7 +23,7 @@ module Bundler
           if previous_source.nil?
             requirements[indirect_dependency_name] = source
           else
-            no_ambiguous_sources = Bundler.feature_flag.bundler_3_mode?
+            no_ambiguous_sources = Bundler.feature_flag.bundler_4_mode?
 
             msg = ["The gem '#{indirect_dependency_name}' was found in multiple relevant sources."]
             msg.concat [previous_source, source].map {|s| "  * #{s}" }.sort

@@ -1,0 +1,10 @@
+exclude(:test_verbose, 'Test crashes with ZJIT')
+exclude(:test_segv_setproctitle, 'Test crashes with ZJIT')
+exclude(:test_crash_report, 'Test crashes with ZJIT')
+exclude(:test_segv_loaded_features, 'Test crashes with ZJIT')
+exclude(:test_crash_report_executable_path, 'Test crashes with ZJIT')
+exclude(:test_segv_test, 'Test crashes with ZJIT')
+exclude(:test_crash_report_script, 'Test crashes with ZJIT')
+exclude(:test_crash_report_script_path, 'Test crashes with ZJIT')
+
+exclude(:test_version, 'Test fails with ZJIT')

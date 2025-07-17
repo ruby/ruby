@@ -7,7 +7,7 @@ unless RUBY_ENGINE == 'ruby'
   return
 end
 
-have_func("rb_io_descriptor")
+have_func("rb_io_descriptor", "ruby/io.h")
 
 hdr = %w"fcntl.h"
 if have_macro("O_NONBLOCK", hdr) and

@@ -1,10 +1,7 @@
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
-use core::ffi::c_void;
-use std::collections::HashMap;
-
-use crate::{cruby::*, hir_type::{types::{Empty, Fixnum}, Type}, virtualmem::CodePtr};
+use crate::{cruby::*, gc::get_or_create_iseq_payload, hir_type::{types::{Empty}, Type}, options::get_option};
 
 /// Ephemeral state for profiling runtime information
 struct Profiler {
@@ -41,112 +38,104 @@ impl Profiler {
 
 /// API called from zjit_* instruction. opcode is the bare (non-zjit_*) instruction.
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_profile_insn(opcode: ruby_vminsn_type, ec: EcPtr) {
+pub extern "C" fn rb_zjit_profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
     with_vm_lock(src_loc!(), || {
         let mut profiler = Profiler::new(ec);
-        profile_insn(&mut profiler, opcode);
+        profile_insn(&mut profiler, bare_opcode);
     });
 }
 
 /// Profile a YARV instruction
-fn profile_insn(profiler: &mut Profiler, opcode: ruby_vminsn_type) {
-    match opcode {
-        YARVINSN_opt_plus  => profile_operands(profiler, 2),
-        YARVINSN_opt_minus => profile_operands(profiler, 2),
-        YARVINSN_opt_mult  => profile_operands(profiler, 2),
-        YARVINSN_opt_div   => profile_operands(profiler, 2),
-        YARVINSN_opt_mod   => profile_operands(profiler, 2),
-        YARVINSN_opt_eq    => profile_operands(profiler, 2),
-        YARVINSN_opt_neq   => profile_operands(profiler, 2),
-        YARVINSN_opt_lt    => profile_operands(profiler, 2),
-        YARVINSN_opt_le    => profile_operands(profiler, 2),
-        YARVINSN_opt_gt    => profile_operands(profiler, 2),
-        YARVINSN_opt_ge    => profile_operands(profiler, 2),
+fn profile_insn(profiler: &mut Profiler, bare_opcode: ruby_vminsn_type) {
+    let profile = &mut get_or_create_iseq_payload(profiler.iseq).profile;
+    match bare_opcode {
+        YARVINSN_opt_nil_p => profile_operands(profiler, profile, 1),
+        YARVINSN_opt_plus  => profile_operands(profiler, profile, 2),
+        YARVINSN_opt_minus => profile_operands(profiler, profile, 2),
+        YARVINSN_opt_mult  => profile_operands(profiler, profile, 2),
+        YARVINSN_opt_div   => profile_operands(profiler, profile, 2),
+        YARVINSN_opt_mod   => profile_operands(profiler, profile, 2),
+        YARVINSN_opt_eq    => profile_operands(profiler, profile, 2),
+        YARVINSN_opt_neq   => profile_operands(profiler, profile, 2),
+        YARVINSN_opt_lt    => profile_operands(profiler, profile, 2),
+        YARVINSN_opt_le    => profile_operands(profiler, profile, 2),
+        YARVINSN_opt_gt    => profile_operands(profiler, profile, 2),
+        YARVINSN_opt_ge    => profile_operands(profiler, profile, 2),
+        YARVINSN_opt_and   => profile_operands(profiler, profile, 2),
+        YARVINSN_opt_or    => profile_operands(profiler, profile, 2),
         YARVINSN_opt_send_without_block => {
             let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
             let argc = unsafe { vm_ci_argc((*cd).ci) };
             // Profile all the arguments and self (+1).
-            profile_operands(profiler, (argc + 1) as usize);
+            profile_operands(profiler, profile, (argc + 1) as usize);
         }
         _ => {}
+    }
+
+    // Once we profile the instruction num_profiles times, we stop profiling it.
+    profile.num_profiles[profiler.insn_idx] = profile.num_profiles[profiler.insn_idx].saturating_add(1);
+    if profile.num_profiles[profiler.insn_idx] == get_option!(num_profiles) {
+        unsafe { rb_zjit_iseq_insn_set(profiler.iseq, profiler.insn_idx as u32, bare_opcode); }
     }
 }
 
 /// Profile the Type of top-`n` stack operands
-fn profile_operands(profiler: &mut Profiler, n: usize) {
-    let payload = get_or_create_iseq_payload(profiler.iseq);
-    let mut types = if let Some(types) = payload.opnd_types.get(&profiler.insn_idx) {
-        types.clone()
-    } else {
-        vec![Empty; n]
-    };
-
+fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize) {
+    let types = &mut profile.opnd_types[profiler.insn_idx];
+    if types.len() <= n {
+        types.resize(n, Empty);
+    }
     for i in 0..n {
         let opnd_type = Type::from_value(profiler.peek_at_stack((n - i - 1) as isize));
         types[i] = types[i].union(opnd_type);
     }
-
-    payload.opnd_types.insert(profiler.insn_idx, types);
+    // In the loop above, we probably added a new reference to the profile through
+    // the VALUE in Type. It's messy and relatively slow to conditionally run a
+    // write barrier for each Type, so just remember to re-mark the iseq.
+    unsafe { rb_gc_writebarrier_remember(profiler.iseq.into()) };
 }
 
-/// This is all the data ZJIT stores on an iseq. This will be dynamically allocated by C code
-/// C code should pass an &mut IseqPayload to us when calling into ZJIT.
-#[derive(Default, Debug)]
-pub struct IseqPayload {
+#[derive(Debug)]
+pub struct IseqProfile {
     /// Type information of YARV instruction operands, indexed by the instruction index
-    opnd_types: HashMap<usize, Vec<Type>>,
+    opnd_types: Vec<Vec<Type>>,
 
-    /// JIT code address of the first block
-    pub start_ptr: Option<CodePtr>,
+    /// Number of profiled executions for each YARV instruction, indexed by the instruction index
+    num_profiles: Vec<u8>,
 }
 
-impl IseqPayload {
+impl IseqProfile {
+    pub fn new(iseq_size: u32) -> Self {
+        Self {
+            opnd_types: vec![vec![]; iseq_size as usize],
+            num_profiles: vec![0; iseq_size as usize],
+        }
+    }
+
     /// Get profiled operand types for a given instruction index
     pub fn get_operand_types(&self, insn_idx: usize) -> Option<&[Type]> {
-        self.opnd_types.get(&insn_idx).map(|types| types.as_slice())
+        self.opnd_types.get(insn_idx).map(|v| &**v)
     }
 
-    /// Return true if top-two stack operands are Fixnums
-    pub fn have_two_fixnums(&self, insn_idx: usize) -> bool {
-        match self.get_operand_types(insn_idx) {
-            Some([left, right]) => left.is_subtype(Fixnum) && right.is_subtype(Fixnum),
-            _ => false,
+    /// Run a given callback with every object in IseqProfile
+    pub fn each_object(&self, callback: impl Fn(VALUE)) {
+        for types in &self.opnd_types {
+            for opnd_type in types {
+                if let Some(object) = opnd_type.gc_object() {
+                    callback(object);
+                }
+            }
         }
     }
-}
 
-/// Get the payload for an iseq. For safety it's up to the caller to ensure the returned `&mut`
-/// upholds aliasing rules and that the argument is a valid iseq.
-pub fn get_iseq_payload(iseq: IseqPtr) -> Option<&'static mut IseqPayload> {
-    let payload = unsafe { rb_iseq_get_zjit_payload(iseq) };
-    let payload: *mut IseqPayload = payload.cast();
-    unsafe { payload.as_mut() }
-}
-
-/// Get the payload object associated with an iseq. Create one if none exists.
-pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
-    type VoidPtr = *mut c_void;
-
-    let payload_non_null = unsafe {
-        let payload = rb_iseq_get_zjit_payload(iseq);
-        if payload.is_null() {
-            // Allocate a new payload with Box and transfer ownership to the GC.
-            // We drop the payload with Box::from_raw when the GC frees the iseq and calls us.
-            // NOTE(alan): Sometimes we read from an iseq without ever writing to it.
-            // We allocate in those cases anyways.
-            let new_payload = IseqPayload::default();
-            let new_payload = Box::into_raw(Box::new(new_payload));
-            rb_iseq_set_zjit_payload(iseq, new_payload as VoidPtr);
-
-            new_payload
-        } else {
-            payload as *mut IseqPayload
+    /// Run a given callback with a mutable reference to every object in IseqProfile
+    pub fn each_object_mut(&mut self, callback: impl Fn(&mut VALUE)) {
+        for types in self.opnd_types.iter_mut() {
+            for opnd_type in types.iter_mut() {
+                if let Some(object) = opnd_type.gc_object_mut() {
+                    callback(object);
+                }
+            }
         }
-    };
-
-    // SAFETY: we should have the VM lock and all other Ruby threads should be asleep. So we have
-    // exclusive mutable access.
-    // Hmm, nothing seems to stop calling this on the same
-    // iseq twice, though, which violates aliasing rules.
-    unsafe { payload_non_null.as_mut() }.unwrap()
+    }
 }

@@ -126,9 +126,9 @@ module URI
           end
         end
       else
-        component = self.class.component rescue ::URI::Generic::COMPONENT
+        component = self.component rescue ::URI::Generic::COMPONENT
         raise ArgumentError,
-        "expected Array of or Hash of components of #{self.class} (#{component.join(', ')})"
+              "expected Array of or Hash of components of #{self} (#{component.join(', ')})"
       end
 
       tmp << nil
@@ -284,7 +284,7 @@ module URI
 
     # Returns the parser to be used.
     #
-    # Unless a URI::Parser is defined, DEFAULT_PARSER is used.
+    # Unless the +parser+ is defined, DEFAULT_PARSER is used.
     #
     def parser
       if !defined?(@parser) || !@parser
@@ -315,7 +315,7 @@ module URI
     end
 
     #
-    # Checks the scheme +v+ component against the URI::Parser Regexp for :SCHEME.
+    # Checks the scheme +v+ component against the +parser+ Regexp for :SCHEME.
     #
     def check_scheme(v)
       if v && parser.regexp[:SCHEME] !~ v
@@ -385,7 +385,7 @@ module URI
 
     #
     # Checks the user +v+ component for RFC2396 compliance
-    # and against the URI::Parser Regexp for :USERINFO.
+    # and against the +parser+ Regexp for :USERINFO.
     #
     # Can not have a registry or opaque component defined,
     # with a user component defined.
@@ -409,7 +409,7 @@ module URI
 
     #
     # Checks the password +v+ component for RFC2396 compliance
-    # and against the URI::Parser Regexp for :USERINFO.
+    # and against the +parser+ Regexp for :USERINFO.
     #
     # Can not have a registry or opaque component defined,
     # with a user component defined.
@@ -586,7 +586,7 @@ module URI
 
     #
     # Checks the host +v+ component for RFC2396 compliance
-    # and against the URI::Parser Regexp for :HOST.
+    # and against the +parser+ Regexp for :HOST.
     #
     # Can not have a registry or opaque component defined,
     # with a host component defined.
@@ -675,7 +675,7 @@ module URI
 
     #
     # Checks the port +v+ component for RFC2396 compliance
-    # and against the URI::Parser Regexp for :PORT.
+    # and against the +parser+ Regexp for :PORT.
     #
     # Can not have a registry or opaque component defined,
     # with a port component defined.
@@ -748,7 +748,7 @@ module URI
 
     #
     # Checks the path +v+ component for RFC2396 compliance
-    # and against the URI::Parser Regexp
+    # and against the +parser+ Regexp
     # for :ABS_PATH and :REL_PATH.
     #
     # Can not have a opaque component defined,
@@ -853,7 +853,7 @@ module URI
 
     #
     # Checks the opaque +v+ component for RFC2396 compliance and
-    # against the URI::Parser Regexp for :OPAQUE.
+    # against the +parser+ Regexp for :OPAQUE.
     #
     # Can not have a host, port, user, or path component defined,
     # with an opaque component defined.
@@ -905,7 +905,7 @@ module URI
     end
 
     #
-    # Checks the fragment +v+ component against the URI::Parser Regexp for :FRAGMENT.
+    # Checks the fragment +v+ component against the +parser+ Regexp for :FRAGMENT.
     #
     #
     # == Args

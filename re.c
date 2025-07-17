@@ -28,6 +28,7 @@
 #include "ruby/encoding.h"
 #include "ruby/re.h"
 #include "ruby/util.h"
+#include "ractor_core.h"
 
 VALUE rb_eRegexpError, rb_eRegexpTimeoutError;
 
@@ -1666,7 +1667,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     RSTRING_GETMEM(unescaped, ptr, len);
 
     /* If there are no other users of this regex, then we can directly overwrite it. */
-    if (RREGEXP(re)->usecnt == 0) {
+    if (ruby_single_main_ractor && RREGEXP(re)->usecnt == 0) {
         regex_t tmp_reg;
         r = onig_new_without_alloc(&tmp_reg, (UChar *)ptr, (UChar *)(ptr + len),
                                    reg->options, enc,
@@ -3499,12 +3500,17 @@ static VALUE reg_cache;
 VALUE
 rb_reg_regcomp(VALUE str)
 {
-    if (reg_cache && RREGEXP_SRC_LEN(reg_cache) == RSTRING_LEN(str)
-        && ENCODING_GET(reg_cache) == ENCODING_GET(str)
-        && memcmp(RREGEXP_SRC_PTR(reg_cache), RSTRING_PTR(str), RSTRING_LEN(str)) == 0)
-        return reg_cache;
+    if (rb_ractor_main_p()) {
+        if (reg_cache && RREGEXP_SRC_LEN(reg_cache) == RSTRING_LEN(str)
+            && ENCODING_GET(reg_cache) == ENCODING_GET(str)
+            && memcmp(RREGEXP_SRC_PTR(reg_cache), RSTRING_PTR(str), RSTRING_LEN(str)) == 0)
+            return reg_cache;
 
-    return reg_cache = rb_reg_new_str(str, 0);
+        return reg_cache = rb_reg_new_str(str, 0);
+    }
+    else {
+        return rb_reg_new_str(str, 0);
+    }
 }
 
 static st_index_t reg_hash(VALUE re);

@@ -4,8 +4,6 @@ require_relative "lockfile_parser"
 
 module Bundler
   class Definition
-    include GemHelpers
-
     class << self
       # Do not create or modify a lockfile (Makes #lock a noop)
       attr_accessor :no_lock
@@ -62,6 +60,7 @@ module Bundler
 
       if unlock == true
         @unlocking_all = true
+        strict = false
         @unlocking_bundler = false
         @unlocking = unlock
         @sources_to_unlock = []
@@ -70,6 +69,7 @@ module Bundler
         conservative = false
       else
         @unlocking_all = false
+        strict = unlock.delete(:strict)
         @unlocking_bundler = unlock.delete(:bundler)
         @unlocking = unlock.any? {|_k, v| !Array(v).empty? }
         @sources_to_unlock = unlock.delete(:sources) || []
@@ -99,7 +99,7 @@ module Bundler
 
       if lockfile_exists?
         @lockfile_contents = Bundler.read_file(lockfile)
-        @locked_gems = LockfileParser.new(@lockfile_contents)
+        @locked_gems = LockfileParser.new(@lockfile_contents, strict: strict)
         @locked_platforms = @locked_gems.platforms
         @most_specific_locked_platform = @locked_gems.most_specific_locked_platform
         @platforms = @locked_platforms.dup
@@ -282,7 +282,7 @@ module Bundler
     end
 
     def filter_relevant(dependencies)
-      platforms_array = [generic_local_platform].freeze
+      platforms_array = [Bundler.generic_local_platform].freeze
       dependencies.select do |d|
         d.should_include? && !d.gem_platforms(platforms_array).empty?
       end
@@ -456,8 +456,8 @@ module Bundler
       return if current_platform_locked? || @platforms.include?(Gem::Platform::RUBY)
 
       raise ProductionError, "Your bundle only supports platforms #{@platforms.map(&:to_s)} " \
-        "but your local platform is #{local_platform}. " \
-        "Add the current platform to the lockfile with\n`bundle lock --add-platform #{local_platform}` and try again."
+        "but your local platform is #{Bundler.local_platform}. " \
+        "Add the current platform to the lockfile with\n`bundle lock --add-platform #{Bundler.local_platform}` and try again."
     end
 
     def normalize_platforms
@@ -568,7 +568,7 @@ module Bundler
     end
 
     def should_add_extra_platforms?
-      !lockfile_exists? && generic_local_platform_is_ruby? && !Bundler.settings[:force_ruby_platform]
+      !lockfile_exists? && Bundler::MatchPlatform.generic_local_platform_is_ruby? && !Bundler.settings[:force_ruby_platform]
     end
 
     def lockfile_exists?
@@ -632,7 +632,7 @@ module Bundler
       @resolution_base ||= begin
         last_resolve = converge_locked_specs
         remove_invalid_platforms!
-        new_resolution_platforms = @current_platform_missing ? @new_platforms + [local_platform] : @new_platforms
+        new_resolution_platforms = @current_platform_missing ? @new_platforms + [Bundler.local_platform] : @new_platforms
         base = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @unlocking_all || @gems_to_unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: new_resolution_platforms)
         base = additional_base_requirements_to_prevent_downgrades(base)
         base = additional_base_requirements_to_force_updates(base)
@@ -738,8 +738,8 @@ module Bundler
     end
 
     def start_resolution
-      local_platform_needed_for_resolvability = @most_specific_non_local_locked_platform && !@platforms.include?(local_platform)
-      @platforms << local_platform if local_platform_needed_for_resolvability
+      local_platform_needed_for_resolvability = @most_specific_non_local_locked_platform && !@platforms.include?(Bundler.local_platform)
+      @platforms << Bundler.local_platform if local_platform_needed_for_resolvability
       add_platform(Gem::Platform::RUBY) if RUBY_ENGINE == "truffleruby"
 
       result = SpecSet.new(resolver.start)
@@ -758,7 +758,7 @@ module Bundler
         if result.incomplete_for_platform?(current_dependencies, @most_specific_non_local_locked_platform)
           @platforms.delete(@most_specific_non_local_locked_platform)
         elsif local_platform_needed_for_resolvability
-          @platforms.delete(local_platform)
+          @platforms.delete(Bundler.local_platform)
         end
       end
 
@@ -777,17 +777,17 @@ module Bundler
 
     def current_platform_locked?
       @platforms.any? do |bundle_platform|
-        generic_local_platform == bundle_platform || local_platform === bundle_platform
+        Bundler.generic_local_platform == bundle_platform || Bundler.local_platform === bundle_platform
       end
     end
 
     def add_current_platform
-      return if @platforms.include?(local_platform)
+      return if @platforms.include?(Bundler.local_platform)
 
       @most_specific_non_local_locked_platform = find_most_specific_locked_platform
       return if @most_specific_non_local_locked_platform
 
-      @platforms << local_platform
+      @platforms << Bundler.local_platform
       true
     end
 
@@ -1037,16 +1037,15 @@ module Bundler
         lockfile_source = s.source
 
         if dep
-          gemfile_source = dep.source || default_source
+          replacement_source = dep.source
 
-          deps << dep if !dep.source || lockfile_source.include?(dep.source) || new_deps.include?(dep)
-
-          # Replace the locked dependency's source with the equivalent source from the Gemfile
-          s.source = gemfile_source
+          deps << dep if !replacement_source || lockfile_source.include?(replacement_source) || new_deps.include?(dep)
         else
-          # Replace the locked dependency's source with the default source, if the locked source is no longer in the Gemfile
-          s.source = default_source unless sources.get(lockfile_source)
+          replacement_source = sources.get(lockfile_source)
         end
+
+        # Replace the locked dependency's source with the equivalent source from the Gemfile
+        s.source = replacement_source || default_source
 
         source = s.source
         next if @sources_to_unlock.include?(source.name)
@@ -1168,7 +1167,7 @@ module Bundler
     def remove_invalid_platforms!
       return if Bundler.frozen_bundle?
 
-      skips = (@new_platforms + [local_platform]).uniq
+      skips = (@new_platforms + [Bundler.local_platform]).uniq
 
       # We should probably avoid removing non-ruby platforms, since that means
       # lockfile will no longer install on those platforms, so a error to give

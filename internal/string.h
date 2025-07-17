@@ -30,6 +30,7 @@ enum ruby_rstring_private_flags {
 #endif
 
 /* string.c */
+VALUE rb_str_dup_m(VALUE str);
 VALUE rb_fstring(VALUE);
 VALUE rb_fstring_cstr(const char *str);
 VALUE rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc);

@@ -89,6 +89,10 @@ erb_escape_html(VALUE self, VALUE str)
 void
 Init_escape(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
     rb_cERB = rb_define_class("ERB", rb_cObject);
     rb_mEscape = rb_define_module_under(rb_cERB, "Escape");
     rb_define_module_function(rb_mEscape, "html_escape", erb_escape_html, 1);

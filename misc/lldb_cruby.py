@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #coding: utf-8
 #
 # Usage: run `command script import -r misc/lldb_cruby.py` on LLDB

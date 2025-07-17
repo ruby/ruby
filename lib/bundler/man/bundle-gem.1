@@ -1,6 +1,6 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-GEM" "1" "March 2025" ""
+.TH "BUNDLE\-GEM" "1" "July 2025" ""
 .SH "NAME"
 \fBbundle\-gem\fR \- Generate a project skeleton for creating a rubygem
 .SH "SYNOPSIS"
@@ -19,67 +19,90 @@ The generated project skeleton can be customized with OPTIONS, as explained belo
 \fBgem\.test\fR
 .IP "" 0
 .SH "OPTIONS"
-.IP "\(bu" 4
-\fB\-\-exe\fR, \fB\-\-bin\fR, \fB\-b\fR: Specify that Bundler should create a binary executable (as \fBexe/GEM_NAME\fR) in the generated rubygem project\. This binary will also be added to the \fBGEM_NAME\.gemspec\fR manifest\. This behavior is disabled by default\.
-.IP "\(bu" 4
-\fB\-\-no\-exe\fR: Do not create a binary (overrides \fB\-\-exe\fR specified in the global config)\.
-.IP "\(bu" 4
-\fB\-\-coc\fR: Add a \fBCODE_OF_CONDUCT\.md\fR file to the root of the generated project\. If this option is unspecified, an interactive prompt will be displayed and the answer will be saved in Bundler's global config for future \fBbundle gem\fR use\.
-.IP "\(bu" 4
-\fB\-\-no\-coc\fR: Do not create a \fBCODE_OF_CONDUCT\.md\fR (overrides \fB\-\-coc\fR specified in the global config)\.
-.IP "\(bu" 4
-\fB\-\-changelog\fR Add a \fBCHANGELOG\.md\fR file to the root of the generated project\. If this option is unspecified, an interactive prompt will be displayed and the answer will be saved in Bundler's global config for future \fBbundle gem\fR use\.
-.IP "\(bu" 4
-\fB\-\-no\-changelog\fR: Do not create a \fBCHANGELOG\.md\fR (overrides \fB\-\-changelog\fR specified in the global config)\.
-.IP "\(bu" 4
-\fB\-\-ext=c\fR, \fB\-\-ext=rust\fR: Add boilerplate for C or Rust (currently magnus \fIhttps://docs\.rs/magnus\fR based) extension code to the generated project\. This behavior is disabled by default\.
-.IP "\(bu" 4
-\fB\-\-no\-ext\fR: Do not add extension code (overrides \fB\-\-ext\fR specified in the global config)\.
-.IP "\(bu" 4
-\fB\-\-git\fR: Initialize a git repo inside your library\.
-.IP "\(bu" 4
-\fB\-\-github\-username=GITHUB_USERNAME\fR: Fill in GitHub username on README so that you don't have to do it manually\. Set a default with \fBbundle config set \-\-global gem\.github_username <your_username>\fR\.
-.IP "\(bu" 4
-\fB\-\-mit\fR: Add an MIT license to a \fBLICENSE\.txt\fR file in the root of the generated project\. Your name from the global git config is used for the copyright statement\. If this option is unspecified, an interactive prompt will be displayed and the answer will be saved in Bundler's global config for future \fBbundle gem\fR use\.
-.IP "\(bu" 4
-\fB\-\-no\-mit\fR: Do not create a \fBLICENSE\.txt\fR (overrides \fB\-\-mit\fR specified in the global config)\.
-.IP "\(bu" 4
-\fB\-t\fR, \fB\-\-test=minitest\fR, \fB\-\-test=rspec\fR, \fB\-\-test=test\-unit\fR: Specify the test framework that Bundler should use when generating the project\. Acceptable values are \fBminitest\fR, \fBrspec\fR and \fBtest\-unit\fR\. The \fBGEM_NAME\.gemspec\fR will be configured and a skeleton test/spec directory will be created based on this option\. Given no option is specified:
+.TP
+\fB\-\-exe\fR, \fB\-\-bin\fR, \fB\-b\fR
+Specify that Bundler should create a binary executable (as \fBexe/GEM_NAME\fR) in the generated rubygem project\. This binary will also be added to the \fBGEM_NAME\.gemspec\fR manifest\. This behavior is disabled by default\.
+.TP
+\fB\-\-no\-exe\fR
+Do not create a binary (overrides \fB\-\-exe\fR specified in the global config)\.
+.TP
+\fB\-\-coc\fR
+Add a \fBCODE_OF_CONDUCT\.md\fR file to the root of the generated project\. If this option is unspecified, an interactive prompt will be displayed and the answer will be saved in Bundler's global config for future \fBbundle gem\fR use\.
+.TP
+\fB\-\-no\-coc\fR
+Do not create a \fBCODE_OF_CONDUCT\.md\fR (overrides \fB\-\-coc\fR specified in the global config)\.
+.TP
+\fB\-\-changelog\fR
+Add a \fBCHANGELOG\.md\fR file to the root of the generated project\. If this option is unspecified, an interactive prompt will be displayed and the answer will be saved in Bundler's global config for future \fBbundle gem\fR use\. Update the default with \fBbundle config set \-\-global gem\.changelog <true|false>\fR\.
+.TP
+\fB\-\-no\-changelog\fR
+Do not create a \fBCHANGELOG\.md\fR (overrides \fB\-\-changelog\fR specified in the global config)\.
+.TP
+\fB\-\-ext=c\fR, \fB\-\-ext=rust\fR
+Add boilerplate for C or Rust (currently magnus \fIhttps://docs\.rs/magnus\fR based) extension code to the generated project\. This behavior is disabled by default\.
+.TP
+\fB\-\-no\-ext\fR
+Do not add extension code (overrides \fB\-\-ext\fR specified in the global config)\.
+.TP
+\fB\-\-git\fR
+Initialize a git repo inside your library\.
+.TP
+\fB\-\-github\-username=GITHUB_USERNAME\fR
+Fill in GitHub username on README so that you don't have to do it manually\. Set a default with \fBbundle config set \-\-global gem\.github_username <your_username>\fR\.
+.TP
+\fB\-\-mit\fR
+Add an MIT license to a \fBLICENSE\.txt\fR file in the root of the generated project\. Your name from the global git config is used for the copyright statement\. If this option is unspecified, an interactive prompt will be displayed and the answer will be saved in Bundler's global config for future \fBbundle gem\fR use\.
+.TP
+\fB\-\-no\-mit\fR
+Do not create a \fBLICENSE\.txt\fR (overrides \fB\-\-mit\fR specified in the global config)\.
+.TP
+\fB\-t\fR, \fB\-\-test=minitest\fR, \fB\-\-test=rspec\fR, \fB\-\-test=test\-unit\fR
+Specify the test framework that Bundler should use when generating the project\. Acceptable values are \fBminitest\fR, \fBrspec\fR and \fBtest\-unit\fR\. The \fBGEM_NAME\.gemspec\fR will be configured and a skeleton test/spec directory will be created based on this option\. Given no option is specified:
 .IP
 When Bundler is configured to generate tests, this defaults to Bundler's global config setting \fBgem\.test\fR\.
 .IP
 When Bundler is configured to not generate tests, an interactive prompt will be displayed and the answer will be used for the current rubygem project\.
 .IP
 When Bundler is unconfigured, an interactive prompt will be displayed and the answer will be saved in Bundler's global config for future \fBbundle gem\fR use\.
-.IP "\(bu" 4
-\fB\-\-no\-test\fR: Do not use a test framework (overrides \fB\-\-test\fR specified in the global config)\.
-.IP "\(bu" 4
-\fB\-\-changelog\fR: Generate changelog file\. Set a default with \fBbundle config set \-\-global gem\.changelog true\fR\.
-.IP "\(bu" 4
-\fB\-\-ci\fR, \fB\-\-ci=circle\fR, \fB\-\-ci=github\fR, \fB\-\-ci=gitlab\fR: Specify the continuous integration service that Bundler should use when generating the project\. Acceptable values are \fBgithub\fR, \fBgitlab\fR and \fBcircle\fR\. A configuration file will be generated in the project directory\. Given no option is specified:
+.TP
+\fB\-\-no\-test\fR
+Do not use a test framework (overrides \fB\-\-test\fR specified in the global config)\.
+.TP
+\fB\-\-ci\fR, \fB\-\-ci=circle\fR, \fB\-\-ci=github\fR, \fB\-\-ci=gitlab\fR
+Specify the continuous integration service that Bundler should use when generating the project\. Acceptable values are \fBgithub\fR, \fBgitlab\fR and \fBcircle\fR\. A configuration file will be generated in the project directory\. Given no option is specified:
 .IP
 When Bundler is configured to generate CI files, this defaults to Bundler's global config setting \fBgem\.ci\fR\.
 .IP
 When Bundler is configured to not generate CI files, an interactive prompt will be displayed and the answer will be used for the current rubygem project\.
 .IP
 When Bundler is unconfigured, an interactive prompt will be displayed and the answer will be saved in Bundler's global config for future \fBbundle gem\fR use\.
-.IP "\(bu" 4
-\fB\-\-no\-ci\fR: Do not use a continuous integration service (overrides \fB\-\-ci\fR specified in the global config)\.
-.IP "\(bu" 4
-\fB\-\-linter\fR, \fB\-\-linter=rubocop\fR, \fB\-\-linter=standard\fR: Specify the linter and code formatter that Bundler should add to the project's development dependencies\. Acceptable values are \fBrubocop\fR and \fBstandard\fR\. A configuration file will be generated in the project directory\. Given no option is specified:
+.TP
+\fB\-\-no\-ci\fR
+Do not use a continuous integration service (overrides \fB\-\-ci\fR specified in the global config)\.
+.TP
+\fB\-\-linter\fR, \fB\-\-linter=rubocop\fR, \fB\-\-linter=standard\fR
+Specify the linter and code formatter that Bundler should add to the project's development dependencies\. Acceptable values are \fBrubocop\fR and \fBstandard\fR\. A configuration file will be generated in the project directory\. Given no option is specified:
 .IP
 When Bundler is configured to add a linter, this defaults to Bundler's global config setting \fBgem\.linter\fR\.
 .IP
 When Bundler is configured not to add a linter, an interactive prompt will be displayed and the answer will be used for the current rubygem project\.
 .IP
 When Bundler is unconfigured, an interactive prompt will be displayed and the answer will be saved in Bundler's global config for future \fBbundle gem\fR use\.
-.IP "\(bu" 4
-\fB\-\-no\-linter\fR: Do not add a linter (overrides \fB\-\-linter\fR specified in the global config)\.
-.IP "\(bu" 4
-\fB\-\-rubocop\fR: Add rubocop to the generated Rakefile and gemspec\. Set a default with \fBbundle config set \-\-global gem\.rubocop true\fR\.
-.IP "\(bu" 4
-\fB\-\-edit=EDIT\fR, \fB\-e=EDIT\fR: Open the resulting GEM_NAME\.gemspec in EDIT, or the default editor if not specified\. The default is \fB$BUNDLER_EDITOR\fR, \fB$VISUAL\fR, or \fB$EDITOR\fR\.
-.IP "" 0
+.TP
+\fB\-\-no\-linter\fR
+Do not add a linter (overrides \fB\-\-linter\fR specified in the global config)\.
+.TP
+\fB\-\-rubocop\fR
+Add rubocop to the generated Rakefile and gemspec\. Set a default with \fBbundle config set \-\-global gem\.rubocop true\fR\.
+.TP
+\fB\-\-edit=EDIT\fR, \fB\-e=EDIT\fR
+Open the resulting GEM_NAME\.gemspec in EDIT, or the default editor if not specified\. The default is \fB$BUNDLER_EDITOR\fR, \fB$VISUAL\fR, or \fB$EDITOR\fR\.
+.TP
+\fB\-\-bundle\fR
+Run \fBbundle install\fR after creating the gem\.
+.TP
+\fB\-\-no\-bundle\fR
+Do not run \fBbundle install\fR after creating the gem\.
 .SH "SEE ALSO"
 .IP "\(bu" 4
 bundle config(1) \fIbundle\-config\.1\.html\fR

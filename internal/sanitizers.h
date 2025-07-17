@@ -127,6 +127,7 @@ asan_poison_memory_region(const volatile void *ptr, size_t size)
 #define asan_poison_object_if(ptr, obj) ((void)(ptr), (void)(obj))
 #endif
 
+#ifdef RUBY_ASAN_ENABLED
 RUBY_SYMBOL_EXPORT_BEGIN
 /**
  * This is a variant of asan_poison_memory_region that takes a VALUE.
@@ -153,6 +154,11 @@ void *rb_asan_poisoned_object_p(VALUE obj);
 void rb_asan_unpoison_object(VALUE obj, bool newobj_p);
 
 RUBY_SYMBOL_EXPORT_END
+#else
+# define rb_asan_poison_object(obj) ((void)obj)
+# define rb_asan_poisoned_object_p(obj) ((void)obj, NULL)
+# define rb_asan_unpoison_object(obj, newobj_p) ((void)obj, (void)newobj_p)
+#endif
 
 /**
  * This function asserts that a (formally poisoned) memory region from ptr to

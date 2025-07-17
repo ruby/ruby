@@ -95,6 +95,22 @@ describe "IO.popen" do
     @io = IO.popen(ruby_cmd('exit 0'), mode)
   end
 
+  it "accepts a path using the chdir: keyword argument" do
+    path = File.dirname(@fname)
+
+    @io = IO.popen(ruby_cmd("puts Dir.pwd"), "r", chdir: path)
+    @io.read.chomp.should == path
+  end
+
+  it "accepts a path using the chdir: keyword argument and a coercible path" do
+    path = File.dirname(@fname)
+    object = mock("path")
+    object.should_receive(:to_path).and_return(path)
+
+    @io = IO.popen(ruby_cmd("puts Dir.pwd"), "r", chdir: object)
+    @io.read.chomp.should == path
+  end
+
   describe "with a block" do
     it "yields an open IO to the block" do
       IO.popen(ruby_cmd('exit'), "r") do |io|

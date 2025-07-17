@@ -149,6 +149,26 @@ describe "Hash literal" do
     {a: 1, **h, c: 4}.should == {a: 1, b: 2, c: 4}
   end
 
+  ruby_version_is ""..."3.4" do
+    it "does not expand nil using ** into {} and raises TypeError" do
+      h = nil
+      -> { {a: 1, **h} }.should raise_error(TypeError, "no implicit conversion of nil into Hash")
+
+      -> { {a: 1, **nil} }.should raise_error(TypeError, "no implicit conversion of nil into Hash")
+    end
+  end
+
+  ruby_version_is "3.4" do
+    it "expands nil using ** into {}" do
+      h = nil
+      {**h}.should == {}
+      {a: 1, **h}.should == {a: 1}
+
+      {**nil}.should == {}
+      {a: 1, **nil}.should == {a: 1}
+    end
+  end
+
   it "expands an '**{}' or '**obj' element with the last key/value pair taking precedence" do
     -> {
       @h = eval "{a: 1, **{a: 2, b: 3, c: 1}, c: 3}"

@@ -30,7 +30,7 @@ module Bundler
       def platform_specs(specs)
         platforms.map do |platform|
           prefer_locked = @new_platforms.include?(platform) ? false : !unlock?
-          GemHelpers.select_best_platform_match(specs, platform, prefer_locked: prefer_locked)
+          MatchPlatform.select_best_platform_match(specs, platform, prefer_locked: prefer_locked)
         end
       end
 

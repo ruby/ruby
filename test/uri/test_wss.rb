@@ -31,19 +31,19 @@ class URI::TestWSS < Test::Unit::TestCase
     host = 'aBcD'
     u1 = URI.parse('wss://' + host          + '/eFg?HiJ')
     u2 = URI.parse('wss://' + host.downcase + '/eFg?HiJ')
-    assert(u1.normalize.host == 'abcd')
-    assert(u1.normalize.path == u1.path)
-    assert(u1.normalize == u2.normalize)
-    assert(!u1.normalize.host.equal?(u1.host))
-    assert( u2.normalize.host.equal?(u2.host))
+    assert_equal('abcd', u1.normalize.host)
+    assert_equal(u1.path, u1.normalize.path)
+    assert_equal(u2.normalize, u1.normalize)
+    refute_same(u1.host, u1.normalize.host)
+    assert_same(u2.host, u2.normalize.host)
 
     assert_equal('wss://abc/', URI.parse('wss://abc').normalize.to_s)
   end
 
   def test_equal
-    assert(URI.parse('wss://abc') == URI.parse('wss://ABC'))
-    assert(URI.parse('wss://abc/def') == URI.parse('wss://ABC/def'))
-    assert(URI.parse('wss://abc/def') != URI.parse('wss://ABC/DEF'))
+    assert_equal(URI.parse('wss://ABC'), URI.parse('wss://abc'))
+    assert_equal(URI.parse('wss://ABC/def'), URI.parse('wss://abc/def'))
+    refute_equal(URI.parse('wss://ABC/DEF'), URI.parse('wss://abc/def'))
   end
 
   def test_request_uri

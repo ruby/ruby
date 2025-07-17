@@ -38,12 +38,14 @@ module EnumerableSpecs
   class Empty
     include Enumerable
     def each
+      self
     end
   end
 
   class EmptyWithSize
     include Enumerable
     def each
+      self
     end
     def size
       0

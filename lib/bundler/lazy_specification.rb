@@ -33,7 +33,7 @@ module Bundler
       lazy_spec
     end
 
-    def initialize(name, version, platform, source = nil)
+    def initialize(name, version, platform, source = nil, **materialization_options)
       @name          = name
       @version       = version
       @dependencies  = []
@@ -43,6 +43,7 @@ module Bundler
 
       @original_source = source
       @source = source
+      @materialization_options = materialization_options
 
       @force_ruby_platform = default_force_ruby_platform
       @most_specific_locked_platform = nil
@@ -142,15 +143,15 @@ module Bundler
         end
       else
         materialize([name, version]) do |matching_specs|
-          target_platform = source.is_a?(Source::Path) ? platform : local_platform
+          target_platform = source.is_a?(Source::Path) ? platform : Bundler.local_platform
 
-          installable_candidates = GemHelpers.select_best_platform_match(matching_specs, target_platform)
+          installable_candidates = MatchPlatform.select_best_platform_match(matching_specs, target_platform)
 
           specification = choose_compatible(installable_candidates, fallback_to_non_installable: false)
           return specification unless specification.nil?
 
           if target_platform != platform
-            installable_candidates = GemHelpers.select_best_platform_match(matching_specs, platform)
+            installable_candidates = MatchPlatform.select_best_platform_match(matching_specs, platform)
           end
 
           choose_compatible(installable_candidates)
@@ -190,7 +191,7 @@ module Bundler
     end
 
     def ruby_platform_materializes_to_ruby_platform?
-      generic_platform = generic_local_platform == Gem::Platform::JAVA ? Gem::Platform::JAVA : Gem::Platform::RUBY
+      generic_platform = Bundler.generic_local_platform == Gem::Platform::JAVA ? Gem::Platform::JAVA : Gem::Platform::RUBY
 
       (most_specific_locked_platform != generic_platform) || force_ruby_platform || Bundler.settings[:force_ruby_platform]
     end
@@ -226,12 +227,13 @@ module Bundler
     # Validate dependencies of this locked spec are consistent with dependencies
     # of the actual spec that was materialized.
     #
-    # Note that we don't validate dependencies of locally installed gems but
+    # Note that unless we are in strict mode (which we set during installation)
+    # we don't validate dependencies of locally installed gems but
     # accept what's in the lockfile instead for performance, since loading
     # dependencies of locally installed gems would mean evaluating all gemspecs,
     # which would affect `bundler/setup` performance.
     def validate_dependencies(spec)
-      if spec.is_a?(StubSpecification)
+      if !@materialization_options[:strict] && spec.is_a?(StubSpecification)
         spec.dependencies = dependencies
       else
         if !source.is_a?(Source::Path) && spec.runtime_dependencies.sort != dependencies.sort

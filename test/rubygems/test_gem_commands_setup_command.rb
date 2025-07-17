@@ -4,13 +4,6 @@ require_relative "helper"
 require "rubygems/commands/setup_command"
 
 class TestGemCommandsSetupCommand < Gem::TestCase
-  bundler_gemspec = File.expand_path("../../bundler/lib/bundler/version.rb", __dir__)
-  if File.exist?(bundler_gemspec)
-    BUNDLER_VERS = File.read(bundler_gemspec).match(/VERSION = "(#{Gem::Version::VERSION_PATTERN})"/)[1]
-  else
-    BUNDLER_VERS = "2.0.1"
-  end
-
   def setup
     super
 
@@ -35,7 +28,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     create_dummy_files(filelist)
 
-    gemspec = util_spec "bundler", BUNDLER_VERS do |s|
+    gemspec = util_spec "bundler", "9.9.9" do |s|
       s.bindir = "exe"
       s.executables = ["bundle", "bundler"]
     end
@@ -380,20 +373,22 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     File.open "CHANGELOG.md", "w" do |io|
       io.puts <<-HISTORY_TXT
-# #{Gem::VERSION} / 2013-03-26
+# Changelog
 
-## Bug fixes:
+## #{Gem::VERSION} / 2013-03-26
+
+### Bug fixes:
   * Fixed release note display for LANG=C when installing rubygems
   * π is tasty
 
-# 2.0.2 / 2013-03-06
+## 2.0.2 / 2013-03-06
 
-## Bug fixes:
+### Bug fixes:
   * Other bugs fixed
 
-# 2.0.1 / 2013-03-05
+## 2.0.1 / 2013-03-05
 
-## Bug fixes:
+### Bug fixes:
   * Yet more bugs fixed
       HISTORY_TXT
     end
@@ -403,9 +398,9 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     end
 
     expected = <<-EXPECTED
-# #{Gem::VERSION} / 2013-03-26
+## #{Gem::VERSION} / 2013-03-26
 
-## Bug fixes:
+### Bug fixes:
   * Fixed release note display for LANG=C when installing rubygems
   * π is tasty
 

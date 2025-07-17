@@ -312,7 +312,7 @@ io_event_from_value(VALUE value)
 /*
  * call-seq:
  *   io.wait(events, timeout) -> event mask, false or nil
- *   io.wait(timeout = nil, mode = :read) -> self, true, or false
+ *   io.wait(*event_symbols[, timeout]) -> self, true, or false
  *
  * Waits until the IO becomes ready for the specified events and returns the
  * subset of events that become ready, or a falsy value when times out.
@@ -320,10 +320,14 @@ io_event_from_value(VALUE value)
  * The events can be a bit mask of +IO::READABLE+, +IO::WRITABLE+ or
  * +IO::PRIORITY+.
  *
- * Returns a truthy value immediately when buffered data is available.
+ * Returns an event mask (truthy value) immediately when buffered data is
+ * available.
  *
- * Optional parameter +mode+ is one of +:read+, +:write+, or
- * +:read_write+.
+ * The second form: if one or more event symbols (+:read+, +:write+, or
+ * +:read_write+) are passed, the event mask is the bit OR of the bitmask
+ * corresponding to those symbols.  In this form, +timeout+ is optional, the
+ * order of the arguments is arbitrary, and returns +io+ if any of the
+ * events is ready.
  *
  * You must require 'io/wait' to use this method.
  */
@@ -360,10 +364,6 @@ io_wait(int argc, VALUE *argv, VALUE io)
     rb_io_event_t events = 0;
     int i, return_io = 0;
 
-    /* The documented signature for this method is actually incorrect.
-     * A single timeout is allowed in any position, and multiple symbols can be given.
-     * Whether this is intentional or not, I don't know, and as such I consider this to
-     * be a legacy/slow path. */
     if (argc != 2 || (RB_SYMBOL_P(argv[0]) || RB_SYMBOL_P(argv[1]))) {
         /* We'd prefer to return the actual mask, but this form would return the io itself: */
         return_io = 1;

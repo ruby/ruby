@@ -919,7 +919,7 @@ opt_new
     // The bookkeeping slot should be empty.
     RUBY_ASSERT(TOPN(argc + 1) == Qnil);
 
-    if (vm_method_cfunc_is(GET_ISEQ(), cd, val, rb_class_new_instance_pass_kw) && !(ruby_vm_event_flags & ISEQ_TRACE_EVENTS)) {
+    if (vm_method_cfunc_is(GET_ISEQ(), cd, val, rb_class_new_instance_pass_kw)) {
         RB_DEBUG_COUNTER_INC(opt_new_hit);
         val = rb_obj_alloc(val);
         TOPN(argc) = val;
@@ -996,6 +996,7 @@ opt_nil_p
 (CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_nil_p(GET_ISEQ(), cd, recv);
 
@@ -1480,6 +1481,7 @@ opt_and
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_and(recv, obj);
 
@@ -1494,6 +1496,7 @@ opt_or
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_or(recv, obj);
 

@@ -382,13 +382,9 @@ class TestGemDependencyInstaller < Gem::TestCase
     FileUtils.mv f1_gem, @tempdir
     inst = nil
 
-    pwd = Dir.getwd
-    Dir.chdir @tempdir
-    begin
+    Dir.chdir @tempdir do
       inst = Gem::DependencyInstaller.new
       inst.install "f"
-    ensure
-      Dir.chdir pwd
     end
 
     assert_equal %w[f-1], inst.installed_gems.map(&:full_name)
@@ -521,6 +517,58 @@ class TestGemDependencyInstaller < Gem::TestCase
     end
 
     assert_equal %w[a-1], inst.installed_gems.map(&:full_name)
+  end
+
+  def test_install_local_with_extensions_already_installed
+    pend "needs investigation" if Gem.java_platform?
+    pend "ruby.h is not provided by ruby repo" if ruby_repo?
+
+    @spec = quick_gem "a" do |s|
+      s.extensions << "extconf.rb"
+      s.files += %w[extconf.rb a.c]
+    end
+
+    write_dummy_extconf "a"
+
+    c_source_path = File.join(@tempdir, "a.c")
+
+    write_file c_source_path do |io|
+      io.write <<-C
+        #include <ruby.h>
+        void Init_a() { }
+      C
+    end
+
+    package_path = Gem::Package.build @spec
+    installer = Gem::Installer.at(package_path)
+
+    # Make sure the gem is installed and backup the correct package
+
+    installer.install
+
+    package_bkp_path = "#{package_path}.bkp"
+    FileUtils.cp package_path, package_bkp_path
+
+    # Break the extension, rebuild it, and try to install it
+
+    write_file c_source_path do |io|
+      io.write "typo"
+    end
+
+    Gem::Package.build @spec
+
+    assert_raise Gem::Ext::BuildError do
+      installer.install
+    end
+
+    # Make sure installing the good package again still works
+
+    FileUtils.cp "#{package_path}.bkp", package_path
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new domain: :local
+      inst.install package_path
+    end
   end
 
   def test_install_minimal_deps

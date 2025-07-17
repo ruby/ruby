@@ -24,10 +24,6 @@ module Spec
       end
       FileUtils.mkdir_p(home)
       FileUtils.mkdir_p(tmpdir)
-      reset_paths!
-    end
-
-    def reset_paths!
       Bundler.reset!
       Gem.clear_paths
     end
@@ -71,7 +67,6 @@ module Spec
       bundle_bin ||= installed_bindir.join("bundle")
 
       env = options.delete(:env) || {}
-      preserve_ruby_flags = options.delete(:preserve_ruby_flags)
 
       requires = options.delete(:requires) || []
 
@@ -79,15 +74,14 @@ module Spec
       custom_load_path = options.delete(:load_path)
 
       load_path = []
-      load_path << spec_dir
       load_path << custom_load_path if custom_load_path
 
-      build_ruby_options = { load_path: load_path, requires: requires, env: env }
-      build_ruby_options.merge!(artifice: options.delete(:artifice)) if options.key?(:artifice)
+      build_env_options = { load_path: load_path, requires: requires, env: env }
+      build_env_options.merge!(artifice: options.delete(:artifice)) if options.key?(:artifice) || cmd.start_with?("exec")
 
       match_source(cmd)
 
-      env, ruby_cmd = build_ruby_cmd(build_ruby_options)
+      env = build_env(build_env_options)
 
       raise_on_error = options.delete(:raise_on_error)
 
@@ -102,8 +96,7 @@ module Spec
         end
       end.join
 
-      cmd = "#{ruby_cmd} #{bundle_bin} #{cmd}#{args}"
-      env["BUNDLER_SPEC_ORIGINAL_CMD"] = "#{ruby_cmd} #{bundle_bin}" if preserve_ruby_flags
+      cmd = "#{Gem.ruby} #{bundle_bin} #{cmd}#{args}"
       sys_exec(cmd, { env: env, dir: dir, raise_on_error: raise_on_error }, &block)
     end
 
@@ -123,10 +116,10 @@ module Spec
     end
 
     def ruby(ruby, options = {})
-      env, ruby_cmd = build_ruby_cmd({ artifice: nil }.merge(options))
+      env = build_env({ artifice: nil }.merge(options))
       escaped_ruby = ruby.shellescape
       options[:env] = env if env
-      sys_exec(%(#{ruby_cmd} -w -e #{escaped_ruby}), options)
+      sys_exec(%(#{Gem.ruby} -w -e #{escaped_ruby}), options)
     end
 
     def load_error_ruby(ruby, name, opts = {})
@@ -139,17 +132,19 @@ module Spec
       R
     end
 
-    def build_ruby_cmd(options = {})
-      libs = options.delete(:load_path)
-      lib_option = libs ? "-I#{libs.join(File::PATH_SEPARATOR)}" : []
-
+    def build_env(options = {})
       env = options.delete(:env) || {}
+      libs = options.delete(:load_path) || []
+      env["RUBYOPT"] = opt_add("-I#{libs.join(File::PATH_SEPARATOR)}", env["RUBYOPT"]) if libs.any?
+
       current_example = RSpec.current_example
 
       main_source = @gemfile_source if defined?(@gemfile_source)
       compact_index_main_source = main_source&.start_with?("https://gem.repo", "https://gems.security")
 
       requires = options.delete(:requires) || []
+      requires << hax
+
       artifice = options.delete(:artifice) do
         if current_example && current_example.metadata[:realworld]
           "vcr"
@@ -172,11 +167,9 @@ module Spec
         requires << "#{Path.spec_dir}/support/artifice/#{artifice}.rb"
       end
 
-      requires << "#{Path.spec_dir}/support/hax.rb"
+      requires.each {|r| env["RUBYOPT"] = opt_add("-r#{r}", env["RUBYOPT"]) }
 
-      require_option = requires.map {|r| "-r#{r}" }
-
-      [env, [Gem.ruby, *lib_option, *require_option].compact.join(" ")]
+      env
     end
 
     def gembin(cmd, options = {})
@@ -186,7 +179,7 @@ module Spec
 
     def gem_command(command, options = {})
       env = options[:env] || {}
-      env["RUBYOPT"] = opt_add(opt_add("-r#{spec_dir}/support/hax.rb", env["RUBYOPT"]), ENV["RUBYOPT"])
+      env["RUBYOPT"] = opt_add(opt_add("-r#{hax}", env["RUBYOPT"]), ENV["RUBYOPT"])
       options[:env] = env
 
       # Sometimes `gem install` commands hang at dns resolution, which has a
@@ -306,6 +299,10 @@ module Spec
       bundle :lock, opts
     end
 
+    def base_system_gems(*names, **options)
+      system_gems names.map {|name| find_base_path(name) }, **options
+    end
+
     def system_gems(*gems)
       gems = gems.flatten
       options = gems.last.is_a?(Hash) ? gems.pop : {}
@@ -315,7 +312,7 @@ module Spec
         gem_name = g.to_s
         if gem_name.start_with?("bundler")
           version = gem_name.match(/\Abundler-(?<version>.*)\z/)[:version] if gem_name != "bundler"
-          with_built_bundler(version) {|gem_path| install_gem(gem_path, install_dir, default) }
+          with_built_bundler(version, released: options.fetch(:released, false)) {|gem_path| install_gem(gem_path, install_dir, default) }
         elsif %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}.match?(gem_name)
           install_gem(gem_name, install_dir, default)
         else
@@ -340,10 +337,10 @@ module Spec
       gem_command "install #{args} '#{path}'"
     end
 
-    def with_built_bundler(version = nil, &block)
+    def with_built_bundler(version = nil, opts = {}, &block)
       require_relative "builders"
 
-      Builders::BundlerBuilder.new(self, "bundler", version)._build(&block)
+      Builders::BundlerBuilder.new(self, "bundler", version)._build(opts, &block)
     end
 
     def with_gem_path_as(path)
@@ -401,16 +398,6 @@ module Spec
       system_gems(*gems)
     end
 
-    def realworld_system_gems(*gems)
-      gems = gems.flatten
-      opts = gems.last.is_a?(Hash) ? gems.pop : {}
-      path = opts.fetch(:path, system_gem_path)
-
-      gems.each do |gem|
-        gem_command "install --no-document --verbose --install-dir #{path} #{gem}"
-      end
-    end
-
     def cache_gems(*gems, gem_repo: gem_repo1)
       gems = gems.flatten
 
@@ -450,12 +437,6 @@ module Spec
 
     def next_ruby_minor
       ruby_major_minor.map.with_index {|s, i| i == 1 ? s + 1 : s }.join(".")
-    end
-
-    def previous_ruby_minor
-      return "2.7" if ruby_major_minor == [3, 0]
-
-      ruby_major_minor.map.with_index {|s, i| i == 1 ? s - 1 : s }.join(".")
     end
 
     def ruby_major_minor
@@ -515,32 +496,12 @@ module Spec
       end
     end
 
-    def require_rack
-      # need to hack, so we can require rack
+    def require_rack_test
+      # need to hack, so we can require rack for testing
       old_gem_home = ENV["GEM_HOME"]
-      ENV["GEM_HOME"] = Spec::Path.base_system_gem_path.to_s
-      require "rack"
+      ENV["GEM_HOME"] = Spec::Path.scoped_base_system_gem_path.to_s
+      require "rack/test"
       ENV["GEM_HOME"] = old_gem_home
-    end
-
-    def wait_for_server(host, port, seconds = 15)
-      tries = 0
-      sleep 0.5
-      TCPSocket.new(host, port)
-    rescue StandardError => e
-      raise(e) if tries > (seconds * 2)
-      tries += 1
-      retry
-    end
-
-    def find_unused_port
-      port = 21_453
-      begin
-        port += 1 while TCPSocket.new("127.0.0.1", port)
-      rescue StandardError
-        false
-      end
-      port
     end
 
     def exit_status_for_signal(signal_number)

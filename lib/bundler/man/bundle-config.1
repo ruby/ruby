@@ -1,6 +1,6 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-CONFIG" "1" "March 2025" ""
+.TH "BUNDLE\-CONFIG" "1" "July 2025" ""
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
 .SH "SYNOPSIS"
@@ -42,29 +42,192 @@ Executing \fBbundle config unset \-\-global <name>\fR will delete the configurat
 Executing \fBbundle config unset \-\-local <name>\fR will delete the configuration only from the local application\.
 .P
 Executing bundle with the \fBBUNDLE_IGNORE_CONFIG\fR environment variable set will cause it to ignore all configuration\.
+.SH "CONFIGURATION KEYS"
+Configuration keys in bundler have two forms: the canonical form and the environment variable form\.
+.P
+For instance, passing the \fB\-\-without\fR flag to bundle install(1) \fIbundle\-install\.1\.html\fR prevents Bundler from installing certain groups specified in the Gemfile(5)\. Bundler persists this value in \fBapp/\.bundle/config\fR so that calls to \fBBundler\.setup\fR do not try to find gems from the \fBGemfile\fR that you didn't install\. Additionally, subsequent calls to bundle install(1) \fIbundle\-install\.1\.html\fR remember this setting and skip those groups\.
+.P
+The canonical form of this configuration is \fB"without"\fR\. To convert the canonical form to the environment variable form, capitalize it, and prepend \fBBUNDLE_\fR\. The environment variable form of \fB"without"\fR is \fBBUNDLE_WITHOUT\fR\.
+.P
+Any periods in the configuration keys must be replaced with two underscores when setting it via environment variables\. The configuration key \fBlocal\.rack\fR becomes the environment variable \fBBUNDLE_LOCAL__RACK\fR\.
+.SH "LIST OF AVAILABLE KEYS"
+The following is a list of all configuration keys and their purpose\. You can learn more about their operation in bundle install(1) \fIbundle\-install\.1\.html\fR\.
+.TP
+\fBallow_offline_install\fR (\fBBUNDLE_ALLOW_OFFLINE_INSTALL\fR)
+Allow Bundler to use cached data when installing without network access\.
+.TP
+\fBauto_install\fR (\fBBUNDLE_AUTO_INSTALL\fR)
+Automatically run \fBbundle install\fR when gems are missing\.
+.TP
+\fBbin\fR (\fBBUNDLE_BIN\fR)
+Install executables from gems in the bundle to the specified directory\. Defaults to \fBfalse\fR\.
+.TP
+\fBcache_all\fR (\fBBUNDLE_CACHE_ALL\fR)
+Cache all gems, including path and git gems\. This needs to be explicitly before bundler 4, but will be the default on bundler 4\.
+.TP
+\fBcache_all_platforms\fR (\fBBUNDLE_CACHE_ALL_PLATFORMS\fR)
+Cache gems for all platforms\.
+.TP
+\fBcache_path\fR (\fBBUNDLE_CACHE_PATH\fR)
+The directory that bundler will place cached gems in when running \fBbundle package\fR, and that bundler will look in when installing gems\. Defaults to \fBvendor/cache\fR\.
+.TP
+\fBclean\fR (\fBBUNDLE_CLEAN\fR)
+Whether Bundler should run \fBbundle clean\fR automatically after \fBbundle install\fR\. Defaults to \fBtrue\fR in Bundler 4, as long as \fBpath\fR is not explicitly configured\.
+.TP
+\fBconsole\fR (\fBBUNDLE_CONSOLE\fR)
+The console that \fBbundle console\fR starts\. Defaults to \fBirb\fR\.
+.TP
+\fBdefault_cli_command\fR (\fBBUNDLE_DEFAULT_CLI_COMMAND\fR)
+The command that running \fBbundle\fR without arguments should run\. Defaults to \fBcli_help\fR since Bundler 4, but can also be \fBinstall\fR which was the previous default\.
+.TP
+\fBdeployment\fR (\fBBUNDLE_DEPLOYMENT\fR)
+Equivalent to setting \fBfrozen\fR to \fBtrue\fR and \fBpath\fR to \fBvendor/bundle\fR\.
+.TP
+\fBdisable_checksum_validation\fR (\fBBUNDLE_DISABLE_CHECKSUM_VALIDATION\fR)
+Allow installing gems even if they do not match the checksum provided by RubyGems\.
+.TP
+\fBdisable_exec_load\fR (\fBBUNDLE_DISABLE_EXEC_LOAD\fR)
+Stop Bundler from using \fBload\fR to launch an executable in\-process in \fBbundle exec\fR\.
+.TP
+\fBdisable_local_branch_check\fR (\fBBUNDLE_DISABLE_LOCAL_BRANCH_CHECK\fR)
+Allow Bundler to use a local git override without a branch specified in the Gemfile\.
+.TP
+\fBdisable_local_revision_check\fR (\fBBUNDLE_DISABLE_LOCAL_REVISION_CHECK\fR)
+Allow Bundler to use a local git override without checking if the revision present in the lockfile is present in the repository\.
+.TP
+\fBdisable_shared_gems\fR (\fBBUNDLE_DISABLE_SHARED_GEMS\fR)
+Stop Bundler from accessing gems installed to RubyGems' normal location\.
+.TP
+\fBdisable_version_check\fR (\fBBUNDLE_DISABLE_VERSION_CHECK\fR)
+Stop Bundler from checking if a newer Bundler version is available on rubygems\.org\.
+.TP
+\fBforce_ruby_platform\fR (\fBBUNDLE_FORCE_RUBY_PLATFORM\fR)
+Ignore the current machine's platform and install only \fBruby\fR platform gems\. As a result, gems with native extensions will be compiled from source\.
+.TP
+\fBfrozen\fR (\fBBUNDLE_FROZEN\fR)
+Disallow any automatic changes to \fBGemfile\.lock\fR\. Bundler commands will be blocked unless the lockfile can be installed exactly as written\. Usually this will happen when changing the \fBGemfile\fR manually and forgetting to update the lockfile through \fBbundle lock\fR or \fBbundle install\fR\.
+.TP
+\fBgem\.github_username\fR (\fBBUNDLE_GEM__GITHUB_USERNAME\fR)
+Sets a GitHub username or organization to be used in the \fBREADME\fR and \fB\.gemspec\fR files when you create a new gem via \fBbundle gem\fR command\. It can be overridden by passing an explicit \fB\-\-github\-username\fR flag to \fBbundle gem\fR\.
+.TP
+\fBgem\.push_key\fR (\fBBUNDLE_GEM__PUSH_KEY\fR)
+Sets the \fB\-\-key\fR parameter for \fBgem push\fR when using the \fBrake release\fR command with a private gemstash server\.
+.TP
+\fBgemfile\fR (\fBBUNDLE_GEMFILE\fR)
+The name of the file that bundler should use as the \fBGemfile\fR\. This location of this file also sets the root of the project, which is used to resolve relative paths in the \fBGemfile\fR, among other things\. By default, bundler will search up from the current working directory until it finds a \fBGemfile\fR\.
+.TP
+\fBglobal_gem_cache\fR (\fBBUNDLE_GLOBAL_GEM_CACHE\fR)
+Whether Bundler should cache all gems and compiled extensions globally, rather than locally to the configured installation path\.
+.TP
+\fBignore_funding_requests\fR (\fBBUNDLE_IGNORE_FUNDING_REQUESTS\fR)
+When set, no funding requests will be printed\.
+.TP
+\fBignore_messages\fR (\fBBUNDLE_IGNORE_MESSAGES\fR)
+When set, no post install messages will be printed\. To silence a single gem, use dot notation like \fBignore_messages\.httparty true\fR\.
+.TP
+\fBinit_gems_rb\fR (\fBBUNDLE_INIT_GEMS_RB\fR)
+Generate a \fBgems\.rb\fR instead of a \fBGemfile\fR when running \fBbundle init\fR\.
+.TP
+\fBjobs\fR (\fBBUNDLE_JOBS\fR)
+The number of gems Bundler can install in parallel\. Defaults to the number of available processors\.
+.TP
+\fBlockfile_checksums\fR (\fBBUNDLE_LOCKFILE_CHECKSUMS\fR)
+Whether Bundler should include a checksums section in new lockfiles, to protect from compromised gem sources\.
+.TP
+\fBno_install\fR (\fBBUNDLE_NO_INSTALL\fR)
+Whether \fBbundle package\fR should skip installing gems\.
+.TP
+\fBno_prune\fR (\fBBUNDLE_NO_PRUNE\fR)
+Whether Bundler should leave outdated gems unpruned when caching\.
+.TP
+\fBonly\fR (\fBBUNDLE_ONLY\fR)
+A space\-separated list of groups to install only gems of the specified groups\.
+.TP
+\fBpath\fR (\fBBUNDLE_PATH\fR)
+The location on disk where all gems in your bundle will be located regardless of \fB$GEM_HOME\fR or \fB$GEM_PATH\fR values\. Bundle gems not found in this location will be installed by \fBbundle install\fR\. Defaults to \fB\.bundle\fR relative to repository root in Bundler 4, and to the default system path (\fBGem\.dir\fR) before Bundler 4\.
+.TP
+\fBpath\.system\fR (\fBBUNDLE_PATH__SYSTEM\fR)
+Whether Bundler will install gems into the default system path (\fBGem\.dir\fR)\.
+.TP
+\fBplugins\fR (\fBBUNDLE_PLUGINS\fR)
+Enable Bundler's experimental plugin system\.
+.TP
+\fBprefer_patch\fR (BUNDLE_PREFER_PATCH)
+Prefer updating only to next patch version during updates\. Makes \fBbundle update\fR calls equivalent to \fBbundler update \-\-patch\fR\.
+.TP
+\fBredirect\fR (\fBBUNDLE_REDIRECT\fR)
+The number of redirects allowed for network requests\. Defaults to \fB5\fR\.
+.TP
+\fBretry\fR (\fBBUNDLE_RETRY\fR)
+The number of times to retry failed network requests\. Defaults to \fB3\fR\.
+.TP
+\fBshebang\fR (\fBBUNDLE_SHEBANG\fR)
+The program name that should be invoked for generated binstubs\. Defaults to the ruby install name used to generate the binstub\.
+.TP
+\fBsilence_deprecations\fR (\fBBUNDLE_SILENCE_DEPRECATIONS\fR)
+Whether Bundler should silence deprecation warnings for behavior that will be changed in the next major version\.
+.TP
+\fBsilence_root_warning\fR (\fBBUNDLE_SILENCE_ROOT_WARNING\fR)
+Silence the warning Bundler prints when installing gems as root\.
+.TP
+\fBsimulate_version\fR (\fBBUNDLE_SIMULATE_VERSION\fR)
+The virtual version Bundler should use for activating feature flags\. Can be used to simulate all the new functionality that will be enabled in a future major version\.
+.TP
+\fBssl_ca_cert\fR (\fBBUNDLE_SSL_CA_CERT\fR)
+Path to a designated CA certificate file or folder containing multiple certificates for trusted CAs in PEM format\.
+.TP
+\fBssl_client_cert\fR (\fBBUNDLE_SSL_CLIENT_CERT\fR)
+Path to a designated file containing a X\.509 client certificate and key in PEM format\.
+.TP
+\fBssl_verify_mode\fR (\fBBUNDLE_SSL_VERIFY_MODE\fR)
+The SSL verification mode Bundler uses when making HTTPS requests\. Defaults to verify peer\.
+.TP
+\fBsystem_bindir\fR (\fBBUNDLE_SYSTEM_BINDIR\fR)
+The location where RubyGems installs binstubs\. Defaults to \fBGem\.bindir\fR\.
+.TP
+\fBtimeout\fR (\fBBUNDLE_TIMEOUT\fR)
+The seconds allowed before timing out for network requests\. Defaults to \fB10\fR\.
+.TP
+\fBupdate_requires_all_flag\fR (\fBBUNDLE_UPDATE_REQUIRES_ALL_FLAG\fR)
+Require passing \fB\-\-all\fR to \fBbundle update\fR when everything should be updated, and disallow passing no options to \fBbundle update\fR\.
+.TP
+\fBuser_agent\fR (\fBBUNDLE_USER_AGENT\fR)
+The custom user agent fragment Bundler includes in API requests\.
+.TP
+\fBverbose\fR (\fBBUNDLE_VERBOSE\fR)
+Whether Bundler should print verbose output\. Defaults to \fBfalse\fR, unless the \fB\-\-verbose\fR CLI flag is used\.
+.TP
+\fBversion\fR (\fBBUNDLE_VERSION\fR)
+The version of Bundler to use when running under Bundler environment\. Defaults to \fBlockfile\fR\. You can also specify \fBsystem\fR or \fBx\.y\.z\fR\. \fBlockfile\fR will use the Bundler version specified in the \fBGemfile\.lock\fR, \fBsystem\fR will use the system version of Bundler, and \fBx\.y\.z\fR will use the specified version of Bundler\.
+.TP
+\fBwith\fR (\fBBUNDLE_WITH\fR)
+A space\-separated or \fB:\fR\-separated list of groups whose gems bundler should install\.
+.TP
+\fBwithout\fR (\fBBUNDLE_WITHOUT\fR)
+A space\-separated or \fB:\fR\-separated list of groups whose gems bundler should not install\.
 .SH "REMEMBERING OPTIONS"
 Flags passed to \fBbundle install\fR or the Bundler runtime, such as \fB\-\-path foo\fR or \fB\-\-without production\fR, are remembered between commands and saved to your local application's configuration (normally, \fB\./\.bundle/config\fR)\.
 .P
-However, this will be changed in bundler 3, so it's better not to rely on this behavior\. If these options must be remembered, it's better to set them using \fBbundle config\fR (e\.g\., \fBbundle config set \-\-local path foo\fR)\.
+However, this will be changed in bundler 4, so it's better not to rely on this behavior\. If these options must be remembered, it's better to set them using \fBbundle config\fR (e\.g\., \fBbundle config set \-\-local path foo\fR)\.
 .P
-The options that can be configured are:
+The flags that can be configured are:
 .TP
-\fBbin\fR
+\fB\-\-bin\fR
 Creates a directory (defaults to \fB~/bin\fR) and place any executables from the gem there\. These executables run in Bundler's context\. If used, you might add this directory to your environment's \fBPATH\fR variable\. For instance, if the \fBrails\fR gem comes with a \fBrails\fR executable, this flag will create a \fBbin/rails\fR executable that ensures that all referred dependencies will be resolved using the bundled gems\.
 .TP
-\fBdeployment\fR
+\fB\-\-deployment\fR
 In deployment mode, Bundler will 'roll\-out' the bundle for \fBproduction\fR use\. Please check carefully if you want to have this option enabled in \fBdevelopment\fR or \fBtest\fR environments\.
 .TP
-\fBonly\fR
+\fB\-\-only\fR
 A space\-separated list of groups to install only gems of the specified groups\. Please check carefully if you want to install also gems without a group, cause they get put inside \fBdefault\fR group\. For example \fBonly test:default\fR will install all gems specified in test group and without one\.
 .TP
-\fBpath\fR
+\fB\-\-path\fR
 The location to install the specified gems to\. This defaults to Rubygems' setting\. Bundler shares this location with Rubygems, \fBgem install \|\.\|\.\|\.\fR will have gem installed there, too\. Therefore, gems installed without a \fB\-\-path \|\.\|\.\|\.\fR setting will show up by calling \fBgem list\fR\. Accordingly, gems installed to other locations will not get listed\.
 .TP
-\fBwithout\fR
+\fB\-\-without\fR
 A space\-separated or \fB:\fR\-separated list of groups referencing gems to skip during installation\.
 .TP
-\fBwith\fR
+\fB\-\-with\fR
 A space\-separated or \fB:\fR\-separated list of \fBoptional\fR groups referencing gems to include during installation\.
 .SH "BUILD OPTIONS"
 You can use \fBbundle config\fR to give Bundler the flags to pass to the gem installer every time bundler tries to install a particular gem\.
@@ -84,123 +247,6 @@ bundle config set \-\-global build\.mysql \-\-with\-mysql\-config=/usr/local/mys
 .IP "" 0
 .P
 After running this command, every time bundler needs to install the \fBmysql\fR gem, it will pass along the flags you specified\.
-.SH "CONFIGURATION KEYS"
-Configuration keys in bundler have two forms: the canonical form and the environment variable form\.
-.P
-For instance, passing the \fB\-\-without\fR flag to bundle install(1) \fIbundle\-install\.1\.html\fR prevents Bundler from installing certain groups specified in the Gemfile(5)\. Bundler persists this value in \fBapp/\.bundle/config\fR so that calls to \fBBundler\.setup\fR do not try to find gems from the \fBGemfile\fR that you didn't install\. Additionally, subsequent calls to bundle install(1) \fIbundle\-install\.1\.html\fR remember this setting and skip those groups\.
-.P
-The canonical form of this configuration is \fB"without"\fR\. To convert the canonical form to the environment variable form, capitalize it, and prepend \fBBUNDLE_\fR\. The environment variable form of \fB"without"\fR is \fBBUNDLE_WITHOUT\fR\.
-.P
-Any periods in the configuration keys must be replaced with two underscores when setting it via environment variables\. The configuration key \fBlocal\.rack\fR becomes the environment variable \fBBUNDLE_LOCAL__RACK\fR\.
-.SH "LIST OF AVAILABLE KEYS"
-The following is a list of all configuration keys and their purpose\. You can learn more about their operation in bundle install(1) \fIbundle\-install\.1\.html\fR\.
-.IP "\(bu" 4
-\fBallow_offline_install\fR (\fBBUNDLE_ALLOW_OFFLINE_INSTALL\fR): Allow Bundler to use cached data when installing without network access\.
-.IP "\(bu" 4
-\fBauto_clean_without_path\fR (\fBBUNDLE_AUTO_CLEAN_WITHOUT_PATH\fR): Automatically run \fBbundle clean\fR after installing when an explicit \fBpath\fR has not been set and Bundler is not installing into the system gems\.
-.IP "\(bu" 4
-\fBauto_install\fR (\fBBUNDLE_AUTO_INSTALL\fR): Automatically run \fBbundle install\fR when gems are missing\.
-.IP "\(bu" 4
-\fBbin\fR (\fBBUNDLE_BIN\fR): Install executables from gems in the bundle to the specified directory\. Defaults to \fBfalse\fR\.
-.IP "\(bu" 4
-\fBcache_all\fR (\fBBUNDLE_CACHE_ALL\fR): Cache all gems, including path and git gems\. This needs to be explicitly configured on bundler 1 and bundler 2, but will be the default on bundler 3\.
-.IP "\(bu" 4
-\fBcache_all_platforms\fR (\fBBUNDLE_CACHE_ALL_PLATFORMS\fR): Cache gems for all platforms\.
-.IP "\(bu" 4
-\fBcache_path\fR (\fBBUNDLE_CACHE_PATH\fR): The directory that bundler will place cached gems in when running \fBbundle package\fR, and that bundler will look in when installing gems\. Defaults to \fBvendor/cache\fR\.
-.IP "\(bu" 4
-\fBclean\fR (\fBBUNDLE_CLEAN\fR): Whether Bundler should run \fBbundle clean\fR automatically after \fBbundle install\fR\.
-.IP "\(bu" 4
-\fBconsole\fR (\fBBUNDLE_CONSOLE\fR): The console that \fBbundle console\fR starts\. Defaults to \fBirb\fR\.
-.IP "\(bu" 4
-\fBdefault_install_uses_path\fR (\fBBUNDLE_DEFAULT_INSTALL_USES_PATH\fR): Whether a \fBbundle install\fR without an explicit \fB\-\-path\fR argument defaults to installing gems in \fB\.bundle\fR\.
-.IP "\(bu" 4
-\fBdeployment\fR (\fBBUNDLE_DEPLOYMENT\fR): Disallow changes to the \fBGemfile\fR\. When the \fBGemfile\fR is changed and the lockfile has not been updated, running Bundler commands will be blocked\.
-.IP "\(bu" 4
-\fBdisable_checksum_validation\fR (\fBBUNDLE_DISABLE_CHECKSUM_VALIDATION\fR): Allow installing gems even if they do not match the checksum provided by RubyGems\.
-.IP "\(bu" 4
-\fBdisable_exec_load\fR (\fBBUNDLE_DISABLE_EXEC_LOAD\fR): Stop Bundler from using \fBload\fR to launch an executable in\-process in \fBbundle exec\fR\.
-.IP "\(bu" 4
-\fBdisable_local_branch_check\fR (\fBBUNDLE_DISABLE_LOCAL_BRANCH_CHECK\fR): Allow Bundler to use a local git override without a branch specified in the Gemfile\.
-.IP "\(bu" 4
-\fBdisable_local_revision_check\fR (\fBBUNDLE_DISABLE_LOCAL_REVISION_CHECK\fR): Allow Bundler to use a local git override without checking if the revision present in the lockfile is present in the repository\.
-.IP "\(bu" 4
-\fBdisable_shared_gems\fR (\fBBUNDLE_DISABLE_SHARED_GEMS\fR): Stop Bundler from accessing gems installed to RubyGems' normal location\.
-.IP "\(bu" 4
-\fBdisable_version_check\fR (\fBBUNDLE_DISABLE_VERSION_CHECK\fR): Stop Bundler from checking if a newer Bundler version is available on rubygems\.org\.
-.IP "\(bu" 4
-\fBforce_ruby_platform\fR (\fBBUNDLE_FORCE_RUBY_PLATFORM\fR): Ignore the current machine's platform and install only \fBruby\fR platform gems\. As a result, gems with native extensions will be compiled from source\.
-.IP "\(bu" 4
-\fBfrozen\fR (\fBBUNDLE_FROZEN\fR): Disallow changes to the \fBGemfile\fR\. When the \fBGemfile\fR is changed and the lockfile has not been updated, running Bundler commands will be blocked\. Defaults to \fBtrue\fR when \fB\-\-deployment\fR is used\.
-.IP "\(bu" 4
-\fBgem\.github_username\fR (\fBBUNDLE_GEM__GITHUB_USERNAME\fR): Sets a GitHub username or organization to be used in \fBREADME\fR file when you create a new gem via \fBbundle gem\fR command\. It can be overridden by passing an explicit \fB\-\-github\-username\fR flag to \fBbundle gem\fR\.
-.IP "\(bu" 4
-\fBgem\.push_key\fR (\fBBUNDLE_GEM__PUSH_KEY\fR): Sets the \fB\-\-key\fR parameter for \fBgem push\fR when using the \fBrake release\fR command with a private gemstash server\.
-.IP "\(bu" 4
-\fBgemfile\fR (\fBBUNDLE_GEMFILE\fR): The name of the file that bundler should use as the \fBGemfile\fR\. This location of this file also sets the root of the project, which is used to resolve relative paths in the \fBGemfile\fR, among other things\. By default, bundler will search up from the current working directory until it finds a \fBGemfile\fR\.
-.IP "\(bu" 4
-\fBglobal_gem_cache\fR (\fBBUNDLE_GLOBAL_GEM_CACHE\fR): Whether Bundler should cache all gems globally, rather than locally to the installing Ruby installation\.
-.IP "\(bu" 4
-\fBignore_funding_requests\fR (\fBBUNDLE_IGNORE_FUNDING_REQUESTS\fR): When set, no funding requests will be printed\.
-.IP "\(bu" 4
-\fBignore_messages\fR (\fBBUNDLE_IGNORE_MESSAGES\fR): When set, no post install messages will be printed\. To silence a single gem, use dot notation like \fBignore_messages\.httparty true\fR\.
-.IP "\(bu" 4
-\fBinit_gems_rb\fR (\fBBUNDLE_INIT_GEMS_RB\fR): Generate a \fBgems\.rb\fR instead of a \fBGemfile\fR when running \fBbundle init\fR\.
-.IP "\(bu" 4
-\fBjobs\fR (\fBBUNDLE_JOBS\fR): The number of gems Bundler can install in parallel\. Defaults to the number of available processors\.
-.IP "\(bu" 4
-\fBlockfile_checksums\fR (\fBBUNDLE_LOCKFILE_CHECKSUMS\fR): Whether Bundler should include a checksums section in new lockfiles, to protect from compromised gem sources\.
-.IP "\(bu" 4
-\fBno_install\fR (\fBBUNDLE_NO_INSTALL\fR): Whether \fBbundle package\fR should skip installing gems\.
-.IP "\(bu" 4
-\fBno_prune\fR (\fBBUNDLE_NO_PRUNE\fR): Whether Bundler should leave outdated gems unpruned when caching\.
-.IP "\(bu" 4
-\fBonly\fR (\fBBUNDLE_ONLY\fR): A space\-separated list of groups to install only gems of the specified groups\.
-.IP "\(bu" 4
-\fBpath\fR (\fBBUNDLE_PATH\fR): The location on disk where all gems in your bundle will be located regardless of \fB$GEM_HOME\fR or \fB$GEM_PATH\fR values\. Bundle gems not found in this location will be installed by \fBbundle install\fR\. Defaults to \fBGem\.dir\fR\. When \-\-deployment is used, defaults to vendor/bundle\.
-.IP "\(bu" 4
-\fBpath\.system\fR (\fBBUNDLE_PATH__SYSTEM\fR): Whether Bundler will install gems into the default system path (\fBGem\.dir\fR)\.
-.IP "\(bu" 4
-\fBpath_relative_to_cwd\fR (\fBBUNDLE_PATH_RELATIVE_TO_CWD\fR) Makes \fB\-\-path\fR relative to the CWD instead of the \fBGemfile\fR\.
-.IP "\(bu" 4
-\fBplugins\fR (\fBBUNDLE_PLUGINS\fR): Enable Bundler's experimental plugin system\.
-.IP "\(bu" 4
-\fBprefer_patch\fR (BUNDLE_PREFER_PATCH): Prefer updating only to next patch version during updates\. Makes \fBbundle update\fR calls equivalent to \fBbundler update \-\-patch\fR\.
-.IP "\(bu" 4
-\fBprint_only_version_number\fR (\fBBUNDLE_PRINT_ONLY_VERSION_NUMBER\fR): Print only version number from \fBbundler \-\-version\fR\.
-.IP "\(bu" 4
-\fBredirect\fR (\fBBUNDLE_REDIRECT\fR): The number of redirects allowed for network requests\. Defaults to \fB5\fR\.
-.IP "\(bu" 4
-\fBretry\fR (\fBBUNDLE_RETRY\fR): The number of times to retry failed network requests\. Defaults to \fB3\fR\.
-.IP "\(bu" 4
-\fBsetup_makes_kernel_gem_public\fR (\fBBUNDLE_SETUP_MAKES_KERNEL_GEM_PUBLIC\fR): Have \fBBundler\.setup\fR make the \fBKernel#gem\fR method public, even though RubyGems declares it as private\.
-.IP "\(bu" 4
-\fBshebang\fR (\fBBUNDLE_SHEBANG\fR): The program name that should be invoked for generated binstubs\. Defaults to the ruby install name used to generate the binstub\.
-.IP "\(bu" 4
-\fBsilence_deprecations\fR (\fBBUNDLE_SILENCE_DEPRECATIONS\fR): Whether Bundler should silence deprecation warnings for behavior that will be changed in the next major version\.
-.IP "\(bu" 4
-\fBsilence_root_warning\fR (\fBBUNDLE_SILENCE_ROOT_WARNING\fR): Silence the warning Bundler prints when installing gems as root\.
-.IP "\(bu" 4
-\fBssl_ca_cert\fR (\fBBUNDLE_SSL_CA_CERT\fR): Path to a designated CA certificate file or folder containing multiple certificates for trusted CAs in PEM format\.
-.IP "\(bu" 4
-\fBssl_client_cert\fR (\fBBUNDLE_SSL_CLIENT_CERT\fR): Path to a designated file containing a X\.509 client certificate and key in PEM format\.
-.IP "\(bu" 4
-\fBssl_verify_mode\fR (\fBBUNDLE_SSL_VERIFY_MODE\fR): The SSL verification mode Bundler uses when making HTTPS requests\. Defaults to verify peer\.
-.IP "\(bu" 4
-\fBsystem_bindir\fR (\fBBUNDLE_SYSTEM_BINDIR\fR): The location where RubyGems installs binstubs\. Defaults to \fBGem\.bindir\fR\.
-.IP "\(bu" 4
-\fBtimeout\fR (\fBBUNDLE_TIMEOUT\fR): The seconds allowed before timing out for network requests\. Defaults to \fB10\fR\.
-.IP "\(bu" 4
-\fBupdate_requires_all_flag\fR (\fBBUNDLE_UPDATE_REQUIRES_ALL_FLAG\fR): Require passing \fB\-\-all\fR to \fBbundle update\fR when everything should be updated, and disallow passing no options to \fBbundle update\fR\.
-.IP "\(bu" 4
-\fBuser_agent\fR (\fBBUNDLE_USER_AGENT\fR): The custom user agent fragment Bundler includes in API requests\.
-.IP "\(bu" 4
-\fBversion\fR (\fBBUNDLE_VERSION\fR): The version of Bundler to use when running under Bundler environment\. Defaults to \fBlockfile\fR\. You can also specify \fBsystem\fR or \fBx\.y\.z\fR\. \fBlockfile\fR will use the Bundler version specified in the \fBGemfile\.lock\fR, \fBsystem\fR will use the system version of Bundler, and \fBx\.y\.z\fR will use the specified version of Bundler\.
-.IP "\(bu" 4
-\fBwith\fR (\fBBUNDLE_WITH\fR): A space\-separated or \fB:\fR\-separated list of groups whose gems bundler should install\.
-.IP "\(bu" 4
-\fBwithout\fR (\fBBUNDLE_WITHOUT\fR): A space\-separated or \fB:\fR\-separated list of groups whose gems bundler should not install\.
-.IP "" 0
 .SH "LOCAL GIT REPOS"
 Bundler also allows you to work against a git repository locally instead of using the remote version\. This can be achieved by setting up a local override:
 .IP "" 4

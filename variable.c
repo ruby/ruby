@@ -303,9 +303,9 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
 
     if (NIL_P(name)) {
         // Set the temporary classpath to NULL (anonymous):
-        RB_VM_LOCK_ENTER();
-        set_sub_temporary_name(mod, 0);
-        RB_VM_LOCK_LEAVE();
+        RB_VM_LOCKING() {
+            set_sub_temporary_name(mod, 0);
+        }
     }
     else {
         // Ensure the name is a string:
@@ -322,9 +322,9 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
         name = rb_str_new_frozen(name);
 
         // Set the temporary classpath to the given name:
-        RB_VM_LOCK_ENTER();
-        set_sub_temporary_name(mod, name);
-        RB_VM_LOCK_LEAVE();
+        RB_VM_LOCKING() {
+            set_sub_temporary_name(mod, name);
+        }
     }
 
     return mod;
@@ -1201,197 +1201,144 @@ rb_generic_fields_tbl_get(void)
     return generic_fields_tbl_;
 }
 
+static inline VALUE
+generic_fields_lookup(VALUE obj, ID id, bool force_check_ractor)
+{
+    VALUE fields_obj = Qfalse;
+    RB_VM_LOCKING() {
+        st_table *generic_tbl = generic_fields_tbl(obj, id, false);
+        st_lookup(generic_tbl, obj, (st_data_t *)&fields_obj);
+    }
+    return fields_obj;
+}
+
+static inline void
+generic_fields_insert(VALUE obj, VALUE fields_obj)
+{
+    RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields));
+
+    RB_VM_LOCKING() {
+        st_table *generic_tbl = generic_fields_tbl_no_ractor_check(obj);
+        st_insert(generic_tbl, obj, fields_obj);
+    }
+    RB_OBJ_WRITTEN(obj, Qundef, fields_obj);
+}
+
 int
-rb_gen_fields_tbl_get(VALUE obj, ID id, struct gen_fields_tbl **fields_tbl)
+rb_gen_fields_tbl_get(VALUE obj, ID id, VALUE *fields_obj)
 {
     RUBY_ASSERT(!RB_TYPE_P(obj, T_ICLASS));
 
     st_data_t data;
     int r = 0;
 
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         if (st_lookup(generic_fields_tbl(obj, id, false), (st_data_t)obj, &data)) {
-            *fields_tbl = (struct gen_fields_tbl *)data;
+            *fields_obj = (VALUE)data;
             r = 1;
         }
     }
-    RB_VM_LOCK_LEAVE();
 
     return r;
 }
 
 int
-rb_ivar_generic_fields_tbl_lookup(VALUE obj, struct gen_fields_tbl **fields_tbl)
+rb_ivar_generic_fields_tbl_lookup(VALUE obj, VALUE *fields_obj)
 {
-    return rb_gen_fields_tbl_get(obj, 0, fields_tbl);
-}
-
-static size_t
-gen_fields_tbl_bytes(size_t n)
-{
-    return offsetof(struct gen_fields_tbl, as.shape.fields) + n * sizeof(VALUE);
-}
-
-static struct gen_fields_tbl *
-gen_fields_tbl_resize(struct gen_fields_tbl *old, uint32_t n)
-{
-    RUBY_ASSERT(n > 0);
-
-    uint32_t len = old ? old->as.shape.fields_count : 0;
-    struct gen_fields_tbl *fields_tbl = xrealloc(old, gen_fields_tbl_bytes(n));
-
-    fields_tbl->as.shape.fields_count = n;
-    for (; len < n; len++) {
-        fields_tbl->as.shape.fields[len] = Qundef;
-    }
-
-    return fields_tbl;
+    return rb_gen_fields_tbl_get(obj, 0, fields_obj);
 }
 
 void
 rb_mark_generic_ivar(VALUE obj)
 {
-    st_data_t data;
-    if (st_lookup(generic_fields_tbl_no_ractor_check(obj), (st_data_t)obj, &data)) {
-        struct gen_fields_tbl *fields_tbl = (struct gen_fields_tbl *)data;
-        if (rb_shape_obj_too_complex_p(obj)) {
-            rb_mark_tbl_no_pin(fields_tbl->as.complex.table);
-        }
-        else {
-            for (uint32_t i = 0; i < fields_tbl->as.shape.fields_count; i++) {
-                rb_gc_mark_movable(fields_tbl->as.shape.fields[i]);
-            }
-        }
+    VALUE data;
+    if (st_lookup(generic_fields_tbl_no_ractor_check(obj), (st_data_t)obj, (st_data_t *)&data)) {
+        rb_gc_mark_movable(data);
     }
 }
 
 void
 rb_free_generic_ivar(VALUE obj)
 {
-    st_data_t key = (st_data_t)obj, value;
+    if (rb_obj_exivar_p(obj)) {
+        st_data_t key = (st_data_t)obj, value;
 
-    bool too_complex = rb_shape_obj_too_complex_p(obj);
-
-    if (st_delete(generic_fields_tbl_no_ractor_check(obj), &key, &value)) {
-        struct gen_fields_tbl *fields_tbl = (struct gen_fields_tbl *)value;
-
-        if (UNLIKELY(too_complex)) {
-            st_free_table(fields_tbl->as.complex.table);
-        }
-
-        xfree(fields_tbl);
-    }
-}
-
-size_t
-rb_generic_ivar_memsize(VALUE obj)
-{
-    struct gen_fields_tbl *fields_tbl;
-
-    if (rb_gen_fields_tbl_get(obj, 0, &fields_tbl)) {
-        if (rb_shape_obj_too_complex_p(obj)) {
-            return sizeof(struct gen_fields_tbl) + st_memsize(fields_tbl->as.complex.table);
-        }
-        else {
-            return gen_fields_tbl_bytes(fields_tbl->as.shape.fields_count);
+        RB_VM_LOCKING() {
+            st_delete(generic_fields_tbl_no_ractor_check(obj), &key, &value);
         }
     }
-    return 0;
-}
-
-#if !SHAPE_IN_BASIC_FLAGS
-shape_id_t
-rb_generic_shape_id(VALUE obj)
-{
-    struct gen_fields_tbl *fields_tbl = 0;
-    shape_id_t shape_id = 0;
-
-    RB_VM_LOCK_ENTER();
-    {
-        st_table* global_iv_table = generic_fields_tbl(obj, 0, false);
-
-        if (global_iv_table && st_lookup(global_iv_table, obj, (st_data_t *)&fields_tbl)) {
-            shape_id = fields_tbl->shape_id;
-        }
-        else if (OBJ_FROZEN(obj)) {
-            shape_id = SPECIAL_CONST_SHAPE_ID;
-        }
-    }
-    RB_VM_LOCK_LEAVE();
-
-    return shape_id;
-}
-#endif
-
-static size_t
-gen_fields_tbl_count(VALUE obj, const struct gen_fields_tbl *fields_tbl)
-{
-    uint32_t i;
-    size_t n = 0;
-
-    if (rb_shape_obj_too_complex_p(obj)) {
-        n = st_table_size(fields_tbl->as.complex.table);
-    }
-    else {
-        for (i = 0; i < fields_tbl->as.shape.fields_count; i++) {
-            if (!UNDEF_P(fields_tbl->as.shape.fields[i])) {
-                n++;
-            }
-        }
-    }
-
-    return n;
 }
 
 VALUE
 rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
 {
     RUBY_ASSERT(!SPECIAL_CONST_P(obj));
-    RUBY_ASSERT(RSHAPE(target_shape_id)->type == SHAPE_IVAR || RSHAPE(target_shape_id)->type == SHAPE_OBJ_ID);
+    RUBY_ASSERT(RSHAPE_TYPE_P(target_shape_id, SHAPE_IVAR) || RSHAPE_TYPE_P(target_shape_id, SHAPE_OBJ_ID));
 
-    if (rb_shape_id_too_complex_p(target_shape_id)) {
+    if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
+        ASSERT_vm_locking();
+        VALUE field_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+        if (field_obj) {
+            return rb_obj_field_get(field_obj, target_shape_id);
+        }
+        return Qundef;
+    }
+
+    if (rb_shape_too_complex_p(target_shape_id)) {
         st_table *fields_hash;
         switch (BUILTIN_TYPE(obj)) {
           case T_CLASS:
           case T_MODULE:
-            ASSERT_vm_locking();
-            fields_hash = RCLASS_FIELDS_HASH(obj);
+            rb_bug("Unreachable");
             break;
           case T_OBJECT:
             fields_hash = ROBJECT_FIELDS_HASH(obj);
             break;
+          case T_IMEMO:
+            RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
+            fields_hash = rb_imemo_fields_complex_tbl(obj);
+            break;
           default:
-            RUBY_ASSERT(FL_TEST_RAW(obj, FL_EXIVAR));
-            struct gen_fields_tbl *fields_tbl = NULL;
-            rb_ivar_generic_fields_tbl_lookup(obj, &fields_tbl);
-            RUBY_ASSERT(fields_tbl);
-            fields_hash = fields_tbl->as.complex.table;
+            RUBY_ASSERT(rb_obj_exivar_p(obj));
+            VALUE fields_obj = 0;
+            rb_ivar_generic_fields_tbl_lookup(obj, &fields_obj);
+            RUBY_ASSERT(fields_obj);
+            fields_hash = rb_imemo_fields_complex_tbl(fields_obj);
             break;
         }
         VALUE value = Qundef;
-        st_lookup(fields_hash, RSHAPE(target_shape_id)->edge_name, &value);
+        st_lookup(fields_hash, RSHAPE_EDGE_NAME(target_shape_id), &value);
+
+#if RUBY_DEBUG
+        if (UNDEF_P(value)) {
+            rb_bug("Object's shape includes object_id, but it's missing %s", rb_obj_info(obj));
+        }
+#endif
+
         RUBY_ASSERT(!UNDEF_P(value));
         return value;
     }
 
-    attr_index_t attr_index = RSHAPE(target_shape_id)->next_field_index - 1;
+    attr_index_t attr_index = RSHAPE_INDEX(target_shape_id);
     VALUE *fields;
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
-        ASSERT_vm_locking();
-        fields = RCLASS_PRIME_FIELDS(obj);
+        rb_bug("Unreachable");
         break;
       case T_OBJECT:
         fields = ROBJECT_FIELDS(obj);
         break;
+      case T_IMEMO:
+        RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
+        fields = rb_imemo_fields_ptr(obj);
+        break;
       default:
-        RUBY_ASSERT(FL_TEST_RAW(obj, FL_EXIVAR));
-        struct gen_fields_tbl *fields_tbl = NULL;
-        rb_ivar_generic_fields_tbl_lookup(obj, &fields_tbl);
-        RUBY_ASSERT(fields_tbl);
-        fields = fields_tbl->as.shape.fields;
+        RUBY_ASSERT(rb_obj_exivar_p(obj));
+        VALUE fields_obj = 0;
+        rb_ivar_generic_fields_tbl_lookup(obj, &fields_obj);
+        RUBY_ASSERT(fields_obj);
+        fields = rb_imemo_fields_ptr(fields_obj);
         break;
     }
     return fields[attr_index];
@@ -1403,54 +1350,19 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
     if (SPECIAL_CONST_P(obj)) return undef;
 
     shape_id_t shape_id;
-    VALUE * ivar_list;
-    rb_shape_t * shape;
-
-#if SHAPE_IN_BASIC_FLAGS
-    shape_id = RBASIC_SHAPE_ID(obj);
-#endif
+    VALUE *ivar_list;
 
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
         {
-            bool found = false;
-            VALUE val;
-
-            RB_VM_LOCK_ENTER();
-            {
-#if !SHAPE_IN_BASIC_FLAGS
-                shape_id = RCLASS_SHAPE_ID(obj);
-#endif
-
-                if (rb_shape_obj_too_complex_p(obj)) {
-                    st_table * iv_table = RCLASS_FIELDS_HASH(obj);
-                    if (rb_st_lookup(iv_table, (st_data_t)id, (st_data_t *)&val)) {
-                        found = true;
-                    }
-                    else {
-                        val = undef;
-                    }
-                }
-                else {
-                    attr_index_t index = 0;
-                    shape = RSHAPE(shape_id);
-                    found = rb_shape_get_iv_index(shape, id, &index);
-
-                    if (found) {
-                        ivar_list = RCLASS_PRIME_FIELDS(obj);
-                        RUBY_ASSERT(ivar_list);
-
-                        val = ivar_list[index];
-                    }
-                    else {
-                        val = undef;
-                    }
-                }
+            VALUE val = undef;
+            VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+            if (fields_obj) {
+                val = rb_ivar_lookup(fields_obj, id, undef);
             }
-            RB_VM_LOCK_LEAVE();
 
-            if (found &&
+            if (val != undef &&
                     rb_is_instance_id(id) &&
                     UNLIKELY(!rb_ractor_main_p()) &&
                     !rb_ractor_shareable_p(val)) {
@@ -1459,13 +1371,32 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
             }
             return val;
         }
+      case T_IMEMO:
+        // Handled like T_OBJECT
+        {
+            RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
+            shape_id = RBASIC_SHAPE_ID(obj);
+
+            if (rb_shape_too_complex_p(shape_id)) {
+                st_table *iv_table = rb_imemo_fields_complex_tbl(obj);
+                VALUE val;
+                if (rb_st_lookup(iv_table, (st_data_t)id, (st_data_t *)&val)) {
+                    return val;
+                }
+                else {
+                    return undef;
+                }
+            }
+
+            RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
+            ivar_list = rb_imemo_fields_ptr(obj);
+            break;
+        }
       case T_OBJECT:
         {
-#if !SHAPE_IN_BASIC_FLAGS
-            shape_id = ROBJECT_SHAPE_ID(obj);
-#endif
-            if (rb_shape_obj_too_complex_p(obj)) {
-                st_table * iv_table = ROBJECT_FIELDS_HASH(obj);
+            shape_id = RBASIC_SHAPE_ID(obj);
+            if (rb_shape_too_complex_p(shape_id)) {
+                st_table *iv_table = ROBJECT_FIELDS_HASH(obj);
                 VALUE val;
                 if (rb_st_lookup(iv_table, (st_data_t)id, (st_data_t *)&val)) {
                     return val;
@@ -1480,24 +1411,23 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
             break;
         }
       default:
-        if (FL_TEST_RAW(obj, FL_EXIVAR)) {
-            struct gen_fields_tbl *fields_tbl;
-            rb_gen_fields_tbl_get(obj, id, &fields_tbl);
+        shape_id = RBASIC_SHAPE_ID(obj);
+        if (rb_obj_exivar_p(obj)) {
+            VALUE fields_obj = 0;
+            rb_gen_fields_tbl_get(obj, id, &fields_obj);
 
-            if (rb_shape_obj_too_complex_p(obj)) {
+            RUBY_ASSERT(fields_obj);
+
+            if (rb_shape_obj_too_complex_p(fields_obj)) {
                 VALUE val;
-                if (rb_st_lookup(fields_tbl->as.complex.table, (st_data_t)id, (st_data_t *)&val)) {
+                if (rb_st_lookup(rb_imemo_fields_complex_tbl(fields_obj), (st_data_t)id, (st_data_t *)&val)) {
                     return val;
                 }
                 else {
                     return undef;
                 }
             }
-
-#if !SHAPE_IN_BASIC_FLAGS
-            shape_id = fields_tbl->shape_id;
-#endif
-            ivar_list = fields_tbl->as.shape.fields;
+            ivar_list = rb_imemo_fields_ptr(fields_obj);
         }
         else {
             return undef;
@@ -1506,8 +1436,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
     }
 
     attr_index_t index = 0;
-    shape = RSHAPE(shape_id);
-    if (rb_shape_get_iv_index(shape, id, &index)) {
+    if (rb_shape_get_iv_index(shape_id, id, &index)) {
         return ivar_list[index];
     }
 
@@ -1536,18 +1465,102 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
     VALUE val = undef;
     if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
+
+        VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+        if (fields_obj) {
+            if (rb_multi_ractor_p()) {
+                fields_obj = rb_imemo_fields_clone(fields_obj);
+                val = rb_ivar_delete(fields_obj, id, undef);
+                RCLASS_WRITABLE_SET_FIELDS_OBJ(obj, fields_obj);
+            }
+            else {
+                val = rb_ivar_delete(fields_obj, id, undef);
+            }
+        }
+        return val;
     }
 
-    if (!rb_shape_transition_remove_ivar(obj, id, &val)) {
-        if (!rb_shape_obj_too_complex_p(obj)) {
-            rb_evict_fields_to_hash(obj);
-        }
+    shape_id_t old_shape_id = rb_obj_shape_id(obj);
+    if (rb_shape_too_complex_p(old_shape_id)) {
+        goto too_complex;
+    }
 
+    shape_id_t removed_shape_id = 0;
+    shape_id_t next_shape_id = rb_shape_transition_remove_ivar(obj, id, &removed_shape_id);
+
+    if (next_shape_id == old_shape_id) {
+        return undef;
+    }
+
+    if (UNLIKELY(rb_shape_too_complex_p(next_shape_id))) {
+        rb_evict_fields_to_hash(obj);
+        goto too_complex;
+    }
+
+    RUBY_ASSERT(RSHAPE_LEN(next_shape_id) == RSHAPE_LEN(old_shape_id) - 1);
+
+    VALUE *fields;
+    switch(BUILTIN_TYPE(obj)) {
+      case T_CLASS:
+      case T_MODULE:
+        rb_bug("Unreachable");
+        break;
+      case T_IMEMO:
+        RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
+        fields = rb_imemo_fields_ptr(obj);
+        break;
+      case T_OBJECT:
+        fields = ROBJECT_FIELDS(obj);
+        break;
+      default: {
+        VALUE fields_obj;
+        rb_gen_fields_tbl_get(obj, id, &fields_obj);
+        fields = rb_imemo_fields_ptr(fields_obj);
+        break;
+      }
+    }
+
+    RUBY_ASSERT(removed_shape_id != INVALID_SHAPE_ID);
+
+    attr_index_t removed_index = RSHAPE_INDEX(removed_shape_id);
+    val = fields[removed_index];
+
+    attr_index_t new_fields_count = RSHAPE_LEN(next_shape_id);
+    if (new_fields_count) {
+        size_t trailing_fields = new_fields_count - removed_index;
+
+        MEMMOVE(&fields[removed_index], &fields[removed_index + 1], VALUE, trailing_fields);
+    }
+    else {
+        rb_free_generic_ivar(obj);
+    }
+
+    if (RB_TYPE_P(obj, T_OBJECT) &&
+        !RB_FL_TEST_RAW(obj, ROBJECT_EMBED) &&
+        rb_obj_embedded_size(new_fields_count) <= rb_gc_obj_slot_size(obj)) {
+        // Re-embed objects when instances become small enough
+        // This is necessary because YJIT assumes that objects with the same shape
+        // have the same embeddedness for efficiency (avoid extra checks)
+        RB_FL_SET_RAW(obj, ROBJECT_EMBED);
+        MEMCPY(ROBJECT_FIELDS(obj), fields, VALUE, new_fields_count);
+        xfree(fields);
+    }
+    rb_obj_set_shape_id(obj, next_shape_id);
+
+    return val;
+
+too_complex:
+    {
         st_table *table = NULL;
         switch (BUILTIN_TYPE(obj)) {
           case T_CLASS:
           case T_MODULE:
-            table = RCLASS_WRITABLE_FIELDS_HASH(obj);
+            rb_bug("Unreachable");
+            break;
+
+          case T_IMEMO:
+            RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
+            table = rb_imemo_fields_complex_tbl(obj);
             break;
 
           case T_OBJECT:
@@ -1555,9 +1568,9 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
             break;
 
           default: {
-            struct gen_fields_tbl *fields_tbl;
-            if (rb_gen_fields_tbl_get(obj, 0, &fields_tbl)) {
-                table = fields_tbl->as.complex.table;
+            VALUE fields_obj;
+            if (rb_gen_fields_tbl_get(obj, 0, &fields_obj)) {
+                table = rb_imemo_fields_complex_tbl(fields_obj);
             }
             break;
           }
@@ -1579,64 +1592,50 @@ rb_attr_delete(VALUE obj, ID id)
     return rb_ivar_delete(obj, id, Qnil);
 }
 
-static void
+static inline void generic_update_fields_obj(VALUE obj, VALUE fields_obj, const VALUE original_fields_obj);
+
+static shape_id_t
 obj_transition_too_complex(VALUE obj, st_table *table)
 {
+    if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
+        return obj_transition_too_complex(RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(obj), table);
+    }
+
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
     shape_id_t shape_id = rb_shape_transition_complex(obj);
 
-    VALUE *old_fields = NULL;
-
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
-            old_fields = ROBJECT_FIELDS(obj);
+        {
+            VALUE *old_fields = NULL;
+            if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
+                old_fields = ROBJECT_FIELDS(obj);
+            }
+            RBASIC_SET_SHAPE_ID(obj, shape_id);
+            ROBJECT_SET_FIELDS_HASH(obj, table);
+            if (old_fields) {
+                xfree(old_fields);
+            }
         }
-        rb_shape_set_shape_id(obj, shape_id);
-        ROBJECT_SET_FIELDS_HASH(obj, table);
         break;
       case T_CLASS:
       case T_MODULE:
-        old_fields = RCLASS_PRIME_FIELDS(obj);
-        rb_shape_set_shape_id(obj, shape_id);
-        RCLASS_SET_FIELDS_HASH(obj, table);
+        rb_bug("Unreachable");
         break;
       default:
-        RB_VM_LOCK_ENTER();
         {
-            struct st_table *gen_ivs = generic_fields_tbl_no_ractor_check(obj);
+            VALUE fields_obj = rb_imemo_fields_new_complex_tbl(rb_obj_class(obj), table);
+            RBASIC_SET_SHAPE_ID(fields_obj, shape_id);
 
-            struct gen_fields_tbl *old_fields_tbl = NULL;
-            st_lookup(gen_ivs, (st_data_t)obj, (st_data_t *)&old_fields_tbl);
-
-            if (old_fields_tbl) {
-                /* We need to modify old_fields_tbl to have the too complex shape
-                 * and hold the table because the xmalloc could trigger a GC
-                 * compaction. We want the table to be updated rather than
-                 * the original fields. */
-#if SHAPE_IN_BASIC_FLAGS
-                rb_shape_set_shape_id(obj, shape_id);
-#else
-                old_fields_tbl->shape_id = shape_id;
-#endif
-                old_fields_tbl->as.complex.table = table;
-                old_fields = (VALUE *)old_fields_tbl;
+            RB_VM_LOCKING() {
+                const VALUE original_fields_obj = generic_fields_lookup(obj, 0, false);
+                generic_update_fields_obj(obj, fields_obj, original_fields_obj);
             }
-
-            struct gen_fields_tbl *fields_tbl = xmalloc(sizeof(struct gen_fields_tbl));
-            fields_tbl->as.complex.table = table;
-            st_insert(gen_ivs, (st_data_t)obj, (st_data_t)fields_tbl);
-
-#if SHAPE_IN_BASIC_FLAGS
-            rb_shape_set_shape_id(obj, shape_id);
-#else
-            fields_tbl->shape_id = shape_id;
-#endif
+            RBASIC_SET_SHAPE_ID(obj, shape_id);
         }
-        RB_VM_LOCK_LEAVE();
     }
 
-    xfree(old_fields);
+    return shape_id;
 }
 
 void
@@ -1644,26 +1643,67 @@ rb_obj_init_too_complex(VALUE obj, st_table *table)
 {
     // This method is meant to be called on newly allocated object.
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
-    RUBY_ASSERT(rb_shape_canonical_p(rb_obj_shape(obj)));
-    RUBY_ASSERT(rb_obj_shape(obj)->next_field_index == 0);
+    RUBY_ASSERT(rb_shape_canonical_p(RBASIC_SHAPE_ID(obj)));
+    RUBY_ASSERT(RSHAPE_LEN(RBASIC_SHAPE_ID(obj)) == 0);
 
     obj_transition_too_complex(obj, table);
 }
 
+static int
+imemo_fields_complex_from_obj_i(ID key, VALUE val, st_data_t arg)
+{
+    VALUE fields = (VALUE)arg;
+    st_table *table = rb_imemo_fields_complex_tbl(fields);
+
+    RUBY_ASSERT(!st_lookup(table, (st_data_t)key, NULL));
+    st_add_direct(table, (st_data_t)key, (st_data_t)val);
+    RB_OBJ_WRITTEN(fields, Qundef, val);
+
+    return ST_CONTINUE;
+}
+
+static VALUE
+imemo_fields_complex_from_obj(VALUE klass, VALUE source_fields_obj, shape_id_t shape_id)
+{
+    attr_index_t len = source_fields_obj ? RSHAPE_LEN(RBASIC_SHAPE_ID(source_fields_obj)) : 0;
+    VALUE fields_obj = rb_imemo_fields_new_complex(klass, len + 1);
+
+    rb_field_foreach(source_fields_obj, imemo_fields_complex_from_obj_i, (st_data_t)fields_obj, false);
+    RBASIC_SET_SHAPE_ID(fields_obj, shape_id);
+
+    return fields_obj;
+}
+
+static VALUE
+imemo_fields_copy_capa(VALUE klass, VALUE source_fields_obj, attr_index_t new_size)
+{
+    VALUE fields_obj = rb_imemo_fields_new(klass, new_size);
+    if (source_fields_obj) {
+        attr_index_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID(source_fields_obj));
+        VALUE *fields = rb_imemo_fields_ptr(fields_obj);
+        MEMCPY(fields, rb_imemo_fields_ptr(source_fields_obj), VALUE, fields_count);
+        RBASIC_SET_SHAPE_ID(fields_obj, RBASIC_SHAPE_ID(source_fields_obj));
+        for (attr_index_t i = 0; i < fields_count; i++) {
+            RB_OBJ_WRITTEN(fields_obj, Qundef, fields[i]);
+        }
+    }
+    return fields_obj;
+}
+
+void rb_obj_copy_fields_to_hash_table(VALUE obj, st_table *table);
+
 // Copy all object fields, including ivars and internal object_id, etc
-void
+shape_id_t
 rb_evict_fields_to_hash(VALUE obj)
 {
-    void rb_obj_copy_fields_to_hash_table(VALUE obj, st_table *table);
-
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
 
-    rb_shape_t *shape = rb_obj_shape(obj);
-    st_table *table = st_init_numtable_with_size(shape->next_field_index);
+    st_table *table = st_init_numtable_with_size(RSHAPE_LEN(RBASIC_SHAPE_ID(obj)));
     rb_obj_copy_fields_to_hash_table(obj, table);
-    obj_transition_too_complex(obj, table);
+    shape_id_t new_shape_id = obj_transition_too_complex(obj, table);
 
     RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
+    return new_shape_id;
 }
 
 void
@@ -1690,7 +1730,7 @@ general_ivar_set(VALUE obj, ID id, VALUE val, void *data,
                  VALUE *(*shape_fields_func)(VALUE, void *),
                  void (*shape_resize_fields_func)(VALUE, attr_index_t, attr_index_t, void *),
                  void (*set_shape_id_func)(VALUE, shape_id_t, void *),
-                 void (*transition_too_complex_func)(VALUE, void *),
+                 shape_id_t (*transition_too_complex_func)(VALUE, void *),
                  st_table *(*too_complex_table_func)(VALUE, void *))
 {
     struct general_ivar_set_result result = {
@@ -1698,34 +1738,33 @@ general_ivar_set(VALUE obj, ID id, VALUE val, void *data,
         .existing = true
     };
 
-    rb_shape_t *current_shape = rb_obj_shape(obj);
+    shape_id_t current_shape_id = RBASIC_SHAPE_ID(obj);
 
-    if (UNLIKELY(rb_shape_too_complex_p(current_shape))) {
+    if (UNLIKELY(rb_shape_too_complex_p(current_shape_id))) {
         goto too_complex;
     }
 
     attr_index_t index;
-    if (!rb_shape_get_iv_index(current_shape, id, &index)) {
+    if (!rb_shape_get_iv_index(current_shape_id, id, &index)) {
         result.existing = false;
 
-        index = current_shape->next_field_index;
+        index = RSHAPE_LEN(current_shape_id);
         if (index >= SHAPE_MAX_FIELDS) {
             rb_raise(rb_eArgError, "too many instance variables");
         }
 
         shape_id_t next_shape_id = rb_shape_transition_add_ivar(obj, id);
-        rb_shape_t *next_shape = RSHAPE(next_shape_id);
-        if (UNLIKELY(rb_shape_too_complex_p(next_shape))) {
-            transition_too_complex_func(obj, data);
+        if (UNLIKELY(rb_shape_too_complex_p(next_shape_id))) {
+            current_shape_id = transition_too_complex_func(obj, data);
             goto too_complex;
         }
-        else if (UNLIKELY(next_shape->capacity != current_shape->capacity)) {
-            RUBY_ASSERT(next_shape->capacity > current_shape->capacity);
-            shape_resize_fields_func(obj, current_shape->capacity, next_shape->capacity, data);
+        else if (UNLIKELY(RSHAPE_CAPACITY(next_shape_id) != RSHAPE_CAPACITY(current_shape_id))) {
+            RUBY_ASSERT(RSHAPE_CAPACITY(next_shape_id) > RSHAPE_CAPACITY(current_shape_id));
+            shape_resize_fields_func(obj, RSHAPE_CAPACITY(current_shape_id), RSHAPE_CAPACITY(next_shape_id), data);
         }
 
-        RUBY_ASSERT(next_shape->type == SHAPE_IVAR);
-        RUBY_ASSERT(index == (next_shape->next_field_index - 1));
+        RUBY_ASSERT(RSHAPE_TYPE_P(next_shape_id, SHAPE_IVAR));
+        RUBY_ASSERT(index == (RSHAPE_INDEX(next_shape_id)));
         set_shape_id_func(obj, next_shape_id, data);
     }
 
@@ -1752,31 +1791,33 @@ general_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val, void *data,
                   VALUE *(*shape_fields_func)(VALUE, void *),
                   void (*shape_resize_fields_func)(VALUE, attr_index_t, attr_index_t, void *),
                   void (*set_shape_id_func)(VALUE, shape_id_t, void *),
-                  void (*transition_too_complex_func)(VALUE, void *),
+                  shape_id_t (*transition_too_complex_func)(VALUE, void *),
                   st_table *(*too_complex_table_func)(VALUE, void *))
 {
-    rb_shape_t *current_shape = rb_obj_shape(obj);
+    shape_id_t current_shape_id = RBASIC_SHAPE_ID(obj);
 
-    if (UNLIKELY(rb_shape_id_too_complex_p(target_shape_id))) {
-        if (UNLIKELY(!rb_shape_too_complex_p(current_shape))) {
-            transition_too_complex_func(obj, data);
+    if (UNLIKELY(rb_shape_too_complex_p(target_shape_id))) {
+        if (UNLIKELY(!rb_shape_too_complex_p(current_shape_id))) {
+            current_shape_id = transition_too_complex_func(obj, data);
         }
 
         st_table *table = too_complex_table_func(obj, data);
-        if (RSHAPE(target_shape_id)->next_field_index > current_shape->next_field_index) {
-            set_shape_id_func(obj, target_shape_id, data);
+
+        if (RSHAPE_LEN(target_shape_id) > RSHAPE_LEN(current_shape_id)) {
+            RBASIC_SET_SHAPE_ID(obj, target_shape_id);
         }
 
-        st_insert(table, (st_data_t)RSHAPE(target_shape_id)->edge_name, (st_data_t)val);
+        RUBY_ASSERT(RSHAPE_EDGE_NAME(target_shape_id));
+        st_insert(table, (st_data_t)RSHAPE_EDGE_NAME(target_shape_id), (st_data_t)val);
         RB_OBJ_WRITTEN(obj, Qundef, val);
     }
     else {
-        attr_index_t index = RSHAPE(target_shape_id)->next_field_index - 1;
-        if (index >= current_shape->capacity) {
-            shape_resize_fields_func(obj, current_shape->capacity, RSHAPE(target_shape_id)->capacity, data);
+        attr_index_t index = RSHAPE_INDEX(target_shape_id);
+        if (index >= RSHAPE_CAPACITY(current_shape_id)) {
+            shape_resize_fields_func(obj, RSHAPE_CAPACITY(current_shape_id), RSHAPE_CAPACITY(target_shape_id), data);
         }
 
-        if (RSHAPE(target_shape_id)->next_field_index > current_shape->next_field_index) {
+        if (RSHAPE_LEN(target_shape_id) > RSHAPE_LEN(current_shape_id)) {
             set_shape_id_func(obj, target_shape_id, data);
         }
 
@@ -1785,159 +1826,122 @@ general_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val, void *data,
     }
 }
 
-struct gen_fields_lookup_ensure_size {
-    VALUE obj;
-    ID id;
-    struct gen_fields_tbl *fields_tbl;
-    shape_id_t shape_id;
-    bool resize;
-};
-
-static int
-generic_fields_lookup_ensure_size(st_data_t *k, st_data_t *v, st_data_t u, int existing)
+static inline void
+generic_update_fields_obj(VALUE obj, VALUE fields_obj, const VALUE original_fields_obj)
 {
-    ASSERT_vm_locking();
+    if (fields_obj != original_fields_obj) {
+        if (original_fields_obj) {
+            // Clear root shape to avoid triggering cleanup such as free_object_id.
+            rb_imemo_fields_clear(original_fields_obj);
+        }
 
-    struct gen_fields_lookup_ensure_size *fields_lookup = (struct gen_fields_lookup_ensure_size *)u;
-    struct gen_fields_tbl *fields_tbl = existing ? (struct gen_fields_tbl *)*v : NULL;
+        generic_fields_insert(obj, fields_obj);
+    }
+}
 
-    if (!existing || fields_lookup->resize) {
-        if (existing) {
-            RUBY_ASSERT(RSHAPE(fields_lookup->shape_id)->type == SHAPE_IVAR || RSHAPE(fields_lookup->shape_id)->type == SHAPE_OBJ_ID);
-            RUBY_ASSERT(RSHAPE(RSHAPE(fields_lookup->shape_id)->parent_id)->capacity < RSHAPE(fields_lookup->shape_id)->capacity);
+static VALUE
+imemo_fields_set(VALUE klass, VALUE fields_obj, shape_id_t target_shape_id, ID field_name, VALUE val, bool concurrent)
+{
+    const VALUE original_fields_obj = fields_obj;
+    shape_id_t current_shape_id = fields_obj ? RBASIC_SHAPE_ID(fields_obj) : ROOT_SHAPE_ID;
+
+    if (UNLIKELY(rb_shape_too_complex_p(target_shape_id))) {
+        if (rb_shape_too_complex_p(current_shape_id)) {
+            if (concurrent) {
+                // In multi-ractor case, we must always work on a copy because
+                // even if the field already exist, inserting in a st_table may
+                // cause a rebuild.
+                fields_obj = rb_imemo_fields_clone(fields_obj);
+            }
         }
         else {
-            FL_SET_RAW((VALUE)*k, FL_EXIVAR);
+            fields_obj = imemo_fields_complex_from_obj(klass, original_fields_obj, target_shape_id);
+            current_shape_id = target_shape_id;
         }
 
-        fields_tbl = gen_fields_tbl_resize(fields_tbl, RSHAPE(fields_lookup->shape_id)->capacity);
-        *v = (st_data_t)fields_tbl;
+        st_table *table = rb_imemo_fields_complex_tbl(fields_obj);
+
+        RUBY_ASSERT(field_name);
+        st_insert(table, (st_data_t)field_name, (st_data_t)val);
+        RB_OBJ_WRITTEN(fields_obj, Qundef, val);
+        RBASIC_SET_SHAPE_ID(fields_obj, target_shape_id);
     }
-
-    RUBY_ASSERT(FL_TEST((VALUE)*k, FL_EXIVAR));
-
-    fields_lookup->fields_tbl = fields_tbl;
-    if (fields_lookup->shape_id) {
-#if SHAPE_IN_BASIC_FLAGS
-        rb_shape_set_shape_id(fields_lookup->obj, fields_lookup->shape_id);
-#else
-        fields_tbl->shape_id = fields_lookup->shape_id;
-#endif
-    }
-
-    return ST_CONTINUE;
-}
-
-static VALUE *
-generic_ivar_set_shape_fields(VALUE obj, void *data)
-{
-    RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
-
-    struct gen_fields_lookup_ensure_size *fields_lookup = data;
-
-    RB_VM_LOCK_ENTER();
-    {
-        st_update(generic_fields_tbl(obj, fields_lookup->id, false), (st_data_t)obj, generic_fields_lookup_ensure_size, (st_data_t)fields_lookup);
-    }
-    RB_VM_LOCK_LEAVE();
-
-    FL_SET_RAW(obj, FL_EXIVAR);
-
-    return fields_lookup->fields_tbl->as.shape.fields;
-}
-
-static void
-generic_ivar_set_shape_resize_fields(VALUE obj, attr_index_t _old_capa, attr_index_t new_capa, void *data)
-{
-    struct gen_fields_lookup_ensure_size *fields_lookup = data;
-
-    fields_lookup->resize = true;
-}
-
-static void
-generic_ivar_set_set_shape_id(VALUE obj, shape_id_t shape_id, void *data)
-{
-    struct gen_fields_lookup_ensure_size *fields_lookup = data;
-
-    fields_lookup->shape_id = shape_id;
-}
-
-static void
-generic_ivar_set_transition_too_complex(VALUE obj, void *_data)
-{
-    rb_evict_fields_to_hash(obj);
-    FL_SET_RAW(obj, FL_EXIVAR);
-}
-
-static st_table *
-generic_ivar_set_too_complex_table(VALUE obj, void *data)
-{
-    struct gen_fields_lookup_ensure_size *fields_lookup = data;
-
-    struct gen_fields_tbl *fields_tbl;
-    if (!rb_gen_fields_tbl_get(obj, 0, &fields_tbl)) {
-        fields_tbl = xmalloc(sizeof(struct gen_fields_tbl));
-#if !SHAPE_IN_BASIC_FLAGS
-        fields_tbl->shape_id = rb_shape_transition_complex(obj);
-#endif
-        fields_tbl->as.complex.table = st_init_numtable_with_size(1);
-
-        RB_VM_LOCK_ENTER();
-        {
-            st_insert(generic_fields_tbl(obj, fields_lookup->id, false), (st_data_t)obj, (st_data_t)fields_tbl);
+    else {
+        attr_index_t index = RSHAPE_INDEX(target_shape_id);
+        if (concurrent || index >= RSHAPE_CAPACITY(current_shape_id)) {
+            fields_obj = imemo_fields_copy_capa(klass, original_fields_obj, RSHAPE_CAPACITY(target_shape_id));
         }
-        RB_VM_LOCK_LEAVE();
 
-        FL_SET_RAW(obj, FL_EXIVAR);
+        VALUE *table = rb_imemo_fields_ptr(fields_obj);
+        RB_OBJ_WRITE(fields_obj, &table[index], val);
+
+        if (RSHAPE_LEN(target_shape_id) > RSHAPE_LEN(current_shape_id)) {
+            RBASIC_SET_SHAPE_ID(fields_obj, target_shape_id);
+        }
     }
 
-    RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
+    return fields_obj;
+}
 
-    return fields_tbl->as.complex.table;
+static void
+generic_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val)
+{
+    if (!field_name) {
+        field_name = RSHAPE_EDGE_NAME(target_shape_id);
+        RUBY_ASSERT(field_name);
+    }
+
+    const VALUE original_fields_obj = generic_fields_lookup(obj, field_name, false);
+    VALUE fields_obj = imemo_fields_set(rb_obj_class(obj), original_fields_obj, target_shape_id, field_name, val, false);
+
+    generic_update_fields_obj(obj, fields_obj, original_fields_obj);
+
+    if (RBASIC_SHAPE_ID(fields_obj) == target_shape_id) {
+        RBASIC_SET_SHAPE_ID(obj, target_shape_id);
+    }
+
+    RUBY_ASSERT(RBASIC_SHAPE_ID(obj) == RBASIC_SHAPE_ID(fields_obj));
+}
+
+static shape_id_t
+generic_shape_ivar(VALUE obj, ID id, bool *new_ivar_out)
+{
+    bool new_ivar = false;
+    shape_id_t current_shape_id = RBASIC_SHAPE_ID(obj);
+    shape_id_t target_shape_id = current_shape_id;
+
+    if (!rb_shape_too_complex_p(current_shape_id)) {
+        if (!rb_shape_find_ivar(current_shape_id, id, &target_shape_id)) {
+            if (RSHAPE_LEN(current_shape_id) >= SHAPE_MAX_FIELDS) {
+                rb_raise(rb_eArgError, "too many instance variables");
+            }
+
+            new_ivar = true;
+            target_shape_id = rb_shape_transition_add_ivar(obj, id);
+        }
+    }
+
+    *new_ivar_out = new_ivar;
+    return target_shape_id;
 }
 
 static void
 generic_ivar_set(VALUE obj, ID id, VALUE val)
 {
-    struct gen_fields_lookup_ensure_size fields_lookup = {
-        .obj = obj,
-        .id = id,
-        .resize = false,
-    };
-
-    general_ivar_set(obj, id, val, &fields_lookup,
-                     generic_ivar_set_shape_fields,
-                     generic_ivar_set_shape_resize_fields,
-                     generic_ivar_set_set_shape_id,
-                     generic_ivar_set_transition_too_complex,
-                     generic_ivar_set_too_complex_table);
-}
-
-static void
-generic_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val)
-{
-    struct gen_fields_lookup_ensure_size fields_lookup = {
-        .obj = obj,
-        .resize = false,
-    };
-
-    general_field_set(obj, target_shape_id, val, &fields_lookup,
-                      generic_ivar_set_shape_fields,
-                      generic_ivar_set_shape_resize_fields,
-                      generic_ivar_set_set_shape_id,
-                      generic_ivar_set_transition_too_complex,
-                      generic_ivar_set_too_complex_table);
+    bool dontcare;
+    shape_id_t target_shape_id = generic_shape_ivar(obj, id, &dontcare);
+    generic_field_set(obj, target_shape_id, id, val);
 }
 
 void
-rb_ensure_iv_list_size(VALUE obj, uint32_t current_capacity, uint32_t new_capacity)
+rb_ensure_iv_list_size(VALUE obj, uint32_t current_len, uint32_t new_capacity)
 {
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
 
     if (RBASIC(obj)->flags & ROBJECT_EMBED) {
         VALUE *ptr = ROBJECT_FIELDS(obj);
         VALUE *newptr = ALLOC_N(VALUE, new_capacity);
-        MEMCPY(newptr, ptr, VALUE, current_capacity);
+        MEMCPY(newptr, ptr, VALUE, current_len);
         RB_FL_UNSET_RAW(obj, ROBJECT_EMBED);
         ROBJECT(obj)->as.heap.fields = newptr;
     }
@@ -1984,13 +1988,13 @@ obj_ivar_set_shape_resize_fields(VALUE obj, attr_index_t old_capa, attr_index_t 
 static void
 obj_ivar_set_set_shape_id(VALUE obj, shape_id_t shape_id, void *_data)
 {
-    rb_shape_set_shape_id(obj, shape_id);
+    rb_obj_set_shape_id(obj, shape_id);
 }
 
-static void
+static shape_id_t
 obj_ivar_set_transition_too_complex(VALUE obj, void *_data)
 {
-    rb_evict_fields_to_hash(obj);
+    return rb_evict_fields_to_hash(obj);
 }
 
 static st_table *
@@ -2036,42 +2040,14 @@ rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val)
 }
 
 bool
-rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id)
+rb_obj_set_shape_id(VALUE obj, shape_id_t shape_id)
 {
-    if (rb_obj_shape_id(obj) == shape_id) {
+    shape_id_t old_shape_id = rb_obj_shape_id(obj);
+    if (old_shape_id == shape_id) {
         return false;
     }
 
-#if SHAPE_IN_BASIC_FLAGS
-    RBASIC_SET_SHAPE_ID(obj, shape_id);
-#else
-    switch (BUILTIN_TYPE(obj)) {
-      case T_OBJECT:
-        ROBJECT_SET_SHAPE_ID(obj, shape_id);
-        break;
-      case T_CLASS:
-      case T_MODULE:
-        RCLASS_SET_SHAPE_ID(obj, shape_id);
-        break;
-      default:
-        if (shape_id != SPECIAL_CONST_SHAPE_ID) {
-            struct gen_fields_tbl *fields_tbl = 0;
-            RB_VM_LOCK_ENTER();
-            {
-                st_table* global_iv_table = generic_fields_tbl(obj, 0, false);
-
-                if (st_lookup(global_iv_table, obj, (st_data_t *)&fields_tbl)) {
-                    fields_tbl->shape_id = shape_id;
-                }
-                else {
-                    rb_bug("Expected shape_id entry in global iv table");
-                }
-            }
-            RB_VM_LOCK_LEAVE();
-        }
-    }
-#endif
-
+    RB_SET_SHAPE_ID(obj, shape_id);
     return true;
 }
 
@@ -2083,14 +2059,7 @@ void rb_obj_freeze_inline(VALUE x)
             RB_FL_UNSET_RAW(x, FL_USER2 | FL_USER3); // STR_CHILLED
         }
 
-        shape_id_t next_shape_id = rb_shape_transition_frozen(x);
-
-        // If we're transitioning from "not complex" to "too complex"
-        // then evict ivars.  This can happen if we run out of shapes
-        if (rb_shape_id_too_complex_p(next_shape_id) && !rb_shape_obj_too_complex_p(x)) {
-            rb_evict_fields_to_hash(x);
-        }
-        rb_shape_set_shape_id(x, next_shape_id);
+        RB_SET_SHAPE_ID(x, rb_shape_transition_frozen(x));
 
         if (RBASIC_CLASS(x)) {
             rb_freeze_singleton_class(x);
@@ -2138,10 +2107,8 @@ rb_ivar_set_internal(VALUE obj, ID id, VALUE val)
     ivar_set(obj, id, val);
 }
 
-static void class_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val);
-
 void
-rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val)
+rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val)
 {
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
@@ -2149,28 +2116,32 @@ rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val)
         break;
       case T_CLASS:
       case T_MODULE:
-        ASSERT_vm_locking();
-        class_field_set(obj, target_shape_id, val);
+        // The only field is object_id and T_CLASS handle it differently.
+        rb_bug("Unreachable");
         break;
       default:
-        generic_field_set(obj, target_shape_id, val);
+        generic_field_set(obj, target_shape_id, field_name, val);
         break;
     }
 }
 
-VALUE
-rb_ivar_defined(VALUE obj, ID id)
+static VALUE
+ivar_defined0(VALUE obj, ID id)
 {
     attr_index_t index;
 
-    if (SPECIAL_CONST_P(obj)) return Qfalse;
     if (rb_shape_obj_too_complex_p(obj)) {
         VALUE idx;
         st_table *table = NULL;
         switch (BUILTIN_TYPE(obj)) {
           case T_CLASS:
           case T_MODULE:
-            table = (st_table *)RCLASS_FIELDS_HASH(obj);
+            rb_bug("Unreachable");
+            break;
+
+          case T_IMEMO:
+            RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
+            table = rb_imemo_fields_complex_tbl(obj);
             break;
 
           case T_OBJECT:
@@ -2178,11 +2149,10 @@ rb_ivar_defined(VALUE obj, ID id)
             break;
 
           default: {
-            struct gen_fields_tbl *fields_tbl;
-            if (rb_gen_fields_tbl_get(obj, 0, &fields_tbl)) {
-                table = fields_tbl->as.complex.table;
+            VALUE fields_obj;
+            if (rb_gen_fields_tbl_get(obj, 0, &fields_obj)) {
+                table = rb_imemo_fields_complex_tbl(fields_obj);
             }
-            break;
           }
         }
 
@@ -2193,8 +2163,31 @@ rb_ivar_defined(VALUE obj, ID id)
         return Qtrue;
     }
     else {
-        return RBOOL(rb_shape_get_iv_index(rb_obj_shape(obj), id, &index));
+        return RBOOL(rb_shape_get_iv_index(RBASIC_SHAPE_ID(obj), id, &index));
     }
+}
+
+VALUE
+rb_ivar_defined(VALUE obj, ID id)
+{
+    if (SPECIAL_CONST_P(obj)) return Qfalse;
+
+    VALUE defined = Qfalse;
+    switch (BUILTIN_TYPE(obj)) {
+      case T_CLASS:
+      case T_MODULE:
+        {
+            VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+            if (fields_obj) {
+                defined = ivar_defined0(fields_obj, id);
+            }
+        }
+        break;
+      default:
+        defined = ivar_defined0(obj, id);
+        break;
+    }
+    return defined;
 }
 
 struct iv_itr_data {
@@ -2202,65 +2195,46 @@ struct iv_itr_data {
     struct gen_fields_tbl *fields_tbl;
     st_data_t arg;
     rb_ivar_foreach_callback_func *func;
+    VALUE *fields;
     bool ivar_only;
 };
+
+static int
+iterate_over_shapes_callback(shape_id_t shape_id, void *data)
+{
+    struct iv_itr_data *itr_data = data;
+
+    if (itr_data->ivar_only && !RSHAPE_TYPE_P(shape_id, SHAPE_IVAR)) {
+        return ST_CONTINUE;
+    }
+
+    VALUE *fields;
+    switch (BUILTIN_TYPE(itr_data->obj)) {
+      case T_OBJECT:
+        RUBY_ASSERT(!rb_shape_obj_too_complex_p(itr_data->obj));
+        fields = ROBJECT_FIELDS(itr_data->obj);
+        break;
+      case T_IMEMO:
+        RUBY_ASSERT(IMEMO_TYPE_P(itr_data->obj, imemo_fields));
+        RUBY_ASSERT(!rb_shape_obj_too_complex_p(itr_data->obj));
+
+        fields = rb_imemo_fields_ptr(itr_data->obj);
+        break;
+      default:
+        rb_bug("Unreachable");
+    }
+
+    VALUE val = fields[RSHAPE_INDEX(shape_id)];
+    return itr_data->func(RSHAPE_EDGE_NAME(shape_id), val, itr_data->arg);
+}
 
 /*
  * Returns a flag to stop iterating depending on the result of +callback+.
  */
-static bool
-iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_func *callback, struct iv_itr_data *itr_data)
+static void
+iterate_over_shapes(shape_id_t shape_id, rb_ivar_foreach_callback_func *callback, struct iv_itr_data *itr_data)
 {
-    switch ((enum shape_type)shape->type) {
-      case SHAPE_ROOT:
-      case SHAPE_T_OBJECT:
-        return false;
-      case SHAPE_OBJ_ID:
-        if (itr_data->ivar_only) {
-            return iterate_over_shapes_with_callback(RSHAPE(shape->parent_id), callback, itr_data);
-        }
-        // fallthrough
-      case SHAPE_IVAR:
-        ASSUME(callback);
-        if (iterate_over_shapes_with_callback(RSHAPE(shape->parent_id), callback, itr_data)) {
-            return true;
-        }
-
-        VALUE * iv_list;
-        switch (BUILTIN_TYPE(itr_data->obj)) {
-          case T_OBJECT:
-            RUBY_ASSERT(!rb_shape_obj_too_complex_p(itr_data->obj));
-            iv_list = ROBJECT_FIELDS(itr_data->obj);
-            break;
-          case T_CLASS:
-          case T_MODULE:
-            RUBY_ASSERT(!rb_shape_obj_too_complex_p(itr_data->obj));
-            iv_list = RCLASS_PRIME_FIELDS(itr_data->obj);
-            break;
-          default:
-            iv_list = itr_data->fields_tbl->as.shape.fields;
-            break;
-        }
-        VALUE val = iv_list[shape->next_field_index - 1];
-        if (!UNDEF_P(val)) {
-            switch (callback(shape->edge_name, val, itr_data->arg)) {
-              case ST_CHECK:
-              case ST_CONTINUE:
-                break;
-              case ST_STOP:
-                return true;
-              default:
-                rb_bug("unreachable");
-            }
-        }
-        return false;
-      case SHAPE_FROZEN:
-        return iterate_over_shapes_with_callback(RSHAPE(shape->parent_id), callback, itr_data);
-      case SHAPE_OBJ_TOO_COMPLEX:
-      default:
-        rb_bug("Unreachable");
-        UNREACHABLE_RETURN(false);
-    }
+    rb_shape_foreach_field(shape_id, iterate_over_shapes_callback, itr_data);
 }
 
 static int
@@ -2281,187 +2255,116 @@ obj_fields_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, b
         .ivar_only = ivar_only,
     };
 
-    rb_shape_t *shape = rb_obj_shape(obj);
-    if (rb_shape_too_complex_p(shape)) {
+    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+    if (rb_shape_too_complex_p(shape_id)) {
         rb_st_foreach(ROBJECT_FIELDS_HASH(obj), each_hash_iv, (st_data_t)&itr_data);
     }
     else {
-        iterate_over_shapes_with_callback(shape, func, &itr_data);
+        itr_data.fields = ROBJECT_FIELDS(obj);
+        iterate_over_shapes(shape_id, func, &itr_data);
     }
 }
 
 static void
-gen_fields_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, bool ivar_only)
+imemo_fields_each(VALUE fields_obj, rb_ivar_foreach_callback_func *func, st_data_t arg, bool ivar_only)
 {
-    rb_shape_t *shape = rb_obj_shape(obj);
-    struct gen_fields_tbl *fields_tbl;
-    if (!rb_gen_fields_tbl_get(obj, 0, &fields_tbl)) return;
+    IMEMO_TYPE_P(fields_obj, imemo_fields);
 
     struct iv_itr_data itr_data = {
-        .obj = obj,
-        .fields_tbl = fields_tbl,
+        .obj = fields_obj,
         .arg = arg,
         .func = func,
         .ivar_only = ivar_only,
     };
 
-    if (rb_shape_obj_too_complex_p(obj)) {
-        rb_st_foreach(fields_tbl->as.complex.table, each_hash_iv, (st_data_t)&itr_data);
+    shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
+    if (rb_shape_too_complex_p(shape_id)) {
+        rb_st_foreach(rb_imemo_fields_complex_tbl(fields_obj), each_hash_iv, (st_data_t)&itr_data);
     }
     else {
-        iterate_over_shapes_with_callback(shape, func, &itr_data);
-    }
-}
-
-static void
-class_fields_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, bool ivar_only)
-{
-    RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
-
-    rb_shape_t *shape = rb_obj_shape(obj);
-    struct iv_itr_data itr_data = {
-        .obj = obj,
-        .arg = arg,
-        .func = func,
-        .ivar_only = ivar_only,
-    };
-
-    if (rb_shape_obj_too_complex_p(obj)) {
-        rb_st_foreach(RCLASS_WRITABLE_FIELDS_HASH(obj), each_hash_iv, (st_data_t)&itr_data);
-    }
-    else {
-        iterate_over_shapes_with_callback(shape, func, &itr_data);
+        itr_data.fields = rb_imemo_fields_ptr(fields_obj);
+        iterate_over_shapes(shape_id, func, &itr_data);
     }
 }
 
 void
 rb_copy_generic_ivar(VALUE dest, VALUE obj)
 {
-    struct gen_fields_tbl *obj_fields_tbl;
-    struct gen_fields_tbl *new_fields_tbl;
+    VALUE fields_obj;
+    VALUE new_fields_obj;
 
     rb_check_frozen(dest);
 
-    if (!FL_TEST(obj, FL_EXIVAR)) {
-        goto clear;
+    if (!rb_obj_exivar_p(obj)) {
+        return;
     }
 
-    unsigned long src_num_ivs = rb_ivar_count(obj);
-    if (!src_num_ivs) {
-        goto clear;
-    }
+    shape_id_t src_shape_id = rb_obj_shape_id(obj);
 
-    rb_shape_t *src_shape = rb_obj_shape(obj);
-
-    if (rb_gen_fields_tbl_get(obj, 0, &obj_fields_tbl)) {
-        if (gen_fields_tbl_count(obj, obj_fields_tbl) == 0)
+    if (rb_gen_fields_tbl_get(obj, 0, &fields_obj)) {
+        unsigned long src_num_ivs = rb_ivar_count(fields_obj);
+        if (!src_num_ivs) {
             goto clear;
+        }
 
-        FL_SET(dest, FL_EXIVAR);
-
-        if (rb_shape_too_complex_p(src_shape)) {
-            // obj is TOO_COMPLEX so we can copy its iv_hash
-            st_table *table = st_copy(obj_fields_tbl->as.complex.table);
-            if (rb_shape_has_object_id(src_shape)) {
-                st_data_t id = (st_data_t)ruby_internal_object_id;
-                st_delete(table, &id, NULL);
-            }
-            rb_obj_init_too_complex(dest, table);
-
+        if (rb_shape_too_complex_p(src_shape_id)) {
+            rb_shape_copy_complex_ivars(dest, obj, src_shape_id, rb_imemo_fields_complex_tbl(fields_obj));
             return;
         }
 
-        rb_shape_t *shape_to_set_on_dest = src_shape;
-        rb_shape_t *initial_shape = rb_obj_shape(dest);
+        shape_id_t dest_shape_id = src_shape_id;
+        shape_id_t initial_shape_id = rb_obj_shape_id(dest);
 
-        if (!rb_shape_canonical_p(src_shape)) {
-            RUBY_ASSERT(initial_shape->type == SHAPE_ROOT);
+        if (!rb_shape_canonical_p(src_shape_id)) {
+            RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
 
-            shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
-            if (UNLIKELY(rb_shape_too_complex_p(shape_to_set_on_dest))) {
+            dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
+            if (UNLIKELY(rb_shape_too_complex_p(dest_shape_id))) {
                 st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
                 rb_obj_copy_ivs_to_hash_table(obj, table);
                 rb_obj_init_too_complex(dest, table);
-
                 return;
             }
         }
 
-        if (!shape_to_set_on_dest->capacity) {
-            rb_shape_set_shape(dest, shape_to_set_on_dest);
-            FL_UNSET(dest, FL_EXIVAR);
+        if (!RSHAPE_LEN(dest_shape_id)) {
+            rb_obj_set_shape_id(dest, dest_shape_id);
             return;
         }
 
-        new_fields_tbl = gen_fields_tbl_resize(0, shape_to_set_on_dest->capacity);
+        new_fields_obj = rb_imemo_fields_new(rb_obj_class(dest), RSHAPE_CAPACITY(dest_shape_id));
+        VALUE *src_buf = rb_imemo_fields_ptr(fields_obj);
+        VALUE *dest_buf = rb_imemo_fields_ptr(new_fields_obj);
+        rb_shape_copy_fields(new_fields_obj, dest_buf, dest_shape_id, src_buf, src_shape_id);
+        RBASIC_SET_SHAPE_ID(new_fields_obj, dest_shape_id);
 
-        VALUE *src_buf = obj_fields_tbl->as.shape.fields;
-        VALUE *dest_buf = new_fields_tbl->as.shape.fields;
-
-        if (src_shape->next_field_index == shape_to_set_on_dest->next_field_index) {
-            // Happy path, we can just memcpy the ivptr content
-            MEMCPY(dest_buf, src_buf, VALUE, shape_to_set_on_dest->next_field_index);
-
-            // Fire write barriers
-            for (uint32_t i = 0; i < shape_to_set_on_dest->next_field_index; i++) {
-                RB_OBJ_WRITTEN(dest, Qundef, dest_buf[i]);
-            }
-        }
-        else {
-            rb_shape_t *dest_shape = shape_to_set_on_dest;
-            while (src_shape->parent_id != INVALID_SHAPE_ID) {
-                if (src_shape->type == SHAPE_IVAR) {
-                    while (dest_shape->edge_name != src_shape->edge_name) {
-                        dest_shape = RSHAPE(dest_shape->parent_id);
-                    }
-
-                    RB_OBJ_WRITE(dest, &dest_buf[dest_shape->next_field_index - 1], src_buf[src_shape->next_field_index - 1]);
-                }
-                src_shape = RSHAPE(src_shape->parent_id);
-            }
-        }
-
-        /*
-         * c.fields_tbl may change in gen_fields_copy due to realloc,
-         * no need to free
-         */
-        RB_VM_LOCK_ENTER();
-        {
+        RB_VM_LOCKING() {
             generic_fields_tbl_no_ractor_check(dest);
-            st_insert(generic_fields_tbl_no_ractor_check(obj), (st_data_t)dest, (st_data_t)new_fields_tbl);
+            st_insert(generic_fields_tbl_no_ractor_check(obj), (st_data_t)dest, (st_data_t)new_fields_obj);
+            RB_OBJ_WRITTEN(dest, Qundef, new_fields_obj);
         }
-        RB_VM_LOCK_LEAVE();
 
-        rb_shape_set_shape(dest, shape_to_set_on_dest);
+        RBASIC_SET_SHAPE_ID(dest, dest_shape_id);
     }
     return;
 
   clear:
-    if (FL_TEST(dest, FL_EXIVAR)) {
-        rb_free_generic_ivar(dest);
-        FL_UNSET(dest, FL_EXIVAR);
-    }
+    rb_free_generic_ivar(dest);
 }
 
 void
 rb_replace_generic_ivar(VALUE clone, VALUE obj)
 {
-    RUBY_ASSERT(FL_TEST(obj, FL_EXIVAR));
-
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         st_data_t fields_tbl, obj_data = (st_data_t)obj;
         if (st_delete(generic_fields_tbl_, &obj_data, &fields_tbl)) {
-            FL_UNSET_RAW(obj, FL_EXIVAR);
-
             st_insert(generic_fields_tbl_, (st_data_t)clone, fields_tbl);
-            FL_SET_RAW(clone, FL_EXIVAR);
+            RB_OBJ_WRITTEN(clone, Qundef, fields_tbl);
         }
         else {
             rb_bug("unreachable");
         }
     }
-    RB_VM_LOCK_LEAVE();
 }
 
 void
@@ -2469,21 +2372,30 @@ rb_field_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, 
 {
     if (SPECIAL_CONST_P(obj)) return;
     switch (BUILTIN_TYPE(obj)) {
+      case T_IMEMO:
+        if (IMEMO_TYPE_P(obj, imemo_fields)) {
+            imemo_fields_each(obj, func, arg, ivar_only);
+        }
+        break;
       case T_OBJECT:
         obj_fields_each(obj, func, arg, ivar_only);
         break;
       case T_CLASS:
       case T_MODULE:
-        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(0);
-        RB_VM_LOCK_ENTER();
         {
-            class_fields_each(obj, func, arg, ivar_only);
+            IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(0);
+            VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+            if (fields_obj) {
+                imemo_fields_each(fields_obj, func, arg, ivar_only);
+            }
         }
-        RB_VM_LOCK_LEAVE();
         break;
       default:
-        if (FL_TEST(obj, FL_EXIVAR)) {
-            gen_fields_each(obj, func, arg, ivar_only);
+        if (rb_obj_exivar_p(obj)) {
+            VALUE fields_obj = 0;
+            if (!rb_gen_fields_tbl_get(obj, 0, &fields_obj)) return;
+
+            imemo_fields_each(fields_obj, func, arg, ivar_only);
         }
         break;
     }
@@ -2505,16 +2417,46 @@ rb_ivar_count(VALUE obj)
       case T_OBJECT:
         iv_count = ROBJECT_FIELDS_COUNT(obj);
         break;
+
       case T_CLASS:
       case T_MODULE:
-        iv_count = RCLASS_FIELDS_COUNT(obj);
+        {
+            VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+            if (!fields_obj) {
+                return 0;
+            }
+            if (rb_shape_obj_too_complex_p(fields_obj)) {
+                iv_count = rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
+            }
+            else {
+                iv_count = RBASIC_FIELDS_COUNT(fields_obj);
+            }
+        }
         break;
-      default:
-        if (FL_TEST(obj, FL_EXIVAR)) {
-            struct gen_fields_tbl *fields_tbl;
 
-            if (rb_gen_fields_tbl_get(obj, 0, &fields_tbl)) {
-                iv_count = gen_fields_tbl_count(obj, fields_tbl);
+      case T_IMEMO:
+        RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
+
+        if (rb_shape_obj_too_complex_p(obj)) {
+            iv_count = rb_st_table_size(rb_imemo_fields_complex_tbl(obj));
+        }
+        else {
+            iv_count = RBASIC_FIELDS_COUNT(obj);
+        }
+        break;
+
+      default:
+        if (rb_obj_exivar_p(obj)) {
+
+            if (rb_shape_obj_too_complex_p(obj)) {
+                VALUE fields_obj;
+
+                if (rb_gen_fields_tbl_get(obj, 0, &fields_obj)) {
+                    iv_count = rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
+                }
+            }
+            else {
+                iv_count = RBASIC_FIELDS_COUNT(obj);
             }
         }
         break;
@@ -3288,11 +3230,9 @@ autoload_const_set(struct autoload_const *ac)
 {
     check_before_mod_set(ac->module, ac->name, ac->value, "constant");
 
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         const_tbl_update(ac, true);
     }
-    RB_VM_LOCK_LEAVE();
 
     return 0; /* ignored */
 }
@@ -3837,12 +3777,10 @@ rb_local_constants(VALUE mod)
 
     if (!tbl) return rb_ary_new2(0);
 
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         ary = rb_ary_new2(rb_id_table_size(tbl));
         rb_id_table_foreach(tbl, rb_local_constants_i, (void *)ary);
     }
-    RB_VM_LOCK_LEAVE();
 
     return ary;
 }
@@ -3855,11 +3793,9 @@ rb_mod_const_at(VALUE mod, void *data)
         tbl = st_init_numtable();
     }
     if (RCLASS_CONST_TBL(mod)) {
-        RB_VM_LOCK_ENTER();
-        {
+        RB_VM_LOCKING() {
             rb_id_table_foreach(RCLASS_CONST_TBL(mod), sv_i, tbl);
         }
-        RB_VM_LOCK_LEAVE();
     }
     return tbl;
 }
@@ -4034,15 +3970,13 @@ set_namespace_path(VALUE named_namespace, VALUE namespace_path)
 {
     struct rb_id_table *const_table = RCLASS_CONST_TBL(named_namespace);
 
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         RCLASS_WRITE_CLASSPATH(named_namespace, namespace_path, true);
 
         if (const_table) {
             rb_id_table_foreach(const_table, set_namespace_path_i, &namespace_path);
         }
     }
-    RB_VM_LOCK_LEAVE();
 }
 
 static void
@@ -4070,8 +4004,7 @@ const_set(VALUE klass, ID id, VALUE val)
 
     check_before_mod_set(klass, id, val, "constant");
 
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         struct rb_id_table *tbl = RCLASS_WRITABLE_CONST_TBL(klass);
         if (!tbl) {
             tbl = rb_id_table_create(0);
@@ -4091,7 +4024,6 @@ const_set(VALUE klass, ID id, VALUE val)
             const_tbl_update(&ac, false);
         }
     }
-    RB_VM_LOCK_LEAVE();
 
     /*
      * Resolve and cache class name immediately to resolve ambiguity
@@ -4271,7 +4203,7 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv,
                     ac->flag |= flag;
                 }
             }
-        rb_clear_constant_cache_for_id(id);
+            rb_clear_constant_cache_for_id(id);
         }
         else {
             undefined_constant(mod, ID2SYM(id));
@@ -4465,7 +4397,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     }
     check_before_mod_set(target, id, val, "class variable");
 
-    int result = rb_class_ivar_set(target, id, val);
+    bool new_cvar = rb_class_ivar_set(target, id, val);
 
     struct rb_id_table *rb_cvc_tbl = RCLASS_WRITABLE_CVC_TBL(target);
 
@@ -4493,7 +4425,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     // Break the cvar cache if this is a new class variable
     // and target is a module or a subclass with the same
     // cvar in this lookup.
-    if (result == 0) {
+    if (new_cvar) {
         if (RB_TYPE_P(target, T_CLASS)) {
             if (RCLASS_SUBCLASSES_FIRST(target)) {
                 rb_class_foreach_subclass(target, check_for_cvar_table, id);
@@ -4724,81 +4656,115 @@ rb_iv_set(VALUE obj, const char *name, VALUE val)
     return rb_ivar_set(obj, id, val);
 }
 
-static VALUE *
-class_ivar_set_shape_fields(VALUE obj, void *_data)
+static bool
+class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool concurrent, VALUE *new_fields_obj)
 {
-    RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
+    bool existing = true;
+    const VALUE original_fields_obj = fields_obj;
+    fields_obj = original_fields_obj ? original_fields_obj : rb_imemo_fields_new(rb_singleton_class(klass), 1);
 
-    return RCLASS_PRIME_FIELDS(obj);
+    shape_id_t current_shape_id = RBASIC_SHAPE_ID(fields_obj);
+    shape_id_t next_shape_id = current_shape_id;
+
+    if (UNLIKELY(rb_shape_too_complex_p(current_shape_id))) {
+        goto too_complex;
+    }
+
+    attr_index_t index;
+    if (!rb_shape_get_iv_index(current_shape_id, id, &index)) {
+        existing = false;
+
+        index = RSHAPE_LEN(current_shape_id);
+        if (index >= SHAPE_MAX_FIELDS) {
+            rb_raise(rb_eArgError, "too many instance variables");
+        }
+
+        next_shape_id = rb_shape_transition_add_ivar(fields_obj, id);
+        if (UNLIKELY(rb_shape_too_complex_p(next_shape_id))) {
+            fields_obj = imemo_fields_complex_from_obj(rb_singleton_class(klass), fields_obj, next_shape_id);
+            goto too_complex;
+        }
+
+        attr_index_t next_capacity = RSHAPE_CAPACITY(next_shape_id);
+        attr_index_t current_capacity = RSHAPE_CAPACITY(current_shape_id);
+
+        if (next_capacity > current_capacity) {
+            // We allocate a new fields_obj even when concurrency isn't a concern
+            // so that we're embedded as long as possible.
+            fields_obj = imemo_fields_copy_capa(rb_singleton_class(klass), fields_obj, next_capacity);
+        }
+
+        RUBY_ASSERT(RSHAPE(next_shape_id)->type == SHAPE_IVAR);
+        RUBY_ASSERT(index == (RSHAPE_LEN(next_shape_id) - 1));
+    }
+
+    VALUE *fields = rb_imemo_fields_ptr(fields_obj);
+
+    if (concurrent && original_fields_obj == fields_obj) {
+        // In the concurrent case, if we're mutating the existing
+        // fields_obj, we must use an atomic write, because if we're
+        // adding a new field, the shape_id must be written after the field
+        // and if we're updating an existing field, we at least need a relaxed
+        // write to avoid reaping.
+        RB_OBJ_ATOMIC_WRITE(fields_obj, &fields[index], val);
+    }
+    else {
+        RB_OBJ_WRITE(fields_obj, &fields[index], val);
+    }
+
+    if (!existing) {
+        RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
+    }
+
+    *new_fields_obj = fields_obj;
+    return existing;
+
+too_complex:
+    {
+        if (concurrent && fields_obj == original_fields_obj) {
+            // In multi-ractor case, we must always work on a copy because
+            // even if the field already exist, inserting in a st_table may
+            // cause a rebuild.
+            fields_obj = rb_imemo_fields_clone(fields_obj);
+        }
+
+        st_table *table = rb_imemo_fields_complex_tbl(fields_obj);
+        existing = st_insert(table, (st_data_t)id, (st_data_t)val);
+        RB_OBJ_WRITTEN(fields_obj, Qundef, val);
+
+        if (fields_obj != original_fields_obj) {
+            RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
+        }
+    }
+
+    *new_fields_obj = fields_obj;
+    return existing;
 }
 
-static void
-class_ivar_set_shape_resize_fields(VALUE obj, attr_index_t _old_capa, attr_index_t new_capa, void *_data)
-{
-    REALLOC_N(RCLASS_PRIME_FIELDS(obj), VALUE, new_capa);
-}
-
-static void
-class_ivar_set_set_shape_id(VALUE obj, shape_id_t shape_id, void *_data)
-{
-    rb_shape_set_shape_id(obj, shape_id);
-}
-
-static void
-class_ivar_set_transition_too_complex(VALUE obj, void *_data)
-{
-    rb_evict_fields_to_hash(obj);
-}
-
-static st_table *
-class_ivar_set_too_complex_table(VALUE obj, void *_data)
-{
-    RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
-
-    return RCLASS_WRITABLE_FIELDS_HASH(obj);
-}
-
-int
+bool
 rb_class_ivar_set(VALUE obj, ID id, VALUE val)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
-    bool existing = false;
     rb_check_frozen(obj);
 
     rb_class_ensure_writable(obj);
 
-    RB_VM_LOCK_ENTER();
-    {
-        existing = general_ivar_set(obj, id, val, NULL,
-                                    class_ivar_set_shape_fields,
-                                    class_ivar_set_shape_resize_fields,
-                                    class_ivar_set_set_shape_id,
-                                    class_ivar_set_transition_too_complex,
-                                    class_ivar_set_too_complex_table).existing;
+    const VALUE original_fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+    VALUE new_fields_obj = 0;
+
+    bool existing = class_fields_ivar_set(obj, original_fields_obj, id, val, rb_multi_ractor_p(), &new_fields_obj);
+
+    if (new_fields_obj != original_fields_obj) {
+        RCLASS_WRITABLE_SET_FIELDS_OBJ(obj, new_fields_obj);
     }
-    RB_VM_LOCK_LEAVE();
 
-    return existing;
-}
+    // TODO: What should we set as the T_CLASS shape_id?
+    // In most case we can replicate the single `fields_obj` shape
+    // but in namespaced case?
+    // Perhaps INVALID_SHAPE_ID?
+    RBASIC_SET_SHAPE_ID(obj, RBASIC_SHAPE_ID(new_fields_obj));
 
-static void
-class_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val)
-{
-    RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
-    general_field_set(obj, target_shape_id, val, NULL,
-                      class_ivar_set_shape_fields,
-                      class_ivar_set_shape_resize_fields,
-                      class_ivar_set_set_shape_id,
-                      class_ivar_set_transition_too_complex,
-                      class_ivar_set_too_complex_table);
-}
-
-static int
-tbl_copy_i(ID key, VALUE val, st_data_t dest)
-{
-    rb_class_ivar_set((VALUE)dest, key, val);
-
-    return ST_CONTINUE;
+    return !existing;
 }
 
 void
@@ -4806,11 +4772,13 @@ rb_fields_tbl_copy(VALUE dst, VALUE src)
 {
     RUBY_ASSERT(rb_type(dst) == rb_type(src));
     RUBY_ASSERT(RB_TYPE_P(dst, T_CLASS) || RB_TYPE_P(dst, T_MODULE));
+    RUBY_ASSERT(RSHAPE_TYPE_P(RBASIC_SHAPE_ID(dst), SHAPE_ROOT));
 
-    RUBY_ASSERT(rb_obj_shape(dst)->type == SHAPE_ROOT);
-    RUBY_ASSERT(!RCLASS_PRIME_FIELDS(dst));
-
-    rb_ivar_foreach(src, tbl_copy_i, dst);
+    VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(src);
+    if (fields_obj) {
+        RCLASS_WRITABLE_SET_FIELDS_OBJ(dst, rb_imemo_fields_clone(fields_obj));
+        RBASIC_SET_SHAPE_ID(dst, RBASIC_SHAPE_ID(src));
+    }
 }
 
 static rb_const_entry_t *
@@ -4819,11 +4787,9 @@ const_lookup(struct rb_id_table *tbl, ID id)
     if (tbl) {
         VALUE val;
         bool r;
-        RB_VM_LOCK_ENTER();
-        {
+        RB_VM_LOCKING() {
             r = rb_id_table_lookup(tbl, id, &val);
         }
-        RB_VM_LOCK_LEAVE();
 
         if (r) return (rb_const_entry_t *)val;
     }
@@ -4835,3 +4801,4 @@ rb_const_lookup(VALUE klass, ID id)
 {
     return const_lookup(RCLASS_CONST_TBL(klass), id);
 }
+

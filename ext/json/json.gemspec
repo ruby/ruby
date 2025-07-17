@@ -44,15 +44,14 @@ spec = Gem::Specification.new do |s|
     "LEGAL",
     "README.md",
     "json.gemspec",
-    *Dir["lib/**/*.rb"],
-  ]
+  ] + Dir.glob("lib/**/*.rb", base: File.expand_path("..", __FILE__))
 
   if java_ext
     s.platform = 'java'
     s.files += Dir["lib/json/ext/**/*.jar"]
   else
     s.extensions = Dir["ext/json/**/extconf.rb"]
-    s.files += Dir["ext/json/**/*.{c,h}"]
+    s.files += Dir["ext/json/**/*.{c,h,rb}"]
   end
 end
 

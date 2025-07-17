@@ -95,6 +95,134 @@ RSpec.describe Bundler::LockfileParser do
     end
   end
 
+  describe "X64_MINGW_LEGACY platform handling" do
+    before { allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app("gems.rb")) }
+
+    describe "when X64_MINGW_LEGACY is present alone" do
+      let(:lockfile_with_legacy_platform) { <<~L }
+        GEM
+          remote: https://rubygems.org/
+          specs:
+            rake (10.3.2)
+
+        PLATFORMS
+          ruby
+          x64-mingw32
+
+        DEPENDENCIES
+          rake
+
+        BUNDLED WITH
+           3.6.9
+      L
+
+      context "when bundle is not frozen" do
+        before { allow(Bundler).to receive(:frozen_bundle?).and_return(false) }
+        subject { described_class.new(lockfile_with_legacy_platform) }
+
+        it "replaces X64_MINGW_LEGACY with X64_MINGW" do
+          allow(Bundler::SharedHelpers).to receive(:major_deprecation)
+          expect(subject.platforms.map(&:to_s)).to contain_exactly("ruby", "x64-mingw-ucrt")
+          expect(subject.platforms.map(&:to_s)).not_to include("x64-mingw32")
+        end
+
+        it "shows deprecation warning for replacement" do
+          expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(
+            2,
+            "Found x64-mingw32 in lockfile, which is deprecated. Using x64-mingw-ucrt, the replacement for x64-mingw32 in modern rubies, instead. Support for x64-mingw32 will be removed in Bundler 4.0.",
+            removed_message: "Found x64-mingw32 in lockfile, which is no longer supported as of Bundler 4.0."
+          )
+          subject
+        end
+      end
+
+      context "when bundle is frozen" do
+        before { allow(Bundler).to receive(:frozen_bundle?).and_return(true) }
+        subject { described_class.new(lockfile_with_legacy_platform) }
+
+        it "preserves X64_MINGW_LEGACY platform without replacement" do
+          expect(subject.platforms.map(&:to_s)).to contain_exactly("ruby", "x64-mingw32")
+        end
+
+        it "does not show any deprecation warnings" do
+          expect(Bundler::SharedHelpers).not_to receive(:major_deprecation)
+          subject
+        end
+      end
+    end
+
+    describe "when both X64_MINGW_LEGACY and X64_MINGW are present" do
+      let(:lockfile_with_both_platforms) { <<~L }
+        GEM
+          remote: https://rubygems.org/
+          specs:
+            rake (10.3.2)
+
+        PLATFORMS
+          ruby
+          x64-mingw32
+          x64-mingw-ucrt
+
+        DEPENDENCIES
+          rake
+
+        BUNDLED WITH
+           3.6.9
+      L
+
+      context "when bundle is not frozen" do
+        before { allow(Bundler).to receive(:frozen_bundle?).and_return(false) }
+        subject { described_class.new(lockfile_with_both_platforms) }
+
+        it "removes X64_MINGW_LEGACY and keeps X64_MINGW" do
+          allow(Bundler::SharedHelpers).to receive(:major_deprecation)
+          expect(subject.platforms.map(&:to_s)).to contain_exactly("ruby", "x64-mingw-ucrt")
+          expect(subject.platforms.map(&:to_s)).not_to include("x64-mingw32")
+        end
+
+        it "shows deprecation warning for removing legacy platform" do
+          expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(
+            2,
+            "Found x64-mingw32 in lockfile, which is deprecated. Removing it. Support for x64-mingw32 will be removed in Bundler 4.0.",
+            removed_message: "Found x64-mingw32 in lockfile, which is no longer supported as of Bundler 4.0."
+          )
+          subject
+        end
+      end
+    end
+
+    describe "when no X64_MINGW_LEGACY platform is present" do
+      let(:lockfile_with_modern_platforms) { <<~L }
+        GEM
+          remote: https://rubygems.org/
+          specs:
+            rake (10.3.2)
+
+        PLATFORMS
+          ruby
+          x64-mingw-ucrt
+
+        DEPENDENCIES
+          rake
+
+        BUNDLED WITH
+           3.6.9
+      L
+
+      before { allow(Bundler).to receive(:frozen_bundle?).and_return(false) }
+      subject { described_class.new(lockfile_with_modern_platforms) }
+
+      it "preserves all modern platforms without changes" do
+        expect(subject.platforms.map(&:to_s)).to contain_exactly("ruby", "x64-mingw-ucrt")
+      end
+
+      it "does not show any deprecation warnings" do
+        expect(Bundler::SharedHelpers).not_to receive(:major_deprecation)
+        subject
+      end
+    end
+  end
+
   describe "#initialize" do
     before { allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app("gems.rb")) }
     subject { described_class.new(lockfile_contents) }

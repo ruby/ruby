@@ -26,7 +26,7 @@ module Bundler
         if Bundler.feature_flag.update_requires_all_flag?
           raise InvalidOption, "To update everything, pass the `--all` flag."
         end
-        SharedHelpers.major_deprecation 3, "Pass --all to `bundle update` to update everything"
+        SharedHelpers.major_deprecation 4, "Pass --all to `bundle update` to update everything"
       elsif !full_update && options[:all]
         raise InvalidOption, "Cannot specify --all along with specific options."
       end
@@ -63,7 +63,7 @@ module Bundler
       opts = options.dup
       opts["update"] = true
       opts["local"] = options[:local]
-      opts["force"] = options[:redownload]
+      opts["force"] = options[:redownload] if options[:redownload]
 
       Bundler.settings.set_command_option_if_given :jobs, opts["jobs"]
 
@@ -92,7 +92,7 @@ module Bundler
           locked_spec = locked_info[:spec]
           new_spec = Bundler.definition.specs[name].first
           unless new_spec
-            unless locked_spec.match_platform(Bundler.local_platform)
+            unless locked_spec.installable_on_platform?(Bundler.local_platform)
               Bundler.ui.warn "Bundler attempted to update #{name} but it was not considered because it is for a different platform from the current one"
             end
 

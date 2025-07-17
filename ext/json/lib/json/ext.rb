@@ -34,12 +34,12 @@ module JSON
 
     if RUBY_ENGINE == 'truffleruby'
       require 'json/truffle_ruby/generator'
-      JSON.generator = ::JSON::TruffleRuby::Generator
+      JSON.generator = JSON::TruffleRuby::Generator
     else
       require 'json/ext/generator'
       JSON.generator = Generator
     end
   end
 
-  JSON_LOADED = true unless defined?(::JSON::JSON_LOADED)
+  JSON_LOADED = true unless defined?(JSON::JSON_LOADED)
 end

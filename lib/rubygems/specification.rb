@@ -1002,7 +1002,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.find_in_unresolved_tree(path)
     unresolved_specs.each do |spec|
       spec.traverse do |_from_spec, _dep, to_spec, trail|
-        if to_spec.has_conflicts? || to_spec.conficts_when_loaded_with?(trail)
+        if to_spec.has_conflicts? || to_spec.conflicts_when_loaded_with?(trail)
           :next
         else
           return trail.reverse if to_spec.contains_requirable_file? path
@@ -1649,7 +1649,7 @@ class Gem::Specification < Gem::BasicSpecification
   ##
   # return true if there will be conflict when spec if loaded together with the list of specs.
 
-  def conficts_when_loaded_with?(list_of_specs) # :nodoc:
+  def conflicts_when_loaded_with?(list_of_specs) # :nodoc:
     result = list_of_specs.any? do |spec|
       spec.runtime_dependencies.any? {|dep| (dep.name == name) && !satisfies_requirement?(dep) }
     end

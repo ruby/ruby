@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 begin
   required_version = ">= 3.3.7.2"

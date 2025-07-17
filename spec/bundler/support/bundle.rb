@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "activate"
+require_relative "path"
 
-load File.expand_path("bundle", Spec::Path.bindir)
+warn "#{__FILE__} is deprecated. Please use #{Spec::Path.dev_binstub} instead"
+
+load Spec::Path.dev_binstub

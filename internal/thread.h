@@ -72,6 +72,9 @@ void *rb_thread_prevent_fork(void *(*func)(void *), void *data); /* for ext/sock
 VALUE rb_thread_io_blocking_region(struct rb_io *io, rb_blocking_function_t *func, void *data1);
 VALUE rb_thread_io_blocking_call(struct rb_io *io, rb_blocking_function_t *func, void *data1, int events);
 
+// Invoke the given function, with the specified argument, in a way that `IO#close` from another execution context can interrupt it.
+VALUE rb_thread_io_blocking_operation(VALUE self, VALUE(*function)(VALUE), VALUE argument);
+
 /* thread.c (export) */
 int ruby_thread_has_gvl_p(void); /* for ext/fiddle/closure.c */
 
@@ -80,6 +83,8 @@ RUBY_SYMBOL_EXPORT_END
 int rb_threadptr_execute_interrupts(struct rb_thread_struct *th, int blocking_timing);
 bool rb_thread_mn_schedulable(VALUE thread);
 
+bool rb_thread_resolve_unblock_function(rb_unblock_function_t **unblock_function, void **data2, struct rb_thread_struct *thread);
+
 // interrupt exec
 
 typedef VALUE (rb_interrupt_exec_func_t)(void *data);
@@ -87,6 +92,7 @@ typedef VALUE (rb_interrupt_exec_func_t)(void *data);
 enum rb_interrupt_exec_flag {
     rb_interrupt_exec_flag_none = 0x00,
     rb_interrupt_exec_flag_value_data = 0x01,
+    rb_interrupt_exec_flag_new_thread = 0x02,
 };
 
 // interrupt the target_th and run func.

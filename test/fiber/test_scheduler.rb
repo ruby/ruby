@@ -94,6 +94,9 @@ class TestFiberScheduler < Test::Unit::TestCase
     def scheduler.kernel_sleep
     end
 
+    def scheduler.fiber_interrupt(_fiber, _exception)
+    end
+
     thread = Thread.new do
       Fiber.set_scheduler scheduler
     end

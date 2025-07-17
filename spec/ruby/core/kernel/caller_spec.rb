@@ -84,13 +84,26 @@ describe 'Kernel#caller' do
   end
 
   guard -> { Kernel.instance_method(:tap).source_location } do
-    it "includes core library methods defined in Ruby" do
-      file, line = Kernel.instance_method(:tap).source_location
-      file.should.start_with?('<internal:')
+    ruby_version_is ""..."3.5" do
+      it "includes core library methods defined in Ruby" do
+        file, line = Kernel.instance_method(:tap).source_location
+        file.should.start_with?('<internal:')
 
-      loc = nil
-      tap { loc = caller(1, 1)[0] }
-      loc.should =~ /\A<internal:.*in [`'](?:Kernel#)?tap'\z/
+        loc = nil
+        tap { loc = caller(1, 1)[0] }
+        loc.should =~ /\A<internal:.*in [`'](?:Kernel#)?tap'\z/
+      end
+    end
+
+    ruby_version_is "3.5" do
+      it "includes core library methods defined in Ruby" do
+        file, line = Kernel.instance_method(:tap).source_location
+        file.should.start_with?('<internal:')
+
+        loc = nil
+        tap { loc = caller(1, 1)[0] }
+        loc.should =~ /\A#{ __FILE__ }:.*in [`'](?:Kernel#)?tap'\z/
+      end
     end
   end
 end

@@ -119,6 +119,9 @@ pub const X20_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 20 };
 pub const X21_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 21 };
 pub const X22_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 22 };
 
+// link register
+pub const X30_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 30 };
+
 // zero register
 pub const XZR_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 31 };
 
@@ -153,7 +156,7 @@ pub const X26: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 26 });
 pub const X27: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 27 });
 pub const X28: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 28 });
 pub const X29: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 29 });
-pub const X30: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 30 });
+pub const X30: A64Opnd = A64Opnd::Reg(X30_REG);
 pub const X31: A64Opnd = A64Opnd::Reg(XZR_REG);
 
 // 32-bit registers

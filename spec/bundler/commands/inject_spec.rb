@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle inject", bundler: "< 3" do
+RSpec.describe "bundle inject" do
   before :each do
     gemfile <<-G
       source "https://gem.repo1"
@@ -79,11 +79,7 @@ Usage: "bundle inject GEM VERSION"
   context "when frozen" do
     before do
       bundle "install"
-      if Bundler.feature_flag.bundler_3_mode?
-        bundle "config set --local deployment true"
-      else
-        bundle "config set --local frozen true"
-      end
+      bundle "config set --local frozen true"
     end
 
     it "injects anyway" do

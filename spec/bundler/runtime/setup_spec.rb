@@ -1406,7 +1406,6 @@ end
     describe "default gem activation" do
       let(:exemptions) do
         exempts = %w[did_you_mean bundler uri pathname]
-        exempts << "etc" if (Gem.ruby_version < Gem::Version.new("3.2") || Gem.ruby_version >= Gem::Version.new("3.3.2")) && Gem.win_platform?
         exempts << "error_highlight" # added in Ruby 3.1 as a default gem
         exempts << "ruby2_keywords" # added in Ruby 3.1 as a default gem
         exempts << "syntax_suggest" # added in Ruby 3.2 as a default gem
@@ -1465,7 +1464,7 @@ end
         install_gemfile "source 'https://gem.repo1'"
         create_file("script.rb", "#!/usr/bin/env ruby\n\n#{code}")
         FileUtils.chmod(0o777, bundled_app("script.rb"))
-        bundle "exec ./script.rb", artifice: nil, env: { "RUBYOPT" => activation_warning_hack_rubyopt }
+        bundle "exec ./script.rb", env: { "RUBYOPT" => activation_warning_hack_rubyopt }
         expect(out).to eq("{}")
       end
 
@@ -1525,22 +1524,7 @@ end
   end
 
   describe "after setup" do
-    it "allows calling #gem on random objects", bundler: "< 3" do
-      install_gemfile <<-G
-        source "https://gem.repo1"
-        gem "myrack"
-      G
-
-      ruby <<-RUBY
-        require "bundler/setup"
-        Object.new.gem "myrack"
-        puts Gem.loaded_specs["myrack"].full_name
-      RUBY
-
-      expect(out).to eq("myrack-1.0.0")
-    end
-
-    it "keeps Kernel#gem private", bundler: "3" do
+    it "keeps Kernel#gem private" do
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
@@ -1552,7 +1536,7 @@ end
         puts "FAIL"
       RUBY
 
-      expect(last_command.stdboth).not_to include "FAIL"
+      expect(stdboth).not_to include "FAIL"
       expect(err).to match(/private method [`']gem'/)
     end
 
@@ -1568,7 +1552,7 @@ end
         puts "FAIL"
       RUBY
 
-      expect(last_command.stdboth).not_to include "FAIL"
+      expect(stdboth).not_to include "FAIL"
       expect(err).to match(/private method [`']require'/)
     end
 

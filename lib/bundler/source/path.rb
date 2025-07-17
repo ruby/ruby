@@ -167,6 +167,13 @@ module Bundler
             next unless spec = load_gemspec(file)
             spec.source = self
 
+            # The ignore attribute is for ignoring installed gems that don't
+            # have extensions correctly compiled for activation. In the case of
+            # path sources, there's a single version of each gem in the path
+            # source available to Bundler, so we always certainly want to
+            # consider that for activation and never makes sense to ignore it.
+            spec.ignored = false
+
             # Validation causes extension_dir to be calculated, which depends
             # on #source, so we validate here instead of load_gemspec
             validate_spec(spec)

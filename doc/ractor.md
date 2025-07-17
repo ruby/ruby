@@ -10,9 +10,9 @@ You can make multiple Ractors and they run in parallel.
 
 * `Ractor.new{ expr }` creates a new Ractor and `expr` is run in parallel on a parallel computer.
 * Interpreter invokes with the first Ractor (called *main Ractor*).
-* If main Ractor terminated, all Ractors receive terminate request like Threads (if main thread (first invoked Thread), Ruby interpreter sends all running threads to terminate execution).
-* Each Ractor has 1 or more Threads.
-  * Threads in a Ractor shares a Ractor-wide global lock like GIL (GVL in MRI terminology), so they can't run in parallel (without releasing GVL explicitly in C-level). Threads in different ractors run in parallel.
+* If the main Ractor terminates, all other Ractors receive termination requests, similar to how threads behave. (if main thread (first invoked Thread), Ruby interpreter sends all running threads to terminate execution).
+* Each Ractor contains one or more Threads.
+  * Threads within the same Ractor share a Ractor-wide global lock like GIL (GVL in MRI terminology), so they can't run in parallel (without releasing GVL explicitly in C-level). Threads in different ractors run in parallel.
   * The overhead of creating a Ractor is similar to overhead of one Thread creation.
 
 ### Limited sharing between multiple ractors
@@ -31,20 +31,23 @@ Ractors don't share everything, unlike threads.
     * Ractor object itself.
     * And more...
 
-### Two-types communication between Ractors
+### Communication between Ractors with `Ractor::Port`
 
-Ractors communicate with each other and synchronize the execution by message exchanging between Ractors. There are two message exchange protocols: push type (message passing) and pull type.
+Ractors communicate with each other and synchronize the execution by message exchanging between Ractors. `Ractor::Port` is provided for this communication.
 
-* Push type message passing: `Ractor#send(obj)` and `Ractor.receive()` pair.
-  * Sender ractor passes the `obj` to the ractor `r` by `r.send(obj)` and receiver ractor receives the message with `Ractor.receive`.
-  * Sender knows the destination Ractor `r` and the receiver does not know the sender (accept all messages from any ractors).
-  * Receiver has infinite queue and sender enqueues the message. Sender doesn't block to put message into this queue.
-  * This type of message exchanging is employed by many other Actor-based languages.
-  * `Ractor.receive_if{ filter_expr }` is a variant of `Ractor.receive` to select a message.
-* Pull type communication: `Ractor.yield(obj)` and `Ractor#take()` pair.
-  * Sender ractor declare to yield the `obj` by `Ractor.yield(obj)` and receiver Ractor take it with `r.take`.
-  * Sender doesn't know a destination Ractor and receiver knows the sender Ractor `r`.
-  * Sender or receiver will block if there is no other side.
+```ruby
+port = Ractor::Port.new
+
+Ractor.new port do |port|
+  # Other ractors can send to the port
+  port << 42
+end
+
+port.receive # get a message to the port. Only the creator Ractor can receive from the port
+#=> 42
+```
+
+Ractors have its own deafult port and `Ractor#send`, `Ractor.receive` will use it.
 
 ### Copy & Move semantics to send messages
 
@@ -66,7 +69,7 @@ Ractor helps to write a thread-safe concurrent program, but we can make thread-u
   * To make it compatible with old behavior, classes and modules can introduce data-race and so on.
   * Ruby programmers should take care if they modify class/module objects on multi Ractor programs.
 * BAD: Ractor can't solve all thread-safety problems
-  * There are several blocking operations (waiting send, waiting yield and waiting take) so you can make a program which has dead-lock and live-lock issues.
+  * There are several blocking operations (waiting send) so you can make a program which has dead-lock and live-lock issues.
   * Some kind of shareable objects can introduce transactions (STM, for example). However, misusing transactions will generate inconsistent state.
 
 Without Ractor, we need to trace all state-mutations to debug thread-safety issues.
@@ -105,7 +108,7 @@ begin
   r = Ractor.new do
     a #=> ArgumentError because this block accesses `a`.
   end
-  r.take # see later
+  r.join # see later
 rescue ArgumentError
 end
 ```
@@ -117,7 +120,7 @@ r = Ractor.new do
   p self.class #=> Ractor
   self.object_id
 end
-r.take == self.object_id #=> false
+r.value == self.object_id #=> false
 ```
 
 Passed arguments to `Ractor.new()` becomes block parameters for the given block. However, an interpreter does not pass the parameter object references, but send them as messages (see below for details).
@@ -126,7 +129,7 @@ Passed arguments to `Ractor.new()` becomes block parameters for the given block.
 r = Ractor.new 'ok' do |msg|
   msg #=> 'ok'
 end
-r.take #=> 'ok'
+r.value #=> 'ok'
 ```
 
 ```ruby
@@ -136,7 +139,7 @@ r = Ractor.new do
   msg
 end
 r.send 'ok'
-r.take #=> 'ok'
+r.value #=> 'ok'
 ```
 
 ### An execution result of given block
@@ -147,15 +150,7 @@ Return value of the given block becomes an outgoing message (see below for detai
 r = Ractor.new do
   'ok'
 end
-r.take #=> `ok`
-```
-
-```ruby
-# almost similar to the last example
-r = Ractor.new do
-  Ractor.yield 'ok'
-end
-r.take #=> 'ok'
+r.value #=> `ok`
 ```
 
 Error in the given block will be propagated to the receiver of an outgoing message.
@@ -166,7 +161,7 @@ r = Ractor.new do
 end
 
 begin
-  r.take
+  r.value
 rescue Ractor::RemoteError => e
   e.cause.class   #=> RuntimeError
   e.cause.message #=> 'ok'
@@ -178,9 +173,7 @@ end
 
 Communication between Ractors is achieved by sending and receiving messages. There are two ways to communicate with each other.
 
-* (1) Message sending/receiving
-  * (1-1) push type send/receive (sender knows receiver). Similar to the Actor model.
-  * (1-2) pull type yield/take (receiver knows sender).
+* (1) Message sending/receiving via `Ractor::Port`
 * (2) Using shareable container objects
   * Ractor::TVar gem ([ko1/ractor-tvar](https://github.com/ko1/ractor-tvar))
   * more?
@@ -189,18 +182,12 @@ Users can control program execution timing with (1), but should not control with
 
 For message sending and receiving, there are two types of APIs: push type and pull type.
 
-* (1-1) send/receive (push type)
-  * `Ractor#send(obj)` (`Ractor#<<(obj)` is an alias) send a message to the Ractor's incoming port. Incoming port is connected to the infinite size incoming queue so `Ractor#send` will never block.
-  * `Ractor.receive` dequeue a message from its own incoming queue. If the incoming queue is empty, `Ractor.receive` calling will block.
-  * `Ractor.receive_if{|msg| filter_expr }` is variant of `Ractor.receive`. `receive_if` only receives a message which `filter_expr` is true (So `Ractor.receive` is the same as `Ractor.receive_if{ true }`.
-* (1-2) yield/take (pull type)
-  * `Ractor.yield(obj)` send an message to a Ractor which are calling `Ractor#take` via outgoing port . If no Ractors are waiting for it, the `Ractor.yield(obj)` will block. If multiple Ractors are waiting for `Ractor.yield(obj)`, only one Ractor can receive the message.
-  * `Ractor#take` receives a message which is waiting by `Ractor.yield(obj)` method from the specified Ractor. If the Ractor does not call `Ractor.yield` yet, the `Ractor#take` call will block.
-* `Ractor.select()` can wait for the success of `take`, `yield` and `receive`.
-* You can close the incoming port or outgoing port.
-  * You can close then with `Ractor#close_incoming` and `Ractor#close_outgoing`.
-  * If the incoming port is closed for a Ractor, you can't `send` to the Ractor. If `Ractor.receive` is blocked for the closed incoming port, then it will raise an exception.
-  * If the outgoing port is closed for a Ractor, you can't call `Ractor#take` and `Ractor.yield` on the Ractor. If ractors are blocking by `Ractor#take` or `Ractor.yield`, closing outgoing port will raise an exception on these blocking ractors.
+* (1) send/receive via `Ractor::Port`.
+  * `Ractor::Port#send(obj)` (`Ractor::Port#<<(obj)` is an alias) send a message to the port. Ports are connected to the infinite size incoming queue so `Ractor::Port#send` will never block.
+  * `Ractor::Port#receive` dequeue a message from its own incoming queue. If the incoming queue is empty, `Ractor::Port#receive` calling will block the execution of a thread.
+* `Ractor.select()` can wait for the success of `Ractor::Port#receive`.
+* You can close `Ractor::Port` by `Ractor::Port#close` only by the creator Ractor of the port.
+  * If the port is closed, you can't `send` to the port. If `Ractor::Port#receive` is blocked for the closed port, then it will raise an exception.
   * When a Ractor is terminated, the Ractor's ports are closed.
 * There are 3 ways to send an object as a message
   * (1) Send a reference: Sending a shareable object, send only a reference to the object (fast)
@@ -208,104 +195,15 @@ For message sending and receiving, there are two types of APIs: push type and pu
   * (3) Move an object: Sending an unshareable object reference with a membership. Sender Ractor can not access moved objects anymore (raise an exception) after moving it. Current implementation makes new object as a moved object for receiver Ractor and copies references of sending object to moved object. `T_DATA` objects are not supported.
   * You can choose "Copy" and "Move" by the `move:` keyword, `Ractor#send(obj, move: true/false)` and `Ractor.yield(obj, move: true/false)` (default is `false` (COPY)).
 
-### Sending/Receiving ports
-
-Each Ractor has _incoming-port_ and _outgoing-port_. Incoming-port is connected to the infinite sized incoming queue.
-
-```
-                  Ractor r
-                 +-------------------------------------------+
-                 | incoming                         outgoing |
-                 | port                                 port |
-   r.send(obj) ->*->[incoming queue]     Ractor.yield(obj) ->*-> r.take
-                 |                |                          |
-                 |                v                          |
-                 |           Ractor.receive                  |
-                 +-------------------------------------------+
-
-
-Connection example: r2.send obj on r1、Ractor.receive on r2
-  +----+     +----+
-  * r1 |---->* r2 *
-  +----+     +----+
-
-
-Connection example: Ractor.yield(obj) on r1, r1.take on r2
-  +----+     +----+
-  * r1 *---->- r2 *
-  +----+     +----+
-
-Connection example: Ractor.yield(obj) on r1 and r2,
-                    and waiting for both simultaneously by Ractor.select(r1, r2)
-
-  +----+
-  * r1 *------+
-  +----+      |
-              +----> Ractor.select(r1, r2)
-  +----+      |
-  * r2 *------|
-  +----+
-```
-
-```ruby
-r = Ractor.new do
-  msg = Ractor.receive # Receive from r's incoming queue
-  msg # send back msg as block return value
-end
-r.send 'ok' # Send 'ok' to r's incoming port -> incoming queue
-r.take      # Receive from r's outgoing port
-```
-
-The last example shows the following ractor network.
-
-```
-  +------+        +---+
-  * main |------> * r *---+
-  +------+        +---+   |
-      ^                   |
-      +-------------------+
-```
-
-And this code can be simplified by using an argument for `Ractor.new`.
-
-```ruby
-# Actual argument 'ok' for `Ractor.new()` will be sent to created Ractor.
-r = Ractor.new 'ok' do |msg|
-  # Values for formal parameters will be received from incoming queue.
-  # Similar to: msg = Ractor.receive
-
-  msg # Return value of the given block will be sent via outgoing port
-end
-
-# receive from the r's outgoing port.
-r.take #=> `ok`
-```
-
-### Return value of a block for `Ractor.new`
-
-As already explained, the return value of `Ractor.new` (an evaluated value of `expr` in `Ractor.new{ expr }`) can be taken by `Ractor#take`.
-
-```ruby
-Ractor.new{ 42 }.take #=> 42
-```
-
-When the block return value is available, the Ractor is dead so that no ractors except taken Ractor can touch the return value, so any values can be sent with this communication path without any modification.
-
-```ruby
-r = Ractor.new do
-  a = "hello"
-  binding
-end
-
-r.take.eval("p a") #=> "hello" (other communication path can not send a Binding object directly)
-```
-
 ### Wait for multiple Ractors with `Ractor.select`
 
-You can wait multiple Ractor's `yield` with `Ractor.select(*ractors)`.
-The return value of `Ractor.select()` is `[r, msg]` where `r` is yielding Ractor and `msg` is yielded message.
+You can wait multiple Ractor port's receiving.
+The return value of `Ractor.select()` is `[port, msg]` where `port` is a ready port and `msg` is received message.
 
-Wait for a single ractor (same as `Ractor.take`):
+To make convenient, `Ractor.select` can also accept Ractors to wait the termination of Ractors.
+The return value of `Ractor.select()` is `[r, msg]` where `r` is a terminated Ractor and `msg` is the value of Ractor's blcok.
+
+Wait for a single ractor (same as `Ractor#value`):
 
 ```ruby
 r1 = Ractor.new{'r1'}
@@ -314,7 +212,7 @@ r, obj = Ractor.select(r1)
 r == r1 and obj == 'r1' #=> true
 ```
 
-Wait for two ractors:
+Waiting for two ractors:
 
 ```ruby
 r1 = Ractor.new{'r1'}
@@ -334,85 +232,29 @@ as << obj
 as.sort == ['r1', 'r2'] #=> true
 ```
 
-\Complex example:
-
-```ruby
-pipe = Ractor.new do
-  loop do
-    Ractor.yield Ractor.receive
-  end
-end
-
-RN = 10
-rs = RN.times.map{|i|
-  Ractor.new pipe, i do |pipe, i|
-    msg = pipe.take
-    msg # ping-pong
-  end
-}
-RN.times{|i|
-  pipe << i
-}
-RN.times.map{
-  r, n = Ractor.select(*rs)
-  rs.delete r
-  n
-}.sort #=> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-```
-
-Multiple Ractors can send to one Ractor.
-
-```ruby
-# Create 10 ractors and they send objects to pipe ractor.
-# pipe ractor yield received objects
-
-pipe = Ractor.new do
-  loop do
-    Ractor.yield Ractor.receive
-  end
-end
-
-RN = 10
-rs = RN.times.map{|i|
-  Ractor.new pipe, i do |pipe, i|
-    pipe << i
-  end
-}
-
-RN.times.map{
-  pipe.take
-}.sort #=> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-```
-
 TODO: Current `Ractor.select()` has the same issue of `select(2)`, so this interface should be refined.
 
 TODO: `select` syntax of go-language uses round-robin technique to make fair scheduling. Now `Ractor.select()` doesn't use it.
 
 ### Closing Ractor's ports
 
-* `Ractor#close_incoming/outgoing` close incoming/outgoing ports (similar to `Queue#close`).
-* `Ractor#close_incoming`
-  * `r.send(obj)` where `r`'s incoming port is closed, will raise an exception.
-  * When the incoming queue is empty and incoming port is closed, `Ractor.receive` raises an exception. If the incoming queue is not empty, it dequeues an object without exceptions.
-* `Ractor#close_outgoing`
-  * `Ractor.yield` on a Ractor which closed the outgoing port, it will raise an exception.
-  * `Ractor#take` for a Ractor which closed the outgoing port, it will raise an exception. If `Ractor#take` is blocking, it will raise an exception.
+* `Ractor::Port#close` close the ports (similar to `Queue#close`).
+  * `port.send(obj)` where `port` is closed, will raise an exception.
+  * When the queue connected to the port is empty and port is closed, `Ractor::Port#receive` raises an exception. If the queue is not empty, it dequeues an object without exceptions.
 * When a Ractor terminates, the ports are closed automatically.
-  * Return value of the Ractor's block will be yielded as `Ractor.yield(ret_val)`, even if the implementation terminates the based native thread.
 
-Example (try to take from closed Ractor):
+Example (try to get a result from closed Ractor):
 
 ```ruby
 r = Ractor.new do
   'finish'
 end
-r.take # success (will return 'finish')
-begin
-  o = r.take # try to take from closed Ractor
-rescue Ractor::ClosedError
-  'ok'
-else
-  "ng: #{o}"
+r.join # success (wait for the termination)
+r.value # success (will return 'finish')
+
+# the first Ractor which success the `Ractor#value` can get the result
+Ractor.new r do |r|
+  r.value #=> Ractor::Error
 end
 ```
 
@@ -422,7 +264,7 @@ Example (try to send to closed (terminated) Ractor):
 r = Ractor.new do
 end
 
-r.take # wait terminate
+r.join # wait terminate
 
 begin
   r.send(1)
@@ -433,11 +275,9 @@ else
 end
 ```
 
-When multiple Ractors are waiting for `Ractor.yield()`, `Ractor#close_outgoing` will cancel all blocking by raising an exception (`ClosedError`).
-
 ### Send a message by copying
 
-`Ractor#send(obj)` or `Ractor.yield(obj)` copy `obj` deeply if `obj` is an unshareable object.
+`Ractor::Port#send(obj)` copy `obj` deeply if `obj` is an unshareable object.
 
 ```ruby
 obj = 'str'.dup
@@ -446,7 +286,7 @@ r = Ractor.new obj do |msg|
   msg.object_id
 end
 
-obj.object_id == r.take #=> false
+obj.object_id == r.value #=> false
 ```
 
 Some objects are not supported to copy the value, and raise an exception.
@@ -466,7 +306,7 @@ end
 
 ### Send a message by moving
 
-`Ractor#send(obj, move: true)` or `Ractor.yield(obj, move: true)` move `obj` to the destination Ractor.
+`Ractor::Port#send(obj, move: true)` moves `obj` to the destination Ractor.
 If the source Ractor touches the moved object (for example, call the method like `obj.foo()`), it will be an error.
 
 ```ruby
@@ -478,7 +318,7 @@ end
 
 str = 'hello'
 r.send str, move: true
-modified = r.take #=> 'hello world'
+modified = r.value #=> 'hello world'
 
 # str is moved, and accessing str from this Ractor is prohibited
 
@@ -489,22 +329,6 @@ rescue Ractor::MovedError
   modified #=> 'hello world'
 else
   raise 'unreachable'
-end
-```
-
-```ruby
-# move with Ractor.yield
-r = Ractor.new do
-  obj = 'hello'
-  Ractor.yield obj, move: true
-  obj << 'world'  # raise Ractor::MovedError
-end
-
-str = r.take
-begin
-  r.take
-rescue Ractor::RemoteError
-  p str #=> "hello"
 end
 ```
 
@@ -554,13 +378,13 @@ r = Ractor.new do
 end
 
 begin
-  r.take
+  r.join
 rescue Ractor::RemoteError => e
   e.cause.message #=> 'can not access global variables from non-main Ractors'
 end
 ```
 
-Note that some special global variables are ractor-local, like `$stdin`, `$stdout`, `$stderr`. See [[Bug #17268]](https://bugs.ruby-lang.org/issues/17268) for more details.
+Note that some special global variables, such as `$stdin`, `$stdout` and `$stderr` are Ractor-lcoal. See [[Bug #17268]](https://bugs.ruby-lang.org/issues/17268) for more details.
 
 ### Instance variables of shareable objects
 
@@ -575,7 +399,7 @@ p Ractor.new do
   class C
      @iv
   end
-end.take #=> 1
+end.value #=> 1
 ```
 
 Otherwise, only the main Ractor can access instance variables of shareable objects.
@@ -601,7 +425,7 @@ Ractor.new do
       #=> "can not set instance variables of classes/modules by non-main Ractors"
     end
   end
-end.take
+end.join
 ```
 
 
@@ -615,7 +439,7 @@ r = Ractor.new shared do |shared|
 end
 
 begin
-  r.take
+  r.join
 rescue Ractor::RemoteError => e
   e.cause.message #=> can not access instance variables of shareable objects from non-main Ractors (Ractor::IsolationError)
 end
@@ -640,7 +464,7 @@ end
 
 
 begin
-  r.take
+  r.join
 rescue => e
   e.class #=> Ractor::IsolationError
 end
@@ -658,7 +482,7 @@ r = Ractor.new do
   C::CONST
 end
 begin
-  r.take
+  r.join
 rescue => e
   e.class #=> Ractor::IsolationError
 end
@@ -673,7 +497,7 @@ r = Ractor.new do
   C::CONST = 'str'
 end
 begin
-  r.take
+  r.join
 rescue => e
   e.class #=> Ractor::IsolationError
 end
@@ -770,53 +594,50 @@ end
 
 ### Worker pool
 
+(1) One ractor has a pool
+
 ```ruby
 require 'prime'
 
-pipe = Ractor.new do
-  loop do
-    Ractor.yield Ractor.receive
-  end
-end
-
 N = 1000
 RN = 10
+
+# make RN workers
 workers = (1..RN).map do
-  Ractor.new pipe do |pipe|
-    while n = pipe.take
-      Ractor.yield [n, n.prime?]
+  Ractor.new do |; result_port|
+    loop do
+      n, result_port = Ractor.receive
+      result_port << [n, n.prime?, Ractor.current]
     end
   end
 end
 
-(1..N).each{|i|
-  pipe << i
-}
+result_port = Ractor::Port.new
+results = []
 
-pp (1..N).map{
-  _r, (n, b) = Ractor.select(*workers)
-  [n, b]
-}.sort_by{|(n, b)| n}
+(1..N).each do |i|
+  if workers.empty?
+    # receive a result
+    n, result, w = result_port.receive
+    results << [n, result]
+  else
+    w = workers.pop
+  end
+
+  # send a task to the idle worker ractor
+  w << [i, result_port]
+end
+
+# receive a result
+while results.size != N
+  n, result, _w = result_port.receive
+  results << [n, result]
+end
+
+pp results.sort_by{|n, result| n}
 ```
 
 ### Pipeline
-
-```ruby
-# pipeline with yield/take
-r1 = Ractor.new do
-  'r1'
-end
-
-r2 = Ractor.new r1 do |r1|
-  r1.take + 'r2'
-end
-
-r3 = Ractor.new r2 do |r2|
-  r2.take + 'r3'
-end
-
-p r3.take #=> 'r1r2r3'
-```
 
 ```ruby
 # pipeline with send/receive

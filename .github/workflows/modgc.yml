@@ -26,8 +26,8 @@ jobs:
       matrix:
         gc:
           - name: default
-          # - name: mmtk
-          #   mmtk_build: release
+          - name: mmtk
+            mmtk_build: release
         os: [macos-latest, ubuntu-latest]
         include:
           - test_task: check
@@ -63,7 +63,7 @@ jobs:
         uses: ./.github/actions/setup/ubuntu
         if: ${{ contains(matrix.os, 'ubuntu') }}
 
-      - uses: ruby/setup-ruby@d8d83c3960843afb664e821fed6be52f37da5267 # v1.231.0
+      - uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.245.0
         with:
           ruby-version: '3.1'
           bundler: none
@@ -131,6 +131,7 @@ jobs:
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
 
       - name: Set up Launchable
+        id: launchable
         uses: ./.github/actions/launchable/setup
         with:
           os: ${{ matrix.os || 'ubuntu-22.04' }}
@@ -139,14 +140,12 @@ jobs:
           builddir: build
           srcdir: src
         continue-on-error: true
+        timeout-minutes: 3
 
       - name: make ${{ matrix.test_task }}
         run: |
-          if [ -n "${LAUNCHABLE_ORGANIZATION}" ]; then
-            exec \
-            > >(tee launchable_stdout.log) \
-            2> >(tee launchable_stderr.log)
-          fi
+          test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
+          test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
 
           $SETARCH make -s ${{ matrix.test_task }} \
             ${TESTS:+TESTS="$TESTS"} \
@@ -154,8 +153,10 @@ jobs:
         timeout-minutes: ${{ matrix.gc.timeout || 40 }}
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof,rbs,repl_type_completor'
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           PRECHECK_BUNDLED_GEMS: 'no'
+          LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
+          LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
 
       - name: make skipped tests
         run: |

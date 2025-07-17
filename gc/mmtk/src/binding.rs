@@ -83,7 +83,7 @@ impl RubyBinding {
             gc_thread_join_handles: Default::default(),
             wb_unprotected_objects: Default::default(),
 
-            weak_reference_dead_value
+            weak_reference_dead_value,
         }
     }
 

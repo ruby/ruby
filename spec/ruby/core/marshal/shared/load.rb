@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../fixtures/marshal_data'
 
 describe :marshal_load, shared: true do

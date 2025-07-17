@@ -103,7 +103,7 @@ module Bundler
     end
 
     def get(source)
-      source_list_for(source).find {|s| equivalent_source?(source, s) }
+      source_list_for(source).find {|s| s.include?(source) }
     end
 
     def lock_sources
@@ -264,10 +264,6 @@ module Bundler
 
     def equivalent_sources?(lock_sources, replacement_sources)
       lock_sources.sort_by(&:identifier) == replacement_sources.sort_by(&:identifier)
-    end
-
-    def equivalent_source?(source, other_source)
-      source == other_source
     end
   end
 end

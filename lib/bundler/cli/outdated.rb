@@ -155,7 +155,7 @@ module Bundler
 
       return active_spec if strict
 
-      active_specs = active_spec.source.specs.search(current_spec.name).select {|spec| spec.match_platform(current_spec.platform) }.sort_by(&:version)
+      active_specs = active_spec.source.specs.search(current_spec.name).select {|spec| spec.installable_on_platform?(current_spec.platform) }.sort_by(&:version)
       if !current_spec.version.prerelease? && !options[:pre] && active_specs.size > 1
         active_specs.delete_if {|b| b.respond_to?(:version) && b.version.prerelease? }
       end

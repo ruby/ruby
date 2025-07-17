@@ -78,6 +78,7 @@ ruby_setup(void)
 #endif
     Init_BareVM();
     rb_vm_encoded_insn_data_table_init();
+    Init_enable_namespace();
     Init_vm_objects();
     Init_fstring_table();
 
@@ -422,7 +423,8 @@ rb_class_modify_check(VALUE klass)
         Check_Type(klass, T_CLASS);
     }
     if (RB_TYPE_P(klass, T_MODULE)) {
-        rb_module_set_initialized(klass);
+        // TODO: shouldn't this only happen in a few places?
+        rb_class_set_initialized(klass);
     }
     if (OBJ_FROZEN(klass)) {
         const char *desc;
@@ -529,10 +531,14 @@ exc_setup_message(const rb_execution_context_t *ec, VALUE mesg, VALUE *cause)
         rb_exc_check_circular_cause(*cause);
 #else
         VALUE c = *cause;
-        while (!NIL_P(c = rb_attr_get(c, id_cause))) {
+        while (!NIL_P(c)) {
             if (c == mesg) {
                 rb_raise(rb_eArgError, "circular causes");
             }
+            if (THROW_DATA_P(c)) {
+                break;
+            }
+            c = rb_attr_get(c, id_cause);
         }
 #endif
     }

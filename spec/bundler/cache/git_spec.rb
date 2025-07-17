@@ -452,7 +452,7 @@ RSpec.describe "bundle cache with git" do
       bundle :cache, "all-platforms" => true, :install => false
 
       # it did _NOT_ actually install the gem - neither in $GEM_HOME (bundler 2 mode),
-      # nor in .bundle (bundler 3 mode)
+      # nor in .bundle (bundler 4 mode)
       expect(Pathname.new(File.join(default_bundle_path, "gems/foo-1.0-#{ref}"))).to_not exist
       # it _did_ cache the gem in vendor/
       expect(bundled_app("vendor/cache/foo-1.0-#{ref}")).to exist

@@ -471,8 +471,7 @@ RBIMPL_SYMBOL_EXPORT_END()
 /**
  * Identical to #TypedData_Wrap_Struct,  except it allocates a  new data region
  * internally instead of taking an existing  one.  The allocation is done using
- * ruby_calloc().  Hence  it makes no sense  for `data_type->function.dfree` to
- * be anything other than ::RUBY_TYPED_DEFAULT_FREE.
+ * ruby_calloc().
  *
  * @param      klass          Ruby level class of the object.
  * @param      type           Type name of the C struct.

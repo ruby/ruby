@@ -439,6 +439,10 @@ without including the tags in the match:
   /(?<=<b>)\w+(?=<\/b>)/.match("Fortune favors the <b>bold</b>.")
   # => #<MatchData "bold">
 
+The pattern in lookbehind must be fixed-width.
+But top-level alternatives can be of various lengths.
+ex. (?<=a|bc) is OK. (?<=aaa(?:b|cd)) is not allowed.
+
 ==== Match-Reset Anchor
 
 - <tt>\K</tt>: Match reset:

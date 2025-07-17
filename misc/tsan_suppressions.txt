@@ -22,16 +22,7 @@ race_top:push_subclass_entry_to_list
 race:objspace_malloc_increase_body
 
 # Signals and ubf
-race_top:rb_signal_buff_size
 race:unregister_ubf_list
-
-# interrupt flag is set atomically, but read non-atomically
-race_top:RUBY_VM_INTERRUPTED_ANY
-race_top:unblock_function_set
-race_top:threadptr_get_interrupts
-
-# system_working needs to be converted to atomic
-race:system_working
 
 # It's already crashing. We're doing our best
 signal:rb_vm_bugreport
@@ -74,11 +65,20 @@ race_top:rb_ractor_set_current_ec_
 # Possible deadlock between Ractor lock and UBF lock
 deadlock:ractor_sleep_interrupt
 
+# TSan reports a lock-order-inversion between thread_sched_lock_ and this lock.
+# It's unclear if that can cause a deadlock since the lock is on self
+deadlock:ractor_lock_self
+
+# TSan reports a deadlock when reacquiring the this lock after a barrier, but
+# we know the other threads have been stopped
+deadlock:rb_ractor_sched_barrier_start
+
 # RVALUE_AGE_SET manipulates flag bits on objects which may be accessed in Ractors
 race_top:RVALUE_AGE_SET
 
 # Inline caches
 race_top:vm_cc_call_set
+race_top:vm_cc_class_check
 race_top:vm_search_cc
 race_top:vm_search_method_slowpath0
 race_top:rb_vm_opt_getconstant_path
@@ -94,6 +94,10 @@ race:gccct_method_search
 # Ignore exit for now
 race:rb_ec_finalize
 race:rb_ec_cleanup
+
+# TSan doesn't work well post-fork, this raises errors when creating the new
+# timer thread
+race:after_fork_ruby
 
 # object_id races
 race:object_id
@@ -114,6 +118,7 @@ race_top:method_definition_addref
 # Switching to setting up tracing. Likely other ractors should be stopped for this.
 race_top:encoded_iseq_trace_instrument
 race:rb_iseq_trace_set_all
+race:rb_tracepoint_enable
 
 # We walk the machine stack looking for markable objects, a thread with the GVL
 # released could by mutating the stack with non-Ruby-objects

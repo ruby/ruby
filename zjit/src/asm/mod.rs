@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-//use std::fmt;
+use std::fmt;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::mem;
@@ -106,13 +106,17 @@ impl CodeBlock {
         self.write_pos
     }
 
+    pub fn write_mem(&self, write_ptr: CodePtr, byte: u8) -> Result<(), WriteError> {
+        self.mem_block.borrow_mut().write_byte(write_ptr, byte)
+    }
+
     /// Get a (possibly dangling) direct pointer to the current write position
     pub fn get_write_ptr(&self) -> CodePtr {
         self.get_ptr(self.write_pos)
     }
 
     /// Set the current write position from a pointer
-    fn set_write_ptr(&mut self, code_ptr: CodePtr) {
+    pub fn set_write_ptr(&mut self, code_ptr: CodePtr) {
         let pos = code_ptr.as_offset() - self.mem_block.borrow().start_ptr().as_offset();
         self.write_pos = pos.try_into().unwrap();
     }
@@ -248,6 +252,11 @@ impl CodeBlock {
         assert!(self.label_refs.is_empty());
     }
 
+    /// Convert a Label to CodePtr
+    pub fn resolve_label(&self, label: Label) -> CodePtr {
+        self.get_ptr(self.label_addrs[label.0])
+    }
+
     pub fn clear_labels(&mut self) {
         self.label_addrs.clear();
         self.label_names.clear();
@@ -257,6 +266,18 @@ impl CodeBlock {
     /// Make all the code in the region executable. Call this at the end of a write session.
     pub fn mark_all_executable(&mut self) {
         self.mem_block.borrow_mut().mark_all_executable();
+    }
+}
+
+/// Produce hex string output from the bytes in a code block
+impl fmt::LowerHex for CodeBlock {
+    fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
+        for pos in 0..self.write_pos {
+            let mem_block = &*self.mem_block.borrow();
+            let byte = unsafe { mem_block.start_ptr().raw_ptr(mem_block).add(pos).read() };
+            fmtr.write_fmt(format_args!("{:02x}", byte))?;
+        }
+        Ok(())
     }
 }
 

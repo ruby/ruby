@@ -108,12 +108,10 @@ fn main() {
 
         // From shape.h
         .allowlist_function("rb_obj_shape_id")
-        .allowlist_function("rb_shape_lookup")
         .allowlist_function("rb_shape_id_offset")
         .allowlist_function("rb_shape_get_iv_index")
         .allowlist_function("rb_shape_transition_add_ivar_no_warnings")
-        .allowlist_function("rb_shape_id")
-        .allowlist_function("rb_shape_obj_too_complex_p")
+        .allowlist_function("rb_zjit_shape_obj_too_complex_p")
         .allowlist_var("SHAPE_ID_NUM_BITS")
 
         // From ruby/internal/intern/object.h
@@ -169,6 +167,7 @@ fn main() {
         .allowlist_function("rb_gc_mark_movable")
         .allowlist_function("rb_gc_location")
         .allowlist_function("rb_gc_writebarrier")
+        .allowlist_function("rb_gc_writebarrier_remember")
 
         // VALUE variables for Ruby class objects
         // From include/ruby/internal/globals.h
@@ -183,11 +182,14 @@ fn main() {
         .allowlist_var("rb_cSymbol")
         .allowlist_var("rb_cFloat")
         .allowlist_var("rb_cNumeric")
+        .allowlist_var("rb_cRange")
         .allowlist_var("rb_cString")
         .allowlist_var("rb_cThread")
         .allowlist_var("rb_cArray")
         .allowlist_var("rb_cHash")
+        .allowlist_var("rb_cSet")
         .allowlist_var("rb_cClass")
+        .allowlist_var("rb_cRegexp")
         .allowlist_var("rb_cISeq")
 
         // From include/ruby/internal/fl_type.h
@@ -228,6 +230,7 @@ fn main() {
         .allowlist_function("rb_sym2id")
         .allowlist_function("rb_str_intern")
         .allowlist_function("rb_id2str")
+        .allowlist_function("rb_sym2str")
 
         // From internal/numeric.h
         .allowlist_function("rb_fix_aref")
@@ -333,6 +336,7 @@ fn main() {
         .allowlist_function("rb_zjit_get_page_size")
         .allowlist_function("rb_zjit_iseq_builtin_attrs")
         .allowlist_function("rb_zjit_iseq_inspect")
+        .allowlist_function("rb_zjit_iseq_insn_set")
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_c_method_tracing_currently_enabled")
         .allowlist_function("rb_full_cfunc_return")
@@ -349,6 +353,9 @@ fn main() {
         .allowlist_function("rb_zjit_print_exception")
         .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
+
+        // From jit.c
+        .allowlist_function("rb_assert_holding_vm_lock")
 
         // from vm_sync.h
         .allowlist_function("rb_vm_barrier")
@@ -368,6 +375,7 @@ fn main() {
         .allowlist_function("rb_iseqw_to_iseq")
         .allowlist_function("rb_iseq_label")
         .allowlist_function("rb_iseq_line_no")
+        .allowlist_function("rb_iseq_defined_string")
         .allowlist_type("defined_type")
 
         // From builtin.h
@@ -381,6 +389,7 @@ fn main() {
         .allowlist_function("rb_attr_get")
         .allowlist_function("rb_ivar_defined")
         .allowlist_function("rb_ivar_get")
+        .allowlist_function("rb_ivar_set")
         .allowlist_function("rb_mod_name")
 
         // From include/ruby/internal/intern/vm.h

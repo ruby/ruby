@@ -42,6 +42,7 @@ enum imemo_type {
     imemo_callinfo       = 11,
     imemo_callcache      = 12,
     imemo_constcache     = 13,
+    imemo_fields   = 14,
 };
 
 /* CREF (Class REFerence) is defined in method.h */
@@ -148,9 +149,7 @@ static inline void MEMO_V1_SET(struct MEMO *m, VALUE v);
 static inline void MEMO_V2_SET(struct MEMO *m, VALUE v);
 
 size_t rb_imemo_memsize(VALUE obj);
-void rb_cc_table_mark(VALUE klass);
 void rb_imemo_mark_and_move(VALUE obj, bool reference_updating);
-void rb_cc_table_free(VALUE klass);
 void rb_cc_tbl_free(struct rb_id_table *cc_tbl, VALUE klass);
 void rb_imemo_free(VALUE obj);
 
@@ -255,6 +254,61 @@ static inline void
 MEMO_V2_SET(struct MEMO *m, VALUE v)
 {
     RB_OBJ_WRITE(m, &m->v2, v);
+}
+
+struct rb_fields {
+    struct RBasic basic;
+    union {
+        struct {
+            VALUE fields[1];
+        } embed;
+        struct {
+            VALUE *ptr;
+        } external;
+        struct {
+            // Note: the st_table could be embedded, but complex T_CLASS should be rare to
+            // non-existent, so not really worth the trouble.
+            st_table *table;
+        } complex;
+    } as;
+};
+
+#define OBJ_FIELD_EXTERNAL IMEMO_FL_USER0
+#define IMEMO_OBJ_FIELDS(fields) ((struct rb_fields *)fields)
+
+VALUE rb_imemo_fields_new(VALUE klass, size_t capa);
+VALUE rb_imemo_fields_new_complex(VALUE klass, size_t capa);
+VALUE rb_imemo_fields_new_complex_tbl(VALUE klass, st_table *tbl);
+VALUE rb_imemo_fields_clone(VALUE fields_obj);
+void rb_imemo_fields_clear(VALUE fields_obj);
+
+static inline VALUE *
+rb_imemo_fields_ptr(VALUE obj_fields)
+{
+    if (!obj_fields) {
+        return NULL;
+    }
+
+    RUBY_ASSERT(IMEMO_TYPE_P(obj_fields, imemo_fields));
+
+    if (RB_UNLIKELY(FL_TEST_RAW(obj_fields, OBJ_FIELD_EXTERNAL))) {
+        return IMEMO_OBJ_FIELDS(obj_fields)->as.external.ptr;
+    }
+    else {
+        return IMEMO_OBJ_FIELDS(obj_fields)->as.embed.fields;
+    }
+}
+
+static inline st_table *
+rb_imemo_fields_complex_tbl(VALUE obj_fields)
+{
+    if (!obj_fields) {
+        return NULL;
+    }
+
+    RUBY_ASSERT(IMEMO_TYPE_P(obj_fields, imemo_fields));
+
+    return IMEMO_OBJ_FIELDS(obj_fields)->as.complex.table;
 }
 
 #endif /* INTERNAL_IMEMO_H */

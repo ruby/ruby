@@ -335,7 +335,7 @@ class TestMemoryView < Test::Unit::TestCase
         p mv[[0, 2]]
         mv[[1, 3]]
       end
-      p r.take
+      p r.value
     end;
   end
 end

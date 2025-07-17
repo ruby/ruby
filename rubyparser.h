@@ -915,12 +915,16 @@ typedef struct RNode_COLON2 {
 
     struct RNode *nd_head;
     ID nd_mid;
+    rb_code_location_t delimiter_loc;
+    rb_code_location_t name_loc;
 } rb_node_colon2_t;
 
 typedef struct RNode_COLON3 {
     NODE node;
 
     ID nd_mid;
+    rb_code_location_t delimiter_loc;
+    rb_code_location_t name_loc;
 } rb_node_colon3_t;
 
 /* NODE_DOT2, NODE_DOT3, NODE_FLIP2, NODE_FLIP3 */
@@ -1153,7 +1157,7 @@ typedef struct RNode_ERROR {
 #define RNODE_FILE(node) ((rb_node_file_t *)(node))
 #define RNODE_ENCODING(node) ((rb_node_encoding_t *)(node))
 
-/* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8: UNUSED, 9: UNUSED, 10: EXIVAR, 11: FREEZE */
+/* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8..10: UNUSED, 11: FREEZE */
 /* NODE_FL: 0..4: UNUSED,  5: UNUSED,  6: UNUSED,   7: NODE_FL_NEWLINE,
  *          8..14: nd_type,
  *          15..: nd_line

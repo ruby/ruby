@@ -148,7 +148,7 @@ static int hrtime_update_expire(rb_hrtime_t *, const rb_hrtime_t);
 NORETURN(static void async_bug_fd(const char *mesg, int errno_arg, int fd));
 MAYBE_UNUSED(static int consume_communication_pipe(int fd));
 
-static volatile int system_working = 1;
+static rb_atomic_t system_working = 1;
 static rb_internal_thread_specific_key_t specific_key_count;
 
 /********************************************************************************/
@@ -173,7 +173,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 
 #define THREAD_BLOCKING_END(th) \
   thread_sched_to_running((sched), (th)); \
-  rb_ractor_thread_switch(th->ractor, th); \
+  rb_ractor_thread_switch(th->ractor, th, false); \
 } while(0)
 
 #ifdef __GNUC__
@@ -207,6 +207,10 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 static inline int
 vm_check_ints_blocking(rb_execution_context_t *ec)
 {
+#ifdef RUBY_ASSERT_CRITICAL_SECTION
+    VM_ASSERT(ruby_assert_critical_section_entered == 0);
+#endif
+
     rb_thread_t *th = rb_ec_thread_ptr(ec);
 
     if (LIKELY(rb_threadptr_pending_interrupt_empty_p(th))) {
@@ -515,20 +519,13 @@ thread_cleanup_func(void *th_ptr, int atfork)
     th->locking_mutex = Qfalse;
     thread_cleanup_func_before_exec(th_ptr);
 
-    /*
-     * Unfortunately, we can't release native threading resource at fork
-     * because libc may have unstable locking state therefore touching
-     * a threading resource may cause a deadlock.
-     */
     if (atfork) {
+        native_thread_destroy_atfork(th->nt);
         th->nt = NULL;
         return;
     }
 
     rb_native_mutex_destroy(&th->interrupt_lock);
-#ifndef RUBY_THREAD_PTHREAD_H
-    rb_native_cond_destroy(&th->ractor_waiting.cond);
-#endif
 }
 
 static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *);
@@ -706,6 +703,10 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
             /* fatal error within this thread, need to stop whole script */
         }
         else if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
+            if (th->invoke_type == thread_invoke_type_ractor_proc) {
+                rb_ractor_atexit_exception(th->ec);
+            }
+
             /* exit on main_thread. */
         }
         else {
@@ -1055,23 +1056,28 @@ thread_join_sleep(VALUE arg)
     while (!thread_finished(target_th)) {
         VALUE scheduler = rb_fiber_scheduler_current();
 
-        if (scheduler != Qnil) {
-            rb_fiber_scheduler_block(scheduler, target_th->self, p->timeout);
-            // Check if the target thread is finished after blocking:
-            if (thread_finished(target_th)) break;
-            // Otherwise, a timeout occurred:
-            else return Qfalse;
-        }
-        else if (!limit) {
-            sleep_forever(th, SLEEP_DEADLOCKABLE | SLEEP_ALLOW_SPURIOUS | SLEEP_NO_CHECKINTS);
+        if (!limit) {
+            if (scheduler != Qnil) {
+                rb_fiber_scheduler_block(scheduler, target_th->self, Qnil);
+            }
+            else {
+                sleep_forever(th, SLEEP_DEADLOCKABLE | SLEEP_ALLOW_SPURIOUS | SLEEP_NO_CHECKINTS);
+            }
         }
         else {
             if (hrtime_update_expire(limit, end)) {
                 RUBY_DEBUG_LOG("timeout target_th:%u", rb_th_serial(target_th));
                 return Qfalse;
             }
-            th->status = THREAD_STOPPED;
-            native_sleep(th, limit);
+
+            if (scheduler != Qnil) {
+                VALUE timeout = rb_float_new(hrtime2double(*limit));
+                rb_fiber_scheduler_block(scheduler, target_th->self, timeout);
+            }
+            else {
+                th->status = THREAD_STOPPED;
+                native_sleep(th, limit);
+            }
         }
         RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
         th->status = THREAD_RUNNABLE;
@@ -1130,6 +1136,10 @@ thread_join(rb_thread_t *target_th, VALUE timeout, rb_hrtime_t *limit)
                 /* OK. killed. */
                 break;
               default:
+                if (err == RUBY_FATAL_FIBER_KILLED) { // not integer constant so can't be a case expression
+                    // root fiber killed in non-main thread
+                    break;
+                }
                 rb_bug("thread_join: Fixnum (%d) should not reach here.", FIX2INT(err));
             }
         }
@@ -1470,7 +1480,7 @@ rb_thread_schedule_limits(uint32_t limits_us)
 
             RB_VM_SAVE_MACHINE_CONTEXT(th);
             thread_sched_yield(TH_SCHED(th), th);
-            rb_ractor_thread_switch(th->ractor, th);
+            rb_ractor_thread_switch(th->ractor, th, true);
 
             RUBY_DEBUG_LOG("switch %s", "done");
         }
@@ -1518,7 +1528,7 @@ blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
     unregister_ubf_list(th);
 
     thread_sched_to_running(TH_SCHED(th), th);
-    rb_ractor_thread_switch(th->ractor, th);
+    rb_ractor_thread_switch(th->ractor, th, false);
 
     th->blocking_region_buffer = 0;
     rb_ractor_blocking_threads_dec(th->ractor, __FILE__, __LINE__);
@@ -1534,6 +1544,29 @@ blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
 #endif
 }
 
+/*
+ * Resolve sentinel unblock function values to their actual function pointers
+ * and appropriate data2 values. This centralizes the logic for handling
+ * RUBY_UBF_IO and RUBY_UBF_PROCESS sentinel values.
+ *
+ * @param unblock_function Pointer to unblock function pointer (modified in place)
+ * @param data2 Pointer to data2 pointer (modified in place)
+ * @param thread Thread context for resolving data2 when needed
+ * @return true if sentinel values were resolved, false otherwise
+ */
+bool
+rb_thread_resolve_unblock_function(rb_unblock_function_t **unblock_function, void **data2, struct rb_thread_struct *thread)
+{
+    rb_unblock_function_t *ubf = *unblock_function;
+
+    if ((ubf == RUBY_UBF_IO) || (ubf == RUBY_UBF_PROCESS)) {
+        *unblock_function = ubf_select;
+        *data2 = thread;
+        return true;
+    }
+    return false;
+}
+
 void *
 rb_nogvl(void *(*func)(void *), void *data1,
          rb_unblock_function_t *ubf, void *data2,
@@ -1542,7 +1575,7 @@ rb_nogvl(void *(*func)(void *), void *data1,
     if (flags & RB_NOGVL_OFFLOAD_SAFE) {
         VALUE scheduler = rb_fiber_scheduler_current();
         if (scheduler != Qnil) {
-            struct rb_fiber_scheduler_blocking_operation_state state;
+            struct rb_fiber_scheduler_blocking_operation_state state = {0};
 
             VALUE result = rb_fiber_scheduler_blocking_operation_wait(scheduler, func, data1, ubf, data2, flags, &state);
 
@@ -1560,11 +1593,9 @@ rb_nogvl(void *(*func)(void *), void *data1,
     bool is_main_thread = vm->ractor.main_thread == th;
     int saved_errno = 0;
 
-    if ((ubf == RUBY_UBF_IO) || (ubf == RUBY_UBF_PROCESS)) {
-        ubf = ubf_select;
-        data2 = th;
-    }
-    else if (ubf && rb_ractor_living_thread_num(th->ractor) == 1 && is_main_thread) {
+    rb_thread_resolve_unblock_function(&ubf, &data2, th);
+
+    if (ubf && rb_ractor_living_thread_num(th->ractor) == 1 && is_main_thread) {
         if (flags & RB_NOGVL_UBF_ASYNC_SAFE) {
             vm->ubf_async_safe = 1;
         }
@@ -1693,35 +1724,88 @@ waitfd_to_waiting_flag(int wfd_event)
     return wfd_event << 1;
 }
 
+static struct ccan_list_head *
+rb_io_blocking_operations(struct rb_io *io)
+{
+    rb_serial_t fork_generation = GET_VM()->fork_gen;
+
+    // On fork, all existing entries in this list (which are stack allocated) become invalid.
+    // Therefore, we re-initialize the list which clears it.
+    if (io->fork_generation != fork_generation) {
+        ccan_list_head_init(&io->blocking_operations);
+        io->fork_generation = fork_generation;
+    }
+
+    return &io->blocking_operations;
+}
+
+/*
+ * Registers a blocking operation for an IO object. This is used to track all threads and fibers
+ * that are currently blocked on this IO for reading, writing or other operations.
+ *
+ * When the IO is closed, all blocking operations will be notified via rb_fiber_scheduler_fiber_interrupt
+ * for fibers with a scheduler, or via rb_threadptr_interrupt for threads without a scheduler.
+ *
+ * @parameter io The IO object on which the operation will block
+ * @parameter blocking_operation The operation details including the execution context that will be blocked
+ */
+static void
+rb_io_blocking_operation_enter(struct rb_io *io, struct rb_io_blocking_operation *blocking_operation)
+{
+    ccan_list_add(rb_io_blocking_operations(io), &blocking_operation->list);
+}
+
+static void
+rb_io_blocking_operation_pop(struct rb_io *io, struct rb_io_blocking_operation *blocking_operation)
+{
+    ccan_list_del(&blocking_operation->list);
+}
+
 struct io_blocking_operation_arguments {
     struct rb_io *io;
     struct rb_io_blocking_operation *blocking_operation;
 };
 
 static VALUE
-io_blocking_operation_release(VALUE _arguments) {
+io_blocking_operation_exit(VALUE _arguments)
+{
     struct io_blocking_operation_arguments *arguments = (void*)_arguments;
     struct rb_io_blocking_operation *blocking_operation = arguments->blocking_operation;
 
-    ccan_list_del(&blocking_operation->list);
+    rb_io_blocking_operation_pop(arguments->io, blocking_operation);
 
     rb_io_t *io = arguments->io;
     rb_thread_t *thread = io->closing_ec->thread_ptr;
     rb_fiber_t *fiber = io->closing_ec->fiber_ptr;
 
     if (thread->scheduler != Qnil) {
+        // This can cause spurious wakeups...
         rb_fiber_scheduler_unblock(thread->scheduler, io->self, rb_fiberptr_self(fiber));
-    } else {
+    }
+    else {
         rb_thread_wakeup(thread->self);
     }
 
     return Qnil;
 }
 
+/*
+ * Called when a blocking operation completes or is interrupted. Removes the operation from
+ * the IO's blocking_operations list and wakes up any waiting threads/fibers.
+ *
+ * If there's a wakeup_mutex (meaning an IO close is in progress), synchronizes the cleanup
+ * through that mutex to ensure proper coordination with the closing thread.
+ *
+ * @parameter io The IO object the operation was performed on
+ * @parameter blocking_operation The completed operation to clean up
+ */
 static void
-rb_io_blocking_operation_release(struct rb_io *io, struct rb_io_blocking_operation *blocking_operation)
+rb_io_blocking_operation_exit(struct rb_io *io, struct rb_io_blocking_operation *blocking_operation)
 {
     VALUE wakeup_mutex = io->wakeup_mutex;
+
+    // Indicate that the blocking operation is no longer active:
+    blocking_operation->ec = NULL;
 
     if (RB_TEST(wakeup_mutex)) {
         struct io_blocking_operation_arguments arguments = {
@@ -1729,10 +1813,55 @@ rb_io_blocking_operation_release(struct rb_io *io, struct rb_io_blocking_operati
             .blocking_operation = blocking_operation
         };
 
-        rb_mutex_synchronize(wakeup_mutex, io_blocking_operation_release, (VALUE)&arguments);
-    } else {
-        ccan_list_del(&blocking_operation->list);
+        rb_mutex_synchronize(wakeup_mutex, io_blocking_operation_exit, (VALUE)&arguments);
     }
+    else {
+        // If there's no wakeup_mutex, we can safely remove the operation directly:
+        rb_io_blocking_operation_pop(io, blocking_operation);
+    }
+}
+
+static VALUE
+rb_thread_io_blocking_operation_ensure(VALUE _argument)
+{
+    struct io_blocking_operation_arguments *arguments = (void*)_argument;
+
+    rb_io_blocking_operation_exit(arguments->io, arguments->blocking_operation);
+
+    return Qnil;
+}
+
+/*
+ * Executes a function that performs a blocking IO operation, while properly tracking
+ * the operation in the IO's blocking_operations list. This ensures proper cleanup
+ * and interruption handling if the IO is closed while blocked.
+ *
+ * The operation is automatically removed from the blocking_operations list when the function
+ * returns, whether normally or due to an exception.
+ *
+ * @parameter self The IO object
+ * @parameter function The function to execute that will perform the blocking operation
+ * @parameter argument The argument to pass to the function
+ * @returns The result of the blocking operation function
+ */
+VALUE
+rb_thread_io_blocking_operation(VALUE self, VALUE(*function)(VALUE), VALUE argument)
+{
+    struct rb_io *io;
+    RB_IO_POINTER(self, io);
+
+    rb_execution_context_t *ec = GET_EC();
+    struct rb_io_blocking_operation blocking_operation = {
+        .ec = ec,
+    };
+    rb_io_blocking_operation_enter(io, &blocking_operation);
+
+    struct io_blocking_operation_arguments io_blocking_operation_arguments = {
+        .io = io,
+        .blocking_operation = &blocking_operation
+    };
+
+    return rb_ensure(function, argument, rb_thread_io_blocking_operation_ensure, (VALUE)&io_blocking_operation_arguments);
 }
 
 static bool
@@ -1802,8 +1931,8 @@ rb_thread_mn_schedulable(VALUE thval)
 VALUE
 rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void *data1, int events)
 {
-    rb_execution_context_t * ec = GET_EC();
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    rb_execution_context_t * volatile ec = GET_EC();
+    rb_thread_t * volatile th = rb_ec_thread_ptr(ec);
 
     RUBY_DEBUG_LOG("th:%u fd:%d ev:%d", rb_th_serial(th), io->fd, events);
 
@@ -1824,7 +1953,7 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
     struct rb_io_blocking_operation blocking_operation = {
         .ec = ec,
     };
-    ccan_list_add(&io->blocking_operations, &blocking_operation.list);
+    rb_io_blocking_operation_enter(io, &blocking_operation);
 
     {
         EC_PUSH_TAG(ec);
@@ -1836,13 +1965,16 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
                 saved_errno = errno;
             }, ubf_select, th, FALSE);
 
-            th = rb_ec_thread_ptr(ec);
+            RUBY_ASSERT(th == rb_ec_thread_ptr(ec));
             if (events &&
                 blocking_call_retryable_p((int)val, saved_errno) &&
                 thread_io_wait_events(th, fd, events, NULL)) {
                 RUBY_VM_CHECK_INTS_BLOCKING(ec);
                 goto retry;
             }
+
+            RUBY_VM_CHECK_INTS_BLOCKING(ec);
+
             state = saved_state;
         }
         EC_POP_TAG();
@@ -1851,14 +1983,11 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
         th->mn_schedulable = prev_mn_schedulable;
     }
 
-    rb_io_blocking_operation_release(io, &blocking_operation);
+    rb_io_blocking_operation_exit(io, &blocking_operation);
 
     if (state) {
         EC_JUMP_TAG(ec, state);
     }
-
-    /* TODO: check func() */
-    RUBY_VM_CHECK_INTS_BLOCKING(ec);
 
     // If the error was a timeout, we raise a specific exception for that:
     if (saved_errno == ETIMEDOUT) {
@@ -2442,8 +2571,9 @@ threadptr_get_interrupts(rb_thread_t *th)
     rb_atomic_t interrupt;
     rb_atomic_t old;
 
+    old = ATOMIC_LOAD_RELAXED(ec->interrupt_flag);
     do {
-        interrupt = ec->interrupt_flag;
+        interrupt = old;
         old = ATOMIC_CAS(ec->interrupt_flag, interrupt, interrupt & ec->interrupt_mask);
     } while (old != interrupt);
     return interrupt & (rb_atomic_t)~ec->interrupt_mask;
@@ -2481,8 +2611,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
         terminate_interrupt = interrupt & TERMINATE_INTERRUPT_MASK; // request from other ractors
 
         if (interrupt & VM_BARRIER_INTERRUPT_MASK) {
-            RB_VM_LOCK_ENTER();
-            RB_VM_LOCK_LEAVE();
+            RB_VM_LOCKING();
         }
 
         if (postponed_job_interrupt) {
@@ -2648,31 +2777,59 @@ rb_ec_reset_raised(rb_execution_context_t *ec)
     return 1;
 }
 
-static size_t
-thread_io_close_notify_all(struct rb_io *io)
+/*
+ * Thread-safe IO closing mechanism.
+ *
+ * When an IO is closed while other threads or fibers are blocked on it, we need to:
+ * 1. Track and notify all blocking operations through io->blocking_operations
+ * 2. Ensure only one thread can close at a time using io->closing_ec
+ * 3. Synchronize cleanup using wakeup_mutex
+ *
+ * The close process works as follows:
+ * - First check if any thread is already closing (io->closing_ec)
+ * - Set up wakeup_mutex for synchronization
+ * - Iterate through all blocking operations in io->blocking_operations
+ * - For each blocked fiber with a scheduler:
+ *   - Notify via rb_fiber_scheduler_fiber_interrupt
+ * - For each blocked thread without a scheduler:
+ *   - Enqueue IOError via rb_threadptr_pending_interrupt_enque
+ *   - Wake via rb_threadptr_interrupt
+ * - Wait on wakeup_mutex until all operations are cleaned up
+ * - Only then clear closing state and allow actual close to proceed
+ */
+static VALUE
+thread_io_close_notify_all(VALUE _io)
 {
-    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    struct rb_io *io = (struct rb_io *)_io;
 
     size_t count = 0;
     rb_vm_t *vm = io->closing_ec->thread_ptr->vm;
     VALUE error = vm->special_exceptions[ruby_error_stream_closed];
 
     struct rb_io_blocking_operation *blocking_operation;
-    ccan_list_for_each(&io->blocking_operations, blocking_operation, list) {
+    ccan_list_for_each(rb_io_blocking_operations(io), blocking_operation, list) {
         rb_execution_context_t *ec = blocking_operation->ec;
 
-        rb_thread_t *thread = ec->thread_ptr;
-        rb_threadptr_pending_interrupt_enque(thread, error);
+        // If the operation is in progress, we need to interrupt it:
+        if (ec) {
+            rb_thread_t *thread = ec->thread_ptr;
 
-        // This operation is slow:
-        rb_threadptr_interrupt(thread);
+            VALUE result = RUBY_Qundef;
+            if (thread->scheduler != Qnil) {
+                result = rb_fiber_scheduler_fiber_interrupt(thread->scheduler, rb_fiberptr_self(ec->fiber_ptr), error);
+            }
+
+            if (result == RUBY_Qundef) {
+                // If the thread is not the current thread, we need to enqueue an error:
+                rb_threadptr_pending_interrupt_enque(thread, error);
+                rb_threadptr_interrupt(thread);
+            }
+        }
 
         count += 1;
     }
 
-    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
-
-    return count;
+    return (VALUE)count;
 }
 
 size_t
@@ -2684,7 +2841,7 @@ rb_thread_io_close_interrupt(struct rb_io *io)
     }
 
     // If there are no blocking operations, we are done:
-    if (ccan_list_empty(&io->blocking_operations)) {
+    if (ccan_list_empty(rb_io_blocking_operations(io))) {
         return 0;
     }
 
@@ -2694,8 +2851,12 @@ rb_thread_io_close_interrupt(struct rb_io *io)
 
     // This is used to ensure the correct execution context is woken up after the blocking operation is interrupted:
     io->wakeup_mutex = rb_mutex_new();
+    rb_mutex_allow_trap(io->wakeup_mutex, 1);
 
-    return thread_io_close_notify_all(io);
+    // We need to use a mutex here as entering the fiber scheduler may cause a context switch:
+    VALUE result = rb_mutex_synchronize(io->wakeup_mutex, thread_io_close_notify_all, (VALUE)io);
+
+    return (size_t)result;
 }
 
 void
@@ -2709,7 +2870,7 @@ rb_thread_io_close_wait(struct rb_io* io)
     }
 
     rb_mutex_lock(wakeup_mutex);
-    while (!ccan_list_empty(&io->blocking_operations)) {
+    while (!ccan_list_empty(rb_io_blocking_operations(io))) {
         rb_mutex_sleep(wakeup_mutex, Qnil);
     }
     rb_mutex_unlock(wakeup_mutex);
@@ -4336,6 +4497,8 @@ do_select(VALUE p)
         RUBY_VM_CHECK_INTS_BLOCKING(set->th->ec); /* may raise */
     } while (wait_retryable(&result, lerrno, to, endtime) && do_select_update());
 
+    RUBY_VM_CHECK_INTS_BLOCKING(set->th->ec);
+
     if (result < 0) {
         errno = lerrno;
     }
@@ -4435,7 +4598,7 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
 
     if (io) {
         blocking_operation.ec = ec;
-        ccan_list_add(&io->blocking_operations, &blocking_operation.list);
+        rb_io_blocking_operation_enter(io, &blocking_operation);
     }
 
     if (timeout == NULL && thread_io_wait_events(th, fd, events, NULL)) {
@@ -4456,12 +4619,15 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
 
                 RUBY_VM_CHECK_INTS_BLOCKING(ec);
             } while (wait_retryable(&result, lerrno, to, end));
+
+            RUBY_VM_CHECK_INTS_BLOCKING(ec);
         }
+
         EC_POP_TAG();
     }
 
     if (io) {
-        rb_io_blocking_operation_release(io, &blocking_operation);
+        rb_io_blocking_operation_exit(io, &blocking_operation);
     }
 
     if (state) {
@@ -4539,7 +4705,7 @@ select_single_cleanup(VALUE ptr)
     struct select_args *args = (struct select_args *)ptr;
 
     if (args->blocking_operation) {
-        rb_io_blocking_operation_release(args->io, args->blocking_operation);
+        rb_io_blocking_operation_exit(args->io, args->blocking_operation);
     }
 
     if (args->read) rb_fd_term(args->read);
@@ -4572,9 +4738,10 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
     if (io) {
         args.io = io;
         blocking_operation.ec = GET_EC();
-        ccan_list_add(&io->blocking_operations, &blocking_operation.list);
+        rb_io_blocking_operation_enter(io, &blocking_operation);
         args.blocking_operation = &blocking_operation;
-    } else {
+    }
+    else {
         args.io = NULL;
         blocking_operation.ec = NULL;
         args.blocking_operation = NULL;
@@ -4616,7 +4783,7 @@ rb_gc_set_stack_end(VALUE **stack_end_p)
 {
     VALUE stack_end;
 COMPILER_WARNING_PUSH
-#if __has_warning("-Wdangling-pointer")
+#if RBIMPL_COMPILER_IS(GCC)
 COMPILER_WARNING_IGNORED(-Wdangling-pointer);
 #endif
     *stack_end_p = &stack_end;
@@ -4770,6 +4937,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
 
     thread_sched_atfork(TH_SCHED(th));
     ubf_list_atfork();
+    rb_signal_atfork();
 
     // OK. Only this thread accesses:
     ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
@@ -6062,8 +6230,15 @@ threadptr_interrupt_exec_exec(rb_thread_t *th)
         }
         rb_native_mutex_unlock(&th->interrupt_lock);
 
+        RUBY_DEBUG_LOG("task:%p", task);
+
         if (task) {
-            (*task->func)(task->data);
+            if (task->flags & rb_interrupt_exec_flag_new_thread) {
+                rb_thread_create(task->func, task->data);
+            }
+            else {
+                (*task->func)(task->data);
+            }
             ruby_xfree(task);
         }
         else {
@@ -6086,40 +6261,15 @@ threadptr_interrupt_exec_cleanup(rb_thread_t *th)
     rb_native_mutex_unlock(&th->interrupt_lock);
 }
 
-struct interrupt_ractor_new_thread_data {
-    rb_interrupt_exec_func_t *func;
-    void *data;
-};
-
-static VALUE
-interrupt_ractor_new_thread_func(void *data)
-{
-    struct interrupt_ractor_new_thread_data d = *(struct interrupt_ractor_new_thread_data *)data;
-    ruby_xfree(data);
-
-    d.func(d.data);
-    return Qnil;
-}
-
-static VALUE
-interrupt_ractor_func(void *data)
-{
-    rb_thread_create(interrupt_ractor_new_thread_func, data);
-    return Qnil;
-}
-
 // native thread safe
 // func/data should be native thread safe
 void
 rb_ractor_interrupt_exec(struct rb_ractor_struct *target_r,
                          rb_interrupt_exec_func_t *func, void *data, enum rb_interrupt_exec_flag flags)
 {
-    struct interrupt_ractor_new_thread_data *d = ALLOC(struct interrupt_ractor_new_thread_data);
+    RUBY_DEBUG_LOG("flags:%d", (int)flags);
 
-    d->func = func;
-    d->data = data;
     rb_thread_t *main_th = target_r->threads.main;
-    rb_threadptr_interrupt_exec(main_th, interrupt_ractor_func, d, flags);
-
-    // TODO MEMO: we can create a new thread in a ractor, but not sure how to do that now.
+    rb_threadptr_interrupt_exec(main_th, func, data, flags | rb_interrupt_exec_flag_new_thread);
 }
+

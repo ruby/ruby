@@ -2,15 +2,19 @@ Returns a centered copy of +self+.
 
 If integer argument +size+ is greater than the size (in characters) of +self+,
 returns a new string of length +size+ that is a copy of +self+,
-centered and padded on both ends with +pad_string+:
+centered and padded on one or both ends with +pad_string+:
 
-  'hello'.center(10)       # => "  hello   "
-  '  hello'.center(10)     # => "   hello  "
-  'hello'.center(10, 'ab') # => "abhelloaba"
-  'тест'.center(10)        # => "   тест   "
-  'こんにちは'.center(10)    # => "  こんにちは   "
+  'hello'.center(6)             # => "hello "               # Padded on one end.
+  'hello'.center(10)            # => "  hello   "           # Padded on both ends.
+  'hello'.center(20, '-|')      # => "-|-|-|-hello-|-|-|-|" # Some padding repeated.
+  'hello'.center(10, 'abcdefg') # => "abhelloabc"           # Some padding not used.
+  '  hello  '.center(13)        # => "    hello    "
+  'тест'.center(10)             # => "   тест   "
+  'こんにちは'.center(10)         # => "  こんにちは   "      # Multi-byte characters.
 
-If +size+ is not greater than the size of +self+, returns a copy of +self+:
+If +size+ is less than or equal to the size of +self+, returns an unpadded copy of +self+:
 
-  'hello'.center(5)  # => "hello"
-  'hello'.center(1)  # => "hello"
+  'hello'.center(5)   # => "hello"
+  'hello'.center(-10) # => "hello"
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

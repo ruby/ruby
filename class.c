@@ -42,10 +42,10 @@
  * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
  *           This class's prime classext is the only classext and writable from any namespaces.
  *           If unset, the prime classext is writable only from the root namespace.
- * if !SHAPE_IN_BASIC_FLAGS
- * 4-19: SHAPE_FLAG_MASK
- *           Shape ID for the class.
- * endif
+ * 3:    RCLASS_IS_INITIALIZED
+ *           Class has been initialized.
+ * 4:    RCLASS_NAMESPACEABLE
+ *           Is a builtin class that may be namespaced. It larger than a normal class.
  */
 
 /* Flags of T_ICLASS
@@ -53,10 +53,8 @@
  * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
  *           This module's prime classext is the only classext and writable from any namespaces.
  *           If unset, the prime classext is writable only from the root namespace.
- * if !SHAPE_IN_BASIC_FLAGS
- * 4-19: SHAPE_FLAG_MASK
- *           Shape ID. This is set but not used.
- * endif
+ * 4:    RCLASS_NAMESPACEABLE
+ *           Is a builtin class that may be namespaced. It larger than a normal class.
  */
 
 /* Flags of T_MODULE
@@ -64,17 +62,15 @@
  * 0:    RCLASS_IS_ROOT
  *           The class has been added to the VM roots. Will always be marked and pinned.
  *           This is done for classes defined from C to allow storing them in global variables.
- * 1:    RMODULE_ALLOCATED_BUT_NOT_INITIALIZED
- *           Module has not been initialized.
+ * 1:    RMODULE_IS_REFINEMENT
+ *           Module is used for refinements.
  * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
  *           This module's prime classext is the only classext and writable from any namespaces.
  *           If unset, the prime classext is writable only from the root namespace.
- * 3:    RMODULE_IS_REFINEMENT
- *           Module is used for refinements.
- * if !SHAPE_IN_BASIC_FLAGS
- * 4-19: SHAPE_FLAG_MASK
- *           Shape ID for the module.
- * endif
+ * 3:    RCLASS_IS_INITIALIZED
+ *           Module has been initialized.
+ * 4:    RCLASS_NAMESPACEABLE
+ *           Is a builtin class that may be namespaced. It larger than a normal class.
  */
 
 #define METACLASS_OF(k) RBASIC(k)->klass
@@ -183,16 +179,6 @@ duplicate_classext_const_tbl(struct rb_id_table *src, VALUE klass)
     return dst;
 }
 
-static void
-duplicate_classext_superclasses(rb_classext_t *orig, rb_classext_t *copy)
-{
-    RCLASSEXT_SUPERCLASSES(copy) = RCLASSEXT_SUPERCLASSES(orig);
-    RCLASSEXT_SUPERCLASS_DEPTH(copy) = RCLASSEXT_SUPERCLASS_DEPTH(orig);
-    // the copy is always not the owner and the orig (or its parent class) will maintain the superclasses array
-    RCLASSEXT_SUPERCLASSES_OWNER(copy) = false;
-    RCLASSEXT_SUPERCLASSES_WITH_SELF(copy) = RCLASSEXT_SUPERCLASSES_WITH_SELF(orig);
-}
-
 static VALUE
 namespace_subclasses_tbl_key(const rb_namespace_t *ns)
 {
@@ -256,6 +242,8 @@ duplicate_classext_subclasses(rb_classext_t *orig, rb_classext_t *copy)
 static void
 class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_namespace_t *ns)
 {
+    RUBY_ASSERT(RB_TYPE_P(iclass, T_ICLASS));
+
     rb_classext_t *src = RCLASS_EXT_PRIME(iclass);
     rb_classext_t *ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(iclass, ns);
     int first_set = 0;
@@ -278,7 +266,7 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_n
     else {
         RCLASSEXT_M_TBL(ext) = RCLASSEXT_M_TBL(mod_ext);
     }
-    RCLASSEXT_FIELDS(ext) = (VALUE *)st_init_numtable();
+
     RCLASSEXT_CONST_TBL(ext) = RCLASSEXT_CONST_TBL(mod_ext);
     RCLASSEXT_CVC_TBL(ext) = RCLASSEXT_CVC_TBL(mod_ext);
 
@@ -315,13 +303,8 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
 
     RCLASSEXT_M_TBL(ext) = duplicate_classext_m_tbl(RCLASSEXT_M_TBL(orig), klass, dup_iclass);
 
-    // TODO: consider shapes for performance
-    if (RCLASSEXT_FIELDS(orig)) {
-        RCLASSEXT_FIELDS(ext) = (VALUE *)st_copy((st_table *)RCLASSEXT_FIELDS(orig));
-        rb_autoload_copy_table_for_namespace((st_table *)RCLASSEXT_FIELDS(ext), ns);
-    }
-    else {
-        RCLASSEXT_FIELDS(ext) = (VALUE *)st_init_numtable();
+    if (orig->fields_obj) {
+        RB_OBJ_WRITE(klass, &ext->fields_obj, rb_imemo_fields_clone(orig->fields_obj));
     }
 
     if (RCLASSEXT_SHARED_CONST_TBL(orig)) {
@@ -344,9 +327,6 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
 
     RCLASSEXT_CVC_TBL(ext) = duplicate_classext_id_table(RCLASSEXT_CVC_TBL(orig), dup_iclass);
 
-    // superclass_depth, superclasses
-    duplicate_classext_superclasses(orig, ext);
-
     // subclasses, subclasses_index
     duplicate_classext_subclasses(orig, ext);
 
@@ -356,9 +336,9 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
      * * refined_class
      * * as.class.allocator / as.singleton_class.attached_object
      * * includer
+     * * max IV count
+     * * variation count
      */
-    RCLASSEXT_MAX_IV_COUNT(ext) = RCLASSEXT_MAX_IV_COUNT(orig);
-    RCLASSEXT_VARIATION_COUNT(ext) = RCLASSEXT_VARIATION_COUNT(orig);
     RCLASSEXT_PERMANENT_CLASSPATH(ext) = RCLASSEXT_PERMANENT_CLASSPATH(orig);
     RCLASSEXT_CLONED(ext) = RCLASSEXT_CLONED(orig);
     RCLASSEXT_CLASSPATH(ext) = RCLASSEXT_CLASSPATH(orig);
@@ -378,6 +358,8 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
             if (subclass_entry->klass && RB_TYPE_P(subclass_entry->klass, T_ICLASS)) {
                 iclass = subclass_entry->klass;
                 if (RBASIC_CLASS(iclass) == klass) {
+                    // Is the subclass an ICLASS including this module into another class
+                    // If so we need to re-associate it under our namespace with the new ext
                     class_duplicate_iclass_classext(iclass, ext, ns);
                 }
             }
@@ -412,7 +394,7 @@ class_classext_foreach_i(st_data_t key, st_data_t value, st_data_t arg)
 void
 rb_class_classext_foreach(VALUE klass, rb_class_classext_foreach_callback_func *func, void *arg)
 {
-    st_table *tbl = RCLASS(klass)->ns_classext_tbl;
+    st_table *tbl = RCLASS_CLASSEXT_TBL(klass);
     struct class_classext_foreach_arg foreach_arg;
     if (tbl) {
         foreach_arg.func = func;
@@ -452,8 +434,7 @@ push_subclass_entry_to_list(VALUE super, VALUE klass, bool is_module)
     entry = ZALLOC(rb_subclass_entry_t);
     entry->klass = klass;
 
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         anchor = RCLASS_WRITABLE_SUBCLASSES(super);
         VM_ASSERT(anchor);
         ns_subclasses = (rb_ns_subclasses_t *)anchor->ns_subclasses;
@@ -470,7 +451,6 @@ push_subclass_entry_to_list(VALUE super, VALUE klass, bool is_module)
         entry->prev = head;
         st_insert(tbl, namespace_subclasses_tbl_key(ns), (st_data_t)entry);
     }
-    RB_VM_LOCK_LEAVE();
 
     if (is_module) {
         RCLASS_WRITE_NS_MODULE_SUBCLASSES(klass, anchor->ns_subclasses);
@@ -654,24 +634,30 @@ class_switch_superclass(VALUE super, VALUE klass)
 }
 
 /**
- * Allocates a struct RClass for a new class.
+ * Allocates a struct RClass for a new class, iclass, or module.
  *
- * @param flags     initial value for basic.flags of the returned class.
- * @param klass     the class of the returned class.
- * @return          an uninitialized Class object.
- * @pre  `klass` must refer `Class` class or an ancestor of Class.
- * @pre  `(flags | T_CLASS) != 0`
- * @post the returned class can safely be `#initialize` 'd.
+ * @param type      The type of the RClass (T_CLASS, T_ICLASS, or T_MODULE)
+ * @param klass     value for basic.klass of the returned object.
+ * @return          an uninitialized Class/IClass/Module object.
+ * @pre  `klass` must refer to a class or module
  *
  * @note this function is not Class#allocate.
  */
 static VALUE
-class_alloc(VALUE flags, VALUE klass)
+class_alloc0(enum ruby_value_type type, VALUE klass, bool namespaceable)
 {
     rb_ns_subclasses_t *ns_subclasses;
     rb_subclass_anchor_t *anchor;
     const rb_namespace_t *ns = rb_definition_namespace();
-    size_t alloc_size = sizeof(struct RClass) + sizeof(rb_classext_t);
+
+    if (!ruby_namespace_init_done) {
+        namespaceable = true;
+    }
+
+    size_t alloc_size = sizeof(struct RClass_and_rb_classext_t);
+    if (namespaceable) {
+        alloc_size = sizeof(struct RClass_namespaceable);
+    }
 
     // class_alloc is supposed to return a new object that is not promoted yet.
     // So, we need to avoid GC after NEWOBJ_OF.
@@ -686,8 +672,12 @@ class_alloc(VALUE flags, VALUE klass)
     anchor->ns_subclasses = ns_subclasses;
     anchor->head = ZALLOC(rb_subclass_entry_t);
 
-    flags &= T_MASK;
+    RUBY_ASSERT(type == T_CLASS || type == T_ICLASS || type == T_MODULE);
+
+    VALUE flags = type;
     if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
+    if (namespaceable) flags |= RCLASS_NAMESPACEABLE;
+
     NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
 
     memset(RCLASS_EXT_PRIME(obj), 0, sizeof(rb_classext_t));
@@ -702,15 +692,20 @@ class_alloc(VALUE flags, VALUE klass)
     RCLASS_PRIME_NS((VALUE)obj) = ns;
     // Classes/Modules defined in user namespaces are
     // writable directly because it exists only in a namespace.
-    RCLASS_SET_PRIME_CLASSEXT_WRITABLE((VALUE)obj, NAMESPACE_USER_P(ns) ? true : false);
+    RCLASS_SET_PRIME_CLASSEXT_WRITABLE((VALUE)obj, !namespaceable || NAMESPACE_USER_P(ns));
 
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SET_REFINED_CLASS((VALUE)obj, Qnil);
-    RCLASS_SET_ALLOCATOR((VALUE)obj, 0);
 
     RCLASS_SET_SUBCLASSES((VALUE)obj, anchor);
 
     return (VALUE)obj;
+}
+
+static VALUE
+class_alloc(enum ruby_value_type type, VALUE klass)
+{
+    return class_alloc0(type, klass, false);
 }
 
 static VALUE
@@ -748,6 +743,23 @@ class_clear_method_table(VALUE c)
     RCLASS_WRITE_M_TBL_EVEN_WHEN_PROMOTED(c, rb_id_table_create(0));
 }
 
+static VALUE
+class_boot_namespaceable(VALUE super, bool namespaceable)
+{
+    VALUE klass = class_alloc0(T_CLASS, rb_cClass, namespaceable);
+
+    // initialize method table prior to class_associate_super()
+    // because class_associate_super() may cause GC and promote klass
+    class_initialize_method_table(klass);
+
+    class_associate_super(klass, super, true);
+    if (super && !UNDEF_P(super)) {
+        rb_class_set_initialized(klass);
+    }
+
+    return (VALUE)klass;
+}
+
 /**
  * A utility function that wraps class_alloc.
  *
@@ -760,15 +772,7 @@ class_clear_method_table(VALUE c)
 VALUE
 rb_class_boot(VALUE super)
 {
-    VALUE klass = class_alloc(T_CLASS, rb_cClass);
-
-    // initialize method table prior to class_associate_super()
-    // because class_associate_super() may cause GC and promote klass
-    class_initialize_method_table(klass);
-
-    class_associate_super(klass, super, true);
-
-    return (VALUE)klass;
+    return class_boot_namespaceable(super, false);
 }
 
 static VALUE *
@@ -825,11 +829,11 @@ rb_class_update_superclasses(VALUE klass)
     }
     else {
         superclasses = class_superclasses_including_self(super);
-        RCLASS_WRITE_SUPERCLASSES(super, super_depth, superclasses, true, true);
+        RCLASS_WRITE_SUPERCLASSES(super, super_depth, superclasses, true);
     }
 
     size_t depth = super_depth == RCLASS_MAX_SUPERCLASS_DEPTH ? super_depth : super_depth + 1;
-    RCLASS_WRITE_SUPERCLASSES(klass, depth, superclasses, false, false);
+    RCLASS_WRITE_SUPERCLASSES(klass, depth, superclasses, false);
 }
 
 void
@@ -858,6 +862,8 @@ rb_class_new(VALUE super)
         RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
     }
 
+    RUBY_ASSERT(getenv("RUBY_NAMESPACE") || RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass));
+
     return klass;
 }
 
@@ -871,8 +877,7 @@ static void
 clone_method(VALUE old_klass, VALUE new_klass, ID mid, const rb_method_entry_t *me)
 {
     if (me->def->type == VM_METHOD_TYPE_ISEQ) {
-        rb_cref_t *new_cref;
-        rb_vm_rewrite_cref(me->def->body.iseq.cref, old_klass, new_klass, &new_cref);
+        rb_cref_t *new_cref = rb_vm_rewrite_cref(me->def->body.iseq.cref, old_klass, new_klass);
         rb_add_method_iseq(new_klass, mid, me->def->body.iseq.iseqptr, new_cref, METHOD_ENTRY_VISI(me));
     }
     else {
@@ -922,7 +927,7 @@ class_init_copy_check(VALUE clone, VALUE orig)
     if (orig == rb_cBasicObject) {
         rb_raise(rb_eTypeError, "can't copy the root class");
     }
-    if (RCLASS_SUPER(clone) != 0 || clone == rb_cBasicObject) {
+    if (RCLASS_INITIALIZED_P(clone)) {
         rb_raise(rb_eTypeError, "already initialized class");
     }
     if (RCLASS_SINGLETON_P(orig)) {
@@ -975,48 +980,33 @@ copy_tables(VALUE clone, VALUE orig)
     rb_id_table_free(RCLASS_M_TBL(clone));
     RCLASS_WRITE_M_TBL_EVEN_WHEN_PROMOTED(clone, 0);
     if (!RB_TYPE_P(clone, T_ICLASS)) {
-        st_data_t id;
-
         rb_fields_tbl_copy(clone, orig);
-        CONST_ID(id, "__tmp_classpath__");
-        rb_attr_delete(clone, id);
-        CONST_ID(id, "__classpath__");
-        rb_attr_delete(clone, id);
     }
     if (RCLASS_CONST_TBL(orig)) {
         struct clone_const_arg arg;
         struct rb_id_table *const_tbl;
-        arg.tbl = const_tbl = rb_id_table_create(0);
+        struct rb_id_table *orig_tbl = RCLASS_CONST_TBL(orig);
+        arg.tbl = const_tbl = rb_id_table_create(rb_id_table_size(orig_tbl));
         arg.klass = clone;
-        rb_id_table_foreach(RCLASS_CONST_TBL(orig), clone_const_i, &arg);
+        rb_id_table_foreach(orig_tbl, clone_const_i, &arg);
         RCLASS_WRITE_CONST_TBL(clone, const_tbl, false);
     }
 }
 
 static bool ensure_origin(VALUE klass);
 
-/**
- * If this flag is set, that module is allocated but not initialized yet.
- */
-enum {RMODULE_ALLOCATED_BUT_NOT_INITIALIZED = RUBY_FL_USER1};
-
-static inline bool
-RMODULE_UNINITIALIZED(VALUE module)
-{
-    return FL_TEST_RAW(module, RMODULE_ALLOCATED_BUT_NOT_INITIALIZED);
-}
-
 void
-rb_module_set_initialized(VALUE mod)
+rb_class_set_initialized(VALUE klass)
 {
-    FL_UNSET_RAW(mod, RMODULE_ALLOCATED_BUT_NOT_INITIALIZED);
+    RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE));
+    FL_SET_RAW(klass, RCLASS_IS_INITIALIZED);
     /* no more re-initialization */
 }
 
 void
 rb_module_check_initializable(VALUE mod)
 {
-    if (!RMODULE_UNINITIALIZED(mod)) {
+    if (RCLASS_INITIALIZED_P(mod)) {
         rb_raise(rb_eTypeError, "already initialized module");
     }
 }
@@ -1025,9 +1015,11 @@ rb_module_check_initializable(VALUE mod)
 VALUE
 rb_mod_init_copy(VALUE clone, VALUE orig)
 {
+    /* Only class or module is valid here, but other classes may enter here and
+     * only hit an exception on the OBJ_INIT_COPY checks
+     */
     switch (BUILTIN_TYPE(clone)) {
       case T_CLASS:
-      case T_ICLASS:
         class_init_copy_check(clone, orig);
         break;
       case T_MODULE:
@@ -1037,6 +1029,11 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         break;
     }
     if (!OBJ_INIT_COPY(clone, orig)) return clone;
+
+    RUBY_ASSERT(RB_TYPE_P(orig, T_CLASS) || RB_TYPE_P(orig, T_MODULE));
+    RUBY_ASSERT(BUILTIN_TYPE(clone) == BUILTIN_TYPE(orig));
+
+    rb_class_set_initialized(clone);
 
     /* cloned flag is refer at constant inline cache
      * see vm_get_const_key_cref() in vm_insnhelper.c
@@ -1048,7 +1045,9 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
         rb_singleton_class_attached(METACLASS_OF(clone), (VALUE)clone);
     }
-    RCLASS_SET_ALLOCATOR(clone, RCLASS_ALLOCATOR(orig));
+    if (BUILTIN_TYPE(clone) == T_CLASS) {
+        RCLASS_SET_ALLOCATOR(clone, RCLASS_ALLOCATOR(orig));
+    }
     copy_tables(clone, orig);
     if (RCLASS_M_TBL(orig)) {
         struct clone_method_arg arg;
@@ -1081,7 +1080,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
             if (BUILTIN_TYPE(p) != T_ICLASS) {
                 rb_bug("non iclass between module/class and origin");
             }
-            clone_p = class_alloc(RBASIC(p)->flags, METACLASS_OF(p));
+            clone_p = class_alloc(T_ICLASS, METACLASS_OF(p));
             /* We should set the m_tbl right after allocation before anything
              * that can trigger GC to avoid clone_p from becoming old and
              * needing to fire write barriers. */
@@ -1089,7 +1088,6 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
             rb_class_set_super(prev_clone_p, clone_p);
             prev_clone_p = clone_p;
             RCLASS_SET_CONST_TBL(clone_p, RCLASS_CONST_TBL(p), false);
-            RCLASS_SET_ALLOCATOR(clone_p, RCLASS_ALLOCATOR(p));
             if (RB_TYPE_P(clone, T_CLASS)) {
                 RCLASS_SET_INCLUDER(clone_p, clone);
             }
@@ -1159,7 +1157,8 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
     else {
         /* copy singleton(unnamed) class */
         bool klass_of_clone_is_new;
-        VALUE clone = class_alloc(RBASIC(klass)->flags, 0);
+        RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
+        VALUE clone = class_alloc(T_CLASS, 0);
 
         if (BUILTIN_TYPE(obj) == T_CLASS) {
             klass_of_clone_is_new = true;
@@ -1265,7 +1264,7 @@ static inline VALUE
 make_metaclass(VALUE klass)
 {
     VALUE super;
-    VALUE metaclass = rb_class_boot(Qundef);
+    VALUE metaclass = class_boot_namespaceable(Qundef, FL_TEST_RAW(klass, RCLASS_NAMESPACEABLE));
 
     FL_SET(metaclass, FL_SINGLETON);
     rb_singleton_class_attached(metaclass, klass);
@@ -1283,6 +1282,7 @@ make_metaclass(VALUE klass)
     super = RCLASS_SUPER(klass);
     while (RB_TYPE_P(super, T_ICLASS)) super = RCLASS_SUPER(super);
     class_associate_super(metaclass, super ? ENSURE_EIGENCLASS(super) : rb_cClass, true);
+    rb_class_set_initialized(klass);
 
     // Full class ancestry may not have been filled until we reach here.
     rb_class_update_superclasses(METACLASS_OF(metaclass));
@@ -1300,7 +1300,7 @@ static inline VALUE
 make_singleton_class(VALUE obj)
 {
     VALUE orig_class = METACLASS_OF(obj);
-    VALUE klass = rb_class_boot(orig_class);
+    VALUE klass = class_boot_namespaceable(orig_class, FL_TEST_RAW(orig_class, RCLASS_NAMESPACEABLE));
 
     FL_SET(klass, FL_SINGLETON);
     RBASIC_SET_CLASS(obj, klass);
@@ -1565,7 +1565,6 @@ rb_module_s_alloc(VALUE klass)
 {
     VALUE mod = class_alloc(T_MODULE, klass);
     class_initialize_method_table(mod);
-    FL_SET(mod, RMODULE_ALLOCATED_BUT_NOT_INITIALIZED);
     return mod;
 }
 
@@ -1689,7 +1688,7 @@ ensure_includable(VALUE klass, VALUE module)
 {
     rb_class_modify_check(klass);
     Check_Type(module, T_MODULE);
-    rb_module_set_initialized(module);
+    rb_class_set_initialized(module);
     if (!NIL_P(rb_refinement_module_get_refined_class(module))) {
         rb_raise(rb_eArgError, "refinement module is not allowed");
     }
@@ -2766,7 +2765,8 @@ rb_freeze_singleton_class(VALUE x)
     if (!RCLASS_SINGLETON_P(x)) {
         VALUE klass = RBASIC_CLASS(x);
         if (klass && // no class when hidden from ObjectSpace
-            FL_TEST(klass, (FL_SINGLETON|FL_FREEZE)) == FL_SINGLETON) {
+            FL_TEST_RAW(klass, FL_SINGLETON) &&
+            !OBJ_FROZEN_RAW(klass)) {
             OBJ_FREEZE(klass);
         }
     }

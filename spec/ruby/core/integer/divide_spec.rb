@@ -106,4 +106,21 @@ describe "Integer#/" do
       -> { @bignum / :symbol }.should raise_error(TypeError)
     end
   end
+
+  it "coerces the RHS and calls #coerce" do
+    obj = mock("integer plus")
+    obj.should_receive(:coerce).with(6).and_return([6, 3])
+    (6 / obj).should == 2
+  end
+
+  it "coerces the RHS and calls #coerce even if it's private" do
+    obj = Object.new
+    class << obj
+      private def coerce(n)
+        [n, 3]
+      end
+    end
+
+    (6 / obj).should == 2
+  end
 end

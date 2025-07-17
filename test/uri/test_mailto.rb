@@ -141,12 +141,90 @@ class URI::TestMailTo < Test::Unit::TestCase
   def test_check_to
     u = URI::MailTo.build(['joe@example.com', 'subject=Ruby'])
 
+    # Valid emails
+    u.to = 'a@valid.com'
+    assert_equal(u.to, 'a@valid.com')
+
+    # Invalid emails
     assert_raise(URI::InvalidComponentError) do
       u.to = '#1@mail.com'
     end
 
     assert_raise(URI::InvalidComponentError) do
       u.to = '@invalid.email'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = '.hello@invalid.email'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'hello.@invalid.email'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'n.@invalid.email'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'n..t@invalid.email'
+    end
+
+    # Invalid host emails
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@.invalid.email'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@invalid.email.'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@invalid..email'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@-invalid.email'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@invalid-.email'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@invalid.-email'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@invalid.email-'
+    end
+
+    u.to = 'a@'+'invalid'.ljust(63, 'd')+'.email'
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@'+'invalid'.ljust(64, 'd')+'.email'
+    end
+
+    u.to = 'a@invalid.'+'email'.rjust(63, 'e')
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'a@invalid.'+'email'.rjust(64, 'e')
+    end
+  end
+
+  def test_email_regexp
+    re = URI::MailTo::EMAIL_REGEXP
+
+    repeat = 10
+    longlabel = '.' + 'invalid'.ljust(63, 'd')
+    endlabel = ''
+    seq = (1..3).map {|i| 10**i}
+    rehearsal = 10
+    pre = ->(n) {'a@invalid' + longlabel*(n) + endlabel}
+    assert_linear_performance(seq, rehearsal: rehearsal, pre: pre) do |to|
+      repeat.times {re =~ to or flunk}
+    end
+    endlabel = '.' + 'email'.rjust(64, 'd')
+    assert_linear_performance(seq, rehearsal: rehearsal, pre: pre) do |to|
+      repeat.times {re =~ to and flunk}
     end
   end
 

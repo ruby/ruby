@@ -17,7 +17,7 @@ module Prism
       "spanning_heredoc.txt",
       "spanning_heredoc_newlines.txt",
       # Prism emits a single :on_tstring_content in <<- style heredocs when there
-      # is a line continuation preceeded by escaped backslashes. It should emit two, same
+      # is a line continuation preceded by escaped backslashes. It should emit two, same
       # as if the backslashes are not present.
       "heredocs_with_fake_newlines.txt",
     ]

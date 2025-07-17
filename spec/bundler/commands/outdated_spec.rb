@@ -151,7 +151,7 @@ RSpec.describe "bundle outdated" do
     end
   end
 
-  describe "with multiple, duplicated sources, with lockfile in old format", bundler: "< 3" do
+  describe "with multiple, duplicated sources, with lockfile in old format" do
     before do
       build_repo2 do
         build_gem "dotenv", "2.7.6"
@@ -819,7 +819,7 @@ RSpec.describe "bundle outdated" do
     expect(out).to include("Installing foo 1.0")
   end
 
-  context "after bundle install --deployment", bundler: "< 3" do
+  context "after bundle install --deployment" do
     before do
       build_repo2
 

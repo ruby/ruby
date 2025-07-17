@@ -8,7 +8,7 @@ This document outlines the expected way to distribute Ruby, with a specific focu
 
 The tarball for official releases is created by the release manager. The release manager uploads the tarball to the [Ruby website](https://www.ruby-lang.org/en/downloads/).
 
-Downstream distributors should use the official release tarballs as part of their build process. This ensures that the tarball is created in a consistent way, and that the tarball is crytographically verified.
+Downstream distributors should use the official release tarballs as part of their build process. This ensures that the tarball is created in a consistent way, and that the tarball is cryptographically verified.
 
 ### Using the nightly tarball for testing
 

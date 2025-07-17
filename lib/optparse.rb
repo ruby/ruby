@@ -7,6 +7,7 @@
 #
 # See OptionParser for documentation.
 #
+require 'set' unless defined?(Set)
 
 #--
 # == Developer Documentation (not for RDoc output)
@@ -1293,7 +1294,15 @@ XXX
   # to $0.
   #
   def program_name
-    @program_name || File.basename($0, '.*')
+    @program_name || strip_ext(File.basename($0))
+  end
+
+  private def strip_ext(name)  # :nodoc:
+    exts = /#{
+      require "rbconfig"
+      Regexp.union(*RbConfig::CONFIG["EXECUTABLE_EXTS"]&.split(" "))
+    }\z/o
+    name.sub(exts, "")
   end
 
   # for experimental cascading :-)
@@ -1500,7 +1509,7 @@ XXX
       case o
       when Proc, Method
         block = notwice(o, block, 'block')
-      when Array, Hash
+      when Array, Hash, Set
         if Array === o
           o, v = o.partition {|v,| Completion.completable?(v)}
           values = notwice(v, values, 'values') unless v.empty?

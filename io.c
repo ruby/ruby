@@ -5692,8 +5692,13 @@ rb_io_memsize(const rb_io_t *io)
     if (io->writeconv) size += rb_econv_memsize(io->writeconv);
 
     struct rb_io_blocking_operation *blocking_operation = 0;
-    ccan_list_for_each(&io->blocking_operations, blocking_operation, list) {
-        size += sizeof(struct rb_io_blocking_operation);
+
+    // Validate the fork generation of the IO object. If the IO object fork generation is different, the list of blocking operations is not valid memory. See `rb_io_blocking_operations` for the exact semantics.
+    rb_serial_t fork_generation = GET_VM()->fork_gen;
+    if (io->fork_generation == fork_generation) {
+        ccan_list_for_each(&io->blocking_operations, blocking_operation, list) {
+            size += sizeof(struct rb_io_blocking_operation);
+        }
     }
 
     return size;
@@ -8570,6 +8575,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     ccan_list_head_init(&fptr->blocking_operations);
     fptr->closing_ec = NULL;
     fptr->wakeup_mutex = Qnil;
+    fptr->fork_generation = GET_VM()->fork_gen;
 
     if (!NIL_P(orig->pathv)) fptr->pathv = orig->pathv;
     fptr_copy_finalizer(fptr, orig);
@@ -9311,6 +9317,7 @@ rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE t
     ccan_list_head_init(&io->blocking_operations);
     io->closing_ec = NULL;
     io->wakeup_mutex = Qnil;
+    io->fork_generation = GET_VM()->fork_gen;
 
     if (encoding) {
         io->encs = *encoding;
@@ -9454,6 +9461,7 @@ rb_io_fptr_new(void)
     ccan_list_head_init(&fp->blocking_operations);
     fp->closing_ec = NULL;
     fp->wakeup_mutex = Qnil;
+    fp->fork_generation = GET_VM()->fork_gen;
     return fp;
 }
 
@@ -9587,6 +9595,7 @@ io_initialize(VALUE io, VALUE fnum, VALUE vmode, VALUE opt)
     ccan_list_head_init(&fp->blocking_operations);
     fp->closing_ec = NULL;
     fp->wakeup_mutex = Qnil;
+    fp->fork_generation = GET_VM()->fork_gen;
     clear_codeconv(fp);
     io_check_tty(fp);
     if (fileno(stdin) == fd)
@@ -9920,7 +9929,7 @@ io_event_from_value(VALUE value)
 /*
  * call-seq:
  *   io.wait(events, timeout) -> event mask, false or nil
- *   io.wait(timeout = nil, mode = :read) -> self, true, or false
+ *   io.wait(*event_symbols[, timeout]) -> self, true, or false
  *
  * Waits until the IO becomes ready for the specified events and returns the
  * subset of events that become ready, or a falsy value when times out.
@@ -9928,10 +9937,14 @@ io_event_from_value(VALUE value)
  * The events can be a bit mask of +IO::READABLE+, +IO::WRITABLE+ or
  * +IO::PRIORITY+.
  *
- * Returns an event mask (truthy value) immediately when buffered data is available.
+ * Returns an event mask (truthy value) immediately when buffered data is
+ * available.
  *
- * Optional parameter +mode+ is one of +:read+, +:write+, or
- * +:read_write+.
+ * The second form: if one or more event symbols (+:read+, +:write+, or
+ * +:read_write+) are passed, the event mask is the bit OR of the bitmask
+ * corresponding to those symbols.  In this form, +timeout+ is optional, the
+ * order of the arguments is arbitrary, and returns +io+ if any of the
+ * events is ready.
  */
 
 static VALUE
@@ -9941,10 +9954,6 @@ io_wait(int argc, VALUE *argv, VALUE io)
     enum rb_io_event events = 0;
     int return_io = 0;
 
-    // The documented signature for this method is actually incorrect.
-    // A single timeout is allowed in any position, and multiple symbols can be given.
-    // Whether this is intentional or not, I don't know, and as such I consider this to
-    // be a legacy/slow path.
     if (argc != 2 || (RB_SYMBOL_P(argv[0]) || RB_SYMBOL_P(argv[1]))) {
         // We'd prefer to return the actual mask, but this form would return the io itself:
         return_io = 1;
@@ -10659,7 +10668,7 @@ argf_readlines(int argc, VALUE *argv, VALUE argf)
  *    $ `date`                 # => "Wed Apr  9 08:56:30 CDT 2003\n"
  *    $ `echo oops && exit 99` # => "oops\n"
  *    $ $?                     # => #<Process::Status: pid 17088 exit 99>
- *    $ $?.status              # => 99>
+ *    $ $?.exitstatus          # => 99
  *
  *  The built-in syntax <tt>%x{...}</tt> uses this method.
  *
@@ -14909,7 +14918,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * - \File +t.rb+:
  *
  *     p "ARGV: #{ARGV}"
- *     p "Line: #{ARGF.read}" # Read everything from all specified streams.
+ *     p "Read: #{ARGF.read}" # Read everything from all specified streams.
  *
  * - Command and output:
  *

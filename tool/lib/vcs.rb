@@ -522,17 +522,32 @@ class VCS
       cmd << date
       cmd.concat(arg)
       proc do |w|
-        w.print "-*- coding: utf-8 -*-\n\n"
-        w.print "base-url = #{base_url}\n\n" if base_url
+        w.print "-*- coding: utf-8 -*-\n"
+        w.print "\n""base-url = #{base_url}\n" if base_url
+
+        begin
+          ignore_revs = File.readlines(File.join(@srcdir, ".git-blame-ignore-revs"), chomp: true)
+                          .grep_v(/^ *(?:#|$)/)
+                          .to_h {|v| [v, true]}
+          ignore_revs = nil if ignore_revs.empty?
+        rescue Errno::ENOENT
+        end
+
         cmd_pipe(env, cmd, chdir: @srcdir) do |r|
-          while s = r.gets("\ncommit ")
+          r.gets(sep = "commit ")
+          sep = "\n" + sep
+          while s = r.gets(sep, chomp: true)
             h, s = s.split(/^$/, 2)
+            if ignore_revs&.key?(h[/\A\h{40}/])
+              next
+            end
 
             next if /^Author: *dependabot\[bot\]/ =~ h
 
             h.gsub!(/^(?:(?:Author|Commit)(?:Date)?|Date): /, '  \&')
             if s.sub!(/\nNotes \(log-fix\):\n((?: +.*\n)+)/, '')
               fix = $1
+              next if /\A *skip\Z/ =~ fix
               s = s.lines
               fix.each_line do |x|
                 next unless x.sub!(/^(\s+)(?:(\d+)|\$(?:-\d+)?)/, '')
@@ -598,7 +613,7 @@ class VCS
 
             s.gsub!(/ +\n/, "\n")
             s.sub!(/^Notes:/, '  \&')
-            w.print h, s
+            w.print sep, h, s
           end
         end
       end

@@ -121,6 +121,16 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_string_mapped_buffer_frozen
+    string = "Hello World".freeze
+    IO::Buffer.for(string) do |buffer|
+      assert_raise IO::Buffer::AccessError, "Buffer is not writable!" do
+        buffer.set_string("abc")
+      end
+      assert_equal "H".ord, buffer.get_value(:U8, 0)
+    end
+  end
+
   def test_non_string
     not_string = Object.new
 
@@ -682,5 +692,18 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_predicate buf, :null?
     buf.set_string('a', 0, 0)
     assert_predicate buf, :empty?
+  end
+
+  # https://bugs.ruby-lang.org/issues/21210
+  def test_bug_21210
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    str = +"hello"
+    buf = IO::Buffer.for(str)
+    assert_predicate buf, :valid?
+
+    GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+    assert_predicate buf, :valid?
   end
 end

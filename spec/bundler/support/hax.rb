@@ -51,4 +51,18 @@ module Gem
 
     File.singleton_class.prepend ReadOnly
   end
+
+  if ENV["BUNDLER_SPEC_FAKE_RESOLVE"]
+    module FakeResolv
+      def getaddrinfo(host, port)
+        if host == ENV["BUNDLER_SPEC_FAKE_RESOLVE"]
+          [["AF_INET", port, "127.0.0.1", "127.0.0.1", 2, 2, 17]]
+        else
+          super
+        end
+      end
+    end
+
+    Socket.singleton_class.prepend FakeResolv
+  end
 end

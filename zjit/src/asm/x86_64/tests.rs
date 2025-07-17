@@ -1,11 +1,10 @@
 #![cfg(test)]
 
-//use crate::asm::x86_64::*;
+use crate::asm::x86_64::*;
 
-/*
 /// Check that the bytes for an instruction sequence match a hex string
 fn check_bytes<R>(bytes: &str, run: R) where R: FnOnce(&mut super::CodeBlock) {
-    let mut cb = super::CodeBlock::new_dummy(4096);
+    let mut cb = super::CodeBlock::new_dummy();
     run(&mut cb);
     assert_eq!(format!("{:x}", cb), bytes);
 }
@@ -194,6 +193,7 @@ fn test_mov() {
     check_bytes("48c7470801000000", |cb| mov(cb, mem_opnd(64, RDI, 8), imm_opnd(1)));
     //check_bytes("67c7400411000000", |cb| mov(cb, mem_opnd(32, EAX, 4), imm_opnd(0x34))); // We don't distinguish between EAX and RAX here - that's probably fine?
     check_bytes("c7400411000000", |cb| mov(cb, mem_opnd(32, RAX, 4), imm_opnd(17)));
+    check_bytes("c7400401000080", |cb| mov(cb, mem_opnd(32, RAX, 4), uimm_opnd(0x80000001)));
     check_bytes("41895814", |cb| mov(cb, mem_opnd(32, R8, 20), EBX));
     check_bytes("4d8913", |cb| mov(cb, mem_opnd(64, R11, 0), R10));
     check_bytes("48c742f8f4ffffff", |cb| mov(cb, mem_opnd(64, RDX, -8), imm_opnd(-12)));
@@ -439,9 +439,10 @@ fn basic_capstone_usage() -> std::result::Result<(), capstone::Error> {
 }
 
 #[test]
+#[ignore]
 #[cfg(feature = "disasm")]
 fn block_comments() {
-    let mut cb = super::CodeBlock::new_dummy(4096);
+    let mut cb = super::CodeBlock::new_dummy();
 
     let first_write_ptr = cb.get_write_ptr().raw_addr(&cb);
     cb.add_comment("Beginning");
@@ -458,4 +459,3 @@ fn block_comments() {
     assert_eq!(&vec!( "Two bytes in".to_string(), "Still two bytes in".to_string() ), cb.comments_at(second_write_ptr).unwrap());
     assert_eq!(&vec!( "Ten bytes in".to_string() ), cb.comments_at(third_write_ptr).unwrap());
 }
-*/

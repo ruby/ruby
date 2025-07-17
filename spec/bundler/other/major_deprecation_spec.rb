@@ -17,14 +17,14 @@ RSpec.describe "major deprecations" do
         bundle "exec ruby -e #{source.dump}"
       end
 
-      it "is deprecated in favor of .unbundled_env", bundler: "< 3" do
+      it "is deprecated in favor of .unbundled_env" do
         expect(deprecations).to include \
           "`Bundler.clean_env` has been deprecated in favor of `Bundler.unbundled_env`. " \
           "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env` " \
           "(called at -e:1)"
       end
 
-      pending "is removed and shows a helpful error message about it", bundler: "3"
+      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
 
     describe ".with_clean_env" do
@@ -33,7 +33,7 @@ RSpec.describe "major deprecations" do
         bundle "exec ruby -e #{source.dump}"
       end
 
-      it "is deprecated in favor of .unbundled_env", bundler: "< 3" do
+      it "is deprecated in favor of .unbundled_env" do
         expect(deprecations).to include(
           "`Bundler.with_clean_env` has been deprecated in favor of `Bundler.with_unbundled_env`. " \
           "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env` " \
@@ -41,7 +41,7 @@ RSpec.describe "major deprecations" do
         )
       end
 
-      pending "is removed and shows a helpful error message about it", bundler: "3"
+      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
 
     describe ".clean_system" do
@@ -50,7 +50,7 @@ RSpec.describe "major deprecations" do
         bundle "exec ruby -e #{source.dump}"
       end
 
-      it "is deprecated in favor of .unbundled_system", bundler: "< 3" do
+      it "is deprecated in favor of .unbundled_system" do
         expect(deprecations).to include(
           "`Bundler.clean_system` has been deprecated in favor of `Bundler.unbundled_system`. " \
           "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system` " \
@@ -58,7 +58,7 @@ RSpec.describe "major deprecations" do
         )
       end
 
-      pending "is removed and shows a helpful error message about it", bundler: "3"
+      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
 
     describe ".clean_exec" do
@@ -67,7 +67,7 @@ RSpec.describe "major deprecations" do
         bundle "exec ruby -e #{source.dump}"
       end
 
-      it "is deprecated in favor of .unbundled_exec", bundler: "< 3" do
+      it "is deprecated in favor of .unbundled_exec" do
         expect(deprecations).to include(
           "`Bundler.clean_exec` has been deprecated in favor of `Bundler.unbundled_exec`. " \
           "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec` " \
@@ -75,7 +75,7 @@ RSpec.describe "major deprecations" do
         )
       end
 
-      pending "is removed and shows a helpful error message about it", bundler: "3"
+      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
 
     describe ".environment" do
@@ -84,11 +84,11 @@ RSpec.describe "major deprecations" do
         bundle "exec ruby -e #{source.dump}"
       end
 
-      it "is deprecated in favor of .load", bundler: "< 3" do
+      it "is deprecated in favor of .load" do
         expect(deprecations).to include "Bundler.environment has been removed in favor of Bundler.load (called at -e:1)"
       end
 
-      pending "is removed and shows a helpful error message about it", bundler: "3"
+      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
   end
 
@@ -97,11 +97,11 @@ RSpec.describe "major deprecations" do
       bundle "exec --no-keep-file-descriptors -e 1", raise_on_error: false
     end
 
-    it "is deprecated", bundler: "< 3" do
+    it "is deprecated" do
       expect(deprecations).to include "The `--no-keep-file-descriptors` has been deprecated. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to"
     end
 
-    pending "is removed and shows a helpful error message about it", bundler: "3"
+    pending "is removed and shows a helpful error message about it", bundler: "4"
   end
 
   describe "bundle update --quiet" do
@@ -121,7 +121,7 @@ RSpec.describe "major deprecations" do
       bundle "check --path vendor/bundle", raise_on_error: false
     end
 
-    it "should print a deprecation warning", bundler: "< 3" do
+    it "should print a deprecation warning" do
       expect(deprecations).to include(
         "The `--path` flag is deprecated because it relies on being " \
         "remembered across bundler invocations, which bundler will no " \
@@ -130,7 +130,7 @@ RSpec.describe "major deprecations" do
       )
     end
 
-    pending "fails with a helpful error", bundler: "3"
+    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle check --path=" do
@@ -143,7 +143,7 @@ RSpec.describe "major deprecations" do
       bundle "check --path=vendor/bundle", raise_on_error: false
     end
 
-    it "should print a deprecation warning", bundler: "< 3" do
+    it "should print a deprecation warning" do
       expect(deprecations).to include(
         "The `--path` flag is deprecated because it relies on being " \
         "remembered across bundler invocations, which bundler will no " \
@@ -152,7 +152,29 @@ RSpec.describe "major deprecations" do
       )
     end
 
-    pending "fails with a helpful error", bundler: "3"
+    pending "fails with a helpful error", bundler: "4"
+  end
+
+  context "bundle binstubs --path=" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      bundle "binstubs myrack --path=binpath", raise_on_error: false
+    end
+
+    it "should print a deprecation warning" do
+      expect(deprecations).to include(
+        "The `--path` flag is deprecated because it relies on being " \
+        "remembered across bundler invocations, which bundler will no " \
+        "longer do in future versions. Instead please use `bundle config set " \
+        "bin 'binpath'`, and stop using this flag"
+      )
+    end
+
+    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle cache --all" do
@@ -165,7 +187,7 @@ RSpec.describe "major deprecations" do
       bundle "cache --all", raise_on_error: false
     end
 
-    it "should print a deprecation warning", bundler: "< 3" do
+    it "should print a deprecation warning" do
       expect(deprecations).to include(
         "The `--all` flag is deprecated because it relies on being " \
         "remembered across bundler invocations, which bundler will no " \
@@ -174,7 +196,7 @@ RSpec.describe "major deprecations" do
       )
     end
 
-    pending "fails with a helpful error", bundler: "3"
+    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle cache --path" do
@@ -187,7 +209,7 @@ RSpec.describe "major deprecations" do
       bundle "cache --path foo", raise_on_error: false
     end
 
-    it "should print a deprecation warning", bundler: "< 3" do
+    it "should print a deprecation warning" do
       expect(deprecations).to include(
         "The `--path` flag is deprecated because its semantics are unclear. " \
         "Use `bundle config cache_path` to configure the path of your cache of gems, " \
@@ -196,7 +218,29 @@ RSpec.describe "major deprecations" do
       )
     end
 
-    pending "fails with a helpful error", bundler: "3"
+    pending "fails with a helpful error", bundler: "4"
+  end
+
+  context "bundle cache --path=" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      bundle "cache --path=foo", raise_on_error: false
+    end
+
+    it "should print a deprecation warning" do
+      expect(deprecations).to include(
+        "The `--path` flag is deprecated because its semantics are unclear. " \
+        "Use `bundle config cache_path` to configure the path of your cache of gems, " \
+        "and `bundle config path` to configure the path where your gems are installed, " \
+        "and stop using this flag"
+      )
+    end
+
+    pending "fails with a helpful error", bundler: "4"
   end
 
   describe "bundle config" do
@@ -205,11 +249,11 @@ RSpec.describe "major deprecations" do
         bundle "config"
       end
 
-      it "warns", bundler: "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config list` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "3"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old get interface" do
@@ -217,11 +261,11 @@ RSpec.describe "major deprecations" do
         bundle "config waka"
       end
 
-      it "warns", bundler: "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config get waka` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "3"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old set interface" do
@@ -229,11 +273,11 @@ RSpec.describe "major deprecations" do
         bundle "config waka wakapun"
       end
 
-      it "warns", bundler: "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set waka wakapun` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "3"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old set interface with --local" do
@@ -241,11 +285,11 @@ RSpec.describe "major deprecations" do
         bundle "config --local waka wakapun"
       end
 
-      it "warns", bundler: "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set --local waka wakapun` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "3"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old set interface with --global" do
@@ -253,11 +297,11 @@ RSpec.describe "major deprecations" do
         bundle "config --global waka wakapun"
       end
 
-      it "warns", bundler: "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set --global waka wakapun` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "3"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old unset interface" do
@@ -265,11 +309,11 @@ RSpec.describe "major deprecations" do
         bundle "config --delete waka"
       end
 
-      it "warns", bundler: "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset waka` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "3"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old unset interface with --local" do
@@ -277,11 +321,11 @@ RSpec.describe "major deprecations" do
         bundle "config --delete --local waka"
       end
 
-      it "warns", bundler: "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset --local waka` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "3"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old unset interface with --global" do
@@ -289,11 +333,11 @@ RSpec.describe "major deprecations" do
         bundle "config --delete --global waka"
       end
 
-      it "warns", bundler: "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset --global waka` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "3"
+      pending "fails with a helpful error", bundler: "5"
     end
   end
 
@@ -305,12 +349,12 @@ RSpec.describe "major deprecations" do
       G
     end
 
-    it "warns when no options are given", bundler: "3" do
+    it "warns when no options are given", bundler: "4" do
       bundle "update"
       expect(deprecations).to include("Pass --all to `bundle update` to update everything")
     end
 
-    pending "fails with a helpful error when no options are given", bundler: "3"
+    pending "fails with a helpful error when no options are given", bundler: "5"
 
     it "does not warn when --all is passed" do
       bundle "update --all"
@@ -326,11 +370,11 @@ RSpec.describe "major deprecations" do
       G
     end
 
-    it "should output a deprecation warning", bundler: "< 3" do
+    it "should output a deprecation warning" do
       expect(deprecations).to include("The --binstubs option will be removed in favor of `bundle binstubs --all`")
     end
 
-    pending "fails with a helpful error", bundler: "3"
+    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle install with both gems.rb and Gemfile present" do
@@ -390,7 +434,7 @@ RSpec.describe "major deprecations" do
           bundle "install #{flag_name} #{value}"
         end
 
-        it "should print a deprecation warning", bundler: "< 3" do
+        it "should print a deprecation warning" do
           expect(deprecations).to include(
             "The `#{flag_name}` flag is deprecated because it relies on " \
             "being remembered across bundler invocations, which bundler " \
@@ -399,7 +443,7 @@ RSpec.describe "major deprecations" do
           )
         end
 
-        pending "fails with a helpful error", bundler: "3"
+        pending "fails with a helpful error", bundler: "4"
       end
     end
   end
@@ -412,7 +456,7 @@ RSpec.describe "major deprecations" do
       G
     end
 
-    it "shows a deprecation", bundler: "< 3" do
+    it "shows a deprecation" do
       expect(deprecations).to include(
         "Your Gemfile contains multiple global sources. " \
         "Using `source` more than once without a block is a security risk, and " \
@@ -421,7 +465,7 @@ RSpec.describe "major deprecations" do
       )
     end
 
-    it "doesn't show lockfile deprecations if there's a lockfile", bundler: "< 3" do
+    it "doesn't show lockfile deprecations if there's a lockfile" do
       bundle "install"
 
       expect(deprecations).to include(
@@ -449,7 +493,7 @@ RSpec.describe "major deprecations" do
       )
     end
 
-    pending "fails with a helpful error", bundler: "3"
+    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle install in frozen mode with a lockfile with a single rubygems section with multiple remotes" do
@@ -485,13 +529,13 @@ RSpec.describe "major deprecations" do
       bundle "config set --local frozen true"
     end
 
-    it "shows a deprecation", bundler: "< 3" do
+    it "shows a deprecation" do
       bundle "install"
 
       expect(deprecations).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure.")
     end
 
-    pending "fails with a helpful error", bundler: "3"
+    pending "fails with a helpful error", bundler: "4"
   end
 
   context "when Bundler.setup is run in a ruby script" do
@@ -524,14 +568,14 @@ RSpec.describe "major deprecations" do
       RUBY
     end
 
-    it "should print a capistrano deprecation warning", bundler: "< 3" do
+    it "should print a capistrano deprecation warning" do
       expect(deprecations).to include("Bundler no longer integrates " \
                              "with Capistrano, but Capistrano provides " \
                              "its own integration with Bundler via the " \
                              "capistrano-bundler gem. Use it instead.")
     end
 
-    pending "fails with a helpful error", bundler: "3"
+    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle show" do
@@ -547,11 +591,11 @@ RSpec.describe "major deprecations" do
         bundle "show --outdated"
       end
 
-      it "prints a deprecation warning informing about its removal", bundler: "< 3" do
+      it "prints a deprecation warning informing about its removal" do
         expect(deprecations).to include("the `--outdated` flag to `bundle show` was undocumented and will be removed without replacement")
       end
 
-      pending "fails with a helpful message", bundler: "3"
+      pending "fails with a helpful message", bundler: "4"
     end
   end
 
@@ -564,28 +608,27 @@ RSpec.describe "major deprecations" do
     end
 
     context "with --install" do
-      it "shows a deprecation warning", bundler: "< 3" do
+      it "shows a deprecation warning" do
         bundle "remove myrack --install"
 
         expect(err).to include "[DEPRECATED] The `--install` flag has been deprecated. `bundle install` is triggered by default."
       end
 
-      pending "fails with a helpful message", bundler: "3"
+      pending "fails with a helpful message", bundler: "4"
     end
   end
 
-  context "bundle viz", :realworld do
+  context "bundle viz" do
     before do
-      realworld_system_gems "ruby-graphviz --version 1.2.5"
       create_file "gems.rb", "source 'https://gem.repo1'"
       bundle "viz"
     end
 
-    it "prints a deprecation warning", bundler: "< 3" do
+    it "prints a deprecation warning" do
       expect(deprecations).to include "The `viz` command has been renamed to `graph` and moved to a plugin. See https://github.com/rubygems/bundler-graph"
     end
 
-    pending "fails with a helpful message", bundler: "3"
+    pending "fails with a helpful message", bundler: "4"
   end
 
   context "bundle plugin install --local_git" do
@@ -595,14 +638,14 @@ RSpec.describe "major deprecations" do
       end
     end
 
-    it "prints a deprecation warning", bundler: "< 3" do
+    it "prints a deprecation warning" do
       bundle "plugin install foo --local_git #{lib_path("foo-1.0")}"
 
       expect(out).to include("Installed plugin foo")
       expect(deprecations).to include "--local_git is deprecated, use --git"
     end
 
-    pending "fails with a helpful message", bundler: "3"
+    pending "fails with a helpful message", bundler: "4"
   end
 
   describe "deprecating rubocop" do
@@ -616,7 +659,7 @@ RSpec.describe "major deprecations" do
         bundle "gem my_new_gem --rubocop", raise_on_error: false
       end
 
-      it "prints a deprecation warning", bundler: "< 3" do
+      it "prints a deprecation warning" do
         expect(deprecations).to include \
           "--rubocop is deprecated, use --linter=rubocop"
       end
@@ -627,7 +670,7 @@ RSpec.describe "major deprecations" do
         bundle "gem my_new_gem --no-rubocop", raise_on_error: false
       end
 
-      it "prints a deprecation warning", bundler: "< 3" do
+      it "prints a deprecation warning" do
         expect(deprecations).to include \
           "--no-rubocop is deprecated, use --linter"
       end
@@ -638,7 +681,7 @@ RSpec.describe "major deprecations" do
         bundle "gem my_new_gem", env: { "BUNDLE_GEM__RUBOCOP" => "true" }, raise_on_error: false
       end
 
-      it "prints a deprecation warning", bundler: "< 3" do
+      it "prints a deprecation warning" do
         expect(deprecations).to include \
           "config gem.rubocop is deprecated; we've updated your config to use gem.linter instead"
       end
@@ -649,7 +692,7 @@ RSpec.describe "major deprecations" do
         bundle "gem my_new_gem", env: { "BUNDLE_GEM__RUBOCOP" => "false" }, raise_on_error: false
       end
 
-      it "prints a deprecation warning", bundler: "< 3" do
+      it "prints a deprecation warning" do
         expect(deprecations).to include \
           "config gem.rubocop is deprecated; we've updated your config to use gem.linter instead"
       end

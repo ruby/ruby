@@ -1,8 +1,11 @@
 Returns a copy of +self+ with trailing substring <tt>suffix</tt> removed:
 
-  'hello'.delete_suffix('llo')      # => "he"
-  'hello'.delete_suffix('hel')      # => "hello"
-  'тест'.delete_suffix('ст')        # => "те"
+  'foo'.delete_suffix('o')           # => "fo"
+  'foo'.delete_suffix('oo')          # => "f"
+  'foo'.delete_suffix('foo')         # => ""
+  'foo'.delete_suffix('f')           # => "foo"
+  'foo'.delete_suffix('x')           # => "foo"
+  'тест'.delete_suffix('ст')         # => "те"
   'こんにちは'.delete_suffix('ちは')  # => "こんに"
 
-Related: String#delete_suffix!, String#delete_prefix.
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

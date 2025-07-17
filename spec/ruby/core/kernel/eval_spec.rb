@@ -175,6 +175,75 @@ describe "Kernel#eval" do
     end
   end
 
+  context "parameter forwarding" do
+    it "allows anonymous rest parameter forwarding" do
+      object = Object.new
+      def object.foo(a, b, c)
+        [a, b, c]
+      end
+      def object.bar(*)
+        eval "foo(*)"
+      end
+
+      object.bar(1, 2, 3).should == [1, 2, 3]
+    end
+
+    it "allows anonymous keyword parameters forwarding" do
+      object = Object.new
+      def object.foo(a:, b:, c:)
+        [a, b, c]
+      end
+      def object.bar(**)
+        eval "foo(**)"
+      end
+
+      object.bar(a: 1, b: 2, c: 3).should == [1, 2, 3]
+    end
+
+    it "allows anonymous block parameter forwarding" do
+      object = Object.new
+      def object.foo(&block)
+        block.call
+      end
+      def object.bar(&)
+        eval "foo(&)"
+      end
+
+      object.bar { :foobar }.should == :foobar
+    end
+
+    it "allows ... forwarding" do
+      object = Object.new
+      def object.foo(a, b:, &block)
+        [a, b, block.call]
+      end
+      def object.bar(...)
+        eval "foo(...)"
+      end
+
+      object.bar(1, b: 2) { 3 }.should == [1, 2, 3]
+    end
+
+    it "allows parameter forwarding to super" do
+      m = Module.new do
+        def foo(a, b:, &block)
+          [a, b, block.call]
+        end
+      end
+
+      c = Class.new do
+        include m
+
+        def foo(a, b:, &block)
+          eval "super"
+        end
+      end
+
+      object = c.new
+      object.foo(1, b: 2) { 3 }.should == [1, 2, 3]
+    end
+  end
+
   ruby_version_is "3.3" do
     it "uses (eval at __FILE__:__LINE__) if none is provided" do
       eval("__FILE__").should == "(eval at #{__FILE__}:#{__LINE__})"

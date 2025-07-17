@@ -418,6 +418,9 @@ class Gem::TestCase < Test::Unit::TestCase
       @orig_hooks[name] = Gem.send(name).dup
     end
 
+    Gem::Platform.const_get(:GENERIC_CACHE).clear
+    Gem::Platform.const_get(:GENERICS).each {|g| Gem::Platform.const_get(:GENERIC_CACHE)[g] = g }
+
     @marshal_version = "#{Marshal::MAJOR_VERSION}.#{Marshal::MINOR_VERSION}"
     @orig_loaded_features = $LOADED_FEATURES.dup
   end
@@ -678,6 +681,14 @@ class Gem::TestCase < Test::Unit::TestCase
     end
 
     path
+  end
+
+  def write_dummy_extconf(gem_name)
+    write_file File.join(@tempdir, "extconf.rb") do |io|
+      io.puts "require 'mkmf'"
+      yield io if block_given?
+      io.puts "create_makefile '#{gem_name}'"
+    end
   end
 
   ##

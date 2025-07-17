@@ -337,6 +337,19 @@ class TestAst < Test::Unit::TestCase
     assert_parse("END {defined? yield}")
   end
 
+  def test_invalid_yield_no_memory_leak
+    # [Bug #21383]
+    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true)
+      code = proc do
+        eval("class C; yield; end")
+      rescue SyntaxError
+      end
+      1_000.times(&code)
+    begin;
+      100_000.times(&code)
+    end;
+  end
+
   def test_node_id_for_location
     omit if ParserSupport.prism_enabled?
 
@@ -1382,6 +1395,24 @@ dummy
 
       node = ast_parse("class A < B; end")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 16], [1, 0, 1, 5], [1, 8, 1, 9], [1, 13, 1, 16]])
+    end
+
+    def test_colon2_locations
+      node = ast_parse("A::B")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 4], [1, 1, 1, 3], [1, 3, 1, 4]])
+
+      node = ast_parse("A::B::C")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 7], [1, 4, 1, 6], [1, 6, 1, 7]])
+      assert_locations(node.children[-1].children[0].locations, [[1, 0, 1, 4], [1, 1, 1, 3], [1, 3, 1, 4]])
+    end
+
+    def test_colon3_locations
+      node = ast_parse("::A")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 3], [1, 0, 1, 2], [1, 2, 1, 3]])
+
+      node = ast_parse("::A::B")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 3, 1, 5], [1, 5, 1, 6]])
+      assert_locations(node.children[-1].children[0].locations, [[1, 0, 1, 3], [1, 0, 1, 2], [1, 2, 1, 3]])
     end
 
     def test_dot2_locations

@@ -101,9 +101,8 @@ RSpec.describe "bundle lock" do
 
   let(:gemfile_with_rails_weakling_and_foo_from_repo4) do
     build_repo4 do
-      FileUtils.cp rake_path, "#{gem_repo4}/gems/"
-
       build_gem "rake", "10.0.1"
+      build_gem "rake", rake_version
 
       %w[2.3.1 2.3.2].each do |version|
         build_gem "rails", version do |s|
@@ -1257,11 +1256,6 @@ RSpec.describe "bundle lock" do
       end
 
       build_gem "raygun-apm", "1.0.78" do |s|
-        s.platform = "x64-mingw32"
-        s.required_ruby_version = "< #{next_ruby_minor}.dev"
-      end
-
-      build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x64-mingw-ucrt"
         s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
@@ -1386,62 +1380,6 @@ RSpec.describe "bundle lock" do
         * sorbet-static-0.5.11989-x86_64-linux
     E
     expect(err).to include(nice_error)
-  end
-
-  it "does not crash on conflicting ruby requirements between platform versions in two different gems" do
-    build_repo4 do
-      build_gem "unf_ext", "0.0.8.2"
-
-      build_gem "unf_ext", "0.0.8.2" do |s|
-        s.required_ruby_version = [">= 2.4", "< #{previous_ruby_minor}"]
-        s.platform = "x64-mingw32"
-      end
-
-      build_gem "unf_ext", "0.0.8.2" do |s|
-        s.required_ruby_version = [">= #{previous_ruby_minor}", "< #{current_ruby_minor}"]
-        s.platform = "x64-mingw-ucrt"
-      end
-
-      build_gem "google-protobuf", "3.21.12"
-
-      build_gem "google-protobuf", "3.21.12" do |s|
-        s.required_ruby_version = [">= 2.5", "< #{previous_ruby_minor}"]
-        s.platform = "x64-mingw32"
-      end
-
-      build_gem "google-protobuf", "3.21.12" do |s|
-        s.required_ruby_version = [">= #{previous_ruby_minor}", "< #{current_ruby_minor}"]
-        s.platform = "x64-mingw-ucrt"
-      end
-    end
-
-    gemfile <<~G
-      source "https://gem.repo4"
-
-      gem "google-protobuf"
-      gem "unf_ext"
-    G
-
-    lockfile <<~L
-      GEM
-        remote: https://gem.repo4/
-        specs:
-          google-protobuf (3.21.12)
-          unf_ext (0.0.8.2)
-
-      PLATFORMS
-        x64-mingw-ucrt
-        x64-mingw32
-
-      DEPENDENCIES
-        google-protobuf
-        unf_ext
-
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    L
-
-    bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s, "DEBUG_RESOLVER" => "1" }
   end
 
   it "respects lower bound ruby requirements" do
@@ -1663,6 +1601,64 @@ RSpec.describe "bundle lock" do
 
         DEPENDENCIES
           debug
+        #{checksums}
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
+
+  context "when a system gem has incorrect dependencies, different from remote gems" do
+    before do
+      build_repo4 do
+        build_gem "foo", "1.0.0" do |s|
+          s.add_dependency "bar"
+        end
+
+        build_gem "bar", "1.0.0"
+      end
+
+      system_gems "foo-1.0.0", gem_repo: gem_repo4, path: default_bundle_path
+
+      # simulate gemspec with wrong empty dependencies
+      foo_gemspec_path = default_bundle_path("specifications/foo-1.0.0.gemspec")
+      foo_gemspec = Gem::Specification.load(foo_gemspec_path.to_s)
+      foo_gemspec.dependencies.clear
+      File.write(foo_gemspec_path, foo_gemspec.to_ruby)
+    end
+
+    it "generates a lockfile using remote dependencies, and prints a warning" do
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "foo"
+      G
+
+      checksums = checksums_section_when_enabled do |c|
+        c.checksum gem_repo4, "foo", "1.0.0"
+        c.checksum gem_repo4, "bar", "1.0.0"
+      end
+
+      simulate_platform "x86_64-linux" do
+        bundle "lock --verbose"
+      end
+
+      expect(err).to eq("Local specification for foo-1.0.0 has different dependencies than the remote gem, ignoring it")
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            bar (1.0.0)
+            foo (1.0.0)
+              bar
+
+        PLATFORMS
+          ruby
+          x86_64-linux
+
+        DEPENDENCIES
+          foo
         #{checksums}
         BUNDLED WITH
            #{Bundler::VERSION}

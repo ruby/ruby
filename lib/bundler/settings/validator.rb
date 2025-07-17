@@ -74,29 +74,6 @@ module Bundler
           fail!(key, value, "`#{other_key}` is current set to #{other_setting.inspect}", "the `#{conflicting.join("`, `")}` groups conflict")
         end
       end
-
-      rule %w[path], "relative paths are expanded relative to the current working directory" do |key, value, settings|
-        next if value.nil?
-
-        path = Pathname.new(value)
-        next if !path.relative? || !Bundler.feature_flag.path_relative_to_cwd?
-
-        path = path.expand_path
-
-        root = begin
-                 Bundler.root
-               rescue GemfileNotFound
-                 Pathname.pwd.expand_path
-               end
-
-        path = begin
-                 path.relative_path_from(root)
-               rescue ArgumentError
-                 path
-               end
-
-        set(settings, key, path.to_s)
-      end
     end
   end
 end

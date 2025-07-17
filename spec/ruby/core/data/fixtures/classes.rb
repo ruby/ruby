@@ -9,5 +9,20 @@ module DataSpecs
     end
 
     class DataSubclass < Data; end
+
+    MeasureSubclass = Class.new(Measure) do
+      def initialize(amount:, unit:)
+        super
+      end
+    end
+
+    Empty = Data.define()
+
+    DataWithOverriddenInitialize = Data.define(:amount, :unit) do
+      def initialize(*rest, **kw)
+        super
+        ScratchPad.record [:initialize, rest, kw]
+      end
+    end
   end
 end

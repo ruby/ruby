@@ -101,6 +101,8 @@ errors:
   - EXPECT_FOR_DELIMITER
   - EXPECT_IDENT_REQ_PARAMETER
   - EXPECT_IN_DELIMITER
+  - EXPECT_LPAREN_AFTER_NOT_LPAREN
+  - EXPECT_LPAREN_AFTER_NOT_OTHER
   - EXPECT_LPAREN_REQ_PARAMETER
   - EXPECT_MESSAGE
   - EXPECT_RBRACKET
@@ -1828,6 +1830,11 @@ nodes:
         type: constant[]
       - name: class_keyword_loc
         type: location
+        comment: |
+          Represents the location of the `class` keyword.
+
+              class Foo end
+              ^^^^^
       - name: constant_path
         type: node
         kind:
@@ -1836,18 +1843,43 @@ nodes:
           - on error: CallNode # class 0.X end
       - name: inheritance_operator_loc
         type: location?
+        comment: |
+          Represents the location of the `<` operator.
+
+              class Foo < Bar
+                        ^
       - name: superclass
         type: node?
         kind: non-void expression
+        comment: |
+          Represents the superclass of the class.
+
+              class Foo < Bar
+                          ^^^
       - name: body
         type: node?
         kind:
           - StatementsNode
           - BeginNode
+        comment: |
+          Represents the body of the class.
+
+              class Foo
+                foo
+                ^^^
       - name: end_keyword_loc
         type: location
+        comment: |
+          Represents the location of the `end` keyword.
+
+              class Foo end
+                        ^^^
       - name: name
         type: constant
+        comment: |
+          The name of the class.
+
+              class Foo end # name `:Foo`
     comment: |
       Represents a class declaration involving the `class` keyword.
 

@@ -162,10 +162,9 @@
  */
 VALUE rb_cEnumerator;
 static VALUE rb_cLazy;
-static ID id_rewind, id_new, id_to_enum, id_each_entry;
+static ID id_rewind, id_to_enum, id_each_entry;
 static ID id_next, id_result, id_receiver, id_arguments, id_memo, id_method, id_force;
-static ID id_begin, id_end, id_step, id_exclude_end;
-static VALUE sym_each, sym_cycle, sym_yield;
+static VALUE sym_each, sym_yield;
 
 static VALUE lazy_use_super_method;
 
@@ -3748,6 +3747,55 @@ enumerator_s_product(int argc, VALUE *argv, VALUE klass)
     return obj;
 }
 
+struct arith_seq {
+    struct enumerator enumerator;
+    VALUE begin;
+    VALUE end;
+    VALUE step;
+    bool exclude_end;
+};
+
+RUBY_REFERENCES(arith_seq_refs) = {
+    RUBY_REF_EDGE(struct enumerator, obj),
+    RUBY_REF_EDGE(struct enumerator, args),
+    RUBY_REF_EDGE(struct enumerator, fib),
+    RUBY_REF_EDGE(struct enumerator, dst),
+    RUBY_REF_EDGE(struct enumerator, lookahead),
+    RUBY_REF_EDGE(struct enumerator, feedvalue),
+    RUBY_REF_EDGE(struct enumerator, stop_exc),
+    RUBY_REF_EDGE(struct enumerator, size),
+    RUBY_REF_EDGE(struct enumerator, procs),
+
+    RUBY_REF_EDGE(struct arith_seq, begin),
+    RUBY_REF_EDGE(struct arith_seq, end),
+    RUBY_REF_EDGE(struct arith_seq, step),
+    RUBY_REF_END
+};
+
+static const rb_data_type_t arith_seq_data_type = {
+    "arithmetic_sequence",
+    {
+        RUBY_REFS_LIST_PTR(arith_seq_refs),
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // Nothing allocated externally, so don't need a memsize function
+        NULL,
+    },
+    .parent = &enumerator_data_type,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
+};
+
+static VALUE
+arith_seq_allocate(VALUE klass)
+{
+    struct arith_seq *ptr;
+    VALUE enum_obj;
+
+    enum_obj = TypedData_Make_Struct(klass, struct arith_seq, &arith_seq_data_type, ptr);
+    ptr->enumerator.obj = Qundef;
+
+    return enum_obj;
+}
+
 /*
  * Document-class: Enumerator::ArithmeticSequence
  *
@@ -3765,12 +3813,16 @@ rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
                  rb_enumerator_size_func *size_fn,
                  VALUE beg, VALUE end, VALUE step, int excl)
 {
-    VALUE aseq = enumerator_init(enumerator_allocate(rb_cArithSeq),
+    VALUE aseq = enumerator_init(arith_seq_allocate(rb_cArithSeq),
                                  obj, meth, argc, argv, size_fn, Qnil, rb_keyword_given_p());
-    rb_ivar_set(aseq, id_begin, beg);
-    rb_ivar_set(aseq, id_end, end);
-    rb_ivar_set(aseq, id_step, step);
-    rb_ivar_set(aseq, id_exclude_end, RBOOL(excl));
+    struct arith_seq *ptr;
+    TypedData_Get_Struct(aseq, struct arith_seq, &enumerator_data_type, ptr);
+
+    RB_OBJ_WRITE(aseq, &ptr->begin, beg);
+    RB_OBJ_WRITE(aseq, &ptr->end, end);
+    RB_OBJ_WRITE(aseq, &ptr->step, step);
+    ptr->exclude_end = excl;
+
     return aseq;
 }
 
@@ -3783,7 +3835,9 @@ rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
 static inline VALUE
 arith_seq_begin(VALUE self)
 {
-    return rb_ivar_get(self, id_begin);
+    struct arith_seq *ptr;
+    TypedData_Get_Struct(self, struct arith_seq, &enumerator_data_type, ptr);
+    return ptr->begin;
 }
 
 /*
@@ -3794,7 +3848,9 @@ arith_seq_begin(VALUE self)
 static inline VALUE
 arith_seq_end(VALUE self)
 {
-    return rb_ivar_get(self, id_end);
+    struct arith_seq *ptr;
+    TypedData_Get_Struct(self, struct arith_seq, &enumerator_data_type, ptr);
+    return ptr->end;
 }
 
 /*
@@ -3806,7 +3862,9 @@ arith_seq_end(VALUE self)
 static inline VALUE
 arith_seq_step(VALUE self)
 {
-    return rb_ivar_get(self, id_step);
+    struct arith_seq *ptr;
+    TypedData_Get_Struct(self, struct arith_seq, &enumerator_data_type, ptr);
+    return ptr->step;
 }
 
 /*
@@ -3817,13 +3875,17 @@ arith_seq_step(VALUE self)
 static inline VALUE
 arith_seq_exclude_end(VALUE self)
 {
-    return rb_ivar_get(self, id_exclude_end);
+    struct arith_seq *ptr;
+    TypedData_Get_Struct(self, struct arith_seq, &enumerator_data_type, ptr);
+    return RBOOL(ptr->exclude_end);
 }
 
 static inline int
 arith_seq_exclude_end_p(VALUE self)
 {
-    return RTEST(arith_seq_exclude_end(self));
+    struct arith_seq *ptr;
+    TypedData_Get_Struct(self, struct arith_seq, &enumerator_data_type, ptr);
+    return ptr->exclude_end;
 }
 
 int
@@ -4664,7 +4726,6 @@ void
 Init_Enumerator(void)
 {
     id_rewind = rb_intern_const("rewind");
-    id_new = rb_intern_const("new");
     id_next = rb_intern_const("next");
     id_result = rb_intern_const("result");
     id_receiver = rb_intern_const("receiver");
@@ -4674,12 +4735,7 @@ Init_Enumerator(void)
     id_force = rb_intern_const("force");
     id_to_enum = rb_intern_const("to_enum");
     id_each_entry = rb_intern_const("each_entry");
-    id_begin = rb_intern_const("begin");
-    id_end = rb_intern_const("end");
-    id_step = rb_intern_const("step");
-    id_exclude_end = rb_intern_const("exclude_end");
     sym_each = ID2SYM(id_each);
-    sym_cycle = ID2SYM(rb_intern_const("cycle"));
     sym_yield = ID2SYM(rb_intern_const("yield"));
 
     InitVM(Enumerator);

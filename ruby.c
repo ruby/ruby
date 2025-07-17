@@ -757,8 +757,6 @@ ruby_init_loadpath(void)
         rb_ary_push(load_path, path);
         paths += len + 1;
     }
-
-    rb_const_set(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"), ruby_prefix_path);
 }
 
 
@@ -1772,7 +1770,6 @@ static void
 ruby_init_prelude(void)
 {
     Init_builtin_features();
-    rb_const_remove(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
 }
 
 void rb_call_builtin_inits(void);
@@ -1822,8 +1819,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     GET_VM()->running = 1;
     memset(ruby_vm_redefined_flag, 0, sizeof(ruby_vm_redefined_flag));
 
-    ruby_init_prelude();
-
     if (rb_namespace_available())
         rb_initialize_main_namespace();
 
@@ -1844,6 +1839,8 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     Init_builtin_yjit_hook();
 #endif
 
+    rb_namespace_init_done();
+    ruby_init_prelude();
     ruby_set_script_name(opt->script_name);
     require_libraries(&opt->req_list);
 }

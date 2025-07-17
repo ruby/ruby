@@ -29,7 +29,7 @@ require 'tmpdir'
 #   require 'tempfile'
 #
 #   # Tempfile.create with a block
-#   # The filename are choosen automatically.
+#   # The filename are chosen automatically.
 #   # (You can specify the prefix and suffix of the filename by an optional argument.)
 #   Tempfile.create {|f|
 #     f.puts "foo"

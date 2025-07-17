@@ -590,29 +590,6 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(err).to be_empty
   end
 
-  it "when requiring fileutils after does not show redefinition warnings" do
-    Dir.mkdir tmp("path_without_gemfile")
-
-    default_fileutils_version = ruby "gem 'fileutils', '< 999999'; require 'fileutils'; puts FileUtils::VERSION", raise_on_error: false
-    skip "fileutils isn't a default gem" if default_fileutils_version.empty?
-
-    realworld_system_gems "fileutils --version 1.4.1"
-
-    realworld_system_gems "pathname --version 0.2.0"
-
-    script <<-RUBY, dir: tmp("path_without_gemfile"), env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s, "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
-      require "bundler/inline"
-
-      gemfile(true) do
-        source "https://gem.repo2"
-      end
-
-      require "fileutils"
-    RUBY
-
-    expect(err).to eq("The Gemfile specifies no dependencies")
-  end
-
   it "does not load default timeout" do
     default_timeout_version = ruby "gem 'timeout', '< 999999'; require 'timeout'; puts Timeout::VERSION", raise_on_error: false
     skip "timeout isn't a default gem" if default_timeout_version.empty?

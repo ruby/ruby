@@ -95,14 +95,15 @@ fn main() {
 
         // From shape.h
         .allowlist_function("rb_obj_shape_id")
-        .allowlist_function("rb_shape_lookup")
         .allowlist_function("rb_shape_id_offset")
         .allowlist_function("rb_shape_get_iv_index")
         .allowlist_function("rb_shape_transition_add_ivar_no_warnings")
-        .allowlist_function("rb_shape_id")
-        .allowlist_function("rb_shape_obj_too_complex_p")
-        .allowlist_function("rb_shape_too_complex_p")
+        .allowlist_function("rb_yjit_shape_obj_too_complex_p")
+        .allowlist_function("rb_yjit_shape_too_complex_p")
+        .allowlist_function("rb_yjit_shape_capacity")
+        .allowlist_function("rb_yjit_shape_index")
         .allowlist_var("SHAPE_ID_NUM_BITS")
+        .allowlist_var("SHAPE_ID_HAS_IVAR_MASK")
 
         // From ruby/internal/intern/object.h
         .allowlist_function("rb_obj_is_kind_of")
@@ -340,13 +341,15 @@ fn main() {
         .allowlist_function("rb_yjit_exit_locations_dict")
         .allowlist_function("rb_yjit_icache_invalidate")
         .allowlist_function("rb_optimized_call")
-        .allowlist_function("rb_yjit_assert_holding_vm_lock")
         .allowlist_function("rb_yjit_sendish_sp_pops")
         .allowlist_function("rb_yjit_invokeblock_sp_pops")
         .allowlist_function("rb_yjit_set_exception_return")
         .allowlist_function("rb_yjit_str_concat_codepoint")
         .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
+
+        // From jit.c
+        .allowlist_function("rb_assert_holding_vm_lock")
 
         // from vm_sync.h
         .allowlist_function("rb_vm_barrier")

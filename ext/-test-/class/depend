@@ -127,6 +127,7 @@ class2name.o: $(hdrdir)/ruby/internal/intern/re.h
 class2name.o: $(hdrdir)/ruby/internal/intern/ruby.h
 class2name.o: $(hdrdir)/ruby/internal/intern/select.h
 class2name.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+class2name.o: $(hdrdir)/ruby/internal/intern/set.h
 class2name.o: $(hdrdir)/ruby/internal/intern/signal.h
 class2name.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 class2name.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -287,6 +288,7 @@ init.o: $(hdrdir)/ruby/internal/intern/re.h
 init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 init.o: $(hdrdir)/ruby/internal/intern/select.h
 init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+init.o: $(hdrdir)/ruby/internal/intern/set.h
 init.o: $(hdrdir)/ruby/internal/intern/signal.h
 init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 init.o: $(hdrdir)/ruby/internal/intern/string.h

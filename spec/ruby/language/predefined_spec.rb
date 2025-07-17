@@ -1,4 +1,5 @@
 require_relative '../spec_helper'
+require_relative '../core/exception/shared/set_backtrace'
 require 'stringio'
 
 # The following tables are excerpted from Programming Ruby: The Pragmatic Programmer's Guide'
@@ -621,6 +622,17 @@ describe "Predefined global $@" do
     end
   end
 
+  it_behaves_like :exception_set_backtrace, -> backtrace {
+    exception = nil
+    begin
+      raise
+    rescue
+      $@ = backtrace
+      exception = $!
+    end
+    exception
+  }
+
   it "cannot be assigned when there is no a rescued exception" do
     -> {
       $@ = []
@@ -1063,8 +1075,14 @@ describe "Execution variable $:" do
   it "default $LOAD_PATH entries until sitelibdir included have @gem_prelude_index set" do
     skip "no sense in ruby itself" if MSpecScript.instance_variable_defined?(:@testing_ruby)
 
-    $:.should.include?(RbConfig::CONFIG['sitelibdir'])
-    idx = $:.index(RbConfig::CONFIG['sitelibdir'])
+    if platform_is :windows
+      # See https://github.com/ruby/setup-ruby/pull/762#issuecomment-2917460440
+      $:.should.find { |e| File.realdirpath(e) == RbConfig::CONFIG['sitelibdir'] }
+      idx = $:.index { |e| File.realdirpath(e) == RbConfig::CONFIG['sitelibdir'] }
+    else
+      $:.should.include?(RbConfig::CONFIG['sitelibdir'])
+      idx = $:.index(RbConfig::CONFIG['sitelibdir'])
+    end
 
     $:[idx..-1].all? { |p| p.instance_variable_defined?(:@gem_prelude_index) }.should be_true
     $:[0...idx].all? { |p| !p.instance_variable_defined?(:@gem_prelude_index) }.should be_true

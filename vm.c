@@ -233,13 +233,9 @@ vm_cref_new0(VALUE klass, rb_method_visibility_t visi, int module_func, rb_cref_
     int omod_shared = FALSE;
 
     /* scope */
-    union {
-        rb_scope_visibility_t visi;
-        VALUE value;
-    } scope_visi;
-
-    scope_visi.visi.method_visi = visi;
-    scope_visi.visi.module_func = module_func;
+    rb_scope_visibility_t scope_visi;
+    scope_visi.method_visi = visi;
+    scope_visi.module_func = module_func;
 
     /* refinements */
     if (prev_cref != NULL && prev_cref != (void *)1 /* TODO: why CREF_NEXT(cref) is 1? */) {
@@ -256,7 +252,7 @@ vm_cref_new0(VALUE klass, rb_method_visibility_t visi, int module_func, rb_cref_
     rb_cref_t *cref = IMEMO_NEW(rb_cref_t, imemo_cref, refinements);
     cref->klass_or_self = klass;
     cref->next = use_prev_prev ? CREF_NEXT(prev_cref) : prev_cref;
-    *((rb_scope_visibility_t *)&cref->scope_visi) = scope_visi.visi;
+    *((rb_scope_visibility_t *)&cref->scope_visi) = scope_visi;
 
     if (pushed_by_eval) CREF_PUSHED_BY_EVAL_SET(cref);
     if (omod_shared) CREF_OMOD_SHARED_SET(cref);
@@ -452,7 +448,9 @@ jit_compile(rb_execution_context_t *ec)
             rb_zjit_compile_iseq(iseq, ec, false);
         }
     }
-#elif USE_YJIT
+#endif
+
+#if USE_YJIT
     // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
     if (body->jit_entry == NULL && rb_yjit_enabled_p) {
         body->jit_entry_calls++;
@@ -734,8 +732,8 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     SET(constant_cache_invalidations, ruby_vm_constant_cache_invalidations);
     SET(constant_cache_misses, ruby_vm_constant_cache_misses);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
-    SET(next_shape_id, (rb_serial_t)GET_SHAPE_TREE()->next_shape_id);
-    SET(shape_cache_size, (rb_serial_t)GET_SHAPE_TREE()->cache_size);
+    SET(next_shape_id, (rb_serial_t)rb_shapes_count());
+    SET(shape_cache_size, (rb_serial_t)rb_shape_tree.cache_size);
 #undef SET
 
 #if USE_DEBUG_COUNTER
@@ -2980,6 +2978,7 @@ rb_vm_update_references(void *ptr)
     if (ptr) {
         rb_vm_t *vm = ptr;
 
+        vm->self = rb_gc_location(vm->self);
         vm->mark_object_ary = rb_gc_location(vm->mark_object_ary);
         vm->load_path = rb_gc_location(vm->load_path);
         vm->load_path_snapshot = rb_gc_location(vm->load_path_snapshot);
@@ -3065,6 +3064,8 @@ rb_vm_mark(void *ptr)
         for (struct global_object_list *list = vm->global_object_list; list; list = list->next) {
             rb_gc_mark_maybe(*list->varptr);
         }
+
+        rb_gc_mark_movable(vm->self);
 
         if (vm->main_namespace) {
             rb_namespace_entry_mark((void *)vm->main_namespace);
@@ -3160,8 +3161,6 @@ ruby_vm_destruct(rb_vm_t *vm)
             // TODO: Is this ignorable for classext->m_tbl ?
             // rb_id_table_free(RCLASS(rb_mRubyVMFrozenCore)->m_tbl);
 
-            rb_shape_free_all();
-
             st_free_table(vm->static_ext_inits);
 
             rb_vm_postponed_job_free();
@@ -3194,6 +3193,10 @@ ruby_vm_destruct(rb_vm_t *vm)
             st_free_table(vm->ci_table);
             vm->ci_table = NULL;
         }
+        if (vm->cc_refinement_table) {
+            rb_set_free_table(vm->cc_refinement_table);
+            vm->cc_refinement_table = NULL;
+        }
         RB_ALTSTACK_FREE(vm->main_altstack);
 
         struct global_object_list *next;
@@ -3220,11 +3223,12 @@ ruby_vm_destruct(rb_vm_t *vm)
         ruby_mimfree(vm);
         ruby_current_vm_ptr = NULL;
 
-#if USE_YJIT
         if (rb_free_at_exit) {
+            rb_shape_free_all();
+#if USE_YJIT
             rb_yjit_free_at_exit();
-        }
 #endif
+        }
     }
     RUBY_FREE_LEAVE("vm");
     return 0;
@@ -3293,8 +3297,8 @@ vm_memsize(const void *ptr)
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         rb_id_table_memsize(vm->negative_cme_table) +
         rb_st_memsize(vm->overloaded_cme_table) +
-        vm_memsize_constant_cache() +
-        GET_SHAPE_TREE()->cache_size * sizeof(redblack_node_t)
+        rb_set_memsize(vm->cc_refinement_table) +
+        vm_memsize_constant_cache()
     );
 
     // TODO
@@ -3556,7 +3560,6 @@ thread_mark(void *ptr)
     rb_gc_mark(th->last_status);
     rb_gc_mark(th->locking_mutex);
     rb_gc_mark(th->name);
-    rb_gc_mark(th->ractor_waiting.receiving_mutex);
 
     rb_gc_mark(th->scheduler);
 
@@ -3668,10 +3671,10 @@ rb_ec_initialize_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size)
 void
 rb_ec_clear_vm_stack(rb_execution_context_t *ec)
 {
-    rb_ec_set_vm_stack(ec, NULL, 0);
-
-    // Avoid dangling pointers:
+    // set cfp to NULL before clearing the stack in case `thread_profile_frames`
+    // gets called in this middle of `rb_ec_set_vm_stack` via signal handler.
     ec->cfp = NULL;
+    rb_ec_set_vm_stack(ec, NULL, 0);
 }
 
 static void
@@ -3718,10 +3721,6 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->ext_config.ractor_safe = true;
 
     ccan_list_head_init(&th->interrupt_exec_tasks);
-    ccan_list_node_init(&th->ractor_waiting.waiting_node);
-#ifndef RUBY_THREAD_PTHREAD_H
-    rb_native_cond_initialize(&th->ractor_waiting.cond);
-#endif
 
 #if USE_RUBY_DEBUG_LOG
     static rb_atomic_t thread_serial = 1;
@@ -4016,8 +4015,6 @@ Init_VM(void)
     fcore = rb_class_new(rb_cBasicObject);
     rb_set_class_path(fcore, rb_cRubyVM, "FrozenCore");
     rb_vm_register_global_object(rb_class_path_cached(fcore));
-    RB_FL_UNSET_RAW(fcore, T_MASK);
-    RB_FL_SET_RAW(fcore, T_ICLASS);
     klass = rb_singleton_class(fcore);
     rb_define_method_id(klass, id_core_set_method_alias, m_core_set_method_alias, 3);
     rb_define_method_id(klass, id_core_set_variable_alias, m_core_set_variable_alias, 2);
@@ -4379,7 +4376,8 @@ Init_BareVM(void)
     vm_opt_mid_table = st_init_numtable();
 
 #ifdef RUBY_THREAD_WIN32_H
-    rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);
+    rb_native_cond_initialize(&vm->ractor.sync.barrier_complete_cond);
+    rb_native_cond_initialize(&vm->ractor.sync.barrier_release_cond);
 #endif
 }
 
@@ -4490,8 +4488,7 @@ rb_vm_register_global_object(VALUE obj)
       default:
         break;
     }
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         VALUE list = GET_VM()->mark_object_ary;
         VALUE head = pin_array_list_append(list, obj);
         if (head != list) {
@@ -4499,7 +4496,6 @@ rb_vm_register_global_object(VALUE obj)
         }
         RB_GC_GUARD(obj);
     }
-    RB_VM_LOCK_LEAVE();
 }
 
 void
@@ -4511,6 +4507,7 @@ Init_vm_objects(void)
     vm->mark_object_ary = pin_array_list_new(Qnil);
     vm->loading_table = st_init_strtable();
     vm->ci_table = st_init_table(&vm_ci_hashtype);
+    vm->cc_refinement_table = rb_set_init_numtable();
 }
 
 // Stub for builtin function when not building YJIT units

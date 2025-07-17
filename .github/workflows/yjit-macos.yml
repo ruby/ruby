@@ -112,6 +112,13 @@ jobs:
 
       - run: make
 
+      - name: Verify that --yjit-dump-disasm works
+        run: |
+          ./miniruby --yjit-call-threshold=1 --yjit-dump-disasm -e0 | \
+          wc -l | \
+          ruby -ne 'raise "Disassembly seems broken in dev build (output has too few lines)" unless $_.to_i > 10'
+        if: ${{ contains(matrix.configure, 'jit=dev') }}
+
       - name: Enable YJIT through ENV
         run: echo "RUBY_YJIT_ENABLE=1" >> $GITHUB_ENV
 
@@ -123,6 +130,7 @@ jobs:
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
 
       - name: Set up Launchable
+        id: launchable
         uses: ./.github/actions/launchable/setup
         with:
           os: macos-14
@@ -132,14 +140,12 @@ jobs:
           srcdir: src
           is-yjit: true
         continue-on-error: true
+        timeout-minutes: 3
 
       - name: make ${{ matrix.test_task }}
         run: |
-          if [ -n "${LAUNCHABLE_ORGANIZATION}" ]; then
-            exec \
-            > >(tee launchable_stdout.log) \
-            2> >(tee launchable_stderr.log)
-          fi
+          test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
+          test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
 
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"} \
             RUN_OPTS="$RUN_OPTS" \
@@ -147,9 +153,11 @@ jobs:
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof,rbs,repl_type_completor'
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           SYNTAX_SUGGEST_TIMEOUT: '5'
           PRECHECK_BUNDLED_GEMS: 'no'
+          LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
+          LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - name: make skipped tests

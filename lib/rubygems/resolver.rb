@@ -241,7 +241,7 @@ class Gem::Resolver
 
     sources.each do |source|
       groups[source].
-        sort_by {|spec| [spec.version, spec.platform =~ Gem::Platform.local ? 1 : 0] }. # rubocop:disable Performance/RegexpMatch
+        sort_by {|spec| [spec.version, -Gem::Platform.platform_specificity_match(spec.platform, Gem::Platform.local)] }.
         map {|spec| ActivationRequest.new spec, dependency }.
         each {|activation_request| activation_requests << activation_request }
     end

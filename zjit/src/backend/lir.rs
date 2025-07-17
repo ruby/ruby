@@ -1,11 +1,14 @@
+use std::collections::HashMap;
 use std::fmt;
 use std::mem::take;
-use crate::{cruby::VALUE, hir::FrameState};
+use crate::codegen::local_size_and_idx_to_ep_offset;
+use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32};
+use crate::hir::SideExitReason;
+use crate::options::{debug, get_option};
+use crate::cruby::VALUE;
 use crate::backend::current::*;
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
-#[cfg(feature = "disasm")]
-use crate::options::*;
 
 pub const EC: Opnd = _EC;
 pub const CFP: Opnd = _CFP;
@@ -13,6 +16,7 @@ pub const SP: Opnd = _SP;
 
 pub const C_ARG_OPNDS: [Opnd; 6] = _C_ARG_OPNDS;
 pub const C_RET_OPND: Opnd = _C_RET_OPND;
+pub const NATIVE_STACK_PTR: Opnd = _NATIVE_STACK_PTR;
 pub use crate::backend::current::{Reg, C_RET_REG};
 
 // Memory operand base
@@ -28,13 +32,13 @@ pub enum MemBase
 pub struct Mem
 {
     // Base register number or instruction index
-    pub(super) base: MemBase,
+    pub base: MemBase,
 
     // Offset relative to the base pointer
-    pub(super) disp: i32,
+    pub disp: i32,
 
     // Size in bits
-    pub(super) num_bits: u8,
+    pub num_bits: u8,
 }
 
 impl fmt::Debug for Mem {
@@ -42,7 +46,7 @@ impl fmt::Debug for Mem {
         write!(fmt, "Mem{}[{:?}", self.num_bits, self.base)?;
         if self.disp != 0 {
             let sign = if self.disp > 0 { '+' } else { '-' };
-            write!(fmt, " {sign} {}", self.disp)?;
+            write!(fmt, " {sign} {}", self.disp.abs())?;
         }
 
         write!(fmt, "]")
@@ -74,7 +78,8 @@ impl fmt::Debug for Opnd {
         match self {
             Self::None => write!(fmt, "None"),
             Value(val) => write!(fmt, "Value({val:?})"),
-            VReg { idx, num_bits } => write!(fmt, "Out{num_bits}({idx})"),
+            VReg { idx, num_bits } if *num_bits == 64 => write!(fmt, "VReg({idx})"),
+            VReg { idx, num_bits } => write!(fmt, "VReg{num_bits}({idx})"),
             Imm(signed) => write!(fmt, "{signed:x}_i64"),
             UImm(unsigned) => write!(fmt, "{unsigned:x}_u64"),
             // Say Mem and Reg only once
@@ -112,7 +117,7 @@ impl Opnd
     }
 
     /// Constructor for constant pointer operand
-    pub fn const_ptr(ptr: *const u8) -> Self {
+    pub fn const_ptr<T>(ptr: *const T) -> Self {
         Opnd::UImm(ptr as u64)
     }
 
@@ -265,6 +270,14 @@ impl From<VALUE> for Opnd {
     }
 }
 
+/// Set of things we need to restore for side exits.
+#[derive(Clone, Debug)]
+pub struct SideExitContext {
+    pub pc: *const VALUE,
+    pub stack: Vec<Opnd>,
+    pub locals: Vec<Opnd>,
+}
+
 /// Branch target (something that we can jump to)
 /// for branch instructions
 #[derive(Clone, Debug)]
@@ -272,12 +285,20 @@ pub enum Target
 {
     /// Pointer to a piece of ZJIT-generated code
     CodePtr(CodePtr),
-    // Side exit with a counter
-    SideExit(FrameState),
-    /// Pointer to a side exit code
-    SideExitPtr(CodePtr),
     /// A label within the generated code
     Label(Label),
+    /// Side exit to the interpreter
+    SideExit {
+        /// Context to restore on regular side exits. None for side exits right
+        /// after JIT-to-JIT calls because we restore them before the JIT call.
+        context: Option<SideExitContext>,
+        /// We use this to enrich asm comments.
+        reason: SideExitReason,
+        /// The number of bytes we need to adjust the C stack pointer by.
+        c_stack_bytes: usize,
+        /// Some if the side exit should write this label. We use it for patch points.
+        label: Option<Label>,
+    },
 }
 
 impl Target
@@ -292,7 +313,6 @@ impl Target
     pub fn unwrap_code_ptr(&self) -> CodePtr {
         match self {
             Target::CodePtr(ptr) => *ptr,
-            Target::SideExitPtr(ptr) => *ptr,
             _ => unreachable!("trying to unwrap {:?} into code ptr", self)
         }
     }
@@ -483,9 +503,13 @@ pub enum Insn {
     // binary OR operation.
     Or { left: Opnd, right: Opnd, out: Opnd },
 
-    /// Pad nop instructions to accommodate Op::Jmp in case the block or the insn
-    /// is invalidated.
-    PadInvalPatch,
+    /// Patch point that will be rewritten to a jump to a side exit on invalidation.
+    PatchPoint(Target),
+
+    /// Make sure the last PatchPoint has enough space to insert a jump.
+    /// We insert this instruction at the end of each block so that the jump
+    /// will not overwrite the next block or a side exit.
+    PadPatchPoint,
 
     // Mark a position in the generated code
     PosMarker(PosMarkerFn),
@@ -539,12 +563,13 @@ impl Insn {
             Insn::Jne(target) |
             Insn::Jnz(target) |
             Insn::Jo(target) |
-            Insn::Jz(target) |
-            Insn::Label(target) |
             Insn::JoMul(target) |
+            Insn::Jz(target) |
             Insn::Joz(_, target) |
             Insn::Jonz(_, target) |
-            Insn::LeaJumpTarget { target, .. } => {
+            Insn::Label(target) |
+            Insn::LeaJumpTarget { target, .. } |
+            Insn::PatchPoint(target) => {
                 Some(target)
             }
             _ => None,
@@ -606,7 +631,8 @@ impl Insn {
             Insn::Mov { .. } => "Mov",
             Insn::Not { .. } => "Not",
             Insn::Or { .. } => "Or",
-            Insn::PadInvalPatch => "PadEntryExit",
+            Insn::PatchPoint(_) => "PatchPoint",
+            Insn::PadPatchPoint => "PadPatchPoint",
             Insn::PosMarker(_) => "PosMarker",
             Insn::RShift { .. } => "RShift",
             Insn::Store { .. } => "Store",
@@ -697,8 +723,13 @@ impl Insn {
             Insn::Jne(target) |
             Insn::Jnz(target) |
             Insn::Jo(target) |
+            Insn::JoMul(target) |
             Insn::Jz(target) |
-            Insn::LeaJumpTarget { target, .. } => Some(target),
+            Insn::Joz(_, target) |
+            Insn::Jonz(_, target) |
+            Insn::Label(target) |
+            Insn::LeaJumpTarget { target, .. } |
+            Insn::PatchPoint(target) => Some(target),
             _ => None
         }
     }
@@ -731,6 +762,64 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.insn {
+            Insn::Jbe(target) |
+            Insn::Jb(target) |
+            Insn::Je(target) |
+            Insn::Jl(target) |
+            Insn::Jg(target) |
+            Insn::Jge(target) |
+            Insn::Jmp(target) |
+            Insn::Jne(target) |
+            Insn::Jnz(target) |
+            Insn::Jo(target) |
+            Insn::JoMul(target) |
+            Insn::Jz(target) |
+            Insn::Label(target) |
+            Insn::LeaJumpTarget { target, .. } |
+            Insn::PatchPoint(target) => {
+                if let Target::SideExit { context: Some(SideExitContext { stack, locals, .. }), .. } = target {
+                    let stack_idx = self.idx;
+                    if stack_idx < stack.len() {
+                        let opnd = &stack[stack_idx];
+                        self.idx += 1;
+                        return Some(opnd);
+                    }
+
+                    let local_idx = self.idx - stack.len();
+                    if local_idx < locals.len() {
+                        let opnd = &locals[local_idx];
+                        self.idx += 1;
+                        return Some(opnd);
+                    }
+                }
+                None
+            }
+
+            Insn::Joz(opnd, target) |
+            Insn::Jonz(opnd, target) => {
+                if self.idx == 0 {
+                    self.idx += 1;
+                    return Some(opnd);
+                }
+
+                if let Target::SideExit { context: Some(SideExitContext { stack, locals, .. }), .. } = target {
+                    let stack_idx = self.idx - 1;
+                    if stack_idx < stack.len() {
+                        let opnd = &stack[stack_idx];
+                        self.idx += 1;
+                        return Some(opnd);
+                    }
+
+                    let local_idx = stack_idx - stack.len();
+                    if local_idx < locals.len() {
+                        let opnd = &locals[local_idx];
+                        self.idx += 1;
+                        return Some(opnd);
+                    }
+                }
+                None
+            }
+
             Insn::BakeString(_) |
             Insn::Breakpoint |
             Insn::Comment(_) |
@@ -739,21 +828,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::CPushAll |
             Insn::FrameSetup |
             Insn::FrameTeardown |
-            Insn::Jbe(_) |
-            Insn::Jb(_) |
-            Insn::Je(_) |
-            Insn::Jl(_) |
-            Insn::Jg(_) |
-            Insn::Jge(_) |
-            Insn::Jmp(_) |
-            Insn::Jne(_) |
-            Insn::Jnz(_) |
-            Insn::Jo(_) |
-            Insn::JoMul(_) |
-            Insn::Jz(_) |
-            Insn::Label(_) |
-            Insn::LeaJumpTarget { .. } |
-            Insn::PadInvalPatch |
+            Insn::PadPatchPoint |
             Insn::PosMarker(_) => None,
 
             Insn::CPopInto(opnd) |
@@ -764,8 +839,6 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::LiveReg { opnd, .. } |
             Insn::Load { opnd, .. } |
             Insn::LoadSExt { opnd, .. } |
-            Insn::Joz(opnd, _) |
-            Insn::Jonz(opnd, _) |
             Insn::Not { opnd, .. } => {
                 match self.idx {
                     0 => {
@@ -845,6 +918,64 @@ impl<'a> InsnOpndMutIterator<'a> {
 
     pub(super) fn next(&mut self) -> Option<&mut Opnd> {
         match self.insn {
+            Insn::Jbe(target) |
+            Insn::Jb(target) |
+            Insn::Je(target) |
+            Insn::Jl(target) |
+            Insn::Jg(target) |
+            Insn::Jge(target) |
+            Insn::Jmp(target) |
+            Insn::Jne(target) |
+            Insn::Jnz(target) |
+            Insn::Jo(target) |
+            Insn::JoMul(target) |
+            Insn::Jz(target) |
+            Insn::Label(target) |
+            Insn::LeaJumpTarget { target, .. } |
+            Insn::PatchPoint(target) => {
+                if let Target::SideExit { context: Some(SideExitContext { stack, locals, .. }), .. } = target {
+                    let stack_idx = self.idx;
+                    if stack_idx < stack.len() {
+                        let opnd = &mut stack[stack_idx];
+                        self.idx += 1;
+                        return Some(opnd);
+                    }
+
+                    let local_idx = self.idx - stack.len();
+                    if local_idx < locals.len() {
+                        let opnd = &mut locals[local_idx];
+                        self.idx += 1;
+                        return Some(opnd);
+                    }
+                }
+                None
+            }
+
+            Insn::Joz(opnd, target) |
+            Insn::Jonz(opnd, target) => {
+                if self.idx == 0 {
+                    self.idx += 1;
+                    return Some(opnd);
+                }
+
+                if let Target::SideExit { context: Some(SideExitContext { stack, locals, .. }), .. } = target {
+                    let stack_idx = self.idx - 1;
+                    if stack_idx < stack.len() {
+                        let opnd = &mut stack[stack_idx];
+                        self.idx += 1;
+                        return Some(opnd);
+                    }
+
+                    let local_idx = stack_idx - stack.len();
+                    if local_idx < locals.len() {
+                        let opnd = &mut locals[local_idx];
+                        self.idx += 1;
+                        return Some(opnd);
+                    }
+                }
+                None
+            }
+
             Insn::BakeString(_) |
             Insn::Breakpoint |
             Insn::Comment(_) |
@@ -853,21 +984,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::CPushAll |
             Insn::FrameSetup |
             Insn::FrameTeardown |
-            Insn::Jbe(_) |
-            Insn::Jb(_) |
-            Insn::Je(_) |
-            Insn::Jl(_) |
-            Insn::Jg(_) |
-            Insn::Jge(_) |
-            Insn::Jmp(_) |
-            Insn::Jne(_) |
-            Insn::Jnz(_) |
-            Insn::Jo(_) |
-            Insn::JoMul(_) |
-            Insn::Jz(_) |
-            Insn::Label(_) |
-            Insn::LeaJumpTarget { .. } |
-            Insn::PadInvalPatch |
+            Insn::PadPatchPoint |
             Insn::PosMarker(_) => None,
 
             Insn::CPopInto(opnd) |
@@ -878,8 +995,6 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::LiveReg { opnd, .. } |
             Insn::Load { opnd, .. } |
             Insn::LoadSExt { opnd, .. } |
-            Insn::Joz(opnd, _) |
-            Insn::Jonz(opnd, _) |
             Insn::Not { opnd, .. } => {
                 match self.idx {
                     0 => {
@@ -1036,7 +1151,7 @@ impl RegisterPool {
     fn take_reg(&mut self, reg: &Reg, vreg_idx: usize) -> Reg {
         let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no)
             .unwrap_or_else(|| panic!("Unable to find register: {}", reg.reg_no));
-        assert_eq!(self.pool[reg_idx], None, "register already allocated");
+        assert_eq!(self.pool[reg_idx], None, "register already allocated for VReg({:?})", self.pool[reg_idx]);
         self.pool[reg_idx] = Some(vreg_idx);
         self.live_regs += 1;
         *reg
@@ -1431,13 +1546,18 @@ impl Assembler
     /// Sets the out field on the various instructions that require allocated
     /// registers because their output is used as the operand on a subsequent
     /// instruction. This is our implementation of the linear scan algorithm.
-    pub(super) fn alloc_regs(mut self, regs: Vec<Reg>) -> Assembler {
+    pub(super) fn alloc_regs(mut self, regs: Vec<Reg>) -> Option<Assembler> {
         // Dump live registers for register spill debugging.
         fn dump_live_regs(insns: Vec<Insn>, live_ranges: Vec<LiveRange>, num_regs: usize, spill_index: usize) {
             // Convert live_ranges to live_regs: the number of live registers at each index
             let mut live_regs: Vec<usize> = vec![];
             for insn_idx in 0..insns.len() {
-                let live_count = live_ranges.iter().filter(|range| range.start() <= insn_idx && insn_idx <= range.end()).count();
+                let live_count = live_ranges.iter().filter(|range|
+                    match (range.start, range.end) {
+                        (Some(start), Some(end)) => start <= insn_idx && insn_idx <= end,
+                        _ => false,
+                    }
+                ).count();
                 live_regs.push(live_count);
             }
 
@@ -1473,7 +1593,12 @@ impl Assembler
                     // If C_RET_REG is in use, move it to another register.
                     // This must happen before last-use registers are deallocated.
                     if let Some(vreg_idx) = pool.vreg_for(&C_RET_REG) {
-                        let new_reg = pool.alloc_reg(vreg_idx).unwrap(); // TODO: support spill
+                        let new_reg = if let Some(new_reg) = pool.alloc_reg(vreg_idx) {
+                            new_reg
+                        } else {
+                            debug!("spilling VReg is not implemented yet, can't evacuate C_RET_REG on CCall");
+                            return None;
+                        };
                         asm.mov(Opnd::Reg(new_reg), C_RET_OPND);
                         pool.dealloc_reg(&C_RET_REG);
                         reg_mapping[vreg_idx] = Some(new_reg);
@@ -1566,13 +1691,16 @@ impl Assembler
                         _ => match pool.alloc_reg(vreg_idx.unwrap()) {
                             Some(reg) => Some(reg),
                             None => {
-                                let mut insns = asm.insns;
-                                insns.push(insn);
-                                while let Some((_, insn)) = iterator.next() {
+                                if get_option!(debug) {
+                                    let mut insns = asm.insns;
                                     insns.push(insn);
+                                    while let Some((_, insn)) = iterator.next() {
+                                        insns.push(insn);
+                                    }
+                                    dump_live_regs(insns, live_ranges, regs.len(), index);
                                 }
-                                dump_live_regs(insns, live_ranges, regs.len(), index);
-                                unreachable!("Register spill not supported");
+                                debug!("Register spill not supported");
+                                return None;
                             }
                         }
                     };
@@ -1643,16 +1771,13 @@ impl Assembler
         }
 
         assert!(pool.is_empty(), "Expected all registers to be returned to the pool");
-        asm
+        Some(asm)
     }
 
     /// Compile the instructions down to machine code.
     /// Can fail due to lack of code memory and inopportune code placement, among other reasons.
     #[must_use]
-    pub fn compile(mut self, cb: &mut CodeBlock) -> Option<(CodePtr, Vec<u32>)>
-    {
-        self.compile_side_exits(cb)?;
-
+    pub fn compile(self, cb: &mut CodeBlock) -> Option<(CodePtr, Vec<CodePtr>)> {
         #[cfg(feature = "disasm")]
         let start_addr = cb.get_write_ptr();
         let alloc_regs = Self::get_alloc_regs();
@@ -1667,49 +1792,87 @@ impl Assembler
         ret
     }
 
+    /// Compile with a limited number of registers. Used only for unit tests.
+    #[cfg(test)]
+    pub fn compile_with_num_regs(self, cb: &mut CodeBlock, num_regs: usize) -> (CodePtr, Vec<CodePtr>) {
+        let mut alloc_regs = Self::get_alloc_regs();
+        let alloc_regs = alloc_regs.drain(0..num_regs).collect();
+        self.compile_with_regs(cb, alloc_regs).unwrap()
+    }
+
     /// Compile Target::SideExit and convert it into Target::CodePtr for all instructions
     #[must_use]
-    pub fn compile_side_exits(&mut self, cb: &mut CodeBlock) -> Option<()> {
-        for insn in self.insns.iter_mut() {
-            if let Some(target) = insn.target_mut() {
-                if let Target::SideExit(state) = target {
-                    let side_exit_ptr = cb.get_write_ptr();
-                    let mut asm = Assembler::new();
-                    asm_comment!(asm, "side exit: {state}");
-                    asm.ccall(Self::rb_zjit_side_exit as *const u8, vec![]);
-                    asm.compile(cb)?;
-                    *target = Target::SideExitPtr(side_exit_ptr);
+    pub fn compile_side_exits(&mut self) -> Option<()> {
+        let mut targets = HashMap::new();
+        for (idx, insn) in self.insns.iter().enumerate() {
+            if let Some(target @ Target::SideExit { .. }) = insn.target() {
+                targets.insert(idx, target.clone());
+            }
+        }
+
+        for (idx, target) in targets {
+            // Compile a side exit. Note that this is past the split pass and alloc_regs(),
+            // so you can't use a VReg or an instruction that needs to be split.
+            if let Target::SideExit { context, reason, c_stack_bytes, label } = target {
+                asm_comment!(self, "Exit: {reason}");
+                let side_exit_label = if let Some(label) = label {
+                    Target::Label(label)
+                } else {
+                    self.new_label("side_exit".into())
+                };
+                self.write_label(side_exit_label.clone());
+
+                // Load an operand that cannot be used as a source of Insn::Store
+                fn split_store_source(asm: &mut Assembler, opnd: Opnd) -> Opnd {
+                    if matches!(opnd, Opnd::Mem(_) | Opnd::Value(_)) ||
+                        (cfg!(target_arch = "aarch64") && matches!(opnd, Opnd::UImm(_))) {
+                        asm.load_into(Opnd::Reg(Assembler::SCRATCH_REG), opnd);
+                        Opnd::Reg(Assembler::SCRATCH_REG)
+                    } else {
+                        opnd
+                    }
                 }
+
+                // Restore the PC and the stack for regular side exits. We don't do this for
+                // side exits right after JIT-to-JIT calls, which restore them before the call.
+                if let Some(SideExitContext { pc, stack, locals }) = context {
+                    asm_comment!(self, "write stack slots: {stack:?}");
+                    for (idx, &opnd) in stack.iter().enumerate() {
+                        let opnd = split_store_source(self, opnd);
+                        self.store(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), opnd);
+                    }
+
+                    asm_comment!(self, "write locals: {locals:?}");
+                    for (idx, &opnd) in locals.iter().enumerate() {
+                        let opnd = split_store_source(self, opnd);
+                        self.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
+                    }
+
+                    asm_comment!(self, "save cfp->pc");
+                    self.load_into(Opnd::Reg(Assembler::SCRATCH_REG), Opnd::const_ptr(pc));
+                    self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::Reg(Assembler::SCRATCH_REG));
+
+                    asm_comment!(self, "save cfp->sp");
+                    self.lea_into(Opnd::Reg(Assembler::SCRATCH_REG), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
+                    let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
+                    self.store(cfp_sp, Opnd::Reg(Assembler::SCRATCH_REG));
+                }
+
+                if c_stack_bytes > 0 {
+                    asm_comment!(self, "restore C stack pointer");
+                    self.add_into(NATIVE_STACK_PTR, c_stack_bytes.into());
+                }
+
+                asm_comment!(self, "exit to the interpreter");
+                self.frame_teardown();
+                self.mov(C_RET_OPND, Opnd::UImm(Qundef.as_u64()));
+                self.cret(C_RET_OPND);
+
+                *self.insns[idx].target_mut().unwrap() = side_exit_label;
             }
         }
         Some(())
     }
-
-    #[unsafe(no_mangle)]
-    extern "C" fn rb_zjit_side_exit() {
-        unimplemented!("side exits are not implemented yet");
-    }
-
-    /*
-    /// Compile with a limited number of registers. Used only for unit tests.
-    #[cfg(test)]
-    pub fn compile_with_num_regs(self, cb: &mut CodeBlock, num_regs: usize) -> (CodePtr, Vec<u32>)
-    {
-        let mut alloc_regs = Self::get_alloc_regs();
-        let alloc_regs = alloc_regs.drain(0..num_regs).collect();
-        self.compile_with_regs(cb, None, alloc_regs).unwrap()
-    }
-
-    /// Return true if the next ccall() is expected to be leaf.
-    pub fn get_leaf_ccall(&mut self) -> bool {
-        self.leaf_ccall
-    }
-
-    /// Assert that the next ccall() is going to be leaf.
-    pub fn expect_leaf_ccall(&mut self) {
-        self.leaf_ccall = true;
-    }
-    */
 }
 
 impl fmt::Debug for Assembler {
@@ -1730,6 +1893,11 @@ impl Assembler {
         let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn::Add { left, right, out });
         out
+    }
+
+    pub fn add_into(&mut self, left: Opnd, right: Opnd) -> Opnd {
+        self.push_insn(Insn::Add { left, right, out: left });
+        left
     }
 
     #[must_use]
@@ -1970,6 +2138,10 @@ impl Assembler {
         out
     }
 
+    pub fn lea_into(&mut self, out: Opnd, opnd: Opnd) {
+        self.push_insn(Insn::Lea { opnd, out });
+    }
+
     #[must_use]
     pub fn lea_jump_target(&mut self, target: Target) -> Opnd {
         let out = self.new_vreg(Opnd::DEFAULT_NUM_BITS);
@@ -1992,6 +2164,7 @@ impl Assembler {
     }
 
     pub fn load_into(&mut self, dest: Opnd, opnd: Opnd) {
+        assert!(matches!(dest, Opnd::Reg(_) | Opnd::VReg{..}), "Destination of load_into must be a register");
         match (dest, opnd) {
             (Opnd::Reg(dest), Opnd::Reg(opnd)) if dest == opnd => {}, // skip if noop
             _ => self.push_insn(Insn::LoadInto { dest, opnd }),
@@ -2034,11 +2207,14 @@ impl Assembler {
         out
     }
 
-    pub fn pad_inval_patch(&mut self) {
-        self.push_insn(Insn::PadInvalPatch);
+    pub fn patch_point(&mut self, target: Target) {
+        self.push_insn(Insn::PatchPoint(target));
     }
 
-    //pub fn pos_marker<F: FnMut(CodePtr)>(&mut self, marker_fn: F)
+    pub fn pad_patch_point(&mut self) {
+        self.push_insn(Insn::PadPatchPoint);
+    }
+
     pub fn pos_marker(&mut self, marker_fn: impl Fn(CodePtr, &CodeBlock) + 'static) {
         self.push_insn(Insn::PosMarker(Box::new(marker_fn)));
     }
@@ -2117,6 +2293,15 @@ macro_rules! asm_comment {
 }
 pub(crate) use asm_comment;
 
+/// Convenience macro over [`Assembler::ccall`] that also adds a comment with the function name.
+macro_rules! asm_ccall {
+    [$asm: ident, $fn_name:ident, $($args:expr),* ] => {{
+        $crate::backend::lir::asm_comment!($asm, concat!("call ", stringify!($fn_name)));
+        $asm.ccall($fn_name as *const u8, vec![$($args),*])
+    }};
+}
+pub(crate) use asm_ccall;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2141,6 +2326,14 @@ mod tests {
         assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
 
         assert!(matches!(opnd_iter.next(), None));
+    }
+
+    #[test]
+    #[should_panic]
+    fn load_into_memory_is_invalid() {
+        let mut asm = Assembler::new();
+        let mem = Opnd::mem(64, SP, 0);
+        asm.load_into(mem, mem);
     }
 }
 

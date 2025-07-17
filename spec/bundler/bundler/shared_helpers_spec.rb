@@ -423,7 +423,7 @@ RSpec.describe Bundler::SharedHelpers do
       it "sets BUNDLE_BIN_PATH to the bundle executable file" do
         subject.set_bundle_environment
         bin_path = ENV["BUNDLE_BIN_PATH"]
-        expect(bin_path).to eq(bindir.join("bundle").to_s)
+        expect(bin_path).to eq(exedir.join("bundle").to_s)
         expect(File.exist?(bin_path)).to be true
       end
     end
@@ -517,7 +517,7 @@ RSpec.describe Bundler::SharedHelpers do
   end
 
   describe "#major_deprecation" do
-    before { allow(Bundler).to receive(:bundler_major_version).and_return(37) }
+    before { allow(Bundler).to receive(:feature_flag).and_return(Bundler::FeatureFlag.new(37)) }
     before { allow(Bundler.ui).to receive(:warn) }
 
     it "prints and raises nothing below the deprecated major version" do

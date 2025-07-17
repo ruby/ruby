@@ -36,6 +36,19 @@ STRINGIO_VERSION = "3.1.8.dev";
 # define rb_class_new_instance_kw(argc, argv, klass, kw_splat) rb_class_new_instance(argc, argv, klass)
 #endif
 
+static inline bool
+str_chilled_p(VALUE str)
+{
+#if (RUBY_API_VERSION_MAJOR == 3 && RUBY_API_VERSION_MINOR >= 4) || RUBY_API_VERSION_MAJOR >= 4
+    // Do not attempt to modify chilled strings on Ruby 3.4+
+    // RUBY_FL_USER2 == STR_CHILLED_LITERAL
+    // RUBY_FL_USER3 == STR_CHILLED_SYMBOL_TO_S
+    return FL_TEST_RAW(str, RUBY_FL_USER2 | RUBY_FL_USER3);
+#else
+    return false;
+#endif
+}
+
 #ifndef HAVE_TYPE_RB_IO_MODE_T
 typedef int rb_io_mode_t;
 #endif
@@ -1865,14 +1878,7 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
 	}
     }
     ptr->enc = enc;
-    if (!NIL_P(ptr->string) && WRITABLE(self)
-#if (RUBY_API_VERSION_MAJOR == 3 && RUBY_API_VERSION_MINOR >= 4) || RUBY_API_VERSION_MAJOR >= 4
-            // Do not attempt to modify chilled strings on Ruby 3.4+
-            // RUBY_FL_USER2 == STR_CHILLED_LITERAL
-            // RUBY_FL_USER3 == STR_CHILLED_SYMBOL_TO_S
-            && !FL_TEST_RAW(ptr->string, RUBY_FL_USER2 | RUBY_FL_USER3)
-#endif
-            ) {
+    if (!NIL_P(ptr->string) && WRITABLE(self) && !str_chilled_p(ptr->string)) {
 	rb_enc_associate(ptr->string, enc);
     }
 

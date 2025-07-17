@@ -1612,7 +1612,7 @@ class TestMethod < Test::Unit::TestCase
         begin
           foo(1)
         rescue ArgumentError => e
-          assert_equal "main.rb:#{$line_method}:in 'foo'", e.backtrace.first
+          assert_equal "main.rb:#{$line_method}:in 'Object#foo'", e.backtrace.first
         end
       EOS
     END_OF_BODY

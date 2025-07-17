@@ -305,8 +305,8 @@ module Bundler
         end
 
         def has_revision_cached?
-          return unless @revision && path.exist?
-          git("cat-file", "-e", @revision, dir: path)
+          return unless commit && path.exist?
+          git("cat-file", "-e", commit, dir: path)
           true
         rescue GitError
           false
@@ -408,7 +408,7 @@ module Bundler
         def capture3_args_for(cmd, dir)
           return ["git", *cmd] unless dir
 
-          if Bundler.feature_flag.bundler_3_mode? || supports_minus_c?
+          if Bundler.feature_flag.bundler_4_mode? || supports_minus_c?
             ["git", "-C", dir.to_s, *cmd]
           else
             ["git", *cmd, { chdir: dir.to_s }]

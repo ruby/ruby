@@ -1,0 +1,3 @@
+case 1; in -1**2; end
+           ^~~~~ expected a pattern expression after the `in` keyword
+

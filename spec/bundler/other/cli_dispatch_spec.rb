@@ -4,13 +4,13 @@ RSpec.describe "bundle command names" do
   it "work when given fully" do
     bundle "install", raise_on_error: false
     expect(err).to eq("Could not locate Gemfile")
-    expect(last_command.stdboth).not_to include("Ambiguous command")
+    expect(stdboth).not_to include("Ambiguous command")
   end
 
   it "work when not ambiguous" do
     bundle "ins", raise_on_error: false
     expect(err).to eq("Could not locate Gemfile")
-    expect(last_command.stdboth).not_to include("Ambiguous command")
+    expect(stdboth).not_to include("Ambiguous command")
   end
 
   it "print a friendly error when ambiguous" do

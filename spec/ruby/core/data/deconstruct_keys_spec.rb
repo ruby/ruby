@@ -1,10 +1,11 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe "Data#deconstruct" do
+describe "Data#deconstruct_keys" do
   it "returns a hash of attributes" do
     klass = Data.define(:x, :y)
     d = klass.new(1, 2)
+
     d.deconstruct_keys([:x, :y]).should == {x: 1, y: 2}
   end
 
@@ -29,6 +30,7 @@ describe "Data#deconstruct" do
   it "accepts string attribute names" do
     klass = Data.define(:x, :y)
     d = klass.new(1, 2)
+
     d.deconstruct_keys(['x', 'y']).should == {'x' => 1, 'y' => 2}
   end
 
@@ -58,6 +60,7 @@ describe "Data#deconstruct" do
   it "returns an empty hash when there are more keys than attributes" do
     klass = Data.define(:x, :y)
     d = klass.new(1, 2)
+
     d.deconstruct_keys([:x, :y, :x]).should == {}
   end
 
@@ -82,6 +85,28 @@ describe "Data#deconstruct" do
     d = klass.new(1, 2)
 
     d.deconstruct_keys(nil).should == {x: 1, y: 2}
+  end
+
+  it "tries to convert a key with #to_int if index is not a String nor a Symbol, but responds to #to_int" do
+    klass = Data.define(:x, :y)
+    d = klass.new(1, 2)
+
+    key = mock("to_int")
+    key.should_receive(:to_int).and_return(1)
+
+    d.deconstruct_keys([key]).should == { key => 2 }
+  end
+
+  it "raises a TypeError if the conversion with #to_int does not return an Integer" do
+    klass = Data.define(:x, :y)
+    d = klass.new(1, 2)
+
+    key = mock("to_int")
+    key.should_receive(:to_int).and_return("not an Integer")
+
+    -> {
+      d.deconstruct_keys([key])
+    }.should raise_error(TypeError, /can't convert MockObject to Integer/)
   end
 
   it "raises TypeError if index is not a String, a Symbol and not convertible to Integer " do

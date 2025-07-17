@@ -1,10 +1,10 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-INSTALL" "1" "March 2025" ""
+.TH "BUNDLE\-INSTALL" "1" "July 2025" ""
 .SH "NAME"
 \fBbundle\-install\fR \- Install the dependencies specified in your Gemfile
 .SH "SYNOPSIS"
-\fBbundle install\fR [\-\-binstubs[=DIRECTORY]] [\-\-clean] [\-\-deployment] [\-\-frozen] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-jobs=NUMBER] [\-\-local] [\-\-no\-cache] [\-\-no\-prune] [\-\-path PATH] [\-\-prefer\-local] [\-\-quiet] [\-\-redownload] [\-\-retry=NUMBER] [\-\-shebang=SHEBANG] [\-\-standalone[=GROUP[ GROUP\|\.\|\.\|\.]]] [\-\-system] [\-\-trust\-policy=TRUST\-POLICY] [\-\-target\-rbconfig=TARGET\-RBCONFIG] [\-\-with=GROUP[ GROUP\|\.\|\.\|\.]] [\-\-without=GROUP[ GROUP\|\.\|\.\|\.]]
+\fBbundle install\fR [\-\-binstubs[=DIRECTORY]] [\-\-clean] [\-\-deployment] [\-\-force] [\-\-frozen] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-jobs=NUMBER] [\-\-local] [\-\-no\-cache] [\-\-no\-prune] [\-\-path PATH] [\-\-prefer\-local] [\-\-quiet] [\-\-retry=NUMBER] [\-\-shebang=SHEBANG] [\-\-standalone[=GROUP[ GROUP\|\.\|\.\|\.]]] [\-\-system] [\-\-trust\-policy=TRUST\-POLICY] [\-\-target\-rbconfig=TARGET\-RBCONFIG] [\-\-with=GROUP[ GROUP\|\.\|\.\|\.]] [\-\-without=GROUP[ GROUP\|\.\|\.\|\.]]
 .SH "DESCRIPTION"
 Install the gems specified in your Gemfile(5)\. If this is the first time you run bundle install (and a \fBGemfile\.lock\fR does not exist), Bundler will fetch all remote sources, resolve dependencies and install all needed gems\.
 .P
@@ -29,8 +29,8 @@ In \fIdeployment mode\fR, Bundler will 'roll\-out' the bundle for production or 
 .IP
 This option is deprecated in favor of the \fBdeployment\fR setting\.
 .TP
-\fB\-\-redownload\fR, \fB\-\-force\fR
-Force download every gem, even if the required versions are already available locally\.
+\fB\-\-force\fR, \fB\-\-redownload\fR
+Force reinstalling every gem, even if already installed\.
 .TP
 \fB\-\-frozen\fR
 Do not allow the Gemfile\.lock to be updated after this install\. Exits non\-zero if there are going to be changes to the Gemfile\.lock\.

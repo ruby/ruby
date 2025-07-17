@@ -35,7 +35,9 @@ module Prism
     <%- nodes.each_with_index do |node, index| -%>
 <%= "\n" if index != 0 -%>
     # Compile a <%= node.name %> node
-    alias visit_<%= node.human %> visit_child_nodes
+    def visit_<%= node.human %>(node)
+      node.compact_child_nodes.map { |node| node.accept(self) }
+    end
     <%- end -%>
   end
 end

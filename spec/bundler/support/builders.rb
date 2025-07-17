@@ -24,10 +24,6 @@ module Spec
       Gem::Platform.new(platform)
     end
 
-    def rake_version
-      "13.2.1"
-    end
-
     def build_repo1
       build_repo gem_repo1 do
         FileUtils.cp rake_path, "#{gem_repo1}/gems/"
@@ -108,10 +104,6 @@ module Spec
 
         build_gem "platform_specific" do |s|
           s.platform = "x86-mingw32"
-        end
-
-        build_gem "platform_specific" do |s|
-          s.platform = "x64-mingw32"
         end
 
         build_gem "platform_specific" do |s|
@@ -277,7 +269,7 @@ module Spec
     end
 
     def update_repo(path, build_compact_index: true)
-      exempted_caller = Gem.ruby_version >= Gem::Version.new("3.4.0.dev") ? "#{Module.nesting.first}#build_repo" : "build_repo"
+      exempted_caller = Gem.ruby_version >= Gem::Version.new("3.4.0.dev") && RUBY_ENGINE != "jruby" ? "#{Module.nesting.first}#build_repo" : "build_repo"
       if path == gem_repo1 && caller_locations(1, 1).first.label != exempted_caller
         raise "Updating gem_repo1 is unsupported -- use gem_repo2 instead"
       end
@@ -285,9 +277,9 @@ module Spec
       @_build_path = "#{path}/gems"
       @_build_repo = File.basename(path)
       yield
-      with_gem_path_as base_system_gem_path do
-        Dir[base_system_gem_path.join("gems/rubygems-generate_index*/lib")].first ||
-          raise("Could not find rubygems-generate_index lib directory in #{base_system_gem_path}")
+      with_gem_path_as scoped_base_system_gem_path do
+        Dir[scoped_base_system_gem_path.join("gems/rubygems-generate_index*/lib")].first ||
+          raise("Could not find rubygems-generate_index lib directory in #{scoped_base_system_gem_path}")
 
         command = "generate_index"
         command += " --no-compact" if !build_compact_index && gem_command(command + " --help").include?("--[no-]compact")
@@ -458,9 +450,10 @@ module Spec
         end
 
         @context.replace_version_file(@version, dir: build_path)
+        @context.replace_changelog(@version, dir: build_path) if options[:released]
         @context.replace_required_ruby_version(@required_ruby_version, dir: build_path) if @required_ruby_version
 
-        Spec::BuildMetadata.write_build_metadata(dir: build_path)
+        Spec::BuildMetadata.write_build_metadata(dir: build_path, version: @version)
 
         @context.gem_command "build #{@context.relative_gemspec}", dir: build_path
 

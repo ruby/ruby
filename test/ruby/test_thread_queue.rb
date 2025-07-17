@@ -235,8 +235,14 @@ class TestThreadQueue < Test::Unit::TestCase
           end
         _eom
       rescue Timeout::Error
+        # record load average:
+        uptime = `uptime` rescue nil
+        if uptime && /(load average: [\d.]+),/ =~ uptime
+          la = " (#{$1})"
+        end
+
         count = File.read("#{d}/test_thr_kill_count").to_i
-        flunk "only #{count}/#{total_count} done in #{timeout} seconds."
+        flunk "only #{count}/#{total_count} done in #{timeout} seconds.#{la}"
       end
     }
   end

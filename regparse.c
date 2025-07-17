@@ -5687,7 +5687,8 @@ i_apply_case_fold(OnigCodePoint from, OnigCodePoint to[],
       if (add_flag) {
         if (is_singlebyte_range(*to, env->enc)) {
           BITSET_SET_BIT(bs, *to);
-        } else {
+        }
+        else {
           r = add_code_range0(&(cc->mbuf), env, *to, *to, 0);
           if (r < 0) return r;
         }
@@ -5699,10 +5700,12 @@ i_apply_case_fold(OnigCodePoint from, OnigCodePoint to[],
         if (is_singlebyte_range(*to, env->enc)) {
           if (IS_NCCLASS_NOT(cc)) {
             BITSET_CLEAR_BIT(bs, *to);
-          } else {
+          }
+          else {
             BITSET_SET_BIT(bs, *to);
           }
-        } else {
+        }
+        else {
           if (IS_NCCLASS_NOT(cc)) clear_not_flag_cclass(cc, env->enc);
           r = add_code_range0(&(cc->mbuf), env, *to, *to, 0);
           if (r < 0) return r;
@@ -6282,7 +6285,8 @@ is_onechar_cclass(CClassNode* cc, OnigCodePoint* code)
     if (b1 != 0) {
       if (((b1 & (b1 - 1)) == 0) && (c == not_found)) {
 	c = BITS_IN_ROOM * i + countbits(b1 - 1);
-      } else {
+      }
+      else {
 	return 0;  /* the character class contains multiple chars */
       }
     }
@@ -6717,7 +6721,7 @@ parse_subexp(Node** top, OnigToken* tok, int term,
 	     UChar** src, UChar* end, ScanEnv* env)
 {
   int r;
-  Node *node, **headp;
+  Node *node, *topnode, **headp;
 
   *top = NULL;
   env->parse_depth++;
@@ -6733,26 +6737,29 @@ parse_subexp(Node** top, OnigToken* tok, int term,
     *top = node;
   }
   else if (r == TK_ALT) {
-    *top  = onig_node_new_alt(node, NULL);
-    headp = &(NCDR(*top));
+    topnode = onig_node_new_alt(node, NULL);
+    headp   = &(NCDR(topnode));
     while (r == TK_ALT) {
       r = fetch_token(tok, src, end, env);
       if (r < 0) {
-	onig_node_free(node);
+	onig_node_free(topnode);
 	return r;
       }
       r = parse_branch(&node, tok, term, src, end, env);
       if (r < 0) {
-	onig_node_free(node);
+	onig_node_free(topnode);
 	return r;
       }
 
       *headp = onig_node_new_alt(node, NULL);
-      headp = &(NCDR(*headp));
+      headp  = &(NCDR(*headp));
     }
 
-    if (tok->type != (enum TokenSyms )term)
+    if (tok->type != (enum TokenSyms )term) {
+      onig_node_free(topnode);
       goto err;
+    }
+    *top = topnode;
   }
   else {
     onig_node_free(node);

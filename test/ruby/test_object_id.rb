@@ -115,6 +115,14 @@ class TestObjectId < Test::Unit::TestCase
     assert_equal 42, copy.instance_variable_get(:@foo)
     refute_predicate copy, :frozen?
   end
+
+  def test_object_id_need_resize
+    (3 - @obj.instance_variables.size).times do |i|
+      @obj.instance_variable_set("@a_#{i}", "[Bug #21445]")
+    end
+    @obj.object_id
+    GC.start
+  end
 end
 
 class TestObjectIdClass < TestObjectId
@@ -131,6 +139,9 @@ end
 
 class TestObjectIdTooComplex < TestObjectId
   class TooComplex
+    def initialize
+      @too_complex_obj_id_test = 1
+    end
   end
 
   def setup
@@ -193,5 +204,51 @@ class TestObjectIdTooComplexGeneric < TestObjectId
     if defined?(RubyVM::Shape)
       assert_predicate(RubyVM::Shape.of(@obj), :too_complex?)
     end
+  end
+end
+
+class TestObjectIdRactor < Test::Unit::TestCase
+  def test_object_id_race_free
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Warning[:experimental] = false
+      class MyClass
+        attr_reader :a, :b, :c
+        def initialize
+          @a = @b = @c = nil
+        end
+      end
+      N = 10_000
+      objs = Ractor.make_shareable(N.times.map { MyClass.new })
+      results = 4.times.map{
+        Ractor.new(objs) { |objs|
+          vars = []
+          ids = []
+          objs.each do |obj|
+            vars << obj.a << obj.b << obj.c
+            ids << obj.object_id
+          end
+          [vars, ids]
+        }
+      }.map(&:value)
+      assert_equal 1, results.uniq.size
+    end;
+  end
+
+  def test_external_object_id_ractor_move
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Warning[:experimental] = false
+      class MyClass
+        attr_reader :a, :b, :c
+        def initialize
+          @a = @b = @c = nil
+        end
+      end
+      obj = Ractor.make_shareable(MyClass.new)
+      object_id = obj.object_id
+      obj = Ractor.new { Ractor.receive }.send(obj, move: true).value
+      assert_equal object_id, obj.object_id
+    end;
   end
 end

@@ -127,6 +127,24 @@ require 'json/common'
 #
 # ---
 #
+# Option +allow_duplicate_key+ specifies whether duplicate keys in objects
+# should be ignored or cause an error to be raised:
+#
+# When not specified:
+#   # The last value is used and a deprecation warning emitted.
+#   JSON.parse('{"a": 1, "a":2}') => {"a" => 2}
+#   # waring: detected duplicate keys in JSON object.
+#   # This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`
+#
+# When set to `+true+`
+#   # The last value is used.
+#   JSON.parse('{"a": 1, "a":2}') => {"a" => 2}
+#
+# When set to `+false+`, the future default:
+#   JSON.parse('{"a": 1, "a":2}') => duplicate key at line 1 column 1 (JSON::ParserError)
+#
+# ---
+#
 # Option +allow_nan+ (boolean) specifies whether to allow
 # NaN, Infinity, and MinusInfinity in +source+;
 # defaults to +false+.
@@ -143,7 +161,22 @@ require 'json/common'
 #   ruby = JSON.parse(source, {allow_nan: true})
 #   ruby # => [NaN, Infinity, -Infinity]
 #
+# ---
+#
+# Option +allow_trailing_comma+ (boolean) specifies whether to allow
+# trailing commas in objects and arrays;
+# defaults to +false+.
+#
+# With the default, +false+:
+#   JSON.parse('[1,]') # unexpected character: ']' at line 1 column 4 (JSON::ParserError)
+#
+# When enabled:
+#   JSON.parse('[1,]', allow_trailing_comma: true) # => [1]
+#
 # ====== Output Options
+#
+# Option +freeze+ (boolean) specifies whether the returned objects will be frozen;
+# defaults to +false+.
 #
 # Option +symbolize_names+ (boolean) specifies whether returned \Hash keys
 # should be Symbols;

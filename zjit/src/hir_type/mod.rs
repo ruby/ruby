@@ -1,8 +1,11 @@
 #![allow(non_upper_case_globals)]
-use crate::cruby::{Qfalse, Qnil, Qtrue, VALUE, RUBY_T_ARRAY, RUBY_T_STRING, RUBY_T_HASH};
-use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass};
+use crate::cruby::{Qfalse, Qnil, Qtrue, VALUE, RUBY_T_ARRAY, RUBY_T_STRING, RUBY_T_HASH, RUBY_T_CLASS, RUBY_T_MODULE};
+use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass, rb_cRange, rb_cSet, rb_cRegexp, rb_cClass, rb_cModule};
 use crate::cruby::ClassRelationship;
 use crate::cruby::get_class_name;
+use crate::cruby::ruby_sym_to_rust_string;
+use crate::cruby::rb_mRubyVMFrozenCore;
+use crate::cruby::rb_obj_class;
 use crate::hir::PtrPrintMap;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -68,6 +71,8 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
     let ty = printer.inner;
     match ty.spec {
         Specialization::Any | Specialization::Empty => { Ok(()) },
+        Specialization::Object(val) if val == unsafe { rb_mRubyVMFrozenCore } => write!(f, "[VMFrozenCore]"),
+        Specialization::Object(val) if ty.is_subtype(types::SymbolExact) => write!(f, "[:{}]", ruby_sym_to_rust_string(val)),
         Specialization::Object(val) => write!(f, "[{}]", val.print(printer.ptr_map)),
         Specialization::Type(val) => write!(f, "[class:{}]", get_class_name(val)),
         Specialization::TypeExact(val) => write!(f, "[class_exact:{}]", get_class_name(val)),
@@ -137,6 +142,22 @@ fn is_hash_exact(val: VALUE) -> bool {
     val.class_of() == unsafe { rb_cHash } || (val.class_of() == VALUE(0) && val.builtin_type() == RUBY_T_HASH)
 }
 
+fn is_range_exact(val: VALUE) -> bool {
+    val.class_of() == unsafe { rb_cRange }
+}
+
+fn is_module_exact(val: VALUE) -> bool {
+    if val.builtin_type() != RUBY_T_MODULE {
+        return false;
+    }
+
+    // For Class and Module instances, `class_of` will return the singleton class of the object.
+    // Using `rb_obj_class` will give us the actual class of the module so we can check if the
+    // object is an instance of Module, or an instance of Module subclass.
+    let klass = unsafe { rb_obj_class(val) };
+    klass == unsafe { rb_cModule }
+}
+
 impl Type {
     /// Create a `Type` from the given integer.
     pub const fn fixnum(val: i64) -> Type {
@@ -163,6 +184,11 @@ impl Type {
         else if val == Qnil { types::NilClassExact }
         else if val == Qtrue { types::TrueClassExact }
         else if val == Qfalse { types::FalseClassExact }
+        else if val.cme_p() {
+            // NB: Checking for CME has to happen before looking at class_of because that's not
+            // valid on imemo.
+            Type { bits: bits::CallableMethodEntry, spec: Specialization::Object(val) }
+        }
         else if val.class_of() == unsafe { rb_cInteger } {
             Type { bits: bits::Bignum, spec: Specialization::Object(val) }
         }
@@ -178,8 +204,23 @@ impl Type {
         else if is_hash_exact(val) {
             Type { bits: bits::HashExact, spec: Specialization::Object(val) }
         }
+        else if is_range_exact(val) {
+            Type { bits: bits::RangeExact, spec: Specialization::Object(val) }
+        }
         else if is_string_exact(val) {
             Type { bits: bits::StringExact, spec: Specialization::Object(val) }
+        }
+        else if is_module_exact(val) {
+            Type { bits: bits::ModuleExact, spec: Specialization::Object(val) }
+        }
+        else if val.builtin_type() == RUBY_T_CLASS {
+            Type { bits: bits::Class, spec: Specialization::Object(val) }
+        }
+        else if val.class_of() == unsafe { rb_cRegexp } {
+            Type { bits: bits::RegexpExact, spec: Specialization::Object(val) }
+        }
+        else if val.class_of() == unsafe { rb_cSet } {
+            Type { bits: bits::SetExact, spec: Specialization::Object(val) }
         }
         else if val.class_of() == unsafe { rb_cObject } {
             Type { bits: bits::ObjectExact, spec: Specialization::Object(val) }
@@ -247,6 +288,27 @@ impl Type {
         }
     }
 
+    /// Return a Ruby object that needs to be marked on GC.
+    /// This covers Type and TypeExact unlike ruby_object().
+    pub fn gc_object(&self) -> Option<VALUE> {
+        match self.spec {
+            Specialization::Type(val) |
+            Specialization::TypeExact(val) |
+            Specialization::Object(val) => Some(val),
+            _ => None,
+        }
+    }
+
+    /// Mutable version of gc_object().
+    pub fn gc_object_mut(&mut self) -> Option<&mut VALUE> {
+        match &mut self.spec {
+            Specialization::Type(val) |
+            Specialization::TypeExact(val) |
+            Specialization::Object(val) => Some(val),
+            _ => None,
+        }
+    }
+
     pub fn unspecialized(&self) -> Self {
         Type { spec: Specialization::Any, ..*self }
     }
@@ -266,12 +328,16 @@ impl Type {
 
     fn is_builtin(class: VALUE) -> bool {
         if class == unsafe { rb_cArray } { return true; }
+        if class == unsafe { rb_cClass } { return true; }
         if class == unsafe { rb_cFalseClass } { return true; }
         if class == unsafe { rb_cFloat } { return true; }
         if class == unsafe { rb_cHash } { return true; }
         if class == unsafe { rb_cInteger } { return true; }
+        if class == unsafe { rb_cModule } { return true; }
         if class == unsafe { rb_cNilClass } { return true; }
         if class == unsafe { rb_cObject } { return true; }
+        if class == unsafe { rb_cRange } { return true; }
+        if class == unsafe { rb_cRegexp } { return true; }
         if class == unsafe { rb_cString } { return true; }
         if class == unsafe { rb_cSymbol } { return true; }
         if class == unsafe { rb_cTrueClass } { return true; }
@@ -372,12 +438,17 @@ impl Type {
             return Some(val);
         }
         if self.is_subtype(types::ArrayExact) { return Some(unsafe { rb_cArray }); }
+        if self.is_subtype(types::Class) { return Some(unsafe { rb_cClass }); }
         if self.is_subtype(types::FalseClassExact) { return Some(unsafe { rb_cFalseClass }); }
         if self.is_subtype(types::FloatExact) { return Some(unsafe { rb_cFloat }); }
         if self.is_subtype(types::HashExact) { return Some(unsafe { rb_cHash }); }
         if self.is_subtype(types::IntegerExact) { return Some(unsafe { rb_cInteger }); }
+        if self.is_subtype(types::ModuleExact) { return Some(unsafe { rb_cModule }); }
         if self.is_subtype(types::NilClassExact) { return Some(unsafe { rb_cNilClass }); }
         if self.is_subtype(types::ObjectExact) { return Some(unsafe { rb_cObject }); }
+        if self.is_subtype(types::RangeExact) { return Some(unsafe { rb_cRange }); }
+        if self.is_subtype(types::RegexpExact) { return Some(unsafe { rb_cRegexp }); }
+        if self.is_subtype(types::SetExact) { return Some(unsafe { rb_cSet }); }
         if self.is_subtype(types::StringExact) { return Some(unsafe { rb_cString }); }
         if self.is_subtype(types::SymbolExact) { return Some(unsafe { rb_cSymbol }); }
         if self.is_subtype(types::TrueClassExact) { return Some(unsafe { rb_cTrueClass }); }
@@ -570,6 +641,21 @@ mod tests {
     }
 
     #[test]
+    fn set() {
+        assert_subtype(types::SetExact, types::Set);
+        assert_subtype(types::SetSubclass, types::Set);
+    }
+
+    #[test]
+    fn set_has_ruby_class() {
+        crate::cruby::with_rubyvm(|| {
+            assert_eq!(types::SetExact.runtime_exact_ruby_class(), Some(unsafe { rb_cSet }));
+            assert_eq!(types::Set.runtime_exact_ruby_class(), None);
+            assert_eq!(types::SetSubclass.runtime_exact_ruby_class(), None);
+        });
+    }
+
+    #[test]
     fn display_exact_bits_match() {
         assert_eq!(format!("{}", Type::fixnum(4)), "Fixnum[4]");
         assert_eq!(format!("{}", Type::from_cint(types::CInt8, -1)), "CInt8[-1]");
@@ -679,6 +765,19 @@ mod tests {
             let left = Type::from_value(unsafe { rb_float_new(1.7976931348623157e+308) });
             let right = Type::from_value(unsafe { rb_float_new(1.7976931348623157e+308) });
             assert_bit_equal(left.union(right), types::HeapFloat);
+        });
+    }
+
+    #[test]
+    fn cme() {
+        use crate::cruby::{rb_callable_method_entry, ID};
+        crate::cruby::with_rubyvm(|| {
+            let cme = unsafe { rb_callable_method_entry(rb_cInteger, ID!(to_s)) };
+            assert!(!cme.is_null());
+            let cme_value: VALUE = cme.into();
+            let ty = Type::from_value(cme_value);
+            assert_subtype(ty, types::CallableMethodEntry);
+            assert!(ty.ruby_object_known());
         });
     }
 

@@ -26,4 +26,11 @@ describe "Struct#[]=" do
     -> { car[-4] = true         }.should raise_error(IndexError)
     -> { car[Object.new] = true }.should raise_error(TypeError)
   end
+
+  it "raises a FrozenError on a frozen struct" do
+    car = StructClasses::Car.new('Ford', 'Ranger')
+    car.freeze
+
+    -> { car[:model] = 'Escape' }.should raise_error(FrozenError)
+  end
 end

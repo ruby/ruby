@@ -78,11 +78,11 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
-      - name: 'GCC 13 LTO'
+      - name: 'GCC 15 LTO'
         uses: './.github/actions/compilers'
         with:
-          tag: gcc-13
-          with_gcc: 'gcc-13 -flto=auto -ffat-lto-objects -Werror=lto-type-mismatch'
+          tag: gcc-15
+          with_gcc: 'gcc-15 -flto=auto -ffat-lto-objects -Werror=lto-type-mismatch'
           optflags: '-O2'
           enable_shared: false
       - { uses: './.github/actions/compilers', name: 'ext/Setup', with: { static_exts: 'etc json/* */escape' } }
@@ -299,6 +299,8 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'VM_DEBUG_BP_CHECK',              with: { cppflags: '-DVM_DEBUG_BP_CHECK' } }
       - { uses: './.github/actions/compilers', name: 'VM_DEBUG_VERIFY_METHOD_CACHE',   with: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' } }
       - { uses: './.github/actions/compilers', name: 'enable-yjit',                    with: { append_configure: '--enable-yjit' } }
+      - { uses: './.github/actions/compilers', name: 'enable-{y,z}jit',                with: { append_configure: '--enable-yjit --enable-zjit' } }
+      - { uses: './.github/actions/compilers', name: 'enable-{y,z}jit=dev',            with: { append_configure: '--enable-yjit=dev --enable-zjit' } }
       - { uses: './.github/actions/compilers', name: 'YJIT_FORCE_ENABLE',              with: { cppflags: '-DYJIT_FORCE_ENABLE' } }
       - { uses: './.github/actions/compilers', name: 'UNIVERSAL_PARSER',               with: { cppflags: '-DUNIVERSAL_PARSER' } }
 

@@ -8,7 +8,7 @@ class TestDateParseRactor < Test::Unit::TestCase
       share = #{share}
       d = Date.parse('Aug 23:55')
       Ractor.make_shareable(d) if share
-      d2, d3 = Ractor.new(d) { |d| [d, Date.parse(d.to_s)] }.take
+      d2, d3 = Ractor.new(d) { |d| [d, Date.parse(d.to_s)] }.value
       if share
         assert_same d, d2
       else

@@ -524,6 +524,36 @@ describe "Time.new with a timezone argument" do
       Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: 3r).subsec.should == 0.123r
     end
 
+    it "returns Time with correct subseconds when given seconds fraction is shorted than 6 digits" do
+      Time.new("2020-12-25T00:56:17.123 +09:00").nsec.should == 123000000
+      Time.new("2020-12-25T00:56:17.123 +09:00").usec.should == 123000
+      Time.new("2020-12-25T00:56:17.123 +09:00").subsec.should == 0.123
+    end
+
+    it "returns Time with correct subseconds when given seconds fraction is milliseconds" do
+      Time.new("2020-12-25T00:56:17.123456 +09:00").nsec.should == 123456000
+      Time.new("2020-12-25T00:56:17.123456 +09:00").usec.should == 123456
+      Time.new("2020-12-25T00:56:17.123456 +09:00").subsec.should == 0.123456
+    end
+
+    it "returns Time with correct subseconds when given seconds fraction is longer that 6 digits but shorted than 9 digits" do
+      Time.new("2020-12-25T00:56:17.12345678 +09:00").nsec.should == 123456780
+      Time.new("2020-12-25T00:56:17.12345678 +09:00").usec.should == 123456
+      Time.new("2020-12-25T00:56:17.12345678 +09:00").subsec.should == 0.12345678
+    end
+
+    it "returns Time with correct subseconds when given seconds fraction is nanoseconds" do
+      Time.new("2020-12-25T00:56:17.123456789 +09:00").nsec.should == 123456789
+      Time.new("2020-12-25T00:56:17.123456789 +09:00").usec.should == 123456
+      Time.new("2020-12-25T00:56:17.123456789 +09:00").subsec.should == 0.123456789
+    end
+
+    it "returns Time with correct subseconds when given seconds fraction is longer than 9 digits" do
+      Time.new("2020-12-25T00:56:17.123456789876 +09:00").nsec.should == 123456789
+      Time.new("2020-12-25T00:56:17.123456789876 +09:00").usec.should == 123456
+      Time.new("2020-12-25T00:56:17.123456789876 +09:00").subsec.should == 0.123456789
+    end
+
     ruby_version_is ""..."3.3" do
       it "raise TypeError is can't convert precision keyword argument into Integer" do
         -> {
@@ -550,16 +580,18 @@ describe "Time.new with a timezone argument" do
       }.should raise_error(ArgumentError, /missing min part: 00 |can't parse:/)
     end
 
-    it "raises ArgumentError if the time part is missing" do
-      -> {
-        Time.new("2020-12-25")
-      }.should raise_error(ArgumentError, /no time information|can't parse:/)
-    end
+    ruby_version_is "3.2.3" do
+      it "raises ArgumentError if the time part is missing" do
+        -> {
+          Time.new("2020-12-25")
+        }.should raise_error(ArgumentError, /no time information|can't parse:/)
+      end
 
-    it "raises ArgumentError if day is missing" do
-      -> {
-        Time.new("2020-12")
-      }.should raise_error(ArgumentError, /no time information|can't parse:/)
+      it "raises ArgumentError if day is missing" do
+        -> {
+          Time.new("2020-12")
+        }.should raise_error(ArgumentError, /no time information|can't parse:/)
+      end
     end
 
     it "raises ArgumentError if subsecond is missing after dot" do
@@ -698,22 +730,24 @@ describe "Time.new with a timezone argument" do
       }.should raise_error(ArgumentError, /can't parse.+ abc/)
     end
 
-    it "raises ArgumentError when there are leading space characters" do
-      -> { Time.new(" 2020-12-02 00:00:00") }.should raise_error(ArgumentError, /can't parse/)
-      -> { Time.new("\t2020-12-02 00:00:00") }.should raise_error(ArgumentError, /can't parse/)
-      -> { Time.new("\n2020-12-02 00:00:00") }.should raise_error(ArgumentError, /can't parse/)
-      -> { Time.new("\v2020-12-02 00:00:00") }.should raise_error(ArgumentError, /can't parse/)
-      -> { Time.new("\f2020-12-02 00:00:00") }.should raise_error(ArgumentError, /can't parse/)
-      -> { Time.new("\r2020-12-02 00:00:00") }.should raise_error(ArgumentError, /can't parse/)
-    end
+    ruby_version_is "3.2.3" do
+      it "raises ArgumentError when there are leading space characters" do
+        -> { Time.new(" 2020-12-02 00:00:00") }.should raise_error(ArgumentError, /can't parse/)
+        -> { Time.new("\t2020-12-02 00:00:00") }.should raise_error(ArgumentError, /can't parse/)
+        -> { Time.new("\n2020-12-02 00:00:00") }.should raise_error(ArgumentError, /can't parse/)
+        -> { Time.new("\v2020-12-02 00:00:00") }.should raise_error(ArgumentError, /can't parse/)
+        -> { Time.new("\f2020-12-02 00:00:00") }.should raise_error(ArgumentError, /can't parse/)
+        -> { Time.new("\r2020-12-02 00:00:00") }.should raise_error(ArgumentError, /can't parse/)
+      end
 
-    it "raises ArgumentError when there are trailing whitespaces" do
-      -> { Time.new("2020-12-02 00:00:00 ") }.should raise_error(ArgumentError, /can't parse/)
-      -> { Time.new("2020-12-02 00:00:00\t") }.should raise_error(ArgumentError, /can't parse/)
-      -> { Time.new("2020-12-02 00:00:00\n") }.should raise_error(ArgumentError, /can't parse/)
-      -> { Time.new("2020-12-02 00:00:00\v") }.should raise_error(ArgumentError, /can't parse/)
-      -> { Time.new("2020-12-02 00:00:00\f") }.should raise_error(ArgumentError, /can't parse/)
-      -> { Time.new("2020-12-02 00:00:00\r") }.should raise_error(ArgumentError, /can't parse/)
+      it "raises ArgumentError when there are trailing whitespaces" do
+        -> { Time.new("2020-12-02 00:00:00 ") }.should raise_error(ArgumentError, /can't parse/)
+        -> { Time.new("2020-12-02 00:00:00\t") }.should raise_error(ArgumentError, /can't parse/)
+        -> { Time.new("2020-12-02 00:00:00\n") }.should raise_error(ArgumentError, /can't parse/)
+        -> { Time.new("2020-12-02 00:00:00\v") }.should raise_error(ArgumentError, /can't parse/)
+        -> { Time.new("2020-12-02 00:00:00\f") }.should raise_error(ArgumentError, /can't parse/)
+        -> { Time.new("2020-12-02 00:00:00\r") }.should raise_error(ArgumentError, /can't parse/)
+      end
     end
   end
 end

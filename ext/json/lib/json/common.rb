@@ -172,7 +172,7 @@ module JSON
         end
       end
       self.state = generator::State
-      const_set :State, self.state
+      const_set :State, state
     ensure
       $VERBOSE = old
     end
@@ -268,7 +268,7 @@ module JSON
   # to string interpolation.
   #
   # Note: no validation is performed on the provided string. It is the
-  # responsability of the caller to ensure the string contains valid JSON.
+  # responsibility of the caller to ensure the string contains valid JSON.
   Fragment = Struct.new(:json) do
     def initialize(json)
       unless string = String.try_convert(json)
@@ -490,7 +490,7 @@ module JSON
   #   }
   #
   def pretty_generate(obj, opts = nil)
-    return state.generate(obj) if State === opts
+    return opts.generate(obj) if State === opts
 
     options = PRETTY_GENERATE_OPTIONS
 
@@ -1072,7 +1072,7 @@ module ::Kernel
     end
 
     objs.each do |obj|
-      puts JSON::generate(obj, :allow_nan => true, :max_nesting => false)
+      puts JSON.generate(obj, :allow_nan => true, :max_nesting => false)
     end
     nil
   end
@@ -1087,7 +1087,7 @@ module ::Kernel
     end
 
     objs.each do |obj|
-      puts JSON::pretty_generate(obj, :allow_nan => true, :max_nesting => false)
+      puts JSON.pretty_generate(obj, :allow_nan => true, :max_nesting => false)
     end
     nil
   end

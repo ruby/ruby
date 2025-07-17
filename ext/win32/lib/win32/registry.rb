@@ -372,7 +372,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # Replace %\w+% into the environment value of what is contained between the %'s
     # This method is used for REG_EXPAND_SZ.
     #
-    # For detail, see expandEnvironmentStrings[http://msdn.microsoft.com/library/en-us/sysinfo/base/expandenvironmentstrings.asp] \Win32 \API.
+    # For detail, see expandEnvironmentStrings[https://learn.microsoft.com/en-us/windows/win32/api/processenv/nf-processenv-expandenvironmentstringsa] \Win32 \API.
     #
     def self.expand_environ(str)
       str.gsub(Regexp.compile("%([^%]+)%".encode(str.encoding))) {
@@ -487,7 +487,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       ObjectSpace.define_finalizer self, @@final.call(@hkeyfinal)
     end
 
-    # Win32::Registry object of parent key, or nil if predefeined key.
+    # Win32::Registry object of parent key, or nil if predefined key.
     attr_reader :parent
     # Same as subkey value of Registry.open or
     # Registry.create method.
@@ -571,7 +571,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # For each value it yields key, type and data.
     #
     # key is a String which contains name of key.
-    # type is a type contant kind of Win32::Registry::REG_*
+    # type is a type constant kind of Win32::Registry::REG_*
     # data is the value of this key.
     #
     def each_value

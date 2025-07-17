@@ -62,7 +62,7 @@ pub trait Allocator {
 
 /// Pointer into a [VirtualMemory] represented as an offset from the base.
 /// Note: there is no NULL constant for [CodePtr]. You should use `Option<CodePtr>` instead.
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Debug)]
 #[repr(C, packed)]
 pub struct CodePtr(u32);
 
@@ -72,6 +72,13 @@ impl CodePtr {
         let CodePtr(raw) = self;
         let bytes: u32 = bytes.try_into().unwrap();
         CodePtr(raw + bytes)
+    }
+
+    /// Subtract bytes from the CodePtr
+    pub fn sub_bytes(self, bytes: usize) -> Self {
+        let CodePtr(raw) = self;
+        let bytes: u32 = bytes.try_into().unwrap();
+        CodePtr(raw.saturating_sub(bytes))
     }
 
     /// Note that the raw pointer might be dangling if there hasn't

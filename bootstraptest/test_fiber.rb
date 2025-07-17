@@ -37,3 +37,8 @@ assert_normal_exit %q{
 assert_normal_exit %q{
   Fiber.new(&Object.method(:class_eval)).resume("foo")
 }, '[ruby-dev:34128]'
+
+# [Bug #21400]
+assert_normal_exit %q{
+  Thread.new { Fiber.current.kill }.join
+}

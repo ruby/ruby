@@ -1,0 +1,17 @@
+true && not true
+            ^~~~ expected a `(` after `not`
+            ^~~~ unexpected 'true', expecting end-of-input
+
+true || not true
+            ^~~~ expected a `(` after `not`
+            ^~~~ unexpected 'true', expecting end-of-input
+
+true && not (true)
+           ^ expected a `(` immediately after `not`
+            ^ unexpected '(', expecting end-of-input
+
+true && not
+true
+^~~~ expected a `(` after `not`
+^~~~ unexpected 'true', expecting end-of-input
+

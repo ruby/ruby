@@ -225,10 +225,11 @@ pub const RUBY_FL_PROMOTED: ruby_fl_type = 32;
 pub const RUBY_FL_UNUSED6: ruby_fl_type = 64;
 pub const RUBY_FL_FINALIZE: ruby_fl_type = 128;
 pub const RUBY_FL_TAINT: ruby_fl_type = 0;
+pub const RUBY_FL_EXIVAR: ruby_fl_type = 0;
 pub const RUBY_FL_SHAREABLE: ruby_fl_type = 256;
 pub const RUBY_FL_UNTRUSTED: ruby_fl_type = 0;
 pub const RUBY_FL_UNUSED9: ruby_fl_type = 512;
-pub const RUBY_FL_EXIVAR: ruby_fl_type = 1024;
+pub const RUBY_FL_UNUSED10: ruby_fl_type = 1024;
 pub const RUBY_FL_FREEZE: ruby_fl_type = 2048;
 pub const RUBY_FL_USER0: ruby_fl_type = 4096;
 pub const RUBY_FL_USER1: ruby_fl_type = 8192;
@@ -303,7 +304,7 @@ pub const RARRAY_EMBED_LEN_MASK: ruby_rarray_flags = 4161536;
 pub type ruby_rarray_flags = u32;
 pub const RARRAY_EMBED_LEN_SHIFT: ruby_rarray_consts = 15;
 pub type ruby_rarray_consts = u32;
-pub const RMODULE_IS_REFINEMENT: ruby_rmodule_flags = 32768;
+pub const RMODULE_IS_REFINEMENT: ruby_rmodule_flags = 8192;
 pub type ruby_rmodule_flags = u32;
 pub const ROBJECT_EMBED: ruby_robject_flags = 8192;
 pub type ruby_robject_flags = u32;
@@ -395,11 +396,6 @@ pub struct rb_namespace_struct {
 }
 pub type rb_namespace_t = rb_namespace_struct;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct rb_id_table {
-    _unused: [u8; 0],
-}
 pub const imemo_env: imemo_type = 0;
 pub const imemo_cref: imemo_type = 1;
 pub const imemo_svar: imemo_type = 2;
@@ -414,6 +410,7 @@ pub const imemo_parser_strterm: imemo_type = 10;
 pub const imemo_callinfo: imemo_type = 11;
 pub const imemo_callcache: imemo_type = 12;
 pub const imemo_constcache: imemo_type = 13;
+pub const imemo_fields: imemo_type = 14;
 pub type imemo_type = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -520,7 +517,7 @@ pub struct iseq_inline_constant_cache {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct iseq_inline_iv_cache_entry {
-    pub value: usize,
+    pub value: u64,
     pub iv_set_name: ID,
 }
 #[repr(C)]
@@ -690,32 +687,10 @@ pub const VM_ENV_FLAG_ESCAPED: vm_frame_env_flags = 4;
 pub const VM_ENV_FLAG_WB_REQUIRED: vm_frame_env_flags = 8;
 pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
-pub type attr_index_t = u32;
+pub type attr_index_t = u16;
 pub type shape_id_t = u32;
-pub type redblack_id_t = u32;
-pub type redblack_node_t = redblack_node;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct rb_shape {
-    pub edges: *mut rb_id_table,
-    pub edge_name: ID,
-    pub next_field_index: attr_index_t,
-    pub capacity: attr_index_t,
-    pub type_: u8,
-    pub heap_index: u8,
-    pub flags: u8,
-    pub parent_id: shape_id_t,
-    pub ancestor_index: *mut redblack_node_t,
-}
-pub type rb_shape_t = rb_shape;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct redblack_node {
-    pub key: ID,
-    pub value: *mut rb_shape_t,
-    pub l: redblack_id_t,
-    pub r: redblack_id_t,
-}
+pub const SHAPE_ID_HAS_IVAR_MASK: _bindgen_ty_37 = 134742014;
+pub type _bindgen_ty_37 = u32;
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
     pub index: u32,
@@ -1140,16 +1115,12 @@ extern "C" {
     pub fn rb_obj_info(obj: VALUE) -> *const ::std::os::raw::c_char;
     pub fn rb_ec_stack_check(ec: *mut rb_execution_context_struct) -> ::std::os::raw::c_int;
     pub fn rb_shape_id_offset() -> i32;
-    pub fn rb_shape_lookup(shape_id: shape_id_t) -> *mut rb_shape_t;
     pub fn rb_obj_shape_id(obj: VALUE) -> shape_id_t;
-    pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
-    pub fn rb_shape_obj_too_complex_p(obj: VALUE) -> bool;
-    pub fn rb_shape_too_complex_p(shape: *mut rb_shape_t) -> bool;
+    pub fn rb_shape_get_iv_index(shape_id: shape_id_t, id: ID, value: *mut attr_index_t) -> bool;
     pub fn rb_shape_transition_add_ivar_no_warnings(obj: VALUE, id: ID) -> shape_id_t;
-    pub fn rb_shape_id(shape: *mut rb_shape_t) -> shape_id_t;
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;
-    pub fn rb_ensure_iv_list_size(obj: VALUE, len: u32, newsize: u32);
+    pub fn rb_ensure_iv_list_size(obj: VALUE, current_len: u32, newsize: u32);
     pub fn rb_vm_barrier();
     pub fn rb_str_byte_substr(str_: VALUE, beg: VALUE, len: VALUE) -> VALUE;
     pub fn rb_str_substr_two_fixnums(
@@ -1219,7 +1190,6 @@ extern "C" {
     pub fn rb_yjit_get_proc_ptr(procv: VALUE) -> *mut rb_proc_t;
     pub fn rb_get_symbol_id(namep: VALUE) -> ID;
     pub fn rb_get_def_bmethod_proc(def: *mut rb_method_definition_t) -> VALUE;
-    pub fn rb_get_iseq_body_parent_iseq(iseq: *const rb_iseq_t) -> *const rb_iseq_t;
     pub fn rb_optimized_call(
         recv: *mut VALUE,
         ec: *mut rb_execution_context_t,
@@ -1236,7 +1206,6 @@ extern "C" {
     pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_str_neq_internal(str1: VALUE, str2: VALUE) -> VALUE;
-    pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_ary_unshift_m(argc: ::std::os::raw::c_int, argv: *mut VALUE, ary: VALUE) -> VALUE;
     pub fn rb_yjit_rb_ary_subseq_length(ary: VALUE, beg: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_yjit_fix_div_fix(recv: VALUE, obj: VALUE) -> VALUE;
@@ -1272,7 +1241,10 @@ extern "C" {
         line: ::std::os::raw::c_int,
     );
     pub fn rb_object_shape_count() -> VALUE;
-    pub fn rb_yjit_assert_holding_vm_lock();
+    pub fn rb_yjit_shape_too_complex_p(shape_id: shape_id_t) -> bool;
+    pub fn rb_yjit_shape_obj_too_complex_p(obj: VALUE) -> bool;
+    pub fn rb_yjit_shape_capacity(shape_id: shape_id_t) -> attr_index_t;
+    pub fn rb_yjit_shape_index(shape_id: shape_id_t) -> attr_index_t;
     pub fn rb_yjit_sendish_sp_pops(ci: *const rb_callinfo) -> usize;
     pub fn rb_yjit_invokeblock_sp_pops(ci: *const rb_callinfo) -> usize;
     pub fn rb_yjit_set_exception_return(
@@ -1313,6 +1285,7 @@ extern "C" {
     pub fn rb_get_mct_func(mct: *const rb_method_cfunc_t) -> *mut ::std::os::raw::c_void;
     pub fn rb_get_def_iseq_ptr(def: *mut rb_method_definition_t) -> *const rb_iseq_t;
     pub fn rb_get_iseq_body_local_iseq(iseq: *const rb_iseq_t) -> *const rb_iseq_t;
+    pub fn rb_get_iseq_body_parent_iseq(iseq: *const rb_iseq_t) -> *const rb_iseq_t;
     pub fn rb_get_iseq_body_local_table_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_get_iseq_body_iseq_encoded(iseq: *const rb_iseq_t) -> *mut VALUE;
     pub fn rb_get_iseq_body_stack_max(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
@@ -1352,6 +1325,8 @@ extern "C" {
     pub fn rb_BASIC_OP_UNREDEFINED_P(bop: ruby_basic_operators, klass: u32) -> bool;
     pub fn rb_RCLASS_ORIGIN(c: VALUE) -> VALUE;
     pub fn rb_assert_iseq_handle(handle: VALUE);
+    pub fn rb_assert_holding_vm_lock();
     pub fn rb_IMEMO_TYPE_P(imemo: VALUE, imemo_type: imemo_type) -> ::std::os::raw::c_int;
     pub fn rb_assert_cme_handle(handle: VALUE);
+    pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;
 }

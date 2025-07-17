@@ -394,9 +394,10 @@ dump_object(VALUE obj, struct dump_config *dc)
 
     dc->cur_obj = obj;
     dc->cur_obj_references = 0;
-    if (BUILTIN_TYPE(obj) == T_NODE || BUILTIN_TYPE(obj) == T_IMEMO) {
+    if (BUILTIN_TYPE(obj) == T_NODE || (BUILTIN_TYPE(obj) == T_IMEMO && !IMEMO_TYPE_P(obj, imemo_fields))) {
         dc->cur_obj_klass = 0;
-    } else {
+    }
+    else {
         dc->cur_obj_klass = RBASIC_CLASS(obj);
     }
 
@@ -414,9 +415,11 @@ dump_object(VALUE obj, struct dump_config *dc)
     dump_append(dc, obj_type(obj));
     dump_append(dc, "\"");
 
-    size_t shape_id = rb_obj_shape_id(obj);
-    dump_append(dc, ", \"shape_id\":");
-    dump_append_sizet(dc, shape_id);
+    if (BUILTIN_TYPE(obj) != T_IMEMO || IMEMO_TYPE_P(obj, imemo_fields)) {
+        size_t shape_id = rb_obj_shape_id(obj) & SHAPE_ID_OFFSET_MASK;
+        dump_append(dc, ", \"shape_id\":");
+        dump_append_sizet(dc, shape_id);
+    }
 
     dump_append(dc, ", \"slot_size\":");
     dump_append_sizet(dc, dc->cur_page_slot_size);
@@ -782,30 +785,29 @@ objspace_dump(VALUE os, VALUE obj, VALUE output)
 }
 
 static void
-shape_i(rb_shape_t *shape, void *data)
+shape_id_i(shape_id_t shape_id, void *data)
 {
     struct dump_config *dc = (struct dump_config *)data;
 
-    shape_id_t shape_id = rb_shape_id(shape);
     if (shape_id < dc->shapes_since) {
         return;
     }
 
     dump_append(dc, "{\"address\":");
-    dump_append_ref(dc, (VALUE)shape);
+    dump_append_ref(dc, (VALUE)RSHAPE(shape_id));
 
     dump_append(dc, ", \"type\":\"SHAPE\", \"id\":");
     dump_append_sizet(dc, shape_id);
 
-    if (shape->type != SHAPE_ROOT) {
+    if (RSHAPE_TYPE(shape_id) != SHAPE_ROOT) {
         dump_append(dc, ", \"parent_id\":");
-        dump_append_lu(dc, shape->parent_id);
+        dump_append_lu(dc, RSHAPE_PARENT(shape_id));
     }
 
     dump_append(dc, ", \"depth\":");
     dump_append_sizet(dc, rb_shape_depth(shape_id));
 
-    switch((enum shape_type)shape->type) {
+    switch (RSHAPE_TYPE(shape_id)) {
       case SHAPE_ROOT:
         dump_append(dc, ", \"shape_type\":\"ROOT\"");
         break;
@@ -813,17 +815,8 @@ shape_i(rb_shape_t *shape, void *data)
         dump_append(dc, ", \"shape_type\":\"IVAR\"");
 
         dump_append(dc, ",\"edge_name\":");
-        dump_append_id(dc, shape->edge_name);
+        dump_append_id(dc, RSHAPE_EDGE_NAME(shape_id));
 
-        break;
-      case SHAPE_FROZEN:
-        dump_append(dc, ", \"shape_type\":\"FROZEN\"");
-        break;
-      case SHAPE_T_OBJECT:
-        dump_append(dc, ", \"shape_type\":\"T_OBJECT\"");
-        break;
-      case SHAPE_OBJ_TOO_COMPLEX:
-        dump_append(dc, ", \"shape_type\":\"OBJ_TOO_COMPLEX\"");
         break;
       case SHAPE_OBJ_ID:
         dump_append(dc, ", \"shape_type\":\"OBJ_ID\"");
@@ -853,7 +846,7 @@ objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since, VALUE shapes)
     }
 
     if (RTEST(shapes)) {
-        rb_shape_each_shape(shape_i, &dc);
+        rb_shape_each_shape_id(shape_id_i, &dc);
     }
 
     /* dump all objects */
@@ -870,7 +863,7 @@ objspace_dump_shapes(VALUE os, VALUE output, VALUE shapes)
     dump_output(&dc, output, Qfalse, Qnil, shapes);
 
     if (RTEST(shapes)) {
-        rb_shape_each_shape(shape_i, &dc);
+        rb_shape_each_shape_id(shape_id_i, &dc);
     }
     return dump_result(&dc);
 }

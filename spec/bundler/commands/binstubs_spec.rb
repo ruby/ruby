@@ -168,7 +168,7 @@ RSpec.describe "bundle binstubs <gem>" do
       expect(bundled_app("exec/myrackup")).to exist
     end
 
-    it "setting is saved for bundle install", bundler: "< 3" do
+    it "setting is saved for bundle install" do
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"

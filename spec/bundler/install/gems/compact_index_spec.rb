@@ -313,10 +313,10 @@ RSpec.describe "compact index api" do
       gem "myrack"
     G
 
-    expect(last_command.stdboth).not_to include "Double checking"
+    expect(stdboth).not_to include "Double checking"
   end
 
-  it "fetches again when more dependencies are found in subsequent sources", bundler: "< 3" do
+  it "fetches again when more dependencies are found in subsequent sources" do
     build_repo2 do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
@@ -375,7 +375,7 @@ RSpec.describe "compact index api" do
     expect(the_bundle).to include_gems "myrack 1.2"
   end
 
-  it "considers all possible versions of dependencies from all api gem sources", bundler: "< 3" do
+  it "considers all possible versions of dependencies from all api gem sources" do
     # In this scenario, the gem "somegem" only exists in repo4.  It depends on specific version of activesupport that
     # exists only in repo1.  There happens also be a version of activesupport in repo4, but not the one that version 1.0.0
     # of somegem wants. This test makes sure that bundler actually finds version 1.2.3 of active support in the other
@@ -471,7 +471,7 @@ RSpec.describe "compact index api" do
     expect(the_bundle).to include_gems "foo 1.0"
   end
 
-  it "fetches again when more dependencies are found in subsequent sources using deployment mode", bundler: "< 3" do
+  it "fetches again when more dependencies are found in subsequent sources using deployment mode" do
     build_repo2 do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
@@ -529,7 +529,7 @@ RSpec.describe "compact index api" do
     expect(out).to include("Fetching gem metadata from #{source_uri}")
   end
 
-  it "installs the binstubs", bundler: "< 3" do
+  it "installs the binstubs" do
     gemfile <<-G
       source "#{source_uri}"
       gem "myrack"
@@ -541,7 +541,7 @@ RSpec.describe "compact index api" do
     expect(out).to eq("1.0.0")
   end
 
-  it "installs the bins when using --path and uses autoclean", bundler: "< 3" do
+  it "installs the bins when using --path and uses autoclean" do
     gemfile <<-G
       source "#{source_uri}"
       gem "myrack"
@@ -552,7 +552,7 @@ RSpec.describe "compact index api" do
     expect(vendored_gems("bin/myrackup")).to exist
   end
 
-  it "installs the bins when using --path and uses bundle clean", bundler: "< 3" do
+  it "installs the bins when using --path and uses bundle clean" do
     gemfile <<-G
       source "#{source_uri}"
       gem "myrack"
@@ -617,7 +617,7 @@ RSpec.describe "compact index api" do
       expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
-    it "strips http basic auth creds when warning about ambiguous sources", bundler: "< 3" do
+    it "strips http basic auth creds when warning about ambiguous sources" do
       gemfile <<-G
         source "#{basic_auth_source_uri}"
         source "#{file_uri_for(gem_repo1)}"
@@ -742,7 +742,7 @@ RSpec.describe "compact index api" do
         gem "myrack"
       G
 
-      bundle :install, env: { "RUBYOPT" => opt_add("-I#{bundled_app("broken_ssl")}", ENV["RUBYOPT"]) }, raise_on_error: false, artifice: nil
+      bundle :install, env: { "RUBYOPT" => "-I#{bundled_app("broken_ssl")}" }, raise_on_error: false, artifice: nil
       expect(err).to include("recompile Ruby").and include("cannot load such file")
     end
   end

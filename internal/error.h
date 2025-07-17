@@ -241,4 +241,11 @@ rb_typeddata_is_instance_of_inline(VALUE obj, const rb_data_type_t *data_type)
     return RB_TYPE_P(obj, T_DATA) && RTYPEDDATA_P(obj) && (RTYPEDDATA_TYPE(obj) == data_type);
 }
 
+typedef enum {
+    rb_stack_overflow_prevention = 0, // VM stack overflow or about to machine stack overflow
+    rb_stack_overflow_signal = 1, // machine stack overflow but may be recoverable
+    rb_stack_overflow_fatal = 2, // fatal machine stack overflow
+} ruby_stack_overflow_critical_level;
+NORETURN(void rb_ec_stack_overflow(struct rb_execution_context_struct *ec, ruby_stack_overflow_critical_level crit));
+
 #endif /* INTERNAL_ERROR_H */

@@ -98,6 +98,8 @@ class MethodNameCheckTest < Test::Unit::TestCase
   end
 
   def test_does_not_append_suggestions_twice
+    omit "This test is not working with JRuby" if RUBY_ENGINE == "jruby"
+
     error = assert_raise NoMethodError do
       begin
         @user.firstname
@@ -110,6 +112,8 @@ class MethodNameCheckTest < Test::Unit::TestCase
   end
 
   def test_does_not_append_suggestions_three_times
+    omit "This test is not working with JRuby" if RUBY_ENGINE == "jruby"
+
     error = assert_raise NoMethodError do
       begin
         @user.raise_no_method_error

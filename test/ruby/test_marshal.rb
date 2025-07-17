@@ -268,7 +268,11 @@ class TestMarshal < Test::Unit::TestCase
   classISO8859_1.name
   ClassISO8859_1 = classISO8859_1
 
-  def test_class_nonascii
+  moduleUTF8 = const_set("C\u{30af 30e9 30b9}", Module.new)
+  moduleUTF8.name
+  ModuleUTF8 = moduleUTF8
+
+  def test_nonascii_class_instance
     a = ClassUTF8.new
     assert_instance_of(ClassUTF8, Marshal.load(Marshal.dump(a)), '[ruby-core:24790]')
 
@@ -299,6 +303,12 @@ class TestMarshal < Test::Unit::TestCase
       assert_equal(a.instance_variables, b.instance_variables, bug1932)
       assert_equal(b, b.instance_variable_get(a.instance_variables[0]), bug1932)
     end
+  end
+
+  def test_nonascii_class_module
+    assert_same(ClassUTF8, Marshal.load(Marshal.dump(ClassUTF8)))
+    assert_same(ClassISO8859_1, Marshal.load(Marshal.dump(ClassISO8859_1)))
+    assert_same(ModuleUTF8, Marshal.load(Marshal.dump(ModuleUTF8)))
   end
 
   def test_regexp2

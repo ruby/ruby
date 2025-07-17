@@ -7,8 +7,8 @@ require_relative "../command"
 # RubyGems checkout or tarball.
 
 class Gem::Commands::SetupCommand < Gem::Command
-  HISTORY_HEADER = %r{^#\s*[\d.a-zA-Z]+\s*/\s*\d{4}-\d{2}-\d{2}\s*$}
-  VERSION_MATCHER = %r{^#\s*([\d.a-zA-Z]+)\s*/\s*\d{4}-\d{2}-\d{2}\s*$}
+  HISTORY_HEADER = %r{^##\s*[\d.a-zA-Z]+\s*/\s*\d{4}-\d{2}-\d{2}\s*$}
+  VERSION_MATCHER = %r{^##\s*([\d.a-zA-Z]+)\s*/\s*\d{4}-\d{2}-\d{2}\s*$}
 
   ENV_PATHS = %w[/usr/bin/env /bin/env].freeze
 

@@ -288,7 +288,7 @@ struct iseq_inline_constant_cache {
 };
 
 struct iseq_inline_iv_cache_entry {
-    uintptr_t value; // attr_index in lower bits, dest_shape_id in upper bits
+    uint64_t value; // dest_shape_id in former half, attr_index in latter half
     ID iv_set_name;
 };
 
@@ -683,12 +683,15 @@ typedef struct rb_vm_struct {
             bool terminate_waiting;
 
 #ifndef RUBY_THREAD_PTHREAD_H
+            // win32
             bool barrier_waiting;
             unsigned int barrier_cnt;
-            rb_nativethread_cond_t barrier_cond;
+            rb_nativethread_cond_t barrier_complete_cond;
+            rb_nativethread_cond_t barrier_release_cond;
 #endif
         } sync;
 
+#ifdef RUBY_THREAD_PTHREAD_H
         // ractor scheduling
         struct {
             rb_nativethread_lock_t lock;
@@ -722,7 +725,10 @@ typedef struct rb_vm_struct {
             bool barrier_waiting;
             unsigned int barrier_waiting_cnt;
             unsigned int barrier_serial;
+            struct rb_ractor_struct *barrier_ractor;
+            unsigned int barrier_lock_rec;
         } sched;
+#endif
     } ractor;
 
 #ifdef USE_SIGALTSTACK
@@ -730,7 +736,6 @@ typedef struct rb_vm_struct {
 #endif
 
     rb_serial_t fork_gen;
-    struct ccan_list_head waiting_fds; /* <=> struct waiting_fd */
 
     /* set in single-threaded processes only: */
     volatile int ubf_async_safe;
@@ -798,6 +803,7 @@ typedef struct rb_vm_struct {
     struct rb_id_table *negative_cme_table;
     st_table *overloaded_cme_table; // cme -> overloaded_cme
     set_table *unused_block_warning_table;
+    set_table *cc_refinement_table;
 
     // This id table contains a mapping from ID to ICs. It does this with ID
     // keys and nested st_tables as values. The nested tables have ICs as keys
@@ -1106,18 +1112,6 @@ typedef struct rb_ractor_struct rb_ractor_t;
 
 struct rb_native_thread;
 
-struct rb_thread_ractor_waiting {
-    //enum rb_ractor_wait_status wait_status;
-    int wait_status;
-    //enum rb_ractor_wakeup_status wakeup_status;
-    int wakeup_status;
-    struct ccan_list_node waiting_node; // the rb_thread_t
-    VALUE receiving_mutex; // protects Ractor.receive_if
-#ifndef RUBY_THREAD_PTHREAD_H
-    rb_nativethread_cond_t cond;
-#endif
-};
-
 typedef struct rb_thread_struct {
     struct ccan_list_node lt_node; // managed by a ractor (r->threads.set)
     VALUE self;
@@ -1129,8 +1123,6 @@ typedef struct rb_thread_struct {
     struct rb_thread_sched_item sched;
     bool mn_schedulable;
     rb_atomic_t serial; // only for RUBY_DEBUG_LOG()
-
-    struct rb_thread_ractor_waiting ractor_waiting;
 
     VALUE last_status; /* $? */
 
@@ -1904,7 +1896,9 @@ rb_vm_living_threads_init(rb_vm_t *vm)
 {
     ccan_list_head_init(&vm->workqueue);
     ccan_list_head_init(&vm->ractor.set);
+#ifdef RUBY_THREAD_PTHREAD_H
     ccan_list_head_init(&vm->ractor.sched.zombie_threads);
+#endif
 }
 
 typedef int rb_backtrace_iter_func(void *, VALUE, int, VALUE);
@@ -1928,7 +1922,7 @@ void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE
 
 void rb_gc_mark_machine_context(const rb_execution_context_t *ec);
 
-void rb_vm_rewrite_cref(rb_cref_t *node, VALUE old_klass, VALUE new_klass, rb_cref_t **new_cref_ptr);
+rb_cref_t *rb_vm_rewrite_cref(rb_cref_t *node, VALUE old_klass, VALUE new_klass);
 
 const rb_callable_method_entry_t *rb_vm_frame_method_entry(const rb_control_frame_t *cfp);
 
@@ -2003,9 +1997,9 @@ rb_current_execution_context(bool expect_ec)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
   #if defined(__arm64__) || defined(__aarch64__)
-    rb_execution_context_t *ec = rb_current_ec();
+    rb_execution_context_t * volatile ec = rb_current_ec();
   #else
-    rb_execution_context_t *ec = ruby_current_ec;
+    rb_execution_context_t * volatile ec = ruby_current_ec;
   #endif
 
     /* On the shared objects, `__tls_get_addr()` is used to access the TLS
@@ -2022,7 +2016,7 @@ rb_current_execution_context(bool expect_ec)
      */
     VM_ASSERT(ec == rb_current_ec_noinline());
 #else
-    rb_execution_context_t *ec = native_tls_get(ruby_current_ec_key);
+    rb_execution_context_t * volatile ec = native_tls_get(ruby_current_ec_key);
 #endif
     VM_ASSERT(!expect_ec || ec != NULL);
     return ec;
@@ -2103,8 +2097,12 @@ enum {
 #define RUBY_VM_SET_TRAP_INTERRUPT(ec)		ATOMIC_OR((ec)->interrupt_flag, TRAP_INTERRUPT_MASK)
 #define RUBY_VM_SET_TERMINATE_INTERRUPT(ec)     ATOMIC_OR((ec)->interrupt_flag, TERMINATE_INTERRUPT_MASK)
 #define RUBY_VM_SET_VM_BARRIER_INTERRUPT(ec)    ATOMIC_OR((ec)->interrupt_flag, VM_BARRIER_INTERRUPT_MASK)
-#define RUBY_VM_INTERRUPTED(ec)			((ec)->interrupt_flag & ~(ec)->interrupt_mask & \
-                                                 (PENDING_INTERRUPT_MASK|TRAP_INTERRUPT_MASK))
+
+static inline bool
+RUBY_VM_INTERRUPTED(rb_execution_context_t *ec)
+{
+    return (ATOMIC_LOAD_RELAXED(ec->interrupt_flag) & ~(ec->interrupt_mask) & (PENDING_INTERRUPT_MASK|TRAP_INTERRUPT_MASK));
+}
 
 static inline bool
 RUBY_VM_INTERRUPTED_ANY(rb_execution_context_t *ec)
@@ -2117,7 +2115,7 @@ RUBY_VM_INTERRUPTED_ANY(rb_execution_context_t *ec)
         RUBY_VM_SET_TIMER_INTERRUPT(ec);
     }
 #endif
-    return ec->interrupt_flag & ~(ec)->interrupt_mask;
+    return ATOMIC_LOAD_RELAXED(ec->interrupt_flag) & ~(ec)->interrupt_mask;
 }
 
 VALUE rb_exc_set_backtrace(VALUE exc, VALUE bt);

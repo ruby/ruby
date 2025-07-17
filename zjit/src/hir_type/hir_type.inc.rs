@@ -9,7 +9,7 @@ mod bits {
   pub const BasicObjectSubclass: u64 = 1u64 << 3;
   pub const Bignum: u64 = 1u64 << 4;
   pub const BoolExact: u64 = FalseClassExact | TrueClassExact;
-  pub const BuiltinExact: u64 = ArrayExact | BasicObjectExact | FalseClassExact | FloatExact | HashExact | IntegerExact | NilClassExact | ObjectExact | StringExact | SymbolExact | TrueClassExact;
+  pub const BuiltinExact: u64 = ArrayExact | BasicObjectExact | FalseClassExact | FloatExact | HashExact | IntegerExact | ModuleExact | NilClassExact | ObjectExact | RangeExact | RegexpExact | SetExact | StringExact | SymbolExact | TrueClassExact;
   pub const CBool: u64 = 1u64 << 5;
   pub const CDouble: u64 = 1u64 << 6;
   pub const CInt: u64 = CSigned | CUnsigned;
@@ -26,44 +26,58 @@ mod bits {
   pub const CUInt8: u64 = 1u64 << 16;
   pub const CUnsigned: u64 = CUInt16 | CUInt32 | CUInt64 | CUInt8;
   pub const CValue: u64 = CBool | CDouble | CInt | CNull | CPtr;
-  pub const DynamicSymbol: u64 = 1u64 << 17;
+  pub const CallableMethodEntry: u64 = 1u64 << 17;
+  pub const Class: u64 = 1u64 << 18;
+  pub const DynamicSymbol: u64 = 1u64 << 19;
   pub const Empty: u64 = 0u64;
   pub const FalseClass: u64 = FalseClassExact | FalseClassSubclass;
-  pub const FalseClassExact: u64 = 1u64 << 18;
-  pub const FalseClassSubclass: u64 = 1u64 << 19;
-  pub const Fixnum: u64 = 1u64 << 20;
+  pub const FalseClassExact: u64 = 1u64 << 20;
+  pub const FalseClassSubclass: u64 = 1u64 << 21;
+  pub const Fixnum: u64 = 1u64 << 22;
   pub const Float: u64 = FloatExact | FloatSubclass;
   pub const FloatExact: u64 = Flonum | HeapFloat;
-  pub const FloatSubclass: u64 = 1u64 << 21;
-  pub const Flonum: u64 = 1u64 << 22;
+  pub const FloatSubclass: u64 = 1u64 << 23;
+  pub const Flonum: u64 = 1u64 << 24;
   pub const Hash: u64 = HashExact | HashSubclass;
-  pub const HashExact: u64 = 1u64 << 23;
-  pub const HashSubclass: u64 = 1u64 << 24;
-  pub const HeapFloat: u64 = 1u64 << 25;
+  pub const HashExact: u64 = 1u64 << 25;
+  pub const HashSubclass: u64 = 1u64 << 26;
+  pub const HeapFloat: u64 = 1u64 << 27;
   pub const Immediate: u64 = FalseClassExact | Fixnum | Flonum | NilClassExact | StaticSymbol | TrueClassExact | Undef;
   pub const Integer: u64 = IntegerExact | IntegerSubclass;
   pub const IntegerExact: u64 = Bignum | Fixnum;
-  pub const IntegerSubclass: u64 = 1u64 << 26;
+  pub const IntegerSubclass: u64 = 1u64 << 28;
+  pub const Module: u64 = Class | ModuleExact | ModuleSubclass;
+  pub const ModuleExact: u64 = 1u64 << 29;
+  pub const ModuleSubclass: u64 = 1u64 << 30;
   pub const NilClass: u64 = NilClassExact | NilClassSubclass;
-  pub const NilClassExact: u64 = 1u64 << 27;
-  pub const NilClassSubclass: u64 = 1u64 << 28;
-  pub const Object: u64 = Array | FalseClass | Float | Hash | Integer | NilClass | ObjectExact | ObjectSubclass | String | Symbol | TrueClass;
-  pub const ObjectExact: u64 = 1u64 << 29;
-  pub const ObjectSubclass: u64 = 1u64 << 30;
-  pub const RubyValue: u64 = BasicObject | Undef;
-  pub const StaticSymbol: u64 = 1u64 << 31;
+  pub const NilClassExact: u64 = 1u64 << 31;
+  pub const NilClassSubclass: u64 = 1u64 << 32;
+  pub const Object: u64 = Array | FalseClass | Float | Hash | Integer | Module | NilClass | ObjectExact | ObjectSubclass | Range | Regexp | Set | String | Symbol | TrueClass;
+  pub const ObjectExact: u64 = 1u64 << 33;
+  pub const ObjectSubclass: u64 = 1u64 << 34;
+  pub const Range: u64 = RangeExact | RangeSubclass;
+  pub const RangeExact: u64 = 1u64 << 35;
+  pub const RangeSubclass: u64 = 1u64 << 36;
+  pub const Regexp: u64 = RegexpExact | RegexpSubclass;
+  pub const RegexpExact: u64 = 1u64 << 37;
+  pub const RegexpSubclass: u64 = 1u64 << 38;
+  pub const RubyValue: u64 = BasicObject | CallableMethodEntry | Undef;
+  pub const Set: u64 = SetExact | SetSubclass;
+  pub const SetExact: u64 = 1u64 << 39;
+  pub const SetSubclass: u64 = 1u64 << 40;
+  pub const StaticSymbol: u64 = 1u64 << 41;
   pub const String: u64 = StringExact | StringSubclass;
-  pub const StringExact: u64 = 1u64 << 32;
-  pub const StringSubclass: u64 = 1u64 << 33;
-  pub const Subclass: u64 = ArraySubclass | BasicObjectSubclass | FalseClassSubclass | FloatSubclass | HashSubclass | IntegerSubclass | NilClassSubclass | ObjectSubclass | StringSubclass | SymbolSubclass | TrueClassSubclass;
+  pub const StringExact: u64 = 1u64 << 42;
+  pub const StringSubclass: u64 = 1u64 << 43;
+  pub const Subclass: u64 = ArraySubclass | BasicObjectSubclass | FalseClassSubclass | FloatSubclass | HashSubclass | IntegerSubclass | ModuleSubclass | NilClassSubclass | ObjectSubclass | RangeSubclass | RegexpSubclass | SetSubclass | StringSubclass | SymbolSubclass | TrueClassSubclass;
   pub const Symbol: u64 = SymbolExact | SymbolSubclass;
   pub const SymbolExact: u64 = DynamicSymbol | StaticSymbol;
-  pub const SymbolSubclass: u64 = 1u64 << 34;
+  pub const SymbolSubclass: u64 = 1u64 << 44;
   pub const TrueClass: u64 = TrueClassExact | TrueClassSubclass;
-  pub const TrueClassExact: u64 = 1u64 << 35;
-  pub const TrueClassSubclass: u64 = 1u64 << 36;
-  pub const Undef: u64 = 1u64 << 37;
-  pub const AllBitPatterns: [(&'static str, u64); 63] = [
+  pub const TrueClassExact: u64 = 1u64 << 45;
+  pub const TrueClassSubclass: u64 = 1u64 << 46;
+  pub const Undef: u64 = 1u64 << 47;
+  pub const AllBitPatterns: [(&'static str, u64); 77] = [
     ("Any", Any),
     ("RubyValue", RubyValue),
     ("Immediate", Immediate),
@@ -83,11 +97,23 @@ mod bits {
     ("StringExact", StringExact),
     ("SymbolExact", SymbolExact),
     ("StaticSymbol", StaticSymbol),
+    ("Set", Set),
+    ("SetSubclass", SetSubclass),
+    ("SetExact", SetExact),
+    ("Regexp", Regexp),
+    ("RegexpSubclass", RegexpSubclass),
+    ("RegexpExact", RegexpExact),
+    ("Range", Range),
+    ("RangeSubclass", RangeSubclass),
+    ("RangeExact", RangeExact),
     ("ObjectSubclass", ObjectSubclass),
     ("ObjectExact", ObjectExact),
     ("NilClass", NilClass),
     ("NilClassSubclass", NilClassSubclass),
     ("NilClassExact", NilClassExact),
+    ("Module", Module),
+    ("ModuleSubclass", ModuleSubclass),
+    ("ModuleExact", ModuleExact),
     ("Integer", Integer),
     ("IntegerSubclass", IntegerSubclass),
     ("Float", Float),
@@ -104,6 +130,8 @@ mod bits {
     ("FalseClassSubclass", FalseClassSubclass),
     ("FalseClassExact", FalseClassExact),
     ("DynamicSymbol", DynamicSymbol),
+    ("Class", Class),
+    ("CallableMethodEntry", CallableMethodEntry),
     ("CValue", CValue),
     ("CInt", CInt),
     ("CUnsigned", CUnsigned),
@@ -128,7 +156,7 @@ mod bits {
     ("ArrayExact", ArrayExact),
     ("Empty", Empty),
   ];
-  pub const NumTypeBits: u64 = 38;
+  pub const NumTypeBits: u64 = 48;
 }
 pub mod types {
   use super::*;
@@ -158,6 +186,8 @@ pub mod types {
   pub const CUInt8: Type = Type::from_bits(bits::CUInt8);
   pub const CUnsigned: Type = Type::from_bits(bits::CUnsigned);
   pub const CValue: Type = Type::from_bits(bits::CValue);
+  pub const CallableMethodEntry: Type = Type::from_bits(bits::CallableMethodEntry);
+  pub const Class: Type = Type::from_bits(bits::Class);
   pub const DynamicSymbol: Type = Type::from_bits(bits::DynamicSymbol);
   pub const Empty: Type = Type::from_bits(bits::Empty);
   pub const FalseClass: Type = Type::from_bits(bits::FalseClass);
@@ -176,13 +206,25 @@ pub mod types {
   pub const Integer: Type = Type::from_bits(bits::Integer);
   pub const IntegerExact: Type = Type::from_bits(bits::IntegerExact);
   pub const IntegerSubclass: Type = Type::from_bits(bits::IntegerSubclass);
+  pub const Module: Type = Type::from_bits(bits::Module);
+  pub const ModuleExact: Type = Type::from_bits(bits::ModuleExact);
+  pub const ModuleSubclass: Type = Type::from_bits(bits::ModuleSubclass);
   pub const NilClass: Type = Type::from_bits(bits::NilClass);
   pub const NilClassExact: Type = Type::from_bits(bits::NilClassExact);
   pub const NilClassSubclass: Type = Type::from_bits(bits::NilClassSubclass);
   pub const Object: Type = Type::from_bits(bits::Object);
   pub const ObjectExact: Type = Type::from_bits(bits::ObjectExact);
   pub const ObjectSubclass: Type = Type::from_bits(bits::ObjectSubclass);
+  pub const Range: Type = Type::from_bits(bits::Range);
+  pub const RangeExact: Type = Type::from_bits(bits::RangeExact);
+  pub const RangeSubclass: Type = Type::from_bits(bits::RangeSubclass);
+  pub const Regexp: Type = Type::from_bits(bits::Regexp);
+  pub const RegexpExact: Type = Type::from_bits(bits::RegexpExact);
+  pub const RegexpSubclass: Type = Type::from_bits(bits::RegexpSubclass);
   pub const RubyValue: Type = Type::from_bits(bits::RubyValue);
+  pub const Set: Type = Type::from_bits(bits::Set);
+  pub const SetExact: Type = Type::from_bits(bits::SetExact);
+  pub const SetSubclass: Type = Type::from_bits(bits::SetSubclass);
   pub const StaticSymbol: Type = Type::from_bits(bits::StaticSymbol);
   pub const String: Type = Type::from_bits(bits::String);
   pub const StringExact: Type = Type::from_bits(bits::StringExact);

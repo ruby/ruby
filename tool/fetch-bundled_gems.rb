@@ -24,20 +24,22 @@ next unless n
 next if n =~ /^#/
 next if bundled_gems&.all? {|pat| !File.fnmatch?(pat, n)}
 
-if File.directory?(n)
-  puts "updating #{color.notice(n)} ..."
-  system("git", "fetch", "--all", chdir: n) or abort
-else
+unless File.exist?("#{n}/.git")
   puts "retrieving #{color.notice(n)} ..."
-  system(*%W"git clone #{u} #{n}") or abort
+  system(*%W"git clone --depth=1 --no-tags #{u} #{n}") or abort
 end
 
 if r
   puts "fetching #{color.notice(r)} ..."
   system("git", "fetch", "origin", r, chdir: n) or abort
+  c = r
+else
+  c = ["v#{v}", v].find do |c|
+    puts "fetching #{color.notice(c)} ..."
+    system("git", "fetch", "origin", "refs/tags/#{c}:refs/tags/#{c}", chdir: n)
+  end or abort
 end
 
-c = r || "v#{v}"
 checkout = %w"git -c advice.detachedHead=false checkout"
 print %[checking out #{color.notice(c)} (v=#{color.info(v)}]
 print %[, r=#{color.info(r)}] if r

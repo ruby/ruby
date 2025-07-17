@@ -126,19 +126,19 @@ module TestParallel
         assert_not_nil($1, "'done' was not found")
 
         result = Marshal.load($1.chomp.unpack1("m"))
-        assert_equal(5, result[0])
-        pend "TODO: result[1] returns 17. We should investigate it" do # TODO: misusage of pend (pend doens't use given block)
-          assert_equal(12, result[1])
-        end
-        assert_kind_of(Array,result[2])
-        assert_kind_of(Array,result[3])
-        assert_kind_of(Array,result[4])
-        assert_kind_of(Array,result[2][1])
-        assert_kind_of(Test::Unit::AssertionFailedError,result[2][0][2])
-        assert_kind_of(Test::Unit::PendedError,result[2][1][2])
-        assert_kind_of(Test::Unit::PendedError,result[2][2][2])
-        assert_kind_of(Exception, result[2][3][2])
-        assert_equal(result[5], "TestE")
+        tests, asserts, reports, failures, loadpaths, suite = result
+        assert_equal(5, tests)
+        assert_equal(12, asserts)
+        assert_kind_of(Array, reports)
+        assert_kind_of(Array, failures)
+        assert_kind_of(Array, loadpaths)
+        reports.sort_by! {|_, t| t}
+        assert_kind_of(Array, reports[1])
+        assert_kind_of(Test::Unit::AssertionFailedError, reports[0][2])
+        assert_kind_of(Test::Unit::PendedError, reports[1][2])
+        assert_kind_of(Test::Unit::PendedError, reports[2][2])
+        assert_kind_of(Exception, reports[3][2])
+        assert_equal("TestE", suite)
       end
     end
 

@@ -130,6 +130,12 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(Set['a','b','c'], set)
 
     set = Set[1,2]
+    ret = set.replace(Set.new('a'..'c'))
+
+    assert_same(set, ret)
+    assert_equal(Set['a','b','c'], set)
+
+    set = Set[1,2]
     assert_raise(ArgumentError) {
       set.replace(3)
     }
@@ -775,6 +781,10 @@ class TC_Set < Test::Unit::TestCase
     ret.each { |s| n += s.size }
     assert_equal(set.size, n)
     assert_equal(set, ret.flatten)
+
+    set = Set[2,12,9,11,13,4,10,15,3,8,5,0,1,7,14]
+    ret = set.divide { |a,b| (a - b).abs == 1 }
+    assert_equal(2, ret.size)
   end
 
   def test_freeze
@@ -829,24 +839,28 @@ class TC_Set < Test::Unit::TestCase
 
   def test_inspect
     set1 = Set[1, 2]
-    assert_equal('#<Set: {1, 2}>', set1.inspect)
+    assert_equal('Set[1, 2]', set1.inspect)
 
     set2 = Set[Set[0], 1, 2, set1]
-    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2}>}>', set2.inspect)
+    assert_equal('Set[Set[0], 1, 2, Set[1, 2]]', set2.inspect)
 
     set1.add(set2)
-    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2, #<Set: {...}>}>}>', set2.inspect)
+    assert_equal('Set[Set[0], 1, 2, Set[1, 2, Set[...]]]', set2.inspect)
+
+    c = Class.new(Set)
+    c.set_temporary_name("_MySet")
+    assert_equal('_MySet[1, 2]', c[1, 2].inspect)
   end
 
   def test_to_s
     set1 = Set[1, 2]
-    assert_equal('#<Set: {1, 2}>', set1.to_s)
+    assert_equal('Set[1, 2]', set1.to_s)
 
     set2 = Set[Set[0], 1, 2, set1]
-    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2}>}>', set2.to_s)
+    assert_equal('Set[Set[0], 1, 2, Set[1, 2]]', set2.to_s)
 
     set1.add(set2)
-    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2, #<Set: {...}>}>}>', set2.to_s)
+    assert_equal('Set[Set[0], 1, 2, Set[1, 2, Set[...]]]', set2.to_s)
   end
 
   def test_compare_by_identity

@@ -109,7 +109,7 @@ RSpec.describe "the lockfile format" do
          #{version}
     L
 
-    install_gemfile <<-G, verbose: true, preserve_ruby_flags: true
+    install_gemfile <<-G, verbose: true
       source "https://gem.repo4"
 
       gem "myrack"
@@ -2308,19 +2308,7 @@ RSpec.describe "the lockfile format" do
 
   private
 
-  def prerelease?(version)
-    Gem::Version.new(version).prerelease?
-  end
-
   def previous_major(version)
     version.split(".").map.with_index {|v, i| i == 0 ? v.to_i - 1 : v }.join(".")
-  end
-
-  def bump_minor(version)
-    bump(version, 1)
-  end
-
-  def bump(version, segment)
-    version.split(".").map.with_index {|v, i| i == segment ? v.to_i + 1 : v }.join(".")
   end
 end

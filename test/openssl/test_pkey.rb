@@ -8,16 +8,7 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_instance_of OpenSSL::PKey::RSA, rsa
     assert_equal "rsaEncryption", rsa.oid
     assert_match %r{oid=rsaEncryption}, rsa.inspect
-  end
-
-  def test_generic_oid_inspect_x25519
-    omit_on_fips
-
-    # X25519 private key
-    x25519 = OpenSSL::PKey.generate_key("X25519")
-    assert_instance_of OpenSSL::PKey::PKey, x25519
-    assert_equal "X25519", x25519.oid
-    assert_match %r{oid=X25519}, x25519.inspect
+    assert_match %r{type_name=RSA}, rsa.inspect if openssl?(3, 0, 0)
   end
 
   def test_s_generate_parameters
@@ -152,6 +143,8 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     alice = OpenSSL::PKey.read(alice_pem)
     bob = OpenSSL::PKey.read(bob_pem)
     assert_instance_of OpenSSL::PKey::PKey, alice
+    assert_equal "X25519", alice.oid
+    assert_match %r{oid=X25519}, alice.inspect
     assert_equal alice_pem, alice.private_to_pem
     assert_equal bob_pem, bob.public_to_pem
     assert_equal [shared_secret].pack("H*"), alice.derive(bob)
@@ -166,6 +159,25 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
       alice.raw_private_key.unpack1("H*")
     assert_equal "de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f",
       bob.raw_public_key.unpack1("H*")
+  end
+
+  def test_ml_dsa
+    # AWS-LC also supports ML-DSA, but it's implemented in a different way
+    return unless openssl?(3, 5, 0)
+
+    pkey = OpenSSL::PKey.generate_key("ML-DSA-44")
+    assert_match(/type_name=ML-DSA-44/, pkey.inspect)
+    sig = pkey.sign(nil, "data")
+    assert_equal(2420, sig.bytesize)
+    assert_equal(true, pkey.verify(nil, sig, "data"))
+
+    pub2 = OpenSSL::PKey.read(pkey.public_to_der)
+    assert_equal(true, pub2.verify(nil, sig, "data"))
+
+    raw_public_key = pkey.raw_public_key
+    assert_equal(1312, raw_public_key.bytesize)
+    pub3 = OpenSSL::PKey.new_raw_public_key("ML-DSA-44", raw_public_key)
+    assert_equal(true, pub3.verify(nil, sig, "data"))
   end
 
   def test_raw_initialize_errors

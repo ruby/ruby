@@ -260,11 +260,25 @@ This will add launch configurations for debugging Ruby itself by running `test.r
 
 ### Compiling for Debugging
 
-You should configure Ruby without optimization and other flags that may
-interfere with debugging:
+You can compile Ruby with the `RUBY_DEBUG` macro to enable debugging on some
+features. One example is debugging object shapes in Ruby with
+`RubyVM::Shape.of(object)`.
+
+Additionally Ruby can be compiled to support the `RUBY_DEBUG` environment
+variable to enable debugging on some features. An example is using
+`RUBY_DEBUG=gc_stress` to debug GC-related issues.
+
+There is also support for the `RUBY_DEBUG_LOG` environment variable to log a
+lot of information about what the VM is doing, via the `USE_RUBY_DEBUG_LOG`
+macro.
+
+You should also configure Ruby without optimization and other flags that may
+interfere with debugging by changing the optimization flags.
+
+Bringing it all together:
 
 ```sh
-./configure --enable-debug-env optflags="-O0 -fno-omit-frame-pointer"
+./configure cppflags="-DRUBY_DEBUG=1 -DUSE_RUBY_DEBUG_LOG=1" --enable-debug-env optflags="-O0 -fno-omit-frame-pointer"
 ```
 
 ### Building with Address Sanitizer
