@@ -887,7 +887,7 @@ pm_compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_node_t *cond, LAB
 static void
 pm_compile_flip_flop_bound(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    const pm_node_location_t location = { .line = ISEQ_BODY(iseq)->location.first_lineno, .node_id = -1 };
+    const pm_node_location_t location = PM_NODE_START_LOCATION(scope_node->parser, node);
 
     if (PM_NODE_TYPE_P(node, PM_INTEGER_NODE)) {
         PM_COMPILE_NOT_POPPED(node);
@@ -906,7 +906,7 @@ pm_compile_flip_flop_bound(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *
 static void
 pm_compile_flip_flop(const pm_flip_flop_node_t *flip_flop_node, LABEL *else_label, LABEL *then_label, rb_iseq_t *iseq, const int lineno, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    const pm_node_location_t location = { .line = ISEQ_BODY(iseq)->location.first_lineno, .node_id = -1 };
+    const pm_node_location_t location = { .line = lineno, .node_id = -1 };
     LABEL *lend = NEW_LABEL(location.line);
 
     int again = !(flip_flop_node->base.flags & PM_RANGE_FLAGS_EXCLUDE_END);
