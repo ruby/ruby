@@ -20,7 +20,7 @@ struct concurrent_set_entry {
 struct concurrent_set {
     rb_atomic_t size;
     unsigned int capacity;
-    unsigned int deleted_entries;
+    rb_atomic_t deleted_entries;
     const struct rb_concurrent_set_funcs *funcs;
     struct concurrent_set_entry *entries;
 };
@@ -96,8 +96,13 @@ concurrent_set_try_resize_without_locking(VALUE old_set_obj, VALUE *set_obj_ptr)
     struct concurrent_set *old_set = RTYPEDDATA_GET_DATA(old_set_obj);
 
     // This may overcount by up to the number of threads concurrently attempting to insert
+    // plus the number of threads concurrently attempting to delete.
     // GC may also happen between now and the set being rebuilt
-    int expected_size = RUBY_ATOMIC_LOAD(old_set->size) - old_set->deleted_entries;
+    // Note: By loading the two fields in this order, we may underestimate the deleted entries
+    // more than we underestimate the size.
+    int cur_deleted_entries = RUBY_ATOMIC_LOAD(old_set->deleted_entries);
+    int cur_size = RUBY_ATOMIC_LOAD(old_set->size);
+    int expected_size = cur_size - cur_deleted_entries;
 
     struct concurrent_set_entry *old_entries = old_set->entries;
     int old_capacity = old_set->capacity;
@@ -234,9 +239,15 @@ rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
                 if (UNLIKELY(rb_objspace_garbage_object_p(curr_key))) {
                     // This is a weakref set, so after marking but before sweeping is complete we may find a matching garbage object.
                     // Skip it and mark it as deleted.
-                    RUBY_ATOMIC_VALUE_CAS(entry->key, curr_key, CONCURRENT_SET_DELETED);
+                    VALUE old_key = RUBY_ATOMIC_VALUE_CAS(entry->key, curr_key, CONCURRENT_SET_DELETED);
+                    if (old_key == curr_key) {
+                        // We successfully deleted the entry.
+                        // Atomically increment deleted_entries because another thread may be
+                        // deleting another entry concurrently.
+                        RUBY_ATOMIC_ADD(set->deleted_entries, 1);
+                    }
 
-                    // Fall through and continue our search.
+                    // Regardless of the old_key, we should fall through and continue our search.
                 }
                 else {
                     RB_GC_GUARD(set_obj);
@@ -281,6 +292,8 @@ rb_concurrent_set_delete_by_identity(VALUE set_obj, VALUE key)
           default:
             if (key == curr_key) {
                 entry->key = CONCURRENT_SET_DELETED;
+                // We may increment deleted_entries non-atomically because
+                // we are holding the VM lock and have entered barrier.
                 set->deleted_entries++;
                 return curr_key;
             }
@@ -316,6 +329,9 @@ rb_concurrent_set_foreach_with_replace(VALUE set_obj, int (*callback)(VALUE *key
                 return;
               case ST_DELETE:
                 set->entries[i].key = CONCURRENT_SET_DELETED;
+                // We may increment deleted_entries non-atomically because
+                // we are holding the VM lock and have entered barrier.
+                set->deleted_entries++;
                 break;
             }
             break;
