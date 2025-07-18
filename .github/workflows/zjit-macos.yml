@@ -32,7 +32,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - test_task: 'zjit-test'
+          - test_task: 'zjit-check'
             configure: '--enable-yjit=dev --enable-zjit'
 
           - test_task: 'ruby' # build test for combo build
@@ -84,7 +84,7 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: nextest@0.9
-        if: ${{ matrix.test_task == 'zjit-test' }}
+        if: ${{ matrix.test_task == 'zjit-check' }}
 
       - name: Install Rust # TODO(alan): remove when GitHub images catch up past 1.85.0
         run: rustup default 1.85.0
