@@ -28,7 +28,7 @@ jobs:
           - name: default
           - name: mmtk
             mmtk_build: release
-        os: [macos-latest, ubuntu-latest]
+        os: [macos-latest-xlarge, ubuntu-latest]
         include:
           - test_task: check
       fail-fast: false

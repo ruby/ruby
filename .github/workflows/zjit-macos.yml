@@ -51,7 +51,7 @@ jobs:
       SPECOPTS: ${{ matrix.specopts }}
       TESTOPTS: ${{ matrix.testopts }}
 
-    runs-on: macos-14
+    runs-on: macos-14-xlarge
 
     if: >-
       ${{!(false
@@ -162,7 +162,7 @@ jobs:
   result:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
-    runs-on: macos-14
+    runs-on: macos-14-xlarge
     needs: [make]
     steps:
       - run: exit 1
