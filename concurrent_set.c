@@ -139,7 +139,7 @@ concurrent_set_try_resize_without_locking(VALUE old_set_obj, VALUE *set_obj_ptr)
             if (entry->key == CONCURRENT_SET_EMPTY) {
                 new_set->size++;
 
-                RUBY_ASSERT(new_set->size < new_set->capacity / 2);
+                RUBY_ASSERT(new_set->size <= new_set->capacity / 2);
                 RUBY_ASSERT(entry->hash == 0);
 
                 entry->key = key;
