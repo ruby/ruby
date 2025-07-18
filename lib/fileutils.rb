@@ -733,6 +733,7 @@ module FileUtils
   def ln_sr(src, dest, target_directory: true, force: nil, noop: nil, verbose: nil)
     fu_output_message "ln -sr#{force ? 'f' : ''}#{
       target_directory ? '' : 'T'} #{[src,dest].flatten.join ' '}" if verbose
+    return if noop
     unless target_directory
       destdirs = fu_split_path(File.realdirpath(dest))
     end
@@ -754,7 +755,6 @@ module FileUtils
         end
         s = File.join(*base, *srcdirs)
       end
-      next if noop
       remove_file d, true if force
       File.symlink s, d
     end
