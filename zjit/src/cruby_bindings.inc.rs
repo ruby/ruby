@@ -722,6 +722,8 @@ pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
 pub type rb_iseq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
+pub const RB_SPECIAL_CONST_SHAPE_ID: u32 = 33554432;
+pub const RB_INVALID_SHAPE_ID: u32 = 4294967295;
 unsafe extern "C" {
     pub fn ruby_xfree(ptr: *mut ::std::os::raw::c_void);
     pub fn rb_class_attached_object(klass: VALUE) -> VALUE;
@@ -1016,4 +1018,6 @@ unsafe extern "C" {
     pub fn rb_IMEMO_TYPE_P(imemo: VALUE, imemo_type: imemo_type) -> ::std::os::raw::c_int;
     pub fn rb_assert_cme_handle(handle: VALUE);
     pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;
+    pub fn rb_zjit_singleton_class_p(klass: VALUE) -> bool;
+    pub fn rb_get_iseq_flags(iseq: *const rb_iseq_t) -> u64;
 }

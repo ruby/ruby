@@ -6,6 +6,7 @@
 pub use std;
 
 mod state;
+mod distribution;
 mod cruby;
 mod cruby_methods;
 mod hir;
