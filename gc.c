@@ -3168,11 +3168,6 @@ rb_gc_mark_children(void *objspace, VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_FLOAT:
       case T_BIGNUM:
-      case T_SYMBOL:
-        /* Not immediates, but does not have references and singleton class.
-         *
-         * RSYMBOL(obj)->fstr intentionally not marked. See log for 96815f1e
-         * ("symbol.c: remove rb_gc_mark_symbols()") */
         return;
 
       case T_NIL:
@@ -3228,6 +3223,10 @@ rb_gc_mark_children(void *objspace, VALUE obj)
 
       case T_HASH:
         mark_hash(obj);
+        break;
+
+      case T_SYMBOL:
+        gc_mark_internal(RSYMBOL(obj)->fstr);
         break;
 
       case T_STRING:
