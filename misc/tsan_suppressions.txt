@@ -37,21 +37,15 @@ race_top:rb_ec_vm_lock_rec
 race_top:vm_lock_enter
 race_top:vm_locked
 
-# Ractors
-race:ractor_take
-race:ractor_register_take
-race:ractor_check_take_basket
-race:ractor_selector__wait
-
 # vm->ractor.sched.grq_cnt++
 race_top:ractor_sched_enq
 race_top:ractor_sched_deq
 
-# Using VM lock instead of rb_native_mutex_unlock?
+# Race between vm_remove_ractor writing ractor count and
+# native_thread_check_and_create_shared reading it during thread creation.
+# The write happens when a ractor thread exits, the read happens when
+# checking if new shared threads need to be created.
 race:vm_remove_ractor
-
-# cr->sync.wait.wakeup_status
-race_top:rb_ractor_sched_sleep
 
 # th->sched.finished at end of co_start
 race_top:rb_thread_sched_mark_zombies
@@ -61,9 +55,6 @@ race_top:thread_sched_wait_events
 
 # At thread start
 race_top:rb_ractor_set_current_ec_
-
-# Possible deadlock between Ractor lock and UBF lock
-deadlock:ractor_sleep_interrupt
 
 # TSan reports a lock-order-inversion between thread_sched_lock_ and this lock.
 # It's unclear if that can cause a deadlock since the lock is on self
@@ -76,16 +67,22 @@ deadlock:rb_ractor_sched_barrier_start
 # RVALUE_AGE_SET manipulates flag bits on objects which may be accessed in Ractors
 race_top:RVALUE_AGE_SET
 
-# Inline caches
+# Inline caches and call cache updates
+# Multiple threads can race when updating shared call caches during method lookups
+# and argument forwarding. These races involve reading/writing cd->cc fields.
 race_top:vm_cc_call_set
 race_top:vm_cc_class_check
 race_top:vm_search_cc
 race_top:vm_search_method_slowpath0
 race_top:rb_vm_opt_getconstant_path
 race_top:vm_ic_attr_index_set
+race:vm_ic_update
+race:vm_caller_setup_fwd_args
 
-# Shapes have problems with RCLASS_MAX_IV_COUNT and RCLASS_VARIATION_COUNT
-# which are probably benign
+# Race in shape_get_next where multiple threads simultaneously access and modify
+# RCLASS_MAX_IV_COUNT and RCLASS_VARIATION_COUNT fields in class objects.
+# One thread reads the field while another thread calls RCLASS_SET_MAX_IV_COUNT.
+# This happens during instance variable shape transitions in multi-threaded code.
 race:shape_get_next
 
 # Non-atomic reads/writes
@@ -99,15 +96,9 @@ race:rb_ec_cleanup
 # timer thread
 race:after_fork_ruby
 
-# object_id races
-race:object_id
-
 # Sets objspace->flags.dont_incremental while writebarrier may be running
 race_top:objspace_each_exec
 race_top:objspace_each_objects_ensure
-
-# Ractor autoload
-race:rb_ractor_autoload_load
 
 # Non-atomic lazy initialized static variable
 race_top:rbimpl_intern_const
@@ -123,3 +114,7 @@ race:rb_tracepoint_enable
 # We walk the machine stack looking for markable objects, a thread with the GVL
 # released could by mutating the stack with non-Ruby-objects
 race:rb_gc_mark_machine_context
+
+# GC enable/disable flag modifications race with object allocation flag reads
+race_top:rb_gc_impl_gc_disable
+race_top:rb_gc_impl_gc_enable
