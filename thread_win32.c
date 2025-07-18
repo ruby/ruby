@@ -12,9 +12,9 @@
 #ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
 #include "internal/sanitizers.h"
+#include "internal/thread.h"
 #include <process.h>
 
-#define TIME_QUANTUM_USEC (10 * 1000)
 #define RB_CONDATTR_CLOCK_MONOTONIC 1 /* no effect */
 
 #undef Sleep
@@ -774,7 +774,7 @@ timer_thread_func(void *dummy)
     RUBY_DEBUG_LOG("start");
     rb_w32_set_thread_description(GetCurrentThread(), L"ruby-timer-thread");
     while (WaitForSingleObject(timer_thread.lock,
-                               TIME_QUANTUM_USEC/1000) == WAIT_TIMEOUT) {
+                               THREAD_TIMER_INTERVAL_MSEC) == WAIT_TIMEOUT) {
         vm->clock++;
         rb_threadptr_check_signal(vm->ractor.main_thread);
     }
