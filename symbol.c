@@ -98,7 +98,6 @@ typedef struct {
     VALUE sym_set;
 
     VALUE ids;
-    VALUE dsymbol_fstr_hash;
 } rb_symbols_t;
 
 rb_symbols_t ruby_global_symbols = {tNEXT_ID-1};
@@ -154,7 +153,12 @@ sym_set_sym_get_str(VALUE sym)
 static VALUE
 sym_set_hash(VALUE sym)
 {
-    return (VALUE)rb_str_hash(sym_set_sym_get_str(sym));
+    if (sym_set_sym_static_p(sym)) {
+        return (VALUE)rb_str_hash(sym_set_static_sym_untag(sym)->str);
+    }
+    else {
+        return (VALUE)RSYMBOL(sym)->hashval;
+    }
 }
 
 static bool
@@ -278,10 +282,7 @@ sym_set_create(VALUE sym, void *data)
         if (id < 0) id = ID_JUNK;
         obj->id = id;
 
-        /* we want hashval to be in Fixnum range [ruby-core:15713] r15672 */
-        long hashval = (long)rb_str_hash(str);
-        obj->hashval = RSHIFT((long)hashval, 1);
-        rb_hash_aset(ruby_global_symbols.dsymbol_fstr_hash, str, Qtrue);
+        obj->hashval = rb_str_hash(str);
         RUBY_DTRACE_CREATE_HOOK(SYMBOL, RSTRING_PTR(obj->fstr));
 
         return (VALUE)obj;
@@ -377,10 +378,6 @@ Init_sym(void)
 {
     rb_symbols_t *symbols = &ruby_global_symbols;
 
-    VALUE dsym_fstrs = rb_ident_hash_new();
-    symbols->dsymbol_fstr_hash = dsym_fstrs;
-    rb_obj_hide(dsym_fstrs);
-
     symbols->sym_set = rb_concurrent_set_new(&sym_set_funcs, 1024);
     symbols->ids = rb_ary_hidden_new(0);
 
@@ -395,7 +392,6 @@ rb_sym_global_symbols_mark(void)
 
     rb_gc_mark_movable(symbols->sym_set);
     rb_gc_mark_movable(symbols->ids);
-    rb_gc_mark_movable(symbols->dsymbol_fstr_hash);
 }
 
 void
@@ -405,7 +401,6 @@ rb_sym_global_symbols_update_references(void)
 
     symbols->sym_set = rb_gc_location(symbols->sym_set);
     symbols->ids = rb_gc_location(symbols->ids);
-    symbols->dsymbol_fstr_hash = rb_gc_location(symbols->dsymbol_fstr_hash);
 }
 
 WARN_UNUSED_RESULT(static ID lookup_str_id(VALUE str));
@@ -955,7 +950,6 @@ rb_gc_free_dsymbol(VALUE sym)
     if (str) {
         GLOBAL_SYMBOLS_LOCKING(symbols) {
             rb_concurrent_set_delete_by_identity(symbols->sym_set, sym);
-            rb_hash_delete_entry(symbols->dsymbol_fstr_hash, str);
         }
 
         RSYMBOL(sym)->fstr = 0;
@@ -1013,7 +1007,6 @@ rb_sym2id(VALUE sym)
                 /* make it permanent object */
 
                 set_id_entry(symbols, rb_id_to_serial(num), fstr, sym);
-                rb_hash_delete_entry(symbols->dsymbol_fstr_hash, fstr);
             }
         }
     }
@@ -1098,25 +1091,17 @@ symbols_i(VALUE *key, void *data)
     VALUE ary = (VALUE)data;
     VALUE sym = (VALUE)*key;
 
-    if (STATIC_SYM_P(sym)) {
-        rb_ary_push(ary, sym);
-        return ST_CONTINUE;
-    }
-    else if (!DYNAMIC_SYM_P(sym)) {
-        rb_bug("invalid symbol: %s", RSTRING_PTR((VALUE)key));
-    }
-    else if (!SYMBOL_PINNED_P(sym) && rb_objspace_garbage_object_p(sym)) {
-        RSYMBOL(sym)->fstr = 0;
-        return ST_DELETE;
+    if (sym_set_sym_static_p(sym)) {
+        rb_ary_push(ary, sym_set_static_sym_untag(sym)->sym);
     }
     else if (rb_objspace_garbage_object_p(sym)) {
         return ST_DELETE;
     }
     else {
         rb_ary_push(ary, sym);
-        return ST_CONTINUE;
     }
 
+    return ST_CONTINUE;
 }
 
 VALUE

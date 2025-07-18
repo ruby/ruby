@@ -184,7 +184,7 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
             hnum = rb_hash_start(hnum);
         }
         else {
-            hnum = RSYMBOL(a)->hashval;
+            hnum = RSHIFT(RSYMBOL(a)->hashval, 1);
         }
         break;
       case T_FIXNUM:
