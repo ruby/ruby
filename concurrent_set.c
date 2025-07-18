@@ -182,13 +182,14 @@ rb_concurrent_set_find(VALUE *set_obj_ptr, VALUE key)
 
     VALUE set_obj;
 
+    VALUE hash = set->funcs->hash(key);
+
   retry:
     set_obj = RUBY_ATOMIC_VALUE_LOAD(*set_obj_ptr);
     RUBY_ASSERT(set_obj);
     struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
 
     struct concurrent_set_probe probe;
-    VALUE hash = set->funcs->hash(key);
     int idx = concurrent_set_probe_start(&probe, set, hash);
 
     while (true) {
@@ -238,13 +239,14 @@ rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
     bool inserting = false;
     VALUE set_obj;
 
+    VALUE hash = set->funcs->hash(key);
+
   retry:
     set_obj = RUBY_ATOMIC_VALUE_LOAD(*set_obj_ptr);
     RUBY_ASSERT(set_obj);
     struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
 
     struct concurrent_set_probe probe;
-    VALUE hash = set->funcs->hash(key);
     int idx = concurrent_set_probe_start(&probe, set, hash);
 
     while (true) {
