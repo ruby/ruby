@@ -104,10 +104,6 @@ race_top:encoded_iseq_trace_instrument
 race:rb_iseq_trace_set_all
 race:rb_tracepoint_enable
 
-# We walk the machine stack looking for markable objects, a thread with the GVL
-# released could by mutating the stack with non-Ruby-objects
-race:rb_gc_mark_machine_context
-
 # GC enable/disable flag modifications race with object allocation flag reads
 race_top:rb_gc_impl_gc_disable
 race_top:rb_gc_impl_gc_enable
