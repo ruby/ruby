@@ -1752,6 +1752,9 @@ impl Assembler
                         asm.push_insn(Insn::PosMarker(end_marker));
                     }
                 }
+                Insn::Mov { src, dest } | Insn::LoadInto { dest, opnd: src } if src == dest => {
+                    // Remove no-op move now that VReg are resolved to physical Reg
+                }
                 _ => asm.push_insn(insn),
             }
 
