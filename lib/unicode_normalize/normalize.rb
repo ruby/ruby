@@ -114,8 +114,26 @@ module UnicodeNormalize  # :nodoc:
         last_class = accent_class
       end
     end
-    accents = nfc_one(accents) if accents.length>1 # TODO: change from recursion to loop
-    hangul_comp_one(start+accents)
+
+    result = start
+    until accents.empty?
+      start = accents[0]
+      last_class = CLASS_TABLE[start]-1
+      rest = ''
+      accents[1..-1].each_char do |accent|
+        accent_class = CLASS_TABLE[accent]
+        if last_class < accent_class && (composite = COMPOSITION_TABLE[start + accent])
+          start = composite
+        else
+          rest << accent
+          last_class = accent_class
+        end
+      end
+      result << start
+      accents = rest
+    end
+
+    hangul_comp_one(result)
   end
 
   def self.normalize(string, form = :nfc)
