@@ -181,14 +181,21 @@ rb_concurrent_set_find(VALUE *set_obj_ptr, VALUE key)
     RUBY_ASSERT(key >= CONCURRENT_SET_SPECIAL_VALUE_COUNT);
 
     VALUE set_obj;
+    VALUE hash = 0;
 
   retry:
     set_obj = RUBY_ATOMIC_VALUE_LOAD(*set_obj_ptr);
     RUBY_ASSERT(set_obj);
     struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
 
+    if (hash == 0) {
+        // We don't need to recompute the hash on every retry because it should
+        // never change.
+        hash = set->funcs->hash(key);
+    }
+    RUBY_ASSERT(hash == set->funcs->hash(key));
+
     struct concurrent_set_probe probe;
-    VALUE hash = set->funcs->hash(key);
     int idx = concurrent_set_probe_start(&probe, set, hash);
 
     while (true) {
@@ -237,14 +244,21 @@ rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
 
     bool inserting = false;
     VALUE set_obj;
+    VALUE hash = 0;
 
   retry:
     set_obj = RUBY_ATOMIC_VALUE_LOAD(*set_obj_ptr);
     RUBY_ASSERT(set_obj);
     struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
 
+    if (hash == 0) {
+        // We don't need to recompute the hash on every retry because it should
+        // never change.
+        hash = set->funcs->hash(key);
+    }
+    RUBY_ASSERT(hash == set->funcs->hash(key));
+
     struct concurrent_set_probe probe;
-    VALUE hash = set->funcs->hash(key);
     int idx = concurrent_set_probe_start(&probe, set, hash);
 
     while (true) {
