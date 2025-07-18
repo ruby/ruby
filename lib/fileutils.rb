@@ -708,9 +708,10 @@ module FileUtils
     if relative
       return ln_sr(src, dest, force: force, noop: noop, verbose: verbose)
     end
-    fu_output_message "ln -s#{force ? 'f' : ''} #{[src,dest].flatten.join ' '}" if verbose
+    fu_output_message "ln -s#{force ? 'f' : ''}#{
+      target_directory ? '' : 'T'} #{[src,dest].flatten.join ' '}" if verbose
     return if noop
-    fu_each_src_dest0(src, dest) do |s,d|
+    fu_each_src_dest0(src, dest, target_directory) do |s,d|
       remove_file d, true if force
       File.symlink s, d
     end
@@ -730,17 +731,16 @@ module FileUtils
   # Like FileUtils.ln_s, but create links relative to +dest+.
   #
   def ln_sr(src, dest, target_directory: true, force: nil, noop: nil, verbose: nil)
-    options = "#{force ? 'f' : ''}#{target_directory ? '' : 'T'}"
-    dest = File.path(dest)
-    srcs = Array(src)
-    link = proc do |s, target_dir_p = true|
-      s = File.path(s)
-      if target_dir_p
-        d = File.join(destdirs = dest, File.basename(s))
-      else
-        destdirs = File.dirname(d = dest)
+    fu_output_message "ln -sr#{force ? 'f' : ''}#{
+      target_directory ? '' : 'T'} #{[src,dest].flatten.join ' '}" if verbose
+    unless target_directory
+      destdirs = fu_split_path(File.realdirpath(dest))
+    end
+    fu_each_src_dest0(src, dest, target_directory) do |s,d|
+      if target_directory
+        destdirs = fu_split_path(File.realdirpath(File.dirname(d)))
+      # else d == dest
       end
-      destdirs = fu_split_path(File.realpath(destdirs))
       if fu_starting_path?(s)
         srcdirs = fu_split_path((File.realdirpath(s) rescue File.expand_path(s)))
         base = fu_relative_components_from(srcdirs, destdirs)
@@ -754,17 +754,9 @@ module FileUtils
         end
         s = File.join(*base, *srcdirs)
       end
-      fu_output_message "ln -s#{options} #{s} #{d}" if verbose
       next if noop
       remove_file d, true if force
       File.symlink s, d
-    end
-    case srcs.size
-    when 0
-    when 1
-      link[srcs[0], target_directory && File.directory?(dest)]
-    else
-      srcs.each(&link)
     end
   end
   module_function :ln_sr
@@ -2475,6 +2467,9 @@ module FileUtils
 
   def fu_each_src_dest0(src, dest, target_directory = true)   #:nodoc:
     if tmp = Array.try_convert(src)
+      unless target_directory or tmp.size <= 1
+        raise ArgumentError, "extra target #{tmp}"
+      end
       tmp.each do |s|
         s = File.path(s)
         yield s, (target_directory ? File.join(dest, File.basename(s)) : dest)
