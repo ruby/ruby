@@ -1301,7 +1301,6 @@ hash_ar_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
     if (error) return ST_STOP;
 
     int status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
-    /* TODO: rehash check? rb_raise(rb_eRuntimeError, "rehash occurred during iteration"); */
 
     return hash_iter_status_check(status);
 }
