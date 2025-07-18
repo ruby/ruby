@@ -1425,6 +1425,20 @@ mod tests {
     }
 
     #[test]
+    fn no_dead_mov_from_vreg() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let ret_val = asm.load(Opnd::mem(64, C_RET_OPND, 0));
+        asm.cret(ret_val);
+
+        asm.compile_with_num_regs(&mut cb, 1);
+        assert_disasm!(cb, "000040f8c0035fd6", "
+            0x0: ldur x0, [x0]
+            0x4: ret
+        ");
+    }
+
+    #[test]
     fn test_emit_add() {
         let (mut asm, mut cb) = setup_asm();
 
