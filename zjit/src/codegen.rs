@@ -890,13 +890,22 @@ fn gen_new_range(
 }
 
 /// Compile code that exits from JIT code with a return value
-fn gen_return(jit: &JITState, asm: &mut Assembler, val: lir::Opnd) -> Option<()> {
+fn gen_return(jit: &JITState, asm: &mut Assembler, mut val: lir::Opnd) -> Option<()> {
     // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
     asm_comment!(asm, "pop stack frame");
     let incr_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, incr_cfp);
     asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+
+    // Load any stack relative memory since we're about to destroy the current frame
+    const NATIVE_SP_REG_NO: u8 = {
+        let Opnd::Reg(reg) = NATIVE_STACK_PTR else { unreachable!(); };
+        reg.reg_no
+    };
+    if let Opnd::Mem(lir::Mem { base: lir::MemBase::Reg(NATIVE_SP_REG_NO), .. }) = val {
+        val = asm.load(val);
+    }
 
     // Restore the C stack pointer bumped for basic block arguments
     if jit.c_stack_bytes > 0 {
