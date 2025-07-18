@@ -3148,7 +3148,6 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_free_loaded_builtin_table();
 
             rb_free_shared_fiber_pool();
-            rb_free_static_symid_str();
             rb_free_transcoder_table();
             rb_free_vm_opt_tables();
             rb_free_warning();
