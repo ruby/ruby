@@ -1957,19 +1957,6 @@ eom
     assert_equal(/9/, eval('9.then { /#{it}/o }'))
   end
 
-  def test_it_with_splat_super_method
-    bug21256 = '[ruby-core:121592] [Bug #21256]'
-
-    a = Class.new do
-      define_method(:foo) { it }
-    end
-    b = Class.new(a) do
-      def foo(*args) = super
-    end
-
-    assert_equal(1, b.new.foo(1), bug21256)
-  end
-
   def test_value_expr_in_condition
     mesg = /void value expression/
     assert_syntax_error("tap {a = (true ? next : break)}", mesg)

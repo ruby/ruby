@@ -6777,17 +6777,6 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         body->param.flags.has_lead = true;
     }
 
-    if (scope_node->parameters && PM_NODE_TYPE_P(scope_node->parameters, PM_IT_PARAMETERS_NODE)) {
-        const uint8_t param_name[] = { 'i', 't' };
-        pm_constant_id_t constant_id = pm_constant_pool_find(&scope_node->parser->constant_pool, param_name, 2);
-        RUBY_ASSERT(constant_id && "parser should fill in `it` parameter");
-        pm_insert_local_index(constant_id, local_index, index_lookup_table, local_table_for_iseq, scope_node);
-
-        local_index++;
-        body->param.lead_num = 1;
-        body->param.flags.has_lead = true;
-    }
-
     //********END OF STEP 3**********
 
     //********STEP 4**********
