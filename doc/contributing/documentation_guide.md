@@ -61,7 +61,7 @@ Use your judgment about what the user needs to know.
 Use only US-ASCII-compatible characters in a C source file.
 (If you use other characters, the Ruby CI will gently let you know.)
 
-If want to put ASCII-incompatible characters into the documentation
+If you want to put ASCII-incompatible characters into the documentation
 for a C-coded class, module, or method, there are workarounds
 involving new files `doc/*.rdoc`:
 
@@ -74,7 +74,7 @@ involving new files `doc/*.rdoc`:
     class Foo; end
     ```
 
-- Similarly, for module `Bar` (defined in file `bar.c`,
+- Similarly, for module `Bar` (defined in file `bar.c`),
   create file `doc/bar.rdoc`, declare `module Bar; end`,
   and place the module documentation above that declaration:
 
@@ -284,7 +284,7 @@ Use a full URL-based link for:
 - A link in standard library documentation to documentation in a different
   standard library package.
 
-Doing so ensures that the link will valid even when the package documentation
+Doing so ensures that the link will be valid even when the package documentation
 is built independently (separately from the core documentation).
 
 The link should lead to a target in https://docs.ruby-lang.org/en/master/.
@@ -484,7 +484,7 @@ Return types:
 - If the method can return multiple types, use +object+.
 - If the method returns the receiver, use +self+.
 - If the method returns an object of the same class,
-  prefix `new_` if an only if the object is not  +self+;
+  prefix `new_` if and only if the object is not +self+;
   example: `new_array`.
 
 Aliases:
@@ -588,7 +588,7 @@ mention `Hash#fetch` as a related method, and `Hash#merge` might mention
 `Hash#merge!` as a related method.
 
 - Consider which methods may be related
-  to the current method, and if you think the reader would benefit it,
+  to the current method, and if you think the reader would benefit from it,
   at the end of the method documentation, add a line starting with
   "Related: " (e.g. "Related: #fetch.").
 - Don't list more than three related methods.
@@ -597,7 +597,7 @@ mention `Hash#fetch` as a related method, and `Hash#merge` might mention
 - Consider adding:
 
     - A phrase suggesting how the related method is similar to,
-      or different from,the current method.
+      or different from, the current method.
       See an example at Time#getutc.
     - Example code that illustrates the similarities and differences.
       See examples at Time#ctime, Time#inspect, Time#to_s.
