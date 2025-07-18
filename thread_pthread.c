@@ -13,6 +13,7 @@
 
 #include "internal/gc.h"
 #include "internal/sanitizers.h"
+#include "internal/thread.h"
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
@@ -2885,7 +2886,7 @@ static int
 timer_thread_set_timeout(rb_vm_t *vm)
 {
 #if 0
-    return 10; // ms
+    return THREAD_TIMER_INTERVAL_MSEC;
 #else
     int timeout = -1;
 
@@ -2901,7 +2902,7 @@ timer_thread_set_timeout(rb_vm_t *vm)
                            !ubf_threads_empty(),
                            (vm->ractor.sched.grq_cnt > 0));
 
-            timeout = 10; // ms
+            timeout = THREAD_TIMER_INTERVAL_MSEC;
             vm->ractor.sched.timeslice_wait_inf = false;
         }
         else {
@@ -2923,7 +2924,7 @@ timer_thread_set_timeout(rb_vm_t *vm)
                 RUBY_DEBUG_LOG("th:%u now:%lu rel:%lu", rb_th_serial(th), (unsigned long)now, (unsigned long)hrrel);
 
                 // TODO: overflow?
-                timeout = (int)((hrrel + RB_HRTIME_PER_MSEC - 1) / RB_HRTIME_PER_MSEC); // ms
+                timeout = (int)((hrrel + RB_HRTIME_PER_MSEC - 1) / RB_HRTIME_PER_MSEC);
             }
         }
         rb_native_mutex_unlock(&timer_th.waiting_lock);
