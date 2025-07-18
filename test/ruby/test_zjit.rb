@@ -1066,6 +1066,31 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  # ZJIT currently only generates a MethodRedefined patch point when the method
+  # is called on the top-level self.
+  def test_method_redefinition_with_top_self
+    assert_runs '["original", "redefined"]', %q{
+      def foo
+        "original"
+      end
+
+      def test = foo
+
+      test; test
+
+      result1 = test
+
+      # Redefine the method
+      def foo
+        "redefined"
+      end
+
+      result2 = test
+
+      [result1, result2]
+    }, call_threshold: 2
+  end
+
   def test_module_name_with_guard_passes
     assert_compiles '"Integer"', %q{
       def test(mod)
