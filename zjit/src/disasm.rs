@@ -44,7 +44,7 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
                 writeln!(&mut out, "  {BOLD_BEGIN}# {comment}{BOLD_END}").unwrap();
             }
         }
-        writeln!(&mut out, "  {insn}").unwrap();
+        writeln!(&mut out, "  {}", format!("{insn}").trim()).unwrap();
     }
 
     return out;
