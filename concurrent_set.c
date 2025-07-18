@@ -304,6 +304,14 @@ rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
             if (set->funcs->cmp(key, curr_key)) {
                 // We've found a match.
                 RB_GC_GUARD(set_obj);
+
+                if (inserting) {
+                    // We created key using set->funcs->create, but we didn't end
+                    // up inserting it into the set. Free it here to prevent memory
+                    // leaks.
+                    if (set->funcs->free) set->funcs->free(key);
+                }
+
                 return curr_key;
             }
 

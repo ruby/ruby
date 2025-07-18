@@ -315,10 +315,19 @@ sym_set_create(VALUE sym, void *data)
     }
 }
 
+static void
+sym_set_free(VALUE sym)
+{
+    if (sym_set_sym_static_p(sym)) {
+        xfree(sym_set_static_sym_untag(sym));
+    }
+}
+
 static const struct rb_concurrent_set_funcs sym_set_funcs = {
     .hash = sym_set_hash,
     .cmp = sym_set_cmp,
     .create = sym_set_create,
+    .free = sym_set_free,
 };
 
 static VALUE
