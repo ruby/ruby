@@ -898,6 +898,10 @@ fn gen_return(jit: &JITState, asm: &mut Assembler, val: lir::Opnd) -> Option<()>
     asm.mov(CFP, incr_cfp);
     asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
+    // Order here is important. Because we're about to tear down the frame,
+    // we need to load the return value, which might be part of the frame.
+    asm.load_into(C_RET_OPND, val);
+
     // Restore the C stack pointer bumped for basic block arguments
     if jit.c_stack_bytes > 0 {
         asm_comment!(asm, "restore C stack pointer");
@@ -908,7 +912,7 @@ fn gen_return(jit: &JITState, asm: &mut Assembler, val: lir::Opnd) -> Option<()>
     asm.frame_teardown();
 
     // Return from the function
-    asm.cret(val);
+    asm.cret(C_RET_OPND);
     Some(())
 }
 
