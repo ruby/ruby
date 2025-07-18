@@ -363,6 +363,7 @@ rb_concurrent_set_foreach_with_replace(VALUE set_obj, int (*callback)(VALUE *key
     struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
 
     for (unsigned int i = 0; i < set->capacity; i++) {
+        struct concurrent_set_entry *entry = &set->entries[i];
         VALUE key = set->entries[i].key;
 
         switch (key) {
@@ -373,7 +374,7 @@ rb_concurrent_set_foreach_with_replace(VALUE set_obj, int (*callback)(VALUE *key
             rb_bug("rb_concurrent_set_foreach_with_replace: moved entry");
             break;
           default: {
-            int ret = callback(&set->entries[i].key, data);
+            int ret = callback(&entry->key, data);
             switch (ret) {
               case ST_STOP:
                 return;
