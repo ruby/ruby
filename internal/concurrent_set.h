@@ -4,14 +4,11 @@
 #include "ruby/atomic.h"
 #include "ruby/ruby.h"
 
-typedef VALUE (*rb_concurrent_set_hash_func)(VALUE key);
-typedef bool (*rb_concurrent_set_cmp_func)(VALUE a, VALUE b);
-typedef VALUE (*rb_concurrent_set_create_func)(VALUE key, void *data);
-
 struct rb_concurrent_set_funcs {
-    rb_concurrent_set_hash_func hash;
-    rb_concurrent_set_cmp_func cmp;
-    rb_concurrent_set_create_func create;
+    VALUE (*hash)(VALUE key);
+    bool (*cmp)(VALUE a, VALUE b);
+    VALUE (*create)(VALUE key, void *data);
+    void (*free)(VALUE key);
 };
 
 VALUE rb_concurrent_set_new(const struct rb_concurrent_set_funcs *funcs, int capacity);

@@ -552,6 +552,7 @@ static const struct rb_concurrent_set_funcs fstring_concurrent_set_funcs = {
     .hash = fstring_concurrent_set_hash,
     .cmp = fstring_concurrent_set_cmp,
     .create = fstring_concurrent_set_create,
+    .free = NULL,
 };
 
 void
