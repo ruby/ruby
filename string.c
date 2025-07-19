@@ -5732,14 +5732,29 @@ rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive)
                 }
             }
         }
-#if 0
-        /* both edges are all digits */
-        if (ISDIGIT(*bp) && ISDIGIT(*ep) &&
+        /* both edges and value are all digits */
+        if (ISDIGIT(*bp) && ISDIGIT(*ep) && ISDIGIT(*vp) &&
             all_digits_p(bp, RSTRING_LEN(beg)) &&
-            all_digits_p(ep, RSTRING_LEN(end))) {
-            /* TODO */
+            all_digits_p(ep, RSTRING_LEN(end)) &&
+            all_digits_p(vp, RSTRING_LEN(val))) {
+            VALUE b = rb_str_to_inum(beg, 10, FALSE);
+            VALUE e = rb_str_to_inum(end, 10, FALSE);
+            VALUE v = rb_str_to_inum(val, 10, FALSE);
+
+            if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(v)) {
+                long bi = FIX2LONG(b);
+                long ei = FIX2LONG(e);
+                long vi = FIX2LONG(v);
+
+                if (bi <= vi && (RTEST(exclusive) ? vi < ei : vi <= ei))
+                    return Qtrue;
+                return Qfalse;
+            }
+            if (RTEST(rb_num_coerce_relop(b, v, idLE)) &&
+                RTEST(rb_num_coerce_relop(v, e, RTEST(exclusive) ? '<' : idLE)))
+                return Qtrue;
+            return Qfalse;
         }
-#endif
     }
     rb_str_upto_each(beg, end, RTEST(exclusive), include_range_i, (VALUE)&val);
 

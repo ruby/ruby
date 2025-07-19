@@ -1082,6 +1082,9 @@ class TestRange < Test::Unit::TestCase
     assert_operator(2.0..5.0, :cover?, 2.0...5.0)
     assert_operator('aa'..'zz', :cover?, 'aa'...'bb')
 
+    assert_operator('10'..'20', :cover?, '15')
+    assert_not_operator('10'...'20', :cover?, '20')
+
     assert_not_operator(2..5, :cover?, 1..5)
     assert_not_operator(2...6, :cover?, 1..5)
     assert_not_operator(2..5, :cover?, 1...6)
