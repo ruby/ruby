@@ -990,6 +990,7 @@ copy_tables(VALUE clone, VALUE orig)
         arg.klass = clone;
         rb_id_table_foreach(orig_tbl, clone_const_i, &arg);
         RCLASS_WRITE_CONST_TBL(clone, const_tbl, false);
+        rb_gc_writebarrier_remember(clone);
     }
 }
 
@@ -1931,6 +1932,11 @@ ensure_origin(VALUE klass)
         rb_class_set_super(origin, RCLASS_SUPER(klass));
         rb_class_set_super(klass, origin); // writes origin into RCLASS_SUPER(klass)
         RCLASS_WRITE_ORIGIN(klass, origin);
+
+        // RCLASS_WRITE_ORIGIN marks origin as an origin, so this is the first
+        // point that it sees M_TBL and may mark it
+        rb_gc_writebarrier_remember(origin);
+
         class_clear_method_table(klass);
         rb_id_table_foreach(RCLASS_M_TBL(origin), cache_clear_refined_method, (void *)klass);
         rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)klass);
