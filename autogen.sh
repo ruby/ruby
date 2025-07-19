@@ -21,6 +21,6 @@ symlink_flags() {
 }
 
 exec ${AUTORECONF:-autoreconf} \
-     $(symlink_flags "$@") \
+     $(symlink_flags) \
      "$@" \
      $(srcdir)
