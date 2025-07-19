@@ -29,7 +29,7 @@ src, dest = ARGV
 require 'fileutils'
 
 include FileUtils
-unless respond_to?(:ln_sr)
+unless respond_to?(:ln_sr, true)
   def ln_sr(src, dest, target_directory: true, force: nil, noop: nil, verbose: nil)
     cmd = "ln -s#{force ? 'f' : ''}#{target_directory ? '' : 'T'}" if verbose
     fu_each_src_dest0(src, dest, target_directory) do |s,d|
