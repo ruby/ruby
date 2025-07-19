@@ -1031,7 +1031,8 @@ class TestFileUtils < Test::Unit::TestCase
     assert_all_assertions_foreach(nil, *TARGETS) do |fname|
       lnfname = 'tmp/lnsdest'
       ln_sr fname, lnfname
-      assert FileTest.symlink?(lnfname), 'not symlink'
+      assert_file.symlink?(lnfname)
+      assert_file.identical?(lnfname, fname)
       assert_equal "../#{fname}", File.readlink(lnfname)
     ensure
       rm_f lnfname
@@ -1060,6 +1061,7 @@ class TestFileUtils < Test::Unit::TestCase
     ln_sr 'tmp/src/xxx', 'data'
     assert_file.symlink?('data/xxx')
     assert_equal 'ok', File.read('data/xxx')
+    assert_equal 'src/xxx', File.readlink('data/xxx')
   end
 
   def test_ln_sr_not_target_directory

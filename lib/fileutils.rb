@@ -732,19 +732,31 @@ module FileUtils
   #
   def ln_sr(src, dest, target_directory: true, force: nil, noop: nil, verbose: nil)
     cmd = "ln -s#{force ? 'f' : ''}#{target_directory ? '' : 'T'}" if verbose
-    unless target_directory
-      destdirs = fu_split_path(dest)
-    end
     fu_each_src_dest0(src, dest, target_directory) do |s,d|
       if target_directory
-        destdirs = fu_split_path(File.dirname(d))
-      # else d == dest
+        parent = File.dirname(d)
+        destdirs = fu_split_path(parent)
+        real_ddirs = fu_split_path(File.realpath(parent))
+      else
+        destdirs ||= fu_split_path(dest)
+        real_ddirs ||= fu_split_path(File.realpath(dest))
       end
       srcdirs = fu_split_path(s)
       i = fu_common_components(srcdirs, destdirs)
       n = destdirs.size - i
       n -= 1 unless target_directory
-      s = File.join(fu_clean_components(*Array.new(n, '..'), *srcdirs[i..-1]))
+      link1 = fu_clean_components(*Array.new([n, 0].max, '..'), *srcdirs[i..-1])
+      begin
+        real_sdirs = fu_split_path(File.realdirpath(s)) rescue nil
+      rescue
+      else
+        i = fu_common_components(real_sdirs, real_ddirs)
+        n = real_ddirs.size - i
+        n -= 1 unless target_directory
+        link2 = fu_clean_components(*Array.new([n, 0].max, '..'), *real_sdirs[i..-1])
+        link1 = link2 if link1.size > link2.size
+      end
+      s = File.join(link1)
       fu_output_message [cmd, s, d].flatten.join(' ') if verbose
       next if noop
       remove_file d, true if force
