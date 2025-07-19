@@ -7578,6 +7578,7 @@ gc.$(OBJEXT): $(top_srcdir)/internal/class.h
 gc.$(OBJEXT): $(top_srcdir)/internal/compile.h
 gc.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 gc.$(OBJEXT): $(top_srcdir)/internal/complex.h
+gc.$(OBJEXT): $(top_srcdir)/internal/concurrent_set.h
 gc.$(OBJEXT): $(top_srcdir)/internal/cont.h
 gc.$(OBJEXT): $(top_srcdir)/internal/error.h
 gc.$(OBJEXT): $(top_srcdir)/internal/eval.h
@@ -19064,6 +19065,7 @@ symbol.$(OBJEXT): $(top_srcdir)/internal/array.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/class.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+symbol.$(OBJEXT): $(top_srcdir)/internal/concurrent_set.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/error.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/gc.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/hash.h
