@@ -20,6 +20,7 @@ rb_imemo_name(enum imemo_type type)
         IMEMO_NAME(callcache);
         IMEMO_NAME(callinfo);
         IMEMO_NAME(constcache);
+        IMEMO_NAME(constentry);
         IMEMO_NAME(cref);
         IMEMO_NAME(env);
         IMEMO_NAME(ifunc);
@@ -231,6 +232,8 @@ rb_imemo_memsize(VALUE obj)
         break;
       case imemo_constcache:
         break;
+      case imemo_constentry:
+        break;
       case imemo_cref:
         break;
       case imemo_env:
@@ -398,6 +401,14 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
 
         break;
       }
+      case imemo_constentry: {
+        rb_const_entry_t *ce = (rb_const_entry_t *)obj;
+
+        rb_gc_mark_and_move(&ce->value);
+        rb_gc_mark_and_move(&ce->file);
+
+        break;
+      }
       case imemo_cref: {
         rb_cref_t *cref = (rb_cref_t *)obj;
 
@@ -520,21 +531,6 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
  * free
  * ========================================================================= */
 
-static enum rb_id_table_iterator_result
-free_const_entry_i(VALUE value, void *data)
-{
-    rb_const_entry_t *ce = (rb_const_entry_t *)value;
-    xfree(ce);
-    return ID_TABLE_CONTINUE;
-}
-
-void
-rb_free_const_table(struct rb_id_table *tbl)
-{
-    rb_id_table_foreach_values(tbl, free_const_entry_i, 0);
-    rb_id_table_free(tbl);
-}
-
 // alive: if false, target pointers can be freed already.
 static void
 vm_ccs_free(struct rb_class_cc_entries *ccs, int alive, VALUE klass)
@@ -626,6 +622,10 @@ rb_imemo_free(VALUE obj)
       }
       case imemo_constcache:
         RB_DEBUG_COUNTER_INC(obj_imemo_constcache);
+
+        break;
+      case imemo_constentry:
+        RB_DEBUG_COUNTER_INC(obj_imemo_constentry);
 
         break;
       case imemo_cref:
