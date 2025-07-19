@@ -739,7 +739,7 @@ module FileUtils
         real_ddirs = fu_split_path(File.realpath(parent))
       else
         destdirs ||= fu_split_path(dest)
-        real_ddirs ||= fu_split_path(File.realpath(dest))
+        real_ddirs ||= fu_split_path(File.realdirpath(dest))
       end
       srcdirs = fu_split_path(s)
       i = fu_common_components(srcdirs, destdirs)

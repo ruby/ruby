@@ -1080,7 +1080,11 @@ class TestFileUtils < Test::Unit::TestCase
       assert_raise(Errno::EEXIST, Errno::EACCES) {
         ln_sr fname, 'tmp', target_directory: false
       }
-      assert_file.not_exist? File.join('tmp/', File.basename(fname))
+      dest = File.join('tmp/', File.basename(fname))
+      assert_file.not_exist? dest
+      ln_sr fname, dest, target_directory: false
+      assert_file.symlink?(dest)
+      assert_equal("../#{fname}", File.readlink(dest))
     end
   end if have_symlink?
 
