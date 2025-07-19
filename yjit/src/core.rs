@@ -2091,11 +2091,9 @@ pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
 
                 // Only write when the VALUE moves, to be copy-on-write friendly.
                 if new_addr != object {
-                    for (byte_idx, &byte) in new_addr.as_u64().to_le_bytes().iter().enumerate() {
-                        let byte_code_ptr = value_code_ptr.add_bytes(byte_idx);
-                        cb.write_mem(byte_code_ptr, byte)
-                            .expect("patching existing code should be within bounds");
-                    }
+                    // SAFETY: Since we already set code memory writable before the compacting phase,
+                    // we can use raw memory accesses directly.
+                    unsafe { value_ptr.write_unaligned(new_addr); }
                 }
             }
         }
