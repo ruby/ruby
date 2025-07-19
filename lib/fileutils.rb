@@ -706,7 +706,7 @@ module FileUtils
   #
   def ln_s(src, dest, force: nil, relative: false, target_directory: true, noop: nil, verbose: nil)
     if relative
-      return ln_sr(src, dest, force: force, noop: noop, verbose: verbose)
+      return ln_sr(src, dest, force: force, target_directory: target_directory, noop: noop, verbose: verbose)
     end
     fu_output_message "ln -s#{force ? 'f' : ''}#{
       target_directory ? '' : 'T'} #{[src,dest].flatten.join ' '}" if verbose
