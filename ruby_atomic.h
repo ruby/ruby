@@ -73,6 +73,8 @@ rbimpl_atomic_##name##load_explicit(type *ptr, int memory_order) \
 
 /* Generate atomic load function with explicit memory ordering */
 DEFINE_ATOMIC_LOAD_EXPLICIT(, rb_atomic_t)
+DEFINE_ATOMIC_LOAD_EXPLICIT(value_, VALUE)
+DEFINE_ATOMIC_LOAD_EXPLICIT(ptr_, void *)
 
 #undef DEFINE_ATOMIC_LOAD_EXPLICIT
 #undef DEFINE_ATOMIC_LOAD_EXPLICIT_BODY
