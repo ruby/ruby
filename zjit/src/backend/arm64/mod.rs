@@ -11,12 +11,12 @@ use crate::cast::*;
 pub type Reg = A64Reg;
 
 // Callee-saved registers
-pub const _CFP: Opnd = Opnd::Reg(X19_REG);
-pub const _EC: Opnd = Opnd::Reg(X20_REG);
-pub const _SP: Opnd = Opnd::Reg(X21_REG);
+pub const CFP: Opnd = Opnd::Reg(X19_REG);
+pub const EC: Opnd = Opnd::Reg(X20_REG);
+pub const SP: Opnd = Opnd::Reg(X21_REG);
 
 // C argument registers on this platform
-pub const _C_ARG_OPNDS: [Opnd; 6] = [
+pub const C_ARG_OPNDS: [Opnd; 6] = [
     Opnd::Reg(X0_REG),
     Opnd::Reg(X1_REG),
     Opnd::Reg(X2_REG),
@@ -27,8 +27,8 @@ pub const _C_ARG_OPNDS: [Opnd; 6] = [
 
 // C return value register on this platform
 pub const C_RET_REG: Reg = X0_REG;
-pub const _C_RET_OPND: Opnd = Opnd::Reg(X0_REG);
-pub const _NATIVE_STACK_PTR: Opnd = Opnd::Reg(XZR_REG);
+pub const C_RET_OPND: Opnd = Opnd::Reg(X0_REG);
+pub const NATIVE_STACK_PTR: Opnd = Opnd::Reg(XZR_REG);
 
 // These constants define the way we work with Arm64's stack pointer. The stack
 // pointer always needs to be aligned to a 16-byte boundary.
