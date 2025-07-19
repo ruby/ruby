@@ -7,12 +7,12 @@ PWD=
 # configure.ac should be in the same place
 srcdir() {
   case "$0" in
-    */* ) dirname "$0" ;;
-    *   ) echo ""    ;;
+    */* ) dirname "$0" ;; # Called with path
+    *   ) echo ""    ;; # Otherwise
   esac
 }
 
-# If install only is explicitly requested, disbale symlink flags
+# If install-only is explicitly requested, disbale symlink flags
 symlink_flags() {
   case " $* " in
     *" -i "* | *" --install"* ) echo "" ;;
