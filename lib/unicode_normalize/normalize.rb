@@ -115,7 +115,7 @@ module UnicodeNormalize  # :nodoc:
       end
     end
 
-    result = start
+    result = start.dup
     until accents.empty?
       start = accents[0]
       last_class = CLASS_TABLE[start]-1
