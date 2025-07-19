@@ -53,22 +53,22 @@
 
 /* Platform-specific implementation (or fallback) */
 #if defined(HAVE_GCC_ATOMIC_BUILTINS)
-#define DEFINE_ATOMIC_LOAD_EXPLICIT_BODY(ptr, memory_order, type, name) \
+#define DEFINE_ATOMIC_LOAD_EXPLICIT_BODY(ptr, memory_order, type, type_prefix) \
     __atomic_load_n(ptr, memory_order)
 #elif defined(HAVE_STDATOMIC_H)
-#define DEFINE_ATOMIC_LOAD_EXPLICIT_BODY(ptr, memory_order, type, name) \
+#define DEFINE_ATOMIC_LOAD_EXPLICIT_BODY(ptr, memory_order, type, type_prefix) \
     atomic_load_explicit((_Atomic volatile type *)ptr, memory_order)
 #else
-#define DEFINE_ATOMIC_LOAD_EXPLICIT_BODY(ptr, memory_order, type, name) \
-    ((void)memory_order, rbimpl_atomic_##name##load(ptr))
+#define DEFINE_ATOMIC_LOAD_EXPLICIT_BODY(ptr, memory_order, type, type_prefix) \
+    ((void)memory_order, rbimpl_atomic_##type_prefix##load(ptr))
 #endif
 
 /* Single macro definition for load operations with explicit memory ordering */
-#define DEFINE_ATOMIC_LOAD_EXPLICIT(name, type) \
+#define DEFINE_ATOMIC_LOAD_EXPLICIT(type_prefix, type) \
 static inline type \
-rbimpl_atomic_##name##load_explicit(type *ptr, int memory_order) \
+rbimpl_atomic_##type_prefix##load_explicit(type *ptr, int memory_order) \
 { \
-    return DEFINE_ATOMIC_LOAD_EXPLICIT_BODY(ptr, memory_order, type, name); \
+    return DEFINE_ATOMIC_LOAD_EXPLICIT_BODY(ptr, memory_order, type, type_prefix); \
 }
 
 /* Generate atomic load function with explicit memory ordering */
@@ -79,7 +79,32 @@ DEFINE_ATOMIC_LOAD_EXPLICIT(ptr_, void *)
 #undef DEFINE_ATOMIC_LOAD_EXPLICIT
 #undef DEFINE_ATOMIC_LOAD_EXPLICIT_BODY
 
-/**********************************/
+/* Define the body for two-operand atomic operations based on platform */
+#if defined(HAVE_GCC_ATOMIC_BUILTINS)
+#define ATOMIC_OP_EXPLICIT_BODY(gcc_op, stdatomic_op, ptr, val, memory_order, type, type_prefix) \
+    __atomic_##gcc_op(ptr, val, memory_order)
+#elif defined(HAVE_STDATOMIC_H)
+#define ATOMIC_OP_EXPLICIT_BODY(gcc_op, stdatomic_op, ptr, val, memory_order, type, type_prefix) \
+    atomic_##stdatomic_op##_explicit((_Atomic volatile type *)ptr, val, memory_order)
+#else
+#define ATOMIC_OP_EXPLICIT_BODY(gcc_op, stdatomic_op, ptr, val, memory_order, type, type_prefix) \
+    ((void)memory_order, rbimpl_atomic_##type_prefix##stdatomic_op(ptr, val))
+#endif
+
+/* Generic macro for two-operand atomic operations with explicit memory ordering */
+#define DEFINE_ATOMIC_OP_EXPLICIT(gcc_op, stdatomic_op, type_prefix, type) \
+static inline void \
+rbimpl_atomic_##type_prefix##stdatomic_op##_explicit(volatile type *ptr, type val, int memory_order) \
+{ \
+    ATOMIC_OP_EXPLICIT_BODY(gcc_op, stdatomic_op, ptr, val, memory_order, type, type_prefix); \
+}
+
+/* Generate atomic operations with explicit memory ordering */
+DEFINE_ATOMIC_OP_EXPLICIT(store_n, store, , rb_atomic_t)
+DEFINE_ATOMIC_OP_EXPLICIT(add_fetch, add, , rb_atomic_t)
+
+#undef DEFINE_ATOMIC_OP_EXPLICIT
+#undef ATOMIC_OP_EXPLICIT_BODY
 
 #define ATOMIC_LOAD_RELAXED(var) rbimpl_atomic_load_explicit(&(var), RUBY_ATOMIC_RELAXED)
 
