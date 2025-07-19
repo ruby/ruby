@@ -93,6 +93,14 @@ DEFINE_ATOMIC_LOAD_EXPLICIT(ptr_, void *)
 
 /* Generic macro for two-operand atomic operations with explicit memory ordering */
 #define DEFINE_ATOMIC_OP_EXPLICIT(gcc_op, stdatomic_op, type_prefix, type) \
+static inline type \
+rbimpl_atomic_##type_prefix##stdatomic_op##_explicit(volatile type *ptr, type val, int memory_order) \
+{ \
+    return ATOMIC_OP_EXPLICIT_BODY(gcc_op, stdatomic_op, ptr, val, memory_order, type, type_prefix); \
+}
+
+/* Special case for store operations that don't return values */
+#define DEFINE_ATOMIC_STORE_EXPLICIT(gcc_op, stdatomic_op, type_prefix, type) \
 static inline void \
 rbimpl_atomic_##type_prefix##stdatomic_op##_explicit(volatile type *ptr, type val, int memory_order) \
 { \
@@ -100,11 +108,46 @@ rbimpl_atomic_##type_prefix##stdatomic_op##_explicit(volatile type *ptr, type va
 }
 
 /* Generate atomic operations with explicit memory ordering */
-DEFINE_ATOMIC_OP_EXPLICIT(store_n, store, , rb_atomic_t)
+DEFINE_ATOMIC_STORE_EXPLICIT(store_n, store, , rb_atomic_t)
 DEFINE_ATOMIC_OP_EXPLICIT(add_fetch, add, , rb_atomic_t)
+DEFINE_ATOMIC_STORE_EXPLICIT(store_n, store, value_, VALUE)
+DEFINE_ATOMIC_OP_EXPLICIT(sub_fetch, sub, , rb_atomic_t)
+DEFINE_ATOMIC_OP_EXPLICIT(fetch_add, fetch_add, , rb_atomic_t)
+DEFINE_ATOMIC_OP_EXPLICIT(exchange_n, exchange, value_, VALUE)
+
+/* Define the body for CAS operations based on platform */
+#if defined(HAVE_GCC_ATOMIC_BUILTINS)
+#define ATOMIC_CAS_EXPLICIT_BODY(ptr, oldval, newval, success_memorder, failure_memorder, type, type_prefix) \
+    type expected = oldval; \
+    __atomic_compare_exchange_n(ptr, &expected, newval, 0, success_memorder, failure_memorder); \
+    return expected
+#elif defined(HAVE_STDATOMIC_H)
+#define ATOMIC_CAS_EXPLICIT_BODY(ptr, oldval, newval, success_memorder, failure_memorder, type, type_prefix) \
+    type expected = oldval; \
+    atomic_compare_exchange_strong_explicit((_Atomic volatile type *)ptr, &expected, newval, success_memorder, failure_memorder); \
+    return expected
+#else
+#define ATOMIC_CAS_EXPLICIT_BODY(ptr, oldval, newval, success_memorder, failure_memorder, type, type_prefix) \
+    (void)success_memorder; (void)failure_memorder; \
+    return rbimpl_atomic_##type_prefix##cas(ptr, oldval, newval)
+#endif
+
+/* Generic macro for CAS operations with explicit memory ordering */
+#define DEFINE_ATOMIC_CAS_EXPLICIT(type_prefix, type) \
+static inline type \
+rbimpl_atomic_##type_prefix##cas_explicit(volatile type *ptr, type oldval, type newval, int success_memorder, int failure_memorder) \
+{ \
+    ATOMIC_CAS_EXPLICIT_BODY(ptr, oldval, newval, success_memorder, failure_memorder, type, type_prefix); \
+}
+
+/* Generate CAS operations with explicit memory ordering */
+DEFINE_ATOMIC_CAS_EXPLICIT(value_, VALUE)
 
 #undef DEFINE_ATOMIC_OP_EXPLICIT
+#undef DEFINE_ATOMIC_STORE_EXPLICIT
+#undef DEFINE_ATOMIC_CAS_EXPLICIT
 #undef ATOMIC_OP_EXPLICIT_BODY
+#undef ATOMIC_CAS_EXPLICIT_BODY
 
 #define ATOMIC_LOAD_RELAXED(var) rbimpl_atomic_load_explicit(&(var), RUBY_ATOMIC_RELAXED)
 
