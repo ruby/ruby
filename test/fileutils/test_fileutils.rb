@@ -1048,11 +1048,17 @@ class TestFileUtils < Test::Unit::TestCase
       end
     end
 
+    File.symlink 'data', 'link'
+    mkdir 'link/d1'
+    mkdir 'link/d2'
+    ln_sr 'link/d1/z', 'link/d2'
+    assert_equal '../d1/z', File.readlink('data/d2/z')
+
     mkdir 'data/src'
     File.write('data/src/xxx', 'ok')
     File.symlink '../data/src', 'tmp/src'
     ln_sr 'tmp/src/xxx', 'data'
-    assert File.symlink?('data/xxx')
+    assert_file.symlink?('data/xxx')
     assert_equal 'ok', File.read('data/xxx')
   end
 
