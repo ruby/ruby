@@ -115,23 +115,25 @@ module UnicodeNormalize  # :nodoc:
       end
     end
 
-    while accents.length > 1
-      nfd_accents = nfd_one accents
-      comp = nfd_accents[0]
-      last_class = CLASS_TABLE[comp] - 1
+    result = start
+    until accents.empty?
+      start = accents[0]
+      last_class = CLASS_TABLE[start]-1
       rest = ''
-      nfd_accents[1..-1].each_char do |accent|
+      accents[1..-1].each_char do |accent|
         accent_class = CLASS_TABLE[accent]
-        if last_class < accent_class && (composite = COMPOSITION_TABLE[comp + accent])
-          comp = composite
+        if last_class < accent_class && (composite = COMPOSITION_TABLE[start + accent])
+          start = composite
         else
           rest << accent
           last_class = accent_class
         end
       end
-      accents = comp + rest
+      result << start
+      accents = rest
     end
-    hangul_comp_one(start + accents)
+
+    hangul_comp_one(result)
   end
 
   def self.normalize(string, form = :nfc)
