@@ -160,7 +160,7 @@ typedef unsigned int rb_atomic_t;
  * @return  void
  * @post    `var` holds `val`.
  */
-#define RUBY_ATOMIC_SET(var, val) rbimpl_atomic_set(&(var), (val))
+#define RUBY_ATOMIC_SET(var, val) rbimpl_atomic_store(&(var), (val))
 
 /**
  * Identical to #RUBY_ATOMIC_FETCH_ADD, except for the return type.
@@ -327,7 +327,7 @@ typedef unsigned int rb_atomic_t;
 * @post    `var` holds `val`.
 */
 #define RUBY_ATOMIC_PTR_SET(var, val) \
-   rbimpl_atomic_ptr_set((volatile void **)&(var), (val))
+   rbimpl_atomic_ptr_store((volatile void **)&(var), (val))
 
 /**
  * Identical to #RUBY_ATOMIC_CAS, except it expects its arguments are `void*`.
@@ -354,7 +354,7 @@ typedef unsigned int rb_atomic_t;
  * @post    `var` holds `val`.
  */
 #define RUBY_ATOMIC_VALUE_SET(var, val) \
-    rbimpl_atomic_value_set(&(var), (val))
+    rbimpl_atomic_value_store(&(var), (val))
 
 /**
  * Identical  to #RUBY_ATOMIC_EXCHANGE,  except  it expects  its arguments  are
@@ -859,7 +859,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_size_set(volatile size_t *ptr, size_t val)
+rbimpl_atomic_size_store(volatile size_t *ptr, size_t val)
 {
 #if 0
 
@@ -904,13 +904,13 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_ptr_set(volatile void **ptr, void *val)
+rbimpl_atomic_ptr_store(volatile void **ptr, void *val)
 {
     RBIMPL_STATIC_ASSERT(sizeof_value, sizeof *ptr == sizeof(size_t));
 
     const size_t sval = RBIMPL_CAST((size_t)val);
     volatile size_t *const sptr = RBIMPL_CAST((volatile size_t *)ptr);
-    rbimpl_atomic_size_set(sptr, sval);
+    rbimpl_atomic_size_store(sptr, sval);
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
@@ -931,13 +931,13 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_value_set(volatile VALUE *ptr, VALUE val)
+rbimpl_atomic_value_store(volatile VALUE *ptr, VALUE val)
 {
     RBIMPL_STATIC_ASSERT(sizeof_value, sizeof *ptr == sizeof(size_t));
 
     const size_t sval = RBIMPL_CAST((size_t)val);
     volatile size_t *const sptr = RBIMPL_CAST((volatile size_t *)ptr);
-    rbimpl_atomic_size_set(sptr, sval);
+    rbimpl_atomic_size_store(sptr, sval);
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
@@ -959,7 +959,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_set(volatile rb_atomic_t *ptr, rb_atomic_t val)
+rbimpl_atomic_store(volatile rb_atomic_t *ptr, rb_atomic_t val)
 {
 #if 0
 
