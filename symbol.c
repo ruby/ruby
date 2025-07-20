@@ -22,6 +22,7 @@
 #include "symbol.h"
 #include "vm_sync.h"
 #include "builtin.h"
+#include "ruby/internal/attr/nonstring.h"
 
 #if defined(USE_SYMBOL_GC) && !(USE_SYMBOL_GC+0)
 # undef USE_SYMBOL_GC
