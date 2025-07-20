@@ -40,6 +40,7 @@
 #include "ruby/util.h"
 #include "builtin.h"
 #include "shape.h"
+#include "ruby/internal/attr/nonstring.h"
 
 #define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
@@ -1541,7 +1542,7 @@ name_equal(const char *name, size_t nlen, const char *p, long l)
 static int
 sym2encidx(VALUE sym, VALUE val)
 {
-    static const char name_encoding[8] = "encoding";
+    RBIMPL_ATTR_NONSTRING() static const char name_encoding[8] = "encoding";
     const char *p;
     long l;
     if (rb_enc_get_index(sym) != ENCINDEX_US_ASCII) return -1;
