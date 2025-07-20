@@ -290,8 +290,8 @@ extern VALUE rb_eResolution;
 #ifdef SOCKS
 extern VALUE rb_cSOCKSSocket;
 #  ifndef SOCKS5
-void SOCKSinit();
-int Rconnect();
+void SOCKSinit(char *);
+int Rconnect(int, const struct sockaddr *, socklen_t);
 #  endif
 #endif
 
