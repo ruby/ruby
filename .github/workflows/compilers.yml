@@ -75,6 +75,8 @@ jobs:
         env:
           - {}
         entry:
+          - { name: gcc-15,    env: { default_cc: gcc-15 } }
+          - { name: gcc-14,    env: { default_cc: gcc-14 } }
           - { name: gcc-13,    env: { default_cc: gcc-13 } }
           - { name: gcc-12,    env: { default_cc: gcc-12 } }
           - { name: gcc-11,    env: { default_cc: gcc-11 } }
