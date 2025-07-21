@@ -16459,7 +16459,14 @@ parse_variable(pm_parser_t *parser) {
             pm_node_list_append(&current_scope->implicit_parameters, node);
 
             return node;
-        } else if ((parser->version >= PM_OPTIONS_VERSION_CRUBY_3_4) && pm_token_is_it(parser->previous.start, parser->previous.end)) {
+        } else if ((parser->version != PM_OPTIONS_VERSION_CRUBY_3_3) && pm_token_is_it(parser->previous.start, parser->previous.end)) {
+            if (match1(parser, PM_TOKEN_EQUAL)) {
+                pm_constant_id_t name_id = pm_parser_local_add_location(parser, parser->previous.start, parser->previous.end, 0);
+                pm_node_t *node = (pm_node_t *) pm_local_variable_read_node_create_constant_id(parser, &parser->previous, name_id, 0, false);
+
+                return node;
+            }
+
             pm_node_t *node = (pm_node_t *) pm_it_local_variable_read_node_create(parser, &parser->previous);
             pm_node_list_append(&current_scope->implicit_parameters, node);
 
