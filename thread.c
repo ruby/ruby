@@ -78,6 +78,7 @@
 #include "internal/class.h"
 #include "internal/cont.h"
 #include "internal/error.h"
+#include "internal/eval.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/io.h"
@@ -2710,18 +2711,11 @@ rb_threadptr_ready(rb_thread_t *th)
 static VALUE
 rb_threadptr_raise(rb_thread_t *target_th, int argc, VALUE *argv)
 {
-    VALUE exc;
-
     if (rb_threadptr_dead(target_th)) {
         return Qnil;
     }
 
-    if (argc == 0) {
-        exc = rb_exc_new(rb_eRuntimeError, 0, 0);
-    }
-    else {
-        exc = rb_make_exception(argc, argv);
-    }
+    VALUE exception = rb_exception_setup(argc, argv);
 
     /* making an exception object can switch thread,
        so we need to check thread deadness again */
@@ -2729,9 +2723,9 @@ rb_threadptr_raise(rb_thread_t *target_th, int argc, VALUE *argv)
         return Qnil;
     }
 
-    rb_ec_setup_exception(GET_EC(), exc, Qundef);
-    rb_threadptr_pending_interrupt_enque(target_th, exc);
+    rb_threadptr_pending_interrupt_enque(target_th, exception);
     rb_threadptr_interrupt(target_th);
+
     return Qnil;
 }
 

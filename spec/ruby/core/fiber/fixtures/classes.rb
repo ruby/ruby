@@ -1,10 +1,10 @@
 module FiberSpecs
 
   class NewFiberToRaise
-    def self.raise(*args)
+    def self.raise(*args, **kwargs)
       fiber = Fiber.new { Fiber.yield }
       fiber.resume
-      fiber.raise(*args)
+      fiber.raise(*args, **kwargs)
     end
   end
 
