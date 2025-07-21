@@ -460,8 +460,7 @@
 #
 # _Substitution_
 #
-# - #dump: Returns a copy of +self+ with all non-printing characters replaced by \xHH notation
-#   and all special characters escaped.
+# - #dump: Returns a printable version of +self+, enclosed in double-quotes.
 # - #undump: Returns a copy of +self+ with all <tt>\xNN</tt> notations replaced by <tt>\uNNNN</tt> notations
 #   and all escaped characters unescaped.
 # - #sub: Returns a copy of +self+ with the first substring matching a given pattern
