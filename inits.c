@@ -52,6 +52,7 @@ rb_call_inits(void)
     CALL(Time);
     CALL(Random);
     CALL(load);
+    CALL(Namespace);
     CALL(Proc);
     CALL(Binding);
     CALL(Math);
@@ -78,7 +79,6 @@ rb_call_inits(void)
     CALL(Prism);
     CALL(unicode_version);
     CALL(Set);
-    CALL(Namespace);
 
     // enable builtin loading
     CALL(builtin);
