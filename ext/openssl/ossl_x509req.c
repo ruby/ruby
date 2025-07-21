@@ -289,7 +289,7 @@ ossl_x509req_get_public_key(VALUE self)
 	ossl_raise(eX509ReqError, NULL);
     }
 
-    return ossl_pkey_new(pkey); /* NO DUP - OK */
+    return ossl_pkey_wrap(pkey);
 }
 
 static VALUE
