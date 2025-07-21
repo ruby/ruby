@@ -338,6 +338,10 @@ class TracePoint
     Primitive.tracepoint_attr_callee_id
   end
 
+  def ivar_name
+    Primitive.tracepoint_attr_ivar_name
+  end
+
   # Returns the class or module of the method being called.
   #
   #     class C; def foo; end; end

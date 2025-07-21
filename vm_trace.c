@@ -657,6 +657,7 @@ get_event_name(rb_event_flag_t event)
       case RUBY_EVENT_C_CALL:	return "c-call";
       case RUBY_EVENT_C_RETURN:	return "c-return";
       case RUBY_EVENT_RAISE:	return "raise";
+      case RUBY_EVENT_IVAR_SET: return "ivar_set";
       default:
         return "unknown";
     }
@@ -684,6 +685,7 @@ get_event_id(rb_event_flag_t event)
         C(fiber_switch, FIBER_SWITCH);
         C(script_compiled, SCRIPT_COMPILED);
         C(rescue, RESCUE);
+        C(ivar_set, IVAR_SET);
 #undef C
       default:
         return 0;
@@ -825,6 +827,7 @@ symbol2event_flag(VALUE v)
     C(fiber_switch, FIBER_SWITCH);
     C(script_compiled, SCRIPT_COMPILED);
     C(rescue, RESCUE);
+    C(ivar_set, IVAR_SET);
 
     /* joke */
     C(a_call, A_CALL);
@@ -943,6 +946,7 @@ rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
         }
         break;
       }
+      case RUBY_EVENT_IVAR_SET:
       case RUBY_EVENT_RAISE:
       case RUBY_EVENT_LINE:
       case RUBY_EVENT_CLASS:
@@ -951,6 +955,15 @@ rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
       case RUBY_EVENT_RESCUE:
         rb_raise(rb_eRuntimeError, "not supported by this event");
         break;
+    }
+    return Qnil;
+}
+
+VALUE rb_tracearg_ivar_name(rb_trace_arg_t *trace_arg)
+{
+    if (trace_arg->event == RUBY_EVENT_IVAR_SET) {
+        VALUE pair = trace_arg->data;
+        return RARRAY_AREF(pair, 0);
     }
     return Qnil;
 }
@@ -1006,6 +1019,10 @@ rb_tracearg_return_value(rb_trace_arg_t *trace_arg)
 {
     if (trace_arg->event & (RUBY_EVENT_RETURN | RUBY_EVENT_C_RETURN | RUBY_EVENT_B_RETURN)) {
         /* ok */
+    }
+    else if (trace_arg->event == RUBY_EVENT_IVAR_SET) {
+        VALUE pair = trace_arg->data;
+        return RARRAY_AREF(pair, 1);
     }
     else {
         rb_raise(rb_eRuntimeError, "not supported by this event");
@@ -1118,6 +1135,12 @@ static VALUE
 tracepoint_attr_parameters(rb_execution_context_t *ec, VALUE tpval)
 {
     return rb_tracearg_parameters(get_trace_arg());
+}
+
+static VALUE
+tracepoint_attr_ivar_name(rb_execution_context_t *ec, VALUE tpval)
+{
+    return rb_tracearg_ivar_name(get_trace_arg());
 }
 
 static VALUE
