@@ -706,7 +706,7 @@ module FileUtils
   #
   def ln_s(src, dest, force: nil, relative: false, target_directory: true, noop: nil, verbose: nil)
     if relative
-      return ln_sr(src, dest, force: force, noop: noop, verbose: verbose)
+      return ln_sr(src, dest, force: force, target_directory: target_directory, noop: noop, verbose: verbose)
     end
     fu_output_message "ln -s#{force ? 'f' : ''}#{
       target_directory ? '' : 'T'} #{[src,dest].flatten.join ' '}" if verbose
@@ -731,30 +731,34 @@ module FileUtils
   # Like FileUtils.ln_s, but create links relative to +dest+.
   #
   def ln_sr(src, dest, target_directory: true, force: nil, noop: nil, verbose: nil)
-    fu_output_message "ln -sr#{force ? 'f' : ''}#{
-      target_directory ? '' : 'T'} #{[src,dest].flatten.join ' '}" if verbose
-    return if noop
-    unless target_directory
-      destdirs = fu_split_path(File.realdirpath(dest))
-    end
+    cmd = "ln -s#{force ? 'f' : ''}#{target_directory ? '' : 'T'}" if verbose
     fu_each_src_dest0(src, dest, target_directory) do |s,d|
       if target_directory
-        destdirs = fu_split_path(File.realdirpath(File.dirname(d)))
-      # else d == dest
-      end
-      if fu_starting_path?(s)
-        srcdirs = fu_split_path((File.realdirpath(s) rescue File.expand_path(s)))
-        base = fu_relative_components_from(srcdirs, destdirs)
-        s = File.join(*base)
+        parent = File.dirname(d)
+        destdirs = fu_split_path(parent)
+        real_ddirs = fu_split_path(File.realpath(parent))
       else
-        srcdirs = fu_clean_components(*fu_split_path(s))
-        base = fu_relative_components_from(fu_split_path(Dir.pwd), destdirs)
-        while srcdirs.first&. == ".." and base.last&.!=("..") and !fu_starting_path?(base.last)
-          srcdirs.shift
-          base.pop
-        end
-        s = File.join(*base, *srcdirs)
+        destdirs ||= fu_split_path(dest)
+        real_ddirs ||= fu_split_path(File.realdirpath(dest))
       end
+      srcdirs = fu_split_path(s)
+      i = fu_common_components(srcdirs, destdirs)
+      n = destdirs.size - i
+      n -= 1 unless target_directory
+      link1 = fu_clean_components(*Array.new([n, 0].max, '..'), *srcdirs[i..-1])
+      begin
+        real_sdirs = fu_split_path(File.realdirpath(s)) rescue nil
+      rescue
+      else
+        i = fu_common_components(real_sdirs, real_ddirs)
+        n = real_ddirs.size - i
+        n -= 1 unless target_directory
+        link2 = fu_clean_components(*Array.new([n, 0].max, '..'), *real_sdirs[i..-1])
+        link1 = link2 if link1.size > link2.size
+      end
+      s = File.join(link1)
+      fu_output_message [cmd, s, d].flatten.join(' ') if verbose
+      next if noop
       remove_file d, true if force
       File.symlink s, d
     end
@@ -1483,7 +1487,8 @@ module FileUtils
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
   def remove_dir(path, force = false)
-    remove_entry path, force   # FIXME?? check if it is a directory
+    raise Errno::ENOTDIR, path unless force or File.directory?(path)
+    remove_entry path, force
   end
   module_function :remove_dir
 
@@ -2468,6 +2473,7 @@ module FileUtils
   def fu_each_src_dest0(src, dest, target_directory = true)   #:nodoc:
     if tmp = Array.try_convert(src)
       unless target_directory or tmp.size <= 1
+        tmp = tmp.map {|f| File.path(f)} # A workaround for RBS
         raise ArgumentError, "extra target #{tmp}"
       end
       tmp.each do |s|
@@ -2504,7 +2510,11 @@ module FileUtils
     path = File.path(path)
     list = []
     until (parent, base = File.split(path); parent == path or parent == ".")
-      list << base
+      if base != '..' and list.last == '..' and !(fu_have_symlink? && File.symlink?(path))
+        list.pop
+      else
+        list << base
+      end
       path = parent
     end
     list << path
@@ -2512,14 +2522,14 @@ module FileUtils
   end
   private_module_function :fu_split_path
 
-  def fu_relative_components_from(target, base) #:nodoc:
+  def fu_common_components(target, base) #:nodoc:
     i = 0
     while target[i]&.== base[i]
       i += 1
     end
-    Array.new(base.size-i, '..').concat(target[i..-1])
+    i
   end
-  private_module_function :fu_relative_components_from
+  private_module_function :fu_common_components
 
   def fu_clean_components(*comp) #:nodoc:
     comp.shift while comp.first == "."
@@ -2529,7 +2539,7 @@ module FileUtils
     while c = comp.shift
       if c == ".." and clean.last != ".." and !(fu_have_symlink? && File.symlink?(path))
         clean.pop
-        path.chomp!(%r((?<=\A|/)[^/]+/\z), "")
+        path.sub!(%r((?<=\A|/)[^/]+/\z), "")
       else
         clean << c
         path << c << "/"
