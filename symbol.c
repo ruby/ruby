@@ -166,11 +166,9 @@ sym_set_cmp(VALUE a, VALUE b)
     return rb_str_hash_cmp(sym_set_sym_get_str(a), sym_set_sym_get_str(b)) == false;
 }
 
-
 static int
 sym_check_asciionly(VALUE str, bool fake_str)
 {
-    if (!rb_enc_asciicompat(rb_enc_get(str))) return FALSE;
     switch (rb_enc_str_coderange(str)) {
       case ENC_CODERANGE_BROKEN:
         if (fake_str) {
@@ -187,19 +185,12 @@ sym_check_asciionly(VALUE str, bool fake_str)
 static VALUE
 dup_string_for_create(VALUE str)
 {
-    rb_encoding *enc = rb_enc_get(str);
+    int encidx = ENCODING_GET(str);
 
-    str = rb_enc_str_new(RSTRING_PTR(str), RSTRING_LEN(str), enc);
-
-    rb_encoding *ascii = rb_usascii_encoding();
-    if (enc != ascii && sym_check_asciionly(str, false)) {
-        rb_enc_associate(str, ascii);
+    if (encidx != rb_usascii_encindex() && sym_check_asciionly(str, true)) {
+        return rb_enc_interned_str(RSTRING_PTR(str), RSTRING_LEN(str), rb_usascii_encoding());
     }
-    OBJ_FREEZE(str);
-
-    str = rb_fstring(str);
-
-    return str;
+    return rb_bare_fstring(str);
 }
 
 static int
