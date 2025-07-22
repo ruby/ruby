@@ -537,7 +537,7 @@ MESSAGE_END = ) do @echo.%~I)
 ECHO_BEGIN = @echo.
 ECHO_END =
 
-all: $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(srcdir)/common.mk
+all: $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(srcdir)/common.mk $(srcdir)/depend
 prog: config
 
 ruby: $(PROGRAM)
@@ -569,6 +569,7 @@ ACTIONS_ENDGROUP = @::
 ABI_VERSION_HDR = $(hdrdir)/ruby/internal/abi.h
 
 !include $(srcdir)/common.mk
+!include $(srcdir)/depend
 
 !ifdef SCRIPTPROGRAMS
 !else if [echo>scriptbin.mk SCRIPTPROGRAMS = \]
