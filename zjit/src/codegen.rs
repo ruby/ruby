@@ -1,5 +1,6 @@
 use std::cell::Cell;
 use std::rc::Rc;
+use std::ffi::{c_int};
 
 use crate::asm::Label;
 use crate::backend::current::{Reg, ALLOC_REGS};
@@ -446,8 +447,20 @@ fn gen_getlocal_with_ep(asm: &mut Assembler, local_ep_offset: u32, level: u32) -
 /// can't optimize the level=0 case using the SP register.
 fn gen_setlocal_with_ep(asm: &mut Assembler, val: Opnd, local_ep_offset: u32, level: u32) -> Option<()> {
     let ep = gen_get_ep(asm, level);
-    let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).ok()?);
-    asm.mov(Opnd::mem(64, ep, offset), val);
+    match val {
+        // If we're writing a constant, non-heap VALUE, do a raw memory write without
+        // running write barrier.
+        lir::Opnd::Value(const_val) if const_val.special_const_p() => {
+            let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).ok()?);
+            asm.mov(Opnd::mem(64, ep, offset), val);
+        }
+        // We're potentially writing a reference to an IMEMO/env object,
+        // so take care of the write barrier with a function.
+        _ => {
+            let local_index = c_int::try_from(local_ep_offset).ok().and_then(|idx| idx.checked_mul(-1))?;
+            asm_ccall!(asm, rb_vm_env_write, ep, local_index.into(), val);
+        }
+    }
     Some(())
 }
 
