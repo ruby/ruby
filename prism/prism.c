@@ -5279,6 +5279,10 @@ pm_interpolated_string_node_append(pm_interpolated_string_node_t *node, pm_node_
 
     switch (PM_NODE_TYPE(part)) {
         case PM_STRING_NODE:
+            // If inner string is not frozen, clear flags for this string
+            if (!PM_NODE_FLAG_P(part, PM_STRING_FLAGS_FROZEN)) {
+                CLEAR_FLAGS(node);
+            }
             part->flags = (pm_node_flags_t) ((part->flags | PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN) & ~PM_STRING_FLAGS_MUTABLE);
             break;
         case PM_INTERPOLATED_STRING_NODE:
