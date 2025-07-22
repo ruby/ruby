@@ -370,7 +370,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SetGlobal { id, val, state } => return gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state)),
         Insn::GetGlobal { id, state: _ } => gen_getglobal(asm, *id),
         &Insn::GetLocal { ep_offset, level } => gen_getlocal_with_ep(asm, ep_offset, level)?,
-        Insn::SetLocal { val, ep_offset, level } => return gen_setlocal_with_ep(asm, opnd!(val), *ep_offset, *level),
+        &Insn::SetLocal { val, ep_offset, level } => return gen_setlocal_with_ep(asm, jit, function, val, ep_offset, level),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, *ic, &function.frame_state(*state))?,
         Insn::SetIvar { self_val, id, val, state: _ } => return gen_setivar(asm, opnd!(self_val), *id, opnd!(val)),
         Insn::SideExit { state, reason } => return gen_side_exit(jit, asm, reason, &function.frame_state(*state)),
@@ -507,21 +507,19 @@ fn gen_getlocal_with_ep(asm: &mut Assembler, local_ep_offset: u32, level: u32) -
 /// Set a local variable from a higher scope or the heap. `local_ep_offset` is in number of VALUEs.
 /// We generate this instruction with level=0 only when the local variable is on the heap, so we
 /// can't optimize the level=0 case using the SP register.
-fn gen_setlocal_with_ep(asm: &mut Assembler, val: Opnd, local_ep_offset: u32, level: u32) -> Option<()> {
+fn gen_setlocal_with_ep(asm: &mut Assembler, jit: &JITState, function: &Function, val: InsnId, local_ep_offset: u32, level: u32) -> Option<()> {
     let ep = gen_get_ep(asm, level);
-    match val {
-        // If we're writing a constant, non-heap VALUE, do a raw memory write without
-        // running write barrier.
-        lir::Opnd::Value(const_val) if const_val.special_const_p() => {
-            let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).ok()?);
-            asm.mov(Opnd::mem(64, ep, offset), val);
-        }
+
+    // When we've proved that we're writing an immediate,
+    // we can skip the write barrier.
+    if function.type_of(val).is_immediate() {
+        let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).ok()?);
+        asm.mov(Opnd::mem(64, ep, offset), jit.get_opnd(val)?);
+    } else {
         // We're potentially writing a reference to an IMEMO/env object,
         // so take care of the write barrier with a function.
-        _ => {
-            let local_index = c_int::try_from(local_ep_offset).ok().and_then(|idx| idx.checked_mul(-1))?;
-            asm_ccall!(asm, rb_vm_env_write, ep, local_index.into(), val);
-        }
+        let local_index = c_int::try_from(local_ep_offset).ok().and_then(|idx| idx.checked_mul(-1))?;
+        asm_ccall!(asm, rb_vm_env_write, ep, local_index.into(), jit.get_opnd(val)?);
     }
     Some(())
 }

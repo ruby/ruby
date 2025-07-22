@@ -1264,7 +1264,7 @@ impl Function {
         self.union_find.borrow_mut().make_equal_to(insn, replacement);
     }
 
-    fn type_of(&self, insn: InsnId) -> Type {
+    pub fn type_of(&self, insn: InsnId) -> Type {
         assert!(self.insns[insn.0].has_output());
         self.insn_types[self.union_find.borrow_mut().find(insn).0]
     }
