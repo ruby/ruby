@@ -5,22 +5,18 @@ PWD=
 
 # Figure out the source directory for this script
 # configure.ac should be in the same place
-srcdir() {
-  case "$0" in
-    */* ) dirname "$0" ;; # Called with path
-    *   ) echo ""    ;; # Otherwise
-  esac
-}
+case "$0" in
+    */* )  srcdir=`dirname "$0"` ;; # Called with path
+    *   )  srcdir="";; # Otherwise
+esac
 
 # If install-only is explicitly requested, disbale symlink flags
-symlink_flags() {
-  case " $* " in
-    *" -i "* | *" --install"* ) echo "" ;;
-    *                         ) echo "--install --symlink" ;;
-  esac
-}
+case " $* " in
+    *" -i "* | *" --install"* ) symlink_flags="" ;;
+    *                         ) symlink_flags="--install --symlink" ;;
+esac
 
 exec ${AUTORECONF:-autoreconf} \
-     $(symlink_flags "$@") \
+     $symlink_flags \
      "$@" \
-     $(srcdir)
+     $srcdir
