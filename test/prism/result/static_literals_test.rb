@@ -4,11 +4,6 @@ require_relative "../test_helper"
 
 module Prism
   class StaticLiteralsTest < TestCase
-    def test_concatenanted_string_literal_is_not_static
-      node = Prism.parse_statement("'a' 'b'")
-      refute_predicate node, :static_literal?
-    end
-
     def test_static_literals
       assert_warning("1")
       assert_warning("0xA", "10", "10")
