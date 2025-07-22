@@ -313,7 +313,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     // Convert InsnId to lir::Opnd
     macro_rules! opnd {
         ($insn_id:ident) => {
-            jit.get_opnd(*$insn_id)?
+            jit.get_opnd($insn_id.clone())?
         };
     }
 
