@@ -16,7 +16,7 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     # This test is slow
     dh = OpenSSL::PKey::DH.new(NEW_KEYLEN)
     assert_key(dh)
-  end if ENV["OSSL_TEST_ALL"]
+  end if ENV["OSSL_TEST_ALL"] == "1"
 
   def test_new_break
     unless openssl? && OpenSSL.fips_mode

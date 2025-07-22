@@ -298,6 +298,13 @@ module Gem
     spec = find_and_activate_spec_for_exe name, exec_name, requirements
 
     if spec.name == "bundler"
+      # Old versions of Bundler need a workaround to support nested `bundle
+      # exec` invocations by overriding `Gem.activate_bin_path`. However,
+      # RubyGems now uses this new `Gem.activate_and_load_bin_path` helper in
+      # binstubs, which is of course not overridden in Bundler since it didn't
+      # exist at the time. So, include the override here to workaround that.
+      load ENV["BUNDLE_BIN_PATH"] if ENV["BUNDLE_BIN_PATH"] && spec.version <= "2.5.22"
+
       # Make sure there's no version of Bundler in `$LOAD_PATH` that's different
       # from the version we just activated. If that was the case (it happens
       # when testing Bundler from ruby/ruby), we would load Bundler extensions

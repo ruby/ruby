@@ -61,6 +61,14 @@ rb_concurrent_set_new(const struct rb_concurrent_set_funcs *funcs, int capacity)
     return obj;
 }
 
+rb_atomic_t
+rb_concurrent_set_size(VALUE set_obj)
+{
+    struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
+
+    return RUBY_ATOMIC_LOAD(set->size);
+}
+
 struct concurrent_set_probe {
     int idx;
     int d;
@@ -119,7 +127,7 @@ concurrent_set_try_resize_without_locking(VALUE old_set_obj, VALUE *set_obj_ptr)
         RUBY_ASSERT(key != CONCURRENT_SET_MOVED);
 
         if (key < CONCURRENT_SET_SPECIAL_VALUE_COUNT) continue;
-        if (rb_objspace_garbage_object_p(key)) continue;
+        if (!RB_SPECIAL_CONST_P(key) && rb_objspace_garbage_object_p(key)) continue;
 
         VALUE hash = RUBY_ATOMIC_VALUE_LOAD(entry->hash);
         if (hash == 0) {
@@ -168,20 +176,89 @@ concurrent_set_try_resize(VALUE old_set_obj, VALUE *set_obj_ptr)
 }
 
 VALUE
-rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
+rb_concurrent_set_find(VALUE *set_obj_ptr, VALUE key)
 {
     RUBY_ASSERT(key >= CONCURRENT_SET_SPECIAL_VALUE_COUNT);
 
-    bool inserting = false;
     VALUE set_obj;
+    VALUE hash = 0;
 
   retry:
     set_obj = RUBY_ATOMIC_VALUE_LOAD(*set_obj_ptr);
     RUBY_ASSERT(set_obj);
     struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
 
+    if (hash == 0) {
+        // We don't need to recompute the hash on every retry because it should
+        // never change.
+        hash = set->funcs->hash(key);
+    }
+    RUBY_ASSERT(hash == set->funcs->hash(key));
+
     struct concurrent_set_probe probe;
-    VALUE hash = set->funcs->hash(key);
+    int idx = concurrent_set_probe_start(&probe, set, hash);
+
+    while (true) {
+        struct concurrent_set_entry *entry = &set->entries[idx];
+        VALUE curr_key = RUBY_ATOMIC_VALUE_LOAD(entry->key);
+
+        switch (curr_key) {
+          case CONCURRENT_SET_EMPTY:
+            return 0;
+          case CONCURRENT_SET_DELETED:
+            break;
+          case CONCURRENT_SET_MOVED:
+            // Wait
+            RB_VM_LOCKING();
+
+            goto retry;
+          default: {
+            VALUE curr_hash = RUBY_ATOMIC_VALUE_LOAD(entry->hash);
+            if (curr_hash != 0 && curr_hash != hash) break;
+
+            if (UNLIKELY(!RB_SPECIAL_CONST_P(curr_key) && rb_objspace_garbage_object_p(curr_key))) {
+                // This is a weakref set, so after marking but before sweeping is complete we may find a matching garbage object.
+                // Skip it and mark it as deleted.
+                RUBY_ATOMIC_VALUE_CAS(entry->key, curr_key, CONCURRENT_SET_DELETED);
+                break;
+            }
+
+            if (set->funcs->cmp(key, curr_key)) {
+                // We've found a match.
+                RB_GC_GUARD(set_obj);
+                return curr_key;
+            }
+
+            break;
+          }
+        }
+
+        idx = concurrent_set_probe_next(&probe);
+    }
+}
+
+VALUE
+rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
+{
+    RUBY_ASSERT(key >= CONCURRENT_SET_SPECIAL_VALUE_COUNT);
+
+    bool inserting = false;
+    VALUE set_obj;
+    VALUE hash = 0;
+
+  retry:
+    set_obj = RUBY_ATOMIC_VALUE_LOAD(*set_obj_ptr);
+    RUBY_ASSERT(set_obj);
+    struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
+
+    if (hash == 0) {
+        // We don't need to recompute the hash on every retry because it should
+        // never change.
+        hash = set->funcs->hash(key);
+    }
+    RUBY_ASSERT(hash == set->funcs->hash(key));
+
+    struct concurrent_set_probe probe;
     int idx = concurrent_set_probe_start(&probe, set, hash);
 
     while (true) {
@@ -229,19 +306,27 @@ rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
             goto retry;
           default: {
             VALUE curr_hash = RUBY_ATOMIC_VALUE_LOAD(entry->hash);
-            if ((curr_hash == hash || curr_hash == 0) && set->funcs->cmp(key, curr_key)) {
-                // We've found a match.
-                if (UNLIKELY(rb_objspace_garbage_object_p(curr_key))) {
-                    // This is a weakref set, so after marking but before sweeping is complete we may find a matching garbage object.
-                    // Skip it and mark it as deleted.
-                    RUBY_ATOMIC_VALUE_CAS(entry->key, curr_key, CONCURRENT_SET_DELETED);
+            if (curr_hash != 0 && curr_hash != hash) break;
 
-                    // Fall through and continue our search.
+            if (UNLIKELY(!RB_SPECIAL_CONST_P(curr_key) && rb_objspace_garbage_object_p(curr_key))) {
+                // This is a weakref set, so after marking but before sweeping is complete we may find a matching garbage object.
+                // Skip it and mark it as deleted.
+                RUBY_ATOMIC_VALUE_CAS(entry->key, curr_key, CONCURRENT_SET_DELETED);
+                break;
+            }
+
+            if (set->funcs->cmp(key, curr_key)) {
+                // We've found a match.
+                RB_GC_GUARD(set_obj);
+
+                if (inserting) {
+                    // We created key using set->funcs->create, but we didn't end
+                    // up inserting it into the set. Free it here to prevent memory
+                    // leaks.
+                    if (set->funcs->free) set->funcs->free(key);
                 }
-                else {
-                    RB_GC_GUARD(set_obj);
-                    return curr_key;
-                }
+
+                return curr_key;
             }
 
             break;
@@ -300,6 +385,7 @@ rb_concurrent_set_foreach_with_replace(VALUE set_obj, int (*callback)(VALUE *key
     struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
 
     for (unsigned int i = 0; i < set->capacity; i++) {
+        struct concurrent_set_entry *entry = &set->entries[i];
         VALUE key = set->entries[i].key;
 
         switch (key) {
@@ -310,7 +396,7 @@ rb_concurrent_set_foreach_with_replace(VALUE set_obj, int (*callback)(VALUE *key
             rb_bug("rb_concurrent_set_foreach_with_replace: moved entry");
             break;
           default: {
-            int ret = callback(&set->entries[i].key, data);
+            int ret = callback(&entry->key, data);
             switch (ret) {
               case ST_STOP:
                 return;

@@ -91,6 +91,7 @@
 #include "internal/class.h"
 #include "internal/compile.h"
 #include "internal/complex.h"
+#include "internal/concurrent_set.h"
 #include "internal/cont.h"
 #include "internal/error.h"
 #include "internal/eval.h"
@@ -344,6 +345,7 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
         if (rb_obj_is_fiber(obj)) return false;
         if (rb_obj_is_main_ractor(obj)) return false;
         if (rb_obj_is_fstring_table(obj)) return false;
+        if (rb_obj_is_symbol_table(obj)) return false;
 
         return true;
 
@@ -3166,11 +3168,6 @@ rb_gc_mark_children(void *objspace, VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_FLOAT:
       case T_BIGNUM:
-      case T_SYMBOL:
-        /* Not immediates, but does not have references and singleton class.
-         *
-         * RSYMBOL(obj)->fstr intentionally not marked. See log for 96815f1e
-         * ("symbol.c: remove rb_gc_mark_symbols()") */
         return;
 
       case T_NIL:
@@ -3226,6 +3223,10 @@ rb_gc_mark_children(void *objspace, VALUE obj)
 
       case T_HASH:
         mark_hash(obj);
+        break;
+
+      case T_SYMBOL:
+        gc_mark_internal(RSYMBOL(obj)->fstr);
         break;
 
       case T_STRING:
@@ -3864,9 +3865,6 @@ update_iclass_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void 
     update_classext_values(objspace, ext, true);
 }
 
-extern rb_symbols_t ruby_global_symbols;
-#define global_symbols ruby_global_symbols
-
 struct global_vm_table_foreach_data {
     vm_table_foreach_callback_func callback;
     vm_table_update_callback_func update_callback;
@@ -3924,34 +3922,20 @@ vm_weak_table_cc_refinement_foreach_update_update(st_data_t *key, st_data_t data
 
 
 static int
-vm_weak_table_str_sym_foreach(st_data_t key, st_data_t value, st_data_t data, int error)
+vm_weak_table_sym_set_foreach(VALUE *sym_ptr, void *data)
 {
+    VALUE sym = *sym_ptr;
     struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
 
-    if (!iter_data->weak_only) {
-        int ret = iter_data->callback((VALUE)key, iter_data->data);
-        if (ret != ST_CONTINUE) return ret;
+    if (RB_SPECIAL_CONST_P(sym)) return ST_CONTINUE;
+
+    int ret = iter_data->callback(sym, iter_data->data);
+
+    if (ret == ST_REPLACE) {
+        ret = iter_data->update_callback(sym_ptr, iter_data->data);
     }
 
-    if (STATIC_SYM_P(value)) {
-        return ST_CONTINUE;
-    }
-    else {
-        return iter_data->callback((VALUE)value, iter_data->data);
-    }
-}
-
-static int
-vm_weak_table_foreach_update_weak_value(st_data_t *key, st_data_t *value, st_data_t data, int existing)
-{
-    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
-
-    if (!iter_data->weak_only) {
-        int ret = iter_data->update_callback((VALUE *)key, iter_data->data);
-        if (ret != ST_CONTINUE) return ret;
-    }
-
-    return iter_data->update_callback((VALUE *)value, iter_data->data);
+    return ret;
 }
 
 struct st_table *rb_generic_fields_tbl_get(void);
@@ -4098,14 +4082,10 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
         break;
       }
       case RB_GC_VM_GLOBAL_SYMBOLS_TABLE: {
-        if (global_symbols.str_sym) {
-            st_foreach_with_replace(
-                global_symbols.str_sym,
-                vm_weak_table_str_sym_foreach,
-                vm_weak_table_foreach_update_weak_value,
-                (st_data_t)&foreach_data
-            );
-        }
+        rb_sym_global_symbol_table_foreach_weak_reference(
+            vm_weak_table_sym_set_foreach,
+            &foreach_data
+        );
         break;
       }
       case RB_GC_VM_ID2REF_TABLE: {

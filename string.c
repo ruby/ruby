@@ -552,6 +552,7 @@ static const struct rb_concurrent_set_funcs fstring_concurrent_set_funcs = {
     .hash = fstring_concurrent_set_hash,
     .cmp = fstring_concurrent_set_cmp,
     .create = fstring_concurrent_set_create,
+    .free = NULL,
 };
 
 void
@@ -7412,16 +7413,9 @@ rb_str_inspect(VALUE str)
 
 /*
  *  call-seq:
- *    dump -> string
+ *    dump -> new_string
  *
- *  Returns a printable version of +self+, enclosed in double-quotes,
- *  with special characters escaped, and with non-printing characters
- *  replaced by hexadecimal notation:
- *
- *    "hello \n ''".dump    # => "\"hello \\n ''\""
- *    "\f\x00\xff\\\"".dump # => "\"\\f\\x00\\xFF\\\\\\\"\""
- *
- *  Related: String#undump (inverse of String#dump).
+ *  :include: doc/string/dump.rdoc
  *
  */
 
