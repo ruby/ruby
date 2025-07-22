@@ -127,7 +127,7 @@ The following bundled gems are promoted from default gems.
 * rdoc 6.14.2
 * win32ole 1.9.2
 * irb 1.15.2
-* reline 0.6.1
+* reline 0.6.2
 * readline 0.0.4
 * fiddle 1.1.8
 
