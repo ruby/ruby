@@ -1,0 +1,52 @@
+Returns a printable version of +self+, enclosed in double-quotes:
+
+  'hello'.dump     # => "\"hello\""
+
+Certain special characters are rendered with escapes:
+
+  '"'.dump  # => "\"\\\"\""
+  '\\'.dump # => "\"\\\\\""
+
+Non-printing characters are rendered with escapes:
+
+  s = ''
+  s << 7   # Alarm (bell).
+  s << 8   # Back space.
+  s << 9   # Horizontal tab.
+  s << 10  # Line feed.
+  s << 11  # Vertical tab.
+  s << 12  # Form feed.
+  s << 13  # Carriage return.
+  s        # => "\a\b\t\n\v\f\r"
+  s.dump   # => "\"\\a\\b\\t\\n\\v\\f\\r\""
+
+If +self+ is encoded in UTF-8 and contains Unicode characters, renders Unicode
+characters in Unicode escape sequence:
+
+  'тест'.dump     # => "\"\\u0442\\u0435\\u0441\\u0442\""
+  'こんにちは'.dump # => "\"\\u3053\\u3093\\u306B\\u3061\\u306F\""
+
+If the encoding of +self+ is not ASCII-compatible (i.e., +self.encoding.ascii_compatible?+
+returns +false+), renders all ASCII-compatible bytes as ASCII characters and all
+other bytes as hexadecimal. Appends <tt>.dup.force_encoding(\"encoding\")</tt>, where
+<tt><encoding></tt> is +self.encoding.name+:
+
+  s = 'hello'
+  s.encoding                # => #<Encoding:UTF-8>
+  s.dump                    # => "\"hello\""
+  s.encode('utf-16').dump   # => "\"\\xFE\\xFF\\x00h\\x00e\\x00l\\x00l\\x00o\".dup.force_encoding(\"UTF-16\")"
+  s.encode('utf-16le').dump # => "\"h\\x00e\\x00l\\x00l\\x00o\\x00\".dup.force_encoding(\"UTF-16LE\")"
+
+  s = 'тест'
+  s.encoding                # => #<Encoding:UTF-8>
+  s.dump                    # => "\"\\u0442\\u0435\\u0441\\u0442\""
+  s.encode('utf-16').dump   # => "\"\\xFE\\xFF\\x04B\\x045\\x04A\\x04B\".dup.force_encoding(\"UTF-16\")"
+  s.encode('utf-16le').dump # => "\"B\\x045\\x04A\\x04B\\x04\".dup.force_encoding(\"UTF-16LE\")"
+
+  s = 'こんにちは'
+  s.encoding                # => #<Encoding:UTF-8>
+  s.dump                    # => "\"\\u3053\\u3093\\u306B\\u3061\\u306F\""
+  s.encode('utf-16').dump   # => "\"\\xFE\\xFF0S0\\x930k0a0o\".dup.force_encoding(\"UTF-16\")"
+  s.encode('utf-16le').dump # => "\"S0\\x930k0a0o0\".dup.force_encoding(\"UTF-16LE\")"
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
