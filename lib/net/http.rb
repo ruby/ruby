@@ -1677,7 +1677,7 @@ module Net   #:nodoc:
           # Use built-in timeout in TCPSocket.open if available
           TCPSocket.open(conn_addr, conn_port, @local_host, @local_port, open_timeout: @open_timeout)
         rescue ArgumentError => e
-          raise if !e.message.include?('unknown keyword: :open_timeout')
+          raise if !(e.message.include?('unknown keyword: :open_timeout') || e.message.include?('wrong number of arguments (given 5, expected 2..4)'))
           # Fallback to Timeout.timeout if TCPSocket.open does not support open_timeout
           Timeout.timeout(@open_timeout, Net::OpenTimeout) {
             TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
