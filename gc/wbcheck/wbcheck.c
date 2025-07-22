@@ -69,6 +69,20 @@ typedef enum {
     WBCHECK_STATE_DIRTY     // Has seen writebarrier since last snapshot, queued for verification
 } wbcheck_object_state_t;
 
+// Tri-color marking colors
+typedef enum {
+    WBCHECK_COLOR_WHITE,    // Unmarked - will be swept
+    WBCHECK_COLOR_GRAY,     // Marked but children not processed
+    WBCHECK_COLOR_BLACK     // Marked and children processed
+} wbcheck_color_t;
+
+// GC phases
+typedef enum {
+    WBCHECK_PHASE_MUTATOR,   // Normal execution
+    WBCHECK_PHASE_SNAPSHOT,  // Collecting references for verification
+    WBCHECK_PHASE_FULL_GC    // Marking objects during full GC
+} wbcheck_phase_t;
+
 // List of objects
 typedef struct {
     VALUE *items;
@@ -149,6 +163,7 @@ typedef struct {
     wbcheck_object_list_t *gc_mark_snapshot; // Snapshot of references from last GC mark
     wbcheck_object_list_t *writebarrier_children; // References added via write barriers since last snapshot
     wbcheck_object_state_t state; // Current state in verification lifecycle
+    wbcheck_color_t color;  // Tri-color marking color
 } rb_wbcheck_object_info_t;
 
 // Structure to track objects that need dfree called
@@ -166,7 +181,9 @@ typedef struct {
     wbcheck_object_list_t *objects_to_verify; // Objects that need verification after write barriers
     wbcheck_zombie_t *zombie_list; // Linked list of objects with dfree functions to call
     wbcheck_object_list_t *current_refs; // Current list for collecting references during marking
-    bool during_gc;          // True when we're currently marking
+    wbcheck_object_list_t *mark_queue; // Queue of gray objects for tri-color marking
+    wbcheck_phase_t phase;   // Current GC phase
+    bool gc_enabled;         // Whether GC is allowed to run
     size_t missed_write_barrier_parents; // Number of parent objects with missed write barriers
     size_t missed_write_barrier_children; // Total number of missed write barriers detected
     size_t simulated_gc_count; // Simulated GC count incremented on each GC.start
@@ -174,6 +191,10 @@ typedef struct {
 
 // Global objspace pointer for accessing from obj_slot_size function
 static rb_wbcheck_objspace_t *wbcheck_global_objspace = NULL;
+
+// Forward declarations
+static void wbcheck_foreach_object(rb_wbcheck_objspace_t *objspace, int (*callback)(VALUE obj, rb_wbcheck_object_info_t *info, void *data), void *data);
+static int wbcheck_verify_all_references_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *data);
 
 // Helper functions for object tracking
 static rb_wbcheck_object_info_t *
@@ -296,6 +317,7 @@ wbcheck_register_object(void *objspace_ptr, VALUE obj, size_t alloc_size, bool w
     info->gc_mark_snapshot = NULL;  /* No snapshot initially */
     info->writebarrier_children = NULL;  /* No write barrier children initially */
     info->state = WBCHECK_STATE_CLEAR;  /* Start in clear state */
+    info->color = WBCHECK_COLOR_WHITE;  /* Start as white (unmarked) */
 
     // Store object info in hash table (VALUE -> rb_wbcheck_object_info_t*)
     st_insert(objspace->object_table, (st_data_t)obj, (st_data_t)info);
@@ -334,7 +356,9 @@ rb_gc_impl_objspace_alloc(void)
     objspace->objects_to_verify = wbcheck_object_list_init();   // Initialize empty list
     objspace->zombie_list = NULL;      // No zombies initially
     objspace->current_refs = NULL;     // No current refs initially
-    objspace->during_gc = false;       // Not marking initially
+    objspace->mark_queue = wbcheck_object_list_init(); // Initialize mark queue
+    objspace->phase = WBCHECK_PHASE_MUTATOR; // Start in mutator phase
+    objspace->gc_enabled = true;       // GC enabled by default (like default GC)
     objspace->missed_write_barrier_parents = 0;  // No errors found yet
     objspace->missed_write_barrier_children = 0; // No errors found yet
     objspace->simulated_gc_count = 0;   // Start with GC count of 0
@@ -451,7 +475,7 @@ bool
 rb_gc_impl_during_gc_p(void *objspace_ptr)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
-    return objspace->during_gc;
+    return objspace->phase != WBCHECK_PHASE_MUTATOR;
 }
 
 void
@@ -463,7 +487,8 @@ rb_gc_impl_prepare_heap(void *objspace_ptr)
 void
 rb_gc_impl_gc_enable(void *objspace_ptr)
 {
-    // Stub implementation
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    objspace->gc_enabled = true;
 }
 
 void
@@ -475,8 +500,8 @@ rb_gc_impl_gc_disable(void *objspace_ptr, bool finish_current_gc)
 bool
 rb_gc_impl_gc_enabled_p(void *objspace_ptr)
 {
-    // Stub implementation
-    return false;
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    return objspace->gc_enabled;
 }
 
 void
@@ -528,13 +553,13 @@ wbcheck_collect_references_from_object(VALUE obj, rb_wbcheck_object_info_t *info
 
     // Set up objspace state for marking
     objspace->current_refs = new_list;
-    objspace->during_gc = true;
+    objspace->phase = WBCHECK_PHASE_SNAPSHOT;
 
     // Use the marking infrastructure to collect references
     rb_gc_mark_children(objspace, obj);
 
     // Clean up objspace state
-    objspace->during_gc = false;
+    objspace->phase = WBCHECK_PHASE_MUTATOR;
     objspace->current_refs = NULL;
 
     if (wbcheck_debug_enabled) {
@@ -607,6 +632,94 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
     info->state = WBCHECK_STATE_MARKED;  // Back to marked state after verification
 }
 
+// Mark object as gray (add to mark queue)
+static void
+wbcheck_mark_gray(rb_wbcheck_objspace_t *objspace, VALUE obj)
+{
+    if (RB_SPECIAL_CONST_P(obj)) return;
+
+    st_data_t value;
+    if (!st_lookup(objspace->object_table, (st_data_t)obj, &value)) {
+        return; // Not our object
+    }
+
+    rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)value;
+    if (info->color != WBCHECK_COLOR_WHITE) {
+        return; // Already marked
+    }
+
+    info->color = WBCHECK_COLOR_GRAY;
+    wbcheck_object_list_append(objspace->mark_queue, obj);
+    WBCHECK_DEBUG("wbcheck: marked gray: %p\n", (void *)obj);
+}
+
+// Reset all objects to white
+static int
+st_foreach_reset_white(st_data_t key, st_data_t val, st_data_t arg)
+{
+    rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)val;
+    info->color = WBCHECK_COLOR_WHITE;
+    return ST_CONTINUE;
+}
+
+// Full mark phase using tri-color marking with snapshots
+static void
+wbcheck_mark_phase(rb_wbcheck_objspace_t *objspace)
+{
+    WBCHECK_DEBUG("wbcheck: starting GC mark phase\n");
+
+    // Clear mark queue and reset all objects to white
+    objspace->mark_queue->count = 0;
+    st_foreach(objspace->object_table, st_foreach_reset_white, 0);
+
+    // Mark roots gray
+    objspace->phase = WBCHECK_PHASE_FULL_GC;
+    rb_gc_save_machine_context();
+    rb_gc_mark_roots(objspace, NULL);
+    objspace->phase = WBCHECK_PHASE_MUTATOR;
+
+    // Process gray queue until empty
+    while (objspace->mark_queue->count > 0) {
+        // Get last object from queue (LIFO)
+        VALUE obj = objspace->mark_queue->items[--objspace->mark_queue->count];
+
+        st_data_t value;
+        if (st_lookup(objspace->object_table, (st_data_t)obj, &value)) {
+            rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)value;
+            if (info->color == WBCHECK_COLOR_GRAY) {
+                // Mark all children from snapshot gray
+                if (info->gc_mark_snapshot) {
+                    for (size_t i = 0; i < info->gc_mark_snapshot->count; i++) {
+                        wbcheck_mark_gray(objspace, info->gc_mark_snapshot->items[i]);
+                    }
+                }
+
+                // Mark this object black
+                info->color = WBCHECK_COLOR_BLACK;
+                WBCHECK_DEBUG("wbcheck: marked black: %p\n", (void *)obj);
+            }
+        }
+    }
+
+    WBCHECK_DEBUG("wbcheck: tri-color mark phase complete\n");
+}
+
+// Full GC: verify all objects then mark from roots
+static void
+wbcheck_full_gc(rb_wbcheck_objspace_t *objspace)
+{
+    WBCHECK_DEBUG("wbcheck: starting full GC\n");
+
+    // First, verify all objects to update their reference snapshots
+    WBCHECK_DEBUG("wbcheck: verifying all objects\n");
+    wbcheck_foreach_object(objspace, wbcheck_verify_all_references_callback, objspace);
+
+    // Now start tri-color marking
+    wbcheck_mark_phase(objspace);
+
+    WBCHECK_DEBUG("wbcheck: full GC complete\n");
+}
+
 static void
 maybe_gc(void *objspace_ptr)
 {
@@ -639,6 +752,11 @@ maybe_gc(void *objspace_ptr)
 
     // Clear the list after processing
     objspace->objects_to_capture->count = 0;
+
+    // Run full GC only if we have enough objects, GC is enabled, and we're in a native thread
+    if (st_table_size(objspace->object_table) > 1000 && objspace->gc_enabled && ruby_native_thread_p()) {
+        wbcheck_full_gc(objspace);
+    }
 }
 
 static void
@@ -762,12 +880,22 @@ gc_mark(rb_wbcheck_objspace_t *objspace, VALUE obj)
     WBCHECK_DEBUG("wbcheck: gc_mark called\n");
     wbcheck_debug_obj_info_dump(obj);
 
-    // Assume we're collecting references
-    GC_ASSERT(objspace->during_gc);
-    GC_ASSERT(objspace->current_refs);
+    if (RB_SPECIAL_CONST_P(obj)) return;
 
-    if (!RB_SPECIAL_CONST_P(obj)) {
-        wbcheck_object_list_append(objspace->current_refs, obj);
+    switch (objspace->phase) {
+        case WBCHECK_PHASE_SNAPSHOT:
+            // Collecting references during verification
+            GC_ASSERT(objspace->current_refs);
+            wbcheck_object_list_append(objspace->current_refs, obj);
+            break;
+        case WBCHECK_PHASE_FULL_GC:
+            // Marking during full GC
+            wbcheck_mark_gray(objspace, obj);
+            break;
+        case WBCHECK_PHASE_MUTATOR:
+            // Should not be called during mutator phase
+            rb_bug("wbcheck: gc_mark called during mutator phase");
+            break;
     }
 }
 
