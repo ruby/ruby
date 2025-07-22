@@ -18,6 +18,7 @@
 #include <math.h>
 #include <time.h>
 #include <sys/types.h>
+#include <stdint.h>
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
@@ -746,6 +747,10 @@ get_tzname(int dst)
 }
 #endif
 
+#if defined(__APPLE__) && defined(ENABLE_MACOS_LOCALTIME_CACHE)
+static void invalidate_localtime_cache(void);
+#endif
+
 void
 ruby_reset_timezone(const char *val)
 {
@@ -754,6 +759,9 @@ ruby_reset_timezone(const char *val)
     w32_tz.use_tzkey = !val || !*val;
 #endif
     ruby_reset_leap_second_info();
+#if defined(__APPLE__) && defined(ENABLE_MACOS_LOCALTIME_CACHE)
+    invalidate_localtime_cache();
+#endif
 }
 
 static void
@@ -764,12 +772,85 @@ update_tz(void)
     tzset();
 }
 
+#if defined(__APPLE__) && defined(ENABLE_MACOS_LOCALTIME_CACHE)
+/* Use direct-mapped hash table for better performance with random access patterns
+    * (e.g., when reading many timestamps from zip files) */
+#define LOCALTIME_CACHE_SIZE 32  /* Must be power of 2 */
+#define LOCALTIME_CACHE_ZONE_LENGTH 64
+
+/* Localtime cache structure keyed by time_t */
+typedef struct {
+    time_t time;          /* the time_t value as key */
+    struct tm local_tm;   /* cached localtime result */
+    int valid;
+#ifdef HAVE_STRUCT_TM_TM_ZONE
+    char tm_zone[LOCALTIME_CACHE_ZONE_LENGTH];
+#endif
+} localtime_cache_entry;
+
+static localtime_cache_entry localtime_cache[LOCALTIME_CACHE_SIZE] = {{0}};
+
+/* Invalidate the entire cache - called when timezone changes */
+static void
+invalidate_localtime_cache(void)
+{
+    for (int i = 0; i < LOCALTIME_CACHE_SIZE; i++) {
+        localtime_cache[i].valid = 0;
+    }
+}
+
+/* Knuth multiplicative hash for time_t values */
+static inline unsigned int
+localtime_cache_hash(time_t t) {
+    /* Knuth's multiplicative hash: multiply by golden ratio prime
+     * For 32 entries (5 bits), shift right by 27 to get upper 5 bits */
+    uint32_t val = (uint32_t)t;
+    return (uint32_t)((val * 2654435761U) >> 27) & (LOCALTIME_CACHE_SIZE - 1);
+}
+#endif
+
 static struct tm *
 rb_localtime_r(const time_t *t, struct tm *result)
 {
 #if defined __APPLE__ && defined __LP64__
     if (*t != (time_t)(int)*t) return NULL;
 #endif
+
+#if defined(__APPLE__) && defined(ENABLE_MACOS_LOCALTIME_CACHE)
+    unsigned int cache_idx = localtime_cache_hash(*t);
+
+    if (localtime_cache[cache_idx].valid && localtime_cache[cache_idx].time == *t) {
+        *result = localtime_cache[cache_idx].local_tm;
+#ifdef HAVE_STRUCT_TM_TM_ZONE
+        result->tm_zone = localtime_cache[cache_idx].tm_zone;
+#endif
+        return result;
+    }
+
+    update_tz();
+
+    if (!localtime_r(t, result)) {
+        return NULL;
+    }
+
+    localtime_cache[cache_idx].time = *t;
+    localtime_cache[cache_idx].local_tm = *result;
+    localtime_cache[cache_idx].valid = 1;
+#ifdef HAVE_STRUCT_TM_TM_ZONE
+    /* We must copy the timezone string because the pointer from localtime_r
+     * points to static data that may be overwritten before we retrieve it
+     * from the cache on a future call. */
+    if (result->tm_zone) {
+        strncpy(localtime_cache[cache_idx].tm_zone, result->tm_zone, LOCALTIME_CACHE_ZONE_LENGTH-1);
+        localtime_cache[cache_idx].tm_zone[LOCALTIME_CACHE_ZONE_LENGTH-1] = '\0';
+        localtime_cache[cache_idx].local_tm.tm_zone = localtime_cache[cache_idx].tm_zone;
+    } else {
+        localtime_cache[cache_idx].tm_zone[0] = '\0';
+    }
+#endif
+
+    return result;
+#else
     update_tz();
 #ifdef HAVE_GMTIME_R
     result = localtime_r(t, result);
@@ -779,6 +860,7 @@ rb_localtime_r(const time_t *t, struct tm *result)
         if (tmp) *result = *tmp;
     }
 #endif
+#endif /* __APPLE__ */
 #if defined(HAVE_MKTIME) && defined(LOCALTIME_OVERFLOW_PROBLEM)
     if (result) {
         long gmtoff1 = 0;
