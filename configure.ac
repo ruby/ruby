@@ -2252,6 +2252,20 @@ AC_CHECK_FUNCS(waitpid)
 AC_CHECK_FUNCS(__cospi)
 AC_CHECK_FUNCS(__sinpi)
 
+AC_ARG_ENABLE(macos-localtime-cache,
+	AS_HELP_STRING([--enable-macos-localtime-cache],
+		       [enable localtime cache optimization for macOS to improve forked process performance]),
+	[macos_localtime_cache=$enableval], [macos_localtime_cache=no])
+AS_IF([test "$macos_localtime_cache" = yes], [
+    AS_CASE(["$target_os"],
+        [darwin*], [
+            AC_DEFINE(ENABLE_MACOS_LOCALTIME_CACHE, 1, [Enable macOS localtime cache optimization])
+            AC_MSG_NOTICE([macOS localtime cache optimization enabled])
+        ],
+        [AC_MSG_WARN([--enable-macos-localtime-cache is only supported on macOS, ignoring])]
+    )
+])
+
 AS_IF([test "x$ac_cv_member_struct_statx_stx_btime" = xyes],
     [AC_CHECK_FUNCS(statx)])
 
