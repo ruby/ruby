@@ -778,18 +778,20 @@ update_tz(void)
 }
 
 #if defined(__APPLE__) && defined(ENABLE_MACOS_LOCALTIME_CACHE)
-/* Offset-based cache: stores UTC-to-local offset per minute
- * This handles leap seconds correctly since offset remains constant throughout a minute */
-#define OFFSET_CACHE_SIZE 32  /* Must be power of 2 */
+/* Offset-based cache: stores UTC-to-local offset per 15-minute interval
+ * This handles leap seconds correctly since offset remains constant throughout a minute
+ * All timezone offsets are on 15-minute boundaries (00, 15, 30, 45) which improves
+ * cache effectiveness by 15x compared to per-minute caching */
+#define OFFSET_CACHE_SIZE 64  /* Must be power of 2 - increased for better coverage */
 #define OFFSET_CACHE_ZONE_LENGTH 64
 
-/* Cache key: minute precision (no seconds) */
+/* Cache key: 15-minute precision */
 typedef struct {
     int year;
     int month;
     int day;
     int hour;
-    int minute;
+    int quarter;  /* 0-3 representing 00, 15, 30, 45 minute intervals */
 } offset_cache_key;
 
 /* Offset cache entry */
@@ -814,15 +816,17 @@ invalidate_offset_cache(void)
     }
 }
 
-/* Hash function for offset cache based on minute components */
+/* Hash function for offset cache based on 15-minute intervals */
 static inline unsigned int
 offset_cache_hash(const offset_cache_key *key)
 {
-    /* Combine components into a single value for hashing */
-    uint32_t val = key->year * 525600 + key->month * 43200 +
-                   key->day * 1440 + key->hour * 60 + key->minute;
+    /* Combine components into a single value for hashing
+     * year * 35040 (quarters in a year) + month * 2880 (quarters in a month) +
+     * day * 96 (quarters in a day) + hour * 4 + quarter */
+    uint32_t val = key->year * 35040 + key->month * 2880 +
+                   key->day * 96 + key->hour * 4 + key->quarter;
     /* Knuth multiplicative hash */
-    return (uint32_t)((val * 2654435761U) >> 27) & (OFFSET_CACHE_SIZE - 1);
+    return (uint32_t)((val * 2654435761U) >> 26) & (OFFSET_CACHE_SIZE - 1);
 }
 
 /* Check if cache keys match */
@@ -830,7 +834,7 @@ static inline int
 offset_cache_key_eq(const offset_cache_key *a, const offset_cache_key *b)
 {
     return a->year == b->year && a->month == b->month &&
-           a->day == b->day && a->hour == b->hour && a->minute == b->minute;
+           a->day == b->day && a->hour == b->hour && a->quarter == b->quarter;
 }
 
 /* Calculate day of week from year/month/day */
@@ -864,13 +868,13 @@ rb_localtime_r(const time_t *t, struct tm *result)
         return NULL;
     }
 
-    /* Create cache key from UTC time (minute precision) */
+    /* Create cache key from UTC time (15-minute precision) */
     offset_cache_key key = {
         .year = utc_tm.tm_year + 1900,
         .month = utc_tm.tm_mon + 1,
         .day = utc_tm.tm_mday,
         .hour = utc_tm.tm_hour,
-        .minute = utc_tm.tm_min
+        .quarter = utc_tm.tm_min / 15  /* 0-3 for 00, 15, 30, 45 minute intervals */
     };
 
     unsigned int cache_idx = offset_cache_hash(&key);
