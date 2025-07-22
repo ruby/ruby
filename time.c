@@ -704,6 +704,11 @@ static struct vtm *localtimew(wideval_t timew, struct vtm *result);
 
 static int leap_year_p(long y);
 #define leap_year_v_p(y) leap_year_p(NUM2LONG(modv((y), INT2FIX(400))))
+static int calc_tm_yday(long tm_year, int tm_mon, int tm_mday);
+
+#if defined(__APPLE__) && defined(ENABLE_MACOS_LOCALTIME_CACHE)
+static void apply_tm_offset(struct tm *tm, long offset);
+#endif
 
 static VALUE tm_from_time(VALUE klass, VALUE time);
 
@@ -828,26 +833,6 @@ offset_cache_key_eq(const offset_cache_key *a, const offset_cache_key *b)
            a->day == b->day && a->hour == b->hour && a->minute == b->minute;
 }
 
-/* Days in each month (non-leap year) */
-static const int days_in_month[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-
-/* Check if year is a leap year */
-static inline int
-is_leap_year(int year)
-{
-    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
-}
-
-/* Get days in month, accounting for leap years */
-static inline int
-get_days_in_month(int year, int month)
-{
-    if (month == 2 && is_leap_year(year)) {
-        return 29;
-    }
-    return days_in_month[month - 1];
-}
-
 /* Calculate day of week from year/month/day */
 static int
 calculate_wday(int year, int month, int day)
@@ -862,97 +847,6 @@ calculate_wday(int year, int month, int day)
     int h = (day + (13 * (month + 1)) / 5 + k + k / 4 + j / 4 - 2 * j) % 7;
     /* Convert to tm_wday format (Sunday = 0) */
     return (h + 6) % 7;
-}
-
-/* Calculate day of year from year/month/day */
-static int
-calculate_yday(int year, int month, int day)
-{
-    int yday = 0;
-    for (int m = 1; m < month; m++) {
-        yday += get_days_in_month(year, m);
-    }
-    return yday + day - 1; /* tm_yday is 0-based */
-}
-
-/* Apply offset to UTC time components */
-static void
-apply_tm_offset(struct tm *tm, long offset)
-{
-    /* Break down offset into hours and minutes */
-    int offset_hours = (int)(offset / 3600);
-    int offset_mins = (int)((offset % 3600) / 60);
-    int offset_secs = (int)(offset % 60);
-
-    /* Apply seconds offset */
-    tm->tm_sec += offset_secs;
-    if (tm->tm_sec < 0) {
-        tm->tm_sec += 60;
-        offset_mins--;
-    }
-    else if (tm->tm_sec > 60) {
-        /* Preserve leap second (60) */
-        tm->tm_sec -= 60;
-        offset_mins++;
-    }
-
-    /* Apply minutes offset */
-    tm->tm_min += offset_mins;
-    if (tm->tm_min < 0) {
-        tm->tm_min += 60;
-        offset_hours--;
-    }
-    else if (tm->tm_min >= 60) {
-        tm->tm_min -= 60;
-        offset_hours++;
-    }
-
-    /* Apply hours offset */
-    tm->tm_hour += offset_hours;
-    int day_delta = 0;
-    if (tm->tm_hour < 0) {
-        day_delta = -((23 - tm->tm_hour) / 24);
-        tm->tm_hour = ((tm->tm_hour % 24) + 24) % 24;
-    }
-    else if (tm->tm_hour >= 24) {
-        day_delta = tm->tm_hour / 24;
-        tm->tm_hour = tm->tm_hour % 24;
-    }
-
-    /* Apply day offset if needed */
-    if (day_delta != 0) {
-        int year = tm->tm_year + 1900;
-        int month = tm->tm_mon + 1;
-        int day = tm->tm_mday + day_delta;
-
-        /* Handle month boundaries */
-        while (day < 1) {
-            month--;
-            if (month < 1) {
-                month = 12;
-                year--;
-            }
-            day += get_days_in_month(year, month);
-        }
-
-        while (day > get_days_in_month(year, month)) {
-            day -= get_days_in_month(year, month);
-            month++;
-            if (month > 12) {
-                month = 1;
-                year++;
-            }
-        }
-
-        /* Update tm structure */
-        tm->tm_year = year - 1900;
-        tm->tm_mon = month - 1;
-        tm->tm_mday = day;
-
-        /* Recalculate wday and yday */
-        tm->tm_wday = calculate_wday(year, month, day);
-        tm->tm_yday = calculate_yday(year, month, day);
-    }
 }
 #endif
 
@@ -1121,6 +1015,88 @@ static const int8_t leap_year_days_in_month[] = {
 #define days_in_month_of(leap) ((leap) ? leap_year_days_in_month : common_year_days_in_month)
 #define days_in_month_in(y) days_in_month_of(leap_year_p(y))
 #define days_in_month_in_v(y) days_in_month_of(leap_year_v_p(y))
+
+#if defined(__APPLE__) && defined(ENABLE_MACOS_LOCALTIME_CACHE)
+/* Apply offset to UTC time components */
+static void
+apply_tm_offset(struct tm *tm, long offset)
+{
+    /* Break down offset into hours and minutes */
+    int offset_hours = (int)(offset / 3600);
+    int offset_mins = (int)((offset % 3600) / 60);
+    int offset_secs = (int)(offset % 60);
+
+    /* Apply seconds offset */
+    tm->tm_sec += offset_secs;
+    if (tm->tm_sec < 0) {
+        tm->tm_sec += 60;
+        offset_mins--;
+    }
+    else if (tm->tm_sec > 60) {
+        /* Preserve leap second (60) */
+        tm->tm_sec -= 60;
+        offset_mins++;
+    }
+
+    /* Apply minutes offset */
+    tm->tm_min += offset_mins;
+    if (tm->tm_min < 0) {
+        tm->tm_min += 60;
+        offset_hours--;
+    }
+    else if (tm->tm_min >= 60) {
+        tm->tm_min -= 60;
+        offset_hours++;
+    }
+
+    /* Apply hours offset */
+    tm->tm_hour += offset_hours;
+    int day_delta = 0;
+    if (tm->tm_hour < 0) {
+        day_delta = -((23 - tm->tm_hour) / 24);
+        tm->tm_hour = ((tm->tm_hour % 24) + 24) % 24;
+    }
+    else if (tm->tm_hour >= 24) {
+        day_delta = tm->tm_hour / 24;
+        tm->tm_hour = tm->tm_hour % 24;
+    }
+
+    /* Apply day offset if needed */
+    if (day_delta != 0) {
+        int year = tm->tm_year + 1900;
+        int month = tm->tm_mon + 1;
+        int day = tm->tm_mday + day_delta;
+
+        /* Handle month boundaries */
+        while (day < 1) {
+            month--;
+            if (month < 1) {
+                month = 12;
+                year--;
+            }
+            day += days_in_month_in(year)[month - 1];
+        }
+
+        while (day > days_in_month_in(year)[month - 1]) {
+            day -= days_in_month_in(year)[month - 1];
+            month++;
+            if (month > 12) {
+                month = 1;
+                year++;
+            }
+        }
+
+        /* Update tm structure */
+        tm->tm_year = year - 1900;
+        tm->tm_mon = month - 1;
+        tm->tm_mday = day;
+
+        /* Recalculate wday and yday */
+        tm->tm_wday = calculate_wday(year, month, day);
+        tm->tm_yday = calc_tm_yday(year - 1900, month - 1, day) - 1;
+    }
+}
+#endif
 
 #define M28(m) \
     (m),(m),(m),(m),(m),(m),(m),(m),(m),(m), \
