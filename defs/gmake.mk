@@ -204,7 +204,7 @@ post-commit: $(if $(DOT_WAIT),,do-commit)
 	+$(Q) \
 	{ \
 	  $(in-srcdir) \
-	  exec sed -f tool/prereq.status defs/gmake.mk template/Makefile.in common.mk; \
+	  exec sed -f tool/prereq.status defs/gmake.mk template/Makefile.in common.mk depend; \
 	} | \
 	$(MAKE) $(mflags) Q=$(Q) ECHO=$(ECHO) \
 		top_srcdir="$(top_srcdir)" srcdir="$(srcdir)" srcs_vpath="" CHDIR="$(CHDIR)" \

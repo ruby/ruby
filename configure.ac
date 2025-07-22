@@ -4693,8 +4693,8 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	sed '/^MISSING/s/\$U\././g;/^VCS *=/s#@VCS@#'"$VCS"'#;/^VCSUP *=/s#@VCSUP@#'"$VCSUP"'#' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
 	AS_IF([test "$gnumake" != yes], [
-	    echo ['$(MKFILES): $(srcdir)/common.mk']
-	    sed ['s/{\$([^(){}]*)[^{}]*}//g'] ${srcdir}/common.mk
+	    echo ['$(MKFILES): $(srcdir)/common.mk $(srcdir)/depend']
+	    sed ['s/{\$([^(){}]*)[^{}]*}//g'] ${srcdir}/common.mk ${srcdir}/depend
             AS_IF([test "$YJIT_SUPPORT" = yes], [
                 cat ${srcdir}/yjit/not_gmake.mk
                 echo ['$(MKFILES): ${srcdir}/yjit/not_gmake.mk']
