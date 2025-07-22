@@ -184,6 +184,7 @@ typedef struct {
     wbcheck_object_list_t *mark_queue; // Queue of gray objects for tri-color marking
     wbcheck_phase_t phase;   // Current GC phase
     bool gc_enabled;         // Whether GC is allowed to run
+    size_t gc_threshold;     // Trigger GC when object count reaches this
     size_t missed_write_barrier_parents; // Number of parent objects with missed write barriers
     size_t missed_write_barrier_children; // Total number of missed write barriers detected
     size_t simulated_gc_count; // Simulated GC count incremented on each GC.start
@@ -195,6 +196,7 @@ static rb_wbcheck_objspace_t *wbcheck_global_objspace = NULL;
 // Forward declarations
 static void wbcheck_foreach_object(rb_wbcheck_objspace_t *objspace, int (*callback)(VALUE obj, rb_wbcheck_object_info_t *info, void *data), void *data);
 static int wbcheck_verify_all_references_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *data);
+static void wbcheck_finalize_zombies(rb_wbcheck_objspace_t *objspace);
 
 // Helper functions for object tracking
 static rb_wbcheck_object_info_t *
@@ -359,6 +361,7 @@ rb_gc_impl_objspace_alloc(void)
     objspace->mark_queue = wbcheck_object_list_init(); // Initialize mark queue
     objspace->phase = WBCHECK_PHASE_MUTATOR; // Start in mutator phase
     objspace->gc_enabled = true;       // GC enabled by default (like default GC)
+    objspace->gc_threshold = 1000;     // Start with 1000 objects, will adjust after first GC
     objspace->missed_write_barrier_parents = 0;  // No errors found yet
     objspace->missed_write_barrier_children = 0; // No errors found yet
     objspace->simulated_gc_count = 0;   // Start with GC count of 0
@@ -704,6 +707,68 @@ wbcheck_mark_phase(rb_wbcheck_objspace_t *objspace)
     WBCHECK_DEBUG("wbcheck: tri-color mark phase complete\n");
 }
 
+// Sweep phase callback - free white objects
+static int
+wbcheck_sweep_callback(st_data_t key, st_data_t val, st_data_t arg, int error)
+{
+    VALUE obj = (VALUE)key;
+    rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)val;
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)arg;
+
+    if (info->color == WBCHECK_COLOR_WHITE) {
+        WBCHECK_DEBUG("wbcheck: sweeping unmarked object %p\n", (void *)obj);
+
+        // Clear weak references first
+        rb_gc_obj_free_vm_weak_references(obj);
+
+        // Call rb_gc_obj_free which handles finalizers/zombies
+        if (rb_gc_obj_free(objspace, obj)) {
+            // Object was actually freed, clean up our tracking
+            wbcheck_object_list_free(info->gc_mark_snapshot);
+            wbcheck_object_list_free(info->writebarrier_children);
+            free(info);
+
+            // Free the actual object memory
+            free((void *)obj);
+
+            return ST_DELETE; // Remove from hash table
+        } else {
+            // Object became a zombie with finalizers, keep tracking it
+            // but free our reference lists since they're no longer valid
+            wbcheck_object_list_free(info->gc_mark_snapshot);
+            wbcheck_object_list_free(info->writebarrier_children);
+            info->gc_mark_snapshot = NULL;
+            info->writebarrier_children = NULL;
+            return ST_CONTINUE; // Keep in hash table
+        }
+    }
+
+    return ST_CONTINUE; // Keep marked objects
+}
+
+static void
+wbcheck_sweep_phase(rb_wbcheck_objspace_t *objspace)
+{
+    WBCHECK_DEBUG("wbcheck: starting sweep phase\n");
+
+    size_t objects_before = st_table_size(objspace->object_table);
+
+    // Sweep unmarked objects
+    st_foreach_check(objspace->object_table, wbcheck_sweep_callback, (st_data_t)objspace, 0);
+
+    // Process zombies (objects with dfree functions)
+    wbcheck_finalize_zombies(objspace);
+
+    size_t objects_after = st_table_size(objspace->object_table);
+    size_t freed_objects = objects_before - objects_after;
+
+    // Update GC threshold: 2x the live set after GC
+    objspace->gc_threshold = objects_after * 2;
+
+    WBCHECK_DEBUG("wbcheck: sweep phase complete - freed %zu objects (%zu -> %zu), new threshold: %zu\n",
+                  freed_objects, objects_before, objects_after, objspace->gc_threshold);
+}
+
 // Full GC: verify all objects then mark from roots
 static void
 wbcheck_full_gc(rb_wbcheck_objspace_t *objspace)
@@ -716,6 +781,9 @@ wbcheck_full_gc(rb_wbcheck_objspace_t *objspace)
 
     // Now start tri-color marking
     wbcheck_mark_phase(objspace);
+
+    // Sweep unmarked objects
+    wbcheck_sweep_phase(objspace);
 
     WBCHECK_DEBUG("wbcheck: full GC complete\n");
 }
@@ -753,8 +821,8 @@ maybe_gc(void *objspace_ptr)
     // Clear the list after processing
     objspace->objects_to_capture->count = 0;
 
-    // Run full GC only if we have enough objects, GC is enabled, and we're in a native thread
-    if (st_table_size(objspace->object_table) > 1000 && objspace->gc_enabled && ruby_native_thread_p()) {
+    // Run full GC if we exceed the threshold
+    if (st_table_size(objspace->object_table) >= objspace->gc_threshold && objspace->gc_enabled && ruby_native_thread_p()) {
         wbcheck_full_gc(objspace);
     }
 }
