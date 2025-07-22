@@ -9798,7 +9798,7 @@ rb_str_enumerate_chars(VALUE str, VALUE ary)
 
 /*
  *  call-seq:
- *    each_char {|c| ... } -> self
+ *    each_char {|char| ... } -> self
  *    each_char            -> enumerator
  *
  *  :include: doc/string/each_char.rdoc
