@@ -1,17 +1,22 @@
-Calls the given block with each successive character from +self+;
+With a block given, calls the block with each successive character from +self+;
 returns +self+:
 
-  'hello'.each_char {|char| print char, ' ' }
-  print "\n"
-  'тест'.each_char {|char| print char, ' ' }
-  print "\n"
-  'こんにちは'.each_char {|char| print char, ' ' }
-  print "\n"
+  a = []
+  'hello'.each_char do |char|
+    a.push(char)
+  end
+  a # => ["h", "e", "l", "l", "o"]
+  a = []
+  'тест'.each_char do |char|
+    a.push(char)
+  end
+  a # => ["т", "е", "с", "т"]
+  a = []
+  'こんにちは'.each_char do |char|
+    a.push(char)
+  end
+  a # => ["こ", "ん", "に", "ち", "は"]
 
-Output:
+With no block given, returns an enumerator.
 
-  h e l l o
-  т е с т
-  こ ん に ち は
-
-Returns an enumerator if no block is given.
+Related: see {Iterating}[rdoc-ref:String@Iterating].
