@@ -422,13 +422,13 @@ module Prism
     def dump_options_version(version)
       case version
       when nil, "latest"
-        0
+        0 # Handled in pm_parser_init
       when /\A3\.3(\.\d+)?\z/
         1
       when /\A3\.4(\.\d+)?\z/
         2
       when /\A3\.5(\.\d+)?\z/
-        0
+        3
       else
         raise ArgumentError, "invalid version: #{version}"
       end
