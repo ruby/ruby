@@ -244,13 +244,13 @@ must_encindex(int index)
         rb_raise(rb_eEncodingError, "encoding index out of bound: %d",
                  index);
     }
-    if (ENC_TO_ENCINDEX(enc) != (int)(index & ENC_INDEX_MASK)) {
-        rb_raise(rb_eEncodingError, "wrong encoding index %d for %s (expected %d)",
-                 index, rb_enc_name(enc), ENC_TO_ENCINDEX(enc));
-    }
     if (rb_enc_autoload_p(enc) && rb_enc_autoload(enc) == -1) {
         rb_loaderror("failed to load encoding (%s)",
                      rb_enc_name(enc));
+    }
+    if (ENC_TO_ENCINDEX(enc) != (int)(index & ENC_INDEX_MASK)) {
+        rb_raise(rb_eEncodingError, "wrong encoding index %d for %s (expected %d)",
+                 index, rb_enc_name(enc), ENC_TO_ENCINDEX(enc));
     }
     return enc;
 }
@@ -792,26 +792,33 @@ enc_autoload_body(rb_encoding *enc)
                 }
             } while (enc_table->list[i].enc != base && (++i, 1));
         }
+
+        if (i != -1) {
+            if (base) {
+                bool do_register = true;
+                if (rb_enc_autoload_p(base)) {
+                    if (rb_enc_autoload(base) < 0) {
+                        do_register = false;
+                        i = -1;
+                    }
+                }
+
+                i = enc->ruby_encoding_index;
+                if (do_register) {
+                    enc_register_at(enc_table, i & ENC_INDEX_MASK, rb_enc_name(enc), base);
+                    ((rb_raw_encoding *)enc)->ruby_encoding_index = i;
+                }
+
+                i &= ENC_INDEX_MASK;
+            }
+            else {
+                i = -2;
+            }
+        }
+
     }
 
-    if (i == -1) return -1;
-
-    if (base) {
-        if (rb_enc_autoload_p(base)) {
-            if (rb_enc_autoload(base) < 0) return -1;
-        }
-        i = enc->ruby_encoding_index;
-
-        GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-            enc_register_at(enc_table, i & ENC_INDEX_MASK, rb_enc_name(enc), base);
-        }
-
-        ((rb_raw_encoding *)enc)->ruby_encoding_index = i;
-        i &= ENC_INDEX_MASK;
-        return i;
-    }
-
-    return -2;
+    return i;
 }
 
 int
