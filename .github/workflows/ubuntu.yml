@@ -99,6 +99,16 @@ jobs:
         working-directory:
         if: ${{ endsWith(matrix.os, 's390x') }}
 
+      # A temporary workaround: Set HOME env to pass the step
+      # ./.github/actions/setup/directories.
+      # https://github.com/IBM/actionspz/issues/30
+      - name: Set HOME env
+        run: |
+          echo "HOME: #{HOME}"
+          echo "HOME=$(ls -d ~)" >> $GITHUB_ENV
+        working-directory:
+        if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
+
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
