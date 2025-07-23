@@ -326,7 +326,7 @@ module Spec
     def self.install_dev_bundler
       extend self
 
-      with_built_bundler {|gem_path| install_gem(gem_path, pristine_system_gem_path) }
+      with_built_bundler(nil, build_path: tmp_root) {|gem_path| install_gem(gem_path, pristine_system_gem_path) }
     end
 
     def install_gem(path, install_dir, default = false)
