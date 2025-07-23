@@ -329,7 +329,7 @@ RSpec.describe "bundle check" do
 
     it "shows what is missing with the current Gemfile if it is not satisfied" do
       FileUtils.rm_r default_bundle_path
-      system_gems :bundler
+      default_system_gems
       bundle :check, raise_on_error: false
       expect(err).to match(/The following gems are missing/)
       expect(err).to include("* myrack (1.0")

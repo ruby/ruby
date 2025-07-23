@@ -356,7 +356,7 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       bundle :cache
-      pristine_system_gems :bundler
+      pristine_system_gems
       FileUtils.rm_r gem_repo2
 
       bundle "install --local"
@@ -371,7 +371,7 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       bundle :cache
-      pristine_system_gems :bundler
+      pristine_system_gems
       FileUtils.rm_r gem_repo2
 
       bundle "config set --local deployment true"
@@ -388,7 +388,7 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       bundle :cache
-      pristine_system_gems :bundler
+      pristine_system_gems
       FileUtils.rm_r gem_repo2
 
       bundle "config set --local cache_all_platforms true"
@@ -482,7 +482,7 @@ RSpec.describe "bundle install with gem sources" do
         bundle :cache
       end
 
-      pristine_system_gems :bundler
+      pristine_system_gems
 
       bundle "config set --local force_ruby_platform true"
 

@@ -95,7 +95,7 @@ RSpec.describe "global gem caching" do
           gem "myrack"
         G
 
-        pristine_system_gems :bundler
+        pristine_system_gems
         expect(the_bundle).not_to include_gems "myrack 1.0.0"
         expect(source_global_cache("myrack-1.0.0.gem")).to exist
         # myrack 1.0.0 is not installed and it is in the global cache
@@ -105,7 +105,7 @@ RSpec.describe "global gem caching" do
           gem "myrack", "0.9.1"
         G
 
-        pristine_system_gems :bundler
+        pristine_system_gems
         expect(the_bundle).not_to include_gems "myrack 0.9.1"
         expect(source2_global_cache("myrack-0.9.1.gem")).to exist
         # myrack 0.9.1 is not installed and it is in the global cache
@@ -119,7 +119,7 @@ RSpec.describe "global gem caching" do
         # myrack 1.0.0 is installed and myrack 0.9.1 is not
         expect(the_bundle).to include_gems "myrack 1.0.0"
         expect(the_bundle).not_to include_gems "myrack 0.9.1"
-        pristine_system_gems :bundler
+        pristine_system_gems
 
         gemfile <<-G
           source "#{source2}"
@@ -141,7 +141,7 @@ RSpec.describe "global gem caching" do
         G
 
         bundle :install, artifice: "compact_index"
-        pristine_system_gems :bundler
+        pristine_system_gems
         expect(the_bundle).not_to include_gems "myrack 1.0.0"
         expect(source_global_cache("myrack-1.0.0.gem")).to exist
         # myrack 1.0.0 is not installed and it is in the global cache
@@ -152,7 +152,7 @@ RSpec.describe "global gem caching" do
         G
 
         bundle :install, artifice: "compact_index"
-        pristine_system_gems :bundler
+        pristine_system_gems
         expect(the_bundle).not_to include_gems "myrack 0.9.1"
         expect(source2_global_cache("myrack-0.9.1.gem")).to exist
         # myrack 0.9.1 is not installed and it is in the global cache
@@ -204,7 +204,7 @@ RSpec.describe "global gem caching" do
         expect(the_bundle).to include_gems "activesupport 2.3.5"
         expect(source_global_cache("myrack-1.0.0.gem")).to exist
         expect(source_global_cache("activesupport-2.3.5.gem")).to exist
-        pristine_system_gems :bundler
+        pristine_system_gems
         # Both gems are now only in the global cache
         expect(the_bundle).not_to include_gems "myrack 1.0.0"
         expect(the_bundle).not_to include_gems "activesupport 2.3.5"

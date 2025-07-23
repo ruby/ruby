@@ -164,7 +164,7 @@ RSpec.describe "bundle cache with git" do
     bundle "config set path vendor/bundle"
     bundle :install
 
-    pristine_system_gems :bundler
+    pristine_system_gems
     with_path_as "" do
       bundle "config set deployment true"
       bundle "install --local"
@@ -182,7 +182,7 @@ RSpec.describe "bundle cache with git" do
     bundle "config set cache_all true"
     bundle :cache, "all-platforms" => true
 
-    pristine_system_gems :bundler
+    pristine_system_gems
     bundle "config set frozen true"
     bundle "install --local --verbose"
     expect(out).to_not include("Fetching")
@@ -199,7 +199,7 @@ RSpec.describe "bundle cache with git" do
     bundle "config set cache_all true"
     bundle :cache, "all-platforms" => true
 
-    pristine_system_gems :bundler
+    pristine_system_gems
     bundle "config set frozen true"
     bundle "install --local --verbose"
     expect(out).to_not include("Fetching")
@@ -216,7 +216,7 @@ RSpec.describe "bundle cache with git" do
     bundle "config set cache_all true"
     bundle :cache, "all-platforms" => true
 
-    pristine_system_gems :bundler
+    pristine_system_gems
     bundle "config set frozen true"
 
     # Remove untracked files (including the empty refs dir in the cache)
@@ -380,7 +380,7 @@ RSpec.describe "bundle cache with git" do
     bundle "config set cache_all true"
     bundle :cache, "all-platforms" => true, :install => false
 
-    pristine_system_gems :bundler
+    pristine_system_gems
     with_path_as "" do
       bundle "config set deployment true"
       bundle :install, local: true

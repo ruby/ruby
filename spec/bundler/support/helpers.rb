@@ -310,9 +310,10 @@ module Spec
       default = options.fetch(:default, false)
       gems.each do |g|
         gem_name = g.to_s
-        if gem_name.start_with?("bundler")
-          version = gem_name.match(/\Abundler-(?<version>.*)\z/)[:version] if gem_name != "bundler"
-          with_built_bundler(version, released: options.fetch(:released, false)) {|gem_path| install_gem(gem_path, install_dir, default) }
+        bundler = gem_name.match(/\Abundler-(?<version>.*)\z/)
+
+        if bundler
+          with_built_bundler(bundler[:version], released: options.fetch(:released, false)) {|gem_path| install_gem(gem_path, install_dir, default) }
         elsif %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}.match?(gem_name)
           install_gem(gem_name, install_dir, default)
         else
@@ -325,7 +326,7 @@ module Spec
     def self.install_dev_bundler
       extend self
 
-      system_gems :bundler, path: pristine_system_gem_path
+      with_built_bundler {|gem_path| install_gem(gem_path, pristine_system_gem_path) }
     end
 
     def install_gem(path, install_dir, default = false)
@@ -395,7 +396,11 @@ module Spec
     def pristine_system_gems(*gems)
       FileUtils.rm_r(system_gem_path)
 
-      system_gems(*gems)
+      if gems.any?
+        system_gems(*gems)
+      else
+        default_system_gems
+      end
     end
 
     def cache_gems(*gems, gem_repo: gem_repo1)
@@ -412,7 +417,11 @@ module Spec
 
     def simulate_new_machine
       FileUtils.rm_r bundled_app(".bundle")
-      pristine_system_gems :bundler
+      pristine_system_gems
+    end
+
+    def default_system_gems
+      FileUtils.cp_r pristine_system_gem_path, system_gem_path
     end
 
     def simulate_ruby_platform(ruby_platform)
