@@ -205,6 +205,7 @@ typedef struct {
     wbcheck_zombie_t *zombie_list; // Linked list of objects with dfree functions to call
     wbcheck_object_list_t *current_refs; // Current list for collecting references during marking
     wbcheck_object_list_t *mark_queue; // Queue of gray objects for tri-color marking
+    wbcheck_object_list_t *weak_references; // Array of weak reference pointers (VALUE* cast to VALUE)
     wbcheck_phase_t phase;   // Current GC phase
     bool gc_enabled;         // Whether GC is allowed to run
     size_t gc_threshold;     // Trigger GC when object count reaches this
@@ -370,7 +371,7 @@ void *
 rb_gc_impl_objspace_alloc(void)
 {
     wbcheck_configure_from_env();
-    
+
     rb_wbcheck_objspace_t *objspace = calloc(1, sizeof(rb_wbcheck_objspace_t));
     if (!objspace) rb_bug("wbcheck: failed to allocate objspace");
 
@@ -385,6 +386,7 @@ rb_gc_impl_objspace_alloc(void)
     objspace->zombie_list = NULL;      // No zombies initially
     objspace->current_refs = NULL;     // No current refs initially
     objspace->mark_queue = wbcheck_object_list_init(); // Initialize mark queue
+    objspace->weak_references = wbcheck_object_list_init(); // Initialize weak references array
     objspace->phase = WBCHECK_PHASE_MUTATOR; // Start in mutator phase
     objspace->gc_enabled = true;       // GC enabled by default (like default GC)
     objspace->gc_threshold = 1000;     // Start with 1000 objects, will adjust after first GC
@@ -778,6 +780,42 @@ wbcheck_sweep_phase(rb_wbcheck_objspace_t *objspace)
                   freed_objects, objects_before, objects_after, objspace->gc_threshold);
 }
 
+// Clear weak references to dead objects during GC
+static void
+wbcheck_clear_weak_references(rb_wbcheck_objspace_t *objspace)
+{
+    size_t cleared_count = 0;
+
+    for (size_t i = 0; i < objspace->weak_references->count; i++) {
+        VALUE *weak_ptr = (VALUE *)objspace->weak_references->items[i];
+        VALUE obj = *weak_ptr;
+
+        if (RB_SPECIAL_CONST_P(obj)) {
+            continue; // Special constants are always live
+        }
+
+        // Look up the object in our table
+        st_data_t value;
+        if (st_lookup(objspace->object_table, (st_data_t)obj, &value)) {
+            rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)value;
+
+            // If object is white (unmarked), clear the weak reference
+            if (info->color == WBCHECK_COLOR_WHITE) {
+                *weak_ptr = Qundef;
+                cleared_count++;
+                WBCHECK_DEBUG("wbcheck: cleared weak reference to dead object %p\n", (void *)obj);
+            }
+        } else {
+            // Object not in our table means it's not managed by us, leave it alone
+        }
+    }
+
+    WBCHECK_DEBUG("wbcheck: cleared %zu weak references\n", cleared_count);
+
+    // Clear the weak references array for next GC
+    objspace->weak_references->count = 0;
+}
+
 // Full GC: verify all objects then mark from roots
 static void
 wbcheck_full_gc(rb_wbcheck_objspace_t *objspace)
@@ -790,6 +828,9 @@ wbcheck_full_gc(rb_wbcheck_objspace_t *objspace)
 
     // Now start tri-color marking
     wbcheck_mark_phase(objspace);
+
+    // Clear weak references to dead objects before sweeping
+    wbcheck_clear_weak_references(objspace);
 
     // Sweep unmarked objects
     wbcheck_sweep_phase(objspace);
@@ -1013,14 +1054,16 @@ rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
 void
 rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
 {
-    WBCHECK_DEBUG("wbcheck: rb_gc_impl_mark_weak called\n");
-    wbcheck_debug_obj_info_dump(*ptr);
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    wbcheck_object_list_append(objspace->weak_references, (VALUE)ptr);
 }
 
 void
 rb_gc_impl_remove_weak(void *objspace_ptr, VALUE parent_obj, VALUE *ptr)
 {
-    // Stub implementation
+    // Since wbcheck is stop-the-world and not incremental, we don't need to remove
+    // weak references during normal operation (like default.c does)
+    return;
 }
 
 // Compaction
@@ -1350,7 +1393,7 @@ static int
 wbcheck_update_all_snapshots_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *data)
 {
     void *objspace_ptr = data;
-    
+
     // For wb_protected objects, do full verification if they have a snapshot
     if (info->wb_protected && info->state != WBCHECK_STATE_CLEAR) {
         wbcheck_verify_object_references(objspace_ptr, obj);
@@ -1361,7 +1404,7 @@ wbcheck_update_all_snapshots_callback(VALUE obj, rb_wbcheck_object_info_t *info,
         info->gc_mark_snapshot = current_refs;
         info->state = WBCHECK_STATE_MARKED;
     }
-    
+
     return ST_CONTINUE;
 }
 
