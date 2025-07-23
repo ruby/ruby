@@ -534,14 +534,12 @@ rb_gc_impl_stress_get(void *objspace_ptr)
 VALUE
 rb_gc_impl_config_get(void *objspace_ptr)
 {
-    // Stub implementation
-    return Qnil;
+    return rb_hash_new();
 }
 
 void
 rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
 {
-    // Stub implementation
 }
 
 // Object allocation
