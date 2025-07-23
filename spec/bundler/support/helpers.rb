@@ -62,6 +62,10 @@ module Spec
       run(cmd, *args)
     end
 
+    def in_bundled_app(cmd, options = {})
+      sys_exec(cmd, dir: bundled_app, raise_on_error: options[:raise_on_error])
+    end
+
     def bundle(cmd, options = {}, &block)
       bundle_bin = options.delete(:bundle_bin)
       bundle_bin ||= installed_bindir.join("bundle")
@@ -119,6 +123,7 @@ module Spec
       env = build_env({ artifice: nil }.merge(options))
       escaped_ruby = ruby.shellescape
       options[:env] = env if env
+      options[:dir] ||= bundled_app
       sys_exec(%(#{Gem.ruby} -w -e #{escaped_ruby}), options)
     end
 
@@ -200,7 +205,6 @@ module Spec
       env = options[:env] || {}
       env["RUBYOPT"] = opt_add(opt_add("-r#{spec_dir}/support/switch_rubygems.rb", env["RUBYOPT"]), ENV["RUBYOPT"])
       options[:env] = env
-      options[:dir] ||= bundled_app
 
       sh(cmd, options, &block)
     end
