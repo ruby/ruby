@@ -18,3 +18,8 @@ jobs:
     steps:
       - run: uname -a
       - run: cat /proc/cpuinfo
+      - run: pwd
+      - run: ls -d ~
+      - run: |
+          echo "HOME: ${HOME}"
+      - run: git config --global core.autocrlf false
