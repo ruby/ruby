@@ -38,7 +38,7 @@ module Spec
       dir = options[:dir]
       env = options[:env] || {}
 
-      command_execution = CommandExecution.new(cmd.to_s, working_directory: dir, timeout: options[:timeout] || 60)
+      command_execution = CommandExecution.new(cmd.to_s, timeout: options[:timeout] || 60)
 
       require "open3"
       require "shellwords"
