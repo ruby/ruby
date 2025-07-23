@@ -1,0 +1,1 @@
+42.tap { p it; it = it; p it }
