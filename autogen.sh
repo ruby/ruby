@@ -1,17 +1,22 @@
 #!/bin/sh
 
+# Clear PWD to force commands to recompute working directory
 PWD=
+
+# Figure out the source directory for this script
+# configure.ac should be in the same place
 case "$0" in
-*/*) srcdir=`dirname $0`;;
-*) srcdir="";;
+    */* )  srcdir=`dirname "$0"` ;; # Called with path
+    *   )  srcdir="";; # Otherwise
 esac
 
-symlink='--install --symlink'
+# If install-only is explicitly requested, disbale symlink flags
 case " $* " in
-    *" -i "*|*" --install "*)
-        # reset to copy missing standard auxiliary files, instead of symlinks
-        symlink=
-        ;;
+    *" -i "* | *" --install"* ) symlink_flags="" ;;
+    *                         ) symlink_flags="--install --symlink" ;;
 esac
 
-exec ${AUTORECONF:-autoreconf} ${symlink} "$@" ${srcdir:+"$srcdir"}
+exec ${AUTORECONF:-autoreconf} \
+     $symlink_flags \
+     "$@" \
+     $srcdir
