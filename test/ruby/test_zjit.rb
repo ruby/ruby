@@ -811,6 +811,12 @@ class TestZJIT < Test::Unit::TestCase
       def a(n1,n2,n3,n4,n5,n6,n7,n8) = n8
       a(1,1,1,1,1,1,1,0)
     }
+
+    # self param with spilled param
+    assert_compiles '"main"', %q{
+      def a(n1,n2,n3,n4,n5,n6,n7,n8) = self
+      a(1,0,0,0,0,0,0,0).to_s
+    }
   end
 
   def test_opt_aref_with
