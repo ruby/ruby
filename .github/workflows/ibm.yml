@@ -14,6 +14,7 @@ jobs:
           # - os: ubuntu-22.04-ppc64le-p10
           - os: ubuntu-24.04-s390x
           - os: ubuntu-22.04-s390x
+    if: github.repository == 'ruby/ruby'
     runs-on: ${{ matrix.os }}
     steps:
       - run: uname -a
