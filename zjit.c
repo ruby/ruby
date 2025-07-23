@@ -23,6 +23,7 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
+#include "internal/jit.h"
 #include "ractor_core.h"
 #include "shape.h"
 

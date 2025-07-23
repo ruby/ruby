@@ -77,6 +77,7 @@
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/cont.h"
+#include "internal/jit.h"
 #include "internal/coverage.h"
 #include "internal/error.h"
 #include "internal/eval.h"
