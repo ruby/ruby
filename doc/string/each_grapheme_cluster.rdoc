@@ -9,8 +9,6 @@ returns +self+:
   a  # => ["h", "e", "l", "l", "o"]
 
   a = []
-  # => []
-  a
   'тест'.each_grapheme_cluster do |grapheme_cluster|
     a.push(grapheme_cluster)
   end
@@ -21,14 +19,6 @@ returns +self+:
     a.push(grapheme_cluster)
   end
   a # => ["こ", "ん", "に", "ち", "は"]
-
-  a = []
-  s = "\u0061\u0308-\u0062\u0308-\u0063\u0308"
-  # => "ä-b̈-c̈"
-  s.each_grapheme_cluster do |grapheme_cluster|
-    a.push(grapheme_cluster)
-  end
-  a # => ["ä", "-", "b̈", "-", "c̈"]
 
 With no block given, returns an enumerator.
 
