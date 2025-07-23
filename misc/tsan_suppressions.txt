@@ -30,13 +30,6 @@ race:check_reserved_signal_
 
 race_top:rb_check_deadlock
 
-# lock_owner
-race_top:thread_sched_setup_running_threads
-race_top:vm_lock_enter
-race_top:rb_ec_vm_lock_rec
-race_top:vm_lock_enter
-race_top:vm_locked
-
 # vm->ractor.sched.grq_cnt++
 race_top:ractor_sched_enq
 race_top:ractor_sched_deq
