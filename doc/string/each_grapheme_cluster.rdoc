@@ -1,12 +1,35 @@
-Calls the given block with each successive grapheme cluster from +self+
+With a block given, calls the given block with each successive grapheme cluster from +self+
 (see {Unicode Grapheme Cluster Boundaries}[https://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries]);
 returns +self+:
 
-  s = "\u0061\u0308-pqr-\u0062\u0308-xyz-\u0063\u0308" # => "ä-pqr-b̈-xyz-c̈"
-  s.each_grapheme_cluster {|gc| print gc, ' ' }
+  a = []
+  'hello'.each_grapheme_cluster do |grapheme_cluster|
+    a.push(grapheme_cluster)
+  end
+  a  # => ["h", "e", "l", "l", "o"]
 
-Output:
+  a = []
+  # => []
+  a
+  'тест'.each_grapheme_cluster do |grapheme_cluster|
+    a.push(grapheme_cluster)
+  end
+  a # => ["т", "е", "с", "т"]
 
-  ä - p q r - b̈ - x y z - c̈
+  a = []
+  'こんにちは'.each_grapheme_cluster do |grapheme_cluster|
+    a.push(grapheme_cluster)
+  end
+  a # => ["こ", "ん", "に", "ち", "は"]
 
-Returns an enumerator if no block is given.
+  a = []
+  s = "\u0061\u0308-\u0062\u0308-\u0063\u0308"
+  # => "ä-b̈-c̈"
+  s.each_grapheme_cluster do |grapheme_cluster|
+    a.push(grapheme_cluster)
+  end
+  a # => ["ä", "-", "b̈", "-", "c̈"]
+
+With no block given, returns an enumerator.
+
+Related: see {Iterating}[rdoc-ref:String@Iterating].

@@ -9858,7 +9858,7 @@ rb_str_enumerate_codepoints(VALUE str, VALUE ary)
 
 /*
  *  call-seq:
- *    each_codepoint {|integer| ... } -> self
+ *    each_codepoint {|codepoint| ... } -> self
  *    each_codepoint                  -> enumerator
  *
  *  :include: doc/string/each_codepoint.rdoc
@@ -10028,7 +10028,7 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
 
 /*
  *  call-seq:
- *    each_grapheme_cluster {|gc| ... } -> self
+ *    each_grapheme_cluster {|grapheme_cluster| ... } -> self
  *    each_grapheme_cluster             -> enumerator
  *
  *  :include: doc/string/each_grapheme_cluster.rdoc
