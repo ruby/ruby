@@ -2417,12 +2417,13 @@ rb_str_bytesize(VALUE str)
  *  call-seq:
  *    empty? -> true or false
  *
- *  Returns +true+ if the length of +self+ is zero, +false+ otherwise:
+ *  Returns whether the length of +self+ is zero:
  *
  *    "hello".empty? # => false
  *    " ".empty? # => false
  *    "".empty? # => true
  *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 
 static VALUE
