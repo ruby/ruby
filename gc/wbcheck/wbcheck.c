@@ -1393,6 +1393,11 @@ wbcheck_finalize_zombies(rb_wbcheck_objspace_t *objspace)
             zombie->dfree(zombie->data);
         }
 
+        // Free the actual object memory and remove from tracking table
+        WBCHECK_DEBUG("wbcheck: freeing zombie object memory %p\n", (void *)zombie->obj);
+        wbcheck_unregister_object(objspace, zombie->obj);
+        free((void *)zombie->obj);
+
         free(zombie);
         zombie = next;
     }
