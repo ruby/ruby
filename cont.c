@@ -28,6 +28,7 @@ extern int madvise(caddr_t, size_t, int);
 #include "eval_intern.h"
 #include "internal.h"
 #include "internal/cont.h"
+#include "internal/jit_cont.h"
 #include "internal/thread.h"
 #include "internal/error.h"
 #include "internal/gc.h"

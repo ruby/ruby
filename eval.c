@@ -20,7 +20,7 @@
 #include "eval_intern.h"
 #include "internal.h"
 #include "internal/class.h"
-#include "internal/cont.h"
+#include "internal/jit_cont.h"
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/gc.h"

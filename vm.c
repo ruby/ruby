@@ -20,6 +20,7 @@
 #include "internal/eval.h"
 #include "internal/gc.h"
 #include "internal/inits.h"
+#include "internal/jit_cont.h"
 #include "internal/missing.h"
 #include "internal/namespace.h"
 #include "internal/object.h"

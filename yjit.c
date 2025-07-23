@@ -29,6 +29,7 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
+#include "internal/jit_cont.h"
 #include "zjit.h"
 
 // For mmapp(), sysconf()
