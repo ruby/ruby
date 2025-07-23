@@ -1907,15 +1907,30 @@ static VALUE cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_l
     return Qnil;
 }
 
+struct configure_state_data {
+    JSON_Generator_State *state;
+    VALUE vstate;  // Ruby object that owns the state, or Qfalse if stack-allocated
+};
+
+static inline void state_write_value(struct configure_state_data *data, VALUE *field, VALUE value)
+{
+    if (RTEST(data->vstate)) {
+        RB_OBJ_WRITE(data->vstate, field, value);
+    } else {
+        *field = value;
+    }
+}
+
 static int configure_state_i(VALUE key, VALUE val, VALUE _arg)
 {
-    JSON_Generator_State *state = (JSON_Generator_State *)_arg;
+    struct configure_state_data *data = (struct configure_state_data *)_arg;
+    JSON_Generator_State *state = data->state;
 
-         if (key == sym_indent)                { state->indent = string_config(val); }
-    else if (key == sym_space)                 { state->space = string_config(val); }
-    else if (key == sym_space_before)          { state->space_before = string_config(val); }
-    else if (key == sym_object_nl)             { state->object_nl = string_config(val); }
-    else if (key == sym_array_nl)              { state->array_nl = string_config(val); }
+         if (key == sym_indent)                { state_write_value(data, &state->indent, string_config(val)); }
+    else if (key == sym_space)                 { state_write_value(data, &state->space, string_config(val)); }
+    else if (key == sym_space_before)          { state_write_value(data, &state->space_before, string_config(val)); }
+    else if (key == sym_object_nl)             { state_write_value(data, &state->object_nl, string_config(val)); }
+    else if (key == sym_array_nl)              { state_write_value(data, &state->array_nl, string_config(val)); }
     else if (key == sym_max_nesting)           { state->max_nesting = long_config(val); }
     else if (key == sym_allow_nan)             { state->allow_nan = RTEST(val); }
     else if (key == sym_ascii_only)            { state->ascii_only = RTEST(val); }
@@ -1924,11 +1939,14 @@ static int configure_state_i(VALUE key, VALUE val, VALUE _arg)
     else if (key == sym_script_safe)           { state->script_safe = RTEST(val); }
     else if (key == sym_escape_slash)          { state->script_safe = RTEST(val); }
     else if (key == sym_strict)                { state->strict = RTEST(val); }
-    else if (key == sym_as_json)               { state->as_json = RTEST(val) ? rb_convert_type(val, T_DATA, "Proc", "to_proc") : Qfalse; }
+    else if (key == sym_as_json)               {
+        VALUE proc = RTEST(val) ? rb_convert_type(val, T_DATA, "Proc", "to_proc") : Qfalse;
+        state_write_value(data, &state->as_json, proc);
+    }
     return ST_CONTINUE;
 }
 
-static void configure_state(JSON_Generator_State *state, VALUE config)
+static void configure_state(JSON_Generator_State *state, VALUE vstate, VALUE config)
 {
     if (!RTEST(config)) return;
 
@@ -1936,15 +1954,20 @@ static void configure_state(JSON_Generator_State *state, VALUE config)
 
     if (!RHASH_SIZE(config)) return;
 
+    struct configure_state_data data = {
+        .state = state,
+        .vstate = vstate
+    };
+
     // We assume in most cases few keys are set so it's faster to go over
     // the provided keys than to check all possible keys.
-    rb_hash_foreach(config, configure_state_i, (VALUE)state);
+    rb_hash_foreach(config, configure_state_i, (VALUE)&data);
 }
 
 static VALUE cState_configure(VALUE self, VALUE opts)
 {
     GET_STATE(self);
-    configure_state(state, opts);
+    configure_state(state, self, opts);
     return self;
 }
 
@@ -1952,7 +1975,7 @@ static VALUE cState_m_generate(VALUE klass, VALUE obj, VALUE opts, VALUE io)
 {
     JSON_Generator_State state = {0};
     state_init(&state);
-    configure_state(&state, opts);
+    configure_state(&state, Qfalse, opts);
 
     char stack_buffer[FBUFFER_STACK_SIZE];
     FBuffer buffer = {
