@@ -2889,6 +2889,7 @@ str_encode_associate(VALUE str, int encidx)
  *
  *  Like #encode, but applies encoding changes to +self+; returns +self+.
  *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
