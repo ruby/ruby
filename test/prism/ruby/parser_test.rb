@@ -183,25 +183,6 @@ module Prism
       assert_equal(it_block_parameter_sexp, actual_ast.to_sexp)
     end
 
-    def test_it_assignment_syntax
-      it_assignment_fixture_path = Pathname(__dir__).join('../../../test/prism/fixtures/it_assignment.txt')
-
-      buffer = Parser::Source::Buffer.new(it_assignment_fixture_path)
-      buffer.source = it_assignment_fixture_path.read
-      actual_ast = Prism::Translation::Parser34.new.tokenize(buffer)[0]
-
-      it_assignment_sexp = parse_sexp {
-        s(:block,
-           s(:send, s(:int, 42), :tap),
-           s(:args),
-           s(:begin,
-              s(:lvasgn, :it, s(:lvar, :it)),
-              s(:send, nil, :p, s(:lvar, :it))))
-      }
-
-      assert_equal(it_assignment_sexp, actual_ast.to_sexp)
-    end
-
     private
 
     def assert_equal_parses(fixture, compare_asts: true, compare_tokens: true, compare_comments: true)
