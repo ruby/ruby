@@ -6346,7 +6346,7 @@ bigand_int(VALUE x, long xn, BDIGIT hibitsx, long y)
     BDIGIT hibitsy;
 
     if (y == 0) return INT2FIX(0);
-    if (xn == 0) return hibitsx ? LONG2NUM(y) : 0;
+    if (xn == 0) return hibitsx ? LONG2NUM(y) : INT2FIX(0);
     hibitsy = 0 <= y ? 0 : BDIGMAX;
     xds = BDIGITS(x);
 #if SIZEOF_BDIGIT >= SIZEOF_LONG
