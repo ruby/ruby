@@ -45,3 +45,4 @@ given, conversion from an encoding +enc+ to the same encoding +enc+
 no-op, i.e. the string is simply copied without any changes, and no
 exceptions are raised, even if there are invalid bytes.
 
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
