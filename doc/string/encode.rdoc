@@ -1,7 +1,10 @@
-Returns a copy of +self+ transcoded as determined by +dst_encoding+.
+Returns a copy of +self+ transcoded as determined by +dst_encoding+;
+see {Encodings}[rdoc-ref:encodings.rdoc].
+
 By default, raises an exception if +self+
 contains an invalid byte or a character not defined in +dst_encoding+;
 that behavior may be modified by encoding options; see below.
+
 
 With no arguments:
 
