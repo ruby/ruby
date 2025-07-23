@@ -121,6 +121,7 @@ VALUE rb_integer_float_eq(VALUE x, VALUE y);
 VALUE rb_str_convert_to_inum(VALUE str, int base, int badcheck, int raise_exception);
 VALUE rb_big_comp(VALUE x);
 VALUE rb_big_aref(VALUE x, VALUE y);
+VALUE rb_big_aref2(VALUE num, VALUE beg, VALUE len);
 VALUE rb_big_abs(VALUE x);
 VALUE rb_big_size_m(VALUE big);
 VALUE rb_big_bit_length(VALUE big);
