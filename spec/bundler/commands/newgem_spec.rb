@@ -746,7 +746,7 @@ RSpec.describe "bundle gem" do
       file.puts rakefile
     end
 
-    sys_exec(rake, dir: bundled_app(gem_name))
+    sys_exec("rake", dir: bundled_app(gem_name))
     expect(out).to include("SUCCESS")
   end
 

@@ -196,10 +196,6 @@ module Spec
       output
     end
 
-    def rake
-      "#{Gem.ruby} -S #{ENV["GEM_PATH"]}/bin/rake"
-    end
-
     def sys_exec(cmd, options = {}, &block)
       env = options[:env] || {}
       env["RUBYOPT"] = opt_add(opt_add("-r#{spec_dir}/support/switch_rubygems.rb", env["RUBYOPT"]), ENV["RUBYOPT"])

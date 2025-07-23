@@ -66,9 +66,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
   it "includes the relevant tasks" do
     define_local_gem_using_gem_tasks
 
-    with_gem_path_as(scoped_base_system_gem_path.to_s) do
-      sys_exec "#{rake} -T", env: { "GEM_HOME" => system_gem_path.to_s }
-    end
+    sys_exec "rake -T"
 
     expect(err).to be_empty
     expected_tasks = [
@@ -85,9 +83,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
   it "defines a working `rake install` task", :ruby_repo do
     define_local_gem_using_gem_tasks
 
-    with_gem_path_as(scoped_base_system_gem_path.to_s) do
-      sys_exec "#{rake} install", env: { "GEM_HOME" => system_gem_path.to_s }
-    end
+    sys_exec "rake install"
 
     expect(err).to be_empty
 
@@ -155,9 +151,8 @@ RSpec.describe "require 'bundler/gem_tasks'" do
   it "adds 'pkg' to rake/clean's CLOBBER" do
     define_local_gem_using_gem_tasks
 
-    with_gem_path_as(scoped_base_system_gem_path.to_s) do
-      sys_exec %(#{rake} -e 'load "Rakefile"; puts CLOBBER.inspect'), env: { "GEM_HOME" => system_gem_path.to_s }
-    end
+    sys_exec %(rake -e 'load "Rakefile"; puts CLOBBER.inspect')
+
     expect(out).to eq '["pkg"]'
   end
 end
