@@ -3,6 +3,9 @@ require_relative 'fixtures/classes'
 require_relative '../../shared/kernel/raise'
 
 describe "Thread#raise" do
+  it_behaves_like :kernel_raise, :raise, ThreadSpecs::NewThreadToRaise
+  it_behaves_like :kernel_raise_across_contexts, :raise, ThreadSpecs::NewThreadToRaise
+
   it "ignores dead threads and returns nil" do
     t = Thread.new { :dead }
     Thread.pass while t.alive?
@@ -228,94 +231,5 @@ describe "Thread#raise on same thread" do
       end
     end
     -> { t.value }.should raise_error(RuntimeError, '')
-  end
-end
-
-ruby_version_is "3.5" do
-  describe "Thread#raise with cause keyword argument" do
-    before :each do
-      ScratchPad.clear
-    end
-
-    it "accepts a cause keyword argument that overrides the last exception" do
-      original_cause = nil
-      override_cause = StandardError.new("override cause")
-
-      thread = Thread.new do
-        Thread.current.report_on_exception = false
-        begin
-          begin
-            raise "first error"
-          rescue => error
-            original_cause = error
-            sleep
-          end
-        rescue => error
-          error
-        end
-      end
-
-      ThreadSpecs.spin_until_sleeping(thread)
-      thread.raise("second error", cause: override_cause)
-      result = thread.value
-
-      result.should be_kind_of(RuntimeError)
-      result.message.should == "second error"
-      result.cause.should == override_cause
-      result.cause.should_not == original_cause
-    end
-
-    it "supports automatic cause chaining from calling context" do
-      thread = Thread.new do
-        Thread.current.report_on_exception = false
-        begin
-          begin
-            raise "original error"
-          rescue
-            sleep
-          end
-        rescue => error
-          error
-        end
-      end
-
-      ThreadSpecs.spin_until_sleeping(thread)
-      # No explicit cause - should use calling context's `$!`:
-      thread.raise("new error")
-      result = thread.value
-
-      result.should be_kind_of(RuntimeError)
-      result.message.should == "new error"
-      # Calling context has no current exception:
-      result.cause.should == nil
-    end
-
-    it "supports explicit cause: nil to prevent cause chaining" do
-      thread = Thread.new do
-        Thread.current.report_on_exception = false
-        begin
-          begin
-            raise "original error"
-          rescue
-            sleep
-          end
-        rescue => error
-          error
-        end
-      end
-
-      begin
-        raise "calling context error"
-      rescue
-        ThreadSpecs.spin_until_sleeping(thread)
-        # Explicit nil prevents chaining:
-        thread.raise("new error", cause: nil)
-        result = thread.value
-
-        result.should be_kind_of(RuntimeError)
-        result.message.should == "new error"
-        result.cause.should == nil
-      end
-    end
   end
 end

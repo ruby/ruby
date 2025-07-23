@@ -4,6 +4,7 @@ require_relative '../../shared/kernel/raise'
 
 describe "Fiber#raise" do
   it_behaves_like :kernel_raise, :raise, FiberSpecs::NewFiberToRaise
+  it_behaves_like :kernel_raise_across_contexts, :raise, FiberSpecs::NewFiberToRaise
 end
 
 describe "Fiber#raise" do
@@ -134,89 +135,5 @@ describe "Fiber#raise" do
     fiber = Fiber.new { root.transfer }
     fiber.transfer
     -> { fiber.raise "msg" }.should raise_error(RuntimeError, "msg")
-  end
-end
-
-ruby_version_is "3.5" do
-  describe "Fiber#raise with cause keyword argument" do
-    it "accepts a cause keyword argument that overrides the last exception" do
-      original_cause = nil
-      override_cause = StandardError.new("override cause")
-      result = nil
-
-      fiber = Fiber.new do
-        begin
-          begin
-            raise "first error"
-          rescue => error
-            original_cause = error
-            Fiber.yield
-          end
-        rescue => error
-          result = error
-        end
-      end
-
-      fiber.resume
-      fiber.raise("second error", cause: override_cause)
-
-      result.should be_kind_of(RuntimeError)
-      result.message.should == "second error"
-      result.cause.should == override_cause
-      result.cause.should_not == original_cause
-    end
-
-    it "supports automatic cause chaining from calling context" do
-      result = nil
-
-      fiber = Fiber.new do
-        begin
-          begin
-            raise "original error"
-          rescue
-            Fiber.yield
-          end
-        rescue => result
-          # Ignore.
-        end
-      end
-
-      fiber.resume
-      # No explicit cause - should use calling context's `$!`:
-      fiber.raise("new error")
-
-      result.should be_kind_of(RuntimeError)
-      result.message.should == "new error"
-      # Calling context has no current exception:
-      result.cause.should == nil
-    end
-
-    it "supports explicit cause: nil to prevent cause chaining" do
-      result = nil
-
-      fiber = Fiber.new do
-        begin
-          begin
-            raise "original error"
-          rescue
-            Fiber.yield
-          end
-        rescue => result
-          # Ignore.
-        end
-      end
-
-      begin
-        raise "calling context error"
-      rescue
-        fiber.resume
-        # Explicit nil prevents chaining:
-        fiber.raise("new error", cause: nil)
-
-        result.should be_kind_of(RuntimeError)
-        result.message.should == "new error"
-        result.cause.should == nil
-      end
-    end
   end
 end
