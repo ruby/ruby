@@ -222,6 +222,7 @@ static void wbcheck_foreach_object(rb_wbcheck_objspace_t *objspace, int (*callba
 static int wbcheck_verify_all_references_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *data);
 static int wbcheck_update_all_snapshots_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *data);
 static void wbcheck_finalize_zombies(rb_wbcheck_objspace_t *objspace);
+static void wbcheck_run_finalizers_for_object(VALUE obj, rb_wbcheck_object_info_t *info);
 
 // Helper functions for object tracking
 static rb_wbcheck_object_info_t *
@@ -706,6 +707,11 @@ wbcheck_mark_phase(rb_wbcheck_objspace_t *objspace)
                     }
                 }
 
+                // Mark finalizer array if it exists
+                if (info->finalizers) {
+                    wbcheck_mark_gray(objspace, info->finalizers);
+                }
+
                 // Mark this object black
                 info->color = WBCHECK_COLOR_BLACK;
                 WBCHECK_DEBUG("wbcheck: marked black: %p\n", (void *)obj);
@@ -729,6 +735,9 @@ wbcheck_sweep_callback(st_data_t key, st_data_t val, st_data_t arg, int error)
 
         // Clear weak references first
         rb_gc_obj_free_vm_weak_references(obj);
+
+        // Run finalizers if they exist
+        wbcheck_run_finalizers_for_object(obj, info);
 
         // Call rb_gc_obj_free which handles finalizers/zombies
         if (rb_gc_obj_free(objspace, obj)) {
@@ -1238,7 +1247,12 @@ rb_gc_impl_each_objects(void *objspace_ptr, int (*callback)(void *, void *, size
         .data = data
     };
 
+    bool old_gc_enabled = objspace->gc_enabled;
+    objspace->gc_enabled = false;
+
     wbcheck_foreach_object(objspace, each_objects_callback, &callback_data);
+
+    objspace->gc_enabled = old_gc_enabled;
 }
 
 void
@@ -1252,7 +1266,12 @@ rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), 
         .data = data
     };
 
+    bool old_gc_enabled = objspace->gc_enabled;
+    objspace->gc_enabled = false;
+
     wbcheck_foreach_object(objspace, each_object_callback, &callback_data);
+
+    objspace->gc_enabled = old_gc_enabled;
 }
 
 // Finalizers
@@ -1363,18 +1382,22 @@ wbcheck_get_final(long i, void *data)
     return RARRAY_AREF(table, i);
 }
 
-static int
-wbcheck_shutdown_call_finalizer_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *data)
+static void
+wbcheck_run_finalizers_for_object(VALUE obj, rb_wbcheck_object_info_t *info)
 {
     if (info->finalizers) {
         VALUE table = info->finalizers;
         long count = RARRAY_LEN(table);
-
         rb_gc_run_obj_finalizer(rb_obj_id(obj), count, wbcheck_get_final, (void *)table);
-
         FL_UNSET(obj, FL_FINALIZE);
     }
+    info->finalizers = 0;
+}
 
+static int
+wbcheck_shutdown_call_finalizer_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *data)
+{
+    wbcheck_run_finalizers_for_object(obj, info);
     return ST_CONTINUE;  /* Keep iterating through all objects */
 }
 
