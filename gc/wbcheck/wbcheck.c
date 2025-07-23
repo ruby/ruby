@@ -505,7 +505,8 @@ rb_gc_impl_gc_enable(void *objspace_ptr)
 void
 rb_gc_impl_gc_disable(void *objspace_ptr, bool finish_current_gc)
 {
-    // Stub implementation
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    objspace->gc_enabled = false;
 }
 
 bool
