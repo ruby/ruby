@@ -1177,9 +1177,12 @@ rb_enc_copy(VALUE obj1, VALUE obj2)
 
 /*
  *  call-seq:
- *     obj.encoding   -> encoding
+ *     encoding -> encoding
  *
- *  Returns the Encoding object that represents the encoding of obj.
+ *  Returns an Encoding object that represents the encoding of +self+;
+ *  see {Encodings}[rdoc-ref:encodings.rdoc].
+ *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 
 VALUE
