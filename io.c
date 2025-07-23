@@ -15983,6 +15983,7 @@ Init_IO(void)
     rb_define_method(rb_cARGF, "set_encoding", argf_set_encoding, -1);
 
     argf = rb_class_new_instance(0, 0, rb_cARGF);
+    rb_vm_register_global_object(argf);
 
     rb_define_readonly_variable("$<", &argf);
     /*
