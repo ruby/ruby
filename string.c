@@ -2419,9 +2419,9 @@ rb_str_bytesize(VALUE str)
  *
  *  Returns whether the length of +self+ is zero:
  *
- *    "hello".empty? # => false
- *    " ".empty? # => false
- *    "".empty? # => true
+ *    'hello'.empty? # => false
+ *    ' '.empty? # => false
+ *    ''.empty? # => true
  *
  *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
