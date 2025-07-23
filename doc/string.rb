@@ -334,7 +334,7 @@
 # _Counts_
 #
 # - #length (aliased as #size): Returns the count of characters (not bytes).
-# - #empty?: Returns +true+ if +self.length+ is zero; +false+ otherwise.
+# - #empty?: Returns whether the length of +self+ is zero.
 # - #bytesize: Returns the count of bytes.
 # - #count: Returns the count of substrings matching given strings.
 #
