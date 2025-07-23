@@ -788,9 +788,8 @@ wbcheck_clear_weak_references(rb_wbcheck_objspace_t *objspace)
         VALUE *weak_ptr = (VALUE *)objspace->weak_references->items[i];
         VALUE obj = *weak_ptr;
 
-        if (RB_SPECIAL_CONST_P(obj)) {
-            continue; // Special constants are always live
-        }
+        // We should never see special constants in weak references
+        RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
 
         // Look up the object in our table
         st_data_t value;
@@ -804,7 +803,8 @@ wbcheck_clear_weak_references(rb_wbcheck_objspace_t *objspace)
                 WBCHECK_DEBUG("wbcheck: cleared weak reference to dead object %p\n", (void *)obj);
             }
         } else {
-            // Object not in our table means it's not managed by us, leave it alone
+            // All objects should be in our table - this is a bug
+            rb_bug("wbcheck: weak reference to object %p not in our object table", (void *)obj);
         }
     }
 
@@ -871,7 +871,6 @@ maybe_gc(void *objspace_ptr)
 
     // Run full GC if we exceed the threshold
     if (st_table_size(objspace->object_table) >= objspace->gc_threshold && objspace->gc_enabled && ruby_native_thread_p()) {
-        fprintf(stderr, "GCing at %i\n", st_table_size(objspace->object_table));
         wbcheck_full_gc(objspace);
     }
 }
