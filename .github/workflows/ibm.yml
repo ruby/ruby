@@ -23,4 +23,8 @@ jobs:
       - run: ls -d ~
       - run: |
           echo "HOME: ${HOME}"
+      - run: |
+          echo "HOME=$(ls -d ~)" >> $GITHUB_ENV
+      - run: |
+          echo "HOME: ${HOME}"
       - run: git config --global core.autocrlf false
