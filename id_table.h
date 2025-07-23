@@ -42,6 +42,15 @@ int rb_managed_id_table_lookup(VALUE table, ID id, VALUE *valp);
 size_t rb_managed_id_table_size(VALUE table);
 void rb_managed_id_table_foreach(VALUE table, rb_id_table_foreach_func_t *func, void *data);
 
+VALUE rb_marked_id_table_new(size_t capa);
+VALUE rb_marked_id_table_dup(VALUE table);
+int rb_marked_id_table_insert(VALUE table, ID id, VALUE val);
+int rb_marked_id_table_lookup(VALUE table, ID id, VALUE *valp);
+int rb_marked_id_table_delete(VALUE table, ID id);
+
+size_t rb_marked_id_table_size(VALUE table);
+void rb_marked_id_table_foreach(VALUE table, rb_id_table_foreach_func_t *func, void *data);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 size_t rb_id_table_size(const struct rb_id_table *tbl);
 RUBY_SYMBOL_EXPORT_END

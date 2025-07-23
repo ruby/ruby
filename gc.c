@@ -1214,9 +1214,6 @@ classext_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
 
     rb_id_table_free(RCLASSEXT_M_TBL(ext));
     rb_cc_tbl_free(RCLASSEXT_CC_TBL(ext), args->klass);
-    if (!RCLASSEXT_SHARED_CONST_TBL(ext) && (tbl = RCLASSEXT_CONST_TBL(ext)) != NULL) {
-        rb_free_const_table(tbl);
-    }
     if ((tbl = RCLASSEXT_CVC_TBL(ext)) != NULL) {
         rb_id_table_foreach_values(tbl, cvar_table_free_i, NULL);
         rb_id_table_free(tbl);
@@ -2297,9 +2294,6 @@ classext_memsize(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
     if (RCLASSEXT_CVC_TBL(ext)) {
         s += rb_id_table_memsize(RCLASSEXT_CVC_TBL(ext));
     }
-    if (RCLASSEXT_CONST_TBL(ext)) {
-        s += rb_id_table_memsize(RCLASSEXT_CONST_TBL(ext));
-    }
     if (RCLASSEXT_CC_TBL(ext)) {
         s += cc_table_memsize(RCLASSEXT_CC_TBL(ext));
     }
@@ -2823,23 +2817,6 @@ mark_m_tbl(void *objspace, struct rb_id_table *tbl)
     }
 }
 
-static enum rb_id_table_iterator_result
-mark_const_entry_i(VALUE value, void *objspace)
-{
-    const rb_const_entry_t *ce = (const rb_const_entry_t *)value;
-
-    gc_mark_internal(ce->value);
-    gc_mark_internal(ce->file);
-    return ID_TABLE_CONTINUE;
-}
-
-static void
-mark_const_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
-{
-    if (!tbl) return;
-    rb_id_table_foreach_values(tbl, mark_const_entry_i, objspace);
-}
-
 struct mark_cc_entry_args {
     rb_objspace_t *objspace;
     VALUE klass;
@@ -3125,9 +3102,7 @@ gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE namespace, void *a
     }
     mark_m_tbl(objspace, RCLASSEXT_M_TBL(ext));
     gc_mark_internal(RCLASSEXT_FIELDS_OBJ(ext));
-    if (!RCLASSEXT_SHARED_CONST_TBL(ext) && RCLASSEXT_CONST_TBL(ext)) {
-        mark_const_tbl(objspace, RCLASSEXT_CONST_TBL(ext));
-    }
+    gc_mark_internal(RCLASSEXT_CONST_TBL(ext));
     mark_m_tbl(objspace, RCLASSEXT_CALLABLE_M_TBL(ext));
     mark_cc_tbl(objspace, RCLASSEXT_CC_TBL(ext), obj);
     mark_cvc_tbl(objspace, RCLASSEXT_CVC_TBL(ext));
@@ -3765,29 +3740,6 @@ update_cvc_tbl(void *objspace, struct rb_id_table *tbl)
     rb_id_table_foreach_values(tbl, update_cvc_tbl_i, objspace);
 }
 
-static enum rb_id_table_iterator_result
-update_const_tbl_i(VALUE value, void *objspace)
-{
-    rb_const_entry_t *ce = (rb_const_entry_t *)value;
-
-    if (rb_gc_impl_object_moved_p(objspace, ce->value)) {
-        ce->value = gc_location_internal(objspace, ce->value);
-    }
-
-    if (rb_gc_impl_object_moved_p(objspace, ce->file)) {
-        ce->file = gc_location_internal(objspace, ce->file);
-    }
-
-    return ID_TABLE_CONTINUE;
-}
-
-static void
-update_const_tbl(void *objspace, struct rb_id_table *tbl)
-{
-    if (!tbl) return;
-    rb_id_table_foreach_values(tbl, update_const_tbl_i, objspace);
-}
-
 static void
 update_subclasses(void *objspace, rb_classext_t *ext)
 {
@@ -3837,9 +3789,7 @@ update_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
     update_m_tbl(objspace, RCLASSEXT_M_TBL(ext));
 
     UPDATE_IF_MOVED(objspace, ext->fields_obj);
-    if (!RCLASSEXT_SHARED_CONST_TBL(ext)) {
-        update_const_tbl(objspace, RCLASSEXT_CONST_TBL(ext));
-    }
+    UPDATE_IF_MOVED(objspace, RCLASSEXT_CONST_TBL(ext));
     update_cc_tbl(objspace, RCLASSEXT_CC_TBL(ext));
     update_cvc_tbl(objspace, RCLASSEXT_CVC_TBL(ext));
     update_superclasses(objspace, ext);
@@ -3858,6 +3808,7 @@ update_iclass_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void 
         UPDATE_IF_MOVED(objspace, RCLASSEXT_SUPER(ext));
     }
     update_m_tbl(objspace, RCLASSEXT_M_TBL(ext));
+    UPDATE_IF_MOVED(objspace, RCLASSEXT_CONST_TBL(ext));
     update_m_tbl(objspace, RCLASSEXT_CALLABLE_M_TBL(ext));
     update_cc_tbl(objspace, RCLASSEXT_CC_TBL(ext));
     update_subclasses(objspace, ext);

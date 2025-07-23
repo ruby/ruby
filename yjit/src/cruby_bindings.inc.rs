@@ -411,6 +411,7 @@ pub const imemo_callinfo: imemo_type = 11;
 pub const imemo_callcache: imemo_type = 12;
 pub const imemo_constcache: imemo_type = 13;
 pub const imemo_fields: imemo_type = 14;
+pub const imemo_constentry: imemo_type = 15;
 pub type imemo_type = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

@@ -30,17 +30,19 @@ typedef enum {
 #define RB_CONST_DEPRECATED_P(ce) \
     ((ce)->flag & CONST_DEPRECATED)
 
+// imemo_constentry
 typedef struct rb_const_entry_struct {
-    rb_const_flag_t flag;
-    int line;
+    VALUE _imemo_flags;
+
     VALUE value;            /* should be mark */
     VALUE file;             /* should be mark */
+    int line;
+    rb_const_flag_t flag;
 } rb_const_entry_t;
 
 VALUE rb_mod_private_constant(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_mod_public_constant(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_mod_deprecate_constant(int argc, const VALUE *argv, VALUE obj);
-void rb_free_const_table(struct rb_id_table *tbl);
 VALUE rb_const_source_location(VALUE, ID);
 
 int rb_autoloading_value(VALUE mod, ID id, VALUE *value, rb_const_flag_t *flag);
