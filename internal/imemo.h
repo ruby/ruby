@@ -38,11 +38,10 @@ enum imemo_type {
     imemo_iseq           =  7,
     imemo_tmpbuf         =  8,
     imemo_ast            =  9, // Obsolete due to the universal parser
-    imemo_parser_strterm = 10,
-    imemo_callinfo       = 11,
-    imemo_callcache      = 12,
-    imemo_constcache     = 13,
-    imemo_fields   = 14,
+    imemo_callinfo       = 10,
+    imemo_callcache      = 11,
+    imemo_constcache     = 12,
+    imemo_fields   = 13,
 };
 
 /* CREF (Class REFerence) is defined in method.h */

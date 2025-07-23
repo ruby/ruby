@@ -26,7 +26,6 @@ rb_imemo_name(enum imemo_type type)
         IMEMO_NAME(iseq);
         IMEMO_NAME(memo);
         IMEMO_NAME(ment);
-        IMEMO_NAME(parser_strterm);
         IMEMO_NAME(svar);
         IMEMO_NAME(throw_data);
         IMEMO_NAME(tmpbuf);
@@ -249,8 +248,6 @@ rb_imemo_memsize(VALUE obj)
         size += sizeof(((rb_method_entry_t *)obj)->def);
 
         break;
-      case imemo_parser_strterm:
-        break;
       case imemo_svar:
         break;
       case imemo_throw_data:
@@ -460,8 +457,6 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
       case imemo_ment:
         mark_and_move_method_entry((rb_method_entry_t *)obj, reference_updating);
         break;
-      case imemo_parser_strterm:
-        break;
       case imemo_svar: {
         struct vm_svar *svar = (struct vm_svar *)obj;
 
@@ -656,10 +651,6 @@ rb_imemo_free(VALUE obj)
       case imemo_ment:
         rb_free_method_entry((rb_method_entry_t *)obj);
         RB_DEBUG_COUNTER_INC(obj_imemo_ment);
-
-        break;
-      case imemo_parser_strterm:
-        RB_DEBUG_COUNTER_INC(obj_imemo_parser_strterm);
 
         break;
       case imemo_svar:
