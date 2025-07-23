@@ -48,6 +48,29 @@ wbcheck_debug_obj_info_dump(VALUE obj)
 // Forward declaration
 static void lock_and_maybe_gc(void *objspace_ptr);
 
+// Configure wbcheck from environment variables
+static void
+wbcheck_configure_from_env(void)
+{
+    // Configure debug output based on environment variable
+    const char *debug_env = getenv("WBCHECK_DEBUG");
+    if (debug_env && (strcmp(debug_env, "1") == 0 || strcmp(debug_env, "true") == 0)) {
+        wbcheck_debug_enabled = true;
+    }
+
+    // Configure verification after write barrier based on environment variable
+    const char *verify_after_wb_env = getenv("WBCHECK_VERIFY_AFTER_WB");
+    if (verify_after_wb_env && (strcmp(verify_after_wb_env, "1") == 0 || strcmp(verify_after_wb_env, "true") == 0)) {
+        wbcheck_verify_after_wb_enabled = true;
+    }
+
+    // Configure useless write barrier warnings based on environment variable
+    const char *warn_useless_wb_env = getenv("WBCHECK_WARN_USELESS_WB");
+    if (warn_useless_wb_env && (strcmp(warn_useless_wb_env, "1") == 0 || strcmp(warn_useless_wb_env, "true") == 0)) {
+        wbcheck_warn_useless_wb_enabled = true;
+    }
+}
+
 #define BASE_SLOT_SIZE 40
 #define HEAP_COUNT 5
 #define MAX_HEAP_SIZE (BASE_SLOT_SIZE * 16)
@@ -196,6 +219,7 @@ static rb_wbcheck_objspace_t *wbcheck_global_objspace = NULL;
 // Forward declarations
 static void wbcheck_foreach_object(rb_wbcheck_objspace_t *objspace, int (*callback)(VALUE obj, rb_wbcheck_object_info_t *info, void *data), void *data);
 static int wbcheck_verify_all_references_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *data);
+static int wbcheck_update_all_snapshots_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *data);
 static void wbcheck_finalize_zombies(rb_wbcheck_objspace_t *objspace);
 
 // Helper functions for object tracking
@@ -345,6 +369,8 @@ wbcheck_unregister_object(void *objspace_ptr, VALUE obj)
 void *
 rb_gc_impl_objspace_alloc(void)
 {
+    wbcheck_configure_from_env();
+    
     rb_wbcheck_objspace_t *objspace = calloc(1, sizeof(rb_wbcheck_objspace_t));
     if (!objspace) rb_bug("wbcheck: failed to allocate objspace");
 
@@ -399,24 +425,6 @@ gc_verify_internal_consistency(VALUE self)
 void
 rb_gc_impl_init(void)
 {
-    // Configure debug output based on environment variable
-    const char *debug_env = getenv("WBCHECK_DEBUG");
-    if (debug_env && (strcmp(debug_env, "1") == 0 || strcmp(debug_env, "true") == 0)) {
-        wbcheck_debug_enabled = true;
-    }
-
-    // Configure verification after write barrier based on environment variable
-    const char *verify_after_wb_env = getenv("WBCHECK_VERIFY_AFTER_WB");
-    if (verify_after_wb_env && (strcmp(verify_after_wb_env, "1") == 0 || strcmp(verify_after_wb_env, "true") == 0)) {
-        wbcheck_verify_after_wb_enabled = true;
-    }
-
-    // Configure useless write barrier warnings based on environment variable
-    const char *warn_useless_wb_env = getenv("WBCHECK_WARN_USELESS_WB");
-    if (warn_useless_wb_env && (strcmp(warn_useless_wb_env, "1") == 0 || strcmp(warn_useless_wb_env, "true") == 0)) {
-        wbcheck_warn_useless_wb_enabled = true;
-    }
-
     VALUE gc_constants = rb_hash_new();
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(BASE_SLOT_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
@@ -643,7 +651,7 @@ wbcheck_mark_gray(rb_wbcheck_objspace_t *objspace, VALUE obj)
 
     st_data_t value;
     if (!st_lookup(objspace->object_table, (st_data_t)obj, &value)) {
-        return; // Not our object
+        rb_bug("wbcheck: asked to mark object %p not in our object table", (void *)obj);
     }
 
     rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)value;
@@ -775,9 +783,9 @@ wbcheck_full_gc(rb_wbcheck_objspace_t *objspace)
 {
     WBCHECK_DEBUG("wbcheck: starting full GC\n");
 
-    // First, verify all objects to update their reference snapshots
-    WBCHECK_DEBUG("wbcheck: verifying all objects\n");
-    wbcheck_foreach_object(objspace, wbcheck_verify_all_references_callback, objspace);
+    // First, update snapshots for all objects (verify wb_protected ones)
+    WBCHECK_DEBUG("wbcheck: updating snapshots for all objects\n");
+    wbcheck_foreach_object(objspace, wbcheck_update_all_snapshots_callback, objspace);
 
     // Now start tri-color marking
     wbcheck_mark_phase(objspace);
@@ -823,6 +831,7 @@ maybe_gc(void *objspace_ptr)
 
     // Run full GC if we exceed the threshold
     if (st_table_size(objspace->object_table) >= objspace->gc_threshold && objspace->gc_enabled && ruby_native_thread_p()) {
+        fprintf(stderr, "GCing at %i\n", st_table_size(objspace->object_table));
         wbcheck_full_gc(objspace);
     }
 }
@@ -1333,6 +1342,25 @@ wbcheck_verify_all_references_callback(VALUE obj, rb_wbcheck_object_info_t *info
 {
     void *objspace_ptr = data;
     wbcheck_verify_object_references(objspace_ptr, obj);
+    return ST_CONTINUE;
+}
+
+static int
+wbcheck_update_all_snapshots_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *data)
+{
+    void *objspace_ptr = data;
+    
+    // For wb_protected objects, do full verification if they have a snapshot
+    if (info->wb_protected && info->state != WBCHECK_STATE_CLEAR) {
+        wbcheck_verify_object_references(objspace_ptr, obj);
+    } else {
+        // For CLEAR objects (wb_protected or not) and non-wb_protected objects, just take a new snapshot
+        wbcheck_object_list_t *current_refs = wbcheck_collect_references_from_object(obj, info);
+        wbcheck_object_list_free(info->gc_mark_snapshot);
+        info->gc_mark_snapshot = current_refs;
+        info->state = WBCHECK_STATE_MARKED;
+    }
+    
     return ST_CONTINUE;
 }
 
