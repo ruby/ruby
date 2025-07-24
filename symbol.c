@@ -827,12 +827,10 @@ sym_find(VALUE str)
 {
     VALUE sym;
 
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        struct sym_set_static_sym_entry static_sym = {
-            .str = str
-        };
-        sym = rb_concurrent_set_find(&symbols->sym_set, sym_set_static_sym_tag(&static_sym));
-    }
+    struct sym_set_static_sym_entry static_sym = {
+        .str = str
+    };
+    sym = rb_concurrent_set_find(&ruby_global_symbols.sym_set, sym_set_static_sym_tag(&static_sym));
 
     if (sym) {
         return sym_set_entry_to_sym(sym);
