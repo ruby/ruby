@@ -30,22 +30,20 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "does not create ./.bundle by default" do
-      gemfile <<-G
+      install_gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
       G
 
-      bundle :install # can't use install_gemfile since it sets retry
       expect(bundled_app(".bundle")).not_to exist
     end
 
     it "does not create ./.bundle by default when installing to system gems" do
-      gemfile <<-G
+      install_gemfile <<-G, env: { "BUNDLE_PATH__SYSTEM" => "true" }
         source "https://gem.repo1"
         gem "myrack"
       G
 
-      bundle :install, env: { "BUNDLE_PATH__SYSTEM" => "true" } # can't use install_gemfile since it sets retry
       expect(bundled_app(".bundle")).not_to exist
     end
 
