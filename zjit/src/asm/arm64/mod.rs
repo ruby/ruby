@@ -13,6 +13,21 @@ use inst::*;
 pub use arg::*;
 pub use opnd::*;
 
+/// The extend type for register operands in extended register instructions.
+/// It's the reuslt size is determined by the the destination register and
+/// the source size interpreted using the last letter.
+#[derive(Clone, Copy)]
+pub enum ExtendType {
+    UXTB = 0b000, // unsigned extend byte
+    UXTH = 0b001, // unsigned extend halfword
+    UXTW = 0b010, // unsigned extend word
+    UXTX = 0b011, // unsigned extend doubleword
+    SXTB = 0b100, // signed extend byte
+    SXTH = 0b101, // signed extend halfword
+    SXTW = 0b110, // signed extend word
+    SXTX = 0b111, // signed extend doubleword
+}
+
 /// Checks that a signed value fits within the specified number of bits.
 pub const fn imm_fits_bits(imm: i64, num_bits: u8) -> bool {
     let minimum = if num_bits == 64 { i64::MIN } else { -(2_i64.pow((num_bits as u32) - 1)) };
@@ -54,6 +69,42 @@ pub fn add(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
             }
         },
         _ => panic!("Invalid operand combination to add instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// Encode ADD (extended register)
+///
+/// <https://developer.arm.com/documentation/ddi0602/2023-09/Base-Instructions/ADD--extended-register---Add--extended-register-->
+///
+///   31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12  11 10 09 08 07 06 05 04 03 02 01 00
+///             0  1  0  1  1  0  0  1  │           │ │      │  │      │  │           │  │           │
+///   sf op  S                          └────rm─────┘ └option┘  └─imm3─┘  └────rn─────┘  └────rd─────┘
+fn encode_add_extend(rd: u8, rn: u8, rm: u8, extend_type: ExtendType, shift: u8, num_bits: u8) -> [u8; 4] {
+    assert!(shift <= 4, "shift must be 0-4");
+
+    ((Sf::from(num_bits) as u32) << 31 |
+     0b0 << 30 |        // op = 0 for add
+     0b0 << 29 |        // S = 0 for non-flag-setting
+     0b01011001 << 21 |
+     (rm as u32) << 16 |
+     (extend_type as u32) << 13 |
+     (shift as u32) << 10 |
+     (rn as u32) << 5 |
+     rd as u32).to_le_bytes()
+}
+
+/// ADD (extended register) - add rn and rm with UXTX extension (no extension for 64-bit registers)
+/// This is equivalent to a regular ADD for 64-bit registers since UXTX with shift 0 means no modification.
+/// For reg_no=31, rd and rn mean SP while with rm means the zero register.
+pub fn add_extended(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn, rm) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
+            encode_add_extend(rd.reg_no, rn.reg_no, rm.reg_no, ExtendType::UXTX, 0, rd.num_bits)
+        },
+        _ => panic!("Invalid operand combination to add_extend instruction."),
     };
 
     cb.write_bytes(&bytes);
@@ -1142,6 +1193,7 @@ fn cbz_cbnz(num_bits: u8, op: bool, offset: InstructionOffset, rt: u8) -> [u8; 4
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::assertions::assert_disasm;
 
     /// Check that the bytes for an instruction sequence match a hex string
     fn check_bytes<R>(bytes: &str, run: R) where R: FnOnce(&mut super::CodeBlock) {
@@ -1674,5 +1726,20 @@ mod tests {
     #[test]
     fn test_tst_32b_immediate() {
         check_bytes("1f3c0072", |cb| tst(cb, W0, A64Opnd::new_uimm(0xffff)));
+    }
+
+    #[test]
+    fn test_add_extend_various_regs() {
+        let mut cb = CodeBlock::new_dummy();
+
+        add_extended(&mut cb, X10, X11, X9);
+        add_extended(&mut cb, X30, X30, X30);
+        add_extended(&mut cb, X31, X31, X31);
+
+        assert_disasm!(cb, "6a61298bde633e8bff633f8b", "
+            0x0: add x10, x11, x9, uxtx
+            0x4: add x30, x30, x30, uxtx
+            0x8: add sp, sp, xzr
+        ");
     }
 }
