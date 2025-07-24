@@ -10,7 +10,6 @@ mod sys_reg;
 mod truncate;
 
 pub use bitmask_imm::BitmaskImmediate;
-#[cfg(target_arch = "aarch64")]
 pub use condition::Condition;
 pub use inst_offset::InstructionOffset;
 pub use sf::Sf;
