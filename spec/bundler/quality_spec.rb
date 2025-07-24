@@ -115,10 +115,8 @@ RSpec.describe "The library itself" do
   end
 
   it "maintains language quality of the documentation" do
-    included = /ronn/
     error_messages = []
     man_tracked_files.each do |filename|
-      next unless filename&.match?(included)
       error_messages << check_for_expendable_words(filename)
       error_messages << check_for_specific_pronouns(filename)
     end
