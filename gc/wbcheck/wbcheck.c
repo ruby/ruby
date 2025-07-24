@@ -351,7 +351,7 @@ wbcheck_register_object(void *objspace_ptr, VALUE obj, size_t alloc_size, bool w
     info->gc_mark_snapshot = NULL;  /* No snapshot initially */
     info->writebarrier_children = NULL;  /* No write barrier children initially */
     info->state = WBCHECK_STATE_CLEAR;  /* Start in clear state */
-    info->color = WBCHECK_COLOR_WHITE;  /* Start as white (unmarked) */
+    info->color = WBCHECK_COLOR_BLACK;  /* Start as black to survive current GC */
 
     // Store object info in hash table (VALUE -> rb_wbcheck_object_info_t*)
     st_insert(objspace->object_table, (st_data_t)obj, (st_data_t)info);
