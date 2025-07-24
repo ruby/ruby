@@ -136,19 +136,11 @@ module Spec
     end
 
     def default_bundle_path(*path)
-      if Bundler.feature_flag.bundler_4_mode?
-        local_gem_path(*path)
-      else
-        system_gem_path(*path)
-      end
+      system_gem_path(*path)
     end
 
     def default_cache_path(*path)
-      if Bundler.feature_flag.global_gem_cache?
-        home(".bundle/cache", *path)
-      else
-        default_bundle_path("cache/bundler", *path)
-      end
+      default_bundle_path("cache/bundler", *path)
     end
 
     def compact_index_cache_path
