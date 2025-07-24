@@ -6,7 +6,7 @@
 .SH "SYNOPSIS"
 \fBbundle plugin\fR install PLUGINS [\-\-source=\fISOURCE\fR] [\-\-version=\fIversion\fR] [\-\-git=\fIgit\-url\fR] [\-\-branch=\fIbranch\fR|\-\-ref=\fIrev\fR] [\-\-path=\fIpath\fR]
 .br
-\fBbundle plugin\fR uninstall PLUGINS
+\fBbundle plugin\fR uninstall PLUGINS [\-\-all]
 .br
 \fBbundle plugin\fR list
 .br
@@ -41,8 +41,16 @@ When you specify \fB\-\-git\fR, you can use \fB\-\-branch\fR or \fB\-\-ref\fR to
 .TP
 \fBbundle plugin install bundler\-graph \-\-path \.\./bundler\-graph\fR
 Install bundler\-graph gem from a local path\.
+.TP
+\fBbundle plugin install bundler\-graph \-\-local\-git \.\./bundler\-graph\fR
+This option is deprecated in favor of \fB\-\-git\fR\.
 .SS "uninstall"
 Uninstall the plugin(s) specified in PLUGINS\.
+.P
+\fBOPTIONS\fR
+.TP
+\fB\-\-all\fR
+Uninstall all the installed plugins\. If no plugin is installed, then it does nothing\.
 .SS "list"
 List the installed plugins and available commands\.
 .P

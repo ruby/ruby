@@ -288,8 +288,6 @@ RSpec.describe "The library itself" do
   end
 
   def cli_and_man_pages_in_sync!(commands)
-    undocumented_options = ["--all", "--local-git"]
-
     commands.each do |command_name, opts|
       man_page_path = man_tracked_files.find {|f| File.basename(f) == "bundle-#{command_name}.1.ronn" }
       expect(man_page_path).to_not be_nil, "The command #{command_name} has no associated man page."
@@ -298,8 +296,6 @@ RSpec.describe "The library itself" do
 
       man_page_content = File.read(man_page_path)
       opts.each do |option_name|
-        next if undocumented_options.include?(option_name.to_s)
-
         error_msg = <<~EOM
           The command #{command_name} has no mention of the option or subcommand `#{option_name}` in its man page.
           Document the `#{option_name}` in the man page to discard this error.
