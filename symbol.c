@@ -51,7 +51,6 @@
 #define STATIC_SYM2ID(sym) RSHIFT((VALUE)(sym), RUBY_SPECIAL_SHIFT)
 
 static ID register_static_symid(ID, const char *, long, rb_encoding *);
-static ID register_static_symid_str(ID, VALUE);
 #define REGISTER_SYMID(id, name) register_static_symid((id), (name), strlen(name), enc)
 #include "id.c"
 
@@ -803,21 +802,12 @@ static ID
 register_static_symid(ID id, const char *name, long len, rb_encoding *enc)
 {
     VALUE str = rb_enc_str_new(name, len, enc);
-    return register_static_symid_str(id, str);
-}
-
-static ID
-register_static_symid_str(ID id, VALUE str)
-{
     OBJ_FREEZE(str);
     str = rb_fstring(str);
 
     RUBY_DTRACE_CREATE_HOOK(SYMBOL, RSTRING_PTR(str));
 
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        // TODO: remove this function
-        sym_find_or_insert_static_symbol_id(symbols, str, id);
-    }
+    sym_find_or_insert_static_symbol_id(&ruby_global_symbols, str, id);
 
     return id;
 }
