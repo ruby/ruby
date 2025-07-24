@@ -67,10 +67,13 @@ impl From<Opnd> for A64Opnd {
             Opnd::Reg(reg) => A64Opnd::Reg(reg),
             Opnd::Mem(Mem { base: MemBase::Reg(reg_no), num_bits, disp }) => {
                 A64Opnd::new_mem(num_bits, A64Opnd::Reg(A64Reg { num_bits, reg_no }), disp)
-            },
+            }
             Opnd::Mem(Mem { base: MemBase::VReg(_), .. }) => {
                 panic!("attempted to lower an Opnd::Mem with a MemBase::VReg base")
-            },
+            }
+            Opnd::Mem(Mem { base: MemBase::FrameBase, .. }) => {
+                panic!("attempted to lower an Opnd::Mem with a MemBase::FrameBase base")
+            }
             Opnd::VReg { .. } => panic!("attempted to lower an Opnd::VReg"),
             Opnd::Value(_) => panic!("attempted to lower an Opnd::Value"),
             Opnd::None => panic!(
@@ -225,13 +228,19 @@ impl Assembler
         fn split_lea_operand(asm: &mut Assembler, opnd: Opnd) -> Opnd {
             match opnd {
                 Opnd::Mem(Mem { base, disp, num_bits }) => {
-                    if disp >= 0 && ShiftedImmediate::try_from(disp as u64).is_ok() {
+                    if let MemBase::FrameBase = base {
+                        // Frame base offset is unkonwn at this point so
+                        // to gurantee that it'll be encodable, put it in a register.
+                        let base = asm.lea(Opnd::frame_base(num_bits, 0));
+                        split_lea_operand(asm, Opnd::mem(num_bits, base, disp))
+                    } else if disp >= 0 && ShiftedImmediate::try_from(disp as u64).is_ok() {
                         asm.lea(opnd)
                     } else {
                         let disp = asm.load(Opnd::Imm(disp.into()));
                         let reg = match base {
                             MemBase::Reg(reg_no) => Opnd::Reg(Reg { reg_no, num_bits }),
-                            MemBase::VReg(idx) => Opnd::VReg { idx, num_bits }
+                            MemBase::VReg(idx) => Opnd::VReg { idx, num_bits },
+                            MemBase::FrameBase => unreachable!(), // Covered above
                         };
 
                         asm.add(reg, disp)
@@ -390,25 +399,24 @@ impl Assembler
         let asm = &mut asm_local;
 
         while let Some((index, mut insn)) = iterator.next() {
-            // Here we're going to map the operands of the instruction to load
-            // any Opnd::Value operands into registers if they are heap objects
-            // such that only the Op::Load instruction needs to handle that
-            // case. If the values aren't heap objects then we'll treat them as
-            // if they were just unsigned integer.
             let is_load = matches!(insn, Insn::Load { .. } | Insn::LoadInto { .. });
             let mut opnd_iter = insn.opnd_iter_mut();
-
             while let Some(opnd) = opnd_iter.next() {
                 match opnd {
+                    // Here we're going to map the operands of the instruction to load
+                    // any Opnd::Value operands into registers if they are heap objects
+                    // such that only the Op::Load instruction needs to handle that
+                    // case. If the values aren't heap objects then we'll treat them as
+                    // if they were just unsigned integer.
                     Opnd::Value(value) => {
                         if value.special_const_p() {
                             *opnd = Opnd::UImm(value.as_u64());
                         } else if !is_load {
                             *opnd = asm.load(*opnd);
                         }
-                    },
+                    }
                     _ => {}
-                };
+                }
             }
 
             // We are replacing instructions here so we know they are already
@@ -873,6 +881,45 @@ impl Assembler
             ldr_post(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
         }
 
+        // Last minute legalization of memory displacements. Required since we don't
+        // know the exact value of FrameBase displacement until here.
+        fn split_mem_displacement(cb: &mut CodeBlock, mem: Mem, scratch: A64Opnd, predicate: fn(i32)->bool) -> Opnd {
+            let Mem { num_bits, disp, base: MemBase::Reg(base_reg_no) } = mem else {
+                unreachable!("non register memory base during emit");
+            };
+            if predicate(disp) {
+                Opnd::Mem(mem)
+            } else {
+                // Add together the displacement and the original base register to make
+                // a memory operand with zero displacement.
+                emit_load_value(cb, scratch, disp as i64 as u64);
+                // Put scratch on the right, since we want the
+                // original base_reg to refer to SP when no=31
+                add_extended(cb, scratch, A64Opnd::Reg(A64Reg { reg_no: base_reg_no, num_bits: 64 }), scratch);
+                Opnd::mem(num_bits, Opnd::Reg(scratch.unwrap_reg()), 0)
+            }
+        }
+
+        // Whether a memory displacement can be encoded as an immediate to a SUB/ADD
+        fn fits_shifted_immediate(disp: i32) -> bool {
+            // Why not just mem_disp_fits_bits(12)? This is not a two's complement
+            // situation. With both SUB/ADD take a 12-bit unsigned immediate, so we
+            // test with absolute value.
+            u64::try_from((disp as i64).abs())
+                .ok()
+                .and_then(|disp| ShiftedImmediate::try_from(disp).ok())
+                .is_some()
+        }
+
+        fn lower_frame_base(mem: &Mem, frame_base_offset: i32) -> Mem {
+            if let &Mem { num_bits, disp, base: MemBase::FrameBase } = mem {
+                // Instructions that could use SP number it 31.
+                Mem { num_bits, base: MemBase::Reg(31), disp: disp + frame_base_offset }
+            } else {
+                *mem
+            }
+        }
+
         // List of GC offsets
         let mut gc_offsets: Vec<CodePtr> = Vec::new();
 
@@ -881,6 +928,9 @@ impl Assembler
 
         // The write_pos for the last Insn::PatchPoint, if any
         let mut last_patch_pos: Option<usize> = None;
+
+        // We maintain that native_sp + this = base sp of the frame
+        let mut frame_base_offset = 0;
 
         // For each instruction
         let mut insn_idx: usize = 0;
@@ -917,6 +967,9 @@ impl Assembler
                     // X29 (frame_pointer) = SP
                     mov(cb, X29, C_SP_REG);
                 },
+                Insn::FrameSetupDone => {
+                    frame_base_offset = 0;
+                }
                 Insn::FrameTeardown => {
                     // SP = X29 (frame pointer)
                     mov(cb, C_SP_REG, X29);
@@ -930,6 +983,11 @@ impl Assembler
                     // to the stack pointer; we assume you got x31 from NATIVE_STACK_POINTER.
                     let out: A64Opnd = out.into();
                     if let A64Opnd::Reg(A64Reg { reg_no: 31, .. }) = out {
+                        match right {
+                            &Opnd::Imm(offset) => frame_base_offset -= i32::try_from(offset).expect("overlarge native SP change"),
+                            &Opnd::UImm(offset) => frame_base_offset -= i32::try_from(offset).expect("overlarge native SP change"),
+                            _ => {}
+                        }
                         add(cb, out, left.into(), right.into());
                     } else {
                         adds(cb, out, left.into(), right.into());
@@ -942,6 +1000,11 @@ impl Assembler
                     // to the stack pointer; we assume you got x31 from NATIVE_STACK_POINTER.
                     let out: A64Opnd = out.into();
                     if let A64Opnd::Reg(A64Reg { reg_no: 31, .. }) = out {
+                        match right {
+                            &Opnd::Imm(offset) => frame_base_offset += i32::try_from(offset).expect("overlarge native SP change"),
+                            &Opnd::UImm(offset) => frame_base_offset += i32::try_from(offset).expect("overlarge native SP change"),
+                            _ => {}
+                        }
                         sub(cb, out, left.into(), right.into());
                     } else {
                         subs(cb, out, left.into(), right.into());
@@ -996,6 +1059,12 @@ impl Assembler
                     lsl(cb, out.into(), opnd.into(), shift.into());
                 },
                 Insn::Store { dest, src } => {
+                    let Opnd::Mem(mem) = dest else {
+                        unreachable!("Store to non memory destination");
+                    };
+                    let mem = lower_frame_base(mem, frame_base_offset);
+                    let dest = split_mem_displacement(cb, mem, Self::SCRATCH0, mem_disp_fits_bits);
+
                     // This order may be surprising but it is correct. The way
                     // the Arm64 assembler works, the register that is going to
                     // be stored is first and the address is second. However in
@@ -1018,7 +1087,9 @@ impl Assembler
                         Opnd::Imm(imm) => {
                             emit_load_value(cb, out.into(), imm as u64);
                         },
-                        Opnd::Mem(_) => {
+                        Opnd::Mem(mem) => {
+                            let mem = lower_frame_base(&mem, frame_base_offset);
+                            let opnd = split_mem_displacement(cb, mem, Self::SCRATCH0, mem_disp_fits_bits);
                             match opnd.rm_num_bits() {
                                 64 | 32 => ldur(cb, out.into(), opnd.into()),
                                 16 => ldurh(cb, out.into(), opnd.into()),
@@ -1042,7 +1113,7 @@ impl Assembler
 
                             let ptr_offset = cb.get_write_ptr().sub_bytes(SIZEOF_VALUE);
                             gc_offsets.push(ptr_offset);
-                        },
+                        }
                         Opnd::None => {
                             unreachable!("Attempted to load from None operand");
                         }
@@ -1076,6 +1147,11 @@ impl Assembler
                     }
                 },
                 Insn::Lea { opnd, out } => {
+                    let Opnd::Mem(mem) = opnd else {
+                        panic!("Op::Lea only accepts Opnd::Mem operands.");
+                    };
+                    let mem = lower_frame_base(mem, frame_base_offset);
+                    let opnd = split_mem_displacement(cb, mem, Self::SCRATCH0, fits_shifted_immediate);
                     let opnd: A64Opnd = opnd.into();
 
                     match opnd {
@@ -1086,10 +1162,8 @@ impl Assembler
                                 A64Opnd::Reg(A64Reg { reg_no: mem.base_reg_no, num_bits: 64 }),
                                 A64Opnd::new_imm(mem.disp.into())
                             );
-                        },
-                        _ => {
-                            panic!("Op::Lea only accepts Opnd::Mem operands.");
                         }
+                        _ => unreachable!()
                     };
                 },
                 Insn::LeaJumpTarget { out, target, .. } => {
@@ -1109,23 +1183,28 @@ impl Assembler
                 },
                 Insn::CPush(opnd) => {
                     emit_push(cb, opnd.into());
+                    frame_base_offset += C_SP_STEP;
                 },
                 Insn::CPop { out } => {
                     emit_pop(cb, out.into());
+                    frame_base_offset -= C_SP_STEP;
                 },
                 Insn::CPopInto(opnd) => {
                     emit_pop(cb, opnd.into());
+                    frame_base_offset -= C_SP_STEP;
                 },
                 Insn::CPushAll => {
                     let regs = Assembler::get_caller_save_regs();
 
                     for reg in regs {
                         emit_push(cb, A64Opnd::Reg(reg));
+                        frame_base_offset += C_SP_STEP;
                     }
 
                     // Push the flags/state register
                     mrs(cb, Self::SCRATCH0, SystemRegister::NZCV);
                     emit_push(cb, Self::SCRATCH0);
+                    frame_base_offset += C_SP_STEP;
                 },
                 Insn::CPopAll => {
                     let regs = Assembler::get_caller_save_regs();
@@ -1133,9 +1212,11 @@ impl Assembler
                     // Pop the state/flags register
                     msr(cb, SystemRegister::NZCV, Self::SCRATCH0);
                     emit_pop(cb, Self::SCRATCH0);
+                    frame_base_offset -= C_SP_STEP;
 
                     for reg in regs.into_iter().rev() {
                         emit_pop(cb, A64Opnd::Reg(reg));
+                        frame_base_offset -= C_SP_STEP;
                     }
                 },
                 Insn::CCall { fptr, .. } => {
@@ -1435,6 +1516,35 @@ mod tests {
         assert_disasm!(cb, "000040f8c0035fd6", "
             0x0: ldur x0, [x0]
             0x4: ret
+        ");
+    }
+
+    #[test]
+    fn frame_base_memory_opnd() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // Straddle the 9-bit displacement limits
+        let load = asm.load(Opnd::frame_base(64, 255));
+        asm.cpush(load);
+        asm.store(Opnd::frame_base(64, 255), 0.into());
+        asm.load_into(C_RET_OPND, Opnd::frame_base(64, -256));
+        asm.store(Opnd::frame_base(64, -0x110), 0.into());
+
+        asm.compile_with_num_regs(&mut cb, 2);
+        assert_disasm!(cb, "e0f34ff8e00f1ff8f02180d2f063308b1f0200f8e00351f8e043009101de9fd2e1ffbff2e1ffdff2e1fffff2000001ab1f0000f8", "
+            0x0: ldur x0, [sp, #0xff]
+            0x4: str x0, [sp, #-0x10]!
+            0x8: mov x16, #0x10f
+            0xc: add x16, sp, x16
+            0x10: stur xzr, [x16]
+            0x14: ldur x0, [sp, #-0xf0]
+            0x18: add x0, sp, #0x10
+            0x1c: mov x1, #0xfef0
+            0x20: movk x1, #0xffff, lsl #16
+            0x24: movk x1, #0xffff, lsl #32
+            0x28: movk x1, #0xffff, lsl #48
+            0x2c: adds x0, x0, x1
+            0x30: stur xzr, [x0]
         ");
     }
 
