@@ -6,95 +6,125 @@ if defined?(OpenSSL)
 class OpenSSL::TestPKCS7 < OpenSSL::TestCase
   def setup
     super
-    @rsa1024 = Fixtures.pkey("rsa1024")
-    @rsa2048 = Fixtures.pkey("rsa2048")
-    ca = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
-    ee1 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=EE1")
-    ee2 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=EE2")
+    @ca_key = Fixtures.pkey("rsa-1")
+    @ee1_key = Fixtures.pkey("rsa-2")
+    @ee2_key = Fixtures.pkey("rsa-3")
+    ca = OpenSSL::X509::Name.new([["CN", "CA"]])
+    ee1 = OpenSSL::X509::Name.new([["CN", "EE1"]])
+    ee2 = OpenSSL::X509::Name.new([["CN", "EE2"]])
 
     ca_exts = [
-      ["basicConstraints","CA:TRUE",true],
-      ["keyUsage","keyCertSign, cRLSign",true],
-      ["subjectKeyIdentifier","hash",false],
-      ["authorityKeyIdentifier","keyid:always",false],
+      ["basicConstraints", "CA:TRUE", true],
+      ["keyUsage", "keyCertSign, cRLSign", true],
+      ["subjectKeyIdentifier", "hash", false],
+      ["authorityKeyIdentifier", "keyid:always", false],
     ]
-    @ca_cert = issue_cert(ca, @rsa2048, 1, ca_exts, nil, nil)
+    @ca_cert = issue_cert(ca, @ca_key, 1, ca_exts, nil, nil)
     ee_exts = [
-      ["keyUsage","Non Repudiation, Digital Signature, Key Encipherment",true],
-      ["authorityKeyIdentifier","keyid:always",false],
-      ["extendedKeyUsage","clientAuth, emailProtection, codeSigning",false],
+      ["keyUsage", "nonRepudiation, digitalSignature, keyEncipherment", true],
+      ["authorityKeyIdentifier", "keyid:always", false],
+      ["extendedKeyUsage", "clientAuth, emailProtection, codeSigning", false],
     ]
-    @ee1_cert = issue_cert(ee1, @rsa1024, 2, ee_exts, @ca_cert, @rsa2048)
-    @ee2_cert = issue_cert(ee2, @rsa1024, 3, ee_exts, @ca_cert, @rsa2048)
+    @ee1_cert = issue_cert(ee1, @ee1_key, 2, ee_exts, @ca_cert, @ca_key)
+    @ee2_cert = issue_cert(ee2, @ee2_key, 3, ee_exts, @ca_cert, @ca_key)
   end
 
   def test_signed
     store = OpenSSL::X509::Store.new
     store.add_cert(@ca_cert)
-    ca_certs = [@ca_cert]
 
-    data = "aaaaa\r\nbbbbb\r\nccccc\r\n"
-    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, ca_certs)
+    data = "aaaaa\nbbbbb\nccccc\n"
+    ca_certs = [@ca_cert]
+    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @ee1_key, data, ca_certs)
+    # TODO: #data contains untranslated content
+    assert_equal("aaaaa\nbbbbb\nccccc\n", tmp.data)
+    assert_nil(tmp.error_string)
+
     p7 = OpenSSL::PKCS7.new(tmp.to_der)
+    assert_nil(p7.data)
+    assert_nil(p7.error_string)
+
+    assert_true(p7.verify([], store))
+    # AWS-LC does not appear to convert to CRLF automatically
+    assert_equal("aaaaa\r\nbbbbb\r\nccccc\r\n", p7.data) unless aws_lc?
+    assert_nil(p7.error_string)
+
     certs = p7.certificates
-    signers = p7.signers
-    assert(p7.verify([], store))
-    assert_equal(data, p7.data)
     assert_equal(2, certs.size)
-    assert_equal(@ee1_cert.subject.to_s, certs[0].subject.to_s)
-    assert_equal(@ca_cert.subject.to_s, certs[1].subject.to_s)
+    assert_equal(@ee1_cert.subject, certs[0].subject)
+    assert_equal(@ca_cert.subject, certs[1].subject)
+
+    signers = p7.signers
     assert_equal(1, signers.size)
     assert_equal(@ee1_cert.serial, signers[0].serial)
-    assert_equal(@ee1_cert.issuer.to_s, signers[0].issuer.to_s)
+    assert_equal(@ee1_cert.issuer, signers[0].issuer)
     # AWS-LC does not generate authenticatedAttributes
     assert_in_delta(Time.now, signers[0].signed_time, 10) unless aws_lc?
+
+    assert_false(p7.verify([@ca_cert], OpenSSL::X509::Store.new))
+  end
+
+  def test_signed_flags
+    store = OpenSSL::X509::Store.new
+    store.add_cert(@ca_cert)
 
     # Normally OpenSSL tries to translate the supplied content into canonical
     # MIME format (e.g. a newline character is converted into CR+LF).
     # If the content is a binary, PKCS7::BINARY flag should be used.
-
+    #
+    # PKCS7::NOATTR flag suppresses authenticatedAttributes.
     data = "aaaaa\nbbbbb\nccccc\n"
     flag = OpenSSL::PKCS7::BINARY | OpenSSL::PKCS7::NOATTR
-    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, ca_certs, flag)
+    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @ee1_key, data, [@ca_cert], flag)
     p7 = OpenSSL::PKCS7.new(tmp.to_der)
-    certs = p7.certificates
-    signers = p7.signers
-    assert(p7.verify([], store))
+
+    assert_true(p7.verify([], store))
     assert_equal(data, p7.data)
+
+    certs = p7.certificates
     assert_equal(2, certs.size)
-    assert_equal(@ee1_cert.subject.to_s, certs[0].subject.to_s)
-    assert_equal(@ca_cert.subject.to_s, certs[1].subject.to_s)
+    assert_equal(@ee1_cert.subject, certs[0].subject)
+    assert_equal(@ca_cert.subject, certs[1].subject)
+
+    signers = p7.signers
     assert_equal(1, signers.size)
     assert_equal(@ee1_cert.serial, signers[0].serial)
-    assert_equal(@ee1_cert.issuer.to_s, signers[0].issuer.to_s)
+    assert_equal(@ee1_cert.issuer, signers[0].issuer)
     assert_raise(OpenSSL::PKCS7::PKCS7Error) { signers[0].signed_time }
+  end
+
+  def test_signed_multiple_signers
+    store = OpenSSL::X509::Store.new
+    store.add_cert(@ca_cert)
 
     # A signed-data which have multiple signatures can be created
     # through the following steps.
     #   1. create two signed-data
     #   2. copy signerInfo and certificate from one to another
-
-    tmp1 = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, [], flag)
-    tmp2 = OpenSSL::PKCS7.sign(@ee2_cert, @rsa1024, data, [], flag)
+    data = "aaaaa\r\nbbbbb\r\nccccc\r\n"
+    tmp1 = OpenSSL::PKCS7.sign(@ee1_cert, @ee1_key, data)
+    tmp2 = OpenSSL::PKCS7.sign(@ee2_cert, @ee2_key, data)
     tmp1.add_signer(tmp2.signers[0])
     tmp1.add_certificate(@ee2_cert)
 
     p7 = OpenSSL::PKCS7.new(tmp1.to_der)
-    certs = p7.certificates
-    signers = p7.signers
-    assert(p7.verify([], store))
+    assert_true(p7.verify([], store))
     assert_equal(data, p7.data)
+
+    certs = p7.certificates
     assert_equal(2, certs.size)
+
+    signers = p7.signers
     assert_equal(2, signers.size)
     assert_equal(@ee1_cert.serial, signers[0].serial)
-    assert_equal(@ee1_cert.issuer.to_s, signers[0].issuer.to_s)
+    assert_equal(@ee1_cert.issuer, signers[0].issuer)
     assert_equal(@ee2_cert.serial, signers[1].serial)
-    assert_equal(@ee2_cert.issuer.to_s, signers[1].issuer.to_s)
+    assert_equal(@ee2_cert.issuer, signers[1].issuer)
   end
 
   def test_signed_add_signer
     data = "aaaaa\nbbbbb\nccccc\n"
-    psi = OpenSSL::PKCS7::SignerInfo.new(@ee1_cert, @rsa1024, "sha256")
+    psi = OpenSSL::PKCS7::SignerInfo.new(@ee1_cert, @ee1_key, "sha256")
     p7 = OpenSSL::PKCS7.new
     p7.type = :signed
     p7.add_signer(psi)
@@ -113,27 +143,33 @@ class OpenSSL::TestPKCS7 < OpenSSL::TestCase
   def test_detached_sign
     store = OpenSSL::X509::Store.new
     store.add_cert(@ca_cert)
-    ca_certs = [@ca_cert]
 
     data = "aaaaa\nbbbbb\nccccc\n"
+    ca_certs = [@ca_cert]
     flag = OpenSSL::PKCS7::BINARY|OpenSSL::PKCS7::DETACHED
-    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, ca_certs, flag)
+    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @ee1_key, data, ca_certs, flag)
     p7 = OpenSSL::PKCS7.new(tmp.to_der)
-    assert_nothing_raised do
-      OpenSSL::ASN1.decode(p7)
-    end
+    assert_predicate(p7, :detached?)
+    assert_true(p7.detached)
+
+    assert_false(p7.verify([], store))
+    # FIXME: Should it be nil?
+    assert_equal("", p7.data)
+    assert_match(/no content|NO_CONTENT/, p7.error_string)
+
+    assert_true(p7.verify([], store, data))
+    assert_equal(data, p7.data)
+    assert_nil(p7.error_string)
 
     certs = p7.certificates
-    signers = p7.signers
-    assert(!p7.verify([], store))
-    assert(p7.verify([], store, data))
-    assert_equal(data, p7.data)
     assert_equal(2, certs.size)
-    assert_equal(@ee1_cert.subject.to_s, certs[0].subject.to_s)
-    assert_equal(@ca_cert.subject.to_s, certs[1].subject.to_s)
+    assert_equal(@ee1_cert.subject, certs[0].subject)
+    assert_equal(@ca_cert.subject, certs[1].subject)
+
+    signers = p7.signers
     assert_equal(1, signers.size)
     assert_equal(@ee1_cert.serial, signers[0].serial)
-    assert_equal(@ee1_cert.issuer.to_s, signers[0].issuer.to_s)
+    assert_equal(@ee1_cert.issuer, signers[0].issuer)
   end
 
   def test_signed_authenticated_attributes
@@ -181,6 +217,8 @@ IQCJVpo1FTLZOHSc9UpjS+VKR4cg50Iz0HiPyo6hwjCrwA==
   end
 
   def test_enveloped
+    omit_on_fips # PKCS #1 v1.5 padding
+
     certs = [@ee1_cert, @ee2_cert]
     cipher = OpenSSL::Cipher::AES.new("128-CBC")
     data = "aaaaa\nbbbbb\nccccc\n"
@@ -191,15 +229,20 @@ IQCJVpo1FTLZOHSc9UpjS+VKR4cg50Iz0HiPyo6hwjCrwA==
     assert_equal(:enveloped, p7.type)
     assert_equal(2, recip.size)
 
-    assert_equal(@ca_cert.subject.to_s, recip[0].issuer.to_s)
-    assert_equal(2, recip[0].serial)
-    assert_equal(data, p7.decrypt(@rsa1024, @ee1_cert))
+    assert_equal(@ca_cert.subject, recip[0].issuer)
+    assert_equal(@ee1_cert.serial, recip[0].serial)
+    assert_equal(16, @ee1_key.decrypt(recip[0].enc_key).size)
+    assert_equal(data, p7.decrypt(@ee1_key, @ee1_cert))
 
-    assert_equal(@ca_cert.subject.to_s, recip[1].issuer.to_s)
-    assert_equal(3, recip[1].serial)
-    assert_equal(data, p7.decrypt(@rsa1024, @ee2_cert))
+    assert_equal(@ca_cert.subject, recip[1].issuer)
+    assert_equal(@ee2_cert.serial, recip[1].serial)
+    assert_equal(data, p7.decrypt(@ee2_key, @ee2_cert))
 
-    assert_equal(data, p7.decrypt(@rsa1024))
+    assert_equal(data, p7.decrypt(@ee1_key))
+
+    assert_raise(OpenSSL::PKCS7::PKCS7Error) {
+      p7.decrypt(@ca_key, @ca_cert)
+    }
 
     # Default cipher has been removed in v3.3
     assert_raise_with_message(ArgumentError, /RC2-40-CBC/) {
@@ -232,7 +275,8 @@ IQCJVpo1FTLZOHSc9UpjS+VKR4cg50Iz0HiPyo6hwjCrwA==
     # PKCS7#verify can't distinguish verification failure and other errors
     store = OpenSSL::X509::Store.new
     assert_equal(false, p7.verify([@ee1_cert], store))
-    assert_raise(OpenSSL::PKCS7::PKCS7Error) { p7.decrypt(@rsa1024) }
+    assert_match(/wrong content type|WRONG_CONTENT_TYPE/, p7.error_string)
+    assert_raise(OpenSSL::PKCS7::PKCS7Error) { p7.decrypt(@ee1_key) }
   end
 
   def test_empty_signed_data_ruby_bug_19974
@@ -293,7 +337,7 @@ END
     ca_certs = [@ca_cert]
 
     data = "aaaaa\r\nbbbbb\r\nccccc\r\n"
-    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, ca_certs)
+    tmp = OpenSSL::PKCS7.sign(@ee1_cert, @ee1_key, data, ca_certs)
     p7 = OpenSSL::PKCS7.new(tmp.to_der)
     smime = OpenSSL::PKCS7.write_smime(p7)
     assert_equal(true, smime.start_with?(<<END))
@@ -355,6 +399,8 @@ END
   end
 
   def test_decode_ber_constructed_string
+    omit_on_fips # PKCS #1 v1.5 padding
+
     p7 = OpenSSL::PKCS7.encrypt([@ee1_cert], "content", "aes-128-cbc")
 
     # Make an equivalent BER to p7.to_der. Here we convert the encryptedContent
@@ -378,8 +424,8 @@ END
     assert_not_equal(p7.to_der, asn1.to_der)
     assert_equal(p7.to_der, OpenSSL::PKCS7.new(asn1.to_der).to_der)
 
-    assert_equal("content", OpenSSL::PKCS7.new(p7.to_der).decrypt(@rsa1024))
-    assert_equal("content", OpenSSL::PKCS7.new(asn1.to_der).decrypt(@rsa1024))
+    assert_equal("content", OpenSSL::PKCS7.new(p7.to_der).decrypt(@ee1_key))
+    assert_equal("content", OpenSSL::PKCS7.new(asn1.to_der).decrypt(@ee1_key))
   end
 end
 
