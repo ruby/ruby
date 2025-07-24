@@ -130,7 +130,7 @@ module Bundler
     def self.clean_after_install?
       clean = Bundler.settings[:clean]
       return clean unless clean.nil?
-      clean ||= Bundler.feature_flag.bundler_4_mode? && Bundler.settings[:path].nil?
+      clean ||= Bundler.feature_flag.bundler_5_mode? && Bundler.settings[:path].nil?
       clean &&= !Bundler.use_system_gems?
       clean
     end

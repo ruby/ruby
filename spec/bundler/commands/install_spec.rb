@@ -38,6 +38,15 @@ RSpec.describe "bundle install with gem sources" do
       expect(bundled_app(".bundle")).not_to exist
     end
 
+    it "will create a ./.bundle by default", bundler: "5" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      expect(bundled_app(".bundle")).to exist
+    end
+
     it "does not create ./.bundle by default when installing to system gems" do
       install_gemfile <<-G, env: { "BUNDLE_PATH__SYSTEM" => "true" }
         source "https://gem.repo1"

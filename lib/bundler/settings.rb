@@ -272,7 +272,7 @@ module Bundler
       def use_system_gems?
         return true if system_path
         return false if explicit_path
-        !Bundler.feature_flag.bundler_4_mode?
+        !Bundler.feature_flag.bundler_5_mode?
       end
 
       def base_path
