@@ -1156,7 +1156,7 @@ static rb_node_nil_t *rb_node_nil_new(struct parser_params *p, const YYLTYPE *lo
 static rb_node_true_t *rb_node_true_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_false_t *rb_node_false_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_errinfo_t *rb_node_errinfo_new(struct parser_params *p, const YYLTYPE *loc);
-static rb_node_defined_t *rb_node_defined_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc);
+static rb_node_defined_t *rb_node_defined_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 static rb_node_postexe_t *rb_node_postexe_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
 static rb_node_sym_t *rb_node_sym_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
 static rb_node_dsym_t *rb_node_dsym_new(struct parser_params *p, rb_parser_string_t *string, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
@@ -1264,7 +1264,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_TRUE(loc) (NODE *)rb_node_true_new(p,loc)
 #define NEW_FALSE(loc) (NODE *)rb_node_false_new(p,loc)
 #define NEW_ERRINFO(loc) (NODE *)rb_node_errinfo_new(p,loc)
-#define NEW_DEFINED(e,loc) (NODE *)rb_node_defined_new(p,e,loc)
+#define NEW_DEFINED(e,loc,k_loc) (NODE *)rb_node_defined_new(p,e,loc, k_loc)
 #define NEW_POSTEXE(b,loc,k_loc,o_loc,c_loc) (NODE *)rb_node_postexe_new(p,b,loc,k_loc,o_loc,c_loc)
 #define NEW_SYM(str,loc) (NODE *)rb_node_sym_new(p,str,loc)
 #define NEW_DSYM(s,l,n,loc) (NODE *)rb_node_dsym_new(p,s,l,n,loc)
@@ -1470,7 +1470,7 @@ static rb_node_kw_arg_t *kwd_append(rb_node_kw_arg_t*, rb_node_kw_arg_t*);
 static NODE *new_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc);
 static NODE *new_unique_key_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc);
 
-static NODE *new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc);
+static NODE *new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 
 static NODE *new_regexp(struct parser_params *, NODE *, int, const YYLTYPE *, const YYLTYPE *, const YYLTYPE *, const YYLTYPE *);
 
@@ -4041,7 +4041,7 @@ arg		: asgn(arg_rhs)
                 | keyword_defined '\n'? begin_defined arg
                     {
                         p->ctxt.in_defined = $3.in_defined;
-                        $$ = new_defined(p, $4, &@$);
+                        $$ = new_defined(p, $4, &@$, &@1);
                         p->ctxt.has_trailing_semicolon = $3.has_trailing_semicolon;
                     /*% ripper: defined!($:4) %*/
                     }
@@ -4429,7 +4429,7 @@ primary		: inline_primary
             | keyword_defined '\n'? '(' begin_defined expr rparen
                 {
                     p->ctxt.in_defined = $4.in_defined;
-                    $$ = new_defined(p, $5, &@$);
+                    $$ = new_defined(p, $5, &@$, &@1);
                     p->ctxt.has_trailing_semicolon = $4.has_trailing_semicolon;
                 /*% ripper: defined!($:5) %*/
                 }
@@ -12240,10 +12240,11 @@ rb_node_errinfo_new(struct parser_params *p, const YYLTYPE *loc)
 }
 
 static rb_node_defined_t *
-rb_node_defined_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc)
+rb_node_defined_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, const YYLTYPE *keyword_loc)
 {
     rb_node_defined_t *n = NODE_NEWNODE(NODE_DEFINED, rb_node_defined_t, loc);
     n->nd_head = nd_head;
+    n->keyword_loc = *keyword_loc;
 
     return n;
 }
@@ -13021,7 +13022,7 @@ kwd_append(rb_node_kw_arg_t *kwlist, rb_node_kw_arg_t *kw)
 }
 
 static NODE *
-new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc)
+new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc, const YYLTYPE *keyword_loc)
 {
     int had_trailing_semicolon = p->ctxt.has_trailing_semicolon;
     p->ctxt.has_trailing_semicolon = 0;
@@ -13041,10 +13042,10 @@ new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc)
 
     if (had_trailing_semicolon && !nd_type_p(expr, NODE_BLOCK)) {
         NODE *block = NEW_BLOCK(expr, loc);
-        return NEW_DEFINED(block, loc);
+        return NEW_DEFINED(block, loc, keyword_loc);
     }
 
-    return NEW_DEFINED(n, loc);
+    return NEW_DEFINED(n, loc, keyword_loc);
 }
 
 static NODE*

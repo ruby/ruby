@@ -1655,6 +1655,11 @@ dummy
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 20], [1, 9, 1, 14], [1, 14, 1, 15], [1, 19, 1, 20]])
     end
 
+    def test_defined_locations
+      node = ast_parse("defined? x")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 10], [1, 0, 1, 8]])
+    end
+
     private
     def ast_parse(src, **options)
       begin
