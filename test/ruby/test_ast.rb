@@ -1415,6 +1415,14 @@ dummy
       assert_locations(node.children[-1].children[0].locations, [[1, 0, 1, 3], [1, 0, 1, 2], [1, 2, 1, 3]])
     end
 
+    def test_defined_locations
+      node = ast_parse("defined? x")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 10], [1, 0, 1, 8]])
+
+      node = ast_parse("defined?(x)")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 11], [1, 0, 1, 8]])
+    end
+
     def test_dot2_locations
       node = ast_parse("1..2")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 4], [1, 1, 1, 3]])
@@ -1653,11 +1661,6 @@ dummy
 
       node = ast_parse("def foo; yield(1, 2) end")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 20], [1, 9, 1, 14], [1, 14, 1, 15], [1, 19, 1, 20]])
-    end
-
-    def test_defined_locations
-      node = ast_parse("defined? x")
-      assert_locations(node.children[-1].locations, [[1, 0, 1, 10], [1, 0, 1, 8]])
     end
 
     private
