@@ -236,6 +236,12 @@ wbcheck_get_object_info(VALUE obj)
         return (rb_wbcheck_object_info_t *)value;
     }
 
+    fprintf(stderr, "wbcheck: object not found in tracking table\n");
+    rb_obj_info_dump(obj);
+
+    // Force ASAN crash?
+    ((volatile VALUE *)obj)[0];
+
     // Object not found in tracking table - this should never happen
     rb_bug("wbcheck: object not found in tracking table");
 }
@@ -675,21 +681,38 @@ st_foreach_reset_white(st_data_t key, st_data_t val, st_data_t arg)
     return ST_CONTINUE;
 }
 
+// Mark all finalizer arrays to keep them alive during GC
+static int
+st_foreach_mark_finalizers(st_data_t key, st_data_t val, st_data_t arg)
+{
+    rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)val;
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)arg;
+
+    if (info->finalizers) {
+        wbcheck_mark_gray(objspace, info->finalizers);
+    }
+
+    return ST_CONTINUE;
+}
+
 // Full mark phase using tri-color marking with snapshots
 static void
 wbcheck_mark_phase(rb_wbcheck_objspace_t *objspace)
 {
     WBCHECK_DEBUG("wbcheck: starting GC mark phase\n");
 
+    objspace->phase = WBCHECK_PHASE_FULL_GC;
+
     // Clear mark queue and reset all objects to white
     objspace->mark_queue->count = 0;
     st_foreach(objspace->object_table, st_foreach_reset_white, 0);
 
+    // Mark all finalizer arrays first to keep them alive
+    st_foreach(objspace->object_table, st_foreach_mark_finalizers, (st_data_t)objspace);
+
     // Mark roots gray
-    objspace->phase = WBCHECK_PHASE_FULL_GC;
     rb_gc_save_machine_context();
     rb_gc_mark_roots(objspace, NULL);
-    objspace->phase = WBCHECK_PHASE_MUTATOR;
 
     // Process gray queue until empty
     while (objspace->mark_queue->count > 0) {
@@ -707,17 +730,14 @@ wbcheck_mark_phase(rb_wbcheck_objspace_t *objspace)
                     }
                 }
 
-                // Mark finalizer array if it exists
-                if (info->finalizers) {
-                    wbcheck_mark_gray(objspace, info->finalizers);
-                }
-
                 // Mark this object black
                 info->color = WBCHECK_COLOR_BLACK;
                 WBCHECK_DEBUG("wbcheck: marked black: %p\n", (void *)obj);
             }
         }
     }
+
+    objspace->phase = WBCHECK_PHASE_MUTATOR;
 
     WBCHECK_DEBUG("wbcheck: tri-color mark phase complete\n");
 }
@@ -1061,6 +1081,10 @@ void
 rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+
+    // Crash if we're trying to mark_weak something invalid
+    wbcheck_get_object_info(*ptr);
+
     wbcheck_object_list_append(objspace->weak_references, (VALUE)ptr);
 }
 
@@ -1229,9 +1253,6 @@ rb_gc_impl_each_objects(void *objspace_ptr, int (*callback)(void *, void *, size
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     GC_ASSERT(objspace);
 
-    bool old_gc_enabled = objspace->gc_enabled;
-    objspace->gc_enabled = false;
-
     wbcheck_object_list_t *snapshot = wbcheck_take_object_snapshot(objspace);
 
     for (size_t i = 0; i < snapshot->count; i++) {
@@ -1250,7 +1271,6 @@ rb_gc_impl_each_objects(void *objspace_ptr, int (*callback)(void *, void *, size
     }
 
     wbcheck_object_list_free(snapshot);
-    objspace->gc_enabled = old_gc_enabled;
 }
 
 void
@@ -1258,9 +1278,6 @@ rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), 
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     GC_ASSERT(objspace);
-
-    bool old_gc_enabled = objspace->gc_enabled;
-    objspace->gc_enabled = false;
 
     wbcheck_object_list_t *snapshot = wbcheck_take_object_snapshot(objspace);
 
@@ -1273,7 +1290,6 @@ rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), 
     }
 
     wbcheck_object_list_free(snapshot);
-    objspace->gc_enabled = old_gc_enabled;
 }
 
 // Finalizers
