@@ -7080,6 +7080,7 @@ goruby.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+goruby.$(OBJEXT): {$(VPATH)}internal/attr/nonstring.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
