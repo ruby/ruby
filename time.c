@@ -705,6 +705,7 @@ static struct vtm *localtimew(wideval_t timew, struct vtm *result);
 static int leap_year_p(long y);
 #define leap_year_v_p(y) leap_year_p(NUM2LONG(modv((y), INT2FIX(400))))
 static int calc_tm_yday(long tm_year, int tm_mon, int tm_mday);
+static int calc_wday(int year_mod400, int month, int day);
 
 #if defined(__APPLE__) && defined(ENABLE_MACOS_LOCALTIME_CACHE)
 static void apply_tm_offset(struct tm *tm, long offset);
@@ -837,21 +838,6 @@ offset_cache_key_eq(const offset_cache_key *a, const offset_cache_key *b)
            a->day == b->day && a->hour == b->hour && a->quarter == b->quarter;
 }
 
-/* Calculate day of week from year/month/day */
-static int
-calculate_wday(int year, int month, int day)
-{
-    /* Zeller's congruence algorithm */
-    if (month < 3) {
-        month += 12;
-        year--;
-    }
-    int k = year % 100;
-    int j = year / 100;
-    int h = (day + (13 * (month + 1)) / 5 + k + k / 4 + j / 4 - 2 * j) % 7;
-    /* Convert to tm_wday format (Sunday = 0) */
-    return (h + 6) % 7;
-}
 #endif
 
 static struct tm *
@@ -1096,7 +1082,7 @@ apply_tm_offset(struct tm *tm, long offset)
         tm->tm_mday = day;
 
         /* Recalculate wday and yday */
-        tm->tm_wday = calculate_wday(year, month, day);
+        tm->tm_wday = calc_wday(year % 400, month, day);
         tm->tm_yday = calc_tm_yday(year - 1900, month - 1, day) - 1;
     }
 }
