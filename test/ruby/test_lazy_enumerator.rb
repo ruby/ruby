@@ -608,7 +608,7 @@ EOS
   end
 
   def test_require_block
-    %i[select reject drop_while take_while map flat_map].each do |method|
+    %i[select reject drop_while take_while map flat_map peek].each do |method|
       assert_raise(ArgumentError){ [].lazy.send(method) }
     end
   end
@@ -714,5 +714,24 @@ EOS
 
   def test_with_index_size
     assert_equal(3, Enumerator::Lazy.new([1, 2, 3], 3){|y, v| y << v}.with_index.size)
+  end
+
+  def test_lazy_peek
+    out = []
+
+    e = (1..Float::INFINITY).lazy
+                            .peek { |x| out << x }
+                            .select(&:even?)
+                            .first(5)
+
+    assert_equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], out)
+    assert_equal([2, 4, 6, 8, 10], e)
+  end
+
+  def test_lazy_peek_is_not_intrusive
+    s = Step.new(1..3)
+
+    assert_equal(2, s.lazy.peek { |x| x }.map { |x| x * 2 }.first)
+    assert_equal(1, s.current)
   end
 end
