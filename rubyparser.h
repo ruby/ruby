@@ -962,6 +962,7 @@ typedef struct RNode_DEFINED {
     NODE node;
 
     struct RNode *nd_head;
+    rb_code_location_t keyword_loc;
 } rb_node_defined_t;
 
 typedef struct RNode_POSTEXE {
