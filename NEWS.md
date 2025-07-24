@@ -104,6 +104,16 @@ Note: We're only listing outstanding class updates.
     * Update Unicode to Version 16.0.0 and Emoji Version 16.0.
       [[Feature #19908]][[Feature #20724]] (also applies to Regexp)
 
+* Thread
+
+    * Introduce support for `Thread#raise(cause:)` argument similar to
+      `Kernel#raise`. [[Feature #21360]]
+
+* Fiber
+
+    * Introduce support for `Fiber#raise(cause:)` argument similar to
+      `Kernel#raise`. [[Feature #21360]]
+
 * Fiber::Scheduler
 
     * Introduce `Fiber::Scheduler#fiber_interrupt` to interrupt a fiber with a
@@ -243,3 +253,4 @@ The following bundled gems are updated.
 [Feature #21262]: https://bugs.ruby-lang.org/issues/21262
 [Feature #21287]: https://bugs.ruby-lang.org/issues/21287
 [Feature #21347]: https://bugs.ruby-lang.org/issues/21347
+[Feature #21360]: https://bugs.ruby-lang.org/issues/21360

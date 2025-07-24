@@ -4,6 +4,7 @@ require_relative '../../shared/kernel/raise'
 
 describe "Fiber#raise" do
   it_behaves_like :kernel_raise, :raise, FiberSpecs::NewFiberToRaise
+  it_behaves_like :kernel_raise_across_contexts, :raise, FiberSpecs::NewFiberToRaise
 end
 
 describe "Fiber#raise" do

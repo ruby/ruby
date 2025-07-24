@@ -104,43 +104,24 @@ describe :kernel_raise, shared: true do
   end
 
   it "re-raises a previously rescued exception without overwriting the backtrace" do
-    # This spec is written using #backtrace and matching the line number
-    # from the string, as backtrace_locations is a more advanced
-    # method that is not always supported by implementations.
-    #
-    initial_raise_line = nil
-    raise_again_line = nil
-    raised_again = nil
+    exception = nil
 
-    if defined?(FiberSpecs::NewFiberToRaise) and @object == FiberSpecs::NewFiberToRaise
-      fiber = Fiber.new do
-        begin
-          initial_raise_line = __LINE__; Fiber.yield
-        rescue => raised
-          begin
-            raise_again_line = __LINE__; Fiber.yield raised
-          rescue => raised_again
-            raised_again
-          end
-        end
-      end
-      fiber.resume
-      raised = fiber.raise 'raised'
-      raised_again = fiber.raise raised
-    else
-      begin
-        initial_raise_line = __LINE__; @object.raise 'raised'
-      rescue => raised
-        begin
-          raise_again_line = __LINE__; @object.raise raised
-        rescue => raised_again
-          raised_again
-        end
-      end
+    begin
+      raise "raised"
+    rescue => exception
+      # Ignore.
     end
 
-    raised_again.backtrace.first.should include("#{__FILE__}:#{initial_raise_line}:")
-    raised_again.backtrace.first.should_not include("#{__FILE__}:#{raise_again_line}:")
+    backtrace = exception.backtrace
+
+    begin
+      raised_exception = @object.raise(exception)
+    rescue => raised_exception
+      # Ignore.
+    end
+
+    raised_exception.backtrace.should == backtrace
+    raised_exception.should == exception
   end
 
   it "allows Exception, message, and backtrace parameters" do
@@ -157,6 +138,261 @@ describe :kernel_raise, shared: true do
       end.should raise_error(ArgumentError, "message") { |error|
         error.backtrace_locations.map(&:to_s).should == locations.map(&:to_s)
       }
+    end
+  end
+
+  ruby_version_is "3.5" do
+    it "allows cause keyword argument" do
+      cause = StandardError.new("original error")
+      result = nil
+
+      -> do
+        @object.raise("new error", cause: cause)
+      end.should raise_error(RuntimeError, "new error") do |error|
+        error.cause.should == cause
+      end
+    end
+
+    it "raises an ArgumentError when only cause is given" do
+      cause = StandardError.new("cause")
+      -> do
+        @object.raise(cause: cause)
+      end.should raise_error(ArgumentError, "only cause is given with no arguments")
+    end
+
+    it "raises an ArgumentError when only cause is given and is nil" do
+      -> do
+        @object.raise(cause: nil)
+      end.should raise_error(ArgumentError, "only cause is given with no arguments")
+    end
+
+    it "raises a TypeError when given cause is not an instance of Exception" do
+      cause = Object.new
+      -> do
+        @object.raise("message", cause: cause)
+      end.should raise_error(TypeError, "exception object expected")
+    end
+
+    it "doesn't set given cause when it equals the raised exception" do
+      cause = StandardError.new("cause")
+      result = nil
+
+      -> do
+        @object.raise(cause, cause: cause)
+      end.should raise_error(StandardError, "cause") do |error|
+        error.should == cause
+        error.cause.should == nil
+      end
+    end
+
+    it "accepts cause equal an exception" do
+      error = RuntimeError.new("message")
+      result = nil
+
+      -> do
+        @object.raise(error, cause: error)
+      end.should raise_error(RuntimeError, "message") do |error|
+        error.cause.should == nil
+      end
+    end
+
+    it "rejects circular causes" do
+      -> {
+        begin
+          raise "Error 1"
+        rescue => error1
+          begin
+            raise "Error 2"
+          rescue => error2
+            begin
+              raise "Error 3"
+            rescue => error3
+              @object.raise(error1, cause: error3)
+            end
+          end
+        end
+      }.should raise_error(ArgumentError, "circular causes")
+    end
+
+    it "supports exception class with message and cause" do
+      cause = StandardError.new("cause message")
+      result = nil
+
+      -> do
+        @object.raise(ArgumentError, "argument error message", cause: cause)
+      end.should raise_error(ArgumentError, "argument error message") do |error|
+        error.should be_kind_of(ArgumentError)
+        error.message.should == "argument error message"
+        error.cause.should == cause
+      end
+    end
+
+    it "supports exception class with message, backtrace and cause" do
+      cause = StandardError.new("cause message")
+      backtrace = ["line1", "line2"]
+      result = nil
+
+      -> do
+        @object.raise(ArgumentError, "argument error message", backtrace, cause: cause)
+      end.should raise_error(ArgumentError, "argument error message") do |error|
+        error.should be_kind_of(ArgumentError)
+        error.message.should == "argument error message"
+        error.cause.should == cause
+        error.backtrace.should == backtrace
+      end
+    end
+
+    it "supports automatic cause chaining" do
+      -> do
+        begin
+          raise "first error"
+        rescue
+          # No explicit cause - should chain automatically:
+          @object.raise("second error")
+        end
+      end.should raise_error(RuntimeError, "second error") do |error|
+        error.cause.should be_kind_of(RuntimeError)
+        error.cause.message.should == "first error"
+      end
+    end
+
+    it "supports cause: nil to prevent automatic cause chaining" do
+      -> do
+        begin
+          raise "first error"
+        rescue
+          # Explicit nil prevents chaining:
+          @object.raise("second error", cause: nil)
+        end
+      end.should raise_error(RuntimeError, "second error") do |error|
+        error.cause.should == nil
+      end
+    end
+  end
+end
+
+describe :kernel_raise_across_contexts, shared: true do
+  ruby_version_is "3.5" do
+    describe "with cause keyword argument" do
+      it "uses the cause from the calling context" do
+        original_cause = nil
+        result = nil
+
+        # We have no cause ($!) and we don't specify one explicitly either:
+        @object.raise("second error") do |&block|
+          begin
+            begin
+              raise "first error"
+            rescue => original_cause
+              # We have a cause here ($!) but we should ignore it:
+              block.call
+            end
+          rescue => result
+            # Ignore.
+          end
+        end
+
+        result.should be_kind_of(RuntimeError)
+        result.message.should == "second error"
+        result.cause.should == nil
+      end
+
+      it "accepts a cause keyword argument that overrides the last exception" do
+        original_cause = nil
+        override_cause = StandardError.new("override cause")
+        result = nil
+
+        begin
+          raise "outer error"
+        rescue
+          # We have an existing cause, but we want to override it:
+          @object.raise("second error", cause: override_cause) do |&block|
+            begin
+              begin
+                raise "first error"
+              rescue => original_cause
+                # We also have an existing cause here:
+                block.call
+              end
+            rescue => result
+              # Ignore.
+            end
+          end
+        end
+
+        result.should be_kind_of(RuntimeError)
+        result.message.should == "second error"
+        result.cause.should == override_cause
+      end
+
+      it "supports automatic cause chaining from calling context" do
+        result = nil
+
+        @object.raise("new error") do |&block|
+          begin
+            begin
+              raise "original error"
+            rescue
+              block.call # Let the context yield/sleep
+            end
+          rescue => result
+            # Ignore.
+          end
+        end
+
+        result.should be_kind_of(RuntimeError)
+        result.message.should == "new error"
+        # Calling context has no current exception:
+        result.cause.should == nil
+      end
+
+      it "supports explicit cause: nil to prevent cause chaining" do
+        result = nil
+
+        begin
+          raise "calling context error"
+        rescue
+          @object.raise("new error", cause: nil) do |&block|
+            begin
+              begin
+                raise "target context error"
+              rescue
+                block.call # Let the context yield/sleep
+              end
+            rescue => result
+              # Ignore.
+            end
+          end
+
+          result.should be_kind_of(RuntimeError)
+          result.message.should == "new error"
+          result.cause.should == nil
+        end
+      end
+
+      it "raises TypeError when cause is not an Exception" do
+        -> {
+          @object.raise("error", cause: "not an exception") do |&block|
+            begin
+              block.call # Let the context yield/sleep
+            rescue
+              # Ignore - we expect the TypeError to be raised in the calling context
+            end
+          end
+        }.should raise_error(TypeError, "exception object expected")
+      end
+
+      it "raises ArgumentError when only cause is given with no arguments" do
+        -> {
+          @object.raise(cause: StandardError.new("cause")) do |&block|
+            begin
+              block.call # Let the context yield/sleep
+            rescue
+              # Ignore - we expect the ArgumentError to be raised in the calling context
+            end
+          end
+        }.should raise_error(ArgumentError, "only cause is given with no arguments")
+      end
     end
   end
 end

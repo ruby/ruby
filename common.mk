@@ -4094,6 +4094,7 @@ cont.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 cont.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 cont.$(OBJEXT): $(top_srcdir)/internal/cont.h
 cont.$(OBJEXT): $(top_srcdir)/internal/error.h
+cont.$(OBJEXT): $(top_srcdir)/internal/eval.h
 cont.$(OBJEXT): $(top_srcdir)/internal/gc.h
 cont.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 cont.$(OBJEXT): $(top_srcdir)/internal/namespace.h
@@ -19292,6 +19293,7 @@ thread.$(OBJEXT): $(top_srcdir)/internal/class.h
 thread.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 thread.$(OBJEXT): $(top_srcdir)/internal/cont.h
 thread.$(OBJEXT): $(top_srcdir)/internal/error.h
+thread.$(OBJEXT): $(top_srcdir)/internal/eval.h
 thread.$(OBJEXT): $(top_srcdir)/internal/gc.h
 thread.$(OBJEXT): $(top_srcdir)/internal/hash.h
 thread.$(OBJEXT): $(top_srcdir)/internal/imemo.h
