@@ -452,22 +452,20 @@ rb_id_attrset(ID id)
     }
 
     bool error = false;
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        /* make new symbol and ID */
-        VALUE str = lookup_id_str(id);
-        if (str) {
-            str = rb_str_dup(str);
-            rb_str_cat(str, "=", 1);
-            if (sym_check_asciionly(str, false)) {
-                rb_enc_associate(str, rb_usascii_encoding());
-            }
+    /* make new symbol and ID */
+    VALUE str = lookup_id_str(id);
+    if (str) {
+        str = rb_str_dup(str);
+        rb_str_cat(str, "=", 1);
+        if (sym_check_asciionly(str, false)) {
+            rb_enc_associate(str, rb_usascii_encoding());
+        }
 
-            VALUE sym = sym_find_or_insert_static_symbol(symbols, str);
-            id = rb_sym2id(sym);
-        }
-        else {
-            error = true;
-        }
+        VALUE sym = sym_find_or_insert_static_symbol(&ruby_global_symbols, str);
+        id = rb_sym2id(sym);
+    }
+    else {
+        error = true;
     }
 
     if (error) {
