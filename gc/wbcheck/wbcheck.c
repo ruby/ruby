@@ -1202,39 +1202,26 @@ wbcheck_foreach_object(rb_wbcheck_objspace_t *objspace, int (*callback)(VALUE ob
     st_foreach(objspace->object_table, wbcheck_foreach_object_i, (st_data_t)&foreach_data);
 }
 
-struct each_object_callback_data {
-    void (*func)(VALUE obj, void *data);
-    void *data;
-};
-
+// Helper to collect all objects into a snapshot list
 static int
-each_object_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *arg)
+wbcheck_snapshot_collector(st_data_t key, st_data_t val, st_data_t arg)
 {
-    struct each_object_callback_data *callback_data = (struct each_object_callback_data *)arg;
-    callback_data->func(obj, callback_data->data);
+    VALUE obj = (VALUE)key;
+    wbcheck_object_list_t *snapshot = (wbcheck_object_list_t *)arg;
+    wbcheck_object_list_append(snapshot, obj);
     return ST_CONTINUE;
 }
 
-struct each_objects_callback_data {
-    int (*callback)(void *, void *, size_t, void *);
-    void *data;
-};
-
-static int
-each_objects_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *arg)
+// Take a snapshot of all objects for safe iteration
+static wbcheck_object_list_t *
+wbcheck_take_object_snapshot(rb_wbcheck_objspace_t *objspace)
 {
-    struct each_objects_callback_data *callback_data = (struct each_objects_callback_data *)arg;
-
-    // Call the callback with the object as a single-object memory region
-    int result = callback_data->callback(
-        (void *)obj,
-        (void *)((char *)obj + info->alloc_size),
-        info->alloc_size,
-        callback_data->data
-    );
-
-    return (result == 0) ? ST_CONTINUE : ST_STOP;
+    size_t object_count = st_table_size(objspace->object_table);
+    wbcheck_object_list_t *snapshot = wbcheck_object_list_init_with_capacity(object_count);
+    st_foreach(objspace->object_table, wbcheck_snapshot_collector, (st_data_t)snapshot);
+    return snapshot;
 }
+
 
 void
 rb_gc_impl_each_objects(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data)
@@ -1242,16 +1229,27 @@ rb_gc_impl_each_objects(void *objspace_ptr, int (*callback)(void *, void *, size
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     GC_ASSERT(objspace);
 
-    struct each_objects_callback_data callback_data = {
-        .callback = callback,
-        .data = data
-    };
-
     bool old_gc_enabled = objspace->gc_enabled;
     objspace->gc_enabled = false;
 
-    wbcheck_foreach_object(objspace, each_objects_callback, &callback_data);
+    wbcheck_object_list_t *snapshot = wbcheck_take_object_snapshot(objspace);
 
+    for (size_t i = 0; i < snapshot->count; i++) {
+        VALUE obj = snapshot->items[i];
+        st_data_t value;
+        if (st_lookup(objspace->object_table, (st_data_t)obj, &value)) {
+            rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)value;
+            int result = callback(
+                (void *)obj,
+                (void *)((char *)obj + info->alloc_size),
+                info->alloc_size,
+                data
+            );
+            if (result != 0) break;
+        }
+    }
+
+    wbcheck_object_list_free(snapshot);
     objspace->gc_enabled = old_gc_enabled;
 }
 
@@ -1261,16 +1259,20 @@ rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), 
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     GC_ASSERT(objspace);
 
-    struct each_object_callback_data callback_data = {
-        .func = func,
-        .data = data
-    };
-
     bool old_gc_enabled = objspace->gc_enabled;
     objspace->gc_enabled = false;
 
-    wbcheck_foreach_object(objspace, each_object_callback, &callback_data);
+    wbcheck_object_list_t *snapshot = wbcheck_take_object_snapshot(objspace);
 
+    for (size_t i = 0; i < snapshot->count; i++) {
+        VALUE obj = snapshot->items[i];
+        st_data_t value;
+        if (st_lookup(objspace->object_table, (st_data_t)obj, &value)) {
+            func(obj, data);
+        }
+    }
+
+    wbcheck_object_list_free(snapshot);
     objspace->gc_enabled = old_gc_enabled;
 }
 
@@ -1618,8 +1620,14 @@ rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
 bool
 rb_gc_impl_garbage_object_p(void *objspace_ptr, VALUE obj)
 {
-    // Stub implementation
-    return false;
+    unsigned int lev = RB_GC_VM_LOCK();
+
+    // Check if this pointer exists in our object tracking table
+    st_data_t value;
+    bool result = st_lookup(wbcheck_global_objspace->object_table, (st_data_t)obj, &value);
+
+    RB_GC_VM_UNLOCK(lev);
+    return !result;
 }
 
 void
