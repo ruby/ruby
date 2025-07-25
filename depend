@@ -779,7 +779,7 @@ builtin.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 builtin.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 builtin.$(OBJEXT): {$(VPATH)}builtin.c
 builtin.$(OBJEXT): {$(VPATH)}builtin.h
-builtin.$(OBJEXT): {$(VPATH)}builtin_binary.inc
+builtin.$(OBJEXT): {$(VPATH)}builtin_binary.rbbin
 builtin.$(OBJEXT): {$(VPATH)}config.h
 builtin.$(OBJEXT): {$(VPATH)}constant.h
 builtin.$(OBJEXT): {$(VPATH)}defines.h

@@ -738,7 +738,7 @@ clean-local:: clean-runnable
 	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) dmyenc.$(OBJEXT) $(ARCHFILE) .*.time
 	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h config.log rbconfig.rb $(ruby_pc) $(COROUTINE_H:/Context.h=/.time)
 	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp ChangeLog $(STATIC_RUBY)$(EXEEXT)
-	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D) builtin_binary.inc
+	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D) builtin_binary.rbbin
 	$(Q)$(RM) $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/*/.time yjit_exit_locations.dump
 	-$(Q)$(RMALL) target
 	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine target \
@@ -1358,12 +1358,12 @@ preludes: {$(VPATH)}miniprelude.c
 	$(ECHO) making $@
 	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $<
 
-$(BUILTIN_BINARY:yes=built)in_binary.inc: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/template/builtin_binary.inc.tmpl
+$(BUILTIN_BINARY:yes=built)in_binary.rbbin: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/template/builtin_binary.rbbin.tmpl
 	$(Q) $(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ \
-		$(srcdir)/template/builtin_binary.inc.tmpl
+		$(srcdir)/template/builtin_binary.rbbin.tmpl
 	-$(Q) sha256sum $@ 2> $(NULL) || $(NULLCMD)
 
-$(BUILTIN_BINARY:no=builtin)_binary.inc:
+$(BUILTIN_BINARY:no=builtin)_binary.rbbin:
 	$(Q) echo> $@ // empty $(@F)
 
 $(BUILTIN_RB_INCS): $(top_srcdir)/tool/mk_builtin_loader.rb
