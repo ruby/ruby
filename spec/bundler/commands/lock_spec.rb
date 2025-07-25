@@ -2237,7 +2237,6 @@ RSpec.describe "bundle lock" do
               nokogiri (1.14.2-x86_64-linux)
 
           PLATFORMS
-            ruby
             x86_64-linux
 
           DEPENDENCIES

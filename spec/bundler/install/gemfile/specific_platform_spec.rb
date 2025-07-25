@@ -392,7 +392,23 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "installs sorbet-static, which does not provide a pure ruby variant, just fine", :truffleruby do
+  it "installs sorbet-static, which does not provide a pure ruby variant, in absence of a lockfile, just fine", :truffleruby do
+    skip "does not apply to Windows" if Gem.win_platform?
+
+    build_repo2 do
+      build_gem("sorbet-static", "0.5.6403") {|s| s.platform = Bundler.local_platform }
+    end
+
+    gemfile <<~G
+      source "https://gem.repo2"
+
+      gem "sorbet-static", "0.5.6403"
+    G
+
+    bundle "install --verbose"
+  end
+
+  it "installs sorbet-static, which does not provide a pure ruby variant, in presence of a lockfile, just fine", :truffleruby do
     skip "does not apply to Windows" if Gem.win_platform?
 
     build_repo2 do

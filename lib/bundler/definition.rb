@@ -740,7 +740,6 @@ module Bundler
     def start_resolution
       local_platform_needed_for_resolvability = @most_specific_non_local_locked_platform && !@platforms.include?(Bundler.local_platform)
       @platforms << Bundler.local_platform if local_platform_needed_for_resolvability
-      add_platform(Gem::Platform::RUBY) if RUBY_ENGINE == "truffleruby"
 
       result = SpecSet.new(resolver.start)
 
