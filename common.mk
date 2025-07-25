@@ -1531,8 +1531,12 @@ update-coverage: main PHONY
 		--install-dir .bundle --conservative "simplecov"
 
 refresh-gems: update-bundled_gems prepare-gems
+# can't recall exactly, but `make` somewhere (not GNU or nmake)
+# couldn't handle spaces in replacement strings; i.e.,
+# `$(HAVE_BASERUBY:yes=word word ...)` didn't work.
 prepare-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=extract-gems)
-extract-gems: $(HAVE_BASERUBY:yes=update-gems)
+extract-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=outdate-bundled-gems)
+update-gems: $(HAVE_BASERUBY:yes=outdate-bundled-gems)
 
 update-gems$(sequential): PHONY
 	$(ECHO) Downloading bundled gem files...
@@ -1566,6 +1570,7 @@ extract-gems$(sequential): PHONY
 
 extract-gems$(sequential): $(HAVE_GIT:yes=clone-bundled-gems-src)
 
+flush-gems: outdate-bundled-gems
 outdate-bundled-gems: PHONY
 	$(Q) $(BASERUBY) $(tooldir)/$@.rb --make="$(MAKE)" --mflags="$(MFLAGS)" \
 	--ruby-platform=$(arch) --ruby-version=$(ruby_version) \
