@@ -124,11 +124,7 @@ module Bundler
       end
 
       def expand(somepath)
-        if Bundler.current_ruby.jruby? # TODO: Unify when https://github.com/rubygems/bundler/issues/7598 fixed upstream and all supported jrubies include the fix
-          somepath.expand_path(root_path).expand_path
-        else
-          somepath.expand_path(root_path)
-        end
+        somepath.expand_path(root_path)
       rescue ArgumentError => e
         Bundler.ui.debug(e)
         raise PathError, "There was an error while trying to use the path " \
