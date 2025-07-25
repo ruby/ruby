@@ -2079,7 +2079,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
                                digest: nil)
     mldsa_cert = issue_cert(@svr, mldsa, 60, [], mldsa_ca_cert, mldsa_ca_key,
                             digest: nil)
-    rsa = Fixtures.pkey("rsa2048")
+    rsa = Fixtures.pkey("rsa-1")
     rsa_cert = issue_cert(@svr, rsa, 61, [], @ca_cert, @ca_key)
     ctx_proc = -> ctx {
       # Unset values set by start_server
@@ -2246,22 +2246,30 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
     assert_equal(1, ctx.security_level)
 
-    dsa512 = Fixtures.pkey("dsa512")
-    dsa512_cert = issue_cert(@svr, dsa512, 50, [], @ca_cert, @ca_key)
-    rsa1024 = Fixtures.pkey("rsa1024")
-    rsa1024_cert = issue_cert(@svr, rsa1024, 51, [], @ca_cert, @ca_key)
+    # See SSL_CTX_set_security_level(3). Definitions of security levels may
+    # change in future OpenSSL versions. As of OpenSSL 1.1.0:
+    #  - Level 1 requires 160-bit ECC keys or 1024-bit RSA keys.
+    #  - Level 2 requires 224-bit ECC keys or 2048-bit RSA keys.
+    begin
+      ec112 = OpenSSL::PKey::EC.generate("secp112r1")
+      ec112_cert = issue_cert(@svr, ec112, 50, [], @ca_cert, @ca_key)
+      ec192 = OpenSSL::PKey::EC.generate("prime192v1")
+      ec192_cert = issue_cert(@svr, ec192, 51, [], @ca_cert, @ca_key)
+    rescue OpenSSL::PKey::PKeyError
+      # Distro-provided OpenSSL may refuse to generate small keys
+      return
+    end
 
     assert_raise(OpenSSL::SSL::SSLError) {
-      # 512 bit DSA key is rejected because it offers < 80 bits of security
-      ctx.add_certificate(dsa512_cert, dsa512)
+      ctx.add_certificate(ec112_cert, ec112)
     }
     assert_nothing_raised {
-      ctx.add_certificate(rsa1024_cert, rsa1024)
+      ctx.add_certificate(ec192_cert, ec192)
     }
     ctx.security_level = 2
     assert_raise(OpenSSL::SSL::SSLError) {
       # < 112 bits of security
-      ctx.add_certificate(rsa1024_cert, rsa1024)
+      ctx.add_certificate(ec192_cert, ec192)
     }
   end
 
