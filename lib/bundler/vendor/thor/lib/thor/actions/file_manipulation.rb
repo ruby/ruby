@@ -242,6 +242,35 @@ class Bundler::Thor
       insert_into_file(path, *(args << config), &block)
     end
 
+    # Run a regular expression replacement on a file, raising an error if the
+    # contents of the file are not changed.
+    #
+    # ==== Parameters
+    # path<String>:: path of the file to be changed
+    # flag<Regexp|String>:: the regexp or string to be replaced
+    # replacement<String>:: the replacement, can be also given as a block
+    # config<Hash>:: give :verbose => false to not log the status, and
+    #                :force => true, to force the replacement regardless of runner behavior.
+    #
+    # ==== Example
+    #
+    #   gsub_file! 'app/controllers/application_controller.rb', /#\s*(filter_parameter_logging :password)/, '\1'
+    #
+    #   gsub_file! 'README', /rake/, :green do |match|
+    #     match << " no more. Use thor!"
+    #   end
+    #
+    def gsub_file!(path, flag, *args, &block)
+      config = args.last.is_a?(Hash) ? args.pop : {}
+
+      return unless behavior == :invoke || config.fetch(:force, false)
+
+      path = File.expand_path(path, destination_root)
+      say_status :gsub, relative_to_original_destination_root(path), config.fetch(:verbose, true)
+
+      actually_gsub_file(path, flag, args, true, &block) unless options[:pretend]
+    end
+
     # Run a regular expression replacement on a file.
     #
     # ==== Parameters
@@ -267,11 +296,7 @@ class Bundler::Thor
       path = File.expand_path(path, destination_root)
       say_status :gsub, relative_to_original_destination_root(path), config.fetch(:verbose, true)
 
-      unless options[:pretend]
-        content = File.binread(path)
-        content.gsub!(flag, *args, &block)
-        File.open(path, "wb") { |file| file.write(content) }
-      end
+      actually_gsub_file(path, flag, args, false, &block) unless options[:pretend]
     end
 
     # Uncomment all lines matching a given regex. Preserves indentation before
@@ -348,13 +373,24 @@ class Bundler::Thor
     end
 
     def with_output_buffer(buf = "".dup) #:nodoc:
-      raise ArgumentError, "Buffer can not be a frozen object" if buf.frozen?
+      raise ArgumentError, "Buffer cannot be a frozen object" if buf.frozen?
       old_buffer = output_buffer
       self.output_buffer = buf
       yield
       output_buffer
     ensure
       self.output_buffer = old_buffer
+    end
+
+    def actually_gsub_file(path, flag, args, error_on_no_change, &block)
+      content = File.binread(path)
+      success = content.gsub!(flag, *args, &block)
+
+      if success.nil? && error_on_no_change
+        raise Bundler::Thor::Error, "The content of #{path} did not change"
+      end
+
+      File.open(path, "wb") { |file| file.write(content) }
     end
 
     # Bundler::Thor::Actions#capture depends on what kind of buffer is used in ERB.
