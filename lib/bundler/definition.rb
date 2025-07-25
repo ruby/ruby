@@ -645,20 +645,12 @@ module Bundler
     end
 
     def materialize(dependencies)
-      # Tracks potential endless loops trying to re-resolve.
-      # TODO: Remove as dead code if not reports are received in a while
-      incorrect_spec = nil
-
       specs = begin
         resolve.materialize(dependencies)
       rescue IncorrectLockfileDependencies => e
         raise if Bundler.frozen_bundle?
 
-        spec = e.spec
-        raise "Infinite loop while fixing lockfile dependencies" if incorrect_spec == spec
-
-        incorrect_spec = spec
-        reresolve_without([spec])
+        reresolve_without([e.spec])
         retry
       end
 
