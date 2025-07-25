@@ -294,6 +294,33 @@ class OpenSSL::PKeyTestCase < OpenSSL::TestCase
   else
     assert_equal(false, ret)
   end
+
+  def der_to_pem(der, pem_header)
+    # RFC 7468
+    <<~EOS
+    -----BEGIN #{pem_header}-----
+    #{[der].pack("m0").scan(/.{1,64}/).join("\n")}
+    -----END #{pem_header}-----
+    EOS
+  end
+
+  def der_to_encrypted_pem(der, pem_header, password)
+    # OpenSSL encryption, non-standard
+    iv = 16.times.to_a.pack("C*")
+    encrypted = OpenSSL::Cipher.new("aes-128-cbc").encrypt.then { |cipher|
+      cipher.key = OpenSSL::Digest.digest("MD5", password + iv[0, 8])
+      cipher.iv = iv
+      cipher.update(der) << cipher.final
+    }
+    <<~EOS
+    -----BEGIN #{pem_header}-----
+    Proc-Type: 4,ENCRYPTED
+    DEK-Info: AES-128-CBC,#{iv.unpack1("H*").upcase}
+
+    #{[encrypted].pack("m0").scan(/.{1,64}/).join("\n")}
+    -----END #{pem_header}-----
+    EOS
+  end
 end
 
 module OpenSSL::Certs

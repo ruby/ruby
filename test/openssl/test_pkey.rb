@@ -293,10 +293,10 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end
 
   def test_compare?
-    key1 = Fixtures.pkey("rsa1024")
-    key2 = Fixtures.pkey("rsa1024")
-    key3 = Fixtures.pkey("rsa2048")
-    key4 = Fixtures.pkey("dh-1")
+    key1 = Fixtures.pkey("rsa-1")
+    key2 = Fixtures.pkey("rsa-1")
+    key3 = Fixtures.pkey("rsa-2")
+    key4 = Fixtures.pkey("p256")
 
     assert_equal(true, key1.compare?(key2))
     assert_equal(true, key1.public_key.compare?(key2))
@@ -311,7 +311,7 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end
 
   def test_to_text
-    rsa = Fixtures.pkey("rsa1024")
+    rsa = Fixtures.pkey("rsa-1")
     assert_include rsa.to_text, "publicExponent"
   end
 end
