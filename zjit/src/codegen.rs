@@ -11,7 +11,7 @@ use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, SideExitContext, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, SP};
 use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SELF_PARAM_IDX};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
-use crate::hir_type::{types::Fixnum, Type};
+use crate::hir_type::{types, Type};
 use crate::options::get_option;
 
 /// Ephemeral code generation state
@@ -1046,10 +1046,29 @@ fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> Option<lir::Opnd> {
 
 /// Compile a type check with a side exit
 fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard_type: Type, state: &FrameState) -> Option<lir::Opnd> {
-    if guard_type.is_subtype(Fixnum) {
-        // Check if opnd is Fixnum
+    if guard_type.is_subtype(types::Fixnum) {
         asm.test(val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
         asm.jz(side_exit(jit, state, GuardType(guard_type))?);
+    } else if guard_type.is_subtype(types::Flonum) {
+        // Flonum: (val & RUBY_FLONUM_MASK) == RUBY_FLONUM_FLAG
+        let masked = asm.and(val, Opnd::UImm(RUBY_FLONUM_MASK as u64));
+        asm.cmp(masked, Opnd::UImm(RUBY_FLONUM_FLAG as u64));
+        asm.jne(side_exit(jit, state, GuardType(guard_type))?);
+    } else if guard_type.is_subtype(types::StaticSymbol) {
+        // Static symbols have (val & 0xff) == RUBY_SYMBOL_FLAG
+        // Use 8-bit comparison like YJIT does
+        asm.cmp(val.with_num_bits(8).unwrap(), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
+        asm.jne(side_exit(jit, state, GuardType(guard_type))?);
+    } else if guard_type.is_subtype(types::NilClassExact) {
+        asm.cmp(val, Qnil.into());
+        asm.jne(side_exit(jit, state, GuardType(guard_type))?);
+    } else if guard_type.is_subtype(types::TrueClassExact) {
+        asm.cmp(val, Qtrue.into());
+        asm.jne(side_exit(jit, state, GuardType(guard_type))?);
+    } else if guard_type.is_subtype(types::FalseClassExact) {
+        assert!(Qfalse.as_i64() == 0);
+        asm.test(val, val);
+        asm.jne(side_exit(jit, state, GuardType(guard_type))?);
     } else if let Some(expected_class) = guard_type.runtime_exact_ruby_class() {
         asm_comment!(asm, "guard exact class");
 
