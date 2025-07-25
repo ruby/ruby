@@ -361,7 +361,7 @@ fn main() {
         // From internal/compile.h
         .allowlist_function("rb_vm_insn_decode")
 
-        // from internal/cont.h
+        // from internal/jit_cont.h
         .allowlist_function("rb_jit_cont_each_iseq")
 
         // From iseq.h
