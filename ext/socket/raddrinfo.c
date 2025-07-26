@@ -713,6 +713,12 @@ do_getnameinfo(void *ptr)
 }
 
 static void *
+fork_safe_do_getnameinfo(void *ptr)
+{
+    return rb_thread_prevent_fork(do_getnameinfo, ptr);
+}
+
+static void *
 wait_getnameinfo(void *ptr)
 {
     struct getnameinfo_arg *arg = (struct getnameinfo_arg *)ptr;
@@ -752,7 +758,7 @@ start:
     }
 
     pthread_t th;
-    if (raddrinfo_pthread_create(&th, do_getnameinfo, arg) != 0) {
+    if (raddrinfo_pthread_create(&th, fork_safe_do_getnameinfo, arg) != 0) {
         int err = errno;
         free_getnameinfo_arg(arg);
         errno = err;
