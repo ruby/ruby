@@ -18,6 +18,7 @@
 #include <math.h>
 #include <time.h>
 #include <sys/types.h>
+#include <stdint.h>
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
@@ -703,6 +704,12 @@ static struct vtm *localtimew(wideval_t timew, struct vtm *result);
 
 static int leap_year_p(long y);
 #define leap_year_v_p(y) leap_year_p(NUM2LONG(modv((y), INT2FIX(400))))
+static int calc_tm_yday(long tm_year, int tm_mon, int tm_mday);
+static int calc_wday(int year_mod400, int month, int day);
+
+#if defined(__APPLE__) && defined(ENABLE_MACOS_LOCALTIME_CACHE)
+static void apply_tm_offset(struct tm *tm, long offset);
+#endif
 
 static VALUE tm_from_time(VALUE klass, VALUE time);
 
@@ -746,6 +753,10 @@ get_tzname(int dst)
 }
 #endif
 
+#if defined(__APPLE__) && defined(ENABLE_MACOS_LOCALTIME_CACHE)
+static void invalidate_offset_cache(void);
+#endif
+
 void
 ruby_reset_timezone(const char *val)
 {
@@ -754,6 +765,9 @@ ruby_reset_timezone(const char *val)
     w32_tz.use_tzkey = !val || !*val;
 #endif
     ruby_reset_leap_second_info();
+#if defined(__APPLE__) && defined(ENABLE_MACOS_LOCALTIME_CACHE)
+    invalidate_offset_cache();
+#endif
 }
 
 static void
@@ -764,12 +778,143 @@ update_tz(void)
     tzset();
 }
 
+#if defined(__APPLE__) && defined(ENABLE_MACOS_LOCALTIME_CACHE)
+/* Offset-based cache: stores UTC-to-local offset per 15-minute interval
+ * This handles leap seconds correctly since offset remains constant throughout a minute
+ * All timezone offsets are on 15-minute boundaries (00, 15, 30, 45) which improves
+ * cache effectiveness by 15x compared to per-minute caching */
+#define OFFSET_CACHE_SIZE 64  /* Must be power of 2 - increased for better coverage */
+#define OFFSET_CACHE_ZONE_LENGTH 64
+
+/* Cache key: 15-minute precision */
+typedef struct {
+    int year;
+    int month;
+    int day;
+    int hour;
+    int quarter;  /* 0-3 representing 00, 15, 30, 45 minute intervals */
+} offset_cache_key;
+
+/* Offset cache entry */
+typedef struct {
+    offset_cache_key key;
+    long gmtoff;          /* UTC to local offset in seconds */
+    int isdst;            /* DST flag */
+    int valid;
+#ifdef HAVE_STRUCT_TM_TM_ZONE
+    char tm_zone[OFFSET_CACHE_ZONE_LENGTH];
+#endif
+} offset_cache_entry;
+
+static offset_cache_entry offset_cache[OFFSET_CACHE_SIZE] = {{0}};
+
+/* Invalidate the entire cache - called when timezone changes */
+static void
+invalidate_offset_cache(void)
+{
+    for (int i = 0; i < OFFSET_CACHE_SIZE; i++) {
+        offset_cache[i].valid = 0;
+    }
+}
+
+/* Hash function for offset cache based on 15-minute intervals */
+static inline unsigned int
+offset_cache_hash(const offset_cache_key *key)
+{
+    /* Combine components into a single value for hashing
+     * year * 35040 (quarters in a year) + month * 2880 (quarters in a month) +
+     * day * 96 (quarters in a day) + hour * 4 + quarter */
+    uint32_t val = key->year * 35040 + key->month * 2880 +
+                   key->day * 96 + key->hour * 4 + key->quarter;
+    /* Knuth multiplicative hash */
+    return (uint32_t)((val * 2654435761U) >> 26) & (OFFSET_CACHE_SIZE - 1);
+}
+
+/* Check if cache keys match */
+static inline int
+offset_cache_key_eq(const offset_cache_key *a, const offset_cache_key *b)
+{
+    return a->year == b->year && a->month == b->month &&
+           a->day == b->day && a->hour == b->hour && a->quarter == b->quarter;
+}
+
+#endif
+
 static struct tm *
 rb_localtime_r(const time_t *t, struct tm *result)
 {
 #if defined __APPLE__ && defined __LP64__
     if (*t != (time_t)(int)*t) return NULL;
 #endif
+
+#if defined(__APPLE__) && defined(ENABLE_MACOS_LOCALTIME_CACHE)
+    /* First get UTC time components */
+    struct tm utc_tm;
+    if (!gmtime_r(t, &utc_tm)) {
+        return NULL;
+    }
+
+    /* Create cache key from UTC time (15-minute precision) */
+    offset_cache_key key = {
+        .year = utc_tm.tm_year + 1900,
+        .month = utc_tm.tm_mon + 1,
+        .day = utc_tm.tm_mday,
+        .hour = utc_tm.tm_hour,
+        .quarter = utc_tm.tm_min / 15  /* 0-3 for 00, 15, 30, 45 minute intervals */
+    };
+
+    unsigned int cache_idx = offset_cache_hash(&key);
+    offset_cache_entry *entry = &offset_cache[cache_idx];
+
+    /* Check cache */
+    if (entry->valid && offset_cache_key_eq(&entry->key, &key)) {
+        /* Cache hit - apply cached offset to UTC time */
+        *result = utc_tm;  /* Start with UTC components */
+
+        /* Apply the offset directly without calling gmtime_r again */
+        apply_tm_offset(result, entry->gmtoff);
+
+        /* Set cached timezone info */
+        result->tm_isdst = entry->isdst;
+#ifdef HAVE_STRUCT_TM_TM_GMTOFF
+        result->tm_gmtoff = entry->gmtoff;
+#endif
+#ifdef HAVE_STRUCT_TM_TM_ZONE
+        result->tm_zone = entry->tm_zone;
+#endif
+        return result;
+    }
+
+    /* Cache miss - call localtime_r */
+    update_tz();
+
+    if (!localtime_r(t, result)) {
+        return NULL;
+    }
+
+    /* Store in cache */
+    entry->key = key;
+#ifdef HAVE_STRUCT_TM_TM_GMTOFF
+    entry->gmtoff = result->tm_gmtoff;
+#else
+    /* Fallback: calculate offset if tm_gmtoff not available */
+    entry->gmtoff = mktime(result) - *t;
+#endif
+    entry->isdst = result->tm_isdst;
+    entry->valid = 1;
+
+#ifdef HAVE_STRUCT_TM_TM_ZONE
+    if (result->tm_zone) {
+        strncpy(entry->tm_zone, result->tm_zone, OFFSET_CACHE_ZONE_LENGTH-1);
+        entry->tm_zone[OFFSET_CACHE_ZONE_LENGTH-1] = '\0';
+    }
+    else {
+        entry->tm_zone[0] = '\0';
+    }
+#endif
+
+    return result;
+#else
     update_tz();
 #ifdef HAVE_GMTIME_R
     result = localtime_r(t, result);
@@ -779,6 +924,7 @@ rb_localtime_r(const time_t *t, struct tm *result)
         if (tmp) *result = *tmp;
     }
 #endif
+#endif /* __APPLE__ */
 #if defined(HAVE_MKTIME) && defined(LOCALTIME_OVERFLOW_PROBLEM)
     if (result) {
         long gmtoff1 = 0;
@@ -859,6 +1005,88 @@ static const int8_t leap_year_days_in_month[] = {
 #define days_in_month_of(leap) ((leap) ? leap_year_days_in_month : common_year_days_in_month)
 #define days_in_month_in(y) days_in_month_of(leap_year_p(y))
 #define days_in_month_in_v(y) days_in_month_of(leap_year_v_p(y))
+
+#if defined(__APPLE__) && defined(ENABLE_MACOS_LOCALTIME_CACHE)
+/* Apply offset to UTC time components */
+static void
+apply_tm_offset(struct tm *tm, long offset)
+{
+    /* Break down offset into hours and minutes */
+    int offset_hours = (int)(offset / 3600);
+    int offset_mins = (int)((offset % 3600) / 60);
+    int offset_secs = (int)(offset % 60);
+
+    /* Apply seconds offset */
+    tm->tm_sec += offset_secs;
+    if (tm->tm_sec < 0) {
+        tm->tm_sec += 60;
+        offset_mins--;
+    }
+    else if (tm->tm_sec > 60) {
+        /* Preserve leap second (60) */
+        tm->tm_sec -= 60;
+        offset_mins++;
+    }
+
+    /* Apply minutes offset */
+    tm->tm_min += offset_mins;
+    if (tm->tm_min < 0) {
+        tm->tm_min += 60;
+        offset_hours--;
+    }
+    else if (tm->tm_min >= 60) {
+        tm->tm_min -= 60;
+        offset_hours++;
+    }
+
+    /* Apply hours offset */
+    tm->tm_hour += offset_hours;
+    int day_delta = 0;
+    if (tm->tm_hour < 0) {
+        day_delta = -((23 - tm->tm_hour) / 24);
+        tm->tm_hour = ((tm->tm_hour % 24) + 24) % 24;
+    }
+    else if (tm->tm_hour >= 24) {
+        day_delta = tm->tm_hour / 24;
+        tm->tm_hour = tm->tm_hour % 24;
+    }
+
+    /* Apply day offset if needed */
+    if (day_delta != 0) {
+        int year = tm->tm_year + 1900;
+        int month = tm->tm_mon + 1;
+        int day = tm->tm_mday + day_delta;
+
+        /* Handle month boundaries */
+        while (day < 1) {
+            month--;
+            if (month < 1) {
+                month = 12;
+                year--;
+            }
+            day += days_in_month_in(year)[month - 1];
+        }
+
+        while (day > days_in_month_in(year)[month - 1]) {
+            day -= days_in_month_in(year)[month - 1];
+            month++;
+            if (month > 12) {
+                month = 1;
+                year++;
+            }
+        }
+
+        /* Update tm structure */
+        tm->tm_year = year - 1900;
+        tm->tm_mon = month - 1;
+        tm->tm_mday = day;
+
+        /* Recalculate wday and yday */
+        tm->tm_wday = calc_wday(year % 400, month, day);
+        tm->tm_yday = calc_tm_yday(year - 1900, month - 1, day) - 1;
+    }
+}
+#endif
 
 #define M28(m) \
     (m),(m),(m),(m),(m),(m),(m),(m),(m),(m), \
