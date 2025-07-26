@@ -819,6 +819,13 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_spilled_param_new_arary
+    assert_compiles '[:ok]', %q{
+      def a(n1,n2,n3,n4,n5,n6,n7,n8) = [n8]
+      a(0,0,0,0,0,0,0, :ok)
+    }
+  end
+
   def test_opt_aref_with
     assert_compiles ':ok', %q{
       def aref_with(hash) = hash["key"]
