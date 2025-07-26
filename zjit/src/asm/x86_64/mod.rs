@@ -47,7 +47,7 @@ pub struct X86Reg
     pub reg_no: u8,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct X86Mem
 {
     // Size in bits
@@ -66,7 +66,7 @@ pub struct X86Mem
     pub disp: i32,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum X86Opnd
 {
     // Dummy operand

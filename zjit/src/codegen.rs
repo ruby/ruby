@@ -255,6 +255,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
                 let new_sp = asm.sub(NATIVE_STACK_PTR, jit.c_stack_bytes.into());
                 asm.mov(NATIVE_STACK_PTR, new_sp);
             }
+
+            asm.frame_setup_done();
         }
 
         // Compile all parameters
@@ -616,8 +618,8 @@ fn gen_entry_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block, c_s
             // the HIR function ────────────► └────────────┘
             // is running
             match param {
-                Opnd::Mem(lir::Mem { base, disp, num_bits }) => {
-                    let param_slot = Opnd::Mem(lir::Mem { num_bits, base, disp: disp - c_stack_bytes as i32 - Assembler::frame_size() });
+                Opnd::Mem(lir::Mem { base: lir::MemBase::FrameBase, disp, num_bits }) => {
+                    let param_slot = Opnd::mem(num_bits, NATIVE_STACK_PTR, disp - c_stack_bytes as i32 - Assembler::frame_size());
                     asm.mov(param_slot, local);
                 }
                 // Prepare for parallel move for locals in registers
@@ -1140,7 +1142,7 @@ fn param_opnd(idx: usize) -> Opnd {
     if idx < ALLOC_REGS.len() {
         Opnd::Reg(ALLOC_REGS[idx])
     } else {
-        Opnd::mem(64, NATIVE_STACK_PTR, (idx - ALLOC_REGS.len()) as i32 * SIZEOF_VALUE_I32)
+        Opnd::frame_base(VALUE_BITS, (idx - ALLOC_REGS.len()) as i32 * SIZEOF_VALUE_I32)
     }
 }
 

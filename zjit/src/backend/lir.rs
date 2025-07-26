@@ -22,6 +22,7 @@ pub enum MemBase
 {
     Reg(u8),
     VReg(usize),
+    FrameBase,
 }
 
 // Memory location
@@ -111,6 +112,13 @@ impl Opnd
 
             _ => unreachable!("memory operand with non-register base")
         }
+    }
+
+    /// Make a memory operand relative to the base of the native stack frame.
+    /// Use this to refer to a stack slot in presence of changes to [NATIVE_STACK_PTR].
+    /// Note that the backend can automatically insert stack operations.
+    pub fn frame_base(num_bits: u8, disp: i32) -> Self {
+        Opnd::Mem(Mem { base: MemBase::FrameBase, disp, num_bits })
     }
 
     /// Constructor for constant pointer operand
@@ -361,6 +369,11 @@ pub enum Insn {
     /// Push all of the caller-save registers and the flags to the C stack
     CPushAll,
 
+    /// Signal that the code has finish setting up the native stack frame
+    /// and that the current native stack pointer is the base pointer.
+    /// Relevant for [Opnd::frame_base].
+    FrameSetupDone,
+
     // C function call with N arguments (variadic)
     CCall {
         opnds: Vec<Opnd>,
@@ -599,6 +612,7 @@ impl Insn {
             Insn::CSelNZ { .. } => "CSelNZ",
             Insn::CSelZ { .. } => "CSelZ",
             Insn::FrameSetup => "FrameSetup",
+            Insn::FrameSetupDone => "FrameSetupDone",
             Insn::FrameTeardown => "FrameTeardown",
             Insn::IncrCounter { .. } => "IncrCounter",
             Insn::Jbe(_) => "Jbe",
@@ -826,6 +840,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::FrameSetup |
             Insn::FrameTeardown |
             Insn::PadPatchPoint |
+            Insn::FrameSetupDone |
             Insn::PosMarker(_) => None,
 
             Insn::CPopInto(opnd) |
@@ -980,6 +995,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::CPopAll |
             Insn::CPushAll |
             Insn::FrameSetup |
+            Insn::FrameSetupDone |
             Insn::FrameTeardown |
             Insn::PadPatchPoint |
             Insn::PosMarker(_) => None,
@@ -1914,6 +1930,10 @@ impl Assembler {
     #[allow(dead_code)]
     pub fn breakpoint(&mut self) {
         self.push_insn(Insn::Breakpoint);
+    }
+
+    pub fn frame_setup_done(&mut self) {
+        self.push_insn(Insn::FrameSetupDone);
     }
 
     /// Call a C function without PosMarkers

@@ -439,6 +439,14 @@ impl Assembler
             }
         }
 
+        fn lower_frame_base(opnd: &Opnd, frame_base_offset: i32) -> Opnd {
+            if let &Opnd::Mem(Mem { num_bits, disp, base: MemBase::FrameBase }) = opnd {
+                Opnd::mem(num_bits, NATIVE_STACK_PTR, disp + frame_base_offset)
+            } else {
+                *opnd
+            }
+        }
+
         // List of GC offsets
         let mut gc_offsets: Vec<CodePtr> = Vec::new();
 
@@ -447,6 +455,9 @@ impl Assembler
 
         // The write_pos for the last Insn::PatchPoint, if any
         let mut last_patch_pos: Option<usize> = None;
+
+        // We maintain that native_sp + this = base sp of the frame
+        let mut frame_base_offset = 0;
 
         // For each instruction
         let mut insn_idx: usize = 0;
@@ -486,6 +497,9 @@ impl Assembler
                         push(cb, RBP);
                     }
                 },
+                Insn::FrameSetupDone => {
+                    frame_base_offset = 0;
+                }
                 Insn::FrameTeardown => {
                     if false { // We don't support --zjit-perf yet
                         pop(cb, RBP);
@@ -494,13 +508,29 @@ impl Assembler
                 },
 
                 Insn::Add { left, right, .. } => {
+                    let left: X86Opnd = left.into();
+                    if left == RSP {
+                        match right {
+                            &Opnd::Imm(offset) => frame_base_offset -= i32::try_from(offset).expect("overlarge native SP change"),
+                            &Opnd::UImm(offset) => frame_base_offset -= i32::try_from(offset).expect("overlarge native SP change"),
+                            _ => {}
+                        }
+                    }
                     let opnd1 = emit_64bit_immediate(cb, right);
-                    add(cb, left.into(), opnd1);
+                    add(cb, left, opnd1);
                 },
 
                 Insn::Sub { left, right, .. } => {
+                    let left: X86Opnd = left.into();
+                    if left == RSP {
+                        match right {
+                            &Opnd::Imm(offset) => frame_base_offset += i32::try_from(offset).expect("overlarge native SP change"),
+                            &Opnd::UImm(offset) => frame_base_offset += i32::try_from(offset).expect("overlarge native SP change"),
+                            _ => {}
+                        }
+                    }
                     let opnd1 = emit_64bit_immediate(cb, right);
-                    sub(cb, left.into(), opnd1);
+                    sub(cb, left, opnd1);
                 },
 
                 Insn::Mul { left, right, .. } => {
@@ -540,6 +570,7 @@ impl Assembler
                 },
 
                 Insn::Store { dest, src } => {
+                    let dest = lower_frame_base(dest, frame_base_offset);
                     mov(cb, dest.into(), src.into());
                 },
 
@@ -554,7 +585,10 @@ impl Assembler
                             let ptr_offset = cb.get_write_ptr().sub_bytes(SIZEOF_VALUE);
                             gc_offsets.push(ptr_offset);
                         }
-                        _ => mov(cb, out.into(), opnd.into())
+                        _ => {
+                            let opnd = lower_frame_base(opnd, frame_base_offset);
+                            mov(cb, out.into(), opnd.into());
+                        }
                     }
                 },
 
@@ -565,11 +599,13 @@ impl Assembler
                 Insn::ParallelMov { .. } => unreachable!("{insn:?} should have been lowered at alloc_regs()"),
 
                 Insn::Mov { dest, src } => {
+                    let dest = lower_frame_base(dest, frame_base_offset);
                     mov(cb, dest.into(), src.into());
                 },
 
                 // Load effective address
                 Insn::Lea { opnd, out } => {
+                    let opnd = lower_frame_base(opnd, frame_base_offset);
                     lea(cb, out.into(), opnd.into());
                 },
 
@@ -595,12 +631,15 @@ impl Assembler
                 // Push and pop to/from the C stack
                 Insn::CPush(opnd) => {
                     push(cb, opnd.into());
+                    frame_base_offset += 8;
                 },
                 Insn::CPop { out } => {
                     pop(cb, out.into());
+                    frame_base_offset -= 8;
                 },
                 Insn::CPopInto(opnd) => {
                     pop(cb, opnd.into());
+                    frame_base_offset -= 8;
                 },
 
                 // Push and pop to the C stack all caller-save registers and the
@@ -610,15 +649,19 @@ impl Assembler
 
                     for reg in regs {
                         push(cb, X86Opnd::Reg(reg));
+                        frame_base_offset += 8;
                     }
                     pushfq(cb);
+                    frame_base_offset += 8;
                 },
                 Insn::CPopAll => {
                     let regs = Assembler::get_caller_save_regs();
 
                     popfq(cb);
+                    frame_base_offset -= 8;
                     for reg in regs.into_iter().rev() {
                         pop(cb, X86Opnd::Reg(reg));
+                        frame_base_offset -= 8;
                     }
                 },
 
