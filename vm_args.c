@@ -318,7 +318,7 @@ args_setup_kw_parameters_lookup(const ID key, VALUE *ptr, const VALUE *const pas
     return FALSE;
 }
 
-#define KW_SPECIFIED_BITS_MAX (32-1) /* TODO: 32 -> Fixnum's max bits */
+#define KW_SPECIFIED_BITS_MAX ((SIZEOF_VALUE * CHAR_BIT) - 1)
 
 static void
 args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *const iseq, const rb_callable_method_entry_t *cme,
