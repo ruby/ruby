@@ -3608,24 +3608,24 @@ symbol_key_needs_quote(VALUE str)
     if (first == '@' || first == '$' || first == '!') return true;
     if (!at_char_boundary(s, s + len - 1, RSTRING_END(str), rb_enc_get(str))) return false;
     switch (s[len - 1]) {
-        case '+':
-        case '-':
-        case '*':
-        case '/':
-        case '`':
-        case '%':
-        case '^':
-        case '&':
-        case '|':
-        case ']':
-        case '<':
-        case '=':
-        case '>':
-        case '~':
-        case '@':
-            return true;
-        default:
-            return false;
+      case '+':
+      case '-':
+      case '*':
+      case '/':
+      case '`':
+      case '%':
+      case '^':
+      case '&':
+      case '|':
+      case ']':
+      case '<':
+      case '=':
+      case '>':
+      case '~':
+      case '@':
+        return true;
+      default:
+        return false;
     }
 }
 
