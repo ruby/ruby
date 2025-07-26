@@ -860,6 +860,11 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(&RNODE_LAMBDA(node)->operator_loc),
                                     location_new(&RNODE_LAMBDA(node)->opening_loc),
                                     location_new(&RNODE_LAMBDA(node)->closing_loc));
+      case NODE_MODULE:
+        return rb_ary_new_from_args(3,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_MODULE(node)->module_keyword_loc),
+                                    location_new(&RNODE_MODULE(node)->end_keyword_loc));
       case NODE_IF:
         return rb_ary_new_from_args(4,
                                     location_new(nd_code_loc(node)),
