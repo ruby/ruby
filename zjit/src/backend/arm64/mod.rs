@@ -29,6 +29,7 @@ pub const C_ARG_OPNDS: [Opnd; 6] = [
 pub const C_RET_REG: Reg = X0_REG;
 pub const C_RET_OPND: Opnd = Opnd::Reg(X0_REG);
 pub const NATIVE_STACK_PTR: Opnd = Opnd::Reg(XZR_REG);
+pub const NATIVE_BASE_PTR: Opnd = Opnd::Reg(X29_REG);
 
 // These constants define the way we work with Arm64's stack pointer. The stack
 // pointer always needs to be aligned to a 16-byte boundary.
@@ -911,18 +912,54 @@ impl Assembler
                         cb.write_byte(0);
                     }
                 },
-                Insn::FrameSetup => {
+                &Insn::FrameSetup { preserved, mut slot_count } => {
+                    const { assert!(SIZEOF_VALUE == 8, "alignment logic relies on SIZEOF_VALUE == 8"); }
+                    // Preserve X29 and set up frame record
                     stp_pre(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, -16));
-
-                    // X29 (frame_pointer) = SP
                     mov(cb, X29, C_SP_REG);
-                },
-                Insn::FrameTeardown => {
+
+                    for regs in preserved.chunks(2) {
+                        // For the body, store pairs and move SP
+                        if let [reg0, reg1] = regs {
+                            stp_pre(cb, reg1.into(), reg0.into(), A64Opnd::new_mem(128, C_SP_REG, -16));
+                        } else if let [reg] = regs {
+                            // For overhang, store but don't move SP. Combine movement with
+                            // movement for slots below.
+                            stur(cb, reg.into(), A64Opnd::new_mem(64, C_SP_REG, -8));
+                            slot_count += 1;
+                        } else {
+                            unreachable!("chunks(2)");
+                        }
+                    }
+                    // Align slot_count
+                    if slot_count % 2 == 1 {
+                        slot_count += 1
+                    }
+                    if slot_count > 0 {
+                        let slot_offset = (slot_count * SIZEOF_VALUE) as u64;
+                        // Bail when asked to reserve too many slots in one instruction.
+                        ShiftedImmediate::try_from(slot_offset).ok()?;
+                        sub(cb, C_SP_REG, C_SP_REG, A64Opnd::new_uimm(slot_offset));
+                    }
+                }
+                Insn::FrameTeardown { preserved } => {
+                    // Restore preserved registers below frame pointer.
+                    let mut base_offset = 0;
+                    for regs in preserved.chunks(2) {
+                        if let [reg0, reg1] = regs {
+                            base_offset -= 16;
+                            ldp(cb, reg1.into(), reg0.into(), A64Opnd::new_mem(128, X29, base_offset));
+                        } else if let [reg] = regs {
+                            ldur(cb, reg.into(), A64Opnd::new_mem(64, X29, base_offset - 8));
+                        } else {
+                            unreachable!("chunks(2)");
+                        }
+                    }
+
                     // SP = X29 (frame pointer)
                     mov(cb, C_SP_REG, X29);
-
                     ldp_post(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, 16));
-                },
+                }
                 Insn::Add { left, right, out } => {
                     // Usually, we issue ADDS, so you could branch on overflow, but ADDS with
                     // out=31 refers to out=XZR, which discards the sum. So, instead of ADDS
@@ -1482,9 +1519,71 @@ mod tests {
     fn test_emit_frame() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.frame_setup();
-        asm.frame_teardown();
+        asm.frame_setup(&[], 0);
+        asm.frame_teardown(&[]);
         asm.compile_with_num_regs(&mut cb, 0);
+    }
+
+    #[test]
+    fn frame_setup_and_teardown() {
+        const THREE_REGS: &'static [Opnd] = &[Opnd::Reg(X19_REG), Opnd::Reg(X20_REG), Opnd::Reg(X21_REG)];
+        // Test 3 preserved regs (odd), odd slot_count
+        {
+            let (mut asm, mut cb) = setup_asm();
+            asm.frame_setup(THREE_REGS, 3);
+            asm.frame_teardown(THREE_REGS);
+            asm.compile_with_num_regs(&mut cb, 0);
+            assert_disasm!(cb, "fd7bbfa9fd030091f44fbfa9f5831ff8ff8300d1b44f7fa9b5835ef8bf030091fd7bc1a8", "
+                0x0: stp x29, x30, [sp, #-0x10]!
+                0x4: mov x29, sp
+                0x8: stp x20, x19, [sp, #-0x10]!
+                0xc: stur x21, [sp, #-8]
+                0x10: sub sp, sp, #0x20
+                0x14: ldp x20, x19, [x29, #-0x10]
+                0x18: ldur x21, [x29, #-0x18]
+                0x1c: mov sp, x29
+                0x20: ldp x29, x30, [sp], #0x10
+            ");
+        }
+
+        // Test 3 preserved regs (odd), even slot_count
+        {
+            let (mut asm, mut cb) = setup_asm();
+            asm.frame_setup(THREE_REGS, 4);
+            asm.frame_teardown(THREE_REGS);
+            asm.compile_with_num_regs(&mut cb, 0);
+            assert_disasm!(cb, "fd7bbfa9fd030091f44fbfa9f5831ff8ffc300d1b44f7fa9b5835ef8bf030091fd7bc1a8", "
+                0x0: stp x29, x30, [sp, #-0x10]!
+                0x4: mov x29, sp
+                0x8: stp x20, x19, [sp, #-0x10]!
+                0xc: stur x21, [sp, #-8]
+                0x10: sub sp, sp, #0x30
+                0x14: ldp x20, x19, [x29, #-0x10]
+                0x18: ldur x21, [x29, #-0x18]
+                0x1c: mov sp, x29
+                0x20: ldp x29, x30, [sp], #0x10
+            ");
+        }
+
+        // Test 4 preserved regs (even), odd slot_count
+        {
+            static FOUR_REGS: &'static [Opnd] = &[Opnd::Reg(X19_REG), Opnd::Reg(X20_REG), Opnd::Reg(X21_REG), Opnd::Reg(X22_REG)];
+            let (mut asm, mut cb) = setup_asm();
+            asm.frame_setup(FOUR_REGS, 3);
+            asm.frame_teardown(FOUR_REGS);
+            asm.compile_with_num_regs(&mut cb, 0);
+            assert_disasm!(cb, "fd7bbfa9fd030091f44fbfa9f657bfa9ff8300d1b44f7fa9b6577ea9bf030091fd7bc1a8", "
+                0x0: stp x29, x30, [sp, #-0x10]!
+                0x4: mov x29, sp
+                0x8: stp x20, x19, [sp, #-0x10]!
+                0xc: stp x22, x21, [sp, #-0x10]!
+                0x10: sub sp, sp, #0x20
+                0x14: ldp x20, x19, [x29, #-0x10]
+                0x18: ldp x22, x21, [x29, #-0x20]
+                0x1c: mov sp, x29
+                0x20: ldp x29, x30, [sp], #0x10
+            ");
+        }
     }
 
     #[test]
