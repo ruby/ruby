@@ -1,6 +1,6 @@
 use std::{collections::{HashMap, HashSet}};
 
-use crate::{backend::lir::{asm_comment, Assembler}, cruby::{rb_callable_method_entry_t, ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag}, hir::Invariant, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
+use crate::{backend::lir::{asm_comment, Assembler}, cruby::{rb_callable_method_entry_t, ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag, ID}, hir::Invariant, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
 
 #[derive(Debug, Eq, Hash, PartialEq)]
 struct Jump {
@@ -23,6 +23,9 @@ pub struct Invariants {
 
     /// Map from CME to patch points that assume the method hasn't been redefined
     cme_patch_points: HashMap<*const rb_callable_method_entry_t, HashSet<Jump>>,
+
+    /// Map from constant ID to patch points that assume the constant hasn't been redefined
+    constant_state_patch_points: HashMap<ID, HashSet<Jump>>,
 }
 
 /// Called when a basic operator is redefined. Note that all the blocks assuming
@@ -116,6 +119,30 @@ pub fn track_cme_assumption(
     });
 }
 
+/// Track a patch point for each constant name in a constant path assumption.
+pub fn track_stable_constant_names_assumption(
+    idlist: *const ID,
+    patch_point_ptr: CodePtr,
+    side_exit_ptr: CodePtr
+) {
+    let invariants = ZJITState::get_invariants();
+
+    let mut idx = 0;
+    loop {
+        let id = unsafe { *idlist.wrapping_add(idx) };
+        if id.0 == 0 {
+            break;
+        }
+
+        invariants.constant_state_patch_points.entry(id).or_default().insert(Jump {
+            from: patch_point_ptr,
+            to: side_exit_ptr,
+        });
+
+        idx += 1;
+    }
+}
+
 /// Called when a method is redefined. Invalidates all JIT code that depends on the CME.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_cme_invalidate(cme: *const rb_callable_method_entry_t) {
@@ -140,6 +167,35 @@ pub extern "C" fn rb_zjit_cme_invalidate(cme: *const rb_callable_method_entry_t)
                     asm.compile(cb).expect("can write existing code");
                 });
             }
+            cb.mark_all_executable();
+        }
+    });
+}
+
+/// Called when a constant is redefined. Invalidates all JIT code that depends on the constant.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_constant_state_changed(id: ID) {
+    // If ZJIT isn't enabled, do nothing
+    if !zjit_enabled_p() {
+        return;
+    }
+
+    with_vm_lock(src_loc!(), || {
+        let invariants = ZJITState::get_invariants();
+        if let Some(jumps) = invariants.constant_state_patch_points.get(&id) {
+            let cb = ZJITState::get_code_block();
+            debug!("Constant state changed: {:?}", id);
+
+            // Invalidate all patch points for this constant ID
+            for jump in jumps {
+                cb.with_write_ptr(jump.from, |cb| {
+                    let mut asm = Assembler::new();
+                    asm_comment!(asm, "Constant state changed: {:?}", id);
+                    asm.jmp(jump.to.into());
+                    asm.compile(cb).expect("can write existing code");
+                });
+            }
+
             cb.mark_all_executable();
         }
     });

@@ -148,6 +148,7 @@ rb_clear_constant_cache_for_id(ID id)
     }
 
     rb_yjit_constant_state_changed(id);
+    rb_zjit_constant_state_changed(id);
 }
 
 static void
