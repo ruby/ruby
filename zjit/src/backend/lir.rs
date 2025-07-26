@@ -12,9 +12,11 @@ use crate::asm::{CodeBlock, Label};
 pub use crate::backend::current::{
     Reg,
     EC, CFP, SP,
-    NATIVE_STACK_PTR,
+    NATIVE_STACK_PTR, NATIVE_BASE_PTR,
     C_ARG_OPNDS, C_RET_REG, C_RET_OPND,
 };
+
+pub static JIT_PRESERVED_REGS: &'static [Opnd] = &[CFP, SP, EC];
 
 // Memory operand base
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -291,8 +293,6 @@ pub enum Target
         context: Option<SideExitContext>,
         /// We use this to enrich asm comments.
         reason: SideExitReason,
-        /// The number of bytes we need to adjust the C stack pointer by.
-        c_stack_bytes: usize,
         /// Some if the side exit should write this label. We use it for patch points.
         label: Option<Label>,
     },
@@ -404,10 +404,10 @@ pub enum Insn {
     CSelZ { truthy: Opnd, falsy: Opnd, out: Opnd },
 
     /// Set up the frame stack as necessary per the architecture.
-    FrameSetup,
+    FrameSetup { preserved: &'static [Opnd], slot_count: usize },
 
     /// Tear down the frame stack as necessary per the architecture.
-    FrameTeardown,
+    FrameTeardown { preserved: &'static [Opnd], },
 
     // Atomically increment a counter
     // Input: memory operand, increment value
@@ -598,8 +598,8 @@ impl Insn {
             Insn::CSelNE { .. } => "CSelNE",
             Insn::CSelNZ { .. } => "CSelNZ",
             Insn::CSelZ { .. } => "CSelZ",
-            Insn::FrameSetup => "FrameSetup",
-            Insn::FrameTeardown => "FrameTeardown",
+            Insn::FrameSetup { .. } => "FrameSetup",
+            Insn::FrameTeardown { .. } => "FrameTeardown",
             Insn::IncrCounter { .. } => "IncrCounter",
             Insn::Jbe(_) => "Jbe",
             Insn::Jb(_) => "Jb",
@@ -823,8 +823,8 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::CPop { .. } |
             Insn::CPopAll |
             Insn::CPushAll |
-            Insn::FrameSetup |
-            Insn::FrameTeardown |
+            Insn::FrameSetup { .. } |
+            Insn::FrameTeardown { .. } |
             Insn::PadPatchPoint |
             Insn::PosMarker(_) => None,
 
@@ -979,8 +979,8 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::CPop { .. } |
             Insn::CPopAll |
             Insn::CPushAll |
-            Insn::FrameSetup |
-            Insn::FrameTeardown |
+            Insn::FrameSetup { .. } |
+            Insn::FrameTeardown { .. } |
             Insn::PadPatchPoint |
             Insn::PosMarker(_) => None,
 
@@ -1813,7 +1813,7 @@ impl Assembler
         for (idx, target) in targets {
             // Compile a side exit. Note that this is past the split pass and alloc_regs(),
             // so you can't use a VReg or an instruction that needs to be split.
-            if let Target::SideExit { context, reason, c_stack_bytes, label } = target {
+            if let Target::SideExit { context, reason, label } = target {
                 asm_comment!(self, "Exit: {reason}");
                 let side_exit_label = if let Some(label) = label {
                     Target::Label(label)
@@ -1858,13 +1858,8 @@ impl Assembler
                     self.store(cfp_sp, Opnd::Reg(Assembler::SCRATCH_REG));
                 }
 
-                if c_stack_bytes > 0 {
-                    asm_comment!(self, "restore C stack pointer");
-                    self.add_into(NATIVE_STACK_PTR, c_stack_bytes.into());
-                }
-
                 asm_comment!(self, "exit to the interpreter");
-                self.frame_teardown();
+                self.frame_teardown(&[]); // matching the setup in :bb0-prologue:
                 self.mov(C_RET_OPND, Opnd::UImm(Qundef.as_u64()));
                 self.cret(C_RET_OPND);
 
@@ -2065,12 +2060,14 @@ impl Assembler {
         out
     }
 
-    pub fn frame_setup(&mut self) {
-        self.push_insn(Insn::FrameSetup);
+    pub fn frame_setup(&mut self, preserved_regs: &'static [Opnd], slot_count: usize) {
+        self.push_insn(Insn::FrameSetup { preserved: preserved_regs, slot_count });
     }
 
-    pub fn frame_teardown(&mut self) {
-        self.push_insn(Insn::FrameTeardown);
+    /// The inverse of [Self::frame_setup] used before return. `reserve_bytes`
+    /// not necessary since we use a base pointer register.
+    pub fn frame_teardown(&mut self, preserved_regs: &'static [Opnd]) {
+        self.push_insn(Insn::FrameTeardown { preserved: preserved_regs });
     }
 
     pub fn incr_counter(&mut self, mem: Opnd, value: Opnd) {
