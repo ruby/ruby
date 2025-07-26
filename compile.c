@@ -1440,6 +1440,30 @@ new_insn_body(rb_iseq_t *iseq, int line_no, int node_id, enum ruby_vminsn_type i
     return new_insn_core(iseq, line_no, node_id, insn_id, argc, operands);
 }
 
+static INSN *
+insn_replace_with_operands(rb_iseq_t *iseq, INSN *iobj, enum ruby_vminsn_type insn_id, int argc, ...)
+{
+    VALUE *operands = 0;
+    va_list argv;
+    if (argc > 0) {
+        int i;
+        va_start(argv, argc);
+        operands = compile_data_alloc2(iseq, sizeof(VALUE), argc);
+        for (i = 0; i < argc; i++) {
+            VALUE v = va_arg(argv, VALUE);
+            operands[i] = v;
+        }
+        va_end(argv);
+    }
+
+    iobj->insn_id = insn_id;
+    iobj->operand_size = argc;
+    iobj->operands = operands;
+    iseq_insn_each_markable_object(iobj, iseq_insn_each_object_write_barrier, (VALUE)iseq);
+
+    return iobj;
+}
+
 static const struct rb_callinfo *
 new_callinfo(rb_iseq_t *iseq, ID mid, int argc, unsigned int flag, struct rb_callinfo_kwarg *kw_arg, int has_blockiseq)
 {
@@ -3439,11 +3463,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 VALUE ary = iobj->operands[0];
                 rb_obj_reveal(ary, rb_cArray);
 
-                iobj->insn_id = BIN(opt_ary_freeze);
-                iobj->operand_size = 2;
-                iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
-                iobj->operands[0] = ary;
-                iobj->operands[1] = (VALUE)ci;
+                insn_replace_with_operands(iseq, iobj, BIN(opt_ary_freeze), 2, ary, (VALUE)ci);
                 ELEM_REMOVE(next);
             }
         }
@@ -3465,11 +3485,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 VALUE hash = iobj->operands[0];
                 rb_obj_reveal(hash, rb_cHash);
 
-                iobj->insn_id = BIN(opt_hash_freeze);
-                iobj->operand_size = 2;
-                iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
-                iobj->operands[0] = hash;
-                iobj->operands[1] = (VALUE)ci;
+                insn_replace_with_operands(iseq, iobj, BIN(opt_hash_freeze), 2, hash, (VALUE)ci);
                 ELEM_REMOVE(next);
             }
         }
@@ -3488,11 +3504,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(next, 1);
 
             if (vm_ci_simple(ci) && vm_ci_argc(ci) == 0 && blockiseq == NULL && vm_ci_mid(ci) == idFreeze) {
-                iobj->insn_id = BIN(opt_ary_freeze);
-                iobj->operand_size = 2;
-                iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
-                RB_OBJ_WRITE(iseq, &iobj->operands[0], rb_cArray_empty_frozen);
-                iobj->operands[1] = (VALUE)ci;
+                insn_replace_with_operands(iseq, iobj, BIN(opt_ary_freeze), 2, rb_cArray_empty_frozen, (VALUE)ci);
                 ELEM_REMOVE(next);
             }
         }
@@ -3511,11 +3523,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(next, 1);
 
             if (vm_ci_simple(ci) && vm_ci_argc(ci) == 0 && blockiseq == NULL && vm_ci_mid(ci) == idFreeze) {
-                iobj->insn_id = BIN(opt_hash_freeze);
-                iobj->operand_size = 2;
-                iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
-                RB_OBJ_WRITE(iseq, &iobj->operands[0], rb_cHash_empty_frozen);
-                iobj->operands[1] = (VALUE)ci;
+                insn_replace_with_operands(iseq, iobj, BIN(opt_hash_freeze), 2, rb_cHash_empty_frozen, (VALUE)ci);
                 ELEM_REMOVE(next);
             }
         }
@@ -4109,17 +4117,16 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 static int
 insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
 {
-    iobj->insn_id = insn_id;
-    iobj->operand_size = insn_len(insn_id) - 1;
-    iobj->insn_info.events |= RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN;
-
     if (insn_id == BIN(opt_neq)) {
         VALUE original_ci = iobj->operands[0];
-        iobj->operand_size = 2;
-        iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
-        iobj->operands[0] = (VALUE)new_callinfo(iseq, idEq, 1, 0, NULL, FALSE);
-        iobj->operands[1] = original_ci;
+        VALUE new_ci = (VALUE)new_callinfo(iseq, idEq, 1, 0, NULL, FALSE);
+        insn_replace_with_operands(iseq, iobj, insn_id, 2, new_ci, original_ci);
     }
+    else {
+        iobj->insn_id = insn_id;
+        iobj->operand_size = insn_len(insn_id) - 1;
+    }
+    iobj->insn_info.events |= RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN;
 
     return COMPILE_OK;
 }
@@ -4151,12 +4158,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 
                 if (method != INT2FIX(0)) {
                     VALUE num = iobj->operands[0];
-                    int operand_len = insn_len(BIN(opt_newarray_send)) - 1;
-                    iobj->insn_id = BIN(opt_newarray_send);
-                    iobj->operands = compile_data_calloc2(iseq, operand_len, sizeof(VALUE));
-                    iobj->operands[0] = num;
-                    iobj->operands[1] = method;
-                    iobj->operand_size = operand_len;
+                    insn_replace_with_operands(iseq, iobj, BIN(opt_newarray_send), 2, num, method);
                     ELEM_REMOVE(&niobj->link);
                     return COMPILE_OK;
                 }
@@ -4168,12 +4170,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
             const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT((INSN *)niobj->link.next, 0);
             if (vm_ci_simple(ci) && vm_ci_argc(ci) == 1 && vm_ci_mid(ci) == idPack) {
                 VALUE num = iobj->operands[0];
-                int operand_len = insn_len(BIN(opt_newarray_send)) - 1;
-                iobj->insn_id = BIN(opt_newarray_send);
-                iobj->operands = compile_data_calloc2(iseq, operand_len, sizeof(VALUE));
-                iobj->operands[0] = FIXNUM_INC(num, 1);
-                iobj->operands[1] = INT2FIX(VM_OPT_NEWARRAY_SEND_PACK);
-                iobj->operand_size = operand_len;
+                insn_replace_with_operands(iseq, iobj, BIN(opt_newarray_send), 2, FIXNUM_INC(num, 1), INT2FIX(VM_OPT_NEWARRAY_SEND_PACK));
                 ELEM_REMOVE(&iobj->link);
                 ELEM_REMOVE(niobj->link.next);
                 ELEM_INSERT_NEXT(&niobj->link, &iobj->link);
@@ -4191,12 +4188,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
             if (vm_ci_mid(ci) == idPack && vm_ci_argc(ci) == 2 &&
                     (kwarg && kwarg->keyword_len == 1 && kwarg->keywords[0] == rb_id2sym(idBuffer))) {
                 VALUE num = iobj->operands[0];
-                int operand_len = insn_len(BIN(opt_newarray_send)) - 1;
-                iobj->insn_id = BIN(opt_newarray_send);
-                iobj->operands = compile_data_calloc2(iseq, operand_len, sizeof(VALUE));
-                iobj->operands[0] = FIXNUM_INC(num, 2);
-                iobj->operands[1] = INT2FIX(VM_OPT_NEWARRAY_SEND_PACK_BUFFER);
-                iobj->operand_size = operand_len;
+                insn_replace_with_operands(iseq, iobj, BIN(opt_newarray_send), 2, FIXNUM_INC(num, 2), INT2FIX(VM_OPT_NEWARRAY_SEND_PACK_BUFFER));
                 // Remove the "send" insn.
                 ELEM_REMOVE((niobj->link.next)->next);
                 // Remove the modified insn from its original "newarray" position...
@@ -4230,11 +4222,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
             if (vm_ci_simple(ci) && vm_ci_argc(ci) == 1 && vm_ci_mid(ci) == idIncludeP) {
                 VALUE num = iobj->operands[0];
                 INSN *sendins = (INSN *)sendobj;
-                sendins->insn_id = BIN(opt_newarray_send);
-                sendins->operand_size = insn_len(sendins->insn_id) - 1;
-                sendins->operands = compile_data_calloc2(iseq, sendins->operand_size, sizeof(VALUE));
-                sendins->operands[0] = FIXNUM_INC(num, 1);
-                sendins->operands[1] = INT2FIX(VM_OPT_NEWARRAY_SEND_INCLUDE_P);
+                insn_replace_with_operands(iseq, sendins, BIN(opt_newarray_send), 2, FIXNUM_INC(num, 1), INT2FIX(VM_OPT_NEWARRAY_SEND_INCLUDE_P));
                 // Remove the original "newarray" insn.
                 ELEM_REMOVE(&iobj->link);
                 return COMPILE_OK;
@@ -4272,12 +4260,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
                 rb_obj_reveal(ary, rb_cArray);
 
                 INSN *sendins = (INSN *)sendobj;
-                sendins->insn_id = BIN(opt_duparray_send);
-                sendins->operand_size = insn_len(sendins->insn_id) - 1;;
-                sendins->operands = compile_data_calloc2(iseq, sendins->operand_size, sizeof(VALUE));
-                sendins->operands[0] = ary;
-                sendins->operands[1] = rb_id2sym(idIncludeP);
-                sendins->operands[2] = INT2FIX(1);
+                insn_replace_with_operands(iseq, sendins, BIN(opt_duparray_send), 3, ary, rb_id2sym(idIncludeP), INT2FIX(1));
 
                 // Remove the duparray insn.
                 ELEM_REMOVE(&iobj->link);
