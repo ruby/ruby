@@ -97,7 +97,7 @@ static void
 concurrent_set_try_resize_without_locking(VALUE old_set_obj, VALUE *set_obj_ptr)
 {
     // Check if another thread has already resized.
-    if (RUBY_ATOMIC_VALUE_LOAD(*set_obj_ptr) != old_set_obj) {
+    if (rbimpl_atomic_value_load_explicit(set_obj_ptr, RUBY_ATOMIC_ACQUIRE) != old_set_obj) {
         return;
     }
 
@@ -105,7 +105,7 @@ concurrent_set_try_resize_without_locking(VALUE old_set_obj, VALUE *set_obj_ptr)
 
     // This may overcount by up to the number of threads concurrently attempting to insert
     // GC may also happen between now and the set being rebuilt
-    int expected_size = RUBY_ATOMIC_LOAD(old_set->size) - old_set->deleted_entries;
+    int expected_size = rbimpl_atomic_load_explicit(&old_set->size, RUBY_ATOMIC_RELAXED) - old_set->deleted_entries;
 
     struct concurrent_set_entry *old_entries = old_set->entries;
     int old_capacity = old_set->capacity;
@@ -123,13 +123,13 @@ concurrent_set_try_resize_without_locking(VALUE old_set_obj, VALUE *set_obj_ptr)
 
     for (int i = 0; i < old_capacity; i++) {
         struct concurrent_set_entry *entry = &old_entries[i];
-        VALUE key = RUBY_ATOMIC_VALUE_EXCHANGE(entry->key, CONCURRENT_SET_MOVED);
+        VALUE key = rbimpl_atomic_value_exchange_explicit(&entry->key, CONCURRENT_SET_MOVED, RUBY_ATOMIC_ACQUIRE);
         RUBY_ASSERT(key != CONCURRENT_SET_MOVED);
 
         if (key < CONCURRENT_SET_SPECIAL_VALUE_COUNT) continue;
         if (!RB_SPECIAL_CONST_P(key) && rb_objspace_garbage_object_p(key)) continue;
 
-        VALUE hash = RUBY_ATOMIC_VALUE_LOAD(entry->hash);
+        VALUE hash = rbimpl_atomic_value_load_explicit(&entry->hash, RUBY_ATOMIC_RELAXED);
         if (hash == 0) {
             // Either in-progress insert or extremely unlikely 0 hash.
             // Re-calculate the hash.
@@ -162,7 +162,7 @@ concurrent_set_try_resize_without_locking(VALUE old_set_obj, VALUE *set_obj_ptr)
         }
     }
 
-    RUBY_ATOMIC_VALUE_SET(*set_obj_ptr, new_set_obj);
+    rbimpl_atomic_value_store_explicit(set_obj_ptr, new_set_obj, RUBY_ATOMIC_RELEASE);
 
     RB_GC_GUARD(old_set_obj);
 }
@@ -184,7 +184,7 @@ rb_concurrent_set_find(VALUE *set_obj_ptr, VALUE key)
     VALUE hash = 0;
 
   retry:
-    set_obj = RUBY_ATOMIC_VALUE_LOAD(*set_obj_ptr);
+    set_obj = rbimpl_atomic_value_load_explicit(set_obj_ptr, RUBY_ATOMIC_ACQUIRE);
     RUBY_ASSERT(set_obj);
     struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
 
@@ -263,7 +263,7 @@ rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
 
     while (true) {
         struct concurrent_set_entry *entry = &set->entries[idx];
-        VALUE curr_key = RUBY_ATOMIC_VALUE_LOAD(entry->key);
+        VALUE curr_key = rbimpl_atomic_value_load_explicit(&entry->key, RUBY_ATOMIC_ACQUIRE);
 
         switch (curr_key) {
           case CONCURRENT_SET_EMPTY: {
@@ -274,7 +274,7 @@ rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
                 inserting = true;
             }
 
-            rb_atomic_t prev_size = RUBY_ATOMIC_FETCH_ADD(set->size, 1);
+            rb_atomic_t prev_size = rbimpl_atomic_fetch_add_explicit(&set->size, 1, RUBY_ATOMIC_RELAXED);
 
             if (UNLIKELY(prev_size > set->capacity / 2)) {
                 concurrent_set_try_resize(set_obj, set_obj_ptr);
@@ -282,16 +282,16 @@ rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
                 goto retry;
             }
 
-            curr_key = RUBY_ATOMIC_VALUE_CAS(entry->key, CONCURRENT_SET_EMPTY, key);
+            curr_key = rbimpl_atomic_value_cas_explicit(&entry->key, CONCURRENT_SET_EMPTY, key, RUBY_ATOMIC_RELEASE, RUBY_ATOMIC_RELAXED);
             if (curr_key == CONCURRENT_SET_EMPTY) {
-                RUBY_ATOMIC_VALUE_SET(entry->hash, hash);
+                rbimpl_atomic_value_store_explicit(&entry->hash, hash, RUBY_ATOMIC_RELAXED);
 
                 RB_GC_GUARD(set_obj);
                 return key;
             }
             else {
                 // Entry was not inserted.
-                RUBY_ATOMIC_DEC(set->size);
+                rbimpl_atomic_sub_explicit(&set->size, 1, RUBY_ATOMIC_RELAXED);
 
                 // Another thread won the race, try again at the same location.
                 continue;
@@ -305,13 +305,13 @@ rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
 
             goto retry;
           default: {
-            VALUE curr_hash = RUBY_ATOMIC_VALUE_LOAD(entry->hash);
+            VALUE curr_hash = rbimpl_atomic_value_load_explicit(&entry->hash, RUBY_ATOMIC_RELAXED);
             if (curr_hash != 0 && curr_hash != hash) break;
 
             if (UNLIKELY(!RB_SPECIAL_CONST_P(curr_key) && rb_objspace_garbage_object_p(curr_key))) {
                 // This is a weakref set, so after marking but before sweeping is complete we may find a matching garbage object.
                 // Skip it and mark it as deleted.
-                RUBY_ATOMIC_VALUE_CAS(entry->key, curr_key, CONCURRENT_SET_DELETED);
+                rbimpl_atomic_value_cas_explicit(&entry->key, curr_key, CONCURRENT_SET_DELETED, RUBY_ATOMIC_RELEASE, RUBY_ATOMIC_RELAXED);
                 break;
             }
 
@@ -352,7 +352,7 @@ rb_concurrent_set_delete_by_identity(VALUE set_obj, VALUE key)
 
     while (true) {
         struct concurrent_set_entry *entry = &set->entries[idx];
-        VALUE curr_key = RUBY_ATOMIC_VALUE_LOAD(entry->key);
+        VALUE curr_key = entry->key;
 
         switch (curr_key) {
           case CONCURRENT_SET_EMPTY:

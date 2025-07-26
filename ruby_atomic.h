@@ -3,6 +3,28 @@
 
 #include "ruby/atomic.h"
 
+#if defined(HAVE_GCC_ATOMIC_BUILTINS)
+    #define RUBY_ATOMIC_RELAXED __ATOMIC_RELAXED
+    #define RUBY_ATOMIC_ACQUIRE __ATOMIC_ACQUIRE
+    #define RUBY_ATOMIC_RELEASE __ATOMIC_RELEASE
+    #define RUBY_ATOMIC_ACQ_REL __ATOMIC_ACQ_REL
+    #define RUBY_ATOMIC_SEQ_CST __ATOMIC_SEQ_CST
+#elif defined(HAVE_STDATOMIC_H)
+    #include <stdatomic.h>
+    #define RUBY_ATOMIC_RELAXED memory_order_relaxed
+    #define RUBY_ATOMIC_ACQUIRE memory_order_acquire
+    #define RUBY_ATOMIC_RELEASE memory_order_release
+    #define RUBY_ATOMIC_ACQ_REL memory_order_acq_rel
+    #define RUBY_ATOMIC_SEQ_CST memory_order_seq_cst
+#else
+    /* Dummy values for unsupported platforms */
+    #define RUBY_ATOMIC_RELAXED 0
+    #define RUBY_ATOMIC_ACQUIRE 1
+    #define RUBY_ATOMIC_RELEASE 2
+    #define RUBY_ATOMIC_ACQ_REL 3
+    #define RUBY_ATOMIC_SEQ_CST 4
+#endif
+
 #define RUBY_ATOMIC_VALUE_LOAD(x) (VALUE)(RUBY_ATOMIC_PTR_LOAD(x))
 
 /* shim macros only */
@@ -27,16 +49,107 @@
 #define ATOMIC_VALUE_CAS(var, oldval, val) RUBY_ATOMIC_VALUE_CAS(var, oldval, val)
 #define ATOMIC_VALUE_EXCHANGE(var, val) RUBY_ATOMIC_VALUE_EXCHANGE(var, val)
 
-static inline rb_atomic_t
-rbimpl_atomic_load_relaxed(volatile rb_atomic_t *ptr)
-{
+/**********************************/
+
+/* Platform-specific implementation (or fallback) */
 #if defined(HAVE_GCC_ATOMIC_BUILTINS)
-    return __atomic_load_n(ptr, __ATOMIC_RELAXED);
+#define DEFINE_ATOMIC_LOAD_EXPLICIT_BODY(ptr, memory_order, type, type_prefix) \
+    __atomic_load_n(ptr, memory_order)
+#elif defined(HAVE_STDATOMIC_H)
+#define DEFINE_ATOMIC_LOAD_EXPLICIT_BODY(ptr, memory_order, type, type_prefix) \
+    atomic_load_explicit((_Atomic volatile type *)ptr, memory_order)
 #else
-    return *ptr;
+#define DEFINE_ATOMIC_LOAD_EXPLICIT_BODY(ptr, memory_order, type, type_prefix) \
+    ((void)memory_order, rbimpl_atomic_##type_prefix##load(ptr))
 #endif
+
+/* Single macro definition for load operations with explicit memory ordering */
+#define DEFINE_ATOMIC_LOAD_EXPLICIT(type_prefix, type) \
+static inline type \
+rbimpl_atomic_##type_prefix##load_explicit(type *ptr, int memory_order) \
+{ \
+    return DEFINE_ATOMIC_LOAD_EXPLICIT_BODY(ptr, memory_order, type, type_prefix); \
 }
-#define ATOMIC_LOAD_RELAXED(var) rbimpl_atomic_load_relaxed(&(var))
+
+/* Generate atomic load function with explicit memory ordering */
+DEFINE_ATOMIC_LOAD_EXPLICIT(, rb_atomic_t)
+DEFINE_ATOMIC_LOAD_EXPLICIT(value_, VALUE)
+DEFINE_ATOMIC_LOAD_EXPLICIT(ptr_, void *)
+
+#undef DEFINE_ATOMIC_LOAD_EXPLICIT
+#undef DEFINE_ATOMIC_LOAD_EXPLICIT_BODY
+
+/* Define the body for two-operand atomic operations based on platform */
+#if defined(HAVE_GCC_ATOMIC_BUILTINS)
+#define ATOMIC_OP_EXPLICIT_BODY(gcc_op, stdatomic_op, ptr, val, memory_order, type, type_prefix) \
+    __atomic_##gcc_op(ptr, val, memory_order)
+#elif defined(HAVE_STDATOMIC_H)
+#define ATOMIC_OP_EXPLICIT_BODY(gcc_op, stdatomic_op, ptr, val, memory_order, type, type_prefix) \
+    atomic_##stdatomic_op##_explicit((_Atomic volatile type *)ptr, val, memory_order)
+#else
+#define ATOMIC_OP_EXPLICIT_BODY(gcc_op, stdatomic_op, ptr, val, memory_order, type, type_prefix) \
+    ((void)memory_order, rbimpl_atomic_##type_prefix##stdatomic_op(ptr, val))
+#endif
+
+/* Generic macro for two-operand atomic operations with explicit memory ordering */
+#define DEFINE_ATOMIC_OP_EXPLICIT(gcc_op, stdatomic_op, type_prefix, type) \
+static inline type \
+rbimpl_atomic_##type_prefix##stdatomic_op##_explicit(volatile type *ptr, type val, int memory_order) \
+{ \
+    return ATOMIC_OP_EXPLICIT_BODY(gcc_op, stdatomic_op, ptr, val, memory_order, type, type_prefix); \
+}
+
+/* Special case for store operations that don't return values */
+#define DEFINE_ATOMIC_STORE_EXPLICIT(gcc_op, stdatomic_op, type_prefix, type) \
+static inline void \
+rbimpl_atomic_##type_prefix##stdatomic_op##_explicit(volatile type *ptr, type val, int memory_order) \
+{ \
+    ATOMIC_OP_EXPLICIT_BODY(gcc_op, stdatomic_op, ptr, val, memory_order, type, type_prefix); \
+}
+
+/* Generate atomic operations with explicit memory ordering */
+DEFINE_ATOMIC_STORE_EXPLICIT(store_n, store, , rb_atomic_t)
+DEFINE_ATOMIC_OP_EXPLICIT(add_fetch, add, , rb_atomic_t)
+DEFINE_ATOMIC_STORE_EXPLICIT(store_n, store, value_, VALUE)
+DEFINE_ATOMIC_OP_EXPLICIT(sub_fetch, sub, , rb_atomic_t)
+DEFINE_ATOMIC_OP_EXPLICIT(fetch_add, fetch_add, , rb_atomic_t)
+DEFINE_ATOMIC_OP_EXPLICIT(exchange_n, exchange, value_, VALUE)
+
+/* Define the body for CAS operations based on platform */
+#if defined(HAVE_GCC_ATOMIC_BUILTINS)
+#define ATOMIC_CAS_EXPLICIT_BODY(ptr, oldval, newval, success_memorder, failure_memorder, type, type_prefix) \
+    type expected = oldval; \
+    __atomic_compare_exchange_n(ptr, &expected, newval, 0, success_memorder, failure_memorder); \
+    return expected
+#elif defined(HAVE_STDATOMIC_H)
+#define ATOMIC_CAS_EXPLICIT_BODY(ptr, oldval, newval, success_memorder, failure_memorder, type, type_prefix) \
+    type expected = oldval; \
+    atomic_compare_exchange_strong_explicit((_Atomic volatile type *)ptr, &expected, newval, success_memorder, failure_memorder); \
+    return expected
+#else
+#define ATOMIC_CAS_EXPLICIT_BODY(ptr, oldval, newval, success_memorder, failure_memorder, type, type_prefix) \
+    (void)success_memorder; (void)failure_memorder; \
+    return rbimpl_atomic_##type_prefix##cas(ptr, oldval, newval)
+#endif
+
+/* Generic macro for CAS operations with explicit memory ordering */
+#define DEFINE_ATOMIC_CAS_EXPLICIT(type_prefix, type) \
+static inline type \
+rbimpl_atomic_##type_prefix##cas_explicit(volatile type *ptr, type oldval, type newval, int success_memorder, int failure_memorder) \
+{ \
+    ATOMIC_CAS_EXPLICIT_BODY(ptr, oldval, newval, success_memorder, failure_memorder, type, type_prefix); \
+}
+
+/* Generate CAS operations with explicit memory ordering */
+DEFINE_ATOMIC_CAS_EXPLICIT(value_, VALUE)
+
+#undef DEFINE_ATOMIC_OP_EXPLICIT
+#undef DEFINE_ATOMIC_STORE_EXPLICIT
+#undef DEFINE_ATOMIC_CAS_EXPLICIT
+#undef ATOMIC_OP_EXPLICIT_BODY
+#undef ATOMIC_CAS_EXPLICIT_BODY
+
+#define ATOMIC_LOAD_RELAXED(var) rbimpl_atomic_load_explicit(&(var), RUBY_ATOMIC_RELAXED)
 
 typedef RBIMPL_ALIGNAS(8) uint64_t rbimpl_atomic_uint64_t;
 
