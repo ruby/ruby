@@ -11492,6 +11492,18 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *
     return pm_parse_process(result, node, script_lines);
 }
 
+struct rb_stdin_wrapper {
+    VALUE rb_stdin;
+    int eof_seen;
+};
+
+static int
+pm_parse_stdin_eof(void *stream)
+{
+    struct rb_stdin_wrapper * wrapped_stdin = (struct rb_stdin_wrapper *)stream;
+    return wrapped_stdin->eof_seen;
+}
+
 /**
  * An implementation of fgets that is suitable for use with Ruby IO objects.
  */
@@ -11500,7 +11512,9 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
 {
     RUBY_ASSERT(size > 0);
 
-    VALUE line = rb_funcall((VALUE) stream, rb_intern("gets"), 1, INT2FIX(size - 1));
+    struct rb_stdin_wrapper * wrapped_stdin = (struct rb_stdin_wrapper *)stream;
+
+    VALUE line = rb_funcall(wrapped_stdin->rb_stdin, rb_intern("gets"), 1, INT2FIX(size - 1));
     if (NIL_P(line)) {
         return NULL;
     }
@@ -11510,6 +11524,13 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
 
     memcpy(string, cstr, length);
     string[length] = '\0';
+
+    // We're reading strings from stdin via gets.  We'll assume that if the
+    // string is smaller than the requested length, and doesn't end with a
+    // newline, that we hit EOF.
+    if (length < (size - 1) && string[length - 1] != '\n') {
+        wrapped_stdin->eof_seen = 1;
+    }
 
     return string;
 }
@@ -11527,8 +11548,13 @@ pm_parse_stdin(pm_parse_result_t *result)
 {
     pm_options_frozen_string_literal_init(&result->options);
 
+    struct rb_stdin_wrapper wrapped_stdin = {
+        rb_stdin,
+        0
+    };
+
     pm_buffer_t buffer;
-    pm_node_t *node = pm_parse_stream(&result->parser, &buffer, (void *) rb_stdin, pm_parse_stdin_fgets, &result->options);
+    pm_node_t *node = pm_parse_stream(&result->parser, &buffer, (void *) &wrapped_stdin, pm_parse_stdin_fgets, pm_parse_stdin_eof, &result->options);
 
     // Copy the allocated buffer contents into the input string so that it gets
     // freed. At this point we've handed over ownership, so we don't need to
