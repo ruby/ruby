@@ -5115,8 +5115,8 @@ fix_xor(VALUE x, VALUE y)
  *
  */
 
-static VALUE
-int_xor(VALUE x, VALUE y)
+VALUE
+rb_int_xor(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
         return fix_xor(x, y);
@@ -5289,9 +5289,22 @@ generate_mask(VALUE len)
 }
 
 static VALUE
+int_aref2(VALUE num, VALUE beg, VALUE len)
+{
+    if (RB_TYPE_P(num, T_BIGNUM)) {
+        return rb_big_aref2(num, beg, len);
+    }
+    else {
+        num = rb_int_rshift(num, beg);
+        VALUE mask = generate_mask(len);
+        return rb_int_and(num, mask);
+    }
+}
+
+static VALUE
 int_aref1(VALUE num, VALUE arg)
 {
-    VALUE orig_num = num, beg, end;
+    VALUE beg, end;
     int excl;
 
     if (rb_range_values(arg, &beg, &end, &excl)) {
@@ -5311,22 +5324,19 @@ int_aref1(VALUE num, VALUE arg)
                 return INT2FIX(0);
             }
         }
-        num = rb_int_rshift(num, beg);
 
         int cmp = compare_indexes(beg, end);
         if (!NIL_P(end) && cmp < 0) {
             VALUE len = rb_int_minus(end, beg);
             if (!excl) len = rb_int_plus(len, INT2FIX(1));
-            VALUE mask = generate_mask(len);
-            num = rb_int_and(num, mask);
+            return int_aref2(num, beg, len);
         }
         else if (cmp == 0) {
             if (excl) return INT2FIX(0);
-            num = orig_num;
             arg = beg;
             goto one_bit;
         }
-        return num;
+        return rb_int_rshift(num, beg);
     }
 
 one_bit:
@@ -5337,15 +5347,6 @@ one_bit:
         return rb_big_aref(num, arg);
     }
     return Qnil;
-}
-
-static VALUE
-int_aref2(VALUE num, VALUE beg, VALUE len)
-{
-    num = rb_int_rshift(num, beg);
-    VALUE mask = generate_mask(len);
-    num = rb_int_and(num, mask);
-    return num;
 }
 
 /*
@@ -6366,7 +6367,7 @@ Init_Numeric(void)
 
     rb_define_method(rb_cInteger, "&", rb_int_and, 1);
     rb_define_method(rb_cInteger, "|", int_or,  1);
-    rb_define_method(rb_cInteger, "^", int_xor, 1);
+    rb_define_method(rb_cInteger, "^", rb_int_xor, 1);
     rb_define_method(rb_cInteger, "[]", int_aref, -1);
 
     rb_define_method(rb_cInteger, "<<", rb_int_lshift, 1);
