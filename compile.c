@@ -4273,7 +4273,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 
                 INSN *sendins = (INSN *)sendobj;
                 sendins->insn_id = BIN(opt_duparray_send);
-                sendins->operand_size = insn_len(sendins->insn_id) - 1;;
+                sendins->operand_size = insn_len(sendins->insn_id) - 1;
                 sendins->operands = compile_data_calloc2(iseq, sendins->operand_size, sizeof(VALUE));
                 sendins->operands[0] = ary;
                 sendins->operands[1] = rb_id2sym(idIncludeP);
