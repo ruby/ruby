@@ -4379,17 +4379,18 @@ typedef struct {
 } MinMaxLen;
 
 typedef struct {
+  int left_anchor;
+  int right_anchor;
+} OptAncInfo;
+
+typedef struct {
   MinMaxLen        mmd;
   OnigEncoding     enc;
   OnigOptionType   options;
   OnigCaseFoldType case_fold_flag;
   ScanEnv*         scan_env;
+  OptAncInfo       anc;
 } OptEnv;
-
-typedef struct {
-  int left_anchor;
-  int right_anchor;
-} OptAncInfo;
 
 typedef struct {
   MinMaxLen  mmd; /* info position */
@@ -5009,6 +5010,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
 	if (r == 0) {
 	  add_mml(&nenv.mmd, &nopt.len);
 	  concat_left_node_opt_info(env->enc, opt, &nopt);
+	  copy_opt_anc_info(&nenv.anc, &opt->anc);
 	}
       } while (r == 0 && IS_NOT_NULL(nd = NCDR(nd)));
     }
@@ -5233,7 +5235,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
       if (r) break;
 
       if (/*qn->lower == 0 &&*/ IS_REPEAT_INFINITE(qn->upper)) {
-	if (env->mmd.max == 0 &&
+	if (env->mmd.max == 0 && !env->anc.right_anchor &&
 	    NTYPE(qn->target) == NT_CANY && qn->greedy) {
 	  if (IS_MULTILINE(env->options))
 	    /* implicit anchor: /.*a/ ==> /\A.*a/ */
