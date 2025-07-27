@@ -950,6 +950,140 @@ Init_enable_namespace(void)
     }
 }
 
+#ifdef RUBY_DEBUG
+
+static const char *
+classname(VALUE klass)
+{
+    VALUE p = RCLASS_CLASSPATH(klass);
+    if (RTEST(p))
+        return RSTRING_PTR(p);
+    if (RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS))
+        return RSTRING_PTR(rb_inspect(klass));
+    return "NonClassValue";
+}
+
+static enum rb_id_table_iterator_result
+dump_classext_methods_i(ID mid, VALUE _val, void *data)
+{
+    VALUE ary = (VALUE)data;
+    rb_ary_push(ary, rb_id2str(mid));
+    return ID_TABLE_CONTINUE;
+}
+
+static enum rb_id_table_iterator_result
+dump_classext_constants_i(ID mid, VALUE _val, void *data)
+{
+    VALUE ary = (VALUE)data;
+    rb_ary_push(ary, rb_id2str(mid));
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+dump_classext_i(rb_classext_t *ext, bool is_prime, VALUE _ns, void *data)
+{
+    char buf[4096];
+    struct rb_id_table *tbl;
+    VALUE ary, res = (VALUE)data;
+
+    snprintf(buf, 4096, "Namespace %ld:%s classext %p\n",
+             RCLASSEXT_NS(ext)->ns_id, is_prime ? " prime" : "", (void *)ext);
+    rb_str_cat_cstr(res, buf);
+
+    snprintf(buf, 2048, "  Super: %s\n", classname(RCLASSEXT_SUPER(ext)));
+    rb_str_cat_cstr(res, buf);
+
+    tbl = RCLASSEXT_M_TBL(ext);
+    if (tbl) {
+        ary = rb_ary_new_capa((long)rb_id_table_size(tbl));
+        rb_id_table_foreach(RCLASSEXT_M_TBL(ext), dump_classext_methods_i, (void *)ary);
+        rb_ary_sort_bang(ary);
+        snprintf(buf, 4096, "  Methods(%ld): ", RARRAY_LEN(ary));
+        rb_str_cat_cstr(res, buf);
+        rb_str_concat(res, rb_ary_join(ary, rb_str_new_cstr(",")));
+        rb_str_cat_cstr(res, "\n");
+    }
+    else {
+        rb_str_cat_cstr(res, "  Methods(0): .\n");
+    }
+
+    tbl = RCLASSEXT_CONST_TBL(ext);
+    if (tbl) {
+        ary = rb_ary_new_capa((long)rb_id_table_size(tbl));
+        rb_id_table_foreach(tbl, dump_classext_constants_i, (void *)ary);
+        rb_ary_sort_bang(ary);
+        snprintf(buf, 4096, "  Constants(%ld): ", RARRAY_LEN(ary));
+        rb_str_cat_cstr(res, buf);
+        rb_str_concat(res, rb_ary_join(ary, rb_str_new_cstr(",")));
+        rb_str_cat_cstr(res, "\n");
+    }
+    else {
+        rb_str_cat_cstr(res, "  Constants(0): .\n");
+    }
+}
+
+static VALUE
+rb_f_dump_classext(VALUE recv, VALUE klass)
+{
+    /*
+     * The desired output String value is:
+     * Class: 0x88800932 (String) [singleton]
+     * Prime classext namespace(2,main), readable(t), writable(f)
+     * Non-prime classexts: 3
+     * Namespace 2: prime classext 0x88800933
+     *   Super: Object
+     *   Methods(43): aaaaa, bbbb, cccc, dddd, eeeee, ffff, gggg, hhhhh, ...
+     *   Constants(12): FOO, Bar, ...
+     * Namespace 5: classext 0x88800934
+     *   Super: Object
+     *   Methods(43): aaaaa, bbbb, cccc, dddd, eeeee, ffff, gggg, hhhhh, ...
+     *   Constants(12): FOO, Bar, ...
+     */
+    char buf[2048];
+    VALUE res;
+    const rb_classext_t *ext;
+    const rb_namespace_t *ns;
+    st_table *classext_tbl;
+
+    if (!(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE))) {
+        snprintf(buf, 2048, "Non-class/module value: %p (%s)\n", (void *)klass, rb_type_str(BUILTIN_TYPE(klass)));
+        return rb_str_new_cstr(buf);
+    }
+
+    if (RB_TYPE_P(klass, T_CLASS)) {
+        snprintf(buf, 2048, "Class: %p (%s)%s\n",
+                 (void *)klass, classname(klass), RCLASS_SINGLETON_P(klass) ? " [singleton]" : "");
+    }
+    else {
+        snprintf(buf, 2048, "Module: %p (%s)\n", (void *)klass, classname(klass));
+    }
+    res = rb_str_new_cstr(buf);
+
+    ext = RCLASS_EXT_PRIME(klass);
+    ns = RCLASSEXT_NS(ext);
+    snprintf(buf, 2048, "Prime classext namespace(%ld,%s), readable(%s), writable(%s)\n",
+             ns->ns_id,
+             NAMESPACE_ROOT_P(ns) ? "root" : (NAMESPACE_MAIN_P(ns) ? "main" : "optional"),
+             RCLASS_PRIME_CLASSEXT_READABLE_P(klass) ? "t" : "f",
+             RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass) ? "t" : "f");
+    rb_str_cat_cstr(res, buf);
+
+    classext_tbl = RCLASS_CLASSEXT_TBL(klass);
+    if (!classext_tbl) {
+        rb_str_cat_cstr(res, "Non-prime classexts: 0\n");
+    }
+    else {
+        snprintf(buf, 2048, "Non-prime classexts: %zu\n", st_table_size(classext_tbl));
+        rb_str_cat_cstr(res, buf);
+    }
+
+    rb_class_classext_foreach(klass, dump_classext_i, (void *)res);
+
+    return res;
+}
+
+#endif /* RUBY_DEBUG */
+
 /*
  *  Document-class: Namespace
  *
@@ -977,8 +1111,13 @@ Init_Namespace(void)
     namespace_define_loader_method("require");
     namespace_define_loader_method("require_relative");
     namespace_define_loader_method("load");
+
     if (rb_namespace_available()) {
         rb_include_module(rb_cObject, rb_mNamespaceLoader);
+
+#ifdef RUBY_DEBUG
+        rb_define_global_function("dump_classext", rb_f_dump_classext, 1);
+#endif
     }
 
     rb_define_singleton_method(rb_cNamespace, "enabled?", rb_namespace_s_getenabled, 0);
