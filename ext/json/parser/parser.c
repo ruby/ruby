@@ -426,6 +426,7 @@ static void emit_parse_warning(const char *message, JSON_ParserState *state)
 }
 
 #define PARSE_ERROR_FRAGMENT_LEN 32
+
 #ifdef RBIMPL_ATTR_NORETURN
 RBIMPL_ATTR_NORETURN()
 #endif
@@ -830,21 +831,64 @@ static inline VALUE json_decode_array(JSON_ParserState *state, JSON_ParserConfig
     return array;
 }
 
+static VALUE json_find_duplicated_key(size_t count, const VALUE *pairs)
+{
+    VALUE set = rb_hash_new_capa(count / 2);
+    for (size_t index = 0; index < count; index += 2) {
+        size_t before = RHASH_SIZE(set);
+        VALUE key = pairs[index];
+        rb_hash_aset(set, key, Qtrue);
+        if (RHASH_SIZE(set) == before) {
+            if (RB_SYMBOL_P(key)) {
+                return rb_sym2str(key);
+            }
+            return key;
+        }
+    }
+    return Qfalse;
+}
+
+static void emit_duplicate_key_warning(JSON_ParserState *state, VALUE duplicate_key)
+{
+    VALUE message = rb_sprintf(
+        "detected duplicate key %"PRIsVALUE" in JSON object. This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`",
+        rb_inspect(duplicate_key)
+    );
+
+    emit_parse_warning(RSTRING_PTR(message), state);
+    RB_GC_GUARD(message);
+}
+
+#ifdef RBIMPL_ATTR_NORETURN
+RBIMPL_ATTR_NORETURN()
+#endif
+static void raise_duplicate_key_error(JSON_ParserState *state, VALUE duplicate_key)
+{
+    VALUE message = rb_sprintf(
+        "duplicate key %"PRIsVALUE,
+        rb_inspect(duplicate_key)
+    );
+
+    raise_parse_error(RSTRING_PTR(message), state);
+    RB_GC_GUARD(message);
+}
+
 static inline VALUE json_decode_object(JSON_ParserState *state, JSON_ParserConfig *config, size_t count)
 {
     size_t entries_count = count / 2;
     VALUE object = rb_hash_new_capa(entries_count);
-    rb_hash_bulk_insert(count, rvalue_stack_peek(state->stack, count), object);
+    const VALUE *pairs = rvalue_stack_peek(state->stack, count);
+    rb_hash_bulk_insert(count, pairs, object);
 
     if (RB_UNLIKELY(RHASH_SIZE(object) < entries_count)) {
         switch (config->on_duplicate_key) {
             case JSON_IGNORE:
                 break;
             case JSON_DEPRECATED:
-                emit_parse_warning("detected duplicate keys in JSON object. This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`", state);
+                emit_duplicate_key_warning(state, json_find_duplicated_key(count, pairs));
                 break;
             case JSON_RAISE:
-                raise_parse_error("duplicate key", state);
+                raise_duplicate_key_error(state, json_find_duplicated_key(count, pairs));
                 break;
         }
     }
