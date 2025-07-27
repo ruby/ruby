@@ -2847,6 +2847,10 @@ CODE
     s1 = S("\xff".force_encoding("UTF-8"))
     s2 = S("\xff".force_encoding("ISO-2022-JP"))
     assert_equal([-1, 1], [s1 <=> s2, s2 <=> s1].sort)
+
+    s3 = S("あ".force_encoding("UTF-16LE"))
+    s4 = S("a".force_encoding("IBM437"))
+    assert_equal([-1, 1], [s3 <=> s4, s4 <=> s3].sort)
   end
 
   def test_casecmp
@@ -2949,7 +2953,6 @@ CODE
     s5 = S("\u0000\u3042")
     assert_equal("\u3042", s5.lstrip!)
     assert_equal("\u3042", s5)
-
   end
 
   def test_delete_prefix_type_error
