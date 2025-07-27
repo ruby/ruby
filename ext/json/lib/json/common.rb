@@ -96,7 +96,7 @@ module JSON
   end
 
   class << self
-    def deprecation_warning(message, uplevel = 4) # :nodoc:
+    def deprecation_warning(message, uplevel = 3) # :nodoc:
       gem_root = File.expand_path("../../../", __FILE__) + "/"
       caller_locations(uplevel, 10).each do |frame|
         if frame.path.nil? || frame.path.start_with?(gem_root) || frame.path.end_with?("/truffle/cext_ruby.rb", ".c")
@@ -107,9 +107,9 @@ module JSON
       end
 
       if RUBY_VERSION >= "3.0"
-        warn(message, uplevel: uplevel - 1, category: :deprecated)
+        warn(message, uplevel: uplevel, category: :deprecated)
       else
-        warn(message, uplevel: uplevel - 1)
+        warn(message, uplevel: uplevel)
       end
     end
 
