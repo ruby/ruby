@@ -735,10 +735,14 @@ static VALUE
 ossl_x509stctx_get_curr_cert(VALUE self)
 {
     X509_STORE_CTX *ctx;
+    X509 *x509;
 
     GetX509StCtx(self, ctx);
+    x509 = X509_STORE_CTX_get_current_cert(ctx);
+    if (!x509)
+        return Qnil;
 
-    return ossl_x509_new(X509_STORE_CTX_get_current_cert(ctx));
+    return ossl_x509_new(x509);
 }
 
 /*
