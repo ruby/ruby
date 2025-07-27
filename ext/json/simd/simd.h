@@ -103,7 +103,8 @@ static inline FORCE_INLINE int string_scan_simd_neon(const char **ptr, const cha
     return 0;
 }
 
-uint8x16x4_t load_uint8x16_4(const unsigned char *table) {
+static inline uint8x16x4_t load_uint8x16_4(const unsigned char *table)
+{
   uint8x16x4_t tab;
   tab.val[0] = vld1q_u8(table);
   tab.val[1] = vld1q_u8(table+16);
