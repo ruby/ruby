@@ -48,7 +48,7 @@ module JSON
         end
       end
 
-      # TODO: exctract :create_additions support to another gem for version 3.0
+      # TODO: extract :create_additions support to another gem for version 3.0
       def create_additions_proc(opts)
         if opts[:symbolize_names]
           raise ArgumentError, "options :symbolize_names and :create_additions cannot be  used in conjunction"
@@ -87,31 +87,32 @@ module JSON
         opts
       end
 
-      GEM_ROOT = File.expand_path("../../../", __FILE__) + "/"
       def create_additions_warning
-        message = "JSON.load implicit support for `create_additions: true` is deprecated " \
+        JSON.deprecation_warning "JSON.load implicit support for `create_additions: true` is deprecated " \
           "and will be removed in 3.0, use JSON.unsafe_load or explicitly " \
           "pass `create_additions: true`"
-
-        uplevel = 4
-        caller_locations(uplevel, 10).each do |frame|
-          if frame.path.nil? || frame.path.start_with?(GEM_ROOT) || frame.path.end_with?("/truffle/cext_ruby.rb", ".c")
-            uplevel += 1
-          else
-            break
-          end
-        end
-
-        if RUBY_VERSION >= "3.0"
-          warn(message, uplevel: uplevel - 1, category: :deprecated)
-        else
-          warn(message, uplevel: uplevel - 1)
-        end
       end
     end
   end
 
   class << self
+    def deprecation_warning(message, uplevel = 4) # :nodoc:
+      gem_root = File.expand_path("../../../", __FILE__) + "/"
+      caller_locations(uplevel, 10).each do |frame|
+        if frame.path.nil? || frame.path.start_with?(gem_root) || frame.path.end_with?("/truffle/cext_ruby.rb", ".c")
+          uplevel += 1
+        else
+          break
+        end
+      end
+
+      if RUBY_VERSION >= "3.0"
+        warn(message, uplevel: uplevel - 1, category: :deprecated)
+      else
+        warn(message, uplevel: uplevel - 1)
+      end
+    end
+
     # :call-seq:
     #   JSON[object] -> new_array or new_string
     #

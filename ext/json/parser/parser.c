@@ -422,7 +422,8 @@ static void emit_parse_warning(const char *message, JSON_ParserState *state)
     long line, column;
     cursor_position(state, &line, &column);
 
-    rb_warn("%s at line %ld column %ld", message, line, column);
+    VALUE warning = rb_sprintf("%s at line %ld column %ld", message, line, column);
+    rb_funcall(mJSON, rb_intern("deprecation_warning"), 1, warning);
 }
 
 #define PARSE_ERROR_FRAGMENT_LEN 32
