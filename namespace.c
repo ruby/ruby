@@ -460,7 +460,7 @@ rb_namespace_s_current(VALUE recv)
     if (!rb_namespace_available())
         return Qnil;
 
-    ns = rb_vm_caller_namespace(GET_EC());
+    ns = rb_vm_current_namespace(GET_EC());
     VM_ASSERT(ns && ns->ns_object);
     return ns->ns_object;
 }

@@ -95,6 +95,29 @@ rb_vm_search_cf_from_ep(const rb_execution_context_t *ec, const rb_control_frame
     }
 }
 
+static const VALUE *
+VM_EP_RUBY_LEP(const rb_execution_context_t *ec, const rb_control_frame_t *current_cfp)
+{
+    const VALUE *ep = current_cfp->ep;
+    const rb_control_frame_t *cfp, *checkpoint_cfp = current_cfp;
+
+    while (!VM_ENV_LOCAL_P(ep) || VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
+        while (!VM_ENV_LOCAL_P(ep)) {
+            ep = VM_ENV_PREV_EP(ep);
+        }
+        while (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
+            if (!cfp) {
+                cfp = rb_vm_search_cf_from_ep(ec, checkpoint_cfp, ep);
+            }
+            cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+            ep = cfp->ep;
+        }
+        checkpoint_cfp = cfp;
+        cfp = NULL;
+    }
+    return ep;
+}
+
 const VALUE *
 rb_vm_ep_local_ep(const VALUE *ep)
 {
@@ -1001,11 +1024,8 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
             VM_FORCE_WRITE_SPECIAL_CONST(&ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(prev_cfp->ep));
         }
     }
-    else if (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_TOP)) {
-        // block_handler is always VM_BLOCK_HANDLER_NONE in this case
-    }
     else {
-        VM_ASSERT(VM_ENV_LOCAL_P(ep) && !VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_TOP));
+        VM_ASSERT(VM_ENV_LOCAL_P(ep));
         VALUE block_handler = VM_ENV_BLOCK_HANDLER(ep);
 
         if (block_handler != VM_BLOCK_HANDLER_NONE) {
@@ -3017,15 +3037,15 @@ rb_vm_frame_flag_set_ns_require(const rb_execution_context_t *ec)
 }
 
 static const rb_namespace_t *
-current_namespace_on_env(const VALUE *ep)
+current_namespace_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
     rb_callable_method_entry_t *cme;
     const rb_namespace_t *ns;
-    const VALUE *lep = VM_EP_LEP(ep);
+    const VALUE *lep = VM_EP_RUBY_LEP(ec, cfp);
     VM_ASSERT(lep);
     VM_ASSERT(rb_namespace_available());
 
-    if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_METHOD) || VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_CFUNC)) {
+    if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_METHOD)) {
         cme = check_method_entry(lep[VM_ENV_DATA_INDEX_ME_CREF], TRUE);
         VM_ASSERT(cme);
         VM_ASSERT(cme->def);
@@ -3053,29 +3073,16 @@ const rb_namespace_t *
 rb_vm_current_namespace(const rb_execution_context_t *ec)
 {
     VM_ASSERT(rb_namespace_available());
-    return current_namespace_on_env(ec->cfp->ep);
-}
-
-const rb_namespace_t *
-rb_vm_caller_namespace(const rb_execution_context_t *ec)
-{
-    const rb_control_frame_t *caller_cfp;
-
-    VM_ASSERT(rb_namespace_available());
-
-    // The current control frame is MAGIC_CFUNC to call Namespace.current, but
-    // we want to get the current namespace of its caller.
-    caller_cfp = vm_get_ruby_level_caller_cfp(ec, ec->cfp);
-    return current_namespace_on_env(caller_cfp->ep);
+    return current_namespace_on_cfp(ec, ec->cfp);
 }
 
 static const rb_control_frame_t *
-find_loader_control_frame(const rb_control_frame_t *cfp, const rb_control_frame_t *end_cfp)
+find_loader_control_frame(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, const rb_control_frame_t *end_cfp)
 {
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
         if (!VM_ENV_FRAME_TYPE_P(cfp->ep, VM_FRAME_MAGIC_CFUNC))
             break;
-        if (!NAMESPACE_ROOT_P(current_namespace_on_env(cfp->ep)))
+        if (!NAMESPACE_ROOT_P(current_namespace_on_cfp(ec, cfp)))
             break;
         cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
@@ -3102,13 +3109,13 @@ rb_vm_loading_namespace(const rb_execution_context_t *ec)
                 return rb_get_namespace_t(cfp->self);
             }
             // Kernel#require, #require_relative, #load
-            cfp = find_loader_control_frame(cfp, end_cfp);
-            return current_namespace_on_env(cfp->ep);
+            cfp = find_loader_control_frame(ec, cfp, end_cfp);
+            return current_namespace_on_cfp(ec, cfp);
         }
         cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
     // no require/load with explicit namespaces.
-    return current_namespace_on_env(current_cfp->ep);
+    return current_namespace_on_cfp(ec, current_cfp);
 }
 
 /* vm */
