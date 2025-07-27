@@ -64,9 +64,8 @@ ossl_x509crl_new(X509_CRL *crl)
     VALUE obj;
 
     obj = NewX509CRL(cX509CRL);
-    tmp = X509_CRL_dup(crl);
-    if (!tmp)
-        ossl_raise(eX509CRLError, "X509_CRL_dup");
+    tmp = crl ? X509_CRL_dup(crl) : X509_CRL_new();
+    if(!tmp) ossl_raise(eX509CRLError, NULL);
     SetX509CRL(obj, tmp);
 
     return obj;
