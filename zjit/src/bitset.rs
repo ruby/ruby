@@ -2,7 +2,7 @@ type Entry = u128;
 
 const ENTRY_NUM_BITS: usize = Entry::BITS as usize;
 
-pub trait BitSetImpl<T: Into<usize> + Copy>{
+trait BitSetImpl<T: Into<usize> + Copy>{
 
     // Set bit at index to 1. Returns false if it was already set
     fn insert(&mut self, idx: T) -> bool;
@@ -42,31 +42,29 @@ impl<T: Into<usize> + Copy> BitSet<T> {
             })
         }
     }
-}
 
-impl<T: Into<usize> + Copy> BitSetImpl<T> for BitSet<T> {
-    fn insert(&mut self, idx: T) -> bool {
+    pub fn insert(&mut self, idx: T) -> bool {
         match self {
             BitSet::Small(inner) => inner.insert(idx),
             BitSet::Large(inner) => inner.insert(idx),
         }
     }
 
-    fn insert_all(&mut self) {
+    pub fn insert_all(&mut self) {
         match self {
             BitSet::Small(inner) => inner.insert_all(),
             BitSet::Large(inner) => inner.insert_all(),
         }
     }
 
-    fn get(&self, idx: T) -> bool {
+    pub fn get(&self, idx: T) -> bool {
         match self {
             BitSet::Small(inner) => inner.get(idx),
             BitSet::Large(inner) => inner.get(idx),
         }
     }
 
-    fn intersect_with(&mut self, other: &Self) -> bool {
+    pub fn intersect_with(&mut self, other: &Self) -> bool {
         match (self, other) {
             (BitSet::Small(a), BitSet::Small(b)) => a.intersect_with(b),
             (BitSet::Large(a), BitSet::Large(b)) => a.intersect_with(b),
@@ -74,7 +72,7 @@ impl<T: Into<usize> + Copy> BitSetImpl<T> for BitSet<T> {
         }
     }
 
-    fn num_bits(&self) -> usize {
+    pub fn num_bits(&self) -> usize {
         match self {
             BitSet::Small(inner) => inner.num_bits(),
             BitSet::Large(inner) => inner.num_bits(),
@@ -173,7 +171,6 @@ impl<T: Into<usize> + Copy> BitSetImpl<T> for LargeBitSet<T> {
 #[cfg(test)]
 mod tests {
     use super::BitSet;
-    use super::BitSetImpl;
 
     #[test]
     #[should_panic]
