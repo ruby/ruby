@@ -2,7 +2,7 @@ type Entry = u128;
 
 const ENTRY_NUM_BITS: usize = Entry::BITS as usize;
 
-trait BitSetImpl<T: Into<usize> + Copy>{
+trait BitSetBackend<T: Into<usize> + Copy>{
 
     // Set bit at index to 1. Returns false if it was already set
     fn insert(&mut self, idx: T) -> bool;
@@ -88,7 +88,7 @@ pub struct SmallBitSet<T: Into<usize> + Copy> {
     phantom: std::marker::PhantomData<T>,
 }
 
-impl<T: Into<usize> + Copy> BitSetImpl<T> for SmallBitSet<T> {
+impl<T: Into<usize> + Copy> BitSetBackend<T> for SmallBitSet<T> {
     fn insert(&mut self, idx: T) -> bool {
         let idx = idx.into();
         debug_assert!(idx < self.num_bits);
@@ -127,7 +127,7 @@ pub struct LargeBitSet<T: Into<usize> + Copy> {
     phantom: std::marker::PhantomData<T>,
 }
 
-impl<T: Into<usize> + Copy> BitSetImpl<T> for LargeBitSet<T> {
+impl<T: Into<usize> + Copy> BitSetBackend<T> for LargeBitSet<T> {
 
     fn insert(&mut self, idx: T) -> bool {
         debug_assert!(idx.into() < self.num_bits);
