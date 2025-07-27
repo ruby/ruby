@@ -7,45 +7,45 @@ typedef enum {
 #ifdef JSON_ENABLE_SIMD
 
 #ifdef __clang__
-  #if __has_builtin(__builtin_ctzll)
-    #define HAVE_BUILTIN_CTZLL 1
-  #else
-    #define HAVE_BUILTIN_CTZLL 0
-  #endif
+# if __has_builtin(__builtin_ctzll)
+#   define HAVE_BUILTIN_CTZLL 1
+# else
+#   define HAVE_BUILTIN_CTZLL 0
+# endif
 #elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
-  #define HAVE_BUILTIN_CTZLL 1
+# define HAVE_BUILTIN_CTZLL 1
 #else
-  #define HAVE_BUILTIN_CTZLL 0
+# define HAVE_BUILTIN_CTZLL 0
 #endif
 
 static inline uint32_t trailing_zeros64(uint64_t input)
 {
 #if HAVE_BUILTIN_CTZLL
-  return __builtin_ctzll(input);
+    return __builtin_ctzll(input);
 #else
-  uint32_t trailing_zeros = 0;
-  uint64_t temp = input;
-  while ((temp & 1) == 0 && temp > 0) {
-    trailing_zeros++;
-    temp >>= 1;
-  }
-  return trailing_zeros;
+    uint32_t trailing_zeros = 0;
+    uint64_t temp = input;
+    while ((temp & 1) == 0 && temp > 0) {
+        trailing_zeros++;
+        temp >>= 1;
+    }
+    return trailing_zeros;
 #endif
 }
 
 static inline int trailing_zeros(int input)
 {
-  #if HAVE_BUILTIN_CTZLL
+#if HAVE_BUILTIN_CTZLL
     return __builtin_ctz(input);
-  #else
+#else
     int trailing_zeros = 0;
     int temp = input;
     while ((temp & 1) == 0 && temp > 0) {
-      trailing_zeros++;
-      temp >>= 1;
+        trailing_zeros++;
+        temp >>= 1;
     }
     return trailing_zeros;
-  #endif
+#endif
 }
 
 #if (defined(__GNUC__ ) || defined(__clang__))
@@ -79,38 +79,38 @@ static inline FORCE_INLINE uint64_t neon_match_mask(uint8x16_t matches)
 
 static inline FORCE_INLINE uint64_t compute_chunk_mask_neon(const char *ptr)
 {
-  uint8x16_t chunk = vld1q_u8((const unsigned char *)ptr);
+    uint8x16_t chunk = vld1q_u8((const unsigned char *)ptr);
 
-  // Trick: c < 32 || c == 34 can be factored as c ^ 2 < 33
-  // https://lemire.me/blog/2025/04/13/detect-control-characters-quotes-and-backslashes-efficiently-using-swar/
-  const uint8x16_t too_low_or_dbl_quote = vcltq_u8(veorq_u8(chunk, vdupq_n_u8(2)), vdupq_n_u8(33));
+    // Trick: c < 32 || c == 34 can be factored as c ^ 2 < 33
+    // https://lemire.me/blog/2025/04/13/detect-control-characters-quotes-and-backslashes-efficiently-using-swar/
+    const uint8x16_t too_low_or_dbl_quote = vcltq_u8(veorq_u8(chunk, vdupq_n_u8(2)), vdupq_n_u8(33));
 
-  uint8x16_t has_backslash = vceqq_u8(chunk, vdupq_n_u8('\\'));
-  uint8x16_t needs_escape  = vorrq_u8(too_low_or_dbl_quote, has_backslash);
-  return neon_match_mask(needs_escape);
+    uint8x16_t has_backslash = vceqq_u8(chunk, vdupq_n_u8('\\'));
+    uint8x16_t needs_escape  = vorrq_u8(too_low_or_dbl_quote, has_backslash);
+    return neon_match_mask(needs_escape);
 }
 
 static inline FORCE_INLINE int string_scan_simd_neon(const char **ptr, const char *end, uint64_t *mask)
 {
     while (*ptr + sizeof(uint8x16_t) <= end) {
-      uint64_t chunk_mask = compute_chunk_mask_neon(*ptr);
-      if (chunk_mask) {
-          *mask = chunk_mask;
-          return 1;
-      }
-      *ptr += sizeof(uint8x16_t);
+        uint64_t chunk_mask = compute_chunk_mask_neon(*ptr);
+        if (chunk_mask) {
+            *mask = chunk_mask;
+            return 1;
+        }
+        *ptr += sizeof(uint8x16_t);
     }
     return 0;
 }
 
 static inline uint8x16x4_t load_uint8x16_4(const unsigned char *table)
 {
-  uint8x16x4_t tab;
-  tab.val[0] = vld1q_u8(table);
-  tab.val[1] = vld1q_u8(table+16);
-  tab.val[2] = vld1q_u8(table+32);
-  tab.val[3] = vld1q_u8(table+48);
-  return tab;
+    uint8x16x4_t tab;
+    tab.val[0] = vld1q_u8(table);
+    tab.val[1] = vld1q_u8(table+16);
+    tab.val[2] = vld1q_u8(table+32);
+    tab.val[3] = vld1q_u8(table+48);
+    return tab;
 }
 
 #endif /* ARM Neon Support.*/
@@ -151,12 +151,12 @@ static inline TARGET_SSE2 FORCE_INLINE int compute_chunk_mask_sse2(const char *p
 static inline TARGET_SSE2 FORCE_INLINE int string_scan_simd_sse2(const char **ptr, const char *end, int *mask)
 {
     while (*ptr + sizeof(__m128i) <= end) {
-      int chunk_mask = compute_chunk_mask_sse2(*ptr);
-      if (chunk_mask) {
-          *mask = chunk_mask;
-          return 1;
-      }
-      *ptr += sizeof(__m128i);
+        int chunk_mask = compute_chunk_mask_sse2(*ptr);
+        if (chunk_mask) {
+            *mask = chunk_mask;
+            return 1;
+        }
+        *ptr += sizeof(__m128i);
     }
 
     return 0;
