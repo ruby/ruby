@@ -1,5 +1,4 @@
 //! High-level intermediary representation (IR) in static single-assignment (SSA) form.
-
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
@@ -11,6 +10,7 @@ use std::{
 };
 use crate::hir_type::{Type, types};
 use crate::bitset::BitSet;
+use crate::bitset::BitSetImpl;
 
 /// An index of an [`Insn`] in a [`Function`]. This is a popular
 /// type since this effectively acts as a pointer to an [`Insn`].
