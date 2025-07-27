@@ -66,6 +66,10 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     end
 
     results
+  rescue Gem::Ext::Builder::NoMakefileError => error
+    results << error.message
+    results << "Skipping make for #{extension} as no Makefile was found."
+    # We are good, do not re-raise the error.
   ensure
     FileUtils.rm_rf tmp_dest if tmp_dest
   end
