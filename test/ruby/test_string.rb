@@ -2481,7 +2481,6 @@ CODE
         i & integer\\
         L & unsigned long\\
         l & long\\
-
         m & string encoded in base64 (uuencoded)\\
         N & long, network (big-endian) byte order\\
         n & short, network (big-endian) byte-order\\
@@ -2493,8 +2492,7 @@ CODE
         v & short, little-endian byte order\\
         X & back up a byte\\
         x & null byte\\
-        Z & ASCII string (null padded, count is width)\\
-"
+        Z & ASCII string (null padded, count is width)\\"
 =end
   end
 
@@ -2845,13 +2843,11 @@ CODE
     assert_equal("\u3042", ("\u3042" * 100)[-1])
   end
 
-=begin
   def test_compare_different_encoding_string
     s1 = S("\xff".force_encoding("UTF-8"))
     s2 = S("\xff".force_encoding("ISO-2022-JP"))
     assert_equal([-1, 1], [s1 <=> s2, s2 <=> s1].sort)
   end
-=end
 
   def test_casecmp
     assert_equal(0, S("FoO").casecmp("fOO"))
@@ -3320,6 +3316,11 @@ CODE
     assert_equal(u("\x81\x82"), S("\u3042").byteslice(1..2))
 
     assert_equal(u("\x82")+("\u3042"*9), S("\u3042"*10).byteslice(2, 28))
+
+    assert_equal("\xE3", S("こんにちは").byteslice(0))
+    assert_equal("こんにちは", S("こんにちは").byteslice(0, 15))
+    assert_equal("こ", S("こんにちは").byteslice(0, 3))
+    assert_equal("は", S("こんにちは").byteslice(12, 15))
 
     bug7954 = '[ruby-dev:47108]'
     assert_equal(false, S("\u3042").byteslice(0, 2).valid_encoding?, bug7954)
