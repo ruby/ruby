@@ -11,12 +11,12 @@ use crate::cast::*;
 pub type Reg = A64Reg;
 
 // Callee-saved registers
-pub const _CFP: Opnd = Opnd::Reg(X19_REG);
-pub const _EC: Opnd = Opnd::Reg(X20_REG);
-pub const _SP: Opnd = Opnd::Reg(X21_REG);
+pub const CFP: Opnd = Opnd::Reg(X19_REG);
+pub const EC: Opnd = Opnd::Reg(X20_REG);
+pub const SP: Opnd = Opnd::Reg(X21_REG);
 
 // C argument registers on this platform
-pub const _C_ARG_OPNDS: [Opnd; 6] = [
+pub const C_ARG_OPNDS: [Opnd; 6] = [
     Opnd::Reg(X0_REG),
     Opnd::Reg(X1_REG),
     Opnd::Reg(X2_REG),
@@ -27,8 +27,8 @@ pub const _C_ARG_OPNDS: [Opnd; 6] = [
 
 // C return value register on this platform
 pub const C_RET_REG: Reg = X0_REG;
-pub const _C_RET_OPND: Opnd = Opnd::Reg(X0_REG);
-pub const _NATIVE_STACK_PTR: Opnd = Opnd::Reg(XZR_REG);
+pub const C_RET_OPND: Opnd = Opnd::Reg(X0_REG);
+pub const NATIVE_STACK_PTR: Opnd = Opnd::Reg(XZR_REG);
 
 // These constants define the way we work with Arm64's stack pointer. The stack
 // pointer always needs to be aligned to a 16-byte boundary.
@@ -1421,6 +1421,20 @@ mod tests {
             0x0: mov x0, #8
             0x4: subs x0, x0, x5
             0x8: mov x1, x0
+        ");
+    }
+
+    #[test]
+    fn no_dead_mov_from_vreg() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let ret_val = asm.load(Opnd::mem(64, C_RET_OPND, 0));
+        asm.cret(ret_val);
+
+        asm.compile_with_num_regs(&mut cb, 1);
+        assert_disasm!(cb, "000040f8c0035fd6", "
+            0x0: ldur x0, [x0]
+            0x4: ret
         ");
     }
 

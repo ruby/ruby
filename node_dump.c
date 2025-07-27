@@ -1105,8 +1105,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("defined? expression");
         ANN("format: defined?([nd_head])");
         ANN("example: defined?(foo)");
-        LAST_NODE;
         F_NODE(nd_head, RNODE_DEFINED, "expr");
+        LAST_NODE;
+        F_LOC(keyword_loc, RNODE_DEFINED);
         return;
 
       case NODE_POSTEXE:

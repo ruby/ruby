@@ -2065,12 +2065,21 @@ void rb_ec_vm_lock_rec_release(const rb_execution_context_t *ec,
                                unsigned int recorded_lock_rec,
                                unsigned int current_lock_rec);
 
+/* This technically is a data race, as it's checked without the lock, however we
+ * check against a value only our own thread will write. */
+NO_SANITIZE("thread", static inline bool
+vm_locked_by_ractor_p(rb_vm_t *vm, rb_ractor_t *cr))
+{
+    VM_ASSERT(cr == GET_RACTOR());
+    return vm->ractor.sync.lock_owner == cr;
+}
+
 static inline unsigned int
 rb_ec_vm_lock_rec(const rb_execution_context_t *ec)
 {
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
 
-    if (vm->ractor.sync.lock_owner != rb_ec_ractor_ptr(ec)) {
+    if (!vm_locked_by_ractor_p(vm, rb_ec_ractor_ptr(ec))) {
         return 0;
     }
     else {

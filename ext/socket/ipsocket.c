@@ -54,7 +54,7 @@ inetsock_cleanup(VALUE v)
 }
 
 static VALUE
-current_clocktime()
+current_clocktime(void)
 {
     VALUE clock_monotnic_const = rb_const_get(rb_mProcess, rb_intern("CLOCK_MONOTONIC"));
     return rb_funcall(rb_mProcess, rb_intern("clock_gettime"), 1, clock_monotnic_const);

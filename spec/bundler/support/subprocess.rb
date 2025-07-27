@@ -38,11 +38,14 @@ module Spec
       dir = options[:dir]
       env = options[:env] || {}
 
-      command_execution = CommandExecution.new(cmd.to_s, working_directory: dir, timeout: options[:timeout] || 60)
+      command_execution = CommandExecution.new(cmd.to_s, timeout: options[:timeout] || 60)
+
+      open3_opts = {}
+      open3_opts[:chdir] = dir if dir
 
       require "open3"
       require "shellwords"
-      Open3.popen3(env, *cmd.shellsplit, chdir: dir) do |stdin, stdout, stderr, wait_thr|
+      Open3.popen3(env, *cmd.shellsplit, **open3_opts) do |stdin, stdout, stderr, wait_thr|
         yield stdin, stdout, wait_thr if block_given?
         stdin.close
 

@@ -12,7 +12,7 @@ void rb_ractor_sched_barrier_end(rb_vm_t *vm, rb_ractor_t *cr);
 static bool
 vm_locked(rb_vm_t *vm)
 {
-    return vm->ractor.sync.lock_owner == GET_RACTOR();
+    return vm_locked_by_ractor_p(vm, GET_RACTOR());
 }
 
 #if RUBY_DEBUG > 0

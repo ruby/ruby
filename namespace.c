@@ -596,15 +596,15 @@ static const char *
 copy_ext_file_error(char *message, size_t size, int copy_retvalue, char *src_path, char *dst_path)
 {
     switch (copy_retvalue) {
-    case 1:
+      case 1:
         snprintf(message, size, "can't open the extension path: %s", src_path);
-    case 2:
+      case 2:
         snprintf(message, size, "can't open the file to write: %s", dst_path);
-    case 3:
+      case 3:
         snprintf(message, size, "failed to read the extension path: %s", src_path);
-    case 4:
+      case 4:
         snprintf(message, size, "failed to write the extension path: %s", dst_path);
-    default:
+      default:
         rb_bug("unknown return value of copy_ext_file: %d", copy_retvalue);
     }
     return message;

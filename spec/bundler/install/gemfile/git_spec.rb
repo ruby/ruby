@@ -37,7 +37,7 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "caches the git repo globally and properly uses the cached repo on the next invocation" do
-      pristine_system_gems :bundler
+      pristine_system_gems
       bundle "config set global_gem_cache true"
       bundle :install
       expect(Dir["#{home}/.bundle/cache/git/foo-1.0-*"]).to have_attributes size: 1
@@ -1241,7 +1241,7 @@ RSpec.describe "bundle install with git sources" do
         gem "valim", "= 1.0", :git => "#{lib_path("valim")}"
       G
 
-      pristine_system_gems :bundler
+      pristine_system_gems
 
       bundle "config set --local deployment true"
       bundle :install
@@ -1628,7 +1628,7 @@ In Gemfile:
       G
       bundle "config set --global path vendor/bundle"
       bundle :install
-      pristine_system_gems :bundler
+      pristine_system_gems
 
       bundle "install", env: { "PATH" => "" }
       expect(out).to_not include("You need to install git to be able to use gems from git repositories.")

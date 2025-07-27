@@ -584,16 +584,18 @@ rb_find_global_entry(ID id)
     struct rb_global_entry *entry;
     VALUE data;
 
-    if (!rb_id_table_lookup(rb_global_tbl, id, &data)) {
-        entry = NULL;
-    }
-    else {
-        entry = (struct rb_global_entry *)data;
-        RUBY_ASSERT(entry != NULL);
+    RB_VM_LOCKING() {
+        if (!rb_id_table_lookup(rb_global_tbl, id, &data)) {
+            entry = NULL;
+        }
+        else {
+            entry = (struct rb_global_entry *)data;
+            RUBY_ASSERT(entry != NULL);
+        }
     }
 
     if (UNLIKELY(!rb_ractor_main_p()) && (!entry || !entry->ractor_local)) {
-        rb_raise(rb_eRactorIsolationError, "can not access global variables %s from non-main Ractors", rb_id2name(id));
+        rb_raise(rb_eRactorIsolationError, "can not access global variable %s from non-main Ractor", rb_id2name(id));
     }
 
     return entry;
@@ -621,25 +623,28 @@ rb_gvar_undef_compactor(void *var)
 static struct rb_global_entry*
 rb_global_entry(ID id)
 {
-    struct rb_global_entry *entry = rb_find_global_entry(id);
-    if (!entry) {
-        struct rb_global_variable *var;
-        entry = ALLOC(struct rb_global_entry);
-        var = ALLOC(struct rb_global_variable);
-        entry->id = id;
-        entry->var = var;
-        entry->ractor_local = false;
-        var->counter = 1;
-        var->data = 0;
-        var->getter = rb_gvar_undef_getter;
-        var->setter = rb_gvar_undef_setter;
-        var->marker = rb_gvar_undef_marker;
-        var->compactor = rb_gvar_undef_compactor;
+    struct rb_global_entry *entry;
+    RB_VM_LOCKING() {
+        entry = rb_find_global_entry(id);
+        if (!entry) {
+            struct rb_global_variable *var;
+            entry = ALLOC(struct rb_global_entry);
+            var = ALLOC(struct rb_global_variable);
+            entry->id = id;
+            entry->var = var;
+            entry->ractor_local = false;
+            var->counter = 1;
+            var->data = 0;
+            var->getter = rb_gvar_undef_getter;
+            var->setter = rb_gvar_undef_setter;
+            var->marker = rb_gvar_undef_marker;
+            var->compactor = rb_gvar_undef_compactor;
 
-        var->block_trace = 0;
-        var->trace = 0;
-        var->namespace_ready = false;
-        rb_id_table_insert(rb_global_tbl, id, (VALUE)entry);
+            var->block_trace = 0;
+            var->trace = 0;
+            var->namespace_ready = false;
+            rb_id_table_insert(rb_global_tbl, id, (VALUE)entry);
+        }
     }
     return entry;
 }
@@ -1003,15 +1008,17 @@ rb_gvar_set(ID id, VALUE val)
     struct rb_global_entry *entry;
     const rb_namespace_t *ns = rb_current_namespace();
 
-    entry = rb_global_entry(id);
+    RB_VM_LOCKING() {
+        entry = rb_global_entry(id);
 
-    if (USE_NAMESPACE_GVAR_TBL(ns, entry)) {
-        rb_hash_aset(ns->gvar_tbl, rb_id2sym(entry->id), val);
-        retval = val;
-        // TODO: think about trace
-    }
-    else {
-        retval = rb_gvar_set_entry(entry, val);
+        if (USE_NAMESPACE_GVAR_TBL(ns, entry)) {
+            rb_hash_aset(ns->gvar_tbl, rb_id2sym(entry->id), val);
+            retval = val;
+            // TODO: think about trace
+        }
+        else {
+            retval = rb_gvar_set_entry(entry, val);
+        }
     }
     return retval;
 }
@@ -1026,26 +1033,29 @@ VALUE
 rb_gvar_get(ID id)
 {
     VALUE retval, gvars, key;
-    struct rb_global_entry *entry = rb_global_entry(id);
-    struct rb_global_variable *var = entry->var;
     const rb_namespace_t *ns = rb_current_namespace();
+    // TODO: use lock-free rb_id_table when it's available for use (doesn't yet exist)
+    RB_VM_LOCKING() {
+        struct rb_global_entry *entry = rb_global_entry(id);
+        struct rb_global_variable *var = entry->var;
 
-    if (USE_NAMESPACE_GVAR_TBL(ns, entry)) {
-        gvars = ns->gvar_tbl;
-        key = rb_id2sym(entry->id);
-        if (RTEST(rb_hash_has_key(gvars, key))) { // this gvar is already cached
-            retval = rb_hash_aref(gvars, key);
+        if (USE_NAMESPACE_GVAR_TBL(ns, entry)) {
+            gvars = ns->gvar_tbl;
+            key = rb_id2sym(entry->id);
+            if (RTEST(rb_hash_has_key(gvars, key))) { // this gvar is already cached
+                retval = rb_hash_aref(gvars, key);
+            }
+            else {
+                retval = (*var->getter)(entry->id, var->data);
+                if (rb_obj_respond_to(retval, rb_intern("clone"), 1)) {
+                    retval = rb_funcall(retval, rb_intern("clone"), 0);
+                }
+                rb_hash_aset(gvars, key, retval);
+            }
         }
         else {
             retval = (*var->getter)(entry->id, var->data);
-            if (rb_obj_respond_to(retval, rb_intern("clone"), 1)) {
-                retval = rb_funcall(retval, rb_intern("clone"), 0);
-            }
-            rb_hash_aset(gvars, key, retval);
         }
-    }
-    else {
-        retval = (*var->getter)(entry->id, var->data);
     }
     return retval;
 }
@@ -1128,7 +1138,7 @@ rb_f_global_variables(void)
 void
 rb_alias_variable(ID name1, ID name2)
 {
-    struct rb_global_entry *entry1, *entry2;
+    struct rb_global_entry *entry1 = NULL, *entry2;
     VALUE data1;
     struct rb_id_table *gtbl = rb_global_tbl;
 
@@ -1136,27 +1146,28 @@ rb_alias_variable(ID name1, ID name2)
         rb_raise(rb_eRactorIsolationError, "can not access global variables from non-main Ractors");
     }
 
-    entry2 = rb_global_entry(name2);
-    if (!rb_id_table_lookup(gtbl, name1, &data1)) {
-        entry1 = ALLOC(struct rb_global_entry);
-        entry1->id = name1;
-        rb_id_table_insert(gtbl, name1, (VALUE)entry1);
-    }
-    else if ((entry1 = (struct rb_global_entry *)data1)->var != entry2->var) {
-        struct rb_global_variable *var = entry1->var;
-        if (var->block_trace) {
-            rb_raise(rb_eRuntimeError, "can't alias in tracer");
+    RB_VM_LOCKING() {
+        entry2 = rb_global_entry(name2);
+        if (!rb_id_table_lookup(gtbl, name1, &data1)) {
+            entry1 = ALLOC(struct rb_global_entry);
+            entry1->id = name1;
+            rb_id_table_insert(gtbl, name1, (VALUE)entry1);
         }
-        var->counter--;
-        if (var->counter == 0) {
-            free_global_variable(var);
+        else if ((entry1 = (struct rb_global_entry *)data1)->var != entry2->var) {
+            struct rb_global_variable *var = entry1->var;
+            if (var->block_trace) {
+                rb_raise(rb_eRuntimeError, "can't alias in tracer");
+            }
+            var->counter--;
+            if (var->counter == 0) {
+                free_global_variable(var);
+            }
+        }
+        if (entry1) {
+            entry2->var->counter++;
+            entry1->var = entry2->var;
         }
     }
-    else {
-        return;
-    }
-    entry2->var->counter++;
-    entry1->var = entry2->var;
 }
 
 static void

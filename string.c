@@ -552,6 +552,7 @@ static const struct rb_concurrent_set_funcs fstring_concurrent_set_funcs = {
     .hash = fstring_concurrent_set_hash,
     .cmp = fstring_concurrent_set_cmp,
     .create = fstring_concurrent_set_create,
+    .free = NULL,
 };
 
 void
@@ -2416,12 +2417,13 @@ rb_str_bytesize(VALUE str)
  *  call-seq:
  *    empty? -> true or false
  *
- *  Returns +true+ if the length of +self+ is zero, +false+ otherwise:
+ *  Returns whether the length of +self+ is zero:
  *
- *    "hello".empty? # => false
- *    " ".empty? # => false
- *    "".empty? # => true
+ *    'hello'.empty? # => false
+ *    ' '.empty? # => false
+ *    ''.empty? # => true
  *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 
 static VALUE
@@ -7412,16 +7414,9 @@ rb_str_inspect(VALUE str)
 
 /*
  *  call-seq:
- *    dump -> string
+ *    dump -> new_string
  *
- *  Returns a printable version of +self+, enclosed in double-quotes,
- *  with special characters escaped, and with non-printing characters
- *  replaced by hexadecimal notation:
- *
- *    "hello \n ''".dump    # => "\"hello \\n ''\""
- *    "\f\x00\xff\\\"".dump # => "\"\\f\\x00\\xFF\\\\\\\"\""
- *
- *  Related: String#undump (inverse of String#dump).
+ *  :include: doc/string/dump.rdoc
  *
  */
 
@@ -9683,8 +9678,8 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
 
 /*
  *  call-seq:
- *    each_line(line_sep = $/, chomp: false) {|substring| ... } -> self
- *    each_line(line_sep = $/, chomp: false)                    -> enumerator
+ *    each_line(record_separator = $/, chomp: false) {|substring| ... } -> self
+ *    each_line(record_separator = $/, chomp: false)                    -> enumerator
  *
  *  :include: doc/string/each_line.rdoc
  *
@@ -9804,7 +9799,7 @@ rb_str_enumerate_chars(VALUE str, VALUE ary)
 
 /*
  *  call-seq:
- *    each_char {|c| ... } -> self
+ *    each_char {|char| ... } -> self
  *    each_char            -> enumerator
  *
  *  :include: doc/string/each_char.rdoc
@@ -9864,7 +9859,7 @@ rb_str_enumerate_codepoints(VALUE str, VALUE ary)
 
 /*
  *  call-seq:
- *    each_codepoint {|integer| ... } -> self
+ *    each_codepoint {|codepoint| ... } -> self
  *    each_codepoint                  -> enumerator
  *
  *  :include: doc/string/each_codepoint.rdoc
@@ -10034,7 +10029,7 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
 
 /*
  *  call-seq:
- *    each_grapheme_cluster {|gc| ... } -> self
+ *    each_grapheme_cluster {|grapheme_cluster| ... } -> self
  *    each_grapheme_cluster             -> enumerator
  *
  *  :include: doc/string/each_grapheme_cluster.rdoc

@@ -503,10 +503,7 @@ RSpec.describe "bundle gem" do
   context "when git is not available" do
     # This spec cannot have `git` available in the test env
     before do
-      load_paths = [lib_dir, spec_dir]
-      load_path_str = "-I#{load_paths.join(File::PATH_SEPARATOR)}"
-
-      sys_exec "#{Gem.ruby} #{load_path_str} #{bindir.join("bundle")} gem #{gem_name}", env: { "PATH" => "" }
+      bundle "gem #{gem_name}", env: { "PATH" => "" }
     end
 
     it "creates the gem without the need for git" do
@@ -746,7 +743,7 @@ RSpec.describe "bundle gem" do
       file.puts rakefile
     end
 
-    sys_exec(rake, dir: bundled_app(gem_name))
+    sys_exec("rake", dir: bundled_app(gem_name))
     expect(out).to include("SUCCESS")
   end
 

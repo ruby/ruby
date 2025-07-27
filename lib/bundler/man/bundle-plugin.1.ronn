@@ -6,7 +6,7 @@ bundle-plugin(1) -- Manage Bundler plugins
 `bundle plugin` install PLUGINS [--source=<SOURCE>] [--version=<version>]
                               [--git=<git-url>] [--branch=<branch>|--ref=<rev>]
                               [--path=<path>]<br>
-`bundle plugin` uninstall PLUGINS<br>
+`bundle plugin` uninstall PLUGINS [--all]<br>
 `bundle plugin` list<br>
 `bundle plugin` help [COMMAND]
 
@@ -42,9 +42,17 @@ Install the given plugin(s).
 * `bundle plugin install bundler-graph --path ../bundler-graph`:
   Install bundler-graph gem from a local path.
 
+* `bundle plugin install bundler-graph --local-git ../bundler-graph`:
+  This option is deprecated in favor of `--git`.
+
 ### uninstall
 
 Uninstall the plugin(s) specified in PLUGINS.
+
+**OPTIONS**
+
+* `--all`:
+  Uninstall all the installed plugins. If no plugin is installed, then it does nothing.
 
 ### list
 

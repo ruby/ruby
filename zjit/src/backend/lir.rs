@@ -6,18 +6,15 @@ use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_
 use crate::hir::SideExitReason;
 use crate::options::{debug, get_option};
 use crate::cruby::VALUE;
-use crate::backend::current::*;
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
 
-pub const EC: Opnd = _EC;
-pub const CFP: Opnd = _CFP;
-pub const SP: Opnd = _SP;
-
-pub const C_ARG_OPNDS: [Opnd; 6] = _C_ARG_OPNDS;
-pub const C_RET_OPND: Opnd = _C_RET_OPND;
-pub const NATIVE_STACK_PTR: Opnd = _NATIVE_STACK_PTR;
-pub use crate::backend::current::{Reg, C_RET_REG};
+pub use crate::backend::current::{
+    Reg,
+    EC, CFP, SP,
+    NATIVE_STACK_PTR,
+    C_ARG_OPNDS, C_RET_REG, C_RET_OPND,
+};
 
 // Memory operand base
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -1751,6 +1748,9 @@ impl Assembler
                     if let Some(end_marker) = end_marker {
                         asm.push_insn(Insn::PosMarker(end_marker));
                     }
+                }
+                Insn::Mov { src, dest } | Insn::LoadInto { dest, opnd: src } if src == dest => {
+                    // Remove no-op move now that VReg are resolved to physical Reg
                 }
                 _ => asm.push_insn(insn),
             }

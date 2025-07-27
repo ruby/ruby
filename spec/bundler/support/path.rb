@@ -342,7 +342,7 @@ module Spec
     end
 
     def man_tracked_files_glob
-      ruby_core? ? "man/bundle* man/gemfile*" : "lib/bundler/man/bundle*.1 lib/bundler/man/gemfile*.5"
+      "lib/bundler/man/bundle*.1.ronn lib/bundler/man/gemfile*.5.ronn"
     end
 
     def ruby_core_tarball?

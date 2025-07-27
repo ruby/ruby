@@ -182,12 +182,6 @@ runs:
             --flavor workflow="${{ github.workflow }}" \
             --test-suite ${suite} \
             )
-          launchable subset \
-            --get-tests-from-previous-sessions \
-            --non-blocking \
-            --target 90% \
-            --session "${session}" \
-            raw > /dev/null
           echo "${target}_session=${session}" >> $GITHUB_OUTPUT
         }
 

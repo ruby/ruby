@@ -1,5 +1,6 @@
 use std::cell::Cell;
 use std::rc::Rc;
+use std::ffi::{c_int};
 
 use crate::asm::Label;
 use crate::backend::current::{Reg, ALLOC_REGS};
@@ -185,6 +186,10 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_pt
     asm.cpop_into(CFP);
     asm.frame_teardown();
     asm.cret(C_RET_OPND);
+
+    if get_option!(dump_lir) {
+        println!("LIR:\nJIT entry for {}:\n{:?}", iseq_name(iseq), asm);
+    }
 
     let result = asm.compile(cb).map(|(start_ptr, _)| start_ptr);
     if let Some(start_addr) = result {
@@ -446,8 +451,20 @@ fn gen_getlocal_with_ep(asm: &mut Assembler, local_ep_offset: u32, level: u32) -
 /// can't optimize the level=0 case using the SP register.
 fn gen_setlocal_with_ep(asm: &mut Assembler, val: Opnd, local_ep_offset: u32, level: u32) -> Option<()> {
     let ep = gen_get_ep(asm, level);
-    let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).ok()?);
-    asm.mov(Opnd::mem(64, ep, offset), val);
+    match val {
+        // If we're writing a constant, non-heap VALUE, do a raw memory write without
+        // running write barrier.
+        lir::Opnd::Value(const_val) if const_val.special_const_p() => {
+            let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).ok()?);
+            asm.mov(Opnd::mem(64, ep, offset), val);
+        }
+        // We're potentially writing a reference to an IMEMO/env object,
+        // so take care of the write barrier with a function.
+        _ => {
+            let local_index = c_int::try_from(local_ep_offset).ok().and_then(|idx| idx.checked_mul(-1))?;
+            asm_ccall!(asm, rb_vm_env_write, ep, local_index.into(), val);
+        }
+    }
     Some(())
 }
 
@@ -571,16 +588,16 @@ fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
 
 /// Assign method arguments to basic block arguments at JIT entry
 fn gen_entry_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block, c_stack_bytes: usize) {
-    let self_param = gen_param(asm, SELF_PARAM_IDX);
-    asm.mov(self_param, Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF));
-
     let num_params = entry_block.params().len() - 1; // -1 to exclude self
     if num_params > 0 {
         asm_comment!(asm, "set method params: {num_params}");
 
-        // Allocate registers for basic block arguments
-        for idx in 0..num_params {
-            let param = gen_param(asm, idx + 1); // +1 for self
+        // Fill basic block parameters.
+        // Doing it in reverse is load-bearing. High index params have memory slots that might
+        // require using a register to fill. Filling them first avoids clobbering.
+        for idx in (0..num_params).rev() {
+            let param = param_opnd(idx + 1); // +1 for self
+            let local = gen_entry_param(asm, iseq, idx);
 
             // Funky offset adjustment to write into the native stack frame of the
             // HIR function we'll be calling into. This only makes sense in context
@@ -598,17 +615,22 @@ fn gen_entry_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block, c_s
             // would be while                 │            │
             // the HIR function ────────────► └────────────┘
             // is running
-            let param = if let Opnd::Mem(lir::Mem { base, disp, num_bits }) = param {
-                Opnd::Mem(lir::Mem { num_bits, base, disp: disp - c_stack_bytes as i32 - Assembler::frame_size() })
-            } else {
-                param
-            };
+            match param {
+                Opnd::Mem(lir::Mem { base, disp, num_bits }) => {
+                    let param_slot = Opnd::Mem(lir::Mem { num_bits, base, disp: disp - c_stack_bytes as i32 - Assembler::frame_size() });
+                    asm.mov(param_slot, local);
+                }
+                // Prepare for parallel move for locals in registers
+                reg @ Opnd::Reg(_) => {
+                    asm.load_into(reg, local);
+                }
+                _ => unreachable!("on entry, params are either in memory or in reg. Got {param:?}")
+            }
 
             // Assign local variables to the basic block arguments
-            let local = gen_entry_param(asm, iseq, idx);
-            asm.mov(param, local);
         }
     }
+    asm.load_into(param_opnd(SELF_PARAM_IDX), Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF));
 }
 
 /// Set branch params to basic block arguments
@@ -898,6 +920,10 @@ fn gen_return(jit: &JITState, asm: &mut Assembler, val: lir::Opnd) -> Option<()>
     asm.mov(CFP, incr_cfp);
     asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
+    // Order here is important. Because we're about to tear down the frame,
+    // we need to load the return value, which might be part of the frame.
+    asm.load_into(C_RET_OPND, val);
+
     // Restore the C stack pointer bumped for basic block arguments
     if jit.c_stack_bytes > 0 {
         asm_comment!(asm, "restore C stack pointer");
@@ -908,7 +934,7 @@ fn gen_return(jit: &JITState, asm: &mut Assembler, val: lir::Opnd) -> Option<()>
     asm.frame_teardown();
 
     // Return from the function
-    asm.cret(val);
+    asm.cret(C_RET_OPND);
     Some(())
 }
 

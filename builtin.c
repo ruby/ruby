@@ -3,7 +3,7 @@
 #include "iseq.h"
 #include "builtin.h"
 
-#include "builtin_binary.inc"
+#include "builtin_binary.rbbin"
 
 #ifndef BUILTIN_BINARY_SIZE
 

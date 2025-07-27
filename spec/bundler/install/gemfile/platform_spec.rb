@@ -161,7 +161,7 @@ RSpec.describe "bundle install across platforms" do
 
       expect(the_bundle).to include_gems "nokogiri 1.4.2 java", "weakling 0.0.3"
 
-      pristine_system_gems :bundler
+      pristine_system_gems
       bundle "config set --local force_ruby_platform true"
       bundle "install"
 

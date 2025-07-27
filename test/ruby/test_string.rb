@@ -2469,33 +2469,7 @@ CODE
 
     assert_equal([0xa9, 0x42, 0x2260], S("\xc2\xa9B\xe2\x89\xa0").unpack(S("U*")))
 
-=begin
-    skipping "Not tested:
-        D,d & double-precision float, native format\\
-        E & double-precision float, little-endian byte order\\
-        e & single-precision float, little-endian byte order\\
-        F,f & single-precision float, native format\\
-        G & double-precision float, network (big-endian) byte order\\
-        g & single-precision float, network (big-endian) byte order\\
-        I & unsigned integer\\
-        i & integer\\
-        L & unsigned long\\
-        l & long\\
-
-        m & string encoded in base64 (uuencoded)\\
-        N & long, network (big-endian) byte order\\
-        n & short, network (big-endian) byte-order\\
-        P & pointer to a structure (fixed-length string)\\
-        p & pointer to a null-terminated string\\
-        S & unsigned short\\
-        s & short\\
-        V & long, little-endian byte order\\
-        v & short, little-endian byte order\\
-        X & back up a byte\\
-        x & null byte\\
-        Z & ASCII string (null padded, count is width)\\
-"
-=end
+    # more comprehensive tests are in test_pack.rb
   end
 
   def test_upcase
@@ -2845,13 +2819,15 @@ CODE
     assert_equal("\u3042", ("\u3042" * 100)[-1])
   end
 
-=begin
   def test_compare_different_encoding_string
     s1 = S("\xff".force_encoding("UTF-8"))
     s2 = S("\xff".force_encoding("ISO-2022-JP"))
     assert_equal([-1, 1], [s1 <=> s2, s2 <=> s1].sort)
+
+    s3 = S("あ".force_encoding("UTF-16LE"))
+    s4 = S("a".force_encoding("IBM437"))
+    assert_equal([-1, 1], [s3 <=> s4, s4 <=> s3].sort)
   end
-=end
 
   def test_casecmp
     assert_equal(0, S("FoO").casecmp("fOO"))
@@ -2953,7 +2929,6 @@ CODE
     s5 = S("\u0000\u3042")
     assert_equal("\u3042", s5.lstrip!)
     assert_equal("\u3042", s5)
-
   end
 
   def test_delete_prefix_type_error
@@ -3320,6 +3295,11 @@ CODE
     assert_equal(u("\x81\x82"), S("\u3042").byteslice(1..2))
 
     assert_equal(u("\x82")+("\u3042"*9), S("\u3042"*10).byteslice(2, 28))
+
+    assert_equal("\xE3", S("こんにちは").byteslice(0))
+    assert_equal("こんにちは", S("こんにちは").byteslice(0, 15))
+    assert_equal("こ", S("こんにちは").byteslice(0, 3))
+    assert_equal("は", S("こんにちは").byteslice(12, 15))
 
     bug7954 = '[ruby-dev:47108]'
     assert_equal(false, S("\u3042").byteslice(0, 2).valid_encoding?, bug7954)

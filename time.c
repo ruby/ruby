@@ -46,7 +46,7 @@
 #include "timev.h"
 
 #if defined(_WIN32)
-# include "timezoneapi.h" /* DYNAMIC_TIME_ZONE_INFORMATION */
+# include <timezoneapi.h> /* DYNAMIC_TIME_ZONE_INFORMATION */
 #endif
 
 #include "builtin.h"

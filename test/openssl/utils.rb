@@ -177,16 +177,16 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
     @ca  = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
     @svr = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
     @cli = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
-    ca_exts = [
+    @ca_exts = [
       ["basicConstraints","CA:TRUE",true],
       ["keyUsage","cRLSign,keyCertSign",true],
     ]
-    ee_exts = [
+    @ee_exts = [
       ["keyUsage","keyEncipherment,digitalSignature",true],
     ]
-    @ca_cert  = issue_cert(@ca, @ca_key, 1, ca_exts, nil, nil)
-    @svr_cert = issue_cert(@svr, @svr_key, 2, ee_exts, @ca_cert, @ca_key)
-    @cli_cert = issue_cert(@cli, @cli_key, 3, ee_exts, @ca_cert, @ca_key)
+    @ca_cert  = issue_cert(@ca, @ca_key, 1, @ca_exts, nil, nil)
+    @svr_cert = issue_cert(@svr, @svr_key, 2, @ee_exts, @ca_cert, @ca_key)
+    @cli_cert = issue_cert(@cli, @cli_key, 3, @ee_exts, @ca_cert, @ca_key)
     @server = nil
   end
 

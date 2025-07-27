@@ -42,7 +42,7 @@ RSpec.describe "bundle install --standalone" do
         testrb << "\nrequire \"#{k}\""
         testrb << "\nputs #{k.upcase}"
       end
-      sys_exec %(#{Gem.ruby} --disable-gems -w -e #{testrb.shellescape})
+      in_bundled_app %(#{Gem.ruby} --disable-gems -w -e #{testrb.shellescape})
 
       expect(out).to eq(expected_gems.values.join("\n"))
     end
@@ -113,7 +113,7 @@ RSpec.describe "bundle install --standalone" do
         testrb << "\nrequire \"#{k}\""
         testrb << "\nputs #{k.upcase}"
       end
-      sys_exec %(#{Gem.ruby} -w -e #{testrb.shellescape})
+      in_bundled_app %(#{Gem.ruby} -w -e #{testrb.shellescape})
 
       expect(out).to eq(expected_gems.values.join("\n"))
     end
@@ -485,7 +485,7 @@ RSpec.describe "bundle install --standalone" do
     include_examples "common functionality"
 
     it "creates stubs that use the standalone load path" do
-      expect(sys_exec("bin/rails -v").chomp).to eql "2.3.2"
+      expect(in_bundled_app("bin/rails -v").chomp).to eql "2.3.2"
     end
 
     it "creates stubs that can be executed from anywhere" do

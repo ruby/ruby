@@ -139,7 +139,7 @@ RSpec.describe "bundle exec" do
     G
 
     install_gemfile "source \"https://gem.repo1\""
-    sys_exec "#{Gem.ruby} #{command.path}"
+    in_bundled_app "#{Gem.ruby} #{command.path}"
 
     expect(out).to be_empty
     expect(err).to be_empty

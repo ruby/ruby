@@ -38,10 +38,11 @@
  *  information as only a *HINT*. Especially, the size of +T_DATA+ may not be
  *  correct.
  *
- *  This method is only expected to work with C Ruby.
+ *  This method is only expected to work with CRuby.
  *
- *  From Ruby 2.2, memsize_of(obj) returns a memory size includes
- *  sizeof(RVALUE).
+ *  From Ruby 3.2 with Variable Width Allocation, it returns the actual slot
+ *  size used plus any additional memory allocated outside the slot (such
+ *  as external strings, arrays, or hash tables).
  */
 
 static VALUE
@@ -500,7 +501,6 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
         INIT_IMEMO_TYPE_ID(imemo_iseq);
         INIT_IMEMO_TYPE_ID(imemo_tmpbuf);
         INIT_IMEMO_TYPE_ID(imemo_ast);
-        INIT_IMEMO_TYPE_ID(imemo_parser_strterm);
         INIT_IMEMO_TYPE_ID(imemo_callinfo);
         INIT_IMEMO_TYPE_ID(imemo_callcache);
         INIT_IMEMO_TYPE_ID(imemo_constcache);

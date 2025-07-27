@@ -214,7 +214,7 @@ def in_makefile(target, source)
     when %r{\Acoroutine/} then source2 = "{$(VPATH)}$(COROUTINE_H)"
     else source2 = "$(top_srcdir)/#{source}"
     end
-    ["common.mk", target2, source2]
+    ["depend", target2, source2]
   when %r{\Aenc/}
     target2 = "#{target.sub(/\.o\z/, '.$(OBJEXT)')}"
     case source

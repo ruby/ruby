@@ -217,6 +217,7 @@ pub const fn bcond_offset_fits_bits(offset: i64) -> bool {
 
 /// B.cond - branch to target if condition is true
 pub fn bcond(cb: &mut CodeBlock, cond: u8, offset: InstructionOffset) {
+    _ = Condition;
     assert!(bcond_offset_fits_bits(offset.into()), "The offset must be 19 bits or less.");
     let bytes: [u8; 4] = BranchCond::bcond(cond, offset).into();
 
@@ -1138,14 +1139,13 @@ fn cbz_cbnz(num_bits: u8, op: bool, offset: InstructionOffset, rt: u8) -> [u8; 4
           rt as u32).to_le_bytes()
 }
 
-/*
 #[cfg(test)]
 mod tests {
     use super::*;
 
     /// Check that the bytes for an instruction sequence match a hex string
     fn check_bytes<R>(bytes: &str, run: R) where R: FnOnce(&mut super::CodeBlock) {
-        let mut cb = super::CodeBlock::new_dummy(128);
+        let mut cb = super::CodeBlock::new_dummy();
         run(&mut cb);
         assert_eq!(format!("{:x}", cb), bytes);
     }
@@ -1676,4 +1676,3 @@ mod tests {
         check_bytes("1f3c0072", |cb| tst(cb, W0, A64Opnd::new_uimm(0xffff)));
     }
 }
-*/

@@ -66,3 +66,9 @@ module Gem
     Socket.singleton_class.prepend FakeResolv
   end
 end
+
+# mise installed rubygems_plugin.rb to system wide `site_ruby` directory.
+# This empty module avoid to call `mise` command.
+module ReshimInstaller
+  def self.reshim; end
+end

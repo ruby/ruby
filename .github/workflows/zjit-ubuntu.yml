@@ -37,7 +37,7 @@ jobs:
             configure: '--enable-zjit=dev --with-gcc=clang-14'
             libclang_path: '/usr/lib/llvm-14/lib/libclang.so.1'
 
-          - test_task: 'zjit-test'
+          - test_task: 'zjit-check'
             configure: '--enable-yjit --enable-zjit=dev'
 
           - test_task: 'zjit-test-all'
@@ -77,7 +77,7 @@ jobs:
 
       - uses: ./.github/actions/setup/ubuntu
 
-      - uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.245.0
+      - uses: ruby/setup-ruby@a9bfc2ecf3dd40734a9418f89a7e9d484c32b990 # v1.248.0
         with:
           ruby-version: '3.1'
           bundler: none
@@ -85,7 +85,7 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: nextest@0.9
-        if: ${{ matrix.test_task == 'zjit-test' }}
+        if: ${{ matrix.test_task == 'zjit-check' }}
 
 
       - uses: ./.github/actions/setup/directories

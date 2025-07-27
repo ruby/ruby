@@ -115,10 +115,8 @@ RSpec.describe "The library itself" do
   end
 
   it "maintains language quality of the documentation" do
-    included = /ronn/
     error_messages = []
     man_tracked_files.each do |filename|
-      next unless filename&.match?(included)
       error_messages << check_for_expendable_words(filename)
       error_messages << check_for_specific_pronouns(filename)
     end
@@ -253,9 +251,58 @@ RSpec.describe "The library itself" do
     expect(lib_code).to eq(spec_code)
   end
 
+  it "documents all cli command options in their associated man pages" do
+    commands = normalize_commands_and_options(Bundler::CLI)
+    cli_and_man_pages_in_sync!(commands)
+
+    Bundler::CLI.subcommand_classes.each do |_, klass|
+      subcommands = normalize_commands_and_options(klass)
+
+      cli_and_man_pages_in_sync!(subcommands)
+    end
+  end
+
   private
 
   def each_line(filename, &block)
     File.readlines(filename, encoding: "UTF-8").each_with_index(&block)
+  end
+
+  def normalize_commands_and_options(command_class)
+    commands = {}
+
+    command_class.commands.each do |command_name, command|
+      next if command.is_a?(Bundler::Thor::HiddenCommand)
+
+      key = command.ancestor_name || command_name
+      commands[key] ||= []
+      # Verify that all subcommands are documented in the main command's man page.
+      commands[key] << command_name unless command_class == Bundler::CLI
+
+      command.options.each do |_, option|
+        commands[key] << option.switch_name
+      end
+    end
+
+    commands
+  end
+
+  def cli_and_man_pages_in_sync!(commands)
+    commands.each do |command_name, opts|
+      man_page_path = man_tracked_files.find {|f| File.basename(f) == "bundle-#{command_name}.1.ronn" }
+      expect(man_page_path).to_not be_nil, "The command #{command_name} has no associated man page."
+
+      next if opts.empty?
+
+      man_page_content = File.read(man_page_path)
+      opts.each do |option_name|
+        error_msg = <<~EOM
+          The command #{command_name} has no mention of the option or subcommand `#{option_name}` in its man page.
+          Document the `#{option_name}` in the man page to discard this error.
+        EOM
+
+        expect(man_page_content).to match(option_name), error_msg
+      end
+    end
   end
 end

@@ -1578,3 +1578,9 @@ class Object
 end
 
 require_relative "utilities"
+
+# mise installed rubygems_plugin.rb to system wide `site_ruby` directory.
+# This empty module avoid to call `mise` command.
+module ReshimInstaller
+  def self.reshim; end
+end

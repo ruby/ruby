@@ -10,6 +10,7 @@
 **********************************************************************/
 
 #include "internal.h"
+#include "internal/concurrent_set.h"
 #include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
@@ -42,12 +43,14 @@
 # define CHECK_ID_SERIAL SYMBOL_DEBUG
 #endif
 
+#define IDSET_ATTRSET_FOR_SYNTAX ((1U<<ID_LOCAL)|(1U<<ID_CONST))
+#define IDSET_ATTRSET_FOR_INTERN (~(~0U<<(1<<ID_SCOPE_SHIFT)) & ~(1U<<ID_ATTRSET))
+
 #define SYMBOL_PINNED_P(sym) (RSYMBOL(sym)->id&~ID_SCOPE_MASK)
 
 #define STATIC_SYM2ID(sym) RSHIFT((VALUE)(sym), RUBY_SPECIAL_SHIFT)
 
 static ID register_static_symid(ID, const char *, long, rb_encoding *);
-static ID register_static_symid_str(ID, VALUE);
 #define REGISTER_SYMID(id, name) register_static_symid((id), (name), strlen(name), enc)
 #include "id.c"
 
@@ -56,6 +59,13 @@ static ID register_static_symid_str(ID, VALUE);
 #define op_tbl_count numberof(op_tbl)
 STATIC_ASSERT(op_tbl_name_size, sizeof(op_tbl[0].name) == 3);
 #define op_tbl_len(i) (!op_tbl[i].name[1] ? 1 : !op_tbl[i].name[2] ? 2 : 3)
+
+
+#define GLOBAL_SYMBOLS_LOCKING(symbols) \
+    for (rb_symbols_t *symbols = &ruby_global_symbols, **locking = &symbols; \
+         locking; \
+         locking = NULL) \
+        RB_VM_LOCKING()
 
 static void
 Init_op_tbl(void)
@@ -82,23 +92,301 @@ enum id_entry_type {
     ID_ENTRY_SIZE
 };
 
+typedef struct {
+    rb_id_serial_t last_id;
+    VALUE sym_set;
+
+    VALUE ids;
+} rb_symbols_t;
+
 rb_symbols_t ruby_global_symbols = {tNEXT_ID-1};
 
-static const struct st_hash_type symhash = {
-    rb_str_hash_cmp,
-    rb_str_hash,
+struct sym_set_static_sym_entry {
+    VALUE sym;
+    VALUE str;
 };
+
+#define SYM_SET_SYM_STATIC_TAG 1
+
+static bool
+sym_set_sym_static_p(VALUE sym)
+{
+    return sym & SYM_SET_SYM_STATIC_TAG;
+}
+
+static VALUE
+sym_set_static_sym_tag(struct sym_set_static_sym_entry *sym)
+{
+    VALUE value = (VALUE)sym | SYM_SET_SYM_STATIC_TAG;
+    RUBY_ASSERT(IMMEDIATE_P(value));
+    RUBY_ASSERT(sym_set_sym_static_p(value));
+
+    return value;
+}
+
+static struct sym_set_static_sym_entry *
+sym_set_static_sym_untag(VALUE sym)
+{
+    RUBY_ASSERT(sym_set_sym_static_p(sym));
+
+    return (struct sym_set_static_sym_entry *)(sym & ~((VALUE)SYM_SET_SYM_STATIC_TAG));
+}
+
+static VALUE
+sym_set_sym_get_str(VALUE sym)
+{
+    VALUE str;
+    if (sym_set_sym_static_p(sym)) {
+        str = sym_set_static_sym_untag(sym)->str;
+    }
+    else {
+        RUBY_ASSERT(RB_TYPE_P(sym, T_SYMBOL));
+        str = RSYMBOL(sym)->fstr;
+    }
+
+    RUBY_ASSERT(RB_TYPE_P(str, T_STRING));
+
+    return str;
+}
+
+static VALUE
+sym_set_hash(VALUE sym)
+{
+    if (sym_set_sym_static_p(sym)) {
+        return (VALUE)rb_str_hash(sym_set_static_sym_untag(sym)->str);
+    }
+    else {
+        return (VALUE)RSYMBOL(sym)->hashval;
+    }
+}
+
+static bool
+sym_set_cmp(VALUE a, VALUE b)
+{
+    return rb_str_hash_cmp(sym_set_sym_get_str(a), sym_set_sym_get_str(b)) == false;
+}
+
+
+static int
+sym_check_asciionly(VALUE str, bool fake_str)
+{
+    if (!rb_enc_asciicompat(rb_enc_get(str))) return FALSE;
+    switch (rb_enc_str_coderange(str)) {
+      case ENC_CODERANGE_BROKEN:
+        if (fake_str) {
+            str = rb_enc_str_new(RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str));
+        }
+        rb_raise(rb_eEncodingError, "invalid symbol in encoding %s :%+"PRIsVALUE,
+                 rb_enc_name(rb_enc_get(str)), str);
+      case ENC_CODERANGE_7BIT:
+        return TRUE;
+    }
+    return FALSE;
+}
+
+static VALUE
+dup_string_for_create(VALUE str)
+{
+    rb_encoding *enc = rb_enc_get(str);
+
+    str = rb_enc_str_new(RSTRING_PTR(str), RSTRING_LEN(str), enc);
+
+    rb_encoding *ascii = rb_usascii_encoding();
+    if (enc != ascii && sym_check_asciionly(str, false)) {
+        rb_enc_associate(str, ascii);
+    }
+    OBJ_FREEZE(str);
+
+    str = rb_fstring(str);
+
+    return str;
+}
+
+static int
+rb_str_symname_type(VALUE name, unsigned int allowed_attrset)
+{
+    const char *ptr = StringValuePtr(name);
+    long len = RSTRING_LEN(name);
+    int type = rb_enc_symname_type(ptr, len, rb_enc_get(name), allowed_attrset);
+    RB_GC_GUARD(name);
+    return type;
+}
+
+static ID
+next_id_base_with_lock(rb_symbols_t *symbols)
+{
+    ID id;
+    rb_id_serial_t next_serial = symbols->last_id + 1;
+
+    if (next_serial == 0) {
+        id = (ID)-1;
+    }
+    else {
+        const size_t num = ++symbols->last_id;
+        id = num << ID_SCOPE_SHIFT;
+    }
+
+    return id;
+}
+
+static ID
+next_id_base(void)
+{
+    ID id;
+    GLOBAL_SYMBOLS_LOCKING(symbols) {
+        id = next_id_base_with_lock(symbols);
+    }
+    return id;
+}
+
+static void
+set_id_entry(rb_symbols_t *symbols, rb_id_serial_t num, VALUE str, VALUE sym)
+{
+    ASSERT_vm_locking();
+    RUBY_ASSERT_BUILTIN_TYPE(str, T_STRING);
+    RUBY_ASSERT_BUILTIN_TYPE(sym, T_SYMBOL);
+
+    size_t idx = num / ID_ENTRY_UNIT;
+
+    VALUE ary, ids = symbols->ids;
+    if (idx >= (size_t)RARRAY_LEN(ids) || NIL_P(ary = rb_ary_entry(ids, (long)idx))) {
+        ary = rb_ary_hidden_new(ID_ENTRY_UNIT * ID_ENTRY_SIZE);
+        rb_ary_store(ids, (long)idx, ary);
+    }
+    idx = (num % ID_ENTRY_UNIT) * ID_ENTRY_SIZE;
+    rb_ary_store(ary, (long)idx + ID_ENTRY_STR, str);
+    rb_ary_store(ary, (long)idx + ID_ENTRY_SYM, sym);
+}
+
+static VALUE
+sym_set_create(VALUE sym, void *data)
+{
+    bool create_dynamic_symbol = (bool)data;
+
+    struct sym_set_static_sym_entry *static_sym_entry = sym_set_static_sym_untag(sym);
+
+    VALUE str = dup_string_for_create(static_sym_entry->str);
+
+    if (create_dynamic_symbol) {
+        NEWOBJ_OF(obj, struct RSymbol, rb_cSymbol, T_SYMBOL | FL_WB_PROTECTED, sizeof(struct RSymbol), 0);
+
+        rb_encoding *enc = rb_enc_get(str);
+        rb_enc_set_index((VALUE)obj, rb_enc_to_index(enc));
+        OBJ_FREEZE((VALUE)obj);
+        RB_OBJ_WRITE((VALUE)obj, &obj->fstr, str);
+
+        int id = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
+        if (id < 0) id = ID_JUNK;
+        obj->id = id;
+
+        obj->hashval = rb_str_hash(str);
+        RUBY_DTRACE_CREATE_HOOK(SYMBOL, RSTRING_PTR(obj->fstr));
+
+        return (VALUE)obj;
+    }
+    else {
+        struct sym_set_static_sym_entry *new_static_sym_entry = xmalloc(sizeof(struct sym_set_static_sym_entry));
+        new_static_sym_entry->str = str;
+
+        VALUE static_sym = static_sym_entry->sym;
+        if (static_sym == 0) {
+            ID id = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
+            if (id == (ID)-1) id = ID_JUNK;
+
+            ID nid = next_id_base();
+            if (nid == (ID)-1) {
+                str = rb_str_ellipsize(str, 20);
+                rb_raise(rb_eRuntimeError, "symbol table overflow (symbol %"PRIsVALUE")", str);
+            }
+
+            id |= nid;
+            id |= ID_STATIC_SYM;
+
+            static_sym = STATIC_ID2SYM(id);
+        }
+        new_static_sym_entry->sym = static_sym;
+
+        RB_VM_LOCKING() {
+            set_id_entry(&ruby_global_symbols, rb_id_to_serial(STATIC_SYM2ID(static_sym)), str, static_sym);
+        }
+
+        return sym_set_static_sym_tag(new_static_sym_entry);
+    }
+}
+
+static void
+sym_set_free(VALUE sym)
+{
+    if (sym_set_sym_static_p(sym)) {
+        xfree(sym_set_static_sym_untag(sym));
+    }
+}
+
+static const struct rb_concurrent_set_funcs sym_set_funcs = {
+    .hash = sym_set_hash,
+    .cmp = sym_set_cmp,
+    .create = sym_set_create,
+    .free = sym_set_free,
+};
+
+static VALUE
+sym_set_entry_to_sym(VALUE entry)
+{
+    if (sym_set_sym_static_p(entry)) {
+        RUBY_ASSERT(STATIC_SYM_P(sym_set_static_sym_untag(entry)->sym));
+
+        if (!STATIC_SYM_P(sym_set_static_sym_untag(entry)->sym)) rb_bug("not sym");
+
+        return sym_set_static_sym_untag(entry)->sym;
+    }
+    else {
+        RUBY_ASSERT(DYNAMIC_SYM_P(entry));
+        if (!DYNAMIC_SYM_P(entry)) rb_bug("not sym");
+
+        return entry;
+    }
+}
+
+static VALUE
+sym_find_or_insert_dynamic_symbol(rb_symbols_t *symbols, const VALUE str)
+{
+    struct sym_set_static_sym_entry static_sym = {
+        .str = str
+    };
+    return sym_set_entry_to_sym(
+        rb_concurrent_set_find_or_insert(&symbols->sym_set, sym_set_static_sym_tag(&static_sym), (void *)true)
+    );
+}
+
+static VALUE
+sym_find_or_insert_static_symbol(rb_symbols_t *symbols, const VALUE str)
+{
+    struct sym_set_static_sym_entry static_sym = {
+        .str = str
+    };
+    return sym_set_entry_to_sym(
+        rb_concurrent_set_find_or_insert(&symbols->sym_set, sym_set_static_sym_tag(&static_sym), (void *)false)
+    );
+}
+
+static VALUE
+sym_find_or_insert_static_symbol_id(rb_symbols_t *symbols, const VALUE str, ID id)
+{
+    struct sym_set_static_sym_entry static_sym = {
+        .sym = STATIC_ID2SYM(id),
+        .str = str,
+    };
+    return sym_set_entry_to_sym(
+        rb_concurrent_set_find_or_insert(&symbols->sym_set, sym_set_static_sym_tag(&static_sym), (void *)false)
+    );
+}
 
 void
 Init_sym(void)
 {
     rb_symbols_t *symbols = &ruby_global_symbols;
 
-    VALUE dsym_fstrs = rb_ident_hash_new();
-    symbols->dsymbol_fstr_hash = dsym_fstrs;
-    rb_obj_hide(dsym_fstrs);
-
-    symbols->str_sym = st_init_table_with_size(&symhash, 1000);
+    symbols->sym_set = rb_concurrent_set_new(&sym_set_funcs, 1024);
     symbols->ids = rb_ary_hidden_new(0);
 
     Init_op_tbl();
@@ -110,8 +398,8 @@ rb_sym_global_symbols_mark(void)
 {
     rb_symbols_t *symbols = &ruby_global_symbols;
 
+    rb_gc_mark_movable(symbols->sym_set);
     rb_gc_mark_movable(symbols->ids);
-    rb_gc_mark_movable(symbols->dsymbol_fstr_hash);
 }
 
 void
@@ -119,28 +407,16 @@ rb_sym_global_symbols_update_references(void)
 {
     rb_symbols_t *symbols = &ruby_global_symbols;
 
+    symbols->sym_set = rb_gc_location(symbols->sym_set);
     symbols->ids = rb_gc_location(symbols->ids);
-    symbols->dsymbol_fstr_hash = rb_gc_location(symbols->dsymbol_fstr_hash);
 }
 
-WARN_UNUSED_RESULT(static VALUE dsymbol_alloc(rb_symbols_t *symbols, const VALUE klass, const VALUE str, rb_encoding *const enc, const ID type));
-WARN_UNUSED_RESULT(static VALUE dsymbol_check(rb_symbols_t *symbols, const VALUE sym));
 WARN_UNUSED_RESULT(static ID lookup_str_id(VALUE str));
-WARN_UNUSED_RESULT(static VALUE lookup_str_sym_with_lock(rb_symbols_t *symbols, const VALUE str));
-WARN_UNUSED_RESULT(static VALUE lookup_str_sym(const VALUE str));
 WARN_UNUSED_RESULT(static VALUE lookup_id_str(ID id));
-WARN_UNUSED_RESULT(static ID intern_str(VALUE str, int mutable));
-
-#define GLOBAL_SYMBOLS_LOCKING(symbols) \
-    for (rb_symbols_t *symbols = &ruby_global_symbols, **locking = &symbols; \
-         locking; \
-         locking = NULL) \
-        RB_VM_LOCKING()
 
 ID
 rb_id_attrset(ID id)
 {
-    VALUE str, sym;
     int scope;
 
     if (!is_notop_id(id)) {
@@ -161,7 +437,8 @@ rb_id_attrset(ID id)
             return id;
           default:
             {
-                if ((str = lookup_id_str(id)) != 0) {
+                VALUE str = lookup_id_str(id);
+                if (str != 0) {
                     rb_name_error(id, "cannot make unknown type ID %d:%"PRIsVALUE" attrset",
                                   scope, str);
                 }
@@ -174,17 +451,20 @@ rb_id_attrset(ID id)
     }
 
     bool error = false;
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        /* make new symbol and ID */
-        if ((str = lookup_id_str(id))) {
-            str = rb_str_dup(str);
-            rb_str_cat(str, "=", 1);
-            sym = lookup_str_sym(str);
-            id = sym ? rb_sym2id(sym) : intern_str(str, 1);
+    /* make new symbol and ID */
+    VALUE str = lookup_id_str(id);
+    if (str) {
+        str = rb_str_dup(str);
+        rb_str_cat(str, "=", 1);
+        if (sym_check_asciionly(str, false)) {
+            rb_enc_associate(str, rb_usascii_encoding());
         }
-        else {
-            error = true;
-        }
+
+        VALUE sym = sym_find_or_insert_static_symbol(&ruby_global_symbols, str);
+        id = rb_sym2id(sym);
+    }
+    else {
+        error = true;
     }
 
     if (error) {
@@ -278,9 +558,6 @@ rb_sym_constant_char_p(const char *name, long nlen, rb_encoding *enc)
     }
     return FALSE;
 }
-
-#define IDSET_ATTRSET_FOR_SYNTAX ((1U<<ID_LOCAL)|(1U<<ID_CONST))
-#define IDSET_ATTRSET_FOR_INTERN (~(~0U<<(1<<ID_SCOPE_SHIFT)) & ~(1U<<ID_ATTRSET))
 
 struct enc_synmane_type_leading_chars_tag {
     const enum { invalid, stophere, needmore, } kind;
@@ -446,35 +723,6 @@ rb_enc_symname2_p(const char *name, long len, rb_encoding *enc)
     return rb_enc_symname_type(name, len, enc, IDSET_ATTRSET_FOR_SYNTAX) != -1;
 }
 
-static int
-rb_str_symname_type(VALUE name, unsigned int allowed_attrset)
-{
-    const char *ptr = StringValuePtr(name);
-    long len = RSTRING_LEN(name);
-    int type = rb_enc_symname_type(ptr, len, rb_enc_get(name), allowed_attrset);
-    RB_GC_GUARD(name);
-    return type;
-}
-
-static void
-set_id_entry(rb_symbols_t *symbols, rb_id_serial_t num, VALUE str, VALUE sym)
-{
-    ASSERT_vm_locking();
-    RUBY_ASSERT_BUILTIN_TYPE(str, T_STRING);
-    RUBY_ASSERT_BUILTIN_TYPE(sym, T_SYMBOL);
-
-    size_t idx = num / ID_ENTRY_UNIT;
-
-    VALUE ary, ids = symbols->ids;
-    if (idx >= (size_t)RARRAY_LEN(ids) || NIL_P(ary = rb_ary_entry(ids, (long)idx))) {
-        ary = rb_ary_hidden_new(ID_ENTRY_UNIT * ID_ENTRY_SIZE);
-        rb_ary_store(ids, (long)idx, ary);
-    }
-    idx = (num % ID_ENTRY_UNIT) * ID_ENTRY_SIZE;
-    rb_ary_store(ary, (long)idx + ID_ENTRY_STR, str);
-    rb_ary_store(ary, (long)idx + ID_ENTRY_SYM, sym);
-}
-
 static VALUE
 get_id_serial_entry(rb_id_serial_t num, ID id, const enum id_entry_type t)
 {
@@ -550,216 +798,60 @@ rb_id_serial_to_id(rb_id_serial_t num)
     }
 }
 
-static int
-register_sym_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
-{
-    if (existing) {
-        rb_fatal("symbol :% "PRIsVALUE" is already registered with %"PRIxVALUE,
-                 (VALUE)*key, (VALUE)*value);
-    }
-    *value = arg;
-    return ST_CONTINUE;
-}
-
-static void
-register_sym(rb_symbols_t *symbols, VALUE str, VALUE sym)
-{
-    ASSERT_vm_locking();
-
-    if (SYMBOL_DEBUG) {
-        st_update(symbols->str_sym, (st_data_t)str,
-                  register_sym_update_callback, (st_data_t)sym);
-    }
-    else {
-        st_add_direct(symbols->str_sym, (st_data_t)str, (st_data_t)sym);
-    }
-}
-
-void
-rb_free_static_symid_str(void)
-{
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        st_free_table(symbols->str_sym);
-    }
-}
-
-static void
-unregister_sym(rb_symbols_t *symbols, VALUE str, VALUE sym)
-{
-    ASSERT_vm_locking();
-
-    st_data_t str_data = (st_data_t)str;
-    if (!st_delete(symbols->str_sym, &str_data, NULL)) {
-        rb_bug("%p can't remove str from str_id (%s)", (void *)sym, RSTRING_PTR(str));
-    }
-}
-
 static ID
 register_static_symid(ID id, const char *name, long len, rb_encoding *enc)
 {
     VALUE str = rb_enc_str_new(name, len, enc);
-    return register_static_symid_str(id, str);
-}
-
-static ID
-register_static_symid_str(ID id, VALUE str)
-{
-    rb_id_serial_t num = rb_id_to_serial(id);
-    VALUE sym = STATIC_ID2SYM(id);
-
     OBJ_FREEZE(str);
     str = rb_fstring(str);
 
     RUBY_DTRACE_CREATE_HOOK(SYMBOL, RSTRING_PTR(str));
 
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        register_sym(symbols, str, sym);
-        set_id_entry(symbols, num, str, sym);
-    }
+    sym_find_or_insert_static_symbol_id(&ruby_global_symbols, str, id);
 
     return id;
 }
 
-static int
-sym_check_asciionly(VALUE str, bool fake_str)
-{
-    if (!rb_enc_asciicompat(rb_enc_get(str))) return FALSE;
-    switch (rb_enc_str_coderange(str)) {
-      case ENC_CODERANGE_BROKEN:
-        if (fake_str) {
-            str = rb_enc_str_new(RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str));
-        }
-        rb_raise(rb_eEncodingError, "invalid symbol in encoding %s :%+"PRIsVALUE,
-                 rb_enc_name(rb_enc_get(str)), str);
-      case ENC_CODERANGE_7BIT:
-        return TRUE;
-    }
-    return FALSE;
-}
-
-#if 0
-/*
- * _str_ itself will be registered at the global symbol table.  _str_
- * can be modified before the registration, since the encoding will be
- * set to ASCII-8BIT if it is a special global name.
- */
-
-static inline void
-must_be_dynamic_symbol(VALUE x)
-{
-    if (UNLIKELY(!DYNAMIC_SYM_P(x))) {
-        if (STATIC_SYM_P(x)) {
-            VALUE str = lookup_id_str(RSHIFT((unsigned long)(x),RUBY_SPECIAL_SHIFT));
-
-            if (str) {
-                rb_bug("wrong argument: %s (inappropriate Symbol)", RSTRING_PTR(str));
-            }
-            else {
-                rb_bug("wrong argument: inappropriate Symbol (%p)", (void *)x);
-            }
-        }
-        else {
-            rb_bug("wrong argument type %s (expected Symbol)", rb_builtin_class_name(x));
-        }
-    }
-}
-#endif
-
 static VALUE
-dsymbol_alloc(rb_symbols_t *symbols, const VALUE klass, const VALUE str, rb_encoding * const enc, const ID type)
+sym_find(VALUE str)
 {
-    ASSERT_vm_locking();
+    VALUE sym;
 
-    NEWOBJ_OF(obj, struct RSymbol, klass, T_SYMBOL | FL_WB_PROTECTED, sizeof(struct RSymbol), 0);
+    struct sym_set_static_sym_entry static_sym = {
+        .str = str
+    };
+    sym = rb_concurrent_set_find(&ruby_global_symbols.sym_set, sym_set_static_sym_tag(&static_sym));
 
-    long hashval;
-
-    rb_enc_set_index((VALUE)obj, rb_enc_to_index(enc));
-    OBJ_FREEZE((VALUE)obj);
-    RB_OBJ_WRITE((VALUE)obj, &obj->fstr, str);
-    obj->id = type;
-
-    /* we want hashval to be in Fixnum range [ruby-core:15713] r15672 */
-    hashval = (long)rb_str_hash(str);
-    obj->hashval = RSHIFT((long)hashval, 1);
-    register_sym(symbols, str, (VALUE)obj);
-    rb_hash_aset(symbols->dsymbol_fstr_hash, str, Qtrue);
-    RUBY_DTRACE_CREATE_HOOK(SYMBOL, RSTRING_PTR(obj->fstr));
-
-    return (VALUE)obj;
-}
-
-static inline VALUE
-dsymbol_check(rb_symbols_t *symbols, const VALUE sym)
-{
-    ASSERT_vm_locking();
-
-    if (UNLIKELY(rb_objspace_garbage_object_p(sym))) {
-        const VALUE fstr = RSYMBOL(sym)->fstr;
-        const ID type = RSYMBOL(sym)->id & ID_SCOPE_MASK;
-        RSYMBOL(sym)->fstr = 0;
-        unregister_sym(symbols, fstr, sym);
-        return dsymbol_alloc(symbols, rb_cSymbol, fstr, rb_enc_get(fstr), type);
+    if (sym) {
+        return sym_set_entry_to_sym(sym);
     }
     else {
-        return sym;
+        return 0;
     }
 }
 
 static ID
 lookup_str_id(VALUE str)
 {
-    st_data_t sym_data;
-    int found;
+    VALUE sym = sym_find(str);
 
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        found = st_lookup(symbols->str_sym, (st_data_t)str, &sym_data);
+    if (sym == 0) {
+        return (ID)0;
     }
 
-    if (found) {
-        const VALUE sym = (VALUE)sym_data;
-
-        if (STATIC_SYM_P(sym)) {
-            return STATIC_SYM2ID(sym);
-        }
-        else if (DYNAMIC_SYM_P(sym)) {
-            ID id = RSYMBOL(sym)->id;
-            if (id & ~ID_SCOPE_MASK) return id;
-        }
-        else {
-            rb_bug("non-symbol object %s:%"PRIxVALUE" for %"PRIsVALUE" in symbol table",
-                   rb_builtin_class_name(sym), sym, str);
-        }
+    if (STATIC_SYM_P(sym)) {
+        return STATIC_SYM2ID(sym);
     }
-    return (ID)0;
-}
-
-static VALUE
-lookup_str_sym_with_lock(rb_symbols_t *symbols, const VALUE str)
-{
-    st_data_t sym_data;
-    if (st_lookup(symbols->str_sym, (st_data_t)str, &sym_data)) {
-        VALUE sym = (VALUE)sym_data;
-        if (DYNAMIC_SYM_P(sym)) {
-            sym = dsymbol_check(symbols, sym);
-        }
-        return sym;
+    else if (DYNAMIC_SYM_P(sym)) {
+        ID id = RSYMBOL(sym)->id;
+        if (id & ~ID_SCOPE_MASK) return id;
     }
     else {
-        return Qfalse;
-    }
-}
-
-static VALUE
-lookup_str_sym(const VALUE str)
-{
-    VALUE sym;
-
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        sym = lookup_str_sym_with_lock(symbols, str);
+        rb_bug("non-symbol object %s:%"PRIxVALUE" for %"PRIsVALUE" in symbol table",
+                rb_builtin_class_name(sym), sym, str);
     }
 
-    return sym;
+    return (ID)0;
 }
 
 static VALUE
@@ -771,75 +863,12 @@ lookup_id_str(ID id)
 ID
 rb_intern3(const char *name, long len, rb_encoding *enc)
 {
-    VALUE sym;
     struct RString fake_str;
     VALUE str = rb_setup_fake_str(&fake_str, name, len, enc);
     OBJ_FREEZE(str);
-    ID id;
 
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        sym = lookup_str_sym(str);
-        if (sym) {
-            id = rb_sym2id(sym);
-        }
-        else {
-            str = rb_enc_str_new(name, len, enc); /* make true string */
-            id = intern_str(str, 1);
-        }
-    }
-
-    return id;
-}
-
-static ID
-next_id_base_with_lock(rb_symbols_t *symbols)
-{
-    ID id;
-    rb_id_serial_t next_serial = symbols->last_id + 1;
-
-    if (next_serial == 0) {
-        id = (ID)-1;
-    }
-    else {
-        const size_t num = ++symbols->last_id;
-        id = num << ID_SCOPE_SHIFT;
-    }
-
-    return id;
-}
-
-static ID
-next_id_base(void)
-{
-    ID id;
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        id = next_id_base_with_lock(symbols);
-    }
-    return id;
-}
-
-static ID
-intern_str(VALUE str, int mutable)
-{
-    ASSERT_vm_locking();
-
-    ID id;
-    ID nid;
-
-    id = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
-    if (id == (ID)-1) id = ID_JUNK;
-    if (sym_check_asciionly(str, false)) {
-        if (!mutable) str = rb_str_dup(str);
-        rb_enc_associate(str, rb_usascii_encoding());
-    }
-    if ((nid = next_id_base()) == (ID)-1) {
-        str = rb_str_ellipsize(str, 20);
-        rb_raise(rb_eRuntimeError, "symbol table overflow (symbol %"PRIsVALUE")",
-                 str);
-    }
-    id |= nid;
-    id |= ID_STATIC_SYM;
-    return register_static_symid_str(id, str);
+    VALUE sym = sym_find_or_insert_static_symbol(&ruby_global_symbols, str);
+    return rb_sym2id(sym);
 }
 
 ID
@@ -858,18 +887,48 @@ rb_intern(const char *name)
 ID
 rb_intern_str(VALUE str)
 {
-    ID id;
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        VALUE sym = lookup_str_sym(str);
-        if (sym) {
-            id = SYM2ID(sym);
-        }
-        else {
-            id = intern_str(str, 0);
-        }
-    }
+    VALUE sym = sym_find_or_insert_static_symbol(&ruby_global_symbols, str);
+    return SYM2ID(sym);
+}
 
-    return id;
+bool
+rb_obj_is_symbol_table(VALUE obj)
+{
+    return obj == ruby_global_symbols.sym_set;
+}
+
+struct global_symbol_table_foreach_weak_reference_data {
+    int (*callback)(VALUE *key, void *data);
+    void *data;
+};
+
+static int
+rb_sym_global_symbol_table_foreach_weak_reference_i(VALUE *key, void *d)
+{
+    struct global_symbol_table_foreach_weak_reference_data *data = d;
+    VALUE sym = *key;
+
+    if (sym_set_sym_static_p(sym)) {
+        struct sym_set_static_sym_entry *static_sym = sym_set_static_sym_untag(sym);
+
+        return data->callback(&static_sym->str, data->data);
+    }
+    else {
+        return data->callback(key, data->data);
+    }
+}
+
+void
+rb_sym_global_symbol_table_foreach_weak_reference(int (*callback)(VALUE *key, void *data), void *data)
+{
+    if (!ruby_global_symbols.sym_set) return;
+
+    struct global_symbol_table_foreach_weak_reference_data foreach_data = {
+        .callback = callback,
+        .data = data,
+    };
+
+    rb_concurrent_set_foreach_with_replace(ruby_global_symbols.sym_set, rb_sym_global_symbol_table_foreach_weak_reference_i, &foreach_data);
 }
 
 void
@@ -878,12 +937,9 @@ rb_gc_free_dsymbol(VALUE sym)
     VALUE str = RSYMBOL(sym)->fstr;
 
     if (str) {
-        RSYMBOL(sym)->fstr = 0;
+        rb_concurrent_set_delete_by_identity(ruby_global_symbols.sym_set, sym);
 
-        GLOBAL_SYMBOLS_LOCKING(symbols) {
-            unregister_sym(symbols, str, sym);
-            rb_hash_delete_entry(symbols->dsymbol_fstr_hash, str);
-        }
+        RSYMBOL(sym)->fstr = 0;
     }
 }
 
@@ -910,38 +966,7 @@ rb_gc_free_dsymbol(VALUE sym)
 VALUE
 rb_str_intern(VALUE str)
 {
-    VALUE sym = 0;
-
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        sym = lookup_str_sym_with_lock(symbols, str);
-
-        if (sym) {
-            // ok
-        }
-        else if (USE_SYMBOL_GC) {
-            rb_encoding *enc = rb_enc_get(str);
-            rb_encoding *ascii = rb_usascii_encoding();
-            if (enc != ascii && sym_check_asciionly(str, false)) {
-                str = rb_str_dup(str);
-                rb_enc_associate(str, ascii);
-                OBJ_FREEZE(str);
-                enc = ascii;
-            }
-            else {
-                str = rb_str_dup(str);
-                OBJ_FREEZE(str);
-            }
-            str = rb_fstring(str);
-            int type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
-            if (type < 0) type = ID_JUNK;
-            sym = dsymbol_alloc(symbols, rb_cSymbol, str, enc, type);
-        }
-        else {
-            ID id = intern_str(str, 0);
-            sym = ID2SYM(id);
-        }
-    }
-    return sym;
+    return sym_find_or_insert_dynamic_symbol(&ruby_global_symbols, str);
 }
 
 ID
@@ -964,7 +989,6 @@ rb_sym2id(VALUE sym)
                 /* make it permanent object */
 
                 set_id_entry(symbols, rb_id_to_serial(num), fstr, sym);
-                rb_hash_delete_entry(symbols->dsymbol_fstr_hash, fstr);
             }
         }
     }
@@ -1044,27 +1068,22 @@ rb_make_temporary_id(size_t n)
 }
 
 static int
-symbols_i(st_data_t key, st_data_t value, st_data_t arg)
+symbols_i(VALUE *key, void *data)
 {
-    VALUE ary = (VALUE)arg;
-    VALUE sym = (VALUE)value;
+    VALUE ary = (VALUE)data;
+    VALUE sym = (VALUE)*key;
 
-    if (STATIC_SYM_P(sym)) {
-        rb_ary_push(ary, sym);
-        return ST_CONTINUE;
+    if (sym_set_sym_static_p(sym)) {
+        rb_ary_push(ary, sym_set_static_sym_untag(sym)->sym);
     }
-    else if (!DYNAMIC_SYM_P(sym)) {
-        rb_bug("invalid symbol: %s", RSTRING_PTR((VALUE)key));
-    }
-    else if (!SYMBOL_PINNED_P(sym) && rb_objspace_garbage_object_p(sym)) {
-        RSYMBOL(sym)->fstr = 0;
+    else if (rb_objspace_garbage_object_p(sym)) {
         return ST_DELETE;
     }
     else {
         rb_ary_push(ary, sym);
-        return ST_CONTINUE;
     }
 
+    return ST_CONTINUE;
 }
 
 VALUE
@@ -1073,8 +1092,8 @@ rb_sym_all_symbols(void)
     VALUE ary;
 
     GLOBAL_SYMBOLS_LOCKING(symbols) {
-        ary = rb_ary_new2(symbols->str_sym->num_entries);
-        st_foreach(symbols->str_sym, symbols_i, ary);
+        ary = rb_ary_new2(rb_concurrent_set_size(symbols->sym_set));
+        rb_concurrent_set_foreach_with_replace(symbols->sym_set, symbols_i, (void *)ary);
     }
 
     return ary;
@@ -1223,7 +1242,7 @@ rb_check_symbol(volatile VALUE *namep)
 
     sym_check_asciionly(name, false);
 
-    if ((sym = lookup_str_sym(name)) != 0) {
+    if ((sym = sym_find(name)) != 0) {
         return sym;
     }
 
@@ -1250,7 +1269,7 @@ rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
 
     sym_check_asciionly(name, true);
 
-    if ((sym = lookup_str_sym(name)) != 0) {
+    if ((sym = sym_find(name)) != 0) {
         return sym;
     }
 

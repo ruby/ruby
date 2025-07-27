@@ -39,7 +39,7 @@ const rb_data_type_t ossl_evp_pkey_type = {
 };
 
 static VALUE
-pkey_new0(VALUE arg)
+pkey_wrap0(VALUE arg)
 {
     EVP_PKEY *pkey = (EVP_PKEY *)arg;
     VALUE klass, obj;
@@ -65,12 +65,12 @@ pkey_new0(VALUE arg)
 }
 
 VALUE
-ossl_pkey_new(EVP_PKEY *pkey)
+ossl_pkey_wrap(EVP_PKEY *pkey)
 {
     VALUE obj;
     int status;
 
-    obj = rb_protect(pkey_new0, (VALUE)pkey, &status);
+    obj = rb_protect(pkey_wrap0, (VALUE)pkey, &status);
     if (status) {
 	EVP_PKEY_free(pkey);
 	rb_jump_tag(status);
@@ -239,7 +239,7 @@ ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
     BIO_free(bio);
     if (!pkey)
 	ossl_raise(ePKeyError, "Could not parse PKey");
-    return ossl_pkey_new(pkey);
+    return ossl_pkey_wrap(pkey);
 }
 
 static VALUE
@@ -443,7 +443,7 @@ pkey_generate(int argc, VALUE *argv, VALUE self, int genparam)
         }
     }
 
-    return ossl_pkey_new(gen_arg.pkey);
+    return ossl_pkey_wrap(gen_arg.pkey);
 }
 
 /*
@@ -687,7 +687,7 @@ ossl_pkey_new_raw_private_key(VALUE self, VALUE type, VALUE key)
         ossl_raise(ePKeyError, "EVP_PKEY_new_raw_private_key");
 #endif
 
-    return ossl_pkey_new(pkey);
+    return ossl_pkey_wrap(pkey);
 }
 
 /*
@@ -719,7 +719,7 @@ ossl_pkey_new_raw_public_key(VALUE self, VALUE type, VALUE key)
         ossl_raise(ePKeyError, "EVP_PKEY_new_raw_public_key");
 #endif
 
-    return ossl_pkey_new(pkey);
+    return ossl_pkey_wrap(pkey);
 }
 
 /*

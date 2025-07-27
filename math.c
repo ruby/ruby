@@ -15,7 +15,6 @@
 # define _USE_MATH_DEFINES 1
 #endif
 
-#include <errno.h>
 #include <float.h>
 #include <math.h>
 
