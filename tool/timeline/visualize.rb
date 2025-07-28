@@ -16,6 +16,13 @@ RubyInternalEvent = {
   :GC_EXIT       =>  0x4000000, # /**< `gc_exit()` is called. */
 }
 
+GCEnterEvent = {
+  :start        => 0,
+  :continue     => 1,
+  :rest         => 2,
+  :finalizer    => 3,
+}
+
 class LogProcessor
   def initialize(verbose: false)
     @verbose = verbose
@@ -70,16 +77,12 @@ class LogProcessor
       result[:args].update({
         event: event
       })
-      case event
-      when RubyInternalEvent[:GC_ENTER]
-        result[:name] = 'GCEnterExit'
-        result[:ph] = 'B'
-      when RubyInternalEvent[:GC_EXIT]
-        result[:name] = 'GCEnterExit'
-        result[:ph] = 'E'
-      else
-        result[:name] = RubyInternalEvent.key(event)
-      end
+      result[:name] = RubyInternalEvent.key(event)
+    when 'GCEnterExit'
+      event = args[0].to_i
+      result[:args].update({
+        event: GCEnterEvent.key(event)
+      })
     end
 
     @results << result

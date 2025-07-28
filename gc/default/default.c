@@ -6693,6 +6693,10 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
 {
     *lock_lev = RB_GC_VM_LOCK();
 
+    if (RUBY_DTRACE_GC_ENTER_ENABLED()) {
+        RUBY_DTRACE_GC_ENTER(event);
+    }
+
     switch (event) {
       case gc_enter_event_rest:
       case gc_enter_event_start:
@@ -6720,6 +6724,10 @@ static inline void
 gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev)
 {
     GC_ASSERT(during_gc != 0);
+
+    if (RUBY_DTRACE_GC_EXIT_ENABLED()) {
+        RUBY_DTRACE_GC_EXIT(event);
+    }
 
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_EXIT);
 

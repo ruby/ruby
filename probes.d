@@ -221,6 +221,20 @@ provider ruby {
      Fired when rb_gc_event_hook is called.
   */
   probe gc__event_hook(int event);
+
+  /*
+     ruby:::gc-enter();
+
+     Fired when gc_enter in default.c is called.
+  */
+  probe gc__enter(int event);
+
+  /*
+     ruby:::gc-exit();
+
+     Fired when gc_exit in default.c is called.
+  */
+  probe gc__exit(int event);
 };
 
 #pragma D attributes Stable/Evolving/Common provider ruby provider
