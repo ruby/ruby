@@ -71,10 +71,6 @@
 #define HASH_DEBUG 0
 #endif
 
-#if HASH_DEBUG
-#include "internal/gc.h"
-#endif
-
 #define SET_DEFAULT(hash, ifnone) ( \
     FL_UNSET_RAW(hash, RHASH_PROC_DEFAULT), \
     RHASH_SET_IFNONE(hash, ifnone))
