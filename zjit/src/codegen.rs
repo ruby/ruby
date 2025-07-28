@@ -1037,13 +1037,13 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         // Use 8-bit comparison like YJIT does
         asm.cmp(val.with_num_bits(8).unwrap(), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
         asm.jne(side_exit(jit, state, GuardType(guard_type))?);
-    } else if guard_type.is_subtype(types::NilClassExact) {
+    } else if guard_type.is_subtype(types::NilClass) {
         asm.cmp(val, Qnil.into());
         asm.jne(side_exit(jit, state, GuardType(guard_type))?);
-    } else if guard_type.is_subtype(types::TrueClassExact) {
+    } else if guard_type.is_subtype(types::TrueClass) {
         asm.cmp(val, Qtrue.into());
         asm.jne(side_exit(jit, state, GuardType(guard_type))?);
-    } else if guard_type.is_subtype(types::FalseClassExact) {
+    } else if guard_type.is_subtype(types::FalseClass) {
         assert!(Qfalse.as_i64() == 0);
         asm.test(val, val);
         asm.jne(side_exit(jit, state, GuardType(guard_type))?);
