@@ -442,7 +442,7 @@ impl Type {
         if self.is_subtype(types::FalseClassExact) { return Some(unsafe { rb_cFalseClass }); }
         if self.is_subtype(types::FloatExact) { return Some(unsafe { rb_cFloat }); }
         if self.is_subtype(types::HashExact) { return Some(unsafe { rb_cHash }); }
-        if self.is_subtype(types::IntegerExact) { return Some(unsafe { rb_cInteger }); }
+        if self.is_subtype(types::Integer) { return Some(unsafe { rb_cInteger }); }
         if self.is_subtype(types::ModuleExact) { return Some(unsafe { rb_cModule }); }
         if self.is_subtype(types::NilClassExact) { return Some(unsafe { rb_cNilClass }); }
         if self.is_subtype(types::ObjectExact) { return Some(unsafe { rb_cObject }); }
@@ -547,10 +547,8 @@ mod tests {
         assert_subtype(Type::fixnum(123), Type::fixnum(123));
         assert_not_subtype(Type::fixnum(123), Type::fixnum(200));
         assert_subtype(Type::from_value(VALUE::fixnum_from_usize(123)), types::Fixnum);
-        assert_subtype(types::Fixnum, types::IntegerExact);
-        assert_subtype(types::Bignum, types::IntegerExact);
-        assert_subtype(types::IntegerExact, types::Integer);
-        assert_subtype(types::IntegerSubclass, types::Integer);
+        assert_subtype(types::Fixnum, types::Integer);
+        assert_subtype(types::Bignum, types::Integer);
     }
 
     #[test]
@@ -590,7 +588,6 @@ mod tests {
     fn fixnum_has_ruby_object() {
         assert_eq!(Type::fixnum(3).ruby_object(), Some(VALUE::fixnum_from_usize(3)));
         assert_eq!(types::Fixnum.ruby_object(), None);
-        assert_eq!(types::IntegerExact.ruby_object(), None);
         assert_eq!(types::Integer.ruby_object(), None);
     }
 
@@ -608,7 +605,6 @@ mod tests {
     fn integer_has_exact_ruby_class() {
         assert_eq!(Type::fixnum(3).exact_ruby_class(), Some(unsafe { rb_cInteger }.into()));
         assert_eq!(types::Fixnum.exact_ruby_class(), None);
-        assert_eq!(types::IntegerExact.exact_ruby_class(), None);
         assert_eq!(types::Integer.exact_ruby_class(), None);
     }
 
@@ -636,7 +632,6 @@ mod tests {
     fn integer_has_ruby_class() {
         assert_eq!(Type::fixnum(3).inexact_ruby_class(), Some(unsafe { rb_cInteger }.into()));
         assert_eq!(types::Fixnum.inexact_ruby_class(), None);
-        assert_eq!(types::IntegerExact.inexact_ruby_class(), None);
         assert_eq!(types::Integer.inexact_ruby_class(), None);
     }
 
@@ -670,7 +665,6 @@ mod tests {
         assert_eq!(format!("{}", Type::from_cbool(false)), "CBool[false]");
         assert_eq!(format!("{}", types::Fixnum), "Fixnum");
         assert_eq!(format!("{}", types::Integer), "Integer");
-        assert_eq!(format!("{}", types::IntegerExact), "IntegerExact");
     }
 
     #[test]
@@ -688,12 +682,10 @@ mod tests {
 
     #[test]
     fn union_bits_subtype() {
-        assert_bit_equal(types::Fixnum.union(types::IntegerExact), types::IntegerExact);
         assert_bit_equal(types::Fixnum.union(types::Integer), types::Integer);
         assert_bit_equal(types::Fixnum.union(types::Object), types::Object);
         assert_bit_equal(Type::fixnum(3).union(types::Fixnum), types::Fixnum);
 
-        assert_bit_equal(types::IntegerExact.union(types::Fixnum), types::IntegerExact);
         assert_bit_equal(types::Integer.union(types::Fixnum), types::Integer);
         assert_bit_equal(types::Object.union(types::Fixnum), types::Object);
         assert_bit_equal(types::Fixnum.union(Type::fixnum(3)), types::Fixnum);
