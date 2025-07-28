@@ -4932,14 +4932,14 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
   }
 
   p = s;
-  if (reg->dmin > 0) {
+  if (reg->dmin != 0) {
+    if (end - p <= reg->dmin) return 0; /* fail */
     if (ONIGENC_IS_SINGLEBYTE(reg->enc)) {
       p += reg->dmin;
     }
     else {
       UChar *q = p + reg->dmin;
 
-      if (q >= end) return 0; /* fail */
       while (p < q) p += enclen(reg->enc, p, end);
     }
   }
@@ -4976,7 +4976,7 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
   }
 
   if (p && p < range) {
-    if (p - reg->dmin < s) {
+    if (p - s < reg->dmin) {
     retry_gate:
       pprev = p;
       p += enclen(reg->enc, p, end);
@@ -5020,10 +5020,11 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
 	  *low_prev = onigenc_get_prev_char_head(reg->enc,
 						 (pprev ? pprev : str), p, end);
       }
+      *high = p;
     }
     else {
       if (reg->dmax != ONIG_INFINITE_DISTANCE) {
-	if (p < str + reg->dmax) {
+	if (p - str < reg->dmax) {
 	  *low = (UChar* )str;
 	  if (low_prev)
 	    *low_prev = onigenc_get_prev_char_head(reg->enc, str, *low, end);
@@ -5044,9 +5045,12 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
 	  }
 	}
       }
+      /* no needs to adjust *high, *high is used as range check only */
+      if (p - str < reg->dmin)
+        *high = (UChar* )str;
+      else
+        *high = p - reg->dmin;
     }
-    /* no needs to adjust *high, *high is used as range check only */
-    *high = p - reg->dmin;
 
 #ifdef ONIG_DEBUG_SEARCH
     fprintf(stderr,
