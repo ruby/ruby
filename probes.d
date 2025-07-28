@@ -214,6 +214,13 @@ provider ruby {
      Fired at the end of a sweep phase.
   */
   probe gc__sweep__end();
+
+  /*
+     ruby:::gc-event-hook();
+
+     Fired when rb_gc_event_hook is called.
+  */
+  probe gc__event_hook(int event);
 };
 
 #pragma D attributes Stable/Evolving/Common provider ruby provider

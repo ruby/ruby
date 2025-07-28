@@ -1,0 +1,44 @@
+BEGIN {
+    @every = 1;
+    @harness = 0;
+
+    @gc_count = 0;
+    @enable_print = 1;
+
+    if (!@harness) {
+        //always collect data
+        @stats_enabled = 1;
+    }
+}
+
+usdt:<%=ruby%>:ruby:gc__mark__begin {
+    if (@enable_print) {
+        printf("gc_mark,B,%d,%lu\n", tid, nsecs);
+    }
+}
+
+usdt:<%=ruby%>:ruby:gc__mark__end {
+    if (@enable_print) {
+        printf("gc_mark,E,%d,%lu\n", tid, nsecs);
+    }
+}
+
+usdt:<%=ruby%>:ruby:gc__sweep__begin {
+    if (@enable_print) {
+        printf("gc_sweep,B,%d,%lu\n", tid, nsecs);
+    }
+}
+
+usdt:<%=ruby%>:ruby:gc__sweep__end {
+    if (@enable_print) {
+        printf("gc_sweep,E,%d,%lu\n", tid, nsecs);
+    }
+}
+
+usdt:<%=ruby%>:ruby:gc__event_hook {
+    if (@enable_print) {
+        printf("gc_event_hook,i,%d,%lu,%d\n", tid, nsecs, arg0);
+    }
+}
+
+// vim: ft=bpftrace ts=4 sw=4 sts=4 et
