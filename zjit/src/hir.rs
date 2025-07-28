@@ -1514,13 +1514,13 @@ impl Function {
                         self.try_rewrite_aref(block, insn_id, self_val, args[0], state),
                     Insn::SendWithoutBlock { mut self_val, call_info, cd, args, state } => {
                         let frame_state = self.frame_state(state);
-                        let (klass, guard_equal_to) = if let Some(klass) = self.type_of(self_val).runtime_exact_ruby_class() {
+                        let (klass, guard_type) = if let Some(klass) = self.type_of(self_val).runtime_exact_ruby_class() {
                             // If we know the class statically, use it to fold the lookup at compile-time.
                             (klass, None)
                         } else {
                             // If we know that self is top-self from profile information, guard and use it to fold the lookup at compile-time.
                             match self.profiled_type_of_at(self_val, frame_state.insn_idx) {
-                                Some(self_type) if self_type.is_top_self() => (self_type.exact_ruby_class().unwrap(), self_type.ruby_object()),
+                                Some(self_type) if self_type.runtime_exact_ruby_class().is_some() => (self_type.runtime_exact_ruby_class().unwrap(), Some(self_type)),
                                 _ => { self.push_insn_id(block, insn_id); continue; }
                             }
                         };
@@ -1546,8 +1546,8 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                        if let Some(expected) = guard_equal_to {
-                            self_val = self.push_insn(block, Insn::GuardBitEquals { val: self_val, expected, state });
+                        if let Some(guard_type) = guard_type {
+                            self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type, state });
                         }
                         let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, call_info, cd, cme, iseq, args, state });
                         self.make_equal_to(insn_id, send_direct);
