@@ -1019,6 +1019,7 @@ extern "C" {
     pub fn rb_gc_location(obj: VALUE) -> VALUE;
     pub fn rb_gc_writebarrier(old: VALUE, young: VALUE);
     pub fn rb_class_get_superclass(klass: VALUE) -> VALUE;
+    pub fn rb_funcall(recv: VALUE, mid: ID, n: ::std::os::raw::c_int, ...) -> VALUE;
     pub static mut rb_mKernel: VALUE;
     pub static mut rb_cBasicObject: VALUE;
     pub static mut rb_cArray: VALUE;
@@ -1080,6 +1081,7 @@ extern "C" {
     pub fn rb_ivar_get(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_ivar_defined(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_attr_get(obj: VALUE, name: ID) -> VALUE;
+    pub fn rb_const_get(space: VALUE, name: ID) -> VALUE;
     pub fn rb_obj_info_dump(obj: VALUE);
     pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
     pub fn rb_obj_equal(obj1: VALUE, obj2: VALUE) -> VALUE;
@@ -1102,6 +1104,7 @@ extern "C" {
         klass: VALUE,
         id: ID,
     ) -> *const rb_callable_method_entry_t;
+    pub static mut rb_cRubyVM: VALUE;
     pub static mut rb_mRubyVMFrozenCore: VALUE;
     pub static mut rb_block_param_proxy: VALUE;
     pub fn rb_vm_ep_local_ep(ep: *const VALUE) -> *const VALUE;

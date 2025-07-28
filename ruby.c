@@ -1833,12 +1833,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     }
 #endif
 
-#if USE_YJIT
-    // Call yjit_hook.rb after rb_yjit_init() to use `RubyVM::YJIT.enabled?`
-    void Init_builtin_yjit_hook();
-    Init_builtin_yjit_hook();
-#endif
-
     rb_namespace_init_done();
     ruby_init_prelude();
     ruby_set_script_name(opt->script_name);

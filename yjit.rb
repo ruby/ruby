@@ -64,7 +64,6 @@ module RubyVM::YJIT
     end
 
     at_exit { print_and_dump_stats } if stats
-    call_yjit_hooks
     Primitive.rb_yjit_enable(stats, stats != :quiet, log, log != :quiet, mem_size, call_threshold)
   end
 
