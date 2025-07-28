@@ -21,6 +21,7 @@
 *.pch
 *.pdb
 *.rbinc
+*.rbbin
 *.rej
 *.s
 *.sav
