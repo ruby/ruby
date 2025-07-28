@@ -105,6 +105,9 @@ fn main() {
         .allowlist_var("SHAPE_ID_NUM_BITS")
         .allowlist_var("SHAPE_ID_HAS_IVAR_MASK")
 
+        // From ruby/internal/eval.h
+        .allowlist_function("rb_funcall")
+
         // From ruby/internal/intern/object.h
         .allowlist_function("rb_obj_is_kind_of")
         .allowlist_function("rb_obj_frozen_p")
@@ -269,6 +272,7 @@ fn main() {
         .allowlist_function("rb_float_new")
 
         // From vm_core.h
+        .allowlist_var("rb_cRubyVM")
         .allowlist_var("rb_mRubyVMFrozenCore")
         .allowlist_var("VM_BLOCK_HANDLER_NONE")
         .allowlist_type("vm_frame_env_flags")
@@ -383,6 +387,7 @@ fn main() {
         .allowlist_function("rb_ivar_defined")
         .allowlist_function("rb_ivar_get")
         .allowlist_function("rb_mod_name")
+        .allowlist_function("rb_const_get")
 
         // From internal/vm.h
         .allowlist_var("rb_vm_insns_count")
