@@ -232,4 +232,17 @@ mod tests {
         assert_eq!(left.get(1usize), true);
         assert_eq!(left.get(2usize), false);
     }
+    #[test]
+    fn insert_and_get_at_max_index_127() {
+        let mut set = BitSet::with_capacity(128);
+        assert_eq!(set.insert(127usize), true);
+        assert_eq!(set.get(127usize), true);
+        assert_eq!(set.insert(127usize), false);
+    }
+    #[test]
+    fn insert_all_at_max_capacity_128() {
+        let mut set = BitSet::with_capacity(128);
+        set.insert_all();
+        assert_eq!(set.get(127usize), true);
+    }
 }
