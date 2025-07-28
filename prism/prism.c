@@ -16459,14 +16459,7 @@ parse_variable(pm_parser_t *parser) {
             pm_node_list_append(&current_scope->implicit_parameters, node);
 
             return node;
-        } else if ((parser->version != PM_OPTIONS_VERSION_CRUBY_3_3) && pm_token_is_it(parser->previous.start, parser->previous.end)) {
-            if (match1(parser, PM_TOKEN_EQUAL)) {
-                pm_constant_id_t name_id = pm_parser_local_add_location(parser, parser->previous.start, parser->previous.end, 0);
-                pm_node_t *node = (pm_node_t *) pm_local_variable_read_node_create_constant_id(parser, &parser->previous, name_id, 0, false);
-
-                return node;
-            }
-
+        } else if ((parser->version >= PM_OPTIONS_VERSION_CRUBY_3_4) && pm_token_is_it(parser->previous.start, parser->previous.end)) {
             pm_node_t *node = (pm_node_t *) pm_it_local_variable_read_node_create(parser, &parser->previous);
             pm_node_list_append(&current_scope->implicit_parameters, node);
 
@@ -21190,6 +21183,13 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 }
                 PRISM_FALLTHROUGH
                 case PM_CASE_WRITABLE: {
+                    // When we have `it = value`, we need to add `it` as a local
+                    // variable before parsing the value, in case the value
+                    // references the variable.
+                    if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
+                        pm_parser_local_add_location(parser, node->location.start, node->location.end, 0);
+                    }
+
                     parser_lex(parser);
                     pm_node_t *value = parse_assignment_values(parser, previous_binding_power, PM_NODE_TYPE_P(node, PM_MULTI_TARGET_NODE) ? PM_BINDING_POWER_MULTI_ASSIGNMENT + 1 : binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL, (uint16_t) (depth + 1));
 
