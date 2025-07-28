@@ -4,7 +4,7 @@
 #![allow(non_upper_case_globals)]
 
 use crate::{
-    cast::IntoUsize, cruby::*, options::{get_option, DumpHIR}, gc::{get_or_create_iseq_payload, IseqPayload}, state::ZJITState
+    cast::IntoUsize, cruby::*, gc::{get_or_create_iseq_payload, IseqPayload}, options::{get_option, DumpHIR}, state::ZJITState, stats::Counter
 };
 use std::{
     cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_int, c_void, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
@@ -566,6 +566,9 @@ pub enum Insn {
 
     /// Side-exit into the interpreter.
     SideExit { state: InsnId, reason: SideExitReason },
+
+    /// Increment a counter in ZJIT stats
+    IncrCounter(Counter),
 }
 
 impl Insn {
@@ -576,7 +579,7 @@ impl Insn {
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
-            | Insn::SetLocal { .. } | Insn::Throw { .. } => false,
+            | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) => false,
             _ => true,
         }
     }
@@ -1096,7 +1099,8 @@ impl Function {
                     | PutSpecialObject {..}
                     | GetGlobal {..}
                     | GetLocal {..}
-                    | SideExit {..}) => result.clone(),
+                    | SideExit {..}
+                    | IncrCounter(_)) => result.clone(),
             Snapshot { state: FrameState { iseq, insn_idx, pc, stack, locals } } =>
                 Snapshot {
                     state: FrameState {
@@ -1217,7 +1221,7 @@ impl Function {
             Insn::SetGlobal { .. } | Insn::ArraySet { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
-            | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } =>
+            | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_) =>
                 panic!("Cannot infer type of instruction with no output: {}", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -1835,7 +1839,8 @@ impl Function {
             &Insn::Const { .. }
             | &Insn::Param { .. }
             | &Insn::GetLocal { .. }
-            | &Insn::PutSpecialObject { .. } =>
+            | &Insn::PutSpecialObject { .. }
+            | &Insn::IncrCounter(_) =>
                 {}
             &Insn::PatchPoint { state, .. }
             | &Insn::GetConstantPath { ic: _, state } => {
@@ -2621,6 +2626,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             state.pc = pc;
             let exit_state = state.clone();
             profiles.profile_stack(&exit_state);
+
+            // Increment zjit_insns_count for each YARV instruction if --zjit-stats is enabled.
+            if get_option!(stats) {
+                fun.push_insn(block, Insn::IncrCounter(Counter::zjit_insns_count));
+            }
 
             // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
             let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }

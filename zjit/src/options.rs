@@ -1,5 +1,6 @@
 use std::{ffi::{CStr, CString}, ptr::null};
 use std::os::raw::{c_char, c_int, c_uint};
+use crate::cruby::*;
 
 /// Number of calls to start profiling YARV instructions.
 /// They are profiled `rb_zjit_call_threshold - rb_zjit_profile_threshold` times,
@@ -14,10 +15,17 @@ pub static mut rb_zjit_profile_threshold: u64 = 1;
 #[allow(non_upper_case_globals)]
 pub static mut rb_zjit_call_threshold: u64 = 2;
 
+/// True if --zjit-stats is enabled.
+#[allow(non_upper_case_globals)]
+static mut zjit_stats_enabled_p: bool = false;
+
 #[derive(Clone, Copy, Debug)]
 pub struct Options {
     /// Number of times YARV instructions should be profiled.
     pub num_profiles: u8,
+
+    /// Enable YJIT statsitics
+    pub stats: bool,
 
     /// Enable debug logging
     pub debug: bool,
@@ -42,6 +50,7 @@ pub struct Options {
 pub fn init_options() -> Options {
     Options {
         num_profiles: 1,
+        stats: false,
         debug: false,
         dump_hir_init: None,
         dump_hir_opt: None,
@@ -56,6 +65,8 @@ pub fn init_options() -> Options {
 pub const ZJIT_OPTIONS: &'static [(&str, &str)] = &[
     ("--zjit-call-threshold=num", "Number of calls to trigger JIT (default: 2)."),
     ("--zjit-num-profiles=num",   "Number of profiled calls before JIT (default: 1, max: 255)."),
+    ("--zjit-stats",              "Enable collecting ZJIT statistics."),
+    ("--zjit-perf",               "Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf."),
 ];
 
 #[derive(Clone, Copy, Debug)]
@@ -132,6 +143,11 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
             Err(_) => return None,
         },
 
+        ("stats", "") => {
+            unsafe { zjit_stats_enabled_p = true; }
+            options.stats = true;
+        }
+
         ("debug", "") => options.debug = true,
 
         // --zjit-dump-hir dumps the actual input to the codegen, which is currently the same as --zjit-dump-hir-opt.
@@ -193,3 +209,15 @@ macro_rules! debug {
     };
 }
 pub(crate) use debug;
+
+/// Return Qtrue if --zjit-stats has been enabled
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_stats_enabled_p(_ec: EcPtr, _self: VALUE) -> VALUE {
+    // ZJITState is not initialized yet when loading builtins, so this relies
+    // on a separate global variable.
+    if unsafe { zjit_stats_enabled_p } {
+        Qtrue
+    } else {
+        Qfalse
+    }
+}

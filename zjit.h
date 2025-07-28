@@ -4,6 +4,11 @@
 // This file contains definitions ZJIT exposes to the CRuby codebase
 //
 
+// ZJIT_STATS controls whether to support runtime counters in the interpreter
+#ifndef ZJIT_STATS
+# define ZJIT_STATS (USE_ZJIT && RUBY_DEBUG)
+#endif
+
 #if USE_ZJIT
 extern bool rb_zjit_enabled_p;
 extern uint64_t rb_zjit_call_threshold;

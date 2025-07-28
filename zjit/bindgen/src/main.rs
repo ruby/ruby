@@ -392,6 +392,9 @@ fn main() {
         .allowlist_function("rb_ivar_set")
         .allowlist_function("rb_mod_name")
 
+        // From internal/vm.h
+        .allowlist_var("rb_vm_insns_count")
+
         // From include/ruby/internal/intern/vm.h
         .allowlist_function("rb_get_alloc_func")
 

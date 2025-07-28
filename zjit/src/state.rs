@@ -1,8 +1,9 @@
-use crate::cruby::{self, rb_bug_panic_hook, EcPtr, Qnil, VALUE};
+use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insns_count, EcPtr, Qnil, VALUE};
 use crate::cruby_methods;
 use crate::invariants::Invariants;
 use crate::options::Options;
 use crate::asm::CodeBlock;
+use crate::stats::Counters;
 
 #[allow(non_upper_case_globals)]
 #[unsafe(no_mangle)]
@@ -20,6 +21,9 @@ pub struct ZJITState {
 
     /// ZJIT command-line options
     options: Options,
+
+    /// ZJIT statistics
+    counters: Counters,
 
     /// Assumptions that require invalidation
     invariants: Invariants,
@@ -80,6 +84,7 @@ impl ZJITState {
         let zjit_state = ZJITState {
             code_block: cb,
             options,
+            counters: Counters::default(),
             invariants: Invariants::default(),
             assert_compiles: false,
             method_annotations: cruby_methods::init(),
@@ -126,6 +131,11 @@ impl ZJITState {
         let instance = ZJITState::get_instance();
         instance.assert_compiles = true;
     }
+
+    /// Get a mutable reference to counters for ZJIT stats
+    pub fn get_counters() -> &'static mut Counters {
+        &mut ZJITState::get_instance().counters
+    }
 }
 
 /// Initialize ZJIT, given options allocated by rb_zjit_init_options()
@@ -141,6 +151,9 @@ pub extern "C" fn rb_zjit_init(options: *const u8) {
         std::mem::drop(options);
 
         rb_bug_panic_hook();
+
+        // Discard the instruction count for boot which we never compile
+        unsafe { rb_vm_insns_count = 0; }
 
         // ZJIT enabled and initialized successfully
         assert!(unsafe{ !rb_zjit_enabled_p });

@@ -79,7 +79,7 @@ VALUE rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_ca
 struct vm_ifunc *rb_current_ifunc(void);
 VALUE rb_gccct_clear_table(VALUE);
 
-#if USE_YJIT
+#if USE_YJIT || USE_ZJIT
 /* vm_exec.c */
 extern uint64_t rb_vm_insns_count;
 #endif
