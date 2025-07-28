@@ -93,7 +93,7 @@ enum id_entry_type {
 };
 
 typedef struct {
-    rb_id_serial_t last_id;
+    rb_atomic_t next_id;
     VALUE sym_set;
 
     VALUE ids;
@@ -213,30 +213,11 @@ rb_str_symname_type(VALUE name, unsigned int allowed_attrset)
 }
 
 static ID
-next_id_base_with_lock(rb_symbols_t *symbols)
-{
-    ID id;
-    rb_id_serial_t next_serial = symbols->last_id + 1;
-
-    if (next_serial == 0) {
-        id = (ID)-1;
-    }
-    else {
-        const size_t num = ++symbols->last_id;
-        id = num << ID_SCOPE_SHIFT;
-    }
-
-    return id;
-}
-
-static ID
 next_id_base(void)
 {
-    ID id;
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        id = next_id_base_with_lock(symbols);
-    }
-    return id;
+    rb_atomic_t serial = RUBY_ATOMIC_FETCH_ADD(ruby_global_symbols.next_id, 1);
+
+    return (ID)serial << ID_SCOPE_SHIFT;
 }
 
 static void
@@ -293,13 +274,7 @@ sym_set_create(VALUE sym, void *data)
             ID id = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
             if (id == (ID)-1) id = ID_INTERNAL;
 
-            ID nid = next_id_base();
-            if (nid == (ID)-1) {
-                str = rb_str_ellipsize(str, 20);
-                rb_raise(rb_eRuntimeError, "symbol table overflow (symbol %"PRIsVALUE")", str);
-            }
-
-            id |= nid;
+            id |= next_id_base();
             id |= ID_STATIC_SYM;
 
             static_sym = STATIC_ID2SYM(id);
@@ -729,7 +704,7 @@ get_id_serial_entry(rb_id_serial_t num, ID id, const enum id_entry_type t)
     VALUE result = 0;
 
     GLOBAL_SYMBOLS_LOCKING(symbols) {
-        if (num && num <= symbols->last_id) {
+        if (num && num < RUBY_ATOMIC_LOAD(symbols->next_id)) {
             size_t idx = num / ID_ENTRY_UNIT;
             VALUE ids = symbols->ids;
             VALUE ary;
@@ -983,7 +958,7 @@ rb_sym2id(VALUE sym)
 
             if (UNLIKELY(!(id & ~ID_SCOPE_MASK))) {
                 VALUE fstr = RSYMBOL(sym)->fstr;
-                ID num = next_id_base_with_lock(symbols);
+                ID num = next_id_base();
 
                 RSYMBOL(sym)->id = id |= num;
                 /* make it permanent object */
@@ -1061,7 +1036,7 @@ rb_make_temporary_id(size_t n)
 {
     const ID max_id = RB_ID_SERIAL_MAX & ~0xffff;
     const ID id = max_id - (ID)n;
-    if (id <= ruby_global_symbols.last_id) {
+    if (id < RUBY_ATOMIC_LOAD(ruby_global_symbols.next_id)) {
         rb_raise(rb_eRuntimeError, "too big to make temporary ID: %" PRIdSIZE, n);
     }
     return (id << ID_SCOPE_SHIFT) | ID_STATIC_SYM | ID_INTERNAL;
@@ -1102,7 +1077,7 @@ rb_sym_all_symbols(void)
 size_t
 rb_sym_immortal_count(void)
 {
-    return (size_t)ruby_global_symbols.last_id;
+    return (size_t)(RUBY_ATOMIC_LOAD(ruby_global_symbols.next_id) - 1);
 }
 
 int
