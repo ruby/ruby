@@ -68,6 +68,13 @@ def base_type name
   [type, exact]
 end
 
+# Define a new type that cannot be subclassed.
+def final_type name
+  type = $object.subtype name
+  $builtin_exact << type.name
+  type
+end
+
 base_type "String"
 base_type "Array"
 base_type "Hash"
@@ -77,7 +84,7 @@ base_type "Regexp"
 module_class, _ = base_type "Module"
 module_class.subtype "Class"
 
-_, integer_exact = base_type "Integer"
+integer_exact = final_type "Integer"
 # CRuby partitions Integer into immediate and non-immediate variants.
 fixnum = integer_exact.subtype "Fixnum"
 integer_exact.subtype "Bignum"
