@@ -2333,7 +2333,7 @@ impl<'a> std::fmt::Display for FunctionGraphvizPrinter<'a> {
         write_encoded!(f, "# {iseq_name}")?;
         write!(f, "\n")?;
         writeln!(f, "node [shape=plaintext];")?;
-        writeln!(f, "mode=hier; overlap=false; splines=curved;")?;
+        writeln!(f, "mode=hier; overlap=false; splines=true;")?;
         for block_id in fun.rpo() {
             writeln!(f, r#"  {block_id} [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">"#)?;
             write!(f, r#"<TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">{block_id}("#)?;
