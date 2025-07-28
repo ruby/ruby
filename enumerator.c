@@ -1602,6 +1602,11 @@ lazy_init_block_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
 #define LAZY_MEMO_SET_PACKED(memo) ((memo)->memo_flags |= LAZY_MEMO_PACKED)
 #define LAZY_MEMO_RESET_PACKED(memo) ((memo)->memo_flags &= ~LAZY_MEMO_PACKED)
 
+#define LAZY_NEED_BLOCK(func) \
+    if (!rb_block_given_p()) { \
+        rb_raise(rb_eArgError, "tried to call lazy " #func " without a block"); \
+    }
+
 static VALUE lazy_yielder_result(struct MEMO *result, VALUE yielder, VALUE procs_array, VALUE memos, long i);
 
 static VALUE
@@ -1805,9 +1810,7 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
     VALUE generator;
 
     rb_check_arity(argc, 1, 2);
-    if (!rb_block_given_p()) {
-        rb_raise(rb_eArgError, "tried to call lazy new without a block");
-    }
+    LAZY_NEED_BLOCK(new);
     obj = argv[0];
     if (argc > 1) {
         size = argv[1];
@@ -2065,10 +2068,7 @@ static const lazyenum_funcs lazy_map_funcs = {
 static VALUE
 lazy_map(VALUE obj)
 {
-    if (!rb_block_given_p()) {
-        rb_raise(rb_eArgError, "tried to call lazy map without a block");
-    }
-
+    LAZY_NEED_BLOCK(map);
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_map_funcs);
 }
 
@@ -2150,10 +2150,7 @@ static const lazyenum_funcs lazy_flat_map_funcs = {
 static VALUE
 lazy_flat_map(VALUE obj)
 {
-    if (!rb_block_given_p()) {
-        rb_raise(rb_eArgError, "tried to call lazy flat_map without a block");
-    }
-
+    LAZY_NEED_BLOCK(flat_map);
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_flat_map_funcs);
 }
 
@@ -2180,10 +2177,7 @@ static const lazyenum_funcs lazy_select_funcs = {
 static VALUE
 lazy_select(VALUE obj)
 {
-    if (!rb_block_given_p()) {
-        rb_raise(rb_eArgError, "tried to call lazy select without a block");
-    }
-
+    LAZY_NEED_BLOCK(select);
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_select_funcs);
 }
 
@@ -2214,10 +2208,7 @@ static const lazyenum_funcs lazy_filter_map_funcs = {
 static VALUE
 lazy_filter_map(VALUE obj)
 {
-    if (!rb_block_given_p()) {
-        rb_raise(rb_eArgError, "tried to call lazy filter_map without a block");
-    }
-
+    LAZY_NEED_BLOCK(filter_map);
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_filter_map_funcs);
 }
 
@@ -2243,10 +2234,7 @@ static const lazyenum_funcs lazy_reject_funcs = {
 static VALUE
 lazy_reject(VALUE obj)
 {
-    if (!rb_block_given_p()) {
-        rb_raise(rb_eArgError, "tried to call lazy reject without a block");
-    }
-
+    LAZY_NEED_BLOCK(reject);
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_reject_funcs);
 }
 
@@ -2529,10 +2517,7 @@ static const lazyenum_funcs lazy_take_while_funcs = {
 static VALUE
 lazy_take_while(VALUE obj)
 {
-    if (!rb_block_given_p()) {
-        rb_raise(rb_eArgError, "tried to call lazy take_while without a block");
-    }
-
+    LAZY_NEED_BLOCK(take_while);
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_take_while_funcs);
 }
 
@@ -2627,10 +2612,7 @@ static const lazyenum_funcs lazy_drop_while_funcs = {
 static VALUE
 lazy_drop_while(VALUE obj)
 {
-    if (!rb_block_given_p()) {
-        rb_raise(rb_eArgError, "tried to call lazy drop_while without a block");
-    }
-
+    LAZY_NEED_BLOCK(drop_while);
     return lazy_add_method(obj, 0, 0, Qfalse, Qnil, &lazy_drop_while_funcs);
 }
 
