@@ -259,7 +259,7 @@ pub struct VALUE(pub usize);
 /// An interned string. See [ids] and methods this type.
 /// `0` is a sentinal value for IDs.
 #[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct ID(pub ::std::os::raw::c_ulong);
 
 /// Pointer to an ISEQ

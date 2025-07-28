@@ -889,6 +889,48 @@ class TestZJIT < Test::Unit::TestCase
     end
   end
 
+  def test_constant_invalidation
+    assert_compiles '123', <<~RUBY, call_threshold: 2, insns: [:opt_getconstant_path]
+      class C; end
+      def test = C
+      test
+      test
+
+      C = 123
+      test
+    RUBY
+  end
+
+  def test_constant_path_invalidation
+    assert_compiles '["Foo::C", "Foo::C", "Bar::C"]', <<~RUBY, call_threshold: 2, insns: [:opt_getconstant_path]
+      module A
+        module B; end
+      end
+
+      module Foo
+        C = "Foo::C"
+      end
+
+      module Bar
+        C = "Bar::C"
+      end
+
+      A::B = Foo
+
+      def test = A::B::C
+
+      result = []
+
+      result << test
+      result << test
+
+      A::B = Bar
+
+      result << test
+      result
+    RUBY
+  end
+
   def test_dupn
     assert_compiles '[[1], [1, 1], :rhs, [nil, :rhs]]', <<~RUBY, insns: [:dupn]
       def test(array) = (array[1, 2] ||= :rhs)
