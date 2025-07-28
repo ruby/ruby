@@ -76,12 +76,12 @@ pub fn init() -> Annotations {
 
     annotate!(rb_mKernel, "itself", types::BasicObject, no_gc, leaf, elidable);
     annotate!(rb_cString, "bytesize", types::Fixnum, no_gc, leaf);
-    annotate!(rb_cModule, "name", types::StringExact.union(types::NilClassExact), no_gc, leaf, elidable);
+    annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cArray, "size", types::Fixnum, no_gc, leaf, elidable);
-    annotate!(rb_cNilClass, "nil?", types::TrueClassExact, no_gc, leaf, elidable);
-    annotate!(rb_mKernel, "nil?", types::FalseClassExact, no_gc, leaf, elidable);
+    annotate!(rb_cNilClass, "nil?", types::TrueClass, no_gc, leaf, elidable);
+    annotate!(rb_mKernel, "nil?", types::FalseClass, no_gc, leaf, elidable);
 
     Annotations {
         cfuncs: std::mem::take(cfuncs)

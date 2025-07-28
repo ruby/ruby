@@ -72,7 +72,7 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
     match ty.spec {
         Specialization::Any | Specialization::Empty => { Ok(()) },
         Specialization::Object(val) if val == unsafe { rb_mRubyVMFrozenCore } => write!(f, "[VMFrozenCore]"),
-        Specialization::Object(val) if ty.is_subtype(types::SymbolExact) => write!(f, "[:{}]", ruby_sym_to_rust_string(val)),
+        Specialization::Object(val) if ty.is_subtype(types::Symbol) => write!(f, "[:{}]", ruby_sym_to_rust_string(val)),
         Specialization::Object(val) => write!(f, "[{}]", val.print(printer.ptr_map)),
         Specialization::Type(val) => write!(f, "[class:{}]", get_class_name(val)),
         Specialization::TypeExact(val) => write!(f, "[class_exact:{}]", get_class_name(val)),
@@ -169,7 +169,7 @@ impl Type {
 
     /// Create a `Type` from a Ruby `VALUE`. The type is not guaranteed to have object
     /// specialization in its `specialization` field (for example, `Qnil` will just be
-    /// `types::NilClassExact`), but will be available via `ruby_object()`.
+    /// `types::NilClass`), but will be available via `ruby_object()`.
     pub fn from_value(val: VALUE) -> Type {
         if val.fixnum_p() {
             Type { bits: bits::Fixnum, spec: Specialization::Object(val) }
@@ -181,9 +181,9 @@ impl Type {
             Type { bits: bits::StaticSymbol, spec: Specialization::Object(val) }
         }
         // Singleton objects; don't specialize
-        else if val == Qnil { types::NilClassExact }
-        else if val == Qtrue { types::TrueClassExact }
-        else if val == Qfalse { types::FalseClassExact }
+        else if val == Qnil { types::NilClass }
+        else if val == Qtrue { types::TrueClass }
+        else if val == Qfalse { types::FalseClass }
         else if val.cme_p() {
             // NB: Checking for CME has to happen before looking at class_of because that's not
             // valid on imemo.
@@ -266,12 +266,12 @@ impl Type {
 
     /// Return true if the value with this type is definitely truthy.
     pub fn is_known_truthy(&self) -> bool {
-        !self.could_be(types::NilClassExact) && !self.could_be(types::FalseClassExact)
+        !self.could_be(types::NilClass) && !self.could_be(types::FalseClass)
     }
 
     /// Return true if the value with this type is definitely falsy.
     pub fn is_known_falsy(&self) -> bool {
-        self.is_subtype(types::NilClassExact) || self.is_subtype(types::FalseClassExact)
+        self.is_subtype(types::NilClass) || self.is_subtype(types::FalseClass)
     }
 
     /// Top self is the Ruby global object, where top-level method definitions go. Return true if
@@ -431,7 +431,7 @@ impl Type {
     }
 
     /// Return a pointer to the Ruby class that an object of this Type would have at run-time, if
-    /// known. This includes classes for HIR types such as ArrayExact or NilClassExact, which have
+    /// known. This includes classes for HIR types such as ArrayExact or NilClass, which have
     /// canonical Type representations that lack an explicit specialization in their `spec` fields.
     pub fn runtime_exact_ruby_class(&self) -> Option<VALUE> {
         if let Some(val) = self.exact_ruby_class() {
@@ -439,19 +439,19 @@ impl Type {
         }
         if self.is_subtype(types::ArrayExact) { return Some(unsafe { rb_cArray }); }
         if self.is_subtype(types::Class) { return Some(unsafe { rb_cClass }); }
-        if self.is_subtype(types::FalseClassExact) { return Some(unsafe { rb_cFalseClass }); }
-        if self.is_subtype(types::FloatExact) { return Some(unsafe { rb_cFloat }); }
+        if self.is_subtype(types::FalseClass) { return Some(unsafe { rb_cFalseClass }); }
+        if self.is_subtype(types::Float) { return Some(unsafe { rb_cFloat }); }
         if self.is_subtype(types::HashExact) { return Some(unsafe { rb_cHash }); }
         if self.is_subtype(types::Integer) { return Some(unsafe { rb_cInteger }); }
         if self.is_subtype(types::ModuleExact) { return Some(unsafe { rb_cModule }); }
-        if self.is_subtype(types::NilClassExact) { return Some(unsafe { rb_cNilClass }); }
+        if self.is_subtype(types::NilClass) { return Some(unsafe { rb_cNilClass }); }
         if self.is_subtype(types::ObjectExact) { return Some(unsafe { rb_cObject }); }
         if self.is_subtype(types::RangeExact) { return Some(unsafe { rb_cRange }); }
         if self.is_subtype(types::RegexpExact) { return Some(unsafe { rb_cRegexp }); }
         if self.is_subtype(types::SetExact) { return Some(unsafe { rb_cSet }); }
         if self.is_subtype(types::StringExact) { return Some(unsafe { rb_cString }); }
-        if self.is_subtype(types::SymbolExact) { return Some(unsafe { rb_cSymbol }); }
-        if self.is_subtype(types::TrueClassExact) { return Some(unsafe { rb_cTrueClass }); }
+        if self.is_subtype(types::Symbol) { return Some(unsafe { rb_cSymbol }); }
+        if self.is_subtype(types::TrueClass) { return Some(unsafe { rb_cTrueClass }); }
         None
     }
 
@@ -520,7 +520,7 @@ mod tests {
     #[test]
     fn empty_is_subtype_of_everything() {
         // Spot check a few cases
-        assert_subtype(types::Empty, types::NilClassExact);
+        assert_subtype(types::Empty, types::NilClass);
         assert_subtype(types::Empty, types::Array);
         assert_subtype(types::Empty, types::Object);
         assert_subtype(types::Empty, types::CUInt16);
@@ -532,7 +532,7 @@ mod tests {
     #[test]
     fn everything_is_a_subtype_of_any() {
         // Spot check a few cases
-        assert_subtype(types::NilClassExact, types::Any);
+        assert_subtype(types::NilClass, types::Any);
         assert_subtype(types::Array, types::Any);
         assert_subtype(types::Object, types::Any);
         assert_subtype(types::CUInt16, types::Any);
@@ -553,18 +553,14 @@ mod tests {
 
     #[test]
     fn float() {
-        assert_subtype(types::Flonum, types::FloatExact);
-        assert_subtype(types::HeapFloat, types::FloatExact);
-        assert_subtype(types::FloatExact, types::Float);
-        assert_subtype(types::FloatSubclass, types::Float);
+        assert_subtype(types::Flonum, types::Float);
+        assert_subtype(types::HeapFloat, types::Float);
     }
 
     #[test]
     fn symbol() {
-        assert_subtype(types::StaticSymbol, types::SymbolExact);
-        assert_subtype(types::DynamicSymbol, types::SymbolExact);
-        assert_subtype(types::SymbolExact, types::Symbol);
-        assert_subtype(types::SymbolSubclass, types::Symbol);
+        assert_subtype(types::StaticSymbol, types::Symbol);
+        assert_subtype(types::DynamicSymbol, types::Symbol);
     }
 
     #[test]
@@ -572,12 +568,9 @@ mod tests {
         assert_subtype(Type::fixnum(123), types::Immediate);
         assert_subtype(types::Fixnum, types::Immediate);
         assert_not_subtype(types::Bignum, types::Immediate);
-        assert_subtype(types::NilClassExact, types::Immediate);
-        assert_subtype(types::TrueClassExact, types::Immediate);
-        assert_subtype(types::FalseClassExact, types::Immediate);
-        assert_not_subtype(types::NilClassSubclass, types::Immediate);
-        assert_not_subtype(types::TrueClassSubclass, types::Immediate);
-        assert_not_subtype(types::FalseClassSubclass, types::Immediate);
+        assert_subtype(types::NilClass, types::Immediate);
+        assert_subtype(types::TrueClass, types::Immediate);
+        assert_subtype(types::FalseClass, types::Immediate);
         assert_subtype(types::StaticSymbol, types::Immediate);
         assert_not_subtype(types::DynamicSymbol, types::Immediate);
         assert_subtype(types::Flonum, types::Immediate);
@@ -594,11 +587,11 @@ mod tests {
     #[test]
     fn singletons_do_not_have_ruby_object() {
         assert_eq!(Type::from_value(Qnil).ruby_object(), None);
-        assert_eq!(types::NilClassExact.ruby_object(), None);
+        assert_eq!(types::NilClass.ruby_object(), None);
         assert_eq!(Type::from_value(Qtrue).ruby_object(), None);
-        assert_eq!(types::TrueClassExact.ruby_object(), None);
+        assert_eq!(types::TrueClass.ruby_object(), None);
         assert_eq!(Type::from_value(Qfalse).ruby_object(), None);
-        assert_eq!(types::FalseClassExact.ruby_object(), None);
+        assert_eq!(types::FalseClass.ruby_object(), None);
     }
 
     #[test]
@@ -611,21 +604,21 @@ mod tests {
     #[test]
     fn singletons_do_not_have_exact_ruby_class() {
         assert_eq!(Type::from_value(Qnil).exact_ruby_class(), None);
-        assert_eq!(types::NilClassExact.exact_ruby_class(), None);
+        assert_eq!(types::NilClass.exact_ruby_class(), None);
         assert_eq!(Type::from_value(Qtrue).exact_ruby_class(), None);
-        assert_eq!(types::TrueClassExact.exact_ruby_class(), None);
+        assert_eq!(types::TrueClass.exact_ruby_class(), None);
         assert_eq!(Type::from_value(Qfalse).exact_ruby_class(), None);
-        assert_eq!(types::FalseClassExact.exact_ruby_class(), None);
+        assert_eq!(types::FalseClass.exact_ruby_class(), None);
     }
 
     #[test]
     fn singletons_do_not_have_ruby_class() {
         assert_eq!(Type::from_value(Qnil).inexact_ruby_class(), None);
-        assert_eq!(types::NilClassExact.inexact_ruby_class(), None);
+        assert_eq!(types::NilClass.inexact_ruby_class(), None);
         assert_eq!(Type::from_value(Qtrue).inexact_ruby_class(), None);
-        assert_eq!(types::TrueClassExact.inexact_ruby_class(), None);
+        assert_eq!(types::TrueClass.inexact_ruby_class(), None);
         assert_eq!(Type::from_value(Qfalse).inexact_ruby_class(), None);
-        assert_eq!(types::FalseClassExact.inexact_ruby_class(), None);
+        assert_eq!(types::FalseClass.inexact_ruby_class(), None);
     }
 
     #[test]

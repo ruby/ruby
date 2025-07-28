@@ -89,19 +89,19 @@ integer_exact = final_type "Integer"
 fixnum = integer_exact.subtype "Fixnum"
 integer_exact.subtype "Bignum"
 
-_, float_exact = base_type "Float"
+float_exact = final_type "Float"
 # CRuby partitions Float into immediate and non-immediate variants.
 flonum = float_exact.subtype "Flonum"
 float_exact.subtype "HeapFloat"
 
-_, symbol_exact = base_type "Symbol"
+symbol_exact = final_type "Symbol"
 # CRuby partitions Symbol into immediate and non-immediate variants.
 static_sym = symbol_exact.subtype "StaticSymbol"
 symbol_exact.subtype "DynamicSymbol"
 
-_, nil_exact = base_type "NilClass"
-_, true_exact = base_type "TrueClass"
-_, false_exact = base_type "FalseClass"
+nil_exact = final_type "NilClass"
+true_exact = final_type "TrueClass"
+false_exact = final_type "FalseClass"
 
 # Build the cvalue object universe. This is for C-level types that may be
 # passed around when calling into the Ruby VM or after some strength reduction
