@@ -276,7 +276,7 @@ sym_set_create(VALUE sym, void *data)
         RB_OBJ_WRITE((VALUE)obj, &obj->fstr, str);
 
         int id = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
-        if (id < 0) id = ID_JUNK;
+        if (id < 0) id = ID_INTERNAL;
         obj->id = id;
 
         obj->hashval = rb_str_hash(str);
@@ -291,7 +291,7 @@ sym_set_create(VALUE sym, void *data)
         VALUE static_sym = static_sym_entry->sym;
         if (static_sym == 0) {
             ID id = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
-            if (id == (ID)-1) id = ID_JUNK;
+            if (id == (ID)-1) id = ID_INTERNAL;
 
             ID nid = next_id_base();
             if (nid == (ID)-1) {
@@ -431,7 +431,7 @@ rb_id_attrset(ID id)
         scope = id_type(id);
         switch (scope) {
           case ID_LOCAL: case ID_INSTANCE: case ID_GLOBAL:
-          case ID_CONST: case ID_CLASS: case ID_JUNK:
+          case ID_CONST: case ID_CLASS: case ID_INTERNAL:
             break;
           case ID_ATTRSET:
             return id;
@@ -476,7 +476,7 @@ rb_id_attrset(ID id)
             "attrset",
             "const",
             "class",
-            "junk",
+            "internal",
         };
         rb_name_error(id, "cannot make anonymous %.*s ID %"PRIxVALUE" attrset",
                       (int)sizeof(id_types[0]), id_types[scope], (VALUE)id);
@@ -602,66 +602,66 @@ enc_synmane_type_leading_chars(const char *name, long len, rb_encoding *enc, int
 
       case '<':
         switch (*++m) {
-          default:  return (t) { stophere, ID_JUNK, 1, };
-          case '<': return (t) { stophere, ID_JUNK, 2, };
+          default:  return (t) { stophere, ID_INTERNAL, 1, };
+          case '<': return (t) { stophere, ID_INTERNAL, 2, };
           case '=':
             switch (*++m) {
-              default:  return (t) { stophere, ID_JUNK, 2, };
-              case '>': return (t) { stophere, ID_JUNK, 3, };
+              default:  return (t) { stophere, ID_INTERNAL, 2, };
+              case '>': return (t) { stophere, ID_INTERNAL, 3, };
             }
         }
 
       case '>':
         switch (*++m) {
-          default:            return (t) { stophere, ID_JUNK, 1, };
-          case '>': case '=': return (t) { stophere, ID_JUNK, 2, };
+          default:            return (t) { stophere, ID_INTERNAL, 1, };
+          case '>': case '=': return (t) { stophere, ID_INTERNAL, 2, };
         }
 
       case '=':
         switch (*++m) {
-          default:  return (t) { invalid,  0,       1, };
-          case '~': return (t) { stophere, ID_JUNK, 2, };
+          default:  return (t) { invalid,  0,           1, };
+          case '~': return (t) { stophere, ID_INTERNAL, 2, };
           case '=':
             switch (*++m) {
-              default:  return (t) { stophere, ID_JUNK, 2, };
-              case '=': return (t) { stophere, ID_JUNK, 3, };
+              default:  return (t) { stophere, ID_INTERNAL, 2, };
+              case '=': return (t) { stophere, ID_INTERNAL, 3, };
             }
         }
 
       case '*':
         switch (*++m) {
-          default:  return (t) { stophere, ID_JUNK, 1, };
-          case '*': return (t) { stophere, ID_JUNK, 2, };
+          default:  return (t) { stophere, ID_INTERNAL, 1, };
+          case '*': return (t) { stophere, ID_INTERNAL, 2, };
         }
 
       case '+': case '-':
         switch (*++m) {
-          default:  return (t) { stophere, ID_JUNK, 1, };
-          case '@': return (t) { stophere, ID_JUNK, 2, };
+          default:  return (t) { stophere, ID_INTERNAL, 1, };
+          case '@': return (t) { stophere, ID_INTERNAL, 2, };
         }
 
       case '|': case '^': case '&': case '/': case '%': case '~': case '`':
-        return (t) { stophere, ID_JUNK, 1, };
+        return (t) { stophere, ID_INTERNAL, 1, };
 
       case '[':
         switch (*++m) {
-          default: return (t) { needmore, ID_JUNK, 0, };
+          default: return (t) { needmore, ID_INTERNAL, 0, };
           case ']':
             switch (*++m) {
-              default:  return (t) { stophere, ID_JUNK, 2, };
-              case '=': return (t) { stophere, ID_JUNK, 3, };
+              default:  return (t) { stophere, ID_INTERNAL, 2, };
+              case '=': return (t) { stophere, ID_INTERNAL, 3, };
             }
         }
 
       case '!':
         switch (*++m) {
-          case '=': case '~': return (t) { stophere, ID_JUNK, 2, };
+          case '=': case '~': return (t) { stophere, ID_INTERNAL, 2, };
           default:
-            if (allowed_attrset & (1U << ID_JUNK)) {
-                return (t) { needmore, ID_JUNK, 1, };
+            if (allowed_attrset & (1U << ID_INTERNAL)) {
+                return (t) { needmore, ID_INTERNAL, 1, };
             }
             else {
-                return (t) { stophere, ID_JUNK, 1, };
+                return (t) { stophere, ID_INTERNAL, 1, };
             }
         }
 
@@ -702,7 +702,7 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
         switch (*m) {
           case '!': case '?':
             if (type == ID_GLOBAL || type == ID_CLASS || type == ID_INSTANCE) return -1;
-            type = ID_JUNK;
+            type = ID_INTERNAL;
             ++m;
             if (m + 1 < e || *m != '=') break;
             /* fall through */
@@ -1144,7 +1144,7 @@ rb_is_local_id(ID id)
 int
 rb_is_junk_id(ID id)
 {
-    return is_junk_id(id);
+    return is_internal_id(id);
 }
 
 int
