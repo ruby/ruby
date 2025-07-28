@@ -99,7 +99,7 @@ impl<T: Into<usize> + Copy> BitSetBackend<T> for SmallBitSet<T> {
     }
 
     fn insert_all(&mut self) {
-        self.bits = (1 << self.num_bits) - 1;
+        self.bits = !0
     }
 
     fn get(&self, idx: T) -> bool {
