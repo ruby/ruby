@@ -2319,8 +2319,6 @@ impl<'a, 'b> std::fmt::Write for HtmlEncoder<'a, 'b> {
 
 impl<'a> std::fmt::Display for FunctionGraphvizPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        /// macro write_encoded! that looks like normal write! but creates a temporary HtmlEncoder and writes to it instead
-        // let mut f = HtmlEncoder { formatter: out };
         macro_rules! write_encoded {
             ($f:ident, $($arg:tt)*) => {
                 HtmlEncoder { formatter: $f }.write_fmt(format_args!($($arg)*))
