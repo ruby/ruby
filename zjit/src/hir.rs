@@ -2330,7 +2330,8 @@ impl<'a> std::fmt::Display for FunctionGraphvizPrinter<'a> {
         let fun = &self.fun;
         let iseq_name = iseq_get_location(fun.iseq, 0);
         writeln!(f, "digraph G {{")?;
-        writeln!(f, "  # {iseq_name}")?;
+        write_encoded!(f, "  # {iseq_name}")?;
+        write!(f, "\n")?;
         writeln!(f, "  node [shape=plaintext];")?;
         for block_id in fun.rpo() {
             writeln!(f, r#"  {block_id} [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">"#)?;
