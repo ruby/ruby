@@ -842,6 +842,22 @@ impl<'a> FunctionPrinter<'a> {
     }
 }
 
+/// Pretty printer for [`Function`].
+pub struct FunctionGraphvizPrinter<'a> {
+    fun: &'a Function,
+    ptr_map: PtrPrintMap,
+}
+
+impl<'a> FunctionGraphvizPrinter<'a> {
+    pub fn new(fun: &'a Function) -> Self {
+        let mut ptr_map = PtrPrintMap::identity();
+        if cfg!(test) {
+            ptr_map.map_ptrs = true;
+        }
+        Self { fun, ptr_map }
+    }
+}
+
 /// Union-Find (Disjoint-Set) is a data structure for managing disjoint sets that has an interface
 /// of two operations:
 ///
@@ -2105,6 +2121,10 @@ impl Function {
             Some(DumpHIR::Debug) => println!("Optimized HIR:\n{:#?}", &self),
             None => {},
         }
+
+        if get_option!(dump_hir_graphviz) {
+            println!("Optimized HIR Graphviz:\n{}", FunctionGraphvizPrinter::new(&self));
+        }
     }
 
 
@@ -2274,6 +2294,87 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
             }
         }
         Ok(())
+    }
+}
+
+struct HtmlEncoder<'a, 'b> {
+    formatter: &'a mut std::fmt::Formatter<'b>,
+}
+
+impl<'a, 'b> std::fmt::Write for HtmlEncoder<'a, 'b> {
+    fn write_str(&mut self, s: &str) -> std::fmt::Result {
+        for ch in s.chars() {
+            match ch {
+                '<' => self.formatter.write_str("&lt;")?,
+                '>' => self.formatter.write_str("&gt;")?,
+                '&' => self.formatter.write_str("&amp;")?,
+                '"' => self.formatter.write_str("&quot;")?,
+                '\'' => self.formatter.write_str("&#39;")?,
+                _ => self.formatter.write_char(ch)?,
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<'a> std::fmt::Display for FunctionGraphvizPrinter<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        /// macro write_encoded! that looks like normal write! but creates a temporary HtmlEncoder and writes to it instead
+        // let mut f = HtmlEncoder { formatter: out };
+        macro_rules! write_encoded {
+            ($f:ident, $($arg:tt)*) => {
+                HtmlEncoder { formatter: $f }.write_fmt(format_args!($($arg)*))
+            };
+        }
+        use std::fmt::Write;
+        let fun = &self.fun;
+        let iseq_name = iseq_get_location(fun.iseq, 0);
+        writeln!(f, "digraph G {{")?;
+        writeln!(f, "  # {iseq_name}")?;
+        writeln!(f, "  node [shape=plaintext];")?;
+        for block_id in fun.rpo() {
+            writeln!(f, r#"  {block_id} [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">"#)?;
+            write!(f, r#"<TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">{block_id}("#)?;
+            if !fun.blocks[block_id.0].params.is_empty() {
+                let mut sep = "";
+                for param in &fun.blocks[block_id.0].params {
+                    write_encoded!(f, "{sep}{param}")?;
+                    let insn_type = fun.type_of(*param);
+                    if !insn_type.is_subtype(types::Empty) {
+                        write_encoded!(f, ":{}", insn_type.print(&self.ptr_map))?;
+                    }
+                    sep = ", ";
+                }
+            }
+            let mut edges = vec![];
+            writeln!(f, ")&nbsp;</TD></TR>")?;
+            for insn_id in &fun.blocks[block_id.0].insns {
+                let insn_id = fun.union_find.borrow().find_const(*insn_id);
+                let insn = fun.find(insn_id);
+                if matches!(insn, Insn::Snapshot {..}) {
+                    continue;
+                }
+                write!(f, r#"<TR><TD ALIGN="left" PORT="{insn_id}">"#)?;
+                if insn.has_output() {
+                    let insn_type = fun.type_of(insn_id);
+                    if insn_type.is_subtype(types::Empty) {
+                        write_encoded!(f, "{insn_id} = ")?;
+                    } else {
+                        write_encoded!(f, "{insn_id}:{} = ", insn_type.print(&self.ptr_map))?;
+                    }
+                }
+                if let Insn::Jump(ref target) | Insn::IfTrue { ref target, .. } | Insn::IfFalse { ref target, .. } = insn {
+                    edges.push((insn_id, target.target));
+                }
+                write_encoded!(f, "{}", insn.print(&self.ptr_map))?;
+                writeln!(f, "&nbsp;</TD></TR>")?;
+            }
+            writeln!(f, "</TABLE>>];")?;
+            for (src, dst) in edges {
+                writeln!(f, "  {block_id}:{src} -> {dst}:params;")?;
+            }
+        }
+        writeln!(f, "}}")
     }
 }
 
