@@ -4,6 +4,7 @@ use crate::invariants::Invariants;
 use crate::options::Options;
 use crate::asm::CodeBlock;
 use crate::stats::Counters;
+use crate::backend::lir::Assembler;
 
 #[allow(non_upper_case_globals)]
 #[unsafe(no_mangle)]
@@ -33,6 +34,9 @@ pub struct ZJITState {
 
     /// Properties of core library methods
     method_annotations: cruby_methods::Annotations,
+
+    /// Abort stub
+    abort_stub: *const u8,
 }
 
 /// Private singleton instance of the codegen globals
@@ -88,6 +92,7 @@ impl ZJITState {
             invariants: Invariants::default(),
             assert_compiles: false,
             method_annotations: cruby_methods::init(),
+            abort_stub: std::ptr::null(),
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
     }
@@ -168,6 +173,19 @@ impl ZJITState {
             true // If no restrictions, allow all ISEQs
         }
     }
+
+    fn create_abort_stub() {
+        assert_eq!(ZJITState::get_instance().abort_stub, std::ptr::null(), "Abort stub already created");
+        let mut asm = Assembler::new();
+        asm.breakpoint();
+        let cb = ZJITState::get_code_block();
+        let code_ptr = asm.compile(cb).unwrap().0.raw_ptr(cb);
+        ZJITState::get_instance().abort_stub = code_ptr;
+    }
+
+    pub fn abort_stub() -> *const u8 {
+        ZJITState::get_instance().abort_stub
+    }
 }
 
 /// Initialize ZJIT, given options allocated by rb_zjit_init_options()
@@ -180,6 +198,7 @@ pub extern "C" fn rb_zjit_init(options: *const u8) {
 
         let options = unsafe { Box::from_raw(options as *mut Options) };
         ZJITState::init(*options);
+        ZJITState::create_abort_stub();
 
         rb_bug_panic_hook();
 

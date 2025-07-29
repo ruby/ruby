@@ -790,7 +790,7 @@ fn gen_send_without_block(
 
 /// Compile a direct jump to an ISEQ call without block
 fn gen_send_without_block_direct(
-    cb: &mut CodeBlock,
+    _cb: &mut CodeBlock,
     jit: &mut JITState,
     asm: &mut Assembler,
     cme: *const rb_callable_method_entry_t,
@@ -839,11 +839,12 @@ fn gen_send_without_block_direct(
 
     // Make a method call. The target address will be rewritten once compiled.
     let branch = Branch::new();
-    let dummy_ptr = cb.get_write_ptr().raw_ptr(cb);
     jit.branch_iseqs.push((branch.clone(), iseq));
     // TODO(max): Add a PatchPoint here that can side-exit the function if the callee messed with
     // the frame's locals
-    let ret = asm.ccall_with_branch(dummy_ptr, c_args, &branch);
+    let stub = ZJITState::abort_stub();
+    assert_ne!(stub, std::ptr::null());
+    let ret = asm.ccall_with_branch(ZJITState::abort_stub(), c_args, &branch);
 
     // If a callee side-exits, i.e. returns Qundef, propagate the return value to the caller.
     // The caller will side-exit the callee into the interpreter.
