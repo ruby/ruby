@@ -1520,7 +1520,8 @@ impl Function {
                         } else {
                             // If we know that self is top-self from profile information, guard and use it to fold the lookup at compile-time.
                             match self.profiled_type_of_at(self_val, frame_state.insn_idx) {
-                                Some(self_type) if self_type.runtime_exact_ruby_class().is_some() && !self_type.ruby_object_known() => (self_type.runtime_exact_ruby_class().unwrap(), Some(self_type)),
+                                Some(self_type) if self_type.runtime_exact_ruby_class().is_some() && !self_type.ruby_object_known() =>
+                                    (self_type.runtime_exact_ruby_class().unwrap(), Some(self_type)),
                                 _ => { self.push_insn_id(block, insn_id); continue; }
                             }
                         };
