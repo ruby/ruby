@@ -16,9 +16,9 @@ pub static mut rb_zjit_profile_threshold: u64 = 1;
 #[allow(non_upper_case_globals)]
 pub static mut rb_zjit_call_threshold: u64 = 2;
 
-/// True if --zjit-stats is enabled.
-#[allow(non_upper_case_globals)]
-static mut zjit_stats_enabled_p: bool = false;
+/// ZJIT command-line options. This is set before rb_zjit_init() sets
+/// ZJITState so that we can query some options while loading builtins.
+pub static mut OPTIONS: Option<Options> = None;
 
 #[derive(Clone, Debug)]
 pub struct Options {
@@ -53,19 +53,20 @@ pub struct Options {
     pub log_compiled_iseqs: Option<String>,
 }
 
-/// Return an Options with default values
-pub fn init_options() -> Options {
-    Options {
-        num_profiles: 1,
-        stats: false,
-        debug: false,
-        dump_hir_init: None,
-        dump_hir_opt: None,
-        dump_lir: false,
-        dump_disasm: false,
-        perf: false,
-        allowed_iseqs: None,
-        log_compiled_iseqs: None,
+impl Default for Options {
+    fn default() -> Self {
+        Options {
+            num_profiles: 1,
+            stats: false,
+            debug: false,
+            dump_hir_init: None,
+            dump_hir_opt: None,
+            dump_lir: false,
+            dump_disasm: false,
+            perf: false,
+            allowed_iseqs: None,
+            log_compiled_iseqs: None,
+        }
     }
 }
 
@@ -95,28 +96,26 @@ macro_rules! get_option {
     // Unsafe is ok here because options are initialized
     // once before any Ruby code executes
     ($option_name:ident) => {
-        {
-            use crate::state::ZJITState;
-            ZJITState::get_options().$option_name
-        }
+        unsafe { crate::options::OPTIONS.as_ref() }.unwrap().$option_name
     };
 }
 pub(crate) use get_option;
 
-/// Allocate Options on the heap, initialize it, and return the address of it.
-/// The return value will be modified by rb_zjit_parse_option() and then
-/// passed to rb_zjit_init() for initialization.
+/// Set default values to ZJIT options. Setting Some to OPTIONS will make `#with_jit`
+/// enable the JIT hook while not enabling compilation yet.
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_init_options() -> *const u8 {
-    let options = init_options();
-    Box::into_raw(Box::new(options)) as *const u8
+pub extern "C" fn rb_zjit_prepare_options() {
+    // rb_zjit_prepare_options() could be called for feature flags or $RUBY_ZJIT_ENABLE
+    // after rb_zjit_parse_option() is called, so we need to handle the already-initialized case.
+    if unsafe { OPTIONS.is_none() } {
+        unsafe { OPTIONS = Some(Options::default()); }
+    }
 }
 
 /// Parse a --zjit* command-line flag
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_parse_option(options: *const u8, str_ptr: *const c_char) -> bool {
-    let options = unsafe { &mut *(options as *mut Options) };
-    parse_option(options, str_ptr).is_some()
+pub extern "C" fn rb_zjit_parse_option(str_ptr: *const c_char) -> bool {
+    parse_option(str_ptr).is_some()
 }
 
 fn parse_jit_list(path_like: &str) -> HashSet<String> {
@@ -142,7 +141,10 @@ fn parse_jit_list(path_like: &str) -> HashSet<String> {
 /// Expected to receive what comes after the third dash in "--zjit-*".
 /// Empty string means user passed only "--zjit". C code rejects when
 /// they pass exact "--zjit-".
-fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> Option<()> {
+fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
+    rb_zjit_prepare_options();
+    let options = unsafe { OPTIONS.as_mut().unwrap() };
+
     let c_str: &CStr = unsafe { CStr::from_ptr(str_ptr) };
     let opt_str: &str = c_str.to_str().ok()?;
 
@@ -161,7 +163,7 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
         ("call-threshold", _) => match opt_val.parse() {
             Ok(n) => {
                 unsafe { rb_zjit_call_threshold = n; }
-                update_profile_threshold(options);
+                update_profile_threshold();
             },
             Err(_) => return None,
         },
@@ -169,13 +171,12 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
         ("num-profiles", _) => match opt_val.parse() {
             Ok(n) => {
                 options.num_profiles = n;
-                update_profile_threshold(options);
+                update_profile_threshold();
             },
             Err(_) => return None,
         },
 
         ("stats", "") => {
-            unsafe { zjit_stats_enabled_p = true; }
             options.stats = true;
         }
 
@@ -217,15 +218,14 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
 }
 
 /// Update rb_zjit_profile_threshold based on rb_zjit_call_threshold and options.num_profiles
-fn update_profile_threshold(options: &Options) {
-    unsafe {
-        if rb_zjit_call_threshold == 1 {
-            // If --zjit-call-threshold=1, never rewrite ISEQs to profile instructions.
-            rb_zjit_profile_threshold = 0;
-        } else {
-            // Otherwise, profile instructions at least once.
-            rb_zjit_profile_threshold = rb_zjit_call_threshold.saturating_sub(options.num_profiles as u64).max(1);
-        }
+fn update_profile_threshold() {
+    if unsafe { rb_zjit_call_threshold == 1 } {
+        // If --zjit-call-threshold=1, never rewrite ISEQs to profile instructions.
+        unsafe { rb_zjit_profile_threshold = 0; }
+    } else {
+        // Otherwise, profile instructions at least once.
+        let num_profiles = get_option!(num_profiles) as u64;
+        unsafe { rb_zjit_profile_threshold = rb_zjit_call_threshold.saturating_sub(num_profiles).max(1) };
     }
 }
 
@@ -254,12 +254,23 @@ macro_rules! debug {
 }
 pub(crate) use debug;
 
-/// Return Qtrue if --zjit-stats has been enabled
+/// Return Qtrue if --zjit* has been specified. For the `#with_jit` hook,
+/// this becomes Qtrue before ZJIT is actually initialized and enabled.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_option_enabled_p(_ec: EcPtr, _self: VALUE) -> VALUE {
+    // If any --zjit* option is specified, OPTIONS becomes Some.
+    if unsafe { OPTIONS.is_some() } {
+        Qtrue
+    } else {
+        Qfalse
+    }
+}
+
+/// Return Qtrue if --zjit-stats has been specified.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_stats_enabled_p(_ec: EcPtr, _self: VALUE) -> VALUE {
-    // ZJITState is not initialized yet when loading builtins, so this relies
-    // on a separate global variable.
-    if unsafe { zjit_stats_enabled_p } {
+    // Builtin zjit.rb calls this even if ZJIT is disabled, so OPTIONS may not be set.
+    if unsafe { OPTIONS.as_ref() }.map_or(false, |opts| opts.stats) {
         Qtrue
     } else {
         Qfalse

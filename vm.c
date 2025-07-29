@@ -4509,13 +4509,20 @@ Init_vm_objects(void)
     vm->cc_refinement_table = rb_set_init_numtable();
 }
 
+#if USE_ZJIT
+extern VALUE rb_zjit_option_enabled_p(rb_execution_context_t *ec, VALUE self);
+#else
+static VALUE rb_zjit_option_enabled_p(rb_execution_context_t *ec, VALUE self) { return Qfalse; }
+#endif
+
+// Whether JIT is enabled or not, we need to load/undef `#with_jit` for other builtins.
+#include "jit_hook.rbinc"
+#include "jit_undef.rbinc"
+
 // Stub for builtin function when not building YJIT units
 #if !USE_YJIT
 void Init_builtin_yjit(void) {}
 #endif
-
-// Whether YJIT is enabled or not, we load yjit_hook.rb to remove Kernel#with_yjit.
-#include "yjit_hook.rbinc"
 
 // Stub for builtin function when not building ZJIT units
 #if !USE_ZJIT
