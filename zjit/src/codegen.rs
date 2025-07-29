@@ -136,17 +136,21 @@ fn gen_iseq_entry_point_body(cb: &mut CodeBlock, iseq: IseqPtr) -> *const u8 {
 
     // Recursively compile callee ISEQs
     let caller_iseq = iseq;
+    let mut iseqs = vec![(iseq, gc_offsets, start_ptr)];
     while let Some((branch, iseq)) = branch_iseqs.pop() {
         // Disable profiling. This will be the last use of the profiling information for the ISEQ.
         unsafe { rb_zjit_profile_disable(iseq); }
 
         // Compile the ISEQ
-        let Some((callee_ptr, callee_branch_iseqs)) = gen_iseq(cb, iseq) else {
+        let Some((callee_ptr, callee_gc_offsets, callee_branch_iseqs)) = gen_iseq(cb, iseq) else {
             // Failed to compile the callee. Bail out of compiling this graph of ISEQs.
             debug!("Failed to compile iseq: could not compile callee: {} -> {}",
                    iseq_get_location(caller_iseq, 0), iseq_get_location(iseq, 0));
             return std::ptr::null();
         };
+        // TODO(max): Actually append GC offsets here to keep objects alive incase we cause GC
+        // during ZJIT compile
+        iseqs.push((iseq, callee_gc_offsets, callee_ptr));
         let callee_addr = callee_ptr.raw_ptr(cb);
         branch.regenerate(cb, |asm| {
             asm.ccall(callee_addr, vec![]);
@@ -154,10 +158,11 @@ fn gen_iseq_entry_point_body(cb: &mut CodeBlock, iseq: IseqPtr) -> *const u8 {
         branch_iseqs.extend(callee_branch_iseqs);
     }
 
-    // Remember the block address to reuse it later
-    let payload = get_or_create_iseq_payload(iseq);
-    payload.start_ptr = Some(start_ptr);
-    append_gc_offsets(iseq, &gc_offsets);
+    for (iseq, gc_offsets, start_ptr) in iseqs {
+        let payload = get_or_create_iseq_payload(iseq);
+        payload.start_ptr = Some(start_ptr);
+        append_gc_offsets(iseq, &gc_offsets);
+    }
 
     // Return a JIT code address
     entry_ptr.raw_ptr(cb)
@@ -210,11 +215,11 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_pt
 }
 
 /// Compile an ISEQ into machine code
-fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<(CodePtr, Vec<(Rc<Branch>, IseqPtr)>)> {
+fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<(CodePtr, Vec<CodePtr>, Vec<(Rc<Branch>, IseqPtr)>)> {
     // Return an existing pointer if it's already compiled
     let payload = get_or_create_iseq_payload(iseq);
     if let Some(start_ptr) = payload.start_ptr {
-        return Some((start_ptr, vec![]));
+        return Some((start_ptr, vec![], vec![]));
     }
 
     // Convert ISEQ into High-level IR and optimize HIR
@@ -224,14 +229,8 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<(CodePtr, Vec<(Rc<Branc
     };
 
     // Compile the High-level IR
-    let result = gen_function(cb, iseq, &function);
-    if let Some((start_ptr, gc_offsets, jit)) = result {
-        payload.start_ptr = Some(start_ptr);
-        append_gc_offsets(iseq, &gc_offsets);
-        Some((start_ptr, jit.branch_iseqs))
-    } else {
-        None
-    }
+    let (start_ptr, gc_offsets, jit) = gen_function(cb, iseq, &function)?;
+    Some((start_ptr, gc_offsets, jit.branch_iseqs))
 }
 
 /// Compile a function
