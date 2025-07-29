@@ -342,6 +342,14 @@ rb_mmtk_update_global_tables(int table)
     rb_gc_vm_weak_table_foreach(rb_mmtk_update_table_i, NULL, NULL, true, (enum rb_gc_vm_weak_tables)table);
 }
 
+static bool
+rb_mmtk_special_const_p(MMTk_ObjectReference object)
+{
+    VALUE obj = (VALUE)object;
+
+    return RB_SPECIAL_CONST_P(obj);
+}
+
 // Bootup
 MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
@@ -360,6 +368,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_update_global_tables,
     rb_mmtk_global_tables_count,
     rb_mmtk_update_finalizer_table,
+    rb_mmtk_special_const_p,
 };
 
 // Use max 80% of the available memory by default for MMTk
