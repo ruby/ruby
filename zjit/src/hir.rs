@@ -2474,7 +2474,6 @@ pub enum ParseError {
     UnknownParameterType(ParameterType),
     MalformedIseq(u32), // insn_idx into iseq_encoded
     Validation(ValidationError),
-    NotAllowed,
 }
 
 /// Return the number of locals in the current ISEQ (includes parameters)
