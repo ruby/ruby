@@ -121,39 +121,46 @@ fn gen_iseq_entry_point_body(cb: &mut CodeBlock, iseq: IseqPtr) -> *const u8 {
     };
 
     // Compile the High-level IR
-    let (start_ptr, mut branch_iseqs) = match gen_function(cb, iseq, &function) {
-        Some((start_ptr, gc_offsets, jit)) => {
-            // Remember the block address to reuse it later
-            let payload = get_or_create_iseq_payload(iseq);
-            payload.start_ptr = Some(start_ptr);
-            append_gc_offsets(iseq, &gc_offsets);
-
-            // Compile an entry point to the JIT code
-            (gen_entry(cb, iseq, &function, start_ptr), jit.branch_iseqs)
-        },
-        None => (None, vec![]),
+    let Some((start_ptr, gc_offsets, jit)) = gen_function(cb, iseq, &function) else {
+        debug!("Failed to compile iseq: gen_function failed: {}", iseq_get_location(iseq, 0));
+        return std::ptr::null();
     };
 
+    // Compile an entry point to the JIT code
+    let Some(entry_ptr) = gen_entry(cb, iseq, &function, start_ptr) else {
+        debug!("Failed to compile iseq: gen_entry failed: {}", iseq_get_location(iseq, 0));
+        return std::ptr::null();
+    };
+
+    let mut branch_iseqs = jit.branch_iseqs;
+
     // Recursively compile callee ISEQs
+    let caller_iseq = iseq;
     while let Some((branch, iseq)) = branch_iseqs.pop() {
         // Disable profiling. This will be the last use of the profiling information for the ISEQ.
         unsafe { rb_zjit_profile_disable(iseq); }
 
         // Compile the ISEQ
-        if let Some((callee_ptr, callee_branch_iseqs)) = gen_iseq(cb, iseq) {
-            let callee_addr = callee_ptr.raw_ptr(cb);
-            branch.regenerate(cb, |asm| {
-                asm.ccall(callee_addr, vec![]);
-            });
-            branch_iseqs.extend(callee_branch_iseqs);
-        } else {
+        let Some((callee_ptr, callee_branch_iseqs)) = gen_iseq(cb, iseq) else {
             // Failed to compile the callee. Bail out of compiling this graph of ISEQs.
+            debug!("Failed to compile iseq: could not compile callee: {} -> {}",
+                   iseq_get_location(caller_iseq, 0), iseq_get_location(iseq, 0));
             return std::ptr::null();
-        }
+        };
+        let callee_addr = callee_ptr.raw_ptr(cb);
+        branch.regenerate(cb, |asm| {
+            asm.ccall(callee_addr, vec![]);
+        });
+        branch_iseqs.extend(callee_branch_iseqs);
     }
 
-    // Return a JIT code address or a null pointer
-    start_ptr.map(|start_ptr| start_ptr.raw_ptr(cb)).unwrap_or(std::ptr::null())
+    // Remember the block address to reuse it later
+    let payload = get_or_create_iseq_payload(iseq);
+    payload.start_ptr = Some(start_ptr);
+    append_gc_offsets(iseq, &gc_offsets);
+
+    // Return a JIT code address
+    entry_ptr.raw_ptr(cb)
 }
 
 /// Write an entry to the perf map in /tmp
@@ -1177,7 +1184,8 @@ fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
     let mut function = match iseq_to_hir(iseq) {
         Ok(function) => function,
         Err(err) => {
-            debug!("ZJIT: iseq_to_hir: {err:?}");
+            let name = crate::cruby::iseq_get_location(iseq, 0);
+            debug!("ZJIT: iseq_to_hir: {err:?}: {name}");
             return None;
         }
     };
