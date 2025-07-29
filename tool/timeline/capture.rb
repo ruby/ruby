@@ -28,8 +28,10 @@ if !ruby_bin.file?
   raise "Ruby executable '#{ruby_bin}' does not exist"
 end
 
-script = IO.read(Pathname(__dir__) / 'capture.bt')
+script_path = Pathname(__dir__) / 'capture.bt'
+script = IO.read(script_path)
 template = ERB.new(script, trim_mode: '%<>')
+template.location = [script_path.to_s, 1]
 
 if options[:'erb-debug']
   puts template.src
