@@ -222,7 +222,6 @@ pub const imemo_memo: imemo_type = 5;
 pub const imemo_ment: imemo_type = 6;
 pub const imemo_iseq: imemo_type = 7;
 pub const imemo_tmpbuf: imemo_type = 8;
-pub const imemo_ast: imemo_type = 9;
 pub const imemo_callinfo: imemo_type = 10;
 pub const imemo_callcache: imemo_type = 11;
 pub const imemo_constcache: imemo_type = 12;

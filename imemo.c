@@ -16,7 +16,6 @@ rb_imemo_name(enum imemo_type type)
     // put no default case to get a warning if an imemo type is missing
     switch (type) {
 #define IMEMO_NAME(x) case imemo_##x: return #x;
-        IMEMO_NAME(ast);
         IMEMO_NAME(callcache);
         IMEMO_NAME(callinfo);
         IMEMO_NAME(constcache);
@@ -220,10 +219,6 @@ rb_imemo_memsize(VALUE obj)
 {
     size_t size = 0;
     switch (imemo_type(obj)) {
-      case imemo_ast:
-        rb_bug("imemo_ast is obsolete");
-
-        break;
       case imemo_callcache:
         break;
       case imemo_callinfo:
@@ -336,10 +331,6 @@ void
 rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
 {
     switch (imemo_type(obj)) {
-      case imemo_ast:
-        rb_bug("imemo_ast is obsolete");
-
-        break;
       case imemo_callcache: {
         /* cc is callcache.
          *
@@ -600,10 +591,6 @@ void
 rb_imemo_free(VALUE obj)
 {
     switch (imemo_type(obj)) {
-      case imemo_ast:
-        rb_bug("imemo_ast is obsolete");
-
-        break;
       case imemo_callcache:
         RB_DEBUG_COUNTER_INC(obj_imemo_callcache);
 
