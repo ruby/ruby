@@ -15,6 +15,7 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
+#include "zjit.h"
 #include "vm_sync.h"
 #include "vm_insnhelper.h"
 #include "probes.h"
@@ -22,7 +23,6 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
-#include "zjit.h"
 
 // For mmapp(), sysconf()
 #ifndef _WIN32

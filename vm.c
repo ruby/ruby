@@ -35,6 +35,8 @@
 #include "iseq.h"
 #include "symbol.h" // This includes a macro for a more performant rb_id2sym.
 #include "yjit.h"
+#include "insns.inc"
+#include "zjit.h"
 #include "ruby/st.h"
 #include "ruby/vm.h"
 #include "vm_core.h"
@@ -45,8 +47,6 @@
 #include "ractor_core.h"
 #include "vm_sync.h"
 #include "shape.h"
-#include "insns.inc"
-#include "zjit.h"
 
 #include "builtin.h"
 
