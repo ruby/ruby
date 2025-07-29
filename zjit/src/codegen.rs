@@ -120,13 +120,13 @@ fn gen_iseq_entry_point_body(cb: &mut CodeBlock, iseq: IseqPtr) -> *const u8 {
     };
 
     // Compile the High-level IR
-    let Some((inner_ptr, gc_offsets, jit)) = gen_function(cb, iseq, &function) else {
+    let Some((start_ptr, gc_offsets, jit)) = gen_function(cb, iseq, &function) else {
         debug!("Failed to compile iseq: gen_function failed: {}", iseq_get_location(iseq, 0));
         return std::ptr::null();
     };
 
     // Compile an entry point to the JIT code
-    let Some(start_ptr) = gen_entry(cb, iseq, &function, inner_ptr) else {
+    let Some(entry_ptr) = gen_entry(cb, iseq, &function, start_ptr) else {
         debug!("Failed to compile iseq: gen_entry failed: {}", iseq_get_location(iseq, 0));
         return std::ptr::null();
     };
@@ -159,7 +159,7 @@ fn gen_iseq_entry_point_body(cb: &mut CodeBlock, iseq: IseqPtr) -> *const u8 {
     append_gc_offsets(iseq, &gc_offsets);
 
     // Return a JIT code address
-    start_ptr.raw_ptr(cb)
+    entry_ptr.raw_ptr(cb)
 }
 
 /// Write an entry to the perf map in /tmp
