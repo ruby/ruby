@@ -3,7 +3,7 @@
 
 #include "ruby/atomic.h"
 
-#define RUBY_ATOMIC_VALUE_LOAD(x) (VALUE)(RUBY_ATOMIC_PTR_LOAD(x))
+#define RUBY_ATOMIC_VALUE_LOAD(x) rbimpl_atomic_value_load(&(x), RBIMPL_ATOMIC_SEQ_CST)
 
 /* shim macros only */
 #define ATOMIC_ADD(var, val) RUBY_ATOMIC_ADD(var, val)

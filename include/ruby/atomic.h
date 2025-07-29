@@ -1160,6 +1160,15 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline VALUE
+rbimpl_atomic_value_load(volatile VALUE *ptr, int memory_order)
+{
+    return RBIMPL_CAST((VALUE)rbimpl_atomic_ptr_load((void **)ptr, memory_order));
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_NONNULL((1))
+static inline VALUE
 rbimpl_atomic_value_cas(volatile VALUE *ptr, VALUE oldval, VALUE newval, int success_memorder, int failure_memorder)
 {
     RBIMPL_STATIC_ASSERT(sizeof_value, sizeof *ptr == sizeof(size_t));
