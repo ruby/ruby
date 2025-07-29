@@ -2735,7 +2735,7 @@ lazy_with_index(int argc, VALUE *argv, VALUE obj)
 }
 
 static struct MEMO *
-lazy_peek_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_tap_each_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
 
@@ -2744,13 +2744,13 @@ lazy_peek_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_ind
     return result;
 }
 
-static const lazyenum_funcs lazy_peek_funcs = {
-    lazy_peek_proc, 0,
+static const lazyenum_funcs lazy_tap_each_funcs = {
+    lazy_tap_each_proc, 0,
 };
 
 /*
  *  call-seq:
- *     lazy.peek { |item| ... } -> lazy_enumerator
+ *     lazy.tap_each { |item| ... } -> lazy_enumerator
  *
  *  Passes each element through to the block for side effects only,
  *  without modifying the element or affecting the enumeration.
@@ -2760,7 +2760,7 @@ static const lazyenum_funcs lazy_peek_funcs = {
  *  without breaking laziness or misusing +map+.
  *
  *     (1..).lazy
- *           .peek { |x| puts "got #{x}" }
+ *           .tap_each { |x| puts "got #{x}" }
  *           .select(&:even?)
  *           .first(3)
  *     # prints: got 1, got 2, ..., got 6
@@ -2770,14 +2770,14 @@ static const lazyenum_funcs lazy_peek_funcs = {
  */
 
 static VALUE
-lazy_peek(VALUE obj)
+lazy_tap_each(VALUE obj)
 {
     if (!rb_block_given_p())
     {
-        rb_raise(rb_eArgError, "tried to call lazy peek without a block");
+        rb_raise(rb_eArgError, "tried to call lazy tap_each without a block");
     }
 
-    return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_peek_funcs);
+    return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_tap_each_funcs);
 }
 
 #if 0 /* for RDoc */
@@ -4607,7 +4607,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
     rb_define_method(rb_cLazy, "compact", lazy_compact, 0);
     rb_define_method(rb_cLazy, "with_index", lazy_with_index, -1);
-    rb_define_method(rb_cLazy, "peek", lazy_peek, 0);
+    rb_define_method(rb_cLazy, "tap_each", lazy_tap_each, 0);
 
     lazy_use_super_method = rb_hash_new_with_size(18);
     rb_hash_aset(lazy_use_super_method, sym("map"), sym("_enumerable_map"));
