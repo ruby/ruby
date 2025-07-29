@@ -136,6 +136,38 @@ impl ZJITState {
     pub fn get_counters() -> &'static mut Counters {
         &mut ZJITState::get_instance().counters
     }
+
+    /// Was --zjit-save-compiled-iseqs specified?
+    pub fn should_log_compiled_iseqs() -> bool {
+        ZJITState::get_instance().options.log_compiled_iseqs.is_some()
+    }
+
+    /// Log the name of a compiled ISEQ to the file specified in options.log_compiled_iseqs
+    pub fn log_compile(iseq_name: String) {
+        assert!(ZJITState::should_log_compiled_iseqs());
+        let filename = ZJITState::get_instance().options.log_compiled_iseqs.as_ref().unwrap();
+        use std::io::Write;
+        let mut file = match std::fs::OpenOptions::new().create(true).append(true).open(filename) {
+            Ok(f) => f,
+            Err(e) => {
+                eprintln!("ZJIT: Failed to create file '{}': {}", filename, e);
+                return;
+            }
+        };
+        if let Err(e) = writeln!(file, "{}", iseq_name) {
+            eprintln!("ZJIT: Failed to write to file '{}': {}", filename, e);
+        }
+    }
+
+    /// Check if we are allowed to compile a given ISEQ based on --zjit-allowed-iseqs
+    pub fn can_compile_iseq(iseq: cruby::IseqPtr) -> bool {
+        if let Some(ref allowed_iseqs) = ZJITState::get_instance().options.allowed_iseqs {
+            let name = cruby::iseq_get_location(iseq, 0);
+            allowed_iseqs.contains(&name)
+        } else {
+            true // If no restrictions, allow all ISEQs
+        }
+    }
 }
 
 /// Initialize ZJIT, given options allocated by rb_zjit_init_options()
@@ -148,7 +180,6 @@ pub extern "C" fn rb_zjit_init(options: *const u8) {
 
         let options = unsafe { Box::from_raw(options as *mut Options) };
         ZJITState::init(*options);
-        std::mem::drop(options);
 
         rb_bug_panic_hook();
 

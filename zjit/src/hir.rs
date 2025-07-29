@@ -2480,6 +2480,7 @@ pub enum ParseError {
     UnknownParameterType(ParameterType),
     MalformedIseq(u32), // insn_idx into iseq_encoded
     Validation(ValidationError),
+    NotAllowed,
 }
 
 /// Return the number of locals in the current ISEQ (includes parameters)
@@ -2545,6 +2546,9 @@ fn filter_unknown_parameter_type(iseq: *const rb_iseq_t) -> Result<(), ParseErro
 
 /// Compile ISEQ into High-level IR
 pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
+    if !ZJITState::can_compile_iseq(iseq) {
+        return Err(ParseError::NotAllowed);
+    }
     filter_unknown_parameter_type(iseq)?;
     let payload = get_or_create_iseq_payload(iseq);
     let mut profiles = ProfileOracle::new(payload);

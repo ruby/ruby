@@ -1,6 +1,7 @@
 use std::{ffi::{CStr, CString}, ptr::null};
 use std::os::raw::{c_char, c_int, c_uint};
 use crate::cruby::*;
+use std::collections::HashSet;
 
 /// Number of calls to start profiling YARV instructions.
 /// They are profiled `rb_zjit_call_threshold - rb_zjit_profile_threshold` times,
@@ -19,7 +20,7 @@ pub static mut rb_zjit_call_threshold: u64 = 2;
 #[allow(non_upper_case_globals)]
 static mut zjit_stats_enabled_p: bool = false;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct Options {
     /// Number of times YARV instructions should be profiled.
     pub num_profiles: u8,
@@ -44,6 +45,12 @@ pub struct Options {
 
     /// Dump code map to /tmp for performance profilers.
     pub perf: bool,
+
+    /// List of ISEQs that can be compiled, identified by their iseq_get_location()
+    pub allowed_iseqs: Option<HashSet<String>>,
+
+    /// Path to a file where compiled ISEQs will be saved.
+    pub log_compiled_iseqs: Option<String>,
 }
 
 /// Return an Options with default values
@@ -57,6 +64,8 @@ pub fn init_options() -> Options {
         dump_lir: false,
         dump_disasm: false,
         perf: false,
+        allowed_iseqs: None,
+        log_compiled_iseqs: None,
     }
 }
 
@@ -67,6 +76,8 @@ pub const ZJIT_OPTIONS: &'static [(&str, &str)] = &[
     ("--zjit-num-profiles=num",   "Number of profiled calls before JIT (default: 1, max: 255)."),
     ("--zjit-stats",              "Enable collecting ZJIT statistics."),
     ("--zjit-perf",               "Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf."),
+    ("--zjit-log-compiled-iseqs=path",
+                     "Log compiled ISEQs to the file. The file will be truncated."),
 ];
 
 #[derive(Clone, Copy, Debug)]
@@ -106,6 +117,26 @@ pub extern "C" fn rb_zjit_init_options() -> *const u8 {
 pub extern "C" fn rb_zjit_parse_option(options: *const u8, str_ptr: *const c_char) -> bool {
     let options = unsafe { &mut *(options as *mut Options) };
     parse_option(options, str_ptr).is_some()
+}
+
+fn parse_jit_list(path_like: &str) -> HashSet<String> {
+    // Read lines from the file
+    let mut result = HashSet::new();
+    if let Ok(lines) = std::fs::read_to_string(path_like) {
+        for line in lines.lines() {
+            let trimmed = line.trim();
+            if !trimmed.is_empty() {
+                result.insert(trimmed.to_string());
+            }
+        }
+    } else {
+        eprintln!("Failed to read JIT list from '{}'", path_like);
+    }
+    eprintln!("JIT list:");
+    for item in &result {
+        eprintln!("  {}", item);
+    }
+    result
 }
 
 /// Expected to receive what comes after the third dash in "--zjit-*".
@@ -164,6 +195,19 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
         ("dump-disasm", "") => options.dump_disasm = true,
 
         ("perf", "") => options.perf = true,
+
+        ("allowed-iseqs", _) if opt_val != "" => options.allowed_iseqs = Some(parse_jit_list(opt_val)),
+        ("log-compiled-iseqs", _) if opt_val != "" => {
+            // Truncate the file if it exists
+            std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(opt_val)
+                .map_err(|e| eprintln!("Failed to open file '{}': {}", opt_val, e))
+                .ok();
+            options.log_compiled_iseqs = Some(opt_val.into());
+        }
 
         _ => return None, // Option name not recognized
     }
