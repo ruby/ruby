@@ -7,6 +7,7 @@ use crate::backend::current::{Reg, ALLOC_REGS};
 use crate::invariants::{track_bop_assumption, track_cme_assumption, track_stable_constant_names_assumption};
 use crate::gc::{get_or_create_iseq_payload, append_gc_offsets};
 use crate::state::ZJITState;
+use crate::stats::{counter_ptr, Counter};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, SideExitContext, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SP};
 use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SELF_PARAM_IDX};
@@ -354,6 +355,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
         Insn::Defined { op_type, obj, pushval, v } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v))?,
+        &Insn::IncrCounter(counter) => return Some(gen_incr_counter(asm, counter)),
         _ => {
             debug!("ZJIT: gen_function: unexpected insn {insn}");
             return None;
@@ -1070,6 +1072,16 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd,
     asm.cmp(val, Opnd::Value(expected));
     asm.jnz(side_exit(jit, state, GuardBitEquals(expected))?);
     Some(val)
+}
+
+/// Generate code that increments a counter in ZJIT stats
+fn gen_incr_counter(asm: &mut Assembler, counter: Counter) -> () {
+    let ptr = counter_ptr(counter);
+    let ptr_reg = asm.load(Opnd::const_ptr(ptr as *const u8));
+    let counter_opnd = Opnd::mem(64, ptr_reg, 0);
+
+    // Increment and store the updated value
+    asm.incr_counter(counter_opnd, Opnd::UImm(1));
 }
 
 /// Save the incremented PC on the CFP.

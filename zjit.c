@@ -15,6 +15,7 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
+#include "zjit.h"
 #include "vm_sync.h"
 #include "vm_insnhelper.h"
 #include "probes.h"
@@ -22,7 +23,6 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
-#include "zjit.h"
 
 // For mmapp(), sysconf()
 #ifndef _WIN32
@@ -331,9 +331,6 @@ rb_iseq_set_zjit_payload(const rb_iseq_t *iseq, void *payload)
     iseq->body->zjit_payload = payload;
 }
 
-// Primitives used by zjit.rb
-VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
-
 void
 rb_zjit_print_exception(void)
 {
@@ -348,6 +345,11 @@ rb_zjit_shape_obj_too_complex_p(VALUE obj)
 {
     return rb_shape_obj_too_complex_p(obj);
 }
+
+// Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
+VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
+VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self);
+VALUE rb_zjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 
 // Preprocessed zjit.rb generated during build
 #include "zjit.rbinc"

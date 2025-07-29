@@ -832,6 +832,7 @@ unsafe extern "C" {
         elts: *const VALUE,
     ) -> VALUE;
     pub fn rb_vm_top_self() -> VALUE;
+    pub static mut rb_vm_insns_count: u64;
     pub fn rb_method_entry_at(obj: VALUE, id: ID) -> *const rb_method_entry_t;
     pub fn rb_callable_method_entry(klass: VALUE, id: ID) -> *const rb_callable_method_entry_t;
     pub fn rb_callable_method_entry_or_negative(
