@@ -4454,10 +4454,10 @@ rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
         asan_unpoisoning_object(obj) {
             /* Garbage can live on the stack, so do not mark or pin */
             switch (BUILTIN_TYPE(obj)) {
-            case T_ZOMBIE:
-            case T_NONE:
+              case T_ZOMBIE:
+              case T_NONE:
                 break;
-            default:
+              default:
                 gc_mark_and_pin(objspace, obj);
                 break;
             }
