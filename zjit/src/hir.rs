@@ -789,6 +789,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 write!(f, "Throw {state_string}, {val}")
             }
+            Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
             insn => { write!(f, "{insn:?}") }
         }
     }
