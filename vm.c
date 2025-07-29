@@ -607,7 +607,7 @@ rb_serial_t ruby_vm_global_cvar_state = 1;
 
 static const struct rb_callcache vm_empty_cc = {
     .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
-    .klass = Qfalse,
+    .klass = Qundef,
     .cme_  = NULL,
     .call_ = vm_call_general,
     .aux_  = {
@@ -617,7 +617,7 @@ static const struct rb_callcache vm_empty_cc = {
 
 static const struct rb_callcache vm_empty_cc_for_super = {
     .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
-    .klass = Qfalse,
+    .klass = Qundef,
     .cme_  = NULL,
     .call_ = vm_call_super_method,
     .aux_  = {

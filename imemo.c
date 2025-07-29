@@ -273,7 +273,7 @@ rb_imemo_memsize(VALUE obj)
 static bool
 moved_or_living_object_strictly_p(VALUE obj)
 {
-    return obj && (!rb_objspace_garbage_object_p(obj) || BUILTIN_TYPE(obj) == T_MOVED);
+    return !SPECIAL_CONST_P(obj) && (!rb_objspace_garbage_object_p(obj) || BUILTIN_TYPE(obj) == T_MOVED);
 }
 
 static void
@@ -353,25 +353,19 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
          */
         struct rb_callcache *cc = (struct rb_callcache *)obj;
         if (reference_updating) {
-            if (!cc->klass) {
-                // already invalidated
+            if (moved_or_living_object_strictly_p((VALUE)cc->cme_)) {
+                *((VALUE *)&cc->klass) = rb_gc_location(cc->klass);
+                *((struct rb_callable_method_entry_struct **)&cc->cme_) =
+                    (struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cc->cme_);
             }
-            else {
-                if (moved_or_living_object_strictly_p(cc->klass) &&
-                        moved_or_living_object_strictly_p((VALUE)cc->cme_)) {
-                    *((VALUE *)&cc->klass) = rb_gc_location(cc->klass);
-                    *((struct rb_callable_method_entry_struct **)&cc->cme_) =
-                        (struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cc->cme_);
-                }
-                else {
-                    vm_cc_invalidate(cc);
-                }
+            else if (vm_cc_valid(cc)) {
+                vm_cc_invalidate(cc);
             }
         }
         else {
-            if (cc->klass && (vm_cc_super_p(cc) || vm_cc_refinement_p(cc))) {
+            rb_gc_mark_weak((VALUE *)&cc->klass);
+            if ((vm_cc_super_p(cc) || vm_cc_refinement_p(cc))) {
                 rb_gc_mark_movable((VALUE)cc->cme_);
-                rb_gc_mark_movable((VALUE)cc->klass);
             }
         }
 
