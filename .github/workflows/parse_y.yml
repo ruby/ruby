@@ -78,7 +78,9 @@ jobs:
 
       - run: make
 
-      - run: make TESTRUN_SCRIPT='-e "exit !RUBY_DESCRIPTION.include?(%[+PRISM])"' run
+      - run: make TESTRUN_SCRIPT='-renvutil -v -e "exit EnvUtil.current_parser == %[parse.y]"' run
+        env:
+          RUNOPT0: -I$(tooldir)/lib
 
       - name: make ${{ matrix.test_task }}
         run: make -s ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS" SPECOPTS="$SPECOPTS"
