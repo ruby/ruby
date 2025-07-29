@@ -2123,7 +2123,7 @@ impl Function {
         }
 
         if get_option!(dump_hir_graphviz) {
-            println!("Optimized HIR Graphviz:\n{}", FunctionGraphvizPrinter::new(&self));
+            println!("{}", FunctionGraphvizPrinter::new(&self));
         }
     }
 
@@ -2327,8 +2327,8 @@ impl<'a> std::fmt::Display for FunctionGraphvizPrinter<'a> {
         use std::fmt::Write;
         let fun = &self.fun;
         let iseq_name = iseq_get_location(fun.iseq, 0);
-        writeln!(f, "digraph G {{")?;
-        write_encoded!(f, "# {iseq_name}")?;
+        write!(f, "digraph G {{ # ")?;
+        write_encoded!(f, "{iseq_name}")?;
         write!(f, "\n")?;
         writeln!(f, "node [shape=plaintext];")?;
         writeln!(f, "mode=hier; overlap=false; splines=true;")?;
