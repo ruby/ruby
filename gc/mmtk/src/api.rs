@@ -108,8 +108,7 @@ pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
         if !builder.options.threads.set(threads) {
             // MMTk will validate it and reject 0.
             eprintln!(
-                "[FATAL] Failed to set the number of MMTk threads to {}",
-                threads
+                "[FATAL] Failed to set the number of MMTk threads to {threads}"
             );
             std::process::exit(1);
         }
@@ -121,8 +120,7 @@ pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
 
     if heap_min >= heap_max {
         eprintln!(
-            "[FATAL] MMTK_HEAP_MIN({}) >= MMTK_HEAP_MAX({})",
-            heap_min, heap_max
+            "[FATAL] MMTK_HEAP_MIN({heap_min}) >= MMTK_HEAP_MAX({heap_max})"
         );
         std::process::exit(1);
     }

@@ -119,7 +119,7 @@ impl RubyBinding {
     }
 
     pub fn register_wb_unprotected_object(&self, object: ObjectReference) {
-        debug!("Registering WB-unprotected object: {}", object);
+        debug!("Registering WB-unprotected object: {object}");
         let mut objects = self.wb_unprotected_objects.lock().unwrap();
         objects.insert(object);
     }

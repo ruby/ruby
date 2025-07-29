@@ -42,8 +42,7 @@ impl Collection<Ruby> for VMCollection {
                 .spawn(move || {
                     let ordinal = worker.ordinal;
                     debug!(
-                        "Hello! This is MMTk Worker Thread running! ordinal: {}",
-                        ordinal
+                        "Hello! This is MMTk Worker Thread running! ordinal: {ordinal}"
                     );
                     crate::register_gc_thread(thread::current().id());
                     let ptr_worker = &mut *worker as *mut GCWorker<Ruby>;
@@ -56,8 +55,7 @@ impl Collection<Ruby> for VMCollection {
                         worker,
                     );
                     debug!(
-                        "An MMTk Worker Thread is quitting. Good bye! ordinal: {}",
-                        ordinal
+                        "An MMTk Worker Thread is quitting. Good bye! ordinal: {ordinal}"
                     );
                     crate::unregister_gc_thread(thread::current().id());
                 })

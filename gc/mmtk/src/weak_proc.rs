@@ -103,7 +103,7 @@ impl GCWork<Ruby> for ProcessObjFreeCandidates {
 
         let n_cands = obj_free_candidates.len();
 
-        debug!("Total: {} candidates", n_cands);
+        debug!("Total: {n_cands} candidates");
 
         // Process obj_free
         let mut new_candidates = Vec::new();
@@ -113,9 +113,7 @@ impl GCWork<Ruby> for ProcessObjFreeCandidates {
                 // Forward and add back to the candidate list.
                 let new_object = object.forward();
                 trace!(
-                    "Forwarding obj_free candidate: {} -> {}",
-                    object,
-                    new_object
+                    "Forwarding obj_free candidate: {object} -> {new_object}"
                 );
                 new_candidates.push(new_object);
             } else {
@@ -158,11 +156,10 @@ trait GlobalTableProcessingWork {
         let forward_object = |_worker, object: ObjectReference, _pin| {
             debug_assert!(
                 mmtk::memory_manager::is_mmtk_object(object.to_raw_address()).is_some(),
-                "{} is not an MMTk object",
-                object
+                "{object} is not an MMTk object"
             );
             let result = object.forward();
-            trace!("Forwarding reference: {} -> {}", object, result);
+            trace!("Forwarding reference: {object} -> {result}");
             result
         };
 
@@ -217,13 +214,11 @@ impl GCWork<Ruby> for UpdateWbUnprotectedObjectsList {
                 // Forward and add back to the candidate list.
                 let new_object = object.forward();
                 trace!(
-                    "Forwarding WB-unprotected object: {} -> {}",
-                    object,
-                    new_object
+                    "Forwarding WB-unprotected object: {object} -> {new_object}"
                 );
                 objects.insert(new_object);
             } else {
-                trace!("Removing WB-unprotected object from list: {}", object);
+                trace!("Removing WB-unprotected object from list: {object}");
             }
         }
 
