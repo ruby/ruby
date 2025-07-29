@@ -112,9 +112,7 @@ impl GCWork<Ruby> for ProcessObjFreeCandidates {
             if object.is_reachable() {
                 // Forward and add back to the candidate list.
                 let new_object = object.forward();
-                trace!(
-                    "Forwarding obj_free candidate: {object} -> {new_object}"
-                );
+                trace!("Forwarding obj_free candidate: {object} -> {new_object}");
                 new_candidates.push(new_object);
             } else {
                 (upcalls().call_obj_free)(object);
@@ -213,9 +211,7 @@ impl GCWork<Ruby> for UpdateWbUnprotectedObjectsList {
             if object.is_reachable() {
                 // Forward and add back to the candidate list.
                 let new_object = object.forward();
-                trace!(
-                    "Forwarding WB-unprotected object: {object} -> {new_object}"
-                );
+                trace!("Forwarding WB-unprotected object: {object} -> {new_object}");
                 objects.insert(new_object);
             } else {
                 trace!("Removing WB-unprotected object from list: {object}");
