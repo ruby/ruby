@@ -37,7 +37,6 @@ enum imemo_type {
     imemo_ment           =  6,
     imemo_iseq           =  7,
     imemo_tmpbuf         =  8,
-    imemo_ast            =  9, // Obsolete due to the universal parser
     imemo_callinfo       = 10,
     imemo_callcache      = 11,
     imemo_constcache     = 12,
