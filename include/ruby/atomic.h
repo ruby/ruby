@@ -514,7 +514,7 @@ rbimpl_atomic_add(volatile rb_atomic_t *ptr, rb_atomic_t val, int memory_order)
     atomic_add_int(ptr, val);
 
 #elif defined(HAVE_STDATOMIC_H)
-    *(_Atomic volatile rb_atomic_t *)ptr += val;
+    atomic_fetch_add_explicit((_Atomic volatile rb_atomic_t *)ptr, val, memory_order);
 
 #else
 # error Unsupported platform.
@@ -552,7 +552,7 @@ rbimpl_atomic_size_add(volatile size_t *ptr, size_t val, int memory_order)
     rbimpl_atomic_add(tmp, val, memory_order);
 
 #elif defined(HAVE_STDATOMIC_H)
-    *(_Atomic volatile size_t *)ptr += val;
+    atomic_fetch_add_explicit((_Atomic volatile size_t *)ptr, val, memory_order);
 
 #else
 # error Unsupported platform.
@@ -673,7 +673,7 @@ rbimpl_atomic_sub(volatile rb_atomic_t *ptr, rb_atomic_t val, int memory_order)
     atomic_add_int(ptr, neg * val);
 
 #elif defined(HAVE_STDATOMIC_H)
-    *(_Atomic volatile rb_atomic_t *)ptr -= val;
+    atomic_fetch_sub_explicit((_Atomic volatile rb_atomic_t *)ptr, val, memory_order);
 
 #else
 # error Unsupported platform.
@@ -711,7 +711,7 @@ rbimpl_atomic_size_sub(volatile size_t *ptr, size_t val, int memory_order)
     rbimpl_atomic_sub(tmp, val, memory_order);
 
 #elif defined(HAVE_STDATOMIC_H)
-    *(_Atomic volatile size_t *)ptr -= val;
+    atomic_fetch_sub_explicit((_Atomic volatile size_t *)ptr, val, memory_order);
 
 #else
 # error Unsupported platform.
@@ -810,7 +810,7 @@ rbimpl_atomic_or(volatile rb_atomic_t *ptr, rb_atomic_t val, int memory_order)
     atomic_or_uint(ptr, val);
 
 #elif !defined(_WIN32) && defined(HAVE_STDATOMIC_H)
-    *(_Atomic volatile rb_atomic_t *)ptr |= val;
+    atomic_fetch_or_explicit((_Atomic volatile rb_atomic_t *)ptr, val, memory_order);
 
 #else
 # error Unsupported platform.
