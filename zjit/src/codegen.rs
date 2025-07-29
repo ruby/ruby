@@ -120,21 +120,18 @@ fn gen_iseq_entry_point_body(cb: &mut CodeBlock, iseq: IseqPtr) -> *const u8 {
     };
 
     // Compile the High-level IR
-    let (start_ptr, gc_offsets, mut branch_iseqs) = match gen_function(cb, iseq, &function) {
-        Some((start_ptr, gc_offsets, jit)) => {
-            // Compile an entry point to the JIT code
-            if let Some(ptr) = gen_entry(cb, iseq, &function, start_ptr) {
-                (ptr, gc_offsets, jit.branch_iseqs)
-            } else {
-                debug!("Failed to compile iseq: gen_entry failed: {}", iseq_get_location(iseq, 0));
-                return std::ptr::null();
-            }
-        },
-        None => {
-            debug!("Failed to compile iseq: gen_function failed: {}", iseq_get_location(iseq, 0));
-            return std::ptr::null();
-        }
+    let Some((inner_ptr, gc_offsets, jit)) = gen_function(cb, iseq, &function) else {
+        debug!("Failed to compile iseq: gen_function failed: {}", iseq_get_location(iseq, 0));
+        return std::ptr::null();
     };
+
+    // Compile an entry point to the JIT code
+    let Some(start_ptr) = gen_entry(cb, iseq, &function, inner_ptr) else {
+        debug!("Failed to compile iseq: gen_entry failed: {}", iseq_get_location(iseq, 0));
+        return std::ptr::null();
+    };
+
+    let mut branch_iseqs = jit.branch_iseqs;
 
     // Recursively compile callee ISEQs
     let caller_iseq = iseq;
@@ -143,18 +140,17 @@ fn gen_iseq_entry_point_body(cb: &mut CodeBlock, iseq: IseqPtr) -> *const u8 {
         unsafe { rb_zjit_profile_disable(iseq); }
 
         // Compile the ISEQ
-        if let Some((callee_ptr, callee_branch_iseqs)) = gen_iseq(cb, iseq) {
-            let callee_addr = callee_ptr.raw_ptr(cb);
-            branch.regenerate(cb, |asm| {
-                asm.ccall(callee_addr, vec![]);
-            });
-            branch_iseqs.extend(callee_branch_iseqs);
-        } else {
+        let Some((callee_ptr, callee_branch_iseqs)) = gen_iseq(cb, iseq) else {
             // Failed to compile the callee. Bail out of compiling this graph of ISEQs.
             debug!("Failed to compile iseq: could not compile callee: {} -> {}",
                    iseq_get_location(caller_iseq, 0), iseq_get_location(iseq, 0));
             return std::ptr::null();
-        }
+        };
+        let callee_addr = callee_ptr.raw_ptr(cb);
+        branch.regenerate(cb, |asm| {
+            asm.ccall(callee_addr, vec![]);
+        });
+        branch_iseqs.extend(callee_branch_iseqs);
     }
 
     // Remember the block address to reuse it later
