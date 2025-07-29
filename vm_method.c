@@ -409,7 +409,7 @@ invalidate_cc_refinement(st_data_t key, st_data_t data)
 
         VM_ASSERT(vm_cc_refinement_p(cc));
 
-        if (cc->klass) {
+        if (vm_cc_valid(cc)) {
             vm_cc_invalidate(cc);
         }
     }

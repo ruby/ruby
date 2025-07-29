@@ -49,7 +49,7 @@ RB_DEBUG_COUNTER(cc_temp)       //           dummy CC (stack-allocated)
 RB_DEBUG_COUNTER(cc_found_in_ccs)      // count for CC lookup success in CCS
 RB_DEBUG_COUNTER(cc_not_found_in_ccs)  // count for CC lookup success in CCS
 
-RB_DEBUG_COUNTER(cc_ent_invalidate) // count for invalidating cc (cc->klass = 0)
+RB_DEBUG_COUNTER(cc_ent_invalidate) // count for invalidating cc (cc->klass = Qundef)
 RB_DEBUG_COUNTER(cc_cme_invalidate) // count for invalidating CME
 
 RB_DEBUG_COUNTER(cc_invalidate_leaf)          // count for invalidating klass if klass has no-subclasses

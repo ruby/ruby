@@ -325,15 +325,13 @@ cc_is_active(const struct rb_callcache *cc, bool reference_updating)
             cc = (const struct rb_callcache *)rb_gc_location((VALUE)cc);
         }
 
-        if (vm_cc_markable(cc)) {
-            if (cc->klass) { // cc is not invalidated
-                const struct rb_callable_method_entry_struct *cme = vm_cc_cme(cc);
-                if (reference_updating) {
-                    cme = (const struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cme);
-                }
-                if (!METHOD_ENTRY_INVALIDATED(cme)) {
-                    return true;
-                }
+        if (vm_cc_markable(cc) && vm_cc_valid(cc)) {
+            const struct rb_callable_method_entry_struct *cme = vm_cc_cme(cc);
+            if (reference_updating) {
+                cme = (const struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cme);
+            }
+            if (!METHOD_ENTRY_INVALIDATED(cme)) {
+                return true;
             }
         }
     }

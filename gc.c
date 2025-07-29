@@ -1209,6 +1209,7 @@ classext_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
 
     rb_id_table_free(RCLASSEXT_M_TBL(ext));
     rb_cc_tbl_free(RCLASSEXT_CC_TBL(ext), args->klass);
+
     if (!RCLASSEXT_SHARED_CONST_TBL(ext) && (tbl = RCLASSEXT_CONST_TBL(ext)) != NULL) {
         rb_free_const_table(tbl);
     }
@@ -1743,7 +1744,7 @@ rb_objspace_free_objects(void *objspace)
 int
 rb_objspace_garbage_object_p(VALUE obj)
 {
-    return rb_gc_impl_garbage_object_p(rb_gc_get_objspace(), obj);
+    return !SPECIAL_CONST_P(obj) && rb_gc_impl_garbage_object_p(rb_gc_get_objspace(), obj);
 }
 
 bool
@@ -4924,11 +4925,11 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
               case imemo_callcache:
                 {
                     const struct rb_callcache *cc = (const struct rb_callcache *)obj;
-                    VALUE class_path = cc->klass ? rb_class_path_cached(cc->klass) : Qnil;
+                    VALUE class_path = vm_cc_valid(cc) ? rb_class_path_cached(cc->klass) : Qnil;
                     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
 
                     APPEND_F("(klass:%s cme:%s%s (%p) call:%p",
-                             NIL_P(class_path) ? (cc->klass ? "??" : "<NULL>") : RSTRING_PTR(class_path),
+                             NIL_P(class_path) ? (vm_cc_valid(cc) ? "??" : "<NULL>") : RSTRING_PTR(class_path),
                              cme ? rb_id2name(cme->called_id) : "<NULL>",
                              cme ? (METHOD_ENTRY_INVALIDATED(cme) ? " [inv]" : "") : "",
                              (void *)cme,
