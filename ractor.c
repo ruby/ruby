@@ -2267,26 +2267,24 @@ struct cross_ractor_require {
     bool silent;
 };
 
-static void
-cross_ractor_require_mark(void *ptr)
-{
-    struct cross_ractor_require *crr = (struct cross_ractor_require *)ptr;
-    rb_gc_mark(crr->port);
-    rb_gc_mark(crr->result);
-    rb_gc_mark(crr->exception);
-    rb_gc_mark(crr->feature);
-    rb_gc_mark(crr->module);
-}
+RUBY_REFERENCES(cross_ractor_require_refs) = {
+    RUBY_REF_EDGE(struct cross_ractor_require, port),
+    RUBY_REF_EDGE(struct cross_ractor_require, result),
+    RUBY_REF_EDGE(struct cross_ractor_require, exception),
+    RUBY_REF_EDGE(struct cross_ractor_require, feature),
+    RUBY_REF_EDGE(struct cross_ractor_require, module),
+    RUBY_REF_END
+};
 
 static const rb_data_type_t cross_ractor_require_data_type = {
     "ractor/cross_ractor_require",
     {
-        cross_ractor_require_mark,
+        RUBY_REFS_LIST_PTR(cross_ractor_require_refs),
         RUBY_DEFAULT_FREE,
         NULL, // memsize
         NULL, // compact
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_DECL_MARKING
 };
 
 static VALUE
