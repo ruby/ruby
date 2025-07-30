@@ -16,7 +16,6 @@ pub struct ShiftedImmediate {
 impl TryFrom<u64> for ShiftedImmediate {
     type Error = ();
 
-    /// Attempt to convert a u64 into a BitmaskImm.
     fn try_from(value: u64) -> Result<Self, Self::Error> {
         let current = value;
         if current < 2_u64.pow(12) {
