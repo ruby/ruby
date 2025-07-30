@@ -47,7 +47,7 @@ struct rb_id_table {
 
 #if SIZEOF_VALUE == 8
 #define ITEM_GET_KEY(tbl, i) ((tbl)->items[i].key)
-#define ITEM_KEY_ISSET(tbl, i) ((tbl)->items[i].key)
+#define ITEM_KEY_ISSET(tbl, i) ((tbl)->items && (tbl)->items[i].key)
 #define ITEM_COLLIDED(tbl, i) ((tbl)->items[i].collision)
 #define ITEM_SET_COLLIDED(tbl, i) ((tbl)->items[i].collision = 1)
 static inline void
@@ -298,6 +298,10 @@ rb_id_table_foreach_values(struct rb_id_table *tbl, rb_id_table_foreach_values_f
 {
     int i, capa = tbl->capa;
 
+    if (!tbl->items) {
+        return;
+    }
+
     for (i=0; i<capa; i++) {
         if (ITEM_KEY_ISSET(tbl, i)) {
             enum rb_id_table_iterator_result ret = (*func)(tbl->items[i].val, data);
@@ -345,7 +349,7 @@ managed_id_table_memsize(const void *data)
     return rb_id_table_memsize(tbl) - sizeof(struct rb_id_table);
 }
 
-static const rb_data_type_t managed_id_table_type = {
+const rb_data_type_t rb_managed_id_table_type = {
     .wrap_struct_name = "VM/managed_id_table",
     .function = {
         .dmark = NULL, // Nothing to mark
@@ -359,18 +363,24 @@ static inline struct rb_id_table *
 managed_id_table_ptr(VALUE obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_DATA));
-    RUBY_ASSERT(rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), &managed_id_table_type));
+    RUBY_ASSERT(rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), &rb_managed_id_table_type));
 
     return RTYPEDDATA_GET_DATA(obj);
 }
 
 VALUE
-rb_managed_id_table_new(size_t capa)
+rb_managed_id_table_create(const rb_data_type_t *type, size_t capa)
 {
     struct rb_id_table *tbl;
-    VALUE obj = TypedData_Make_Struct(0, struct rb_id_table, &managed_id_table_type, tbl);
+    VALUE obj = TypedData_Make_Struct(0, struct rb_id_table, type, tbl);
     rb_id_table_init(tbl, capa);
     return obj;
+}
+
+VALUE
+rb_managed_id_table_new(size_t capa)
+{
+    return rb_managed_id_table_create(&rb_managed_id_table_type, capa);
 }
 
 static enum rb_id_table_iterator_result
@@ -385,7 +395,7 @@ VALUE
 rb_managed_id_table_dup(VALUE old_table)
 {
     struct rb_id_table *new_tbl;
-    VALUE obj = TypedData_Make_Struct(0, struct rb_id_table, &managed_id_table_type, new_tbl);
+    VALUE obj = TypedData_Make_Struct(0, struct rb_id_table, &rb_managed_id_table_type, new_tbl);
     struct rb_id_table *old_tbl = managed_id_table_ptr(old_table);
     rb_id_table_init(new_tbl, old_tbl->num + 1);
     rb_id_table_foreach(old_tbl, managed_id_table_dup_i, new_tbl);
@@ -414,4 +424,16 @@ void
 rb_managed_id_table_foreach(VALUE table, rb_id_table_foreach_func_t *func, void *data)
 {
     rb_id_table_foreach(managed_id_table_ptr(table), func, data);
+}
+
+void
+rb_managed_id_table_foreach_values(VALUE table, rb_id_table_foreach_values_func_t *func, void *data)
+{
+    rb_id_table_foreach_values(managed_id_table_ptr(table), func, data);
+}
+
+int
+rb_managed_id_table_delete(VALUE table, ID id)
+{
+    return rb_id_table_delete(managed_id_table_ptr(table), id);
 }

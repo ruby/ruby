@@ -148,7 +148,6 @@ static inline void MEMO_V2_SET(struct MEMO *m, VALUE v);
 
 size_t rb_imemo_memsize(VALUE obj);
 void rb_imemo_mark_and_move(VALUE obj, bool reference_updating);
-void rb_cc_tbl_free(struct rb_id_table *cc_tbl, VALUE klass);
 void rb_imemo_free(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
