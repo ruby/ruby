@@ -353,11 +353,6 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
         return true;
 
       case T_SYMBOL:
-        if (RSYMBOL(obj)->fstr &&
-                (BUILTIN_TYPE(RSYMBOL(obj)->fstr) == T_NONE ||
-                    BUILTIN_TYPE(RSYMBOL(obj)->fstr) == T_ZOMBIE)) {
-            RSYMBOL(obj)->fstr = 0;
-        }
         return true;
 
       case T_NONE:
