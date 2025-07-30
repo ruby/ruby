@@ -181,9 +181,13 @@ module Prism
       actual_ast = Prism::Translation::Parser34.new.tokenize(buffer)[0]
 
       it_block_parameter_sexp = parse_sexp {
+        s(:begin,
         s(:itblock,
           s(:send, nil, :x), :it,
-          s(:lvar, :it))
+          s(:lvar, :it)),
+        s(:itblock,
+          s(:lambda), :it,
+          s(:lvar, :it)))
       }
 
       assert_equal(it_block_parameter_sexp, actual_ast.to_sexp)

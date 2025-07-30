@@ -1151,7 +1151,7 @@ module Prism
         def visit_lambda_node(node)
           parameters =
             case node.parameters
-            when nil, NumberedParametersNode
+            when nil, ItParametersNode, NumberedParametersNode
               s(node, :args)
             else
               visit(node.parameters)
