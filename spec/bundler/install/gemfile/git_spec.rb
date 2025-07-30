@@ -2,7 +2,7 @@
 
 RSpec.describe "bundle install with git sources" do
   describe "when floating on main" do
-    before :each do
+    let(:install_base_gemfile) do
       build_git "foo" do |s|
         s.executables = "foobar"
       end
@@ -16,6 +16,7 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "fetches gems" do
+      install_base_gemfile
       expect(the_bundle).to include_gems("foo 1.0")
 
       run <<-RUBY
@@ -27,16 +28,19 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "caches the git repo" do
+      install_base_gemfile
       expect(Dir["#{default_bundle_path}/cache/bundler/git/foo-1.0-*"]).to have_attributes size: 1
     end
 
     it "does not write to cache on bundler/setup" do
+      install_base_gemfile
       FileUtils.rm_r(default_cache_path)
       ruby "require 'bundler/setup'"
       expect(default_cache_path).not_to exist
     end
 
     it "caches the git repo globally and properly uses the cached repo on the next invocation" do
+      install_base_gemfile
       pristine_system_gems
       bundle "config set global_gem_cache true"
       bundle :install
@@ -48,6 +52,7 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "caches the evaluated gemspec" do
+      install_base_gemfile
       git = update_git "foo" do |s|
         s.executables = ["foobar"] # we added this the first time, so keep it now
         s.files = ["bin/foobar"] # updating git nukes the files list
@@ -66,6 +71,7 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "does not update the git source implicitly" do
+      install_base_gemfile
       update_git "foo"
 
       install_gemfile bundled_app2("Gemfile"), <<-G, dir: bundled_app2
@@ -84,6 +90,7 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "sets up git gem executables on the path" do
+      install_base_gemfile
       bundle "exec foobar"
       expect(out).to eq("1.0")
     end
@@ -136,7 +143,7 @@ RSpec.describe "bundle install with git sources" do
 
     it "still works after moving the application directory" do
       bundle "config set --local path vendor/bundle"
-      bundle "install"
+      install_base_gemfile
 
       FileUtils.mv bundled_app, tmp("bundled_app.bck")
 
@@ -145,7 +152,7 @@ RSpec.describe "bundle install with git sources" do
 
     it "can still install after moving the application directory" do
       bundle "config set --local path vendor/bundle"
-      bundle "install"
+      install_base_gemfile
 
       FileUtils.mv bundled_app, tmp("bundled_app.bck")
 
