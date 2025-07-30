@@ -734,18 +734,18 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::Defined { op_type, v, .. } => {
                 // op_type (enum defined_type) printing logic from iseq.c.
                 // Not sure why rb_iseq_defined_string() isn't exhaustive.
-                use std::borrow::Cow;
+                write!(f, "Defined ")?;
                 let op_type = *op_type as u32;
-                let op_type = if op_type == DEFINED_FUNC {
-                    Cow::Borrowed("func")
+                if op_type == DEFINED_FUNC {
+                    write!(f, "func")?;
                 } else if op_type == DEFINED_REF {
-                    Cow::Borrowed("ref")
+                    write!(f, "ref")?;
                 } else if op_type == DEFINED_CONST_FROM {
-                    Cow::Borrowed("constant-from")
+                    write!(f, "constant-from")?;
                 } else {
-                    String::from_utf8_lossy(unsafe { rb_iseq_defined_string(op_type).as_rstring_byte_slice().unwrap() })
+                    write!(f, "{}", String::from_utf8_lossy(unsafe { rb_iseq_defined_string(op_type).as_rstring_byte_slice().unwrap() }))?;
                 };
-                write!(f, "Defined {op_type}, {v}")
+                write!(f, ", {v}")
             }
             Insn::DefinedIvar { self_val, id, .. } => write!(f, "DefinedIvar {self_val}, :{}", id.contents_lossy().into_owned()),
             Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy().into_owned()),
