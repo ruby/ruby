@@ -4242,17 +4242,7 @@ rb_str_equal(VALUE str1, VALUE str2)
  * call-seq:
  *   eql?(object) -> true or false
  *
- *  Returns +true+ if +object+ has the same length and content;
- *  as +self+; +false+ otherwise:
- *
- *    s = 'foo'
- *    s.eql?('foo') # => true
- *    s.eql?('food') # => false
- *    s.eql?('FOO') # => false
- *
- *  Returns +false+ if the two strings' encodings are not compatible:
- *
- *    "\u{e4 f6 fc}".encode(Encoding::ISO_8859_1).eql?("\u{c4 d6 dc}") # => false
+ * :include: doc/string/eql_p.rdoc
  *
  */
 
