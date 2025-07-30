@@ -4959,14 +4959,14 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
   }
 
   p = s;
-  if (reg->dmin > 0) {
+  if (reg->dmin != 0) {
+    if ((OnigDistance)(end - p) <= reg->dmin) return 0; /* fail */
     if (ONIGENC_IS_SINGLEBYTE(reg->enc)) {
       p += reg->dmin;
     }
     else {
       UChar *q = p + reg->dmin;
 
-      if (q >= end) return 0; /* fail */
       while (p < q) p += enclen(reg->enc, p, end);
     }
   }
@@ -5003,7 +5003,7 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
   }
 
   if (p && p < range) {
-    if (p - reg->dmin < s) {
+    if ((OnigDistance)(p - s) < reg->dmin) {
     retry_gate:
       pprev = p;
       p += enclen(reg->enc, p, end);
@@ -5047,10 +5047,11 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
 	  *low_prev = onigenc_get_prev_char_head(reg->enc,
 						 (pprev ? pprev : str), p, end);
       }
+      *high = p;
     }
     else {
       if (reg->dmax != ONIG_INFINITE_DISTANCE) {
-	if (p < str + reg->dmax) {
+	if ((OnigDistance)(p - str) < reg->dmax) {
 	  *low = (UChar* )str;
 	  if (low_prev)
 	    *low_prev = onigenc_get_prev_char_head(reg->enc, str, *low, end);
@@ -5071,9 +5072,12 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
 	  }
 	}
       }
+      /* no needs to adjust *high, *high is used as range check only */
+      if ((OnigDistance)(p - str) < reg->dmin)
+        *high = (UChar* )str;
+      else
+        *high = p - reg->dmin;
     }
-    /* no needs to adjust *high, *high is used as range check only */
-    *high = p - reg->dmin;
 
 #ifdef ONIG_DEBUG_SEARCH
     fprintf(stderr,
@@ -5100,7 +5104,6 @@ backward_search_range(regex_t* reg, const UChar* str, const UChar* end,
     return 0;
   }
 
-  range += reg->dmin;
   p = s;
 
  retry:
@@ -5178,10 +5181,22 @@ backward_search_range(regex_t* reg, const UChar* str, const UChar* end,
       }
     }
 
-    /* no needs to adjust *high, *high is used as range check only */
     if (reg->dmax != ONIG_INFINITE_DISTANCE) {
-      *low  = p - reg->dmax;
-      *high = p - reg->dmin;
+      if ((OnigDistance)(p - str) < reg->dmax)
+	*low = (UChar* )str;
+      else
+	*low = p - reg->dmax;
+
+      if (reg->dmin != 0) {
+	if ((OnigDistance)(p - str) < reg->dmin)
+	  *high = (UChar* )str;
+	else
+	  *high = p - reg->dmin;
+      }
+      else {
+	*high = p;
+      }
+
       *high = onigenc_get_right_adjust_char_head(reg->enc, adjrange, *high, end);
     }
 
@@ -5340,17 +5355,20 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
       min_semi_end = max_semi_end = (UChar* )end;
 
     end_buf:
-      if ((OnigDistance )(max_semi_end - str) < reg->anchor_dmin)
+      if ((OnigDistance)(max_semi_end - str) < reg->anchor_dmin)
 	goto mismatch_no_msa;
 
       if (range > start) {
-	if ((OnigDistance )(min_semi_end - start) > reg->anchor_dmax) {
+	if ((OnigDistance)(min_semi_end - start) > reg->anchor_dmax) {
 	  start = min_semi_end - reg->anchor_dmax;
 	  if (start < end)
 	    start = onigenc_get_right_adjust_char_head(reg->enc, str, start, end);
 	}
-	if ((OnigDistance )(max_semi_end - (range - 1)) < reg->anchor_dmin) {
-	  range = max_semi_end - reg->anchor_dmin + 1;
+	if ((OnigDistance)(max_semi_end - (range - 1)) < reg->anchor_dmin) {
+	  if ((OnigDistance)(max_semi_end - str + 1) < reg->anchor_dmin)
+	    goto mismatch_no_msa;
+	  else
+	    range = max_semi_end - reg->anchor_dmin + 1;
 	}
 
 	if (start > range) goto mismatch_no_msa;
@@ -5358,12 +5376,16 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
 	   Backward search is used. */
       }
       else {
-	if ((OnigDistance )(min_semi_end - range) > reg->anchor_dmax) {
+	if ((OnigDistance)(min_semi_end - range) > reg->anchor_dmax) {
 	  range = min_semi_end - reg->anchor_dmax;
 	}
-	if ((OnigDistance )(max_semi_end - start) < reg->anchor_dmin) {
-	  start = max_semi_end - reg->anchor_dmin;
-	  start = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc, str, start, end);
+	if ((OnigDistance)(max_semi_end - start) < reg->anchor_dmin) {
+	  if ((OnigDistance)(max_semi_end - str) < reg->anchor_dmin)
+	    goto mismatch_no_msa;
+	  else {
+	    start = max_semi_end - reg->anchor_dmin;
+	    start = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc, str, start, end);
+	  }
 	}
 	if (range > start) goto mismatch_no_msa;
       }
@@ -5442,15 +5464,19 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
     if (reg->optimize != ONIG_OPTIMIZE_NONE) {
       UChar *sch_range, *low, *high, *low_prev;
 
-      sch_range = (UChar* )range;
       if (reg->dmax != 0) {
 	if (reg->dmax == ONIG_INFINITE_DISTANCE)
 	  sch_range = (UChar* )end;
 	else {
-	  sch_range += reg->dmax;
-	  if (sch_range > end) sch_range = (UChar* )end;
+	  if ((OnigDistance)(end - range) < reg->dmax)
+	    sch_range = (UChar* )end;
+	  else {
+	    sch_range = (UChar* )range + reg->dmax;
+	  }
 	}
       }
+      else
+	sch_range = (UChar* )range;
 
       if ((end - start) < reg->threshold_len)
 	goto mismatch;
@@ -5507,18 +5533,27 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
   else {  /* backward search */
     if (reg->optimize != ONIG_OPTIMIZE_NONE) {
       UChar *low, *high, *adjrange, *sch_start;
+      const UChar *min_range;
 
       if (range < end)
 	adjrange = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc, str, range, end);
       else
 	adjrange = (UChar* )end;
 
+      if ((OnigDistance)(end - range) > reg->dmin)
+	min_range = range + reg->dmin;
+      else
+	min_range = end;
+
       if (reg->dmax != ONIG_INFINITE_DISTANCE &&
-	  (end - range) >= reg->threshold_len) {
+	  end - range >= reg->threshold_len) {
 	do {
-	  sch_start = s + reg->dmax;
-	  if (sch_start > end) sch_start = (UChar* )end;
-	  if (backward_search_range(reg, str, end, sch_start, range, adjrange,
+	  if ((OnigDistance)(end - s) > reg->dmax)
+	    sch_start = s + reg->dmax;
+	  else
+	    sch_start = (UChar* )end;
+
+	  if (backward_search_range(reg, str, end, sch_start, min_range, adjrange,
 				    &low, &high) <= 0)
 	    goto mismatch;
 
@@ -5534,21 +5569,24 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
 	goto mismatch;
       }
       else { /* check only. */
-	if ((end - range) < reg->threshold_len) goto mismatch;
+	if (end - range < reg->threshold_len) goto mismatch;
 
-	sch_start = s;
 	if (reg->dmax != 0) {
 	  if (reg->dmax == ONIG_INFINITE_DISTANCE)
 	    sch_start = (UChar* )end;
 	  else {
-	    sch_start += reg->dmax;
-	    if (sch_start > end) sch_start = (UChar* )end;
-	    else
+	    if ((OnigDistance)(end - s) > reg->dmax) {
+	      sch_start = s + reg->dmax;
 	      sch_start = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc,
 						    start, sch_start, end);
+	    } else
+	      sch_start = (UChar* )end;
 	  }
 	}
-	if (backward_search_range(reg, str, end, sch_start, range, adjrange,
+	else
+	  sch_start = (UChar* )s;
+
+	if (backward_search_range(reg, str, end, sch_start, min_range, adjrange,
 				  &low, &high) <= 0) goto mismatch;
       }
     }
