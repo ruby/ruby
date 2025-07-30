@@ -30,6 +30,8 @@ jobs:
         os:
           - ubuntu-24.04
           - ubuntu-24.04-arm
+          - ubuntu-22.04-ppc64le
+          - ubuntu-22.04-s390x
           - ubuntu-24.04-ppc64le
           - ubuntu-24.04-s390x
         # The ppc64le/s390x runners work only in the registered repositories.
@@ -50,6 +52,10 @@ jobs:
             timeout: 50
           - test_task: test-bundled-gems
         exclude:
+          - os: ubuntu-22.04-ppc64le
+            upstream: false
+          - os: ubuntu-22.04-s390x
+            upstream: false
           - os: ubuntu-24.04-ppc64le
             upstream: false
           - os: ubuntu-24.04-s390x
