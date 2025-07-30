@@ -1638,7 +1638,7 @@ RSpec.describe "the lockfile format" do
     G
 
     expect(err).to eq <<~L.strip
-      Your lockfile is missing a checksums entry for \"myrack_middleware\", but can't be updated because frozen mode is set
+      Your lockfile is missing a CHECKSUMS entry for \"myrack_middleware\", but can't be updated because frozen mode is set
 
       Run `bundle install` elsewhere and add the updated Gemfile.lock to version control.
     L

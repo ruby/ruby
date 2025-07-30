@@ -1852,7 +1852,7 @@ RSpec.describe "bundle update --bundler" do
     system_gems "bundler-9.9.9", path: local_gem_path
 
     bundle "update --bundler=9.9.9", env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
-    expect(err).to include("An update to the version of bundler itself was requested, but the lockfile can't be updated because frozen mode is set")
+    expect(err).to include("An update to the version of Bundler itself was requested, but the lockfile can't be updated because frozen mode is set")
   end
 end
 

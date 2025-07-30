@@ -531,7 +531,7 @@ module Bundler
 
       return unless added.any? || deleted.any? || changed.any? || resolve_needed?
 
-      msg = String.new("#{change_reason.capitalize.strip}, but ")
+      msg = String.new("#{change_reason[0].upcase}#{change_reason[1..-1].strip}, but ")
       msg << "the lockfile " unless msg.start_with?("Your lockfile")
       msg << "can't be updated because #{update_refused_reason}"
       msg << "\n\nYou have added to the Gemfile:\n" << added.join("\n") if added.any?
