@@ -489,6 +489,42 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_array_splat_custom_to_a
+    assert_compiles '[1, 2, 3]', %q{
+      class Foo
+        def to_a
+          [1, 2, 3]
+        end
+      end
+      def bar(*a) = a
+      def test = bar(*Foo.new)
+      test
+    }, insns: [:splatarray]
+  end
+
+  def test_array_splat_nil
+    assert_compiles '1', %q{
+      def foo = 1
+      def test = foo(*nil)
+      test
+    }, insns: [:splatarray]
+  end
+
+  def test_array_splat
+    assert_compiles '"foo"', %q{
+      def foo(b) = b
+      def test(a) = foo(*a)
+      test("foo")
+    }, insns: [:splatarray]
+  end
+
+  def test_array_concat_implicit
+    assert_compiles '[1, 2, 3]', %q{
+      def test(a) = [1, *a]
+      test([2, 3])
+    }, insns: [:concattoarray]
+  end
+
   def test_new_range_inclusive
     assert_compiles '1..5', %q{
       def test(a, b) = a..b

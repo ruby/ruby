@@ -367,7 +367,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
         Insn::Defined { op_type, obj, pushval, v } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v))?,
         &Insn::IncrCounter(counter) => return Some(gen_incr_counter(asm, counter)),
-        Insn::ArrayExtend { .. }
+        Insn::ToArray { val, state } => gen_to_array(jit, asm, opnd!(val), &function.frame_state(*state))?,
+        Insn::ArrayExtend { left, right, state } => return gen_array_extend(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state)),
         | Insn::ArrayMax { .. }
         | Insn::ArrayPush { .. }
         | Insn::DefinedIvar { .. }
@@ -379,7 +380,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         | Insn::Send { .. }
         | Insn::StringIntern { .. }
         | Insn::Throw { .. }
-        | Insn::ToArray { .. }
         | Insn::ToNewArray { .. }
         | Insn::Const { .. }
         => {
@@ -768,12 +768,8 @@ fn gen_send_without_block(
     self_val: Opnd,
     args: Vec<Opnd>,
 ) -> Option<lir::Opnd> {
-    // Spill locals onto the stack.
-    // TODO: Don't spill locals eagerly; lazily reify frames
-    asm_comment!(asm, "spill locals");
-    for (idx, &insn_id) in state.locals().enumerate() {
-        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id)?);
-    }
+    spill_locals(jit, asm, state);
+
     // Spill the receiver and the arguments onto the stack.
     // They need to be on the interpreter stack to let the interpreter access them.
     // TODO: Avoid spilling operands that have been spilled before.
@@ -819,13 +815,8 @@ fn gen_send_without_block_direct(
 
     // Spill the virtual stack and the locals of the caller onto the stack
     // TODO: Lazily materialize caller frames on side exits or when needed
-    asm_comment!(asm, "spill locals and stack");
-    for (idx, &insn_id) in state.locals().enumerate() {
-        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id)?);
-    }
-    for (idx, &insn_id) in state.stack().enumerate() {
-        asm.mov(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), jit.get_opnd(insn_id)?);
-    }
+    spill_locals(jit, asm, state);
+    spill_stack(jit, asm, state);
 
     // Set up the new frame
     // TODO: Lazily materialize caller frames on side exits or when needed
@@ -1040,6 +1031,38 @@ fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, str: lir::Opnd, state: &
     gen_save_pc(asm, state);
 
     Some(asm_ccall!(asm, rb_obj_as_string_result, str, val))
+}
+
+fn gen_to_array(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
+    // Save PC
+    gen_save_pc(asm, state);
+
+    // Save SP, dump locals and stack as rb_Array can call user-defined `to_a` method
+    gen_save_sp(asm, state.stack().len());
+    spill_locals(jit, asm, state);
+    spill_stack(jit, asm, state);
+
+    // ToArray is used in both concattoarray and splatarray instructions
+    // It needs to satisfy the following conditions:
+    // - Check if the value is already an array. If it is, return it
+    // - Check if the value can be converted into an array. If it is, return it
+    // - Return an array with just the value in it
+    //
+    // rb_Array satisfies the above conditions, so we can use it here
+    Some(asm_ccall!(asm, rb_Array, val))
+}
+
+fn gen_array_extend(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> Option<()> {
+    // Save PC
+    gen_save_pc(asm, state);
+
+    // Save SP, dump locals and stack as rb_ary_concat calls `rb_to_array_type`, which can call user-defined `to_ary` method
+    gen_save_sp(asm, state.stack().len());
+    spill_locals(jit, asm, state);
+    spill_stack(jit, asm, state);
+
+    asm_ccall!(asm, rb_ary_concat, left, right);
+    Some(())
 }
 
 /// Evaluate if a value is truthy
@@ -1261,6 +1284,28 @@ fn max_num_params(function: &Function) -> usize {
         let block = function.block(block_id);
         block.params().len()
     }).max().unwrap_or(0)
+}
+
+/// Spill locals onto the stack.
+/// TODO: Don't spill locals eagerly; lazily reify frames
+fn spill_locals(jit: &mut JITState, asm: &mut Assembler, state: &FrameState) -> Option<()> {
+    asm_comment!(asm, "spill locals");
+    for (idx, &insn_id) in state.locals().enumerate() {
+        let local_mem = Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32);
+        asm.mov(local_mem, jit.get_opnd(insn_id)?);
+    }
+    Some(())
+}
+
+/// Spill stack onto the stack.
+/// TODO: Don't spill stack eagerly; lazily reify frames
+fn spill_stack(jit: &mut JITState, asm: &mut Assembler, state: &FrameState) -> Option<()> {
+    asm_comment!(asm, "spill stack");
+    for (idx, &insn_id) in state.stack().enumerate() {
+        let stack_mem = Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32);
+        asm.mov(stack_mem, jit.get_opnd(insn_id)?);
+    }
+    Some(())
 }
 
 #[cfg(target_arch = "x86_64")]

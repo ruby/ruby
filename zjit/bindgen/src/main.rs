@@ -118,6 +118,7 @@ fn main() {
         .allowlist_function("rb_obj_is_kind_of")
         .allowlist_function("rb_obj_frozen_p")
         .allowlist_function("rb_class_inherited_p")
+        .allowlist_function("rb_Array")
 
         // From ruby/internal/encoding/encoding.h
         .allowlist_type("ruby_encoding_consts")
@@ -149,6 +150,7 @@ fn main() {
         .allowlist_function("rb_ary_dup")
         .allowlist_function("rb_ary_push")
         .allowlist_function("rb_ary_unshift_m")
+        .allowlist_function("rb_ary_concat")
 
         // From internal/array.h
         .allowlist_function("rb_ec_ary_new_from_values")
