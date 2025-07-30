@@ -2987,6 +2987,14 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.replace({bat: 3, bam: 4}) # => {bat: 3, bam: 4}
  *
+ *  Also replaces the default value or proc of +self+ with the default value
+ *  or proc of +other_hash+.
+ *
+ *    h = {}
+ *    other = Hash.new(:ok)
+ *    h.replace(other)
+ *    h.default # => :ok
+ *
  *  Related: see {Methods for Assigning}[rdoc-ref:Hash@Methods+for+Assigning].
  */
 
