@@ -1,0 +1,26 @@
+Returns the byte at zero-based +index+ as an integer:
+
+  s = 'foo'
+  s.getbyte(0)    # => 102
+  s.getbyte(1)    # => 111
+  s.getbyte(2)    # => 111
+
+Counts backward from the end if +index+ is negative:
+
+  s.getbyte(-3) # => 102
+
+Returns +nil+ if +index+ is out of range:
+
+  s.getbyte(3)  # => nil
+  s.getbyte(-4) # => nil
+
+More examples:
+
+  s = 'тест'
+  s.bytes      # => [209, 130, 208, 181, 209, 129, 209, 130]
+  s.getbyte(2) # => 208
+  s = 'こんにちは'
+  s.bytes      # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
+  s.getbyte(2) # => 147
+
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
