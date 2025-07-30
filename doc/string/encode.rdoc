@@ -5,7 +5,6 @@ By default, raises an exception if +self+
 contains an invalid byte or a character not defined in +dst_encoding+;
 that behavior may be modified by encoding options; see below.
 
-
 With no arguments:
 
 - Uses the same encoding if <tt>Encoding.default_internal</tt> is +nil+
