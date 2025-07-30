@@ -2284,58 +2284,67 @@ static const rb_data_type_t cross_ractor_require_data_type = {
         NULL, // memsize
         NULL, // compact
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_DECL_MARKING
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING
 };
 
 static VALUE
-require_body(VALUE data)
+require_body(VALUE crr_obj)
 {
-    struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
+    struct cross_ractor_require *crr;
+    TypedData_Get_Struct(crr_obj, struct cross_ractor_require, &cross_ractor_require_data_type, crr);
 
     ID require;
     CONST_ID(require, "require");
 
     if (crr->silent) {
         int rb_require_internal_silent(VALUE fname);
-        crr->result = INT2NUM(rb_require_internal_silent(crr->feature));
+
+        RB_OBJ_WRITE(crr_obj, &crr->result, INT2NUM(rb_require_internal_silent(crr->feature)));
     }
     else {
-        crr->result = rb_funcallv(Qnil, require, 1, &crr->feature);
+        RB_OBJ_WRITE(crr_obj, &crr->result, rb_funcallv(Qnil, require, 1, &crr->feature));
     }
 
     return Qnil;
 }
 
 static VALUE
-require_rescue(VALUE data, VALUE errinfo)
+require_rescue(VALUE crr_obj, VALUE errinfo)
 {
-    struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
-    crr->exception = errinfo;
+    struct cross_ractor_require *crr;
+    TypedData_Get_Struct(crr_obj, struct cross_ractor_require, &cross_ractor_require_data_type, crr);
+
+    RB_OBJ_WRITE(crr_obj, &crr->exception, errinfo);
+
     return Qundef;
 }
 
 static VALUE
-require_result_copy_body(VALUE data)
+require_result_copy_body(VALUE crr_obj)
 {
-    struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
+    struct cross_ractor_require *crr;
+    TypedData_Get_Struct(crr_obj, struct cross_ractor_require, &cross_ractor_require_data_type, crr);
 
     if (crr->exception != Qundef) {
         VM_ASSERT(crr->result == Qundef);
-        crr->exception = ractor_copy(crr->exception);
+        RB_OBJ_WRITE(crr_obj, &crr->exception, ractor_copy(crr->exception));
     }
     else{
         VM_ASSERT(crr->result != Qundef);
-        crr->result = ractor_copy(crr->result);
+        RB_OBJ_WRITE(crr_obj, &crr->result, ractor_copy(crr->result));
     }
 
     return Qnil;
 }
 
 static VALUE
-require_result_copy_resuce(VALUE data, VALUE errinfo)
+require_result_copy_resuce(VALUE crr_obj, VALUE errinfo)
 {
-    struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
-    crr->exception = errinfo; // ractor_move(crr->exception);
+    struct cross_ractor_require *crr;
+    TypedData_Get_Struct(crr_obj, struct cross_ractor_require, &cross_ractor_require_data_type, crr);
+
+    RB_OBJ_WRITE(crr_obj, &crr->exception, errinfo);
+
     return Qnil;
 }
 
@@ -2353,16 +2362,16 @@ ractor_require_protect(VALUE crr_obj, VALUE (*func)(VALUE))
     }
 
     // catch any error
-    rb_rescue2(func, (VALUE)crr,
-               require_rescue, (VALUE)crr, rb_eException, 0);
+    rb_rescue2(func, crr_obj,
+               require_rescue, crr_obj, rb_eException, 0);
 
     if (silent) {
         ruby_debug = debug;
         rb_set_errinfo(errinfo);
     }
 
-    rb_rescue2(require_result_copy_body, (VALUE)crr,
-               require_result_copy_resuce, (VALUE)crr, rb_eException, 0);
+    rb_rescue2(require_result_copy_body, crr_obj,
+               require_result_copy_resuce, crr_obj, rb_eException, 0);
 
     ractor_port_send(GET_EC(), crr->port, Qtrue, Qfalse);
     RB_GC_GUARD(crr_obj);
@@ -2386,8 +2395,8 @@ rb_ractor_require(VALUE feature, bool silent)
     FL_SET_RAW(crr_obj, RUBY_FL_SHAREABLE);
 
     // Convert feature to proper file path and make it shareable as fstring
-    crr->feature = rb_fstring(FilePathValue(feature));
-    crr->port = ractor_port_new(GET_RACTOR());
+    RB_OBJ_WRITE(crr_obj, &crr->feature, rb_fstring(FilePathValue(feature)));
+    RB_OBJ_WRITE(crr_obj, &crr->port, ractor_port_new(GET_RACTOR()));
     crr->result = Qundef;
     crr->exception = Qundef;
     crr->silent = silent;
@@ -2422,10 +2431,13 @@ ractor_require(rb_execution_context_t *ec, VALUE self, VALUE feature)
 }
 
 static VALUE
-autoload_load_body(VALUE data)
+autoload_load_body(VALUE crr_obj)
 {
-    struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
-    crr->result = rb_autoload_load(crr->module, crr->name);
+    struct cross_ractor_require *crr;
+    TypedData_Get_Struct(crr_obj, struct cross_ractor_require, &cross_ractor_require_data_type, crr);
+
+    RB_OBJ_WRITE(crr_obj, &crr->result, rb_autoload_load(crr->module, crr->name));
+
     return Qnil;
 }
 
@@ -2441,9 +2453,9 @@ rb_ractor_autoload_load(VALUE module, ID name)
     struct cross_ractor_require *crr;
     VALUE crr_obj = TypedData_Make_Struct(0, struct cross_ractor_require, &cross_ractor_require_data_type, crr);
     FL_SET_RAW(crr_obj, RUBY_FL_SHAREABLE);
-    crr->module = module;
-    crr->name = name;
-    crr->port = ractor_port_new(GET_RACTOR());
+    RB_OBJ_WRITE(crr_obj, &crr->module, module);
+    RB_OBJ_WRITE(crr_obj, &crr->name, name);
+    RB_OBJ_WRITE(crr_obj, &crr->port, ractor_port_new(GET_RACTOR()));
     crr->result = Qundef;
     crr->exception = Qundef;
 
