@@ -143,6 +143,64 @@ rb_vm_cc_table_create(size_t capa)
 }
 
 static enum rb_id_table_iterator_result
+vm_cc_table_dup_i(ID key, VALUE old_ccs_ptr, void *data)
+{
+    struct rb_class_cc_entries *old_ccs = (struct rb_class_cc_entries *)old_ccs_ptr;
+    struct rb_class_cc_entries *new_ccs = ALLOC(struct rb_class_cc_entries);
+    MEMCPY(new_ccs, old_ccs, struct rb_class_cc_entries, 1);
+#if VM_CHECK_MODE > 0
+    new_ccs->debug_sig = ~(VALUE)new_ccs;
+#endif
+    new_ccs->entries = ALLOC_N(struct rb_class_cc_entries_entry, new_ccs->capa);
+    MEMCPY(new_ccs->entries, old_ccs->entries, struct rb_class_cc_entries_entry, new_ccs->capa);
+
+    VALUE new_table = (VALUE)data;
+    rb_managed_id_table_insert(new_table, key, (VALUE)new_ccs);
+    for (int index = 0; index < new_ccs->len; index++) {
+        RB_OBJ_WRITTEN(new_table, Qundef, new_ccs->entries[index].cc);
+    }
+    return ID_TABLE_CONTINUE;
+}
+
+VALUE
+rb_vm_cc_table_dup(VALUE old_table)
+{
+    VALUE new_table = rb_vm_cc_table_create(rb_managed_id_table_size(old_table));
+    rb_managed_id_table_foreach(old_table, vm_cc_table_dup_i, (void *)new_table);
+    return new_table;
+}
+
+static void
+vm_ccs_invalidate(struct rb_class_cc_entries *ccs)
+{
+    if (ccs->entries) {
+        for (int i=0; i<ccs->len; i++) {
+            const struct rb_callcache *cc = ccs->entries[i].cc;
+            VM_ASSERT(!vm_cc_super_p(cc) && !vm_cc_refinement_p(cc));
+            vm_cc_invalidate(cc);
+        }
+    }
+}
+
+void
+rb_vm_ccs_invalidate_and_free(struct rb_class_cc_entries *ccs)
+{
+    RB_DEBUG_COUNTER_INC(ccs_free);
+    vm_ccs_invalidate(ccs);
+    vm_ccs_free(ccs);
+}
+
+void
+rb_vm_cc_table_delete(VALUE table, ID mid)
+{
+    struct rb_class_cc_entries *ccs;
+    if (rb_managed_id_table_lookup(table, mid, (VALUE *)&ccs)) {
+        rb_managed_id_table_delete(table, mid);
+        rb_vm_ccs_invalidate_and_free(ccs);
+    }
+}
+
+static enum rb_id_table_iterator_result
 vm_ccs_dump_i(ID mid, VALUE val, void *data)
 {
     const struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)val;
@@ -296,7 +354,7 @@ invalidate_method_cache_in_cc_table(VALUE tbl, ID mid)
         struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_data;
         rb_yjit_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
         if (NIL_P(ccs->cme->owner)) invalidate_negative_cache(mid);
-        rb_vm_ccs_free(ccs);
+        rb_vm_ccs_invalidate_and_free(ccs);
         rb_managed_id_table_delete(tbl, mid);
         RB_DEBUG_COUNTER_INC(cc_invalidate_leaf_ccs);
     }
@@ -1692,8 +1750,8 @@ cached_callable_method_entry(VALUE klass, ID mid)
             return ccs->cme;
         }
         else {
-            rb_vm_ccs_free(ccs);
             rb_managed_id_table_delete(cc_tbl, mid);
+            rb_vm_ccs_invalidate_and_free(ccs);
         }
     }
 

@@ -2060,58 +2060,49 @@ vm_ccs_verify(struct rb_class_cc_entries *ccs, ID mid, VALUE klass)
 
 const rb_callable_method_entry_t *rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_callinfo * const ci);
 
-static const struct rb_callcache *
-vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
+static void
+vm_evict_cc(VALUE klass, VALUE cc_tbl, ID mid)
 {
-    const ID mid = vm_ci_mid(ci);
-    VALUE cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
-    struct rb_class_cc_entries *ccs = NULL;
-    VALUE ccs_data;
+    ASSERT_vm_locking();
 
-    if (cc_tbl) {
-        // CCS data is keyed on method id, so we don't need the method id
-        // for doing comparisons in the `for` loop below.
-        if (rb_managed_id_table_lookup(cc_tbl, mid, &ccs_data)) {
-            ccs = (struct rb_class_cc_entries *)ccs_data;
-            const int ccs_len = ccs->len;
-
-            if (UNLIKELY(METHOD_ENTRY_INVALIDATED(ccs->cme))) {
-                rb_managed_id_table_delete(cc_tbl, mid);
-                rb_vm_ccs_free(ccs);
-                ccs = NULL;
-            }
-            else {
-                VM_ASSERT(vm_ccs_verify(ccs, mid, klass));
-
-                // We already know the method id is correct because we had
-                // to look up the ccs_data by method id.  All we need to
-                // compare is argc and flag
-                unsigned int argc = vm_ci_argc(ci);
-                unsigned int flag = vm_ci_flag(ci);
-
-                for (int i=0; i<ccs_len; i++) {
-                    unsigned int ccs_ci_argc = ccs->entries[i].argc;
-                    unsigned int ccs_ci_flag = ccs->entries[i].flag;
-                    const struct rb_callcache *ccs_cc = ccs->entries[i].cc;
-
-                    VM_ASSERT(IMEMO_TYPE_P(ccs_cc, imemo_callcache));
-
-                    if (ccs_ci_argc == argc && ccs_ci_flag == flag) {
-                        RB_DEBUG_COUNTER_INC(cc_found_in_ccs);
-
-                        VM_ASSERT(vm_cc_cme(ccs_cc)->called_id == mid);
-                        VM_ASSERT(ccs_cc->klass == klass);
-                        VM_ASSERT(!METHOD_ENTRY_INVALIDATED(vm_cc_cme(ccs_cc)));
-
-                        return ccs_cc;
-                    }
-                }
-            }
+    if (rb_multi_ractor_p()) {
+        if (RCLASS_WRITABLE_CC_TBL(klass) != cc_tbl) {
+            // Another ractor updated the CC table while we were waiting on the VM lock.
+            // We have to retry.
+            return;
         }
+
+        struct rb_class_cc_entries *ccs = NULL;
+        rb_managed_id_table_lookup(cc_tbl, mid, (VALUE *)&ccs);
+
+        if (!ccs || !METHOD_ENTRY_INVALIDATED(ccs->cme)) {
+            // Another ractor replaced that entry while we were waiting on the VM lock.
+            return;
+        }
+
+        VALUE new_table = rb_vm_cc_table_dup(cc_tbl);
+        rb_vm_cc_table_delete(new_table, mid);
+        RB_OBJ_ATOMIC_WRITE(klass, &RCLASS_WRITABLE_CC_TBL(klass), new_table);
     }
     else {
-        cc_tbl = rb_vm_cc_table_create(2);
-        RCLASS_WRITE_CC_TBL(klass, cc_tbl);
+        rb_vm_cc_table_delete(cc_tbl, mid);
+    }
+}
+
+static const struct rb_callcache *
+vm_populate_cc(VALUE klass, const struct rb_callinfo * const ci, ID mid)
+{
+    ASSERT_vm_locking();
+
+    VALUE cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
+    const VALUE original_cc_table = cc_tbl;
+    struct rb_class_cc_entries *ccs = NULL;
+
+    if (!cc_tbl) {
+        cc_tbl = rb_vm_cc_table_create(1);
+    }
+    else if (rb_multi_ractor_p()) {
+        cc_tbl = rb_vm_cc_table_dup(cc_tbl);
     }
 
     RB_DEBUG_COUNTER_INC(cc_not_found_in_ccs);
@@ -2143,11 +2134,7 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
     if (ccs == NULL) {
         VM_ASSERT(cc_tbl);
 
-        if (LIKELY(rb_managed_id_table_lookup(cc_tbl, mid, &ccs_data))) {
-            // rb_callable_method_entry() prepares ccs.
-            ccs = (struct rb_class_cc_entries *)ccs_data;
-        }
-        else {
+        if (!LIKELY(rb_managed_id_table_lookup(cc_tbl, mid, (VALUE *)&ccs))) {
             // TODO: required?
             ccs = vm_ccs_create(klass, cc_tbl, mid, cme);
         }
@@ -2162,6 +2149,91 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
     VM_ASSERT(cme->called_id == mid);
     VM_ASSERT(vm_cc_cme(cc)->called_id == mid);
 
+    if (original_cc_table != cc_tbl) {
+        RB_OBJ_ATOMIC_WRITE(klass, &RCLASS_WRITABLE_CC_TBL(klass), cc_tbl);
+    }
+
+    return cc;
+}
+
+static const struct rb_callcache *
+vm_lookup_cc(const VALUE klass, const struct rb_callinfo * const ci, ID mid)
+{
+    VALUE cc_tbl;
+    struct rb_class_cc_entries *ccs;
+retry:
+    cc_tbl = RUBY_ATOMIC_VALUE_LOAD(RCLASS_WRITABLE_CC_TBL(klass));
+    ccs = NULL;
+
+    if (cc_tbl) {
+        // CCS data is keyed on method id, so we don't need the method id
+        // for doing comparisons in the `for` loop below.
+
+        if (rb_managed_id_table_lookup(cc_tbl, mid, (VALUE *)&ccs)) {
+            const int ccs_len = ccs->len;
+
+            if (UNLIKELY(METHOD_ENTRY_INVALIDATED(ccs->cme))) {
+                RB_VM_LOCKING() {
+                    vm_evict_cc(klass, cc_tbl, mid);
+                }
+                goto retry;
+            }
+            else {
+                VM_ASSERT(vm_ccs_verify(ccs, mid, klass));
+
+                // We already know the method id is correct because we had
+                // to look up the ccs_data by method id.  All we need to
+                // compare is argc and flag
+                unsigned int argc = vm_ci_argc(ci);
+                unsigned int flag = vm_ci_flag(ci);
+
+                for (int i=0; i<ccs_len; i++) {
+                    unsigned int ccs_ci_argc = ccs->entries[i].argc;
+                    unsigned int ccs_ci_flag = ccs->entries[i].flag;
+                    const struct rb_callcache *ccs_cc = ccs->entries[i].cc;
+
+                    VM_ASSERT(IMEMO_TYPE_P(ccs_cc, imemo_callcache));
+
+                    if (ccs_ci_argc == argc && ccs_ci_flag == flag) {
+                        RB_DEBUG_COUNTER_INC(cc_found_in_ccs);
+
+                        VM_ASSERT(vm_cc_cme(ccs_cc)->called_id == mid);
+                        VM_ASSERT(ccs_cc->klass == klass);
+                        VM_ASSERT(!METHOD_ENTRY_INVALIDATED(vm_cc_cme(ccs_cc)));
+
+                        return ccs_cc;
+                    }
+                }
+            }
+        }
+    }
+
+    RB_GC_GUARD(cc_tbl);
+    return NULL;
+}
+
+static const struct rb_callcache *
+vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
+{
+    const ID mid = vm_ci_mid(ci);
+
+    const struct rb_callcache *cc = vm_lookup_cc(klass, ci, mid);
+    if (cc) {
+        return cc;
+    }
+
+    RB_VM_LOCKING() {
+        if (rb_multi_ractor_p()) {
+            // The CC may have been populated by another ractor while we were waiting on the lock,
+            // so we must lookup a second time.
+            cc = vm_lookup_cc(klass, ci, mid);
+        }
+
+        if (!cc) {
+            cc = vm_populate_cc(klass, ci, mid);
+        }
+    }
+
     return cc;
 }
 
@@ -2172,16 +2244,14 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
 
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
 
-    RB_VM_LOCKING() {
-        cc = vm_search_cc(klass, ci);
+    cc = vm_search_cc(klass, ci);
 
-        VM_ASSERT(cc);
-        VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-        VM_ASSERT(cc == vm_cc_empty() || cc->klass == klass);
-        VM_ASSERT(cc == vm_cc_empty() || callable_method_entry_p(vm_cc_cme(cc)));
-        VM_ASSERT(cc == vm_cc_empty() || !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc)));
-        VM_ASSERT(cc == vm_cc_empty() || vm_cc_cme(cc)->called_id == vm_ci_mid(ci));
-    }
+    VM_ASSERT(cc);
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc == vm_cc_empty() || cc->klass == klass);
+    VM_ASSERT(cc == vm_cc_empty() || callable_method_entry_p(vm_cc_cme(cc)));
+    VM_ASSERT(cc == vm_cc_empty() || !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc)));
+    VM_ASSERT(cc == vm_cc_empty() || vm_cc_cme(cc)->called_id == vm_ci_mid(ci));
 
     return cc;
 }
