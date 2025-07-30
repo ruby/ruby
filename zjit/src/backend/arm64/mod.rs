@@ -219,29 +219,6 @@ impl Assembler
     /// have no memory operands.
     fn arm64_split(mut self) -> Assembler
     {
-        /// When we're attempting to load a memory address into a register, the
-        /// displacement must fit into the maximum number of bits for an Op::Add
-        /// immediate. If it doesn't, we have to load the displacement into a
-        /// register first.
-        fn split_lea_operand(asm: &mut Assembler, opnd: Opnd) -> Opnd {
-            match opnd {
-                Opnd::Mem(Mem { base, disp, num_bits }) => {
-                    if disp >= 0 && ShiftedImmediate::try_from(disp as u64).is_ok() {
-                        asm.lea(opnd)
-                    } else {
-                        let disp = asm.load(Opnd::Imm(disp.into()));
-                        let reg = match base {
-                            MemBase::Reg(reg_no) => Opnd::Reg(Reg { reg_no, num_bits }),
-                            MemBase::VReg(idx) => Opnd::VReg { idx, num_bits }
-                        };
-
-                        asm.add(reg, disp)
-                    }
-                },
-                _ => unreachable!("Op::Lea only accepts Opnd::Mem operands.")
-            }
-        }
-
         /// When you're storing a register into a memory location or loading a
         /// memory location into a register, the displacement from the base
         /// register of the memory location must fit into 9 bits. If it doesn't,
@@ -252,7 +229,7 @@ impl Assembler
                     if mem_disp_fits_bits(mem.disp) {
                         opnd
                     } else {
-                        let base = split_lea_operand(asm, opnd);
+                        let base = asm.lea(opnd);
                         Opnd::mem(64, base, 0)
                     }
                 },
@@ -575,7 +552,7 @@ impl Assembler
                 },
                 Insn::IncrCounter { mem, value } => {
                     let counter_addr = match mem {
-                        Opnd::Mem(_) => split_lea_operand(asm, *mem),
+                        Opnd::Mem(_) => asm.lea(*mem),
                         _ => *mem
                     };
 
@@ -1113,22 +1090,24 @@ impl Assembler
                     }
                 },
                 Insn::Lea { opnd, out } => {
-                    let opnd: A64Opnd = opnd.into();
-
-                    match opnd {
-                        A64Opnd::Mem(mem) => {
-                            add(
-                                cb,
-                                out.into(),
-                                A64Opnd::Reg(A64Reg { reg_no: mem.base_reg_no, num_bits: 64 }),
-                                A64Opnd::new_imm(mem.disp.into())
-                            );
-                        },
-                        _ => {
-                            panic!("Op::Lea only accepts Opnd::Mem operands.");
-                        }
+                    let &Opnd::Mem(Mem { num_bits: _, base: MemBase::Reg(base_reg_no), disp }) = opnd else {
+                        panic!("Unexpected Insn::Lea operand in arm64_emit: {opnd:?}");
                     };
-                },
+                    let out: A64Opnd = out.into();
+                    let base_reg = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: base_reg_no });
+                    assert_ne!(31, out.unwrap_reg().reg_no, "Insn::Lea sp, [sp, #imm] not always encodable. Use add/sub instead.");
+
+                    if ShiftedImmediate::try_from(disp.unsigned_abs() as u64).is_ok() {
+                        // Use ADD/SUB if the displacement fits
+                        add(cb, out, base_reg, A64Opnd::new_imm(disp.into()));
+                    } else {
+                        // Use add_extended() to interpret reg_no=31 as sp
+                        // since the base register is never the zero register.
+                        // Careful! Only the first two operands can refer to sp.
+                        emit_load_value(cb, out, disp as u64);
+                        add_extended(cb, out, base_reg, out);
+                    };
+                }
                 Insn::LeaJumpTarget { out, target, .. } => {
                     if let Target::Label(label_idx) = target {
                         // Set output to the raw address of the label
@@ -1605,6 +1584,45 @@ mod tests {
 
         asm.je(Target::CodePtr(target));
         asm.compile_with_num_regs(&mut cb, 0);
+    }
+
+    #[test]
+    fn test_emit_lea() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // Test values that exercise various types of immediates.
+        //  - 9 bit displacement for Load/Store
+        //  - 12 bit shifted immediate
+        //  - bit mask immediates
+        for displacement in [i32::MAX, 0x10008, 0x1800, 0x208, -0x208, -0x1800, -0x1008, i32::MIN] {
+            let mem = Opnd::mem(64, NATIVE_STACK_PTR, displacement);
+            asm.lea_into(Opnd::Reg(X0_REG), mem);
+        }
+
+        asm.compile_with_num_regs(&mut cb, 0);
+        assert_disasm!(cb, "e07b40b2e063208b000180d22000a0f2e063208b000083d2e063208be0230891e02308d100009dd2e0ffbff2e0ffdff2e0fffff2e063208b00ff9dd2e0ffbff2e0ffdff2e0fffff2e063208be08361b2e063208b", "
+            0x0: orr x0, xzr, #0x7fffffff
+            0x4: add x0, sp, x0
+            0x8: mov x0, #8
+            0xc: movk x0, #1, lsl #16
+            0x10: add x0, sp, x0
+            0x14: mov x0, #0x1800
+            0x18: add x0, sp, x0
+            0x1c: add x0, sp, #0x208
+            0x20: sub x0, sp, #0x208
+            0x24: mov x0, #0xe800
+            0x28: movk x0, #0xffff, lsl #16
+            0x2c: movk x0, #0xffff, lsl #32
+            0x30: movk x0, #0xffff, lsl #48
+            0x34: add x0, sp, x0
+            0x38: mov x0, #0xeff8
+            0x3c: movk x0, #0xffff, lsl #16
+            0x40: movk x0, #0xffff, lsl #32
+            0x44: movk x0, #0xffff, lsl #48
+            0x48: add x0, sp, x0
+            0x4c: orr x0, xzr, #0xffffffff80000000
+            0x50: add x0, sp, x0
+        ");
     }
 
     /*
