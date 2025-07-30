@@ -557,6 +557,7 @@ module Bundler
         @missing_lockfile_dep ||
         @unlocking_bundler ||
         @locked_spec_with_missing_checksums ||
+        @locked_spec_with_empty_checksums ||
         @locked_spec_with_missing_deps ||
         @locked_spec_with_invalid_deps
     end
@@ -836,6 +837,7 @@ module Bundler
         [@missing_lockfile_dep, "your lockfile is missing \"#{@missing_lockfile_dep}\""],
         [@unlocking_bundler, "an update to the version of Bundler itself was requested"],
         [@locked_spec_with_missing_checksums, "your lockfile is missing a CHECKSUMS entry for \"#{@locked_spec_with_missing_checksums}\""],
+        [@locked_spec_with_empty_checksums, "your lockfile has an empty CHECKSUMS entry for \"#{@locked_spec_with_empty_checksums}\""],
         [@locked_spec_with_missing_deps, "your lockfile includes \"#{@locked_spec_with_missing_deps}\" but not some of its dependencies"],
         [@locked_spec_with_invalid_deps, "your lockfile does not satisfy dependencies of \"#{@locked_spec_with_invalid_deps}\""],
       ].select(&:first).map(&:last).join(", ")
@@ -895,13 +897,23 @@ module Bundler
       @locked_spec_with_invalid_deps = nil
       @locked_spec_with_missing_deps = nil
       @locked_spec_with_missing_checksums = nil
+      @locked_spec_with_empty_checksums = nil
 
       missing_deps = []
       missing_checksums = []
+      empty_checksums = []
       invalid = []
 
       @locked_specs.each do |s|
-        missing_checksums << s if @locked_checksums && s.source.checksum_store.missing?(s)
+        if @locked_checksums
+          checksum_store = s.source.checksum_store
+
+          if checksum_store.missing?(s)
+            missing_checksums << s
+          elsif checksum_store.empty?(s)
+            empty_checksums << s
+          end
+        end
 
         validation = @locked_specs.validate_deps(s)
 
@@ -910,6 +922,7 @@ module Bundler
       end
 
       @locked_spec_with_missing_checksums = missing_checksums.first.name if missing_checksums.any?
+      @locked_spec_with_empty_checksums = empty_checksums.first.name if empty_checksums.any?
 
       if missing_deps.any?
         @locked_specs.delete(missing_deps)

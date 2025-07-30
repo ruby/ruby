@@ -2,17 +2,21 @@
 
 RSpec.describe "bundle install with git sources" do
   describe "when floating on main" do
-    let(:install_base_gemfile) do
-      build_git "foo" do |s|
-        s.executables = "foobar"
-      end
-
-      install_gemfile <<-G
+    let(:base_gemfile) do
+      <<-G
         source "https://gem.repo1"
         git "#{lib_path("foo-1.0")}" do
           gem 'foo'
         end
       G
+    end
+
+    let(:install_base_gemfile) do
+      build_git "foo" do |s|
+        s.executables = "foobar"
+      end
+
+      install_gemfile base_gemfile
     end
 
     it "fetches gems" do
@@ -25,6 +29,43 @@ RSpec.describe "bundle install with git sources" do
       RUBY
 
       expect(out).to eq("WIN")
+    end
+
+    it "does not (yet?) enforce CHECKSUMS" do
+      build_git "foo"
+      revision = revision_for(lib_path("foo-1.0"))
+
+      bundle "config set lockfile_checksums true"
+      gemfile base_gemfile
+
+      lockfile <<~L
+        GIT
+          remote: #{lib_path("foo-1.0")}
+          revision: #{revision}
+          specs:
+            foo (1.0)
+
+        GEM
+          remote: https://gem.repo1/
+          specs:
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          foo!
+
+        CHECKSUMS
+          foo (1.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "config set frozen true"
+
+      bundle "install"
+      expect(the_bundle).to include_gems("foo 1.0")
     end
 
     it "caches the git repo" do
