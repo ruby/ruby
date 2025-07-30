@@ -429,6 +429,43 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_ge], call_threshold: 2
   end
 
+
+  def test_new_hash_empty
+    assert_compiles '{}', %q{
+      def test = {}
+      test
+    }, insns: [:newhash]
+  end
+
+  def test_new_hash_nonempty
+    assert_compiles '{"key" => "value", 42 => 100}', %q{
+      def test
+        key = "key"
+        value = "value"
+        num = 42
+        result = 100
+        {key => value, num => result}
+      end
+      test
+    }, insns: [:newhash]
+  end
+
+  def test_new_hash_single_key_value
+    assert_compiles '{"key" => "value"}', %q{
+      def test = {"key" => "value"}
+      test
+    }, insns: [:newhash]
+  end
+
+  def test_new_hash_with_computation
+    assert_compiles '{"sum" => 5, "product" => 6}', %q{
+      def test(a, b)
+        {"sum" => a + b, "product" => a * b}
+      end
+      test(2, 3)
+    }, insns: [:newhash]
+  end
+
   def test_opt_hash_freeze
     assert_compiles '{}', <<~RUBY, insns: [:opt_hash_freeze]
       def test = {}.freeze

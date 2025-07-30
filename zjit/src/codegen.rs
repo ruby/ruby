@@ -327,6 +327,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     let out_opnd = match insn {
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
         Insn::NewArray { elements, state } => gen_new_array(asm, opnds!(elements), &function.frame_state(*state)),
+        Insn::NewHash { elements, state } => gen_new_hash(jit, asm, elements, &function.frame_state(*state)),
         Insn::NewRange { low, high, flag, state } => gen_new_range(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::StringCopy { val, chilled } => gen_string_copy(asm, opnd!(val), *chilled),
@@ -905,6 +906,36 @@ fn gen_new_array(
     }
 
     new_array
+}
+
+/// Compile a new hash instruction
+fn gen_new_hash(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    elements: &Vec<(InsnId, InsnId)>,
+    state: &FrameState,
+) -> lir::Opnd {
+    // Save PC
+    gen_save_pc(asm, state);
+
+    asm_comment!(asm, "call rb_hash_new");
+    let cap: ::std::os::raw::c_long = (elements.len() / 2).try_into().expect("Unable to fit length of elements into c_long");
+    let new_hash = asm.ccall(
+        rb_hash_new_with_size as *const u8,
+        vec![lir::Opnd::Imm(cap)],
+    );
+
+    for (key_id, val_id) in elements.iter() {
+        let key = jit.get_opnd(*key_id).unwrap();
+        let val = jit.get_opnd(*val_id).unwrap();
+        asm_comment!(asm, "call rb_hash_aset");
+        asm.ccall(
+            rb_hash_aset as *const u8,
+            vec![new_hash, key, val]
+        );
+    }
+
+    new_hash
 }
 
 /// Compile a new range instruction
