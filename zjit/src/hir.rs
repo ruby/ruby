@@ -763,23 +763,23 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::SideExit { reason, .. } => write!(f, "SideExit {reason}"),
             Insn::PutSpecialObject { value_type } => write!(f, "PutSpecialObject {value_type}"),
             Insn::Throw { throw_state, val } => {
-                let mut state_string = match throw_state & VM_THROW_STATE_MASK {
-                    RUBY_TAG_NONE => "TAG_NONE".to_string(),
-                    RUBY_TAG_RETURN => "TAG_RETURN".to_string(),
-                    RUBY_TAG_BREAK => "TAG_BREAK".to_string(),
-                    RUBY_TAG_NEXT => "TAG_NEXT".to_string(),
-                    RUBY_TAG_RETRY => "TAG_RETRY".to_string(),
-                    RUBY_TAG_REDO => "TAG_REDO".to_string(),
-                    RUBY_TAG_RAISE => "TAG_RAISE".to_string(),
-                    RUBY_TAG_THROW => "TAG_THROW".to_string(),
-                    RUBY_TAG_FATAL => "TAG_FATAL".to_string(),
-                    tag => format!("{tag}")
-                };
+                write!(f, "Throw ")?;
+                match throw_state & VM_THROW_STATE_MASK {
+                    RUBY_TAG_NONE   => write!(f, "TAG_NONE"),
+                    RUBY_TAG_RETURN => write!(f, "TAG_RETURN"),
+                    RUBY_TAG_BREAK  => write!(f, "TAG_BREAK"),
+                    RUBY_TAG_NEXT   => write!(f, "TAG_NEXT"),
+                    RUBY_TAG_RETRY  => write!(f, "TAG_RETRY"),
+                    RUBY_TAG_REDO   => write!(f, "TAG_REDO"),
+                    RUBY_TAG_RAISE  => write!(f, "TAG_RAISE"),
+                    RUBY_TAG_THROW  => write!(f, "TAG_THROW"),
+                    RUBY_TAG_FATAL  => write!(f, "TAG_FATAL"),
+                    tag => write!(f, "{tag}")
+                }?;
                 if throw_state & VM_THROW_NO_ESCAPE_FLAG != 0 {
-                    use std::fmt::Write;
-                    write!(state_string, "|NO_ESCAPE")?;
+                    write!(f, "|NO_ESCAPE")?;
                 }
-                write!(f, "Throw {state_string}, {val}")
+                write!(f, ", {val}")
             }
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
             insn => { write!(f, "{insn:?}") }
