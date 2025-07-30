@@ -107,11 +107,6 @@ impl std::fmt::Display for BranchEdge {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct CallInfo {
-    pub method_name: String,
-}
-
 /// Invalidation reasons
 #[derive(Debug, Clone, Copy)]
 pub enum Invariant {
@@ -515,11 +510,10 @@ pub enum Insn {
 
     /// Send without block with dynamic dispatch
     /// Ignoring keyword arguments etc for now
-    SendWithoutBlock { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
-    Send { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
+    SendWithoutBlock { self_val: InsnId, cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
+    Send { self_val: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
     SendWithoutBlockDirect {
         self_val: InsnId,
-        call_info: CallInfo,
         cd: *const rb_call_data,
         cme: *const rb_callable_method_entry_t,
         iseq: IseqPtr,
@@ -551,7 +545,7 @@ pub enum Insn {
     FixnumOr   { left: InsnId, right: InsnId },
 
     // Distinct from `SendWithoutBlock` with `mid:to_s` because does not have a patch point for String to_s being redefined
-    ObjToString { val: InsnId, call_info: CallInfo, cd: *const rb_call_data, state: InsnId },
+    ObjToString { val: InsnId, cd: *const rb_call_data, state: InsnId },
     AnyToString { val: InsnId, str: InsnId, state: InsnId },
 
     /// Side-exit if val doesn't have the expected type.
@@ -680,25 +674,25 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
             Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}") }
-            Insn::SendWithoutBlock { self_val, call_info, args, .. } => {
-                write!(f, "SendWithoutBlock {self_val}, :{}", call_info.method_name)?;
+            Insn::SendWithoutBlock { self_val, cd, args, .. } => {
+                write!(f, "SendWithoutBlock {self_val}, :{}", ruby_call_method_name(*cd))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
             }
-            Insn::SendWithoutBlockDirect { self_val, call_info, iseq, args, .. } => {
-                write!(f, "SendWithoutBlockDirect {self_val}, :{} ({:?})", call_info.method_name, self.ptr_map.map_ptr(iseq))?;
+            Insn::SendWithoutBlockDirect { self_val, cd, iseq, args, .. } => {
+                write!(f, "SendWithoutBlockDirect {self_val}, :{} ({:?})", ruby_call_method_name(*cd), self.ptr_map.map_ptr(iseq))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
             }
-            Insn::Send { self_val, call_info, args, blockiseq, .. } => {
+            Insn::Send { self_val, cd, args, blockiseq, .. } => {
                 // For tests, we want to check HIR snippets textually. Addresses change
                 // between runs, making tests fail. Instead, pick an arbitrary hex value to
                 // use as a "pointer" so we can check the rest of the HIR.
-                write!(f, "Send {self_val}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), call_info.method_name)?;
+                write!(f, "Send {self_val}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1134,9 +1128,8 @@ impl Function {
             &FixnumLe { left, right } => FixnumLe { left: find!(left), right: find!(right) },
             &FixnumAnd { left, right } => FixnumAnd { left: find!(left), right: find!(right) },
             &FixnumOr { left, right } => FixnumOr { left: find!(left), right: find!(right) },
-            &ObjToString { val, ref call_info, cd, state } => ObjToString {
+            &ObjToString { val, cd, state } => ObjToString {
                 val: find!(val),
-                call_info: call_info.clone(),
                 cd: cd,
                 state,
             },
@@ -1145,25 +1138,22 @@ impl Function {
                 str: find!(str),
                 state,
             },
-            &SendWithoutBlock { self_val, ref call_info, cd, ref args, state } => SendWithoutBlock {
+            &SendWithoutBlock { self_val, cd, ref args, state } => SendWithoutBlock {
                 self_val: find!(self_val),
-                call_info: call_info.clone(),
                 cd: cd,
                 args: find_vec!(args),
                 state,
             },
-            &SendWithoutBlockDirect { self_val, ref call_info, cd, cme, iseq, ref args, state } => SendWithoutBlockDirect {
+            &SendWithoutBlockDirect { self_val, cd, cme, iseq, ref args, state } => SendWithoutBlockDirect {
                 self_val: find!(self_val),
-                call_info: call_info.clone(),
                 cd: cd,
                 cme: cme,
                 iseq: iseq,
                 args: find_vec!(args),
                 state,
             },
-            &Send { self_val, ref call_info, cd, blockiseq, ref args, state } => Send {
+            &Send { self_val, cd, blockiseq, ref args, state } => Send {
                 self_val: find!(self_val),
-                call_info: call_info.clone(),
                 cd: cd,
                 blockiseq: blockiseq,
                 args: find_vec!(args),
@@ -1477,39 +1467,39 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "+" && args.len() == 1 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(plus) && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAdd { left, right, state }, BOP_PLUS, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "-" && args.len() == 1 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minus) && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumSub { left, right, state }, BOP_MINUS, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "*" && args.len() == 1 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(mult) && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMult { left, right, state }, BOP_MULT, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "/" && args.len() == 1 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(div) && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumDiv { left, right, state }, BOP_DIV, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "%" && args.len() == 1 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(modulo) && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMod { left, right, state }, BOP_MOD, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "==" && args.len() == 1 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(eq) && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumEq { left, right }, BOP_EQ, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "!=" && args.len() == 1 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(neq) && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumNeq { left, right }, BOP_NEQ, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "<" && args.len() == 1 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(lt) && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLt { left, right }, BOP_LT, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "<=" && args.len() == 1 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(le) && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLe { left, right }, BOP_LE, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == ">" && args.len() == 1 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(gt) && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGt { left, right }, BOP_GT, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == ">=" && args.len() == 1 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(ge) && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGe { left, right }, BOP_GE, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "&" && args.len() == 1 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(and) && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAnd { left, right }, BOP_AND, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "|" && args.len() == 1 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(or) && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumOr { left, right }, BOP_OR, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "freeze" && args.len() == 0 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.len() == 0 =>
                         self.try_rewrite_freeze(block, insn_id, self_val, state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "-@" && args.len() == 0 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.len() == 0 =>
                         self.try_rewrite_uminus(block, insn_id, self_val, state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "[]" && args.len() == 1 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(aref) && args.len() == 1 =>
                         self.try_rewrite_aref(block, insn_id, self_val, args[0], state),
-                    Insn::SendWithoutBlock { mut self_val, call_info, cd, args, state } => {
+                    Insn::SendWithoutBlock { mut self_val, cd, args, state } => {
                         let frame_state = self.frame_state(state);
                         let (klass, guard_equal_to) = if let Some(klass) = self.type_of(self_val).runtime_exact_ruby_class() {
                             // If we know the class statically, use it to fold the lookup at compile-time.
@@ -1546,7 +1536,7 @@ impl Function {
                         if let Some(expected) = guard_equal_to {
                             self_val = self.push_insn(block, Insn::GuardBitEquals { val: self_val, expected, state });
                         }
-                        let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, call_info, cd, cme, iseq, args, state });
+                        let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, cd, cme, iseq, args, state });
                         self.make_equal_to(insn_id, send_direct);
                     }
                     Insn::GetConstantPath { ic, state, .. } => {
@@ -1569,12 +1559,12 @@ impl Function {
                         self.insn_types[replacement.0] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
-                    Insn::ObjToString { val, call_info, cd, state, .. } => {
+                    Insn::ObjToString { val, cd, state, .. } => {
                         if self.is_a(val, types::String) {
                             // behaves differently from `SendWithoutBlock` with `mid:to_s` because ObjToString should not have a patch point for String to_s being redefined
                             self.make_equal_to(insn_id, val);
                         } else {
-                            let replacement = self.push_insn(block, Insn::SendWithoutBlock { self_val: val, call_info, cd, args: vec![], state });
+                            let replacement = self.push_insn(block, Insn::SendWithoutBlock { self_val: val, cd, args: vec![], state });
                             self.make_equal_to(insn_id, replacement)
                         }
                     }
@@ -2934,18 +2924,13 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
-                    let method_name = unsafe {
-                        let mid = rb_vm_ci_mid(call_info);
-                        mid.contents_lossy().into_owned()
-                    };
-
                     assert_eq!(1, argc, "opt_aref_with should only be emitted for argc=1");
                     let aref_arg = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                     let args = vec![aref_arg];
 
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, cd, args, state: exit_id });
                     state.stack_push(send);
                 }
                 YARVINSN_opt_neq => {
@@ -2960,11 +2945,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
-
-                    let method_name = unsafe {
-                        let mid = rb_vm_ci_mid(call_info);
-                        mid.contents_lossy().into_owned()
-                    };
                     let mut args = vec![];
                     for _ in 0..argc {
                         args.push(state.stack_pop()?);
@@ -2973,7 +2953,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, cd, args, state: exit_id });
                     state.stack_push(send);
                 }
                 YARVINSN_opt_hash_freeze |
@@ -2994,14 +2974,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     assert_eq!(0, argc, "{name} should not have args");
                     let args = vec![];
 
-                    let method_name = unsafe {
-                        let mid = rb_vm_ci_mid(call_info);
-                        mid.contents_lossy().into_owned()
-                    };
-
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, cd, args, state: exit_id });
                     state.stack_push(send);
                 }
 
@@ -3051,11 +3026,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
-
-                    let method_name = unsafe {
-                        let mid = rb_vm_ci_mid(call_info);
-                        mid.contents_lossy().into_owned()
-                    };
                     let mut args = vec![];
                     for _ in 0..argc {
                         args.push(state.stack_pop()?);
@@ -3064,7 +3034,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, cd, args, state: exit_id });
                     state.stack_push(send);
                 }
                 YARVINSN_send => {
@@ -3079,10 +3049,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
-                    let method_name = unsafe {
-                        let mid = rb_vm_ci_mid(call_info);
-                        mid.contents_lossy().into_owned()
-                    };
                     let mut args = vec![];
                     for _ in 0..argc {
                         args.push(state.stack_pop()?);
@@ -3091,7 +3057,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { method_name }, cd, blockiseq, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::Send { self_val: recv, cd, blockiseq, args, state: exit_id });
                     state.stack_push(send);
                 }
                 YARVINSN_getglobal => {
@@ -3177,14 +3143,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     assert_eq!(0, argc, "objtostring should not have args");
 
-                    let method_name: String = unsafe {
-                        let mid = rb_vm_ci_mid(call_info);
-                        mid.contents_lossy().into_owned()
-                    };
-
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let objtostring = fun.push_insn(block, Insn::ObjToString { val: recv, call_info: CallInfo { method_name }, cd, state: exit_id });
+                    let objtostring = fun.push_insn(block, Insn::ObjToString { val: recv, cd, state: exit_id });
                     state.stack_push(objtostring)
                 }
                 YARVINSN_anytostring => {

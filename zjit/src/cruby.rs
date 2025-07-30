@@ -750,6 +750,16 @@ pub fn ruby_sym_to_rust_string(v: VALUE) -> String {
     ruby_str_to_rust_string(ruby_str)
 }
 
+pub fn ruby_call_method_id(cd: *const rb_call_data) -> ID {
+    let call_info = unsafe { rb_get_call_data_ci(cd) };
+    unsafe { rb_vm_ci_mid(call_info) }
+}
+
+pub fn ruby_call_method_name(cd: *const rb_call_data) -> String {
+    let mid = ruby_call_method_id(cd);
+    mid.contents_lossy().to_string()
+}
+
 /// A location in Rust code for integrating with debugging facilities defined in C.
 /// Use the [src_loc!] macro to crate an instance.
 pub struct SourceLocation {
@@ -1210,6 +1220,21 @@ pub(crate) mod ids {
         name: to_s
         name: compile
         name: eval
+        name: plus               content: b"+"
+        name: minus              content: b"-"
+        name: mult               content: b"*"
+        name: div                content: b"/"
+        name: modulo             content: b"%"
+        name: neq                content: b"!="
+        name: lt                 content: b"<"
+        name: le                 content: b"<="
+        name: gt                 content: b">"
+        name: ge                 content: b">="
+        name: and                content: b"&"
+        name: or                 content: b"|"
+        name: freeze
+        name: minusat            content: b"-@"
+        name: aref               content: b"[]"
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.

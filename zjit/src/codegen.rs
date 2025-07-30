@@ -10,7 +10,7 @@ use crate::state::ZJITState;
 use crate::stats::{counter_ptr, Counter};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, SideExitContext, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SP};
-use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SELF_PARAM_IDX};
+use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SELF_PARAM_IDX};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types, Type};
 use crate::options::get_option;
@@ -331,10 +331,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Jump(branch) => return gen_jump(jit, asm, branch),
         Insn::IfTrue { val, target } => return gen_if_true(jit, asm, opnd!(val), target),
         Insn::IfFalse { val, target } => return gen_if_false(jit, asm, opnd!(val), target),
-        Insn::SendWithoutBlock { call_info, cd, state, self_val, args, .. } => gen_send_without_block(jit, asm, call_info, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args))?,
+        Insn::SendWithoutBlock { cd, state, self_val, args, .. } => gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args))?,
         // Give up SendWithoutBlockDirect for 6+ args since asm.ccall() doesn't support it.
-        Insn::SendWithoutBlockDirect { call_info, cd, state, self_val, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
-            gen_send_without_block(jit, asm, call_info, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args))?,
+        Insn::SendWithoutBlockDirect { cd, state, self_val, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
+            gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args))?,
         Insn::SendWithoutBlockDirect { cme, iseq, self_val, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(self_val), opnds!(args), &function.frame_state(*state))?,
         Insn::InvokeBuiltin { bf, args, state } => gen_invokebuiltin(asm, &function.frame_state(*state), bf, opnds!(args))?,
         Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
@@ -763,7 +763,6 @@ fn gen_if_false(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch:
 fn gen_send_without_block(
     jit: &mut JITState,
     asm: &mut Assembler,
-    call_info: &CallInfo,
     cd: *const rb_call_data,
     state: &FrameState,
     self_val: Opnd,
@@ -789,7 +788,7 @@ fn gen_send_without_block(
     gen_save_pc(asm, state);
     gen_save_sp(asm, 1 + args.len()); // +1 for receiver
 
-    asm_comment!(asm, "call #{} with dynamic dispatch", call_info.method_name);
+    asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
     unsafe extern "C" {
         fn rb_vm_opt_send_without_block(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
     }
