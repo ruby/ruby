@@ -322,7 +322,7 @@ class Integer
     1
   end
 
-  with_yjit do
+  with_jit do
     if Primitive.rb_builtin_basic_definition_p(:downto)
       undef :downto
 

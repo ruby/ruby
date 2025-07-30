@@ -9196,6 +9196,8 @@ miniinit.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 miniinit.$(OBJEXT): {$(VPATH)}io.rb
 miniinit.$(OBJEXT): {$(VPATH)}iseq.h
+miniinit.$(OBJEXT): {$(VPATH)}jit_hook.rb
+miniinit.$(OBJEXT): {$(VPATH)}jit_undef.rb
 miniinit.$(OBJEXT): {$(VPATH)}kernel.rb
 miniinit.$(OBJEXT): {$(VPATH)}marshal.rb
 miniinit.$(OBJEXT): {$(VPATH)}method.h
@@ -9232,7 +9234,6 @@ miniinit.$(OBJEXT): {$(VPATH)}vm_core.h
 miniinit.$(OBJEXT): {$(VPATH)}vm_opts.h
 miniinit.$(OBJEXT): {$(VPATH)}warning.rb
 miniinit.$(OBJEXT): {$(VPATH)}yjit.rb
-miniinit.$(OBJEXT): {$(VPATH)}yjit_hook.rb
 miniinit.$(OBJEXT): {$(VPATH)}zjit.rb
 namespace.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 namespace.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
@@ -18755,6 +18756,8 @@ vm.$(OBJEXT): {$(VPATH)}internal/variable.h
 vm.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 vm.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 vm.$(OBJEXT): {$(VPATH)}iseq.h
+vm.$(OBJEXT): {$(VPATH)}jit_hook.rbinc
+vm.$(OBJEXT): {$(VPATH)}jit_undef.rbinc
 vm.$(OBJEXT): {$(VPATH)}method.h
 vm.$(OBJEXT): {$(VPATH)}missing.h
 vm.$(OBJEXT): {$(VPATH)}node.h
@@ -18797,7 +18800,6 @@ vm.$(OBJEXT): {$(VPATH)}vm_opts.h
 vm.$(OBJEXT): {$(VPATH)}vm_sync.h
 vm.$(OBJEXT): {$(VPATH)}vmtc.inc
 vm.$(OBJEXT): {$(VPATH)}yjit.h
-vm.$(OBJEXT): {$(VPATH)}yjit_hook.rbinc
 vm.$(OBJEXT): {$(VPATH)}zjit.h
 vm_backtrace.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 vm_backtrace.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h

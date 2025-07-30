@@ -1236,8 +1236,9 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/nilclass.rb \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
+		$(srcdir)/jit_hook.rb \
+		$(srcdir)/jit_undef.rb \
 		$(srcdir)/yjit.rb \
-		$(srcdir)/yjit_hook.rb \
 		$(srcdir)/zjit.rb \
 		$(empty)
 BUILTIN_RB_INCS = $(BUILTIN_RB_SRCS:.rb=.rbinc)

@@ -957,7 +957,7 @@ pub use manual_defs::*;
 pub mod test_utils {
     use std::{ptr::null, sync::Once};
 
-    use crate::{options::init_options, state::rb_zjit_enabled_p, state::ZJITState};
+    use crate::{options::rb_zjit_prepare_options, state::rb_zjit_enabled_p, state::ZJITState};
 
     use super::*;
 
@@ -979,6 +979,7 @@ pub mod test_utils {
             // <https://github.com/Shopify/zjit/pull/37>, though
             let mut var: VALUE = Qnil;
             ruby_init_stack(&mut var as *mut VALUE as *mut _);
+            rb_zjit_prepare_options(); // enable `#with_jit` on builtins
             ruby_init();
 
             // Pass command line options so the VM loads core library methods defined in
@@ -994,7 +995,7 @@ pub mod test_utils {
         }
 
         // Set up globals for convenience
-        ZJITState::init(init_options());
+        ZJITState::init();
 
         // Enable zjit_* instructions
         unsafe { rb_zjit_enabled_p = true; }

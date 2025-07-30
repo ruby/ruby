@@ -1084,6 +1084,13 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_zjit_option_uses_array_each_in_ruby
+    omit 'ZJIT wrongly compiles Array#each, so it is disabled for now'
+    assert_runs '"<internal:array>"', %q{
+      Array.instance_method(:each).source_location&.first
+    }
+  end
+
   def test_profile_under_nested_jit_call
     assert_compiles '[nil, nil, 3]', %q{
       def profile

@@ -57,7 +57,7 @@ fn yjit_init() {
     // Call YJIT hooks before enabling YJIT to avoid compiling the hooks themselves
     unsafe {
         let yjit = rb_const_get(rb_cRubyVM, rust_str_to_id("YJIT"));
-        rb_funcall(yjit, rust_str_to_id("call_yjit_hooks"), 0);
+        rb_funcall(yjit, rust_str_to_id("call_jit_hooks"), 0);
     }
 
     // Catch panics to avoid UB for unwinding into C frames.
