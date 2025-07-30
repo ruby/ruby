@@ -462,7 +462,6 @@ pub enum Insn {
     /// NewHash contains a vec of (key, value) pairs
     NewHash { elements: Vec<(InsnId,InsnId)>, state: InsnId },
     NewRange { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
-    ArraySet { array: InsnId, idx: usize, val: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
     ArrayMax { elements: Vec<InsnId>, state: InsnId },
     /// Extend `left` with the elements from `right`. `left` and `right` must both be `Array`.
@@ -575,7 +574,7 @@ impl Insn {
     /// Not every instruction returns a value. Return true if the instruction does and false otherwise.
     pub fn has_output(&self) -> bool {
         match self {
-            Insn::ArraySet { .. } | Insn::Jump(_)
+            Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
@@ -673,7 +672,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            Insn::ArraySet { array, idx, val } => { write!(f, "ArraySet {array}, {idx}, {val}") }
             Insn::ArrayDup { val, .. } => { write!(f, "ArrayDup {val}") }
             Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
             Insn::StringCopy { val, .. } => { write!(f, "StringCopy {val}") }
@@ -1172,7 +1170,6 @@ impl Function {
                 state: *state,
             },
             InvokeBuiltin { bf, args, state } => InvokeBuiltin { bf: *bf, args: find_vec!(*args), state: *state },
-            ArraySet { array, idx, val } => ArraySet { array: find!(*array), idx: *idx, val: find!(*val) },
             ArrayDup { val , state } => ArrayDup { val: find!(*val), state: *state },
             &HashDup { val , state } => HashDup { val: find!(val), state },
             &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun, args: find_vec!(args), name, return_type, elidable },
@@ -1219,7 +1216,7 @@ impl Function {
         assert!(self.insns[insn.0].has_output());
         match &self.insns[insn.0] {
             Insn::Param { .. } => unimplemented!("params should not be present in block.insns"),
-            Insn::SetGlobal { .. } | Insn::ArraySet { .. } | Insn::Jump(_)
+            Insn::SetGlobal { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_) =>
@@ -1880,10 +1877,6 @@ impl Function {
             | &Insn::ToNewArray { val, state } => {
                 worklist.push_back(val);
                 worklist.push_back(state);
-            }
-            &Insn::ArraySet { array, val, .. } => {
-                worklist.push_back(array);
-                worklist.push_back(val);
             }
             &Insn::Snapshot { ref state } => {
                 worklist.extend(&state.stack);
