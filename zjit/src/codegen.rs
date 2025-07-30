@@ -367,7 +367,22 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
         Insn::Defined { op_type, obj, pushval, v } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v))?,
         &Insn::IncrCounter(counter) => return Some(gen_incr_counter(asm, counter)),
-        _ => {
+        Insn::ArrayExtend { .. }
+        | Insn::ArrayMax { .. }
+        | Insn::ArrayPush { .. }
+        | Insn::DefinedIvar { .. }
+        | Insn::FixnumDiv { .. }
+        | Insn::FixnumMod { .. }
+        | Insn::HashDup { .. }
+        | Insn::NewHash { .. }
+        | Insn::ObjToString { .. }
+        | Insn::Send { .. }
+        | Insn::StringIntern { .. }
+        | Insn::Throw { .. }
+        | Insn::ToArray { .. }
+        | Insn::ToNewArray { .. }
+        | Insn::Const { .. }
+        => {
             debug!("ZJIT: gen_function: unexpected insn {insn}");
             return None;
         }
