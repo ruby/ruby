@@ -41,4 +41,5 @@ s,@rubylibprefix@,,g
 s,@srcdir@,.,g
 
 s/@[A-Za-z][A-Za-z0-9_]*@//g
-s/{\$([A-Za-z]*)}//g
+s/{\$([^(){}]*)}//g
+s/^!/-/

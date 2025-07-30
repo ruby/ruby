@@ -398,7 +398,7 @@ $(MKFILES): config.status $(srcdir)/version.h $(ABI_VERSION_HDR)
 		{ echo "$@ updated, restart."; exit 1; }
 
 uncommon.mk: $(srcdir)/common.mk $(srcdir)/depend
-		sed 's/{\$$([^(){}]*)[^{}]*}//g' $(srcdir)/common.mk $(srcdir)/depend > $@
+		sed -f $(srcdir)/tool/prereq.status $(srcdir)/common.mk $(srcdir)/depend > $@
 
 .PHONY: reconfig
 reconfig-args = $(srcdir)/$(CONFIGURE) $(yes_silence:yes=--silent) $(configure_args)
