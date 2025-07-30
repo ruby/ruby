@@ -329,6 +329,8 @@ cc_check_class(VALUE klass)
     return klass;
 }
 
+VALUE rb_vm_cc_table_create(size_t capa);
+
 static inline const struct rb_callcache *
 vm_cc_new(VALUE klass,
           const struct rb_callable_method_entry_struct *cme,

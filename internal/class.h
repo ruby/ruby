@@ -83,7 +83,7 @@ struct rb_classext_struct {
     struct rb_id_table *m_tbl;
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
-    struct rb_id_table *cc_tbl; /* ID -> [[ci1, cc1], [ci2, cc2] ...] */
+    VALUE cc_tbl; /* { ID => { cme, [cc1, cc2, ...] }, ... } */
     struct rb_id_table *cvc_tbl;
     VALUE *superclasses;
     /**
@@ -262,7 +262,7 @@ static inline void RCLASS_WRITE_SUPER(VALUE klass, VALUE super);
 static inline void RCLASS_SET_CONST_TBL(VALUE klass, struct rb_id_table *table, bool shared);
 static inline void RCLASS_WRITE_CONST_TBL(VALUE klass, struct rb_id_table *table, bool shared);
 static inline void RCLASS_WRITE_CALLABLE_M_TBL(VALUE klass, struct rb_id_table *table);
-static inline void RCLASS_WRITE_CC_TBL(VALUE klass, struct rb_id_table *table);
+static inline void RCLASS_WRITE_CC_TBL(VALUE klass, VALUE table);
 static inline void RCLASS_SET_CVC_TBL(VALUE klass, struct rb_id_table *table);
 static inline void RCLASS_WRITE_CVC_TBL(VALUE klass, struct rb_id_table *table);
 
@@ -628,9 +628,9 @@ RCLASS_WRITE_CALLABLE_M_TBL(VALUE klass, struct rb_id_table *table)
 }
 
 static inline void
-RCLASS_WRITE_CC_TBL(VALUE klass, struct rb_id_table *table)
+RCLASS_WRITE_CC_TBL(VALUE klass, VALUE table)
 {
-    RCLASSEXT_CC_TBL(RCLASS_EXT_WRITABLE(klass)) = table;
+    RB_OBJ_WRITE(klass, &RCLASSEXT_CC_TBL(RCLASS_EXT_WRITABLE(klass)), table);
 }
 
 static inline void
