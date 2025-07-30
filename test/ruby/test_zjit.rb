@@ -826,6 +826,17 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_forty_param_method
+    # This used to a trigger a miscomp on A64 due
+    # to a memory displacement larger than 9 bits.
+    assert_compiles '1', %Q{
+      def foo(#{'_,' * 39} n40) = n40
+
+      foo(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1)
+    }
+  end
+
+
   def test_opt_aref_with
     assert_compiles ':ok', %q{
       def aref_with(hash) = hash["key"]
