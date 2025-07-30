@@ -1,9 +1,11 @@
+use crate::codegen::gen_stub_exit;
 use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insns_count, EcPtr, Qnil, VALUE};
 use crate::cruby_methods;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
 use crate::options::get_option;
 use crate::stats::Counters;
+use crate::virtualmem::CodePtr;
 
 #[allow(non_upper_case_globals)]
 #[unsafe(no_mangle)]
@@ -30,6 +32,9 @@ pub struct ZJITState {
 
     /// Properties of core library methods
     method_annotations: cruby_methods::Annotations,
+
+    /// Side-exit trampoline used when it fails to compile the ISEQ for a function stub
+    stub_exit: CodePtr,
 }
 
 /// Private singleton instance of the codegen globals
@@ -39,7 +44,7 @@ impl ZJITState {
     /// Initialize the ZJIT globals
     pub fn init() {
         #[cfg(not(test))]
-        let cb = {
+        let mut cb = {
             use crate::cruby::*;
             use crate::options::*;
 
@@ -76,7 +81,9 @@ impl ZJITState {
             CodeBlock::new(mem_block.clone(), get_option!(dump_disasm))
         };
         #[cfg(test)]
-        let cb = CodeBlock::new_dummy();
+        let mut cb = CodeBlock::new_dummy();
+
+        let stub_exit = gen_stub_exit(&mut cb).unwrap();
 
         // Initialize the codegen globals instance
         let zjit_state = ZJITState {
@@ -85,6 +92,7 @@ impl ZJITState {
             invariants: Invariants::default(),
             assert_compiles: false,
             method_annotations: cruby_methods::init(),
+            stub_exit,
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
     }
@@ -159,6 +167,11 @@ impl ZJITState {
         } else {
             true // If no restrictions, allow all ISEQs
         }
+    }
+
+    /// Return a code pointer to the side-exit trampoline for function stubs
+    pub fn get_stub_exit() -> CodePtr {
+        ZJITState::get_instance().stub_exit
     }
 }
 
