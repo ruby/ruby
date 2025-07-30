@@ -395,7 +395,7 @@ VALUE
 rb_managed_id_table_dup(VALUE old_table)
 {
     struct rb_id_table *new_tbl;
-    VALUE obj = TypedData_Make_Struct(0, struct rb_id_table, &rb_managed_id_table_type, new_tbl);
+    VALUE obj = TypedData_Make_Struct(0, struct rb_id_table, RTYPEDDATA_TYPE(old_table), new_tbl);
     struct rb_id_table *old_tbl = managed_id_table_ptr(old_table);
     rb_id_table_init(new_tbl, old_tbl->num + 1);
     rb_id_table_foreach(old_tbl, managed_id_table_dup_i, new_tbl);

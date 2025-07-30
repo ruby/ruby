@@ -330,6 +330,8 @@ cc_check_class(VALUE klass)
 }
 
 VALUE rb_vm_cc_table_create(size_t capa);
+VALUE rb_vm_cc_table_dup(VALUE old_table);
+void rb_vm_cc_table_delete(VALUE table, ID mid);
 
 static inline const struct rb_callcache *
 vm_cc_new(VALUE klass,
@@ -600,11 +602,14 @@ vm_ccs_p(const struct rb_class_cc_entries *ccs)
 static inline bool
 vm_cc_check_cme(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme)
 {
-    if (vm_cc_cme(cc) == cme ||
-        (cme->def->iseq_overload && vm_cc_cme(cc) == rb_vm_lookup_overloaded_cme(cme))) {
+    bool valid;
+    RB_VM_LOCKING() {
+        valid = vm_cc_cme(cc) == cme ||
+            (cme->def->iseq_overload && vm_cc_cme(cc) == rb_vm_lookup_overloaded_cme(cme));
+    }
+    if (valid) {
         return true;
     }
-    else {
 #if 1
         // debug print
 
@@ -616,13 +621,9 @@ vm_cc_check_cme(const struct rb_callcache *cc, const rb_callable_method_entry_t 
         rp(vm_cc_cme(cc));
         rp(rb_vm_lookup_overloaded_cme(cme));
 #endif
-        return false;
-    }
+    return false;
 }
 
 #endif
-
-// gc.c
-void rb_vm_ccs_free(struct rb_class_cc_entries *ccs);
 
 #endif /* RUBY_VM_CALLINFO_H */
