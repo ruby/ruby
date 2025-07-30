@@ -779,30 +779,16 @@ update_tz(void)
 }
 
 #if defined(__APPLE__) && defined(ENABLE_MACOS_LOCALTIME_CACHE)
-/* Offset-based cache: stores UTC-to-local offset per 15-minute interval
- * This handles leap seconds correctly since offset remains constant throughout a minute
- * All timezone offsets are on 15-minute boundaries (00, 15, 30, 45) which improves
- * cache effectiveness by 15x compared to per-minute caching */
-#define OFFSET_CACHE_SIZE 64  /* Must be power of 2 - increased for better coverage */
-#define OFFSET_CACHE_ZONE_LENGTH 64
-
-/* Cache key: 15-minute precision */
-typedef struct {
-    int year;
-    int month;
-    int day;
-    int hour;
-    int quarter;  /* 0-3 representing 00, 15, 30, 45 minute intervals */
-} offset_cache_key;
+#define OFFSET_CACHE_SIZE 64 /* Must be a power of 2 */
 
 /* Offset cache entry */
 typedef struct {
-    offset_cache_key key;
+    time_t key;
     long gmtoff;          /* UTC to local offset in seconds */
     int isdst;            /* DST flag */
     int valid;
 #ifdef HAVE_STRUCT_TM_TM_ZONE
-    char tm_zone[OFFSET_CACHE_ZONE_LENGTH];
+    char* tm_zone;
 #endif
 } offset_cache_entry;
 
@@ -817,27 +803,12 @@ invalidate_offset_cache(void)
     }
 }
 
-/* Hash function for offset cache based on 15-minute intervals */
 static inline unsigned int
-offset_cache_hash(const offset_cache_key *key)
+offset_cache_hash(const time_t key)
 {
-    /* Combine components into a single value for hashing
-     * year * 35040 (quarters in a year) + month * 2880 (quarters in a month) +
-     * day * 96 (quarters in a day) + hour * 4 + quarter */
-    uint32_t val = key->year * 35040 + key->month * 2880 +
-                   key->day * 96 + key->hour * 4 + key->quarter;
     /* Knuth multiplicative hash */
-    return (uint32_t)((val * 2654435761U) >> 26) & (OFFSET_CACHE_SIZE - 1);
+    return (uint32_t)((key * 2654435761U) >> 26) & (OFFSET_CACHE_SIZE - 1);
 }
-
-/* Check if cache keys match */
-static inline int
-offset_cache_key_eq(const offset_cache_key *a, const offset_cache_key *b)
-{
-    return a->year == b->year && a->month == b->month &&
-           a->day == b->day && a->hour == b->hour && a->quarter == b->quarter;
-}
-
 #endif
 
 static struct tm *
@@ -854,24 +825,19 @@ rb_localtime_r(const time_t *t, struct tm *result)
         return NULL;
     }
 
-    /* Create cache key from UTC time (15-minute precision) */
-    offset_cache_key key = {
-        .year = utc_tm.tm_year + 1900,
-        .month = utc_tm.tm_mon + 1,
-        .day = utc_tm.tm_mday,
-        .hour = utc_tm.tm_hour,
-        .quarter = utc_tm.tm_min / 15  /* 0-3 for 00, 15, 30, 45 minute intervals */
-    };
+    /* Create cache key from UTC time aligned to one-minute boundaries */
+    time_t key = (*t) / (60);
+    if (*t < 0 && (*t) % (60) != 0) {
+        key--; /* Floor division adjustment for negative timestamps */
+    }
 
-    unsigned int cache_idx = offset_cache_hash(&key);
+    unsigned int cache_idx = offset_cache_hash(key);
     offset_cache_entry *entry = &offset_cache[cache_idx];
 
     /* Check cache */
-    if (entry->valid && offset_cache_key_eq(&entry->key, &key)) {
+    if (entry->valid && entry->key == key) {
         /* Cache hit - apply cached offset to UTC time */
         *result = utc_tm;  /* Start with UTC components */
-
-        /* Apply the offset directly without calling gmtime_r again */
         apply_tm_offset(result, entry->gmtoff);
 
         /* Set cached timezone info */
@@ -892,26 +858,24 @@ rb_localtime_r(const time_t *t, struct tm *result)
         return NULL;
     }
 
-    /* Store in cache */
-    entry->key = key;
 #ifdef HAVE_STRUCT_TM_TM_GMTOFF
-    entry->gmtoff = result->tm_gmtoff;
+    long gmtoff = result->tm_gmtoff;
 #else
     /* Fallback: calculate offset if tm_gmtoff not available */
-    entry->gmtoff = mktime(result) - *t;
+    long gmtoff = mktime(result) - *t;
 #endif
-    entry->isdst = result->tm_isdst;
-    entry->valid = 1;
+
+    /* Store in cache as long as offset is a multiple of one minute */
+    if ((gmtoff % (60)) == 0) {
+        entry->key = key;
+        entry->gmtoff = gmtoff;
+        entry->isdst = result->tm_isdst;
+        entry->valid = 1;
 
 #ifdef HAVE_STRUCT_TM_TM_ZONE
-    if (result->tm_zone) {
-        strncpy(entry->tm_zone, result->tm_zone, OFFSET_CACHE_ZONE_LENGTH-1);
-        entry->tm_zone[OFFSET_CACHE_ZONE_LENGTH-1] = '\0';
-    }
-    else {
-        entry->tm_zone[0] = '\0';
-    }
+        entry->tm_zone = result->tm_zone;
 #endif
+    }
 
     return result;
 #else
@@ -1083,7 +1047,7 @@ apply_tm_offset(struct tm *tm, long offset)
 
         /* Recalculate wday and yday */
         tm->tm_wday = calc_wday(year % 400, month, day);
-        tm->tm_yday = calc_tm_yday(year - 1900, month - 1, day) - 1;
+        tm->tm_yday = calc_tm_yday(tm->tm_year, tm->tm_mon, tm->tm_mday);
     }
 }
 #endif
@@ -1179,6 +1143,7 @@ timegmw_noleapsecond(struct vtm *vtm)
     divmodv(year1900, INT2FIX(400), &q400, &r400);
     year_mod400 = NUM2INT(r400);
 
+    /* TODO - should this be year1900? */
     yday = calc_tm_yday(year_mod400, vtm->mon-1, vtm->mday);
 
     /*

@@ -2255,7 +2255,7 @@ AC_CHECK_FUNCS(__sinpi)
 AC_ARG_ENABLE(macos-localtime-cache,
 	AS_HELP_STRING([--enable-macos-localtime-cache],
 		       [enable localtime cache optimization for macOS to improve forked process performance]),
-	[macos_localtime_cache=$enableval], [macos_localtime_cache=no])
+	[macos_localtime_cache=$enableval], [macos_localtime_cache=yes])
 AS_IF([test "$macos_localtime_cache" = yes], [
     AS_CASE(["$target_os"],
         [darwin*], [
