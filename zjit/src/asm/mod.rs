@@ -7,7 +7,9 @@ use crate::virtualmem::*;
 
 // Lots of manual vertical alignment in there that rustfmt doesn't handle well.
 #[rustfmt::skip]
+#[cfg(target_arch = "x86_64")]
 pub mod x86_64;
+#[cfg(target_arch = "aarch64")]
 pub mod arm64;
 
 /// Index to a label created by cb.new_label()
