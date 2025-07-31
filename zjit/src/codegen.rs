@@ -379,7 +379,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         | Insn::FixnumDiv { .. }
         | Insn::FixnumMod { .. }
         | Insn::HashDup { .. }
-        | Insn::NewHash { .. }
         | Insn::ObjToString { .. }
         | Insn::Send { .. }
         | Insn::StringIntern { .. }
@@ -919,20 +918,14 @@ fn gen_new_hash(
     gen_save_pc(asm, state);
 
     asm_comment!(asm, "call rb_hash_new");
-    let cap: ::std::os::raw::c_long = (elements.len() / 2).try_into().expect("Unable to fit length of elements into c_long");
-    let new_hash = asm.ccall(
-        rb_hash_new_with_size as *const u8,
-        vec![lir::Opnd::Imm(cap)],
-    );
+    let cap: ::std::os::raw::c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+    let new_hash = asm_ccall!(asm, rb_hash_new_with_size, lir::Opnd::Imm(cap));
 
     for (key_id, val_id) in elements.iter() {
         let key = jit.get_opnd(*key_id).unwrap();
         let val = jit.get_opnd(*val_id).unwrap();
         asm_comment!(asm, "call rb_hash_aset");
-        asm.ccall(
-            rb_hash_aset as *const u8,
-            vec![new_hash, key, val]
-        );
+        asm_ccall!(asm, rb_hash_aset, new_hash, key, val);
     }
 
     new_hash
