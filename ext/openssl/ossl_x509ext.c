@@ -68,14 +68,9 @@ ossl_x509ext_new(X509_EXTENSION *ext)
     VALUE obj;
 
     obj = NewX509Ext(cX509Ext);
-    if (!ext) {
-	new = X509_EXTENSION_new();
-    } else {
-	new = X509_EXTENSION_dup(ext);
-    }
-    if (!new) {
-	ossl_raise(eX509ExtError, NULL);
-    }
+    new = X509_EXTENSION_dup(ext);
+    if (!new)
+        ossl_raise(eX509ExtError, "X509_EXTENSION_dup");
     SetX509Ext(obj, new);
 
     return obj;
