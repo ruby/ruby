@@ -644,6 +644,11 @@ pub enum Insn {
     GetSpecialSymbol { symbol_type: SpecialBackrefSymbol, state: InsnId },
     GetSpecialNumber { nth: u64, state: InsnId },
 
+    /// Get a class variable `id`
+    GetClassVar { id: ID, ic: *const iseq_inline_cvar_cache_entry, state: InsnId },
+    /// Set a class variable `id` to `val`
+    SetClassVar { id: ID, val: InsnId, ic: *const iseq_inline_cvar_cache_entry, state: InsnId },
+
     /// Own a FrameState so that instructions can look up their dominating FrameState when
     /// generating deopt side-exits and frame reconstruction metadata. Does not directly generate
     /// any code.
@@ -806,7 +811,7 @@ impl Insn {
         match self {
             Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::EntryPoint { .. } | Insn::Return { .. }
-            | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
+            | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } => false,
@@ -1121,6 +1126,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::SetLocal { val, level, ep_offset } => write!(f, "SetLocal l{level}, EP@{ep_offset}, {val}"),
             Insn::GetSpecialSymbol { symbol_type, .. } => write!(f, "GetSpecialSymbol {symbol_type:?}"),
             Insn::GetSpecialNumber { nth, .. } => write!(f, "GetSpecialNumber {nth}"),
+            Insn::GetClassVar { id, .. } => write!(f, "GetClassVar :{}", id.contents_lossy()),
+            Insn::SetClassVar { id, val, .. } => write!(f, "SetClassVar :{}, {val}", id.contents_lossy()),
             Insn::ToArray { val, .. } => write!(f, "ToArray {val}"),
             Insn::ToNewArray { val, .. } => write!(f, "ToNewArray {val}"),
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
@@ -1706,6 +1713,8 @@ impl Function {
             &LoadIvarEmbedded { self_val, id, index } => LoadIvarEmbedded { self_val: find!(self_val), id, index },
             &LoadIvarExtended { self_val, id, index } => LoadIvarExtended { self_val: find!(self_val), id, index },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val: find!(val), state },
+            &GetClassVar { id, ic, state } => GetClassVar { id, ic, state },
+            &SetClassVar { id, val, ic, state } => SetClassVar { id, val: find!(val), ic, state },
             &SetLocal { val, ep_offset, level } => SetLocal { val: find!(val), ep_offset, level },
             &GetSpecialSymbol { symbol_type, state } => GetSpecialSymbol { symbol_type, state },
             &GetSpecialNumber { nth, state } => GetSpecialNumber { nth, state },
@@ -1755,7 +1764,7 @@ impl Function {
             Insn::Param { .. } => unimplemented!("params should not be present in block.insns"),
             Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::EntryPoint { .. }
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
-            | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
+            | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
             | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrCounterPtr { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}", self.insns[insn.0]),
@@ -1837,6 +1846,7 @@ impl Function {
             Insn::LoadIvarExtended { .. } => types::BasicObject,
             Insn::GetSpecialSymbol { .. } => types::BasicObject,
             Insn::GetSpecialNumber { .. } => types::BasicObject,
+            Insn::GetClassVar { .. } => types::BasicObject,
             Insn::ToNewArray { .. } => types::ArrayExact,
             Insn::ToArray { .. } => types::ArrayExact,
             Insn::ObjToString { .. } => types::BasicObject,
@@ -3141,6 +3151,13 @@ impl Function {
             }
             &Insn::SetIvar { self_val, val, state, .. } => {
                 worklist.push_back(self_val);
+                worklist.push_back(val);
+                worklist.push_back(state);
+            }
+            &Insn::GetClassVar { state, .. } => {
+                worklist.push_back(state);
+            }
+            &Insn::SetClassVar { val, state, .. } => {
                 worklist.push_back(val);
                 worklist.push_back(state);
             }
@@ -4626,6 +4643,20 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state: exit_id });
                     let val = state.stack_pop()?;
                     fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, val, state: exit_id });
+                }
+                YARVINSN_getclassvariable => {
+                    let id = ID(get_arg(pc, 0).as_u64());
+                    let ic = get_arg(pc, 1).as_ptr();
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let result = fun.push_insn(block, Insn::GetClassVar { id, ic, state: exit_id });
+                    state.stack_push(result);
+                }
+                YARVINSN_setclassvariable => {
+                    let id = ID(get_arg(pc, 0).as_u64());
+                    let ic = get_arg(pc, 1).as_ptr();
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let val = state.stack_pop()?;
+                    fun.push_insn(block, Insn::SetClassVar { id, val, ic, state: exit_id });
                 }
                 YARVINSN_opt_reverse => {
                     // Reverse the order of the top N stack items.
@@ -7407,6 +7438,59 @@ mod tests {
             foo.bar
         ");
         assert_eq!(VALUE::fixnum_from_usize(1), result);
+    }
+
+    #[test]
+    fn test_getclassvariable() {
+        eval("
+            class Foo
+              def self.test = @@foo
+            end
+        ");
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("Foo", "test"));
+        assert!(iseq_contains_opcode(iseq, YARVINSN_getclassvariable), "iseq Foo.test does not contain getclassvariable");
+        let function = iseq_to_hir(iseq).unwrap();
+        assert_snapshot!(hir_string_function(&function), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:BasicObject = GetClassVar :@@foo
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_setclassvariable() {
+        eval("
+            class Foo
+              def self.test = @@foo = 42
+            end
+        ");
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("Foo", "test"));
+        assert!(iseq_contains_opcode(iseq, YARVINSN_setclassvariable), "iseq Foo.test does not contain setclassvariable");
+        let function = iseq_to_hir(iseq).unwrap();
+        assert_snapshot!(hir_string_function(&function), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[42] = Const Value(42)
+          SetClassVar :@@foo, v10
+          CheckInterrupts
+          Return v10
+        ");
     }
 
     #[test]

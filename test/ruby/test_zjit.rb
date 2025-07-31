@@ -1664,6 +1664,28 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_getclassvariable
+    assert_compiles '42', %q{
+      class Foo
+        def self.test = @@x
+      end
+
+      Foo.class_variable_set(:@@x, 42)
+      Foo.test()
+    }
+  end
+
+  def test_setclassvariable
+    assert_compiles '42', %q{
+      class Foo
+        def self.test = @@x = 42
+      end
+
+      Foo.test()
+      Foo.class_variable_get(:@@x)
+    }
+  end
+
   def test_attr_reader
     assert_compiles '[4, 4]', %q{
       class C
