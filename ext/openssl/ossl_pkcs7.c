@@ -770,7 +770,6 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
     BIO *in, *out;
     PKCS7 *p7;
     VALUE data;
-    const char *msg;
 
     GetPKCS7(self, p7);
     rb_scan_args(argc, argv, "22", &certs, &store, &indata, &flags);
@@ -794,14 +793,16 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
     ok = PKCS7_verify(p7, x509s, x509st, in, out, flg);
     BIO_free(in);
     sk_X509_pop_free(x509s, X509_free);
-    if (ok < 0) ossl_raise(ePKCS7Error, "PKCS7_verify");
-    msg = ERR_reason_error_string(ERR_peek_error());
-    ossl_pkcs7_set_err_string(self, msg ? rb_str_new2(msg) : Qnil);
-    ossl_clear_error();
     data = ossl_membio2str(out);
     ossl_pkcs7_set_data(self, data);
-
-    return (ok == 1) ? Qtrue : Qfalse;
+    if (ok != 1) {
+        const char *msg = ERR_reason_error_string(ERR_peek_error());
+        ossl_pkcs7_set_err_string(self, msg ? rb_str_new_cstr(msg) : Qnil);
+        ossl_clear_error();
+        return Qfalse;
+    }
+    ossl_pkcs7_set_err_string(self, Qnil);
+    return Qtrue;
 }
 
 static VALUE
