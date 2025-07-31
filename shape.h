@@ -273,7 +273,7 @@ rb_shape_root(size_t heap_id)
 static inline shape_id_t
 RSHAPE_PARENT(shape_id_t shape_id)
 {
-    return RSHAPE(shape_id)->parent_id;
+    return RSHAPE(shape_id)->parent_id | (shape_id & SHAPE_ID_FLAGS_MASK);
 }
 
 static inline enum shape_type
