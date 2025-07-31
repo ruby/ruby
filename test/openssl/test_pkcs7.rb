@@ -265,6 +265,7 @@ IQCJVpo1FTLZOHSc9UpjS+VKR4cg50Iz0HiPyo6hwjCrwA==
 
     p7 = OpenSSL::PKCS7.new(asn1)
     assert_equal(:data, p7.type)
+    assert_equal(false, p7.detached)
     assert_equal(false, p7.detached?)
     # Not applicable
     assert_nil(p7.certificates)

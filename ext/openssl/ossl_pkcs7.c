@@ -510,6 +510,8 @@ ossl_pkcs7_get_detached(VALUE self)
 {
     PKCS7 *p7;
     GetPKCS7(self, p7);
+    if (!PKCS7_type_is_signed(p7))
+        return Qfalse;
     return PKCS7_get_detached(p7) ? Qtrue : Qfalse;
 }
 
