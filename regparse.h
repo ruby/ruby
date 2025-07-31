@@ -69,8 +69,8 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define NTYPE(node)             ((node)->u.base.type)
 #define SET_NTYPE(node, ntype) \
     do { \
-	int value = ntype; \
-	memcpy(&((node)->u.base.type), &value, sizeof(int)); \
+        int value = ntype; \
+        memcpy(&((node)->u.base.type), &value, sizeof(int)); \
     } while (0)
 
 #define NSTR(node)         (&((node)->u.str))
