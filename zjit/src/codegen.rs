@@ -327,7 +327,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     let out_opnd = match insn {
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
         Insn::NewArray { elements, state } => gen_new_array(asm, opnds!(elements), &function.frame_state(*state)),
-        Insn::NewHash { elements, state } => gen_new_hash(jit, asm, elements, &function.frame_state(*state)),
+        Insn::NewHash { elements, state } => gen_new_hash(jit, asm, elements, &function.frame_state(*state))?,
         Insn::NewRange { low, high, flag, state } => gen_new_range(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::StringCopy { val, chilled } => gen_string_copy(asm, opnd!(val), *chilled),
@@ -913,7 +913,7 @@ fn gen_new_hash(
     asm: &mut Assembler,
     elements: &Vec<(InsnId, InsnId)>,
     state: &FrameState,
-) -> lir::Opnd {
+) -> Option<lir::Opnd> {
     // Save PC
     gen_save_pc(asm, state);
 
@@ -922,13 +922,13 @@ fn gen_new_hash(
     let new_hash = asm_ccall!(asm, rb_hash_new_with_size, lir::Opnd::Imm(cap));
 
     for (key_id, val_id) in elements.iter() {
-        let key = jit.get_opnd(*key_id).unwrap();
-        let val = jit.get_opnd(*val_id).unwrap();
+        let key = jit.get_opnd(*key_id)?;
+        let val = jit.get_opnd(*val_id)?;
         asm_comment!(asm, "call rb_hash_aset");
         asm_ccall!(asm, rb_hash_aset, new_hash, key, val);
     }
 
-    new_hash
+    Some(new_hash)
 }
 
 /// Compile a new range instruction
