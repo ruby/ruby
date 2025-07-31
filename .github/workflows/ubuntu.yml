@@ -108,6 +108,7 @@ jobs:
         run: |
           id
           id -u
+          id -g
         working-directory:
 
       # Avoid possible test failures with the zlib applying the following patch
@@ -127,6 +128,11 @@ jobs:
           dummy-files: ${{ matrix.test_task == 'check' }}
           # Set fetch-depth: 10 so that Launchable can receive commits information.
           fetch-depth: 10
+
+      - name: Debug getpwuid()
+        run: |
+          gcc ../src/get_pw_by_uid.c -o get_pw_by_uid
+          ./get_pw_by_uid "$(id -u)"
 
       - name: Run configure
         env:
