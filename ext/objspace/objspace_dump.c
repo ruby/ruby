@@ -801,7 +801,7 @@ shape_id_i(shape_id_t shape_id, void *data)
 
     if (RSHAPE_TYPE(shape_id) != SHAPE_ROOT) {
         dump_append(dc, ", \"parent_id\":");
-        dump_append_lu(dc, RSHAPE_PARENT(shape_id));
+        dump_append_lu(dc, RSHAPE_PARENT_RAW_ID(shape_id));
     }
 
     dump_append(dc, ", \"depth\":");
