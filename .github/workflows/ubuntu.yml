@@ -104,6 +104,12 @@ jobs:
         working-directory:
         if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
 
+      - name: Debug id info
+        run: |
+          id
+          id -u
+        working-directory:
+
       # Avoid possible test failures with the zlib applying the following patch
       # on s390x CPU architecture.
       # https://github.com/madler/zlib/pull/410
@@ -147,6 +153,9 @@ jobs:
           TESTS="$(echo "${{ matrix.skipped_tests }}" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|')"
           echo "TESTS=${TESTS}" >> $GITHUB_ENV
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
+
+      - name: Debug Etc
+        run: make runruby TESTRUN_SCRIPT="../src/test_etc.rb"
 
       - name: Set up Launchable
         id: launchable
