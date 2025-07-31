@@ -244,7 +244,11 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
     let reverse_post_order = function.rpo();
     for &block_id in reverse_post_order.iter() {
         let block = function.block(block_id);
-        asm_comment!(asm, "Block: {block_id}({})", block.params().map(|param| format!("{param}")).collect::<Vec<_>>().join(", "));
+        asm_comment!(
+            asm, "{block_id}({}): {}",
+            block.params().map(|param| format!("{param}")).collect::<Vec<_>>().join(", "),
+            iseq_get_location(iseq, block.insn_idx),
+        );
 
         // Write a label to jump to the basic block
         let label = jit.get_label(&mut asm, block_id);

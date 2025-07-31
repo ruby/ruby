@@ -715,7 +715,7 @@ pub fn iseq_name(iseq: IseqPtr) -> String {
 // Location is the file defining the method, colon, method name.
 // Filenames are sometimes internal strings supplied to eval,
 // so be careful with them.
-pub fn iseq_get_location(iseq: IseqPtr, pos: u16) -> String {
+pub fn iseq_get_location(iseq: IseqPtr, pos: u32) -> String {
     let iseq_path = unsafe { rb_iseq_path(iseq) };
     let iseq_lineno = unsafe { rb_iseq_line_no(iseq, pos as usize) };
 
