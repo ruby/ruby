@@ -840,30 +840,33 @@ ossl_pkcs7_add_data(VALUE self, VALUE data)
     PKCS7 *pkcs7;
     BIO *out, *in;
     char buf[4096];
-    int len;
+    int len, ret;
 
     GetPKCS7(self, pkcs7);
-    if(PKCS7_type_is_signed(pkcs7)){
-	if(!PKCS7_content_new(pkcs7, NID_pkcs7_data))
-	    ossl_raise(ePKCS7Error, NULL);
+    if (PKCS7_type_is_signed(pkcs7)) {
+        if (!PKCS7_content_new(pkcs7, NID_pkcs7_data))
+            ossl_raise(ePKCS7Error, "PKCS7_content_new");
     }
     in = ossl_obj2bio(&data);
-    if(!(out = PKCS7_dataInit(pkcs7, NULL))) goto err;
-    for(;;){
-	if((len = BIO_read(in, buf, sizeof(buf))) <= 0)
-	    break;
-	if(BIO_write(out, buf, len) != len)
-	    goto err;
+    if (!(out = PKCS7_dataInit(pkcs7, NULL))) {
+        BIO_free(in);
+        ossl_raise(ePKCS7Error, "PKCS7_dataInit");
     }
-    if(!PKCS7_dataFinal(pkcs7, out)) goto err;
-    ossl_pkcs7_set_data(self, Qnil);
-
- err:
+    for (;;) {
+        if ((len = BIO_read(in, buf, sizeof(buf))) <= 0)
+            break;
+        if (BIO_write(out, buf, len) != len) {
+            BIO_free_all(out);
+            BIO_free(in);
+            ossl_raise(ePKCS7Error, "BIO_write");
+        }
+    }
+    ret = PKCS7_dataFinal(pkcs7, out);
     BIO_free_all(out);
     BIO_free(in);
-    if(ERR_peek_error()){
-	ossl_raise(ePKCS7Error, NULL);
-    }
+    if (!ret)
+        ossl_raise(ePKCS7Error, "PKCS7_dataFinal");
+    ossl_pkcs7_set_data(self, Qnil);
 
     return data;
 }
