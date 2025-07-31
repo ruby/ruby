@@ -1774,7 +1774,7 @@ general_ivar_set(VALUE obj, ID id, VALUE val, void *data,
             shape_resize_fields_func(obj, RSHAPE_CAPACITY(current_shape_id), RSHAPE_CAPACITY(next_shape_id), data);
         }
 
-        RUBY_ASSERT(RSHAPE_TYPE_P(next_shape_id, SHAPE_IVAR));
+        RUBY_ASSERT(RSHAPE_TYPE_P(next_shape_id, SHAPE_IVAR), "next_shape_id: 0x%" PRIx32, next_shape_id);
         RUBY_ASSERT(index == (RSHAPE_INDEX(next_shape_id)));
         set_shape_id_func(obj, next_shape_id, data);
     }
