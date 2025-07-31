@@ -102,6 +102,7 @@ jobs:
         with:
           path: src\vcpkg_installed
           key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
+        if: ${{ github.ref_name == 'master' || startsWith(github.ref_name, 'ruby_') }}
 
       - name: setup env
         # Available Ruby versions: https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md#ruby
