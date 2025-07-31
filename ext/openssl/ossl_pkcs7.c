@@ -143,11 +143,19 @@ ossl_PKCS7_SIGNER_INFO_dup(PKCS7_SIGNER_INFO *si)
 }
 
 static PKCS7_RECIP_INFO *
-ossl_PKCS7_RECIP_INFO_dup(PKCS7_RECIP_INFO *si)
+ossl_PKCS7_RECIP_INFO_dup(PKCS7_RECIP_INFO *ri)
 {
-    return ASN1_dup((i2d_of_void *)i2d_PKCS7_RECIP_INFO,
-                    (d2i_of_void *)d2i_PKCS7_RECIP_INFO,
-                    si);
+    PKCS7_RECIP_INFO *ri_new = ASN1_dup((i2d_of_void *)i2d_PKCS7_RECIP_INFO,
+                                        (d2i_of_void *)d2i_PKCS7_RECIP_INFO,
+                                        ri);
+    if (ri_new && ri->cert) {
+        if (!X509_up_ref(ri->cert)) {
+            PKCS7_RECIP_INFO_free(ri_new);
+            return NULL;
+        }
+        ri_new->cert = ri->cert;
+    }
+    return ri_new;
 }
 
 static VALUE
@@ -860,6 +868,11 @@ ossl_pkcs7_add_data(VALUE self, VALUE data)
             BIO_free(in);
             ossl_raise(ePKCS7Error, "BIO_write");
         }
+    }
+    if (BIO_flush(out) <= 0) {
+        BIO_free_all(out);
+        BIO_free(in);
+        ossl_raise(ePKCS7Error, "BIO_flush");
     }
     ret = PKCS7_dataFinal(pkcs7, out);
     BIO_free_all(out);

@@ -250,6 +250,28 @@ IQCJVpo1FTLZOHSc9UpjS+VKR4cg50Iz0HiPyo6hwjCrwA==
     }
   end
 
+  def test_enveloped_add_recipient
+    omit_on_fips # PKCS #1 v1.5 padding
+
+    data = "aaaaa\nbbbbb\nccccc\n"
+    ktri_ee1 = OpenSSL::PKCS7::RecipientInfo.new(@ee1_cert)
+    ktri_ee2 = OpenSSL::PKCS7::RecipientInfo.new(@ee2_cert)
+
+    tmp = OpenSSL::PKCS7.new
+    tmp.type = :enveloped
+    tmp.cipher = "AES-128-CBC"
+    tmp.add_recipient(ktri_ee1)
+    tmp.add_recipient(ktri_ee2)
+    tmp.add_data(data)
+
+    p7 = OpenSSL::PKCS7.new(tmp.to_der)
+    assert_equal(:enveloped, p7.type)
+    assert_equal(data, p7.decrypt(@ee1_key, @ee1_cert))
+    assert_equal(data, p7.decrypt(@ee2_key, @ee2_cert))
+    assert_equal([@ee1_cert.serial, @ee2_cert.serial].sort,
+                 p7.recipients.map(&:serial).sort)
+  end
+
   def test_data
     asn1 = OpenSSL::ASN1::Sequence([
       OpenSSL::ASN1::ObjectId("pkcs7-data"),
@@ -316,12 +338,6 @@ END
     p7 = OpenSSL::PKCS7.new
     p7.type = "signedAndEnveloped"
     assert_equal(:signedAndEnveloped, p7.type)
-  end
-
-  def test_set_type_enveloped
-    p7 = OpenSSL::PKCS7.new
-    p7.type = "enveloped"
-    assert_equal(:enveloped, p7.type)
   end
 
   def test_set_type_encrypted
