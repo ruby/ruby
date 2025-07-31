@@ -146,7 +146,9 @@ class Exports::Cygwin < Exports
   end
 
   def each_line(objs, &block)
-    IO.foreach("|#{self.class.nm} --extern-only --defined-only #{objs.join(' ')}", &block)
+    IO.popen(%W[#{self.class.nm} --extern-only --defined-only] + objs) do |f|
+      f.each(&block)
+    end
   end
 
   def each_export(objs)
@@ -155,7 +157,7 @@ class Exports::Cygwin < Exports
     re = /\s(?:(T)|[[:upper:]])\s#{symprefix}((?!#{PrivateNames}).*)$/
     objdump(objs) do |l|
       next if /@.*@/ =~ l
-      yield $2, !$1 if re =~ l
+      yield $2.strip, !$1 if re =~ l
     end
   end
 end
