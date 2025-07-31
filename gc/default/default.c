@@ -839,7 +839,7 @@ RVALUE_AGE_GET(VALUE obj)
 }
 
 static void
-RVALUE_AGE_SET(VALUE obj, int age)
+RVALUE_AGE_SET_BITMAP(VALUE obj, int age)
 {
     RUBY_ASSERT(age <= RVALUE_OLD_AGE);
     bits_t *age_bits = GET_HEAP_PAGE(obj)->age_bits;
@@ -847,6 +847,12 @@ RVALUE_AGE_SET(VALUE obj, int age)
     age_bits[RVALUE_AGE_BITMAP_INDEX(obj)] &= ~(RVALUE_AGE_BIT_MASK << (RVALUE_AGE_BITMAP_OFFSET(obj)));
     // shift the correct value in
     age_bits[RVALUE_AGE_BITMAP_INDEX(obj)] |= ((bits_t)age << RVALUE_AGE_BITMAP_OFFSET(obj));
+}
+
+static void
+RVALUE_AGE_SET(VALUE obj, int age)
+{
+    RVALUE_AGE_SET_BITMAP(obj, age);
     if (age == RVALUE_OLD_AGE) {
         RB_FL_SET_RAW(obj, RUBY_FL_PROMOTED);
     }
@@ -1581,7 +1587,7 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
     page->freelist = slot;
     asan_lock_freelist(page);
 
-    RVALUE_AGE_RESET(obj);
+    RVALUE_AGE_SET_BITMAP(obj, 0);
 
     if (RGENGC_CHECK_MODE &&
         /* obj should belong to page */
@@ -6951,7 +6957,7 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, size_t src_slot_size, si
     }
 
     memset((void *)src, 0, src_slot_size);
-    RVALUE_AGE_RESET(src);
+    RVALUE_AGE_SET_BITMAP(src, 0);
 
     /* Set bits for object in new location */
     if (remembered) {
