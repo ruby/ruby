@@ -111,6 +111,10 @@ jobs:
           id -g
         working-directory:
 
+      - name: Debug nproc
+        run: nproc
+        working-directory:
+
       # Avoid possible test failures with the zlib applying the following patch
       # on s390x CPU architecture.
       # https://github.com/madler/zlib/pull/410
