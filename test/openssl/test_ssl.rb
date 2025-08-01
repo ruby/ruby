@@ -2317,6 +2317,50 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  # OpenSSL::Buffering requires $/ accessible from non-main Ractors (Ruby 3.5)
+  # https://bugs.ruby-lang.org/issues/21109
+  #
+  # Hangs on Windows
+  # https://bugs.ruby-lang.org/issues/21537
+  if respond_to?(:ractor) && RUBY_VERSION >= "3.5" && RUBY_PLATFORM !~ /mswin|mingw/
+    ractor
+    def test_ractor_client
+      start_server { |port|
+        s = Ractor.new(port, @ca_cert) { |port, ca_cert|
+          sock = TCPSocket.new("127.0.0.1", port)
+          ctx = OpenSSL::SSL::SSLContext.new
+          ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+          ctx.cert_store = OpenSSL::X509::Store.new.tap { |store|
+            store.add_cert(ca_cert)
+          }
+          begin
+            ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+            ssl.connect
+            ssl.puts("abc")
+            ssl.gets
+          ensure
+            ssl.close
+            sock.close
+          end
+        }.value
+        assert_equal("abc\n", s)
+      }
+    end
+
+    ractor
+    def test_ractor_set_params
+      # We cannot actually test default stores in the test suite as it depends
+      # on the environment, but at least check that it does not raise an
+      # exception
+      ok = Ractor.new {
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.set_params
+        ctx.cert_store.kind_of?(OpenSSL::X509::Store)
+      }.value
+      assert(ok, "ctx.cert_store is an instance of OpenSSL::X509::Store")
+    end
+  end
+
   private
 
   def server_connect(port, ctx = nil)

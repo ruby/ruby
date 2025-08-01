@@ -66,9 +66,10 @@ module OpenSSL
             AES256-SHA256
             AES128-SHA
             AES256-SHA
-          }.join(":"),
+          }.join(":").freeze,
         )
       end
+      DEFAULT_PARAMS.freeze
 
       DEFAULT_CERT_STORE = OpenSSL::X509::Store.new # :nodoc:
       DEFAULT_CERT_STORE.set_default_paths
@@ -114,7 +115,14 @@ module OpenSSL
         params.each{|name, value| self.__send__("#{name}=", value) }
         if self.verify_mode != OpenSSL::SSL::VERIFY_NONE
           unless self.ca_file or self.ca_path or self.cert_store
-            self.cert_store = DEFAULT_CERT_STORE
+            if not defined?(Ractor) or Ractor.current == Ractor.main
+              self.cert_store = DEFAULT_CERT_STORE
+            else
+              self.cert_store = Ractor.current[:__openssl_default_store__] ||=
+                OpenSSL::X509::Store.new.tap { |store|
+                  store.set_default_paths
+                }
+            end
           end
         end
         return params
