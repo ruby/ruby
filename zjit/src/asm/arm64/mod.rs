@@ -716,6 +716,21 @@ pub fn movk(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
     cb.write_bytes(&bytes);
 }
 
+/// MOVN - load a register with the complement of a shifted then zero extended 16-bit immediate
+/// <https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/MOVN--Move-wide-with-NOT->
+pub fn movn(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
+    let bytes: [u8; 4] = match (rd, imm16) {
+        (A64Opnd::Reg(rd), A64Opnd::UImm(imm16)) => {
+            assert!(uimm_fits_bits(imm16, 16), "The immediate operand must be 16 bits or less.");
+
+            Mov::movn(rd.reg_no, imm16 as u16, shift, rd.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to movn instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// MOVZ - move a 16 bit immediate into a register, zero the other bits
 pub fn movz(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
     let bytes: [u8; 4] = match (rd, imm16) {
@@ -1541,6 +1556,11 @@ mod tests {
     #[test]
     fn test_movk() {
         check_bytes("600fa0f2", |cb| movk(cb, X0, A64Opnd::new_uimm(123), 16));
+    }
+
+    #[test]
+    fn test_movn() {
+        check_bytes("600fa092", |cb| movn(cb, X0, A64Opnd::new_uimm(123), 16));
     }
 
     #[test]

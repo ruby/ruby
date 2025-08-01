@@ -140,6 +140,10 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
         // instruction, then we'll use that.
         movz(cb, rd, A64Opnd::new_uimm(current), 0);
         return 1;
+    } else if u16::try_from(!value).is_ok() {
+        // For small negative values, use a single movn
+        movn(cb, rd, A64Opnd::new_uimm(!value), 0);
+        return 1;
     } else if BitmaskImmediate::try_from(current).is_ok() {
         // Otherwise, if the immediate can be encoded
         // with the special bitmask immediate encoding,
@@ -1592,15 +1596,16 @@ mod tests {
 
         // Test values that exercise various types of immediates.
         //  - 9 bit displacement for Load/Store
-        //  - 12 bit shifted immediate
+        //  - 12 bit ADD/SUB shifted immediate
+        //  - 16 bit MOV family shifted immediates
         //  - bit mask immediates
-        for displacement in [i32::MAX, 0x10008, 0x1800, 0x208, -0x208, -0x1800, -0x1008, i32::MIN] {
+        for displacement in [i32::MAX, 0x10008, 0x1800, 0x208, -0x208, -0x1800, -0x10008, i32::MIN] {
             let mem = Opnd::mem(64, NATIVE_STACK_PTR, displacement);
             asm.lea_into(Opnd::Reg(X0_REG), mem);
         }
 
         asm.compile_with_num_regs(&mut cb, 0);
-        assert_disasm!(cb, "e07b40b2e063208b000180d22000a0f2e063208b000083d2e063208be0230891e02308d100009dd2e0ffbff2e0ffdff2e0fffff2e063208b00ff9dd2e0ffbff2e0ffdff2e0fffff2e063208be08361b2e063208b", "
+        assert_disasm!(cb, "e07b40b2e063208b000180d22000a0f2e063208b000083d2e063208be0230891e02308d1e0ff8292e063208b00ff9fd2c0ffbff2e0ffdff2e0fffff2e063208be08361b2e063208b", "
             0x0: orr x0, xzr, #0x7fffffff
             0x4: add x0, sp, x0
             0x8: mov x0, #8
@@ -1610,18 +1615,15 @@ mod tests {
             0x18: add x0, sp, x0
             0x1c: add x0, sp, #0x208
             0x20: sub x0, sp, #0x208
-            0x24: mov x0, #0xe800
-            0x28: movk x0, #0xffff, lsl #16
-            0x2c: movk x0, #0xffff, lsl #32
-            0x30: movk x0, #0xffff, lsl #48
-            0x34: add x0, sp, x0
-            0x38: mov x0, #0xeff8
-            0x3c: movk x0, #0xffff, lsl #16
-            0x40: movk x0, #0xffff, lsl #32
-            0x44: movk x0, #0xffff, lsl #48
-            0x48: add x0, sp, x0
-            0x4c: orr x0, xzr, #0xffffffff80000000
-            0x50: add x0, sp, x0
+            0x24: mov x0, #-0x1800
+            0x28: add x0, sp, x0
+            0x2c: mov x0, #0xfff8
+            0x30: movk x0, #0xfffe, lsl #16
+            0x34: movk x0, #0xffff, lsl #32
+            0x38: movk x0, #0xffff, lsl #48
+            0x3c: add x0, sp, x0
+            0x40: orr x0, xzr, #0xffffffff80000000
+            0x44: add x0, sp, x0
         ");
     }
 
