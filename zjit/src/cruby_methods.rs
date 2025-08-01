@@ -15,6 +15,11 @@ use crate::hir_type::{types, Type};
 
 pub struct Annotations {
     cfuncs: HashMap<*mut c_void, FnProperties>,
+    // Builtin annotations by function pointer for fast runtime lookup
+    // Uses Option to cache both hits and misses
+    builtin_ptrs: HashMap<*mut c_void, Option<FnProperties>>,
+    // Temporary name-based annotations used during initialization
+    builtin_names: HashMap<&'static str, FnProperties>,
 }
 
 /// Runtime behaviors of C functions that implement a Ruby method
@@ -41,6 +46,25 @@ impl Annotations {
         };
         self.cfuncs.get(&fn_ptr).copied()
     }
+
+    /// Query about properties of a builtin function by its pointer
+    /// If not found by pointer, checks by name and caches the result (including misses)
+    pub fn get_builtin_properties(&mut self, bf: *const rb_builtin_function) -> Option<FnProperties> {
+        let func_ptr = unsafe { (*bf).func_ptr as *mut c_void };
+
+        // First check if we already have it cached by pointer
+        if let Some(&cached_result) = self.builtin_ptrs.get(&func_ptr) {
+            return cached_result;
+        }
+
+        // If not found, check by name and cache the result
+        let name = unsafe { std::ffi::CStr::from_ptr((*bf).name).to_str().ok()? };
+        let result = self.builtin_names.get(name).copied();
+
+        // Cache the result (both hits and misses)
+        self.builtin_ptrs.insert(func_ptr, result);
+        result
+    }
 }
 
 fn annotate_c_method(props_map: &mut HashMap<*mut c_void, FnProperties>, class: VALUE, method_name: &'static str, props: FnProperties) {
@@ -63,6 +87,7 @@ fn annotate_c_method(props_map: &mut HashMap<*mut c_void, FnProperties>, class: 
 /// are about the stock versions of methods.
 pub fn init() -> Annotations {
     let cfuncs = &mut HashMap::new();
+    let builtin_names = &mut HashMap::new();
 
     macro_rules! annotate {
         ($module:ident, $method_name:literal, $return_type:expr, $($properties:ident),+) => {
@@ -71,6 +96,22 @@ pub fn init() -> Annotations {
                 props.$properties = true;
             )+
             annotate_c_method(cfuncs, unsafe { $module }, $method_name, props);
+        }
+    }
+
+    macro_rules! annotate_builtin {
+        ($name:literal, $return_type:expr) => {
+            annotate_builtin!($name, $return_type, no_gc, leaf, elidable)
+        };
+        ($name:literal, $return_type:expr, $($properties:ident),+) => {
+            let mut props = FnProperties {
+                no_gc: false,
+                leaf: false,
+                elidable: false,
+                return_type: $return_type
+            };
+            $(props.$properties = true;)+
+            builtin_names.insert($name, props);
         }
     }
 
@@ -83,7 +124,13 @@ pub fn init() -> Annotations {
     annotate!(rb_cNilClass, "nil?", types::TrueClass, no_gc, leaf, elidable);
     annotate!(rb_mKernel, "nil?", types::FalseClass, no_gc, leaf, elidable);
 
+    // Annotate builtin functions
+    annotate_builtin!("rb_f_float", types::Flonum);
+    annotate_builtin!("rb_f_float1", types::Flonum);
+
     Annotations {
-        cfuncs: std::mem::take(cfuncs)
+        cfuncs: std::mem::take(cfuncs),
+        builtin_ptrs: HashMap::new(), // Cache queried built-in functions by pointer
+        builtin_names: std::mem::take(builtin_names)
     }
 }
