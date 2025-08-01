@@ -1152,7 +1152,7 @@ module Prism
           parameters =
             case node.parameters
             when nil, ItParametersNode, NumberedParametersNode
-              s(node, :args)
+              0
             else
               visit(node.parameters)
             end
