@@ -728,22 +728,6 @@ rb_shape_transition_object_id(VALUE obj)
     return shape_transition_object_id(RBASIC_SHAPE_ID(obj));
 }
 
-shape_id_t
-rb_shape_object_id(shape_id_t original_shape_id)
-{
-    RUBY_ASSERT(rb_shape_has_object_id(original_shape_id));
-
-    rb_shape_t *shape = RSHAPE(original_shape_id);
-    while (shape->type != SHAPE_OBJ_ID) {
-        if (UNLIKELY(shape->parent_id == INVALID_SHAPE_ID)) {
-            rb_bug("Missing object_id in shape tree");
-        }
-        shape = RSHAPE(shape->parent_id);
-    }
-
-    return shape_id(shape, original_shape_id) | SHAPE_ID_FL_HAS_OBJECT_ID;
-}
-
 static inline shape_id_t
 transition_complex(shape_id_t shape_id)
 {

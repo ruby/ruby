@@ -221,7 +221,6 @@ shape_id_t rb_shape_transition_add_ivar(VALUE obj, ID id);
 shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id);
 shape_id_t rb_shape_transition_object_id(VALUE obj);
 shape_id_t rb_shape_transition_heap(VALUE obj, size_t heap_index);
-shape_id_t rb_shape_object_id(shape_id_t original_shape_id);
 
 void rb_shape_free_all(void);
 
