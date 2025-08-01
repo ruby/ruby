@@ -96,8 +96,10 @@ pub const ALLOC_REGS: &'static [Reg] = &[
 
 impl Assembler
 {
-    // A special scratch register for intermediate processing.
-    // This register is caller-saved (so we don't have to save it before using it)
+    /// Special scratch registers for intermediate processing.
+    /// This register is call-clobbered (so we don't have to save it before using it).
+    /// Avoid using if you can since this is used to lower [Insn] internally and
+    /// so conflicts are possible.
     pub const SCRATCH_REG: Reg = R11_REG;
     const SCRATCH0: X86Opnd = X86Opnd::Reg(Assembler::SCRATCH_REG);
 
@@ -293,38 +295,11 @@ impl Assembler
 
                     asm.push_insn(insn);
                 },
-                Insn::Mov { dest, src } | Insn::Store { dest, src } => {
-                    match (&dest, &src) {
-                        (Opnd::Mem(_), Opnd::Mem(_)) => {
-                            // We load opnd1 because for mov, opnd0 is the output
-                            let opnd1 = asm.load(*src);
-                            asm.mov(*dest, opnd1);
-                        },
-                        (Opnd::Mem(Mem { num_bits, .. }), Opnd::UImm(value)) => {
-                            // For 64 bit destinations, 32-bit values will be sign-extended
-                            if *num_bits == 64 && imm_num_bits(*value as i64) > 32 {
-                                let opnd1 = asm.load(*src);
-                                asm.mov(*dest, opnd1);
-                            } else {
-                                asm.mov(*dest, *src);
-                            }
-                        },
-                        (Opnd::Mem(Mem { num_bits, .. }), Opnd::Imm(value)) => {
-                            // For 64 bit destinations, 32-bit values will be sign-extended
-                            if *num_bits == 64 && imm_num_bits(*value) > 32 {
-                                let opnd1 = asm.load(*src);
-                                asm.mov(*dest, opnd1);
-                            } else if uimm_num_bits(*value as u64) <= *num_bits {
-                                // If the bit string is short enough for the destination, use the unsigned representation.
-                                // Note that 64-bit and negative values are ruled out.
-                                asm.mov(*dest, Opnd::UImm(*value as u64));
-                            } else {
-                                asm.mov(*dest, *src);
-                            }
-                        },
-                        _ => {
-                            asm.mov(*dest, *src);
-                        }
+                Insn::Mov { dest, src } => {
+                    if let Opnd::Mem(_) = dest {
+                        asm.store(*dest, *src);
+                    } else {
+                        asm.mov(*dest, *src);
                     }
                 },
                 Insn::Not { opnd, .. } => {
@@ -440,6 +415,14 @@ impl Assembler
             }
         }
 
+        fn emit_load_gc_value(cb: &mut CodeBlock, gc_offsets: &mut Vec<CodePtr>, dest_reg: X86Opnd, value: VALUE) {
+            // Using movabs because mov might write value in 32 bits
+            movabs(cb, dest_reg, value.0 as _);
+            // The pointer immediate is encoded as the last part of the mov written out
+            let ptr_offset = cb.get_write_ptr().sub_bytes(SIZEOF_VALUE);
+            gc_offsets.push(ptr_offset);
+        }
+
         // List of GC offsets
         let mut gc_offsets: Vec<CodePtr> = Vec::new();
 
@@ -552,20 +535,71 @@ impl Assembler
                     shr(cb, opnd.into(), shift.into())
                 },
 
-                Insn::Store { dest, src } => {
-                    mov(cb, dest.into(), src.into());
-                },
+                store_insn @ Insn::Store { dest, src } => {
+                    let &Opnd::Mem(Mem { num_bits, base: MemBase::Reg(base_reg_no), disp: _ }) = dest else {
+                        panic!("Unexpected Insn::Store destination in x64_emit: {dest:?}");
+                    };
+
+                    // This kind of tricky clobber can only happen for explicit use of SCRATCH_REG,
+                    // so we panic to get the author to change their code.
+                    #[track_caller]
+                    fn assert_no_clobber(store_insn: &Insn, user_use: u8, backend_use: Reg) {
+                        assert_ne!(
+                            backend_use.reg_no,
+                            user_use,
+                            "Emitting {store_insn:?} would clobber {user_use:?}, in conflict with its semantics"
+                        );
+                    }
+
+                    let scratch = X86Opnd::Reg(Self::SCRATCH_REG);
+                    let src = match src {
+                        Opnd::Reg(_) => src.into(),
+                        &Opnd::Mem(_) => {
+                            assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH_REG);
+                            mov(cb, scratch, src.into());
+                            scratch
+                        }
+                        &Opnd::Imm(imm) => {
+                            // For 64 bit destinations, 32-bit values will be sign-extended
+                            if num_bits == 64 && imm_num_bits(imm) > 32 {
+                                assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH_REG);
+                                mov(cb, scratch, src.into());
+                                scratch
+                            } else if uimm_num_bits(imm as u64) <= num_bits {
+                                // If the bit string is short enough for the destination, use the unsigned representation.
+                                // Note that 64-bit and negative values are ruled out.
+                                uimm_opnd(imm as u64)
+                            } else {
+                                src.into()
+                            }
+                        }
+                        &Opnd::UImm(imm) => {
+                            // For 64 bit destinations, 32-bit values will be sign-extended
+                            if num_bits == 64 && imm_num_bits(imm as i64) > 32 {
+                                assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH_REG);
+                                mov(cb, scratch, src.into());
+                                scratch
+                            } else {
+                                src.into()
+                            }
+                        }
+                        &Opnd::Value(value) => {
+                            assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH_REG);
+                            emit_load_gc_value(cb, &mut gc_offsets, scratch, value);
+                            scratch
+                        }
+                        src @ (Opnd::None | Opnd::VReg { .. }) => panic!("Unexpected source operand during x86_emit: {src:?}")
+
+                    };
+                    mov(cb, dest.into(), src);
+                }
 
                 // This assumes only load instructions can contain references to GC'd Value operands
                 Insn::Load { opnd, out } |
                 Insn::LoadInto { dest: out, opnd } => {
                     match opnd {
                         Opnd::Value(val) if val.heap_object_p() => {
-                            // Using movabs because mov might write value in 32 bits
-                            movabs(cb, out.into(), val.0 as _);
-                            // The pointer immediate is encoded as the last part of the mov written out
-                            let ptr_offset = cb.get_write_ptr().sub_bytes(SIZEOF_VALUE);
-                            gc_offsets.push(ptr_offset);
+                            emit_load_gc_value(cb, &mut gc_offsets, out.into(), *val);
                         }
                         _ => mov(cb, out.into(), opnd.into())
                     }
@@ -1351,5 +1385,22 @@ mod tests {
             0x26: mov rsp, rbp
             0x29: pop rbp
         "});
+    }
+
+    #[test]
+    fn test_store_value_without_split() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let imitation_heap_value = VALUE(0x1000);
+        assert!(imitation_heap_value.heap_object_p());
+        asm.store(Opnd::mem(VALUE_BITS, SP, 0), imitation_heap_value.into());
+
+        let gc_offsets = asm.x86_emit(&mut cb).unwrap();
+        assert_eq!(1, gc_offsets.len(), "VALUE source operand should be reported as gc offset");
+
+        assert_disasm!(cb, "49bb00100000000000004c891b", "
+            0x0: movabs r11, 0x1000
+            0xa: mov qword ptr [rbx], r11
+        ");
     }
 }

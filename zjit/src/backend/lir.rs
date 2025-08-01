@@ -1822,29 +1822,16 @@ impl Assembler
                 };
                 self.write_label(side_exit_label.clone());
 
-                // Load an operand that cannot be used as a source of Insn::Store
-                fn split_store_source(asm: &mut Assembler, opnd: Opnd) -> Opnd {
-                    if matches!(opnd, Opnd::Mem(_) | Opnd::Value(_)) ||
-                        (cfg!(target_arch = "aarch64") && matches!(opnd, Opnd::UImm(_))) {
-                        asm.load_into(Opnd::Reg(Assembler::SCRATCH_REG), opnd);
-                        Opnd::Reg(Assembler::SCRATCH_REG)
-                    } else {
-                        opnd
-                    }
-                }
-
                 // Restore the PC and the stack for regular side exits. We don't do this for
                 // side exits right after JIT-to-JIT calls, which restore them before the call.
                 if let Some(SideExitContext { pc, stack, locals }) = context {
                     asm_comment!(self, "write stack slots: {stack:?}");
                     for (idx, &opnd) in stack.iter().enumerate() {
-                        let opnd = split_store_source(self, opnd);
                         self.store(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), opnd);
                     }
 
                     asm_comment!(self, "write locals: {locals:?}");
                     for (idx, &opnd) in locals.iter().enumerate() {
-                        let opnd = split_store_source(self, opnd);
                         self.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
                     }
 
