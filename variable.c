@@ -1284,7 +1284,7 @@ VALUE
 rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
 {
     RUBY_ASSERT(!SPECIAL_CONST_P(obj));
-    RUBY_ASSERT(RSHAPE_TYPE_P(target_shape_id, SHAPE_IVAR) || RSHAPE_TYPE_P(target_shape_id, SHAPE_OBJ_ID));
+    RUBY_ASSERT(RSHAPE_TYPE_P(target_shape_id, SHAPE_IVAR));
 
     if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
         ASSERT_vm_locking();

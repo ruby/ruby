@@ -818,9 +818,6 @@ shape_id_i(shape_id_t shape_id, void *data)
         dump_append_id(dc, RSHAPE_EDGE_NAME(shape_id));
 
         break;
-      case SHAPE_OBJ_ID:
-        dump_append(dc, ", \"shape_type\":\"OBJ_ID\"");
-        break;
     }
 
     dump_append(dc, ", \"edges\":");

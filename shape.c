@@ -510,7 +510,6 @@ rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
     if (!new_shape) return NULL;
 
     switch (shape_type) {
-      case SHAPE_OBJ_ID:
       case SHAPE_IVAR:
         if (UNLIKELY(shape->next_field_index >= shape->capacity)) {
             RUBY_ASSERT(shape->next_field_index == shape->capacity);
@@ -705,29 +704,6 @@ remove_shape_recursive(rb_shape_t *shape, ID id, rb_shape_t **removed_shape)
     }
 }
 
-static inline shape_id_t transition_complex(shape_id_t shape_id);
-
-static shape_id_t
-shape_transition_object_id(shape_id_t original_shape_id)
-{
-    RUBY_ASSERT(!rb_shape_has_object_id(original_shape_id));
-
-    bool dont_care;
-    rb_shape_t *shape = get_next_shape_internal(RSHAPE(original_shape_id), id_object_id, SHAPE_OBJ_ID, &dont_care, true);
-    if (!shape) {
-        shape = RSHAPE(ROOT_TOO_COMPLEX_WITH_OBJ_ID);
-    }
-
-    RUBY_ASSERT(shape);
-    return shape_id(shape, original_shape_id) | SHAPE_ID_FL_HAS_OBJECT_ID;
-}
-
-shape_id_t
-rb_shape_transition_object_id(VALUE obj)
-{
-    return shape_transition_object_id(RBASIC_SHAPE_ID(obj));
-}
-
 static inline shape_id_t
 transition_complex(shape_id_t shape_id)
 {
@@ -737,7 +713,7 @@ transition_complex(shape_id_t shape_id)
     if (heap_index) {
         next_shape_id = rb_shape_root(heap_index - 1) | SHAPE_ID_FL_TOO_COMPLEX;
         if (rb_shape_has_object_id(shape_id)) {
-            next_shape_id = shape_transition_object_id(next_shape_id);
+            next_shape_id |= SHAPE_ID_FL_HAS_OBJECT_ID;
         }
     }
     else {
@@ -849,8 +825,6 @@ shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
                 return true;
               case SHAPE_ROOT:
                 return false;
-              case SHAPE_OBJ_ID:
-                rb_bug("Ivar should not exist on transition");
             }
         }
 
@@ -1085,8 +1059,8 @@ rb_shape_id_offset(void)
 }
 
 // Rebuild a similar shape with the same ivars but starting from
-// a different SHAPE_T_OBJECT, and don't cary over non-canonical transitions
-// such as SHAPE_OBJ_ID.
+// a different SHAPE_T_OBJECT, and don't cary over flags in
+// SHAPE_ID_FL_NON_CANONICAL_MASK.
 static rb_shape_t *
 shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
 {
@@ -1110,7 +1084,6 @@ shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
             midway_shape = shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
         }
         break;
-      case SHAPE_OBJ_ID:
       case SHAPE_ROOT:
         break;
     }
@@ -1119,7 +1092,7 @@ shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
 }
 
 // Rebuild `dest_shape_id` starting from `initial_shape_id`, and keep only SHAPE_IVAR transitions.
-// SHAPE_OBJ_ID and frozen status are lost.
+// Flags in SHAPE_ID_FL_NON_CANONICAL_MASK are not kept.
 shape_id_t
 rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id)
 {

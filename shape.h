@@ -27,7 +27,7 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 //      22 SHAPE_ID_FL_FROZEN
 //              Whether the object is frozen or not.
 //      23 SHAPE_ID_FL_HAS_OBJECT_ID
-//              Whether the object has an `SHAPE_OBJ_ID` transition.
+//              Whether the object has an instance variable for id_object_id.
 //      24 SHAPE_ID_FL_TOO_COMPLEX
 //              The object is backed by a `st_table`.
 
@@ -97,7 +97,6 @@ struct redblack_node {
 enum shape_type {
     SHAPE_ROOT,
     SHAPE_IVAR,
-    SHAPE_OBJ_ID,
 };
 
 enum shape_flags {
@@ -219,7 +218,6 @@ shape_id_t rb_shape_transition_complex(VALUE obj);
 shape_id_t rb_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_id);
 shape_id_t rb_shape_transition_add_ivar(VALUE obj, ID id);
 shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id);
-shape_id_t rb_shape_transition_object_id(VALUE obj);
 shape_id_t rb_shape_transition_heap(VALUE obj, size_t heap_index);
 
 void rb_shape_free_all(void);
