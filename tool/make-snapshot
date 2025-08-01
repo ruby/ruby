@@ -430,7 +430,7 @@ def package(vcs, rev, destdir, tmp = nil)
     puts "cross.rb:", File.read("cross.rb").gsub(/^/, "> "), "" if $VERBOSE
     unless File.exist?("configure")
       print "creating configure..."
-      unless system([ENV["AUTOCONF"]]*2)
+      unless system(File.exist?(gen = "./autogen.sh") ? gen : [ENV["AUTOCONF"]]*2)
         puts $colorize.fail(" failed")
         return
       end
