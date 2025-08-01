@@ -117,8 +117,8 @@ impl ZJITState {
         &mut ZJITState::get_instance().invariants
     }
 
-    pub fn get_method_annotations() -> &'static mut cruby_methods::Annotations {
-        &mut ZJITState::get_instance().method_annotations
+    pub fn get_method_annotations() -> &'static cruby_methods::Annotations {
+        &ZJITState::get_instance().method_annotations
     }
 
     /// Return true if successful compilation should be asserted
