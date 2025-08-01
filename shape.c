@@ -933,6 +933,8 @@ shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
 shape_id_t
 rb_shape_transition_add_ivar(VALUE obj, ID id)
 {
+    RUBY_ASSERT(id != id_object_id);
+
     shape_id_t original_shape_id = RBASIC_SHAPE_ID(obj);
     RUBY_ASSERT(!shape_frozen_p(original_shape_id));
 
