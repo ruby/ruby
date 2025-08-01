@@ -99,6 +99,8 @@ fn annotate_builtin_method(props_map: &mut HashMap<*mut c_void, FnProperties>, c
 
         // Scan through the ISEQ to find invokebuiltin instructions
         let mut insn_idx: u32 = 0;
+        let mut func_ptr = std::ptr::null_mut::<c_void>();
+
         while insn_idx < encoded_size {
             // Get the PC for this instruction index
             let pc = rb_iseq_pc_at_idx(iseq, insn_idx);
@@ -112,13 +114,22 @@ fn annotate_builtin_method(props_map: &mut HashMap<*mut c_void, FnProperties>, c
                 // The first operand is the builtin function pointer
                 let bf_value = *pc.add(1);
                 let bf_ptr = bf_value.as_ptr() as *const rb_builtin_function;
-                let func_ptr = (*bf_ptr).func_ptr as *mut c_void;
-                props_map.insert(func_ptr, props);
+
+                if func_ptr.is_null() {
+                    func_ptr = (*bf_ptr).func_ptr as *mut c_void;
+                } else {
+                    panic!("Multiple invokebuiltin instructions found in ISEQ for {}#{}",
+                        std::ffi::CStr::from_ptr(rb_class2name(class)).to_str().unwrap_or("?"),
+                        method_name);
+                }
             }
 
             // Move to the next instruction using the proper length
             insn_idx = insn_idx.saturating_add(rb_insn_len(VALUE(opcode as usize)).try_into().unwrap());
         }
+
+        // Only insert the properties if its iseq has exactly one invokebuiltin instruction
+        props_map.insert(func_ptr, props);
     }
 }
 
