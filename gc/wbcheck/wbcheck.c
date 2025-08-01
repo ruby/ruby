@@ -549,16 +549,6 @@ rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
 {
 }
 
-// Object allocation
-static void
-wbcheck_collect_references_from_object_i(VALUE child_obj, void *data)
-{
-    GC_ASSERT(!RB_SPECIAL_CONST_P(child_obj));
-
-    wbcheck_object_list_t *list = (wbcheck_object_list_t *)data;
-    wbcheck_object_list_append(list, child_obj);
-}
-
 static wbcheck_object_list_t *
 wbcheck_collect_references_from_object(VALUE obj, rb_wbcheck_object_info_t *info)
 {
@@ -753,10 +743,13 @@ wbcheck_sweep_callback(st_data_t key, st_data_t val, st_data_t arg, int error)
     if (info->color == WBCHECK_COLOR_WHITE) {
         WBCHECK_DEBUG("wbcheck: sweeping unmarked object %p\n", (void *)obj);
 
+        rb_gc_event_hook(obj, RUBY_INTERNAL_EVENT_FREEOBJ);
+
         // Clear weak references first
         rb_gc_obj_free_vm_weak_references(obj);
 
         // Run finalizers if they exist
+        // FIXME: this probably need to be deferred
         wbcheck_run_finalizers_for_object(obj, info);
 
         // Call rb_gc_obj_free which handles finalizers/zombies
@@ -813,12 +806,15 @@ wbcheck_clear_weak_references(rb_wbcheck_objspace_t *objspace)
 {
     size_t cleared_count = 0;
 
+    //fprintf(stderr, "clearing %i weak references\n", objspace->weak_references->count);
     for (size_t i = 0; i < objspace->weak_references->count; i++) {
         VALUE *weak_ptr = (VALUE *)objspace->weak_references->items[i];
         VALUE obj = *weak_ptr;
 
-        // We should never see special constants in weak references
-        RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
+        // It's possible our weak reference was replaced (during obj_free ?)
+        if (RB_SPECIAL_CONST_P(obj)) {
+            continue;
+        }
 
         // Look up the object in our table
         st_data_t value;
@@ -873,6 +869,8 @@ maybe_gc(void *objspace_ptr)
     // Not initialized yet
     if (!objspace) return;
 
+    if (!objspace->gc_enabled) return;
+
     // Process all objects that need verification after write barriers (if enabled)
     if (wbcheck_verify_after_wb_enabled) {
         for (size_t i = 0; i < objspace->objects_to_verify->count; i++) {
@@ -902,6 +900,9 @@ maybe_gc(void *objspace_ptr)
     if (st_table_size(objspace->object_table) >= objspace->gc_threshold && objspace->gc_enabled && ruby_native_thread_p()) {
         wbcheck_full_gc(objspace);
     }
+
+    // hack needed due to bad state tracking
+    objspace->weak_references->count = 0;
 }
 
 static void
@@ -1071,8 +1072,6 @@ rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
 
     if (rb_gc_impl_pointer_to_heap_p(objspace_ptr, (void *)obj)) {
-        GC_ASSERT(BUILTIN_TYPE(obj) != T_ZOMBIE);
-        GC_ASSERT(BUILTIN_TYPE(obj) != T_NONE);
         gc_mark(objspace, obj);
     }
 }
@@ -1091,8 +1090,13 @@ rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
 void
 rb_gc_impl_remove_weak(void *objspace_ptr, VALUE parent_obj, VALUE *ptr)
 {
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+
     // Since wbcheck is stop-the-world and not incremental, we don't need to remove
     // weak references during normal operation (like default.c does)
+
+    RUBY_ASSERT_ALWAYS(objspace->phase == WBCHECK_PHASE_MUTATOR);
+
     return;
 }
 
