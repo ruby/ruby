@@ -2878,6 +2878,15 @@ rb_gc_location(VALUE value)
     return gc_location_internal(rb_gc_get_objspace(), value);
 }
 
+void
+rb_gc_update_reference(VALUE *value_ptr)
+{
+    void *objspace = rb_gc_get_objspace();
+    if (rb_gc_impl_object_moved_p(objspace, *value_ptr)) {
+        *value_ptr = gc_location_internal(objspace, *value_ptr);
+    }
+}
+
 #if defined(__wasm__)
 
 
