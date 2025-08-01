@@ -426,8 +426,8 @@ $(MKFILES): config.status $(srcdir)/version.h $(ABI_VERSION_HDR)
 		$(MAKE) -f conftest.mk | grep '^AUTO_REMAKE$$' >/dev/null 2>&1 || \
 		{ echo "$@ updated, restart."; exit 1; }
 
-uncommon.mk: $(srcdir)/common.mk $(srcdir)/depend
-		sed -f $(srcdir)/tool/prereq.status $(srcdir)/common.mk $(srcdir)/depend > $@
+uncommon.mk: $(srcdir)/tool/prereq.status
+	sed -f $(srcdir)/tool/prereq.status $(srcdir)/common.mk $(common_mk_includes) > $@
 
 .PHONY: reconfig
 reconfig-args = $(srcdir)/$(CONFIGURE) $(yes_silence:yes=--silent) $(configure_args)
