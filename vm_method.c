@@ -136,17 +136,19 @@ rb_vm_cc_table_create(size_t capa)
 static enum rb_id_table_iterator_result
 vm_cc_table_dup_i(ID key, VALUE old_ccs_ptr, void *data)
 {
+    VALUE new_table = (VALUE)data;
     struct rb_class_cc_entries *old_ccs = (struct rb_class_cc_entries *)old_ccs_ptr;
     size_t memsize = vm_ccs_alloc_size(old_ccs->capa);
-    struct rb_class_cc_entries *new_ccs = ruby_xmalloc(memsize);
+    struct rb_class_cc_entries *new_ccs = ruby_xcalloc(1, memsize);
+    rb_managed_id_table_insert(new_table, key, (VALUE)new_ccs);
+
     memcpy(new_ccs, old_ccs, memsize);
 
 #if VM_CHECK_MODE > 0
     new_ccs->debug_sig = ~(VALUE)new_ccs;
 #endif
 
-    VALUE new_table = (VALUE)data;
-    rb_managed_id_table_insert(new_table, key, (VALUE)new_ccs);
+    RB_OBJ_WRITTEN(new_table, Qundef, (VALUE)new_ccs->cme);
     for (int index = 0; index < new_ccs->len; index++) {
         RB_OBJ_WRITTEN(new_table, Qundef, new_ccs->entries[index].cc);
     }
