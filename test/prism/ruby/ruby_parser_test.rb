@@ -13,23 +13,11 @@ rescue LoadError
   return
 end
 
-# We want to also compare lines and files to make sure we're setting them
-# correctly.
-Sexp.prepend(
-  Module.new do
-    def ==(other)
-      super && line == other.line && file == other.file # && line_max == other.line_max
-    end
-  end
-)
-
 module Prism
   class RubyParserTest < TestCase
     todos = [
       "encoding_euc_jp.txt",
-      "newline_terminated.txt",
       "regex_char_width.txt",
-      "seattlerb/bug169.txt",
       "seattlerb/masgn_colon3.txt",
       "seattlerb/messy_op_asgn_lineno.txt",
       "seattlerb/op_asgn_primary_colon_const_command_call.txt",
@@ -37,15 +25,10 @@ module Prism
       "seattlerb/str_lit_concat_bad_encodings.txt",
       "strings.txt",
       "unescaping.txt",
-      "unparser/corpus/literal/kwbegin.txt",
-      "unparser/corpus/literal/send.txt",
       "whitequark/masgn_const.txt",
       "whitequark/pattern_matching_constants.txt",
-      "whitequark/pattern_matching_implicit_array_match.txt",
       "whitequark/pattern_matching_single_match.txt",
       "whitequark/ruby_bug_12402.txt",
-      "whitequark/ruby_bug_14690.txt",
-      "whitequark/space_args_block.txt"
     ]
 
     # https://github.com/seattlerb/ruby_parser/issues/344
@@ -105,10 +88,16 @@ module Prism
       source = fixture.read
       expected = ignore_warnings { ::RubyParser.new.parse(source, fixture.path) }
       actual = Prism::Translation::RubyParser.new.parse(source, fixture.path)
+      on_failure = -> { message(expected, actual) }
 
       if !allowed_failure
-        assert_equal(expected, actual, -> { message(expected, actual) })
-      elsif expected == actual
+        assert_equal(expected, actual, on_failure)
+
+        unless actual.nil?
+          assert_equal(expected.line, actual.line, on_failure)
+          assert_equal(expected.file, actual.file, on_failure)
+        end
+      elsif expected == actual && expected.line && actual.line && expected.file == actual.file
         puts "#{name} now passes"
       end
     end
