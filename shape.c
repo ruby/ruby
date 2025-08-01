@@ -940,6 +940,8 @@ rb_shape_transition_add_ivar(VALUE obj, ID id)
 
     rb_shape_t *next_shape = shape_get_next(RSHAPE(original_shape_id), obj, id, true);
     if (next_shape) {
+        RUBY_ASSERT(next_shape->type == SHAPE_IVAR, "next_shape->type == %d", (int)next_shape->type);
+
         return shape_id(next_shape, original_shape_id);
     }
     else {
