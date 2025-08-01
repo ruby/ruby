@@ -1981,15 +1981,15 @@ static VALUE vm_mtbl_dump(VALUE klass, ID target_mid);
 static struct rb_class_cc_entries *
 vm_ccs_create(VALUE klass, VALUE cc_tbl, ID mid, const rb_callable_method_entry_t *cme)
 {
-    struct rb_class_cc_entries *ccs = ALLOC(struct rb_class_cc_entries);
+    int initial_capa = 2;
+    struct rb_class_cc_entries *ccs = ruby_xmalloc(vm_ccs_alloc_size(initial_capa));
 #if VM_CHECK_MODE > 0
     ccs->debug_sig = ~(VALUE)ccs;
 #endif
-    ccs->capa = 0;
+    ccs->capa = initial_capa;
     ccs->len = 0;
     ccs->cme = cme;
     METHOD_ENTRY_CACHED_SET((rb_callable_method_entry_t *)cme);
-    ccs->entries = NULL;
 
     rb_managed_id_table_insert(cc_tbl, mid, (VALUE)ccs);
     RB_OBJ_WRITTEN(cc_tbl, Qundef, cme);
@@ -1997,21 +1997,21 @@ vm_ccs_create(VALUE klass, VALUE cc_tbl, ID mid, const rb_callable_method_entry_
 }
 
 static void
-vm_ccs_push(VALUE cc_tbl, struct rb_class_cc_entries *ccs, const struct rb_callinfo *ci, const struct rb_callcache *cc)
+vm_ccs_push(VALUE cc_tbl, ID mid, struct rb_class_cc_entries *ccs, const struct rb_callinfo *ci, const struct rb_callcache *cc)
 {
     if (! vm_cc_markable(cc)) {
         return;
     }
 
     if (UNLIKELY(ccs->len == ccs->capa)) {
-        if (ccs->capa == 0) {
-            ccs->capa = 1;
-            ccs->entries = ALLOC_N(struct rb_class_cc_entries_entry, ccs->capa);
-        }
-        else {
-            ccs->capa *= 2;
-            REALLOC_N(ccs->entries, struct rb_class_cc_entries_entry, ccs->capa);
-        }
+        RUBY_ASSERT(ccs->capa > 0);
+        ccs->capa *= 2;
+        ccs = ruby_xrealloc(ccs, vm_ccs_alloc_size(ccs->capa));
+#if VM_CHECK_MODE > 0
+        ccs->debug_sig = ~(VALUE)ccs;
+#endif
+        // GC?
+        rb_managed_id_table_insert(cc_tbl, mid, (VALUE)ccs);
     }
     VM_ASSERT(ccs->len < ccs->capa);
 
@@ -2143,7 +2143,7 @@ vm_populate_cc(VALUE klass, const struct rb_callinfo * const ci, ID mid)
     cme = rb_check_overloaded_cme(cme, ci);
 
     const struct rb_callcache *cc = vm_cc_new(klass, cme, vm_call_general, cc_type_normal);
-    vm_ccs_push(cc_tbl, ccs, ci, cc);
+    vm_ccs_push(cc_tbl, mid, ccs, ci, cc);
 
     VM_ASSERT(vm_cc_cme(cc) != NULL);
     VM_ASSERT(cme->called_id == mid);

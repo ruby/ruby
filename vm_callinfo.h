@@ -585,8 +585,14 @@ struct rb_class_cc_entries {
         unsigned int argc;
         unsigned int flag;
         const struct rb_callcache *cc;
-    } *entries;
+    } entries[FLEX_ARY_LEN];
 };
+
+static inline size_t
+vm_ccs_alloc_size(size_t capa)
+{
+    return offsetof(struct rb_class_cc_entries, entries) + (sizeof(struct rb_class_cc_entries_entry) * capa);
+}
 
 #if VM_CHECK_MODE > 0
 
