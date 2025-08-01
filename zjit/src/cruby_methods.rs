@@ -165,6 +165,7 @@ pub fn init() -> Annotations {
 
     annotate_builtin!(rb_mKernel, "Float", types::Flonum);
     annotate_builtin!(rb_mKernel, "Integer", types::Integer);
+    annotate_builtin!(rb_mKernel, "class", types::Class, leaf);
 
     Annotations {
         cfuncs: std::mem::take(cfuncs),

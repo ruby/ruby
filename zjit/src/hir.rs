@@ -5012,6 +5012,18 @@ mod tests {
     }
 
     #[test]
+    fn test_invokebuiltin_cexpr_annotated() {
+        assert_method_hir_with_opcode("class", YARVINSN_opt_invokebuiltin_delegate_leave, expect![[r#"
+            fn class@<internal:kernel>:20:
+            bb0(v0:BasicObject):
+              v3:Class = InvokeBuiltin _bi20, v0
+              Jump bb1(v0, v3)
+            bb1(v5:BasicObject, v6:Class):
+              Return v6
+        "#]]);
+    }
+
+    #[test]
     fn test_invokebuiltin_delegate_with_args() {
         // Using an unannotated builtin to test InvokeBuiltin generation
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("Dir", "open"));
@@ -5028,10 +5040,13 @@ mod tests {
 
     #[test]
     fn test_invokebuiltin_delegate_without_args() {
-        assert_method_hir_with_opcode("class", YARVINSN_opt_invokebuiltin_delegate_leave, expect![[r#"
-            fn class@<internal:kernel>:20:
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("GC", "enable"));
+        assert!(iseq_contains_opcode(iseq, YARVINSN_opt_invokebuiltin_delegate_leave), "iseq GC.enable does not contain invokebuiltin");
+        let function = iseq_to_hir(iseq).unwrap();
+        assert_function_hir(function, expect![[r#"
+            fn enable@<internal:gc>:55:
             bb0(v0:BasicObject):
-              v3:BasicObject = InvokeBuiltin _bi20, v0
+              v3:BasicObject = InvokeBuiltin gc_enable, v0
               Jump bb1(v0, v3)
             bb1(v5:BasicObject, v6:BasicObject):
               Return v6
