@@ -657,6 +657,16 @@ class TestShapes < Test::Unit::TestCase
   def test_object_id_transition_too_complex
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
+      obj = Object.new
+      obj.instance_variable_set(:@a, 1)
+
+      RubyVM::Shape.exhaust_shapes
+
+      assert_equal obj.object_id, obj.object_id
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
       class Hi; end
       obj = Hi.new
       obj.instance_variable_set(:@a, 1)

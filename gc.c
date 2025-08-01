@@ -1870,13 +1870,7 @@ class_object_id(VALUE klass)
 static inline VALUE
 object_id_get(VALUE obj, shape_id_t shape_id)
 {
-    VALUE id;
-    if (rb_shape_too_complex_p(shape_id)) {
-        id = rb_obj_field_get(obj, ROOT_TOO_COMPLEX_WITH_OBJ_ID);
-    }
-    else {
-        id = rb_obj_field_get(obj, rb_shape_object_id(shape_id));
-    }
+    VALUE id = rb_ivar_get(obj, id_object_id);
 
 #if RUBY_DEBUG
     if (!(FIXNUM_P(id) || RB_TYPE_P(id, T_BIGNUM))) {
@@ -1898,14 +1892,9 @@ object_id0(VALUE obj)
         return object_id_get(obj, shape_id);
     }
 
-    // rb_shape_object_id_shape may lock if the current shape has
-    // multiple children.
-    shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
-
     id = generate_next_object_id();
-    rb_obj_field_set(obj, object_id_shape_id, 0, id);
+    rb_ivar_set_internal(obj, id_object_id, id);
 
-    RUBY_ASSERT(RBASIC_SHAPE_ID(obj) == object_id_shape_id);
     RUBY_ASSERT(rb_shape_obj_has_id(obj));
 
     if (RB_UNLIKELY(id2ref_tbl)) {

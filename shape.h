@@ -49,7 +49,7 @@ enum shape_id_fl_type {
 // This masks allows to check if a shape_id contains any ivar.
 // It rely on ROOT_SHAPE_WITH_OBJ_ID==1.
 enum {
-    SHAPE_ID_HAS_IVAR_MASK = SHAPE_ID_FL_TOO_COMPLEX | (SHAPE_ID_OFFSET_MASK - 1),
+    SHAPE_ID_HAS_IVAR_MASK = SHAPE_ID_FL_TOO_COMPLEX | (SHAPE_ID_OFFSET_MASK),
 };
 
 // The interpreter doesn't care about frozen status or slot size when reading ivars.
@@ -69,9 +69,8 @@ typedef uint32_t redblack_id_t;
 #define ATTR_INDEX_NOT_SET ((attr_index_t)-1)
 
 #define ROOT_SHAPE_ID                   0x0
-#define ROOT_SHAPE_WITH_OBJ_ID          0x1
 #define ROOT_TOO_COMPLEX_SHAPE_ID       (ROOT_SHAPE_ID | SHAPE_ID_FL_TOO_COMPLEX)
-#define ROOT_TOO_COMPLEX_WITH_OBJ_ID    (ROOT_SHAPE_WITH_OBJ_ID | SHAPE_ID_FL_TOO_COMPLEX | SHAPE_ID_FL_HAS_OBJECT_ID)
+#define ROOT_TOO_COMPLEX_WITH_OBJ_ID    (ROOT_SHAPE_ID | SHAPE_ID_FL_TOO_COMPLEX | SHAPE_ID_FL_HAS_OBJECT_ID)
 #define SPECIAL_CONST_SHAPE_ID          (ROOT_SHAPE_ID | SHAPE_ID_FL_FROZEN)
 
 typedef struct redblack_node redblack_node_t;
@@ -159,7 +158,7 @@ RBASIC_SHAPE_ID_FOR_READ(VALUE obj)
 }
 
 #if RUBY_DEBUG
-bool rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id);
+bool rb_shape_verify_consistency(VALUE obj, shape_id_t next_shape_id);
 #endif
 
 static inline void
@@ -167,6 +166,7 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 {
     RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
     RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_fields));
+    RUBY_ASSERT(rb_shape_verify_consistency(obj, shape_id));
 #if RBASIC_SHAPE_ID_FIELD
     RBASIC(obj)->shape_id = (VALUE)shape_id;
 #else
@@ -174,7 +174,6 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
     RBASIC(obj)->flags &= SHAPE_FLAG_MASK;
     RBASIC(obj)->flags |= ((VALUE)(shape_id) << SHAPE_FLAG_SHIFT);
 #endif
-    RUBY_ASSERT(rb_shape_verify_consistency(obj, shape_id));
 }
 
 void rb_set_namespaced_class_shape_id(VALUE obj, shape_id_t shape_id);
@@ -201,6 +200,8 @@ RSHAPE(shape_id_t shape_id)
 
     return &rb_shape_tree.shape_list[offset];
 }
+
+extern ID id_object_id;
 
 int32_t rb_shape_id_offset(void);
 

@@ -1680,7 +1680,6 @@ imemo_fields_complex_from_obj(VALUE klass, VALUE source_fields_obj, shape_id_t s
     VALUE fields_obj = rb_imemo_fields_new_complex(klass, len + 1);
 
     rb_field_foreach(source_fields_obj, imemo_fields_complex_from_obj_i, (st_data_t)fields_obj, false);
-    RBASIC_SET_SHAPE_ID(fields_obj, shape_id);
 
     return fields_obj;
 }
@@ -1790,6 +1789,12 @@ general_ivar_set(VALUE obj, ID id, VALUE val, void *data,
 too_complex:
     {
         RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
+
+        if (id == id_object_id && !rb_shape_has_object_id(current_shape_id)) {
+            set_shape_id_func(obj, RBASIC_SHAPE_ID(obj) | SHAPE_ID_FL_HAS_OBJECT_ID, data);
+
+            RUBY_ASSERT(rb_shape_has_object_id(RBASIC_SHAPE_ID(obj)));
+        }
 
         st_table *table = too_complex_table_func(obj, data);
         result.existing = st_insert(table, (st_data_t)id, (st_data_t)val);
@@ -1935,6 +1940,11 @@ generic_shape_ivar(VALUE obj, ID id, bool *new_ivar_out)
     }
 
     *new_ivar_out = new_ivar;
+
+    if (id == id_object_id) {
+        target_shape_id |= SHAPE_ID_FL_HAS_OBJECT_ID;
+    }
+
     return target_shape_id;
 }
 
@@ -2217,7 +2227,9 @@ iterate_over_shapes_callback(shape_id_t shape_id, void *data)
 {
     struct iv_itr_data *itr_data = data;
 
-    if (itr_data->ivar_only && !RSHAPE_TYPE_P(shape_id, SHAPE_IVAR)) {
+    if (itr_data->ivar_only && (
+            !RSHAPE_TYPE_P(shape_id, SHAPE_IVAR) ||
+                RSHAPE(shape_id)->edge_name == id_object_id)) {
         return ST_CONTINUE;
     }
 
@@ -2253,9 +2265,13 @@ iterate_over_shapes(shape_id_t shape_id, rb_ivar_foreach_callback_func *callback
 static int
 each_hash_iv(st_data_t id, st_data_t val, st_data_t data)
 {
-    struct iv_itr_data * itr_data = (struct iv_itr_data *)data;
-    rb_ivar_foreach_callback_func *callback = itr_data->func;
-    return callback((ID)id, (VALUE)val, itr_data->arg);
+    struct iv_itr_data *itr_data = (struct iv_itr_data *)data;
+
+    if (itr_data->ivar_only && id == id_object_id) {
+        return ST_CONTINUE;
+    }
+
+    return itr_data->func((ID)id, (VALUE)val, itr_data->arg);
 }
 
 static void
@@ -4745,9 +4761,7 @@ too_complex:
         existing = st_insert(table, (st_data_t)id, (st_data_t)val);
         RB_OBJ_WRITTEN(fields_obj, Qundef, val);
 
-        if (fields_obj != original_fields_obj) {
-            RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
-        }
+        RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
     }
 
     *new_fields_obj = fields_obj;
