@@ -15,21 +15,26 @@ impl<T: Copy + PartialEq + Default, const N: usize> Distribution<T, N> {
     }
 
     pub fn observe(&mut self, item: T) {
-        for (idx, (bucket, count)) in self.buckets.iter_mut().zip(self.counts.iter_mut()).enumerate() {
+        for (bucket, count) in self.buckets.iter_mut().zip(self.counts.iter_mut()) {
             if *bucket == item || *count == 0 {
                 *bucket = item;
                 *count += 1;
                 // Keep the most frequent item at the front
-                let mut j = idx;
-                while j > 0 && self.counts[j] > self.counts[j - 1] {
-                    self.counts.swap(j, j - 1);
-                    self.buckets.swap(j, j - 1);
-                    j -= 1;
-                }
+                self.bubble_up();
                 return;
             }
         }
         self.other += 1;
+    }
+
+    /// Keep the highest counted bucket at index 0
+    fn bubble_up(&mut self) {
+        if N == 0 { return; }
+        let max_index = self.counts.into_iter().enumerate().max_by_key(|(_, val)| *val).unwrap().0;
+        if max_index != 0 {
+            self.counts.swap(0, max_index);
+            self.buckets.swap(0, max_index);
+        }
     }
 
     pub fn each_item(&self) -> impl Iterator<Item = T> + '_ {
