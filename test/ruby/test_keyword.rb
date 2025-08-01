@@ -2424,6 +2424,21 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { m.call(42, a: 1, **h2) }
   end
 
+  def test_ruby2_keywords_post_arg
+    def self.a(*c, **kw) [c, kw] end
+    def self.b(*a, b) a(*a, b) end
+    assert_warn(/Skipping set of ruby2_keywords flag for b \(method accepts keywords or post arguments or method does not accept argument splat\)/) do
+      assert_nil(singleton_class.send(:ruby2_keywords, :b))
+    end
+    assert_equal([[{foo: 1}, {bar: 1}], {}], b({foo: 1}, bar: 1))
+
+    b = ->(*a, b){a(*a, b)}
+    assert_warn(/Skipping set of ruby2_keywords flag for proc \(proc accepts keywords or post arguments or proc does not accept argument splat\)/) do
+      b.ruby2_keywords
+    end
+    assert_equal([[{foo: 1}, {bar: 1}], {}], b.({foo: 1}, bar: 1))
+  end
+
   def test_proc_ruby2_keywords
     h1 = {:a=>1}
     foo = ->(*args, &block){block.call(*args)}
@@ -2436,8 +2451,8 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { foo.call(:a=>1, &->(arg, **kw){[arg, kw]}) }
     assert_equal(h1, foo.call(:a=>1, &->(arg){arg}))
 
-    [->(){}, ->(arg){}, ->(*args, **kw){}, ->(*args, k: 1){}, ->(*args, k: ){}].each do |pr|
-      assert_warn(/Skipping set of ruby2_keywords flag for proc \(proc accepts keywords or proc does not accept argument splat\)/) do
+    [->(){}, ->(arg){}, ->(*args, x){}, ->(*args, **kw){}, ->(*args, k: 1){}, ->(*args, k: ){}].each do |pr|
+      assert_warn(/Skipping set of ruby2_keywords flag for proc \(proc accepts keywords or post arguments or proc does not accept argument splat\)/) do
         pr.ruby2_keywords
       end
     end
@@ -2790,8 +2805,19 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(:opt, o.clear_last_opt(a: 1))
     assert_nothing_raised(ArgumentError) { o.clear_last_empty_method(a: 1) }
 
-    assert_warn(/Skipping set of ruby2_keywords flag for bar \(method accepts keywords or method does not accept argument splat\)/) do
+    assert_warn(/Skipping set of ruby2_keywords flag for bar \(method accepts keywords or post arguments or method does not accept argument splat\)/) do
       assert_nil(c.send(:ruby2_keywords, :bar))
+    end
+
+    c.class_eval do
+      def bar_post(*a, x) = nil
+      define_method(:bar_post_bmethod) { |*a, x| }
+    end
+    assert_warn(/Skipping set of ruby2_keywords flag for bar_post \(method accepts keywords or post arguments or method does not accept argument splat\)/) do
+      assert_nil(c.send(:ruby2_keywords, :bar_post))
+    end
+    assert_warn(/Skipping set of ruby2_keywords flag for bar_post_bmethod \(method accepts keywords or post arguments or method does not accept argument splat\)/) do
+      assert_nil(c.send(:ruby2_keywords, :bar_post_bmethod))
     end
 
     utf16_sym = "abcdef".encode("UTF-16LE").to_sym
