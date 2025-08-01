@@ -1897,8 +1897,6 @@ object_id0(VALUE obj)
         return object_id_get(obj, shape_id);
     }
 
-    // rb_shape_object_id_shape may lock if the current shape has
-    // multiple children.
     shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
 
     id = generate_next_object_id();
