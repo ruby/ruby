@@ -196,10 +196,10 @@ impl Assembler
     /// Avoid using if you can since this is used to lower [Insn] internally and
     /// so conflicts are possible.
     pub const SCRATCH_REG: Reg = X16_REG;
-    const SCRATCH0: A64Opnd = A64Opnd::Reg(Assembler::SCRATCH_REG);
-    const SCRATCH0_REG: Reg = Assembler::SCRATCH_REG;
-    const SCRATCH1: A64Opnd = A64Opnd::Reg(X17_REG);
+    const SCRATCH0_REG: Reg = Self::SCRATCH_REG;
     const SCRATCH1_REG: Reg = X17_REG;
+    const SCRATCH0: A64Opnd = A64Opnd::Reg(Self::SCRATCH0_REG);
+    const SCRATCH1: A64Opnd = A64Opnd::Reg(Self::SCRATCH1_REG);
 
     /// Get the list of registers from which we will allocate on this platform
     pub fn get_alloc_regs() -> Vec<Reg> {
