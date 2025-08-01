@@ -632,7 +632,7 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
             VALUE lookup_result;
             if (rb_managed_id_table_lookup(edges_table, id, &lookup_result)) {
                 res = (rb_shape_t *)lookup_result;
-                RUBY_ASSERT(res->edge_name == id, "res->name = %s vs id = %s", rb_id2name(res->edge_name), rb_id2name(id));
+                RUBY_ASSERT(res->edge_name == id, "res->name = %s (%p) vs id = %s (%p)", rb_id2name(res->edge_name), (void*)res->edge_name, rb_id2name(id), (void*)id);
                 RUBY_ASSERT(res->type == shape_type, "res->type = %d vs shape_type = %d", res->type, shape_type);
             }
         }
