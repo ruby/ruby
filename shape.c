@@ -623,6 +623,7 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
             // If the one child has a matching edge name, then great,
             // we found what we want.
             if (child->edge_name == id) {
+                RUBY_ASSERT(child->type == shape_type);
                 res = child;
             }
         }
@@ -631,6 +632,8 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
             VALUE lookup_result;
             if (rb_managed_id_table_lookup(edges_table, id, &lookup_result)) {
                 res = (rb_shape_t *)lookup_result;
+                RUBY_ASSERT(res->type == shape_type);
+                RUBY_ASSERT(res->edge_name == id);
             }
         }
     }
@@ -663,6 +666,8 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
             }
 
             res = new_shape;
+            RUBY_ASSERT(res->type == shape_type);
+            RUBY_ASSERT(res->edge_name == id);
         }
     }
 
@@ -940,6 +945,7 @@ rb_shape_transition_add_ivar(VALUE obj, ID id)
 
     rb_shape_t *next_shape = shape_get_next(RSHAPE(original_shape_id), obj, id, true);
     if (next_shape) {
+        RUBY_ASSERT(next_shape->edge_name == id);
         RUBY_ASSERT(next_shape->type == SHAPE_IVAR, "next_shape->type == %d", (int)next_shape->type);
 
         return shape_id(next_shape, original_shape_id);
