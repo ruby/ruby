@@ -492,8 +492,6 @@ module Bundler
       @unlocking
     end
 
-    attr_writer :source_requirements
-
     def add_checksums
       @locked_checksums = true
 
@@ -614,7 +612,7 @@ module Bundler
     end
 
     def resolver
-      @resolver ||= Resolver.new(resolution_base, gem_version_promoter, @most_specific_locked_platform)
+      @resolver ||= new_resolver(resolution_base)
     end
 
     def expanded_dependencies
@@ -632,8 +630,7 @@ module Bundler
       @resolution_base ||= begin
         last_resolve = converge_locked_specs
         remove_invalid_platforms!
-        new_resolution_platforms = @current_platform_missing ? @new_platforms + [Bundler.local_platform] : @new_platforms
-        base = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @unlocking_all || @gems_to_unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: new_resolution_platforms)
+        base = new_resolution_base(last_resolve: last_resolve, unlock: @unlocking_all || @gems_to_unlock)
         base = additional_base_requirements_to_prevent_downgrades(base)
         base = additional_base_requirements_to_force_updates(base)
         base
@@ -1136,23 +1133,12 @@ module Bundler
 
     def additional_base_requirements_to_force_updates(resolution_base)
       return resolution_base if @explicit_unlocks.empty?
-      full_update = dup_for_full_unlock.resolve
+      full_update = SpecSet.new(new_resolver_for_full_update.start)
       @explicit_unlocks.each do |name|
         version = full_update.version_for(name)
         resolution_base.base_requirements[name] = Gem::Requirement.new("= #{version}") if version
       end
       resolution_base
-    end
-
-    def dup_for_full_unlock
-      unlocked_definition = self.class.new(@lockfile, @dependencies, @sources, true, @ruby_version, @optional_groups, @gemfiles)
-      unlocked_definition.source_requirements = source_requirements
-      unlocked_definition.gem_version_promoter.tap do |gvp|
-        gvp.level = gem_version_promoter.level
-        gvp.strict = gem_version_promoter.strict
-        gvp.pre = gem_version_promoter.pre
-      end
-      unlocked_definition
     end
 
     def remove_invalid_platforms!
@@ -1172,6 +1158,23 @@ module Bundler
 
     def source_map
       @source_map ||= SourceMap.new(sources, dependencies, @locked_specs)
+    end
+
+    def new_resolver_for_full_update
+      new_resolver(unlocked_resolution_base)
+    end
+
+    def unlocked_resolution_base
+      new_resolution_base(last_resolve: SpecSet.new([]), unlock: true)
+    end
+
+    def new_resolution_base(last_resolve:, unlock:)
+      new_resolution_platforms = @current_platform_missing ? @new_platforms + [Bundler.local_platform] : @new_platforms
+      Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: new_resolution_platforms)
+    end
+
+    def new_resolver(base)
+      Resolver.new(base, gem_version_promoter, @most_specific_locked_platform)
     end
   end
 end
