@@ -1846,6 +1846,9 @@ clean-gems:
 
 CLEAN_CACHE = clean-extlibs
 
+prepare-package: prereq after-update
+clean-cache: $(CLEAN_CACHE)
+
 info: info-program info-libruby_a info-libruby_so info-arch
 info-program: PHONY
 	@echo PROGRAM=$(PROGRAM)
