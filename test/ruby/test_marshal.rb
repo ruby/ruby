@@ -469,6 +469,30 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(o1.foo, o2.foo)
   end
 
+  class TooComplex
+    def initialize
+      @marshal_too_complex = 1
+    end
+  end
+
+  def test_complex_shape_object_id_not_dumped
+    if defined?(RubyVM::Shape::SHAPE_MAX_VARIATIONS)
+      assert_equal 8, RubyVM::Shape::SHAPE_MAX_VARIATIONS
+    end
+    8.times do |i|
+      TooComplex.new.instance_variable_set("@TestObjectIdTooComplex#{i}", 1)
+    end
+    obj = TooComplex.new
+    ivar = "@a#{rand(10_000).to_s.rjust(5, '0')}"
+    obj.instance_variable_set(ivar, 1)
+
+    if defined?(RubyVM::Shape)
+      assert_predicate(RubyVM::Shape.of(obj), :too_complex?)
+    end
+    obj.object_id
+    assert_equal "\x04\bo:\x1CTestMarshal::TooComplex\a:\x19@marshal_too_complexi\x06:\f#{ivar}i\x06".b, Marshal.dump(obj)
+  end
+
   def test_marshal_complex
     assert_raise(ArgumentError){Marshal.load("\x04\bU:\fComplex[\x05")}
     assert_raise(ArgumentError){Marshal.load("\x04\bU:\fComplex[\x06i\x00")}
