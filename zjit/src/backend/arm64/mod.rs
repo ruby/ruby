@@ -1305,8 +1305,7 @@ impl Assembler
                     }
                     last_patch_pos = Some(cb.get_write_pos());
                 },
-                Insn::IncrCounter { mem: _, value: _ } => {
-                    /*
+                Insn::IncrCounter { mem, value } => {
                     let label = cb.new_label("incr_counter_loop".to_string());
                     cb.write_label(label);
 
@@ -1322,8 +1321,6 @@ impl Assembler
 
                     cmp(cb, Self::SCRATCH1, A64Opnd::new_uimm(0));
                     emit_conditional_jump::<{Condition::NE}>(cb, Target::Label(label));
-                    */
-                    unimplemented!("labels are not supported yet");
                 },
                 Insn::Breakpoint => {
                     brk(cb, A64Opnd::None);
