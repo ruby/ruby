@@ -6610,14 +6610,41 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *     gsub(pattern) {|match| ... } -> new_string
  *     gsub(pattern)                -> enumerator
  *
- *  Returns a copy of +self+ with all occurrences of the given +pattern+ replaced.
+ *  Returns a copy of +self+ with zero or more substrings replaced.
  *
- *  See {Substitution Methods}[rdoc-ref:String@Substitution+Methods].
+ *  Argument +pattern+ may be a string or a Regexp;
+ *  argument +replacement+ may be a string or a Hash.
+ *  Varying types for the argument values makes this method very versatile.
  *
- *  Returns an Enumerator if no +replacement+ and no block given.
+ *  Below are some simple examples;
+ *  for many more examples, see {Substitution Methods}[rdoc-ref:String@Substitution+Methods].
  *
- *  Related: String#sub, String#sub!, String#gsub!.
+ *  With arguments +pattern+ and string +replacement+ given,
+ *  replaces each matching substring with the given +replacement+ string:
  *
+ *    s = 'abracadabra'
+ *    s.gsub('ab', 'AB')   # => "ABracadABra"
+ *    s.gsub(/[a-c]/, 'X') # => "XXrXXXdXXrX"
+ *
+ *  With arguments +pattern+ and hash +replacement+ given,
+ *  replaces each matching substring with a value from the given +replacement+ hash,
+ *  or removes it:
+ *
+ *    h = {'a' => 'A', 'b' => 'B', 'c' => 'C'}
+ *    s.gsub(/[a-c]/, h) # => "ABrACAdABrA"  # 'a', 'b', 'c' replaced.
+ *    s.gsub(/[a-d]/, h) # => "ABrACAABrA"   # 'd' removed.
+ *
+ *  With argument +pattern+ and a block given,
+ *  calls the block with each matching substring;
+ *  replaces that substring with the block's return value:
+ *
+ *    s.gsub(/[a-d]/) {|substring| substring.upcase }
+      # => "ABrACADABrA"
+ *
+ *  With argument +pattern+ and no block given,
+ *  returns a new Enumerator.
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
