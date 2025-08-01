@@ -1804,46 +1804,6 @@ too_complex:
     return result;
 }
 
-static void
-general_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val, void *data,
-                  VALUE *(*shape_fields_func)(VALUE, void *),
-                  void (*shape_resize_fields_func)(VALUE, attr_index_t, attr_index_t, void *),
-                  void (*set_shape_id_func)(VALUE, shape_id_t, void *),
-                  shape_id_t (*transition_too_complex_func)(VALUE, void *),
-                  st_table *(*too_complex_table_func)(VALUE, void *))
-{
-    shape_id_t current_shape_id = RBASIC_SHAPE_ID(obj);
-
-    if (UNLIKELY(rb_shape_too_complex_p(target_shape_id))) {
-        if (UNLIKELY(!rb_shape_too_complex_p(current_shape_id))) {
-            current_shape_id = transition_too_complex_func(obj, data);
-        }
-
-        st_table *table = too_complex_table_func(obj, data);
-
-        if (RSHAPE_LEN(target_shape_id) > RSHAPE_LEN(current_shape_id)) {
-            RBASIC_SET_SHAPE_ID(obj, target_shape_id);
-        }
-
-        RUBY_ASSERT(RSHAPE_EDGE_NAME(target_shape_id));
-        st_insert(table, (st_data_t)RSHAPE_EDGE_NAME(target_shape_id), (st_data_t)val);
-        RB_OBJ_WRITTEN(obj, Qundef, val);
-    }
-    else {
-        attr_index_t index = RSHAPE_INDEX(target_shape_id);
-        if (index >= RSHAPE_CAPACITY(current_shape_id)) {
-            shape_resize_fields_func(obj, RSHAPE_CAPACITY(current_shape_id), RSHAPE_CAPACITY(target_shape_id), data);
-        }
-
-        if (RSHAPE_LEN(target_shape_id) > RSHAPE_LEN(current_shape_id)) {
-            set_shape_id_func(obj, target_shape_id, data);
-        }
-
-        VALUE *table = shape_fields_func(obj, data);
-        RB_OBJ_WRITE(obj, &table[index], val);
-    }
-}
-
 static inline void
 generic_update_fields_obj(VALUE obj, VALUE fields_obj, const VALUE original_fields_obj)
 {
@@ -2039,17 +1999,6 @@ rb_obj_ivar_set(VALUE obj, ID id, VALUE val)
                             obj_ivar_set_too_complex_table).index;
 }
 
-static void
-obj_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val)
-{
-    general_field_set(obj, target_shape_id, val, NULL,
-                      obj_ivar_set_shape_fields,
-                      obj_ivar_set_shape_resize_fields,
-                      obj_ivar_set_set_shape_id,
-                      obj_ivar_set_transition_too_complex,
-                      obj_ivar_set_too_complex_table);
-}
-
 /* Set the instance variable +val+ on object +obj+ at ivar name +id+.
  * This function only works with T_OBJECT objects, so make sure
  * +obj+ is of type T_OBJECT before using this function.
@@ -2128,24 +2077,6 @@ rb_ivar_set_internal(VALUE obj, ID id, VALUE val)
     VM_ASSERT(!rb_is_instance_id(id));
 
     ivar_set(obj, id, val);
-}
-
-void
-rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val)
-{
-    switch (BUILTIN_TYPE(obj)) {
-      case T_OBJECT:
-        obj_field_set(obj, target_shape_id, val);
-        break;
-      case T_CLASS:
-      case T_MODULE:
-        // The only field is object_id and T_CLASS handle it differently.
-        rb_bug("Unreachable");
-        break;
-      default:
-        generic_field_set(obj, target_shape_id, field_name, val);
-        break;
-    }
 }
 
 static VALUE
