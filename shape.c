@@ -716,6 +716,7 @@ shape_transition_object_id(shape_id_t original_shape_id)
     rb_shape_t *shape = get_next_shape_internal(RSHAPE(original_shape_id), id_object_id, SHAPE_OBJ_ID, &dont_care, true);
     if (!shape) {
         shape = RSHAPE(ROOT_SHAPE_WITH_OBJ_ID);
+        return transition_complex(shape_id(shape, original_shape_id) | SHAPE_ID_FL_HAS_OBJECT_ID);
     }
 
     RUBY_ASSERT(shape);
