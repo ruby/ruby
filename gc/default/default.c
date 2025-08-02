@@ -4420,7 +4420,10 @@ rb_gc_impl_mark_and_move(void *objspace_ptr, VALUE *ptr)
         GC_ASSERT(objspace->flags.during_compacting);
         GC_ASSERT(during_gc);
 
-        *ptr = rb_gc_impl_location(objspace, *ptr);
+        VALUE destination = rb_gc_impl_location(objspace, *ptr);
+        if (destination != *ptr) {
+            *ptr = destination;
+        }
     }
     else {
         gc_mark(objspace, *ptr);
