@@ -1925,7 +1925,12 @@ copy_enter(VALUE obj, struct obj_traverse_replace_data *data)
         return traverse_skip;
     }
     else {
-        data->replacement = rb_obj_clone(obj);
+        int state;
+        VALUE result = rb_protect(rb_obj_clone, obj, &state);
+        if (state) {
+            rb_raise(rb_eRactorIsolationError, "cannot copy %"PRIsVALUE"", obj);
+        }
+        data->replacement = result;
         return traverse_cont;
     }
 }
