@@ -65,10 +65,30 @@ jobs:
       )}}
 
     steps:
-      - name: Set up Ruby & MSYS2
-        uses: ruby/setup-ruby@d8d83c3960843afb664e821fed6be52f37da5267 # v1.231.0
+      - uses: msys2/setup-msys2@40677d36a502eb2cf0fb808cc9dec31bf6152638 # v2.28.0
+        id: msys2
         with:
-          ruby-version: '3.2'
+          msystem: UCRT64
+          update: true
+          install: >-
+            git
+            make
+            ruby
+            autoconf
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-ragel
+            mingw-w64-ucrt-x86_64-openssl
+            mingw-w64-ucrt-x86_64-libyaml
+            mingw-w64-ucrt-x86_64-libffi
+
+      - name: Add MSYS2 to PATH
+        working-directory:
+        run: |
+          echo "${env:MSYS2_LOCATION}\usr\bin" | Tee-Object -FilePath "${env:GITHUB_PATH}" -Append -Encoding utf8
+          echo "${env:MSYS2_LOCATION}\ucrt64\bin" | Tee-Object -FilePath "${env:GITHUB_PATH}" -Append -Encoding utf8
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        shell: pwsh
 
       - name: Misc system & package info
         working-directory:
