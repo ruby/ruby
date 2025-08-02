@@ -20,6 +20,13 @@ describe "Etc::Passwd" do
     end
 
     it "returns user group id" do
+      # There is a mismatch between the group IDs of "id -g" and C function
+      # getpwuid(uid_t uid) pw_gid
+      # https://github.com/IBM/actionspz/issues/31
+      if ENV["GITHUB_ACTIONS"] && RUBY_PLATFORM =~ /ppc64le|s390x/
+        skip 'There is a mismatch between "id -g" and getpwuid() pw_gid'
+      end
+
       @pw.gid.should == `id -g`.strip.to_i
     end
 
