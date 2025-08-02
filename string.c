@@ -6639,7 +6639,7 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *  replaces that substring with the block's return value:
  *
  *    s.gsub(/[a-d]/) {|substring| substring.upcase }
-      # => "ABrACADABrA"
+ *    # => "ABrACADABrA"
  *
  *  With argument +pattern+ and no block given,
  *  returns a new Enumerator.
