@@ -138,7 +138,7 @@ static void
 location_ref_update(void *ptr)
 {
     struct valued_frame_info *vfi = ptr;
-    vfi->btobj = rb_gc_location(vfi->btobj);
+    rb_gc_update_reference(&vfi->btobj);
 }
 
 static void

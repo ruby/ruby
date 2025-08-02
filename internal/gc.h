@@ -210,6 +210,7 @@ bool rb_gc_size_allocatable_p(size_t size);
 size_t *rb_gc_heap_sizes(void);
 size_t rb_gc_heap_id_for_size(size_t size);
 
+void rb_gc_update_reference(VALUE *ptr);
 void rb_gc_mark_and_move(VALUE *ptr);
 
 void rb_gc_mark_weak(VALUE *ptr);
