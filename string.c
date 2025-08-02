@@ -400,6 +400,58 @@ str_store_precomputed_hash(VALUE str, st_index_t hash)
     return str;
 }
 
+static VALUE
+setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
+{
+    fake_str->basic.flags = T_STRING|RSTRING_NOEMBED|STR_NOFREE|STR_FAKESTR;
+    RBASIC_SET_SHAPE_ID((VALUE)fake_str, ROOT_SHAPE_ID);
+
+    if (!name) {
+        RUBY_ASSERT_ALWAYS(len == 0);
+        name = "";
+    }
+
+    ENCODING_SET_INLINED((VALUE)fake_str, encidx);
+
+    RBASIC_SET_CLASS_RAW((VALUE)fake_str, rb_cString);
+    fake_str->len = len;
+    fake_str->as.heap.ptr = (char *)name;
+    fake_str->as.heap.aux.capa = len;
+    return (VALUE)fake_str;
+}
+
+/*
+ * set up a fake string which refers a static string literal.
+ */
+VALUE
+rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc)
+{
+    return setup_fake_str(fake_str, name, len, rb_enc_to_index(enc));
+}
+
+VALUE
+rb_bare_fstring(VALUE str)
+{
+    struct RString fake_str;
+
+    Check_Type(str, T_STRING);
+
+    if (FL_TEST(str, RSTRING_FSTR)) {
+        return str;
+    }
+
+    if (BARE_STRING_P(str)) {
+        if (!FL_TEST_RAW(str, FL_FREEZE | STR_NOFREE | STR_CHILLED)) {
+            rb_str_resize(str, RSTRING_LEN(str));
+        }
+    }
+    else {
+        str = setup_fake_str(&fake_str, RSTRING_PTR(str), RSTRING_LEN(str), ENCODING_GET(str));
+    }
+
+    return register_fstring(str, FL_TEST_RAW(str, STR_FAKESTR), false);
+}
+
 VALUE
 rb_fstring(VALUE str)
 {
@@ -616,35 +668,6 @@ rb_fstring_foreach_with_replace(int (*callback)(VALUE *str, void *data), void *d
     if (fstring_table_obj) {
         rb_concurrent_set_foreach_with_replace(fstring_table_obj, callback, data);
     }
-}
-
-static VALUE
-setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
-{
-    fake_str->basic.flags = T_STRING|RSTRING_NOEMBED|STR_NOFREE|STR_FAKESTR;
-    RBASIC_SET_SHAPE_ID((VALUE)fake_str, ROOT_SHAPE_ID);
-
-    if (!name) {
-        RUBY_ASSERT_ALWAYS(len == 0);
-        name = "";
-    }
-
-    ENCODING_SET_INLINED((VALUE)fake_str, encidx);
-
-    RBASIC_SET_CLASS_RAW((VALUE)fake_str, rb_cString);
-    fake_str->len = len;
-    fake_str->as.heap.ptr = (char *)name;
-    fake_str->as.heap.aux.capa = len;
-    return (VALUE)fake_str;
-}
-
-/*
- * set up a fake string which refers a static string literal.
- */
-VALUE
-rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc)
-{
-    return setup_fake_str(fake_str, name, len, rb_enc_to_index(enc));
 }
 
 /*
