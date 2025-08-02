@@ -1009,8 +1009,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: module [nd_cpath]; [nd_body]; end");
         ANN("example: module M; ..; end");
         F_NODE(nd_cpath, RNODE_MODULE, "module path");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_MODULE, "module definition");
+        F_LOC(module_keyword_loc, RNODE_MODULE);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_MODULE);
         return;
 
       case NODE_SCLASS:
