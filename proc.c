@@ -992,7 +992,12 @@ rb_proc_call_kw(VALUE self, VALUE args, int kw_splat)
     VALUE vret;
     rb_proc_t *proc;
     int argc = check_argc(RARRAY_LEN(args));
-    const VALUE *argv = RARRAY_CONST_PTR(args);
+
+    // rb_vm_invoke_proc may end up modifying argv as part of calling and so we
+    // must use RARRAY_PTR, which marks the array as WB_UNPROTECTED instead of
+    // RARRAY_CONST_PTR. Unfortunately this is worse for GC.
+    // See invoke_block_from_c_proc
+    VALUE *argv = RARRAY_PTR(args);
     GetProcPtr(self, proc);
     vret = rb_vm_invoke_proc(GET_EC(), proc, argc, argv,
                              kw_splat, VM_BLOCK_HANDLER_NONE);
