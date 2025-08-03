@@ -75,6 +75,10 @@ class TestOptionParserLoad < Test::Unit::TestCase
     setup_options({}, "config/settings", ".options", &block)
   end
 
+  def setup_options_home_options(envname, &block)
+    setup_options({envname => '~/options'}, "options", ".options", &block)
+  end
+
   def test_load_home_options
     result, = setup_options_home
     assert_load(result)
@@ -142,6 +146,32 @@ class TestOptionParserLoad < Test::Unit::TestCase
 
   def test_load_nothing
     setup_options({}, "") do
+      assert_load_nothing
+    end
+  end
+
+  def test_not_expand_path_basename
+    basename = @basename
+    @basename = "~"
+    $test_optparse_basename = "/" + @basename
+    alias $test_optparse_prog $0
+    alias $0 $test_optparse_basename
+    setup_options({'HOME'=>@tmpdir+"/~options"}, "", "options") do
+      assert_load_nothing
+    end
+  ensure
+    alias $0 $test_optparse_prog
+    @basename = basename
+  end
+
+  def test_not_expand_path_xdg_config_home
+    setup_options_home_options('XDG_CONFIG_HOME') do
+      assert_load_nothing
+    end
+  end
+
+  def test_not_expand_path_xdg_config_dirs
+    setup_options_home_options('XDG_CONFIG_DIRS') do
       assert_load_nothing
     end
   end
