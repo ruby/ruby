@@ -875,6 +875,12 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ *  Document-class: Ractor::Error
+ *
+ *  The parent class of Ractor-related error classes.
+ */
+
+/*
  *  Document-class: Ractor::ClosedError
  *
  *  Raised when an attempt is made to send a message to a closed port,
@@ -909,6 +915,13 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
  *     Received: 2
  *     loop exited
  *     Continue successfully
+ */
+
+/*
+ *  Document-class: Ractor::IsolationError
+ *
+ *  Raised on attempt to make a Ractor-unshareable object
+ *  Ractor-shareable.
  */
 
 /*
@@ -958,6 +971,12 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
  *     # => true
  *     ary.inspect
  *     # Ractor::MovedError (can not send any methods to a moved object)
+ */
+
+/*
+ *  Document-class: Ractor::UnsafeError
+ *
+ *  Raised when Ractor-unsafe C-methods is invoked by a non-main Ractor.
  */
 
 // Main docs are in ractor.rb, but without this clause there are weird artifacts

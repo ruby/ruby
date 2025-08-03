@@ -406,6 +406,13 @@ set_s_alloc(VALUE klass)
     return set_alloc_with_size(klass, 0);
 }
 
+/*
+ *  call-seq:
+ *    Set[*objects] -> new_set
+ *
+ *  Returns a new Set object populated with the given objects,
+ *  See Set::new.
+ */
 static VALUE
 set_s_create(int argc, VALUE *argv, VALUE klass)
 {
@@ -522,6 +529,7 @@ set_i_initialize(int argc, VALUE *argv, VALUE set)
     return set;
 }
 
+/* :nodoc: */
 static VALUE
 set_i_initialize_copy(VALUE set, VALUE other)
 {

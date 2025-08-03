@@ -91,12 +91,19 @@ ractor_port_init(VALUE rpv, rb_ractor_t *r)
     return rpv;
 }
 
+/*
+ *  call-seq:
+ *    Ractor::Port.new  -> new_port
+ *
+ *  Returns a new Ractor::Port object.
+ */
 static VALUE
 ractor_port_initialzie(VALUE self)
 {
     return ractor_port_init(self, GET_RACTOR());
 }
 
+/* :nodoc: */
 static VALUE
 ractor_port_initialzie_copy(VALUE self, VALUE orig)
 {

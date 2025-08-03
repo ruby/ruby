@@ -2026,6 +2026,12 @@ method_owner(VALUE obj)
     return data->owner;
 }
 
+/*
+ *  call-see:
+ *    meth.namespace   -> namespace or nil
+ *
+ *  Returns the namespace where +meth+ is defined in.
+ */
 static VALUE
 method_namespace(VALUE obj)
 {

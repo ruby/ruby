@@ -3500,6 +3500,18 @@ syserr_eqq(VALUE self, VALUE exc)
  */
 
 /*
+ *  Document-class: NoMatchingPatternError
+ *
+ *  Raised when matching pattern not found.
+ */
+
+/*
+ *  Document-class: NoMatchingPatternKeyError
+ *
+ *  Raised when matching key not found.
+ */
+
+/*
  * Document-class: fatal
  *
  * +fatal+ is an Exception that is raised when Ruby has encountered a fatal

@@ -411,6 +411,12 @@ rb_get_namespace_object(rb_namespace_t *ns)
 
 static void setup_pushing_loading_namespace(rb_namespace_t *ns);
 
+/*
+ *  call-seq:
+ *    Namespace.new -> new_namespace
+ *
+ *  Returns a new Namespace object.
+ */
 static VALUE
 namespace_initialize(VALUE namespace)
 {
@@ -450,12 +456,26 @@ namespace_initialize(VALUE namespace)
     return namespace;
 }
 
+/*
+ *  call-seq:
+ *    Namespace.enabled? -> true or false
+ *
+ *  Returns +true+ if namespace is enabled.
+ */
 static VALUE
 rb_namespace_s_getenabled(VALUE namespace)
 {
     return RBOOL(rb_namespace_available());
 }
 
+/*
+ *  call-seq:
+ *    Namespace.current -> namespace, nil or false
+ *
+ *  Returns the current namespace.
+ *  Returns +nil+ if it is the built-in namespace.
+ *  Returns +false+ if namespace is not enabled.
+ */
 static VALUE
 rb_namespace_current(VALUE klass)
 {
@@ -469,6 +489,12 @@ rb_namespace_current(VALUE klass)
     return Qfalse;
 }
 
+/*
+ *  call-seq:
+ *    Namespace.is_builtin?(klass) -> true or false
+ *
+ *  Returns +true+ if +klass+ is only in a user namespace.
+ */
 static VALUE
 rb_namespace_s_is_builtin_p(VALUE namespace, VALUE klass)
 {
@@ -477,6 +503,12 @@ rb_namespace_s_is_builtin_p(VALUE namespace, VALUE klass)
     return Qfalse;
 }
 
+/*
+ *  call-seq:
+ *    load_path -> array
+ *
+ *  Returns namespace local load path.
+ */
 static VALUE
 rb_namespace_load_path(VALUE namespace)
 {
@@ -1048,6 +1080,13 @@ Init_enable_namespace(void)
     }
 }
 
+/*
+ *  Document-class: Namespace
+ *
+ *  Namespace is designed to provide separated spaces in a Ruby
+ *  process, to isolate applications and libraries.
+ *  See {Namespace}[rdoc-ref:namespace.md].
+ */
 void
 Init_Namespace(void)
 {
@@ -1057,14 +1096,17 @@ Init_Namespace(void)
     rb_cNamespace = rb_define_class("Namespace", rb_cModule);
     rb_define_method(rb_cNamespace, "initialize", namespace_initialize, 0);
 
+    /* :nodoc: */
     rb_cNamespaceEntry = rb_define_class_under(rb_cNamespace, "Entry", rb_cObject);
     rb_define_alloc_func(rb_cNamespaceEntry, rb_namespace_entry_alloc);
 
+    /* :nodoc: */
     rb_mNamespaceRefiner = rb_define_module_under(rb_cNamespace, "Refiner");
     if (rb_namespace_available()) {
         setup_builtin_refinement(rb_mNamespaceRefiner);
     }
 
+    /* :nodoc: */
     rb_mNamespaceLoader = rb_define_module_under(rb_cNamespace, "Loader");
     namespace_define_loader_method("require");
     namespace_define_loader_method("require_relative");

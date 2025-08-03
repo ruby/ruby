@@ -4855,6 +4855,7 @@ Init_Regexp(void)
     rb_define_method(rb_cRegexp, "named_captures", rb_reg_named_captures, 0);
     rb_define_method(rb_cRegexp, "timeout", rb_reg_timeout_get, 0);
 
+    /* Raised when regexp matching timed out. */
     rb_eRegexpTimeoutError = rb_define_class_under(rb_cRegexp, "TimeoutError", rb_eRegexpError);
     rb_define_singleton_method(rb_cRegexp, "timeout", rb_reg_s_timeout_get, 0);
     rb_define_singleton_method(rb_cRegexp, "timeout=", rb_reg_s_timeout_set, 1);

@@ -1988,6 +1988,7 @@ Init_unicode_version(void)
     VALUE str = rb_usascii_str_new_static(onigenc_unicode_version_string,
                                           strlen(onigenc_unicode_version_string));
     OBJ_FREEZE(str);
+    /* The supported Unicode version. */
     rb_define_const(rb_cEncoding, "UNICODE_VERSION", str);
 }
 

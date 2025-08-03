@@ -612,6 +612,7 @@ class Ractor
     __builtin_ractor_unmonitor(port)
   end
 
+  # \Port objects transmit messages between Ractors.
   class Port
     #
     # call-seq:
