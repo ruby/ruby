@@ -64,8 +64,11 @@ jobs:
       - name: Generate docs
         id: docs
         run: |
-          ruby -W0 --disable-gems tool/rdoc-srcdir -q --op html .
+          $RDOC -C -x ^ext -x ^lib .
+          $RDOC --op html .
           echo htmlout=ruby-html-${GITHUB_SHA:0:10} >> $GITHUB_OUTPUT
+        env:
+          RDOC: ruby -W0 --disable-gems tool/rdoc-srcdir -q
         # Generate only when document commit/PR
         if: >-
           ${{false
