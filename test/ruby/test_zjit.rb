@@ -466,6 +466,80 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:newhash]
   end
 
+  def test_new_hash_with_user_defined_hash_method
+    assert_runs 'true', %q{
+      class CustomKey
+        attr_reader :val
+        
+        def initialize(val)
+          @val = val
+        end
+        
+        def hash
+          @val.hash
+        end
+        
+        def eql?(other)
+          other.is_a?(CustomKey) && @val == other.val
+        end
+      end
+      
+      def test
+        key = CustomKey.new("key")
+        hash = {key => "value"}
+        hash[key] == "value"
+      end
+      test
+    }
+  end
+
+  def test_new_hash_with_user_hash_method_exception
+    assert_runs 'RuntimeError', %q{
+      class BadKey
+        def hash
+          raise "Hash method failed!"
+        end
+      end
+      
+      def test
+        key = BadKey.new
+        {key => "value"}
+      end
+      
+      begin
+        test
+      rescue => e
+        e.class
+      end
+    }
+  end
+
+  def test_new_hash_with_user_eql_method_exception
+    assert_runs 'RuntimeError', %q{
+      class BadKey
+        def hash
+          42
+        end
+        
+        def eql?(other)
+          raise "Eql method failed!"
+        end
+      end
+      
+      def test
+        key1 = BadKey.new
+        key2 = BadKey.new
+        {key1 => "value1", key2 => "value2"}
+      end
+      
+      begin
+        test
+      rescue => e
+        e.class
+      end
+    }
+  end
+
   def test_opt_hash_freeze
     assert_compiles '{}', <<~RUBY, insns: [:opt_hash_freeze]
       def test = {}.freeze
