@@ -6585,15 +6585,12 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
  *     gsub!(pattern) {|match| ... } -> self or nil
  *     gsub!(pattern)                -> an_enumerator
  *
- *  Performs the specified substring replacement(s) on +self+;
- *  returns +self+ if any replacement occurred, +nil+ otherwise.
+ *  Like String#gsub, except that:
  *
- *  See {Substitution Methods}[rdoc-ref:String@Substitution+Methods].
+ *  - Performs substitutions in +self+ (not in a copy of +self+).
+ *  - Returns +self+ if any characters are removed, +nil+ otherwise.
  *
- *  Returns an Enumerator if no +replacement+ and no block given.
- *
- *  Related: String#sub, String#gsub, String#sub!.
- *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
