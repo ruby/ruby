@@ -411,6 +411,8 @@ usage(const char *name, int help, int highlight, int columns)
 
     if (highlight) sb = esc_standout;
 
+    printf("%s""Options:%s\n", sb, se);
+    printf("%s""(details and examples at https://docs.ruby-lang.org/en/master/ruby/options_md.html)%s\n", sb, se);
     for (i = 0; i < numberof(help_msg); ++i)
         SHOW(help_msg[i]);
     printf("%s""Dump List:%s\n", sb, se);
