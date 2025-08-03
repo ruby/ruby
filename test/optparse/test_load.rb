@@ -31,7 +31,13 @@ class TestOptionParserLoad < Test::Unit::TestCase
     assert_equal({test: result}, into)
   end
 
+  def assert_load_nothing
+    assert !new_parser.load
+    assert_nil @result
+  end
+
   def setup_options(env, dir, suffix = nil)
+    env.update({'HOME'=>@tmpdir})
     optdir = File.join(@tmpdir, dir)
     FileUtils.mkdir_p(optdir)
     file = File.join(optdir, [@basename, suffix].join(""))
@@ -50,7 +56,7 @@ class TestOptionParserLoad < Test::Unit::TestCase
   end
 
   def setup_options_home(&block)
-    setup_options({'HOME'=>@tmpdir}, ".options", &block)
+    setup_options({}, ".options", &block)
   end
 
   def setup_options_xdg_config_home(&block)
@@ -58,7 +64,7 @@ class TestOptionParserLoad < Test::Unit::TestCase
   end
 
   def setup_options_home_config(&block)
-    setup_options({'HOME'=>@tmpdir}, ".config", ".options", &block)
+    setup_options({}, ".config", ".options", &block)
   end
 
   def setup_options_xdg_config_dirs(&block)
@@ -66,7 +72,7 @@ class TestOptionParserLoad < Test::Unit::TestCase
   end
 
   def setup_options_home_config_settings(&block)
-    setup_options({'HOME'=>@tmpdir}, "config/settings", ".options", &block)
+    setup_options({}, "config/settings", ".options", &block)
   end
 
   def test_load_home_options
@@ -135,7 +141,8 @@ class TestOptionParserLoad < Test::Unit::TestCase
   end
 
   def test_load_nothing
-    assert !new_parser.load
-    assert_nil @result
+    setup_options({}, "") do
+      assert_load_nothing
+    end
   end
 end
