@@ -36,9 +36,9 @@ class Pathname
   end
 
   if File.dirname('A:') == 'A:.' # DOSish drive letter
-    ABSOLUTE_PATH = /\A(?:[A-Za-z]:|#{SEPARATOR_PAT})/o
+    ABSOLUTE_PATH = /\A(?:[A-Za-z]:|#{SEPARATOR_PAT})/
   else
-    ABSOLUTE_PATH = /\A#{SEPARATOR_PAT}/o
+    ABSOLUTE_PATH = /\A#{SEPARATOR_PAT}/
   end
   private_constant :ABSOLUTE_PATH
 
