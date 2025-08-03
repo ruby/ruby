@@ -474,7 +474,7 @@ class TestZJIT < Test::Unit::TestCase
         def initialize(val)
           @val = val
         end
-        
+
         def hash
           @val.hash
         end
@@ -483,7 +483,7 @@ class TestZJIT < Test::Unit::TestCase
           other.is_a?(CustomKey) && @val == other.val
         end
       end
-      
+
       def test
         key = CustomKey.new("key")
         hash = {key => "value"}
@@ -500,12 +500,12 @@ class TestZJIT < Test::Unit::TestCase
           raise "Hash method failed!"
         end
       end
-      
+
       def test
         key = BadKey.new
         {key => "value"}
       end
-      
+
       begin
         test
       rescue => e
@@ -525,13 +525,13 @@ class TestZJIT < Test::Unit::TestCase
           raise "Eql method failed!"
         end
       end
-      
+
       def test
         key1 = BadKey.new
         key2 = BadKey.new
         {key1 => "value1", key2 => "value2"}
       end
-      
+
       begin
         test
       rescue => e
