@@ -9,7 +9,6 @@ rdoc_include:
 - doc
 
 exclude:
-- \Alib/irb
 - \.gemspec\z
 
 autolink_excluded_words:
