@@ -470,7 +470,7 @@ class TestZJIT < Test::Unit::TestCase
     assert_runs 'true', %q{
       class CustomKey
         attr_reader :val
-        
+
         def initialize(val)
           @val = val
         end
@@ -478,7 +478,7 @@ class TestZJIT < Test::Unit::TestCase
         def hash
           @val.hash
         end
-        
+
         def eql?(other)
           other.is_a?(CustomKey) && @val == other.val
         end
@@ -520,7 +520,7 @@ class TestZJIT < Test::Unit::TestCase
         def hash
           42
         end
-        
+
         def eql?(other)
           raise "Eql method failed!"
         end
