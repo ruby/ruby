@@ -7,31 +7,39 @@
 #  You may obtain information about the operation of the \GC through GC::Profiler.
 module GC
 
-  # Initiates garbage collection, even if manually disabled.
+  # Initiates garbage collection, even if explicitly disabled by GC.disable .
   #
-  # The +full_mark+ keyword argument determines whether or not to perform a
-  # major garbage collection cycle. When set to +true+, a major garbage
-  # collection cycle is run, meaning all objects are marked. When set to
-  # +false+, a minor garbage collection cycle is run, meaning only young
-  # objects are marked.
+  # Keyword arguments:
   #
-  # The +immediate_mark+ keyword argument determines whether or not to perform
-  # incremental marking. When set to +true+, marking is completed during the
-  # call to this method. When set to +false+, marking is performed in steps
-  # that are interleaved with future Ruby code execution, so marking might not
-  # be completed during this method call. Note that if +full_mark+ is +false+,
-  # then marking will always be immediate, regardless of the value of
-  # +immediate_mark+.
+  # - +full_mark+:
+  #   its boolean value determines whether to perform a major garbage collection cycle:
   #
-  # The +immediate_sweep+ keyword argument determines whether or not to defer
-  # sweeping (using lazy sweep). When set to +false+, sweeping is performed in
-  # steps that are interleaved with future Ruby code execution, so sweeping might
-  # not be completed during this method call. When set to +true+, sweeping is
-  # completed during the call to this method.
+  #   - +true+: initiates a major garbage collection cycle is run,
+  #     meaning all objects (old and new) are marked.
+  #   - +false+: initiates a minor garbage collection cycle,
+  #     meaning only young objects are marked.
   #
-  # Note: These keyword arguments are implementation and version-dependent. They
-  # are not guaranteed to be future-compatible and may be ignored if the
-  # underlying implementation does not support them.
+  # - +immediate_mark+:
+  #   its boolean value determines whether to perform incremental marking:
+  #
+  #   - +true+: marking is completed before the method returns.
+  #   - +false+: marking is performed by parts,
+  #     interleaved with program execution both before the method returns and afterward;
+  #     therefore marking may not be completed before the return.
+  #     Note that if +full_mark+ is +false+, marking will always be immediate,
+  #     regardless of the value of +immediate_mark+.
+  #
+  # - +immediate_sweep+:
+  #   its boolean value determines whether to defer sweeping (using lazy sweep):
+  #
+  #   - +true+: sweeping is completed before the method returns.
+  #   - +false+: sweeping is performed by parts,
+  #     interleaved with program execution both before the method returns and afterward;
+  #     therefore sweeping may not be completed before the return.
+  #
+  # Note that these keword arguments are implementation- and version-dependent,
+  # are not guaranteed to be future-compatible,
+  # and may be ignored in some implementations.
   def self.start full_mark: true, immediate_mark: true, immediate_sweep: true
     Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
   end
