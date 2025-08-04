@@ -1261,6 +1261,16 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
             for (long i=0; i<len; i++) {
                 if (obj_traverse_i(ptr[i], data)) return 1;
             }
+
+            if (RSTRUCT_EMBED_LEN(obj)) {
+                if (!FL_TEST_RAW(obj, RSTRUCT_GEN_IVAR_FLAG)) {
+                    if (obj_traverse_i(ptr[len], data)) return 1;
+                }
+            }
+            else {
+                if (obj_traverse_i(RSTRUCT(obj)->as.heap.fields_obj, data)) return 1;
+            }
+
         }
         break;
 
@@ -1681,6 +1691,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
     if (UNLIKELY(rb_obj_exivar_p(obj))) {
         VALUE fields_obj = 0;
         rb_ivar_generic_fields_tbl_lookup(obj, &fields_obj);
+        RUBY_ASSERT(fields_obj);
 
         if (UNLIKELY(rb_shape_obj_too_complex_p(obj))) {
             struct obj_traverse_replace_callback_data d = {

@@ -1278,8 +1278,10 @@ rb_free_generic_ivar(VALUE obj)
 
         RB_VM_LOCKING() {
             st_delete(generic_fields_tbl_no_ractor_check(obj), &key, &value);
+            RBASIC_SET_SHAPE_ID(obj, ROOT_SHAPE_ID);
         }
     }
+    RUBY_ASSERT(!rb_obj_exivar_p(obj));
 }
 
 VALUE
@@ -2440,11 +2442,7 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
 
     rb_check_frozen(dest);
 
-    if (!rb_obj_exivar_p(obj)) {
-        return;
-    }
-
-    if (rb_gen_fields_tbl_get(obj, 0, &fields_obj)) {
+    if (rb_obj_exivar_p(obj) && rb_gen_fields_tbl_get(obj, 0, &fields_obj)) {
         VALUE new_fields_obj = copy_imemo_fields_ivar(obj, fields_obj, dest);
         if (new_fields_obj) {
             RB_VM_LOCKING() {
@@ -2454,9 +2452,9 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
                 RBASIC_SET_SHAPE_ID(dest, RBASIC_SHAPE_ID(new_fields_obj));
             }
         }
-        else {
-            rb_free_generic_ivar(dest);
-        }
+    }
+    else {
+        rb_free_generic_ivar(dest);
     }
 }
 
