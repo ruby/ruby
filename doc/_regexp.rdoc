@@ -502,7 +502,7 @@ An added _quantifier_ specifies how many matches are required or allowed:
     /\w*/.match('x')
     # => #<MatchData "x">
     /\w*/.match('xyz')
-    # => #<MatchData "yz">
+    # => #<MatchData "xyz">
 
 - <tt>+</tt> - Matches one or more times:
 
