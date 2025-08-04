@@ -472,7 +472,7 @@ pub enum Insn {
     Test { val: InsnId },
     /// Return C `true` if `val` is `Qnil`, else `false`.
     IsNil { val: InsnId },
-    Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId },
+    Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId, state: InsnId },
     GetConstantPath { ic: *const iseq_inline_constant_cache, state: InsnId },
 
     /// Get a global variable named `id`
@@ -1173,7 +1173,7 @@ impl Function {
             &ArrayDup { val, state } => ArrayDup { val: find!(val), state },
             &HashDup { val, state } => HashDup { val: find!(val), state },
             &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun, args: find_vec!(args), name, return_type, elidable },
-            &Defined { op_type, obj, pushval, v } => Defined { op_type, obj, pushval, v: find!(v) },
+            &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
             &NewArray { ref elements, state } => NewArray { elements: find_vec!(elements), state: find!(state) },
             &NewHash { ref elements, state } => {
@@ -2786,7 +2786,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let obj = get_arg(pc, 1);
                     let pushval = get_arg(pc, 2);
                     let v = state.stack_pop()?;
-                    state.stack_push(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v }));
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    state.stack_push(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v, state: exit_id }));
                 }
                 YARVINSN_definedivar => {
                     // (ID id, IVC ic, VALUE pushval)
@@ -4059,12 +4060,12 @@ mod tests {
             fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:NilClass = Const Value(nil)
-              v3:BasicObject = Defined constant, v2
-              v4:BasicObject = Defined func, v0
-              v5:NilClass = Const Value(nil)
-              v6:BasicObject = Defined global-variable, v5
-              v8:ArrayExact = NewArray v3, v4, v6
-              Return v8
+              v4:BasicObject = Defined constant, v2
+              v6:BasicObject = Defined func, v0
+              v7:NilClass = Const Value(nil)
+              v9:BasicObject = Defined global-variable, v7
+              v11:ArrayExact = NewArray v4, v6, v9
+              Return v11
         "#]]);
     }
 

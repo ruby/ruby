@@ -369,7 +369,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SideExit { state, reason } => return gen_side_exit(jit, asm, reason, &function.frame_state(*state)),
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
-        Insn::Defined { op_type, obj, pushval, v } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v))?,
+        Insn::Defined { op_type, obj, pushval, v, state } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v), &function.frame_state(*state))?,
         &Insn::IncrCounter(counter) => return Some(gen_incr_counter(asm, counter)),
         Insn::ArrayExtend { .. }
         | Insn::ArrayMax { .. }
@@ -438,7 +438,7 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
     ep_opnd
 }
 
-fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, _obj: VALUE, pushval: VALUE, _tested_value: Opnd) -> Option<Opnd> {
+fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, pushval: VALUE, tested_value: Opnd, state: &FrameState) -> Option<Opnd> {
     match op_type as defined_type {
         DEFINED_YIELD => {
             // `yield` goes to the block handler stowed in the "local" iseq which is
@@ -455,7 +455,17 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, _obj: VALUE,
                 Some(Qnil.into())
             }
         }
-        _ => None
+        _ => {
+            // Save the PC and SP because the callee may allocate or call #respond_to?
+            gen_prepare_non_leaf_call(jit, asm, state)?;
+
+            // TODO: Inline the cases for each op_type
+            // Call vm_defined(ec, reg_cfp, op_type, obj, v)
+            let def_result = asm_ccall!(asm, rb_vm_defined, EC, CFP, op_type.into(), obj.into(), tested_value);
+
+            asm.cmp(def_result.with_num_bits(8).unwrap(), 0.into());
+            Some(asm.csel_ne(pushval.into(), Qnil.into()))
+        }
     }
 }
 
