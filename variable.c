@@ -2472,8 +2472,10 @@ rb_copy_struct_ivar(VALUE dest, VALUE obj)
     VALUE fields_obj = RSTRUCT_FIELDS_OBJ(obj);
     if (fields_obj) {
         VALUE new_fields_obj = copy_imemo_fields_ivar(obj, fields_obj, dest);
-        RSTRUCT_SET_FIELDS_OBJ(dest, new_fields_obj);
-        RBASIC_SET_SHAPE_ID(dest, RBASIC_SHAPE_ID(new_fields_obj));
+        if (new_fields_obj) {
+            RSTRUCT_SET_FIELDS_OBJ(dest, new_fields_obj);
+            RBASIC_SET_SHAPE_ID(dest, RBASIC_SHAPE_ID(new_fields_obj));
+        }
     }
     return;
 }
