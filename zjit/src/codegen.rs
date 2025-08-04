@@ -340,7 +340,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SendWithoutBlockDirect { cd, state, self_val, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
             gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args))?,
         Insn::SendWithoutBlockDirect { cme, iseq, self_val, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(self_val), opnds!(args), &function.frame_state(*state))?,
-        Insn::InvokeBuiltin { bf, args, state, .. } => gen_invokebuiltin(asm, &function.frame_state(*state), bf, opnds!(args))?,
+        Insn::InvokeBuiltin { bf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, opnds!(args))?,
         Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
@@ -364,7 +364,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GetGlobal { id, state: _ } => gen_getglobal(asm, *id),
         &Insn::GetLocal { ep_offset, level } => gen_getlocal_with_ep(asm, ep_offset, level)?,
         Insn::SetLocal { val, ep_offset, level } => return gen_setlocal_with_ep(asm, opnd!(val), *ep_offset, *level),
-        Insn::GetConstantPath { ic, state } => gen_get_constant_path(asm, *ic, &function.frame_state(*state)),
+        Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, *ic, &function.frame_state(*state))?,
         Insn::SetIvar { self_val, id, val, state: _ } => return gen_setivar(asm, opnd!(self_val), *id, opnd!(val)),
         Insn::SideExit { state, reason } => return gen_side_exit(jit, asm, reason, &function.frame_state(*state)),
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
@@ -490,25 +490,26 @@ fn gen_setlocal_with_ep(asm: &mut Assembler, val: Opnd, local_ep_offset: u32, le
     Some(())
 }
 
-fn gen_get_constant_path(asm: &mut Assembler, ic: *const iseq_inline_constant_cache, state: &FrameState) -> Opnd {
+fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_inline_constant_cache, state: &FrameState) -> Option<Opnd> {
     unsafe extern "C" {
         fn rb_vm_opt_getconstant_path(ec: EcPtr, cfp: CfpPtr, ic: *const iseq_inline_constant_cache) -> VALUE;
     }
 
-    // Save PC since the call can allocate an IC
-    gen_save_pc(asm, state);
+    // Anything could be called on const_missing
+    gen_prepare_non_leaf_call(jit, asm, state)?;
 
-    asm_ccall!(asm, rb_vm_opt_getconstant_path, EC, CFP, Opnd::const_ptr(ic))
+    Some(asm_ccall!(asm, rb_vm_opt_getconstant_path, EC, CFP, Opnd::const_ptr(ic)))
 }
 
-fn gen_invokebuiltin(asm: &mut Assembler, state: &FrameState, bf: &rb_builtin_function, args: Vec<Opnd>) -> Option<lir::Opnd> {
+fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf: &rb_builtin_function, args: Vec<Opnd>) -> Option<lir::Opnd> {
     // Ensure we have enough room fit ec, self, and arguments
     // TODO remove this check when we have stack args (we can use Time.new to test it)
     if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) {
         return None;
     }
 
-    gen_save_pc(asm, state);
+    // Anything can happen inside builtin functions
+    gen_prepare_non_leaf_call(jit, asm, state)?;
 
     let mut cargs = vec![EC];
     cargs.extend(args);
@@ -772,19 +773,17 @@ fn gen_send_without_block(
     self_val: Opnd,
     args: Vec<Opnd>,
 ) -> Option<lir::Opnd> {
-    // Spill locals onto the stack.
-    // TODO: Don't spill locals eagerly; lazily reify frames
-    asm_comment!(asm, "spill locals");
-    for (idx, &insn_id) in state.locals().enumerate() {
-        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id)?);
-    }
+    gen_spill_locals(jit, asm, state)?;
     // Spill the receiver and the arguments onto the stack.
     // They need to be on the interpreter stack to let the interpreter access them.
     // TODO: Avoid spilling operands that have been spilled before.
+    // TODO: Despite https://github.com/ruby/ruby/pull/13468, Kokubun thinks this should
+    // spill the whole stack in case it raises an exception. The HIR might need to change
+    // for opt_aref_with, which pushes to the stack in the middle of the instruction.
     asm_comment!(asm, "spill receiver and arguments");
     for (idx, &val) in [self_val].iter().chain(args.iter()).enumerate() {
         // Currently, we don't move the SP register. So it's equal to the base pointer.
-        let stack_opnd = Opnd::mem(64, SP, idx as i32  * SIZEOF_VALUE_I32);
+        let stack_opnd = Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32);
         asm.mov(stack_opnd, val);
     }
 
@@ -821,15 +820,8 @@ fn gen_send_without_block_direct(
     gen_save_pc(asm, state);
     gen_save_sp(asm, state.stack().len() - args.len() - 1); // -1 for receiver
 
-    // Spill the virtual stack and the locals of the caller onto the stack
-    // TODO: Lazily materialize caller frames on side exits or when needed
-    asm_comment!(asm, "spill locals and stack");
-    for (idx, &insn_id) in state.locals().enumerate() {
-        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id)?);
-    }
-    for (idx, &insn_id) in state.stack().enumerate() {
-        asm.mov(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), jit.get_opnd(insn_id)?);
-    }
+    gen_spill_locals(jit, asm, state)?;
+    gen_spill_stack(jit, asm, state)?;
 
     // Set up the new frame
     // TODO: Lazily materialize caller frames on side exits or when needed
@@ -891,8 +883,7 @@ fn gen_array_dup(
     val: lir::Opnd,
     state: &FrameState,
 ) -> lir::Opnd {
-    // Save PC
-    gen_save_pc(asm, state);
+    gen_prepare_call_with_gc(asm, state);
 
     asm_ccall!(asm, rb_ary_resurrect, val)
 }
@@ -903,8 +894,7 @@ fn gen_new_array(
     elements: Vec<Opnd>,
     state: &FrameState,
 ) -> lir::Opnd {
-    // Save PC
-    gen_save_pc(asm, state);
+    gen_prepare_call_with_gc(asm, state);
 
     let length: ::std::os::raw::c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
@@ -925,8 +915,7 @@ fn gen_new_range(
     flag: RangeType,
     state: &FrameState,
 ) -> lir::Opnd {
-    // Save PC
-    gen_save_pc(asm, state);
+    gen_prepare_call_with_gc(asm, state);
 
     // Call rb_range_new(low, high, flag)
     asm_ccall!(asm, rb_range_new, low, high, (flag as i64).into())
@@ -1040,8 +1029,7 @@ fn gen_isnil(asm: &mut Assembler, val: lir::Opnd) -> Option<lir::Opnd> {
 }
 
 fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, str: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
-    // Save PC
-    gen_save_pc(asm, state);
+    gen_prepare_call_with_gc(asm, state);
 
     Some(asm_ccall!(asm, rb_obj_as_string_result, str, val))
 }
@@ -1133,6 +1121,54 @@ fn gen_save_sp(asm: &mut Assembler, stack_size: usize) {
     let sp_addr = asm.lea(Opnd::mem(64, SP, stack_size as i32 * SIZEOF_VALUE_I32));
     let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
     asm.mov(cfp_sp, sp_addr);
+}
+
+/// Spill locals onto the stack.
+fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) -> Option<()> {
+    // TODO: Avoid spilling locals that have been spilled before and not changed.
+    asm_comment!(asm, "spill locals");
+    for (idx, &insn_id) in state.locals().enumerate() {
+        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id)?);
+    }
+    Some(())
+}
+
+/// Spill the virtual stack onto the stack.
+fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, state: &FrameState) -> Option<()> {
+    // This function does not call gen_save_sp() at the moment because
+    // gen_send_without_block_direct() spills stack slots above SP for arguments.
+    asm_comment!(asm, "spill stack");
+    for (idx, &insn_id) in state.stack().enumerate() {
+        asm.mov(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), jit.get_opnd(insn_id)?);
+    }
+    Some(())
+}
+
+/// Prepare for calling a C function that may call an arbitrary method.
+/// Use gen_prepare_call_with_gc() if the method is leaf but allocates objects.
+#[must_use]
+fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, state: &FrameState) -> Option<()> {
+    // TODO: Lazily materialize caller frames when needed
+    // Save PC for backtraces and allocation tracing
+    gen_save_pc(asm, state);
+
+    // Save SP and spill the virtual stack in case it raises an exception
+    // and the interpreter uses the stack for handling the exception
+    gen_save_sp(asm, state.stack().len());
+    gen_spill_stack(jit, asm, state)?;
+
+    // Spill locals in case the method looks at caller Bindings
+    gen_spill_locals(jit, asm, state)?;
+    Some(())
+}
+
+/// Prepare for calling a C function that may allocate objects and trigger GC.
+/// Use gen_prepare_non_leaf_call() if it may also call an arbitrary method.
+fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState) {
+    // Save PC for allocation tracing
+    gen_save_pc(asm, state);
+    // Unlike YJIT, we don't need to save the stack to protect them from GC
+    // because the backend spills all live registers onto the C stack on asm.ccall().
 }
 
 /// Frame metadata written by gen_push_frame()
