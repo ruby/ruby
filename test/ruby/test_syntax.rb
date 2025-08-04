@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require_relative '../lib/parser_support'
 
 class TestSyntax < Test::Unit::TestCase
   using Module.new {
@@ -1067,6 +1068,22 @@ eom
     assert_syntax_error("/[/=~s", /premature end of char-class/, bug20295)
     assert_syntax_error("/(?<>)/=~s", /group name is empty/, bug20295)
     assert_syntax_error("/(?<a>[)/=~s", /premature end of char-class/, bug20295)
+  end
+
+  def test_syntax_error_message_truncation
+    omit unless ParserSupport.prism_enabled?
+
+    bug21528 = '[ruby-core:122899] [Bug #21528]'
+    begin
+      eval(<<~CODE)
+        if a
+        # 0000000000000ああああああ
+        #
+      CODE
+    rescue SyntaxError => e
+      assert(e.message.valid_encoding?)
+      assert_include(e.message, "# 0000000000000あああああ ...")
+    end
   end
 
   def test_lineno_operation_brace_block

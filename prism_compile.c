@@ -10706,6 +10706,21 @@ pm_parse_errors_format_line(const pm_parser_t *parser, const pm_newline_list_t *
         start += column_start;
     }
 
+    // Take care to not produce a string that is invalid in its encoding.
+    if (truncate_end) {
+        const uint8_t *end_adjusted = start;
+        while (end_adjusted < end) {
+            const size_t next_width = pm_encoding_utf_8_char_width(end_adjusted, 4);
+            // We should only get here with valid utf-8
+            RUBY_ASSERT(next_width > 0);
+
+            if (end_adjusted + next_width > end) {
+                end = end_adjusted;
+            }
+            end_adjusted += next_width;
+        }
+    }
+
     pm_buffer_append_string(buffer, (const char *) start, (size_t) (end - start));
 
     if (truncate_end) {
