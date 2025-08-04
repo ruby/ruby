@@ -385,6 +385,9 @@ init_copy(VALUE dest, VALUE obj)
       case T_OBJECT:
         rb_obj_copy_ivar(dest, obj);
         break;
+      case T_STRUCT:
+        rb_copy_struct_ivar(dest, obj);
+        break;
       default:
         rb_copy_generic_ivar(dest, obj);
         break;

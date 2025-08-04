@@ -413,22 +413,6 @@ rb_shape_obj_has_fields(VALUE obj)
     return rb_shape_has_fields(RBASIC_SHAPE_ID(obj));
 }
 
-static inline bool
-rb_obj_exivar_p(VALUE obj)
-{
-    switch (TYPE(obj)) {
-        case T_NONE:
-        case T_OBJECT:
-        case T_CLASS:
-        case T_MODULE:
-        case T_IMEMO:
-          return false;
-        default:
-          break;
-    }
-    return rb_shape_obj_has_fields(obj);
-}
-
 // For ext/objspace
 RUBY_SYMBOL_EXPORT_BEGIN
 typedef void each_shape_callback(shape_id_t shape_id, void *data);

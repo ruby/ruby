@@ -11,9 +11,32 @@
 /* per-object */
 
 #include "shape.h"
+#include "internal/struct.h"
+
+static inline bool
+rb_obj_exivar_p(VALUE obj)
+{
+    switch (TYPE(obj)) {
+        case T_NONE:
+        case T_OBJECT:
+        case T_CLASS:
+        case T_MODULE:
+        case T_IMEMO:
+          return false;
+        case T_STRUCT:
+          if (!FL_TEST_RAW(obj, RSTRUCT_FL_GENIVAR)) {
+              return false;
+          }
+          break;
+        default:
+          break;
+    }
+    return rb_shape_obj_has_fields(obj);
+}
 
 int rb_ivar_generic_fields_tbl_lookup(VALUE obj, VALUE *);
 void rb_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table);
+void rb_copy_struct_ivar(VALUE dest, VALUE obj);
 
 void rb_free_rb_global_tbl(void);
 void rb_free_generic_fields_tbl_(void);

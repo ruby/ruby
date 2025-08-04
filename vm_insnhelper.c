@@ -1265,6 +1265,18 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 
             break;
         }
+      case T_STRUCT:
+        {
+            if (!FL_TEST_RAW(obj, RSTRUCT_FL_GENIVAR)) {
+                fields_obj = RSTRUCT_FIELDS_OBJ(obj);
+                if (!fields_obj) {
+                    return default_value;
+                }
+                ivar_list = rb_imemo_fields_ptr(fields_obj);
+                goto general_path;
+            }
+            // fallthrough gen fields
+        }
       default:
         if (rb_obj_exivar_p(obj)) {
             VALUE fields_obj = 0;

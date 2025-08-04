@@ -252,3 +252,19 @@ class TestObjectIdRactor < Test::Unit::TestCase
     end;
   end
 end
+
+class TestObjectIdStruct < TestObjectId
+  EmbeddedStruct = Struct.new(:embedded_field)
+
+  def setup
+    @obj = EmbeddedStruct.new
+  end
+end
+
+class TestObjectIdStructGenIvar < TestObjectId
+  GenIvarStruct = Struct.new(:a, :b, :c)
+
+  def setup
+    @obj = GenIvarStruct.new
+  end
+end

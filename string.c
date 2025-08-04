@@ -47,6 +47,7 @@
 #include "ruby/util.h"
 #include "ruby_assert.h"
 #include "shape.h"
+#include "variable.h"
 #include "vm_sync.h"
 #include "ruby/internal/attr/nonstring.h"
 

@@ -47,6 +47,7 @@
 #include "symbol.h"
 #include "ruby/thread_native.h"
 #include "ruby/ractor.h"
+#include "variable.h"
 #include "vm_sync.h"
 #include "builtin.h"
 
