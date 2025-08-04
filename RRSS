@@ -1,0 +1,404 @@
+mkdir#!/usr/bin/env bash
+
+script_name="$(basename "$0")"
+
+command -v "$script_name" > /dev/null 2>&1 || script_name="$0"
+
+num_of_ansi=8
+
+die () {
+    echo -e "\033[0;31m[\033[0m \033[1;91mFATAL\033[0m \033[0;31m]:\033[0m $1" >&2
+    exit 1
+}
+
+reset_terminal () {
+    [[ "$TCT_NO_RESET" == 1 ]] && return 0
+
+    [[ "$TCT_SOFT_RESET" == 1 ]] || reset
+
+    clear
+}
+
+print_little_ansi_display () {
+    for style in $(seq 0 1); do
+        for ansi in $(seq 1 ${num_of_ansi}); do
+            first_part=""
+
+            [[ "$style" == 0 ]] && first_part=3
+            [[ "$style" == 1 ]] && first_part=9
+
+            echo -en "\033[0;${first_part}$(( ${ansi} - 1 ))m███\033[0m"
+        done
+
+        echo -en "\n"
+    done
+}
+
+hex_color_pretty () {
+    v_red="$(( 0x$1 ))"
+    v_grn="$(( 0x$2 ))"
+    v_blu="$(( 0x$3 ))"
+
+    h_red="$1"
+    h_grn="$2"
+    h_blu="$3"
+
+    if [[ "$4" == "dec" ]]; then
+        v_red="$1"
+        v_grn="$2"
+        v_blu="$3"
+
+        h_red="$(printf '%02x' $1)"
+        h_grn="$(printf '%02x' $2)"
+        h_blu="$(printf '%02x' $3)"
+    fi
+
+    echo -e "\033[7m\033[38;2;${v_red};${v_grn};${v_blu}m#${h_red}${h_grn}${h_blu}\033[0m\033[m"
+}
+
+usage () {
+    echo -e " "
+    echo -e "\033[0;96mUsage: $script_name <COMMAND>\033[0m"
+    echo -e " "
+    echo -e "\033[1;93mCommands:\033[0m"
+    echo -e "\033[0;92m  get                           ... Print out all the colors.\033[0m"
+    echo -e "\033[0;92m  set      <COLORS_CONFIG_FILE> ... Set the colors.\033[0m"
+    echo -e "\033[0;92m  set-soft <COLORS_CONFIG_FILE> ... Set the colors (with escape codes so a password isn't needed).\033[0m"
+    echo -e "\033[0;92m  ansi-show                     ... Display a little ANSI color board.\033[0m"
+    echo -e "\033[0;92m  rc-bash                       ... Prints out stuff to add to your .bashrc to make things play nicer in a TTY.\033[0m"
+    echo -e " "
+    echo -e "\033[0;96mFor help on how the colors config file works, use:\033[0m"
+    echo -e "  \033[1;95m\$:\033[0m \033[0;35m$script_name help color-file\033[0m"
+    echo -e " "
+}
+
+prog_help () {
+    if [[ "$1" == "color-file" ]]; then
+        echo -e "\033[0;96mColor files specify RGB values to use for setting the TTY colors.\033[0m"
+        echo -e "\033[0;92mTo create one, you edit a text file and you put one"
+        echo -e "line per ANSI color type ($num_of_ansi lines in total).\033[0m"
+        echo -e "\033[0;93mHere is an example:\033[0m"
+        echo -e "\033[0;33m--[\033[0m \033[1;94mInside The File\033[0m \033[0;33m]--------------------------\033[0m"
+        echo -e "$(hex_color_pretty 00 00 00) $(hex_color_pretty 33 33 33)"
+        echo -e "$(hex_color_pretty dd 00 00) $(hex_color_pretty ff 00 00)"
+        echo -e "$(hex_color_pretty 00 dd 00) $(hex_color_pretty 00 ff 00)"
+        echo -e "$(hex_color_pretty dd dd 00) $(hex_color_pretty ff ff 00)"
+        echo -e "$(hex_color_pretty 00 00 dd) $(hex_color_pretty 00 00 ff)"
+        echo -e "$(hex_color_pretty dd 00 dd) $(hex_color_pretty ff 00 ff)"
+        echo -e "$(hex_color_pretty 00 dd dd) $(hex_color_pretty 00 ff ff)"
+        echo -e "$(hex_color_pretty dd dd dd) $(hex_color_pretty ff ff ff)"
+        echo -e "\033[0;33m-----------------------------------------------\033[0m"
+        echo -e "\033[0;95mAs you can see, each line is in a very specific order,"
+        echo -e "and it starts with the normal shade and ends with the bright shade.\033[0m"
+    else
+        echo "Invalid help page!" >&2
+        return 1
+    fi
+}
+
+rc_warning () {
+    [[ "$TCT_NO_RC_WARN" == 1 ]] && return 0
+
+    shell="$(basename "$SHELL")"
+
+    solution=""
+    rc_file=""
+
+    if [[ "$shell" == "bash" ]]; then
+        solution="eval \"\$(${script_name} rc-bash)\""
+        rc_file="$HOME/.bashrc"
+    fi
+
+    warn_user=0
+
+    grep "$solution" "$rc_file" > /dev/null 2>&1 || warn_user=1
+
+    if [[ "$warn_user" == 1 ]]; then
+        echo -e "\033[0;93mWarning! Your TTY may end up acting kind of funky if you use the 'set-soft' command!\033[0m"
+        echo -e "\033[0;93mTo mitigate/stop this, you can add the following to your '${rc_file}' file:\033[0m"
+        echo -e "\033[0;94m${solution}\033[0m"
+        echo -e "\033[0;93mIf you simply want to stop this warning, you can set the 'TCT_NO_RC_WARN' environment variable to 1.\033[0m"
+    fi
+}
+
+rc_bash () {
+    echo "alias exit='reset; exit'"
+}
+
+channel_file_path () {
+    spec_chan="blu"
+
+    [[ "$1" == 0 ]] && spec_chan="red"
+    [[ "$1" == 1 ]] && spec_chan="grn"
+    [[ "$1" == 2 ]] && spec_chan="blu"
+
+    echo "/sys/module/vt/parameters/default_${spec_chan}"
+}
+
+get_and_print () {
+    for ansi in $(seq 1 ${num_of_ansi}); do
+        t_red="$(cat "$(channel_file_path 0)" | tr ',' '\n' | head --lines $ansi | tail --lines 1)"
+        t_grn="$(cat "$(channel_file_path 1)" | tr ',' '\n' | head --lines $ansi | tail --lines 1)"
+        t_blu="$(cat "$(channel_file_path 2)" | tr ',' '\n' | head --lines $ansi | tail --lines 1)"
+
+        t_red_br="$(cat "$(channel_file_path 0)" | tr ',' '\n' | head --lines $(( ${num_of_ansi} + ansi )) | tail --lines 1)"
+        t_grn_br="$(cat "$(channel_file_path 1)" | tr ',' '\n' | head --lines $(( ${num_of_ansi} + ansi )) | tail --lines 1)"
+        t_blu_br="$(cat "$(channel_file_path 2)" | tr ',' '\n' | head --lines $(( ${num_of_ansi} + ansi )) | tail --lines 1)"
+
+        c_normal="$(hex_color_pretty ${t_red} ${t_grn} ${t_blu} dec)"
+        c_bright="$(hex_color_pretty ${t_red_br} ${t_grn_br} ${t_blu_br} dec)"
+
+        echo "${c_normal} ${c_bright}"
+    done
+}
+
+set_colors () {
+    color_file_path="$1"
+    soft_arg="$2"
+
+    [[ -f "$color_file_path" ]] || die "Color file not found!"
+    [[ "$(cat "$color_file_path" | wc -l)" == "${num_of_ansi}" ]] || die "Invalid number of lines in color file!"
+
+    vt_red=""
+    vt_grn=""
+    vt_blu=""
+
+    for style in $(seq 0 1); do
+        for ansi in $(seq 1 ${num_of_ansi}); do
+            c_pair="$(cat "$color_file_path" | head --lines $ansi | tail --lines 1)"
+
+            color_hex="$(echo "$c_pair" | cut -f$(( $style + 1 )) -d ' ' | sed 's/^#//g')"
+
+            if [[ "$soft_arg" == 0 ]]; then
+                for channel in $(seq 0 2); do
+                    single="$(echo "${color_hex:$(( ${channel} * 2 )):2}")"
+
+                    single_dec=$(( 0x${single} ))
+
+                    suffix=","
+
+                    [[ "$ansi" == "${num_of_ansi}" ]] && [[ "$style" == 1 ]] && suffix=""
+
+                    [[ $channel == 0 ]] && vt_red+="${single_dec}${suffix}"
+                    [[ $channel == 1 ]] && vt_grn+="${single_dec}${suffix}"
+                    [[ $channel == 2 ]] && vt_blu+="${single_dec}${suffix}"
+                done
+            else
+                ansi_offset=$(( ${num_of_ansi} * ${style} ))
+
+                index_dec=$(( ${ansi} + ${ansi_offset} - 1 ))
+                index_hex="$(printf '%x' $index_dec)"
+
+                echo -en "\033]P${index_hex}${color_hex}"
+            fi
+        done
+    done
+
+    if [[ "$soft_arg" == 0 ]]; then
+        for channel in $(seq 0 2); do
+            vt_chan=""
+
+            [[ $channel == 0 ]] && vt_chan="$vt_red"
+            [[ $channel == 1 ]] && vt_chan="$vt_grn"
+            [[ $channel == 2 ]] && vt_chan="$vt_blu"
+
+            channel_file_path="$(channel_file_path $channel)"
+            tmp_file_path="/tmp/${RANDOM}_$(basename "$channel_file_path")"
+
+            echo "$vt_chan" > "$tmp_file_path" || die "Failed to write channel colors to temporary file!"
+            sudo bash -c "cat '${tmp_file_path}' > '${channel_file_path}'" || die "Failed to write to kernel files!"
+        done
+    fi
+
+    if [[ "$TERM" == "linux" ]]; then
+        TCT_SOFT_RESET=${soft_arg} reset_terminal
+
+        print_little_ansi_display
+        echo " "
+R
+        rc_warning
+    else
+        echo -e "\033[0;93mIt appears you are not in a TTY!\033[0m"
+        echo -e "\033[0;93mChanges will only be visible once you switch to a TTY and run the 'reset' command!\033[0m"
+    fi
+}
+R
+if [[ "$1" == "help" ]]; then
+    [[ "$2" == "" ]] && usage || prog_help "$2" || exit 1
+elif [[ "$1" == "get" ]]; then
+    get_and_print
+elif [[ "$1" == "set" ]] || [[ "$1" == "set-soft" ]]; then
+    [[ "$2" == "" ]] && die "Expected color file!"
+
+    soft_arg=0
+    [[ "$1" == "set-soft" ]] && soft_arg=1
+
+    set_colors "$2" "$soft_arg"
+elif [[ "$1" == "ansi-show" ]]; then
+    print_little_ansi_display
+elif [[ "$1" == "rc-bash" ]]; then
+    rc_bash
+else
+    usage
+    exit 1
+fi
+<!DOCTYPE html>
+<html>
+<head>
+<title>Penguin Panic!</title>
+<style>
+  body {
+    background-color: #222;
+    color: #eee;
+    font-family: sans-serif;
+    margin: 0;
+    overflow: hidden; /* Prevent scrollbars */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  #gameCanvas {
+    border: 2px solid #555;
+    background-color: #111;
+  }
+</style>
+</head>
+<body>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Set canvas dimensions
+    canvas.width = 800;
+    canvas.height = 600;
+
+    // Player properties
+    const player = {
+      x: canvas.width / 2 - 15,
+      y: canvas.height - 50,
+      width: 30,
+      height: 30,
+      color: 'lightblue',
+      speed: 5
+    };
+
+    // Penguin mascot properties
+    const penguin = {
+      x: 50,
+      y: 50,
+      width: 40,
+      height: 40,
+      color: 'white', // Basic white for now
+      speed: 2,
+      isChasing: false // Initial state
+    };
+
+    // Game state
+    let gameOver = false;
+
+    // Keyboard input tracking
+    const keys = {};
+    window.addEventListener('keydown', (e) => {
+      keys[e.key] = true;
+    });
+    window.addEventListener('keyup', (e) => {
+      keys[e.key] = false;
+    });
+
+    function drawPlayer() {
+      ctx.fillStyle = player.color;
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+    }
+
+    function drawPenguin() {
+      ctx.fillStyle = penguin.color;
+      ctx.fillRect(penguin.x, penguin.y, penguin.width, penguin.height);
+    }
+
+    function updatePlayer() {
+      if (keys['ArrowLeft'] && player.x > 0) {
+        player.x -= player.speed;
+      }
+      if (keys['ArrowRight'] && player.x < canvas.width - player.width) {
+        player.x += player.speed;
+      }
+      if (keys['ArrowUp'] && player.y > 0) {
+        player.y -= player.speed;
+      }
+      if (keys['ArrowDown'] && player.y < canvas.height - player.height) {
+        player.y += player.speed;
+      }
+    }
+
+    function updatePenguin() {
+      // Simple AI: Chase the player
+      const dx = player.x - penguin.x;
+      const dy = player.y - penguin.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < 200) { // Start chasing if within a certain range
+        penguin.isChasing = true;
+        if (dx > 0) penguin.x += penguin.speed;
+        if (dx < 0) penguin.x -= penguin.speed;
+        if (dy > 0) penguin.y += penguin.speed;
+        if (dy < 0) penguin.y -= penguin.speed;
+      } else {
+        penguin.isChasing = false;
+        // Maybe add some random wandering behavior later
+      }
+    }
+
+    function checkCollision() {
+      if (
+        player.x < penguin.x + penguin.width &&
+        player.x + player.width > penguin.x &&
+        player.y < penguin.y + penguin.height &&
+        player.y + player.height > penguin.y
+      ) {
+        gameOver = true;
+      }
+    }
+
+    function drawGameOver() {
+      ctx.fillStyle = 'red';
+      ctx.font = '48px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
+    }
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (!gameOver) {
+        updatePlayer();
+        updatePenguin();
+        checkCollision();
+        drawPlayer();
+        drawPenguin();
+      } else {
+        drawGameOver();
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Start the game loop
+    gameLoop();
+  </script>
+
+</body>
+</html><iframe src="https://ftf.live/app?tc=evThay" allow="camera; microphone"></iframe><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4840954423930918"
+     crossorigin="anonymous"></script>
+<!-- XCAM -->
+<ins class="adsbygoogle"
+     style="display:inline-block;width:728px;height:90px"
+     data-ad-client="ca-pub-4840954423930918"
+     data-ad-slot="8418337999"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script> 
