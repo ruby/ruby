@@ -12,8 +12,21 @@
 #include "ruby/ruby.h"          /* for struct RBasic */
 #include "internal/imemo.h"
 
+/* Flags of RStruct
+ *
+ * 1-7: RSTRUCT_EMBED_LEN
+ *          If non-zero, the struct is embedded (its contents follow the
+ *          header, rather than being on a separately allocated buffer) and
+ *          these bits are the length of the Struct.
+ * 8:   RSTRUCT_GEN_IVAR_FLAG
+ *          The struct is embedded and has no space left to store the
+ *          IMEMO/fields reference. Any ivar this struct may have will be in
+ *          the generic_fields_tbl. This flag doesn't imply the struct has
+ *          ivars.
+ */
+
 enum {
-    RSTRUCT_FL_GENIVAR = RUBY_FL_USER8,
+    RSTRUCT_GEN_IVAR_FLAG = RUBY_FL_USER8,
     RSTRUCT_EMBED_LEN_MASK = RUBY_FL_USER7 | RUBY_FL_USER6 | RUBY_FL_USER5 | RUBY_FL_USER4 |
                                  RUBY_FL_USER3 | RUBY_FL_USER2 | RUBY_FL_USER1,
     RSTRUCT_EMBED_LEN_SHIFT = (RUBY_FL_USHIFT+1),
@@ -25,7 +38,7 @@ struct RStruct {
         struct {
             long len;
             const VALUE *ptr;
-            const VALUE fields_obj;
+            VALUE fields_obj;
         } heap;
         /* This is a length 1 array because:
          *   1. GCC has a bug that does not optimize C flexible array members
@@ -125,7 +138,7 @@ RSTRUCT_FIELDS_OBJ(VALUE st)
     const long embed_len = RSTRUCT_EMBED_LEN(st);
     VALUE fields_obj;
     if (embed_len) {
-        RUBY_ASSERT(!FL_TEST_RAW(st, RSTRUCT_FL_GENIVAR));
+        RUBY_ASSERT(!FL_TEST_RAW(st, RSTRUCT_GEN_IVAR_FLAG));
         fields_obj = RSTRUCT_GET(st, embed_len);
     }
     else {
@@ -141,7 +154,7 @@ RSTRUCT_SET_FIELDS_OBJ(VALUE st, VALUE fields_obj)
     RUBY_ASSERT(!fields_obj || IMEMO_TYPE_P(fields_obj, imemo_fields));
     const long embed_len = RSTRUCT_EMBED_LEN(st);
     if (embed_len) {
-        RUBY_ASSERT(!FL_TEST_RAW(st, RSTRUCT_FL_GENIVAR));
+        RUBY_ASSERT(!FL_TEST_RAW(st, RSTRUCT_GEN_IVAR_FLAG));
         RSTRUCT_SET(st, embed_len, fields_obj);
     }
     else {

@@ -1679,7 +1679,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 } while (0)
 
     if (UNLIKELY(rb_obj_exivar_p(obj))) {
-        VALUE fields_obj;
+        VALUE fields_obj = 0;
         rb_ivar_generic_fields_tbl_lookup(obj, &fields_obj);
 
         if (UNLIKELY(rb_shape_obj_too_complex_p(obj))) {
@@ -1794,6 +1794,16 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
             for (long i=0; i<len; i++) {
                 CHECK_AND_REPLACE(obj, ptr[i]);
             }
+
+            if (RSTRUCT_EMBED_LEN(obj)) {
+                if (!FL_TEST_RAW(obj, RSTRUCT_GEN_IVAR_FLAG)) {
+                    CHECK_AND_REPLACE(obj, ptr[len]);
+                }
+            }
+            else {
+                CHECK_AND_REPLACE(obj, RSTRUCT(obj)->as.heap.fields_obj);
+            }
+
         }
         break;
 
@@ -1816,6 +1826,31 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         }
 
       case T_IMEMO:
+        if (IMEMO_TYPE_P(obj, imemo_fields)) {
+            if (rb_shape_obj_too_complex_p(obj)) {
+                struct obj_traverse_replace_callback_data d = {
+                    .stop = false,
+                    .data = data,
+                    .src = obj,
+                };
+                rb_st_foreach_with_replace(
+                    rb_imemo_fields_complex_tbl(obj),
+                    obj_iv_hash_traverse_replace_foreach_i,
+                    obj_iv_hash_traverse_replace_i,
+                    (st_data_t)&d
+                );
+                if (d.stop) return 1;
+            }
+            else {
+                uint32_t len = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
+                VALUE *ptr = rb_imemo_fields_ptr(obj);
+
+                for (uint32_t i = 0; i < len; i++) {
+                    CHECK_AND_REPLACE(obj, ptr[i]);
+                }
+            }
+            break;
+        }
         // not supported yet
         return 1;
 
@@ -1944,7 +1979,12 @@ copy_enter(VALUE obj, struct obj_traverse_replace_data *data)
         return traverse_skip;
     }
     else {
-        data->replacement = rb_obj_clone(obj);
+        if (IMEMO_TYPE_P(obj, imemo_fields)) {
+            data->replacement = rb_imemo_fields_clone(obj);
+        }
+        else {
+            data->replacement = rb_obj_clone(obj);
+        }
         return traverse_cont;
     }
 }

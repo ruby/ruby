@@ -24,7 +24,7 @@ rb_obj_exivar_p(VALUE obj)
         case T_IMEMO:
           return false;
         case T_STRUCT:
-          if (!FL_TEST_RAW(obj, RSTRUCT_FL_GENIVAR)) {
+          if (!FL_TEST_RAW(obj, RSTRUCT_GEN_IVAR_FLAG)) {
               return false;
           }
           break;

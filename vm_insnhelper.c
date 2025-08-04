@@ -1267,7 +1267,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
       case T_STRUCT:
         {
-            if (!FL_TEST_RAW(obj, RSTRUCT_FL_GENIVAR)) {
+            if (!FL_TEST_RAW(obj, RSTRUCT_GEN_IVAR_FLAG)) {
                 fields_obj = RSTRUCT_FIELDS_OBJ(obj);
                 if (!fields_obj) {
                     return default_value;

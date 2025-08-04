@@ -3261,7 +3261,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         }
 
         if (RSTRUCT_EMBED_LEN(obj)) {
-            if (!FL_TEST_RAW(obj, RSTRUCT_FL_GENIVAR)) {
+            if (!FL_TEST_RAW(obj, RSTRUCT_GEN_IVAR_FLAG)) {
                 gc_mark_internal(ptr[len]);
             }
         }
@@ -4199,7 +4199,7 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
             }
 
             if (RSTRUCT_EMBED_LEN(obj)) {
-                if (!FL_TEST_RAW(obj, RSTRUCT_FL_GENIVAR)) {
+                if (!FL_TEST_RAW(obj, RSTRUCT_GEN_IVAR_FLAG)) {
                     UPDATE_IF_MOVED(objspace, ptr[len]);
                 }
             }

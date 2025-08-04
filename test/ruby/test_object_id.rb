@@ -268,3 +268,36 @@ class TestObjectIdStructGenIvar < TestObjectId
     @obj = GenIvarStruct.new
   end
 end
+
+class TestObjectIdStructNotEmbed < TestObjectId
+  MANY_IVS = 80
+
+  StructNotEmbed = Struct.new(*MANY_IVS.times.map { |i| :"field_#{i}" })
+
+  def setup
+    @obj = StructNotEmbed.new
+  end
+end
+
+class TestObjectIdStructTooComplex < TestObjectId
+  StructTooComplex = Struct.new(:a) do
+    def initialize
+      @too_complex_obj_id_test = 1
+    end
+  end
+
+  def setup
+    if defined?(RubyVM::Shape::SHAPE_MAX_VARIATIONS)
+      assert_equal 8, RubyVM::Shape::SHAPE_MAX_VARIATIONS
+    end
+    8.times do |i|
+      StructTooComplex.new.instance_variable_set("@TestObjectIdStructTooComplex#{i}", 1)
+    end
+    @obj = StructTooComplex.new
+    @obj.instance_variable_set("@a#{rand(10_000)}", 1)
+
+    if defined?(RubyVM::Shape)
+      assert_predicate(RubyVM::Shape.of(@obj), :too_complex?)
+    end
+  end
+end

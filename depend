@@ -6065,6 +6065,7 @@ hash.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 hash.$(OBJEXT): $(top_srcdir)/internal/st.h
 hash.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 hash.$(OBJEXT): $(top_srcdir)/internal/string.h
+hash.$(OBJEXT): $(top_srcdir)/internal/struct.h
 hash.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 hash.$(OBJEXT): $(top_srcdir)/internal/thread.h
 hash.$(OBJEXT): $(top_srcdir)/internal/time.h
@@ -6288,6 +6289,7 @@ hash.$(OBJEXT): {$(VPATH)}symbol.h
 hash.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 hash.$(OBJEXT): {$(VPATH)}thread_native.h
 hash.$(OBJEXT): {$(VPATH)}util.h
+hash.$(OBJEXT): {$(VPATH)}variable.h
 hash.$(OBJEXT): {$(VPATH)}vm_core.h
 hash.$(OBJEXT): {$(VPATH)}vm_debug.h
 hash.$(OBJEXT): {$(VPATH)}vm_opts.h
@@ -12926,6 +12928,7 @@ range.$(OBJEXT): $(top_srcdir)/internal/enumerator.h
 range.$(OBJEXT): $(top_srcdir)/internal/error.h
 range.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 range.$(OBJEXT): $(top_srcdir)/internal/gc.h
+range.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 range.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 range.$(OBJEXT): $(top_srcdir)/internal/range.h
 range.$(OBJEXT): $(top_srcdir)/internal/serial.h
@@ -12948,6 +12951,7 @@ range.$(OBJEXT): {$(VPATH)}config.h
 range.$(OBJEXT): {$(VPATH)}defines.h
 range.$(OBJEXT): {$(VPATH)}encoding.h
 range.$(OBJEXT): {$(VPATH)}id.h
+range.$(OBJEXT): {$(VPATH)}id_table.h
 range.$(OBJEXT): {$(VPATH)}intern.h
 range.$(OBJEXT): {$(VPATH)}internal.h
 range.$(OBJEXT): {$(VPATH)}internal/abi.h
@@ -15580,6 +15584,7 @@ shape.$(OBJEXT): $(top_srcdir)/internal/serial.h
 shape.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 shape.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 shape.$(OBJEXT): $(top_srcdir)/internal/string.h
+shape.$(OBJEXT): $(top_srcdir)/internal/struct.h
 shape.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 shape.$(OBJEXT): $(top_srcdir)/internal/variable.h
 shape.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -16569,6 +16574,7 @@ string.$(OBJEXT): $(top_srcdir)/internal/serial.h
 string.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 string.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 string.$(OBJEXT): $(top_srcdir)/internal/string.h
+string.$(OBJEXT): $(top_srcdir)/internal/struct.h
 string.$(OBJEXT): $(top_srcdir)/internal/transcode.h
 string.$(OBJEXT): $(top_srcdir)/internal/variable.h
 string.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -16766,6 +16772,7 @@ string.$(OBJEXT): {$(VPATH)}thread.h
 string.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 string.$(OBJEXT): {$(VPATH)}thread_native.h
 string.$(OBJEXT): {$(VPATH)}util.h
+string.$(OBJEXT): {$(VPATH)}variable.h
 string.$(OBJEXT): {$(VPATH)}vm_core.h
 string.$(OBJEXT): {$(VPATH)}vm_debug.h
 string.$(OBJEXT): {$(VPATH)}vm_opts.h
@@ -18103,6 +18110,7 @@ variable.$(OBJEXT): $(top_srcdir)/internal/serial.h
 variable.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 variable.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 variable.$(OBJEXT): $(top_srcdir)/internal/string.h
+variable.$(OBJEXT): $(top_srcdir)/internal/struct.h
 variable.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 variable.$(OBJEXT): $(top_srcdir)/internal/thread.h
 variable.$(OBJEXT): $(top_srcdir)/internal/variable.h
