@@ -192,19 +192,25 @@ English - `$OUTPUT_RECORD_SEPARATOR`, `$ORS`.
 
 The current standard input stream; initially:
 
-  $stdin # => #<IO:<STDIN>>
+```
+$stdin # => #<IO:<STDIN>>
+```
 
 ### `$stdout` (Standard Output)
 
 The current standard output stream; initially:
 
-  $stdout # => #<IO:<STDOUT>>
+```
+$stdout # => #<IO:<STDOUT>>
+```
 
 ### `$stderr` (Standard Error)
 
 The current standard error stream; initially:
 
-  $stderr # => #<IO:<STDERR>>
+```
+$stderr # => #<IO:<STDERR>>
+```
 
 ### `$<` (\ARGF or $stdin)
 
@@ -273,12 +279,14 @@ returns:
 
 Examples:
 
-  $LOAD_PATH.resolve_feature_path('timeout')
-  # => [:rb, "/snap/ruby/317/lib/ruby/3.2.0/timeout.rb"]
-  $LOAD_PATH.resolve_feature_path('date_core')
-  # => [:so, "/snap/ruby/317/lib/ruby/3.2.0/x86_64-linux/date_core.so"]
-  $LOAD_PATH.resolve_feature_path('foo')
-  # => nil
+```
+$LOAD_PATH.resolve_feature_path('timeout')
+# => [:rb, "/snap/ruby/317/lib/ruby/3.2.0/timeout.rb"]
+$LOAD_PATH.resolve_feature_path('date_core')
+# => [:so, "/snap/ruby/317/lib/ruby/3.2.0/x86_64-linux/date_core.so"]
+$LOAD_PATH.resolve_feature_path('foo')
+# => nil
+```
 
 Aliased as `$:` and `$-I`.
 
@@ -286,18 +294,20 @@ Aliased as `$:` and `$-I`.
 
 Contains an array of the paths to the loaded files:
 
-  $LOADED_FEATURES.take(10)
-  # =>
-  ["enumerator.so",
-   "thread.rb",
-   "fiber.so",
-   "rational.so",
-   "complex.so",
-   "ruby2_keywords.rb",
-   "/snap/ruby/317/lib/ruby/3.2.0/x86_64-linux/enc/encdb.so",
-   "/snap/ruby/317/lib/ruby/3.2.0/x86_64-linux/enc/trans/transdb.so",
-   "/snap/ruby/317/lib/ruby/3.2.0/x86_64-linux/rbconfig.rb",
-   "/snap/ruby/317/lib/ruby/3.2.0/rubygems/compatibility.rb"]
+```
+$LOADED_FEATURES.take(10)
+# =>
+["enumerator.so",
+ "thread.rb",
+ "fiber.so",
+ "rational.so",
+ "complex.so",
+ "ruby2_keywords.rb",
+ "/snap/ruby/317/lib/ruby/3.2.0/x86_64-linux/enc/encdb.so",
+ "/snap/ruby/317/lib/ruby/3.2.0/x86_64-linux/enc/trans/transdb.so",
+ "/snap/ruby/317/lib/ruby/3.2.0/x86_64-linux/rbconfig.rb",
+ "/snap/ruby/317/lib/ruby/3.2.0/rubygems/compatibility.rb"]
+```
 
 Aliased as `$"`.
 
@@ -400,19 +410,25 @@ Whether command-line option `-p` was given; read-only.
 
 The standard input stream (the default value for `$stdin`):
 
-  STDIN # => #<IO:<STDIN>>
+```
+STDIN # => #<IO:<STDIN>>
+```
 
 ### `STDOUT`
 
 The standard output stream (the default value for `$stdout`):
 
-  STDOUT # => #<IO:<STDOUT>>
+```
+STDOUT # => #<IO:<STDOUT>>
+```
 
 ### `STDERR`
 
 The standard error stream (the default value for `$stderr`):
 
-  STDERR # => #<IO:<STDERR>>
+```
+STDERR # => #<IO:<STDERR>>
+```
 
 ## Environment
 
@@ -420,13 +436,15 @@ The standard error stream (the default value for `$stderr`):
 
 A hash of the contains current environment variables names and values:
 
-  ENV.take(5)
-  # =>
-  [["COLORTERM", "truecolor"],
-   ["DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/user/1000/bus"],
-   ["DESKTOP_SESSION", "ubuntu"],
-   ["DISPLAY", ":0"],
-   ["GDMSESSION", "ubuntu"]]
+```
+ENV.take(5)
+# =>
+[["COLORTERM", "truecolor"],
+ ["DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/user/1000/bus"],
+ ["DESKTOP_SESSION", "ubuntu"],
+ ["DISPLAY", ":0"],
+ ["GDMSESSION", "ubuntu"]]
+```
 
 ### ARGF
 
@@ -442,31 +460,41 @@ An array of the given command-line arguments.
 
 The Binding of the top level scope:
 
-  TOPLEVEL_BINDING # => #<Binding:0x00007f58da0da7c0>
+```
+TOPLEVEL_BINDING # => #<Binding:0x00007f58da0da7c0>
+```
 
 ### `RUBY_VERSION`
 
 The Ruby version:
 
-  RUBY_VERSION # => "3.2.2"
+```
+RUBY_VERSION # => "3.2.2"
+```
 
 ### `RUBY_RELEASE_DATE`
 
 The release date string:
 
-  RUBY_RELEASE_DATE # => "2023-03-30"
+```
+RUBY_RELEASE_DATE # => "2023-03-30"
+```
 
 ### `RUBY_PLATFORM`
 
 The platform identifier:
 
-  RUBY_PLATFORM # => "x86_64-linux"
+```
+RUBY_PLATFORM # => "x86_64-linux"
+```
 
 ### `RUBY_PATCHLEVEL`
 
 The integer patch level for this Ruby:
 
-  RUBY_PATCHLEVEL # => 53
+```
+RUBY_PATCHLEVEL # => 53
+```
 
 For a development build the patch level will be -1.
 
@@ -474,33 +502,43 @@ For a development build the patch level will be -1.
 
 The git commit hash for this Ruby:
 
-  RUBY_REVISION # => "e51014f9c05aa65cbf203442d37fef7c12390015"
+```
+RUBY_REVISION # => "e51014f9c05aa65cbf203442d37fef7c12390015"
+```
 
 ### `RUBY_COPYRIGHT`
 
 The copyright string:
 
-  RUBY_COPYRIGHT
-  # => "ruby - Copyright (C) 1993-2023 Yukihiro Matsumoto"
+```
+RUBY_COPYRIGHT
+# => "ruby - Copyright (C) 1993-2023 Yukihiro Matsumoto"
+```
 
 ### `RUBY_ENGINE`
 
 The name of the Ruby implementation:
 
-  RUBY_ENGINE # => "ruby"
+```
+RUBY_ENGINE # => "ruby"
+```
 
 ### `RUBY_ENGINE_VERSION`
 
 The version of the Ruby implementation:
 
-  RUBY_ENGINE_VERSION # => "3.2.2"
+```
+RUBY_ENGINE_VERSION # => "3.2.2"
+```
 
 ### `RUBY_DESCRIPTION`
 
 The description of the Ruby implementation:
 
-  RUBY_DESCRIPTION
-  # => "ruby 3.2.2 (2023-03-30 revision e51014f9c0) [x86_64-linux]"
+```
+RUBY_DESCRIPTION
+# => "ruby 3.2.2 (2023-03-30 revision e51014f9c0) [x86_64-linux]"
+```
 
 ## Embedded \Data
 
@@ -508,22 +546,28 @@ The description of the Ruby implementation:
 
 Defined if and only if the program has this line:
 
-  __END__
+```
+__END__
+```
 
 When defined, `DATA` is a File object
 containing the lines following the `__END__`,
 positioned at the first of those lines:
 
-  p DATA
-  DATA.each_line { |line| p line }
-  __END__
-  Foo
-  Bar
-  Baz
+```
+p DATA
+DATA.each_line { |line| p line }
+__END__
+Foo
+Bar
+Baz
+```
 
 Output:
 
-  #<File:t.rb>
-  "Foo\n"
-  "Bar\n"
-  "Baz\n"
+```
+#<File:t.rb>
+"Foo\n"
+"Bar\n"
+"Baz\n"
+```
