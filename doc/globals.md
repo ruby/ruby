@@ -358,9 +358,43 @@ Whether command-line option `-p` was given; read-only.
 
 ### `$;`
 
-= Pre-Defined Global Constants
+# Pre-Defined Global Constants
 
-= Streams
+## Summary
+
+### Streams
+
+| Constant        | Contains                |
+|-----------------|-------------------------|
+| <tt>STDIN</tt>  | Standard input stream.  |
+| <tt>STDOUT</tt> | Standard output stream. |
+| <tt>STDERR</tt> | Standard error stream.  |
+
+### Environment
+
+| Constant                     | Contains                                                                             |
+|------------------------------|--------------------------------------------------------------------------------------|
+| <tt>ENV</tt>                 | Hash of current environment variable names and values.                               |
+| <tt>ARGF</tt>                | String concatenation of files given on the command line, or <tt>$stdin</tt> if none. |
+| <tt>ARGV</tt>                | Array of the given command-line arguments.                                           |
+| <tt>TOPLEVEL_BINDING</tt>    | Binding of the top level scope.                                                      |
+| <tt>RUBY_VERSION</tt>        | String Ruby version.                                                                 |
+| <tt>RUBY_RELEASE_DATE</tt>   | String Ruby release date.                                                            |
+| <tt>RUBY_PLATFORM</tt>       | String Ruby platform.                                                                |
+| <tt>RUBY_PATCH_LEVEL</tt>    | String Ruby patch level.                                                             |
+| <tt>RUBY_REVISION</tt>       | String Ruby revision.                                                                |
+| <tt>RUBY_COPYRIGHT</tt>      | String Ruby copyright.                                                               |
+| <tt>RUBY_ENGINE</tt>         | String Ruby engine.                                                                  |
+| <tt>RUBY_ENGINE_VERSION</tt> | String Ruby engine version.                                                          |
+| <tt>RUBY_DESCRIPTION</tt>    | String Ruby description.                                                             |
+
+### Embedded Data
+
+| Constant      | Contains                                                                  |
+|---------------|---------------------------------------------------------------------------|
+| <tt>DATA</tt> | File containing embedded data (lines following <tt>__END__</tt>, if any). |
+
+## Streams
 
 ### `STDIN`
 
