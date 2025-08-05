@@ -39,10 +39,10 @@ impl Profiler {
 
 /// API called from zjit_* instruction. opcode is the bare (non-zjit_*) instruction.
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
+pub extern "C" fn rb_zjit_profile_insn(bare_opcode: u32, ec: EcPtr) {
     with_vm_lock(src_loc!(), || {
         let mut profiler = Profiler::new(ec);
-        profile_insn(&mut profiler, bare_opcode);
+        profile_insn(&mut profiler, bare_opcode as ruby_vminsn_type);
     });
 }
 
