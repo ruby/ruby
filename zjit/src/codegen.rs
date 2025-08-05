@@ -914,19 +914,7 @@ fn gen_new_hash(
     elements: &Vec<(InsnId, InsnId)>,
     state: &FrameState,
 ) -> Option<lir::Opnd> {
-    // Save PC
-    gen_save_pc(asm, state);
-    gen_save_sp(asm, state.stack().len());
-
-    // Spill the virtual stack and the locals of the caller onto the stack
-    // TODO: Lazily materialize caller frames on side exits or when needed
-    asm_comment!(asm, "spill locals and stack");
-    for (idx, &insn_id) in state.locals().enumerate() {
-        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id)?);
-    }
-    for (idx, &insn_id) in state.stack().enumerate() {
-        asm.mov(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), jit.get_opnd(insn_id)?);
-    }
+    gen_prepare_non_leaf_call(jit, asm, state)?;
 
     asm_comment!(asm, "call rb_hash_new");
     let cap: ::std::os::raw::c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
