@@ -226,6 +226,9 @@ impl Type {
         else if class == unsafe { rb_cObject } {
             Type { bits: bits::ObjectExact, spec: Specialization::Object(val) }
         }
+        else if class.is_subclass_of(unsafe { rb_cObject }) == ClassRelationship::Subclass {
+            Type { bits: bits::Object, spec: Specialization::Object(val) }
+        }
         else {
             // TODO(max): Add more cases for inferring type bits from built-in types
             Type { bits: bits::BasicObject, spec: Specialization::Object(val) }

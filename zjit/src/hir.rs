@@ -5548,7 +5548,7 @@ mod opt_tests {
             fn test@<compiled>:5:
             bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v6:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
+              v6:Object[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
               v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1040)
               Return v7
         "#]]);
@@ -5588,7 +5588,7 @@ mod opt_tests {
             fn test@<compiled>:6:
             bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v6:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
+              v6:Object[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
               v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1040)
               Return v7
         "#]]);
@@ -5607,7 +5607,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v2:Fixnum[3] = Const Value(3)
               PatchPoint MethodRedefined(Object@0x1000, Integer@0x1008, cme:0x1010)
-              v7:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
+              v7:Object[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
               v8:BasicObject = SendWithoutBlockDirect v7, :Integer (0x1040), v2
               Return v8
         "#]]);
@@ -5629,7 +5629,7 @@ mod opt_tests {
               v2:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v8:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
+              v8:Object[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
               v9:BasicObject = SendWithoutBlockDirect v8, :foo (0x1040), v2, v3
               Return v9
         "#]]);
@@ -5652,10 +5652,10 @@ mod opt_tests {
             fn test@<compiled>:7:
             bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v8:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
+              v8:Object[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
               v9:BasicObject = SendWithoutBlockDirect v8, :foo (0x1040)
               PatchPoint MethodRedefined(Object@0x1000, bar@0x1048, cme:0x1050)
-              v11:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
+              v11:Object[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
               v12:BasicObject = SendWithoutBlockDirect v11, :bar (0x1040)
               Return v12
         "#]]);
@@ -6341,7 +6341,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, MY_MODULE)
-              v7:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v7:Object[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               Return v7
         "#]]);
     }
@@ -7385,7 +7385,7 @@ mod opt_tests {
             fn test@<compiled>:3:
             bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v6:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
+              v6:Object[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
               v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1040)
               Return v7
         "#]]);
@@ -7408,7 +7408,7 @@ mod opt_tests {
             fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint MethodRedefined(C@0x1000, nil?@0x1008, cme:0x1010)
-              v15:BasicObject[class_exact:C] = GuardType v1, BasicObject[class_exact:C]
+              v15:Object[class_exact:C] = GuardType v1, Object[class_exact:C]
               v7:Fixnum[4] = Const Value(4)
               Return v7
         "#]]);
