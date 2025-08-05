@@ -1883,7 +1883,7 @@ exc_inspect(VALUE exc)
  *      # String
  *    end
  *
- *  The value returned by this method migth be adjusted when raising (see Kernel#raise),
+ *  The value returned by this method might be adjusted when raising (see Kernel#raise),
  *  or during intermediate handling by #set_backtrace.
  *
  *  See also #backtrace_locations that provide the same value, as structured objects.
