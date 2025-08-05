@@ -4755,10 +4755,10 @@ rb_ary_clear(VALUE ary)
 
 /*
  *  call-seq:
- *    fill(object, start = nil, count = nil) -> new_array
- *    fill(object, range) -> new_array
- *    fill(start = nil, count = nil) {|element| ... } -> new_array
- *    fill(range) {|element| ... } -> new_array
+ *    fill(object, start = nil, count = nil) -> self
+ *    fill(object, range) -> self
+ *    fill(start = nil, count = nil) {|element| ... } -> self
+ *    fill(range) {|element| ... } -> self
  *
  *  Replaces selected elements in +self+;
  *  may add elements to +self+;
