@@ -5045,7 +5045,7 @@ mod tests {
         assert!(iseq_contains_opcode(iseq, YARVINSN_opt_invokebuiltin_delegate_leave), "iseq GC.enable does not contain invokebuiltin");
         let function = iseq_to_hir(iseq).unwrap();
         assert_function_hir(function, expect![[r#"
-            fn enable@<internal:gc>:55:
+            fn enable@<internal:gc>:63:
             bb0(v0:BasicObject):
               v3:BasicObject = InvokeBuiltin gc_enable, v0
               Jump bb1(v0, v3)
@@ -5060,7 +5060,7 @@ mod tests {
         assert!(iseq_contains_opcode(iseq, YARVINSN_invokebuiltin), "iseq GC.start does not contain invokebuiltin");
         let function = iseq_to_hir(iseq).unwrap();
         assert_function_hir(function, expect![[r#"
-            fn start@<internal:gc>:36:
+            fn start@<internal:gc>:44:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject):
               v6:FalseClass = Const Value(false)
               v8:BasicObject = InvokeBuiltin gc_start_internal, v0, v1, v2, v3, v6
