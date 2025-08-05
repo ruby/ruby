@@ -287,6 +287,7 @@ fn main() {
 
         // From vm_core.h
         .allowlist_var("rb_mRubyVMFrozenCore")
+        .allowlist_var("rb_cRubyVM")
         .allowlist_var("VM_BLOCK_HANDLER_NONE")
         .allowlist_type("vm_frame_env_flags")
         .allowlist_type("rb_seq_param_keyword_struct")
@@ -295,6 +296,8 @@ fn main() {
         .allowlist_var(".*_REDEFINED_OP_FLAG")
         .allowlist_type("rb_num_t")
         .allowlist_function("rb_callable_method_entry")
+        .allowlist_function("rb_define_singleton_method")
+        .allowlist_function("rb_const_get")
         .allowlist_function("rb_callable_method_entry_or_negative")
         .allowlist_function("rb_vm_frame_method_entry")
         .allowlist_type("IVC") // pointer to iseq_inline_iv_cache_entry

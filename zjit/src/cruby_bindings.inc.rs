@@ -723,6 +723,12 @@ pub type rb_iseq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_i
 unsafe extern "C" {
     pub fn ruby_xfree(ptr: *mut ::std::os::raw::c_void);
     pub fn rb_class_attached_object(klass: VALUE) -> VALUE;
+    pub fn rb_define_singleton_method(
+        obj: VALUE,
+        mid: *const ::std::os::raw::c_char,
+        func: ::std::option::Option<unsafe extern "C" fn() -> VALUE>,
+        arity: ::std::os::raw::c_int,
+    );
     pub fn rb_singleton_class(obj: VALUE) -> VALUE;
     pub fn rb_get_alloc_func(klass: VALUE) -> rb_alloc_func_t;
     pub fn rb_method_basic_definition_p(klass: VALUE, mid: ID) -> ::std::os::raw::c_int;
@@ -817,6 +823,7 @@ unsafe extern "C" {
     pub fn rb_ivar_set(obj: VALUE, name: ID, val: VALUE) -> VALUE;
     pub fn rb_ivar_defined(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_attr_get(obj: VALUE, name: ID) -> VALUE;
+    pub fn rb_const_get(space: VALUE, name: ID) -> VALUE;
     pub fn rb_obj_info_dump(obj: VALUE);
     pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
     pub fn rb_obj_equal(obj1: VALUE, obj2: VALUE) -> VALUE;
@@ -840,6 +847,7 @@ unsafe extern "C" {
         id: ID,
     ) -> *const rb_callable_method_entry_t;
     pub static mut rb_cISeq: VALUE;
+    pub static mut rb_cRubyVM: VALUE;
     pub static mut rb_mRubyVMFrozenCore: VALUE;
     pub static mut rb_block_param_proxy: VALUE;
     pub fn rb_vm_ep_local_ep(ep: *const VALUE) -> *const VALUE;

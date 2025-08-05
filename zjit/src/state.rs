@@ -175,6 +175,11 @@ impl ZJITState {
     }
 }
 
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_side_exit(_ec: EcPtr, _arg: VALUE) -> VALUE {
+    Qnil
+}
+
 /// Initialize ZJIT
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_init() {
@@ -187,6 +192,13 @@ pub extern "C" fn rb_zjit_init() {
 
         // Install a panic hook for ZJIT
         rb_bug_panic_hook();
+
+        use crate::cruby::{ID,rb_const_get,rb_define_singleton_method, rb_cRubyVM};
+        let zjit = ID!(ZJIT);
+        let zjit_module = unsafe { rb_const_get(rb_cRubyVM, zjit) };
+        unsafe {
+            rb_define_singleton_method(zjit_module, std::ffi::CString::from("side_exit".into()).into(), rb_zjit_side_exit, 0)
+        };
 
         // Discard the instruction count for boot which we never compile
         unsafe { rb_vm_insns_count = 0; }
