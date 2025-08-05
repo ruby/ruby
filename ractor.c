@@ -1679,8 +1679,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 } while (0)
 
     if (UNLIKELY(rb_obj_exivar_p(obj))) {
-        VALUE fields_obj;
-        rb_ivar_generic_fields_tbl_lookup(obj, &fields_obj);
+        VALUE fields_obj = rb_obj_fields_no_ractor_check(obj);
 
         if (UNLIKELY(rb_shape_obj_too_complex_p(obj))) {
             struct obj_traverse_replace_callback_data d = {
