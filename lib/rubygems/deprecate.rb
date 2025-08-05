@@ -126,7 +126,7 @@ module Gem
     # telling the user of +repl+ (unless +repl+ is :none) and the
     # Rubygems version that it is planned to go away.
 
-    def rubygems_deprecate(name, replacement=:none)
+    def rubygems_deprecate(name, replacement=:none, version=Gem::Deprecate.next_rubygems_major_version)
       class_eval do
         old = "_deprecated_#{name}"
         alias_method old, name
@@ -136,7 +136,7 @@ module Gem
           msg = [
             "NOTE: #{target}#{name} is deprecated",
             replacement == :none ? " with no replacement" : "; use #{replacement} instead",
-            ". It will be removed in Rubygems #{Gem::Deprecate.next_rubygems_major_version}",
+            ". It will be removed in Rubygems #{version}",
             "\n#{target}#{name} called from #{Gem.location_of_caller.join(":")}",
           ]
           warn "#{msg.join}." unless Gem::Deprecate.skip
