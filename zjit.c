@@ -346,11 +346,6 @@ rb_zjit_shape_obj_too_complex_p(VALUE obj)
     return rb_shape_obj_too_complex_p(obj);
 }
 
-// Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
-VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
-VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self);
-VALUE rb_zjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
-
 enum {
     RB_SPECIAL_CONST_SHAPE_ID = SPECIAL_CONST_SHAPE_ID,
     RB_INVALID_SHAPE_ID = INVALID_SHAPE_ID,
@@ -361,6 +356,11 @@ rb_zjit_singleton_class_p(VALUE klass)
 {
     return RCLASS_SINGLETON_P(klass);
 }
+
+// Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
+VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
+VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self);
+VALUE rb_zjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 
 // Preprocessed zjit.rb generated during build
 #include "zjit.rbinc"
