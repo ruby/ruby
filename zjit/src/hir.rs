@@ -2242,6 +2242,12 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let fun = &self.fun;
         let iseq_name = iseq_get_location(fun.iseq, 0);
+        // In tests, strip the line number for builtin ISEQs to make tests stable across line changes
+        let iseq_name = if cfg!(test) && iseq_name.contains("@<internal:") {
+            iseq_name[..iseq_name.rfind(':').unwrap()].to_string()
+        } else {
+            iseq_name
+        };
         writeln!(f, "fn {iseq_name}:")?;
         for block_id in fun.rpo() {
             write!(f, "{block_id}(")?;
@@ -5003,7 +5009,7 @@ mod tests {
     #[test]
     fn test_invokebuiltin_delegate_annotated() {
         assert_method_hir_with_opcode("Float", YARVINSN_opt_invokebuiltin_delegate_leave, expect![[r#"
-            fn Float@<internal:kernel>:197:
+            fn Float@<internal:kernel>:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject):
               v6:Flonum = InvokeBuiltin rb_f_float, v0, v1, v2
               Jump bb1(v0, v1, v2, v3, v6)
@@ -5015,7 +5021,7 @@ mod tests {
     #[test]
     fn test_invokebuiltin_cexpr_annotated() {
         assert_method_hir_with_opcode("class", YARVINSN_opt_invokebuiltin_delegate_leave, expect![[r#"
-            fn class@<internal:kernel>:20:
+            fn class@<internal:kernel>:
             bb0(v0:BasicObject):
               v3:Class = InvokeBuiltin _bi20, v0
               Jump bb1(v0, v3)
@@ -5031,7 +5037,7 @@ mod tests {
         assert!(iseq_contains_opcode(iseq, YARVINSN_opt_invokebuiltin_delegate), "iseq Dir.open does not contain invokebuiltin");
         let function = iseq_to_hir(iseq).unwrap();
         assert_function_hir(function, expect![[r#"
-            fn open@<internal:dir>:184:
+            fn open@<internal:dir>:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject):
               v5:NilClass = Const Value(nil)
               v8:BasicObject = InvokeBuiltin dir_s_open, v0, v1, v2
@@ -5045,7 +5051,7 @@ mod tests {
         assert!(iseq_contains_opcode(iseq, YARVINSN_opt_invokebuiltin_delegate_leave), "iseq GC.enable does not contain invokebuiltin");
         let function = iseq_to_hir(iseq).unwrap();
         assert_function_hir(function, expect![[r#"
-            fn enable@<internal:gc>:55:
+            fn enable@<internal:gc>:
             bb0(v0:BasicObject):
               v3:BasicObject = InvokeBuiltin gc_enable, v0
               Jump bb1(v0, v3)
@@ -5060,7 +5066,7 @@ mod tests {
         assert!(iseq_contains_opcode(iseq, YARVINSN_invokebuiltin), "iseq GC.start does not contain invokebuiltin");
         let function = iseq_to_hir(iseq).unwrap();
         assert_function_hir(function, expect![[r#"
-            fn start@<internal:gc>:36:
+            fn start@<internal:gc>:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject):
               v6:FalseClass = Const Value(false)
               v8:BasicObject = InvokeBuiltin gc_start_internal, v0, v1, v2, v3, v6
