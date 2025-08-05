@@ -1,3 +1,6 @@
+/// This implementation was inspired by the type feedback module from Google's S6, which was
+/// written in C++ for use with Python. This is a new implementation in Rust created for use with
+/// Ruby instead of Python.
 #[derive(Debug, Clone)]
 pub struct Distribution<T: Copy + PartialEq + Default, const N: usize> {
     /// buckets and counts have the same length
