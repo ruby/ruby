@@ -920,11 +920,25 @@ fn gen_new_hash(
     let cap: ::std::os::raw::c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
     let new_hash = asm_ccall!(asm, rb_hash_new_with_size, lir::Opnd::Imm(cap));
 
-    for (key_id, val_id) in elements.iter() {
-        let key = jit.get_opnd(*key_id)?;
-        let val = jit.get_opnd(*val_id)?;
-        asm_comment!(asm, "call rb_hash_aset");
-        asm_ccall!(asm, rb_hash_aset, new_hash, key, val);
+    if !elements.is_empty() {
+        let mut pairs = Vec::new();
+        for (key_id, val_id) in elements.iter() {
+            let key = jit.get_opnd(*key_id)?;
+            let val = jit.get_opnd(*val_id)?;
+            pairs.push(key);
+            pairs.push(val);
+        }
+
+        for (i, pair) in pairs.iter().enumerate() {
+            let stack_opnd = Opnd::mem(64, SP, i as i32 * SIZEOF_VALUE_I32);
+            asm.mov(stack_opnd, *pair);
+        }
+
+        let argv = asm.lea(Opnd::mem(64, SP, 0));
+
+        asm_comment!(asm, "call rb_hash_bulk_insert");
+        let argc = (elements.len() * 2) as ::std::os::raw::c_long;
+        asm_ccall!(asm, rb_hash_bulk_insert, lir::Opnd::Imm(argc), argv, new_hash);
     }
 
     Some(new_hash)
