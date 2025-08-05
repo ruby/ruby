@@ -76,19 +76,19 @@ jobs:
           # show where
           result=true
           for e in gcc.exe ragel.exe make.exe libcrypto-3-x64.dll libssl-3-x64.dll; do
-            echo ::group::$'\033[93m'$e$'\033[m'
+            echo ::group::$'\e[93m'$e$'\e[m'
             where $e || result=false
             echo ::endgroup::
           done
           # show version
           for e in gcc ragel make "openssl version"; do
             case "$e" in *" "*) ;; *) e="$e --version";; esac
-            echo ::group::$'\033[93m'$e$'\033[m'
+            echo ::group::$'\e[93m'$e$'\e[m'
             $e || result=false
             echo ::endgroup::
           done
           # show packages
-          echo ::group::$'\033[93m'Packages$'\033[m'
+          echo ::group::$'\e[93m'Packages$'\e[m'
           pacman -Qs mingw-w64-ucrt-x86_64-* | sed -n "s,local/mingw-w64-ucrt-x86_64-,,p"
           echo ::endgroup::
           $result
