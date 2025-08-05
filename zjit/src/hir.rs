@@ -6440,6 +6440,31 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_send_direct_to_instance_method() {
+        eval("
+            class C
+              def foo
+                3
+              end
+            end
+
+            def test(c) = c.foo
+            c = C.new
+            test c
+            test c
+        ");
+
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:8:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+              v7:BasicObject[class_exact:C] = GuardType v1, BasicObject[class_exact:C]
+              v8:BasicObject = SendWithoutBlockDirect v7, :foo (0x1038)
+              Return v8
+        "#]]);
+    }
+
+    #[test]
     fn dont_specialize_call_to_iseq_with_opt() {
         eval("
             def foo(arg=1) = 1
