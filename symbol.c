@@ -99,7 +99,9 @@ typedef struct {
     VALUE ids;
 } rb_symbols_t;
 
-rb_symbols_t ruby_global_symbols = {tNEXT_ID-1};
+rb_symbols_t ruby_global_symbols = {
+    .next_id = tNEXT_ID,
+};
 
 struct sym_set_static_sym_entry {
     VALUE sym;
