@@ -690,17 +690,15 @@ eom
         assert_warning(*args) {$VERBOSE = false; yield}
       end
 
-      def assert_deprecated_warning(mesg = /deprecated/)
+      def assert_deprecated_warning(mesg = /deprecated/, &block)
         assert_warning(mesg) do
-          Warning[:deprecated] = true if Warning.respond_to?(:[]=)
-          yield
+          EnvUtil.deprecation_warning(&block)
         end
       end
 
       def assert_deprecated_warn(mesg = /deprecated/)
         assert_warn(mesg) do
-          Warning[:deprecated] = true if Warning.respond_to?(:[]=)
-          yield
+          EnvUtil.deprecation_warning(&block)
         end
       end
 
