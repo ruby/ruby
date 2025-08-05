@@ -3146,6 +3146,7 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_free_encoded_insn_data();
             rb_free_global_enc_table();
             rb_free_loaded_builtin_table();
+            rb_free_global_symbol_table();
 
             rb_free_shared_fiber_pool();
             rb_free_transcoder_table();
