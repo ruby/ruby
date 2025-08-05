@@ -696,7 +696,7 @@ eom
         end
       end
 
-      def assert_deprecated_warn(mesg = /deprecated/)
+      def assert_deprecated_warn(mesg = /deprecated/, &block)
         assert_warn(mesg) do
           EnvUtil.deprecation_warning(&block)
         end
