@@ -1346,14 +1346,14 @@ rb_resolve_feature_path(VALUE klass, VALUE fname)
 }
 
 static void
-ext_config_push(rb_thread_t *th, struct rb_ext_config *prev)
+ext_config_push(rb_thread_t *th, volatile struct rb_ext_config *prev)
 {
     *prev = th->ext_config;
     th->ext_config = (struct rb_ext_config){0};
 }
 
 static void
-ext_config_pop(rb_thread_t *th, struct rb_ext_config *prev)
+ext_config_pop(rb_thread_t *th, volatile struct rb_ext_config *prev)
 {
     th->ext_config = *prev;
 }
@@ -1407,7 +1407,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     VALUE realpaths = get_loaded_features_realpaths(vm_ns);
     VALUE realpath_map = get_loaded_features_realpath_map(vm_ns);
     volatile bool reset_ext_config = false;
-    struct rb_ext_config prev_ext_config;
+    volatile struct rb_ext_config prev_ext_config;
 
     path = rb_str_encode_ospath(fname);
     RUBY_DTRACE_HOOK(REQUIRE_ENTRY, RSTRING_PTR(fname));
