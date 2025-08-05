@@ -3659,9 +3659,9 @@ rb_ary_collect(VALUE ary)
 
 /*
  *  call-seq:
- *    collect! {|element| ... } -> new_array
+ *    collect! {|element| ... } -> self
  *    collect! -> new_enumerator
- *    map! {|element| ... } -> new_array
+ *    map! {|element| ... } -> self
  *    map! -> new_enumerator
  *
  *  With a block given, calls the block with each element of +self+
