@@ -5228,6 +5228,81 @@ mod tests {
 }
 
 #[cfg(test)]
+mod graphviz_tests {
+    use super::*;
+    use expect_test::{expect, Expect};
+
+    #[track_caller]
+    fn assert_optimized_graphviz(method: &str, expected: Expect) {
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+        let mut function = iseq_to_hir(iseq).unwrap();
+        function.optimize();
+        function.validate().unwrap();
+        let actual = format!("{}", FunctionGraphvizPrinter::new(&function));
+        expected.assert_eq(&actual);
+    }
+
+    #[test]
+    fn test_guard_fixnum_or_fixnum() {
+        eval(r#"
+            def test(x, y) = x | y
+
+            test(1, 2)
+        "#);
+        assert_optimized_graphviz("test", expect![[r#"
+            digraph G { # test@&lt;compiled&gt;:2
+            node [shape=plaintext];
+            mode=hier; overlap=false; splines=true;
+              bb0 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+            <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject)&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v7">PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 29)&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v8">v8:Fixnum = GuardType v1, Fixnum&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v9">v9:Fixnum = GuardType v2, Fixnum&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v10">v10:Fixnum = FixnumOr v8, v9&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v6">Return v10&nbsp;</TD></TR>
+            </TABLE>>];
+            }
+        "#]]);
+    }
+
+    #[test]
+    fn test_multiple_blocks() {
+        eval(r#"
+            def test(c)
+              if c
+                3
+              else
+                4
+              end
+            end
+
+            test(1)
+            test("x")
+        "#);
+        assert_optimized_graphviz("test", expect![[r#"
+            digraph G { # test@&lt;compiled&gt;:3
+            node [shape=plaintext];
+            mode=hier; overlap=false; splines=true;
+              bb0 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+            <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0(v0:BasicObject, v1:BasicObject)&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v3">v3:CBool = Test v1&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v4">IfFalse v3, bb1(v0, v1)&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v5">v5:Fixnum[3] = Const Value(3)&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v6">Return v5&nbsp;</TD></TR>
+            </TABLE>>];
+              bb0:v4 -> bb1:params;
+              bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+            <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v7:BasicObject, v8:BasicObject)&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v10">v10:Fixnum[4] = Const Value(4)&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v11">Return v10&nbsp;</TD></TR>
+            </TABLE>>];
+            }
+        "#]]);
+    }
+}
+
+#[cfg(test)]
 mod opt_tests {
     use super::*;
     use super::tests::assert_function_hir;
