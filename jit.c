@@ -454,15 +454,3 @@ rb_set_cfp_sp(struct rb_control_frame_struct *cfp, VALUE *sp)
 {
     cfp->sp = sp;
 }
-
-const uint32_t
-RB_SPECIAL_CONST_SHAPE_ID = SPECIAL_CONST_SHAPE_ID;
-
-const uint32_t
-RB_INVALID_SHAPE_ID = INVALID_SHAPE_ID;
-
-bool
-rb_zjit_singleton_class_p(VALUE klass)
-{
-    return RCLASS_SINGLETON_P(klass);
-}
