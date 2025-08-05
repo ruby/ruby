@@ -7,7 +7,7 @@
 #  You may obtain information about the operation of the \GC through GC::Profiler.
 module GC
 
-  # Initiates garbage collection, even if explicitly disabled by GC.disable .
+  # Initiates garbage collection, even if explicitly disabled by GC.disable.
   #
   # Keyword arguments:
   #
