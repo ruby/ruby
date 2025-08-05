@@ -38,7 +38,6 @@ module SyncDefaultGems
     open3: "ruby/open3",
     openssl: "ruby/openssl",
     optparse: "ruby/optparse",
-    pathname: "ruby/pathname",
     pp: "ruby/pp",
     prettyprint: "ruby/prettyprint",
     prism: ["ruby/prism", "main"],
@@ -278,13 +277,6 @@ module SyncDefaultGems
       cp_r("#{upstream}/test/erb", "test")
       cp_r("#{upstream}/erb.gemspec", "lib/erb")
       cp_r("#{upstream}/libexec/erb", "libexec")
-    when "pathname"
-      rm_rf(%w[ext/pathname test/pathname])
-      cp_r("#{upstream}/ext/pathname", "ext")
-      cp_r("#{upstream}/test/pathname", "test")
-      cp_r("#{upstream}/lib", "ext/pathname")
-      cp_r("#{upstream}/pathname.gemspec", "ext/pathname")
-      `git checkout ext/pathname/depend`
     when "digest"
       rm_rf(%w[ext/digest test/digest])
       cp_r("#{upstream}/ext/digest", "ext")
