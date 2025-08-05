@@ -264,6 +264,11 @@ lcov*.info
 /lib/prism/reflection.rb
 /lib/prism/serialize.rb
 /lib/prism/visitor.rb
+/lib/prism/sig/prism.rbs
+/lib/prism/sig/prism/dsl.rbs
+/lib/prism/sig/prism/mutation_compiler.rbs
+/lib/prism/sig/prism/node.rbs
+/lib/prism/sig/prism/visitor.rbs
 /prism/api_node.c
 /prism/ast.h
 /prism/diagnostic.c

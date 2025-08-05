@@ -1,0 +1,102 @@
+module Prism
+  # Methods implemented on every subclass of a singleton of Node
+  interface _NodeSingleton
+    def type: () -> Symbol
+  end
+
+  class Node
+    extend _NodeSingleton
+
+    attr_reader source: Source
+    attr_reader node_id: Integer
+    attr_reader location: Location
+    attr_reader flags: Integer
+
+    def newline?: () -> bool
+    def static_literal?: () -> bool
+
+    def start_offset: () -> Integer
+    def end_offset: () -> Integer
+    def source_lines: () -> Array[String]
+    alias script_lines source_lines
+    def slice: () -> String
+    def slice_lines: () -> String
+    def pretty_print: (untyped q) -> untyped
+    def to_dot: () -> String
+    def tunnel: (Integer line, Integer column) -> Array[Prism::node]
+    def breadth_first_search: () { (Prism::node) -> bool } -> Prism::node?
+    def deprecated: (*String) -> void
+    def newline!: (Array[untyped]) -> void
+  end
+
+  type node_singleton = singleton(Node) & _NodeSingleton
+
+  # Methods implemented by every subclass of Node
+  interface _Node
+    def accept: (_Visitor) -> void
+    def child_nodes: () -> Array[Prism::node?]
+    def deconstruct: () -> Array[Prism::node?]
+    def compact_child_nodes: () -> Array[Prism::node]
+    def comment_targets: () -> Array[Prism::node | Location]
+    def fields: () -> Array[Prism::Reflection::Field]
+    def inspect: () -> String
+    def type: () -> Symbol
+  end
+
+  type node = Node & _Node
+
+  <%- nodes.each do |node| -%>
+
+  <%- node.each_comment_line do |line| -%>
+  #<%= line %>
+  <%- end -%>
+  class <%= node.name -%> < Node
+    include _Node
+    <%- if (node_flags = node.flags) -%>
+
+    <%- node_flags.values.each do |value| -%>
+    def <%= value.name.downcase %>?: () -> bool
+    <%- end -%>
+    <%- end -%>
+
+    <%- node.fields.each do |field| -%>
+    attr_reader <%= field.name %>: <%= field.rbs_class %>
+    <%- end -%>
+
+    def initialize: (<%= ["Source source", "Integer node_id", "Location location", "Integer flags", *node.fields.map { |field| "#{field.rbs_class} #{field.name}" }].join(", ") %>) -> void
+    def copy: (<%= (["?node_id: Integer", "?location: Location", "?flags: Integer"] + node.fields.map { |field| "?#{field.name}: #{field.rbs_class}" }).join(", ") %>) -> <%= node.name %>
+    def deconstruct_keys: (Array[Symbol] keys) -> { <%= (["node_id: Integer", "location: Location"] + node.fields.map { |field| "#{field.name}: #{field.rbs_class}" }).join(", ") %> }
+    <%- node.fields.each do |field| -%>
+    <%- case field -%>
+    <%- when Prism::Template::LocationField -%>
+    <%- raise unless field.name.end_with?("_loc") -%>
+    <%- next if node.fields.any? { |other| other.name == field.name.delete_suffix("_loc") } -%>
+    def <%= field.name.delete_suffix("_loc") %>: () -> String
+    <%- when Prism::Template::OptionalLocationField -%>
+    <%- raise unless field.name.end_with?("_loc") -%>
+    <%- next if node.fields.any? { |other| other.name == field.name.delete_suffix("_loc") } -%>
+    def <%= field.name.delete_suffix("_loc") %>: () -> String?
+    <%- end -%>
+    <%- end -%>
+    def type: () -> :<%= node.human %>
+            | ...
+    def self.type: () -> :<%= node.human %>
+  end
+  <%- end -%>
+  <%- flags.each do |flag| -%>
+
+  # <%= flag.comment %>
+  module <%= flag.name %>
+    <%- flag.values.each do |value| -%>
+    # <%= value.comment %>
+    <%= value.name %>: Integer
+    <%- end -%>
+  end
+  <%- end -%>
+
+  # The flags that are common to all nodes.
+  module NodeFlags
+    NEWLINE: Integer
+    STATIC_LITERAL: Integer
+  end
+end

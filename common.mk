@@ -220,6 +220,11 @@ srcs: $(srcdir)/lib/prism/dsl.rb
 $(srcdir)/lib/prism/dsl.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/dsl.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/dsl.rb $(srcdir)/lib/prism/dsl.rb
 
+main: $(srcdir)/lib/prism/sig/prism/dsl.rbs
+srcs: $(srcdir)/lib/prism/sig/prism/dsl.rbs
+$(srcdir)/lib/prism/sig/prism/dsl.rbs: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/sig/prism/dsl.rbs.erb
+	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb sig/prism/dsl.rbs $@
+
 main: $(srcdir)/lib/prism/inspect_visitor.rb
 srcs: $(srcdir)/lib/prism/inspect_visitor.rb
 $(srcdir)/lib/prism/inspect_visitor.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/inspect_visitor.rb.erb
@@ -230,10 +235,20 @@ srcs: $(srcdir)/lib/prism/mutation_compiler.rb
 $(srcdir)/lib/prism/mutation_compiler.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/mutation_compiler.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/mutation_compiler.rb $(srcdir)/lib/prism/mutation_compiler.rb
 
+main: $(srcdir)/lib/prism/sig/prism/mutation_compiler.rbs
+srcs: $(srcdir)/lib/prism/sig/prism/mutation_compiler.rbs
+$(srcdir)/lib/prism/sig/prism/mutation_compiler.rbs: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/sig/prism/mutation_compiler.rbs.erb
+	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb sig/prism/mutation_compiler.rbs $@
+
 main: $(srcdir)/lib/prism/node.rb
 srcs: $(srcdir)/lib/prism/node.rb
 $(srcdir)/lib/prism/node.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/node.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/node.rb $(srcdir)/lib/prism/node.rb
+
+main: $(srcdir)/lib/prism/sig/prism/node.rbs
+srcs: $(srcdir)/lib/prism/sig/prism/node.rbs
+$(srcdir)/lib/prism/sig/prism/node.rbs: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/sig/prism/node.rbs.erb
+	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb sig/prism/node.rbs $@
 
 main: $(srcdir)/lib/prism/reflection.rb
 srcs: $(srcdir)/lib/prism/reflection.rb
@@ -249,6 +264,16 @@ main: $(srcdir)/lib/prism/visitor.rb
 srcs: $(srcdir)/lib/prism/visitor.rb
 $(srcdir)/lib/prism/visitor.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/visitor.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/visitor.rb $(srcdir)/lib/prism/visitor.rb
+
+main: $(srcdir)/lib/prism/sig/prism/visitor.rbs
+srcs: $(srcdir)/lib/prism/sig/prism/visitor.rbs
+$(srcdir)/lib/prism/sig/prism/visitor.rbs: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/sig/prism/visitor.rbs.erb
+	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb sig/prism/visitor.rbs $@
+
+main: $(srcdir)/lib/prism/sig/prism.rbs
+srcs: $(srcdir)/lib/prism/sig/prism.rbs
+$(srcdir)/lib/prism/sig/prism.rbs: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/sig/prism.rbs.erb
+	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb sig/prism.rbs $@
 
 srcs: prism/api_node.c
 prism/api_node.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/ext/prism/api_node.c.erb
