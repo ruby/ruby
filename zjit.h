@@ -33,6 +33,6 @@ static inline void rb_zjit_cme_invalidate(const rb_callable_method_entry_t *cme)
 static inline void rb_zjit_invalidate_ep_is_bp(const rb_iseq_t *iseq) {}
 static inline void rb_zjit_constant_state_changed(ID id) {}
 static inline void rb_zjit_before_ractor_spawn(void) {}
-#endif // #if USE_YJIT
+#endif // #if USE_ZJIT
 
 #endif // #ifndef ZJIT_H
