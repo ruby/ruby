@@ -15,7 +15,6 @@ bundle-gem(1)         bundle-gem.1
 bundle-help(1)        bundle-help.1
 bundle-info(1)        bundle-info.1
 bundle-init(1)        bundle-init.1
-bundle-inject(1)      bundle-inject.1
 bundle-install(1)     bundle-install.1
 bundle-issue(1)       bundle-issue.1
 bundle-licenses(1)    bundle-licenses.1
