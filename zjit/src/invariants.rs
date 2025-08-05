@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, HashSet}};
+use std::{collections::{HashMap, HashSet}, mem};
 
 use crate::{backend::lir::{asm_comment, Assembler}, cruby::{rb_callable_method_entry_t, ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag, ID}, hir::Invariant, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
 
@@ -26,6 +26,9 @@ pub struct Invariants {
 
     /// Map from constant ID to patch points that assume the constant hasn't been redefined
     constant_state_patch_points: HashMap<ID, HashSet<Jump>>,
+
+    /// Set of patch points that assume that the interpreter is running with only one ractor
+    single_ractor_patch_points: HashSet<Jump>,
 }
 
 /// Called when a basic operator is redefined. Note that all the blocks assuming
@@ -198,5 +201,40 @@ pub extern "C" fn rb_zjit_constant_state_changed(id: ID) {
 
             cb.mark_all_executable();
         }
+    });
+}
+
+/// Track the JIT code that assumes that the interpreter is running with only one ractor
+pub fn track_single_ractor_assumption(patch_point_ptr: CodePtr, side_exit_ptr: CodePtr) {
+    let invariants = ZJITState::get_invariants();
+    invariants.single_ractor_patch_points.insert(Jump {
+        from: patch_point_ptr,
+        to: side_exit_ptr,
+    });
+}
+
+/// Callback for when Ruby is about to spawn a ractor. In that case we need to
+/// invalidate every block that is assuming single ractor mode.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_before_ractor_spawn() {
+    // If ZJIT isn't enabled, do nothing
+    if !zjit_enabled_p() {
+        return;
+    }
+
+    with_vm_lock(src_loc!(), || {
+        let cb = ZJITState::get_code_block();
+
+        let jumps = mem::take(&mut ZJITState::get_invariants().single_ractor_patch_points);
+        for jump in jumps {
+            cb.with_write_ptr(jump.from, |cb| {
+                let mut asm = Assembler::new();
+                asm_comment!(asm, "Another ractor spawned, invalidating single ractor mode assumption");
+                asm.jmp(jump.to.into());
+                asm.compile(cb).expect("can write existing code");
+            });
+        }
+
+        cb.mark_all_executable();
     });
 }
