@@ -172,30 +172,31 @@ impl Type {
     /// `types::NilClass`), but will be available via `ruby_object()`.
     pub fn from_value(val: VALUE) -> Type {
         if val.fixnum_p() {
-            Type { bits: bits::Fixnum, spec: Specialization::Object(val) }
+            return Type { bits: bits::Fixnum, spec: Specialization::Object(val) };
         }
-        else if val.flonum_p() {
-            Type { bits: bits::Flonum, spec: Specialization::Object(val) }
+        if val.flonum_p() {
+            return Type { bits: bits::Flonum, spec: Specialization::Object(val) };
         }
-        else if val.static_sym_p() {
-            Type { bits: bits::StaticSymbol, spec: Specialization::Object(val) }
+        if val.static_sym_p() {
+            return Type { bits: bits::StaticSymbol, spec: Specialization::Object(val) };
         }
         // Singleton objects; don't specialize
-        else if val == Qnil { types::NilClass }
-        else if val == Qtrue { types::TrueClass }
-        else if val == Qfalse { types::FalseClass }
-        else if val.cme_p() {
+        if val == Qnil { return types::NilClass; }
+        if val == Qtrue { return types::TrueClass; }
+        if val == Qfalse { return types::FalseClass; }
+        if val.cme_p() {
             // NB: Checking for CME has to happen before looking at class_of because that's not
             // valid on imemo.
-            Type { bits: bits::CallableMethodEntry, spec: Specialization::Object(val) }
+            return Type { bits: bits::CallableMethodEntry, spec: Specialization::Object(val) };
         }
-        else if val.class_of() == unsafe { rb_cInteger } {
+        let class = val.class_of();
+        if class == unsafe { rb_cInteger } {
             Type { bits: bits::Bignum, spec: Specialization::Object(val) }
         }
-        else if val.class_of() == unsafe { rb_cFloat } {
+        else if class == unsafe { rb_cFloat } {
             Type { bits: bits::HeapFloat, spec: Specialization::Object(val) }
         }
-        else if val.class_of() == unsafe { rb_cSymbol } {
+        else if class == unsafe { rb_cSymbol } {
             Type { bits: bits::DynamicSymbol, spec: Specialization::Object(val) }
         }
         else if is_array_exact(val) {
@@ -216,13 +217,13 @@ impl Type {
         else if val.builtin_type() == RUBY_T_CLASS {
             Type { bits: bits::Class, spec: Specialization::Object(val) }
         }
-        else if val.class_of() == unsafe { rb_cRegexp } {
+        else if class == unsafe { rb_cRegexp } {
             Type { bits: bits::RegexpExact, spec: Specialization::Object(val) }
         }
-        else if val.class_of() == unsafe { rb_cSet } {
+        else if class == unsafe { rb_cSet } {
             Type { bits: bits::SetExact, spec: Specialization::Object(val) }
         }
-        else if val.class_of() == unsafe { rb_cObject } {
+        else if class == unsafe { rb_cObject } {
             Type { bits: bits::ObjectExact, spec: Specialization::Object(val) }
         }
         else {
