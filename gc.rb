@@ -14,7 +14,7 @@ module GC
   # - +full_mark+:
   #   its boolean value determines whether to perform a major garbage collection cycle:
   #
-  #   - +true+: initiates a major garbage collection cycle is run,
+  #   - +true+: initiates a major garbage collection cycle,
   #     meaning all objects (old and new) are marked.
   #   - +false+: initiates a minor garbage collection cycle,
   #     meaning only young objects are marked.
