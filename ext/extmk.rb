@@ -8,7 +8,9 @@ module Gem
     RbConfig::CONFIG
   end
 end
-# only needs Gem::Platform
+# Gem::Platform uses Gem::Deprecate now.
+# Gem::Deprecate needs to load `rubygems.rb`
+require 'rubygems'
 require 'rubygems/platform'
 
 # :stopdoc:
