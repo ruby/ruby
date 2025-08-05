@@ -126,13 +126,14 @@ module Gem
     # telling the user of +repl+ (unless +repl+ is :none) and the
     # Rubygems version that it is planned to go away.
 
-    def rubygems_deprecate(name, replacement=:none, version=Gem::Deprecate.next_rubygems_major_version)
+    def rubygems_deprecate(name, replacement=:none, version=nil)
       class_eval do
         old = "_deprecated_#{name}"
         alias_method old, name
         define_method name do |*args, &block|
           klass = is_a? Module
           target = klass ? "#{self}." : "#{self.class}#"
+          version ||= Gem::Deprecate.next_rubygems_major_version
           msg = [
             "NOTE: #{target}#{name} is deprecated",
             replacement == :none ? " with no replacement" : "; use #{replacement} instead",
@@ -147,13 +148,14 @@ module Gem
     end
 
     # Deprecation method to deprecate Rubygems commands
-    def rubygems_deprecate_command(version = Gem::Deprecate.next_rubygems_major_version)
+    def rubygems_deprecate_command(version = nil)
       class_eval do
         define_method "deprecated?" do
           true
         end
 
         define_method "deprecation_warning" do
+          version ||= Gem::Deprecate.next_rubygems_major_version
           msg = [
             "#{command} command is deprecated",
             ". It will be removed in Rubygems #{version}.\n",
