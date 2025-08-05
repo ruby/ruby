@@ -35,6 +35,7 @@ bool rb_obj_is_symbol_table(VALUE obj);
 void rb_sym_global_symbol_table_foreach_weak_reference(int (*callback)(VALUE *key, void *data), void *data);
 void rb_gc_free_dsymbol(VALUE);
 int rb_static_id_valid_p(ID id);
+void rb_free_global_symbol_table(void);
 
 #if __has_builtin(__builtin_constant_p)
 #define rb_sym_intern_ascii_cstr(ptr) \

@@ -386,6 +386,20 @@ rb_sym_global_symbols_update_references(void)
     symbols->ids = rb_gc_location(symbols->ids);
 }
 
+static int
+rb_free_global_symbol_table_i(VALUE *sym_ptr, void *data)
+{
+    sym_set_free(*sym_ptr);
+
+    return ST_DELETE;
+}
+
+void
+rb_free_global_symbol_table(void)
+{
+    rb_concurrent_set_foreach_with_replace(ruby_global_symbols.sym_set, rb_free_global_symbol_table_i, NULL);
+}
+
 WARN_UNUSED_RESULT(static ID lookup_str_id(VALUE str));
 WARN_UNUSED_RESULT(static VALUE lookup_id_str(ID id));
 
