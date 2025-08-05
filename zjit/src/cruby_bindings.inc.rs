@@ -719,9 +719,10 @@ pub const DEFINED_REF: defined_type = 15;
 pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
+pub const RB_SPECIAL_CONST_SHAPE_ID: _bindgen_ty_12 = 33554432;
+pub const RB_INVALID_SHAPE_ID: _bindgen_ty_12 = 4294967295;
+pub type _bindgen_ty_12 = u32;
 pub type rb_iseq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
-pub const RB_SPECIAL_CONST_SHAPE_ID: u32 = 33554432;
-pub const RB_INVALID_SHAPE_ID: u32 = 4294967295;
 unsafe extern "C" {
     pub fn ruby_xfree(ptr: *mut ::std::os::raw::c_void);
     pub fn rb_class_attached_object(klass: VALUE) -> VALUE;
@@ -940,6 +941,7 @@ unsafe extern "C" {
     pub fn rb_iseq_set_zjit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
     pub fn rb_zjit_print_exception();
     pub fn rb_zjit_shape_obj_too_complex_p(obj: VALUE) -> bool;
+    pub fn rb_zjit_singleton_class_p(klass: VALUE) -> bool;
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_pc_at_idx(iseq: *const rb_iseq_t, insn_idx: u32) -> *mut VALUE;
     pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;
@@ -1019,5 +1021,4 @@ unsafe extern "C" {
     pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_set_cfp_pc(cfp: *mut rb_control_frame_struct, pc: *const VALUE);
     pub fn rb_set_cfp_sp(cfp: *mut rb_control_frame_struct, sp: *mut VALUE);
-    pub fn rb_zjit_singleton_class_p(klass: VALUE) -> bool;
 }
