@@ -309,8 +309,19 @@ impl Type {
         }
     }
 
-    pub fn unspecialized(&self) -> Self {
-        Type { spec: Specialization::Any, ..*self }
+    pub fn without_object(&self) -> Self {
+        if let Some(obj) = self.ruby_object() {
+            let class = obj.class_of();
+            if Self::is_builtin(class) {
+                // If the type is a builtin, we already have the class information represented in a
+                // bit.
+                Self { spec: Specialization::Any, ..*self }
+            } else {
+                Self { spec: Specialization::TypeExact(obj.class_of()), ..*self }
+            }
+        } else {
+            *self
+        }
     }
 
     pub fn fixnum_value(&self) -> Option<i64> {

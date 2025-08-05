@@ -1621,7 +1621,7 @@ impl Function {
                 let iseq_insn_idx = fun.frame_state(state).insn_idx;
                 let Some(recv_type) = fun.profiled_type_of_at(self_val, iseq_insn_idx) else { return Err(()) };
                 let Some(recv_class) = recv_type.runtime_exact_ruby_class() else { return Err(()) };
-                (recv_class, Some(recv_type.unspecialized()))
+                (recv_class, Some(recv_type.without_object()))
             };
 
             // Do method lookup
@@ -7387,6 +7387,29 @@ mod opt_tests {
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
               v6:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
               v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1040)
+              Return v7
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_on_non_builtin_basic_object() {
+        eval("
+            def test o
+              o.nil? || 4
+            end
+
+            class C; end
+
+            o = C.new
+            test o; test o
+        ");
+
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:3:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(C@0x1000, nil?@0x1008, cme:0x1010)
+              v15:BasicObject[class_exact:C] = GuardType v1, BasicObject[class_exact:C]
+              v7:Fixnum[4] = Const Value(4)
               Return v7
         "#]]);
     }
