@@ -20,6 +20,28 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(':"foo=="', "foo==".intern.inspect)
   end
 
+  def test_intern_bare_string
+    random = "str#{rand}"
+    random.instance_variable_set(:@ivar, 1)
+    random.freeze
+    str = random.to_sym.name
+    assert_equal [], str.instance_variables
+
+    random = Class.new(String).new("str#{rand}").freeze
+    str = random.to_sym.name
+    assert_equal String, str.class
+
+    random = "utf8™#{rand}"
+    random.instance_variable_set(:@ivar, 1)
+    random.freeze
+    str = random.to_sym.name
+    assert_equal [], str.instance_variables
+
+    random = Class.new(String).new("utf8™#{rand}").freeze
+    str = random.to_sym.name
+    assert_equal String, str.class
+  end
+
   def test_all_symbols
     x = Symbol.all_symbols
     assert_kind_of(Array, x)
