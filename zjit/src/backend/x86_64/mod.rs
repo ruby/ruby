@@ -148,6 +148,15 @@ impl Assembler
                 };
             }
 
+            // When we split an operand, we can create a new VReg not in `live_ranges`.
+            // So when we see a VReg with out-of-range index, it's created from splitting
+            // from the loop above and we know it doesn't outlive the current instruction.
+            let vreg_outlives_insn = |vreg_idx| {
+                live_ranges
+                    .get(vreg_idx)
+                    .map_or(false, |live_range: &LiveRange| live_range.end() > index)
+            };
+
             // We are replacing instructions here so we know they are already
             // being used. It is okay not to use their output here.
             #[allow(unused_must_use)]
@@ -183,7 +192,7 @@ impl Assembler
                                 },
                                 // Instruction output whose live range spans beyond this instruction
                                 (Opnd::VReg { idx, .. }, _) => {
-                                    if live_ranges[idx].end() > index {
+                                    if vreg_outlives_insn(idx) {
                                         *left = asm.load(*left);
                                     }
                                 },
@@ -248,7 +257,7 @@ impl Assembler
                     match opnd {
                         // Instruction output whose live range spans beyond this instruction
                         Opnd::VReg { idx, .. } => {
-                            if live_ranges[*idx].end() > index {
+                            if vreg_outlives_insn(*idx) {
                                 *opnd = asm.load(*opnd);
                             }
                         },
@@ -272,7 +281,7 @@ impl Assembler
                         // If we have an instruction output whose live range
                         // spans beyond this instruction, we have to load it.
                         Opnd::VReg { idx, .. } => {
-                            if live_ranges[idx].end() > index {
+                            if vreg_outlives_insn(idx) {
                                 *truthy = asm.load(*truthy);
                             }
                         },
@@ -307,7 +316,7 @@ impl Assembler
                         // If we have an instruction output whose live range
                         // spans beyond this instruction, we have to load it.
                         Opnd::VReg { idx, .. } => {
-                            if live_ranges[idx].end() > index {
+                            if vreg_outlives_insn(idx) {
                                 *opnd = asm.load(*opnd);
                             }
                         },
