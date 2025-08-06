@@ -1245,9 +1245,19 @@ rb_obj_fields(VALUE obj, ID field_name)
             goto generic_fields;
           default:
           generic_fields:
-            RB_VM_LOCKING() {
-                if (!st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&fields_obj)) {
-                    rb_bug("Object is missing entry in generic_fields_tbl");
+            {
+                rb_execution_context_t *ec = GET_EC();
+                if (ec->gen_fields_cache.obj == obj) {
+                    fields_obj = ec->gen_fields_cache.fields_obj;
+                }
+                else {
+                    RB_VM_LOCKING() {
+                        if (!st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&fields_obj)) {
+                            rb_bug("Object is missing entry in generic_fields_tbl");
+                        }
+                    }
+                    ec->gen_fields_cache.fields_obj = fields_obj;
+                    ec->gen_fields_cache.obj = obj;
                 }
             }
         }
@@ -1275,8 +1285,15 @@ rb_free_generic_ivar(VALUE obj)
             goto generic_fields;
           default:
           generic_fields:
-            RB_VM_LOCKING() {
-                st_delete(generic_fields_tbl_no_ractor_check(), &key, &value);
+            {
+                rb_execution_context_t *ec = GET_EC();
+                if (ec->gen_fields_cache.obj == obj) {
+                    ec->gen_fields_cache.obj = Qundef;
+                    ec->gen_fields_cache.fields_obj = Qundef;
+                }
+                RB_VM_LOCKING() {
+                    st_delete(generic_fields_tbl_no_ractor_check(), &key, &value);
+                }
             }
         }
         RBASIC_SET_SHAPE_ID(obj, ROOT_SHAPE_ID);
@@ -1307,10 +1324,18 @@ rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fie
             goto generic_fields;
           default:
           generic_fields:
-            RB_VM_LOCKING() {
-                st_insert(generic_fields_tbl_, (st_data_t)obj, (st_data_t)fields_obj);
+            {
+                RB_VM_LOCKING() {
+                    st_insert(generic_fields_tbl_, (st_data_t)obj, (st_data_t)fields_obj);
+                }
+                RB_OBJ_WRITTEN(obj, original_fields_obj, fields_obj);
+
+                rb_execution_context_t *ec = GET_EC();
+                if (ec->gen_fields_cache.fields_obj != fields_obj) {
+                    ec->gen_fields_cache.obj = obj;
+                    ec->gen_fields_cache.fields_obj = fields_obj;
+                }
             }
-            RB_OBJ_WRITTEN(obj, original_fields_obj, fields_obj);
         }
 
         if (original_fields_obj) {
