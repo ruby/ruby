@@ -377,11 +377,11 @@ impl Assembler
                 },
                 Opnd::UImm(value) => {
                     // 32-bit values will be sign-extended
-                    if uimm_num_bits(*value) > 32 {
+                    if imm_num_bits(*value as i64) > 32 {
                         mov(cb, Assembler::SCRATCH0, opnd.into());
                         Assembler::SCRATCH0
                     } else {
-                        opnd.into()
+                        imm_opnd(*value as i64)
                     }
                 },
                 _ => opnd.into()
@@ -988,9 +988,8 @@ mod tests {
         asm.cmp(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_disasm!(cb, "49bbffffffffffffffff4c39d8", "
-            0x0: movabs r11, 0xffffffffffffffff
-            0xa: cmp rax, r11
+        assert_disasm!(cb, "4883f8ff", "
+            0x0: cmp rax, -1
         ");
     }
 
@@ -1069,7 +1068,9 @@ mod tests {
         asm.test(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_eq!(format!("{:x}", cb), "f6c0ff");
+        assert_disasm!(cb, "48f7c0ff000000", "
+            0x0: test rax, 0xff
+        ");
     }
 
     #[test]
