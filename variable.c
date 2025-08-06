@@ -29,6 +29,7 @@
 #include "internal/object.h"
 #include "internal/gc.h"
 #include "internal/re.h"
+#include "internal/struct.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
@@ -1228,10 +1229,19 @@ rb_obj_fields(VALUE obj, ID field_name)
     ivar_ractor_check(obj, field_name);
 
     VALUE fields_obj = 0;
-    if (rb_obj_exivar_p(obj)) {
-        RB_VM_LOCKING() {
-            if (!st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&fields_obj)) {
-                rb_bug("Object is missing entry in generic_fields_tbl");
+    if (rb_shape_obj_has_fields(obj)) {
+        switch (BUILTIN_TYPE(obj)) {
+          case T_STRUCT:
+            if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
+                fields_obj = RSTRUCT_FIELDS_OBJ(obj);
+                break;
+            }
+            // fall through
+          default:
+            RB_VM_LOCKING() {
+                if (!st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&fields_obj)) {
+                    rb_bug("Object is missing entry in generic_fields_tbl");
+                }
             }
         }
     }
@@ -1243,11 +1253,19 @@ rb_free_generic_ivar(VALUE obj)
 {
     if (rb_obj_exivar_p(obj)) {
         st_data_t key = (st_data_t)obj, value;
-
-        RB_VM_LOCKING() {
-            st_delete(generic_fields_tbl_no_ractor_check(), &key, &value);
-            RBASIC_SET_SHAPE_ID(obj, ROOT_SHAPE_ID);
+        switch (BUILTIN_TYPE(obj)) {
+          case T_STRUCT:
+            if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
+                RSTRUCT_SET_FIELDS_OBJ(obj, 0);
+                break;
+            }
+            // fall through
+          default:
+            RB_VM_LOCKING() {
+                st_delete(generic_fields_tbl_no_ractor_check(), &key, &value);
+            }
         }
+        RBASIC_SET_SHAPE_ID(obj, ROOT_SHAPE_ID);
     }
 }
 
@@ -1260,11 +1278,19 @@ rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fie
     RUBY_ASSERT(!original_fields_obj || IMEMO_TYPE_P(original_fields_obj, imemo_fields));
 
     if (fields_obj != original_fields_obj) {
-        RB_VM_LOCKING() {
-            st_insert(generic_fields_tbl_, (st_data_t)obj, (st_data_t)fields_obj);
+        switch (BUILTIN_TYPE(obj)) {
+          case T_STRUCT:
+            if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
+                RSTRUCT_SET_FIELDS_OBJ(obj, fields_obj);
+                break;
+            }
+            // fall through
+          default:
+            RB_VM_LOCKING() {
+                st_insert(generic_fields_tbl_, (st_data_t)obj, (st_data_t)fields_obj);
+            }
+            RB_OBJ_WRITTEN(obj, original_fields_obj, fields_obj);
         }
-
-        RB_OBJ_WRITTEN(obj, original_fields_obj, fields_obj);
 
         if (original_fields_obj) {
             // Clear root shape to avoid triggering cleanup such as free_object_id.
@@ -1276,11 +1302,11 @@ rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fie
 }
 
 void
-rb_obj_replace_fields(VALUE obj, VALUE fields_obj, ID field_name)
+rb_obj_replace_fields(VALUE obj, VALUE fields_obj)
 {
     RB_VM_LOCKING() {
-        VALUE original_fields_obj = rb_obj_fields(obj, field_name);
-        rb_obj_set_fields(obj, fields_obj, field_name, original_fields_obj);
+        VALUE original_fields_obj = rb_obj_fields_no_ractor_check(obj);
+        rb_obj_set_fields(obj, fields_obj, 0, original_fields_obj);
     }
 }
 
@@ -1608,7 +1634,7 @@ obj_transition_too_complex(VALUE obj, st_table *table)
         {
             VALUE fields_obj = rb_imemo_fields_new_complex_tbl(rb_obj_class(obj), table);
             RBASIC_SET_SHAPE_ID(fields_obj, shape_id);
-            rb_obj_replace_fields(obj, fields_obj, 0);
+            rb_obj_replace_fields(obj, fields_obj);
         }
     }
 
@@ -2299,12 +2325,7 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
         rb_shape_copy_fields(new_fields_obj, dest_buf, dest_shape_id, src_buf, src_shape_id);
         RBASIC_SET_SHAPE_ID(new_fields_obj, dest_shape_id);
 
-        RB_VM_LOCKING() {
-            st_insert(generic_fields_tbl_no_ractor_check(), (st_data_t)dest, (st_data_t)new_fields_obj);
-            RB_OBJ_WRITTEN(dest, Qundef, new_fields_obj);
-        }
-
-        RBASIC_SET_SHAPE_ID(dest, dest_shape_id);
+        rb_obj_replace_fields(dest, new_fields_obj);
     }
     return;
 

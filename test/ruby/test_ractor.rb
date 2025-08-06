@@ -99,6 +99,24 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_struct_instance_variables
+    assert_ractor(<<~'RUBY')
+      StructIvar = Struct.new(:member) do
+        def initialize(*)
+          super
+          @ivar = "ivar"
+        end
+        attr_reader :ivar
+      end
+      obj = StructIvar.new("member")
+      obj_copy = Ractor.new { Ractor.receive }.send(obj).value
+      assert_equal obj.ivar, obj_copy.ivar
+      refute_same obj.ivar, obj_copy.ivar
+      assert_equal obj.member, obj_copy.member
+      refute_same obj.member, obj_copy.member
+    RUBY
+  end
+
   def test_fork_raise_isolation_error
     assert_ractor(<<~'RUBY')
       ractor = Ractor.new do
