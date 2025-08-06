@@ -274,21 +274,8 @@ source #{@gem_repo} already present in the cache
   def test_execute_add_redundant_source_trailing_slash
     spec_fetcher
 
-    # Remove pre-existing gem source (w/ slash)
     repo_with_slash = "http://gems.example.com/"
-    @cmd.handle_options %W[--remove #{repo_with_slash}]
-    use_ui @ui do
-      @cmd.execute
-    end
-    source = Gem::Source.new repo_with_slash
-    assert_equal false, Gem.sources.include?(source)
-
-    expected = <<-EOF
-#{repo_with_slash} removed from sources
-    EOF
-
-    assert_equal expected, @ui.output
-    assert_equal "", @ui.error
+    Gem.configuration.sources = [repo_with_slash]
 
     # Re-add pre-existing gem source (w/o slash)
     repo_without_slash = "http://gems.example.com"
@@ -300,8 +287,7 @@ source #{@gem_repo} already present in the cache
     assert_equal true, Gem.sources.include?(source)
 
     expected = <<-EOF
-http://gems.example.com/ removed from sources
-http://gems.example.com added to sources
+source http://gems.example.com already present in the cache
     EOF
 
     assert_equal expected, @ui.output
@@ -316,13 +302,14 @@ http://gems.example.com added to sources
     assert_equal true, Gem.sources.include?(source)
 
     expected = <<-EOF
-http://gems.example.com/ removed from sources
-http://gems.example.com added to sources
+source http://gems.example.com already present in the cache
 source http://gems.example.com/ already present in the cache
     EOF
 
     assert_equal expected, @ui.output
     assert_equal "", @ui.error
+  ensure
+    Gem.configuration.sources = nil
   end
 
   def test_execute_add_http_rubygems_org
