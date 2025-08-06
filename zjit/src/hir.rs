@@ -7437,10 +7437,6 @@ mod opt_tests {
         eval("
             class C
               attr_reader :foo
-
-              def initialize
-                @foo = 4
-              end
             end
 
             O = C.new
@@ -7449,7 +7445,7 @@ mod opt_tests {
             test
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:11:
+            fn test@<compiled>:7:
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, O)
@@ -7465,10 +7461,6 @@ mod opt_tests {
         eval("
             class C
               attr_accessor :foo
-
-              def initialize
-                @foo = 4
-              end
             end
 
             O = C.new
@@ -7477,7 +7469,7 @@ mod opt_tests {
             test
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:11:
+            fn test@<compiled>:7:
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, O)
@@ -7493,10 +7485,6 @@ mod opt_tests {
         eval("
             class C
               attr_reader :foo
-
-              def initialize
-                @foo = 4
-              end
             end
 
             def test(o) = o.foo
@@ -7504,7 +7492,7 @@ mod opt_tests {
             test C.new
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:10:
+            fn test@<compiled>:6:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
               v7:BasicObject[class_exact:C] = GuardType v1, BasicObject[class_exact:C]
@@ -7518,10 +7506,6 @@ mod opt_tests {
         eval("
             class C
               attr_accessor :foo
-
-              def initialize
-                @foo = 4
-              end
             end
 
             def test(o) = o.foo
@@ -7529,7 +7513,7 @@ mod opt_tests {
             test C.new
         ");
         assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:10:
+            fn test@<compiled>:6:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
               v7:BasicObject[class_exact:C] = GuardType v1, BasicObject[class_exact:C]
