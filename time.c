@@ -5000,6 +5000,42 @@ time_saturday(VALUE time)
 
 /*
  *  call-seq:
+ *    am? -> true or false
+ *
+ *  Returns +true+ if +self+ is before noon, +false+ otherwise:
+ *
+ *    t = Time.utc(2000, 1, 1, 11, 59, 59) # 2000-01-01 11:59:59 UTC
+ *    t.am?                                # => true
+ *
+ *  Related: Time#pm?
+ */
+
+static VALUE
+time_am(VALUE time)
+{
+    return RBOOL(time_hour(time) < INT2FIX(12));
+}
+
+/*
+ *  call-seq:
+ *    pm? -> true or false
+ *
+ *  Returns +true+ if +self+ is after noon, +false+ otherwise:
+ *
+ *    t = Time.utc(2000, 1, 1, 13, 59, 59) # 2000-01-01 13:59:59 UTC
+ *    t.pm?                                # => true
+ *
+ *  Related: Time#am?
+ */
+
+static VALUE
+time_pm(VALUE time)
+{
+    return RBOOL(time_hour(time) >= INT2FIX(12));
+}
+
+/*
+ *  call-seq:
  *    yday -> integer
  *
  *  Returns the integer day of the year of +self+, in range (1..366).
@@ -6054,6 +6090,9 @@ Init_Time(void)
     rb_define_method(rb_cTime, "thursday?", time_thursday, 0);
     rb_define_method(rb_cTime, "friday?", time_friday, 0);
     rb_define_method(rb_cTime, "saturday?", time_saturday, 0);
+
+    rb_define_method(rb_cTime, "am?", time_am, 0);
+    rb_define_method(rb_cTime, "pm?", time_pm, 0);
 
     rb_define_method(rb_cTime, "tv_sec", time_to_i, 0);
     rb_define_method(rb_cTime, "tv_usec", time_usec, 0);

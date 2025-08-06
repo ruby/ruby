@@ -1515,4 +1515,18 @@ class TestTime < Test::Unit::TestCase
       assert_equal("-10000-01-01T00:00:00Z", Time.utc(-10000).__send__(method))
     end
   end
+
+  def test_am
+    assert Time.new(2025, 8, 6, 0, 0, 0).am?
+    assert Time.new(2025, 8, 6, 11, 59, 59).am?
+    refute Time.new(2025, 8, 6, 12, 0, 0).am?
+    refute Time.new(2025, 8, 6, 23, 59, 0).am?
+  end
+
+  def test_pm
+    assert Time.new(2025, 8, 6, 12, 0, 0).pm?
+    assert Time.new(2025, 8, 6, 23, 59, 59).pm?
+    refute Time.new(2025, 8, 6, 0, 0, 0).pm?
+    refute Time.new(2025, 8, 6, 11, 59, 59).pm?
+  end
 end
