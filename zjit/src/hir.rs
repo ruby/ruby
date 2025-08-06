@@ -445,6 +445,7 @@ pub enum Insn {
 
     StringCopy { val: InsnId, chilled: bool, state: InsnId },
     StringIntern { val: InsnId },
+    StringConcat { strings: Vec<InsnId>, state: InsnId },
 
     /// Put special object (VMCORE, CBASE, etc.) based on value_type
     PutSpecialObject { value_type: SpecialObjectType },
@@ -675,6 +676,16 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayDup { val, .. } => { write!(f, "ArrayDup {val}") }
             Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
             Insn::StringCopy { val, .. } => { write!(f, "StringCopy {val}") }
+            Insn::StringConcat { strings, .. } => {
+                write!(f, "StringConcat")?;
+                let mut prefix = " ";
+                for string in strings {
+                    write!(f, "{prefix}{string}")?;
+                    prefix = ", ";
+                }
+
+                Ok(())
+            }
             Insn::Test { val } => { write!(f, "Test {val}") }
             Insn::IsNil { val } => { write!(f, "IsNil {val}") }
             Insn::Jump(target) => { write!(f, "Jump {target}") }
@@ -1135,6 +1146,7 @@ impl Function {
             &Throw { throw_state, val } => Throw { throw_state, val: find!(val) },
             &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
             &StringIntern { val } => StringIntern { val: find!(val) },
+            &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
             &Jump(ref target) => Jump(find_branch_edge!(target)),
@@ -1258,6 +1270,7 @@ impl Function {
             Insn::IsNil { .. } => types::CBool,
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::StringExact,
+            Insn::StringConcat { .. } => types::StringExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
             Insn::NewHash { .. } => types::HashExact,
@@ -1885,6 +1898,10 @@ impl Function {
             &Insn::NewRange { low, high, state, .. } => {
                 worklist.push_back(low);
                 worklist.push_back(high);
+                worklist.push_back(state);
+            }
+            &Insn::StringConcat { ref strings, state, .. } => {
+                worklist.extend(strings);
                 worklist.push_back(state);
             }
             | &Insn::StringIntern { val }
@@ -2787,6 +2804,20 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_intern => {
                     let val = state.stack_pop()?;
                     let insn_id = fun.push_insn(block, Insn::StringIntern { val });
+                    state.stack_push(insn_id);
+                }
+                YARVINSN_concatstrings => {
+                    let count = get_arg(pc, 0).as_u32();
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    // TODO: Pre-initialize the vector with the correct capacity
+                    // TODO: Fill the vector in the order without needing reversing
+                    // Create an issue for this
+                    let mut strings = vec![];
+                    for _ in 0..count {
+                        strings.push(state.stack_pop()?);
+                    }
+                    strings.reverse();
+                    let insn_id = fun.push_insn(block, Insn::StringConcat { strings, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_newarray => {
@@ -5224,7 +5255,47 @@ mod tests {
               v3:Fixnum[1] = Const Value(1)
               v5:BasicObject = ObjToString v3
               v7:String = AnyToString v3, str: v5
-              SideExit UnknownOpcode(concatstrings)
+              v9:StringExact = StringConcat v2, v7
+              Return v9
+        "#]]);
+    }
+
+    #[test]
+    fn test_string_concat() {
+        eval(r##"
+            def test = "#{1}#{2}#{3}"
+        "##);
+        assert_method_hir_with_opcode("test", YARVINSN_concatstrings, expect![[r#"
+            fn test@<compiled>:2:
+            bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              v4:BasicObject = ObjToString v2
+              v6:String = AnyToString v2, str: v4
+              v7:Fixnum[2] = Const Value(2)
+              v9:BasicObject = ObjToString v7
+              v11:String = AnyToString v7, str: v9
+              v12:Fixnum[3] = Const Value(3)
+              v14:BasicObject = ObjToString v12
+              v16:String = AnyToString v12, str: v14
+              v18:StringExact = StringConcat v6, v11, v16
+              Return v18
+        "#]]);
+    }
+
+    #[test]
+    fn test_string_concat_empty() {
+        eval(r##"
+            def test = "#{}"
+        "##);
+        assert_method_hir_with_opcode("test", YARVINSN_concatstrings, expect![[r#"
+            fn test@<compiled>:2:
+            bb0(v0:BasicObject):
+              v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v3:NilClass = Const Value(nil)
+              v5:BasicObject = ObjToString v3
+              v7:String = AnyToString v3, str: v5
+              v9:StringExact = StringConcat v2, v7
+              Return v9
         "#]]);
     }
 
@@ -7172,7 +7243,8 @@ mod opt_tests {
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               v5:StringExact = StringCopy v3
-              SideExit UnknownOpcode(concatstrings)
+              v11:StringExact = StringConcat v2, v5
+              Return v11
         "#]]);
     }
 
@@ -7186,9 +7258,10 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:Fixnum[1] = Const Value(1)
-              v10:BasicObject = SendWithoutBlock v3, :to_s
-              v7:String = AnyToString v3, str: v10
-              SideExit UnknownOpcode(concatstrings)
+              v11:BasicObject = SendWithoutBlock v3, :to_s
+              v7:String = AnyToString v3, str: v11
+              v9:StringExact = StringConcat v2, v7
+              Return v9
         "#]]);
     }
 
