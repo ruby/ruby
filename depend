@@ -12702,6 +12702,7 @@ ractor.$(OBJEXT): {$(VPATH)}vm_debug.h
 ractor.$(OBJEXT): {$(VPATH)}vm_opts.h
 ractor.$(OBJEXT): {$(VPATH)}vm_sync.h
 ractor.$(OBJEXT): {$(VPATH)}yjit.h
+ractor.$(OBJEXT): {$(VPATH)}zjit.h
 random.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 random.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 random.$(OBJEXT): $(CCAN_DIR)/list/list.h

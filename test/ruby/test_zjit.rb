@@ -950,6 +950,26 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_single_ractor_mode_invalidation
+    # Without invalidating the single-ractor mode, the test would crash
+    assert_compiles '"errored but not crashed"', <<~RUBY, call_threshold: 2, insns: [:opt_getconstant_path]
+      C = Object.new
+
+      def test
+        C
+      rescue Ractor::IsolationError
+        "errored but not crashed"
+      end
+
+      test
+      test
+
+      Ractor.new {
+        test
+      }.value
+    RUBY
+  end
+
   def test_dupn
     assert_compiles '[[1], [1, 1], :rhs, [nil, :rhs]]', <<~RUBY, insns: [:dupn]
       def test(array) = (array[1, 2] ||= :rhs)

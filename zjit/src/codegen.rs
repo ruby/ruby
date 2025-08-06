@@ -4,7 +4,7 @@ use std::ffi::{c_int, c_void};
 
 use crate::asm::Label;
 use crate::backend::current::{Reg, ALLOC_REGS};
-use crate::invariants::{track_bop_assumption, track_cme_assumption, track_stable_constant_names_assumption};
+use crate::invariants::{track_bop_assumption, track_cme_assumption, track_single_ractor_assumption, track_stable_constant_names_assumption};
 use crate::gc::{get_or_create_iseq_payload, append_gc_offsets};
 use crate::state::ZJITState;
 use crate::stats::{counter_ptr, Counter};
@@ -542,9 +542,9 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invarian
                 let side_exit_ptr = cb.resolve_label(label);
                 track_stable_constant_names_assumption(idlist, code_ptr, side_exit_ptr);
             }
-            _ => {
-                debug!("ZJIT: gen_patch_point: unimplemented invariant {invariant:?}");
-                return;
+            Invariant::SingleRactorMode => {
+                let side_exit_ptr = cb.resolve_label(label);
+                track_single_ractor_assumption(code_ptr, side_exit_ptr);
             }
         }
     });
