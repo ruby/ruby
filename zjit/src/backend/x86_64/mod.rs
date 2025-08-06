@@ -381,7 +381,7 @@ impl Assembler
                         mov(cb, Assembler::SCRATCH0, opnd.into());
                         Assembler::SCRATCH0
                     } else {
-                        opnd.into()
+                        imm_opnd(*value as i64)
                     }
                 },
                 _ => opnd.into()
@@ -963,7 +963,9 @@ mod tests {
         asm.cmp(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_eq!(format!("{:x}", cb), "4881f8ff000000");
+        assert_disasm!(cb, "4881f8ff000000", "
+            0x0: cmp rax, 0xff
+        ");
     }
 
     #[test]
@@ -973,7 +975,22 @@ mod tests {
         asm.cmp(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_eq!(format!("{:x}", cb), "49bbffffffffffff00004c39d8");
+        assert_disasm!(cb, "49bbffffffffffff00004c39d8", "
+            0x0: movabs r11, 0xffffffffffff
+            0xa: cmp rax, r11
+        ");
+    }
+
+    #[test]
+    fn test_emit_cmp_64_bits() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.cmp(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF_FFFF));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_disasm!(cb, "4883f8ff", "
+            0x0: cmp rax, -1
+        ");
     }
 
     #[test]
@@ -1051,7 +1068,9 @@ mod tests {
         asm.test(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_eq!(format!("{:x}", cb), "f6c0ff");
+        assert_disasm!(cb, "48f7c0ff000000", "
+            0x0: test rax, 0xff
+        ");
     }
 
     #[test]

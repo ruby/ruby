@@ -283,6 +283,14 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_eq], call_threshold: 2
   end
 
+  def test_opt_eq_with_minus_one
+    assert_compiles '[false, true]', %q{
+      def test(a) = a == -1
+      test(1) # profile opt_eq
+      [test(0), test(-1)]
+    }, insns: [:opt_eq], call_threshold: 2
+  end
+
   def test_opt_neq_dynamic
     # TODO(max): Don't split this test; instead, run all tests with and without
     # profiling.
