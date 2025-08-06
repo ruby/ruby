@@ -666,7 +666,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     // Ensure that we are not joinable.
     VM_ASSERT(UNDEF_P(th->value));
 
-    int fiber_scheduler_closed = 0, event_thread_end_hooked = 0;
+    volatile int fiber_scheduler_closed = 0, event_thread_end_hooked = 0;
     VALUE result = Qundef;
 
     EC_PUSH_TAG(th->ec);
