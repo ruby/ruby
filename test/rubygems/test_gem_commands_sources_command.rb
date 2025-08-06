@@ -382,24 +382,32 @@ beta-gems.example.com is not a URI
   end
 
   def test_execute_remove
-    @cmd.handle_options %W[--remove #{@gem_repo}]
+    Gem.configuration.sources = [@new_repo]
+
+    setup_fake_source(@new_repo)
+
+    @cmd.handle_options %W[--remove #{@new_repo}]
 
     use_ui @ui do
       @cmd.execute
     end
 
-    expected = "#{@gem_repo} removed from sources\n"
+    expected = "#{@new_repo} removed from sources\n"
 
     assert_equal expected, @ui.output
     assert_equal "", @ui.error
+  ensure
+    Gem.configuration.sources = nil
   end
 
   def test_execute_remove_no_network
+    Gem.configuration.sources = [@new_repo]
+
     spec_fetcher
 
-    @cmd.handle_options %W[--remove #{@gem_repo}]
+    @cmd.handle_options %W[--remove #{@new_repo}]
 
-    @fetcher.data["#{@gem_repo}Marshal.#{Gem.marshal_version}"] = proc do
+    @fetcher.data["#{@new_repo}Marshal.#{Gem.marshal_version}"] = proc do
       raise Gem::RemoteFetcher::FetchError
     end
 
@@ -407,10 +415,12 @@ beta-gems.example.com is not a URI
       @cmd.execute
     end
 
-    expected = "#{@gem_repo} removed from sources\n"
+    expected = "#{@new_repo} removed from sources\n"
 
     assert_equal expected, @ui.output
     assert_equal "", @ui.error
+  ensure
+    Gem.configuration.sources = nil
   end
 
   def test_execute_remove_not_present
