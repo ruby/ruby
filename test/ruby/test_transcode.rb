@@ -2320,6 +2320,46 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("A\nB\nC", s.encode(usascii, newline: :lf))
   end
 
+  def test_ractor_lazy_load_encoding
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      rs = []
+      autoload_encodings = Encoding.list.select { |e| e.inspect.include?("(autoload)") }.freeze
+      7.times do
+        rs << Ractor.new(autoload_encodings) do |encodings|
+          str = "\u0300"
+          encodings.each do |enc|
+            str.encode(enc) rescue Encoding::UndefinedConversionError
+          end
+        end
+      end
+
+      while rs.any?
+        r, _obj = Ractor.select(*rs)
+        rs.delete(r)
+      end
+      assert rs.empty?
+    end;
+  end
+
+  def test_ractor_lazy_load_encoding_random
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      rs = []
+      100.times do
+        rs << Ractor.new do
+          "\u0300".encode(Encoding.list.sample) rescue Encoding::UndefinedConversionError
+        end
+      end
+
+      while rs.any?
+        r, _obj = Ractor.select(*rs)
+        rs.delete(r)
+      end
+      assert rs.empty?
+    end;
+  end
+
   private
 
   def assert_conversion_both_ways_utf8(utf8, raw, encoding)
