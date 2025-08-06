@@ -2302,7 +2302,7 @@ static const rb_data_type_t cross_ractor_require_data_type = {
         NULL, // memsize
         NULL, // compact
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
