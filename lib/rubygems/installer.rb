@@ -67,23 +67,6 @@ class Gem::Installer
   attr_reader :package
 
   class << self
-    #
-    # Changes in rubygems to lazily loading `rubygems/command` (in order to
-    # lazily load `optparse` as a side effect) affect bundler's custom installer
-    # which uses `Gem::Command` without requiring it (up until bundler 2.2.29).
-    # This hook is to compensate for that missing require.
-    #
-    # TODO: Remove when rubygems no longer supports running on bundler older
-    # than 2.2.29.
-
-    def inherited(klass)
-      if klass.name == "Bundler::RubyGemsGemInstaller"
-        require "rubygems/command"
-      end
-
-      super(klass)
-    end
-
     ##
     # Overrides the executable format.
     #
