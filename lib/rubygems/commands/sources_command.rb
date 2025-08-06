@@ -149,16 +149,16 @@ protections of an SSL connection to gem downloads.
 
 To add a source use the --add argument:
 
-    $ gem sources --add https://rubygems.org
-    https://rubygems.org added to sources
+    $ gem sources --add https://my.private.source
+    https://my.private.source added to sources
 
 RubyGems will check to see if gems can be installed from the source given
 before it is added.
 
 To remove a source use the --remove argument:
 
-    $ gem sources --remove https://rubygems.org/
-    https://rubygems.org/ removed from sources
+    $ gem sources --remove https://my.private.source/
+    https://my.private.source/ removed from sources
 
     EOF
   end
