@@ -497,7 +497,7 @@ impl Type {
         }
     }
 
-    fn is_immediate(&self) -> bool {
+    pub fn is_immediate(&self) -> bool {
         self.is_subtype(types::Immediate)
     }
 

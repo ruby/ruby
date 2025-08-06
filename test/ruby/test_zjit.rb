@@ -1432,6 +1432,30 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_nil_p]
   end
 
+  def test_basic_object_guard_works_with_immediate
+    assert_compiles 'NilClass', %q{
+      class Foo; end
+
+      def test(val) = val.class
+
+      test(Foo.new)
+      test(Foo.new)
+      test(nil)
+    }, call_threshold: 2
+  end
+
+  def test_basic_object_guard_works_with_false
+    assert_compiles 'FalseClass', %q{
+      class Foo; end
+
+      def test(val) = val.class
+
+      test(Foo.new)
+      test(Foo.new)
+      test(false)
+    }, call_threshold: 2
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
