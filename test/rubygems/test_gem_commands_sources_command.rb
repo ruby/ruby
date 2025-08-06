@@ -428,6 +428,32 @@ beta-gems.example.com is not a URI
     assert_equal "", @ui.error
   end
 
+  def test_execute_remove_redundant_source_trailing_slash
+    repo_with_slash = "http://sample.repo/"
+
+    Gem.configuration.sources = [repo_with_slash]
+
+    setup_fake_source(repo_with_slash)
+
+    repo_without_slash = repo_with_slash.delete_suffix("/")
+
+    @cmd.handle_options %W[--remove #{repo_without_slash}]
+    use_ui @ui do
+      @cmd.execute
+    end
+    source = Gem::Source.new repo_without_slash
+    assert_equal false, Gem.sources.include?(source)
+
+    expected = <<-EOF
+#{repo_without_slash} removed from sources
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal "", @ui.error
+  ensure
+    Gem.configuration.sources = nil
+  end
+
   def test_execute_update
     @cmd.handle_options %w[--update]
 

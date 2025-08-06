@@ -202,8 +202,10 @@ To remove a source use the --remove argument:
   end
 
   def remove_source(source_uri) # :nodoc:
-    if Gem.sources.include? source_uri
-      Gem.sources.delete source_uri
+    source = Gem::Source.new source_uri
+
+    if Gem.sources.include? source
+      Gem.sources.delete source
       Gem.configuration.write
 
       say "#{source_uri} removed from sources"
