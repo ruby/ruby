@@ -1083,7 +1083,7 @@ static rb_node_resbody_t *rb_node_resbody_new(struct parser_params *p, NODE *nd_
 static rb_node_ensure_t *rb_node_ensure_new(struct parser_params *p, NODE *nd_head, NODE *nd_ensr, const YYLTYPE *loc);
 static rb_node_and_t *rb_node_and_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_node_or_t *rb_node_or_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
-static rb_node_masgn_t *rb_node_masgn_new(struct parser_params *p, NODE *nd_head, NODE *nd_args, const YYLTYPE *loc);
+static rb_node_masgn_t *rb_node_masgn_new(struct parser_params *p, NODE *nd_head, NODE *nd_args, const YYLTYPE *loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc);
 static rb_node_lasgn_t *rb_node_lasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_dasgn_t *rb_node_dasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_gasgn_t *rb_node_gasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
@@ -1191,7 +1191,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_ENSURE(b,en,loc) (NODE *)rb_node_ensure_new(p,b,en,loc)
 #define NEW_AND(f,s,loc,op_loc) (NODE *)rb_node_and_new(p,f,s,loc,op_loc)
 #define NEW_OR(f,s,loc,op_loc) (NODE *)rb_node_or_new(p,f,s,loc,op_loc)
-#define NEW_MASGN(l,r,loc)   rb_node_masgn_new(p,l,r,loc)
+#define NEW_MASGN(l,r,loc,l_loc,r_loc) rb_node_masgn_new(p,l,r,loc,l_loc,r_loc)
 #define NEW_LASGN(v,val,loc) (NODE *)rb_node_lasgn_new(p,v,val,loc)
 #define NEW_DASGN(v,val,loc) (NODE *)rb_node_dasgn_new(p,v,val,loc)
 #define NEW_GASGN(v,val,loc) (NODE *)rb_node_gasgn_new(p,v,val,loc)
@@ -3648,6 +3648,9 @@ mlhs		: mlhs_basic
                 | tLPAREN mlhs_inner rparen
                     {
                         $$ = $2;
+                        nd_set_loc((NODE *)$$, &@$);
+                        RNODE_MASGN($$)->lparen_loc = @1;
+                        RNODE_MASGN($$)->rparen_loc = @3;
                     /*% ripper: mlhs_paren!($:2) %*/
                     }
                 ;
@@ -3655,59 +3658,59 @@ mlhs		: mlhs_basic
 mlhs_inner	: mlhs_basic
                 | tLPAREN mlhs_inner rparen
                     {
-                        $$ = NEW_MASGN(NEW_LIST((NODE *)$2, &@$), 0, &@$);
+                        $$ = NEW_MASGN(NEW_LIST((NODE *)$2, &@$), 0, &@$, &@1, &@3);
                     /*% ripper: mlhs_paren!($:2) %*/
                     }
                 ;
 
 mlhs_basic	: mlhs_head
                     {
-                        $$ = NEW_MASGN($1, 0, &@$);
+                        $$ = NEW_MASGN($1, 0, &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: $:1 %*/
                     }
                 | mlhs_head mlhs_item
                     {
-                        $$ = NEW_MASGN(list_append(p, $1, $2), 0, &@$);
+                        $$ = NEW_MASGN(list_append(p, $1, $2), 0, &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: mlhs_add!($:1, $:2) %*/
                     }
                 | mlhs_head tSTAR mlhs_node
                     {
-                        $$ = NEW_MASGN($1, $3, &@$);
+                        $$ = NEW_MASGN($1, $3, &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: mlhs_add_star!($:1, $:3) %*/
                     }
                 | mlhs_head tSTAR mlhs_node ',' mlhs(mlhs_item)
                     {
-                        $$ = NEW_MASGN($1, NEW_POSTARG($3,$5,&@$), &@$);
+                        $$ = NEW_MASGN($1, NEW_POSTARG($3,$5,&@$), &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!($:1, $:3), $:5) %*/
                     }
                 | mlhs_head tSTAR
                     {
-                        $$ = NEW_MASGN($1, NODE_SPECIAL_NO_NAME_REST, &@$);
+                        $$ = NEW_MASGN($1, NODE_SPECIAL_NO_NAME_REST, &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: mlhs_add_star!($:1, Qnil) %*/
                     }
                 | mlhs_head tSTAR ',' mlhs(mlhs_item)
                     {
-                        $$ = NEW_MASGN($1, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, $4, &@$), &@$);
+                        $$ = NEW_MASGN($1, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, $4, &@$), &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!($:1, Qnil), $:4) %*/
                     }
                 | tSTAR mlhs_node
                     {
-                        $$ = NEW_MASGN(0, $2, &@$);
+                        $$ = NEW_MASGN(0, $2, &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: mlhs_add_star!(mlhs_new!, $:2) %*/
                     }
                 | tSTAR mlhs_node ',' mlhs(mlhs_item)
                     {
-                        $$ = NEW_MASGN(0, NEW_POSTARG($2,$4,&@$), &@$);
+                        $$ = NEW_MASGN(0, NEW_POSTARG($2,$4,&@$), &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, $:2), $:4) %*/
                     }
                 | tSTAR
                     {
-                        $$ = NEW_MASGN(0, NODE_SPECIAL_NO_NAME_REST, &@$);
+                        $$ = NEW_MASGN(0, NODE_SPECIAL_NO_NAME_REST, &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: mlhs_add_star!(mlhs_new!, Qnil) %*/
                     }
                 | tSTAR ',' mlhs(mlhs_item)
                     {
-                        $$ = NEW_MASGN(0, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, $3, &@$), &@$);
+                        $$ = NEW_MASGN(0, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, $3, &@$), &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, Qnil), $:3) %*/
                     }
                 ;
@@ -3716,6 +3719,9 @@ mlhs_item	: mlhs_node
                 | tLPAREN mlhs_inner rparen
                     {
                         $$ = (NODE *)$2;
+                        nd_set_loc($$, &@$);
+                        RNODE_MASGN($$)->lparen_loc = @1;
+                        RNODE_MASGN($$)->rparen_loc = @3;
                     /*% ripper: mlhs_paren!($:2) %*/
                     }
                 ;
@@ -4563,7 +4569,7 @@ primary		: inline_primary
                         m->nd_next = node_assign(p, $for_var, NEW_FOR_MASGN(internal_var, &@for_var), NO_LEX_CTXT, &@for_var);
                         break;
                         default: /* e.each {|*internal_var| @a, B, c[1], d.attr = internal_val; ... } */
-                        m->nd_next = node_assign(p, (NODE *)NEW_MASGN(NEW_LIST($for_var, &@for_var), 0, &@for_var), internal_var, NO_LEX_CTXT, &@for_var);
+                        m->nd_next = node_assign(p, (NODE *)NEW_MASGN(NEW_LIST($for_var, &@for_var), 0, &@for_var, &NULL_LOC, &NULL_LOC), internal_var, NO_LEX_CTXT, &@for_var);
                     }
                     /* {|*internal_id| <m> = internal_id; ... } */
                     args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@for_var), &@for_var);
@@ -4912,27 +4918,27 @@ f_marg		: f_norm_arg
 
 f_margs		: mlhs(f_marg)
                     {
-                        $$ = NEW_MASGN($1, 0, &@$);
+                        $$ = NEW_MASGN($1, 0, &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: $:1 %*/
                     }
                 | mlhs(f_marg) ',' f_rest_marg
                     {
-                        $$ = NEW_MASGN($1, $3, &@$);
+                        $$ = NEW_MASGN($1, $3, &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: mlhs_add_star!($:1, $:3) %*/
                     }
                 | mlhs(f_marg) ',' f_rest_marg ',' mlhs(f_marg)
                     {
-                        $$ = NEW_MASGN($1, NEW_POSTARG($3, $5, &@$), &@$);
+                        $$ = NEW_MASGN($1, NEW_POSTARG($3, $5, &@$), &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!($:1, $:3), $:5) %*/
                     }
                 | f_rest_marg
                     {
-                        $$ = NEW_MASGN(0, $1, &@$);
+                        $$ = NEW_MASGN(0, $1, &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: mlhs_add_star!(mlhs_new!, $:1) %*/
                     }
                 | f_rest_marg ',' mlhs(f_marg)
                     {
-                        $$ = NEW_MASGN(0, NEW_POSTARG($1, $3, &@$), &@$);
+                        $$ = NEW_MASGN(0, NEW_POSTARG($1, $3, &@$), &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, $:1), $:3) %*/
                     }
                 ;
@@ -11724,12 +11730,14 @@ rb_node_hash_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc)
 }
 
 static rb_node_masgn_t *
-rb_node_masgn_new(struct parser_params *p, NODE *nd_head, NODE *nd_args, const YYLTYPE *loc)
+rb_node_masgn_new(struct parser_params *p, NODE *nd_head, NODE *nd_args, const YYLTYPE *loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc)
 {
     rb_node_masgn_t *n = NODE_NEWNODE(NODE_MASGN, rb_node_masgn_t, loc);
     n->nd_head = nd_head;
     n->nd_value = 0;
     n->nd_args = nd_args;
+    n->lparen_loc = *lparen_loc;
+    n->rparen_loc = *rparen_loc;
 
     return n;
 }
