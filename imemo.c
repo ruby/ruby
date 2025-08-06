@@ -337,28 +337,37 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
          * cc->klass (klass) should not be marked because if the klass is
          * free'ed, the cc->klass will be cleared by `vm_cc_invalidate()`.
          *
-         * cc->cme (cme) should not be marked because if cc is invalidated
-         * when cme is free'ed.
+         * For "normal" CCs cc->cme (cme) should not be marked because the cc is
+         *   invalidated through the klass when the cme is free'd.
          * - klass marks cme if klass uses cme.
-         * - caller classe's ccs->cme marks cc->cme.
-         * - if cc is invalidated (klass doesn't refer the cc),
-         *   cc is invalidated by `vm_cc_invalidate()` and cc->cme is
-         *   not be accessed.
-         * - On the multi-Ractors, cme will be collected with global GC
+         * - caller class's ccs->cme marks cc->cme.
+         * - if cc is invalidated (klass doesn't refer the cc), cc is
+         *   invalidated by `vm_cc_invalidate()` after which cc->cme must not
+         *   be accessed.
+         * - With multi-Ractors, cme will be collected with global GC
          *   so that it is safe if GC is not interleaving while accessing
          *   cc and cme.
-         * - However, cc_type_super and cc_type_refinement are not chained
-         *   from ccs so cc->cme should be marked; the cme might be
-         *   reachable only through cc in these cases.
+         *
+         * However cc_type_super and cc_type_refinement are not chained
+         *   from ccs so cc->cme should be marked as long as the cc is valid;
+         *   the cme might be reachable only through cc in these cases.
          */
         struct rb_callcache *cc = (struct rb_callcache *)obj;
-        if (reference_updating) {
+        if (UNDEF_P(cc->klass)) {
+            /* If it's invalidated, we must not mark anything.
+             * All fields should are considered invalid
+             */
+        }
+        else if (reference_updating) {
             if (moved_or_living_object_strictly_p((VALUE)cc->cme_)) {
                 *((VALUE *)&cc->klass) = rb_gc_location(cc->klass);
                 *((struct rb_callable_method_entry_struct **)&cc->cme_) =
                     (struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cc->cme_);
+
+                RUBY_ASSERT(RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
+                RUBY_ASSERT(IMEMO_TYPE_P((VALUE)cc->cme_, imemo_ment));
             }
-            else if (vm_cc_valid(cc)) {
+            else {
                 vm_cc_invalidate(cc);
             }
         }
