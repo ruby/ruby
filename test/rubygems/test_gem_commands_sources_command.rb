@@ -42,21 +42,7 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
   end
 
   def test_execute_add
-    spec_fetcher do |fetcher|
-      fetcher.spec "a", 1
-    end
-
-    specs = Gem::Specification.map do |spec|
-      [spec.name, spec.version, spec.original_platform]
-    end
-
-    specs_dump_gz = StringIO.new
-    Zlib::GzipWriter.wrap specs_dump_gz do |io|
-      Marshal.dump specs, io
-    end
-
-    @fetcher.data["#{@new_repo}/specs.#{@marshal_version}.gz"] =
-      specs_dump_gz.string
+    setup_fake_source(@new_repo)
 
     @cmd.handle_options %W[--add #{@new_repo}]
 
@@ -77,20 +63,8 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
   def test_execute_add_allow_typo_squatting_source
     rubygems_org = "https://rubyems.org"
 
-    spec_fetcher do |fetcher|
-      fetcher.spec("a", 1)
-    end
+    setup_fake_source(rubygems_org)
 
-    specs = Gem::Specification.map do |spec|
-      [spec.name, spec.version, spec.original_platform]
-    end
-
-    specs_dump_gz = StringIO.new
-    Zlib::GzipWriter.wrap(specs_dump_gz) do |io|
-      Marshal.dump(specs, io)
-    end
-
-    @fetcher.data["#{rubygems_org}/specs.#{@marshal_version}.gz"] = specs_dump_gz.string
     @cmd.handle_options %W[--add #{rubygems_org}]
     ui = Gem::MockGemUi.new("y")
 
@@ -111,20 +85,8 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
   def test_execute_add_allow_typo_squatting_source_forced
     rubygems_org = "https://rubyems.org"
 
-    spec_fetcher do |fetcher|
-      fetcher.spec("a", 1)
-    end
+    setup_fake_source(rubygems_org)
 
-    specs = Gem::Specification.map do |spec|
-      [spec.name, spec.version, spec.original_platform]
-    end
-
-    specs_dump_gz = StringIO.new
-    Zlib::GzipWriter.wrap(specs_dump_gz) do |io|
-      Marshal.dump(specs, io)
-    end
-
-    @fetcher.data["#{rubygems_org}/specs.#{@marshal_version}.gz"] = specs_dump_gz.string
     @cmd.handle_options %W[--force --add #{rubygems_org}]
 
     @cmd.execute
@@ -141,21 +103,7 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
   def test_execute_add_deny_typo_squatting_source
     rubygems_org = "https://rubyems.org"
 
-    spec_fetcher do |fetcher|
-      fetcher.spec("a", 1)
-    end
-
-    specs = Gem::Specification.map do |spec|
-      [spec.name, spec.version, spec.original_platform]
-    end
-
-    specs_dump_gz = StringIO.new
-    Zlib::GzipWriter.wrap(specs_dump_gz) do |io|
-      Marshal.dump(specs, io)
-    end
-
-    @fetcher.data["#{rubygems_org}/specs.#{@marshal_version}.gz"] =
-      specs_dump_gz.string
+    setup_fake_source(rubygems_org)
 
     @cmd.handle_options %W[--add #{rubygems_org}]
 
@@ -315,21 +263,7 @@ source http://gems.example.com/ already present in the cache
   def test_execute_add_http_rubygems_org
     http_rubygems_org = "http://rubygems.org/"
 
-    spec_fetcher do |fetcher|
-      fetcher.spec "a", 1
-    end
-
-    specs = Gem::Specification.map do |spec|
-      [spec.name, spec.version, spec.original_platform]
-    end
-
-    specs_dump_gz = StringIO.new
-    Zlib::GzipWriter.wrap specs_dump_gz do |io|
-      Marshal.dump specs, io
-    end
-
-    @fetcher.data["#{http_rubygems_org}/specs.#{@marshal_version}.gz"] =
-      specs_dump_gz.string
+    setup_fake_source(http_rubygems_org)
 
     @cmd.handle_options %W[--add #{http_rubygems_org}]
 
@@ -353,20 +287,8 @@ source http://gems.example.com/ already present in the cache
   def test_execute_add_http_rubygems_org_forced
     rubygems_org = "http://rubygems.org"
 
-    spec_fetcher do |fetcher|
-      fetcher.spec("a", 1)
-    end
+    setup_fake_source(rubygems_org)
 
-    specs = Gem::Specification.map do |spec|
-      [spec.name, spec.version, spec.original_platform]
-    end
-
-    specs_dump_gz = StringIO.new
-    Zlib::GzipWriter.wrap(specs_dump_gz) do |io|
-      Marshal.dump(specs, io)
-    end
-
-    @fetcher.data["#{rubygems_org}/specs.#{@marshal_version}.gz"] = specs_dump_gz.string
     @cmd.handle_options %W[--force --add #{rubygems_org}]
 
     @cmd.execute
@@ -383,21 +305,7 @@ source http://gems.example.com/ already present in the cache
   def test_execute_add_https_rubygems_org
     https_rubygems_org = "https://rubygems.org/"
 
-    spec_fetcher do |fetcher|
-      fetcher.spec "a", 1
-    end
-
-    specs = Gem::Specification.map do |spec|
-      [spec.name, spec.version, spec.original_platform]
-    end
-
-    specs_dump_gz = StringIO.new
-    Zlib::GzipWriter.wrap specs_dump_gz do |io|
-      Marshal.dump specs, io
-    end
-
-    @fetcher.data["#{https_rubygems_org}/specs.#{@marshal_version}.gz"] =
-      specs_dump_gz.string
+    setup_fake_source(https_rubygems_org)
 
     @cmd.handle_options %W[--add #{https_rubygems_org}]
 
@@ -532,5 +440,24 @@ beta-gems.example.com is not a URI
 
     assert_equal "source cache successfully updated\n", @ui.output
     assert_equal "", @ui.error
+  end
+
+  private
+
+  def setup_fake_source(uri)
+    spec_fetcher do |fetcher|
+      fetcher.spec "a", 1
+    end
+
+    specs = Gem::Specification.map do |spec|
+      [spec.name, spec.version, spec.original_platform]
+    end
+
+    specs_dump_gz = StringIO.new
+    Zlib::GzipWriter.wrap specs_dump_gz do |io|
+      Marshal.dump specs, io
+    end
+
+    @fetcher.data["#{uri}/specs.#{@marshal_version}.gz"] = specs_dump_gz.string
   end
 end
