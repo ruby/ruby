@@ -315,6 +315,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SideExit { state, reason } => return gen_side_exit(jit, asm, reason, &function.frame_state(*state)),
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
+        Insn::ConcatStrings { strings, state } => gen_concatstrings(asm, opnds!(strings), &function.frame_state(*state))?,
         Insn::Defined { op_type, obj, pushval, v } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v))?,
         _ => {
             debug!("ZJIT: gen_function: unexpected insn {insn}");
@@ -328,6 +329,23 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     jit.opnds[insn_id.0] = Some(out_opnd);
 
     Some(())
+}
+
+fn gen_concatstrings(asm: &mut Assembler, strings: Vec<Opnd>, state: &FrameState) -> Option<Opnd> {
+    // In practice, concatstrings with 0 strings doesn't seem to happen.
+    if strings.len() == 0 {
+        return None;
+    }
+
+    // Save PC since the call allocates and can raise
+    gen_save_pc(asm, state);
+
+    // Pass all the strings on native stack
+    let strings_base = native_stack_push(asm, &strings);
+    let new_string = asm_ccall!(asm, rb_str_concat_literals, strings.len().into(), strings_base);
+    native_stack_pop(asm, &strings);
+
+    Some(new_string)
 }
 
 /// Gets the EP of the ISeq of the containing method, or "local level".
@@ -1164,6 +1182,23 @@ fn aligned_stack_bytes(num_slots: usize) -> usize {
         num_slots + 1
     };
     num_slots * SIZEOF_VALUE
+}
+
+/// Push all of `opnds` and have the 0th element be at [NATIVE_STACK_PTR].
+fn native_stack_push(asm: &mut Assembler, opnds: &[Opnd]) -> Opnd {
+    let sp_change = aligned_stack_bytes(opnds.len());
+    let sp = asm.sub(NATIVE_STACK_PTR, sp_change.into());
+    asm.mov(NATIVE_STACK_PTR, sp);
+    for (idx, &opnd) in opnds.iter().enumerate() {
+        asm.mov(Opnd::mem(VALUE_BITS, NATIVE_STACK_PTR, idx as i32 * SIZEOF_VALUE_I32), opnd);
+    }
+    // Load native SP since the backend might push stuff to e.g. preserve register after this.
+    asm.load(NATIVE_STACK_PTR)
+}
+
+/// Pop all of `opnds` pushed by [native_stack_push]. Use the same `opnds`.
+fn native_stack_pop(asm: &mut Assembler, opnds: &[Opnd]) {
+    asm.add_into(NATIVE_STACK_PTR, aligned_stack_bytes(opnds.len()).into());
 }
 
 impl Assembler {

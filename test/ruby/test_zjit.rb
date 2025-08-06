@@ -38,6 +38,13 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:putstring]
   end
 
+  def test_concatstrings
+    assert_compiles '"Object is not Kernel"', %q{
+      def test = "#{Object} is not #{Kernel}"
+      test
+    }, insns: [:concatstrings]
+  end
+
   def test_putchilldedstring
     assert_compiles '""', %q{
       def test = ""
