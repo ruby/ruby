@@ -128,7 +128,7 @@ yourself to use your own gem server.
 Without any arguments the sources lists your currently configured sources:
 
   $ gem sources
-  *** CURRENT SOURCES ***
+  *** NO CONFIGURED SOURCES, DEFAULT SOURCES LISTED BELOW ***
 
   https://rubygems.org
 
@@ -164,10 +164,18 @@ To remove a source use the --remove argument:
   end
 
   def list # :nodoc:
-    say "*** CURRENT SOURCES ***"
+    if configured_sources
+      header = "*** CURRENT SOURCES ***"
+      list = configured_sources
+    else
+      header = "*** NO CONFIGURED SOURCES, DEFAULT SOURCES LISTED BELOW ***"
+      list = Gem.sources
+    end
+
+    say header
     say
 
-    Gem.sources.each do |src|
+    list.each do |src|
       say src
     end
   end
@@ -223,5 +231,11 @@ To remove a source use the --remove argument:
     else
       say "*** Unable to remove #{desc} source cache ***"
     end
+  end
+
+  private
+
+  def configured_sources
+    Gem.configuration.sources
   end
 end

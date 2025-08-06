@@ -32,7 +32,7 @@ class TestGemCommandsSourcesCommand < Gem::TestCase
     end
 
     expected = <<-EOF
-*** CURRENT SOURCES ***
+*** NO CONFIGURED SOURCES, DEFAULT SOURCES LISTED BELOW ***
 
 #{@gem_repo}
     EOF
@@ -476,7 +476,7 @@ beta-gems.example.com is not a URI
     end
 
     expected = <<-EOF
-*** CURRENT SOURCES ***
+*** NO CONFIGURED SOURCES, DEFAULT SOURCES LISTED BELOW ***
 
 #{@gem_repo}
     EOF
