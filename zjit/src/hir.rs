@@ -7433,7 +7433,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_inline_attr_reader() {
+    fn test_inline_attr_reader_constant() {
         eval("
             class C
               attr_reader :foo
@@ -7461,7 +7461,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_inline_attr_accessor() {
+    fn test_inline_attr_accessor_constant() {
         eval("
             class C
               attr_accessor :foo
@@ -7485,6 +7485,58 @@ mod opt_tests {
               PatchPoint MethodRedefined(C@0x1010, foo@0x1018, cme:0x1020)
               v11:BasicObject = GetIvar v9, :@foo
               Return v11
+        "#]]);
+    }
+
+    #[test]
+    fn test_inline_attr_reader() {
+        eval("
+            class C
+              attr_reader :foo
+
+              def initialize
+                @foo = 4
+              end
+            end
+
+            def test(o) = o.foo
+            o = C.new
+            test o
+            test o
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:10:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+              v7:BasicObject[class_exact:C] = GuardType v1, BasicObject[class_exact:C]
+              v8:BasicObject = GetIvar v7, :@foo
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_inline_attr_accessor() {
+        eval("
+            class C
+              attr_accessor :foo
+
+              def initialize
+                @foo = 4
+              end
+            end
+
+            def test(o) = o.foo
+            o = C.new
+            test o
+            test o
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:10:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+              v7:BasicObject[class_exact:C] = GuardType v1, BasicObject[class_exact:C]
+              v8:BasicObject = GetIvar v7, :@foo
+              Return v8
         "#]]);
     }
 }
