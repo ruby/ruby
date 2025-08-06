@@ -7500,9 +7500,8 @@ mod opt_tests {
             end
 
             def test(o) = o.foo
-            o = C.new
-            test o
-            test o
+            test C.new
+            test C.new
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test@<compiled>:10:
@@ -7526,9 +7525,8 @@ mod opt_tests {
             end
 
             def test(o) = o.foo
-            o = C.new
-            test o
-            test o
+            test C.new
+            test C.new
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test@<compiled>:10:
