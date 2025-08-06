@@ -3441,6 +3441,9 @@ rb_execution_context_update(rb_execution_context_t *ec)
     }
 
     ec->storage = rb_gc_location(ec->storage);
+
+    ec->gen_fields_cache.obj = rb_gc_location(ec->gen_fields_cache.obj);
+    ec->gen_fields_cache.fields_obj = rb_gc_location(ec->gen_fields_cache.fields_obj);
 }
 
 static enum rb_id_table_iterator_result
@@ -3505,6 +3508,9 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     rb_gc_mark(ec->private_const_reference);
 
     rb_gc_mark_movable(ec->storage);
+
+    rb_gc_mark_weak((VALUE *)&ec->gen_fields_cache.obj);
+    rb_gc_mark_weak((VALUE *)&ec->gen_fields_cache.fields_obj);
 }
 
 void rb_fiber_mark_self(rb_fiber_t *fib);

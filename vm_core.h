@@ -1070,6 +1070,11 @@ struct rb_execution_context_struct {
 
     VALUE private_const_reference;
 
+    struct {
+        VALUE obj;
+        VALUE fields_obj;
+    } gen_fields_cache;
+
     /* for GC */
     struct {
         VALUE *stack_start;
