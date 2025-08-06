@@ -220,13 +220,14 @@ source #{@gem_repo} already present in the cache
   end
 
   def test_execute_add_redundant_source_trailing_slash
-    spec_fetcher
+    repo_with_slash = "http://sample.repo/"
 
-    repo_with_slash = "http://gems.example.com/"
     Gem.configuration.sources = [repo_with_slash]
 
+    setup_fake_source(repo_with_slash)
+
     # Re-add pre-existing gem source (w/o slash)
-    repo_without_slash = "http://gems.example.com"
+    repo_without_slash = repo_with_slash.delete_suffix("/")
     @cmd.handle_options %W[--add #{repo_without_slash}]
     use_ui @ui do
       @cmd.execute
@@ -235,7 +236,7 @@ source #{@gem_repo} already present in the cache
     assert_equal true, Gem.sources.include?(source)
 
     expected = <<-EOF
-source http://gems.example.com already present in the cache
+source #{repo_without_slash} already present in the cache
     EOF
 
     assert_equal expected, @ui.output
@@ -250,8 +251,8 @@ source http://gems.example.com already present in the cache
     assert_equal true, Gem.sources.include?(source)
 
     expected = <<-EOF
-source http://gems.example.com already present in the cache
-source http://gems.example.com/ already present in the cache
+source #{repo_without_slash} already present in the cache
+source #{repo_with_slash} already present in the cache
     EOF
 
     assert_equal expected, @ui.output
