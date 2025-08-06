@@ -517,6 +517,21 @@ beta-gems.example.com is not a URI
     assert_equal "", @ui.error
   end
 
+  def test_execute_remove_not_present
+    spec_fetcher
+
+    @cmd.handle_options %W[--remove https://does.not.exist]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = "source https://does.not.exist not present in cache\n"
+
+    assert_equal expected, @ui.output
+    assert_equal "", @ui.error
+  end
+
   def test_execute_update
     @cmd.handle_options %w[--update]
 
