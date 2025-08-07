@@ -93,5 +93,7 @@ result = run_bisect(command, jit_list)
 File.open("jitlist.txt", "w") do |file|
   file.puts(result)
 end
+puts "Run:"
+puts "#{RUBY} --zjit-allowed-iseqs=jitlist.txt #{OPTIONS}"
 puts "Reduced JIT list (available in jitlist.txt):"
 puts result
