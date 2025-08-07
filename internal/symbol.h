@@ -17,8 +17,7 @@
 #endif
 
 /* symbol.c */
-void rb_sym_global_symbols_mark(void);
-void rb_sym_global_symbols_update_references(void);
+void rb_sym_global_symbols_mark_and_move(void);
 VALUE rb_to_symbol_type(VALUE obj);
 VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc);
 VALUE rb_sym_intern_ascii(const char *ptr, long len);
