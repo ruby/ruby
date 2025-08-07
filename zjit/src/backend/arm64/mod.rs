@@ -1823,7 +1823,7 @@ mod tests {
     #[test]
     fn test_emit_test_32b_reg_not_bitmask_imm() {
         let (mut asm, mut cb) = setup_asm();
-        let w0 = Opnd::Reg(X0_REG).with_num_bits(32).unwrap();
+        let w0 = Opnd::Reg(X0_REG).with_num_bits(32);
         asm.test(w0, Opnd::UImm(u32::MAX.into()));
         // All ones is not encodable with a bitmask immediate,
         // so this needs one register
@@ -1833,7 +1833,7 @@ mod tests {
     #[test]
     fn test_emit_test_32b_reg_bitmask_imm() {
         let (mut asm, mut cb) = setup_asm();
-        let w0 = Opnd::Reg(X0_REG).with_num_bits(32).unwrap();
+        let w0 = Opnd::Reg(X0_REG).with_num_bits(32);
         asm.test(w0, Opnd::UImm(0x80000001));
         asm.compile_with_num_regs(&mut cb, 0);
     }
