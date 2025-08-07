@@ -1888,39 +1888,25 @@ force_make_tm(VALUE time, struct time_object *tobj)
 }
 
 static void
-time_mark(void *ptr)
+time_mark_and_move(void *ptr)
 {
     struct time_object *tobj = ptr;
     if (!FIXWV_P(tobj->timew)) {
-        rb_gc_mark_movable(w2v(tobj->timew));
+        rb_gc_mark_and_move(&WIDEVAL_GET(tobj->timew));
     }
-    rb_gc_mark_movable(tobj->vtm.year);
-    rb_gc_mark_movable(tobj->vtm.subsecx);
-    rb_gc_mark_movable(tobj->vtm.utc_offset);
-    rb_gc_mark_movable(tobj->vtm.zone);
-}
-
-static void
-time_compact(void *ptr)
-{
-    struct time_object *tobj = ptr;
-    if (!FIXWV_P(tobj->timew)) {
-        WIDEVAL_GET(tobj->timew) = WIDEVAL_WRAP(rb_gc_location(w2v(tobj->timew)));
-    }
-
-    tobj->vtm.year = rb_gc_location(tobj->vtm.year);
-    tobj->vtm.subsecx = rb_gc_location(tobj->vtm.subsecx);
-    tobj->vtm.utc_offset = rb_gc_location(tobj->vtm.utc_offset);
-    tobj->vtm.zone = rb_gc_location(tobj->vtm.zone);
+    rb_gc_mark_and_move(&tobj->vtm.year);
+    rb_gc_mark_and_move(&tobj->vtm.subsecx);
+    rb_gc_mark_and_move(&tobj->vtm.utc_offset);
+    rb_gc_mark_and_move(&tobj->vtm.zone);
 }
 
 static const rb_data_type_t time_data_type = {
     .wrap_struct_name = "time",
     .function = {
-        .dmark = time_mark,
+        .dmark = time_mark_and_move,
         .dfree = RUBY_TYPED_DEFAULT_FREE,
         .dsize = NULL,
-        .dcompact = time_compact,
+        .dcompact = time_mark_and_move,
     },
     .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
