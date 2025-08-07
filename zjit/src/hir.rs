@@ -443,7 +443,7 @@ pub enum Insn {
     /// SSA block parameter. Also used for function parameters in the function's entry block.
     Param { idx: usize },
 
-    StringCopy { val: InsnId, chilled: bool },
+    StringCopy { val: InsnId, chilled: bool, state: InsnId },
     StringIntern { val: InsnId },
 
     /// Put special object (VMCORE, CBASE, etc.) based on value_type
@@ -1116,7 +1116,7 @@ impl Function {
                 },
             &Return { val } => Return { val: find!(val) },
             &Throw { throw_state, val } => Throw { throw_state, val: find!(val) },
-            &StringCopy { val, chilled } => StringCopy { val: find!(val), chilled },
+            &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
             &StringIntern { val } => StringIntern { val: find!(val) },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
@@ -1870,7 +1870,6 @@ impl Function {
                 worklist.push_back(high);
                 worklist.push_back(state);
             }
-            &Insn::StringCopy { val, .. }
             | &Insn::StringIntern { val }
             | &Insn::Return { val }
             | &Insn::Throw { val, .. }
@@ -1880,6 +1879,7 @@ impl Function {
             | &Insn::IsNil { val } =>
                 worklist.push_back(val),
             &Insn::SetGlobal { val, state, .. }
+            | &Insn::StringCopy { val, state, .. }
             | &Insn::GuardType { val, state, .. }
             | &Insn::GuardBitEquals { val, state, .. }
             | &Insn::ToArray { val, state }
@@ -2667,12 +2667,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_putstring => {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let insn_id = fun.push_insn(block, Insn::StringCopy { val, chilled: false });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let insn_id = fun.push_insn(block, Insn::StringCopy { val, chilled: false, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_putchilledstring => {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let insn_id = fun.push_insn(block, Insn::StringCopy { val, chilled: true });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let insn_id = fun.push_insn(block, Insn::StringCopy { val, chilled: true, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_putself => { state.stack_push(self_param); }
@@ -3862,8 +3864,8 @@ mod tests {
             fn test@<compiled>:1:
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v3:StringExact = StringCopy v2
-              Return v3
+              v4:StringExact = StringCopy v2
+              Return v4
         "#]]);
     }
 
@@ -4390,11 +4392,11 @@ mod tests {
               v5:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               v7:ArrayExact = ArrayDup v5
               v8:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
-              v9:StringExact = StringCopy v8
-              v10:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
-              v11:StringExact = StringCopy v10
-              v13:BasicObject = SendWithoutBlock v0, :unknown_method, v4, v7, v9, v11
-              Return v13
+              v10:StringExact = StringCopy v8
+              v11:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+              v13:StringExact = StringCopy v11
+              v15:BasicObject = SendWithoutBlock v0, :unknown_method, v4, v7, v10, v13
+              Return v15
         "#]]);
     }
 
@@ -4640,7 +4642,7 @@ mod tests {
               v4:NilClass = Const Value(nil)
               v7:BasicObject = SendWithoutBlock v1, :+, v2
               v8:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v9:StringExact = StringCopy v8
+              v10:StringExact = StringCopy v8
               SideExit UnknownNewarraySend(PACK)
         "#]]);
     }
@@ -5943,8 +5945,8 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test@<compiled>:3:
             bb0(v0:BasicObject):
-              v5:Fixnum[5] = Const Value(5)
-              Return v5
+              v6:Fixnum[5] = Const Value(5)
+              Return v6
         "#]]);
     }
 
@@ -6572,10 +6574,10 @@ mod opt_tests {
             fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v3:StringExact = StringCopy v2
+              v4:StringExact = StringCopy v2
               PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010, cme:0x1018)
-              v8:Fixnum = CCall bytesize@0x1040, v3
-              Return v8
+              v9:Fixnum = CCall bytesize@0x1040, v4
+              Return v9
         "#]]);
     }
 
@@ -6934,10 +6936,10 @@ mod opt_tests {
             fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v3:StringExact = StringCopy v2
-              v4:NilClass = Const Value(nil)
-              v6:BasicObject = SendWithoutBlock v3, :freeze, v4
-              Return v6
+              v4:StringExact = StringCopy v2
+              v5:NilClass = Const Value(nil)
+              v7:BasicObject = SendWithoutBlock v4, :freeze, v5
+              Return v7
         "#]]);
     }
 
@@ -6979,10 +6981,10 @@ mod opt_tests {
             fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v3:StringExact = StringCopy v2
-              v5:BasicObject = SendWithoutBlock v3, :dup
-              v7:BasicObject = SendWithoutBlock v5, :-@
-              Return v7
+              v4:StringExact = StringCopy v2
+              v6:BasicObject = SendWithoutBlock v4, :dup
+              v8:BasicObject = SendWithoutBlock v6, :-@
+              Return v8
         "#]]);
     }
 
@@ -6996,7 +6998,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              v4:StringExact = StringCopy v3
+              v5:StringExact = StringCopy v3
               SideExit UnknownOpcode(concatstrings)
         "#]]);
     }
