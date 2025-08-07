@@ -1171,6 +1171,7 @@ rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_t
         st_delete(table, &id, NULL);
     }
     rb_obj_init_too_complex(dest, table);
+    rb_gc_writebarrier_remember(dest);
 }
 
 size_t
