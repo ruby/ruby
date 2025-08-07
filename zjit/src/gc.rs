@@ -1,6 +1,6 @@
 // This module is responsible for marking/moving objects on GC.
 
-use std::ffi::c_void;
+use std::{ffi::c_void, ops::Range};
 use crate::{cruby::*, profile::IseqProfile, state::ZJITState, virtualmem::CodePtr};
 
 /// This is all the data ZJIT stores on an ISEQ. We mark objects in this struct on GC.
@@ -26,16 +26,16 @@ impl IseqPayload {
     }
 }
 
-/// Get the payload object associated with an iseq. Create one if none exists.
-pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
+/// Get a pointer to the payload object associated with an ISEQ. Create one if none exists.
+pub fn get_or_create_iseq_payload_ptr(iseq: IseqPtr) -> *mut IseqPayload {
     type VoidPtr = *mut c_void;
 
-    let payload_non_null = unsafe {
+    unsafe {
         let payload = rb_iseq_get_zjit_payload(iseq);
         if payload.is_null() {
             // Allocate a new payload with Box and transfer ownership to the GC.
-            // We drop the payload with Box::from_raw when the GC frees the iseq and calls us.
-            // NOTE(alan): Sometimes we read from an iseq without ever writing to it.
+            // We drop the payload with Box::from_raw when the GC frees the ISEQ and calls us.
+            // NOTE(alan): Sometimes we read from an ISEQ without ever writing to it.
             // We allocate in those cases anyways.
             let iseq_size = get_iseq_encoded_size(iseq);
             let new_payload = IseqPayload::new(iseq_size);
@@ -46,13 +46,23 @@ pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
         } else {
             payload as *mut IseqPayload
         }
-    };
+    }
+}
 
+/// Get the payload object associated with an ISEQ. Create one if none exists.
+pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
+    let payload_non_null = get_or_create_iseq_payload_ptr(iseq);
+    payload_ptr_as_mut(payload_non_null)
+}
+
+/// Convert an IseqPayload pointer to a mutable reference. Only one reference
+/// should be kept at a time.
+fn payload_ptr_as_mut(payload_ptr: *mut IseqPayload) -> &'static mut IseqPayload {
     // SAFETY: we should have the VM lock and all other Ruby threads should be asleep. So we have
     // exclusive mutable access.
     // Hmm, nothing seems to stop calling this on the same
     // iseq twice, though, which violates aliasing rules.
-    unsafe { payload_non_null.as_mut() }.unwrap()
+    unsafe { payload_ptr.as_mut() }.unwrap()
 }
 
 #[unsafe(no_mangle)]
@@ -90,29 +100,12 @@ pub extern "C" fn rb_zjit_iseq_mark(payload: *mut c_void) {
     }
 }
 
-/// Append a set of gc_offsets to the iseq's payload
-pub fn append_gc_offsets(iseq: IseqPtr, offsets: &Vec<CodePtr>) {
-    let payload = get_or_create_iseq_payload(iseq);
-    payload.gc_offsets.extend(offsets);
-
-    // Call writebarrier on each newly added value
-    let cb = ZJITState::get_code_block();
-    for &offset in offsets.iter() {
-        let value_ptr: *const u8 = offset.raw_ptr(cb);
-        let value_ptr = value_ptr as *const VALUE;
-        unsafe {
-            let object = value_ptr.read_unaligned();
-            rb_gc_writebarrier(iseq.into(), object);
-        }
-    }
-}
-
-/// GC callback for updating GC objects in the per-iseq payload.
+/// GC callback for updating GC objects in the per-ISEQ payload.
 /// This is a mirror of [rb_zjit_iseq_mark].
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_iseq_update_references(payload: *mut c_void) {
     let payload = if payload.is_null() {
-        return; // nothing to mark
+        return; // nothing to update
     } else {
         // SAFETY: The GC takes the VM lock while marking, which
         // we assert, so we should be synchronized and data race free.
@@ -149,4 +142,38 @@ pub extern "C" fn rb_zjit_iseq_update_references(payload: *mut c_void) {
         }
     }
     cb.mark_all_executable();
+}
+
+/// Append a set of gc_offsets to the iseq's payload
+pub fn append_gc_offsets(iseq: IseqPtr, offsets: &Vec<CodePtr>) {
+    let payload = get_or_create_iseq_payload(iseq);
+    payload.gc_offsets.extend(offsets);
+
+    // Call writebarrier on each newly added value
+    let cb = ZJITState::get_code_block();
+    for &offset in offsets.iter() {
+        let value_ptr: *const u8 = offset.raw_ptr(cb);
+        let value_ptr = value_ptr as *const VALUE;
+        unsafe {
+            let object = value_ptr.read_unaligned();
+            rb_gc_writebarrier(iseq.into(), object);
+        }
+    }
+}
+
+/// Remove GC offsets that overlap with a given removed_range.
+/// We do this when invalidation rewrites some code with a jump instruction
+/// and GC offsets are corrupted by the rewrite, assuming no on-stack code
+/// will step into the instruction with the GC offsets after invalidation.
+pub fn remove_gc_offsets(payload_ptr: *mut IseqPayload, removed_range: &Range<CodePtr>) {
+    let payload = payload_ptr_as_mut(payload_ptr);
+    payload.gc_offsets.retain(|&gc_offset| {
+        let offset_range = gc_offset..(gc_offset.add_bytes(SIZEOF_VALUE));
+        !ranges_overlap(&offset_range, removed_range)
+    });
+}
+
+/// Return true if given Range<CodePtr> ranges overlap with each other
+fn ranges_overlap<T>(left: &Range<T>, right: &Range<T>) -> bool where T: PartialOrd {
+    left.start < right.end && right.start < left.end
 }
