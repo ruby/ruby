@@ -172,9 +172,7 @@ set_foreach_replace(st_data_t key, st_data_t argp, int error)
 static int
 set_replace_ref(st_data_t *key, st_data_t argp, int existing)
 {
-    if (rb_gc_location((VALUE)*key) != (VALUE)*key) {
-        *key = rb_gc_location((VALUE)*key);
-    }
+    rb_gc_mark_and_move((VALUE *)key);
 
     return ST_CONTINUE;
 }
