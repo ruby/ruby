@@ -1043,6 +1043,26 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_defined_with_defined_values
+    assert_compiles '["constant", "method", "global-variable"]', %q{
+      class Foo; end
+      def bar; end
+      $ruby = 1
+
+      def test = return defined?(Foo), defined?(bar), defined?($ruby)
+
+      test
+    }, insns: [:defined]
+  end
+
+  def test_defined_with_undefined_values
+    assert_compiles '[nil, nil, nil]', %q{
+      def test = return defined?(Foo), defined?(bar), defined?($ruby)
+
+      test
+    }, insns: [:defined]
+  end
+
   def test_defined_yield
     assert_compiles "nil", "defined?(yield)"
     assert_compiles '[nil, nil, "yield"]', %q{
