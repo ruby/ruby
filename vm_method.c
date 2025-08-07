@@ -37,9 +37,10 @@ mark_cc_entry_i(VALUE ccs_ptr, void *data)
         rb_gc_mark_movable((VALUE)ccs->cme);
 
         for (int i=0; i<ccs->len; i++) {
-            VM_ASSERT(vm_cc_check_cme(ccs->entries[i].cc, ccs->cme));
+            const struct rb_callcache *cc = ccs->entries[i].cc;
+            VM_ASSERT(cc->klass == Qundef || vm_cc_check_cme(cc, ccs->cme));
 
-            rb_gc_mark_movable((VALUE)ccs->entries[i].cc);
+            rb_gc_mark_movable((VALUE)cc);
         }
         return ID_TABLE_CONTINUE;
     }
