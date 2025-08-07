@@ -49,18 +49,24 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_usage
     assert_in_out_err(%w(-h)) do |r, e|
-      assert_operator(r.size, :<=, 25)
-      longer = r[1..-1].select {|x| x.size >= 80}
+      assert_operator(r.size, :<=, 26)
+      longer = r[3..-1].select {|x| x.size >= 80}
       assert_equal([], longer)
       assert_equal([], e)
+
+      version = RUBY_PATCHLEVEL == -1 ? "master" : "#{RUBY_VERSION_MAJOR}.#{RUBY_VERSION_MINOR}"
+      assert_include(r, "Details and examples at https://docs.ruby-lang.org/en/#{version}/ruby/options_md.html")
     end
   end
 
   def test_usage_long
     assert_in_out_err(%w(--help)) do |r, e|
-      longer = r[1..-1].select {|x| x.size > 80}
+      longer = r[3..-1].select {|x| x.size > 80}
       assert_equal([], longer)
       assert_equal([], e)
+
+      version = RUBY_PATCHLEVEL == -1 ? "master" : "#{RUBY_VERSION_MAJOR}.#{RUBY_VERSION_MINOR}"
+      assert_include(r, "Details and examples at https://docs.ruby-lang.org/en/#{version}/ruby/options_md.html")
     end
   end
 
