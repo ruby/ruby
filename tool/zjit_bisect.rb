@@ -72,6 +72,29 @@ def run_bisect(command, items)
   bisect_impl(command, [], items)
 end
 
+def run_ruby *cmd
+  stdout_data = nil
+  stderr_data = nil
+  status = nil
+  Open3.popen3(Shellwords.join cmd) do |stdin, stdout, stderr, wait_thr|
+    pid = wait_thr.pid
+    begin
+      Timeout.timeout(ARGS[:timeout]) do
+        stdout_data = stdout.read
+        stderr_data = stderr.read
+        status = wait_thr.value
+      end
+    rescue Timeout::Error
+      Process.kill("KILL", pid)
+      stderr_data = "(killed due to timeout)"
+      # Wait for the process to be reaped
+      wait_thr.value
+      status = 1
+    end
+  end
+  [stdout_data, stderr_data, status]
+end
+
 def run_with_jit_list(ruby, options, jit_list)
   # Make a new temporary file containing the JIT list
   Tempfile.create("jit_list") do |temp_file|
@@ -79,31 +102,26 @@ def run_with_jit_list(ruby, options, jit_list)
     temp_file.flush
     temp_file.close
     # Run the JIT with the temporary file
-    command = Shellwords.join [ruby, "--zjit-allowed-iseqs=#{temp_file.path}", *options]
-    Open3.capture3(command)
+    run_ruby ruby, "--zjit-allowed-iseqs=#{temp_file.path}", *options
   end
 end
 
 # Try running with no JIT list to get a stable baseline
-_, stderr, status = run_with_jit_list(RUBY, OPTIONS, [])
-if !status.success?
+_, stderr, exitcode = run_with_jit_list(RUBY, OPTIONS, [])
+if exitcode != 0
   raise "Command failed with empty JIT list: #{stderr}"
 end
 # Collect the JIT list from the failing Ruby process
 jit_list = nil
 Tempfile.create "jit_list" do |temp_file|
-  command = Shellwords.join [RUBY, "--zjit-log-compiled-iseqs=#{temp_file.path}", *OPTIONS]
-  Open3.capture3(command)
+  run_ruby RUBY, "--zjit-log-compiled-iseqs=#{temp_file.path}", *OPTIONS
   jit_list = File.readlines(temp_file.path).map(&:strip).reject(&:empty?)
 end
 LOGGER.info("Starting with JIT list of #{jit_list.length} items.")
 # Now narrow it down
 command = lambda do |items|
-  status = Timeout.timeout(ARGS[:timeout]) do
-    _, _, status = run_with_jit_list(RUBY, OPTIONS, items)
-    status
-  end
-  status.success?
+  _, _, exitcode = run_with_jit_list(RUBY, OPTIONS, items)
+  exitcode == 0
 end
 result = run_bisect(command, jit_list)
 File.open("jitlist.txt", "w") do |file|
