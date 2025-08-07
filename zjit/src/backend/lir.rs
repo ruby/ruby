@@ -160,6 +160,7 @@ impl Opnd
 
     /// Return Opnd with a given num_bits if self has num_bits.
     /// Panic otherwise. This should be used only when you know which Opnd self is.
+    #[track_caller]
     pub fn with_num_bits(&self, num_bits: u8) -> Opnd {
         if let Some(opnd) = self.try_num_bits(num_bits) {
             opnd
