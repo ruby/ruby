@@ -1069,17 +1069,29 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         asm.cmp(val, Qtrue.into());
         asm.jne(side_exit(jit, state, GuardType(guard_type))?);
     } else if guard_type.is_subtype(types::FalseClass) {
-        assert!(Qfalse.as_i64() == 0);
-        asm.test(val, val);
+        asm.cmp(val, Qfalse.into());
         asm.jne(side_exit(jit, state, GuardType(guard_type))?);
+    } else if guard_type.is_immediate() {
+        // All immediate types' guard should have been handled above
+        panic!("unexpected immediate guard type: {guard_type}");
     } else if let Some(expected_class) = guard_type.runtime_exact_ruby_class() {
-        asm_comment!(asm, "guard exact class");
+        asm_comment!(asm, "guard exact class for non-immediate types");
 
-        // Get the class of the value
-        let klass = asm.ccall(rb_yarv_class_of as *const u8, vec![val]);
+        let side_exit = side_exit(jit, state, GuardType(guard_type))?;
+
+        // Check if it's a special constant
+        asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
+        asm.jnz(side_exit.clone());
+
+        // Check if it's false
+        asm.cmp(val, Qfalse.into());
+        asm.je(side_exit.clone());
+
+        // Load the class from the object's klass field
+        let klass = asm.load(Opnd::mem(64, val, RUBY_OFFSET_RBASIC_KLASS));
 
         asm.cmp(klass, Opnd::Value(expected_class));
-        asm.jne(side_exit(jit, state, GuardType(guard_type))?);
+        asm.jne(side_exit);
     } else {
         unimplemented!("unsupported type: {guard_type}");
     }
