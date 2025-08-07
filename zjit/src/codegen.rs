@@ -5,7 +5,7 @@ use std::ffi::{c_int, c_void};
 use crate::asm::Label;
 use crate::backend::current::{Reg, ALLOC_REGS};
 use crate::invariants::{track_bop_assumption, track_cme_assumption, track_single_ractor_assumption, track_stable_constant_names_assumption};
-use crate::gc::{get_or_create_iseq_payload, append_gc_offsets};
+use crate::gc::{append_gc_offsets, get_or_create_iseq_payload, get_or_create_iseq_payload_ptr};
 use crate::state::ZJITState;
 use crate::stats::{counter_ptr, Counter};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
@@ -521,6 +521,7 @@ fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf
 
 /// Record a patch point that should be invalidated on a given invariant
 fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invariant, state: &FrameState) -> Option<()> {
+    let payload_ptr = get_or_create_iseq_payload_ptr(jit.iseq);
     let label = asm.new_label("patch_point").unwrap_label();
     let invariant = invariant.clone();
 
@@ -532,19 +533,19 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invarian
         match invariant {
             Invariant::BOPRedefined { klass, bop } => {
                 let side_exit_ptr = cb.resolve_label(label);
-                track_bop_assumption(klass, bop, code_ptr, side_exit_ptr);
+                track_bop_assumption(klass, bop, code_ptr, side_exit_ptr, payload_ptr);
             }
             Invariant::MethodRedefined { klass: _, method: _, cme } => {
                 let side_exit_ptr = cb.resolve_label(label);
-                track_cme_assumption(cme, code_ptr, side_exit_ptr);
+                track_cme_assumption(cme, code_ptr, side_exit_ptr, payload_ptr);
             }
             Invariant::StableConstantNames { idlist } => {
                 let side_exit_ptr = cb.resolve_label(label);
-                track_stable_constant_names_assumption(idlist, code_ptr, side_exit_ptr);
+                track_stable_constant_names_assumption(idlist, code_ptr, side_exit_ptr, payload_ptr);
             }
             Invariant::SingleRactorMode => {
                 let side_exit_ptr = cb.resolve_label(label);
-                track_single_ractor_assumption(code_ptr, side_exit_ptr);
+                track_single_ractor_assumption(code_ptr, side_exit_ptr, payload_ptr);
             }
         }
     });
