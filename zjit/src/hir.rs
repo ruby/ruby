@@ -6920,10 +6920,10 @@ mod opt_tests {
             fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v3:StringExact = StringCopy v2
-              v5:BasicObject = SendWithoutBlock v3, :dup
-              v7:BasicObject = SendWithoutBlock v5, :freeze
-              Return v7
+              v4:StringExact = StringCopy v2
+              v6:BasicObject = SendWithoutBlock v4, :dup
+              v8:BasicObject = SendWithoutBlock v6, :freeze
+              Return v8
         "#]]);
     }
 
