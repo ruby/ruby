@@ -5564,7 +5564,7 @@ mod opt_tests {
             fn test@<compiled>:5:
             bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v6:BasicObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, BasicObject[class_exact*:Object@VALUE(0x1000)]
+              v6:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, HeapObject[class_exact*:Object@VALUE(0x1000)]
               v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1038)
               Return v7
         "#]]);
@@ -5604,7 +5604,7 @@ mod opt_tests {
             fn test@<compiled>:6:
             bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v6:BasicObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, BasicObject[class_exact*:Object@VALUE(0x1000)]
+              v6:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, HeapObject[class_exact*:Object@VALUE(0x1000)]
               v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1038)
               Return v7
         "#]]);
@@ -5623,7 +5623,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v2:Fixnum[3] = Const Value(3)
               PatchPoint MethodRedefined(Object@0x1000, Integer@0x1008, cme:0x1010)
-              v7:BasicObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, BasicObject[class_exact*:Object@VALUE(0x1000)]
+              v7:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, HeapObject[class_exact*:Object@VALUE(0x1000)]
               v8:BasicObject = SendWithoutBlockDirect v7, :Integer (0x1038), v2
               Return v8
         "#]]);
@@ -5645,7 +5645,7 @@ mod opt_tests {
               v2:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v8:BasicObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, BasicObject[class_exact*:Object@VALUE(0x1000)]
+              v8:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, HeapObject[class_exact*:Object@VALUE(0x1000)]
               v9:BasicObject = SendWithoutBlockDirect v8, :foo (0x1038), v2, v3
               Return v9
         "#]]);
@@ -5668,10 +5668,10 @@ mod opt_tests {
             fn test@<compiled>:7:
             bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v8:BasicObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, BasicObject[class_exact*:Object@VALUE(0x1000)]
+              v8:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, HeapObject[class_exact*:Object@VALUE(0x1000)]
               v9:BasicObject = SendWithoutBlockDirect v8, :foo (0x1038)
               PatchPoint MethodRedefined(Object@0x1000, bar@0x1040, cme:0x1048)
-              v11:BasicObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, BasicObject[class_exact*:Object@VALUE(0x1000)]
+              v11:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, HeapObject[class_exact*:Object@VALUE(0x1000)]
               v12:BasicObject = SendWithoutBlockDirect v11, :bar (0x1038)
               Return v12
         "#]]);
@@ -6473,7 +6473,7 @@ mod opt_tests {
             fn test@<compiled>:8:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-              v7:BasicObject[class_exact:C] = GuardType v1, BasicObject[class_exact:C]
+              v7:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
               v8:BasicObject = SendWithoutBlockDirect v7, :foo (0x1038)
               Return v8
         "#]]);
@@ -7426,7 +7426,7 @@ mod opt_tests {
             fn test@<compiled>:3:
             bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v6:BasicObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, BasicObject[class_exact*:Object@VALUE(0x1000)]
+              v6:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, HeapObject[class_exact*:Object@VALUE(0x1000)]
               v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1038)
               Return v7
         "#]]);
@@ -7495,7 +7495,7 @@ mod opt_tests {
             fn test@<compiled>:6:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-              v7:BasicObject[class_exact:C] = GuardType v1, BasicObject[class_exact:C]
+              v7:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
               v8:BasicObject = GetIvar v7, :@foo
               Return v8
         "#]]);
@@ -7516,7 +7516,7 @@ mod opt_tests {
             fn test@<compiled>:6:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-              v7:BasicObject[class_exact:C] = GuardType v1, BasicObject[class_exact:C]
+              v7:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
               v8:BasicObject = GetIvar v7, :@foo
               Return v8
         "#]]);

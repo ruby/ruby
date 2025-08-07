@@ -65,7 +65,8 @@ mod bits {
   pub const Symbol: u64 = DynamicSymbol | StaticSymbol;
   pub const TrueClass: u64 = 1u64 << 40;
   pub const Undef: u64 = 1u64 << 41;
-  pub const AllBitPatterns: [(&'static str, u64); 65] = [
+  pub const HeapObject: u64 = BasicObject & !Immediate;
+  pub const AllBitPatterns: [(&'static str, u64); 66] = [
     ("Any", Any),
     ("RubyValue", RubyValue),
     ("Immediate", Immediate),
@@ -75,6 +76,7 @@ mod bits {
     ("BuiltinExact", BuiltinExact),
     ("BoolExact", BoolExact),
     ("TrueClass", TrueClass),
+    ("HeapObject", HeapObject),
     ("String", String),
     ("Subclass", Subclass),
     ("StringSubclass", StringSubclass),
@@ -201,4 +203,5 @@ pub mod types {
   pub const Symbol: Type = Type::from_bits(bits::Symbol);
   pub const TrueClass: Type = Type::from_bits(bits::TrueClass);
   pub const Undef: Type = Type::from_bits(bits::Undef);
+  pub const HeapObject: Type = Type::from_bits(bits::HeapObject);
 }

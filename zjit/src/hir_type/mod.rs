@@ -248,7 +248,7 @@ impl Type {
         else if val.class() == unsafe { rb_cString } { types::StringExact }
         else {
             // TODO(max): Add more cases for inferring type bits from built-in types
-            Type { bits: bits::BasicObject, spec: Specialization::TypeExact(val.class()) }
+            Type { bits: bits::HeapObject, spec: Specialization::TypeExact(val.class()) }
         }
     }
 
@@ -583,6 +583,7 @@ mod tests {
         assert_subtype(Type::fixnum(123), types::Immediate);
         assert_subtype(types::Fixnum, types::Immediate);
         assert_not_subtype(types::Bignum, types::Immediate);
+        assert_not_subtype(types::Integer, types::Immediate);
         assert_subtype(types::NilClass, types::Immediate);
         assert_subtype(types::TrueClass, types::Immediate);
         assert_subtype(types::FalseClass, types::Immediate);
@@ -590,6 +591,30 @@ mod tests {
         assert_not_subtype(types::DynamicSymbol, types::Immediate);
         assert_subtype(types::Flonum, types::Immediate);
         assert_not_subtype(types::HeapFloat, types::Immediate);
+    }
+
+    #[test]
+    fn heap_object() {
+        assert_not_subtype(Type::fixnum(123), types::HeapObject);
+        assert_not_subtype(types::Fixnum, types::HeapObject);
+        assert_subtype(types::Bignum, types::HeapObject);
+        assert_not_subtype(types::Integer, types::HeapObject);
+        assert_not_subtype(types::NilClass, types::HeapObject);
+        assert_not_subtype(types::TrueClass, types::HeapObject);
+        assert_not_subtype(types::FalseClass, types::HeapObject);
+        assert_not_subtype(types::StaticSymbol, types::HeapObject);
+        assert_subtype(types::DynamicSymbol, types::HeapObject);
+        assert_not_subtype(types::Flonum, types::HeapObject);
+        assert_subtype(types::HeapFloat, types::HeapObject);
+        assert_not_subtype(types::Immediate, types::HeapObject);
+        assert_not_subtype(types::HeapObject, types::Immediate);
+        crate::cruby::with_rubyvm(|| {
+            let left = Type::from_value(rust_str_to_ruby("hello"));
+            let right = Type::from_value(rust_str_to_ruby("world"));
+            assert_subtype(left, types::HeapObject);
+            assert_subtype(right, types::HeapObject);
+            assert_subtype(left.union(right), types::HeapObject);
+        });
     }
 
     #[test]
