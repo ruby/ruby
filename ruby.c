@@ -61,6 +61,7 @@
 #include "ruby/util.h"
 #include "ruby/version.h"
 #include "ruby/internal/error.h"
+#include "version.h"
 
 #define singlebit_only_p(x) !((x) & ((x)-1))
 STATIC_ASSERT(Qnil_1bit_from_Qfalse, singlebit_only_p(Qnil^Qfalse));
@@ -403,7 +404,10 @@ usage(const char *name, int help, int highlight, int columns)
     unsigned int w = (columns > 80 ? (columns - 79) / 2 : 0) + 16;
 #define SHOW(m) show_usage_line(&(m), help, highlight, w, columns)
 
-    printf("%sUsage:%s %s [options] [--] [filepath] [arguments]\n", sb, se, name);
+    printf("%sUsage:%s %s [options] [--] [filepath] [arguments]\n\n", sb, se, name);
+    printf("Details and examples at https://docs.ruby-lang.org/en/%s/ruby/options_md.html\n",
+           RUBY_PATCHLEVEL == -1 ? "master" : STRINGIZE(RUBY_VERSION_MAJOR) "." STRINGIZE(RUBY_VERSION_MINOR));
+
     for (i = 0; i < num; ++i)
         SHOW(usage_msg[i]);
 
