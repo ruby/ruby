@@ -146,14 +146,26 @@ impl Opnd
         }
     }
 
-    pub fn with_num_bits(&self, num_bits: u8) -> Option<Opnd> {
+    /// Return Some(Opnd) with a given num_bits if self has num_bits.
+    /// None if self doesn't have a num_bits field.
+    pub fn try_num_bits(&self, num_bits: u8) -> Option<Opnd> {
         assert!(num_bits == 8 || num_bits == 16 || num_bits == 32 || num_bits == 64);
         match *self {
             Opnd::Reg(reg) => Some(Opnd::Reg(reg.with_num_bits(num_bits))),
             Opnd::Mem(Mem { base, disp, .. }) => Some(Opnd::Mem(Mem { base, disp, num_bits })),
             Opnd::VReg { idx, .. } => Some(Opnd::VReg { idx, num_bits }),
-            //Opnd::Stack { idx, stack_size, num_locals, sp_offset, reg_mapping, .. } => Some(Opnd::Stack { idx, num_bits, stack_size, num_locals, sp_offset, reg_mapping }),
             _ => None,
+        }
+    }
+
+    /// Return Opnd with a given num_bits if self has num_bits.
+    /// Panic otherwise. This should be used only when you know which Opnd self is.
+    #[track_caller]
+    pub fn with_num_bits(&self, num_bits: u8) -> Opnd {
+        if let Some(opnd) = self.try_num_bits(num_bits) {
+            opnd
+        } else {
+            unreachable!("with_num_bits should not be used on: {self:?}");
         }
     }
 
@@ -1720,7 +1732,7 @@ impl Assembler
             while let Some(opnd) = opnd_iter.next() {
                 match *opnd {
                     Opnd::VReg { idx, num_bits } => {
-                        *opnd = Opnd::Reg(reg_mapping[idx].unwrap()).with_num_bits(num_bits).unwrap();
+                        *opnd = Opnd::Reg(reg_mapping[idx].unwrap()).with_num_bits(num_bits);
                     },
                     Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
                         let base = MemBase::Reg(reg_mapping[idx].unwrap().reg_no);
