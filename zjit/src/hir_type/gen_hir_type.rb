@@ -156,6 +156,7 @@ add_union "BuiltinExact", $builtin_exact
 add_union "Subclass", $subclass
 add_union "BoolExact", [true_exact.name, false_exact.name]
 add_union "Immediate", [fixnum.name, flonum.name, static_sym.name, nil_exact.name, true_exact.name, false_exact.name, undef_.name]
+$bits["HeapObject"] = ["BasicObject & !Immediate"]
 $numeric_bits["HeapObject"] = $numeric_bits["BasicObject"] & ~$numeric_bits["Immediate"]
 
 # ===== Finished generating the DAG; write Rust code =====
@@ -166,9 +167,7 @@ $bits.keys.sort.map {|type_name|
   subtypes = $bits[type_name].join(" | ")
   puts "  pub const #{type_name}: u64 = #{subtypes};"
 }
-puts "  pub const HeapObject: u64 = BasicObject & !Immediate;"
-# +1 for HeapObject
-puts "  pub const AllBitPatterns: [(&'static str, u64); #{$bits.size+1}] = ["
+puts "  pub const AllBitPatterns: [(&'static str, u64); #{$bits.size}] = ["
 # Sort the bit patterns by decreasing value so that we can print the densest
 # possible to-string representation of a Type. For example, CSigned instead of
 # CInt8|CInt16|...
@@ -184,5 +183,4 @@ puts "pub mod types {
 $bits.keys.sort.map {|type_name|
     puts "  pub const #{type_name}: Type = Type::from_bits(bits::#{type_name});"
 }
-puts "  pub const HeapObject: Type = Type::from_bits(bits::HeapObject);"
 puts "}"
