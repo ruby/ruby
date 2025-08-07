@@ -429,7 +429,6 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_ge], call_threshold: 2
   end
 
-
   def test_new_hash_empty
     assert_compiles '{}', %q{
       def test = {}

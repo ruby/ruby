@@ -936,7 +936,6 @@ fn gen_new_hash(
 
         let argv = asm.lea(Opnd::mem(64, SP, 0));
 
-        asm_comment!(asm, "call rb_hash_bulk_insert");
         let argc = (elements.len() * 2) as ::std::os::raw::c_long;
         asm_ccall!(asm, rb_hash_bulk_insert, lir::Opnd::Imm(argc), argv, new_hash);
     }
