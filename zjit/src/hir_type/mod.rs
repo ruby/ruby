@@ -606,6 +606,8 @@ mod tests {
         assert_subtype(types::DynamicSymbol, types::HeapObject);
         assert_not_subtype(types::Flonum, types::HeapObject);
         assert_subtype(types::HeapFloat, types::HeapObject);
+        assert_not_subtype(types::BasicObject, types::HeapObject);
+        assert_not_subtype(types::Object, types::HeapObject);
         assert_not_subtype(types::Immediate, types::HeapObject);
         assert_not_subtype(types::HeapObject, types::Immediate);
         crate::cruby::with_rubyvm(|| {
