@@ -280,28 +280,20 @@ enumerator_ptr(VALUE obj)
 }
 
 static void
-proc_entry_mark(void *p)
+proc_entry_mark_and_move(void *p)
 {
     struct proc_entry *ptr = p;
-    rb_gc_mark_movable(ptr->proc);
-    rb_gc_mark_movable(ptr->memo);
-}
-
-static void
-proc_entry_compact(void *p)
-{
-    struct proc_entry *ptr = p;
-    ptr->proc = rb_gc_location(ptr->proc);
-    ptr->memo = rb_gc_location(ptr->memo);
+    rb_gc_mark_and_move(&ptr->proc);
+    rb_gc_mark_and_move(&ptr->memo);
 }
 
 static const rb_data_type_t proc_entry_data_type = {
     "proc_entry",
     {
-        proc_entry_mark,
+        proc_entry_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         NULL, // Nothing allocated externally, so don't need a memsize function
-        proc_entry_compact,
+        proc_entry_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
@@ -1280,26 +1272,19 @@ enumerator_size(VALUE obj)
  * Yielder
  */
 static void
-yielder_mark(void *p)
+yielder_mark_and_move(void *p)
 {
     struct yielder *ptr = p;
-    rb_gc_mark_movable(ptr->proc);
-}
-
-static void
-yielder_compact(void *p)
-{
-    struct yielder *ptr = p;
-    ptr->proc = rb_gc_location(ptr->proc);
+    rb_gc_mark_and_move(&ptr->proc);
 }
 
 static const rb_data_type_t yielder_data_type = {
     "yielder",
     {
-        yielder_mark,
+        yielder_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         NULL,
-        yielder_compact,
+        yielder_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
@@ -1410,28 +1395,20 @@ yielder_new(void)
  * Generator
  */
 static void
-generator_mark(void *p)
+generator_mark_and_move(void *p)
 {
     struct generator *ptr = p;
-    rb_gc_mark_movable(ptr->proc);
-    rb_gc_mark_movable(ptr->obj);
-}
-
-static void
-generator_compact(void *p)
-{
-    struct generator *ptr = p;
-    ptr->proc = rb_gc_location(ptr->proc);
-    ptr->obj = rb_gc_location(ptr->obj);
+    rb_gc_mark_and_move(&ptr->proc);
+    rb_gc_mark_and_move(&ptr->obj);
 }
 
 static const rb_data_type_t generator_data_type = {
     "generator",
     {
-        generator_mark,
+        generator_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         NULL,
-        generator_compact,
+        generator_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
@@ -2894,19 +2871,11 @@ stop_result(VALUE self)
  */
 
 static void
-producer_mark(void *p)
+producer_mark_and_move(void *p)
 {
     struct producer *ptr = p;
-    rb_gc_mark_movable(ptr->init);
-    rb_gc_mark_movable(ptr->proc);
-}
-
-static void
-producer_compact(void *p)
-{
-    struct producer *ptr = p;
-    ptr->init = rb_gc_location(ptr->init);
-    ptr->proc = rb_gc_location(ptr->proc);
+    rb_gc_mark_and_move(&ptr->init);
+    rb_gc_mark_and_move(&ptr->proc);
 }
 
 #define producer_free RUBY_TYPED_DEFAULT_FREE
@@ -2920,10 +2889,10 @@ producer_memsize(const void *p)
 static const rb_data_type_t producer_data_type = {
     "producer",
     {
-        producer_mark,
+        producer_mark_and_move,
         producer_free,
         producer_memsize,
-        producer_compact,
+        producer_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
@@ -3082,17 +3051,10 @@ enumerator_s_produce(int argc, VALUE *argv, VALUE klass)
  */
 
 static void
-enum_chain_mark(void *p)
+enum_chain_mark_and_move(void *p)
 {
     struct enum_chain *ptr = p;
-    rb_gc_mark_movable(ptr->enums);
-}
-
-static void
-enum_chain_compact(void *p)
-{
-    struct enum_chain *ptr = p;
-    ptr->enums = rb_gc_location(ptr->enums);
+    rb_gc_mark_and_move(&ptr->enums);
 }
 
 #define enum_chain_free RUBY_TYPED_DEFAULT_FREE
@@ -3106,10 +3068,10 @@ enum_chain_memsize(const void *p)
 static const rb_data_type_t enum_chain_data_type = {
     "chain",
     {
-        enum_chain_mark,
+        enum_chain_mark_and_move,
         enum_chain_free,
         enum_chain_memsize,
-        enum_chain_compact,
+        enum_chain_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -3404,17 +3366,10 @@ enumerator_plus(VALUE obj, VALUE eobj)
  */
 
 static void
-enum_product_mark(void *p)
+enum_product_mark_and_move(void *p)
 {
     struct enum_product *ptr = p;
-    rb_gc_mark_movable(ptr->enums);
-}
-
-static void
-enum_product_compact(void *p)
-{
-    struct enum_product *ptr = p;
-    ptr->enums = rb_gc_location(ptr->enums);
+    rb_gc_mark_and_move(&ptr->enums);
 }
 
 #define enum_product_free RUBY_TYPED_DEFAULT_FREE
@@ -3428,10 +3383,10 @@ enum_product_memsize(const void *p)
 static const rb_data_type_t enum_product_data_type = {
     "product",
     {
-        enum_product_mark,
+        enum_product_mark_and_move,
         enum_product_free,
         enum_product_memsize,
-        enum_product_compact,
+        enum_product_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
