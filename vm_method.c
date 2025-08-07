@@ -35,6 +35,7 @@ mark_cc_entry_i(VALUE ccs_ptr, void *data)
          */
         for (int i = 0; i < ccs->len; i++) {
             const struct rb_callcache *cc = ccs->entries[i].cc;
+            if (cc->klass == Qundef) continue; // already invalidated
             VM_ASSERT(cc->klass == Qundef || vm_cc_check_cme(cc, ccs->cme));
             VM_ASSERT(!vm_cc_super_p(cc) && !vm_cc_refinement_p(cc));
             vm_cc_invalidate(cc);
