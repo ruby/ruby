@@ -1,14 +1,26 @@
 #!/usr/bin/env ruby
 require 'logger'
 require 'open3'
+require 'optparse'
 require 'shellwords'
 require 'tempfile'
 require 'timeout'
 
-RUBY = ARGV[0] || raise("Usage: ruby jit_bisect.rb <path_to_ruby> <options>")
+ARGS = {:timeout => 5}
+OptionParser.new do |opts|
+  opts.banner += " <path_to_ruby> -- <options>"
+  opts.on("--timeout=TIMEOUT_SEC", "Seconds until child process is killed") do |timeout|
+    ARGS[:timeout] = Integer(timeout)
+  end
+  opts.on("-h", "--help", "Prints this help") do
+    puts opts
+    exit
+  end
+end.parse!
+
+RUBY = ARGV[0] || raise("Usage: ruby jit_bisect.rb <path_to_ruby> -- <options>")
 OPTIONS = ARGV[1..]
 raise("Usage: ruby jit_bisect.rb <path_to_ruby> -- <options>") if OPTIONS.empty?
-TIMEOUT_SEC = 5
 LOGGER = Logger.new($stdout)
 
 # From https://github.com/tekknolagi/omegastar
@@ -87,7 +99,7 @@ end
 LOGGER.info("Starting with JIT list of #{jit_list.length} items.")
 # Now narrow it down
 command = lambda do |items|
-  status = Timeout.timeout(TIMEOUT_SEC) do
+  status = Timeout.timeout(ARGS[:timeout]) do
     _, _, status = run_with_jit_list(RUBY, OPTIONS, items)
     status
   end
