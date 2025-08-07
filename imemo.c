@@ -372,6 +372,9 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
             }
         }
         else {
+            RUBY_ASSERT(RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
+            RUBY_ASSERT(IMEMO_TYPE_P((VALUE)cc->cme_, imemo_ment));
+
             rb_gc_mark_weak((VALUE *)&cc->klass);
             if ((vm_cc_super_p(cc) || vm_cc_refinement_p(cc))) {
                 rb_gc_mark_movable((VALUE)cc->cme_);
