@@ -463,7 +463,7 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, 
             // Call vm_defined(ec, reg_cfp, op_type, obj, v)
             let def_result = asm_ccall!(asm, rb_vm_defined, EC, CFP, op_type.into(), obj.into(), tested_value);
 
-            asm.cmp(def_result.with_num_bits(8).unwrap(), 0.into());
+            asm.cmp(def_result.with_num_bits(8), 0.into());
             Some(asm.csel_ne(pushval.into(), Qnil.into()))
         }
     }
@@ -1070,7 +1070,8 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
     } else if guard_type.is_subtype(types::StaticSymbol) {
         // Static symbols have (val & 0xff) == RUBY_SYMBOL_FLAG
         // Use 8-bit comparison like YJIT does
-        asm.cmp(val.with_num_bits(8).unwrap(), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
+        debug_assert!(val.try_num_bits(8).is_some(), "GuardType should not be used for a known constant, but val was: {val:?}");
+        asm.cmp(val.try_num_bits(8)?, Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
         asm.jne(side_exit(jit, state, GuardType(guard_type))?);
     } else if guard_type.is_subtype(types::NilClass) {
         asm.cmp(val, Qnil.into());
