@@ -139,7 +139,6 @@ set_mark(void *ptr)
 static void
 set_free_embedded(struct set_object *sobj)
 {
-    free((&sobj->table)->bins);
     free((&sobj->table)->entries);
 }
 
