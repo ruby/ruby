@@ -2517,30 +2517,21 @@ typedef struct name_error_message_struct {
 } name_error_message_t;
 
 static void
-name_err_mesg_mark(void *p)
+name_err_mesg_mark_and_move(void *p)
 {
     name_error_message_t *ptr = (name_error_message_t *)p;
-    rb_gc_mark_movable(ptr->mesg);
-    rb_gc_mark_movable(ptr->recv);
-    rb_gc_mark_movable(ptr->name);
-}
-
-static void
-name_err_mesg_update(void *p)
-{
-    name_error_message_t *ptr = (name_error_message_t *)p;
-    ptr->mesg = rb_gc_location(ptr->mesg);
-    ptr->recv = rb_gc_location(ptr->recv);
-    ptr->name = rb_gc_location(ptr->name);
+    rb_gc_mark_and_move(&ptr->mesg);
+    rb_gc_mark_and_move(&ptr->recv);
+    rb_gc_mark_and_move(&ptr->name);
 }
 
 static const rb_data_type_t name_err_mesg_data_type = {
     "name_err_mesg",
     {
-        name_err_mesg_mark,
+        name_err_mesg_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         NULL, // No external memory to report,
-        name_err_mesg_update,
+        name_err_mesg_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
