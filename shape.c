@@ -296,26 +296,13 @@ rb_shape_get_root_shape(void)
 }
 
 static void
-shape_tree_mark(void *data)
+shape_tree_mark_and_move(void *data)
 {
     rb_shape_t *cursor = rb_shape_get_root_shape();
     rb_shape_t *end = RSHAPE(rb_shape_tree.next_shape_id - 1);
     while (cursor <= end) {
         if (cursor->edges && !SINGLE_CHILD_P(cursor->edges)) {
-            rb_gc_mark_movable(cursor->edges);
-        }
-        cursor++;
-    }
-}
-
-static void
-shape_tree_compact(void *data)
-{
-    rb_shape_t *cursor = rb_shape_get_root_shape();
-    rb_shape_t *end = RSHAPE(rb_shape_tree.next_shape_id - 1);
-    while (cursor <= end) {
-        if (cursor->edges && !SINGLE_CHILD_P(cursor->edges)) {
-            cursor->edges = rb_gc_location(cursor->edges);
+            rb_gc_mark_and_move(&cursor->edges);
         }
         cursor++;
     }
@@ -330,10 +317,10 @@ shape_tree_memsize(const void *data)
 static const rb_data_type_t shape_tree_type = {
     .wrap_struct_name = "VM/shape_tree",
     .function = {
-        .dmark = shape_tree_mark,
+        .dmark = shape_tree_mark_and_move,
         .dfree = NULL, // Nothing to free, done at VM exit in rb_shape_free_all,
         .dsize = shape_tree_memsize,
-        .dcompact = shape_tree_compact,
+        .dcompact = shape_tree_mark_and_move,
     },
     .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
