@@ -371,21 +371,12 @@ Init_sym(void)
 }
 
 void
-rb_sym_global_symbols_mark(void)
+rb_sym_global_symbols_mark_and_move(void)
 {
     rb_symbols_t *symbols = &ruby_global_symbols;
 
-    rb_gc_mark_movable(symbols->sym_set);
-    rb_gc_mark_movable(symbols->ids);
-}
-
-void
-rb_sym_global_symbols_update_references(void)
-{
-    rb_symbols_t *symbols = &ruby_global_symbols;
-
-    symbols->sym_set = rb_gc_location(symbols->sym_set);
-    symbols->ids = rb_gc_location(symbols->ids);
+    rb_gc_mark_and_move(&symbols->sym_set);
+    rb_gc_mark_and_move(&symbols->ids);
 }
 
 static int

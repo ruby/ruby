@@ -3028,7 +3028,7 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
     mark_current_machine_context(ec);
 
     MARK_CHECKPOINT("global_symbols");
-    rb_sym_global_symbols_mark();
+    rb_sym_global_symbols_mark_and_move();
 
     MARK_CHECKPOINT("finish");
 
@@ -4045,7 +4045,7 @@ rb_gc_update_vm_references(void *objspace)
 
     rb_vm_update_references(vm);
     rb_gc_update_global_tbl();
-    rb_sym_global_symbols_update_references();
+    rb_sym_global_symbols_mark_and_move();
 
 #if USE_YJIT
     void rb_yjit_root_update_references(void); // in Rust
