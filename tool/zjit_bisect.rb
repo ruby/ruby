@@ -1,11 +1,13 @@
 #!/usr/bin/env ruby
 require 'logger'
 require 'open3'
+require 'shellwords'
 require 'tempfile'
 require 'timeout'
 
 RUBY = ARGV[0] || raise("Usage: ruby jit_bisect.rb <path_to_ruby> <options>")
-OPTIONS = ARGV[1] || raise("Usage: ruby jit_bisect.rb <path_to_ruby> <options>")
+OPTIONS = ARGV[1..]
+raise("Usage: ruby jit_bisect.rb <path_to_ruby> -- <options>") if OPTIONS.empty?
 TIMEOUT_SEC = 5
 LOGGER = Logger.new($stdout)
 
@@ -65,7 +67,8 @@ def run_with_jit_list(ruby, options, jit_list)
     temp_file.flush
     temp_file.close
     # Run the JIT with the temporary file
-    Open3.capture3("#{ruby} --zjit-allowed-iseqs=#{temp_file.path} #{options}")
+    command = Shellwords.join [ruby, "--zjit-allowed-iseqs=#{temp_file.path}", *options]
+    Open3.capture3(command)
   end
 end
 
@@ -77,7 +80,8 @@ end
 # Collect the JIT list from the failing Ruby process
 jit_list = nil
 Tempfile.create "jit_list" do |temp_file|
-  Open3.capture3("#{RUBY} --zjit-log-compiled-iseqs=#{temp_file.path} #{OPTIONS}")
+  command = Shellwords.join [RUBY, "--zjit-log-compiled-iseqs=#{temp_file.path}", *OPTIONS]
+  Open3.capture3(command)
   jit_list = File.readlines(temp_file.path).map(&:strip).reject(&:empty?)
 end
 LOGGER.info("Starting with JIT list of #{jit_list.length} items.")
@@ -94,6 +98,7 @@ File.open("jitlist.txt", "w") do |file|
   file.puts(result)
 end
 puts "Run:"
-puts "#{RUBY} --zjit-allowed-iseqs=jitlist.txt #{OPTIONS}"
+command = Shellwords.join [RUBY, "--zjit-allowed-iseqs=jitlist.txt", *OPTIONS]
+puts command
 puts "Reduced JIT list (available in jitlist.txt):"
 puts result
