@@ -148,6 +148,18 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_send_on_heap_object_in_spilled_arg
+    # This leads to a register spill, so not using `assert_compiles`
+    assert_runs 'Hash', %q{
+      def entry(a1, a2, a3, a4, a5, a6, a7, a8, a9)
+        a9.itself.class
+      end
+
+      entry(1, 2, 3, 4, 5, 6, 7, 8, {}) # profile
+      entry(1, 2, 3, 4, 5, 6, 7, 8, {})
+    }, call_threshold: 2
+  end
+
   def test_invokebuiltin
     omit 'Test fails at the moment due to not handling optional parameters'
     assert_compiles '["."]', %q{
