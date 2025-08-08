@@ -1,6 +1,18 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle list" do
+  context "in verbose mode" do
+    it "logs the actual flags passed to the command" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+      G
+
+      bundle "list --verbose"
+
+      expect(out).to include("Running `bundle list --verbose`")
+    end
+  end
+
   context "with name-only and paths option" do
     it "raises an error" do
       bundle "list --name-only --paths", raise_on_error: false
