@@ -877,8 +877,17 @@ shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
 #endif
 
     VALUE klass;
-    if (IMEMO_TYPE_P(obj, imemo_fields)) { // HACK
-        klass = CLASS_OF(obj);
+    if (IMEMO_TYPE_P(obj, imemo_fields)) {
+        VALUE owner = rb_imemo_fields_owner(obj);
+        switch (BUILTIN_TYPE(owner)) {
+          case T_CLASS:
+          case T_MODULE:
+            klass = rb_singleton_class(owner);
+            break;
+          default:
+            klass = rb_obj_class(owner);
+            break;
+        }
     }
     else {
         klass = rb_obj_class(obj);
