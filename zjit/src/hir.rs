@@ -2486,6 +2486,16 @@ impl FrameState {
         self.stack.pop().ok_or_else(|| ParseError::StackUnderflow(self.clone()))
     }
 
+    fn stack_pop_n(&mut self, count: usize) -> Result<Vec<InsnId>, ParseError> {
+        // Check if we have enough values on the stack
+        let stack_len = self.stack.len();
+        if stack_len < count {
+            return Err(ParseError::StackUnderflow(self.clone()));
+        }
+
+        Ok(self.stack.split_off(stack_len - count))
+    }
+
     /// Get a stack-top operand
     fn stack_top(&self) -> Result<InsnId, ParseError> {
         self.stack.last().ok_or_else(|| ParseError::StackUnderflow(self.clone())).copied()
@@ -2809,35 +2819,20 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_concatstrings => {
                     let count = get_arg(pc, 0).as_u32();
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    // TODO: Pre-initialize the vector with the correct capacity
-                    // TODO: Fill the vector in the order without needing reversing
-                    // Create an issue for this
-                    let mut strings = vec![];
-                    for _ in 0..count {
-                        strings.push(state.stack_pop()?);
-                    }
-                    strings.reverse();
+                    let strings = state.stack_pop_n(count as usize)?;
                     let insn_id = fun.push_insn(block, Insn::StringConcat { strings, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_newarray => {
                     let count = get_arg(pc, 0).as_usize();
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let mut elements = vec![];
-                    for _ in 0..count {
-                        elements.push(state.stack_pop()?);
-                    }
-                    elements.reverse();
+                    let elements = state.stack_pop_n(count)?;
                     state.stack_push(fun.push_insn(block, Insn::NewArray { elements, state: exit_id }));
                 }
                 YARVINSN_opt_newarray_send => {
                     let count = get_arg(pc, 0).as_usize();
                     let method = get_arg(pc, 1).as_u32();
-                    let mut elements = vec![];
-                    for _ in 0..count {
-                        elements.push(state.stack_pop()?);
-                    }
-                    elements.reverse();
+                    let elements = state.stack_pop_n(count)?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let (bop, insn) = match method {
                         VM_OPT_NEWARRAY_SEND_MAX => (BOP_MAX, Insn::ArrayMax { elements, state: exit_id }),
@@ -2902,13 +2897,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_pushtoarray => {
                     let count = get_arg(pc, 0).as_usize();
-                    let mut vals = vec![];
-                    for _ in 0..count {
-                        vals.push(state.stack_pop()?);
-                    }
+                    let vals = state.stack_pop_n(count)?;
                     let array = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    for val in vals.into_iter().rev() {
+                    for val in vals.into_iter() {
                         fun.push_insn(block, Insn::ArrayPush { array, val, state: exit_id });
                     }
                     state.stack_push(array);
@@ -3110,12 +3102,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
-                    let mut args = vec![];
-                    for _ in 0..argc {
-                        args.push(state.stack_pop()?);
-                    }
-                    args.reverse();
-
+                    let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, cd, args, state: exit_id });
@@ -3191,12 +3178,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
-                    let mut args = vec![];
-                    for _ in 0..argc {
-                        args.push(state.stack_pop()?);
-                    }
-                    args.reverse();
-
+                    let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, cd, args, state: exit_id });
@@ -3214,12 +3196,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
-                    let mut args = vec![];
-                    for _ in 0..argc {
-                        args.push(state.stack_pop()?);
-                    }
-                    args.reverse();
-
+                    let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let send = fun.push_insn(block, Insn::Send { self_val: recv, cd, blockiseq, args, state: exit_id });
