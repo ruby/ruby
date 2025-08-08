@@ -595,7 +595,7 @@ RSpec.describe "bundler/inline#gemfile" do
     skip "timeout isn't a default gem" if default_timeout_version.empty?
 
     # This only works on RubyGems 3.5.0 or higher
-    ruby "require 'rubygems/timeout'", raise_on_error: false
+    ruby "require 'rubygems/vendored_timeout'", raise_on_error: false
     skip "rubygems under test does not yet vendor timeout" unless last_command.success?
 
     build_repo4 do
