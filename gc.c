@@ -1975,14 +1975,17 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
         // GC Must not trigger while we build the table, otherwise if we end
         // up freeing an object that had an ID, we might try to delete it from
         // the table even though it wasn't inserted yet.
-        id2ref_tbl = st_init_table(&object_id_hash_type);
-        id2ref_value = TypedData_Wrap_Struct(0, &id2ref_tbl_type, id2ref_tbl);
+        st_table *tmp_id2ref_tbl = st_init_table(&object_id_hash_type);
+        VALUE tmp_id2ref_value = TypedData_Wrap_Struct(0, &id2ref_tbl_type, tmp_id2ref_tbl);
 
         // build_id2ref_i will most certainly malloc, which could trigger GC and sweep
         // objects we just added to the table.
         // By calling rb_gc_disable() we also save having to handle potentially garbage objects.
         bool gc_disabled = RTEST(rb_gc_disable());
         {
+            id2ref_tbl = tmp_id2ref_tbl;
+            id2ref_value = tmp_id2ref_value;
+
             rb_gc_impl_each_object(objspace, build_id2ref_i, (void *)id2ref_tbl);
         }
         if (!gc_disabled) rb_gc_enable();
