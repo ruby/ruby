@@ -26,7 +26,7 @@ class TestMkmfPkgConfig < TestMkmf
         Cflags: -I${includedir}/cflags-I --cflags-other
       EOF
 
-      @pkg_config_path, ENV["PKG_CONFIG_PATH"] = ENV["PKG_CONFIG_PATH"], mkintpath(@fixtures_dir)
+      @pkg_config_path, ENV["PKG_CONFIG_PATH"] = ENV["PKG_CONFIG_PATH"], @fixtures_dir
     end
   end
 
