@@ -1,20 +1,24 @@
 use std::{collections::{HashMap, HashSet}, mem};
 
 use crate::{backend::lir::{asm_comment, Assembler}, cruby::{rb_callable_method_entry_t, ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag, ID}, gc::IseqPayload, hir::Invariant, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
+use crate::stats::with_time_stat;
+use crate::stats::Counter::invalidation_time_ns;
 use crate::gc::remove_gc_offsets;
 
 macro_rules! compile_patch_points {
     ($cb:expr, $patch_points:expr, $($comment_args:tt)*) => {
-        for patch_point in $patch_points {
-            let written_range = $cb.with_write_ptr(patch_point.patch_point_ptr, |cb| {
-                let mut asm = Assembler::new();
-                asm_comment!(asm, $($comment_args)*);
-                asm.jmp(patch_point.side_exit_ptr.into());
-                asm.compile(cb).expect("can write existing code");
-            });
-            // Stop marking GC offsets corrupted by the jump instruction
-            remove_gc_offsets(patch_point.payload_ptr, &written_range);
-        }
+        with_time_stat(invalidation_time_ns, || {
+            for patch_point in $patch_points {
+                let written_range = $cb.with_write_ptr(patch_point.patch_point_ptr, |cb| {
+                    let mut asm = Assembler::new();
+                    asm_comment!(asm, $($comment_args)*);
+                    asm.jmp(patch_point.side_exit_ptr.into());
+                    asm.compile(cb).expect("can write existing code");
+                });
+                // Stop marking GC offsets corrupted by the jump instruction
+                remove_gc_offsets(patch_point.payload_ptr, &written_range);
+            }
+        });
     };
 }
 
