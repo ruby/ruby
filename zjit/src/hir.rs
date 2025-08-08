@@ -953,6 +953,7 @@ fn can_direct_send(iseq: *const rb_iseq_t) -> bool {
     else if unsafe { rb_get_iseq_flags_has_kw(iseq) } { false }
     else if unsafe { rb_get_iseq_flags_has_kwrest(iseq) } { false }
     else if unsafe { rb_get_iseq_flags_has_block(iseq) } { false }
+    else if unsafe { rb_get_iseq_flags_forwardable(iseq) } { false }
     else { true }
 }
 
@@ -2480,6 +2481,9 @@ pub enum CallType {
 #[derive(Debug, PartialEq)]
 pub enum ParameterType {
     Optional,
+    /// For example, `foo(...)`. Interaction of JIT
+    /// calling convention and side exits currently unsolved.
+    Forwardable,
 }
 
 #[derive(Debug, PartialEq)]
@@ -2549,6 +2553,7 @@ pub const SELF_PARAM_IDX: usize = 0;
 
 fn filter_unknown_parameter_type(iseq: *const rb_iseq_t) -> Result<(), ParseError> {
     if unsafe { rb_get_iseq_body_param_opt_num(iseq) } != 0 { return Err(ParseError::UnknownParameterType(ParameterType::Optional)); }
+    if unsafe { rb_get_iseq_flags_forwardable(iseq) } { return Err(ParseError::UnknownParameterType(ParameterType::Forwardable)); }
     Ok(())
 }
 
@@ -4482,11 +4487,13 @@ mod tests {
         eval("
             def test(...) = super(...)
         ");
-        assert_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              SideExit UnknownOpcode(invokesuperforward)
-        "#]]);
+        assert_compile_fails("test", ParseError::UnknownParameterType(ParameterType::Forwardable));
+    }
+
+    #[test]
+    fn test_cant_compile_forwardable() {
+        eval("def forwardable(...) = nil");
+        assert_compile_fails("forwardable", ParseError::UnknownParameterType(ParameterType::Forwardable));
     }
 
     // TODO(max): Figure out how to generate a call with OPT_SEND flag
@@ -4530,11 +4537,7 @@ mod tests {
         eval("
             def test(...) = foo(...)
         ");
-        assert_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              SideExit UnknownOpcode(sendforward)
-        "#]]);
+        assert_compile_fails("test", ParseError::UnknownParameterType(ParameterType::Forwardable));
     }
 
     #[test]
@@ -5515,7 +5518,6 @@ mod opt_tests {
             def kw_rest(**k) = k
             def post(*rest, post) = post
             def block(&b) = nil
-            def forwardable(...) = nil
         ");
 
         assert_optimized_method_hir("rest", expect![[r#"
@@ -5544,12 +5546,6 @@ mod opt_tests {
             fn post@<compiled>:5:
             bb0(v0:BasicObject, v1:ArrayExact, v2:BasicObject):
               Return v2
-        "#]]);
-        assert_optimized_method_hir("forwardable", expect![[r#"
-            fn forwardable@<compiled>:7:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:NilClass = Const Value(nil)
-              Return v3
         "#]]);
     }
 

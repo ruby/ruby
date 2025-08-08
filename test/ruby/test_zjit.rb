@@ -70,6 +70,15 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_call_a_forwardable_method
+    assert_runs '[]', %q{
+      def test_root = forwardable
+      def forwardable(...) = Array.[](...)
+      test_root
+      test_root
+    }, call_threshold: 2
+  end
+
   def test_setlocal_on_eval_with_spill
     assert_compiles '1', %q{
       @b = binding
