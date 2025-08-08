@@ -16,7 +16,7 @@ pub use crate::backend::current::{
     C_ARG_OPNDS, C_RET_REG, C_RET_OPND,
 };
 
-pub static JIT_PRESERVED_REGS: &'static [Opnd] = &[CFP, SP, EC];
+pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
 
 // Memory operand base
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -97,8 +97,8 @@ impl Opnd
                 assert!(base_reg.num_bits == 64);
                 Opnd::Mem(Mem {
                     base: MemBase::Reg(base_reg.reg_no),
-                    disp: disp,
-                    num_bits: num_bits,
+                    disp,
+                    num_bits,
                 })
             },
 
@@ -106,8 +106,8 @@ impl Opnd
                 assert!(num_bits <= out_num_bits);
                 Opnd::Mem(Mem {
                     base: MemBase::VReg(idx),
-                    disp: disp,
-                    num_bits: num_bits,
+                    disp,
+                    num_bits,
                 })
             },
 
@@ -1506,17 +1506,17 @@ impl Assembler
 
     // Shuffle register moves, sometimes adding extra moves using SCRATCH_REG,
     // so that they will not rewrite each other before they are used.
-    pub fn resolve_parallel_moves(old_moves: &Vec<(Reg, Opnd)>) -> Vec<(Reg, Opnd)> {
+    pub fn resolve_parallel_moves(old_moves: &[(Reg, Opnd)]) -> Vec<(Reg, Opnd)> {
         // Return the index of a move whose destination is not used as a source if any.
-        fn find_safe_move(moves: &Vec<(Reg, Opnd)>) -> Option<usize> {
+        fn find_safe_move(moves: &[(Reg, Opnd)]) -> Option<usize> {
             moves.iter().enumerate().find(|&(_, &(dest_reg, _))| {
                 moves.iter().all(|&(_, src_opnd)| src_opnd != Opnd::Reg(dest_reg))
             }).map(|(index, _)| index)
         }
 
         // Remove moves whose source and destination are the same
-        let mut old_moves: Vec<(Reg, Opnd)> = old_moves.clone().into_iter()
-            .filter(|&(reg, opnd)| Opnd::Reg(reg) != opnd).collect();
+        let mut old_moves: Vec<(Reg, Opnd)> = old_moves.iter()
+            .filter(|&(reg, opnd)| Opnd::Reg(*reg) != *opnd).copied().collect();
 
         let mut new_moves = vec![];
         while !old_moves.is_empty() {
@@ -1684,21 +1684,19 @@ impl Assembler
                 // Allocate a new register for this instruction if one is not
                 // already allocated.
                 if out_reg.is_none() {
-                    out_reg = match &insn {
-                        _ => match pool.alloc_reg(vreg_idx.unwrap()) {
-                            Some(reg) => Some(reg),
-                            None => {
-                                if get_option!(debug) {
-                                    let mut insns = asm.insns;
+                    out_reg = match pool.alloc_reg(vreg_idx.unwrap()) {
+                        Some(reg) => Some(reg),
+                        None => {
+                            if get_option!(debug) {
+                                let mut insns = asm.insns;
+                                insns.push(insn);
+                                for (_, insn) in iterator.by_ref() {
                                     insns.push(insn);
-                                    while let Some((_, insn)) = iterator.next() {
-                                        insns.push(insn);
-                                    }
-                                    dump_live_regs(insns, live_ranges, regs.len(), index);
                                 }
-                                debug!("Register spill not supported");
-                                return None;
+                                dump_live_regs(insns, live_ranges, regs.len(), index);
                             }
+                            debug!("Register spill not supported");
+                            return None;
                         }
                     };
                 }
@@ -1759,7 +1757,7 @@ impl Assembler
             if is_ccall {
                 // On x86_64, maintain 16-byte stack alignment
                 if cfg!(target_arch = "x86_64") && saved_regs.len() % 2 == 1 {
-                    asm.cpop_into(Opnd::Reg(saved_regs.last().unwrap().0.clone()));
+                    asm.cpop_into(Opnd::Reg(saved_regs.last().unwrap().0));
                 }
                 // Restore saved registers
                 for &(reg, vreg_idx) in saved_regs.iter().rev() {
@@ -1818,7 +1816,7 @@ impl Assembler
                 let side_exit_label = if let Some(label) = label {
                     Target::Label(label)
                 } else {
-                    self.new_label("side_exit".into())
+                    self.new_label("side_exit")
                 };
                 self.write_label(side_exit_label.clone());
 

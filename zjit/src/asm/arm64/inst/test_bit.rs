@@ -81,8 +81,7 @@ impl From<TestBit> for u32 {
         let b40 = (inst.b40 & 0b11111) as u32;
         let imm14 = truncate_imm::<_, 14>(inst.imm14);
 
-        0
-        | ((inst.b5 as u32) << 31)
+        ((inst.b5 as u32) << 31)
         | (FAMILY << 25)
         | ((inst.op as u32) << 24)
         | (b40 << 19)

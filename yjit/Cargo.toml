@@ -24,3 +24,6 @@ disasm = ["capstone"]
 # from cfg!(debug_assertions) so that we can see disasm of the code
 # that would run in the release mode.
 runtime_checks = []
+
+[lints]
+workspace = true

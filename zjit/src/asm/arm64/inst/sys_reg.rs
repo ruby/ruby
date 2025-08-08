@@ -50,8 +50,7 @@ const FAMILY: u32 = 0b110101010001;
 impl From<SysReg> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: SysReg) -> Self {
-        0
-        | (FAMILY << 20)
+        (FAMILY << 20)
         | ((inst.l as u32) << 21)
         | ((inst.systemreg as u32) << 5)
         | inst.rt as u32

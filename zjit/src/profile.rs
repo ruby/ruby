@@ -105,6 +105,7 @@ fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize
 /// opt_send_without_block/opt_plus/... should store:
 /// * the class of the receiver, so we can do method lookup
 /// * the shape of the receiver, so we can optimize ivar lookup
+///
 /// with those two, pieces of information, we can also determine when an object is an immediate:
 /// * Integer + SPECIAL_CONST_SHAPE_ID == Fixnum
 /// * Float + SPECIAL_CONST_SHAPE_ID == Flonum

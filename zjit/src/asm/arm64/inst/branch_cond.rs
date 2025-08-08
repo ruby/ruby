@@ -31,8 +31,7 @@ const FAMILY: u32 = 0b101;
 impl From<BranchCond> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: BranchCond) -> Self {
-        0
-        | (1 << 30)
+        (1 << 30)
         | (FAMILY << 26)
         | (truncate_imm::<_, 19>(inst.offset) << 5)
         | (inst.cond as u32)

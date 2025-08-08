@@ -72,7 +72,7 @@ impl Default for Options {
 
 /// `ruby --help` descriptions for user-facing options. Do not add options for ZJIT developers.
 /// Note that --help allows only 80 chars per line, including indentation.    80-char limit --> |
-pub const ZJIT_OPTIONS: &'static [(&str, &str)] = &[
+pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
     ("--zjit-call-threshold=num", "Number of calls to trigger JIT (default: 2)."),
     ("--zjit-num-profiles=num",   "Number of profiled calls before JIT (default: 1, max: 255)."),
     ("--zjit-stats",              "Enable collecting ZJIT statistics."),
@@ -197,8 +197,8 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("perf", "") => options.perf = true,
 
-        ("allowed-iseqs", _) if opt_val != "" => options.allowed_iseqs = Some(parse_jit_list(opt_val)),
-        ("log-compiled-iseqs", _) if opt_val != "" => {
+        ("allowed-iseqs", _) if !opt_val.is_empty() => options.allowed_iseqs = Some(parse_jit_list(opt_val)),
+        ("log-compiled-iseqs", _) if !opt_val.is_empty() => {
             // Truncate the file if it exists
             std::fs::OpenOptions::new()
                 .create(true)
@@ -270,7 +270,7 @@ pub extern "C" fn rb_zjit_option_enabled_p(_ec: EcPtr, _self: VALUE) -> VALUE {
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_stats_enabled_p(_ec: EcPtr, _self: VALUE) -> VALUE {
     // Builtin zjit.rb calls this even if ZJIT is disabled, so OPTIONS may not be set.
-    if unsafe { OPTIONS.as_ref() }.map_or(false, |opts| opts.stats) {
+    if unsafe { OPTIONS.as_ref() }.is_some_and(|opts| opts.stats) {
         Qtrue
     } else {
         Qfalse

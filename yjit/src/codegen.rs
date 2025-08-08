@@ -1178,14 +1178,14 @@ pub fn gen_entry_reg_mapping(asm: &mut Assembler, blockid: BlockId, stack_size: 
     // Find an existing callee block. If it's not found or uses no register, skip loading registers.
     let mut ctx = Context::default();
     ctx.set_stack_size(stack_size);
-    let reg_mapping = find_most_compatible_reg_mapping(blockid, &ctx).unwrap_or(RegMapping::default());
+    let reg_mapping = find_most_compatible_reg_mapping(blockid, &ctx).unwrap_or_default();
     if reg_mapping == RegMapping::default() {
         return reg_mapping;
     }
 
     // If found, load the same registers to reuse the block.
     asm_comment!(asm, "reuse maps: {:?}", reg_mapping);
-    let local_table_size: u32 = unsafe { get_iseq_body_local_table_size(blockid.iseq) }.try_into().unwrap();
+    let local_table_size: u32 = unsafe { get_iseq_body_local_table_size(blockid.iseq) };
     for &reg_opnd in reg_mapping.get_reg_opnds().iter() {
         match reg_opnd {
             RegOpnd::Local(local_idx) => {
@@ -7708,7 +7708,7 @@ fn gen_send_iseq(
         // runtime guards later in copy_splat_args_for_rest_callee()
         if !iseq_has_rest {
             let supplying = argc - 1 - i32::from(kw_splat) + array_length as i32;
-            if (required_num..=required_num + opt_num).contains(&supplying) == false {
+            if !(required_num..=required_num + opt_num).contains(&supplying) {
                 gen_counter_incr(jit, asm, Counter::send_iseq_splat_arity_error);
                 return None;
             }

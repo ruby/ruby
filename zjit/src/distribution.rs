@@ -105,7 +105,7 @@ impl<T: Copy + PartialEq + Default + std::fmt::Debug, const N: usize> Distributi
                 DistributionKind::Megamorphic
             }
         };
-        Self { kind, buckets: dist.buckets.clone() }
+        Self { kind, buckets: dist.buckets }
     }
 
     pub fn is_monomorphic(&self) -> bool {

@@ -56,8 +56,7 @@ impl From<PCRelative> for u32 {
             immhi |= 1 << 18;
         }
 
-        0
-        | ((inst.op as u32) << 31)
+        ((inst.op as u32) << 31)
         | (immlo << 29)
         | (FAMILY << 25)
         | (immhi << 5)

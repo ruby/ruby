@@ -186,7 +186,7 @@ impl Opnd
 
     /// Maps the indices from a previous list of instructions to a new list of
     /// instructions.
-    pub fn map_index(self, indices: &Vec<usize>) -> Opnd {
+    pub fn map_index(self, indices: &[usize]) -> Opnd {
         match self {
             Opnd::InsnOut { idx, num_bits } => {
                 Opnd::InsnOut { idx: indices[idx], num_bits }
@@ -1266,11 +1266,11 @@ impl Assembler
 
     /// Spill all live registers to the stack
     pub fn spill_regs(&mut self) {
-        self.spill_regs_except(&vec![]);
+        self.spill_regs_except(&[]);
     }
 
     /// Spill all live registers except `ignored_temps` to the stack
-    pub fn spill_regs_except(&mut self, ignored_temps: &Vec<RegOpnd>) {
+    pub fn spill_regs_except(&mut self, ignored_temps: &[RegOpnd]) {
         // Forget registers above the stack top
         let mut reg_mapping = self.ctx.get_reg_mapping();
         for stack_idx in self.ctx.get_stack_size()..MAX_CTX_TEMPS as u8 {
@@ -1348,17 +1348,17 @@ impl Assembler
 
     // Shuffle register moves, sometimes adding extra moves using SCRATCH_REG,
     // so that they will not rewrite each other before they are used.
-    pub fn reorder_reg_moves(old_moves: &Vec<(Reg, Opnd)>) -> Vec<(Reg, Opnd)> {
+    pub fn reorder_reg_moves(old_moves: &[(Reg, Opnd)]) -> Vec<(Reg, Opnd)> {
         // Return the index of a move whose destination is not used as a source if any.
-        fn find_safe_move(moves: &Vec<(Reg, Opnd)>) -> Option<usize> {
+        fn find_safe_move(moves: &[(Reg, Opnd)]) -> Option<usize> {
             moves.iter().enumerate().find(|(_, &(dest_reg, _))| {
                 moves.iter().all(|&(_, src_opnd)| src_opnd != Opnd::Reg(dest_reg))
             }).map(|(index, _)| index)
         }
 
         // Remove moves whose source and destination are the same
-        let mut old_moves: Vec<(Reg, Opnd)> = old_moves.clone().into_iter()
-            .filter(|&(reg, opnd)| Opnd::Reg(reg) != opnd).collect();
+        let mut old_moves: Vec<(Reg, Opnd)> = old_moves.iter()
+            .filter(|&(reg, opnd)| Opnd::Reg(*reg) != *opnd).copied().collect();
 
         let mut new_moves = vec![];
         while old_moves.len() > 0 {
@@ -1394,7 +1394,7 @@ impl Assembler
 
         // Mutate the pool bitmap to indicate that the register at that index
         // has been allocated and is live.
-        fn alloc_reg(pool: &mut u32, regs: &Vec<Reg>) -> Option<Reg> {
+        fn alloc_reg(pool: &mut u32, regs: &[Reg]) -> Option<Reg> {
             for (index, reg) in regs.iter().enumerate() {
                 if (*pool & (1 << index)) == 0 {
                     *pool |= 1 << index;
@@ -1405,7 +1405,7 @@ impl Assembler
         }
 
         // Allocate a specific register
-        fn take_reg(pool: &mut u32, regs: &Vec<Reg>, reg: &Reg) -> Reg {
+        fn take_reg(pool: &mut u32, regs: &[Reg], reg: &Reg) -> Reg {
             let reg_index = regs.iter().position(|elem| elem.reg_no == reg.reg_no);
 
             if let Some(reg_index) = reg_index {
@@ -1419,7 +1419,7 @@ impl Assembler
         // Mutate the pool bitmap to indicate that the given register is being
         // returned as it is no longer used by the instruction that previously
         // held it.
-        fn dealloc_reg(pool: &mut u32, regs: &Vec<Reg>, reg: &Reg) {
+        fn dealloc_reg(pool: &mut u32, regs: &[Reg], reg: &Reg) {
             let reg_index = regs.iter().position(|elem| elem.reg_no == reg.reg_no);
 
             if let Some(reg_index) = reg_index {
@@ -1602,7 +1602,7 @@ impl Assembler
                 if c_args.len() > 0 {
                     // Resolve C argument dependencies
                     let c_args_len = c_args.len() as isize;
-                    let moves = Self::reorder_reg_moves(&c_args.drain(..).into_iter().collect());
+                    let moves = Self::reorder_reg_moves(&c_args.to_vec());
                     shift_live_ranges(&mut shifted_live_ranges, asm.insns.len(), moves.len() as isize - c_args_len);
 
                     // Push batched C arguments
@@ -1791,7 +1791,7 @@ impl Assembler {
     }
 
     /// Let vm_check_canary() assert the leafness of this ccall if leaf_ccall is set
-    fn set_stack_canary(&mut self, opnds: &Vec<Opnd>) -> Option<Opnd> {
+    fn set_stack_canary(&mut self, opnds: &[Opnd]) -> Option<Opnd> {
         // Use the slot right above the stack top for verifying leafness.
         let canary_opnd = self.stack_opnd(-1);
 

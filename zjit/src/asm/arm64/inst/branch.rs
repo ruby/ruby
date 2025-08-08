@@ -52,8 +52,7 @@ const FAMILY: u32 = 0b101;
 impl From<Branch> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: Branch) -> Self {
-        0
-        | (0b11 << 30)
+        (0b11 << 30)
         | (FAMILY << 26)
         | (1 << 25)
         | ((inst.op as u32) << 21)

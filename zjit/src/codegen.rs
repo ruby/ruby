@@ -185,7 +185,7 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_pt
     gen_entry_params(&mut asm, iseq, function.block(BlockId(0)));
 
     // Jump to the first block using a call instruction
-    asm.ccall(function_ptr.raw_ptr(cb) as *const u8, vec![]);
+    asm.ccall(function_ptr.raw_ptr(cb), vec![]);
 
     // Restore registers for CFP, EC, and SP after use
     asm_comment!(asm, "return to the interpreter");
@@ -218,10 +218,7 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<(CodePtr, Vec<(Rc<Branc
     }
 
     // Convert ISEQ into High-level IR and optimize HIR
-    let function = match compile_iseq(iseq) {
-        Some(function) => function,
-        None => return None,
-    };
+    let function = compile_iseq(iseq)?;
 
     // Compile the High-level IR
     let result = gen_function(cb, iseq, &function);
@@ -341,7 +338,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args))?,
         Insn::SendWithoutBlockDirect { cme, iseq, self_val, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(self_val), opnds!(args), &function.frame_state(*state))?,
         Insn::InvokeBuiltin { bf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, opnds!(args))?,
-        Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
+        Insn::Return { val } => return gen_return(asm, opnd!(val)),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
         Insn::FixnumMult { left, right, state } => gen_fixnum_mult(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
@@ -360,7 +357,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PatchPoint { invariant, state } => return gen_patch_point(jit, asm, invariant, &function.frame_state(*state)),
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfun, opnds!(args))?,
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
-        Insn::SetGlobal { id, val, state: _ } => return Some(gen_setglobal(asm, *id, opnd!(val))),
+        Insn::SetGlobal { id, val, state: _ } => return {
+            gen_setglobal(asm, *id, opnd!(val));
+            Some(())
+        },
         Insn::GetGlobal { id, state: _ } => gen_getglobal(asm, *id),
         &Insn::GetLocal { ep_offset, level } => gen_getlocal_with_ep(asm, ep_offset, level)?,
         Insn::SetLocal { val, ep_offset, level } => return gen_setlocal_with_ep(asm, opnd!(val), *ep_offset, *level),
@@ -370,7 +370,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
         Insn::Defined { op_type, obj, pushval, v } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v))?,
-        &Insn::IncrCounter(counter) => return Some(gen_incr_counter(asm, counter)),
+        &Insn::IncrCounter(counter) => return {
+            gen_incr_counter(asm, counter);
+            Some(())
+        },
         Insn::ArrayExtend { .. }
         | Insn::ArrayMax { .. }
         | Insn::ArrayPush { .. }
@@ -450,7 +453,7 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, _obj: VALUE,
                 let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
                 let pushval = asm.load(pushval.into());
                 asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
-                Some(asm.csel_e(Qnil.into(), pushval.into()))
+                Some(asm.csel_e(Qnil.into(), pushval))
             } else {
                 Some(Qnil.into())
             }
@@ -522,7 +525,7 @@ fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf
 /// Record a patch point that should be invalidated on a given invariant
 fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invariant, state: &FrameState) -> Option<()> {
     let label = asm.new_label("patch_point").unwrap_label();
-    let invariant = invariant.clone();
+    let invariant = *invariant;
 
     // Compile a side exit. Fill nop instructions if the last patch point is too close.
     asm.patch_point(build_side_exit(jit, state, PatchPoint(invariant), Some(label))?);
@@ -1092,7 +1095,7 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd,
 }
 
 /// Generate code that increments a counter in ZJIT stats
-fn gen_incr_counter(asm: &mut Assembler, counter: Counter) -> () {
+fn gen_incr_counter(asm: &mut Assembler, counter: Counter) {
     let ptr = counter_ptr(counter);
     let ptr_reg = asm.load(Opnd::const_ptr(ptr as *const u8));
     let counter_opnd = Opnd::mem(64, ptr_reg, 0);

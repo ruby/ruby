@@ -1099,7 +1099,7 @@ impl Context {
                 MapToLocal(local_idx) => {
                     bits.push_op(CtxOp::MapTempLocal);
                     bits.push_u3(stack_idx as u8);
-                    bits.push_u3(local_idx as u8);
+                    bits.push_u3(local_idx);
                 }
 
                 MapToSelf => {
@@ -1170,19 +1170,19 @@ impl Context {
 
             match op {
                 CtxOp::SetSelfType => {
-                    ctx.self_type = unsafe { transmute(bits.read_u4(&mut idx)) };
+                    ctx.self_type = unsafe { transmute::<u8, Type>(bits.read_u4(&mut idx)) };
                 }
 
                 CtxOp::SetLocalType => {
                     let local_idx = bits.read_u3(&mut idx) as usize;
-                    let t = unsafe { transmute(bits.read_u4(&mut idx)) };
+                    let t = unsafe { transmute::<u8, Type>(bits.read_u4(&mut idx)) };
                     ctx.set_local_type(local_idx, t);
                 }
 
                 // Map temp to stack (known type)
                 CtxOp::SetTempType => {
                     let temp_idx = bits.read_u3(&mut idx) as usize;
-                    let temp_type = unsafe { transmute(bits.read_u4(&mut idx)) };
+                    let temp_type = unsafe { transmute::<u8, Type>(bits.read_u4(&mut idx)) };
                     ctx.set_temp_mapping(temp_idx, TempMapping::MapToStack(temp_type));
                 }
 
@@ -2294,7 +2294,7 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         let generic_ctx = ctx.get_generic_ctx();
 
         if cfg!(debug_assertions) {
-            let mut ctx = ctx.clone();
+            let mut ctx = *ctx;
             if ctx.inline() {
                 // Suppress TypeDiff::Incompatible from ctx.diff(). We return TypeDiff::Incompatible
                 // to keep inlining blocks until we hit the limit, but it's safe to give up inlining.
@@ -2920,7 +2920,7 @@ impl Context {
         }
 
         // Prepare a Context with the same registers
-        let mut dst_with_same_regs = dst.clone();
+        let mut dst_with_same_regs = *dst;
         dst_with_same_regs.set_reg_mapping(self.get_reg_mapping());
 
         // Diff registers and other stuff separately, and merge them
@@ -3823,7 +3823,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> Option<CodePtr> {
 }
 
 /// Return registers to be pushed and popped on branch_stub_hit.
-pub fn caller_saved_temp_regs() -> impl Iterator<Item = &'static Reg> + DoubleEndedIterator {
+pub fn caller_saved_temp_regs() -> impl DoubleEndedIterator<Item = &'static Reg> {
     let temp_regs = Assembler::get_temp_regs().iter();
     let len = temp_regs.len();
     // The return value gen_leave() leaves in C_RET_REG

@@ -93,8 +93,7 @@ impl BitmaskImmediate {
 impl BitmaskImmediate {
     /// Encode a bitmask immediate into a 32-bit value.
     pub fn encode(self) -> u32 {
-        0
-        | ((self.n as u32) << 12)
+        ((self.n as u32) << 12)
         | ((self.immr as u32) << 6)
         | (self.imms as u32)
     }

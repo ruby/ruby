@@ -19,9 +19,9 @@ use crate::profile::{TypeDistributionSummary, ProfiledType};
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub struct InsnId(pub usize);
 
-impl Into<usize> for InsnId {
-    fn into(self) -> usize {
-        self.0
+impl From<InsnId> for usize {
+    fn from(val: InsnId) -> Self {
+        val.0
     }
 }
 
@@ -35,9 +35,9 @@ impl std::fmt::Display for InsnId {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct BlockId(pub usize);
 
-impl Into<usize> for BlockId {
-    fn into(self) -> usize {
-        self.0
+impl From<BlockId> for usize {
+    fn from(val: BlockId) -> Self {
+        val.0
     }
 }
 
@@ -882,7 +882,7 @@ impl<T: Copy + Into<usize> + PartialEq> UnionFind<T> {
 
     /// Private. Return the internal representation of the forwarding pointer for a given element.
     fn at(&self, idx: T) -> Option<T> {
-        self.forwarded.get(idx.into()).map(|x| *x).flatten()
+        self.forwarded.get(idx.into()).and_then(|x| *x)
     }
 
     /// Private. Set the internal representation of the forwarding pointer for the given element
@@ -952,8 +952,7 @@ fn can_direct_send(iseq: *const rb_iseq_t) -> bool {
     else if unsafe { rb_get_iseq_flags_has_opt(iseq) } { false }
     else if unsafe { rb_get_iseq_flags_has_kw(iseq) } { false }
     else if unsafe { rb_get_iseq_flags_has_kwrest(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_block(iseq) } { false }
-    else { true }
+    else { !unsafe { rb_get_iseq_flags_has_block(iseq) } }
 }
 
 /// A [`Function`], which is analogous to a Ruby ISeq, is a control-flow graph of [`Block`]s
@@ -1120,11 +1119,11 @@ impl Function {
             &StringIntern { val } => StringIntern { val: find!(val) },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
-            &Jump(ref target) => Jump(find_branch_edge!(target)),
+            Jump(target) => Jump(find_branch_edge!(target)),
             &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
             &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
-            &GuardType { val, guard_type, state } => GuardType { val: find!(val), guard_type: guard_type, state },
-            &GuardBitEquals { val, expected, state } => GuardBitEquals { val: find!(val), expected: expected, state },
+            &GuardType { val, guard_type, state } => GuardType { val: find!(val), guard_type, state },
+            &GuardBitEquals { val, expected, state } => GuardBitEquals { val: find!(val), expected, state },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
             &FixnumSub { left, right, state } => FixnumSub { left: find!(left), right: find!(right), state },
             &FixnumMult { left, right, state } => FixnumMult { left: find!(left), right: find!(right), state },
@@ -1140,7 +1139,7 @@ impl Function {
             &FixnumOr { left, right } => FixnumOr { left: find!(left), right: find!(right) },
             &ObjToString { val, cd, state } => ObjToString {
                 val: find!(val),
-                cd: cd,
+                cd,
                 state,
             },
             &AnyToString { val, str, state } => AnyToString {
@@ -1150,22 +1149,22 @@ impl Function {
             },
             &SendWithoutBlock { self_val, cd, ref args, state } => SendWithoutBlock {
                 self_val: find!(self_val),
-                cd: cd,
+                cd,
                 args: find_vec!(args),
                 state,
             },
             &SendWithoutBlockDirect { self_val, cd, cme, iseq, ref args, state } => SendWithoutBlockDirect {
                 self_val: find!(self_val),
-                cd: cd,
-                cme: cme,
-                iseq: iseq,
+                cd,
+                cme,
+                iseq,
                 args: find_vec!(args),
                 state,
             },
             &Send { self_val, cd, blockiseq, ref args, state } => Send {
                 self_val: find!(self_val),
-                cd: cd,
-                blockiseq: blockiseq,
+                cd,
+                blockiseq,
                 args: find_vec!(args),
                 state,
             },
@@ -1374,19 +1373,19 @@ impl Function {
     }
 
     fn likely_is_fixnum(&self, val: InsnId, profiled_type: ProfiledType) -> bool {
-        return self.is_a(val, types::Fixnum) || profiled_type.is_fixnum();
+        self.is_a(val, types::Fixnum) || profiled_type.is_fixnum()
     }
 
     fn coerce_to_fixnum(&mut self, block: BlockId, val: InsnId, state: InsnId) -> InsnId {
         if self.is_a(val, types::Fixnum) { return val; }
-        return self.push_insn(block, Insn::GuardType { val, guard_type: types::Fixnum, state });
+        self.push_insn(block, Insn::GuardType { val, guard_type: types::Fixnum, state })
     }
 
     fn arguments_likely_fixnums(&mut self, left: InsnId, right: InsnId, state: InsnId) -> bool {
         let frame_state = self.frame_state(state);
-        let iseq_insn_idx = frame_state.insn_idx as usize;
-        let left_profiled_type = self.profiled_type_of_at(left, iseq_insn_idx).unwrap_or(ProfiledType::empty());
-        let right_profiled_type = self.profiled_type_of_at(right, iseq_insn_idx).unwrap_or(ProfiledType::empty());
+        let iseq_insn_idx = frame_state.insn_idx;
+        let left_profiled_type = self.profiled_type_of_at(left, iseq_insn_idx).unwrap_or_default();
+        let right_profiled_type = self.profiled_type_of_at(right, iseq_insn_idx).unwrap_or_default();
         self.likely_is_fixnum(left, left_profiled_type) && self.likely_is_fixnum(right, right_profiled_type)
     }
 
@@ -1507,9 +1506,9 @@ impl Function {
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAnd { left, right }, BOP_AND, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(or) && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumOr { left, right }, BOP_OR, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.len() == 0 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.is_empty() =>
                         self.try_rewrite_freeze(block, insn_id, self_val, state),
-                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.len() == 0 =>
+                    Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
                         self.try_rewrite_uminus(block, insn_id, self_val, state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(aref) && args.len() == 1 =>
                         self.try_rewrite_aref(block, insn_id, self_val, args[0], state),
@@ -1887,7 +1886,7 @@ impl Function {
                 worklist.push_back(val);
                 worklist.push_back(state);
             }
-            &Insn::Snapshot { ref state } => {
+            Insn::Snapshot { state } => {
                 worklist.extend(&state.stack);
                 worklist.extend(&state.locals);
             }
@@ -1934,7 +1933,7 @@ impl Function {
                 worklist.extend(args);
                 worklist.push_back(state)
             }
-            &Insn::CCall { ref args, .. } => worklist.extend(args),
+            Insn::CCall { args, .. } => worklist.extend(args),
             &Insn::GetIvar { self_val, state, .. } | &Insn::DefinedIvar { self_val, state, .. } => {
                 worklist.push_back(self_val);
                 worklist.push_back(state);
@@ -1991,7 +1990,7 @@ impl Function {
         }
     }
 
-    fn absorb_dst_block(&mut self, num_in_edges: &Vec<u32>, block: BlockId) -> bool {
+    fn absorb_dst_block(&mut self, num_in_edges: &[u32], block: BlockId) -> bool {
         let Some(terminator_id) = self.blocks[block.0].insns.last()
             else { return false };
         let Insn::Jump(BranchEdge { target, args }) = self.find(*terminator_id)
@@ -2110,8 +2109,8 @@ impl Function {
 
         // Dump HIR after optimization
         match get_option!(dump_hir_opt) {
-            Some(DumpHIR::WithoutSnapshot) => println!("Optimized HIR:\n{}", FunctionPrinter::without_snapshot(&self)),
-            Some(DumpHIR::All) => println!("Optimized HIR:\n{}", FunctionPrinter::with_snapshot(&self)),
+            Some(DumpHIR::WithoutSnapshot) => println!("Optimized HIR:\n{}", FunctionPrinter::without_snapshot(self)),
+            Some(DumpHIR::All) => println!("Optimized HIR:\n{}", FunctionPrinter::with_snapshot(self)),
             Some(DumpHIR::Debug) => println!("Optimized HIR:\n{:#?}", &self),
             None => {},
         }
@@ -2402,7 +2401,7 @@ impl FrameState {
         // TODO: Modify the register allocator to allow reusing an argument
         // of another basic block.
         let mut args = vec![self_param];
-        args.extend(self.locals.iter().chain(self.stack.iter()).map(|op| *op));
+        args.extend(self.locals.iter().chain(self.stack.iter()).copied());
         args
     }
 }
@@ -2534,7 +2533,7 @@ impl ProfileOracle {
     fn profile_stack(&mut self, state: &FrameState) {
         let iseq_insn_idx = state.insn_idx;
         let Some(operand_types) = self.payload.profile.get_operand_types(iseq_insn_idx) else { return };
-        let entry = self.types.entry(iseq_insn_idx).or_insert_with(|| vec![]);
+        let entry = self.types.entry(iseq_insn_idx).or_default();
         // operand_types is always going to be <= stack size (otherwise it would have an underflow
         // at run-time) so use that to drive iteration.
         for (idx, insn_type_distribution) in operand_types.iter().rev().enumerate() {

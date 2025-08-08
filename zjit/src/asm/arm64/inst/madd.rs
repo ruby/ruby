@@ -37,8 +37,7 @@ impl MAdd {
 impl From<MAdd> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: MAdd) -> Self {
-        0
-        | ((inst.sf as u32) << 31)
+        ((inst.sf as u32) << 31)
         | (0b11011 << 24)
         | ((inst.rm as u32) << 16)
         | ((inst.ra as u32) << 10)

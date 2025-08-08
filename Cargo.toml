@@ -49,3 +49,22 @@ overflow-checks = true
 debug = true
 # Use ThinLTO. Much smaller output for a small amount of build time increase.
 lto = "thin"
+
+[workspace.lints.clippy]
+# See: https://doc.rust-lang.org/clippy/lints.html
+correctness = { level = "deny", priority = 1 }
+suspicious = { level = "deny", priority = 1 }
+perf = { level = "deny", priority = 1 }
+
+complexity = { level = "deny", priority = -1 }
+
+style = { level = "allow", priority = -1 }
+pedantic = { level = "allow", priority = -1 }
+
+too_many_arguments = "allow"
+identity_op = "allow"
+type_complexity = "allow"
+missing_transmute_annotations = "allow"
+
+unwrap_or_default = "deny"
+ptr_arg = "deny"

@@ -224,16 +224,16 @@ impl CodeBlock {
     }
 
     /// Free the memory pages of given code page indexes
-    fn free_pages(&mut self, page_idxs: &Vec<usize>) {
-        let mut page_idxs = page_idxs.clone();
-        page_idxs.reverse(); // to loop with pop()
+    /// In Rust >= 1.77 this could probably be simplified with chunk_by.
+    fn free_pages(&mut self, page_idxs: &[usize]) {
+        let mut page_idxs = page_idxs.iter().rev().collect::<Vec<_>>();
 
         // Group adjacent page indexes and free them in batches to reduce the # of syscalls.
-        while let Some(page_idx) = page_idxs.pop() {
+        while let Some(&page_idx) = page_idxs.pop() {
             // Group first adjacent page indexes
             let mut batch_idxs = vec![page_idx];
-            while page_idxs.last() == Some(&(batch_idxs.last().unwrap() + 1)) {
-                batch_idxs.push(page_idxs.pop().unwrap());
+            while page_idxs.last() == Some(&&(*batch_idxs.last().unwrap() + 1)) {
+                batch_idxs.push(*page_idxs.pop().unwrap());
             }
 
             // Free the grouped pages at once
@@ -441,12 +441,12 @@ impl CodeBlock {
 
         // Ignore empty code ranges
         if start_addr == end_addr {
-            return (0..0).into_iter();
+            return 0..0;
         }
 
         let start_page = (start_addr.raw_addr(self) - mem_start) / self.page_size;
         let end_page = (end_addr.raw_addr(self) - mem_start - 1) / self.page_size;
-        (start_page..end_page + 1).into_iter()
+        start_page..end_page + 1
     }
 
     /// Get a (possibly dangling) direct pointer to the current write position

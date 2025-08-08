@@ -84,9 +84,7 @@ pub fn add(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
 fn encode_add_extend(rd: u8, rn: u8, rm: u8, extend_type: ExtendType, shift: u8, num_bits: u8) -> [u8; 4] {
     assert!(shift <= 4, "shift must be 0-4");
 
-    ((Sf::from(num_bits) as u32) << 31 |
-     0b0 << 30 |        // op = 0 for add
-     0b0 << 29 |        // S = 0 for non-flag-setting
+    (((Sf::from(num_bits) as u32) << 31) |        // S = 0 for non-flag-setting
      0b01011001 << 21 |
      (rm as u32) << 16 |
      (extend_type as u32) << 13 |

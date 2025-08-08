@@ -139,7 +139,7 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
         // If the value fits into a single movz
         // instruction, then we'll use that.
         movz(cb, rd, A64Opnd::new_uimm(current), 0);
-        return 1;
+        1
     } else if u16::try_from(!value).is_ok() {
         // For small negative values, use a single movn
         movn(cb, rd, A64Opnd::new_uimm(!value), 0);
@@ -182,7 +182,7 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
 /// List of registers that can be used for register allocation.
 /// This has the same number of registers for x86_64 and arm64.
 /// SCRATCH0 and SCRATCH1 are excluded.
-pub const ALLOC_REGS: &'static [Reg] = &[
+pub const ALLOC_REGS: &[Reg] = &[
     X0_REG,
     X1_REG,
     X2_REG,
@@ -480,7 +480,7 @@ impl Assembler
                     // which is both the return value and first argument register
                     if !opnds.is_empty() {
                         let mut args: Vec<(Reg, Opnd)> = vec![];
-                        for (idx, opnd) in opnds.into_iter().enumerate().rev() {
+                        for (idx, opnd) in opnds.iter_mut().enumerate().rev() {
                             // If the value that we're sending is 0, then we can use
                             // the zero register, so in this case we'll just send
                             // a UImm of 0 along as the argument to the move.
@@ -1106,8 +1106,8 @@ impl Assembler
                     // be stored is first and the address is second. However in
                     // our IR we have the address first and the register second.
                     match dest_num_bits {
-                        64 | 32 => stur(cb, src.into(), dest.into()),
-                        16 => sturh(cb, src.into(), dest.into()),
+                        64 | 32 => stur(cb, src, dest),
+                        16 => sturh(cb, src, dest),
                         num_bits => panic!("unexpected dest num_bits: {} (src: {:#?}, dest: {:#?})", num_bits, src, dest),
                     }
                 },
@@ -1411,7 +1411,7 @@ impl Assembler
 ///
 /// If a, b, and c are all registers.
 fn merge_three_reg_mov(
-    live_ranges: &Vec<LiveRange>,
+    live_ranges: &[LiveRange],
     iterator: &mut std::iter::Peekable<impl Iterator<Item = (usize, Insn)>>,
     left: &Opnd,
     right: &Opnd,

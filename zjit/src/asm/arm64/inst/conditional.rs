@@ -40,8 +40,7 @@ const FAMILY: u32 = 0b101;
 impl From<Conditional> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: Conditional) -> Self {
-        0
-        | ((inst.sf as u32) << 31)
+        ((inst.sf as u32) << 31)
         | (1 << 28)
         | (FAMILY << 25)
         | (1 << 23)
