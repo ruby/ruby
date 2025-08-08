@@ -55,7 +55,8 @@ const FAMILY: u32 = 0b0100;
 impl From<Atomic> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: Atomic) -> Self {
-        ((inst.size as u32) << 30)
+        0
+        | ((inst.size as u32) << 30)
         | (0b11 << 28)
         | (FAMILY << 25)
         | (0b111 << 21)

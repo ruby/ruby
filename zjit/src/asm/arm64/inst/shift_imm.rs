@@ -93,7 +93,8 @@ impl From<ShiftImm> for u32 {
     fn from(inst: ShiftImm) -> Self {
         let (n, immr, imms) = inst.bitmask();
 
-        ((inst.sf as u32) << 31)
+        0
+        | ((inst.sf as u32) << 31)
         | (1 << 30)
         | (FAMILY << 24)
         | (n << 22)

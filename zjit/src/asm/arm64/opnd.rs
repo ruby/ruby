@@ -79,7 +79,10 @@ impl A64Opnd {
 
     /// Convenience function to check if this operand is a register.
     pub fn is_reg(&self) -> bool {
-        matches!(self, A64Opnd::Reg(_))
+        match self {
+            A64Opnd::Reg(_) => true,
+            _ => false
+        }
     }
 
     /// Unwrap a register from an operand.

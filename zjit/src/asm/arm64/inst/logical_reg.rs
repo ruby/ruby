@@ -124,7 +124,8 @@ const FAMILY: u32 = 0b0101;
 impl From<LogicalReg> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: LogicalReg) -> Self {
-        ((inst.sf as u32) << 31)
+        0
+        | ((inst.sf as u32) << 31)
         | ((inst.opc as u32) << 29)
         | (FAMILY << 25)
         | ((inst.shift as u32) << 22)

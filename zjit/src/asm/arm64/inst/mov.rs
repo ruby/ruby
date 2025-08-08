@@ -83,7 +83,8 @@ const FAMILY: u32 = 0b1000;
 impl From<Mov> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: Mov) -> Self {
-        ((inst.sf as u32) << 31)
+        0
+        | ((inst.sf as u32) << 31)
         | ((inst.op as u32) << 29)
         | (FAMILY << 25)
         | (0b101 << 23)

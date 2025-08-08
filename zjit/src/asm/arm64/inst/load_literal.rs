@@ -52,7 +52,8 @@ const FAMILY: u32 = 0b0100;
 impl From<LoadLiteral> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: LoadLiteral) -> Self {
-        ((inst.opc as u32) << 30)
+        0
+        | ((inst.opc as u32) << 30)
         | (1 << 28)
         | (FAMILY << 25)
         | (truncate_imm::<_, 19>(inst.offset) << 5)

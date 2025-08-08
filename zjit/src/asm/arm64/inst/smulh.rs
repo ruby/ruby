@@ -31,7 +31,8 @@ impl SMulH {
 impl From<SMulH> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: SMulH) -> Self {
-        (0b10011011010 << 21)
+        0
+        | (0b10011011010 << 21)
         | ((inst.rm as u32) << 16)
         | ((inst.ra as u32) << 10)
         | ((inst.rn as u32) << 5)

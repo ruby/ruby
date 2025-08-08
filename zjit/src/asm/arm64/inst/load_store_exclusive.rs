@@ -70,7 +70,8 @@ const FAMILY: u32 = 0b0100;
 impl From<LoadStoreExclusive> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: LoadStoreExclusive) -> Self {
-        ((inst.size as u32) << 30)
+        0
+        | ((inst.size as u32) << 30)
         | (FAMILY << 25)
         | ((inst.op as u32) << 22)
         | ((inst.rs as u32) << 16)

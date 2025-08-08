@@ -107,7 +107,8 @@ impl From<HalfwordImm> for u32 {
             }
         };
 
-        (FAMILY << 25)
+        0
+        | (FAMILY << 25)
         | ((opc | (inst.op as u32)) << 22)
         | (imm << 10)
         | ((inst.rn as u32) << 5)

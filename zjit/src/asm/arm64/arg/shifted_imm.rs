@@ -33,7 +33,8 @@ impl TryFrom<u64> for ShiftedImmediate {
 impl From<ShiftedImmediate> for u32 {
     /// Encode a bitmask immediate into a 32-bit value.
     fn from(imm: ShiftedImmediate) -> Self {
-        (((imm.shift as u32) & 1) << 12)
+        0
+        | (((imm.shift as u32) & 1) << 12)
         | (imm.value as u32)
     }
 }

@@ -47,7 +47,8 @@ const FAMILY: u32 = 0b101;
 impl From<Call> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: Call) -> Self {
-        ((inst.op as u32) << 31)
+        0
+        | ((inst.op as u32) << 31)
         | (FAMILY << 26)
         | truncate_imm::<_, 26>(inst.offset)
     }

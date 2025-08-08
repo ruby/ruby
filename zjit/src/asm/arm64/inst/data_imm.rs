@@ -82,7 +82,8 @@ impl From<DataImm> for u32 {
     fn from(inst: DataImm) -> Self {
         let imm: u32 = inst.imm.into();
 
-        ((inst.sf as u32) << 31)
+        0
+        | ((inst.sf as u32) << 31)
         | ((inst.op as u32) << 30)
         | ((inst.s as u32) << 29)
         | (FAMILY << 25)

@@ -116,7 +116,8 @@ const FAMILY: u32 = 0b0100;
 impl From<RegisterPair> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: RegisterPair) -> Self {
-        ((inst.opc as u32) << 30)
+        0
+        | ((inst.opc as u32) << 30)
         | (1 << 29)
         | (FAMILY << 25)
         | ((inst.index as u32) << 22)

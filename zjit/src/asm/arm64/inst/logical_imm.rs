@@ -88,7 +88,8 @@ impl From<LogicalImm> for u32 {
     fn from(inst: LogicalImm) -> Self {
         let imm: u32 = inst.imm.encode();
 
-        ((inst.sf as u32) << 31)
+        0
+        | ((inst.sf as u32) << 31)
         | ((inst.opc as u32) << 29)
         | (FAMILY << 25)
         | (imm << 10)
