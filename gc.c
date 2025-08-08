@@ -1755,7 +1755,6 @@ rb_gc_pointer_to_heap_p(VALUE obj)
 #define LAST_OBJECT_ID() (object_id_counter * OBJ_ID_INCREMENT)
 static VALUE id2ref_value = 0;
 static st_table *id2ref_tbl = NULL;
-static bool id2ref_tbl_built = false;
 
 #if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
 static size_t object_id_counter = 1;
@@ -1938,24 +1937,50 @@ object_id(VALUE obj)
     return object_id0(obj);
 }
 
+struct build_id2ref_args {
+    st_table *id2ref_tbl;
+    rb_objspace_t *objspace;
+};
+
 static void
 build_id2ref_i(VALUE obj, void *data)
 {
-    st_table *id2ref_tbl = (st_table *)data;
+    struct build_id2ref_args *args = (struct build_id2ref_args *)data;
+    st_table *id2ref_tbl = args->id2ref_tbl;
+    rb_objspace_t *objspace = args->objspace;
 
+    // If the object is garbage we must not insert it.
+    // But also we must clear its object id, otherwise when it will be finally freed
+    // obj_free_object_id will crash.
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
         if (RCLASS(obj)->object_id) {
-            st_insert(id2ref_tbl, RCLASS(obj)->object_id, obj);
+            if (rb_gc_impl_garbage_object_p(objspace, obj)) {
+                RCLASS(obj)->object_id = 0;
+            }
+            else {
+                st_insert(id2ref_tbl, RCLASS(obj)->object_id, obj);
+            }
         }
         break;
       case T_IMEMO:
+        if (IMEMO_TYPE_P(obj, imemo_fields) && rb_shape_obj_has_id(obj) && rb_gc_impl_garbage_object_p(objspace, obj)) {
+            rb_imemo_fields_clear(obj);
+        }
+
+        break;
       case T_NONE:
+      case T_ZOMBIE:
         break;
       default:
         if (rb_shape_obj_has_id(obj)) {
-            st_insert(id2ref_tbl, rb_obj_id(obj), obj);
+            if (rb_gc_impl_garbage_object_p(objspace, obj)) {
+                RBASIC_SET_SHAPE_ID(obj, ROOT_SHAPE_ID);
+            }
+            else {
+                st_insert(id2ref_tbl, rb_obj_id(obj), obj);
+            }
         }
         break;
     }
@@ -1981,10 +2006,13 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
         // objects we just added to the table.
         bool gc_disabled = RTEST(rb_gc_disable_no_rest());
         {
-            rb_gc_impl_each_object(objspace, build_id2ref_i, (void *)id2ref_tbl);
+            struct build_id2ref_args args = {
+                .id2ref_tbl = id2ref_tbl,
+                .objspace = objspace,
+            };
+            rb_gc_impl_each_object(objspace, build_id2ref_i, (void *)&args);
         }
         if (!gc_disabled) rb_gc_enable();
-        id2ref_tbl_built = true;
     }
 
     VALUE obj;
@@ -2021,12 +2049,12 @@ obj_free_object_id(VALUE obj)
             // fallthrough
           case T_OBJECT:
             {
-            shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-            if (rb_shape_has_object_id(shape_id)) {
-                obj_id = object_id_get(obj, shape_id);
+                shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+                if (rb_shape_has_object_id(shape_id)) {
+                    obj_id = object_id_get(obj, shape_id);
+                }
+                break;
             }
-            break;
-          }
           default:
             // For generic_fields, the T_IMEMO/fields is responsible for freeing the id.
             return;
@@ -2036,12 +2064,7 @@ obj_free_object_id(VALUE obj)
             RUBY_ASSERT(FIXNUM_P(obj_id) || RB_TYPE_P(obj_id, T_BIGNUM));
 
             if (!st_delete(id2ref_tbl, (st_data_t *)&obj_id, NULL)) {
-                // If we're currently building the table then it's not a bug.
-                // The the object is a T_IMEMO/fields, then it's possible the actual object
-                // has been garbage collected already.
-                if (id2ref_tbl_built && !RB_TYPE_P(obj, T_IMEMO)) {
-                    rb_bug("Object ID seen, but not in _id2ref table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
-                }
+                rb_bug("Object ID seen, but not in _id2ref table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
             }
         }
     }
