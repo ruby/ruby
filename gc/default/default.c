@@ -6110,15 +6110,19 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 
     gc_report(1, objspace, "rb_gc_writebarrier_remember: %s\n", rb_obj_info(obj));
 
-    if (is_incremental_marking(objspace)) {
-        if (RVALUE_BLACK_P(objspace, obj)) {
-            gc_grey(objspace, obj);
+    if (is_incremental_marking(objspace) || RVALUE_OLD_P(objspace, obj)) {
+        int lev = RB_GC_VM_LOCK_NO_BARRIER();
+        {
+            if (is_incremental_marking(objspace)) {
+                if (RVALUE_BLACK_P(objspace, obj)) {
+                    gc_grey(objspace, obj);
+                }
+            }
+            else if (RVALUE_OLD_P(objspace, obj)) {
+                rgengc_remember(objspace, obj);
+            }
         }
-    }
-    else {
-        if (RVALUE_OLD_P(objspace, obj)) {
-            rgengc_remember(objspace, obj);
-        }
+        RB_GC_VM_UNLOCK_NO_BARRIER(lev);
     }
 }
 
