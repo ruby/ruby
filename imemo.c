@@ -109,16 +109,16 @@ rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt)
 }
 
 static VALUE
-imemo_fields_new(VALUE klass, size_t capa)
+imemo_fields_new(VALUE owner, size_t capa)
 {
     size_t embedded_size = offsetof(struct rb_fields, as.embed) + capa * sizeof(VALUE);
     if (rb_gc_size_allocatable_p(embedded_size)) {
-        VALUE fields = rb_imemo_new(imemo_fields, klass, embedded_size);
+        VALUE fields = rb_imemo_new(imemo_fields, owner, embedded_size);
         RUBY_ASSERT(IMEMO_TYPE_P(fields, imemo_fields));
         return fields;
     }
     else {
-        VALUE fields = rb_imemo_new(imemo_fields, klass, sizeof(struct rb_fields));
+        VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields));
         FL_SET_RAW(fields, OBJ_FIELD_EXTERNAL);
         IMEMO_OBJ_FIELDS(fields)->as.external.ptr = ALLOC_N(VALUE, capa);
         return fields;
@@ -126,23 +126,23 @@ imemo_fields_new(VALUE klass, size_t capa)
 }
 
 VALUE
-rb_imemo_fields_new(VALUE klass, size_t capa)
+rb_imemo_fields_new(VALUE owner, size_t capa)
 {
-    return imemo_fields_new(klass, capa);
+    return imemo_fields_new(owner, capa);
 }
 
 static VALUE
-imemo_fields_new_complex(VALUE klass, size_t capa)
+imemo_fields_new_complex(VALUE owner, size_t capa)
 {
-    VALUE fields = imemo_fields_new(klass, sizeof(struct rb_fields));
+    VALUE fields = imemo_fields_new(owner, sizeof(struct rb_fields));
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = st_init_numtable_with_size(capa);
     return fields;
 }
 
 VALUE
-rb_imemo_fields_new_complex(VALUE klass, size_t capa)
+rb_imemo_fields_new_complex(VALUE owner, size_t capa)
 {
-    return imemo_fields_new_complex(klass, capa);
+    return imemo_fields_new_complex(owner, capa);
 }
 
 static int
@@ -161,9 +161,9 @@ imemo_fields_complex_wb_i(st_data_t key, st_data_t value, st_data_t arg)
 }
 
 VALUE
-rb_imemo_fields_new_complex_tbl(VALUE klass, st_table *tbl)
+rb_imemo_fields_new_complex_tbl(VALUE owner, st_table *tbl)
 {
-    VALUE fields = imemo_fields_new(klass, sizeof(struct rb_fields));
+    VALUE fields = imemo_fields_new(owner, sizeof(struct rb_fields));
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = tbl;
     st_foreach(tbl, imemo_fields_trigger_wb_i, (st_data_t)fields);
     return fields;
@@ -176,7 +176,7 @@ rb_imemo_fields_clone(VALUE fields_obj)
     VALUE clone;
 
     if (rb_shape_too_complex_p(shape_id)) {
-        clone = rb_imemo_fields_new_complex(CLASS_OF(fields_obj), 0);
+        clone = rb_imemo_fields_new_complex(rb_imemo_fields_owner(fields_obj), 0);
         RBASIC_SET_SHAPE_ID(clone, shape_id);
         st_table *src_table = rb_imemo_fields_complex_tbl(fields_obj);
         st_table *dest_table = rb_imemo_fields_complex_tbl(clone);
@@ -184,7 +184,7 @@ rb_imemo_fields_clone(VALUE fields_obj)
         st_foreach(dest_table, imemo_fields_complex_wb_i, (st_data_t)clone);
     }
     else {
-        clone = imemo_fields_new(CLASS_OF(fields_obj), RSHAPE_CAPACITY(shape_id));
+        clone = imemo_fields_new(rb_imemo_fields_owner(fields_obj), RSHAPE_CAPACITY(shape_id));
         RBASIC_SET_SHAPE_ID(clone, shape_id);
         VALUE *fields = rb_imemo_fields_ptr(clone);
         attr_index_t fields_count = RSHAPE_LEN(shape_id);

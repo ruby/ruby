@@ -1921,7 +1921,7 @@ object_id(VALUE obj)
         // in fields.
         return class_object_id(obj);
       case T_IMEMO:
-        rb_bug("T_IMEMO can't have an object_id");
+        RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
         break;
       default:
         break;
@@ -1965,15 +1965,16 @@ build_id2ref_i(VALUE obj, void *data)
         }
         break;
       case T_IMEMO:
-        if (IMEMO_TYPE_P(obj, imemo_fields) && rb_shape_obj_has_id(obj) && rb_gc_impl_garbage_object_p(objspace, obj)) {
-            rb_imemo_fields_clear(obj);
+        if (IMEMO_TYPE_P(obj, imemo_fields) && rb_shape_obj_has_id(obj)) {
+            if (rb_gc_impl_garbage_object_p(objspace, obj)) {
+                RBASIC_SET_SHAPE_ID(obj, ROOT_SHAPE_ID);
+            }
+            else {
+                st_insert(id2ref_tbl, rb_obj_id(obj), rb_imemo_fields_owner(obj));
+            }
         }
-
         break;
-      case T_NONE:
-      case T_ZOMBIE:
-        break;
-      default:
+      case T_OBJECT:
         if (rb_shape_obj_has_id(obj)) {
             if (rb_gc_impl_garbage_object_p(objspace, obj)) {
                 RBASIC_SET_SHAPE_ID(obj, ROOT_SHAPE_ID);
@@ -1982,6 +1983,9 @@ build_id2ref_i(VALUE obj, void *data)
                 st_insert(id2ref_tbl, rb_obj_id(obj), obj);
             }
         }
+        break;
+      default:
+        // For generic_fields, the T_IMEMO/fields is responsible for populating the entry.
         break;
     }
 }
