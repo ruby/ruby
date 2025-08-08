@@ -843,6 +843,22 @@ impl<'a> FunctionPrinter<'a> {
     }
 }
 
+/// Pretty printer for [`Function`].
+pub struct FunctionGraphvizPrinter<'a> {
+    fun: &'a Function,
+    ptr_map: PtrPrintMap,
+}
+
+impl<'a> FunctionGraphvizPrinter<'a> {
+    pub fn new(fun: &'a Function) -> Self {
+        let mut ptr_map = PtrPrintMap::identity();
+        if cfg!(test) {
+            ptr_map.map_ptrs = true;
+        }
+        Self { fun, ptr_map }
+    }
+}
+
 /// Union-Find (Disjoint-Set) is a data structure for managing disjoint sets that has an interface
 /// of two operations:
 ///
@@ -2115,6 +2131,10 @@ impl Function {
             Some(DumpHIR::Debug) => println!("Optimized HIR:\n{:#?}", &self),
             None => {},
         }
+
+        if get_option!(dump_hir_graphviz) {
+            println!("{}", FunctionGraphvizPrinter::new(&self));
+        }
     }
 
 
@@ -2290,6 +2310,87 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
             }
         }
         Ok(())
+    }
+}
+
+struct HtmlEncoder<'a, 'b> {
+    formatter: &'a mut std::fmt::Formatter<'b>,
+}
+
+impl<'a, 'b> std::fmt::Write for HtmlEncoder<'a, 'b> {
+    fn write_str(&mut self, s: &str) -> std::fmt::Result {
+        for ch in s.chars() {
+            match ch {
+                '<' => self.formatter.write_str("&lt;")?,
+                '>' => self.formatter.write_str("&gt;")?,
+                '&' => self.formatter.write_str("&amp;")?,
+                '"' => self.formatter.write_str("&quot;")?,
+                '\'' => self.formatter.write_str("&#39;")?,
+                _ => self.formatter.write_char(ch)?,
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<'a> std::fmt::Display for FunctionGraphvizPrinter<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        macro_rules! write_encoded {
+            ($f:ident, $($arg:tt)*) => {
+                HtmlEncoder { formatter: $f }.write_fmt(format_args!($($arg)*))
+            };
+        }
+        use std::fmt::Write;
+        let fun = &self.fun;
+        let iseq_name = iseq_get_location(fun.iseq, 0);
+        write!(f, "digraph G {{ # ")?;
+        write_encoded!(f, "{iseq_name}")?;
+        write!(f, "\n")?;
+        writeln!(f, "node [shape=plaintext];")?;
+        writeln!(f, "mode=hier; overlap=false; splines=true;")?;
+        for block_id in fun.rpo() {
+            writeln!(f, r#"  {block_id} [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">"#)?;
+            write!(f, r#"<TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">{block_id}("#)?;
+            if !fun.blocks[block_id.0].params.is_empty() {
+                let mut sep = "";
+                for param in &fun.blocks[block_id.0].params {
+                    write_encoded!(f, "{sep}{param}")?;
+                    let insn_type = fun.type_of(*param);
+                    if !insn_type.is_subtype(types::Empty) {
+                        write_encoded!(f, ":{}", insn_type.print(&self.ptr_map))?;
+                    }
+                    sep = ", ";
+                }
+            }
+            let mut edges = vec![];
+            writeln!(f, ")&nbsp;</TD></TR>")?;
+            for insn_id in &fun.blocks[block_id.0].insns {
+                let insn_id = fun.union_find.borrow().find_const(*insn_id);
+                let insn = fun.find(insn_id);
+                if matches!(insn, Insn::Snapshot {..}) {
+                    continue;
+                }
+                write!(f, r#"<TR><TD ALIGN="left" PORT="{insn_id}">"#)?;
+                if insn.has_output() {
+                    let insn_type = fun.type_of(insn_id);
+                    if insn_type.is_subtype(types::Empty) {
+                        write_encoded!(f, "{insn_id} = ")?;
+                    } else {
+                        write_encoded!(f, "{insn_id}:{} = ", insn_type.print(&self.ptr_map))?;
+                    }
+                }
+                if let Insn::Jump(ref target) | Insn::IfTrue { ref target, .. } | Insn::IfFalse { ref target, .. } = insn {
+                    edges.push((insn_id, target.target));
+                }
+                write_encoded!(f, "{}", insn.print(&self.ptr_map))?;
+                writeln!(f, "&nbsp;</TD></TR>")?;
+            }
+            writeln!(f, "</TABLE>>];")?;
+            for (src, dst) in edges {
+                writeln!(f, "  {block_id}:{src} -> {dst}:params;")?;
+            }
+        }
+        writeln!(f, "}}")
     }
 }
 
@@ -5141,6 +5242,81 @@ mod tests {
             bb0(v0:BasicObject):
               v2:Fixnum[2] = Const Value(2)
               Throw TAG_BREAK, v2
+        "#]]);
+    }
+}
+
+#[cfg(test)]
+mod graphviz_tests {
+    use super::*;
+    use expect_test::{expect, Expect};
+
+    #[track_caller]
+    fn assert_optimized_graphviz(method: &str, expected: Expect) {
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+        let mut function = iseq_to_hir(iseq).unwrap();
+        function.optimize();
+        function.validate().unwrap();
+        let actual = format!("{}", FunctionGraphvizPrinter::new(&function));
+        expected.assert_eq(&actual);
+    }
+
+    #[test]
+    fn test_guard_fixnum_or_fixnum() {
+        eval(r#"
+            def test(x, y) = x | y
+
+            test(1, 2)
+        "#);
+        assert_optimized_graphviz("test", expect![[r#"
+            digraph G { # test@&lt;compiled&gt;:2
+            node [shape=plaintext];
+            mode=hier; overlap=false; splines=true;
+              bb0 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+            <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject)&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v7">PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 29)&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v8">v8:Fixnum = GuardType v1, Fixnum&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v9">v9:Fixnum = GuardType v2, Fixnum&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v10">v10:Fixnum = FixnumOr v8, v9&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v6">Return v10&nbsp;</TD></TR>
+            </TABLE>>];
+            }
+        "#]]);
+    }
+
+    #[test]
+    fn test_multiple_blocks() {
+        eval(r#"
+            def test(c)
+              if c
+                3
+              else
+                4
+              end
+            end
+
+            test(1)
+            test("x")
+        "#);
+        assert_optimized_graphviz("test", expect![[r#"
+            digraph G { # test@&lt;compiled&gt;:3
+            node [shape=plaintext];
+            mode=hier; overlap=false; splines=true;
+              bb0 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+            <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0(v0:BasicObject, v1:BasicObject)&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v3">v3:CBool = Test v1&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v4">IfFalse v3, bb1(v0, v1)&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v5">v5:Fixnum[3] = Const Value(3)&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v6">Return v5&nbsp;</TD></TR>
+            </TABLE>>];
+              bb0:v4 -> bb1:params;
+              bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+            <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v7:BasicObject, v8:BasicObject)&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v10">v10:Fixnum[4] = Const Value(4)&nbsp;</TD></TR>
+            <TR><TD ALIGN="left" PORT="v11">Return v10&nbsp;</TD></TR>
+            </TABLE>>];
+            }
         "#]]);
     }
 }

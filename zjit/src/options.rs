@@ -37,6 +37,8 @@ pub struct Options {
     /// Dump High-level IR after optimization, right before codegen.
     pub dump_hir_opt: Option<DumpHIR>,
 
+    pub dump_hir_graphviz: bool,
+
     /// Dump low-level IR
     pub dump_lir: bool,
 
@@ -61,6 +63,7 @@ impl Default for Options {
             debug: false,
             dump_hir_init: None,
             dump_hir_opt: None,
+            dump_hir_graphviz: false,
             dump_lir: false,
             dump_disasm: false,
             perf: false,
@@ -186,6 +189,7 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("dump-hir" | "dump-hir-opt", "") => options.dump_hir_opt = Some(DumpHIR::WithoutSnapshot),
         ("dump-hir" | "dump-hir-opt", "all") => options.dump_hir_opt = Some(DumpHIR::All),
         ("dump-hir" | "dump-hir-opt", "debug") => options.dump_hir_opt = Some(DumpHIR::Debug),
+        ("dump-hir-graphviz", "") => options.dump_hir_graphviz = true,
 
         ("dump-hir-init", "") => options.dump_hir_init = Some(DumpHIR::WithoutSnapshot),
         ("dump-hir-init", "all") => options.dump_hir_init = Some(DumpHIR::All),
