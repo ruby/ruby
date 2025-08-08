@@ -614,7 +614,7 @@ RSpec.describe "major deprecations" do
       end
 
       it "prints a deprecation warning informing about its removal" do
-        expect(deprecations).to include("the `--outdated` flag to `bundle show` was undocumented and will be removed without replacement")
+        expect(deprecations).to include("the `--outdated` flag to `bundle show` will be removed in favor of `bundle show --verbose`")
       end
 
       pending "fails with a helpful message", bundler: "4"
