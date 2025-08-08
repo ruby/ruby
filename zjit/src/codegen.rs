@@ -1089,6 +1089,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         asm_comment!(asm, "guard exact class for non-immediate types");
 
         // If val isn't in a register, load it to use it as the base of Opnd::mem later.
+        // TODO: Max thinks codegen should not care about the shapes of the operands except to create them. (Shopify/ruby#685)
         let val = match val {
             Opnd::Reg(_) | Opnd::VReg { .. } => val,
             _ => asm.load(val),
