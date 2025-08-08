@@ -1432,7 +1432,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "does not fail when a platform variant is incompatible with the current ruby and another equivalent platform specific variant is part of the resolution", rubygems: ">= 3.3.21" do
+  it "does not fail when a platform variant is incompatible with the current ruby and another equivalent platform specific variant is part of the resolution" do
     build_repo4 do
       build_gem "nokogiri", "1.15.5"
 
@@ -1578,7 +1578,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "adds current musl platform, when there are also gnu variants", rubygems: ">= 3.3.21" do
+  it "adds current musl platform, when there are also gnu variants" do
     build_repo4 do
       build_gem "rcee_precompiled", "0.5.0" do |s|
         s.platform = "x86_64-linux-gnu"
