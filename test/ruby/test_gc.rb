@@ -75,12 +75,9 @@ class TestGc < Test::Unit::TestCase
     GC.start
   end
 
-  def test_gc_config_setting_returns_nil_for_missing_keys
-    missing_value = GC.config(no_such_key: true)[:no_such_key]
-    assert_nil(missing_value)
-  ensure
-    GC.config(full_mark: true)
-    GC.start
+  def test_gc_config_setting_returns_config_hash
+    hash = GC.config(no_such_key: true)
+    assert_equal(GC.config, hash)
   end
 
   def test_gc_config_disable_major

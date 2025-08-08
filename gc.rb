@@ -312,17 +312,17 @@ module GC
   #     before setting this parameter to +false+.
   #
   def self.config hash = nil
-    return Primitive.gc_config_get unless hash
-
-    if(Primitive.cexpr!("RBOOL(RB_TYPE_P(hash, T_HASH))"))
+    if Primitive.cexpr!("RBOOL(RB_TYPE_P(hash, T_HASH))")
       if hash.include?(:implementation)
         raise ArgumentError, 'Attempting to set read-only key "Implementation"'
       end
 
       Primitive.gc_config_set hash
-    else
+    elsif hash != nil
       raise ArgumentError
     end
+
+    Primitive.gc_config_get
   end
 
   # call-seq:
