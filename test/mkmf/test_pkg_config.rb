@@ -3,9 +3,7 @@ require_relative 'base'
 require 'shellwords'
 
 class TestMkmfPkgConfig < TestMkmf
-  PKG_CONFIG = config_string("PKG_CONFIG") do |path|
-    find_executable0(path, "--version") {$?.success?}
-  end
+  PKG_CONFIG = config_string("PKG_CONFIG") {|path| find_executable0(path)}
 
   def setup
     super
