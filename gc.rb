@@ -252,10 +252,11 @@ module GC
   #     GC.config -> hash
   #     GC.config(hash_to_merge) -> merged_hash
   #
-  # This method is expected to be defined, useful, and well-behaved
-  # only in the CRuby implementation.
+  # This method is implementation-specific to CRuby.
   #
   # Sets or gets information about the current \GC configuration.
+  #
+  # Configuration parameters are \GC implementation-specific and may change without notice.
   #
   # With no argument given, returns a hash containing the configuration:
   #
@@ -294,13 +295,13 @@ module GC
   #   Controls whether the \GC is allowed to run a full mark (young & old objects):
   #
   #   - +true+ (default): \GC interleaves major and minor collections.
-  #   - +false+: \GC does not initiate a full marking cycle unless
-  #     explicitly directed by user code;
+  #     A flag is set to notify GC that a full mark has been requested.
+  #     This flag is accessible via GC.latest_gc_info(:need_major_by).
+  #   - +false+: \GC does not initiate a full marking cycle unless explicitly directed by user code;
   #     see GC.start.
-  #
-  #   Setting this parameter to +false+ disables young-to-old promotion .
-  #   For performance reasons, we recommended warming up the application using Process.warmup
-  #   before setting this parameter to +false+.
+  #     Setting this parameter to +false+ disables young-to-old promotion.
+  #     For performance reasons, we recommended warming up the application using Process.warmup
+  #     before setting this parameter to +false+.
   #
   def self.config hash = nil
     return Primitive.gc_config_get unless hash
