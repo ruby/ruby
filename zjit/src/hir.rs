@@ -414,6 +414,7 @@ pub enum SideExitReason {
     GuardBitEquals(VALUE),
     PatchPoint(Invariant),
     CalleeSideExit,
+    ObjToStringFallback,
 }
 
 impl std::fmt::Display for SideExitReason {
@@ -1613,13 +1614,12 @@ impl Function {
                         self.insn_types[replacement.0] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
-                    Insn::ObjToString { val, cd, state, .. } => {
+                    Insn::ObjToString { val, .. } => {
                         if self.is_a(val, types::String) {
                             // behaves differently from `SendWithoutBlock` with `mid:to_s` because ObjToString should not have a patch point for String to_s being redefined
                             self.make_equal_to(insn_id, val);
                         } else {
-                            let replacement = self.push_insn(block, Insn::SendWithoutBlock { self_val: val, cd, args: vec![], state });
-                            self.make_equal_to(insn_id, replacement)
+                            self.push_insn_id(block, insn_id);
                         }
                     }
                     Insn::AnyToString { str, .. } => {
@@ -7235,8 +7235,8 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:Fixnum[1] = Const Value(1)
-              v11:BasicObject = SendWithoutBlock v3, :to_s
-              v7:String = AnyToString v3, str: v11
+              v5:BasicObject = ObjToString v3
+              v7:String = AnyToString v3, str: v5
               v9:StringExact = StringConcat v2, v7
               Return v9
         "#]]);
