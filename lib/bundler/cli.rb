@@ -412,6 +412,7 @@ module Bundler
     D
     def cache
       print_remembered_flag_deprecation("--all", "cache_all", "true") if ARGV.include?("--all")
+      print_remembered_flag_deprecation("--no-all", "cache_all", "false") if ARGV.include?("--no-all")
 
       if flag_passed?("--path")
         message =

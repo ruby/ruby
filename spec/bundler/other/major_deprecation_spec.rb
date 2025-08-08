@@ -199,6 +199,28 @@ RSpec.describe "major deprecations" do
     pending "fails with a helpful error", bundler: "4"
   end
 
+  context "bundle cache --no-all" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      bundle "cache --no-all", raise_on_error: false
+    end
+
+    it "should print a deprecation warning" do
+      expect(deprecations).to include(
+        "The `--no-all` flag is deprecated because it relies on being " \
+        "remembered across bundler invocations, which bundler will no " \
+        "longer do in future versions. Instead please use `bundle config set " \
+        "cache_all false`, and stop using this flag"
+      )
+    end
+
+    pending "fails with a helpful error", bundler: "4"
+  end
+
   context "bundle cache --path" do
     before do
       install_gemfile <<-G
