@@ -111,7 +111,7 @@ impl Opnd
                 })
             },
 
-            _ => unreachable!("memory operand with non-register base")
+            _ => unreachable!("memory operand with non-register base: {base:?}")
         }
     }
 

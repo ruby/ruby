@@ -1088,9 +1088,14 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
     } else if let Some(expected_class) = guard_type.runtime_exact_ruby_class() {
         asm_comment!(asm, "guard exact class for non-immediate types");
 
-        let side_exit = side_exit(jit, state, GuardType(guard_type))?;
+        // If val isn't in a register, load it to use it as the base of Opnd::mem later.
+        let val = match val {
+            Opnd::Reg(_) | Opnd::VReg { .. } => val,
+            _ => asm.load(val),
+        };
 
         // Check if it's a special constant
+        let side_exit = side_exit(jit, state, GuardType(guard_type))?;
         asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
         asm.jnz(side_exit.clone());
 
