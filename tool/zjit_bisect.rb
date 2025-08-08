@@ -6,7 +6,7 @@ require 'shellwords'
 require 'tempfile'
 require 'timeout'
 
-ARGS = {:timeout => 5}
+ARGS = {timeout: 5}
 OptionParser.new do |opts|
   opts.banner += " <path_to_ruby> -- <options>"
   opts.on("--timeout=TIMEOUT_SEC", "Seconds until child process is killed") do |timeout|
@@ -76,7 +76,7 @@ def run_ruby *cmd
   stdout_data = nil
   stderr_data = nil
   status = nil
-  Open3.popen3(Shellwords.join cmd) do |stdin, stdout, stderr, wait_thr|
+  Open3.popen3(*cmd) do |stdin, stdout, stderr, wait_thr|
     pid = wait_thr.pid
     begin
       Timeout.timeout(ARGS[:timeout]) do
@@ -128,7 +128,7 @@ File.open("jitlist.txt", "w") do |file|
   file.puts(result)
 end
 puts "Run:"
-command = Shellwords.join [RUBY, "--zjit-allowed-iseqs=jitlist.txt", *OPTIONS]
+command = [RUBY, "--zjit-allowed-iseqs=jitlist.txt", *OPTIONS].shelljoin
 puts command
 puts "Reduced JIT list (available in jitlist.txt):"
 puts result
