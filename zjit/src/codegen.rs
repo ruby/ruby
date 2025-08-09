@@ -327,6 +327,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     let out_opnd = match insn {
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
         Insn::NewArray { elements, state } => gen_new_array(asm, opnds!(elements), &function.frame_state(*state)),
+        Insn::NewHash { elements, state } => gen_new_hash(jit, asm, elements, &function.frame_state(*state))?,
         Insn::NewRange { low, high, flag, state } => gen_new_range(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
@@ -378,7 +379,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         | Insn::FixnumDiv { .. }
         | Insn::FixnumMod { .. }
         | Insn::HashDup { .. }
-        | Insn::NewHash { .. }
         | Insn::ObjToString { .. }
         | Insn::Send { .. }
         | Insn::StringIntern { .. }
@@ -917,6 +917,42 @@ fn gen_new_array(
     }
 
     new_array
+}
+
+/// Compile a new hash instruction
+fn gen_new_hash(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    elements: &Vec<(InsnId, InsnId)>,
+    state: &FrameState,
+) -> Option<lir::Opnd> {
+    gen_prepare_non_leaf_call(jit, asm, state)?;
+
+    asm_comment!(asm, "call rb_hash_new");
+    let cap: ::std::os::raw::c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+    let new_hash = asm_ccall!(asm, rb_hash_new_with_size, lir::Opnd::Imm(cap));
+
+    if !elements.is_empty() {
+        let mut pairs = Vec::new();
+        for (key_id, val_id) in elements.iter() {
+            let key = jit.get_opnd(*key_id)?;
+            let val = jit.get_opnd(*val_id)?;
+            pairs.push(key);
+            pairs.push(val);
+        }
+
+        for (i, pair) in pairs.iter().enumerate() {
+            let stack_opnd = Opnd::mem(64, SP, i as i32 * SIZEOF_VALUE_I32);
+            asm.mov(stack_opnd, *pair);
+        }
+
+        let argv = asm.lea(Opnd::mem(64, SP, 0));
+
+        let argc = (elements.len() * 2) as ::std::os::raw::c_long;
+        asm_ccall!(asm, rb_hash_bulk_insert, lir::Opnd::Imm(argc), argv, new_hash);
+    }
+
+    Some(new_hash)
 }
 
 /// Compile a new range instruction
