@@ -37,15 +37,7 @@ require 'English'
 | Variable             | English                           | Contains                                         |
 |----------------------|-----------------------------------|--------------------------------------------------|
 | <tt>$/</tt>          | <tt>$INPUT_RECORD_SEPARATOR</tt>  | Input record separator; initially newline.       |
-| <tt>$\</tt>         | <tt>$OUTPUT_RECORD_SEPARATOR</tt> | Output record separator; initially <tt>nil</tt>. |
-| <tt>$\\\</tt>        | <tt>$OUTPUT_RECORD_SEPARATOR</tt> | Output record separator; initially <tt>nil</tt>. |
-| <tt>$\\\\</tt>       | <tt>$OUTPUT_RECORD_SEPARATOR</tt> | Output record separator; initially <tt>nil</tt>. |
-| <tt>$\\\\\</tt>      | <tt>$OUTPUT_RECORD_SEPARATOR</tt> | Output record separator; initially <tt>nil</tt>. |
-| <tt>$\\\\\\</tt>     | <tt>$OUTPUT_RECORD_SEPARATOR</tt> | Output record separator; initially <tt>nil</tt>. |
-| <tt>$\\\\\\\</tt>    | <tt>$OUTPUT_RECORD_SEPARATOR</tt> | Output record separator; initially <tt>nil</tt>. |
 | <tt>$\\\\\\\\</tt>   | <tt>$OUTPUT_RECORD_SEPARATOR</tt> | Output record separator; initially <tt>nil</tt>. |
-| <tt>$\\\\\\\\\</tt>  | <tt>$OUTPUT_RECORD_SEPARATOR</tt> | Output record separator; initially <tt>nil</tt>. |
-| <tt>$\\\\\\\\\\</tt> | <tt>$OUTPUT_RECORD_SEPARATOR</tt> | Output record separator; initially <tt>nil</tt>. |
 
 ### Streams
 
