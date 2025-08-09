@@ -258,71 +258,59 @@ module GC
 
   # call-seq:
   #     GC.config -> hash
-  #     GC.config(hash) -> hash
+  #     GC.config(hash_to_merge) -> merged_hash
   #
-  # Sets or gets information about the current \GC config.
+  # This method is implementation-specific to CRuby.
   #
-  # Configuration parameters are \GC implementation-specific and may change
-  # without notice.
+  # Sets or gets information about the current \GC configuration.
   #
-  # This method can be called without parameters to retrieve the current config
-  # as a +Hash+ with +Symbol+ keys.
+  # Configuration parameters are \GC implementation-specific and may change without notice.
   #
-  # This method can also be called with a +Hash+ argument to assign values to
-  # valid config keys. Config keys missing from the passed +Hash+ will be left
-  # unmodified.
+  # With no argument given, returns a hash containing the configuration:
   #
-  # If a key/value pair is passed to this function that does not correspond to
-  # a valid config key for the \GC implementation being used, no config will be
-  # updated, the key will be present in the returned Hash, and its value will
-  # be +nil+. This is to facilitate easy migration between \GC implementations.
+  #   GC.config
+  #   # => {rgengc_allow_full_mark: true, implementation: "default"}
   #
-  # In both call-seqs, the return value of <code>GC.config</code> will be a +Hash+
-  # containing the most recent full configuration, i.e., all keys and values
-  # defined by the specific \GC implementation being used. In the case of a
-  # config update, the return value will include the new values being updated.
+  # With argument +hash_to_merge+ given,
+  # merges that hash into the stored configuration hash;
+  # ignores unknown hash keys;
+  # returns the implementation-specific configuration hash (see below):
   #
-  # This method is only expected to work on CRuby.
+  #   GC.config(rgengc_allow_full_mark: false)
+  #   # => {rgengc_allow_full_mark: false}
+  #   GC.config
+  #   # => {rgengc_allow_full_mark: false, implementation: "default"}
+  #   GC.config(foo: 'bar')
+  #   # => {rgengc_allow_full_mark: false}
+  #   GC.config
+  #   # => {rgengc_allow_full_mark: false, implementation: "default"}
   #
-  # === \GC Implementation independent values
+  # <b>All-Implementations Configuration</b>
   #
-  # The <code>GC.config</code> hash can also contain keys that are global and
-  # read-only. These keys are not specific to any one \GC library implementation
-  # and attempting to write to them will raise +ArgumentError+.
+  # The single read-only entry for all implementations is:
   #
-  # There is currently only one global, read-only key:
+  # - +implementation+:
+  #   the string name of the implementation;
+  #   for the Ruby default implementation, <tt>'default'</tt>.
   #
-  # [implementation]
-  #    Returns a +String+ containing the name of the currently loaded \GC library,
-  #    if one has been loaded using +RUBY_GC_LIBRARY+, and "default" in all other
-  #    cases
+  # <b>Implementation-Specific Configuration</b>
   #
-  # === \GC Implementation specific values
+  # A \GC implementation maintains its own implementation-specific configuration.
   #
-  # \GC libraries are expected to document their own configuration. Valid keys
-  # for Ruby's default \GC implementation are:
+  # For Ruby's default implementation the single entry is:
   #
-  # [rgengc_allow_full_mark]
-  #   Controls whether the \GC is allowed to run a full mark (young & old objects).
+  # - +rgengc_allow_full_mark+:
+  #   Controls whether the \GC is allowed to run a full mark (young & old objects):
   #
-  #   When +true+, \GC interleaves major and minor collections. This is the default. \GC
-  #   will function as intended.
+  #   - +true+ (default): \GC interleaves major and minor collections.
+  #     A flag is set to notify GC that a full mark has been requested.
+  #     This flag is accessible via GC.latest_gc_info(:need_major_by).
+  #   - +false+: \GC does not initiate a full marking cycle unless explicitly directed by user code;
+  #     see GC.start.
+  #     Setting this parameter to +false+ disables young-to-old promotion.
+  #     For performance reasons, we recommended warming up the application using Process.warmup
+  #     before setting this parameter to +false+.
   #
-  #   When +false+, the \GC will never trigger a full marking cycle unless
-  #   explicitly requested by user code. Instead, only a minor mark will run—
-  #   only young objects will be marked. When the heap space is exhausted, new
-  #   pages will be allocated immediately instead of running a full mark.
-  #
-  #   A flag will be set to notify that a full mark has been
-  #   requested. This flag is accessible using
-  #   <code>GC.latest_gc_info(:need_major_by)</code>
-  #
-  #   The user can trigger a major collection at any time using
-  #   <code>GC.start(full_mark: true)</code>
-  #
-  #   When +false+, Young to Old object promotion is disabled. For performance
-  #   reasons, it is recommended to warm up an application using +Process.warmup+
-  #   before setting this parameter to +false+.
   def self.config hash = nil
     return Primitive.gc_config_get unless hash
 
