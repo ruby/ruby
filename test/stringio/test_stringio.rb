@@ -70,6 +70,16 @@ class TestStringIO < Test::Unit::TestCase
     assert_nil io.getc
   end
 
+  def test_seek_null
+    io = StringIO.new(nil)
+    assert_equal(0, io.seek(0, IO::SEEK_SET))
+    assert_equal(0, io.pos)
+    assert_equal(0, io.seek(0, IO::SEEK_CUR))
+    assert_equal(0, io.pos)
+    assert_equal(0, io.seek(0, IO::SEEK_END))  # This should not segfault
+    assert_equal(0, io.pos)
+  end
+
   def test_truncate
     io = StringIO.new("")
     io.puts "abc"

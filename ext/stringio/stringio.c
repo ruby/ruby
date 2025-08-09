@@ -837,7 +837,11 @@ strio_seek(int argc, VALUE *argv, VALUE self)
 	offset = ptr->pos;
 	break;
       case 2:
-	offset = RSTRING_LEN(ptr->string);
+	if (NIL_P(ptr->string)) {
+	    offset = 0;
+	} else {
+	    offset = RSTRING_LEN(ptr->string);
+	}
 	break;
       default:
 	error_inval("invalid whence");
