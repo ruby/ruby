@@ -1231,13 +1231,20 @@ rb_obj_fields(VALUE obj, ID field_name)
     VALUE fields_obj = 0;
     if (rb_shape_obj_has_fields(obj)) {
         switch (BUILTIN_TYPE(obj)) {
+          case T_DATA:
+            if (LIKELY(RTYPEDDATA_P(obj))) {
+                fields_obj = RTYPEDDATA(obj)->fields_obj;
+                break;
+            }
+            goto generic_fields;
           case T_STRUCT:
             if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
                 fields_obj = RSTRUCT_FIELDS_OBJ(obj);
                 break;
             }
-            // fall through
+            goto generic_fields;
           default:
+          generic_fields:
             RB_VM_LOCKING() {
                 if (!st_lookup(generic_fields_tbl_, (st_data_t)obj, (st_data_t *)&fields_obj)) {
                     rb_bug("Object is missing entry in generic_fields_tbl");
@@ -1254,13 +1261,20 @@ rb_free_generic_ivar(VALUE obj)
     if (rb_obj_exivar_p(obj)) {
         st_data_t key = (st_data_t)obj, value;
         switch (BUILTIN_TYPE(obj)) {
+          case T_DATA:
+            if (LIKELY(RTYPEDDATA_P(obj))) {
+                RB_OBJ_WRITE(obj, &RTYPEDDATA(obj)->fields_obj, 0);
+                break;
+            }
+            goto generic_fields;
           case T_STRUCT:
             if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
                 RSTRUCT_SET_FIELDS_OBJ(obj, 0);
                 break;
             }
-            // fall through
+            goto generic_fields;
           default:
+          generic_fields:
             RB_VM_LOCKING() {
                 st_delete(generic_fields_tbl_no_ractor_check(), &key, &value);
             }
@@ -1279,13 +1293,20 @@ rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fie
 
     if (fields_obj != original_fields_obj) {
         switch (BUILTIN_TYPE(obj)) {
+          case T_DATA:
+            if (LIKELY(RTYPEDDATA_P(obj))) {
+                RB_OBJ_WRITE(obj, &RTYPEDDATA(obj)->fields_obj, fields_obj);
+                break;
+            }
+            goto generic_fields;
           case T_STRUCT:
             if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
                 RSTRUCT_SET_FIELDS_OBJ(obj, fields_obj);
                 break;
             }
-            // fall through
+            goto generic_fields;
           default:
+          generic_fields:
             RB_VM_LOCKING() {
                 st_insert(generic_fields_tbl_, (st_data_t)obj, (st_data_t)fields_obj);
             }
