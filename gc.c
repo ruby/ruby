@@ -4357,7 +4357,7 @@ gc_config_set(rb_execution_context_t *ec, VALUE self, VALUE hash)
 
     rb_gc_impl_config_set(objspace, hash);
 
-    return rb_gc_impl_config_get(objspace);
+    return Qnil;
 }
 
 static VALUE
