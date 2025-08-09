@@ -86,25 +86,37 @@ jobs:
       - name: Misc system & package info
         working-directory:
         run: |
-          # show where
-          result=true
-          for e in gcc.exe ragel.exe make.exe libcrypto-3-x64.dll libssl-3-x64.dll; do
-            echo ::group::$'\e[93m'$e$'\e[m'
-            where $e || result=false
-            echo ::endgroup::
-          done
-          # show version
-          for e in gcc ragel make "openssl version"; do
-            case "$e" in *" "*) ;; *) e="$e --version";; esac
-            echo ::group::$'\e[93m'$e$'\e[m'
-            $e || result=false
-            echo ::endgroup::
-          done
-          # show packages
-          echo ::group::$'\e[93m'Packages$'\e[m'
-          pacman -Qs mingw-w64-ucrt-x86_64-* | sed -n "s,local/mingw-w64-ucrt-x86_64-,,p"
-          echo ::endgroup::
-          $result
+          group() { echo ::group::$'\e[94;1m'"$*"$'\e[m'; }
+          endgroup() { echo ::endgroup::; }
+
+          group Path
+          cygpath -wa / . $(type -p cygpath bash sh)
+          endgroup
+
+          I() {
+              group $1
+              run Where type -pa $1 && { [ $# -eq 1 ] || run Version "$@"; } ||
+                  failed+=($1)
+              endgroup
+          }
+          run() { local w m=$1; shift; w="$("$@")" && show "$m" && indent "$w"; }
+          indent() { [ -z "$1" ] || echo "$1" | /bin/sed '/^$/!s/^/  /'; }
+          show() { echo $'\e[96m'"$*"$'\e[m'; }
+
+          failed=()
+
+          I gcc.exe --version
+          I ragel.exe --version
+          I make.exe --version
+          I openssl.exe version
+          I libcrypto-3-x64.dll
+          I libssl-3-x64.dll
+
+          group Packages
+          pacman -Qs mingw-w64-ucrt-x86_64-* | /bin/sed -n "s,local/mingw-w64-ucrt-x86_64-,,p"
+          endgroup
+
+          [ ${#failed[@]} -eq 0 ]
 
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
