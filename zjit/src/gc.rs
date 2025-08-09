@@ -1,7 +1,8 @@
 // This module is responsible for marking/moving objects on GC.
 
 use std::{ffi::c_void, ops::Range};
-use crate::{cruby::*, profile::IseqProfile, state::ZJITState, virtualmem::CodePtr};
+use crate::{cruby::*, profile::IseqProfile, state::ZJITState, stats::with_time_stat, virtualmem::CodePtr};
+use crate::stats::Counter::gc_time_ns;
 
 /// This is all the data ZJIT stores on an ISEQ. We mark objects in this struct on GC.
 #[derive(Debug)]
@@ -65,6 +66,7 @@ fn payload_ptr_as_mut(payload_ptr: *mut IseqPayload) -> &'static mut IseqPayload
     unsafe { payload_ptr.as_mut() }.unwrap()
 }
 
+/// GC callback for marking GC objects in the per-ISEQ payload.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_iseq_mark(payload: *mut c_void) {
     let payload = if payload.is_null() {
@@ -80,7 +82,29 @@ pub extern "C" fn rb_zjit_iseq_mark(payload: *mut c_void) {
             &*(payload as *const IseqPayload)
         }
     };
+    with_time_stat(gc_time_ns, || iseq_mark(payload));
+}
 
+/// GC callback for updating GC objects in the per-ISEQ payload.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_iseq_update_references(payload: *mut c_void) {
+    let payload = if payload.is_null() {
+        return; // nothing to update
+    } else {
+        // SAFETY: The GC takes the VM lock while marking, which
+        // we assert, so we should be synchronized and data race free.
+        //
+        // For aliasing, having the VM lock hopefully also implies that no one
+        // else has an overlapping &mut IseqPayload.
+        unsafe {
+            rb_assert_holding_vm_lock();
+            &mut *(payload as *mut IseqPayload)
+        }
+    };
+    with_time_stat(gc_time_ns, || iseq_update_references(payload));
+}
+
+fn iseq_mark(payload: &IseqPayload) {
     // Mark objects retained by profiling instructions
     payload.profile.each_object(|object| {
         unsafe { rb_gc_mark_movable(object); }
@@ -100,24 +124,8 @@ pub extern "C" fn rb_zjit_iseq_mark(payload: *mut c_void) {
     }
 }
 
-/// GC callback for updating GC objects in the per-ISEQ payload.
-/// This is a mirror of [rb_zjit_iseq_mark].
-#[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_iseq_update_references(payload: *mut c_void) {
-    let payload = if payload.is_null() {
-        return; // nothing to update
-    } else {
-        // SAFETY: The GC takes the VM lock while marking, which
-        // we assert, so we should be synchronized and data race free.
-        //
-        // For aliasing, having the VM lock hopefully also implies that no one
-        // else has an overlapping &mut IseqPayload.
-        unsafe {
-            rb_assert_holding_vm_lock();
-            &mut *(payload as *mut IseqPayload)
-        }
-    };
-
+/// This is a mirror of [iseq_mark].
+fn iseq_update_references(payload: &mut IseqPayload) {
     // Move objects retained by profiling instructions
     payload.profile.each_object_mut(|object| {
         *object = unsafe { rb_gc_location(*object) };
