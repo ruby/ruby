@@ -1242,6 +1242,7 @@ pub(crate) mod ids {
         name: freeze
         name: minusat            content: b"-@"
         name: aref               content: b"[]"
+        name: ZJIT
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.
