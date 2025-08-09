@@ -14598,6 +14598,7 @@ ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
+ruby.$(OBJEXT): $(top_srcdir)/version.h
 ruby.$(OBJEXT): {$(VPATH)}assert.h
 ruby.$(OBJEXT): {$(VPATH)}atomic.h
 ruby.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -14781,6 +14782,7 @@ ruby.$(OBJEXT): {$(VPATH)}prism/ast.h
 ruby.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 ruby.$(OBJEXT): {$(VPATH)}prism/version.h
 ruby.$(OBJEXT): {$(VPATH)}prism_compile.h
+ruby.$(OBJEXT): {$(VPATH)}revision.h
 ruby.$(OBJEXT): {$(VPATH)}ruby.c
 ruby.$(OBJEXT): {$(VPATH)}ruby_assert.h
 ruby.$(OBJEXT): {$(VPATH)}ruby_atomic.h
