@@ -672,6 +672,11 @@ $ ruby --internal-encoding=cesu-8 -e 'puts Encoding::default_internal'
 CESU-8
 ```
 
+### `--jit`
+
+Option `--jit` is an alias for option `--yjit`, which enables YJIT;
+see additional YJIT options in the [YJIT documentation](rdoc-ref:yjit/yjit.md).
+
 ### `--verbose`: Set `$VERBOSE`
 
 Option `--verbose` sets global variable `$VERBOSE` to `true`
@@ -680,45 +685,4 @@ and disables input from `$stdin`.
 ### `--version`: Print Ruby Version
 
 Option `--version` prints the version of the Ruby interpreter, then exits.
-
-## Experimental Options
-
-These options are experimental in the current Ruby release,
-and may be modified or withdrawn in later releases.
-
-### `--jit`
-
-Option `-jit` enables JIT compilation with the default option.
-
-#### `--jit-debug`
-
-Option `--jit-debug` enables JIT debugging (very slow);
-adds compiler flags if given.
-
-#### `--jit-max-cache=num`
-
-Option `--jit-max-cache=num` sets the maximum number of methods
-to be JIT-ed in a cache; default: 100).
-
-#### `--jit-min-calls=num`
-
-Option `jit-min-calls=num` sets the minimum number of calls to trigger JIT
-(for testing); default: 10000).
-
-#### `--jit-save-temps`
-
-Option `--jit-save-temps` saves JIT temporary files in $TMP or /tmp (for testing).
-
-#### `--jit-verbose`
-
-Option `--jit-verbose` prints JIT logs of level `num` or less
-to `$stderr`; default: 0.
-
-#### `--jit-wait`
-
-Option `--jit-wait` waits until JIT compilation finishes every time (for testing).
-
-#### `--jit-warnings`
-
-Option `--jit-warnings` enables printing of JIT warnings.
 
