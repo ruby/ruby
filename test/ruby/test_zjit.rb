@@ -1570,9 +1570,9 @@ class TestZJIT < Test::Unit::TestCase
     if zjit
       args << "--zjit-call-threshold=#{call_threshold}"
       args << "--zjit-num-profiles=#{num_profiles}"
+      args << "--zjit-stats" if stats
+      args << "--zjit-debug" if debug
     end
-    args << "--zjit-stats" if zjit && stats
-    args << "--zjit-debug" if zjit && debug
     args << "-e" << script_shell_encode(script)
     pipe_r, pipe_w = IO.pipe
     # Separate thread so we don't deadlock when
