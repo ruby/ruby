@@ -1935,7 +1935,7 @@ Init_stringio(void)
 #undef rb_intern
 
 #ifdef HAVE_RB_EXT_RACTOR_SAFE
-  rb_ext_ractor_safe(true);
+    rb_ext_ractor_safe(true);
 #endif
 
     VALUE StringIO = rb_define_class("StringIO", rb_cObject);
