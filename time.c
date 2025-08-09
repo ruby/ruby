@@ -1891,8 +1891,8 @@ static void
 time_mark_and_move(void *ptr)
 {
     struct time_object *tobj = ptr;
-    if (!FIXWV_P(tobj->timew)) {
-        rb_gc_mark_and_move(&WIDEVAL_GET(tobj->timew));
+    if (!WIDEVALUE_IS_WIDER || !FIXWV_P(tobj->timew)) {
+        rb_gc_mark_and_move((VALUE *)&WIDEVAL_GET(tobj->timew));
     }
     rb_gc_mark_and_move(&tobj->vtm.year);
     rb_gc_mark_and_move(&tobj->vtm.subsecx);
