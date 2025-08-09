@@ -814,14 +814,14 @@ VALUE
 ossl_pkey_export_traditional(int argc, VALUE *argv, VALUE self, int to_der)
 {
     EVP_PKEY *pkey;
-    VALUE cipher, pass;
+    VALUE cipher, pass, cipher_holder;
     const EVP_CIPHER *enc = NULL;
     BIO *bio;
 
     GetPKey(self, pkey);
     rb_scan_args(argc, argv, "02", &cipher, &pass);
     if (!NIL_P(cipher)) {
-	enc = ossl_evp_get_cipherbyname(cipher);
+        enc = ossl_evp_cipher_fetch(cipher, &cipher_holder);
 	pass = ossl_pem_passwd_value(pass);
     }
 
@@ -849,7 +849,7 @@ static VALUE
 do_pkcs8_export(int argc, VALUE *argv, VALUE self, int to_der)
 {
     EVP_PKEY *pkey;
-    VALUE cipher, pass;
+    VALUE cipher, pass, cipher_holder;
     const EVP_CIPHER *enc = NULL;
     BIO *bio;
 
@@ -860,7 +860,7 @@ do_pkcs8_export(int argc, VALUE *argv, VALUE self, int to_der)
 	 * TODO: EncryptedPrivateKeyInfo actually has more options.
 	 * Should they be exposed?
 	 */
-	enc = ossl_evp_get_cipherbyname(cipher);
+        enc = ossl_evp_cipher_fetch(cipher, &cipher_holder);
 	pass = ossl_pem_passwd_value(pass);
     }
 

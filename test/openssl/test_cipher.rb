@@ -345,6 +345,24 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
 
   end if has_cipher?("aes-128-ocb")
 
+  def test_aes_gcm_siv
+    # RFC 8452 Appendix C.1., 8th example
+    key = ["01000000000000000000000000000000"].pack("H*")
+    iv  = ["030000000000000000000000"].pack("H*")
+    aad = ["01"].pack("H*")
+    pt =  ["0200000000000000"].pack("H*")
+    ct =  ["1e6daba35669f4273b0a1a2560969cdf790d99759abd1508"].pack("H*")
+    tag = ["3b0a1a2560969cdf790d99759abd1508"].pack("H*")
+    ct_without_tag = ct.byteslice(0, ct.bytesize - tag.bytesize)
+
+    cipher = new_encryptor("aes-128-gcm-siv", key: key, iv: iv, auth_data: aad)
+    assert_equal ct_without_tag, cipher.update(pt) << cipher.final
+    assert_equal tag, cipher.auth_tag
+    cipher = new_decryptor("aes-128-gcm-siv", key: key, iv: iv, auth_tag: tag,
+                           auth_data: aad)
+    assert_equal pt, cipher.update(ct_without_tag) << cipher.final
+  end if openssl?(3, 2, 0)
+
   def test_aes_gcm_key_iv_order_issue
     pt = "[ruby/openssl#49]"
     cipher = OpenSSL::Cipher.new("aes-128-gcm").encrypt

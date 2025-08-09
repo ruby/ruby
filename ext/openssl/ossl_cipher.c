@@ -33,7 +33,7 @@
 static VALUE cCipher;
 static VALUE eCipherError;
 static VALUE eAuthTagError;
-static ID id_auth_tag_len, id_key_set;
+static ID id_auth_tag_len, id_key_set, id_cipher_holder;
 
 static VALUE ossl_cipher_alloc(VALUE klass);
 static void ossl_cipher_free(void *ptr);
@@ -46,30 +46,58 @@ static const rb_data_type_t ossl_cipher_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
+#ifdef OSSL_USE_PROVIDER
+static void
+ossl_evp_cipher_free(void *ptr)
+{
+    // This is safe to call against const EVP_CIPHER * returned by
+    // EVP_get_cipherbyname()
+    EVP_CIPHER_free(ptr);
+}
+
+static const rb_data_type_t ossl_evp_cipher_holder_type = {
+    "OpenSSL/EVP_CIPHER",
+    {
+        .dfree = ossl_evp_cipher_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+};
+#endif
+
 /*
  * PUBLIC
  */
 const EVP_CIPHER *
-ossl_evp_get_cipherbyname(VALUE obj)
+ossl_evp_cipher_fetch(VALUE obj, volatile VALUE *holder)
 {
+    *holder = Qnil;
     if (rb_obj_is_kind_of(obj, cCipher)) {
-	EVP_CIPHER_CTX *ctx;
-
-	GetCipher(obj, ctx);
-
-	return EVP_CIPHER_CTX_cipher(ctx);
+        EVP_CIPHER_CTX *ctx;
+        GetCipher(obj, ctx);
+        EVP_CIPHER *cipher = (EVP_CIPHER *)EVP_CIPHER_CTX_cipher(ctx);
+#ifdef OSSL_USE_PROVIDER
+        *holder = TypedData_Wrap_Struct(0, &ossl_evp_cipher_holder_type, NULL);
+        if (!EVP_CIPHER_up_ref(cipher))
+            ossl_raise(eCipherError, "EVP_CIPHER_up_ref");
+        RTYPEDDATA_DATA(*holder) = cipher;
+#endif
+        return cipher;
     }
-    else {
-	const EVP_CIPHER *cipher;
 
-	StringValueCStr(obj);
-	cipher = EVP_get_cipherbyname(RSTRING_PTR(obj));
-	if (!cipher)
-	    ossl_raise(eCipherError, "unsupported cipher algorithm: %"PRIsVALUE,
-                       obj);
-
-	return cipher;
+    const char *name = StringValueCStr(obj);
+    EVP_CIPHER *cipher = (EVP_CIPHER *)EVP_get_cipherbyname(name);
+#ifdef OSSL_USE_PROVIDER
+    if (!cipher) {
+        ossl_clear_error();
+        *holder = TypedData_Wrap_Struct(0, &ossl_evp_cipher_holder_type, NULL);
+        cipher = EVP_CIPHER_fetch(NULL, name, NULL);
+        RTYPEDDATA_DATA(*holder) = cipher;
     }
+#endif
+    if (!cipher)
+        ossl_raise(eCipherError, "unsupported cipher algorithm: %"PRIsVALUE,
+                   obj);
+    return cipher;
 }
 
 VALUE
@@ -78,6 +106,9 @@ ossl_cipher_new(const EVP_CIPHER *cipher)
     VALUE ret;
     EVP_CIPHER_CTX *ctx;
 
+    // NOTE: This does not set id_cipher_holder because this function should
+    // only be called from ossl_engine.c, which will not use any
+    // reference-counted ciphers.
     ret = ossl_cipher_alloc(cCipher);
     AllocCipher(ret, ctx);
     if (EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, -1) != 1)
@@ -114,15 +145,17 @@ ossl_cipher_initialize(VALUE self, VALUE str)
 {
     EVP_CIPHER_CTX *ctx;
     const EVP_CIPHER *cipher;
+    VALUE cipher_holder;
 
     GetCipherInit(self, ctx);
     if (ctx) {
 	ossl_raise(rb_eRuntimeError, "Cipher already initialized!");
     }
-    cipher = ossl_evp_get_cipherbyname(str);
+    cipher = ossl_evp_cipher_fetch(str, &cipher_holder);
     AllocCipher(self, ctx);
     if (EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, -1) != 1)
-	ossl_raise(eCipherError, NULL);
+        ossl_raise(eCipherError, "EVP_CipherInit_ex");
+    rb_ivar_set(self, id_cipher_holder, cipher_holder);
 
     return self;
 }
@@ -1106,4 +1139,5 @@ Init_ossl_cipher(void)
 
     id_auth_tag_len = rb_intern_const("auth_tag_len");
     id_key_set = rb_intern_const("key_set");
+    id_cipher_holder = rb_intern_const("EVP_CIPHER_holder");
 }

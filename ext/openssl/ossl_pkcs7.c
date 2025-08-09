@@ -68,7 +68,7 @@ static VALUE cPKCS7;
 static VALUE cPKCS7Signer;
 static VALUE cPKCS7Recipient;
 static VALUE ePKCS7Error;
-static ID id_md_holder;
+static ID id_md_holder, id_cipher_holder;
 
 static void
 ossl_pkcs7_free(void *ptr)
@@ -313,7 +313,7 @@ ossl_pkcs7_s_sign(int argc, VALUE *argv, VALUE klass)
 static VALUE
 ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE certs, data, cipher, flags;
+    VALUE certs, data, cipher, flags, cipher_holder;
     STACK_OF(X509) *x509s;
     BIO *in;
     const EVP_CIPHER *ciph;
@@ -327,7 +327,7 @@ ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
                  "cipher must be specified. Before version 3.3, " \
                  "the default cipher was RC2-40-CBC.");
     }
-    ciph = ossl_evp_get_cipherbyname(cipher);
+    ciph = ossl_evp_cipher_fetch(cipher, &cipher_holder);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     ret = NewPKCS7(cPKCS7);
     in = ossl_obj2bio(&data);
@@ -344,6 +344,7 @@ ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
     BIO_free(in);
     SetPKCS7(ret, p7);
     ossl_pkcs7_set_data(ret, data);
+    rb_ivar_set(ret, id_cipher_holder, cipher_holder);
     sk_X509_pop_free(x509s, X509_free);
 
     return ret;
@@ -536,11 +537,14 @@ static VALUE
 ossl_pkcs7_set_cipher(VALUE self, VALUE cipher)
 {
     PKCS7 *pkcs7;
+    const EVP_CIPHER *ciph;
+    VALUE cipher_holder;
 
     GetPKCS7(self, pkcs7);
-    if (!PKCS7_set_cipher(pkcs7, ossl_evp_get_cipherbyname(cipher))) {
-	ossl_raise(ePKCS7Error, NULL);
-    }
+    ciph = ossl_evp_cipher_fetch(cipher, &cipher_holder);
+    if (!PKCS7_set_cipher(pkcs7, ciph))
+        ossl_raise(ePKCS7Error, "PKCS7_set_cipher");
+    rb_ivar_set(self, id_cipher_holder, cipher_holder);
 
     return cipher;
 }
@@ -1165,4 +1169,5 @@ Init_ossl_pkcs7(void)
     DefPKCS7Const(NOSMIMECAP);
 
     id_md_holder = rb_intern_const("EVP_MD_holder");
+    id_cipher_holder = rb_intern_const("EVP_CIPHER_holder");
 }
