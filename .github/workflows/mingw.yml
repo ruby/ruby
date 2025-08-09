@@ -70,6 +70,24 @@ jobs:
         with:
           ruby-version: '3.2'
 
+      - name: Set up env
+        id: setup-env
+        working-directory:
+        run: |
+          $msys2 = ${env:MSYS2_LOCATION}
+          echo $msys2\usr\bin $msys2\ucrt64\bin |
+            Tee-Object ${env:GITHUB_PATH} -Append -Encoding utf-8
+
+          # Use the fast device for the temporary directory.
+          # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
+          # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
+          $tmp = ${env:RUNNER_TEMP}
+          echo HOME=$home TMP=$tmp TEMP=$tmp TMPDIR=$tmp |
+            Tee-Object ${env:GITHUB_ENV} -Append -Encoding utf-8
+        shell: pwsh             # cmd.exe does not strip spaces before `|`.
+        env:
+          MSYS2_LOCATION: ${{ env.RI_DEVKIT }}
+
       - name: Remove Strawberry Perl pkg-config
         working-directory:
         # `pkg-config.bat` included in Strawberry Perl is written in
