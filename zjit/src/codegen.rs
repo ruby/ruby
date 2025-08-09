@@ -330,6 +330,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::NewRange { low, high, flag, state } => gen_new_range(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
+        Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, opnds!(strings), &function.frame_state(*state))?,
         Insn::Param { idx } => unreachable!("block.insns should not have Insn::Param({idx})"),
         Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
         Insn::Jump(branch) => return gen_jump(jit, asm, branch),
@@ -1453,6 +1454,30 @@ pub fn gen_stub_exit(cb: &mut CodeBlock) -> Option<CodePtr> {
         assert_eq!(gc_offsets.len(), 0);
         code_ptr
     })
+}
+
+fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>, state: &FrameState) -> Option<Opnd> {
+    gen_prepare_non_leaf_call(jit, asm, state)?;
+
+    let n = strings.len();
+
+    // Write string values to the Ruby stack
+    asm_comment!(asm, "write strings to stack for rb_str_concat_literals");
+    for (idx, &string_opnd) in strings.iter().enumerate() {
+        let stack_opnd = Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32);
+        asm.mov(stack_opnd, string_opnd);
+    }
+
+    // Get pointer to the first string value on the stack
+    let values_ptr = asm.lea(Opnd::mem(64, SP, 0));
+
+    // Call rb_str_concat_literals(n, values_ptr)
+    let result = asm.ccall(
+        rb_str_concat_literals as *const u8,
+        vec![n.into(), values_ptr]
+    );
+
+    Some(result)
 }
 
 impl Assembler {
