@@ -203,6 +203,18 @@ check_modifiable(struct StringIO *ptr)
     }
 }
 
+static inline bool
+outside_p(struct StringIO *ptr, long pos)
+{
+    return NIL_P(ptr->string) || pos >= RSTRING_LEN(ptr->string);
+}
+
+static inline bool
+eos_p(struct StringIO *ptr)
+{
+    return outside_p(ptr, ptr->pos);
+}
+
 static VALUE
 strio_s_allocate(VALUE klass)
 {
@@ -628,9 +640,8 @@ static struct StringIO *
 strio_to_read(VALUE self)
 {
     struct StringIO *ptr = readable(self);
-    if (NIL_P(ptr->string)) return NULL;
-    if (ptr->pos < RSTRING_LEN(ptr->string)) return ptr;
-    return NULL;
+    if (eos_p(ptr)) return NULL;
+    return ptr;
 }
 
 /*
@@ -910,7 +921,7 @@ strio_getc(VALUE self)
     int len;
     char *p;
 
-    if (NIL_P(str) || pos >= RSTRING_LEN(str)) {
+    if (eos_p(ptr)) {
 	return Qnil;
     }
     p = RSTRING_PTR(str)+pos;
@@ -931,7 +942,7 @@ strio_getbyte(VALUE self)
 {
     struct StringIO *ptr = readable(self);
     int c;
-    if (NIL_P(ptr->string) || ptr->pos >= RSTRING_LEN(ptr->string)) {
+    if (eos_p(ptr)) {
 	return Qnil;
     }
     c = RSTRING_PTR(ptr->string)[ptr->pos++];
@@ -1609,10 +1620,9 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	    if (len < 0) {
 		rb_raise(rb_eArgError, "negative length %ld given", len);
 	    }
-	    if (len > 0 &&
-		(NIL_P(ptr->string) || ptr->pos >= RSTRING_LEN(ptr->string))) {
+	    if (eos_p(ptr)) {
 		if (!NIL_P(str)) rb_str_resize(str, 0);
-		return Qnil;
+		return len > 0 ? Qnil : rb_str_new(0, 0);
 	    }
 	    binary = 1;
 	    break;
@@ -1688,7 +1698,7 @@ strio_pread(int argc, VALUE *argv, VALUE self)
 
     struct StringIO *ptr = readable(self);
 
-    if (offset >= RSTRING_LEN(ptr->string)) {
+    if (outside_p(ptr, offset)) {
 	rb_eof_error();
     }
 
