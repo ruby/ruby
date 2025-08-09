@@ -117,6 +117,7 @@ jobs:
           endgroup
 
           [ ${#failed[@]} -eq 0 ]
+        shell: sh
 
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -135,6 +136,7 @@ jobs:
         run: >
           ../src/configure --disable-install-doc --prefix=/.
           --build=$CHOST --host=$CHOST --target=$CHOST
+        shell: sh
 
       - name: make all
         timeout-minutes: 30
@@ -157,7 +159,6 @@ jobs:
       - name: test
         timeout-minutes: 30
         run: make test
-        shell: cmd
         env:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-v --tty=no'
@@ -165,7 +166,6 @@ jobs:
 
       - name: test-all
         timeout-minutes: 45
-        shell: cmd
         run: |
           make ${{ StartsWith(matrix.test_task, 'test/') && matrix.test_task || 'test-all' }}
         env:
@@ -180,7 +180,6 @@ jobs:
         timeout-minutes: 10
         run: |
           make ${{ StartsWith(matrix.test_task, 'spec/') && matrix.test_task || 'test-spec' }}
-        shell: cmd
         if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-spec' || StartsWith(matrix.test_task, 'spec/') }}
 
       - uses: ./src/.github/actions/slack
@@ -192,4 +191,4 @@ jobs:
 defaults:
   run:
     working-directory: build
-    shell: sh
+    shell: cmd
