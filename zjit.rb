@@ -14,7 +14,12 @@ module RubyVM::ZJIT
 end
 
 class << RubyVM::ZJIT
-  # Return ZJIT statistics as a Hash
+  # Check if \ZJIT is enabled
+  def enabled?
+    Primitive.cexpr! 'RBOOL(rb_zjit_enabled_p)'
+  end
+
+  # Return \ZJIT statistics as a Hash
   def stats
     stats = Primitive.rb_zjit_stats
 
@@ -26,7 +31,7 @@ class << RubyVM::ZJIT
     stats
   end
 
-  # Get the summary of ZJIT statistics as a String
+  # Get the summary of \ZJIT statistics as a String
   def stats_string
     buf = +''
     stats = self.stats
