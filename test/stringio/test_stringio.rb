@@ -70,6 +70,11 @@ class TestStringIO < Test::Unit::TestCase
     assert_nil io.getc
   end
 
+  def test_pread_eof
+    io = StringIO.new(nil)
+    assert_predicate io, :eof?
+  end
+
   def test_pread_null
     io = StringIO.new(nil)
     assert_raise(EOFError) { io.pread(1, 0) }
