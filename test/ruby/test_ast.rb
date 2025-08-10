@@ -1514,6 +1514,20 @@ dummy
       assert_locations(node.children[-1].children[1].children[0].locations, [[1, 11, 1, 17], [1, 13, 1, 15], nil, nil])
     end
 
+    def test_in_locations
+      node = ast_parse("case 1; in 2 then 3; end")
+      assert_locations(node.children[-1].children[1].locations, [[1, 8, 1, 20], [1, 8, 1, 10], [1, 13, 1, 17], nil])
+
+      node = ast_parse("1 => a")
+      assert_locations(node.children[-1].children[1].locations, [[1, 5, 1, 6], nil, nil, [1, 2, 1, 4]])
+
+      node = ast_parse("1 in a")
+      assert_locations(node.children[-1].children[1].locations, [[1, 5, 1, 6], [1, 2, 1, 4], nil, nil])
+
+      node = ast_parse("case 1; in 2; 3; end")
+      assert_locations(node.children[-1].children[1].locations, [[1, 8, 1, 16], [1, 8, 1, 10], [1, 12, 1, 13], nil])
+    end
+
     def test_next_locations
       node = ast_parse("loop { next 1 }")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 13], [1, 7, 1, 11]])

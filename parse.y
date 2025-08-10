@@ -1070,7 +1070,7 @@ static rb_node_case_t *rb_node_case_new(struct parser_params *p, NODE *nd_head, 
 static rb_node_case2_t *rb_node_case2_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *case_keyword_loc, const YYLTYPE *end_keyword_loc);
 static rb_node_case3_t *rb_node_case3_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *case_keyword_loc, const YYLTYPE *end_keyword_loc);
 static rb_node_when_t *rb_node_when_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *then_keyword_loc);
-static rb_node_in_t *rb_node_in_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc);
+static rb_node_in_t *rb_node_in_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc, const YYLTYPE *in_keyword_loc, const YYLTYPE *then_keyword_loc, const YYLTYPE *operator_loc);
 static rb_node_while_t *rb_node_while_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, long nd_state, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *closing_loc);
 static rb_node_until_t *rb_node_until_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, long nd_state, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *closing_loc);
 static rb_node_iter_t *rb_node_iter_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc);
@@ -1178,7 +1178,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_CASE2(b,loc,ck_loc,ek_loc) (NODE *)rb_node_case2_new(p,b,loc,ck_loc,ek_loc)
 #define NEW_CASE3(h,b,loc,ck_loc,ek_loc) (NODE *)rb_node_case3_new(p,h,b,loc,ck_loc,ek_loc)
 #define NEW_WHEN(c,t,e,loc,k_loc,t_loc) (NODE *)rb_node_when_new(p,c,t,e,loc,k_loc,t_loc)
-#define NEW_IN(c,t,e,loc) (NODE *)rb_node_in_new(p,c,t,e,loc)
+#define NEW_IN(c,t,e,loc,ik_loc,tk_loc,o_loc) (NODE *)rb_node_in_new(p,c,t,e,loc,ik_loc,tk_loc,o_loc)
 #define NEW_WHILE(c,b,n,loc,k_loc,c_loc) (NODE *)rb_node_while_new(p,c,b,n,loc,k_loc,c_loc)
 #define NEW_UNTIL(c,b,n,loc,k_loc,c_loc) (NODE *)rb_node_until_new(p,c,b,n,loc,k_loc,c_loc)
 #define NEW_ITER(a,b,loc) (NODE *)rb_node_iter_new(p,a,b,loc)
@@ -3472,7 +3472,7 @@ expr		: command_call
                         pop_pktbl(p, $p_pktbl);
                         pop_pvtbl(p, $p_pvtbl);
                         p->ctxt.in_kwarg = $ctxt.in_kwarg;
-                        $$ = NEW_CASE3($arg, NEW_IN($body, 0, 0, &@body), &@$, &NULL_LOC, &NULL_LOC);
+                        $$ = NEW_CASE3($arg, NEW_IN($body, 0, 0, &@body, &NULL_LOC, &NULL_LOC, &@2), &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: case!($:arg, in!($:body, Qnil, Qnil)) %*/
                     }
                 | arg keyword_in
@@ -3485,7 +3485,7 @@ expr		: command_call
                         pop_pktbl(p, $p_pktbl);
                         pop_pvtbl(p, $p_pvtbl);
                         p->ctxt.in_kwarg = $ctxt.in_kwarg;
-                        $$ = NEW_CASE3($arg, NEW_IN($body, NEW_TRUE(&@body), NEW_FALSE(&@body), &@body), &@$, &NULL_LOC, &NULL_LOC);
+                        $$ = NEW_CASE3($arg, NEW_IN($body, NEW_TRUE(&@body), NEW_FALSE(&@body), &@body, &@keyword_in, &NULL_LOC, &NULL_LOC), &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: case!($:arg, in!($:body, Qnil, Qnil)) %*/
                     }
                 | arg %prec tLBRACE_ARG
@@ -5399,7 +5399,7 @@ p_case_body	: keyword_in
                   compstmt(stmts)
                   p_cases[cases]
                     {
-                        $$ = NEW_IN($expr, $compstmt, $cases, &@$);
+                        $$ = NEW_IN($expr, $compstmt, $cases, &@$, &@keyword_in, &@then, &NULL_LOC);
                     /*% ripper: in!($:expr, $:compstmt, $:cases) %*/
                     }
                 ;
@@ -11528,12 +11528,15 @@ rb_node_when_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd
 }
 
 static rb_node_in_t *
-rb_node_in_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc)
+rb_node_in_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc, const YYLTYPE *in_keyword_loc, const YYLTYPE *then_keyword_loc, const YYLTYPE *operator_loc)
 {
     rb_node_in_t *n = NODE_NEWNODE(NODE_IN, rb_node_in_t, loc);
     n->nd_head = nd_head;
     n->nd_body = nd_body;
     n->nd_next = nd_next;
+    n->in_keyword_loc = *in_keyword_loc;
+    n->then_keyword_loc = *then_keyword_loc;
+    n->operator_loc = *operator_loc;
 
     return n;
 }

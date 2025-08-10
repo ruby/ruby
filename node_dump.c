@@ -309,8 +309,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: case x; in 1; foo; in 2; bar; else baz; end");
         F_NODE(nd_head, RNODE_IN, "in pattern");
         F_NODE(nd_body, RNODE_IN, "in body");
-        LAST_NODE;
         F_NODE(nd_next, RNODE_IN, "next in clause");
+        F_LOC(in_keyword_loc, RNODE_IN);
+        F_LOC(then_keyword_loc, RNODE_IN);
+        LAST_NODE;
+        F_LOC(operator_loc, RNODE_IN);
         return;
 
       case NODE_WHILE:
