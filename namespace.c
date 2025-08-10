@@ -12,6 +12,7 @@
 #include "internal/namespace.h"
 #include "internal/st.h"
 #include "internal/variable.h"
+#include "iseq.h"
 #include "ruby/internal/globals.h"
 #include "ruby/util.h"
 #include "vm_core.h"
@@ -843,20 +844,19 @@ initialize_root_namespace(void)
 }
 
 static VALUE
-rb_namespace_eval_string(VALUE str)
-{
-    return rb_eval_string(RSTRING_PTR(str));
-}
-
-static VALUE
 rb_namespace_eval(VALUE namespace, VALUE str)
 {
-    rb_thread_t *th = GET_THREAD();
+    const rb_iseq_t *iseq;
+    const rb_namespace_t *ns;
 
     StringValue(str);
 
-    namespace_push(th, namespace);
-    return rb_ensure(rb_namespace_eval_string, str, namespace_pop, (VALUE)th);
+    iseq = rb_iseq_compile_iseq(str, rb_str_new_cstr("eval"));
+    VM_ASSERT(iseq);
+
+    ns = (const rb_namespace_t *)rb_get_namespace_t(namespace);
+
+    return rb_iseq_eval(iseq, ns);
 }
 
 static int namespace_experimental_warned = 0;
