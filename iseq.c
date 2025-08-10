@@ -1161,6 +1161,21 @@ rb_iseq_load_iseq(VALUE fname)
     return NULL;
 }
 
+const rb_iseq_t *
+rb_iseq_compile_iseq(VALUE str, VALUE fname)
+{
+    VALUE args[] = {
+        str, fname
+    };
+    VALUE iseqv = rb_check_funcall(rb_cISeq, rb_intern("compile"), 2, args);
+
+    if (!SPECIAL_CONST_P(iseqv) && RBASIC_CLASS(iseqv) == rb_cISeq) {
+        return iseqw_check(iseqv);
+    }
+
+    return NULL;
+}
+
 #define CHECK_ARRAY(v)   rb_to_array_type(v)
 #define CHECK_HASH(v)    rb_to_hash_type(v)
 #define CHECK_STRING(v)  rb_str_to_str(v)
