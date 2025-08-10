@@ -4381,9 +4381,9 @@ str_casecmp(VALUE str1, VALUE str2)
             p2 += l2;
         }
     }
-    if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) return INT2FIX(0);
-    if (RSTRING_LEN(str1) > RSTRING_LEN(str2)) return INT2FIX(1);
-    return INT2FIX(-1);
+    if (p1 == p1end && p2 == p2end) return INT2FIX(0);
+    if (p1 == p1end) return INT2FIX(-1);
+    return INT2FIX(1);
 }
 
 /*

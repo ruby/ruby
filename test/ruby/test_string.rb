@@ -2832,9 +2832,12 @@ CODE
   def test_casecmp
     assert_equal(0, S("FoO").casecmp("fOO"))
     assert_equal(1, S("FoO").casecmp("BaR"))
+    assert_equal(-1, S("foo").casecmp("FOOBAR"))
     assert_equal(-1, S("baR").casecmp("FoO"))
     assert_equal(1, S("\u3042B").casecmp("\u3042a"))
     assert_equal(-1, S("foo").casecmp("foo\0"))
+    assert_equal(1,  S("FOOBAR").casecmp("foo"))
+    assert_equal(0, S("foo\0bar").casecmp("FOO\0BAR"))
 
     assert_nil(S("foo").casecmp(:foo))
     assert_nil(S("foo").casecmp(Object.new))
@@ -2842,6 +2845,16 @@ CODE
     o = Object.new
     def o.to_str; "fOO"; end
     assert_equal(0, S("FoO").casecmp(o))
+
+    assert_equal(0, S("#" * 128 + "A" * 256 + "b").casecmp("#" * 128 + "a" * 256 + "B"))
+    assert_equal(0, S("a" * 256 + "B").casecmp("A" * 256 + "b"))
+
+    assert_equal(-1, S("@").casecmp("`"))
+    assert_equal(0, S("hello\u00E9X").casecmp("HELLO\u00E9x"))
+
+    s1 = S("\xff".force_encoding("UTF-8"))
+    s2 = S("\xff".force_encoding("ISO-2022-JP"))
+    assert_nil(s1.casecmp(s2))
   end
 
   def test_casecmp?
@@ -2857,6 +2870,10 @@ CODE
     o = Object.new
     def o.to_str; "fOO"; end
     assert_equal(true, S("FoO").casecmp?(o))
+
+    s1 = S("\xff".force_encoding("UTF-8"))
+    s2 = S("\xff".force_encoding("ISO-2022-JP"))
+    assert_nil(s1.casecmp?(s2))
   end
 
   def test_upcase2
