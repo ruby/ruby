@@ -1744,7 +1744,6 @@ impl fmt::Debug for MutableBranchList {
 /// This will be dynamically allocated by C code
 /// C code should pass an &mut IseqPayload to us
 /// when calling into YJIT
-#[derive(Default)]
 pub struct IseqPayload {
     // Basic block versions
     pub version_map: VersionMap,
@@ -1758,9 +1757,25 @@ pub struct IseqPayload {
     // Blocks that are invalidated but are not yet deallocated.
     // The code GC will free them later.
     pub dead_blocks: Vec<BlockRef>,
+
+    // Process CPU time when compilation started for this ISEQ
+    pub comp_time_start: u32,
 }
 
 impl IseqPayload {
+    pub fn new() -> Self {
+        // Log the time when compilation started for this ISEQ
+        let comp_time_start = unsafe { rb_yjit_get_cpu_time() } as u32;
+
+        Self {
+            version_map: VersionMap::default(),
+            pages: HashSet::default(),
+            entries: Vec::default(),
+            dead_blocks: Vec::default(),
+            comp_time_start,
+        }
+    }
+
     /// Remove all block versions from the payload and then return them as an iterator
     pub fn take_all_blocks(&mut self) -> impl Iterator<Item = BlockRef> {
         // Empty the blocks
@@ -1793,7 +1808,7 @@ pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
             // We drop the payload with Box::from_raw when the GC frees the iseq and calls us.
             // NOTE(alan): Sometimes we read from an iseq without ever writing to it.
             // We allocate in those cases anyways.
-            let new_payload = IseqPayload::default();
+            let new_payload = IseqPayload::new();
             let new_payload = Box::into_raw(Box::new(new_payload));
             rb_iseq_set_yjit_payload(iseq, new_payload as VoidPtr);
 
@@ -3517,6 +3532,8 @@ c_callable! {
 /// Called by the generated code when a branch stub is executed
 /// Triggers compilation of branches and code patching
 fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -> *const u8 {
+    incr_counter!(branch_stub_hit);
+
     if get_option!(dump_insns) {
         println!("branch_stub_hit");
     }
@@ -3589,6 +3606,25 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         // We've just reconstructed interpreter state.
         if rb_ec_stack_check(ec as _) != 0 {
             return CodegenGlobals::get_stub_exit_code().raw_ptr(cb);
+        }
+
+        // Get the source ISEQ this branch is located in
+        let src_block = branch.block.get().as_ref();
+        let src_iseq = src_block.get_blockid().iseq;
+
+        if let Some(payload) = get_iseq_payload(src_iseq) {
+            let t = rb_yjit_get_cpu_time() as u32;
+
+            // In rare cases the CPU time measure can decrease
+            if t > payload.comp_time_start {
+                // If we are past the branch timeout
+                if t - payload.comp_time_start > get_option!(branch_timeout) {
+                    // Bail because the branch is old and probably very
+                    // infrequently executed, so not worth compiling
+                    incr_counter!(branch_stub_old);
+                    return CodegenGlobals::get_stub_exit_code().raw_ptr(cb);
+                }
+            }
         }
 
         (cfp, original_interp_sp)

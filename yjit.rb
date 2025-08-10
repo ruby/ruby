@@ -414,6 +414,9 @@ module RubyVM::YJIT
       out.puts "branch_insn_count:     " + format_number(13, stats[:branch_insn_count])
       out.puts "branch_known_count:    " + format_number_pct(13, stats[:branch_known_count], stats[:branch_insn_count])
 
+      out.puts "branch_stub_hit:       " + format_number(13, stats[:branch_stub_hit])
+      out.puts "branch_stub_old:       " + format_number_pct(13, stats[:branch_stub_old], stats[:branch_stub_hit])
+
       out.puts "freed_iseq_count:      " + format_number(13, stats[:freed_iseq_count])
       out.puts "invalidation_count:    " + format_number(13, stats[:invalidation_count])
       out.puts "inline_code_size:      " + format_number(13, stats[:inline_code_size])
