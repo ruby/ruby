@@ -2842,6 +2842,9 @@ CODE
     assert_nil(S("foo").casecmp(:foo))
     assert_nil(S("foo").casecmp(Object.new))
 
+    assert_nil(S("foo").casecmp(0))
+    assert_nil(S("foo").casecmp(5.00))
+
     o = Object.new
     def o.to_str; "fOO"; end
     assert_equal(0, S("FoO").casecmp(o))
@@ -2866,6 +2869,9 @@ CODE
 
     assert_nil(S("foo").casecmp?(:foo))
     assert_nil(S("foo").casecmp?(Object.new))
+
+    assert_nil(S("foo").casecmp(0))
+    assert_nil(S("foo").casecmp(5.00))
 
     o = Object.new
     def o.to_str; "fOO"; end
