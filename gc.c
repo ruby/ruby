@@ -5492,9 +5492,17 @@ ruby_xrealloc2(void *ptr, size_t n, size_t size)
 #ifdef ruby_xfree_sized
 #undef ruby_xfree_sized
 #endif
+
+static bool g_nofree = false;
+
 void
 ruby_xfree_sized(void *x, size_t size)
 {
+
+    if (g_nofree) {
+        return;
+    }
+
     if (LIKELY(x)) {
         /* It's possible for a C extension's pthread destructor function set by pthread_key_create
          * to be called after ruby_vm_destruct and attempt to free memory. Fall back to mimfree in
@@ -5776,6 +5784,12 @@ rb_gc_checking_shareable(void)
 void
 Init_GC(void)
 {
+    const char* nofree_str = getenv("RUBY_NO_FREE");
+    if (nofree_str && strcmp(nofree_str, "yes") == 0) {
+        fprintf(stderr, "WARNING: Enabling no-free mode! xfree() will never free anything!\n");
+        g_nofree = true;
+    }
+
 #undef rb_intern
     rb_gc_register_address(&id2ref_value);
 
