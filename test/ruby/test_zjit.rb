@@ -1506,6 +1506,22 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_string_concat
+    assert_compiles '"123"', %q{
+      def test = "#{1}#{2}#{3}"
+
+      test
+    }, insns: [:concatstrings]
+  end
+
+  def test_string_concat_empty
+    assert_compiles '""', %q{
+      def test = "#{}"
+
+      test
+    }, insns: [:concatstrings]
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT

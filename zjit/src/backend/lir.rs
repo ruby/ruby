@@ -2233,6 +2233,12 @@ impl Assembler {
         out
     }
 
+    pub fn sub_into(&mut self, left: Opnd, right: Opnd) -> Opnd {
+        let out = self.sub(left, right);
+        self.mov(left, out);
+        out
+    }
+
     #[must_use]
     pub fn mul(&mut self, left: Opnd, right: Opnd) -> Opnd {
         let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
