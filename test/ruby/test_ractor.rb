@@ -200,6 +200,27 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # [Bug #20346]
+  def test_many_ractors_in_threads
+    assert_ractor(<<~'RUBY')
+      Warning[:experimental] = false
+
+      N = 100
+      ractors = N.times.map do
+        Ractor.new do
+          Ractor.recv # Ractor doesn't start until explicitly told to
+          # Do some calculations
+          fib = ->(x) { x < 2 ? 1 : fib.call(x - 1) + fib.call(x - 2) }
+          fib.call(20)
+        end
+      end
+
+      threads = ractors.map { |r| Thread.new { r.value } }
+      ractors.each { |r| r.send(nil) }
+      threads.each(&:join)
+    RUBY
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
