@@ -1819,8 +1819,10 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     if (rb_namespace_available())
         rb_initialize_main_namespace();
+    rb_namespace_init_done();
+    ruby_init_prelude();
 
-    // Initialize JITs after prelude because JITing prelude is typically not optimal.
+    // Initialize JITs after ruby_init_prelude() because JITing prelude is typically not optimal.
 #if USE_YJIT
     rb_yjit_init(opt->yjit);
 #endif
@@ -1831,8 +1833,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     }
 #endif
 
-    rb_namespace_init_done();
-    ruby_init_prelude();
     ruby_set_script_name(opt->script_name);
     require_libraries(&opt->req_list);
 }
