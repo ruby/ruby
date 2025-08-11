@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class Gem::Ext::CmakeBuilder < Gem::Ext::Builder
-  def self.build(extension, dest_path, results, args=[], lib_dir=nil, cmake_dir=Dir.pwd,
-    target_rbconfig=Gem.target_rbconfig)
+  def self.build(extension, dest_path, results, args = [], lib_dir = nil, cmake_dir = Dir.pwd,
+    target_rbconfig = Gem.target_rbconfig)
     if target_rbconfig.path
       warn "--target-rbconfig is not yet supported for CMake extensions. Ignoring"
     end

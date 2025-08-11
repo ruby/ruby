@@ -153,7 +153,7 @@ class Gem::Installer
   #               process. If not set, then Gem::Command.build_args is used
   # :post_install_message:: Print gem post install message if true
 
-  def initialize(package, options={})
+  def initialize(package, options = {})
     require "fileutils"
 
     @options = options

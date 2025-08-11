@@ -144,7 +144,7 @@ class Gem::Resolver
     [spec, activation_request]
   end
 
-  def requests(s, act, reqs=[]) # :nodoc:
+  def requests(s, act, reqs = []) # :nodoc:
     return reqs if @ignore_dependencies
 
     s.fetch_development_dependencies if @development
