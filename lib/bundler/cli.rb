@@ -520,11 +520,11 @@ module Bundler
         Viz requires the ruby-graphviz gem (and its dependencies).
         The associated gems must also be installed via 'bundle install'.
       D
-      method_option :file, type: :string, default: "gem_graph", aliases: "-f", desc: "The name to use for the generated file. see format option"
-      method_option :format, type: :string, default: "png", aliases: "-F", desc: "This is output format option. Supported format is png, jpg, svg, dot ..."
-      method_option :requirements, type: :boolean, default: false, aliases: "-R", desc: "Set to show the version of each required dependency."
-      method_option :version, type: :boolean, default: false, aliases: "-v", desc: "Set to show each gem version."
-      method_option :without, type: :array, default: [], aliases: "-W", banner: "GROUP[ GROUP...]", desc: "Exclude gems that are part of the specified named group."
+      method_option :file, type: :string, default: "gem_graph", aliases: "-f", banner: "The name to use for the generated file. see format option"
+      method_option :format, type: :string, default: "png", aliases: "-F", banner: "This is output format option. Supported format is png, jpg, svg, dot ..."
+      method_option :requirements, type: :boolean, default: false, aliases: "-R", banner: "Set to show the version of each required dependency."
+      method_option :version, type: :boolean, default: false, aliases: "-v", banner: "Set to show each gem version."
+      method_option :without, type: :array, default: [], aliases: "-W", banner: "Exclude gems that are part of the specified named group."
       def viz
         SharedHelpers.major_deprecation 2, "The `viz` command has been renamed to `graph` and moved to a plugin. See https://github.com/rubygems/bundler-graph"
         require_relative "cli/viz"
@@ -533,19 +533,19 @@ module Bundler
     end
 
     desc "gem NAME [OPTIONS]", "Creates a skeleton for creating a rubygem"
-    method_option :exe, type: :boolean, default: false, aliases: ["--bin", "-b"], desc: "Generate a binary executable for your library."
-    method_option :coc, type: :boolean, desc: "Generate a code of conduct file. Set a default with `bundle config set --global gem.coc true`."
-    method_option :edit, type: :string, aliases: "-e", required: false, banner: "EDITOR", lazy_default: [ENV["BUNDLER_EDITOR"], ENV["VISUAL"], ENV["EDITOR"]].find {|e| !e.nil? && !e.empty? }, desc: "Open generated gemspec in the specified editor (defaults to $EDITOR or $BUNDLER_EDITOR)"
-    method_option :ext, type: :string, desc: "Generate the boilerplate for C extension code.", enum: EXTENSIONS
-    method_option :git, type: :boolean, default: true, desc: "Initialize a git repo inside your library."
-    method_option :mit, type: :boolean, desc: "Generate an MIT license file. Set a default with `bundle config set --global gem.mit true`."
-    method_option :rubocop, type: :boolean, desc: "Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set --global gem.rubocop true`."
-    method_option :changelog, type: :boolean, desc: "Generate changelog file. Set a default with `bundle config set --global gem.changelog true`."
+    method_option :exe, type: :boolean, default: false, aliases: ["--bin", "-b"], banner: "Generate a binary executable for your library."
+    method_option :coc, type: :boolean, banner: "Generate a code of conduct file. Set a default with `bundle config set --global gem.coc true`."
+    method_option :edit, type: :string, aliases: "-e", required: false, lazy_default: [ENV["BUNDLER_EDITOR"], ENV["VISUAL"], ENV["EDITOR"]].find {|e| !e.nil? && !e.empty? }, banner: "Open generated gemspec in the specified editor (defaults to $EDITOR or $BUNDLER_EDITOR)"
+    method_option :ext, type: :string, banner: "Generate the boilerplate for C extension code.", enum: EXTENSIONS
+    method_option :git, type: :boolean, default: true, banner: "Initialize a git repo inside your library."
+    method_option :mit, type: :boolean, banner: "Generate an MIT license file. Set a default with `bundle config set --global gem.mit true`."
+    method_option :rubocop, type: :boolean, banner: "Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set --global gem.rubocop true`."
+    method_option :changelog, type: :boolean, banner: "Generate changelog file. Set a default with `bundle config set --global gem.changelog true`."
     method_option :test, type: :string, lazy_default: Bundler.settings["gem.test"] || "", aliases: "-t", banner: "Use the specified test framework for your library", enum: %w[rspec minitest test-unit], desc: "Generate a test directory for your library, either rspec, minitest or test-unit. Set a default with `bundle config set --global gem.test (rspec|minitest|test-unit)`."
-    method_option :ci, type: :string, lazy_default: Bundler.settings["gem.ci"] || "", enum: %w[github gitlab circle], desc: "Generate CI configuration, either GitHub Actions, GitLab CI or CircleCI. Set a default with `bundle config set --global gem.ci (github|gitlab|circle)`"
-    method_option :linter, type: :string, lazy_default: Bundler.settings["gem.linter"] || "", enum: %w[rubocop standard], desc: "Add a linter and code formatter, either RuboCop or Standard. Set a default with `bundle config set --global gem.linter (rubocop|standard)`"
+    method_option :ci, type: :string, lazy_default: Bundler.settings["gem.ci"] || "", enum: %w[github gitlab circle], banner: "Generate CI configuration, either GitHub Actions, GitLab CI or CircleCI. Set a default with `bundle config set --global gem.ci (github|gitlab|circle)`"
+    method_option :linter, type: :string, lazy_default: Bundler.settings["gem.linter"] || "", enum: %w[rubocop standard], banner: "Add a linter and code formatter, either RuboCop or Standard. Set a default with `bundle config set --global gem.linter (rubocop|standard)`"
     method_option :github_username, type: :string, default: Bundler.settings["gem.github_username"], banner: "Set your username on GitHub", desc: "Fill in GitHub username on README so that you don't have to do it manually. Set a default with `bundle config set --global gem.github_username <your_username>`."
-    method_option :bundle, type: :boolean, default: Bundler.settings["gem.bundle"], desc: "Automatically run `bundle install` after creation. Set a default with `bundle config set --global gem.bundle true`"
+    method_option :bundle, type: :boolean, default: Bundler.settings["gem.bundle"], banner: "Automatically run `bundle install` after creation. Set a default with `bundle config set --global gem.bundle true`"
 
     def gem(name)
       require_relative "cli/gem"
