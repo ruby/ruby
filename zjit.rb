@@ -42,7 +42,7 @@ class << RubyVM::ZJIT
       :zjit_insns_count,
       :ratio_in_zjit,
     ].each do |key|
-      # Some stats like vm_insns_count and ratio_in_yjit are not supported on the release build
+      # Some stats like vm_insns_count and ratio_in_zjit are not supported on the release build
       next unless stats.key?(key)
       value = stats[key]
 
