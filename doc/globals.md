@@ -56,7 +56,7 @@ require 'English'
 | Variable                                       | English                             | Contains                                               |
 |------------------------------------------------|-------------------------------------|--------------------------------------------------------|
 | <tt>$0</tt>                                    |                                     | Initially, the name of the executing program.          |
-| <tt>$*</tt>                                    | <tt>$ARGV</tt>                      | <tt>ARGV</tt>.                                         |
+| <tt>$*</tt>                                    | <tt>$ARGV</tt>                      | Points to the <tt>ARGV</tt> array.                                         |
 | <tt>$$</tt>                                    | <tt>$PROCESS_ID</tt>, <tt>$PID</tt> | Process ID of the current process.                     |
 | <tt>$?</tt>                                    | <tt>$CHILD_STATUS</tt>              | Process::Status of most recently exited child process. |
 | <tt>$LOAD_PATH</tt>, <tt>$:</tt>, <tt>$-I</tt> |                                     | Array of paths to be searched.                         |
@@ -146,8 +146,7 @@ The matched string.
 
 English - `$MATCH`.
 
-### `$`` (Pre-Match Substring)
-
+### `` $` `` (Pre-Match Substring)
 The string to the left of the match.
 
 English - `$PREMATCH`.

@@ -279,7 +279,7 @@ An uninitialized global variable has a value of +nil+.
 
 Ruby has some special globals that behave differently depending on context
 such as the regular expression match variables or that have a side-effect when
-assigned to.  See the {global variables documentation}[rdoc-ref:globals.rdoc]
+assigned to.  See the {global variables documentation}[rdoc-ref:globals.md]
 for details.
 
 == Assignment Methods
