@@ -235,6 +235,27 @@ provider ruby {
      Fired when gc_exit in default.c is called.
   */
   probe gc__exit(int event);
+
+  /*
+     ruby:::gc-xmalloc();
+
+     Fired when allocating memory with xmalloc.
+  */
+  probe gc__xmalloc(int n, int size);
+
+  /*
+     ruby:::gc-xcalloc();
+
+     Fired when allocating memory with xcalloc.
+  */
+  probe gc__xcalloc(int n, int size);
+
+  /*
+     ruby:::gc-xfree();
+
+     Fired when de-allocating memory with xfree.
+  */
+  probe gc__xfree();
 };
 
 #pragma D attributes Stable/Evolving/Common provider ruby provider

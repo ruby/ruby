@@ -78,6 +78,16 @@ class LogProcessor
         event: event
       })
       result[:name] = RubyInternalEvent.key(event)
+    when 'gc_xmalloc'
+      result[:args].update({
+        n: args[0].to_i,
+        size: args[1].to_i,
+      })
+    when 'gc_xcalloc'
+      result[:args].update({
+        n: args[0].to_i,
+        size: args[1].to_i,
+      })
     when 'GCEnterExit'
       event = args[0].to_i
       result[:args].update({

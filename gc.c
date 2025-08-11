@@ -5421,6 +5421,9 @@ ruby_xmalloc2(size_t n, size_t size)
 static void *
 ruby_xmalloc2_body(size_t n, size_t size)
 {
+    if (RUBY_DTRACE_GC_XMALLOC_ENABLED()) {
+        RUBY_DTRACE_GC_XMALLOC(n, size);
+    }
     return rb_gc_impl_malloc(rb_gc_get_objspace(), xmalloc2_size(n, size), malloc_gc_allowed());
 }
 
@@ -5435,6 +5438,9 @@ ruby_xcalloc(size_t n, size_t size)
 static void *
 ruby_xcalloc_body(size_t n, size_t size)
 {
+    if (RUBY_DTRACE_GC_XCALLOC_ENABLED()) {
+        RUBY_DTRACE_GC_XCALLOC(n, size);
+    }
     return rb_gc_impl_calloc(rb_gc_get_objspace(), xmalloc2_size(n, size), malloc_gc_allowed());
 }
 
@@ -5498,9 +5504,12 @@ static bool g_nofree = false;
 void
 ruby_xfree_sized(void *x, size_t size)
 {
-
     if (g_nofree) {
         return;
+    }
+
+    if (RUBY_DTRACE_GC_XFREE_ENABLED()) {
+        RUBY_DTRACE_GC_XFREE();
     }
 
     if (LIKELY(x)) {

@@ -11,15 +11,6 @@ BEGIN {
     }
 }
 
-% usdts = []
-% usdts << ['gc__mark__begin',  'gc_mark',          'B', 0]
-% usdts << ['gc__mark__end',    'gc_mark',          'E', 0]
-% usdts << ['gc__sweep__begin', 'gc_sweep',         'B', 0]
-% usdts << ['gc__sweep__end',   'gc_sweep',         'E', 0]
-% usdts << ['gc__event_hook',   'gc_event_hook',    'i', 1] if enable_event_hooks
-% usdts << ['gc__enter',        'GCEnterExit',      'B', 1]
-% usdts << ['gc__exit',         'GCEnterExit',      'E', 1]
-%
 % usdts.each do |probe, name, ph, niargs|
 usdt:<%=ruby%>:ruby:<%=probe%> {
     if (@enable_print) {
