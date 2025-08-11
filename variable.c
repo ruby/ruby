@@ -2734,21 +2734,12 @@ struct autoload_data {
 };
 
 static void
-autoload_data_compact(void *ptr)
+autoload_data_mark_and_move(void *ptr)
 {
     struct autoload_data *p = ptr;
 
-    p->feature = rb_gc_location(p->feature);
-    p->mutex = rb_gc_location(p->mutex);
-}
-
-static void
-autoload_data_mark(void *ptr)
-{
-    struct autoload_data *p = ptr;
-
-    rb_gc_mark_movable(p->feature);
-    rb_gc_mark_movable(p->mutex);
+    rb_gc_mark_and_move(&p->feature);
+    rb_gc_mark_and_move(&p->mutex);
 }
 
 static void
@@ -2772,7 +2763,7 @@ autoload_data_memsize(const void *ptr)
 
 static const rb_data_type_t autoload_data_type = {
     "autoload_data",
-    {autoload_data_mark, autoload_data_free, autoload_data_memsize, autoload_data_compact},
+    {autoload_data_mark_and_move, autoload_data_free, autoload_data_memsize, autoload_data_mark_and_move},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
