@@ -70,10 +70,6 @@ fn incr_counter(counter: Counter, amount: u64) {
     unsafe { *ptr += amount; }
 }
 
-pub fn zjit_alloc_size() -> usize {
-    0 // TODO: report the actual memory usage
-}
-
 /// Return a Hash object that contains ZJIT statistics
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE) -> VALUE {
@@ -112,4 +108,9 @@ pub fn with_time_stat<F, R>(counter: Counter, func: F) -> R where F: FnOnce() ->
     let nanos = Instant::now().duration_since(start).as_nanos();
     incr_counter(counter, nanos as u64);
     ret
+}
+
+/// The number of bytes ZJIT has allocated on the Rust heap.
+pub fn zjit_alloc_size() -> usize {
+    0 // TODO: report the actual memory usage to support --zjit-mem-size (Shopify/ruby#686)
 }
