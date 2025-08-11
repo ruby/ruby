@@ -25,6 +25,10 @@ VALUE rb_mNamespaceLoader = 0;
 
 static rb_namespace_t root_namespace_data = {
     /* Initialize values lazily in Init_namespace() */
+    (VALUE)NULL, 0,
+    (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL, (VALUE)NULL,
+    (struct st_table *)NULL, (struct st_table *)NULL, (VALUE)NULL, (VALUE)NULL,
+    false, false
 };
 
 static rb_namespace_t * root_namespace = &root_namespace_data;
