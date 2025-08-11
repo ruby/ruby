@@ -2777,27 +2777,15 @@ static const rb_data_type_t autoload_data_type = {
 };
 
 static void
-autoload_const_compact(void *ptr)
+autoload_const_mark_and_move(void *ptr)
 {
     struct autoload_const *ac = ptr;
 
-    ac->module = rb_gc_location(ac->module);
-    ac->autoload_data_value = rb_gc_location(ac->autoload_data_value);
-    ac->value = rb_gc_location(ac->value);
-    ac->file = rb_gc_location(ac->file);
-    ac->namespace = rb_gc_location(ac->namespace);
-}
-
-static void
-autoload_const_mark(void *ptr)
-{
-    struct autoload_const *ac = ptr;
-
-    rb_gc_mark_movable(ac->module);
-    rb_gc_mark_movable(ac->autoload_data_value);
-    rb_gc_mark_movable(ac->value);
-    rb_gc_mark_movable(ac->file);
-    rb_gc_mark_movable(ac->namespace);
+    rb_gc_mark_and_move(&ac->module);
+    rb_gc_mark_and_move(&ac->autoload_data_value);
+    rb_gc_mark_and_move(&ac->value);
+    rb_gc_mark_and_move(&ac->file);
+    rb_gc_mark_and_move(&ac->namespace);
 }
 
 static size_t
@@ -2817,7 +2805,7 @@ autoload_const_free(void *ptr)
 
 static const rb_data_type_t autoload_const_type = {
     "autoload_const",
-    {autoload_const_mark, autoload_const_free, autoload_const_memsize, autoload_const_compact,},
+    {autoload_const_mark_and_move, autoload_const_free, autoload_const_memsize, autoload_const_mark_and_move,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
