@@ -190,7 +190,7 @@ class Gem::Source
   # Downloads +spec+ and writes it to +dir+.  See also
   # Gem::RemoteFetcher#download.
 
-  def download(spec, dir=Dir.pwd)
+  def download(spec, dir = Dir.pwd)
     fetcher = Gem::RemoteFetcher.fetcher
     fetcher.download spec, uri.to_s, dir
   end
@@ -210,7 +210,7 @@ class Gem::Source
     end
   end
 
-  def typo_squatting?(host, distance_threshold=4)
+  def typo_squatting?(host, distance_threshold = 4)
     return if @uri.host.nil?
     levenshtein_distance(@uri.host, host).between? 1, distance_threshold
   end
