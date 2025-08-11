@@ -1475,8 +1475,7 @@ fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>
     let allocation_size = aligned_stack_bytes(n);
 
     asm_comment!(asm, "allocate {} bytes on C stack for {} strings", allocation_size, n);
-    let new_sp = asm.sub(NATIVE_STACK_PTR, allocation_size.into());
-    asm.mov(NATIVE_STACK_PTR, new_sp);
+    asm.sub_into(NATIVE_STACK_PTR, allocation_size.into());
 
     // Calculate the total offset from NATIVE_BASE_PTR to our buffer
     let total_offset_from_base = (frame_size + allocation_size) as i32;
