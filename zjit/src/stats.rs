@@ -105,7 +105,7 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE) -> VALUE {
     hash
 }
 
-/// Measure the time taken by func() and add that to yjit_compile_time.
+/// Measure the time taken by func() and add that to zjit_compile_time.
 pub fn with_time_stat<F, R>(counter: Counter, func: F) -> R where F: FnOnce() -> R {
     let start = Instant::now();
     let ret = func();
