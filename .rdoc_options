@@ -19,5 +19,6 @@ autolink_excluded_words:
 - RDoc
 - Ruby
 - Set
+- ZJIT
 
 canonical_root: https://docs.ruby-lang.org/en/master
