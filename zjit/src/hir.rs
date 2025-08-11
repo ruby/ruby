@@ -343,7 +343,7 @@ impl<'a> std::fmt::Display for ConstPrinter<'a> {
 ///
 /// Because this is extra state external to any pointer being printed, a
 /// printing adapter struct that wraps the pointer along with this map is
-/// required to make use of this effectly. The [`std::fmt::Display`]
+/// required to make use of this effectively. The [`std::fmt::Display`]
 /// implementation on the adapter struct can then be reused to implement
 /// `Display` on the inner type with a default [`PtrPrintMap`], which
 /// does not perform any mapping.
