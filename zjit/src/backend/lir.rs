@@ -1889,9 +1889,8 @@ impl Assembler {
         out
     }
 
-    pub fn add_into(&mut self, left: Opnd, right: Opnd) -> Opnd {
+    pub fn add_into(&mut self, left: Opnd, right: Opnd) {
         self.push_insn(Insn::Add { left, right, out: left });
-        left
     }
 
     #[must_use]
@@ -2233,10 +2232,8 @@ impl Assembler {
         out
     }
 
-    pub fn sub_into(&mut self, left: Opnd, right: Opnd) -> Opnd {
-        let out = self.sub(left, right);
-        self.mov(left, out);
-        out
+    pub fn sub_into(&mut self, left: Opnd, right: Opnd) {
+        self.push_insn(Insn::Sub { left, right, out: left });
     }
 
     #[must_use]
