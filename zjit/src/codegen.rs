@@ -7,7 +7,7 @@ use crate::backend::current::{Reg, ALLOC_REGS};
 use crate::invariants::{track_bop_assumption, track_cme_assumption, track_single_ractor_assumption, track_stable_constant_names_assumption};
 use crate::gc::{append_gc_offsets, get_or_create_iseq_payload, get_or_create_iseq_payload_ptr};
 use crate::state::ZJITState;
-use crate::stats::{counter_ptr, Counter};
+use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::compile_time_ns};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, SideExitContext, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SP};
 use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SELF_PARAM_IDX};
@@ -86,7 +86,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
     // Take a lock to avoid writing to ISEQ in parallel with Ractors.
     // with_vm_lock() does nothing if the program doesn't use Ractors.
     let code_ptr = with_vm_lock(src_loc!(), || {
-        gen_iseq_entry_point(iseq)
+        with_time_stat(compile_time_ns, || gen_iseq_entry_point(iseq))
     });
 
     // Assert that the ISEQ compiles if RubyVM::ZJIT.assert_compiles is enabled
@@ -1359,7 +1359,8 @@ c_callable! {
         with_vm_lock(src_loc!(), || {
             // Get a pointer to compiled code or the side-exit trampoline
             let cb = ZJITState::get_code_block();
-            let code_ptr = if let Some(code_ptr) = function_stub_hit_body(cb, iseq, branch_ptr) {
+            let code_ptr = with_time_stat(compile_time_ns, || function_stub_hit_body(cb, iseq, branch_ptr));
+            let code_ptr = if let Some(code_ptr) = code_ptr {
                 code_ptr
             } else {
                 // gen_push_frame() doesn't set PC and SP, so we need to set them for side-exit

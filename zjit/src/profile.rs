@@ -3,6 +3,8 @@
 
 use crate::{cruby::*, gc::get_or_create_iseq_payload, options::get_option};
 use crate::distribution::{Distribution, DistributionSummary};
+use crate::stats::Counter::profile_time_ns;
+use crate::stats::with_time_stat;
 
 /// Ephemeral state for profiling runtime information
 struct Profiler {
@@ -41,13 +43,13 @@ impl Profiler {
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_profile_insn(bare_opcode: u32, ec: EcPtr) {
     with_vm_lock(src_loc!(), || {
-        let mut profiler = Profiler::new(ec);
-        profile_insn(&mut profiler, bare_opcode as ruby_vminsn_type);
+        with_time_stat(profile_time_ns, || profile_insn(bare_opcode as ruby_vminsn_type, ec));
     });
 }
 
 /// Profile a YARV instruction
-fn profile_insn(profiler: &mut Profiler, bare_opcode: ruby_vminsn_type) {
+fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
+    let profiler = &mut Profiler::new(ec);
     let profile = &mut get_or_create_iseq_payload(profiler.iseq).profile;
     match bare_opcode {
         YARVINSN_opt_nil_p => profile_operands(profiler, profile, 1),
