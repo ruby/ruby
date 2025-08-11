@@ -501,7 +501,7 @@ impl Type {
         self.is_subtype(types::Immediate)
     }
 
-    pub fn print(self, ptr_map: &PtrPrintMap) -> TypePrinter {
+    pub fn print(self, ptr_map: &PtrPrintMap) -> TypePrinter<'_> {
         TypePrinter { inner: self, ptr_map }
     }
 }

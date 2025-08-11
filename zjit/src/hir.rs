@@ -67,7 +67,7 @@ impl std::fmt::Display for VALUE {
 }
 
 impl VALUE {
-    pub fn print(self, ptr_map: &PtrPrintMap) -> VALUEPrinter {
+    pub fn print(self, ptr_map: &PtrPrintMap) -> VALUEPrinter<'_> {
         VALUEPrinter { inner: self, ptr_map }
     }
 }
@@ -136,7 +136,7 @@ pub enum Invariant {
 }
 
 impl Invariant {
-    pub fn print(self, ptr_map: &PtrPrintMap) -> InvariantPrinter {
+    pub fn print(self, ptr_map: &PtrPrintMap) -> InvariantPrinter<'_> {
         InvariantPrinter { inner: self, ptr_map }
     }
 }
@@ -810,12 +810,12 @@ pub struct Block {
 
 impl Block {
     /// Return an iterator over params
-    pub fn params(&self) -> Iter<InsnId> {
+    pub fn params(&self) -> Iter<'_, InsnId> {
         self.params.iter()
     }
 
     /// Return an iterator over insns
-    pub fn insns(&self) -> Iter<InsnId> {
+    pub fn insns(&self) -> Iter<'_, InsnId> {
         self.insns.iter()
     }
 }
@@ -2450,12 +2450,12 @@ impl FrameState {
     }
 
     /// Iterate over all stack slots
-    pub fn stack(&self) -> Iter<InsnId> {
+    pub fn stack(&self) -> Iter<'_, InsnId> {
         self.stack.iter()
     }
 
     /// Iterate over all local variables
-    pub fn locals(&self) -> Iter<InsnId> {
+    pub fn locals(&self) -> Iter<'_, InsnId> {
         self.locals.iter()
     }
 
