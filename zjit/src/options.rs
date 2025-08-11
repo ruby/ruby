@@ -176,9 +176,12 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("mem-size", _) => match opt_val.parse::<usize>() {
             Ok(n) => {
+                // Reject 0 or too large values that could overflow.
+                // The upper bound is 1 TiB but we could make it smaller.
                 if n == 0 || n > 1024 * 1024 {
                     return None
                 }
+
                 // Convert from MiB to bytes internally for convenience
                 options.exec_mem_bytes = n * 1024 * 1024;
             }
