@@ -39,6 +39,7 @@ jobs:
 
           - test_task: 'zjit-check'
             configure: '--enable-yjit --enable-zjit=dev'
+            rust_version: '1.85.0'
 
           - test_task: 'zjit-test-all'
             configure: '--enable-zjit=dev'
@@ -98,7 +99,10 @@ jobs:
           fetch-depth: 10
 
       - name: Install Rust
-        run: rustup default 1.85.0
+        if: ${{ matrix.rust_version }}
+        run: |
+          rustup install ${{ matrix.rust_version }} --profile minimal
+          rustup default ${{ matrix.rust_version }}
 
       - name: Install rustfmt
         if: ${{ matrix.test_task == 'zjit-bindgen' }}
