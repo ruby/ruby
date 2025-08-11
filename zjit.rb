@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-# This module allows for introspection of \ZJIT, CRuby's just-in-time compiler.
+# This module allows for introspection of ZJIT, CRuby's just-in-time compiler.
 # Everything in the module is highly implementation specific and the API might
 # be less stable compared to the standard library.
 #
-# This module may not exist if \ZJIT does not support the particular platform
+# This module may not exist if ZJIT does not support the particular platform
 # for which CRuby is built.
 module RubyVM::ZJIT
   # Avoid calling a Ruby method here to avoid interfering with compilation tests
@@ -14,12 +14,12 @@ module RubyVM::ZJIT
 end
 
 class << RubyVM::ZJIT
-  # Check if \ZJIT is enabled
+  # Check if ZJIT is enabled
   def enabled?
     Primitive.cexpr! 'RBOOL(rb_zjit_enabled_p)'
   end
 
-  # Return \ZJIT statistics as a Hash
+  # Return ZJIT statistics as a Hash
   def stats
     stats = Primitive.rb_zjit_stats
     return nil if stats.nil?
@@ -32,7 +32,7 @@ class << RubyVM::ZJIT
     stats
   end
 
-  # Get the summary of \ZJIT statistics as a String
+  # Get the summary of ZJIT statistics as a String
   def stats_string
     buf = +''
     stats = self.stats
