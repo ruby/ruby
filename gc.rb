@@ -258,7 +258,7 @@ module GC
 
   # call-seq:
   #     GC.config -> hash
-  #     GC.config(hash_to_merge) -> merged_hash
+  #     GC.config(hash_to_merge) -> hash
   #
   # This method is implementation-specific to CRuby.
   #
@@ -274,15 +274,11 @@ module GC
   # With argument +hash_to_merge+ given,
   # merges that hash into the stored configuration hash;
   # ignores unknown hash keys;
-  # returns the implementation-specific configuration hash (see below):
+  # returns the configuration hash:
   #
   #   GC.config(rgengc_allow_full_mark: false)
-  #   # => {rgengc_allow_full_mark: false}
-  #   GC.config
   #   # => {rgengc_allow_full_mark: false, implementation: "default"}
   #   GC.config(foo: 'bar')
-  #   # => {rgengc_allow_full_mark: false}
-  #   GC.config
   #   # => {rgengc_allow_full_mark: false, implementation: "default"}
   #
   # <b>All-Implementations Configuration</b>
