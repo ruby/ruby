@@ -78,7 +78,7 @@ void
 Init_builtin_features(void)
 {
 
-#ifndef BUILTIN_BINARY_SIZE
+#ifdef BUILTIN_BINARY_SIZE
 
     load_with_builtin_functions("gem_prelude", NULL);
 
