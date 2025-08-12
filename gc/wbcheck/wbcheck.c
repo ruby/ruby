@@ -208,6 +208,7 @@ typedef struct {
     wbcheck_object_list_t *weak_references; // Array of weak reference pointers (VALUE* cast to VALUE)
     wbcheck_phase_t phase;   // Current GC phase
     bool gc_enabled;         // Whether GC is allowed to run
+    bool gc_stress;          // GC stress mode (run GC on every allocation)
     size_t gc_threshold;     // Trigger GC when object count reaches this
     size_t missed_write_barrier_parents; // Number of parent objects with missed write barriers
     size_t missed_write_barrier_children; // Total number of missed write barriers detected
@@ -396,6 +397,7 @@ rb_gc_impl_objspace_alloc(void)
     objspace->weak_references = wbcheck_object_list_init(); // Initialize weak references array
     objspace->phase = WBCHECK_PHASE_MUTATOR; // Start in mutator phase
     objspace->gc_enabled = true;       // GC enabled by default (like default GC)
+    objspace->gc_stress = false;       // GC stress disabled by default
     objspace->gc_threshold = 1000;     // Start with 1000 objects, will adjust after first GC
     objspace->missed_write_barrier_parents = 0;  // No errors found yet
     objspace->missed_write_barrier_children = 0; // No errors found yet
@@ -528,14 +530,15 @@ rb_gc_impl_gc_enabled_p(void *objspace_ptr)
 void
 rb_gc_impl_stress_set(void *objspace_ptr, VALUE flag)
 {
-    // Stub implementation
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    objspace->gc_stress = RTEST(flag);
 }
 
 VALUE
 rb_gc_impl_stress_get(void *objspace_ptr)
 {
-    // Stub implementation
-    return Qnil;
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    return objspace->gc_stress ? Qtrue : Qfalse;
 }
 
 VALUE
@@ -896,8 +899,9 @@ maybe_gc(void *objspace_ptr)
     // Clear the list after processing
     objspace->objects_to_capture->count = 0;
 
-    // Run full GC if we exceed the threshold
-    if (st_table_size(objspace->object_table) >= objspace->gc_threshold && objspace->gc_enabled && ruby_native_thread_p()) {
+    // Run full GC if we exceed the threshold OR if gc_stress is enabled
+    if (objspace->gc_enabled && ruby_native_thread_p() &&
+        (objspace->gc_stress || st_table_size(objspace->object_table) >= objspace->gc_threshold)) {
         wbcheck_full_gc(objspace);
     }
 
