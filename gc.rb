@@ -50,14 +50,14 @@ module GC
   end
 
   # call-seq:
-  #    GC.enable -> true or false
+  #   GC.enable -> true or false
   #
-  # Enables garbage collection, returning +true+ if garbage
-  # collection was previously disabled.
+  # Enables garbage collection;
+  # returns whether garbage collection was disabled:
   #
-  #    GC.disable   #=> false
-  #    GC.enable    #=> true
-  #    GC.enable    #=> false
+  #   GC.disable
+  #   GC.enable # => true
+  #   GC.enable # => false
   #
   def self.enable
     Primitive.gc_enable
