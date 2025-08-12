@@ -1377,6 +1377,8 @@ c_callable! {
             }
 
             // If we already know we can't compile the ISEQ, fail early without cb.mark_all_executable().
+            // TODO: Alan thinks the payload status part of this check can happen without the VM lock, since the whole
+            // code path can be made read-only. But you still need the check as is while holding the VM lock in any case.
             let cb = ZJITState::get_code_block();
             let payload = get_or_create_iseq_payload(iseq);
             if cb.has_dropped_bytes() || payload.status == IseqStatus::CantCompile {
