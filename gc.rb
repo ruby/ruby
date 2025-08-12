@@ -322,19 +322,47 @@ module GC
   end
 
   # call-seq:
-  #     GC.latest_gc_info -> hash
-  #     GC.latest_gc_info(hash) -> hash
-  #     GC.latest_gc_info(key) -> value
+  #   GC.latest_gc_info -> new_hash
+  #   GC.latest_gc_info(key) -> value
+  #   GC.latest_gc_info(hash) -> hash
   #
-  # Returns information about the most recent garbage collection.
+  # With no argument given,
+  # returns information about the most recent garbage collection:
   #
-  # If the argument +hash+ is given and is a Hash object,
-  # it is overwritten and returned.
-  # This is intended to avoid the probe effect.
+  #   GC.latest_gc_info
+  #   # =>
+  #   {major_by: :force,
+  #    need_major_by: nil,
+  #    gc_by: :method,
+  #    have_finalizer: false,
+  #    immediate_sweep: true,
+  #    state: :none,
+  #    weak_references_count: 0,
+  #    retained_weak_references_count: 0}
   #
-  # If the argument +key+ is given and is a Symbol object,
-  # it returns the value associated with the key.
-  # This is equivalent to <tt>GC.latest_gc_info[key]</tt>.
+  # With symbol argument +key+ given,
+  # returns the value for that key:
+  #
+  #   GC.latest_gc_info(:gc_by) # => :newobj
+  #
+  # With hash argument +hash+ given,
+  # returns that hash with GC information merged into its content;
+  # this form may be useful in minimizing {probe effects}[https://en.wikipedia.org/wiki/Probe_effect]:
+  #
+  #   h = {foo: 0, bar: 1}
+  #   GC.latest_gc_info(h)
+  #   # =>
+  #   {foo: 0,
+  #    bar: 1,
+  #    major_by: nil,
+  #    need_major_by: nil,
+  #    gc_by: :newobj,
+  #    have_finalizer: false,
+  #    immediate_sweep: false,
+  #    state: :sweeping,
+  #    weak_references_count: 0,
+  #    retained_weak_references_count: 0}
+  #
   def self.latest_gc_info hash_or_key = nil
     if hash_or_key == nil
       hash_or_key = {}
