@@ -7,11 +7,11 @@ use crate::stats::Counter::gc_time_ns;
 /// This is all the data ZJIT stores on an ISEQ. We mark objects in this struct on GC.
 #[derive(Debug)]
 pub struct IseqPayload {
+    /// Compilation status of the ISEQ. It has the JIT code address of the first block if Compiled.
+    pub status: IseqStatus,
+
     /// Type information of YARV instruction operands
     pub profile: IseqProfile,
-
-    /// JIT code address of the first block
-    pub start_ptr: Option<CodePtr>,
 
     /// GC offsets of the JIT code. These are the addresses of objects that need to be marked.
     pub gc_offsets: Vec<CodePtr>,
@@ -20,11 +20,19 @@ pub struct IseqPayload {
 impl IseqPayload {
     fn new(iseq_size: u32) -> Self {
         Self {
+            status: IseqStatus::NotCompiled,
             profile: IseqProfile::new(iseq_size),
-            start_ptr: None,
             gc_offsets: vec![],
         }
     }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum IseqStatus {
+    /// CodePtr has the JIT code address of the first block
+    Compiled(CodePtr),
+    CantCompile,
+    NotCompiled,
 }
 
 /// Get a pointer to the payload object associated with an ISEQ. Create one if none exists.

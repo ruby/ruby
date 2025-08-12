@@ -5,7 +5,7 @@ use std::ffi::{c_int, c_void};
 use crate::asm::Label;
 use crate::backend::current::{Reg, ALLOC_REGS};
 use crate::invariants::{track_bop_assumption, track_cme_assumption, track_single_ractor_assumption, track_stable_constant_names_assumption};
-use crate::gc::{append_gc_offsets, get_or_create_iseq_payload, get_or_create_iseq_payload_ptr};
+use crate::gc::{append_gc_offsets, get_or_create_iseq_payload, get_or_create_iseq_payload_ptr, IseqStatus};
 use crate::state::ZJITState;
 use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::compile_time_ns};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
@@ -136,7 +136,7 @@ fn gen_iseq_entry_point_body(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<CodePt
 
     // Remember the block address to reuse it later
     let payload = get_or_create_iseq_payload(iseq);
-    payload.start_ptr = Some(start_ptr);
+    payload.status = IseqStatus::Compiled(start_ptr);
     append_gc_offsets(iseq, &gc_offsets);
 
     // Return a JIT code address
@@ -213,23 +213,29 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_pt
 fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<(CodePtr, Vec<(Rc<Branch>, IseqPtr)>)> {
     // Return an existing pointer if it's already compiled
     let payload = get_or_create_iseq_payload(iseq);
-    if let Some(start_ptr) = payload.start_ptr {
-        return Some((start_ptr, vec![]));
+    match payload.status {
+        IseqStatus::Compiled(start_ptr) => return Some((start_ptr, vec![])),
+        IseqStatus::CantCompile => return None,
+        IseqStatus::NotCompiled => {},
     }
 
     // Convert ISEQ into High-level IR and optimize HIR
     let function = match compile_iseq(iseq) {
         Some(function) => function,
-        None => return None,
+        None => {
+            payload.status = IseqStatus::CantCompile;
+            return None;
+        }
     };
 
     // Compile the High-level IR
     let result = gen_function(cb, iseq, &function);
     if let Some((start_ptr, gc_offsets, jit)) = result {
-        payload.start_ptr = Some(start_ptr);
+        payload.status = IseqStatus::Compiled(start_ptr);
         append_gc_offsets(iseq, &gc_offsets);
         Some((start_ptr, jit.branch_iseqs))
     } else {
+        payload.status = IseqStatus::CantCompile;
         None
     }
 }
@@ -1356,27 +1362,38 @@ macro_rules! c_callable {
 pub(crate) use c_callable;
 
 c_callable! {
-    /// Generated code calls this function with the SysV calling convention.
-    /// See [gen_function_stub].
+    /// Generated code calls this function with the SysV calling convention. See [gen_function_stub].
+    /// This function is expected to be called repeatedly when ZJIT fails to compile the stub.
+    /// We should be able to compile most (if not all) function stubs by side-exiting at unsupported
+    /// instructions, so this should be used primarily for cb.has_dropped_bytes() situations.
     fn function_stub_hit(iseq: IseqPtr, branch_ptr: *const c_void, ec: EcPtr, sp: *mut VALUE) -> *const u8 {
         with_vm_lock(src_loc!(), || {
-            // Get a pointer to compiled code or the side-exit trampoline
-            let cb = ZJITState::get_code_block();
-            let code_ptr = with_time_stat(compile_time_ns, || function_stub_hit_body(cb, iseq, branch_ptr));
-            let code_ptr = if let Some(code_ptr) = code_ptr {
-                code_ptr
-            } else {
-                // gen_push_frame() doesn't set PC and SP, so we need to set them for side-exit
-                // TODO: We could generate code that sets PC/SP. Note that we'd still need to handle OOM.
+            /// gen_push_frame() doesn't set PC and SP, so we need to set them before exit
+            fn set_pc_and_sp(iseq: IseqPtr, ec: EcPtr, sp: *mut VALUE) {
                 let cfp = unsafe { get_ec_cfp(ec) };
                 let pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) }; // TODO: handle opt_pc once supported
                 unsafe { rb_set_cfp_pc(cfp, pc) };
                 unsafe { rb_set_cfp_sp(cfp, sp) };
+            }
 
+            // If we already know we can't compile the ISEQ, fail early without cb.mark_all_executable().
+            let cb = ZJITState::get_code_block();
+            let payload = get_or_create_iseq_payload(iseq);
+            if cb.has_dropped_bytes() || payload.status == IseqStatus::CantCompile {
                 // Exit to the interpreter
+                set_pc_and_sp(iseq, ec, sp);
+                return ZJITState::get_stub_exit().raw_ptr(cb);
+            }
+
+            // Otherwise, attempt to compile the ISEQ. We have to mark_all_executable() beyond this point.
+            let code_ptr = with_time_stat(compile_time_ns, || function_stub_hit_body(cb, iseq, branch_ptr));
+            let code_ptr = if let Some(code_ptr) = code_ptr {
+                code_ptr
+            } else {
+                // Exit to the interpreter
+                set_pc_and_sp(iseq, ec, sp);
                 ZJITState::get_stub_exit()
             };
-
             cb.mark_all_executable();
             code_ptr.raw_ptr(cb)
         })
