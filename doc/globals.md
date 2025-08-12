@@ -181,7 +181,7 @@ Aliased as `$-0`.
 
 ### `$\\` (Output Record Separator)
 
-An output record separator, initially +nil+.
+An output record separator, initially `nil`.
 
 English - `$OUTPUT_RECORD_SEPARATOR`, `$ORS`.
 
@@ -256,7 +256,7 @@ English - `$PROCESS_ID`, `$PID`.
 
 ### `$?` (Child Status)
 
-Initially +nil+, otherwise the Process::Status object
+Initially `nil`, otherwise the Process::Status object
 created for the most-recently exited child process;
 thread-local.
 
@@ -270,11 +270,11 @@ by Kernel#load and Kernel#require.
 Singleton method `$LOAD_PATH.resolve_feature_path(feature)`
 returns:
 
-- `[:rb, _path_]`, where +path+ is the path to the Ruby file
-  to be loaded for the given +feature+.
-- `[:so, _path_]`, where +path+ is the path to the shared object file
-  to be loaded for the given +feature+.
-- +nil+ if there is no such +feature+ and +path+.
+- `[:rb, _path_]`, where `path` is the path to the Ruby file
+  to be loaded for the given `feature`.
+- `[:so, _path_]`, where `path` is the path to the shared object file
+  to be loaded for the given `feature`.
+- `nil` if there is no such `feature` and `path`.
 
 Examples:
 
@@ -318,23 +318,23 @@ The value returned by method ARGF.filename.
 
 ### `$DEBUG`
 
-Initially +true+ if command-line option `-d` or `--debug` is given,
-otherwise initially +false+;
+Initially `true` if command-line option `-d` or `--debug` is given,
+otherwise initially `false`;
 may be set to either value in the running program.
 
-When +true+, prints each raised exception to `$stderr`.
+When `true`, prints each raised exception to `$stderr`.
 
 Aliased as `$-d`.
 
 ### `$VERBOSE`
 
-Initially +true+ if command-line option `-v` or `-w` is given,
-otherwise initially +false+;
-may be set to either value, or to +nil+, in the running program.
+Initially `true` if command-line option `-v` or `-w` is given,
+otherwise initially `false`;
+may be set to either value, or to `nil`, in the running program.
 
-When +true+, enables Ruby warnings.
+When `true`, enables Ruby warnings.
 
-When +nil+, disables warnings, including those from Kernel#warn.
+When `nil`, disables warnings, including those from Kernel#warn.
 
 Aliased as `$-v` and `$-w`.
 
@@ -347,7 +347,7 @@ Whether command-line option `-a` was given; read-only.
 ### `$-i`
 
 Contains the extension given with command-line option `-i`,
-or +nil+ if none.
+or `nil` if none.
 
 An alias of ARGF.inplace_mode.
 
