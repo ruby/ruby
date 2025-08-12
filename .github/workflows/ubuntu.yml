@@ -157,6 +157,17 @@ jobs:
         continue-on-error: true
         timeout-minutes: 3
 
+      # A temporary workaround: Skip user ground id test
+      # There is a mismatch between the group IDs of "id -g" and C function
+      # getpwuid(uid_t uid) pw_gid.
+      # https://github.com/IBM/actionspz/issues/31
+      - name: Skip user group id test
+        run: |
+          sed -i.orig '/^    it "returns user group id" do/a\      skip' \
+            ../src/spec/ruby/library/etc/struct_passwd_spec.rb
+          diff -u ../src/spec/ruby/library/etc/struct_passwd_spec.rb{.orig,} || :
+        if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
+
       - name: make ${{ matrix.test_task }}
         run: |
           test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
