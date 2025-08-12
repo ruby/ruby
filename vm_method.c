@@ -1737,8 +1737,6 @@ complemented_callable_method_entry(VALUE klass, ID id)
 static const rb_callable_method_entry_t *
 cached_callable_method_entry(VALUE klass, ID mid)
 {
-    ASSERT_vm_locking();
-
     VALUE cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
     VALUE ccs_data;
 
@@ -1752,12 +1750,17 @@ cached_callable_method_entry(VALUE klass, ID mid)
             return ccs->cme;
         }
         else {
-            rb_managed_id_table_delete(cc_tbl, mid);
-            rb_vm_ccs_invalidate_and_free(ccs);
+            RB_VM_LOCKING() {
+                if (METHOD_ENTRY_INVALIDATED(ccs->cme)) {
+                    rb_managed_id_table_delete(cc_tbl, mid);
+                    rb_vm_ccs_invalidate_and_free(ccs);
+                }
+            }
         }
     }
 
     RB_DEBUG_COUNTER_INC(ccs_not_found);
+    RB_GC_GUARD(cc_tbl);
     return NULL;
 }
 
@@ -1811,13 +1814,12 @@ callable_method_entry_or_negative(VALUE klass, ID mid, VALUE *defined_class_ptr)
     const rb_callable_method_entry_t *cme;
 
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
-    RB_VM_LOCKING() {
-        cme = cached_callable_method_entry(klass, mid);
-
-        if (cme) {
-            if (defined_class_ptr != NULL) *defined_class_ptr = cme->defined_class;
-        }
-        else {
+    cme = cached_callable_method_entry(klass, mid);
+    if (cme) {
+        if (defined_class_ptr != NULL) *defined_class_ptr = cme->defined_class;
+    }
+    else {
+        RB_VM_LOCKING() {
             VALUE defined_class;
             rb_method_entry_t *me = search_method(klass, mid, &defined_class);
             if (defined_class_ptr) *defined_class_ptr = defined_class;
