@@ -104,7 +104,7 @@ module GC
   # call-seq:
   #   self.count -> integer
   #
-  # Returns the number of times garbage collection has occurred in the current process:
+  # Returns the total number of times garbage collection has occurred:
   #
   #   GC.count # => 385
   #   GC.start
