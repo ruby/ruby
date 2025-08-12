@@ -272,7 +272,7 @@ returns:
 
 - `[:rb, _path_]`, where +path+ is the path to the Ruby file
   to be loaded for the given +feature+.
-- `[:so+ _path_]`, where +path+ is the path to the shared object file
+- `[:so, _path_]`, where +path+ is the path to the shared object file
   to be loaded for the given +feature+.
 - +nil+ if there is no such +feature+ and +path+.
 
