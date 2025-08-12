@@ -6,7 +6,7 @@ For each of those, the \English synonym is given.
 
 To use the module:
 
-```
+```ruby
 require 'English'
 ```
 
@@ -85,7 +85,7 @@ require 'English'
 
 Contains the Exception object set by Kernel#raise:
 
-```
+```ruby
 begin
   raise RuntimeError.new('Boo!')
 rescue RuntimeError
@@ -106,7 +106,7 @@ English - `$ERROR_INFO`
 Same as `$!.backtrace`;
 returns an array of backtrace positions:
 
-```
+```ruby
 begin
   raise RuntimeError.new('Boo!')
 rescue RuntimeError
@@ -191,7 +191,7 @@ English - `$OUTPUT_RECORD_SEPARATOR`, `$ORS`.
 
 The current standard input stream; initially:
 
-```
+```ruby
 $stdin # => #<IO:<STDIN>>
 ```
 
@@ -199,7 +199,7 @@ $stdin # => #<IO:<STDIN>>
 
 The current standard output stream; initially:
 
-```
+```ruby
 $stdout # => #<IO:<STDOUT>>
 ```
 
@@ -207,7 +207,7 @@ $stdout # => #<IO:<STDOUT>>
 
 The current standard error stream; initially:
 
-```
+```ruby
 $stderr # => #<IO:<STDERR>>
 ```
 
@@ -278,7 +278,7 @@ returns:
 
 Examples:
 
-```
+```ruby
 $LOAD_PATH.resolve_feature_path('timeout')
 # => [:rb, "/snap/ruby/317/lib/ruby/3.2.0/timeout.rb"]
 $LOAD_PATH.resolve_feature_path('date_core')
@@ -293,7 +293,7 @@ Aliased as `$:` and `$-I`.
 
 Contains an array of the paths to the loaded files:
 
-```
+```ruby
 $LOADED_FEATURES.take(10)
 # =>
 ["enumerator.so",
@@ -409,7 +409,7 @@ Whether command-line option `-p` was given; read-only.
 
 The standard input stream (the default value for `$stdin`):
 
-```
+```ruby
 STDIN # => #<IO:<STDIN>>
 ```
 
@@ -417,7 +417,7 @@ STDIN # => #<IO:<STDIN>>
 
 The standard output stream (the default value for `$stdout`):
 
-```
+```ruby
 STDOUT # => #<IO:<STDOUT>>
 ```
 
@@ -425,7 +425,7 @@ STDOUT # => #<IO:<STDOUT>>
 
 The standard error stream (the default value for `$stderr`):
 
-```
+```ruby
 STDERR # => #<IO:<STDERR>>
 ```
 
@@ -435,7 +435,7 @@ STDERR # => #<IO:<STDERR>>
 
 A hash of the contains current environment variables names and values:
 
-```
+```ruby
 ENV.take(5)
 # =>
 [["COLORTERM", "truecolor"],
@@ -459,7 +459,7 @@ An array of the given command-line arguments.
 
 The Binding of the top level scope:
 
-```
+```ruby
 TOPLEVEL_BINDING # => #<Binding:0x00007f58da0da7c0>
 ```
 
@@ -467,7 +467,7 @@ TOPLEVEL_BINDING # => #<Binding:0x00007f58da0da7c0>
 
 The Ruby version:
 
-```
+```ruby
 RUBY_VERSION # => "3.2.2"
 ```
 
@@ -475,7 +475,7 @@ RUBY_VERSION # => "3.2.2"
 
 The release date string:
 
-```
+```ruby
 RUBY_RELEASE_DATE # => "2023-03-30"
 ```
 
@@ -483,7 +483,7 @@ RUBY_RELEASE_DATE # => "2023-03-30"
 
 The platform identifier:
 
-```
+```ruby
 RUBY_PLATFORM # => "x86_64-linux"
 ```
 
@@ -491,7 +491,7 @@ RUBY_PLATFORM # => "x86_64-linux"
 
 The integer patch level for this Ruby:
 
-```
+```ruby
 RUBY_PATCHLEVEL # => 53
 ```
 
@@ -501,7 +501,7 @@ For a development build the patch level will be -1.
 
 The git commit hash for this Ruby:
 
-```
+```ruby
 RUBY_REVISION # => "e51014f9c05aa65cbf203442d37fef7c12390015"
 ```
 
@@ -509,7 +509,7 @@ RUBY_REVISION # => "e51014f9c05aa65cbf203442d37fef7c12390015"
 
 The copyright string:
 
-```
+```ruby
 RUBY_COPYRIGHT
 # => "ruby - Copyright (C) 1993-2023 Yukihiro Matsumoto"
 ```
@@ -518,7 +518,7 @@ RUBY_COPYRIGHT
 
 The name of the Ruby implementation:
 
-```
+```ruby
 RUBY_ENGINE # => "ruby"
 ```
 
@@ -526,7 +526,7 @@ RUBY_ENGINE # => "ruby"
 
 The version of the Ruby implementation:
 
-```
+```ruby
 RUBY_ENGINE_VERSION # => "3.2.2"
 ```
 
@@ -534,7 +534,7 @@ RUBY_ENGINE_VERSION # => "3.2.2"
 
 The description of the Ruby implementation:
 
-```
+```ruby
 RUBY_DESCRIPTION
 # => "ruby 3.2.2 (2023-03-30 revision e51014f9c0) [x86_64-linux]"
 ```
@@ -545,7 +545,7 @@ RUBY_DESCRIPTION
 
 Defined if and only if the program has this line:
 
-```
+```ruby
 __END__
 ```
 
@@ -553,7 +553,7 @@ When defined, `DATA` is a File object
 containing the lines following the `__END__`,
 positioned at the first of those lines:
 
-```
+```ruby
 p DATA
 DATA.each_line { |line| p line }
 __END__
