@@ -1353,11 +1353,11 @@ preludes: {$(VPATH)}miniprelude.c
 
 {$(srcdir)}.rb.rbbin:
 	$(ECHO) making $@
-	$(Q) $(MINIRUBY) $(tooldir)/mk_rbbin.rb $< > $@
+	$(Q) $(MINIRUBY) $(tooldir)/mk_rbbin.rb $(SRC_FILE) > $(OS_DEST_FILE)
 
 {$(srcdir)}.rb.rbinc:
 	$(ECHO) making $@
-	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $<
+	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $(SRC_FILE)
 
 $(BUILTIN_BINARY:yes=built)in_binary.rbbin: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/template/builtin_binary.rbbin.tmpl
 	$(Q) $(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ \
