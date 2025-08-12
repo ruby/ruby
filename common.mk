@@ -1539,7 +1539,7 @@ prepare-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=extract-gems)
 extract-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=outdate-bundled-gems)
 update-gems: $(HAVE_BASERUBY:yes=outdate-bundled-gems)
 
-split_option = -F"\s+|\#.*"
+split_option = -F"\s+|$(HASH_SIGN).*"
 
 update-gems$(sequential): PHONY
 	$(ECHO) Downloading bundled gem files...
