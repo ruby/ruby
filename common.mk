@@ -1539,12 +1539,14 @@ prepare-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=extract-gems)
 extract-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=outdate-bundled-gems)
 update-gems: $(HAVE_BASERUBY:yes=outdate-bundled-gems)
 
+split_option = -F"\s+|\#.*"
+
 update-gems$(sequential): PHONY
 	$(ECHO) Downloading bundled gem files...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
-	    -I./tool -rdownloader -answ \
+	    -I./tool -rdownloader $(split_option) -answ \
 	    -e 'gem, ver = *$$F' \
-	    -e 'next if !ver or /^#/=~gem' \
+	    -e 'next if !ver' \
 	    -e 'old = Dir.glob("gems/#{gem}-*.gem")' \
 	    -e 'gem = "#{gem}-#{ver}.gem"' \
 	    -e 'Downloader::RubyGems.download(gem, "gems", nil) and' \
@@ -1556,10 +1558,10 @@ update-gems$(sequential): PHONY
 extract-gems$(sequential): PHONY
 	$(ECHO) Extracting bundled gem files...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
-	    -Itool/lib -rfileutils -rbundled_gem -answ \
+	    -Itool/lib -rfileutils -rbundled_gem $(split_option) -answ \
 	    -e 'BEGIN {d = ".bundle/gems"}' \
 	    -e 'gem, ver, _, rev = *$$F' \
-	    -e 'next if !ver or /^#/=~gem' \
+	    -e 'next if !ver' \
 	    -e 'g = "#{gem}-#{ver}"' \
 	    -e 'unless File.directory?("#{d}/#{g}")' \
 	    -e   'if rev and File.exist?(gs = "gems/src/#{gem}/#{gem}.gemspec")' \
@@ -1623,7 +1625,7 @@ yes-install-for-test-bundled-gems: yes-update-default-gemspecs
 test-bundled-gems-fetch: yes-test-bundled-gems-fetch
 yes-test-bundled-gems-fetch: clone-bundled-gems-src
 clone-bundled-gems-src: PHONY
-	$(Q) $(BASERUBY) -C $(srcdir)/gems ../tool/fetch-bundled_gems.rb BUNDLED_GEMS="$(BUNDLED_GEMS)" src bundled_gems
+	$(Q) $(BASERUBY) -C $(srcdir) tool/fetch-bundled_gems.rb BUNDLED_GEMS="$(BUNDLED_GEMS)" gems/src gems/bundled_gems
 no-test-bundled-gems-fetch:
 
 test-bundled-gems-prepare: $(TEST_RUNNABLE)-test-bundled-gems-prepare

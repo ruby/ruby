@@ -1,4 +1,4 @@
-#!ruby -pla
+#!ruby -alpF\s+|#.*
 BEGIN {
   require 'rubygems'
   date = nil
@@ -9,7 +9,7 @@ output = STDERR if ARGF.file == STDIN
 END {
   output.print date.strftime("latest_date=%F") if date
 }
-unless /^[^#]/ !~ (gem = $F[0])
+if gem = $F[0]
   ver = Gem::Version.new($F[1])
   (gem, src), = Gem::SpecFetcher.fetcher.detect(:latest) {|s|
     s.platform == "ruby" && s.name == gem

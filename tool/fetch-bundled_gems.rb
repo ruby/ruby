@@ -1,4 +1,4 @@
-#!ruby -an
+#!ruby -alnF\s+|#.*
 BEGIN {
   require 'fileutils'
   require_relative 'lib/colorize'
@@ -21,7 +21,6 @@ BEGIN {
 n, v, u, r = $F
 
 next unless n
-next if n =~ /^#/
 next if bundled_gems&.all? {|pat| !File.fnmatch?(pat, n)}
 
 unless File.exist?("#{n}/.git")
