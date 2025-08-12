@@ -1890,6 +1890,7 @@ impl Assembler {
     }
 
     pub fn add_into(&mut self, left: Opnd, right: Opnd) {
+        assert!(matches!(left, Opnd::Reg(_)), "Destination of add_into must be Opnd::Reg, but got: {left:?}");
         self.push_insn(Insn::Add { left, right, out: left });
     }
 
@@ -2233,6 +2234,7 @@ impl Assembler {
     }
 
     pub fn sub_into(&mut self, left: Opnd, right: Opnd) {
+        assert!(matches!(left, Opnd::Reg(_)), "Destination of sub_into must be Opnd::Reg, but got: {left:?}");
         self.push_insn(Insn::Sub { left, right, out: left });
     }
 
