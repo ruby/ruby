@@ -431,7 +431,7 @@ STDERR # => #<IO:<STDERR>>
 
 ## Environment
 
-### ENV
+### `ENV`
 
 A hash of the contains current environment variables names and values:
 
@@ -445,7 +445,7 @@ ENV.take(5)
  ["GDMSESSION", "ubuntu"]]
 ```
 
-### ARGF
+### `ARGF`
 
 The virtual concatenation of the files given on the command line, or from
 `$stdin` if no files were given, `"-"` is given, or after
