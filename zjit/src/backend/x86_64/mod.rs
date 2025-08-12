@@ -197,8 +197,14 @@ impl Assembler
                                     }
                                 },
                                 // We have to load memory operands to avoid corrupting them
-                                (Opnd::Mem(_) | Opnd::Reg(_), _) => {
+                                (Opnd::Mem(_), _) => {
                                     *left = asm.load(*left);
+                                },
+                                // We have to load register operands to avoid corrupting them
+                                (Opnd::Reg(_), _) => {
+                                    if *left != *out {
+                                        *left = asm.load(*left);
+                                    }
                                 },
                                 // The first operand can't be an immediate value
                                 (Opnd::UImm(_), _) => {
@@ -1164,7 +1170,21 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_eq!(format!("{:x}", cb), "4983c540");
+        assert_disasm!(cb, "4983c540", {"
+            0x0: add r13, 0x40
+        "});
+    }
+
+    #[test]
+    fn test_add_into() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.add_into(CFP, Opnd::UImm(0x40));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_disasm!(cb, "4983c540", {"
+            0x0: add r13, 0x40
+        "});
     }
 
     #[test]
@@ -1175,7 +1195,21 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_eq!(format!("{:x}", cb), "4983ed40");
+        assert_disasm!(cb, "4983ed40", {"
+            0x0: sub r13, 0x40
+        "});
+    }
+
+    #[test]
+    fn test_sub_into() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.sub_into(CFP, Opnd::UImm(0x40));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_disasm!(cb, "4983ed40", {"
+            0x0: sub r13, 0x40
+        "});
     }
 
     #[test]
