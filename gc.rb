@@ -66,11 +66,13 @@ module GC
   # call-seq:
   #    GC.disable -> true or false
   #
-  # Disables garbage collection, returning +true+ if garbage
-  # collection was already disabled.
+  # Disables garbage collection (but GC.start remains potent):
+  # returns whether garbage collection was already disabled.
   #
-  #    GC.disable   #=> false
-  #    GC.disable   #=> true
+  #   GC.enable
+  #   GC.disable # => false
+  #   GC.disable # => true
+  #
   def self.disable
     Primitive.gc_disable
   end
