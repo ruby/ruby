@@ -1559,10 +1559,16 @@ VM_ENV_PREV_EP(const VALUE *ep)
     return VM_ENV_PREV_EP_UNCHECKED(ep);
 }
 
+static inline bool
+VM_ENV_NAMESPACED_P(const VALUE *ep)
+{
+    return VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CLASS) || VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_TOP);
+}
+
 static inline VALUE
 VM_ENV_BLOCK_HANDLER(const VALUE *ep)
 {
-    if (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CLASS) || VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_TOP)) {
+    if (VM_ENV_NAMESPACED_P(ep)) {
         VM_ASSERT(VM_ENV_LOCAL_P(ep));
         return VM_BLOCK_HANDLER_NONE;
     }
@@ -1574,7 +1580,7 @@ VM_ENV_BLOCK_HANDLER(const VALUE *ep)
 static inline const rb_namespace_t *
 VM_ENV_NAMESPACE(const VALUE *ep)
 {
-    VM_ASSERT(VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CLASS) || VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_TOP));
+    VM_ASSERT(VM_ENV_NAMESPACED_P(ep));
     VM_ASSERT(VM_ENV_LOCAL_P(ep));
     return (const rb_namespace_t *)GC_GUARDED_PTR_REF(ep[VM_ENV_DATA_INDEX_SPECVAL]);
 }

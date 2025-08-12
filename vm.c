@@ -142,10 +142,10 @@ static inline VALUE
 VM_CF_BLOCK_HANDLER(const rb_control_frame_t * const cfp)
 {
     const VALUE *ep;
-    if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_TOP) {
+    if (VM_ENV_NAMESPACED_P(cfp->ep)) {
         VM_ASSERT(VM_ENV_LOCAL_P(cfp->ep));
-        /* Never set black_handler for VM_FRAME_MAGIC_TOP
-         * and the specval is used for namespace (rb_namespace_t) in the case
+        /* Never set black_handler for VM_FRAME_MAGIC_TOP or VM_FRAME_MAGIC_CLASS
+         * and the specval is used for namespace (rb_namespace_t) in these case
          */
         return VM_BLOCK_HANDLER_NONE;
     }
