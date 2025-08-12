@@ -3388,7 +3388,7 @@ static const rb_data_type_t enum_product_data_type = {
         enum_product_memsize,
         enum_product_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static struct enum_product *
@@ -3444,7 +3444,7 @@ enum_product_initialize(int argc, VALUE *argv, VALUE obj)
 
     if (!ptr) rb_raise(rb_eArgError, "unallocated product");
 
-    ptr->enums = rb_ary_freeze(enums);
+    RB_OBJ_WRITE(obj, &ptr->enums, rb_ary_freeze(enums));
 
     return obj;
 }
@@ -3462,7 +3462,7 @@ enum_product_init_copy(VALUE obj, VALUE orig)
 
     if (!ptr1) rb_raise(rb_eArgError, "unallocated product");
 
-    ptr1->enums = ptr0->enums;
+    RB_OBJ_WRITE(obj, &ptr1->enums, ptr0->enums);
 
     return obj;
 }
