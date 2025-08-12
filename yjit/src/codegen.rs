@@ -6647,6 +6647,7 @@ fn jit_rb_f_block_given_p(
     true
 }
 
+/// Codegen for `block_given?` and `defined?(yield)`
 fn gen_block_given(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -6656,15 +6657,24 @@ fn gen_block_given(
 ) {
     asm_comment!(asm, "block_given?");
 
-    // Same as rb_vm_frame_block_handler
+    // VM_ENV_FLAGS(ep, VM_FRAME_MAGIC_MASK)
     let ep_opnd = gen_get_lep(jit, asm);
-    let block_handler = asm.load(
-        Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
-    );
+    let flags = Opnd::mem(64, ep_opnd, VM_ENV_DATA_INDEX_FLAGS as i32 * SIZEOF_VALUE_I32);
+    let frame_type = asm.and(flags, VM_FRAME_MAGIC_MASK.into());
+
+    // Return false_opnd if VM_ENV_NAMESPACED_P(ep)
+    asm.cmp(frame_type, VM_FRAME_MAGIC_CLASS.into());
+    let block_given = asm.csel_ne(true_opnd, false_opnd);
+    asm.cmp(frame_type, VM_FRAME_MAGIC_TOP.into());
+    let block_given = asm.csel_ne(block_given, false_opnd);
+
+    // VM_ENV_BLOCK_HANDLER(VM_CF_LEP(cfp))
+    let ep_opnd = gen_get_lep(jit, asm); // Reload ep_opnd to avoid register spill
+    let block_handler = Opnd::mem(64, ep_opnd, VM_ENV_DATA_INDEX_SPECVAL * SIZEOF_VALUE_I32);
 
     // Return `block_handler != VM_BLOCK_HANDLER_NONE`
     asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
-    let block_given = asm.csel_ne(true_opnd, false_opnd);
+    let block_given = asm.csel_ne(block_given, false_opnd);
     asm.mov(out_opnd, block_given);
 }
 
