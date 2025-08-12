@@ -118,6 +118,11 @@ Tempfile.create "jit_list" do |temp_file|
   jit_list = File.readlines(temp_file.path).map(&:strip).reject(&:empty?)
 end
 LOGGER.info("Starting with JIT list of #{jit_list.length} items.")
+# Try running without the optimizer
+_, stderr, exitcode = run_with_jit_list(RUBY, ["--zjit-disable-hir-opt", *OPTIONS], jit_list)
+if exitcode == 0
+  LOGGER.warn "*** Command suceeded with HIR optimizer disabled. HIR optimizer is probably at fault. ***"
+end
 # Now narrow it down
 command = lambda do |items|
   _, _, exitcode = run_with_jit_list(RUBY, OPTIONS, items)
