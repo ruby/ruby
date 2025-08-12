@@ -66,11 +66,6 @@ const int ruby_api_version[] = {
 #else
 #define ZJIT_DESCRIPTION " +ZJIT"
 #endif
-#if USE_ZJIT
-#define JIT_DESCRIPTION ZJIT_DESCRIPTION
-#else
-#define JIT_DESCRIPTION YJIT_DESCRIPTION
-#endif
 #if USE_MODULAR_GC
 #define GC_DESCRIPTION " +GC"
 #else
@@ -200,6 +195,8 @@ rb_ruby_default_parser_set(ruby_default_parser_enum parser)
 static void
 define_ruby_description(const char *const jit_opt)
 {
+#define JIT_DESCRIPTION YJIT_DESCRIPTION ZJIT_DESCRIPTION
+
     static char desc[
         sizeof(ruby_description)
         + rb_strlen_lit(JIT_DESCRIPTION)
@@ -241,6 +238,7 @@ define_ruby_description(const char *const jit_opt)
      * The full ruby version string, like <tt>ruby -v</tt> prints
      */
     rb_define_const(mRuby, "DESCRIPTION", /* MKSTR(description) */ description);
+#undef JIT_DESCRIPTION
 }
 
 void
