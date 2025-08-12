@@ -6540,6 +6540,7 @@ fn jit_rb_f_block_given_p(
     true
 }
 
+/// Codegen for `block_given?` and `defined?(yield)`
 fn gen_block_given(
     jit: &mut JITState,
     asm: &mut Assembler,
