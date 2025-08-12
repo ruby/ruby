@@ -18,6 +18,14 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_enable_through_env
+    child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => '1'}
+    assert_in_out_err([child_env, '-v'], '') do |stdout, stderr|
+      assert_includes(stdout.first, '+ZJIT')
+      assert_equal([], stderr)
+    end
+  end
+
   def test_call_itself
     assert_compiles '42', <<~RUBY, call_threshold: 2
       def test = 42.itself
