@@ -1149,21 +1149,23 @@ search_required(const rb_namespace_t *ns, VALUE fname, volatile VALUE *path, fea
 
     // Check if it's a statically linked extension when
     // not already a feature and not found as a dynamic library.
-    rb_vm_t *vm = GET_VM();
-    if (!ft && type != loadable_ext_rb && vm->static_ext_inits) {
-        VALUE lookup_name = tmp;
-        // Append ".so" if not already present so for example "etc" can find "etc.so".
-        // We always register statically linked extensions with a ".so" extension.
-        // See encinit.c and extinit.c (generated at build-time).
-        if (!ext) {
-            lookup_name = rb_str_dup(lookup_name);
-            rb_str_cat_cstr(lookup_name, ".so");
-        }
-        ftptr = RSTRING_PTR(lookup_name);
-        if (st_lookup(vm->static_ext_inits, (st_data_t)ftptr, NULL)) {
-            *path = rb_filesystem_str_new_cstr(ftptr);
-            RB_GC_GUARD(lookup_name);
-            return 's';
+    if (!ft && type != loadable_ext_rb) {
+        rb_vm_t *vm = GET_VM();
+        if (vm->static_ext_inits) {
+            VALUE lookup_name = tmp;
+            // Append ".so" if not already present so for example "etc" can find "etc.so".
+            // We always register statically linked extensions with a ".so" extension.
+            // See encinit.c and extinit.c (generated at build-time).
+            if (!ext) {
+                lookup_name = rb_str_dup(lookup_name);
+                rb_str_cat_cstr(lookup_name, ".so");
+            }
+            ftptr = RSTRING_PTR(lookup_name);
+            if (st_lookup(vm->static_ext_inits, (st_data_t)ftptr, NULL)) {
+                *path = rb_filesystem_str_new_cstr(ftptr);
+                RB_GC_GUARD(lookup_name);
+                return 's';
+            }
         }
     }
 
