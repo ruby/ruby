@@ -61,14 +61,11 @@ jobs:
           exit $fail
         working-directory: include
 
-      - name: Generate docs
-        id: docs
+      - name: Check if to generate documents
+        id: rdoc
         run: |
-          $RDOC -C -x ^ext -x ^lib .
-          $RDOC --op html .
-          echo htmlout=ruby-html-${GITHUB_SHA:0:10} >> $GITHUB_OUTPUT
-        env:
-          RDOC: ruby -W0 --disable-gems tool/rdoc-srcdir -q
+          ref=$(sed 's/#.*//;/^rdoc /!d' gems/bundled_gems | awk '{print $4}')
+          echo ref=$ref >> $GITHUB_OUTPUT
         # Generate only when document commit/PR
         if: >-
           ${{false
@@ -79,6 +76,36 @@ jobs:
           || contains(github.event.pull_request.title, 'Document')
           || contains(github.event.pull_request.labels.*.name, 'Documentation')
           }}
+
+      - name: Checkout rdoc
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          repository: ruby/rdoc
+          ref: ${{ steps.rdoc.outputs.ref }}
+          path: .bundle/gems/rdoc-0
+        if: ${{ steps.rdoc.outputs.ref != '' }}
+
+      - name: Generate rdoc
+        run: |
+          set -x
+          gempath=$(ruby -e 'print Gem.user_dir, "/bin"')
+          PATH=$gempath:$PATH
+          gem install --user bundler
+          bundle config --local path vendor/bundle
+          bundle install --jobs 4
+          bundle exec rake generate
+        working-directory: .bundle/gems/rdoc-0
+        if: ${{ steps.rdoc.outputs.ref != '' }}
+
+      - name: Generate docs
+        id: docs
+        run: |
+          $RDOC -C -x ^ext -x ^lib .
+          $RDOC --op html .
+          echo htmlout=ruby-html-${GITHUB_SHA:0:10} >> $GITHUB_OUTPUT
+        env:
+          RDOC: ruby -W0 --disable-gems tool/rdoc-srcdir -q
+        if: ${{ steps.rdoc.outcome == 'success' }}
 
       - name: Upload docs
         uses: actions/upload-artifact@v4
