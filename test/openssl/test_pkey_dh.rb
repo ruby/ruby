@@ -103,6 +103,8 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end if !openssl?(3, 0, 0)
 
   def test_params_ok?
+    omit_on_fips
+
     # Skip the tests in old OpenSSL version 1.1.1c or early versions before
     # applying the following commits in OpenSSL 1.1.1d to make `DH_check`
     # function pass the RFC 7919 FFDHE group texts.
