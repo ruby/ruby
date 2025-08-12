@@ -3073,7 +3073,7 @@ static const rb_data_type_t enum_chain_data_type = {
         enum_chain_memsize,
         enum_chain_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static struct enum_chain *
@@ -3123,7 +3123,7 @@ enum_chain_initialize(VALUE obj, VALUE enums)
 
     if (!ptr) rb_raise(rb_eArgError, "unallocated chain");
 
-    ptr->enums = rb_ary_freeze(enums);
+    RB_OBJ_WRITE(obj, &ptr->enums, rb_ary_freeze(enums));
     ptr->pos = -1;
 
     return obj;
@@ -3157,7 +3157,7 @@ enum_chain_init_copy(VALUE obj, VALUE orig)
 
     if (!ptr1) rb_raise(rb_eArgError, "unallocated chain");
 
-    ptr1->enums = ptr0->enums;
+    RB_OBJ_WRITE(obj, &ptr1->enums, ptr0->enums);
     ptr1->pos = ptr0->pos;
 
     return obj;
