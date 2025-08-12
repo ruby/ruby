@@ -19,7 +19,7 @@ allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
 allowed_failures = allowed_failures.split(',').concat(DEFAULT_ALLOWED_FAILURES).uniq.reject(&:empty?)
 
 # make test-bundled-gems BUNDLED_GEMS=gem1,gem2,gem3
-bundled_gems = ARGV.first || ''
+bundled_gems = nil if (bundled_gems = ARGV.first&.split(","))&.empty?
 
 colorize = Colorize.new
 rake = File.realpath("../../.bundle/bin/rake", __FILE__)
@@ -30,7 +30,7 @@ ruby = ENV['RUBY'] || RbConfig.ruby
 failed = []
 File.foreach("#{gem_dir}/bundled_gems") do |line|
   next unless gem = line[/^[^\s\#]+/]
-  next unless bundled_gems.empty? || bundled_gems.split(",").include?(gem)
+  next if bundled_gems&.none? {|pat| File.fnmatch?(pat, gem)}
   next unless File.directory?("#{gem_dir}/src/#{gem}/test")
 
   test_command = "#{ruby} -C #{gem_dir}/src/#{gem} #{rake} test"
