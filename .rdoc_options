@@ -23,3 +23,4 @@ autolink_excluded_words:
 - YJIT
 
 canonical_root: https://docs.ruby-lang.org/en/master
+warn_missing_rdoc_ref: true
