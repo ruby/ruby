@@ -1684,6 +1684,7 @@ impl Assembler {
     }
 
     pub fn cpop_into(&mut self, opnd: Opnd) {
+        assert!(matches!(opnd, Opnd::Reg(_)), "Destination of cpop_into must be a register, got: {opnd:?}");
         self.push_insn(Insn::CPopInto(opnd));
     }
 
@@ -1831,6 +1832,7 @@ impl Assembler {
     }
 
     pub fn lea_into(&mut self, out: Opnd, opnd: Opnd) {
+        assert!(matches!(out, Opnd::Reg(_)), "Destination of lea_into must be a register, got: {out:?}");
         self.push_insn(Insn::Lea { opnd, out });
     }
 
@@ -1856,7 +1858,7 @@ impl Assembler {
     }
 
     pub fn load_into(&mut self, dest: Opnd, opnd: Opnd) {
-        assert!(matches!(dest, Opnd::Reg(_) | Opnd::VReg{..}), "Destination of load_into must be a register");
+        assert!(matches!(dest, Opnd::Reg(_)), "Destination of load_into must be a register, got: {dest:?}");
         match (dest, opnd) {
             (Opnd::Reg(dest), Opnd::Reg(opnd)) if dest == opnd => {}, // skip if noop
             _ => self.push_insn(Insn::LoadInto { dest, opnd }),
@@ -1882,6 +1884,7 @@ impl Assembler {
     }
 
     pub fn mov(&mut self, dest: Opnd, src: Opnd) {
+        assert!(!matches!(dest, Opnd::VReg { .. }), "Destination of mov must not be Opnd::VReg, got: {dest:?}");
         self.push_insn(Insn::Mov { dest, src });
     }
 
@@ -1919,6 +1922,7 @@ impl Assembler {
     }
 
     pub fn store(&mut self, dest: Opnd, src: Opnd) {
+        assert!(!matches!(dest, Opnd::VReg { .. }), "Destination of store must not be Opnd::VReg, got: {dest:?}");
         self.push_insn(Insn::Store { dest, src });
     }
 
