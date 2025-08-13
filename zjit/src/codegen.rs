@@ -337,6 +337,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, opnds!(strings), &function.frame_state(*state))?,
+        Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state))?,
         Insn::Param { idx } => unreachable!("block.insns should not have Insn::Param({idx})"),
         Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
         Insn::Jump(branch) => return gen_jump(jit, asm, branch),
@@ -388,7 +389,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         | Insn::HashDup { .. }
         | Insn::NewHash { .. }
         | Insn::Send { .. }
-        | Insn::StringIntern { .. }
         | Insn::Throw { .. }
         | Insn::ToArray { .. }
         | Insn::ToNewArray { .. }
@@ -607,6 +607,13 @@ fn gen_setivar(asm: &mut Assembler, recv: Opnd, id: ID, val: Opnd) -> Option<()>
 /// Look up global variables
 fn gen_getglobal(asm: &mut Assembler, id: ID) -> Opnd {
     asm_ccall!(asm, rb_gvar_get, id.0.into())
+}
+
+/// Intern a string
+fn gen_intern(asm: &mut Assembler, val: Opnd, state: &FrameState) -> Option<Opnd> {
+    gen_prepare_call_with_gc(asm, state);
+
+    Some(asm_ccall!(asm, rb_str_intern, val))
 }
 
 /// Set global variables

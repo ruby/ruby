@@ -72,6 +72,16 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:setglobal]
   end
 
+  def test_string_intern
+    assert_compiles ':foo123', %q{
+      def test
+        :"foo#{123}"
+      end
+
+      test
+    }, insns: [:intern]
+  end
+
   def test_setglobal_with_trace_var_exception
     assert_compiles '"rescued"', %q{
       def test

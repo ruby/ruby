@@ -445,7 +445,7 @@ pub enum Insn {
     Param { idx: usize },
 
     StringCopy { val: InsnId, chilled: bool, state: InsnId },
-    StringIntern { val: InsnId },
+    StringIntern { val: InsnId, state: InsnId },
     StringConcat { strings: Vec<InsnId>, state: InsnId },
 
     /// Put special object (VMCORE, CBASE, etc.) based on value_type
@@ -779,6 +779,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
             Insn::ArrayPush { array, val, .. } => write!(f, "ArrayPush {array}, {val}"),
             Insn::ObjToString { val, .. } => { write!(f, "ObjToString {val}") },
+            Insn::StringIntern { val, .. } => { write!(f, "StringIntern {val}") },
             Insn::AnyToString { val, str, .. } => { write!(f, "AnyToString {val}, str: {str}") },
             Insn::SideExit { reason, .. } => write!(f, "SideExit {reason}"),
             Insn::PutSpecialObject { value_type } => write!(f, "PutSpecialObject {value_type}"),
@@ -802,7 +803,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, ", {val}")
             }
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
-            insn => { write!(f, "{insn:?}") }
         }
     }
 }
@@ -1148,7 +1148,7 @@ impl Function {
             &Return { val } => Return { val: find!(val) },
             &Throw { throw_state, val } => Throw { throw_state, val: find!(val) },
             &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
-            &StringIntern { val } => StringIntern { val: find!(val) },
+            &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
             &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
@@ -1272,7 +1272,7 @@ impl Function {
             Insn::IsNil { val } if !self.type_of(*val).could_be(types::NilClass) => Type::from_cbool(false),
             Insn::IsNil { .. } => types::CBool,
             Insn::StringCopy { .. } => types::StringExact,
-            Insn::StringIntern { .. } => types::StringExact,
+            Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
@@ -1906,7 +1906,6 @@ impl Function {
                 worklist.extend(strings);
                 worklist.push_back(state);
             }
-            | &Insn::StringIntern { val }
             | &Insn::Return { val }
             | &Insn::Throw { val, .. }
             | &Insn::Defined { v: val, .. }
@@ -1915,6 +1914,7 @@ impl Function {
             | &Insn::IsNil { val } =>
                 worklist.push_back(val),
             &Insn::SetGlobal { val, state, .. }
+            | &Insn::StringIntern { val, state }
             | &Insn::StringCopy { val, state, .. }
             | &Insn::GuardType { val, state, .. }
             | &Insn::GuardBitEquals { val, state, .. }
@@ -2815,7 +2815,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_putself => { state.stack_push(self_param); }
                 YARVINSN_intern => {
                     let val = state.stack_pop()?;
-                    let insn_id = fun.push_insn(block, Insn::StringIntern { val });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let insn_id = fun.push_insn(block, Insn::StringIntern { val, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_concatstrings => {
@@ -4493,6 +4494,26 @@ mod tests {
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = Send v1, 0x1000, :each
               Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn test_intern_interpolated_symbol() {
+        eval(r#"
+            def test
+              :"foo#{123}"
+            end
+        "#);
+        assert_method_hir_with_opcode("test", YARVINSN_intern, expect![[r#"
+            fn test@<compiled>:3:
+            bb0(v0:BasicObject):
+              v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v3:Fixnum[123] = Const Value(123)
+              v5:BasicObject = ObjToString v3
+              v7:String = AnyToString v3, str: v5
+              v9:StringExact = StringConcat v2, v7
+              v11:Symbol = StringIntern v9
+              Return v11
         "#]]);
     }
 
