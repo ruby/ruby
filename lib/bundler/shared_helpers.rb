@@ -130,7 +130,6 @@ module Bundler
         caller_location = caller_locations(2, 2).first
         suffix = " (called at #{caller_location.path}:#{caller_location.lineno})"
         message += suffix
-        removed_message += suffix if removed_message
       end
 
       require_relative "../bundler"
