@@ -373,6 +373,44 @@ module Bundler
       write_lock(target_lockfile, preserve_unknown_sections)
     end
 
+    def write_lock(file, preserve_unknown_sections)
+      return if Definition.no_lock || file.nil?
+
+      contents = to_lock
+
+      # Convert to \r\n if the existing lock has them
+      # i.e., Windows with `git config core.autocrlf=true`
+      contents.gsub!(/\n/, "\r\n") if @lockfile_contents.match?("\r\n")
+
+      if @locked_bundler_version
+        locked_major = @locked_bundler_version.segments.first
+        current_major = bundler_version_to_lock.segments.first
+
+        updating_major = locked_major < current_major
+      end
+
+      preserve_unknown_sections ||= !updating_major && (Bundler.frozen_bundle? || !(unlocking? || @unlocking_bundler))
+
+      if File.exist?(file) && lockfiles_equal?(@lockfile_contents, contents, preserve_unknown_sections)
+        return if Bundler.frozen_bundle?
+        SharedHelpers.filesystem_access(file) { FileUtils.touch(file) }
+        return
+      end
+
+      if Bundler.frozen_bundle?
+        Bundler.ui.error "Cannot write a changed lockfile while frozen."
+        return
+      end
+
+      begin
+        SharedHelpers.filesystem_access(file) do |p|
+          File.open(p, "wb") {|f| f.puts(contents) }
+        end
+      rescue ReadOnlyFileSystemError
+        raise ProductionError, lockfile_changes_summary("file system is read-only")
+      end
+    end
+
     def locked_ruby_version
       return unless ruby_version
       if @unlocking_ruby || !@locked_ruby_version
@@ -572,44 +610,6 @@ module Bundler
 
     def lockfile_exists?
       lockfile && File.exist?(lockfile)
-    end
-
-    def write_lock(file, preserve_unknown_sections)
-      return if Definition.no_lock || file.nil?
-
-      contents = to_lock
-
-      # Convert to \r\n if the existing lock has them
-      # i.e., Windows with `git config core.autocrlf=true`
-      contents.gsub!(/\n/, "\r\n") if @lockfile_contents.match?("\r\n")
-
-      if @locked_bundler_version
-        locked_major = @locked_bundler_version.segments.first
-        current_major = bundler_version_to_lock.segments.first
-
-        updating_major = locked_major < current_major
-      end
-
-      preserve_unknown_sections ||= !updating_major && (Bundler.frozen_bundle? || !(unlocking? || @unlocking_bundler))
-
-      if File.exist?(file) && lockfiles_equal?(@lockfile_contents, contents, preserve_unknown_sections)
-        return if Bundler.frozen_bundle?
-        SharedHelpers.filesystem_access(file) { FileUtils.touch(file) }
-        return
-      end
-
-      if Bundler.frozen_bundle?
-        Bundler.ui.error "Cannot write a changed lockfile while frozen."
-        return
-      end
-
-      begin
-        SharedHelpers.filesystem_access(file) do |p|
-          File.open(p, "wb") {|f| f.puts(contents) }
-        end
-      rescue ReadOnlyFileSystemError
-        raise ProductionError, lockfile_changes_summary("file system is read-only")
-      end
     end
 
     def resolver
