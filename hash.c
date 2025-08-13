@@ -5192,25 +5192,26 @@ env_enc_str_new(const char *ptr, long len, rb_encoding *enc)
 }
 
 static VALUE
-env_str_new(const char *ptr, long len)
+env_str_new(const char *ptr, long len, rb_encoding *enc)
 {
-    return env_enc_str_new(ptr, len, env_encoding());
+    return env_enc_str_new(ptr, len, enc);
 }
 
 static VALUE
-env_str_new2(const char *ptr)
+env_str_new2(const char *ptr, rb_encoding *enc)
 {
     if (!ptr) return Qnil;
-    return env_str_new(ptr, strlen(ptr));
+    return env_str_new(ptr, strlen(ptr), enc);
 }
 
 static VALUE
 getenv_with_lock(const char *name)
 {
     VALUE ret;
+    rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         const char *val = getenv(name);
-        ret = env_str_new2(val);
+        ret = env_str_new2(val, enc);
     }
     return ret;
 }
@@ -5773,13 +5774,14 @@ env_values(void)
 {
     VALUE ary = rb_ary_new();
 
+    rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
 
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
-                rb_ary_push(ary, env_str_new2(s+1));
+                rb_ary_push(ary, env_str_new2(s+1, enc));
             }
             env++;
         }
@@ -5865,14 +5867,15 @@ env_each_pair(VALUE ehash)
 
     VALUE ary = rb_ary_new();
 
+    rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
 
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
-                rb_ary_push(ary, env_str_new(*env, s-*env));
-                rb_ary_push(ary, env_str_new2(s+1));
+                rb_ary_push(ary, env_str_new(*env, s-*env, enc));
+                rb_ary_push(ary, env_str_new2(s+1, enc));
             }
             env++;
         }
@@ -6255,13 +6258,14 @@ env_to_a(VALUE _)
 {
     VALUE ary = rb_ary_new();
 
+    rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
-                rb_ary_push(ary, rb_assoc_new(env_str_new(*env, s-*env),
-                                              env_str_new2(s+1)));
+                rb_ary_push(ary, rb_assoc_new(env_str_new(*env, s-*env, enc),
+                                              env_str_new2(s+1, enc)));
             }
             env++;
         }
@@ -6509,6 +6513,7 @@ env_key(VALUE dmy, VALUE value)
     StringValue(value);
     VALUE str = Qnil;
 
+    rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         while (*env) {
@@ -6516,7 +6521,7 @@ env_key(VALUE dmy, VALUE value)
             if (s++) {
                 long len = strlen(s);
                 if (RSTRING_LEN(value) == len && strncmp(s, RSTRING_PTR(value), len) == 0) {
-                    str = env_str_new(*env, s-*env-1);
+                    str = env_str_new(*env, s-*env-1, enc);
                     break;
                 }
             }
@@ -6533,13 +6538,14 @@ env_to_hash(void)
 {
     VALUE hash = rb_hash_new();
 
+    rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
-                rb_hash_aset(hash, env_str_new(*env, s-*env),
-                             env_str_new2(s+1));
+                rb_hash_aset(hash, env_str_new(*env, s-*env, enc),
+                             env_str_new2(s+1, enc));
             }
             env++;
         }
@@ -6684,14 +6690,15 @@ env_shift(VALUE _)
     VALUE result = Qnil;
     VALUE key = Qnil;
 
+    rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         if (*env) {
             const char *p = *env;
             char *s = strchr(p, '=');
             if (s) {
-                key = env_str_new(p, s-p);
-                VALUE val = env_str_new2(getenv(RSTRING_PTR(key)));
+                key = env_str_new(p, s-p, enc);
+                VALUE val = env_str_new2(getenv(RSTRING_PTR(key)), enc);
                 result = rb_assoc_new(key, val);
             }
         }

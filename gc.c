@@ -1047,7 +1047,7 @@ rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
 {
     RUBY_ASSERT_ALWAYS(dfree != (RUBY_DATA_FUNC)1);
     if (klass) rb_data_object_check(klass);
-    return newobj_of(GET_RACTOR(), klass, T_DATA, (VALUE)dmark, (VALUE)datap, (VALUE)dfree, !dmark, sizeof(struct RTypedData));
+    return newobj_of(GET_RACTOR(), klass, T_DATA, (VALUE)dmark, (VALUE)dfree, (VALUE)datap, !dmark, sizeof(struct RTypedData));
 }
 
 VALUE
@@ -1064,7 +1064,7 @@ typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_
     RBIMPL_NONNULL_ARG(type);
     if (klass) rb_data_object_check(klass);
     bool wb_protected = (type->flags & RUBY_FL_WB_PROTECTED) || !type->function.dmark;
-    return newobj_of(GET_RACTOR(), klass, T_DATA, ((VALUE)type) | IS_TYPED_DATA | typed_flag, (VALUE)datap, 0, wb_protected, size);
+    return newobj_of(GET_RACTOR(), klass, T_DATA, 0, ((VALUE)type) | IS_TYPED_DATA | typed_flag, (VALUE)datap, wb_protected, size);
 }
 
 VALUE
@@ -1755,7 +1755,6 @@ rb_gc_pointer_to_heap_p(VALUE obj)
 #define LAST_OBJECT_ID() (object_id_counter * OBJ_ID_INCREMENT)
 static VALUE id2ref_value = 0;
 static st_table *id2ref_tbl = NULL;
-static bool id2ref_tbl_built = false;
 
 #if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
 static size_t object_id_counter = 1;
@@ -1947,6 +1946,7 @@ build_id2ref_i(VALUE obj, void *data)
       case T_CLASS:
       case T_MODULE:
         if (RCLASS(obj)->object_id) {
+            RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
             st_insert(id2ref_tbl, RCLASS(obj)->object_id, obj);
         }
         break;
@@ -1955,6 +1955,7 @@ build_id2ref_i(VALUE obj, void *data)
         break;
       default:
         if (rb_shape_obj_has_id(obj)) {
+            RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
             st_insert(id2ref_tbl, rb_obj_id(obj), obj);
         }
         break;
@@ -1974,17 +1975,20 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
         // GC Must not trigger while we build the table, otherwise if we end
         // up freeing an object that had an ID, we might try to delete it from
         // the table even though it wasn't inserted yet.
-        id2ref_tbl = st_init_table(&object_id_hash_type);
-        id2ref_value = TypedData_Wrap_Struct(0, &id2ref_tbl_type, id2ref_tbl);
+        st_table *tmp_id2ref_tbl = st_init_table(&object_id_hash_type);
+        VALUE tmp_id2ref_value = TypedData_Wrap_Struct(0, &id2ref_tbl_type, tmp_id2ref_tbl);
 
         // build_id2ref_i will most certainly malloc, which could trigger GC and sweep
         // objects we just added to the table.
-        bool gc_disabled = RTEST(rb_gc_disable_no_rest());
+        // By calling rb_gc_disable() we also save having to handle potentially garbage objects.
+        bool gc_disabled = RTEST(rb_gc_disable());
         {
+            id2ref_tbl = tmp_id2ref_tbl;
+            id2ref_value = tmp_id2ref_value;
+
             rb_gc_impl_each_object(objspace, build_id2ref_i, (void *)id2ref_tbl);
         }
         if (!gc_disabled) rb_gc_enable();
-        id2ref_tbl_built = true;
     }
 
     VALUE obj;
@@ -2036,10 +2040,9 @@ obj_free_object_id(VALUE obj)
             RUBY_ASSERT(FIXNUM_P(obj_id) || RB_TYPE_P(obj_id, T_BIGNUM));
 
             if (!st_delete(id2ref_tbl, (st_data_t *)&obj_id, NULL)) {
-                // If we're currently building the table then it's not a bug.
                 // The the object is a T_IMEMO/fields, then it's possible the actual object
                 // has been garbage collected already.
-                if (id2ref_tbl_built && !RB_TYPE_P(obj, T_IMEMO)) {
+                if (!RB_TYPE_P(obj, T_IMEMO)) {
                     rb_bug("Object ID seen, but not in _id2ref table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
                 }
             }
@@ -3028,7 +3031,7 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
     mark_current_machine_context(ec);
 
     MARK_CHECKPOINT("global_symbols");
-    rb_sym_global_symbols_mark();
+    rb_sym_global_symbols_mark_and_move();
 
     MARK_CHECKPOINT("finish");
 
@@ -3170,10 +3173,15 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         break;
 
       case T_DATA: {
-        void *const ptr = RTYPEDDATA_P(obj) ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+        bool typed_data = RTYPEDDATA_P(obj);
+        void *const ptr = typed_data ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+
+        if (typed_data) {
+            gc_mark_internal(RTYPEDDATA(obj)->fields_obj);
+        }
 
         if (ptr) {
-            if (RTYPEDDATA_P(obj) && gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
+            if (typed_data && gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
                 size_t *offset_list = TYPED_DATA_REFS_OFFSET_LIST(obj);
 
                 for (size_t offset = *offset_list; offset != RUBY_REF_END; offset = *offset_list++) {
@@ -3181,7 +3189,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
                 }
             }
             else {
-                RUBY_DATA_FUNC mark_func = RTYPEDDATA_P(obj) ?
+                RUBY_DATA_FUNC mark_func = typed_data ?
                     RTYPEDDATA_TYPE(obj)->function.dmark :
                     RDATA(obj)->dmark;
                 if (mark_func) (*mark_func)(ptr);
@@ -3258,6 +3266,10 @@ rb_gc_mark_children(void *objspace, VALUE obj)
 
         for (long i = 0; i < len; i++) {
             gc_mark_internal(ptr[i]);
+        }
+
+        if (!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS)) {
+            gc_mark_internal(RSTRUCT_FIELDS_OBJ(obj));
         }
 
         break;
@@ -4041,7 +4053,7 @@ rb_gc_update_vm_references(void *objspace)
 
     rb_vm_update_references(vm);
     rb_gc_update_global_tbl();
-    rb_sym_global_symbols_update_references();
+    rb_sym_global_symbols_mark_and_move();
 
 #if USE_YJIT
     void rb_yjit_root_update_references(void); // in Rust
@@ -4114,9 +4126,15 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
       case T_DATA:
         /* Call the compaction callback, if it exists */
         {
-            void *const ptr = RTYPEDDATA_P(obj) ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+            bool typed_data = RTYPEDDATA_P(obj);
+            void *const ptr = typed_data ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+
+            if (typed_data) {
+                UPDATE_IF_MOVED(objspace, RTYPEDDATA(obj)->fields_obj);
+            }
+
             if (ptr) {
-                if (RTYPEDDATA_P(obj) && gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
+                if (typed_data && gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
                     size_t *offset_list = TYPED_DATA_REFS_OFFSET_LIST(obj);
 
                     for (size_t offset = *offset_list; offset != RUBY_REF_END; offset = *offset_list++) {
@@ -4124,7 +4142,7 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
                         *ref = gc_location_internal(objspace, *ref);
                     }
                 }
-                else if (RTYPEDDATA_P(obj)) {
+                else if (typed_data) {
                     RUBY_DATA_FUNC compact_func = RTYPEDDATA_TYPE(obj)->function.dcompact;
                     if (compact_func) (*compact_func)(ptr);
                 }
@@ -4187,6 +4205,15 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
 
             for (i = 0; i < len; i++) {
                 UPDATE_IF_MOVED(objspace, ptr[i]);
+            }
+
+            if (RSTRUCT_EMBED_LEN(obj)) {
+                if (!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS)) {
+                    UPDATE_IF_MOVED(objspace, ptr[len]);
+                }
+            }
+            else {
+                UPDATE_IF_MOVED(objspace, RSTRUCT(obj)->as.heap.fields_obj);
             }
         }
         break;
@@ -4341,7 +4368,7 @@ gc_config_set(rb_execution_context_t *ec, VALUE self, VALUE hash)
 
     rb_gc_impl_config_set(objspace, hash);
 
-    return rb_gc_impl_config_get(objspace);
+    return Qnil;
 }
 
 static VALUE

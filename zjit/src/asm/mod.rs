@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::fmt;
+use std::ops::Range;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::mem;
@@ -124,7 +125,7 @@ impl CodeBlock {
     }
 
     /// Invoke a callback with write_ptr temporarily adjusted to a given address
-    pub fn with_write_ptr(&mut self, code_ptr: CodePtr, callback: impl Fn(&mut CodeBlock)) {
+    pub fn with_write_ptr(&mut self, code_ptr: CodePtr, callback: impl Fn(&mut CodeBlock)) -> Range<CodePtr> {
         // Temporarily update the write_pos. Ignore the dropped_bytes flag at the old address.
         let old_write_pos = self.write_pos;
         let old_dropped_bytes = self.dropped_bytes;
@@ -134,9 +135,13 @@ impl CodeBlock {
         // Invoke the callback
         callback(self);
 
+        // Build a code range modified by the callback
+        let ret = code_ptr..self.get_write_ptr();
+
         // Restore the original write_pos and dropped_bytes flag.
         self.dropped_bytes = old_dropped_bytes;
         self.write_pos = old_write_pos;
+        ret
     }
 
     /// Get a (possibly dangling) direct pointer into the executable memory block

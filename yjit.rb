@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 # :markup: markdown
 
-# This module allows for introspection of \YJIT, CRuby's just-in-time compiler.
+# This module allows for introspection of YJIT, CRuby's just-in-time compiler.
 # Everything in the module is highly implementation specific and the API might
 # be less stable compared to the standard library.
 #
-# This module may not exist if \YJIT does not support the particular platform
+# This module may not exist if YJIT does not support the particular platform
 # for which CRuby is built.
 module RubyVM::YJIT
-  # Check if \YJIT is enabled.
+  # Check if YJIT is enabled.
   def self.enabled?
     Primitive.cexpr! 'RBOOL(rb_yjit_enabled_p)'
   end
@@ -33,8 +33,8 @@ module RubyVM::YJIT
     Primitive.rb_yjit_reset_stats_bang
   end
 
-  # Enable \YJIT compilation. `stats` option decides whether to enable \YJIT stats or not. `log` decides
-  # whether to enable \YJIT compilation logging or not. Optional `mem_size` and `call_threshold` can be
+  # Enable YJIT compilation. `stats` option decides whether to enable YJIT stats or not. `log` decides
+  # whether to enable YJIT compilation logging or not. Optional `mem_size` and `call_threshold` can be
   # provided to override default configuration.
   #
   # * `stats`:

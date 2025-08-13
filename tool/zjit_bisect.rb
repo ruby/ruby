@@ -1,12 +1,26 @@
 #!/usr/bin/env ruby
 require 'logger'
 require 'open3'
+require 'optparse'
+require 'shellwords'
 require 'tempfile'
 require 'timeout'
 
-RUBY = ARGV[0] || raise("Usage: ruby jit_bisect.rb <path_to_ruby> <options>")
-OPTIONS = ARGV[1] || raise("Usage: ruby jit_bisect.rb <path_to_ruby> <options>")
-TIMEOUT_SEC = 5
+ARGS = {timeout: 5}
+OptionParser.new do |opts|
+  opts.banner += " <path_to_ruby> -- <options>"
+  opts.on("--timeout=TIMEOUT_SEC", "Seconds until child process is killed") do |timeout|
+    ARGS[:timeout] = Integer(timeout)
+  end
+  opts.on("-h", "--help", "Prints this help") do
+    puts opts
+    exit
+  end
+end.parse!
+
+RUBY = ARGV[0] || raise("Usage: ruby jit_bisect.rb <path_to_ruby> -- <options>")
+OPTIONS = ARGV[1..]
+raise("Usage: ruby jit_bisect.rb <path_to_ruby> -- <options>") if OPTIONS.empty?
 LOGGER = Logger.new($stdout)
 
 # From https://github.com/tekknolagi/omegastar
@@ -58,6 +72,29 @@ def run_bisect(command, items)
   bisect_impl(command, [], items)
 end
 
+def run_ruby *cmd
+  stdout_data = nil
+  stderr_data = nil
+  status = nil
+  Open3.popen3(*cmd) do |stdin, stdout, stderr, wait_thr|
+    pid = wait_thr.pid
+    begin
+      Timeout.timeout(ARGS[:timeout]) do
+        stdout_data = stdout.read
+        stderr_data = stderr.read
+        status = wait_thr.value
+      end
+    rescue Timeout::Error
+      Process.kill("KILL", pid)
+      stderr_data = "(killed due to timeout)"
+      # Wait for the process to be reaped
+      wait_thr.value
+      status = 1
+    end
+  end
+  [stdout_data, stderr_data, status]
+end
+
 def run_with_jit_list(ruby, options, jit_list)
   # Make a new temporary file containing the JIT list
   Tempfile.create("jit_list") do |temp_file|
@@ -65,33 +102,38 @@ def run_with_jit_list(ruby, options, jit_list)
     temp_file.flush
     temp_file.close
     # Run the JIT with the temporary file
-    Open3.capture3("#{ruby} --zjit-allowed-iseqs=#{temp_file.path} #{options}")
+    run_ruby ruby, "--zjit-allowed-iseqs=#{temp_file.path}", *options
   end
 end
 
 # Try running with no JIT list to get a stable baseline
-_, stderr, status = run_with_jit_list(RUBY, OPTIONS, [])
-if !status.success?
+_, stderr, exitcode = run_with_jit_list(RUBY, OPTIONS, [])
+if exitcode != 0
   raise "Command failed with empty JIT list: #{stderr}"
 end
 # Collect the JIT list from the failing Ruby process
 jit_list = nil
 Tempfile.create "jit_list" do |temp_file|
-  Open3.capture3("#{RUBY} --zjit-log-compiled-iseqs=#{temp_file.path} #{OPTIONS}")
+  run_ruby RUBY, "--zjit-log-compiled-iseqs=#{temp_file.path}", *OPTIONS
   jit_list = File.readlines(temp_file.path).map(&:strip).reject(&:empty?)
 end
 LOGGER.info("Starting with JIT list of #{jit_list.length} items.")
+# Try running without the optimizer
+_, stderr, exitcode = run_with_jit_list(RUBY, ["--zjit-disable-hir-opt", *OPTIONS], jit_list)
+if exitcode == 0
+  LOGGER.warn "*** Command suceeded with HIR optimizer disabled. HIR optimizer is probably at fault. ***"
+end
 # Now narrow it down
 command = lambda do |items|
-  status = Timeout.timeout(TIMEOUT_SEC) do
-    _, _, status = run_with_jit_list(RUBY, OPTIONS, items)
-    status
-  end
-  status.success?
+  _, _, exitcode = run_with_jit_list(RUBY, OPTIONS, items)
+  exitcode == 0
 end
 result = run_bisect(command, jit_list)
 File.open("jitlist.txt", "w") do |file|
   file.puts(result)
 end
+puts "Run:"
+command = [RUBY, "--zjit-allowed-iseqs=jitlist.txt", *OPTIONS].shelljoin
+puts command
 puts "Reduced JIT list (available in jitlist.txt):"
 puts result

@@ -19,6 +19,7 @@
 #include "internal/thread.h"
 #include "variable.h"
 #include "yjit.h"
+#include "zjit.h"
 
 VALUE rb_cRactor;
 static VALUE rb_cRactorSelector;
@@ -511,6 +512,7 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     r->debug = cr->debug;
 
     rb_yjit_before_ractor_spawn();
+    rb_zjit_before_ractor_spawn();
     rb_thread_create_ractor(r, args, block);
 
     RB_GC_GUARD(rv);
@@ -1679,8 +1681,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 } while (0)
 
     if (UNLIKELY(rb_obj_exivar_p(obj))) {
-        VALUE fields_obj;
-        rb_ivar_generic_fields_tbl_lookup(obj, &fields_obj);
+        VALUE fields_obj = rb_obj_fields_no_ractor_check(obj);
 
         if (UNLIKELY(rb_shape_obj_too_complex_p(obj))) {
             struct obj_traverse_replace_callback_data d = {
@@ -2303,7 +2304,7 @@ static const rb_data_type_t cross_ractor_require_data_type = {
         NULL, // memsize
         NULL, // compact
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE

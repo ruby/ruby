@@ -48,7 +48,7 @@ impl ZJITState {
             use crate::cruby::*;
             use crate::options::*;
 
-            let exec_mem_size: usize = 64 * 1024 * 1024; // TODO: implement the option
+            let exec_mem_bytes: usize = get_option!(exec_mem_bytes);
             let virt_block: *mut u8 = unsafe { rb_zjit_reserve_addr_space(64 * 1024 * 1024) };
 
             // Memory protection syscalls need page-aligned addresses, so check it here. Assuming
@@ -73,8 +73,8 @@ impl ZJITState {
                 crate::virtualmem::sys::SystemAllocator {},
                 page_size,
                 NonNull::new(virt_block).unwrap(),
-                exec_mem_size,
-                64 * 1024 * 1024, // TODO: support the option
+                exec_mem_bytes,
+                exec_mem_bytes, // TODO: change this to --zjit-mem-size (Shopify/ruby#686)
             );
             let mem_block = Rc::new(RefCell::new(mem_block));
 

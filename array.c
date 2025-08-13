@@ -3659,9 +3659,9 @@ rb_ary_collect(VALUE ary)
 
 /*
  *  call-seq:
- *    collect! {|element| ... } -> new_array
+ *    collect! {|element| ... } -> self
  *    collect! -> new_enumerator
- *    map! {|element| ... } -> new_array
+ *    map! {|element| ... } -> self
  *    map! -> new_enumerator
  *
  *  With a block given, calls the block with each element of +self+
@@ -4755,10 +4755,10 @@ rb_ary_clear(VALUE ary)
 
 /*
  *  call-seq:
- *    fill(object, start = nil, count = nil) -> new_array
- *    fill(object, range) -> new_array
- *    fill(start = nil, count = nil) {|element| ... } -> new_array
- *    fill(range) {|element| ... } -> new_array
+ *    fill(object, start = nil, count = nil) -> self
+ *    fill(object, range) -> self
+ *    fill(start = nil, count = nil) {|element| ... } -> self
+ *    fill(range) {|element| ... } -> self
  *
  *  Replaces selected elements in +self+;
  *  may add elements to +self+;

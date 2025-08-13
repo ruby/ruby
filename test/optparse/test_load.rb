@@ -47,7 +47,7 @@ class TestOptionParserLoad < Test::Unit::TestCase
       begin
         yield dir, optdir
       ensure
-        File.unlink(file)
+        File.unlink(file) rescue nil
         Dir.rmdir(optdir) rescue nil
       end
     else
@@ -101,7 +101,7 @@ class TestOptionParserLoad < Test::Unit::TestCase
   end
 
   def test_load_xdg_config_home
-    result, = setup_options_xdg_config_home
+    result, dir = setup_options_xdg_config_home
     assert_load(result)
 
     setup_options_home_config do
@@ -115,6 +115,11 @@ class TestOptionParserLoad < Test::Unit::TestCase
     setup_options_home_config_settings do
       assert_load(result)
     end
+
+    File.unlink("#{dir}/#{@basename}.options")
+    setup_options_home_config do
+      assert_load_nothing
+    end
   end
 
   def test_load_home_config
@@ -127,6 +132,11 @@ class TestOptionParserLoad < Test::Unit::TestCase
 
     setup_options_home_config_settings do
       assert_load(result)
+    end
+
+    setup_options_xdg_config_home do |_, dir|
+      File.unlink("#{dir}/#{@basename}.options")
+      assert_load_nothing
     end
   end
 

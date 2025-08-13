@@ -4,10 +4,10 @@ use std::ffi::{c_int, c_void};
 
 use crate::asm::Label;
 use crate::backend::current::{Reg, ALLOC_REGS};
-use crate::invariants::{track_bop_assumption, track_cme_assumption, track_stable_constant_names_assumption};
-use crate::gc::{get_or_create_iseq_payload, append_gc_offsets};
+use crate::invariants::{track_bop_assumption, track_cme_assumption, track_single_ractor_assumption, track_stable_constant_names_assumption};
+use crate::gc::{append_gc_offsets, get_or_create_iseq_payload, get_or_create_iseq_payload_ptr, IseqStatus};
 use crate::state::ZJITState;
-use crate::stats::{counter_ptr, Counter};
+use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::compile_time_ns};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, SideExitContext, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SP};
 use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SELF_PARAM_IDX};
@@ -86,7 +86,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
     // Take a lock to avoid writing to ISEQ in parallel with Ractors.
     // with_vm_lock() does nothing if the program doesn't use Ractors.
     let code_ptr = with_vm_lock(src_loc!(), || {
-        gen_iseq_entry_point(iseq)
+        with_time_stat(compile_time_ns, || gen_iseq_entry_point(iseq))
     });
 
     // Assert that the ISEQ compiles if RubyVM::ZJIT.assert_compiles is enabled
@@ -136,7 +136,7 @@ fn gen_iseq_entry_point_body(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<CodePt
 
     // Remember the block address to reuse it later
     let payload = get_or_create_iseq_payload(iseq);
-    payload.start_ptr = Some(start_ptr);
+    payload.status = IseqStatus::Compiled(start_ptr);
     append_gc_offsets(iseq, &gc_offsets);
 
     // Return a JIT code address
@@ -213,23 +213,29 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_pt
 fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<(CodePtr, Vec<(Rc<Branch>, IseqPtr)>)> {
     // Return an existing pointer if it's already compiled
     let payload = get_or_create_iseq_payload(iseq);
-    if let Some(start_ptr) = payload.start_ptr {
-        return Some((start_ptr, vec![]));
+    match payload.status {
+        IseqStatus::Compiled(start_ptr) => return Some((start_ptr, vec![])),
+        IseqStatus::CantCompile => return None,
+        IseqStatus::NotCompiled => {},
     }
 
     // Convert ISEQ into High-level IR and optimize HIR
     let function = match compile_iseq(iseq) {
         Some(function) => function,
-        None => return None,
+        None => {
+            payload.status = IseqStatus::CantCompile;
+            return None;
+        }
     };
 
     // Compile the High-level IR
     let result = gen_function(cb, iseq, &function);
     if let Some((start_ptr, gc_offsets, jit)) = result {
-        payload.start_ptr = Some(start_ptr);
+        payload.status = IseqStatus::Compiled(start_ptr);
         append_gc_offsets(iseq, &gc_offsets);
         Some((start_ptr, jit.branch_iseqs))
     } else {
+        payload.status = IseqStatus::CantCompile;
         None
     }
 }
@@ -330,7 +336,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::NewHash { elements, state } => gen_new_hash(jit, asm, elements, &function.frame_state(*state))?,
         Insn::NewRange { low, high, flag, state } => gen_new_range(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
-        Insn::StringCopy { val, chilled } => gen_string_copy(asm, opnd!(val), *chilled),
+        Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
+        Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, opnds!(strings), &function.frame_state(*state))?,
         Insn::Param { idx } => unreachable!("block.insns should not have Insn::Param({idx})"),
         Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
         Insn::Jump(branch) => return gen_jump(jit, asm, branch),
@@ -361,7 +368,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PatchPoint { invariant, state } => return gen_patch_point(jit, asm, invariant, &function.frame_state(*state)),
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfun, opnds!(args))?,
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
-        Insn::SetGlobal { id, val, state: _ } => return Some(gen_setglobal(asm, *id, opnd!(val))),
+        Insn::SetGlobal { id, val, state } => return gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state)),
         Insn::GetGlobal { id, state: _ } => gen_getglobal(asm, *id),
         &Insn::GetLocal { ep_offset, level } => gen_getlocal_with_ep(asm, ep_offset, level)?,
         Insn::SetLocal { val, ep_offset, level } => return gen_setlocal_with_ep(asm, opnd!(val), *ep_offset, *level),
@@ -370,7 +377,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SideExit { state, reason } => return gen_side_exit(jit, asm, reason, &function.frame_state(*state)),
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
-        Insn::Defined { op_type, obj, pushval, v } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v))?,
+        Insn::Defined { op_type, obj, pushval, v, state } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v), &function.frame_state(*state))?,
         &Insn::IncrCounter(counter) => return Some(gen_incr_counter(asm, counter)),
         Insn::ArrayExtend { .. }
         | Insn::ArrayMax { .. }
@@ -438,7 +445,7 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
     ep_opnd
 }
 
-fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, _obj: VALUE, pushval: VALUE, _tested_value: Opnd) -> Option<Opnd> {
+fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, pushval: VALUE, tested_value: Opnd, state: &FrameState) -> Option<Opnd> {
     match op_type as defined_type {
         DEFINED_YIELD => {
             // `yield` goes to the block handler stowed in the "local" iseq which is
@@ -455,7 +462,17 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, _obj: VALUE,
                 Some(Qnil.into())
             }
         }
-        _ => None
+        _ => {
+            // Save the PC and SP because the callee may allocate or call #respond_to?
+            gen_prepare_non_leaf_call(jit, asm, state)?;
+
+            // TODO: Inline the cases for each op_type
+            // Call vm_defined(ec, reg_cfp, op_type, obj, v)
+            let def_result = asm_ccall!(asm, rb_vm_defined, EC, CFP, op_type.into(), obj.into(), tested_value);
+
+            asm.cmp(def_result.with_num_bits(8), 0.into());
+            Some(asm.csel_ne(pushval.into(), Qnil.into()))
+        }
     }
 }
 
@@ -521,6 +538,7 @@ fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf
 
 /// Record a patch point that should be invalidated on a given invariant
 fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invariant, state: &FrameState) -> Option<()> {
+    let payload_ptr = get_or_create_iseq_payload_ptr(jit.iseq);
     let label = asm.new_label("patch_point").unwrap_label();
     let invariant = invariant.clone();
 
@@ -532,19 +550,19 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invarian
         match invariant {
             Invariant::BOPRedefined { klass, bop } => {
                 let side_exit_ptr = cb.resolve_label(label);
-                track_bop_assumption(klass, bop, code_ptr, side_exit_ptr);
+                track_bop_assumption(klass, bop, code_ptr, side_exit_ptr, payload_ptr);
             }
             Invariant::MethodRedefined { klass: _, method: _, cme } => {
                 let side_exit_ptr = cb.resolve_label(label);
-                track_cme_assumption(cme, code_ptr, side_exit_ptr);
+                track_cme_assumption(cme, code_ptr, side_exit_ptr, payload_ptr);
             }
             Invariant::StableConstantNames { idlist } => {
                 let side_exit_ptr = cb.resolve_label(label);
-                track_stable_constant_names_assumption(idlist, code_ptr, side_exit_ptr);
+                track_stable_constant_names_assumption(idlist, code_ptr, side_exit_ptr, payload_ptr);
             }
-            _ => {
-                debug!("ZJIT: gen_patch_point: unimplemented invariant {invariant:?}");
-                return;
+            Invariant::SingleRactorMode => {
+                let side_exit_ptr = cb.resolve_label(label);
+                track_single_ractor_assumption(code_ptr, side_exit_ptr, payload_ptr);
             }
         }
     });
@@ -574,8 +592,12 @@ fn gen_getglobal(asm: &mut Assembler, id: ID) -> Opnd {
 }
 
 /// Set global variables
-fn gen_setglobal(asm: &mut Assembler, id: ID, val: Opnd) {
+fn gen_setglobal(jit: &mut JITState, asm: &mut Assembler, id: ID, val: Opnd, state: &FrameState) -> Option<()> {
+    // When trace_var is used, setting a global variable can cause exceptions
+    gen_prepare_non_leaf_call(jit, asm, state)?;
+
     asm_ccall!(asm, rb_gvar_set, id.0.into(), val);
+    Some(())
 }
 
 /// Side-exit into the interpreter
@@ -871,8 +893,9 @@ fn gen_send_without_block_direct(
 }
 
 /// Compile a string resurrection
-fn gen_string_copy(asm: &mut Assembler, recv: Opnd, chilled: bool) -> Opnd {
+fn gen_string_copy(asm: &mut Assembler, recv: Opnd, chilled: bool, state: &FrameState) -> Opnd {
     // TODO: split rb_ec_str_resurrect into separate functions
+    gen_prepare_call_with_gc(asm, state);
     let chilled = if chilled { Opnd::Imm(1) } else { Opnd::Imm(0) };
     asm_ccall!(asm, rb_ec_str_resurrect, EC, recv, chilled)
 }
@@ -1094,7 +1117,8 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
     } else if guard_type.is_subtype(types::StaticSymbol) {
         // Static symbols have (val & 0xff) == RUBY_SYMBOL_FLAG
         // Use 8-bit comparison like YJIT does
-        asm.cmp(val.with_num_bits(8).unwrap(), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
+        debug_assert!(val.try_num_bits(8).is_some(), "GuardType should not be used for a known constant, but val was: {val:?}");
+        asm.cmp(val.try_num_bits(8)?, Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
         asm.jne(side_exit(jit, state, GuardType(guard_type))?);
     } else if guard_type.is_subtype(types::NilClass) {
         asm.cmp(val, Qnil.into());
@@ -1103,17 +1127,35 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         asm.cmp(val, Qtrue.into());
         asm.jne(side_exit(jit, state, GuardType(guard_type))?);
     } else if guard_type.is_subtype(types::FalseClass) {
-        assert!(Qfalse.as_i64() == 0);
-        asm.test(val, val);
+        asm.cmp(val, Qfalse.into());
         asm.jne(side_exit(jit, state, GuardType(guard_type))?);
+    } else if guard_type.is_immediate() {
+        // All immediate types' guard should have been handled above
+        panic!("unexpected immediate guard type: {guard_type}");
     } else if let Some(expected_class) = guard_type.runtime_exact_ruby_class() {
-        asm_comment!(asm, "guard exact class");
+        asm_comment!(asm, "guard exact class for non-immediate types");
 
-        // Get the class of the value
-        let klass = asm.ccall(rb_yarv_class_of as *const u8, vec![val]);
+        // If val isn't in a register, load it to use it as the base of Opnd::mem later.
+        // TODO: Max thinks codegen should not care about the shapes of the operands except to create them. (Shopify/ruby#685)
+        let val = match val {
+            Opnd::Reg(_) | Opnd::VReg { .. } => val,
+            _ => asm.load(val),
+        };
+
+        // Check if it's a special constant
+        let side_exit = side_exit(jit, state, GuardType(guard_type))?;
+        asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
+        asm.jnz(side_exit.clone());
+
+        // Check if it's false
+        asm.cmp(val, Qfalse.into());
+        asm.je(side_exit.clone());
+
+        // Load the class from the object's klass field
+        let klass = asm.load(Opnd::mem(64, val, RUBY_OFFSET_RBASIC_KLASS));
 
         asm.cmp(klass, Opnd::Value(expected_class));
-        asm.jne(side_exit(jit, state, GuardType(guard_type))?);
+        asm.jne(side_exit);
     } else {
         unimplemented!("unsupported type: {guard_type}");
     }
@@ -1279,7 +1321,9 @@ fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
             return None;
         }
     };
-    function.optimize();
+    if !get_option!(disable_hir_opt) {
+        function.optimize();
+    }
     if let Err(err) = function.validate() {
         debug!("ZJIT: compile_iseq: {err:?}");
         return None;
@@ -1358,26 +1402,40 @@ macro_rules! c_callable {
 pub(crate) use c_callable;
 
 c_callable! {
-    /// Generated code calls this function with the SysV calling convention.
-    /// See [gen_function_stub].
+    /// Generated code calls this function with the SysV calling convention. See [gen_function_stub].
+    /// This function is expected to be called repeatedly when ZJIT fails to compile the stub.
+    /// We should be able to compile most (if not all) function stubs by side-exiting at unsupported
+    /// instructions, so this should be used primarily for cb.has_dropped_bytes() situations.
     fn function_stub_hit(iseq: IseqPtr, branch_ptr: *const c_void, ec: EcPtr, sp: *mut VALUE) -> *const u8 {
         with_vm_lock(src_loc!(), || {
-            // Get a pointer to compiled code or the side-exit trampoline
-            let cb = ZJITState::get_code_block();
-            let code_ptr = if let Some(code_ptr) = function_stub_hit_body(cb, iseq, branch_ptr) {
-                code_ptr
-            } else {
-                // gen_push_frame() doesn't set PC and SP, so we need to set them for side-exit
-                // TODO: We could generate code that sets PC/SP. Note that we'd still need to handle OOM.
+            /// gen_push_frame() doesn't set PC and SP, so we need to set them before exit
+            fn set_pc_and_sp(iseq: IseqPtr, ec: EcPtr, sp: *mut VALUE) {
                 let cfp = unsafe { get_ec_cfp(ec) };
                 let pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) }; // TODO: handle opt_pc once supported
                 unsafe { rb_set_cfp_pc(cfp, pc) };
                 unsafe { rb_set_cfp_sp(cfp, sp) };
+            }
 
+            // If we already know we can't compile the ISEQ, fail early without cb.mark_all_executable().
+            // TODO: Alan thinks the payload status part of this check can happen without the VM lock, since the whole
+            // code path can be made read-only. But you still need the check as is while holding the VM lock in any case.
+            let cb = ZJITState::get_code_block();
+            let payload = get_or_create_iseq_payload(iseq);
+            if cb.has_dropped_bytes() || payload.status == IseqStatus::CantCompile {
                 // Exit to the interpreter
+                set_pc_and_sp(iseq, ec, sp);
+                return ZJITState::get_stub_exit().raw_ptr(cb);
+            }
+
+            // Otherwise, attempt to compile the ISEQ. We have to mark_all_executable() beyond this point.
+            let code_ptr = with_time_stat(compile_time_ns, || function_stub_hit_body(cb, iseq, branch_ptr));
+            let code_ptr = if let Some(code_ptr) = code_ptr {
+                code_ptr
+            } else {
+                // Exit to the interpreter
+                set_pc_and_sp(iseq, ec, sp);
                 ZJITState::get_stub_exit()
             };
-
             cb.mark_all_executable();
             code_ptr.raw_ptr(cb)
         })
@@ -1458,6 +1516,56 @@ pub fn gen_stub_exit(cb: &mut CodeBlock) -> Option<CodePtr> {
         assert_eq!(gc_offsets.len(), 0);
         code_ptr
     })
+}
+
+fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>, state: &FrameState) -> Option<Opnd> {
+    let n = strings.len();
+
+    // concatstrings shouldn't have 0 strings
+    // If it happens we abort the compilation for now
+    if n == 0 {
+        return None;
+    }
+
+    gen_prepare_non_leaf_call(jit, asm, state)?;
+
+    // Calculate the compile-time NATIVE_STACK_PTR offset from NATIVE_BASE_PTR
+    // At this point, frame_setup(&[], jit.c_stack_slots) has been called,
+    // which allocated aligned_stack_bytes(jit.c_stack_slots) on the stack
+    let frame_size = aligned_stack_bytes(jit.c_stack_slots);
+    let allocation_size = aligned_stack_bytes(n);
+
+    asm_comment!(asm, "allocate {} bytes on C stack for {} strings", allocation_size, n);
+    asm.sub_into(NATIVE_STACK_PTR, allocation_size.into());
+
+    // Calculate the total offset from NATIVE_BASE_PTR to our buffer
+    let total_offset_from_base = (frame_size + allocation_size) as i32;
+
+    for (idx, &string_opnd) in strings.iter().enumerate() {
+        let slot_offset = -total_offset_from_base + (idx as i32 * SIZEOF_VALUE_I32);
+        asm.mov(
+            Opnd::mem(VALUE_BITS, NATIVE_BASE_PTR, slot_offset),
+            string_opnd
+        );
+    }
+
+    let first_string_ptr = asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, -total_offset_from_base));
+
+    let result = asm_ccall!(asm, rb_str_concat_literals, n.into(), first_string_ptr);
+
+    asm_comment!(asm, "restore C stack pointer");
+    asm.add_into(NATIVE_STACK_PTR, allocation_size.into());
+
+    Some(result)
+}
+
+/// Given the number of spill slots needed for a function, return the number of bytes
+/// the function needs to allocate on the stack for the stack frame.
+fn aligned_stack_bytes(num_slots: usize) -> usize {
+    // Both x86_64 and arm64 require the stack to be aligned to 16 bytes.
+    // Since SIZEOF_VALUE is 8 bytes, we need to round up the size to the nearest even number.
+    let num_slots = num_slots + (num_slots % 2);
+    num_slots * SIZEOF_VALUE
 }
 
 impl Assembler {

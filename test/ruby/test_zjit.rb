@@ -9,6 +9,15 @@ require_relative '../lib/jit_support'
 return unless JITSupport.zjit_supported?
 
 class TestZJIT < Test::Unit::TestCase
+  def test_enabled
+    assert_runs 'false', <<~RUBY, zjit: false
+      RubyVM::ZJIT.enabled?
+    RUBY
+    assert_runs 'true', <<~RUBY, zjit: true
+      RubyVM::ZJIT.enabled?
+    RUBY
+  end
+
   def test_call_itself
     assert_compiles '42', <<~RUBY, call_threshold: 2
       def test = 42.itself
@@ -52,6 +61,30 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_setglobal
+    assert_compiles '1', %q{
+      def test
+        $a = 1
+        $a
+      end
+
+      test
+    }, insns: [:setglobal]
+  end
+
+  def test_setglobal_with_trace_var_exception
+    assert_compiles '"rescued"', %q{
+      def test
+        $a = 1
+      rescue
+        "rescued"
+      end
+
+      trace_var(:$a) { raise }
+      test
+    }, insns: [:setglobal]
+  end
+
   def test_setlocal
     assert_compiles '3', %q{
       def test(n)
@@ -68,6 +101,15 @@ class TestZJIT < Test::Unit::TestCase
       eval('a = 1', @b)
       eval('a', @b)
     }
+  end
+
+  def test_call_a_forwardable_method
+    assert_runs '[]', %q{
+      def test_root = forwardable
+      def forwardable(...) = Array.[](...)
+      test_root
+      test_root
+    }, call_threshold: 2
   end
 
   def test_setlocal_on_eval_with_spill
@@ -145,6 +187,18 @@ class TestZJIT < Test::Unit::TestCase
 
       test # profile send
       test
+    }, call_threshold: 2
+  end
+
+  def test_send_on_heap_object_in_spilled_arg
+    # This leads to a register spill, so not using `assert_compiles`
+    assert_runs 'Hash', %q{
+      def entry(a1, a2, a3, a4, a5, a6, a7, a8, a9)
+        a9.itself.class
+      end
+
+      entry(1, 2, 3, 4, 5, 6, 7, 8, {}) # profile
+      entry(1, 2, 3, 4, 5, 6, 7, 8, {})
     }, call_threshold: 2
   end
 
@@ -280,6 +334,14 @@ class TestZJIT < Test::Unit::TestCase
       def test(a, b) = a == b
       test(0, 2) # profile opt_eq
       [test(1, 1), test(0, 1)]
+    }, insns: [:opt_eq], call_threshold: 2
+  end
+
+  def test_opt_eq_with_minus_one
+    assert_compiles '[false, true]', %q{
+      def test(a) = a == -1
+      test(1) # profile opt_eq
+      [test(0), test(-1)]
     }, insns: [:opt_eq], call_threshold: 2
   end
 
@@ -989,6 +1051,38 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_attr_reader
+    assert_compiles '[4, 4]', %q{
+      class C
+        attr_reader :foo
+
+        def initialize
+          @foo = 4
+        end
+      end
+
+      def test(c) = c.foo
+      c = C.new
+      [test(c), test(c)]
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
+  def test_attr_accessor
+    assert_compiles '[4, 4]', %q{
+      class C
+        attr_accessor :foo
+
+        def initialize
+          @foo = 4
+        end
+      end
+
+      def test(c) = c.foo
+      c = C.new
+      [test(c), test(c)]
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
   def test_uncached_getconstant_path
     assert_compiles RUBY_COPYRIGHT.dump, %q{
       def test = RUBY_COPYRIGHT
@@ -1052,6 +1146,26 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_single_ractor_mode_invalidation
+    # Without invalidating the single-ractor mode, the test would crash
+    assert_compiles '"errored but not crashed"', <<~RUBY, call_threshold: 2, insns: [:opt_getconstant_path]
+      C = Object.new
+
+      def test
+        C
+      rescue Ractor::IsolationError
+        "errored but not crashed"
+      end
+
+      test
+      test
+
+      Ractor.new {
+        test
+      }.value
+    RUBY
+  end
+
   def test_dupn
     assert_compiles '[[1], [1, 1], :rhs, [nil, :rhs]]', <<~RUBY, insns: [:dupn]
       def test(array) = (array[1, 2] ||= :rhs)
@@ -1091,6 +1205,26 @@ class TestZJIT < Test::Unit::TestCase
       end
       test
     }
+  end
+
+  def test_defined_with_defined_values
+    assert_compiles '["constant", "method", "global-variable"]', %q{
+      class Foo; end
+      def bar; end
+      $ruby = 1
+
+      def test = return defined?(Foo), defined?(bar), defined?($ruby)
+
+      test
+    }, insns: [:defined]
+  end
+
+  def test_defined_with_undefined_values
+    assert_compiles '[nil, nil, nil]', %q{
+      def test = return defined?(Foo), defined?(bar), defined?($ruby)
+
+      test
+    }, insns: [:defined]
   end
 
   def test_defined_yield
@@ -1482,6 +1616,46 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_nil_p]
   end
 
+  def test_basic_object_guard_works_with_immediate
+    assert_compiles 'NilClass', %q{
+      class Foo; end
+
+      def test(val) = val.class
+
+      test(Foo.new)
+      test(Foo.new)
+      test(nil)
+    }, call_threshold: 2
+  end
+
+  def test_basic_object_guard_works_with_false
+    assert_compiles 'FalseClass', %q{
+      class Foo; end
+
+      def test(val) = val.class
+
+      test(Foo.new)
+      test(Foo.new)
+      test(false)
+    }, call_threshold: 2
+  end
+
+  def test_string_concat
+    assert_compiles '"123"', %q{
+      def test = "#{1}#{2}#{3}"
+
+      test
+    }, insns: [:concatstrings]
+  end
+
+  def test_string_concat_empty
+    assert_compiles '""', %q{
+      def test = "#{}"
+
+      test
+    }, insns: [:concatstrings]
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
@@ -1532,14 +1706,23 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   # Run a Ruby process with ZJIT options and a pipe for writing test results
-  def eval_with_jit(script, call_threshold: 1, num_profiles: 1, stats: false, debug: true, timeout: 1000, pipe_fd:)
-    args = [
-      "--disable-gems",
-      "--zjit-call-threshold=#{call_threshold}",
-      "--zjit-num-profiles=#{num_profiles}",
-    ]
-    args << "--zjit-stats" if stats
-    args << "--zjit-debug" if debug
+  def eval_with_jit(
+    script,
+    call_threshold: 1,
+    num_profiles: 1,
+    zjit: true,
+    stats: false,
+    debug: true,
+    timeout: 1000,
+    pipe_fd:
+  )
+    args = ["--disable-gems"]
+    if zjit
+      args << "--zjit-call-threshold=#{call_threshold}"
+      args << "--zjit-num-profiles=#{num_profiles}"
+      args << "--zjit-stats" if stats
+      args << "--zjit-debug" if debug
+    end
     args << "-e" << script_shell_encode(script)
     pipe_r, pipe_w = IO.pipe
     # Separate thread so we don't deadlock when

@@ -1273,7 +1273,7 @@ static const rb_data_type_t ractor_selector_data_type = {
         ractor_selector_memsize,
         NULL, // update
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static struct ractor_selector *
@@ -1318,6 +1318,8 @@ ractor_selector_add(VALUE selv, VALUE rpv)
     }
 
     st_insert(s->ports, (st_data_t)rpv, (st_data_t)rp);
+    RB_OBJ_WRITTEN(selv, Qundef, rpv);
+
     return selv;
 }
 
