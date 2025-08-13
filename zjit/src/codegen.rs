@@ -953,7 +953,7 @@ fn gen_new_hash(
         }
 
         let n = pairs.len();
-        
+
         // Calculate the compile-time NATIVE_STACK_PTR offset from NATIVE_BASE_PTR
         // At this point, frame_setup(&[], jit.c_stack_slots) has been called,
         // which allocated aligned_stack_bytes(jit.c_stack_slots) on the stack
