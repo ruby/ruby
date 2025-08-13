@@ -69,6 +69,30 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_setglobal
+    assert_compiles '1', %q{
+      def test
+        $a = 1
+        $a
+      end
+
+      test
+    }, insns: [:setglobal]
+  end
+
+  def test_setglobal_with_trace_var_exception
+    assert_compiles '"rescued"', %q{
+      def test
+        $a = 1
+      rescue
+        "rescued"
+      end
+
+      trace_var(:$a) { raise }
+      test
+    }, insns: [:setglobal]
+  end
+
   def test_setlocal
     assert_compiles '3', %q{
       def test(n)

@@ -1,3 +1,10 @@
+<!---
+  CAUTION
+
+  This page on docs.ruby-lang.org is displayed in Ruby's help message (-h and --help).
+  Please make sure you update the link when renaming or moving this file.
+--->
+
 # Ruby Command-Line Options
 
 ## About the Examples
