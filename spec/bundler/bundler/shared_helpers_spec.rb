@@ -542,7 +542,7 @@ RSpec.describe Bundler::SharedHelpers do
       expect { subject.major_deprecation(36, "Message", removed_message: "Removal") }.
         to raise_error(Bundler::DeprecatedError, "[REMOVED] Removal")
       expect { subject.major_deprecation(35, "Message", removed_message: "Removal", print_caller_location: true) }.
-        to raise_error(Bundler::DeprecatedError, /^\[REMOVED\] Removal \(called at .*:\d+\)$/)
+        to raise_error(Bundler::DeprecatedError, "[REMOVED] Removal")
     end
   end
 end
