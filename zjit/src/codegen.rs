@@ -378,6 +378,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
         Insn::Defined { op_type, obj, pushval, v, state } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v), &function.frame_state(*state))?,
         &Insn::IncrCounter(counter) => return Some(gen_incr_counter(asm, counter)),
+        Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state))?,
         Insn::ArrayExtend { .. }
         | Insn::ArrayMax { .. }
         | Insn::ArrayPush { .. }
@@ -386,7 +387,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         | Insn::FixnumMod { .. }
         | Insn::HashDup { .. }
         | Insn::NewHash { .. }
-        | Insn::ObjToString { .. }
         | Insn::Send { .. }
         | Insn::StringIntern { .. }
         | Insn::Throw { .. }
@@ -443,6 +443,24 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
     }
 
     ep_opnd
+}
+
+fn gen_objtostring(jit: &mut JITState, asm: &mut Assembler, val: Opnd, cd: *const rb_call_data, state: &FrameState) -> Option<Opnd> {
+    gen_prepare_non_leaf_call(jit, asm, state)?;
+
+    let iseq_opnd = Opnd::Value(jit.iseq.into());
+
+    // TODO: Specialize for immediate types
+    // Call rb_vm_objtostring(iseq, recv, cd)
+    let ret = asm_ccall!(asm, rb_vm_objtostring, iseq_opnd, val, (cd as usize).into());
+
+    // TODO: Call `to_s` on the receiver if rb_vm_objtostring returns Qundef
+    // Need to replicate what CALL_SIMPLE_METHOD does
+    asm_comment!(asm, "side-exit if rb_vm_objtostring returns Qundef");
+    asm.cmp(ret, Qundef.into());
+    asm.je(side_exit(jit, state, ObjToStringFallback)?);
+
+    Some(ret)
 }
 
 fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, pushval: VALUE, tested_value: Opnd, state: &FrameState) -> Option<Opnd> {

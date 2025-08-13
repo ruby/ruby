@@ -1343,6 +1343,71 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_objtostring_calls_to_s_on_non_strings
+    assert_compiles '["foo", "foo"]', %q{
+      results = []
+
+      class Foo
+        def to_s
+          "foo"
+        end
+      end
+
+      def test(str)
+        "#{str}"
+      end
+
+      results << test(Foo.new)
+      results << test(Foo.new)
+
+      results
+    }
+  end
+
+  def test_objtostring_rewrite_does_not_call_to_s_on_strings
+    assert_compiles '["foo", "foo"]', %q{
+      results = []
+
+      class String
+        def to_s
+          "bad"
+        end
+      end
+
+      def test(foo)
+        "#{foo}"
+      end
+
+      results << test("foo")
+      results << test("foo")
+
+      results
+    }
+  end
+
+  def test_objtostring_rewrite_does_not_call_to_s_on_string_subclasses
+    assert_compiles '["foo", "foo"]', %q{
+      results = []
+
+      class StringSubclass < String
+        def to_s
+          "bad"
+        end
+      end
+
+      foo = StringSubclass.new("foo")
+
+      def test(str)
+        "#{str}"
+      end
+
+      results << test(foo)
+      results << test(foo)
+
+      results
+    }
+  end
+
   def test_string_bytesize_with_guard
     assert_compiles '5', %q{
       def test(str)
