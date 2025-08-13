@@ -296,7 +296,21 @@ RSpec.describe "bundle cache" do
         source "https://gem.repo1"
         gem "myrack"
       G
-      bundle "install"
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo1/
+          specs:
+            myrack (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          myrack
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
     end
 
     it "tries to install with frozen" do
