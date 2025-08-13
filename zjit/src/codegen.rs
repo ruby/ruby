@@ -388,7 +388,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         | Insn::FixnumDiv { .. }
         | Insn::FixnumMod { .. }
         | Insn::HashDup { .. }
-        | Insn::ObjToString { .. }
         | Insn::Send { .. }
         | Insn::Throw { .. }
         | Insn::ToArray { .. }
