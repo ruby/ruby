@@ -1,6 +1,6 @@
 use std::cell::Cell;
 use std::rc::Rc;
-use std::ffi::{c_int, c_void};
+use std::ffi::{c_int, c_long, c_void};
 
 use crate::asm::Label;
 use crate::backend::current::{Reg, ALLOC_REGS};
@@ -919,7 +919,7 @@ fn gen_new_array(
 ) -> lir::Opnd {
     gen_prepare_call_with_gc(asm, state);
 
-    let length: ::std::os::raw::c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+    let length: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
     let new_array = asm_ccall!(asm, rb_ary_new_capa, length.into());
 
@@ -939,8 +939,7 @@ fn gen_new_hash(
 ) -> Option<lir::Opnd> {
     gen_prepare_non_leaf_call(jit, asm, state)?;
 
-    asm_comment!(asm, "call rb_hash_new");
-    let cap: ::std::os::raw::c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+    let cap: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
     let new_hash = asm_ccall!(asm, rb_hash_new_with_size, lir::Opnd::Imm(cap));
 
     if !elements.is_empty() {
