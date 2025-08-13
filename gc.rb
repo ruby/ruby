@@ -348,11 +348,29 @@ module GC
   end
 
   # call-seq:
-  #    GC.measure_total_time = true/false
+  #   GC.measure_total_time = setting -> setting
   #
-  # Enables measuring \GC time.
-  # You can get the result with <tt>GC.stat(:time)</tt>.
-  # Note that \GC time measurement can cause some performance overhead.
+  # Enables or disables \GC total time measurement;
+  # returns +setting+.
+  # See GC.total_time.
+  #
+  # When argument +object+ is +nil+ or +false+, disables total time measurement;
+  # GC.measure_total_time then returns +false+:
+  #
+  #   GC.measure_total_time = nil   # => nil
+  #   GC.measure_total_time         # => false
+  #   GC.measure_total_time = false # => false
+  #   GC.measure_total_time         # => false
+  #
+  # Otherwise, enables total time measurement;
+  # GC.measure_total_time then returns +true+:
+  #
+  #   GC.measure_total_time = true # => true
+  #   GC.measure_total_time        # => true
+  #   GC.measure_total_time = :foo # => :foo
+  #   GC.measure_total_time        # => true
+  #
+  # Note that when enabled, total time measurement affects performance.
   def self.measure_total_time=(flag)
     Primitive.cstmt! %{
       rb_gc_impl_set_measure_total_time(rb_gc_get_objspace(), flag);
@@ -361,10 +379,11 @@ module GC
   end
 
   # call-seq:
-  #    GC.measure_total_time -> true/false
+  #   GC.measure_total_time -> true or false
   #
-  # Returns the measure_total_time flag (default: +true+).
-  # Note that measurement can affect the application's performance.
+  # Returns the setting for \GC total time measurement;
+  # the initial setting is +true+.
+  # See GC.total_time.
   def self.measure_total_time
     Primitive.cexpr! %{
       RBOOL(rb_gc_impl_get_measure_total_time(rb_gc_get_objspace()))
@@ -372,9 +391,35 @@ module GC
   end
 
   # call-seq:
-  #    GC.total_time -> int
+  #    GC.total_time -> integer
   #
-  # Returns the measured \GC total time in nanoseconds.
+  # Returns the \GC total time in nanoseconds:
+  #
+  #   GC.total_time # => 156250
+  #
+  # Note that total time accumulates
+  # only when total time measurement is enabled
+  # (that is, when GC.measure_total_time is +true+):
+  #
+  #   GC.measure_total_time # => true
+  #   GC.total_time # => 625000
+  #   GC.start
+  #   GC.total_time # => 937500
+  #   GC.start
+  #   GC.total_time # => 1093750
+  #
+  #   GC.measure_total_time = false
+  #   GC.total_time # => 1250000
+  #   GC.start
+  #   GC.total_time # => 1250000
+  #   GC.start
+  #   GC.total_time # => 1250000
+  #
+  #   GC.measure_total_time = true
+  #   GC.total_time # => 1250000
+  #   GC.start
+  #   GC.total_time # => 1406250
+  #
   def self.total_time
     Primitive.cexpr! %{
       ULL2NUM(rb_gc_impl_get_total_time(rb_gc_get_objspace()))
