@@ -1269,7 +1269,7 @@ impl Function {
             Insn::IsNil { val } if !self.type_of(*val).could_be(types::NilClass) => Type::from_cbool(false),
             Insn::IsNil { .. } => types::CBool,
             Insn::StringCopy { .. } => types::StringExact,
-            Insn::StringIntern { .. } => types::StringExact,
+            Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
@@ -4510,7 +4510,7 @@ mod tests {
               v5:BasicObject = ObjToString v3
               v7:String = AnyToString v3, str: v5
               v9:StringExact = StringConcat v2, v7
-              v11:StringExact = StringIntern v9
+              v11:Symbol = StringIntern v9
               Return v11
         "#]]);
     }
