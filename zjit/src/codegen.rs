@@ -952,15 +952,35 @@ fn gen_new_hash(
             pairs.push(val);
         }
 
-        for (i, pair) in pairs.iter().enumerate() {
-            let stack_opnd = Opnd::mem(64, SP, i as i32 * SIZEOF_VALUE_I32);
-            asm.mov(stack_opnd, *pair);
+        let n = pairs.len();
+        
+        // Calculate the compile-time NATIVE_STACK_PTR offset from NATIVE_BASE_PTR
+        // At this point, frame_setup(&[], jit.c_stack_slots) has been called,
+        // which allocated aligned_stack_bytes(jit.c_stack_slots) on the stack
+        let frame_size = aligned_stack_bytes(jit.c_stack_slots);
+        let allocation_size = aligned_stack_bytes(n);
+
+        asm_comment!(asm, "allocate {} bytes on C stack for {} hash elements", allocation_size, n);
+        asm.sub_into(NATIVE_STACK_PTR, allocation_size.into());
+
+        // Calculate the total offset from NATIVE_BASE_PTR to our buffer
+        let total_offset_from_base = (frame_size + allocation_size) as i32;
+
+        for (idx, &pair_opnd) in pairs.iter().enumerate() {
+            let slot_offset = -total_offset_from_base + (idx as i32 * SIZEOF_VALUE_I32);
+            asm.mov(
+                Opnd::mem(VALUE_BITS, NATIVE_BASE_PTR, slot_offset),
+                pair_opnd
+            );
         }
 
-        let argv = asm.lea(Opnd::mem(64, SP, 0));
+        let argv = asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, -total_offset_from_base));
 
         let argc = (elements.len() * 2) as ::std::os::raw::c_long;
         asm_ccall!(asm, rb_hash_bulk_insert, lir::Opnd::Imm(argc), argv, new_hash);
+
+        asm_comment!(asm, "restore C stack pointer");
+        asm.add_into(NATIVE_STACK_PTR, allocation_size.into());
     }
 
     Some(new_hash)
