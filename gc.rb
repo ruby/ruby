@@ -104,9 +104,14 @@ module GC
   end
 
   # call-seq:
-  #    GC.count -> Integer
+  #   self.count -> integer
   #
-  # Returns the number of times \GC has occurred since the process started.
+  # Returns the total number of times garbage collection has occurred:
+  #
+  #   GC.count # => 385
+  #   GC.start
+  #   GC.count # => 386
+  #
   def self.count
     Primitive.gc_count
   end
