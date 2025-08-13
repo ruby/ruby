@@ -444,7 +444,7 @@ pub enum Insn {
     Param { idx: usize },
 
     StringCopy { val: InsnId, chilled: bool, state: InsnId },
-    StringIntern { val: InsnId },
+    StringIntern { val: InsnId, state: InsnId },
     StringConcat { strings: Vec<InsnId>, state: InsnId },
 
     /// Put special object (VMCORE, CBASE, etc.) based on value_type
@@ -1145,7 +1145,7 @@ impl Function {
             &Return { val } => Return { val: find!(val) },
             &Throw { throw_state, val } => Throw { throw_state, val: find!(val) },
             &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
-            &StringIntern { val } => StringIntern { val: find!(val) },
+            &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
             &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
@@ -1904,7 +1904,6 @@ impl Function {
                 worklist.extend(strings);
                 worklist.push_back(state);
             }
-            | &Insn::StringIntern { val }
             | &Insn::Return { val }
             | &Insn::Throw { val, .. }
             | &Insn::Defined { v: val, .. }
@@ -1913,6 +1912,7 @@ impl Function {
             | &Insn::IsNil { val } =>
                 worklist.push_back(val),
             &Insn::SetGlobal { val, state, .. }
+            | &Insn::StringIntern { val, state }
             | &Insn::StringCopy { val, state, .. }
             | &Insn::GuardType { val, state, .. }
             | &Insn::GuardBitEquals { val, state, .. }
@@ -2813,7 +2813,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_putself => { state.stack_push(self_param); }
                 YARVINSN_intern => {
                     let val = state.stack_pop()?;
-                    let insn_id = fun.push_insn(block, Insn::StringIntern { val });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let insn_id = fun.push_insn(block, Insn::StringIntern { val, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_concatstrings => {
@@ -4509,8 +4510,8 @@ mod tests {
               v5:BasicObject = ObjToString v3
               v7:String = AnyToString v3, str: v5
               v9:StringExact = StringConcat v2, v7
-              v10:StringExact = StringIntern v9
-              Return v10
+              v11:StringExact = StringIntern v9
+              Return v11
         "#]]);
     }
 
