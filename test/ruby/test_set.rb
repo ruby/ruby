@@ -924,6 +924,18 @@ class TC_Set < Test::Unit::TestCase
     end
     end;
   end
+
+  def test_larger_sets
+    set = Set.new
+    10_000.times do |i|
+      set << i
+    end
+    set = set.dup
+
+    10_000.times do |i|
+      assert_includes set, i
+    end
+  end
 end
 
 class TC_Enumerable < Test::Unit::TestCase

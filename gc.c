@@ -1047,7 +1047,7 @@ rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
 {
     RUBY_ASSERT_ALWAYS(dfree != (RUBY_DATA_FUNC)1);
     if (klass) rb_data_object_check(klass);
-    return newobj_of(GET_RACTOR(), klass, T_DATA, (VALUE)dmark, (VALUE)datap, (VALUE)dfree, !dmark, sizeof(struct RTypedData));
+    return newobj_of(GET_RACTOR(), klass, T_DATA, (VALUE)dmark, (VALUE)dfree, (VALUE)datap, !dmark, sizeof(struct RTypedData));
 }
 
 VALUE
@@ -1064,7 +1064,7 @@ typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_
     RBIMPL_NONNULL_ARG(type);
     if (klass) rb_data_object_check(klass);
     bool wb_protected = (type->flags & RUBY_FL_WB_PROTECTED) || !type->function.dmark;
-    return newobj_of(GET_RACTOR(), klass, T_DATA, ((VALUE)type) | IS_TYPED_DATA | typed_flag, (VALUE)datap, 0, wb_protected, size);
+    return newobj_of(GET_RACTOR(), klass, T_DATA, 0, ((VALUE)type) | IS_TYPED_DATA | typed_flag, (VALUE)datap, wb_protected, size);
 }
 
 VALUE
@@ -1921,7 +1921,7 @@ object_id(VALUE obj)
         // in fields.
         return class_object_id(obj);
       case T_IMEMO:
-        rb_bug("T_IMEMO can't have an object_id");
+        RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
         break;
       default:
         break;
@@ -1945,19 +1945,25 @@ build_id2ref_i(VALUE obj, void *data)
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
+        RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
         if (RCLASS(obj)->object_id) {
-            RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
             st_insert(id2ref_tbl, RCLASS(obj)->object_id, obj);
         }
         break;
       case T_IMEMO:
-      case T_NONE:
+        RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
+        if (IMEMO_TYPE_P(obj, imemo_fields) && rb_shape_obj_has_id(obj)) {
+            st_insert(id2ref_tbl, rb_obj_id(obj), rb_imemo_fields_owner(obj));
+        }
         break;
-      default:
+      case T_OBJECT:
+        RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
         if (rb_shape_obj_has_id(obj)) {
-            RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
             st_insert(id2ref_tbl, rb_obj_id(obj), obj);
         }
+        break;
+      default:
+        // For generic_fields, the T_IMEMO/fields is responsible for populating the entry.
         break;
     }
 }
@@ -3173,10 +3179,15 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         break;
 
       case T_DATA: {
-        void *const ptr = RTYPEDDATA_P(obj) ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+        bool typed_data = RTYPEDDATA_P(obj);
+        void *const ptr = typed_data ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+
+        if (typed_data) {
+            gc_mark_internal(RTYPEDDATA(obj)->fields_obj);
+        }
 
         if (ptr) {
-            if (RTYPEDDATA_P(obj) && gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
+            if (typed_data && gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
                 size_t *offset_list = TYPED_DATA_REFS_OFFSET_LIST(obj);
 
                 for (size_t offset = *offset_list; offset != RUBY_REF_END; offset = *offset_list++) {
@@ -3184,7 +3195,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
                 }
             }
             else {
-                RUBY_DATA_FUNC mark_func = RTYPEDDATA_P(obj) ?
+                RUBY_DATA_FUNC mark_func = typed_data ?
                     RTYPEDDATA_TYPE(obj)->function.dmark :
                     RDATA(obj)->dmark;
                 if (mark_func) (*mark_func)(ptr);
@@ -4121,9 +4132,15 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
       case T_DATA:
         /* Call the compaction callback, if it exists */
         {
-            void *const ptr = RTYPEDDATA_P(obj) ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+            bool typed_data = RTYPEDDATA_P(obj);
+            void *const ptr = typed_data ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+
+            if (typed_data) {
+                UPDATE_IF_MOVED(objspace, RTYPEDDATA(obj)->fields_obj);
+            }
+
             if (ptr) {
-                if (RTYPEDDATA_P(obj) && gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
+                if (typed_data && gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
                     size_t *offset_list = TYPED_DATA_REFS_OFFSET_LIST(obj);
 
                     for (size_t offset = *offset_list; offset != RUBY_REF_END; offset = *offset_list++) {
@@ -4131,7 +4148,7 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
                         *ref = gc_location_internal(objspace, *ref);
                     }
                 }
-                else if (RTYPEDDATA_P(obj)) {
+                else if (typed_data) {
                     RUBY_DATA_FUNC compact_func = RTYPEDDATA_TYPE(obj)->function.dcompact;
                     if (compact_func) (*compact_func)(ptr);
                 }
