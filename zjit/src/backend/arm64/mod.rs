@@ -317,7 +317,7 @@ impl Assembler
                         asm.load(opnd)
                     }
                 },
-                Opnd::None | Opnd::Value(_) /*| Opnd::Stack { .. }*/ => unreachable!()
+                Opnd::None | Opnd::Value(_) => unreachable!()
             }
         }
 
@@ -1742,13 +1742,12 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 0);
     }
 
-    /*
     #[test]
     fn test_emit_lea_label() {
         let (mut asm, mut cb) = setup_asm();
 
         let label = asm.new_label("label");
-        let opnd = asm.lea_jump_target(label);
+        let opnd = asm.lea_jump_target(label.clone());
 
         asm.write_label(label);
         asm.bake_string("Hello, world!");
@@ -1756,7 +1755,6 @@ mod tests {
 
         asm.compile_with_num_regs(&mut cb, 1);
     }
-    */
 
     #[test]
     fn test_emit_load_mem_disp_fits_into_load() {
@@ -1967,48 +1965,6 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 2);
     }
 
-    /*
-    #[test]
-    fn test_bcond_straddling_code_pages() {
-        const LANDING_PAGE: usize = 65;
-        let mut asm = Assembler::new(0);
-        let mut cb = CodeBlock::new_dummy_with_freed_pages(vec![0, LANDING_PAGE]);
-
-        // Skip to near the end of the page. Room for two instructions.
-        cb.set_pos(cb.page_start_pos() + cb.page_end() - 8);
-
-        let end = asm.new_label("end");
-        // Start with a conditional jump...
-        asm.jz(end);
-
-        // A few instructions, enough to cause a page switch.
-        let sum = asm.add(399.into(), 111.into());
-        let xorred = asm.xor(sum, 859.into());
-        asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), xorred);
-        asm.store(Opnd::mem(64, Opnd::Reg(X0_REG), 0), xorred);
-
-        // The branch target. It should be in the landing page.
-        asm.write_label(end);
-        asm.cret(xorred);
-
-        // [Bug #19385]
-        // This used to panic with "The offset must be 19 bits or less."
-        // due to attempting to lower the `asm.jz` above to a `b.e` with an offset that's > 1 MiB.
-        let starting_pos = cb.get_write_pos();
-        asm.compile_with_num_regs(&mut cb, 2);
-        let gap = cb.get_write_pos() - starting_pos;
-        assert!(gap > 0b1111111111111111111);
-
-        let instruction_at_starting_pos: [u8; 4] = unsafe {
-            std::slice::from_raw_parts(cb.get_ptr(starting_pos).raw_ptr(&cb), 4)
-        }.try_into().unwrap();
-        assert_eq!(
-            0b000101 << 26_u32,
-            u32::from_le_bytes(instruction_at_starting_pos) & (0b111111 << 26_u32),
-            "starting instruction should be an unconditional branch to the new page (B)"
-        );
-    }
-
     #[test]
     fn test_emit_xor() {
         let (mut asm, mut cb) = setup_asm();
@@ -2018,9 +1974,9 @@ mod tests {
 
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm!(cb, "0b0001ca4b0000f8", "
-            0x0: eor x11, x0, x1
-            0x4: stur x11, [x2]
+        assert_disasm!(cb, "000001ca400000f8", "
+            0x0: eor x0, x0, x1
+            0x4: stur x0, [x2]
         ");
     }
 
@@ -2082,10 +2038,10 @@ mod tests {
         asm.mov(Opnd::Reg(TEMP_REGS[0]), out);
         asm.compile_with_num_regs(&mut cb, 2);
 
-        assert_disasm!(cb, "8b0280d20c0080d261b18c9a", {"
-            0x0: mov x11, #0x14
-            0x4: mov x12, #0
-            0x8: csel x1, x11, x12, lt
+        assert_disasm!(cb, "800280d2010080d201b0819a", {"
+            0x0: mov x0, #0x14
+            0x4: mov x1, #0
+            0x8: csel x1, x0, x1, lt
         "});
     }
 
@@ -2098,11 +2054,9 @@ mod tests {
         asm.mov(Opnd::Reg(TEMP_REGS[0]), out);
         asm.compile_with_num_regs(&mut cb, 2);
 
-        assert_disasm!(cb, "2b0500b16b0500b1e1030baa", {"
-            0x0: adds x11, x9, #1
-            0x4: adds x11, x11, #1
-            0x8: mov x1, x11
+        assert_disasm!(cb, "200500b1010400b1", {"
+            0x0: adds x0, x9, #1
+            0x4: adds x1, x0, #1
         "});
     }
-    */
 }
