@@ -189,12 +189,14 @@ module Bundler
     def setup_domain!(options = {})
       prefer_local! if options[:"prefer-local"]
 
+      sources.cached!
+
       if options[:add_checksums] || (!options[:local] && install_needed?)
-        remotely!
+        sources.remote!
         true
       else
         Bundler.settings.set_command_option(:jobs, 1) unless install_needed? # to avoid the overhead of Bundler::Worker
-        with_cache!
+        sources.local!
         false
       end
     end
