@@ -149,11 +149,14 @@ class TestShapes < Test::Unit::TestCase
   def test_too_many_ivs_on_class
     obj = Class.new
 
-    (MANY_IVS + 1).times do
+    obj.instance_variable_set(:@test_too_many_ivs_on_class, 1)
+    refute_predicate RubyVM::Shape.of(obj), :too_complex?
+
+    MANY_IVS.times do
       obj.instance_variable_set(:"@a#{_1}", 1)
     end
 
-    assert_false RubyVM::Shape.of(obj).too_complex?
+    refute_predicate RubyVM::Shape.of(obj), :too_complex?
   end
 
   def test_removing_when_too_many_ivs_on_class
