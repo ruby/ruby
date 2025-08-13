@@ -296,26 +296,13 @@ rb_shape_get_root_shape(void)
 }
 
 static void
-shape_tree_mark(void *data)
+shape_tree_mark_and_move(void *data)
 {
     rb_shape_t *cursor = rb_shape_get_root_shape();
     rb_shape_t *end = RSHAPE(rb_shape_tree.next_shape_id - 1);
     while (cursor <= end) {
         if (cursor->edges && !SINGLE_CHILD_P(cursor->edges)) {
-            rb_gc_mark_movable(cursor->edges);
-        }
-        cursor++;
-    }
-}
-
-static void
-shape_tree_compact(void *data)
-{
-    rb_shape_t *cursor = rb_shape_get_root_shape();
-    rb_shape_t *end = RSHAPE(rb_shape_tree.next_shape_id - 1);
-    while (cursor <= end) {
-        if (cursor->edges && !SINGLE_CHILD_P(cursor->edges)) {
-            cursor->edges = rb_gc_location(cursor->edges);
+            rb_gc_mark_and_move(&cursor->edges);
         }
         cursor++;
     }
@@ -330,10 +317,10 @@ shape_tree_memsize(const void *data)
 static const rb_data_type_t shape_tree_type = {
     .wrap_struct_name = "VM/shape_tree",
     .function = {
-        .dmark = shape_tree_mark,
+        .dmark = shape_tree_mark_and_move,
         .dfree = NULL, // Nothing to free, done at VM exit in rb_shape_free_all,
         .dsize = shape_tree_memsize,
-        .dcompact = shape_tree_compact,
+        .dcompact = shape_tree_mark_and_move,
     },
     .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -716,6 +703,7 @@ shape_transition_object_id(shape_id_t original_shape_id)
     rb_shape_t *shape = get_next_shape_internal(RSHAPE(original_shape_id), id_object_id, SHAPE_OBJ_ID, &dont_care, true);
     if (!shape) {
         shape = RSHAPE(ROOT_SHAPE_WITH_OBJ_ID);
+        return transition_complex(shape_id(shape, original_shape_id) | SHAPE_ID_FL_HAS_OBJECT_ID);
     }
 
     RUBY_ASSERT(shape);
@@ -889,8 +877,17 @@ shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
 #endif
 
     VALUE klass;
-    if (IMEMO_TYPE_P(obj, imemo_fields)) { // HACK
-        klass = CLASS_OF(obj);
+    if (IMEMO_TYPE_P(obj, imemo_fields)) {
+        VALUE owner = rb_imemo_fields_owner(obj);
+        switch (BUILTIN_TYPE(owner)) {
+          case T_CLASS:
+          case T_MODULE:
+            klass = rb_singleton_class(owner);
+            break;
+          default:
+            klass = rb_obj_class(owner);
+            break;
+        }
     }
     else {
         klass = rb_obj_class(obj);

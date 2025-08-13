@@ -442,3 +442,15 @@ rb_yarv_ary_entry_internal(VALUE ary, long offset)
 {
     return rb_ary_entry_internal(ary, offset);
 }
+
+void
+rb_set_cfp_pc(struct rb_control_frame_struct *cfp, const VALUE *pc)
+{
+    cfp->pc = pc;
+}
+
+void
+rb_set_cfp_sp(struct rb_control_frame_struct *cfp, VALUE *sp)
+{
+    cfp->sp = sp;
+}

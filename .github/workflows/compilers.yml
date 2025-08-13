@@ -107,6 +107,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - { uses: './.github/actions/compilers', name: 'clang 22', with: { tag: 'clang-22' } }
       - { uses: './.github/actions/compilers', name: 'clang 21', with: { tag: 'clang-21' } }
       - { uses: './.github/actions/compilers', name: 'clang 20', with: { tag: 'clang-20' } }
       - { uses: './.github/actions/compilers', name: 'clang 19', with: { tag: 'clang-19' } }

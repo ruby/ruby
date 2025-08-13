@@ -59,14 +59,9 @@ ossl_x509name_new(X509_NAME *name)
     VALUE obj;
 
     obj = NewX509Name(cX509Name);
-    if (!name) {
-	new = X509_NAME_new();
-    } else {
-	new = X509_NAME_dup(name);
-    }
-    if (!new) {
-	ossl_raise(eX509NameError, NULL);
-    }
+    new = X509_NAME_dup(name);
+    if (!new)
+        ossl_raise(eX509NameError, "X509_NAME_dup");
     SetX509Name(obj, new);
 
     return obj;

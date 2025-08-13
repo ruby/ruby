@@ -148,7 +148,6 @@ static inline void MEMO_V2_SET(struct MEMO *m, VALUE v);
 
 size_t rb_imemo_memsize(VALUE obj);
 void rb_imemo_mark_and_move(VALUE obj, bool reference_updating);
-void rb_cc_tbl_free(struct rb_id_table *cc_tbl, VALUE klass);
 void rb_imemo_free(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -274,11 +273,17 @@ struct rb_fields {
 #define OBJ_FIELD_EXTERNAL IMEMO_FL_USER0
 #define IMEMO_OBJ_FIELDS(fields) ((struct rb_fields *)fields)
 
-VALUE rb_imemo_fields_new(VALUE klass, size_t capa);
-VALUE rb_imemo_fields_new_complex(VALUE klass, size_t capa);
-VALUE rb_imemo_fields_new_complex_tbl(VALUE klass, st_table *tbl);
+VALUE rb_imemo_fields_new(VALUE owner, size_t capa);
+VALUE rb_imemo_fields_new_complex(VALUE owner, size_t capa);
+VALUE rb_imemo_fields_new_complex_tbl(VALUE owner, st_table *tbl);
 VALUE rb_imemo_fields_clone(VALUE fields_obj);
 void rb_imemo_fields_clear(VALUE fields_obj);
+
+static inline VALUE
+rb_imemo_fields_owner(VALUE fields_obj)
+{
+    return CLASS_OF(fields_obj);
+}
 
 static inline VALUE *
 rb_imemo_fields_ptr(VALUE obj_fields)

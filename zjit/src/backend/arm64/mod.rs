@@ -140,6 +140,10 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
         // instruction, then we'll use that.
         movz(cb, rd, A64Opnd::new_uimm(current), 0);
         return 1;
+    } else if u16::try_from(!value).is_ok() {
+        // For small negative values, use a single movn
+        movn(cb, rd, A64Opnd::new_uimm(!value), 0);
+        return 1;
     } else if BitmaskImmediate::try_from(current).is_ok() {
         // Otherwise, if the immediate can be encoded
         // with the special bitmask immediate encoding,
@@ -191,11 +195,15 @@ pub const ALLOC_REGS: &'static [Reg] = &[
 
 impl Assembler
 {
-    // Special scratch registers for intermediate processing.
-    // This register is caller-saved (so we don't have to save it before using it)
+    /// Special scratch registers for intermediate processing.
+    /// This register is call-clobbered (so we don't have to save it before using it).
+    /// Avoid using if you can since this is used to lower [Insn] internally and
+    /// so conflicts are possible.
     pub const SCRATCH_REG: Reg = X16_REG;
-    const SCRATCH0: A64Opnd = A64Opnd::Reg(Assembler::SCRATCH_REG);
-    const SCRATCH1: A64Opnd = A64Opnd::Reg(X17_REG);
+    const SCRATCH0_REG: Reg = Self::SCRATCH_REG;
+    const SCRATCH1_REG: Reg = X17_REG;
+    const SCRATCH0: A64Opnd = A64Opnd::Reg(Self::SCRATCH0_REG);
+    const SCRATCH1: A64Opnd = A64Opnd::Reg(Self::SCRATCH1_REG);
 
     /// Get the list of registers from which we will allocate on this platform
     pub fn get_alloc_regs() -> Vec<Reg> {
@@ -219,29 +227,6 @@ impl Assembler
     /// have no memory operands.
     fn arm64_split(mut self) -> Assembler
     {
-        /// When we're attempting to load a memory address into a register, the
-        /// displacement must fit into the maximum number of bits for an Op::Add
-        /// immediate. If it doesn't, we have to load the displacement into a
-        /// register first.
-        fn split_lea_operand(asm: &mut Assembler, opnd: Opnd) -> Opnd {
-            match opnd {
-                Opnd::Mem(Mem { base, disp, num_bits }) => {
-                    if disp >= 0 && ShiftedImmediate::try_from(disp as u64).is_ok() {
-                        asm.lea(opnd)
-                    } else {
-                        let disp = asm.load(Opnd::Imm(disp.into()));
-                        let reg = match base {
-                            MemBase::Reg(reg_no) => Opnd::Reg(Reg { reg_no, num_bits }),
-                            MemBase::VReg(idx) => Opnd::VReg { idx, num_bits }
-                        };
-
-                        asm.add(reg, disp)
-                    }
-                },
-                _ => unreachable!("Op::Lea only accepts Opnd::Mem operands.")
-            }
-        }
-
         /// When you're storing a register into a memory location or loading a
         /// memory location into a register, the displacement from the base
         /// register of the memory location must fit into 9 bits. If it doesn't,
@@ -252,7 +237,7 @@ impl Assembler
                     if mem_disp_fits_bits(mem.disp) {
                         opnd
                     } else {
-                        let base = split_lea_operand(asm, opnd);
+                        let base = asm.lea(opnd);
                         Opnd::mem(64, base, 0)
                     }
                 },
@@ -271,7 +256,7 @@ impl Assembler
                     // Many Arm insns support only 32-bit or 64-bit operands. asm.load with fewer
                     // bits zero-extends the value, so it's safe to recognize it as a 32-bit value.
                     if out_opnd.rm_num_bits() < 32 {
-                        out_opnd.with_num_bits(32).unwrap()
+                        out_opnd.with_num_bits(32)
                     } else {
                         out_opnd
                     }
@@ -297,7 +282,7 @@ impl Assembler
                                 BitmaskImmediate::new_32b_reg(imm as u32).is_ok()) {
                         Opnd::UImm(imm as u64)
                     } else {
-                        asm.load(opnd).with_num_bits(dest_num_bits).unwrap()
+                        asm.load(opnd).with_num_bits(dest_num_bits)
                     }
                 },
                 Opnd::UImm(uimm) => {
@@ -307,7 +292,7 @@ impl Assembler
                             BitmaskImmediate::new_32b_reg(uimm as u32).is_ok()) {
                         opnd
                     } else {
-                        asm.load(opnd).with_num_bits(dest_num_bits).unwrap()
+                        asm.load(opnd).with_num_bits(dest_num_bits)
                     }
                 },
                 Opnd::None | Opnd::Value(_) => unreachable!()
@@ -375,8 +360,8 @@ impl Assembler
             match opnd0 {
                 Opnd::Reg(_) | Opnd::VReg { .. } => {
                     match opnd0.rm_num_bits() {
-                        8 => asm.and(opnd0.with_num_bits(64).unwrap(), Opnd::UImm(0xff)),
-                        16 => asm.and(opnd0.with_num_bits(64).unwrap(), Opnd::UImm(0xffff)),
+                        8 => asm.and(opnd0.with_num_bits(64), Opnd::UImm(0xff)),
+                        16 => asm.and(opnd0.with_num_bits(64), Opnd::UImm(0xffff)),
                         32 | 64 => opnd0,
                         bits => unreachable!("Invalid number of bits. {}", bits)
                     }
@@ -520,7 +505,7 @@ impl Assembler
                     let split_right = split_shifted_immediate(asm, *right);
                     let opnd1 = match split_right {
                         Opnd::VReg { .. } if opnd0.num_bits() != split_right.num_bits() => {
-                            split_right.with_num_bits(opnd0.num_bits().unwrap()).unwrap()
+                            split_right.with_num_bits(opnd0.num_bits().unwrap())
                         },
                         _ => split_right
                     };
@@ -575,7 +560,7 @@ impl Assembler
                 },
                 Insn::IncrCounter { mem, value } => {
                     let counter_addr = match mem {
-                        Opnd::Mem(_) => split_lea_operand(asm, *mem),
+                        Opnd::Mem(_) => asm.lea(*mem),
                         _ => *mem
                     };
 
@@ -670,31 +655,6 @@ impl Assembler
                     // if we get anything else we need to load it first.
                     *opnd = split_load_operand(asm, *opnd);
                     asm.push_insn(insn);
-                },
-                Insn::Store { dest, src } => {
-                    // The value being stored must be in a register, so if it's
-                    // not already one we'll load it first.
-                    let opnd1 = match src {
-                         // If the first operand is zero, then we can just use
-                        // the zero register.
-                        Opnd::UImm(0) | Opnd::Imm(0) => Opnd::Reg(XZR_REG),
-                        // Otherwise we'll check if we need to load it first.
-                        _ => split_load_operand(asm, *src)
-                    };
-
-                    match dest {
-                        Opnd::Reg(_) => {
-                            // Store does not support a register as a dest operand.
-                            asm.mov(*dest, opnd1);
-                        }
-                        _ => {
-                            // The displacement for the STUR instruction can't be more
-                            // than 9 bits long. If it's longer, we need to load the
-                            // memory address into a register first.
-                            let opnd0 = split_memory_address(asm, *dest);
-                            asm.store(opnd0, opnd1);
-                        }
-                    }
                 },
                 Insn::Mul { left, right, .. } => {
                     *left = split_load_operand(asm, *left);
@@ -860,6 +820,42 @@ impl Assembler
             } else {
                 unreachable!("We should only generate Joz/Jonz with side-exit targets");
             }
+        }
+
+        /// Do the address calculation of `out_reg = base_reg + disp`
+        fn load_effective_address(cb: &mut CodeBlock, out: A64Opnd, base_reg_no: u8, disp: i32) {
+            let base_reg = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: base_reg_no });
+            assert_ne!(31, out.unwrap_reg().reg_no, "Lea sp, [sp, #imm] not always encodable. Use add/sub instead.");
+
+            if ShiftedImmediate::try_from(disp.unsigned_abs() as u64).is_ok() {
+                // Use ADD/SUB if the displacement fits
+                add(cb, out, base_reg, A64Opnd::new_imm(disp.into()));
+            } else {
+                // Use add_extended() to interpret reg_no=31 as sp
+                // since the base register is never the zero register.
+                // Careful! Only the first two operands can refer to sp.
+                emit_load_value(cb, out, disp as u64);
+                add_extended(cb, out, base_reg, out);
+            };
+        }
+
+        /// Load a VALUE to a register and remember it for GC marking and reference updating
+        fn emit_load_gc_value(cb: &mut CodeBlock, gc_offsets: &mut Vec<CodePtr>, dest: A64Opnd, value: VALUE) {
+            // We dont need to check if it's a special const
+            // here because we only allow these operands to hit
+            // this point if they're not a special const.
+            assert!(!value.special_const_p());
+
+            // This assumes only load instructions can contain
+            // references to GC'd Value operands. If the value
+            // being loaded is a heap object, we'll report that
+            // back out to the gc_offsets list.
+            ldr_literal(cb, dest, 2.into());
+            b(cb, InstructionOffset::from_bytes(4 + (SIZEOF_VALUE as i32)));
+            cb.write_bytes(&value.as_u64().to_le_bytes());
+
+            let ptr_offset = cb.get_write_ptr().sub_bytes(SIZEOF_VALUE);
+            gc_offsets.push(ptr_offset);
         }
 
         /// Emit a push instruction for the given operand by adding to the stack
@@ -1032,12 +1028,84 @@ impl Assembler
                 Insn::LShift { opnd, shift, out } => {
                     lsl(cb, out.into(), opnd.into(), shift.into());
                 },
-                Insn::Store { dest, src } => {
+                store_insn @ Insn::Store { dest, src } => {
+                    // With minor exceptions, as long as `dest` is a Mem, all forms of `src` are
+                    // accepted. As a rule of thumb, avoid using Assembler::SCRATCH as a memory
+                    // base register to gurantee things will work.
+                    let &Opnd::Mem(Mem { num_bits: dest_num_bits, base: MemBase::Reg(base_reg_no), disp }) = dest else {
+                        panic!("Unexpected Insn::Store destination in arm64_emit: {dest:?}");
+                    };
+
+                    // This kind of tricky clobber can only happen for explicit use of SCRATCH_REG,
+                    // so we panic to get the author to change their code.
+                    #[track_caller]
+                    fn assert_no_clobber(store_insn: &Insn, user_use: u8, backend_use: Reg) {
+                        assert_ne!(
+                            backend_use.reg_no,
+                            user_use,
+                            "Emitting {store_insn:?} would clobber {user_use:?}, in conflict with its semantics"
+                        );
+                    }
+
+                    // Split src into SCRATCH0 if necessary
+                    let src_reg: A64Reg = match src {
+                        Opnd::Reg(reg) => *reg,
+                        // Use zero register when possible
+                        Opnd::UImm(0) | Opnd::Imm(0) => XZR_REG,
+                        // Immediates
+                        &Opnd::Imm(imm) => {
+                            assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH0_REG);
+                            emit_load_value(cb, Self::SCRATCH0, imm as u64);
+                            Self::SCRATCH0_REG
+                        }
+                        &Opnd::UImm(imm) => {
+                            assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH0_REG);
+                            emit_load_value(cb, Self::SCRATCH0, imm);
+                            Self::SCRATCH0_REG
+                        }
+                        &Opnd::Value(value) => {
+                            assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH0_REG);
+                            emit_load_gc_value(cb, &mut gc_offsets, Self::SCRATCH0, value);
+                            Self::SCRATCH0_REG
+                        }
+                        src_mem @ &Opnd::Mem(Mem { num_bits: src_num_bits, base: MemBase::Reg(src_base_reg_no), disp: src_disp }) => {
+                            // For mem-to-mem store, load the source into SCRATCH0
+                            assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH0_REG);
+                            let src_mem = if mem_disp_fits_bits(src_disp) {
+                                src_mem.into()
+                            } else {
+                                // Split the load address into SCRATCH0 first if necessary
+                                assert_no_clobber(store_insn, src_base_reg_no, Self::SCRATCH0_REG);
+                                load_effective_address(cb, Self::SCRATCH0, src_base_reg_no, src_disp);
+                                A64Opnd::new_mem(dest_num_bits, Self::SCRATCH0, 0)
+                            };
+                            match src_num_bits {
+                                64 | 32 => ldur(cb, Self::SCRATCH0, src_mem),
+                                16 => ldurh(cb, Self::SCRATCH0, src_mem),
+                                8 => ldurb(cb, Self::SCRATCH0, src_mem),
+                                num_bits => panic!("unexpected num_bits: {num_bits}")
+                            };
+                            Self::SCRATCH0_REG
+                        }
+                        src @ (Opnd::Mem(_) | Opnd::None | Opnd::VReg { .. }) => panic!("Unexpected source operand during arm64_emit: {src:?}")
+                    };
+                    let src = A64Opnd::Reg(src_reg);
+
+                    // Split dest into SCRATCH1 if necessary.
+                    let dest = if mem_disp_fits_bits(disp) {
+                        dest.into()
+                    } else {
+                        assert_no_clobber(store_insn, src_reg.reg_no, Self::SCRATCH1_REG);
+                        assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH1_REG);
+                        load_effective_address(cb, Self::SCRATCH1, base_reg_no, disp);
+                        A64Opnd::new_mem(dest_num_bits, Self::SCRATCH1, 0)
+                    };
+
                     // This order may be surprising but it is correct. The way
                     // the Arm64 assembler works, the register that is going to
                     // be stored is first and the address is second. However in
                     // our IR we have the address first and the register second.
-                    match dest.rm_num_bits() {
+                    match dest_num_bits {
                         64 | 32 => stur(cb, src.into(), dest.into()),
                         16 => sturh(cb, src.into(), dest.into()),
                         num_bits => panic!("unexpected dest num_bits: {} (src: {:#?}, dest: {:#?})", num_bits, src, dest),
@@ -1064,21 +1132,7 @@ impl Assembler
                             };
                         },
                         Opnd::Value(value) => {
-                            // We dont need to check if it's a special const
-                            // here because we only allow these operands to hit
-                            // this point if they're not a special const.
-                            assert!(!value.special_const_p());
-
-                            // This assumes only load instructions can contain
-                            // references to GC'd Value operands. If the value
-                            // being loaded is a heap object, we'll report that
-                            // back out to the gc_offsets list.
-                            ldr_literal(cb, out.into(), 2.into());
-                            b(cb, InstructionOffset::from_bytes(4 + (SIZEOF_VALUE as i32)));
-                            cb.write_bytes(&value.as_u64().to_le_bytes());
-
-                            let ptr_offset = cb.get_write_ptr().sub_bytes(SIZEOF_VALUE);
-                            gc_offsets.push(ptr_offset);
+                            emit_load_gc_value(cb, &mut gc_offsets, out.into(), value);
                         },
                         Opnd::None => {
                             unreachable!("Attempted to load from None operand");
@@ -1113,22 +1167,11 @@ impl Assembler
                     }
                 },
                 Insn::Lea { opnd, out } => {
-                    let opnd: A64Opnd = opnd.into();
-
-                    match opnd {
-                        A64Opnd::Mem(mem) => {
-                            add(
-                                cb,
-                                out.into(),
-                                A64Opnd::Reg(A64Reg { reg_no: mem.base_reg_no, num_bits: 64 }),
-                                A64Opnd::new_imm(mem.disp.into())
-                            );
-                        },
-                        _ => {
-                            panic!("Op::Lea only accepts Opnd::Mem operands.");
-                        }
+                    let &Opnd::Mem(Mem { num_bits: _, base: MemBase::Reg(base_reg_no), disp }) = opnd else {
+                        panic!("Unexpected Insn::Lea operand in arm64_emit: {opnd:?}");
                     };
-                },
+                    load_effective_address(cb, out.into(), base_reg_no, disp);
+                }
                 Insn::LeaJumpTarget { out, target, .. } => {
                     if let Target::Label(label_idx) = target {
                         // Set output to the raw address of the label
@@ -1262,8 +1305,7 @@ impl Assembler
                     }
                     last_patch_pos = Some(cb.get_write_pos());
                 },
-                Insn::IncrCounter { mem: _, value: _ } => {
-                    /*
+                Insn::IncrCounter { mem, value } => {
                     let label = cb.new_label("incr_counter_loop".to_string());
                     cb.write_label(label);
 
@@ -1279,8 +1321,6 @@ impl Assembler
 
                     cmp(cb, Self::SCRATCH1, A64Opnd::new_uimm(0));
                     emit_conditional_jump::<{Condition::NE}>(cb, Target::Label(label));
-                    */
-                    unimplemented!("labels are not supported yet");
                 },
                 Insn::Breakpoint => {
                     brk(cb, A64Opnd::None);
@@ -1607,6 +1647,101 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 0);
     }
 
+    #[test]
+    fn test_emit_lea() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // Test values that exercise various types of immediates.
+        //  - 9 bit displacement for Load/Store
+        //  - 12 bit ADD/SUB shifted immediate
+        //  - 16 bit MOV family shifted immediates
+        //  - bit mask immediates
+        for displacement in [i32::MAX, 0x10008, 0x1800, 0x208, -0x208, -0x1800, -0x10008, i32::MIN] {
+            let mem = Opnd::mem(64, NATIVE_STACK_PTR, displacement);
+            asm.lea_into(Opnd::Reg(X0_REG), mem);
+        }
+
+        asm.compile_with_num_regs(&mut cb, 0);
+        assert_disasm!(cb, "e07b40b2e063208b000180d22000a0f2e063208b000083d2e063208be0230891e02308d1e0ff8292e063208b00ff9fd2c0ffbff2e0ffdff2e0fffff2e063208be08361b2e063208b", "
+            0x0: orr x0, xzr, #0x7fffffff
+            0x4: add x0, sp, x0
+            0x8: mov x0, #8
+            0xc: movk x0, #1, lsl #16
+            0x10: add x0, sp, x0
+            0x14: mov x0, #0x1800
+            0x18: add x0, sp, x0
+            0x1c: add x0, sp, #0x208
+            0x20: sub x0, sp, #0x208
+            0x24: mov x0, #-0x1800
+            0x28: add x0, sp, x0
+            0x2c: mov x0, #0xfff8
+            0x30: movk x0, #0xfffe, lsl #16
+            0x34: movk x0, #0xffff, lsl #32
+            0x38: movk x0, #0xffff, lsl #48
+            0x3c: add x0, sp, x0
+            0x40: orr x0, xzr, #0xffffffff80000000
+            0x44: add x0, sp, x0
+        ");
+    }
+
+    #[test]
+    fn test_store() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // Large memory offsets in combinations of destination and source
+        let large_mem = Opnd::mem(64, NATIVE_STACK_PTR, -0x305);
+        let small_mem = Opnd::mem(64, C_RET_OPND, 0);
+        asm.store(small_mem, large_mem);
+        asm.store(large_mem, small_mem);
+        asm.store(large_mem, large_mem);
+
+        asm.compile_with_num_regs(&mut cb, 0);
+        assert_disasm!(cb, "f0170cd1100240f8100000f8100040f8f1170cd1300200f8f0170cd1100240f8f1170cd1300200f8", "
+            0x0: sub x16, sp, #0x305
+            0x4: ldur x16, [x16]
+            0x8: stur x16, [x0]
+            0xc: ldur x16, [x0]
+            0x10: sub x17, sp, #0x305
+            0x14: stur x16, [x17]
+            0x18: sub x16, sp, #0x305
+            0x1c: ldur x16, [x16]
+            0x20: sub x17, sp, #0x305
+            0x24: stur x16, [x17]
+        ");
+    }
+
+    #[test]
+    fn test_store_value_without_split() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let imitation_heap_value = VALUE(0x1000);
+        assert!(imitation_heap_value.heap_object_p());
+        asm.store(Opnd::mem(VALUE_BITS, SP, 0), imitation_heap_value.into());
+
+        // Side exit code are compiled without the split pass, so we directly call emit here to
+        // emulate that scenario.
+        let gc_offsets = asm.arm64_emit(&mut cb).unwrap();
+        assert_eq!(1, gc_offsets.len(), "VALUE source operand should be reported as gc offset");
+
+        assert_disasm!(cb, "50000058030000140010000000000000b00200f8", "
+            0x0: ldr x16, #8
+            0x4: b #0x10
+            0x8: .byte 0x00, 0x10, 0x00, 0x00
+            0xc: .byte 0x00, 0x00, 0x00, 0x00
+            0x10: stur x16, [x21]
+        ");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_store_unserviceable() {
+        let (mut asm, mut cb) = setup_asm();
+        // This would put the source into SCRATCH_REG, messing up the destination
+        asm.store(Opnd::mem(64, Opnd::Reg(Assembler::SCRATCH_REG), 0), 0x83902.into());
+
+        asm.compile_with_num_regs(&mut cb, 0);
+    }
+
     /*
     #[test]
     fn test_emit_lea_label() {
@@ -1688,7 +1823,7 @@ mod tests {
     #[test]
     fn test_emit_test_32b_reg_not_bitmask_imm() {
         let (mut asm, mut cb) = setup_asm();
-        let w0 = Opnd::Reg(X0_REG).with_num_bits(32).unwrap();
+        let w0 = Opnd::Reg(X0_REG).with_num_bits(32);
         asm.test(w0, Opnd::UImm(u32::MAX.into()));
         // All ones is not encodable with a bitmask immediate,
         // so this needs one register
@@ -1698,7 +1833,7 @@ mod tests {
     #[test]
     fn test_emit_test_32b_reg_bitmask_imm() {
         let (mut asm, mut cb) = setup_asm();
-        let w0 = Opnd::Reg(X0_REG).with_num_bits(32).unwrap();
+        let w0 = Opnd::Reg(X0_REG).with_num_bits(32);
         asm.test(w0, Opnd::UImm(0x80000001));
         asm.compile_with_num_regs(&mut cb, 0);
     }

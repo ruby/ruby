@@ -464,6 +464,7 @@ ASMEXT = asm
 
 INSTALLED_LIST= .installed.list
 
+HASH_SIGN = ^#
 SRC_FILE = $(<:\=/)
 OS_SRC_FILE = $(<:/=\)
 DEST_FILE = $(@:\=/)

@@ -627,10 +627,10 @@ html: PHONY main srcs-doc
 
 rdoc-coverage: PHONY main srcs-doc
 	@echo Generating RDoc coverage report
-	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) "$(srcdir)"
+	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) .
 
 undocumented: PHONY main srcs-doc
-	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) "$(srcdir)" | \
+	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) . | \
 	sed -n \
 	-e '/^ *# in file /{' -e 's///;N;s/\n/: /p' -e '}' \
 	-e 's/^ *\(.*[^ ]\) *# in file \(.*\)/\2: \1/p' | sort
@@ -1167,8 +1167,9 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/nilclass.rb \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
+		$(srcdir)/jit_hook.rb \
+		$(srcdir)/jit_undef.rb \
 		$(srcdir)/yjit.rb \
-		$(srcdir)/yjit_hook.rb \
 		$(srcdir)/zjit.rb \
 		$(empty)
 BUILTIN_RB_INCS = $(BUILTIN_RB_SRCS:.rb=.rbinc)
@@ -1283,11 +1284,11 @@ preludes: {$(VPATH)}miniprelude.c
 
 {$(srcdir)}.rb.rbbin:
 	$(ECHO) making $@
-	$(Q) $(MINIRUBY) $(tooldir)/mk_rbbin.rb $< > $@
+	$(Q) $(MINIRUBY) $(tooldir)/mk_rbbin.rb $(SRC_FILE) > $(OS_DEST_FILE)
 
 {$(srcdir)}.rb.rbinc:
 	$(ECHO) making $@
-	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $<
+	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $(SRC_FILE)
 
 $(BUILTIN_BINARY:yes=built)in_binary.rbbin: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/template/builtin_binary.rbbin.tmpl
 	$(Q) $(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ \
@@ -1469,12 +1470,14 @@ prepare-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=extract-gems)
 extract-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=outdate-bundled-gems)
 update-gems: $(HAVE_BASERUBY:yes=outdate-bundled-gems)
 
+split_option = -F"\s+|$(HASH_SIGN).*"
+
 update-gems$(sequential): PHONY
 	$(ECHO) Downloading bundled gem files...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
-	    -I./tool -rdownloader -answ \
+	    -I./tool -rdownloader $(split_option) -answ \
 	    -e 'gem, ver = *$$F' \
-	    -e 'next if !ver or /^#/=~gem' \
+	    -e 'next if !ver' \
 	    -e 'old = Dir.glob("gems/#{gem}-*.gem")' \
 	    -e 'gem = "#{gem}-#{ver}.gem"' \
 	    -e 'Downloader::RubyGems.download(gem, "gems", nil) and' \
@@ -1486,10 +1489,10 @@ update-gems$(sequential): PHONY
 extract-gems$(sequential): PHONY
 	$(ECHO) Extracting bundled gem files...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
-	    -Itool/lib -rfileutils -rbundled_gem -answ \
+	    -Itool/lib -rfileutils -rbundled_gem $(split_option) -answ \
 	    -e 'BEGIN {d = ".bundle/gems"}' \
 	    -e 'gem, ver, _, rev = *$$F' \
-	    -e 'next if !ver or /^#/=~gem' \
+	    -e 'next if !ver' \
 	    -e 'g = "#{gem}-#{ver}"' \
 	    -e 'unless File.directory?("#{d}/#{g}")' \
 	    -e   'if rev and File.exist?(gs = "gems/src/#{gem}/#{gem}.gemspec")' \
@@ -1553,7 +1556,7 @@ yes-install-for-test-bundled-gems: yes-update-default-gemspecs
 test-bundled-gems-fetch: yes-test-bundled-gems-fetch
 yes-test-bundled-gems-fetch: clone-bundled-gems-src
 clone-bundled-gems-src: PHONY
-	$(Q) $(BASERUBY) -C $(srcdir)/gems ../tool/fetch-bundled_gems.rb BUNDLED_GEMS="$(BUNDLED_GEMS)" src bundled_gems
+	$(Q) $(BASERUBY) -C $(srcdir) tool/fetch-bundled_gems.rb BUNDLED_GEMS="$(BUNDLED_GEMS)" gems/src gems/bundled_gems
 no-test-bundled-gems-fetch:
 
 test-bundled-gems-prepare: $(TEST_RUNNABLE)-test-bundled-gems-prepare

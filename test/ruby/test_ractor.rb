@@ -99,6 +99,24 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_struct_instance_variables
+    assert_ractor(<<~'RUBY')
+      StructIvar = Struct.new(:member) do
+        def initialize(*)
+          super
+          @ivar = "ivar"
+        end
+        attr_reader :ivar
+      end
+      obj = StructIvar.new("member")
+      obj_copy = Ractor.new { Ractor.receive }.send(obj).value
+      assert_equal obj.ivar, obj_copy.ivar
+      refute_same obj.ivar, obj_copy.ivar
+      assert_equal obj.member, obj_copy.member
+      refute_same obj.member, obj_copy.member
+    RUBY
+  end
+
   def test_fork_raise_isolation_error
     assert_ractor(<<~'RUBY')
       ractor = Ractor.new do
@@ -141,6 +159,45 @@ class TestRactor < Test::Unit::TestCase
         "success"
       end.value
       assert_equal "success", result
+    RUBY
+  end
+
+  # [Bug #21398]
+  def test_port_receive_dnt_with_port_send
+    assert_ractor(<<~'RUBY', timeout: 30)
+      THREADS = 10
+      JOBS_PER_THREAD = 50
+      ARRAY_SIZE = 20_000
+      def ractor_job(job_count, array_size)
+        port = Ractor::Port.new
+        workers = (1..4).map do |i|
+          Ractor.new(port) do |job_port|
+            while job = Ractor.receive
+              result = job.map { |x| x * 2 }.sum
+              job_port.send result
+            end
+          end
+        end
+        jobs = Array.new(job_count) { Array.new(array_size) { rand(1000) } }
+        jobs.each_with_index do |job, i|
+          w_idx = i % 4
+          workers[w_idx].send(job)
+        end
+        results = []
+        jobs.size.times do
+          result = port.receive # dnt receive
+          results << result
+        end
+        results
+      end
+      threads = []
+      # creates 40 ractors (THREADSx4)
+      THREADS.times do
+        threads << Thread.new do
+          ractor_job(JOBS_PER_THREAD, ARRAY_SIZE)
+        end
+      end
+      threads.each(&:join)
     RUBY
   end
 

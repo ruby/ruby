@@ -47,7 +47,7 @@ RSpec.describe "loading dynamically linked library on a bundle exec context", re
     install_gemfile <<-G
       source "https://rubygems.org"
 
-      gem 'ffi'
+      gem 'ffi', force_ruby_platform: true
     G
 
     bundle "exec ruby foo.rb"

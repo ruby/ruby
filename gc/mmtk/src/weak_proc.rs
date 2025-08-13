@@ -134,6 +134,10 @@ impl GCWork<Ruby> for ProcessWeakReferences {
             .expect("Mutators should not be holding the lock.");
 
         for ptr_ptr in weak_references.iter_mut() {
+            if (upcalls().special_const_p)(**ptr_ptr) {
+                continue;
+            }
+
             if !(**ptr_ptr).is_reachable() {
                 **ptr_ptr = crate::binding().weak_reference_dead_value;
             }

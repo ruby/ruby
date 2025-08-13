@@ -2047,19 +2047,27 @@ XXX
   def load(filename = nil, **keywords)
     unless filename
       basename = File.basename($0, '.*')
-      return true if load(File.expand_path(basename, '~/.options'), **keywords) rescue nil
+      return true if load(File.expand_path("~/.options/#{basename}"), **keywords) rescue nil
       basename << ".options"
+      if !(xdg = ENV['XDG_CONFIG_HOME']) or xdg.empty?
+        # https://specifications.freedesktop.org/basedir-spec/latest/#variables
+        #
+        # If $XDG_CONFIG_HOME is either not set or empty, a default
+        # equal to $HOME/.config should be used.
+        xdg = ['~/.config', true]
+      end
       return [
-        # XDG
-        ENV['XDG_CONFIG_HOME'],
-        '~/.config',
+        xdg,
+
         *ENV['XDG_CONFIG_DIRS']&.split(File::PATH_SEPARATOR),
 
         # Haiku
-        '~/config/settings',
-      ].any? {|dir|
+        ['~/config/settings', true],
+      ].any? {|dir, expand|
         next if !dir or dir.empty?
-        load(File.expand_path(basename, dir), **keywords) rescue nil
+        filename = File.join(dir, basename)
+        filename = File.expand_path(filename) if expand
+        load(filename, **keywords) rescue nil
       }
     end
     begin

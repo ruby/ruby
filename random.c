@@ -263,7 +263,7 @@ const rb_data_type_t rb_random_data_type = {
         random_free,
         random_memsize,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 #define random_mt_mark rb_random_mark
@@ -284,7 +284,7 @@ static const rb_data_type_t random_mt_type = {
     },
     &rb_random_data_type,
     (void *)&random_mt_if,
-    RUBY_TYPED_FREE_IMMEDIATELY
+    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static rb_random_t *
@@ -422,10 +422,10 @@ random_init(int argc, VALUE *argv, VALUE obj)
     argc = rb_check_arity(argc, 0, 1);
     rb_check_frozen(obj);
     if (argc == 0) {
-        rnd->seed = rand_init_default(rng, rnd);
+        RB_OBJ_WRITE(obj, &rnd->seed, rand_init_default(rng, rnd));
     }
     else {
-        rnd->seed = rand_init(rng, rnd, rb_to_int(argv[0]));
+        RB_OBJ_WRITE(obj, &rnd->seed, rand_init(rng, rnd, rb_to_int(argv[0])));
     }
     return obj;
 }

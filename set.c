@@ -139,7 +139,6 @@ set_mark(void *ptr)
 static void
 set_free_embedded(struct set_object *sobj)
 {
-    free((&sobj->table)->bins);
     free((&sobj->table)->entries);
 }
 
@@ -172,9 +171,7 @@ set_foreach_replace(st_data_t key, st_data_t argp, int error)
 static int
 set_replace_ref(st_data_t *key, st_data_t argp, int existing)
 {
-    if (rb_gc_location((VALUE)*key) != (VALUE)*key) {
-        *key = rb_gc_location((VALUE)*key);
-    }
+    rb_gc_mark_and_move((VALUE *)key);
 
     return ST_CONTINUE;
 }
@@ -406,6 +403,13 @@ set_s_alloc(VALUE klass)
     return set_alloc_with_size(klass, 0);
 }
 
+/*
+ *  call-seq:
+ *    Set[*objects] -> new_set
+ *
+ *  Returns a new Set object populated with the given objects,
+ *  See Set::new.
+ */
 static VALUE
 set_s_create(int argc, VALUE *argv, VALUE klass)
 {
@@ -522,6 +526,7 @@ set_i_initialize(int argc, VALUE *argv, VALUE set)
     return set;
 }
 
+/* :nodoc: */
 static VALUE
 set_i_initialize_copy(VALUE set, VALUE other)
 {

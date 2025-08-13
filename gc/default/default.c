@@ -4420,7 +4420,10 @@ rb_gc_impl_mark_and_move(void *objspace_ptr, VALUE *ptr)
         GC_ASSERT(objspace->flags.during_compacting);
         GC_ASSERT(during_gc);
 
-        *ptr = rb_gc_impl_location(objspace, *ptr);
+        VALUE destination = rb_gc_impl_location(objspace, *ptr);
+        if (destination != *ptr) {
+            *ptr = destination;
+        }
     }
     else {
         gc_mark(objspace, *ptr);
@@ -6107,15 +6110,19 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 
     gc_report(1, objspace, "rb_gc_writebarrier_remember: %s\n", rb_obj_info(obj));
 
-    if (is_incremental_marking(objspace)) {
-        if (RVALUE_BLACK_P(objspace, obj)) {
-            gc_grey(objspace, obj);
+    if (is_incremental_marking(objspace) || RVALUE_OLD_P(objspace, obj)) {
+        int lev = RB_GC_VM_LOCK_NO_BARRIER();
+        {
+            if (is_incremental_marking(objspace)) {
+                if (RVALUE_BLACK_P(objspace, obj)) {
+                    gc_grey(objspace, obj);
+                }
+            }
+            else if (RVALUE_OLD_P(objspace, obj)) {
+                rgengc_remember(objspace, obj);
+            }
         }
-    }
-    else {
-        if (RVALUE_OLD_P(objspace, obj)) {
-            rgengc_remember(objspace, obj);
-        }
+        RB_GC_VM_UNLOCK_NO_BARRIER(lev);
     }
 }
 

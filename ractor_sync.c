@@ -91,12 +91,19 @@ ractor_port_init(VALUE rpv, rb_ractor_t *r)
     return rpv;
 }
 
+/*
+ *  call-seq:
+ *    Ractor::Port.new  -> new_port
+ *
+ *  Returns a new Ractor::Port object.
+ */
 static VALUE
 ractor_port_initialzie(VALUE self)
 {
     return ractor_port_init(self, GET_RACTOR());
 }
 
+/* :nodoc: */
 static VALUE
 ractor_port_initialzie_copy(VALUE self, VALUE orig)
 {
@@ -1221,7 +1228,6 @@ ractor_try_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE 
 // Ractor::Selector
 
 struct ractor_selector {
-    rb_ractor_t *r;
     struct st_table *ports; // rpv -> rp
 
 };
@@ -1267,7 +1273,7 @@ static const rb_data_type_t ractor_selector_data_type = {
         ractor_selector_memsize,
         NULL, // update
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static struct ractor_selector *
@@ -1312,6 +1318,8 @@ ractor_selector_add(VALUE selv, VALUE rpv)
     }
 
     st_insert(s->ports, (st_data_t)rpv, (st_data_t)rp);
+    RB_OBJ_WRITTEN(selv, Qundef, rpv);
+
     return selv;
 }
 

@@ -353,11 +353,6 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
         return true;
 
       case T_SYMBOL:
-        if (RSYMBOL(obj)->fstr &&
-                (BUILTIN_TYPE(RSYMBOL(obj)->fstr) == T_NONE ||
-                    BUILTIN_TYPE(RSYMBOL(obj)->fstr) == T_ZOMBIE)) {
-            RSYMBOL(obj)->fstr = 0;
-        }
         return true;
 
       case T_NONE:
@@ -1052,7 +1047,7 @@ rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
 {
     RUBY_ASSERT_ALWAYS(dfree != (RUBY_DATA_FUNC)1);
     if (klass) rb_data_object_check(klass);
-    return newobj_of(GET_RACTOR(), klass, T_DATA, (VALUE)dmark, (VALUE)datap, (VALUE)dfree, !dmark, sizeof(struct RTypedData));
+    return newobj_of(GET_RACTOR(), klass, T_DATA, (VALUE)dmark, (VALUE)dfree, (VALUE)datap, !dmark, sizeof(struct RTypedData));
 }
 
 VALUE
@@ -1069,7 +1064,7 @@ typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_
     RBIMPL_NONNULL_ARG(type);
     if (klass) rb_data_object_check(klass);
     bool wb_protected = (type->flags & RUBY_FL_WB_PROTECTED) || !type->function.dmark;
-    return newobj_of(GET_RACTOR(), klass, T_DATA, ((VALUE)type) | IS_TYPED_DATA | typed_flag, (VALUE)datap, 0, wb_protected, size);
+    return newobj_of(GET_RACTOR(), klass, T_DATA, 0, ((VALUE)type) | IS_TYPED_DATA | typed_flag, (VALUE)datap, wb_protected, size);
 }
 
 VALUE
@@ -1213,7 +1208,7 @@ classext_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
 
     rb_id_table_free(RCLASSEXT_M_TBL(ext));
-    rb_cc_tbl_free(RCLASSEXT_CC_TBL(ext), args->klass);
+
     if (!RCLASSEXT_SHARED_CONST_TBL(ext) && (tbl = RCLASSEXT_CONST_TBL(ext)) != NULL) {
         rb_free_const_table(tbl);
     }
@@ -1243,7 +1238,6 @@ classext_iclass_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *a
     if (RCLASSEXT_CALLABLE_M_TBL(ext) != NULL) {
         rb_id_table_free(RCLASSEXT_CALLABLE_M_TBL(ext));
     }
-    rb_cc_tbl_free(RCLASSEXT_CC_TBL(ext), args->klass);
 
     rb_class_classext_free_subclasses(ext, args->klass);
 
@@ -1748,7 +1742,7 @@ rb_objspace_free_objects(void *objspace)
 int
 rb_objspace_garbage_object_p(VALUE obj)
 {
-    return rb_gc_impl_garbage_object_p(rb_gc_get_objspace(), obj);
+    return !SPECIAL_CONST_P(obj) && rb_gc_impl_garbage_object_p(rb_gc_get_objspace(), obj);
 }
 
 bool
@@ -1761,7 +1755,6 @@ rb_gc_pointer_to_heap_p(VALUE obj)
 #define LAST_OBJECT_ID() (object_id_counter * OBJ_ID_INCREMENT)
 static VALUE id2ref_value = 0;
 static st_table *id2ref_tbl = NULL;
-static bool id2ref_tbl_built = false;
 
 #if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
 static size_t object_id_counter = 1;
@@ -1903,8 +1896,6 @@ object_id0(VALUE obj)
         return object_id_get(obj, shape_id);
     }
 
-    // rb_shape_object_id_shape may lock if the current shape has
-    // multiple children.
     shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
 
     id = generate_next_object_id();
@@ -1930,7 +1921,7 @@ object_id(VALUE obj)
         // in fields.
         return class_object_id(obj);
       case T_IMEMO:
-        rb_bug("T_IMEMO can't have an object_id");
+        RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
         break;
       default:
         break;
@@ -1954,17 +1945,25 @@ build_id2ref_i(VALUE obj, void *data)
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
+        RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
         if (RCLASS(obj)->object_id) {
             st_insert(id2ref_tbl, RCLASS(obj)->object_id, obj);
         }
         break;
       case T_IMEMO:
-      case T_NONE:
+        RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
+        if (IMEMO_TYPE_P(obj, imemo_fields) && rb_shape_obj_has_id(obj)) {
+            st_insert(id2ref_tbl, rb_obj_id(obj), rb_imemo_fields_owner(obj));
+        }
         break;
-      default:
+      case T_OBJECT:
+        RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
         if (rb_shape_obj_has_id(obj)) {
             st_insert(id2ref_tbl, rb_obj_id(obj), obj);
         }
+        break;
+      default:
+        // For generic_fields, the T_IMEMO/fields is responsible for populating the entry.
         break;
     }
 }
@@ -1982,17 +1981,20 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
         // GC Must not trigger while we build the table, otherwise if we end
         // up freeing an object that had an ID, we might try to delete it from
         // the table even though it wasn't inserted yet.
-        id2ref_tbl = st_init_table(&object_id_hash_type);
-        id2ref_value = TypedData_Wrap_Struct(0, &id2ref_tbl_type, id2ref_tbl);
+        st_table *tmp_id2ref_tbl = st_init_table(&object_id_hash_type);
+        VALUE tmp_id2ref_value = TypedData_Wrap_Struct(0, &id2ref_tbl_type, tmp_id2ref_tbl);
 
         // build_id2ref_i will most certainly malloc, which could trigger GC and sweep
         // objects we just added to the table.
-        bool gc_disabled = RTEST(rb_gc_disable_no_rest());
+        // By calling rb_gc_disable() we also save having to handle potentially garbage objects.
+        bool gc_disabled = RTEST(rb_gc_disable());
         {
+            id2ref_tbl = tmp_id2ref_tbl;
+            id2ref_value = tmp_id2ref_value;
+
             rb_gc_impl_each_object(objspace, build_id2ref_i, (void *)id2ref_tbl);
         }
         if (!gc_disabled) rb_gc_enable();
-        id2ref_tbl_built = true;
     }
 
     VALUE obj;
@@ -2044,10 +2046,9 @@ obj_free_object_id(VALUE obj)
             RUBY_ASSERT(FIXNUM_P(obj_id) || RB_TYPE_P(obj_id, T_BIGNUM));
 
             if (!st_delete(id2ref_tbl, (st_data_t *)&obj_id, NULL)) {
-                // If we're currently building the table then it's not a bug.
                 // The the object is a T_IMEMO/fields, then it's possible the actual object
                 // has been garbage collected already.
-                if (id2ref_tbl_built && !RB_TYPE_P(obj, T_IMEMO)) {
+                if (!RB_TYPE_P(obj, T_IMEMO)) {
                     rb_bug("Object ID seen, but not in _id2ref table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
                 }
             }
@@ -2267,24 +2268,6 @@ rb_gc_after_updating_jit_code(void)
 #endif
 }
 
-static enum rb_id_table_iterator_result
-cc_table_memsize_i(VALUE ccs_ptr, void *data_ptr)
-{
-    size_t *total_size = data_ptr;
-    struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
-    *total_size += sizeof(*ccs);
-    *total_size += sizeof(ccs->entries[0]) * ccs->capa;
-    return ID_TABLE_CONTINUE;
-}
-
-static size_t
-cc_table_memsize(struct rb_id_table *cc_table)
-{
-    size_t total = rb_id_table_memsize(cc_table);
-    rb_id_table_foreach_values(cc_table, cc_table_memsize_i, &total);
-    return total;
-}
-
 static void
 classext_memsize(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
 {
@@ -2299,9 +2282,6 @@ classext_memsize(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
     }
     if (RCLASSEXT_CONST_TBL(ext)) {
         s += rb_id_table_memsize(RCLASSEXT_CONST_TBL(ext));
-    }
-    if (RCLASSEXT_CC_TBL(ext)) {
-        s += cc_table_memsize(RCLASSEXT_CC_TBL(ext));
     }
     if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext)) {
         s += (RCLASSEXT_SUPERCLASS_DEPTH(ext) + 1) * sizeof(VALUE);
@@ -2352,9 +2332,6 @@ rb_obj_memsize_of(VALUE obj)
             if (RCLASS_M_TBL(obj)) {
                 size += rb_id_table_memsize(RCLASS_M_TBL(obj));
             }
-        }
-        if (RCLASS_WRITABLE_CC_TBL(obj)) {
-            size += cc_table_memsize(RCLASS_WRITABLE_CC_TBL(obj));
         }
         break;
       case T_STRING:
@@ -2840,47 +2817,6 @@ mark_const_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
     rb_id_table_foreach_values(tbl, mark_const_entry_i, objspace);
 }
 
-struct mark_cc_entry_args {
-    rb_objspace_t *objspace;
-    VALUE klass;
-};
-
-static enum rb_id_table_iterator_result
-mark_cc_entry_i(VALUE ccs_ptr, void *data)
-{
-    struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
-
-    VM_ASSERT(vm_ccs_p(ccs));
-
-    if (METHOD_ENTRY_INVALIDATED(ccs->cme)) {
-        rb_vm_ccs_free(ccs);
-        return ID_TABLE_DELETE;
-    }
-    else {
-        gc_mark_internal((VALUE)ccs->cme);
-
-        for (int i=0; i<ccs->len; i++) {
-            VM_ASSERT(((struct mark_cc_entry_args *)data)->klass == ccs->entries[i].cc->klass);
-            VM_ASSERT(vm_cc_check_cme(ccs->entries[i].cc, ccs->cme));
-
-            gc_mark_internal((VALUE)ccs->entries[i].cc);
-        }
-        return ID_TABLE_CONTINUE;
-    }
-}
-
-static void
-mark_cc_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl, VALUE klass)
-{
-    struct mark_cc_entry_args args;
-
-    if (!tbl) return;
-
-    args.objspace = objspace;
-    args.klass = klass;
-    rb_id_table_foreach_values(tbl, mark_cc_entry_i, (void *)&args);
-}
-
 static enum rb_id_table_iterator_result
 mark_cvc_tbl_i(VALUE cvc_entry, void *objspace)
 {
@@ -3101,7 +3037,7 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
     mark_current_machine_context(ec);
 
     MARK_CHECKPOINT("global_symbols");
-    rb_sym_global_symbols_mark();
+    rb_sym_global_symbols_mark_and_move();
 
     MARK_CHECKPOINT("finish");
 
@@ -3118,7 +3054,6 @@ gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE namespace, void *a
 {
     struct gc_mark_classext_foreach_arg *foreach_arg = (struct gc_mark_classext_foreach_arg *)arg;
     rb_objspace_t *objspace = foreach_arg->objspace;
-    VALUE obj = foreach_arg->obj;
 
     if (RCLASSEXT_SUPER(ext)) {
         gc_mark_internal(RCLASSEXT_SUPER(ext));
@@ -3129,7 +3064,7 @@ gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE namespace, void *a
         mark_const_tbl(objspace, RCLASSEXT_CONST_TBL(ext));
     }
     mark_m_tbl(objspace, RCLASSEXT_CALLABLE_M_TBL(ext));
-    mark_cc_tbl(objspace, RCLASSEXT_CC_TBL(ext), obj);
+    gc_mark_internal(RCLASSEXT_CC_TBL(ext));
     mark_cvc_tbl(objspace, RCLASSEXT_CVC_TBL(ext));
     gc_mark_internal(RCLASSEXT_CLASSPATH(ext));
 }
@@ -3139,7 +3074,6 @@ gc_mark_classext_iclass(rb_classext_t *ext, bool prime, VALUE namespace, void *a
 {
     struct gc_mark_classext_foreach_arg *foreach_arg = (struct gc_mark_classext_foreach_arg *)arg;
     rb_objspace_t *objspace = foreach_arg->objspace;
-    VALUE iclass = foreach_arg->obj;
 
     if (RCLASSEXT_SUPER(ext)) {
         gc_mark_internal(RCLASSEXT_SUPER(ext));
@@ -3151,7 +3085,7 @@ gc_mark_classext_iclass(rb_classext_t *ext, bool prime, VALUE namespace, void *a
         gc_mark_internal(RCLASSEXT_INCLUDER(ext));
     }
     mark_m_tbl(objspace, RCLASSEXT_CALLABLE_M_TBL(ext));
-    mark_cc_tbl(objspace, RCLASSEXT_CC_TBL(ext), iclass);
+    gc_mark_internal(RCLASSEXT_CC_TBL(ext));
 }
 
 #define TYPED_DATA_REFS_OFFSET_LIST(d) (size_t *)(uintptr_t)RTYPEDDATA_TYPE(d)->function.dmark
@@ -3245,10 +3179,15 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         break;
 
       case T_DATA: {
-        void *const ptr = RTYPEDDATA_P(obj) ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+        bool typed_data = RTYPEDDATA_P(obj);
+        void *const ptr = typed_data ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+
+        if (typed_data) {
+            gc_mark_internal(RTYPEDDATA(obj)->fields_obj);
+        }
 
         if (ptr) {
-            if (RTYPEDDATA_P(obj) && gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
+            if (typed_data && gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
                 size_t *offset_list = TYPED_DATA_REFS_OFFSET_LIST(obj);
 
                 for (size_t offset = *offset_list; offset != RUBY_REF_END; offset = *offset_list++) {
@@ -3256,7 +3195,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
                 }
             }
             else {
-                RUBY_DATA_FUNC mark_func = RTYPEDDATA_P(obj) ?
+                RUBY_DATA_FUNC mark_func = typed_data ?
                     RTYPEDDATA_TYPE(obj)->function.dmark :
                     RDATA(obj)->dmark;
                 if (mark_func) (*mark_func)(ptr);
@@ -3333,6 +3272,10 @@ rb_gc_mark_children(void *objspace, VALUE obj)
 
         for (long i = 0; i < len; i++) {
             gc_mark_internal(ptr[i]);
+        }
+
+        if (!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS)) {
+            gc_mark_internal(RSTRUCT_FIELDS_OBJ(obj));
         }
 
         break;
@@ -3716,33 +3659,6 @@ update_m_tbl(void *objspace, struct rb_id_table *tbl)
 }
 
 static enum rb_id_table_iterator_result
-update_cc_tbl_i(VALUE ccs_ptr, void *objspace)
-{
-    struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
-    VM_ASSERT(vm_ccs_p(ccs));
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)ccs->cme)) {
-        ccs->cme = (const rb_callable_method_entry_t *)gc_location_internal(objspace, (VALUE)ccs->cme);
-    }
-
-    for (int i=0; i<ccs->len; i++) {
-        if (rb_gc_impl_object_moved_p(objspace, (VALUE)ccs->entries[i].cc)) {
-            ccs->entries[i].cc = (struct rb_callcache *)gc_location_internal(objspace, (VALUE)ccs->entries[i].cc);
-        }
-    }
-
-    // do not replace
-    return ID_TABLE_CONTINUE;
-}
-
-static void
-update_cc_tbl(void *objspace, struct rb_id_table *tbl)
-{
-    if (!tbl) return;
-    rb_id_table_foreach_values(tbl, update_cc_tbl_i, objspace);
-}
-
-static enum rb_id_table_iterator_result
 update_cvc_tbl_i(VALUE cvc_entry, void *objspace)
 {
     struct rb_cvar_class_tbl_entry *entry;
@@ -3840,7 +3756,7 @@ update_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
     if (!RCLASSEXT_SHARED_CONST_TBL(ext)) {
         update_const_tbl(objspace, RCLASSEXT_CONST_TBL(ext));
     }
-    update_cc_tbl(objspace, RCLASSEXT_CC_TBL(ext));
+    UPDATE_IF_MOVED(objspace, RCLASSEXT_CC_TBL(ext));
     update_cvc_tbl(objspace, RCLASSEXT_CVC_TBL(ext));
     update_superclasses(objspace, ext);
     update_subclasses(objspace, ext);
@@ -3859,7 +3775,7 @@ update_iclass_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void 
     }
     update_m_tbl(objspace, RCLASSEXT_M_TBL(ext));
     update_m_tbl(objspace, RCLASSEXT_CALLABLE_M_TBL(ext));
-    update_cc_tbl(objspace, RCLASSEXT_CC_TBL(ext));
+    UPDATE_IF_MOVED(objspace, RCLASSEXT_CC_TBL(ext));
     update_subclasses(objspace, ext);
 
     update_classext_values(objspace, ext, true);
@@ -4143,7 +4059,7 @@ rb_gc_update_vm_references(void *objspace)
 
     rb_vm_update_references(vm);
     rb_gc_update_global_tbl();
-    rb_sym_global_symbols_update_references();
+    rb_sym_global_symbols_mark_and_move();
 
 #if USE_YJIT
     void rb_yjit_root_update_references(void); // in Rust
@@ -4216,9 +4132,15 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
       case T_DATA:
         /* Call the compaction callback, if it exists */
         {
-            void *const ptr = RTYPEDDATA_P(obj) ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+            bool typed_data = RTYPEDDATA_P(obj);
+            void *const ptr = typed_data ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+
+            if (typed_data) {
+                UPDATE_IF_MOVED(objspace, RTYPEDDATA(obj)->fields_obj);
+            }
+
             if (ptr) {
-                if (RTYPEDDATA_P(obj) && gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
+                if (typed_data && gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
                     size_t *offset_list = TYPED_DATA_REFS_OFFSET_LIST(obj);
 
                     for (size_t offset = *offset_list; offset != RUBY_REF_END; offset = *offset_list++) {
@@ -4226,7 +4148,7 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
                         *ref = gc_location_internal(objspace, *ref);
                     }
                 }
-                else if (RTYPEDDATA_P(obj)) {
+                else if (typed_data) {
                     RUBY_DATA_FUNC compact_func = RTYPEDDATA_TYPE(obj)->function.dcompact;
                     if (compact_func) (*compact_func)(ptr);
                 }
@@ -4289,6 +4211,15 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
 
             for (i = 0; i < len; i++) {
                 UPDATE_IF_MOVED(objspace, ptr[i]);
+            }
+
+            if (RSTRUCT_EMBED_LEN(obj)) {
+                if (!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS)) {
+                    UPDATE_IF_MOVED(objspace, ptr[len]);
+                }
+            }
+            else {
+                UPDATE_IF_MOVED(objspace, RSTRUCT(obj)->as.heap.fields_obj);
             }
         }
         break;
@@ -4443,7 +4374,7 @@ gc_config_set(rb_execution_context_t *ec, VALUE self, VALUE hash)
 
     rb_gc_impl_config_set(objspace, hash);
 
-    return rb_gc_impl_config_get(objspace);
+    return Qnil;
 }
 
 static VALUE
@@ -4929,11 +4860,11 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
               case imemo_callcache:
                 {
                     const struct rb_callcache *cc = (const struct rb_callcache *)obj;
-                    VALUE class_path = cc->klass ? rb_class_path_cached(cc->klass) : Qnil;
+                    VALUE class_path = vm_cc_valid(cc) ? rb_class_path_cached(cc->klass) : Qnil;
                     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
 
                     APPEND_F("(klass:%s cme:%s%s (%p) call:%p",
-                             NIL_P(class_path) ? (cc->klass ? "??" : "<NULL>") : RSTRING_PTR(class_path),
+                             NIL_P(class_path) ? (vm_cc_valid(cc) ? "??" : "<NULL>") : RSTRING_PTR(class_path),
                              cme ? rb_id2name(cme->called_id) : "<NULL>",
                              cme ? (METHOD_ENTRY_INVALIDATED(cme) ? " [inv]" : "") : "",
                              (void *)cme,

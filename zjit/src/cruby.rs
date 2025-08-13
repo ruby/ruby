@@ -159,6 +159,7 @@ unsafe extern "C" {
     pub fn rb_vm_stack_canary() -> VALUE;
     pub fn rb_vm_push_cfunc_frame(cme: *const rb_callable_method_entry_t, recv_idx: c_int);
     pub fn rb_obj_class(klass: VALUE) -> VALUE;
+    pub fn rb_vm_objtostring(iseq: IseqPtr, recv: VALUE, cd: *const rb_call_data) -> VALUE;
 }
 
 // Renames
@@ -264,6 +265,12 @@ pub struct ID(pub ::std::os::raw::c_ulong);
 
 /// Pointer to an ISEQ
 pub type IseqPtr = *const rb_iseq_t;
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct ShapeId(pub u32);
+
+pub const SPECIAL_CONST_SHAPE_ID: ShapeId = ShapeId(RB_SPECIAL_CONST_SHAPE_ID);
+pub const INVALID_SHAPE_ID: ShapeId = ShapeId(RB_INVALID_SHAPE_ID);
 
 // Given an ISEQ pointer, convert PC to insn_idx
 pub fn iseq_pc_to_insn_idx(iseq: IseqPtr, pc: *mut VALUE) -> Option<u16> {
@@ -487,8 +494,8 @@ impl VALUE {
         unsafe { rb_zjit_shape_obj_too_complex_p(self) }
     }
 
-    pub fn shape_id_of(self) -> u32 {
-        unsafe { rb_obj_shape_id(self) }
+    pub fn shape_id_of(self) -> ShapeId {
+        ShapeId(unsafe { rb_obj_shape_id(self) })
     }
 
     pub fn embedded_p(self) -> bool {
@@ -715,7 +722,7 @@ pub fn iseq_name(iseq: IseqPtr) -> String {
 // Location is the file defining the method, colon, method name.
 // Filenames are sometimes internal strings supplied to eval,
 // so be careful with them.
-pub fn iseq_get_location(iseq: IseqPtr, pos: u16) -> String {
+pub fn iseq_get_location(iseq: IseqPtr, pos: u32) -> String {
     let iseq_path = unsafe { rb_iseq_path(iseq) };
     let iseq_lineno = unsafe { rb_iseq_line_no(iseq, pos as usize) };
 
@@ -748,6 +755,16 @@ fn ruby_str_to_rust_string(v: VALUE) -> String {
 pub fn ruby_sym_to_rust_string(v: VALUE) -> String {
     let ruby_str = unsafe { rb_sym2str(v) };
     ruby_str_to_rust_string(ruby_str)
+}
+
+pub fn ruby_call_method_id(cd: *const rb_call_data) -> ID {
+    let call_info = unsafe { rb_get_call_data_ci(cd) };
+    unsafe { rb_vm_ci_mid(call_info) }
+}
+
+pub fn ruby_call_method_name(cd: *const rb_call_data) -> String {
+    let mid = ruby_call_method_id(cd);
+    mid.contents_lossy().to_string()
 }
 
 /// A location in Rust code for integrating with debugging facilities defined in C.
@@ -957,7 +974,7 @@ pub use manual_defs::*;
 pub mod test_utils {
     use std::{ptr::null, sync::Once};
 
-    use crate::{options::init_options, state::rb_zjit_enabled_p, state::ZJITState};
+    use crate::{options::rb_zjit_prepare_options, state::rb_zjit_enabled_p, state::ZJITState};
 
     use super::*;
 
@@ -979,6 +996,7 @@ pub mod test_utils {
             // <https://github.com/Shopify/zjit/pull/37>, though
             let mut var: VALUE = Qnil;
             ruby_init_stack(&mut var as *mut VALUE as *mut _);
+            rb_zjit_prepare_options(); // enable `#with_jit` on builtins
             ruby_init();
 
             // Pass command line options so the VM loads core library methods defined in
@@ -994,7 +1012,7 @@ pub mod test_utils {
         }
 
         // Set up globals for convenience
-        ZJITState::init(init_options());
+        ZJITState::init();
 
         // Enable zjit_* instructions
         unsafe { rb_zjit_enabled_p = true; }
@@ -1210,6 +1228,21 @@ pub(crate) mod ids {
         name: to_s
         name: compile
         name: eval
+        name: plus               content: b"+"
+        name: minus              content: b"-"
+        name: mult               content: b"*"
+        name: div                content: b"/"
+        name: modulo             content: b"%"
+        name: neq                content: b"!="
+        name: lt                 content: b"<"
+        name: le                 content: b"<="
+        name: gt                 content: b">"
+        name: ge                 content: b">="
+        name: and                content: b"&"
+        name: or                 content: b"|"
+        name: freeze
+        name: minusat            content: b"-@"
+        name: aref               content: b"[]"
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.

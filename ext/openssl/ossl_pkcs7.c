@@ -143,11 +143,19 @@ ossl_PKCS7_SIGNER_INFO_dup(PKCS7_SIGNER_INFO *si)
 }
 
 static PKCS7_RECIP_INFO *
-ossl_PKCS7_RECIP_INFO_dup(PKCS7_RECIP_INFO *si)
+ossl_PKCS7_RECIP_INFO_dup(PKCS7_RECIP_INFO *ri)
 {
-    return ASN1_dup((i2d_of_void *)i2d_PKCS7_RECIP_INFO,
-                    (d2i_of_void *)d2i_PKCS7_RECIP_INFO,
-                    si);
+    PKCS7_RECIP_INFO *ri_new = ASN1_dup((i2d_of_void *)i2d_PKCS7_RECIP_INFO,
+                                        (d2i_of_void *)d2i_PKCS7_RECIP_INFO,
+                                        ri);
+    if (ri_new && ri->cert) {
+        if (!X509_up_ref(ri->cert)) {
+            PKCS7_RECIP_INFO_free(ri_new);
+            return NULL;
+        }
+        ri_new->cert = ri->cert;
+    }
+    return ri_new;
 }
 
 static VALUE
@@ -510,6 +518,8 @@ ossl_pkcs7_get_detached(VALUE self)
 {
     PKCS7 *p7;
     GetPKCS7(self, p7);
+    if (!PKCS7_type_is_signed(p7))
+        return Qfalse;
     return PKCS7_get_detached(p7) ? Qtrue : Qfalse;
 }
 
@@ -770,7 +780,6 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
     BIO *in, *out;
     PKCS7 *p7;
     VALUE data;
-    const char *msg;
 
     GetPKCS7(self, p7);
     rb_scan_args(argc, argv, "22", &certs, &store, &indata, &flags);
@@ -794,14 +803,16 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
     ok = PKCS7_verify(p7, x509s, x509st, in, out, flg);
     BIO_free(in);
     sk_X509_pop_free(x509s, X509_free);
-    if (ok < 0) ossl_raise(ePKCS7Error, "PKCS7_verify");
-    msg = ERR_reason_error_string(ERR_peek_error());
-    ossl_pkcs7_set_err_string(self, msg ? rb_str_new2(msg) : Qnil);
-    ossl_clear_error();
     data = ossl_membio2str(out);
     ossl_pkcs7_set_data(self, data);
-
-    return (ok == 1) ? Qtrue : Qfalse;
+    if (ok != 1) {
+        const char *msg = ERR_reason_error_string(ERR_peek_error());
+        ossl_pkcs7_set_err_string(self, msg ? rb_str_new_cstr(msg) : Qnil);
+        ossl_clear_error();
+        return Qfalse;
+    }
+    ossl_pkcs7_set_err_string(self, Qnil);
+    return Qtrue;
 }
 
 static VALUE
@@ -837,30 +848,38 @@ ossl_pkcs7_add_data(VALUE self, VALUE data)
     PKCS7 *pkcs7;
     BIO *out, *in;
     char buf[4096];
-    int len;
+    int len, ret;
 
     GetPKCS7(self, pkcs7);
-    if(PKCS7_type_is_signed(pkcs7)){
-	if(!PKCS7_content_new(pkcs7, NID_pkcs7_data))
-	    ossl_raise(ePKCS7Error, NULL);
+    if (PKCS7_type_is_signed(pkcs7)) {
+        if (!PKCS7_content_new(pkcs7, NID_pkcs7_data))
+            ossl_raise(ePKCS7Error, "PKCS7_content_new");
     }
     in = ossl_obj2bio(&data);
-    if(!(out = PKCS7_dataInit(pkcs7, NULL))) goto err;
-    for(;;){
-	if((len = BIO_read(in, buf, sizeof(buf))) <= 0)
-	    break;
-	if(BIO_write(out, buf, len) != len)
-	    goto err;
+    if (!(out = PKCS7_dataInit(pkcs7, NULL))) {
+        BIO_free(in);
+        ossl_raise(ePKCS7Error, "PKCS7_dataInit");
     }
-    if(!PKCS7_dataFinal(pkcs7, out)) goto err;
-    ossl_pkcs7_set_data(self, Qnil);
-
- err:
+    for (;;) {
+        if ((len = BIO_read(in, buf, sizeof(buf))) <= 0)
+            break;
+        if (BIO_write(out, buf, len) != len) {
+            BIO_free_all(out);
+            BIO_free(in);
+            ossl_raise(ePKCS7Error, "BIO_write");
+        }
+    }
+    if (BIO_flush(out) <= 0) {
+        BIO_free_all(out);
+        BIO_free(in);
+        ossl_raise(ePKCS7Error, "BIO_flush");
+    }
+    ret = PKCS7_dataFinal(pkcs7, out);
     BIO_free_all(out);
     BIO_free(in);
-    if(ERR_peek_error()){
-	ossl_raise(ePKCS7Error, NULL);
-    }
+    if (!ret)
+        ossl_raise(ePKCS7Error, "PKCS7_dataFinal");
+    ossl_pkcs7_set_data(self, Qnil);
 
     return data;
 }

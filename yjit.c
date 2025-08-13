@@ -499,18 +499,6 @@ rb_yjit_str_simple_append(VALUE str1, VALUE str2)
     return rb_str_cat(str1, RSTRING_PTR(str2), RSTRING_LEN(str2));
 }
 
-void
-rb_set_cfp_pc(struct rb_control_frame_struct *cfp, const VALUE *pc)
-{
-    cfp->pc = pc;
-}
-
-void
-rb_set_cfp_sp(struct rb_control_frame_struct *cfp, VALUE *sp)
-{
-    cfp->sp = sp;
-}
-
 extern VALUE *rb_vm_base_ptr(struct rb_control_frame_struct *cfp);
 
 // YJIT needs this function to never allocate and never raise
@@ -634,8 +622,9 @@ rb_yjit_iseq_inspect(const rb_iseq_t *iseq)
     const char *path = RSTRING_PTR(rb_iseq_path(iseq));
     int lineno = iseq->body->location.code_location.beg_pos.lineno;
 
-    char *buf = ZALLOC_N(char, strlen(label) + strlen(path) + num_digits(lineno) + 3);
-    sprintf(buf, "%s@%s:%d", label, path, lineno);
+    const size_t size = strlen(label) + strlen(path) + num_digits(lineno) + 3;
+    char *buf = ZALLOC_N(char, size);
+    snprintf(buf, size, "%s@%s:%d", label, path, lineno);
     return buf;
 }
 

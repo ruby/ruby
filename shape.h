@@ -271,9 +271,16 @@ rb_shape_root(size_t heap_id)
 }
 
 static inline shape_id_t
-RSHAPE_PARENT(shape_id_t shape_id)
+RSHAPE_PARENT_RAW_ID(shape_id_t shape_id)
 {
     return RSHAPE(shape_id)->parent_id;
+}
+
+static inline bool
+RSHAPE_DIRECT_CHILD_P(shape_id_t parent_id, shape_id_t child_id)
+{
+    return (parent_id & SHAPE_ID_FLAGS_MASK) == (child_id & SHAPE_ID_FLAGS_MASK) &&
+        RSHAPE(child_id)->parent_id == (parent_id & SHAPE_ID_OFFSET_MASK);
 }
 
 static inline enum shape_type
