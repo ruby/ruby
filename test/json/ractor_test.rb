@@ -42,7 +42,7 @@ class JSONInRactorTest < Test::Unit::TestCase
       else
         puts "Expected:"
         puts expected_json
-        puts "Acutual:"
+        puts "Actual:"
         puts actual_json
         puts
         exit 1

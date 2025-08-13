@@ -137,8 +137,8 @@ static inline FORCE_INLINE void search_flush(search_state *search)
 {
     // Do not remove this conditional without profiling, specifically escape-heavy text.
     // escape_UTF8_char_basic will advance search->ptr and search->cursor (effectively a search_flush).
-    // For back-to-back characters that need to be escaped, specifcally for the SIMD code paths, this method
-    // will be called just before calling escape_UTF8_char_basic. There will be no characers to append for the
+    // For back-to-back characters that need to be escaped, specifically for the SIMD code paths, this method
+    // will be called just before calling escape_UTF8_char_basic. There will be no characters to append for the
     // consecutive characters that need to be escaped. While the fbuffer_append is a no-op if
     // nothing needs to be flushed, we can save a few memory references with this conditional.
     if (search->ptr > search->cursor) {
