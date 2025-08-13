@@ -355,6 +355,9 @@ struct RTypedData {
     /** The part that all ruby objects have in common. */
     struct RBasic basic;
 
+    /** Direct reference to the slots that holds instance variables, if any **/
+    VALUE fields_obj;
+
     /**
      * This is a `const rb_data_type_t *const` value, with the low bits set:
      *

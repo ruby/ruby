@@ -34,6 +34,7 @@ jobs:
         include:
           - test_task: 'zjit-check'
             configure: '--enable-yjit=dev --enable-zjit'
+            rust_version: "1.85.0"
 
           - test_task: 'ruby' # build test for combo build
             configure: '--enable-yjit --enable-zjit'
@@ -81,13 +82,16 @@ jobs:
           # Set fetch-depth: 10 so that Launchable can receive commits information.
           fetch-depth: 10
 
+      - name: Install Rust
+        if: ${{ matrix.rust_version }}
+        run: |
+          rustup install ${{ matrix.rust_version }} --profile minimal
+          rustup default ${{ matrix.rust_version }}
+
       - uses: taiki-e/install-action@v2
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}
-
-      - name: Install Rust # TODO(alan): remove when GitHub images catch up past 1.85.0
-        run: rustup default 1.85.0
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}

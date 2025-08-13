@@ -10,7 +10,7 @@ case "$0" in
     *   )  srcdir="";; # Otherwise
 esac
 
-# If install-only is explicitly requested, disbale symlink flags
+# If install-only is explicitly requested, disable symlink flags
 case " $* " in
     *" -i "* | *" --install"* ) symlink_flags="" ;;
     *                         ) symlink_flags="--install --symlink" ;;

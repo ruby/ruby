@@ -256,7 +256,7 @@ impl Assembler
                     // Many Arm insns support only 32-bit or 64-bit operands. asm.load with fewer
                     // bits zero-extends the value, so it's safe to recognize it as a 32-bit value.
                     if out_opnd.rm_num_bits() < 32 {
-                        out_opnd.with_num_bits(32).unwrap()
+                        out_opnd.with_num_bits(32)
                     } else {
                         out_opnd
                     }
@@ -282,7 +282,7 @@ impl Assembler
                                 BitmaskImmediate::new_32b_reg(imm as u32).is_ok()) {
                         Opnd::UImm(imm as u64)
                     } else {
-                        asm.load(opnd).with_num_bits(dest_num_bits).unwrap()
+                        asm.load(opnd).with_num_bits(dest_num_bits)
                     }
                 },
                 Opnd::UImm(uimm) => {
@@ -292,7 +292,7 @@ impl Assembler
                             BitmaskImmediate::new_32b_reg(uimm as u32).is_ok()) {
                         opnd
                     } else {
-                        asm.load(opnd).with_num_bits(dest_num_bits).unwrap()
+                        asm.load(opnd).with_num_bits(dest_num_bits)
                     }
                 },
                 Opnd::None | Opnd::Value(_) => unreachable!()
@@ -360,8 +360,8 @@ impl Assembler
             match opnd0 {
                 Opnd::Reg(_) | Opnd::VReg { .. } => {
                     match opnd0.rm_num_bits() {
-                        8 => asm.and(opnd0.with_num_bits(64).unwrap(), Opnd::UImm(0xff)),
-                        16 => asm.and(opnd0.with_num_bits(64).unwrap(), Opnd::UImm(0xffff)),
+                        8 => asm.and(opnd0.with_num_bits(64), Opnd::UImm(0xff)),
+                        16 => asm.and(opnd0.with_num_bits(64), Opnd::UImm(0xffff)),
                         32 | 64 => opnd0,
                         bits => unreachable!("Invalid number of bits. {}", bits)
                     }
@@ -505,7 +505,7 @@ impl Assembler
                     let split_right = split_shifted_immediate(asm, *right);
                     let opnd1 = match split_right {
                         Opnd::VReg { .. } if opnd0.num_bits() != split_right.num_bits() => {
-                            split_right.with_num_bits(opnd0.num_bits().unwrap()).unwrap()
+                            split_right.with_num_bits(opnd0.num_bits().unwrap())
                         },
                         _ => split_right
                     };
@@ -1823,7 +1823,7 @@ mod tests {
     #[test]
     fn test_emit_test_32b_reg_not_bitmask_imm() {
         let (mut asm, mut cb) = setup_asm();
-        let w0 = Opnd::Reg(X0_REG).with_num_bits(32).unwrap();
+        let w0 = Opnd::Reg(X0_REG).with_num_bits(32);
         asm.test(w0, Opnd::UImm(u32::MAX.into()));
         // All ones is not encodable with a bitmask immediate,
         // so this needs one register
@@ -1833,7 +1833,7 @@ mod tests {
     #[test]
     fn test_emit_test_32b_reg_bitmask_imm() {
         let (mut asm, mut cb) = setup_asm();
-        let w0 = Opnd::Reg(X0_REG).with_num_bits(32).unwrap();
+        let w0 = Opnd::Reg(X0_REG).with_num_bits(32);
         asm.test(w0, Opnd::UImm(0x80000001));
         asm.compile_with_num_regs(&mut cb, 0);
     }

@@ -156,6 +156,8 @@ add_union "BuiltinExact", $builtin_exact
 add_union "Subclass", $subclass
 add_union "BoolExact", [true_exact.name, false_exact.name]
 add_union "Immediate", [fixnum.name, flonum.name, static_sym.name, nil_exact.name, true_exact.name, false_exact.name, undef_.name]
+$bits["HeapObject"] = ["BasicObject & !Immediate"]
+$numeric_bits["HeapObject"] = $numeric_bits["BasicObject"] & ~$numeric_bits["Immediate"]
 
 # ===== Finished generating the DAG; write Rust code =====
 

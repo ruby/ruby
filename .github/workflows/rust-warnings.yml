@@ -1,0 +1,53 @@
+# Surface Rust warnings on PRs that touch any Rust code.
+# Not a required check so we never block people over new warnings
+# that might come from a new Rust version being released.
+name: Rust warnings
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    paths:
+      - '**.rs'
+      - '!**.inc.rs'
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
+jobs:
+  make:
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+
+    runs-on: ubuntu-24.04
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.head_commit.message, 'Document')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.title, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install Rust
+        run: rustup default beta
+
+      - name: Rust warnings
+        run: |
+          set -euo pipefail
+          cargo check --quiet --all-features --message-format=json \
+            | jq -r 'select(.reason == "compiler-message" and .message.level == "warning") | .message.rendered' \
+            > warnings.txt
+          cat warnings.txt
+          ! grep --quiet '[^[:space:]]' warnings.txt

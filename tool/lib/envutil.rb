@@ -297,6 +297,21 @@ module EnvUtil
   end
   module_function :verbose_warning
 
+  if defined?(Warning.[]=)
+    def deprecation_warning
+      previous_deprecated = Warning[:deprecated]
+      Warning[:deprecated] = true
+      yield
+    ensure
+      Warning[:deprecated] = previous_deprecated
+    end
+  else
+    def deprecation_warning
+      yield
+    end
+  end
+  module_function :deprecation_warning
+
   def default_warning
     $VERBOSE = false
     yield

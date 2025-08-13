@@ -99,7 +99,9 @@ typedef struct {
     VALUE ids;
 } rb_symbols_t;
 
-rb_symbols_t ruby_global_symbols = {tNEXT_ID-1};
+rb_symbols_t ruby_global_symbols = {
+    .next_id = tNEXT_ID,
+};
 
 struct sym_set_static_sym_entry {
     VALUE sym;
@@ -369,21 +371,26 @@ Init_sym(void)
 }
 
 void
-rb_sym_global_symbols_mark(void)
+rb_sym_global_symbols_mark_and_move(void)
 {
     rb_symbols_t *symbols = &ruby_global_symbols;
 
-    rb_gc_mark_movable(symbols->sym_set);
-    rb_gc_mark_movable(symbols->ids);
+    rb_gc_mark_and_move(&symbols->sym_set);
+    rb_gc_mark_and_move(&symbols->ids);
+}
+
+static int
+rb_free_global_symbol_table_i(VALUE *sym_ptr, void *data)
+{
+    sym_set_free(*sym_ptr);
+
+    return ST_DELETE;
 }
 
 void
-rb_sym_global_symbols_update_references(void)
+rb_free_global_symbol_table(void)
 {
-    rb_symbols_t *symbols = &ruby_global_symbols;
-
-    symbols->sym_set = rb_gc_location(symbols->sym_set);
-    symbols->ids = rb_gc_location(symbols->ids);
+    rb_concurrent_set_foreach_with_replace(ruby_global_symbols.sym_set, rb_free_global_symbol_table_i, NULL);
 }
 
 WARN_UNUSED_RESULT(static ID lookup_str_id(VALUE str));

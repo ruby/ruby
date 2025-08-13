@@ -265,6 +265,12 @@ pub struct ID(pub ::std::os::raw::c_ulong);
 /// Pointer to an ISEQ
 pub type IseqPtr = *const rb_iseq_t;
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct ShapeId(pub u32);
+
+pub const SPECIAL_CONST_SHAPE_ID: ShapeId = ShapeId(RB_SPECIAL_CONST_SHAPE_ID);
+pub const INVALID_SHAPE_ID: ShapeId = ShapeId(RB_INVALID_SHAPE_ID);
+
 // Given an ISEQ pointer, convert PC to insn_idx
 pub fn iseq_pc_to_insn_idx(iseq: IseqPtr, pc: *mut VALUE) -> Option<u16> {
     let pc_zero = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
@@ -487,8 +493,8 @@ impl VALUE {
         unsafe { rb_zjit_shape_obj_too_complex_p(self) }
     }
 
-    pub fn shape_id_of(self) -> u32 {
-        unsafe { rb_obj_shape_id(self) }
+    pub fn shape_id_of(self) -> ShapeId {
+        ShapeId(unsafe { rb_obj_shape_id(self) })
     }
 
     pub fn embedded_p(self) -> bool {

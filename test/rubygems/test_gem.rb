@@ -527,35 +527,6 @@ class TestGem < Gem::TestCase
     assert_equal expected, Gem.configuration
   end
 
-  def test_self_datadir
-    foo = nil
-
-    Dir.chdir @tempdir do
-      FileUtils.mkdir_p "data"
-      File.open File.join("data", "foo.txt"), "w" do |fp|
-        fp.puts "blah"
-      end
-
-      foo = util_spec "foo" do |s|
-        s.files = %w[data/foo.txt]
-      end
-
-      install_gem foo
-    end
-
-    gem "foo"
-
-    expected = File.join @gemhome, "gems", foo.full_name, "data", "foo"
-
-    assert_equal expected, Gem::Specification.find_by_name("foo").datadir
-  end
-
-  def test_self_datadir_nonexistent_package
-    assert_raise(Gem::MissingSpecError) do
-      Gem::Specification.find_by_name("xyzzy").datadir
-    end
-  end
-
   def test_self_default_exec_format
     ruby_install_name "ruby" do
       assert_equal "%s", Gem.default_exec_format

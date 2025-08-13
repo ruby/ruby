@@ -622,8 +622,9 @@ rb_yjit_iseq_inspect(const rb_iseq_t *iseq)
     const char *path = RSTRING_PTR(rb_iseq_path(iseq));
     int lineno = iseq->body->location.code_location.beg_pos.lineno;
 
-    char *buf = ZALLOC_N(char, strlen(label) + strlen(path) + num_digits(lineno) + 3);
-    sprintf(buf, "%s@%s:%d", label, path, lineno);
+    const size_t size = strlen(label) + strlen(path) + num_digits(lineno) + 3;
+    char *buf = ZALLOC_N(char, size);
+    snprintf(buf, size, "%s@%s:%d", label, path, lineno);
     return buf;
 }
 

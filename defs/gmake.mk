@@ -309,7 +309,7 @@ HELP_EXTRA_TASKS = \
 # 4. "gem x.y.z URL" -> "gem-x.y.z"
 bundled-gems := $(shell sed \
 	-e 's/[ 	][ 	]*/ /g' \
-	-e 's/^ //;/\#/d;s/ *$$//;/^$$/d' \
+	-e 's/^ //;s/\#.*//;s/ *$$//;/^$$/d' \
 	$(if $(filter yes,$(HAVE_GIT)), \
 	-e 's/^\(.*\) \(.*\) \(.*\) \(.*\)/\1|\2|\4|\3/' \
 	) \

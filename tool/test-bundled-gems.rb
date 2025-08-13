@@ -25,8 +25,7 @@ exit_code = 0
 ruby = ENV['RUBY'] || RbConfig.ruby
 failed = []
 File.foreach("#{gem_dir}/bundled_gems") do |line|
-  next if /^\s*(?:#|$)/ =~ line
-  gem = line.split.first
+  next unless gem = line[/^[^\s\#]+/]
   next unless bundled_gems.empty? || bundled_gems.split(",").include?(gem)
   next unless File.directory?("#{gem_dir}/src/#{gem}/test")
 

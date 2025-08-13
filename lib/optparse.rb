@@ -2049,10 +2049,16 @@ XXX
       basename = File.basename($0, '.*')
       return true if load(File.expand_path("~/.options/#{basename}"), **keywords) rescue nil
       basename << ".options"
+      if !(xdg = ENV['XDG_CONFIG_HOME']) or xdg.empty?
+        # https://specifications.freedesktop.org/basedir-spec/latest/#variables
+        #
+        # If $XDG_CONFIG_HOME is either not set or empty, a default
+        # equal to $HOME/.config should be used.
+        xdg = ['~/.config', true]
+      end
       return [
-        # XDG
-        ENV['XDG_CONFIG_HOME'],
-        ['~/.config', true],
+        xdg,
+
         *ENV['XDG_CONFIG_DIRS']&.split(File::PATH_SEPARATOR),
 
         # Haiku

@@ -39,7 +39,7 @@ jobs:
             test_task: test-bundled-gems
       fail-fast: false
 
-    runs-on: windows-${{ matrix.os < 2022 && '2019' || matrix.os }}
+    runs-on: windows-${{ matrix.os }}
 
     if: >-
       ${{!(false
@@ -94,7 +94,7 @@ jobs:
 
       - name: Install libraries with vcpkg
         run: |
-          vcpkg install --vcpkg-root=C:\Users\runneradmin\scoop\apps\vcpkg\current
+          vcpkg install --vcpkg-root=%USERPROFILE%\scoop\apps\vcpkg\current
         working-directory: src
 
       - name: Save vcpkg artifact
@@ -184,7 +184,7 @@ jobs:
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: windows-${{ matrix.os < 2022 && '2019' || matrix.os }}
+          os: windows-${{ matrix.os }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
