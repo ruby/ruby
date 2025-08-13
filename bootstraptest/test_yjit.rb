@@ -5455,3 +5455,30 @@ assert_normal_exit %{
     new.foo
   end
 }
+
+# Test defined?(yield) and block_given? in non-method context.
+# It's good that the body of this runs at true top level and isn't wrapped in a block.
+assert_equal 'false', %{
+  RESULT = []
+  RESULT << defined?(yield)
+  RESULT << block_given?
+
+  1.times do
+    RESULT << defined?(yield)
+    RESULT << block_given?
+  end
+
+  module ModuleContext
+    1.times do
+      RESULT << defined?(yield)
+      RESULT << block_given?
+    end
+  end
+
+  class << self
+    RESULT << defined?(yield)
+    RESULT << block_given?
+  end
+
+  RESULT.any?
+}
