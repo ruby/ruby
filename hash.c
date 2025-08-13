@@ -4922,25 +4922,38 @@ rb_safe_hash_dig(int argc, VALUE *argv, VALUE self)
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     VALUE curr = self;
 
-    for (; argc > 0; argv++, argc--) {
+    for (; argc > 0; argv++, argc--)
+    {
         VALUE key = *argv, val = Qundef;
 
-        if (RB_TYPE_P(curr, T_HASH)) {
+        if (RB_TYPE_P(curr, T_HASH))
+        {
             val = rb_hash_lookup2(curr, key, Qundef);
-            if (val == Qundef) {
-                if (RB_TYPE_P(key, T_SYMBOL)) {
+            if (val == Qundef)
+            {
+                if (RB_TYPE_P(key, T_SYMBOL))
+                {
                     val = rb_hash_lookup2(curr, rb_sym2str(key), Qundef);
-                } else if (RB_TYPE_P(key, T_STRING)) {
+                }
+                else if (RB_TYPE_P(key, T_STRING))
+                {
                     val = rb_hash_lookup2(curr, ID2SYM(rb_intern_str(key)), Qundef);
                 }
             }
-        } else if (RB_TYPE_P(curr, T_ARRAY)) {
-            if (RB_INTEGER_TYPE_P(key)) {
+        }
+        else if (RB_TYPE_P(curr, T_ARRAY))
+        {
+            if (RB_INTEGER_TYPE_P(key))
+            {
                 val = rb_ary_entry(curr, NUM2LONG(key));
-            } else {
+            }
+            else
+            {
                 return Qnil;
             }
-        } else {
+        }
+        else
+        {
             return Qnil;
         }
 
