@@ -311,23 +311,22 @@ RSpec.describe "bundle cache" do
         BUNDLED WITH
            #{Bundler::VERSION}
       L
+      bundle "config set --local frozen true"
     end
 
     it "tries to install with frozen" do
-      bundle "config set deployment true"
       gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
         gem "myrack-obama"
       G
-      bundle "config set --local frozen true"
       bundle :cache, raise_on_error: false
       expect(exitstatus).to eq(16)
       expect(err).to include("frozen mode")
       expect(err).to include("You have added to the Gemfile")
       expect(err).to include("* myrack-obama")
       bundle "env"
-      expect(out).to include("frozen").or include("deployment")
+      expect(out).to include("frozen")
     end
   end
 
