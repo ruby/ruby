@@ -4905,7 +4905,7 @@ rb_hash_dig(int argc, VALUE *argv, VALUE self)
 static VALUE
 rb_safe_hash_dig(int argc, VALUE *argv, VALUE self)
 {
-    return 42;
+    return Qnil;
 }
 
 static int
