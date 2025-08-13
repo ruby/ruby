@@ -9,7 +9,7 @@
 #      "waterbuffalo" =~ /buff/
 #      print $', $$, "\n"
 #
-#  With English:
+#  With 'English':
 #
 #      require "English"
 #
