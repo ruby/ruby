@@ -4902,6 +4902,12 @@ rb_hash_dig(int argc, VALUE *argv, VALUE self)
     return rb_obj_dig(argc, argv, self, Qnil);
 }
 
+static VALUE
+rb_safe_hash_dig(int argc, VALUE *argv, VALUE self)
+{
+    return 42;
+}
+
 static int
 hash_le_i(VALUE key, VALUE value, VALUE arg)
 {
@@ -7468,6 +7474,7 @@ Init_Hash(void)
 
     rb_define_method(rb_cHash, "any?", rb_hash_any_p, -1);
     rb_define_method(rb_cHash, "dig", rb_hash_dig, -1);
+    rb_define_method(rb_cHash, "safe_dig", rb_safe_hash_dig, -1);
 
     rb_define_method(rb_cHash, "<=", rb_hash_le, 1);
     rb_define_method(rb_cHash, "<", rb_hash_lt, 1);
