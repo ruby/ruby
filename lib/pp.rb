@@ -399,7 +399,8 @@ class PP < PrettyPrint
     # This method should return an array of names of instance variables as symbols or strings as:
     # +[:@a, :@b]+.
     def pretty_print_instance_variables
-      instance_variables.sort
+      ivars = respond_to?(:instance_variables_to_inspect) ? instance_variables_to_inspect : instance_variables
+      ivars.sort
     end
 
     # Is #inspect implementation using #pretty_print.

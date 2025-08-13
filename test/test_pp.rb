@@ -130,6 +130,20 @@ class PPInspectTest < Test::Unit::TestCase
     assert_equal("#{a.inspect}\n", result)
   end
 
+  def test_iv_hiding
+    a = Object.new
+    def a.pretty_print_instance_variables() [:@b] end
+    a.instance_eval { @a = "aaa"; @b = "bbb" }
+    assert_match(/\A#<Object:0x[\da-f]+ @b="bbb">\n\z/, PP.pp(a, ''.dup))
+  end
+
+  def test_iv_hiding_via_ruby
+    a = Object.new
+    def a.instance_variables_to_inspect() [:@b] end
+    a.instance_eval { @a = "aaa"; @b = "bbb" }
+    assert_match(/\A#<Object:0x[\da-f]+ @b="bbb">\n\z/, PP.pp(a, ''.dup))
+  end
+
   def test_basic_object
     a = BasicObject.new
     assert_match(/\A#<BasicObject:0x[\da-f]+>\n\z/, PP.pp(a, ''.dup))
