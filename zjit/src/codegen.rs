@@ -367,7 +367,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PatchPoint { invariant, state } => return gen_patch_point(jit, asm, invariant, &function.frame_state(*state)),
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfun, opnds!(args))?,
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
-        Insn::SetGlobal { id, val, state: _ } => return Some(gen_setglobal(asm, *id, opnd!(val))),
+        Insn::SetGlobal { id, val, state } => return gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state)),
         Insn::GetGlobal { id, state: _ } => gen_getglobal(asm, *id),
         &Insn::GetLocal { ep_offset, level } => gen_getlocal_with_ep(asm, ep_offset, level)?,
         Insn::SetLocal { val, ep_offset, level } => return gen_setlocal_with_ep(asm, opnd!(val), *ep_offset, *level),
@@ -592,8 +592,12 @@ fn gen_getglobal(asm: &mut Assembler, id: ID) -> Opnd {
 }
 
 /// Set global variables
-fn gen_setglobal(asm: &mut Assembler, id: ID, val: Opnd) {
+fn gen_setglobal(jit: &mut JITState, asm: &mut Assembler, id: ID, val: Opnd, state: &FrameState) -> Option<()> {
+    // When trace_var is used, setting a global variable can cause exceptions
+    gen_prepare_non_leaf_call(jit, asm, state)?;
+
     asm_ccall!(asm, rb_gvar_set, id.0.into(), val);
+    Some(())
 }
 
 /// Side-exit into the interpreter
