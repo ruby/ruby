@@ -9,7 +9,7 @@ use crate::gc::{append_gc_offsets, get_or_create_iseq_payload, get_or_create_ise
 use crate::state::ZJITState;
 use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::compile_time_ns};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
-use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, SideExitContext, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SP};
+use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SP};
 use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SELF_PARAM_IDX};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types, Type};
@@ -908,7 +908,7 @@ fn gen_send_without_block_direct(
     asm_comment!(asm, "side-exit if callee side-exits");
     asm.cmp(ret, Qundef.into());
     // Restore the C stack pointer on exit
-    asm.je(Target::SideExit { context: None, reason: CalleeSideExit, label: None });
+    asm.je(ZJITState::get_exit_code().into());
 
     asm_comment!(asm, "restore SP register for the caller");
     let new_sp = asm.sub(SP, sp_offset.into());
@@ -1339,11 +1339,9 @@ fn build_side_exit(jit: &mut JITState, state: &FrameState, reason: SideExitReaso
     }
 
     let target = Target::SideExit {
-        context: Some(SideExitContext {
-            pc: state.pc,
-            stack,
-            locals,
-        }),
+        pc: state.pc,
+        stack,
+        locals,
         reason,
         label,
     };
@@ -1414,7 +1412,7 @@ c_callable! {
             if cb.has_dropped_bytes() || payload.status == IseqStatus::CantCompile {
                 // Exit to the interpreter
                 set_pc_and_sp(iseq, ec, sp);
-                return ZJITState::get_stub_exit().raw_ptr(cb);
+                return ZJITState::get_exit_code().raw_ptr(cb);
             }
 
             // Otherwise, attempt to compile the ISEQ. We have to mark_all_executable() beyond this point.
@@ -1424,7 +1422,7 @@ c_callable! {
             } else {
                 // Exit to the interpreter
                 set_pc_and_sp(iseq, ec, sp);
-                ZJITState::get_stub_exit()
+                ZJITState::get_exit_code()
             };
             cb.mark_all_executable();
             code_ptr.raw_ptr(cb)
@@ -1494,12 +1492,12 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq: IseqPtr, branch: Rc<Branch>) -> O
     asm.compile(cb)
 }
 
-/// Generate a trampoline that is used when a function stub fails to compile the ISEQ
-pub fn gen_stub_exit(cb: &mut CodeBlock) -> Option<CodePtr> {
+/// Generate a trampoline that is used when a function exits without restoring PC and the stack
+pub fn gen_exit(cb: &mut CodeBlock) -> Option<CodePtr> {
     let mut asm = Assembler::new();
 
     asm_comment!(asm, "exit from function stub");
-    asm.frame_teardown(lir::JIT_PRESERVED_REGS);
+    asm.frame_teardown(&[]); // matching the setup in :bb0-prologue:
     asm.cret(Qundef.into());
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {

@@ -1372,7 +1372,7 @@ impl Assembler
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Option<(CodePtr, Vec<CodePtr>)> {
         let asm = self.arm64_split();
         let mut asm = asm.alloc_regs(regs)?;
-        asm.compile_side_exits()?;
+        asm.compile_side_exits();
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {
