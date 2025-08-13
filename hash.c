@@ -4902,6 +4902,20 @@ rb_hash_dig(int argc, VALUE *argv, VALUE self)
     return rb_obj_dig(argc, argv, self, Qnil);
 }
 
+/*
+ *  call-seq:
+ *    h.safe_dig(key, ...) -> object or nil
+ *
+ *  Traverses the given keys and returns the value found or +nil+ if any step
+ *  is not a Hash or Array, or the key/index is missing.
+ *
+ *  Accepts both String and Symbol keys for Hash lookup.
+ *
+ *    { foo: { bar: 1 } }.safe_dig(:foo, :bar)         #=> 1
+ *    { foo: "none" }.safe_dig(:foo, :bar)             #=> nil
+ *    { items: [{id: 1}, {id: 2}] }.safe_dig(:items, 1, :id)  #=> 2
+ *
+ */
 static VALUE
 rb_safe_hash_dig(int argc, VALUE *argv, VALUE self)
 {
