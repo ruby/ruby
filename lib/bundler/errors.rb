@@ -25,6 +25,7 @@ module Bundler
 
   class GemNotFound < BundlerError; status_code(7); end
   class InstallHookError < BundlerError; status_code(8); end
+  class RemovedError < BundlerError; status_code(9); end
   class GemfileNotFound < BundlerError; status_code(10); end
   class GitError < BundlerError; status_code(11); end
   class DeprecatedError < BundlerError; status_code(12); end

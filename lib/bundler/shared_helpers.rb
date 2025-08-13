@@ -137,12 +137,18 @@ module Bundler
       feature_flag = Bundler.feature_flag
 
       if feature_flag.removed_major?(major_version)
-        require_relative "errors"
-        raise DeprecatedError, "[REMOVED] #{removed_message || message}"
+        feature_removed!(removed_message || message)
       end
 
       return unless feature_flag.deprecated_major?(major_version) && prints_major_deprecations?
       Bundler.ui.warn("[DEPRECATED] #{message}")
+    end
+
+    def feature_removed!(message)
+      require_relative "../bundler"
+
+      require_relative "errors"
+      raise RemovedError, "[REMOVED] #{message}"
     end
 
     def print_major_deprecations!
