@@ -604,7 +604,9 @@ impl Insn {
             Insn::Param { .. } => false,
             Insn::StringCopy { .. } => false,
             Insn::NewArray { .. } => false,
-            Insn::NewHash { .. } => false,
+            // NewHash's operands may be hashed and compared for equality, which could have
+            // side-effects.
+            Insn::NewHash { elements, .. } => elements.len() > 0,
             Insn::NewRange { .. } => false,
             Insn::ArrayDup { .. } => false,
             Insn::HashDup { .. } => false,
@@ -6089,7 +6091,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_eliminate_new_hash_with_elements() {
+    fn test_no_eliminate_new_hash_with_elements() {
         eval("
             def test(aval, bval)
               c = {a: aval, b: bval}
@@ -6099,6 +6101,10 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+              v3:NilClass = Const Value(nil)
+              v5:StaticSymbol[:a] = Const Value(VALUE(0x1000))
+              v6:StaticSymbol[:b] = Const Value(VALUE(0x1008))
+              v8:HashExact = NewHash v5: v1, v6: v2
               v9:Fixnum[5] = Const Value(5)
               Return v9
         "#]]);
