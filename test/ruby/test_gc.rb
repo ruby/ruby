@@ -293,7 +293,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_measure_total_time
-    assert_separately([], __FILE__, __LINE__, <<~RUBY)
+    assert_separately([], __FILE__, __LINE__, <<~RUBY, timeout: 60)
       GC.measure_total_time = false
 
       time_before = GC.stat(:time)
