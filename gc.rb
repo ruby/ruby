@@ -194,61 +194,140 @@ module GC
   end
 
   # call-seq:
-  #    GC.stat_heap -> Hash
-  #    GC.stat_heap(nil, hash) -> Hash
-  #    GC.stat_heap(heap_name) -> Hash
-  #    GC.stat_heap(heap_name, hash) -> Hash
-  #    GC.stat_heap(heap_name, :key) -> Numeric
+  #    GC.stat_heap -> new_hash
+  #    GC.stat_heap(heap_id) -> new_hash
+  #    GC.stat_heap(heap_id, key) -> value
+  #    GC.stat_heap(nil, hash) -> hash
+  #    GC.stat_heap(heap_id, hash) -> hash
   #
-  # Returns information for heaps in the \GC.
+  # This method is implementation-specific to CRuby.
   #
-  # If the first optional argument, +heap_name+, is passed in and not +nil+, it
-  # returns a +Hash+ containing information about the particular heap.
-  # Otherwise, it will return a +Hash+ with heap names as keys and
-  # a +Hash+ containing information about the heap as values.
+  # Returns statistics for \GC heaps.
+  # The particular statistics are implementation-specific
+  # and may change in the future without notice.
   #
-  # If the second optional argument, +hash_or_key+, is given as a +Hash+, it will
-  # be overwritten and returned. This is intended to avoid the probe effect.
+  # With no argument given, returns statistics for all heaps:
   #
-  # If both optional arguments are passed in and the second optional argument is
-  # a symbol, it will return a +Numeric+ value for the particular heap.
+  #   GC.stat_heap
+  #   # =>
+  #   {0 =>
+  #     {slot_size: 40,
+  #      heap_eden_pages: 246,
+  #      heap_eden_slots: 402802,
+  #      total_allocated_pages: 246,
+  #      force_major_gc_count: 2,
+  #      force_incremental_marking_finish_count: 1,
+  #      total_allocated_objects: 33867152,
+  #      total_freed_objects: 33520523},
+  #    1 =>
+  #     {slot_size: 80,
+  #      heap_eden_pages: 84,
+  #      heap_eden_slots: 68746,
+  #      total_allocated_pages: 84,
+  #      force_major_gc_count: 1,
+  #      force_incremental_marking_finish_count: 4,
+  #      total_allocated_objects: 147491,
+  #      total_freed_objects: 90699},
+  #    2 =>
+  #     {slot_size: 160,
+  #      heap_eden_pages: 157,
+  #      heap_eden_slots: 64182,
+  #      total_allocated_pages: 157,
+  #      force_major_gc_count: 0,
+  #      force_incremental_marking_finish_count: 0,
+  #      total_allocated_objects: 211460,
+  #      total_freed_objects: 190075},
+  #    3 =>
+  #     {slot_size: 320,
+  #      heap_eden_pages: 8,
+  #      heap_eden_slots: 1631,
+  #      total_allocated_pages: 8,
+  #      force_major_gc_count: 0,
+  #      force_incremental_marking_finish_count: 0,
+  #      total_allocated_objects: 1422,
+  #      total_freed_objects: 700},
+  #    4 =>
+  #     {slot_size: 640,
+  #      heap_eden_pages: 16,
+  #      heap_eden_slots: 1628,
+  #      total_allocated_pages: 16,
+  #      force_major_gc_count: 0,
+  #      force_incremental_marking_finish_count: 0,
+  #      total_allocated_objects: 1230,
+  #      total_freed_objects: 309}}
   #
-  # On CRuby, +heap_name+ is of the type +Integer+ but may be of type +String+
-  # on other implementations.
+  # In the example above, the keys in the outer hash are the heap identifiers:
   #
-  # The contents of the hash are implementation-specific and may change in
-  # the future without notice.
+  #   GC.stat_heap.keys # => [0, 1, 2, 3, 4]
   #
-  # If the optional argument, hash, is given, it is overwritten and returned.
+  # On CRuby, each heap identifier is an integer;
+  # no other implementations, a heap identifier may be a string.
   #
-  # This method is only expected to work on CRuby.
+  # With only argument +heap_id+ given,
+  # returns statistics for the given heap identifier:
   #
-  # The hash includes the following keys about the internal information in
-  # the \GC:
+  #   GC.stat_heap(2)
+  #   # =>
+  #   {slot_size: 160,
+  #    heap_eden_pages: 157,
+  #    heap_eden_slots: 64182,
+  #    total_allocated_pages: 157,
+  #    force_major_gc_count: 0,
+  #    force_incremental_marking_finish_count: 0,
+  #    total_allocated_objects: 225018,
+  #    total_freed_objects: 206647}
   #
-  # [slot_size]
+  # With arguments +heap_id+ and +key+ given,
+  # returns the value for the given key in the given heap:
+  #
+  #   GC.stat_heap(2, :slot_size) # => 160
+  #
+  # With arguments +nil+ and# +hash+ given,
+  # merges the statistics for all heaps into the given hash:
+  #
+  #   GC.stat_heap(nil, h).keys # => [:foo, :bar, 0, 1, 2, 3, 4]
+  #
+  # With arguments +heap_id+ and +hash+ given,
+  # merges the statistics for the given heap into the given hash:
+  #
+  #   GC.stat_heap(2, h).keys
+  #   # =>
+  #   [:foo,
+  #    :bar,
+  #    :slot_size,
+  #    :heap_eden_pages,
+  #    :heap_eden_slots,
+  #    :total_allocated_pages,
+  #    :force_major_gc_count,
+  #    :force_incremental_marking_finish_count,
+  #    :total_allocated_objects,
+  #    :total_freed_objects]
+  #
+  # The statistics for a heap may include:
+  #
+  # - +:slot_size+:
   #   The slot size of the heap in bytes.
-  # [heap_allocatable_pages]
+  # - +:heap_allocatable_pages+:
   #   The number of pages that can be allocated without triggering a new
   #   garbage collection cycle.
-  # [heap_eden_pages]
+  # - +:heap_eden_pages+:
   #   The number of pages in the eden heap.
-  # [heap_eden_slots]
+  # - +:heap_eden_slots+:
   #   The total number of slots in all of the pages in the eden heap.
-  # [heap_tomb_pages]
+  # - +:heap_tomb_pages+:
   #   The number of pages in the tomb heap. The tomb heap only contains pages
   #   that do not have any live objects.
-  # [heap_tomb_slots]
+  # - +:heap_tomb_slots+:
   #   The total number of slots in all of the pages in the tomb heap.
-  # [total_allocated_pages]
+  # - +:total_allocated_pages+:
   #   The total number of pages that have been allocated in the heap.
-  # [total_freed_pages]
+  # - +:total_freed_pages+:
   #   The total number of pages that have been freed and released back to the
   #   system in the heap.
-  # [force_major_gc_count]
+  # - +:force_major_gc_count+:
   #   The number of times this heap has forced major garbage collection cycles
   #   to start due to running out of free slots.
-  # [force_incremental_marking_finish_count]
+  # - +:force_incremental_marking_finish_count+:
   #   The number of times this heap has forced incremental marking to complete
   #   due to running out of pooled slots.
   #
