@@ -330,6 +330,9 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github.event) }}
         run: echo "$GITHUB_CONTEXT"
         working-directory:
+      - name: Test
+        run: echo ${{ contains('document', 'Document') }}
+        working-directory:
       - uses: ./.github/actions/slack
         with:
           label: 'omnibus'
