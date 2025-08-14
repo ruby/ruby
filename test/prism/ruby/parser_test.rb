@@ -163,6 +163,22 @@ module Prism
       end
     end
 
+    def test_invalid_syntax
+      code = <<~RUBY
+        foo do
+          case bar
+          when
+          end
+        end
+      RUBY
+      buffer = Parser::Source::Buffer.new("(string)")
+      buffer.source = code
+
+      parser = Prism::Translation::Parser33.new
+      parser.diagnostics.all_errors_are_fatal = true
+      assert_raise(Parser::SyntaxError) { parser.tokenize(buffer) }
+    end
+
     def test_it_block_parameter_syntax
       it_fixture_path = Pathname(__dir__).join("../../../test/prism/fixtures/it.txt")
 

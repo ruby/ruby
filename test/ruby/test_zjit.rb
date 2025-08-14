@@ -80,6 +80,16 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:setglobal]
   end
 
+  def test_string_intern
+    assert_compiles ':foo123', %q{
+      def test
+        :"foo#{123}"
+      end
+
+      test
+    }, insns: [:intern]
+  end
+
   def test_setglobal_with_trace_var_exception
     assert_compiles '"rescued"', %q{
       def test
@@ -1349,6 +1359,71 @@ class TestZJIT < Test::Unit::TestCase
 
       results
     }, call_threshold: 2
+  end
+
+  def test_objtostring_calls_to_s_on_non_strings
+    assert_compiles '["foo", "foo"]', %q{
+      results = []
+
+      class Foo
+        def to_s
+          "foo"
+        end
+      end
+
+      def test(str)
+        "#{str}"
+      end
+
+      results << test(Foo.new)
+      results << test(Foo.new)
+
+      results
+    }
+  end
+
+  def test_objtostring_rewrite_does_not_call_to_s_on_strings
+    assert_compiles '["foo", "foo"]', %q{
+      results = []
+
+      class String
+        def to_s
+          "bad"
+        end
+      end
+
+      def test(foo)
+        "#{foo}"
+      end
+
+      results << test("foo")
+      results << test("foo")
+
+      results
+    }
+  end
+
+  def test_objtostring_rewrite_does_not_call_to_s_on_string_subclasses
+    assert_compiles '["foo", "foo"]', %q{
+      results = []
+
+      class StringSubclass < String
+        def to_s
+          "bad"
+        end
+      end
+
+      foo = StringSubclass.new("foo")
+
+      def test(str)
+        "#{str}"
+      end
+
+      results << test(foo)
+      results << test(foo)
+
+      results
+    }
   end
 
   def test_string_bytesize_with_guard
