@@ -415,6 +415,10 @@ module Bundler
       print_remembered_flag_deprecation("--all", "cache_all", "true") if ARGV.include?("--all")
       print_remembered_flag_deprecation("--no-all", "cache_all", "false") if ARGV.include?("--no-all")
 
+      %w[frozen no-prune].each do |option|
+        remembered_flag_deprecation(option)
+      end
+
       if flag_passed?("--path")
         message =
           "The `--path` flag is deprecated because its semantics are unclear. " \

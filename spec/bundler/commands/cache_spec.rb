@@ -290,6 +290,39 @@ RSpec.describe "bundle cache" do
     end
   end
 
+  it "enforces frozen mode when --frozen is passed" do
+    gemfile <<-G
+      source "https://gem.repo1"
+      gem "myrack"
+      gem "myrack-obama"
+    G
+
+    lockfile <<-L
+      GEM
+        remote: https://gem.repo1/
+        specs:
+          myrack (1.0.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "cache --frozen", raise_on_error: false
+
+    expect(exitstatus).to eq(16)
+    expect(err).to include("frozen mode")
+    expect(err).to include("You have added to the Gemfile")
+    expect(err).to include("* myrack-obama")
+    bundle "env"
+    expect(out).to include("frozen")
+  end
+
   context "with frozen configured" do
     let(:app_cache) { bundled_app("vendor/cache") }
 
