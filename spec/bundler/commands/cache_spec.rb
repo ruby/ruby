@@ -416,6 +416,22 @@ RSpec.describe "bundle install with gem sources" do
       expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
+    it "does not hit the remote at all in non frozen mode either" do
+      build_repo2
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "myrack"
+      G
+
+      bundle :cache
+      pristine_system_gems
+      FileUtils.rm_r gem_repo2
+
+      bundle "config set --local path vendor/bundle"
+      bundle :install
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
+
     it "does not hit the remote at all when cache_all_platforms configured" do
       build_repo2
       install_gemfile <<-G
