@@ -19,6 +19,7 @@
 #include "internal/object.h"
 #include "internal/string.h"
 #include "internal/transcode.h"
+#include "internal/encoding.h"
 #include "ruby/encoding.h"
 #include "vm_sync.h"
 
@@ -1826,7 +1827,9 @@ rb_econv_asciicompat_encoding(const char *ascii_incompat_name)
     st_table *table2;
     struct asciicompat_encoding_t data = {0};
 
-    RB_VM_LOCKING() {
+    unsigned int lev;
+    RB_VM_LOCK_ENTER_LEV(&lev);
+    {
         if (st_lookup(transcoder_table, (st_data_t)ascii_incompat_name, &v)) {
             table2 = (st_table *)v;
             /*
@@ -1839,12 +1842,25 @@ rb_econv_asciicompat_encoding(const char *ascii_incompat_name)
             if (table2->num_entries == 1) {
                 data.ascii_incompat_name = ascii_incompat_name;
                 data.ascii_compat_name = NULL;
-                st_foreach(table2, asciicompat_encoding_i, (st_data_t)&data);
+                if (rb_multi_ractor_p()) {
+                    /*
+                     * We need to unlock in case `load_transcoder_entry` actually loads the encoding
+                     * and table2 could be inserted into when we unlock.
+                     */
+                    st_table *dup_table2 = st_copy(table2);
+                    RB_VM_LOCK_LEAVE_LEV(&lev);
+                    st_foreach(dup_table2, asciicompat_encoding_i, (st_data_t)&data);
+                    st_free_table(dup_table2);
+                    RB_VM_LOCK_ENTER_LEV(&lev);
+                }
+                else {
+                    st_foreach(table2, asciicompat_encoding_i, (st_data_t)&data);
+                }
             }
 
         }
-
     }
+    RB_VM_LOCK_LEAVE_LEV(&lev);
 
     return data.ascii_compat_name; // can be NULL
 }
@@ -2989,10 +3005,16 @@ static rb_encoding *
 make_encoding(const char *name)
 {
     rb_encoding *enc;
-    RB_VM_LOCKING() {
-        enc = rb_enc_find(name);
-        if (!enc)
-            enc = make_dummy_encoding(name);
+    enc = rb_enc_find(name);
+    if (!enc) {
+        RB_VM_LOCKING() {
+            if (rb_enc_registered(name)) {
+                enc = NULL;
+            }
+            else {
+                enc = make_dummy_encoding(name);
+            }
+        }
     }
     return enc;
 }
@@ -3029,14 +3051,10 @@ econv_s_asciicompat_encoding(VALUE klass, VALUE arg)
     VALUE enc = Qnil;
 
     enc_arg(&arg, &arg_name, &arg_enc);
-
-    RB_VM_LOCKING() {
-        result_name = rb_econv_asciicompat_encoding(arg_name);
-
-        if (result_name) {
-            result_enc = make_encoding(result_name);
-            enc = rb_enc_from_encoding(result_enc);
-        }
+    result_name = rb_econv_asciicompat_encoding(arg_name);
+    if (result_name) {
+        result_enc = make_encoding(result_name);
+        enc = rb_enc_from_encoding(result_enc);
     }
     return enc;
 }

@@ -1401,7 +1401,6 @@ compile.$(OBJEXT): $(top_srcdir)/prism/pack.h
 compile.$(OBJEXT): $(top_srcdir)/prism/parser.h
 compile.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 compile.$(OBJEXT): $(top_srcdir)/prism/prism.h
-compile.$(OBJEXT): $(top_srcdir)/prism/prism.h
 compile.$(OBJEXT): $(top_srcdir)/prism/regexp.h
 compile.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
 compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
@@ -17727,6 +17726,7 @@ transcode.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/array.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/class.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+transcode.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/gc.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/inits.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/object.h
