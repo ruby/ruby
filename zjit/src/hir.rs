@@ -414,6 +414,7 @@ pub enum SideExitReason {
     GuardBitEquals(VALUE),
     PatchPoint(Invariant),
     CalleeSideExit,
+    ObjToStringFallback,
 }
 
 impl std::fmt::Display for SideExitReason {
@@ -444,7 +445,7 @@ pub enum Insn {
     Param { idx: usize },
 
     StringCopy { val: InsnId, chilled: bool, state: InsnId },
-    StringIntern { val: InsnId },
+    StringIntern { val: InsnId, state: InsnId },
     StringConcat { strings: Vec<InsnId>, state: InsnId },
 
     /// Put special object (VMCORE, CBASE, etc.) based on value_type
@@ -604,7 +605,9 @@ impl Insn {
             Insn::Param { .. } => false,
             Insn::StringCopy { .. } => false,
             Insn::NewArray { .. } => false,
-            Insn::NewHash { .. } => false,
+            // NewHash's operands may be hashed and compared for equality, which could have
+            // side-effects.
+            Insn::NewHash { elements, .. } => elements.len() > 0,
             Insn::NewRange { .. } => false,
             Insn::ArrayDup { .. } => false,
             Insn::HashDup { .. } => false,
@@ -776,6 +779,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
             Insn::ArrayPush { array, val, .. } => write!(f, "ArrayPush {array}, {val}"),
             Insn::ObjToString { val, .. } => { write!(f, "ObjToString {val}") },
+            Insn::StringIntern { val, .. } => { write!(f, "StringIntern {val}") },
             Insn::AnyToString { val, str, .. } => { write!(f, "AnyToString {val}, str: {str}") },
             Insn::SideExit { reason, .. } => write!(f, "SideExit {reason}"),
             Insn::PutSpecialObject { value_type } => write!(f, "PutSpecialObject {value_type}"),
@@ -799,7 +803,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, ", {val}")
             }
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
-            insn => { write!(f, "{insn:?}") }
         }
     }
 }
@@ -1145,7 +1148,7 @@ impl Function {
             &Return { val } => Return { val: find!(val) },
             &Throw { throw_state, val } => Throw { throw_state, val: find!(val) },
             &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
-            &StringIntern { val } => StringIntern { val: find!(val) },
+            &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
             &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
@@ -1269,7 +1272,7 @@ impl Function {
             Insn::IsNil { val } if !self.type_of(*val).could_be(types::NilClass) => Type::from_cbool(false),
             Insn::IsNil { .. } => types::CBool,
             Insn::StringCopy { .. } => types::StringExact,
-            Insn::StringIntern { .. } => types::StringExact,
+            Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
@@ -1613,13 +1616,12 @@ impl Function {
                         self.insn_types[replacement.0] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
-                    Insn::ObjToString { val, cd, state, .. } => {
+                    Insn::ObjToString { val, .. } => {
                         if self.is_a(val, types::String) {
                             // behaves differently from `SendWithoutBlock` with `mid:to_s` because ObjToString should not have a patch point for String to_s being redefined
                             self.make_equal_to(insn_id, val);
                         } else {
-                            let replacement = self.push_insn(block, Insn::SendWithoutBlock { self_val: val, cd, args: vec![], state });
-                            self.make_equal_to(insn_id, replacement)
+                            self.push_insn_id(block, insn_id);
                         }
                     }
                     Insn::AnyToString { str, .. } => {
@@ -1904,7 +1906,6 @@ impl Function {
                 worklist.extend(strings);
                 worklist.push_back(state);
             }
-            | &Insn::StringIntern { val }
             | &Insn::Return { val }
             | &Insn::Throw { val, .. }
             | &Insn::Defined { v: val, .. }
@@ -1913,6 +1914,7 @@ impl Function {
             | &Insn::IsNil { val } =>
                 worklist.push_back(val),
             &Insn::SetGlobal { val, state, .. }
+            | &Insn::StringIntern { val, state }
             | &Insn::StringCopy { val, state, .. }
             | &Insn::GuardType { val, state, .. }
             | &Insn::GuardBitEquals { val, state, .. }
@@ -2813,7 +2815,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_putself => { state.stack_push(self_param); }
                 YARVINSN_intern => {
                     let val = state.stack_pop()?;
-                    let insn_id = fun.push_insn(block, Insn::StringIntern { val });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let insn_id = fun.push_insn(block, Insn::StringIntern { val, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_concatstrings => {
@@ -4495,6 +4498,26 @@ mod tests {
     }
 
     #[test]
+    fn test_intern_interpolated_symbol() {
+        eval(r#"
+            def test
+              :"foo#{123}"
+            end
+        "#);
+        assert_method_hir_with_opcode("test", YARVINSN_intern, expect![[r#"
+            fn test@<compiled>:3:
+            bb0(v0:BasicObject):
+              v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v3:Fixnum[123] = Const Value(123)
+              v5:BasicObject = ObjToString v3
+              v7:String = AnyToString v3, str: v5
+              v9:StringExact = StringConcat v2, v7
+              v11:Symbol = StringIntern v9
+              Return v11
+        "#]]);
+    }
+
+    #[test]
     fn different_objects_get_addresses() {
         eval("def test = unknown_method([0], [1], '2', '2')");
 
@@ -6089,7 +6112,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_eliminate_new_hash_with_elements() {
+    fn test_no_eliminate_new_hash_with_elements() {
         eval("
             def test(aval, bval)
               c = {a: aval, b: bval}
@@ -6099,6 +6122,10 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test@<compiled>:3:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+              v3:NilClass = Const Value(nil)
+              v5:StaticSymbol[:a] = Const Value(VALUE(0x1000))
+              v6:StaticSymbol[:b] = Const Value(VALUE(0x1008))
+              v8:HashExact = NewHash v5: v1, v6: v2
               v9:Fixnum[5] = Const Value(5)
               Return v9
         "#]]);
@@ -7235,8 +7262,8 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:Fixnum[1] = Const Value(1)
-              v11:BasicObject = SendWithoutBlock v3, :to_s
-              v7:String = AnyToString v3, str: v11
+              v5:BasicObject = ObjToString v3
+              v7:String = AnyToString v3, str: v5
               v9:StringExact = StringConcat v2, v7
               Return v9
         "#]]);

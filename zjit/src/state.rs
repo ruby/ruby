@@ -1,4 +1,4 @@
-use crate::codegen::gen_stub_exit;
+use crate::codegen::gen_exit;
 use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insns_count, EcPtr, Qnil, VALUE};
 use crate::cruby_methods;
 use crate::invariants::Invariants;
@@ -33,8 +33,8 @@ pub struct ZJITState {
     /// Properties of core library methods
     method_annotations: cruby_methods::Annotations,
 
-    /// Side-exit trampoline used when it fails to compile the ISEQ for a function stub
-    stub_exit: CodePtr,
+    /// Trampoline to side-exit without restoring PC or the stack
+    exit_code: CodePtr,
 }
 
 /// Private singleton instance of the codegen globals
@@ -83,7 +83,7 @@ impl ZJITState {
         #[cfg(test)]
         let mut cb = CodeBlock::new_dummy();
 
-        let stub_exit = gen_stub_exit(&mut cb).unwrap();
+        let exit_code = gen_exit(&mut cb).unwrap();
 
         // Initialize the codegen globals instance
         let zjit_state = ZJITState {
@@ -92,7 +92,7 @@ impl ZJITState {
             invariants: Invariants::default(),
             assert_compiles: false,
             method_annotations: cruby_methods::init(),
-            stub_exit,
+            exit_code,
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
     }
@@ -169,9 +169,9 @@ impl ZJITState {
         }
     }
 
-    /// Return a code pointer to the side-exit trampoline for function stubs
-    pub fn get_stub_exit() -> CodePtr {
-        ZJITState::get_instance().stub_exit
+    /// Return a code pointer to the side-exit trampoline
+    pub fn get_exit_code() -> CodePtr {
+        ZJITState::get_instance().exit_code
     }
 }
 

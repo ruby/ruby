@@ -9,7 +9,7 @@ use crate::gc::{append_gc_offsets, get_or_create_iseq_payload, get_or_create_ise
 use crate::state::ZJITState;
 use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::compile_time_ns};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
-use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, SideExitContext, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SP};
+use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SP};
 use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SELF_PARAM_IDX};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types, Type};
@@ -337,6 +337,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, opnds!(strings), &function.frame_state(*state))?,
+        Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state))?,
         Insn::Param { idx } => unreachable!("block.insns should not have Insn::Param({idx})"),
         Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
         Insn::Jump(branch) => return gen_jump(jit, asm, branch),
@@ -378,6 +379,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
         Insn::Defined { op_type, obj, pushval, v, state } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v), &function.frame_state(*state))?,
         &Insn::IncrCounter(counter) => return Some(gen_incr_counter(asm, counter)),
+        Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state))?,
         Insn::ArrayExtend { .. }
         | Insn::ArrayMax { .. }
         | Insn::ArrayPush { .. }
@@ -386,9 +388,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         | Insn::FixnumMod { .. }
         | Insn::HashDup { .. }
         | Insn::NewHash { .. }
-        | Insn::ObjToString { .. }
         | Insn::Send { .. }
-        | Insn::StringIntern { .. }
         | Insn::Throw { .. }
         | Insn::ToArray { .. }
         | Insn::ToNewArray { .. }
@@ -443,6 +443,24 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
     }
 
     ep_opnd
+}
+
+fn gen_objtostring(jit: &mut JITState, asm: &mut Assembler, val: Opnd, cd: *const rb_call_data, state: &FrameState) -> Option<Opnd> {
+    gen_prepare_non_leaf_call(jit, asm, state)?;
+
+    let iseq_opnd = Opnd::Value(jit.iseq.into());
+
+    // TODO: Specialize for immediate types
+    // Call rb_vm_objtostring(iseq, recv, cd)
+    let ret = asm_ccall!(asm, rb_vm_objtostring, iseq_opnd, val, (cd as usize).into());
+
+    // TODO: Call `to_s` on the receiver if rb_vm_objtostring returns Qundef
+    // Need to replicate what CALL_SIMPLE_METHOD does
+    asm_comment!(asm, "side-exit if rb_vm_objtostring returns Qundef");
+    asm.cmp(ret, Qundef.into());
+    asm.je(side_exit(jit, state, ObjToStringFallback)?);
+
+    Some(ret)
 }
 
 fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, pushval: VALUE, tested_value: Opnd, state: &FrameState) -> Option<Opnd> {
@@ -589,6 +607,13 @@ fn gen_setivar(asm: &mut Assembler, recv: Opnd, id: ID, val: Opnd) -> Option<()>
 /// Look up global variables
 fn gen_getglobal(asm: &mut Assembler, id: ID) -> Opnd {
     asm_ccall!(asm, rb_gvar_get, id.0.into())
+}
+
+/// Intern a string
+fn gen_intern(asm: &mut Assembler, val: Opnd, state: &FrameState) -> Option<Opnd> {
+    gen_prepare_call_with_gc(asm, state);
+
+    Some(asm_ccall!(asm, rb_str_intern, val))
 }
 
 /// Set global variables
@@ -883,7 +908,7 @@ fn gen_send_without_block_direct(
     asm_comment!(asm, "side-exit if callee side-exits");
     asm.cmp(ret, Qundef.into());
     // Restore the C stack pointer on exit
-    asm.je(Target::SideExit { context: None, reason: CalleeSideExit, label: None });
+    asm.je(ZJITState::get_exit_code().into());
 
     asm_comment!(asm, "restore SP register for the caller");
     let new_sp = asm.sub(SP, sp_offset.into());
@@ -1288,6 +1313,7 @@ fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
     if !get_option!(disable_hir_opt) {
         function.optimize();
     }
+    #[cfg(debug_assertions)]
     if let Err(err) = function.validate() {
         debug!("ZJIT: compile_iseq: {err:?}");
         return None;
@@ -1313,11 +1339,9 @@ fn build_side_exit(jit: &mut JITState, state: &FrameState, reason: SideExitReaso
     }
 
     let target = Target::SideExit {
-        context: Some(SideExitContext {
-            pc: state.pc,
-            stack,
-            locals,
-        }),
+        pc: state.pc,
+        stack,
+        locals,
         reason,
         label,
     };
@@ -1388,7 +1412,7 @@ c_callable! {
             if cb.has_dropped_bytes() || payload.status == IseqStatus::CantCompile {
                 // Exit to the interpreter
                 set_pc_and_sp(iseq, ec, sp);
-                return ZJITState::get_stub_exit().raw_ptr(cb);
+                return ZJITState::get_exit_code().raw_ptr(cb);
             }
 
             // Otherwise, attempt to compile the ISEQ. We have to mark_all_executable() beyond this point.
@@ -1398,7 +1422,7 @@ c_callable! {
             } else {
                 // Exit to the interpreter
                 set_pc_and_sp(iseq, ec, sp);
-                ZJITState::get_stub_exit()
+                ZJITState::get_exit_code()
             };
             cb.mark_all_executable();
             code_ptr.raw_ptr(cb)
@@ -1468,12 +1492,12 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq: IseqPtr, branch: Rc<Branch>) -> O
     asm.compile(cb)
 }
 
-/// Generate a trampoline that is used when a function stub fails to compile the ISEQ
-pub fn gen_stub_exit(cb: &mut CodeBlock) -> Option<CodePtr> {
+/// Generate a trampoline that is used when a function exits without restoring PC and the stack
+pub fn gen_exit(cb: &mut CodeBlock) -> Option<CodePtr> {
     let mut asm = Assembler::new();
 
     asm_comment!(asm, "exit from function stub");
-    asm.frame_teardown(lir::JIT_PRESERVED_REGS);
+    asm.frame_teardown(&[]); // matching the setup in :bb0-prologue:
     asm.cret(Qundef.into());
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
