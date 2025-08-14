@@ -53,7 +53,15 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
       File.unlink(path) if File.exist?(path)
     end
 
-    test_command << " stdlib_test validate RBS_SKIP_TESTS=#{__dir__}/rbs_skip_tests SKIP_RBS_VALIDATION=true"
+    rbs_skip_tests = [
+      File.join(__dir__, "/rbs_skip_tests")
+    ]
+
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      rbs_skip_tests << File.join(__dir__, "/rbs_skip_tests_windows")
+    end
+
+    test_command << " stdlib_test validate RBS_SKIP_TESTS=#{rbs_skip_tests.join(File::PATH_SEPARATOR)} SKIP_RBS_VALIDATION=true"
     first_timeout *= 3
 
   when "debug"
