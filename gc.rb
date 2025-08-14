@@ -171,64 +171,64 @@ module GC
   #
   # The hash includes entries such as:
   #
-  # - +count:+ -
+  # - +:count+:
   #   The total number of garbage collections run since application start
   #   (count includes both minor and major garbage collections).
-  # - +time:+ -
+  # - +:time+:
   #   The total time spent in garbage collections (in milliseconds).
-  # - +heap_allocated_pages:+ -
+  # - +:heap_allocated_pages+:
   #   The total number of +:heap_eden_pages+ + +:heap_tomb_pages+.
-  # - +heap_sorted_length:+ -
+  # - +:heap_sorted_length+:
   #   The number of pages that can fit into the buffer that holds references to  all pages.
-  # - +heap_allocatable_pages:+ -
+  # - +:heap_allocatable_pages+:
   #   The total number of pages the application could allocate without additional \GC.
-  # - +heap_available_slots:+ -
+  # - +:heap_available_slots+:
   #   The total number of slots in all +:heap_allocated_pages+.
-  # - +heap_live_slots:+ -
+  # - +:heap_live_slots+:
   #   The total number of slots which contain live objects.
-  # - +heap_free_slots:+ -
+  # - +:heap_free_slots+:
   #   The total number of slots which do not contain live objects.
-  # - +heap_final_slots:+ -
+  # - +:heap_final_slots+:
   #   The total number of slots with pending finalizers to be run.
-  # - +heap_marked_slots:+ -
+  # - +:heap_marked_slots+:
   #   The total number of objects marked in the last \GC.
-  # - +heap_eden_pages:+ -
+  # - +:heap_eden_pages+:
   #   The total number of pages which contain at least one live slot.
-  # - +heap_tomb_pages:+ -
+  # - +:heap_tomb_pages+:
   #   The total number of pages which do not contain any live slots.
-  # - +total_allocated_pages:+ -
+  # - +:total_allocated_pages+:
   #   The cumulative number of pages allocated since application start.
-  # - +total_freed_pages:+ -
+  # - +:total_freed_pages+:
   #   The cumulative number of pages freed since application start.
-  # - +total_allocated_objects:+ -
+  # - +:total_allocated_objects+:
   #   The cumulative number of objects allocated since application start.
-  # - +total_freed_objects:+ -
+  # - +:total_freed_objects+:
   #   The cumulative number of objects freed since application start.
-  # - +malloc_increase_bytes:+ -
+  # - +:malloc_increase_bytes+:
   #   Amount of memory allocated on the heap for objects. Decreased by any \GC.
-  # - +malloc_increase_bytes_limit:+ -
+  # - +:malloc_increase_bytes_limit+:
   #   When +:malloc_increase_bytes+ crosses this limit, \GC is triggered.
-  # - +minor_gc_count:+ -
+  # - +:minor_gc_count+:
   #   The total number of minor garbage collections run since process start.
-  # - +major_gc_count:+ -
+  # - +:major_gc_count+:
   #   The total number of major garbage collections run since process start.
-  # - +compact_count:+ -
+  # - +:compact_count+:
   #   The total number of compactions run since process start.
-  # - +read_barrier_faults:+ -
+  # - +:read_barrier_faults+:
   #   The total number of times the read barrier was triggered during compaction.
-  # - +total_moved_objects:+ -
+  # - +:total_moved_objects+:
   #   The total number of objects compaction has moved.
-  # - +remembered_wb_unprotected_objects:+ -
+  # - +:remembered_wb_unprotected_objects+:
   #   The total number of objects without write barriers.
-  # - +remembered_wb_unprotected_objects_limit:+ -
+  # - +:remembered_wb_unprotected_objects_limit+:
   #   When +:remembered_wb_unprotected_objects+ crosses this limit, major \GC is triggered.
-  # - +old_objects:+ -
+  # - +:old_objects+:
   #   Number of live, old objects which have survived at least 3 garbage collections.
-  # - +old_objects_limit:+ -
+  # - +:old_objects_limit+:
   #   When +:old_objects+ crosses this limit, major \GC is triggered.
-  # - +oldmalloc_increase_bytes:+ -
+  # - +:oldmalloc_increase_bytes+:
   #   Amount of memory allocated on the heap for objects. Decreased by major \GC.
-  # - +oldmalloc_increase_bytes_limit:+ -
+  # - +:oldmalloc_increase_bytes_limit+:
   #   When +:oldmalloc_increase_bytes+ crosses this limit, major \GC is triggered.
   #
   def self.stat hash_or_key = nil
@@ -327,7 +327,7 @@ module GC
   #
   # The single read-only entry for all implementations is:
   #
-  # - +implementation+:
+  # - +:implementation+:
   #   the string name of the implementation;
   #   for the Ruby default implementation, <tt>'default'</tt>.
   #
@@ -337,7 +337,7 @@ module GC
   #
   # For Ruby's default implementation the single entry is:
   #
-  # - +rgengc_allow_full_mark+:
+  # - +:rgengc_allow_full_mark+:
   #   Controls whether the \GC is allowed to run a full mark (young & old objects):
   #
   #   - +true+ (default): \GC interleaves major and minor collections.
