@@ -78,27 +78,36 @@ module GC
   end
 
   # call-seq:
-  #   GC.stress -> integer, true, or false
+  #   GC.stress -> setting
   #
-  # Returns the current status of \GC stress mode.
+  # Returns the current \GC stress-mode setting,
+  # which initially is +false+.
+  #
+  # The stress mode may be set by method GC.stress=.
   def self.stress
     Primitive.gc_stress_get
   end
 
   # call-seq:
-  #   GC.stress = flag -> flag
+  #   GC.stress = value -> value
   #
-  # Updates the \GC stress mode.
+  # Enables or disables stress mode;
+  # enabling stress mode will degrade performance; it is only for debugging.
   #
-  # When stress mode is enabled, the \GC is invoked at every \GC opportunity:
-  # all memory and object allocations.
+  # Sets the current \GC stress mode to the given value:
   #
-  # Enabling stress mode will degrade performance; it is only for debugging.
+  # - If the value is +nil+ or +false+, disables stress mode.
+  # - If the value is an integer,
+  #   enables stress mode with certain flags; see below.
+  # - Otherwise, enables stress mode;
+  #   \GC is invoked at every \GC opportunity: all memory and object allocations.
   #
-  # The flag can be true, false, or an integer bitwise-ORed with the following flags:
-  #   0x01:: no major GC
-  #   0x02:: no immediate sweep
-  #   0x04:: full mark after malloc/calloc/realloc
+  # The flags are bits in the given integer:
+  #
+  # - +0x01+: No major \GC.
+  # - +0x02+: No immediate sweep.
+  # - +0x04+: Full mark after malloc/calloc/realloc.
+  #
   def self.stress=(flag)
     Primitive.gc_stress_set_m flag
   end
