@@ -24,11 +24,13 @@
 
 #ifdef RUBY_REVISION
 # if RUBY_PATCHLEVEL == -1
+#  define RUBY_API_VERSION_NAME "master"
 #  ifndef RUBY_BRANCH_NAME
-#   define RUBY_BRANCH_NAME "master"
+#   define RUBY_BRANCH_NAME RUBY_API_VERSION_NAME
 #  endif
 #  define RUBY_REVISION_STR " "RUBY_BRANCH_NAME" "RUBY_REVISION
 # else
+#  define RUBY_API_VERSION_NAME RUBY_API_VERSION_STR
 #  define RUBY_REVISION_STR " revision "RUBY_REVISION
 # endif
 #else
@@ -44,6 +46,10 @@
 #define MKSTR(type) rb_obj_freeze(rb_usascii_str_new_static(ruby_##type, sizeof(ruby_##type)-1))
 #define MKINT(name) INT2FIX(ruby_##name)
 
+#define RUBY_API_VERSION_STR \
+    STRINGIZE(RUBY_API_VERSION_MAJOR) "." \
+    STRINGIZE(RUBY_API_VERSION_MINOR) "." \
+    ""
 const int ruby_api_version[] = {
     RUBY_API_VERSION_MAJOR,
     RUBY_API_VERSION_MINOR,
@@ -81,6 +87,7 @@ const char ruby_revision[] = RUBY_FULL_REVISION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
+const char ruby_api_version_name[] = RUBY_API_VERSION_NAME;
 const char ruby_description[] =
     "ruby " RUBY_VERSION RUBY_PATCHLEVEL_STR " "
     "(" RUBY_RELEASE_DATETIME RUBY_REVISION_STR ") "
