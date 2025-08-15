@@ -3798,40 +3798,6 @@ mod tests {
     use super::*;
     use expect_test::{expect, Expect};
 
-    #[macro_export]
-    macro_rules! assert_matches {
-        ( $x:expr, $pat:pat ) => {
-            {
-                let val = $x;
-                if (!matches!(val, $pat)) {
-                    eprintln!("{} ({:?}) does not match pattern {}", stringify!($x), val, stringify!($pat));
-                    assert!(false);
-                }
-            }
-        };
-    }
-
-
-    #[track_caller]
-    fn assert_matches_value(insn: Option<&Insn>, val: VALUE) {
-        match insn {
-            Some(Insn::Const { val: Const::Value(spec) }) => {
-                assert_eq!(*spec, val);
-            }
-            _ => assert!(false, "Expected Const {val}, found {insn:?}"),
-        }
-    }
-
-    #[track_caller]
-    fn assert_matches_const(insn: Option<&Insn>, expected: Const) {
-        match insn {
-            Some(Insn::Const { val }) => {
-                assert_eq!(*val, expected, "{val:?} does not match {expected:?}");
-            }
-            _ => assert!(false, "Expected Const {expected:?}, found {insn:?}"),
-        }
-    }
-
     #[track_caller]
     fn assert_method_hir(method: &str, hir: Expect) {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
