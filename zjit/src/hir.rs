@@ -1940,12 +1940,12 @@ impl Function {
             }
             | &Insn::Return { val }
             | &Insn::Throw { val, .. }
-            | &Insn::Defined { v: val, .. }
             | &Insn::Test { val }
             | &Insn::SetLocal { val, .. }
             | &Insn::IsNil { val } =>
                 worklist.push_back(val),
             &Insn::SetGlobal { val, state, .. }
+            | &Insn::Defined { v: val, state, .. }
             | &Insn::StringIntern { val, state }
             | &Insn::StringCopy { val, state, .. }
             | &Insn::GuardType { val, state, .. }
