@@ -1330,7 +1330,7 @@ impl Function {
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
             Insn::InvokeBuiltin { return_type, .. } => return_type.unwrap_or(types::BasicObject),
-            Insn::Defined { .. } => types::BasicObject,
+            Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::DefinedIvar { .. } => types::BasicObject,
             Insn::GetConstantPath { .. } => types::BasicObject,
             Insn::ArrayMax { .. } => types::BasicObject,
@@ -4204,10 +4204,10 @@ mod tests {
             fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:NilClass = Const Value(nil)
-              v4:BasicObject = Defined constant, v2
-              v6:BasicObject = Defined func, v0
+              v4:StringExact|NilClass = Defined constant, v2
+              v6:StringExact|NilClass = Defined func, v0
               v7:NilClass = Const Value(nil)
-              v9:BasicObject = Defined global-variable, v7
+              v9:StringExact|NilClass = Defined global-variable, v7
               v11:ArrayExact = NewArray v4, v6, v9
               Return v11
         "#]]);
