@@ -2143,7 +2143,10 @@ impl Function {
         #[cfg(debug_assertions)] self.assert_validates();
         self.eliminate_dead_code();
         #[cfg(debug_assertions)] self.assert_validates();
+    }
 
+    /// Dump HIR passed to codegen if specified by options.
+    pub fn dump_hir(&self) {
         // Dump HIR after optimization
         match get_option!(dump_hir_opt) {
             Some(DumpHIR::WithoutSnapshot) => println!("Optimized HIR:\n{}", FunctionPrinter::without_snapshot(&self)),
@@ -2156,7 +2159,6 @@ impl Function {
             println!("{}", FunctionGraphvizPrinter::new(&self));
         }
     }
-
 
     /// Validates the following:
     /// 1. Basic block jump args match parameter arity.
