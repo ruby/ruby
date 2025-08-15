@@ -2354,7 +2354,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         if (!FEATURE_USED_P(opt->features, yjit) && env_var_truthy("RUBY_YJIT_ENABLE")) {
             FEATURE_SET(opt->features, FEATURE_BIT(yjit));
         }
-#elif USE_ZJIT
+#endif
+#if USE_ZJIT
         if (!FEATURE_USED_P(opt->features, zjit) && env_var_truthy("RUBY_ZJIT_ENABLE")) {
             FEATURE_SET(opt->features, FEATURE_BIT(zjit));
         }

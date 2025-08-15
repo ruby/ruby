@@ -1429,13 +1429,12 @@ c_callable! {
     /// instructions, so this should be used primarily for cb.has_dropped_bytes() situations.
     fn function_stub_hit(iseq: IseqPtr, branch_ptr: *const c_void, ec: EcPtr, sp: *mut VALUE) -> *const u8 {
         with_vm_lock(src_loc!(), || {
-            /// gen_push_frame() doesn't set PC and SP, so we need to set them before exit
-            fn set_pc_and_sp(iseq: IseqPtr, ec: EcPtr, sp: *mut VALUE) {
-                let cfp = unsafe { get_ec_cfp(ec) };
-                let pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) }; // TODO: handle opt_pc once supported
-                unsafe { rb_set_cfp_pc(cfp, pc) };
-                unsafe { rb_set_cfp_sp(cfp, sp) };
-            }
+            // gen_push_frame() doesn't set PC and SP, so we need to set them before exit.
+            // function_stub_hit_body() may allocate and call gc_validate_pc(), so we always set PC.
+            let cfp = unsafe { get_ec_cfp(ec) };
+            let pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) }; // TODO: handle opt_pc once supported
+            unsafe { rb_set_cfp_pc(cfp, pc) };
+            unsafe { rb_set_cfp_sp(cfp, sp) };
 
             // If we already know we can't compile the ISEQ, fail early without cb.mark_all_executable().
             // TODO: Alan thinks the payload status part of this check can happen without the VM lock, since the whole
@@ -1444,7 +1443,6 @@ c_callable! {
             let payload = get_or_create_iseq_payload(iseq);
             if cb.has_dropped_bytes() || payload.status == IseqStatus::CantCompile {
                 // Exit to the interpreter
-                set_pc_and_sp(iseq, ec, sp);
                 return ZJITState::get_exit_code().raw_ptr(cb);
             }
 
@@ -1454,7 +1452,6 @@ c_callable! {
                 code_ptr
             } else {
                 // Exit to the interpreter
-                set_pc_and_sp(iseq, ec, sp);
                 ZJITState::get_exit_code()
             };
             cb.mark_all_executable();

@@ -1036,10 +1036,12 @@ class TestRegexp < Test::Unit::TestCase
     [Encoding::UTF_8, Encoding::Shift_JIS, Encoding::EUC_JP].each do |enc|
       idx = key.encode(enc)
       pat = /#{idx}/
-      test.call {|m| assert_raise_with_message(IndexError, pat, bug10877) {m[idx]} }
-      test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.offset(idx)} }
-      test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.begin(idx)} }
-      test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.end(idx)} }
+      EnvUtil.with_default_internal(enc) do
+        test.call {|m| assert_raise_with_message(IndexError, pat, bug10877) {m[idx]} }
+        test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.offset(idx)} }
+        test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.begin(idx)} }
+        test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.end(idx)} }
+      end
     end
     test.call {|m| assert_equal(/a/, m.regexp) }
     test.call {|m| assert_equal("abc", m.string) }

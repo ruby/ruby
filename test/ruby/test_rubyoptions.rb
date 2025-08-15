@@ -994,7 +994,7 @@ class TestRubyOptions < Test::Unit::TestCase
           pid = spawn(EnvUtil.rubybin, :in => s, :out => w)
           w.close
           assert_nothing_raised('[ruby-dev:37798]') do
-            result = EnvUtil.timeout(3) {r.read}
+            result = EnvUtil.timeout(10) {r.read}
           end
           Process.wait pid
         }

@@ -375,7 +375,9 @@ struct RTypedData {
     void *data;
 };
 
+#if !defined(__cplusplus) || __cplusplus >= 201103L
 RBIMPL_STATIC_ASSERT(data_in_rtypeddata, offsetof(struct RData, data) == offsetof(struct RTypedData, data));
+#endif
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 RBIMPL_ATTR_NONNULL((3))
