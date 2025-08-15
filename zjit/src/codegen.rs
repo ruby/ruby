@@ -321,6 +321,12 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         };
     }
 
+    macro_rules! no_output {
+        ($call:expr) => {
+            { let () = $call; return Some(()); }
+        };
+    }
+
     if !matches!(*insn, Insn::Snapshot { .. }) {
         asm_comment!(asm, "Insn: {insn_id} {insn}");
     }
@@ -328,56 +334,59 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     let out_opnd = match insn {
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
         Insn::NewArray { elements, state } => gen_new_array(asm, opnds!(elements), &function.frame_state(*state)),
-        Insn::NewHash { elements, state } => gen_new_hash(jit, asm, elements, &function.frame_state(*state))?,
+        Insn::NewHash { elements, state } => gen_new_hash(jit, asm, elements, &function.frame_state(*state)),
         Insn::NewRange { low, high, flag, state } => gen_new_range(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
-        Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, opnds!(strings), &function.frame_state(*state))?,
-        Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state))?,
+        // concatstrings shouldn't have 0 strings
+        // If it happens we abort the compilation for now
+        Insn::StringConcat { strings, .. } if strings.is_empty() => return None,
+        Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, opnds!(strings), &function.frame_state(*state)),
+        Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state)),
         Insn::Param { idx } => unreachable!("block.insns should not have Insn::Param({idx})"),
         Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
-        Insn::Jump(branch) => { gen_jump(jit, asm, branch); return Some(()); },
-        Insn::IfTrue { val, target } => { gen_if_true(jit, asm, opnd!(val), target); return Some(()); },
-        Insn::IfFalse { val, target } => { gen_if_false(jit, asm, opnd!(val), target); return Some(()); },
-        Insn::SendWithoutBlock { cd, state, self_val, args, .. } => gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args))?,
+        Insn::Jump(branch) => no_output!(gen_jump(jit, asm, branch)),
+        Insn::IfTrue { val, target } => no_output!(gen_if_true(jit, asm, opnd!(val), target)),
+        Insn::IfFalse { val, target } => no_output!(gen_if_false(jit, asm, opnd!(val), target)),
+        Insn::SendWithoutBlock { cd, state, self_val, args, .. } => gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args)),
         // Give up SendWithoutBlockDirect for 6+ args since asm.ccall() doesn't support it.
         Insn::SendWithoutBlockDirect { cd, state, self_val, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
-            gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args))?,
-        Insn::SendWithoutBlockDirect { cme, iseq, self_val, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(self_val), opnds!(args), &function.frame_state(*state))?,
+            gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args)),
+        Insn::SendWithoutBlockDirect { cme, iseq, self_val, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(self_val), opnds!(args), &function.frame_state(*state)),
         Insn::InvokeBuiltin { bf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, opnds!(args))?,
-        Insn::Return { val } => { gen_return(asm, opnd!(val)); return Some(()); },
-        Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
-        Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
-        Insn::FixnumMult { left, right, state } => gen_fixnum_mult(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
-        Insn::FixnumEq { left, right } => gen_fixnum_eq(asm, opnd!(left), opnd!(right))?,
-        Insn::FixnumNeq { left, right } => gen_fixnum_neq(asm, opnd!(left), opnd!(right))?,
-        Insn::FixnumLt { left, right } => gen_fixnum_lt(asm, opnd!(left), opnd!(right))?,
-        Insn::FixnumLe { left, right } => gen_fixnum_le(asm, opnd!(left), opnd!(right))?,
-        Insn::FixnumGt { left, right } => gen_fixnum_gt(asm, opnd!(left), opnd!(right))?,
-        Insn::FixnumGe { left, right } => gen_fixnum_ge(asm, opnd!(left), opnd!(right))?,
-        Insn::FixnumAnd { left, right } => gen_fixnum_and(asm, opnd!(left), opnd!(right))?,
-        Insn::FixnumOr { left, right } => gen_fixnum_or(asm, opnd!(left), opnd!(right))?,
-        Insn::IsNil { val } => gen_isnil(asm, opnd!(val))?,
-        Insn::Test { val } => gen_test(asm, opnd!(val))?,
+        Insn::Return { val } => no_output!(gen_return(asm, opnd!(val))),
+        Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state)),
+        Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state)),
+        Insn::FixnumMult { left, right, state } => gen_fixnum_mult(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state)),
+        Insn::FixnumEq { left, right } => gen_fixnum_eq(asm, opnd!(left), opnd!(right)),
+        Insn::FixnumNeq { left, right } => gen_fixnum_neq(asm, opnd!(left), opnd!(right)),
+        Insn::FixnumLt { left, right } => gen_fixnum_lt(asm, opnd!(left), opnd!(right)),
+        Insn::FixnumLe { left, right } => gen_fixnum_le(asm, opnd!(left), opnd!(right)),
+        Insn::FixnumGt { left, right } => gen_fixnum_gt(asm, opnd!(left), opnd!(right)),
+        Insn::FixnumGe { left, right } => gen_fixnum_ge(asm, opnd!(left), opnd!(right)),
+        Insn::FixnumAnd { left, right } => gen_fixnum_and(asm, opnd!(left), opnd!(right)),
+        Insn::FixnumOr { left, right } => gen_fixnum_or(asm, opnd!(left), opnd!(right)),
+        Insn::IsNil { val } => gen_isnil(asm, opnd!(val)),
+        Insn::Test { val } => gen_test(asm, opnd!(val)),
         Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state))?,
-        Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(jit, asm, opnd!(val), *expected, &function.frame_state(*state))?,
-        Insn::PatchPoint { invariant, state } => return gen_patch_point(jit, asm, invariant, &function.frame_state(*state)),
-        Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfun, opnds!(args))?,
+        Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(jit, asm, opnd!(val), *expected, &function.frame_state(*state)),
+        Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
+        Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfun, opnds!(args)),
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
-        Insn::SetGlobal { id, val, state } => return gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state)),
+        Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
         Insn::GetGlobal { id, state: _ } => gen_getglobal(asm, *id),
-        &Insn::GetLocal { ep_offset, level } => gen_getlocal_with_ep(asm, ep_offset, level)?,
-        &Insn::SetLocal { val, ep_offset, level } => return gen_setlocal_with_ep(asm, jit, function, val, ep_offset, level),
-        Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, *ic, &function.frame_state(*state))?,
-        Insn::SetIvar { self_val, id, val, state: _ } => return gen_setivar(asm, opnd!(self_val), *id, opnd!(val)),
-        Insn::SideExit { state, reason } => { gen_side_exit(jit, asm, reason, &function.frame_state(*state)); return Some(()); },
+        &Insn::GetLocal { ep_offset, level } => gen_getlocal_with_ep(asm, ep_offset, level),
+        &Insn::SetLocal { val, ep_offset, level } => no_output!(gen_setlocal_with_ep(asm, opnd!(val), function.type_of(val), ep_offset, level)),
+        Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, *ic, &function.frame_state(*state)),
+        Insn::SetIvar { self_val, id, val, state: _ } => no_output!(gen_setivar(asm, opnd!(self_val), *id, opnd!(val))),
+        Insn::SideExit { state, reason } => no_output!(gen_side_exit(jit, asm, reason, &function.frame_state(*state))),
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
-        Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
-        Insn::Defined { op_type, obj, pushval, v, state } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v), &function.frame_state(*state))?,
+        Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state)),
+        Insn::Defined { op_type, obj, pushval, v, state } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v), &function.frame_state(*state)),
         Insn::GetSpecialSymbol { symbol_type, state: _ } => gen_getspecial_symbol(asm, *symbol_type),
         Insn::GetSpecialNumber { nth, state } => gen_getspecial_number(asm, *nth, &function.frame_state(*state)),
-        &Insn::IncrCounter(counter) => { gen_incr_counter(asm, counter); return Some(()); },
-        Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state))?,
+        &Insn::IncrCounter(counter) => no_output!(gen_incr_counter(asm, counter)),
+        Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state)),
         Insn::ArrayExtend { .. }
         | Insn::ArrayMax { .. }
         | Insn::ArrayPush { .. }
@@ -442,7 +451,7 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
     ep_opnd
 }
 
-fn gen_objtostring(jit: &mut JITState, asm: &mut Assembler, val: Opnd, cd: *const rb_call_data, state: &FrameState) -> Option<Opnd> {
+fn gen_objtostring(jit: &mut JITState, asm: &mut Assembler, val: Opnd, cd: *const rb_call_data, state: &FrameState) -> Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
 
     let iseq_opnd = Opnd::Value(jit.iseq.into());
@@ -457,10 +466,10 @@ fn gen_objtostring(jit: &mut JITState, asm: &mut Assembler, val: Opnd, cd: *cons
     asm.cmp(ret, Qundef.into());
     asm.je(side_exit(jit, state, ObjToStringFallback));
 
-    Some(ret)
+    ret
 }
 
-fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, pushval: VALUE, tested_value: Opnd, state: &FrameState) -> Option<Opnd> {
+fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, pushval: VALUE, tested_value: Opnd, state: &FrameState) -> Opnd {
     match op_type as defined_type {
         DEFINED_YIELD => {
             // `yield` goes to the block handler stowed in the "local" iseq which is
@@ -472,9 +481,9 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, 
                 let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
                 let pushval = asm.load(pushval.into());
                 asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
-                Some(asm.csel_e(Qnil.into(), pushval.into()))
+                asm.csel_e(Qnil.into(), pushval.into())
             } else {
-                Some(Qnil.into())
+                Qnil.into()
             }
         }
         _ => {
@@ -486,7 +495,7 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, 
             let def_result = asm_ccall!(asm, rb_vm_defined, EC, CFP, op_type.into(), obj.into(), tested_value);
 
             asm.cmp(def_result.with_num_bits(8), 0.into());
-            Some(asm.csel_ne(pushval.into(), Qnil.into()))
+            asm.csel_ne(pushval.into(), Qnil.into())
         }
     }
 }
@@ -494,33 +503,32 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, 
 /// Get a local variable from a higher scope or the heap. `local_ep_offset` is in number of VALUEs.
 /// We generate this instruction with level=0 only when the local variable is on the heap, so we
 /// can't optimize the level=0 case using the SP register.
-fn gen_getlocal_with_ep(asm: &mut Assembler, local_ep_offset: u32, level: u32) -> Option<lir::Opnd> {
+fn gen_getlocal_with_ep(asm: &mut Assembler, local_ep_offset: u32, level: u32) -> lir::Opnd {
     let ep = gen_get_ep(asm, level);
-    let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).ok()?);
-    Some(asm.load(Opnd::mem(64, ep, offset)))
+    let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).expect(&format!("Could not convert local_ep_offset {local_ep_offset} to i32")));
+    asm.load(Opnd::mem(64, ep, offset))
 }
 
 /// Set a local variable from a higher scope or the heap. `local_ep_offset` is in number of VALUEs.
 /// We generate this instruction with level=0 only when the local variable is on the heap, so we
 /// can't optimize the level=0 case using the SP register.
-fn gen_setlocal_with_ep(asm: &mut Assembler, jit: &JITState, function: &Function, val: InsnId, local_ep_offset: u32, level: u32) -> Option<()> {
+fn gen_setlocal_with_ep(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset: u32, level: u32) {
     let ep = gen_get_ep(asm, level);
 
     // When we've proved that we're writing an immediate,
     // we can skip the write barrier.
-    if function.type_of(val).is_immediate() {
-        let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).ok()?);
-        asm.mov(Opnd::mem(64, ep, offset), jit.get_opnd(val));
+    if val_type.is_immediate() {
+        let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).expect(&format!("Could not convert local_ep_offset {local_ep_offset} to i32")));
+        asm.mov(Opnd::mem(64, ep, offset), val);
     } else {
         // We're potentially writing a reference to an IMEMO/env object,
         // so take care of the write barrier with a function.
-        let local_index = c_int::try_from(local_ep_offset).ok().and_then(|idx| idx.checked_mul(-1))?;
-        asm_ccall!(asm, rb_vm_env_write, ep, local_index.into(), jit.get_opnd(val));
+        let local_index = c_int::try_from(local_ep_offset).ok().and_then(|idx| idx.checked_mul(-1)).expect(&format!("Could not turn {local_ep_offset} into a negative c_int"));
+        asm_ccall!(asm, rb_vm_env_write, ep, local_index.into(), val);
     }
-    Some(())
 }
 
-fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_inline_constant_cache, state: &FrameState) -> Option<Opnd> {
+fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_inline_constant_cache, state: &FrameState) -> Opnd {
     unsafe extern "C" {
         fn rb_vm_opt_getconstant_path(ec: EcPtr, cfp: CfpPtr, ic: *const iseq_inline_constant_cache) -> VALUE;
     }
@@ -528,7 +536,7 @@ fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_in
     // Anything could be called on const_missing
     gen_prepare_non_leaf_call(jit, asm, state);
 
-    Some(asm_ccall!(asm, rb_vm_opt_getconstant_path, EC, CFP, Opnd::const_ptr(ic)))
+    asm_ccall!(asm, rb_vm_opt_getconstant_path, EC, CFP, Opnd::const_ptr(ic))
 }
 
 fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf: &rb_builtin_function, args: Vec<Opnd>) -> Option<lir::Opnd> {
@@ -550,7 +558,7 @@ fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf
 }
 
 /// Record a patch point that should be invalidated on a given invariant
-fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invariant, state: &FrameState) -> Option<()> {
+fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invariant, state: &FrameState) {
     let payload_ptr = get_or_create_iseq_payload_ptr(jit.iseq);
     let label = asm.new_label("patch_point").unwrap_label();
     let invariant = invariant.clone();
@@ -579,13 +587,12 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invarian
             }
         }
     });
-    Some(())
 }
 
 /// Lowering for [`Insn::CCall`]. This is a low-level raw call that doesn't know
 /// anything about the callee, so handling for e.g. GC safety is dealt with elsewhere.
-fn gen_ccall(asm: &mut Assembler, cfun: *const u8, args: Vec<Opnd>) -> Option<lir::Opnd> {
-    Some(asm.ccall(cfun, args))
+fn gen_ccall(asm: &mut Assembler, cfun: *const u8, args: Vec<Opnd>) -> lir::Opnd {
+    asm.ccall(cfun, args)
 }
 
 /// Emit an uncached instance variable lookup
@@ -594,9 +601,8 @@ fn gen_getivar(asm: &mut Assembler, recv: Opnd, id: ID) -> Opnd {
 }
 
 /// Emit an uncached instance variable store
-fn gen_setivar(asm: &mut Assembler, recv: Opnd, id: ID, val: Opnd) -> Option<()> {
+fn gen_setivar(asm: &mut Assembler, recv: Opnd, id: ID, val: Opnd) {
     asm_ccall!(asm, rb_ivar_set, recv, id.0.into(), val);
-    Some(())
 }
 
 /// Look up global variables
@@ -605,19 +611,18 @@ fn gen_getglobal(asm: &mut Assembler, id: ID) -> Opnd {
 }
 
 /// Intern a string
-fn gen_intern(asm: &mut Assembler, val: Opnd, state: &FrameState) -> Option<Opnd> {
+fn gen_intern(asm: &mut Assembler, val: Opnd, state: &FrameState) -> Opnd {
     gen_prepare_call_with_gc(asm, state);
 
-    Some(asm_ccall!(asm, rb_str_intern, val))
+    asm_ccall!(asm, rb_str_intern, val)
 }
 
 /// Set global variables
-fn gen_setglobal(jit: &mut JITState, asm: &mut Assembler, id: ID, val: Opnd, state: &FrameState) -> Option<()> {
+fn gen_setglobal(jit: &mut JITState, asm: &mut Assembler, id: ID, val: Opnd, state: &FrameState) {
     // When trace_var is used, setting a global variable can cause exceptions
     gen_prepare_non_leaf_call(jit, asm, state);
 
     asm_ccall!(asm, rb_gvar_set, id.0.into(), val);
-    Some(())
 }
 
 /// Side-exit into the interpreter
@@ -839,7 +844,7 @@ fn gen_send_without_block(
     state: &FrameState,
     self_val: Opnd,
     args: Vec<Opnd>,
-) -> Option<lir::Opnd> {
+) -> lir::Opnd {
     gen_spill_locals(jit, asm, state);
     // Spill the receiver and the arguments onto the stack.
     // They need to be on the interpreter stack to let the interpreter access them.
@@ -869,7 +874,7 @@ fn gen_send_without_block(
     // TODO(max): Add a PatchPoint here that can side-exit the function if the callee messed with
     // the frame's locals
 
-    Some(ret)
+    ret
 }
 
 /// Compile a direct jump to an ISEQ call without block
@@ -882,7 +887,7 @@ fn gen_send_without_block_direct(
     recv: Opnd,
     args: Vec<Opnd>,
     state: &FrameState,
-) -> Option<lir::Opnd> {
+) -> lir::Opnd {
     // Save cfp->pc and cfp->sp for the caller frame
     gen_save_pc(asm, state);
     gen_save_sp(asm, state.stack().len() - args.len() - 1); // -1 for receiver
@@ -934,7 +939,7 @@ fn gen_send_without_block_direct(
     let new_sp = asm.sub(SP, sp_offset.into());
     asm.mov(SP, new_sp);
 
-    Some(ret)
+    ret
 }
 
 /// Compile a string resurrection
@@ -981,8 +986,8 @@ fn gen_new_hash(
     asm: &mut Assembler,
     elements: &Vec<(InsnId, InsnId)>,
     state: &FrameState,
-) -> Option<lir::Opnd> {
-    gen_prepare_non_leaf_call(jit, asm, state)?;
+) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
 
     let cap: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
     let new_hash = asm_ccall!(asm, rb_hash_new_with_size, lir::Opnd::Imm(cap));
@@ -1027,7 +1032,7 @@ fn gen_new_hash(
         asm.add_into(NATIVE_STACK_PTR, allocation_size.into());
     }
 
-    Some(new_hash)
+    new_hash
 }
 
 /// Compile a new range instruction
@@ -1063,27 +1068,25 @@ fn gen_return(asm: &mut Assembler, val: lir::Opnd) {
 }
 
 /// Compile Fixnum + Fixnum
-fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
+fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> lir::Opnd {
     // Add left + right and test for overflow
     let left_untag = asm.sub(left, Opnd::Imm(1));
     let out_val = asm.add(left_untag, right);
     asm.jo(side_exit(jit, state, FixnumAddOverflow));
 
-    Some(out_val)
+    out_val
 }
 
 /// Compile Fixnum - Fixnum
-fn gen_fixnum_sub(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
+fn gen_fixnum_sub(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> lir::Opnd {
     // Subtract left - right and test for overflow
     let val_untag = asm.sub(left, right);
     asm.jo(side_exit(jit, state, FixnumSubOverflow));
-    let out_val = asm.add(val_untag, Opnd::Imm(1));
-
-    Some(out_val)
+    asm.add(val_untag, Opnd::Imm(1))
 }
 
 /// Compile Fixnum * Fixnum
-fn gen_fixnum_mult(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
+fn gen_fixnum_mult(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> lir::Opnd {
     // Do some bitwise gymnastics to handle tag bits
     // x * y is translated to (x >> 1) * (y - 1) + 1
     let left_untag = asm.rshift(left, Opnd::UImm(1));
@@ -1092,79 +1095,77 @@ fn gen_fixnum_mult(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, rig
 
     // Test for overflow
     asm.jo_mul(side_exit(jit, state, FixnumMultOverflow));
-    let out_val = asm.add(out_val, Opnd::UImm(1));
-
-    Some(out_val)
+    asm.add(out_val, Opnd::UImm(1))
 }
 
 /// Compile Fixnum == Fixnum
-fn gen_fixnum_eq(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Option<lir::Opnd> {
+fn gen_fixnum_eq(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
     asm.cmp(left, right);
-    Some(asm.csel_e(Qtrue.into(), Qfalse.into()))
+    asm.csel_e(Qtrue.into(), Qfalse.into())
 }
 
 /// Compile Fixnum != Fixnum
-fn gen_fixnum_neq(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Option<lir::Opnd> {
+fn gen_fixnum_neq(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
     asm.cmp(left, right);
-    Some(asm.csel_ne(Qtrue.into(), Qfalse.into()))
+    asm.csel_ne(Qtrue.into(), Qfalse.into())
 }
 
 /// Compile Fixnum < Fixnum
-fn gen_fixnum_lt(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Option<lir::Opnd> {
+fn gen_fixnum_lt(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
     asm.cmp(left, right);
-    Some(asm.csel_l(Qtrue.into(), Qfalse.into()))
+    asm.csel_l(Qtrue.into(), Qfalse.into())
 }
 
 /// Compile Fixnum <= Fixnum
-fn gen_fixnum_le(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Option<lir::Opnd> {
+fn gen_fixnum_le(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
     asm.cmp(left, right);
-    Some(asm.csel_le(Qtrue.into(), Qfalse.into()))
+    asm.csel_le(Qtrue.into(), Qfalse.into())
 }
 
 /// Compile Fixnum > Fixnum
-fn gen_fixnum_gt(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Option<lir::Opnd> {
+fn gen_fixnum_gt(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
     asm.cmp(left, right);
-    Some(asm.csel_g(Qtrue.into(), Qfalse.into()))
+    asm.csel_g(Qtrue.into(), Qfalse.into())
 }
 
 /// Compile Fixnum >= Fixnum
-fn gen_fixnum_ge(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Option<lir::Opnd> {
+fn gen_fixnum_ge(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
     asm.cmp(left, right);
-    Some(asm.csel_ge(Qtrue.into(), Qfalse.into()))
+    asm.csel_ge(Qtrue.into(), Qfalse.into())
 }
 
 /// Compile Fixnum & Fixnum
-fn gen_fixnum_and(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Option<lir::Opnd> {
-    Some(asm.and(left, right))
+fn gen_fixnum_and(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
+    asm.and(left, right)
 }
 
 /// Compile Fixnum | Fixnum
-fn gen_fixnum_or(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Option<lir::Opnd> {
-    Some(asm.or(left, right))
+fn gen_fixnum_or(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
+    asm.or(left, right)
 }
 
 // Compile val == nil
-fn gen_isnil(asm: &mut Assembler, val: lir::Opnd) -> Option<lir::Opnd> {
+fn gen_isnil(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
     asm.cmp(val, Qnil.into());
     // TODO: Implement and use setcc
-    Some(asm.csel_e(Opnd::Imm(1), Opnd::Imm(0)))
+    asm.csel_e(Opnd::Imm(1), Opnd::Imm(0))
 }
 
-fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, str: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
+fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, str: lir::Opnd, state: &FrameState) -> lir::Opnd {
     gen_prepare_call_with_gc(asm, state);
 
-    Some(asm_ccall!(asm, rb_obj_as_string_result, str, val))
+    asm_ccall!(asm, rb_obj_as_string_result, str, val)
 }
 
 /// Evaluate if a value is truthy
 /// Produces a CBool type (0 or 1)
 /// In Ruby, only nil and false are falsy
 /// Everything else evaluates to true
-fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> Option<lir::Opnd> {
+fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
     // Test if any bit (outside of the Qnil bit) is on
     // See RB_TEST(), include/ruby/internal/special_consts.h
     asm.test(val, Opnd::Imm(!Qnil.as_i64()));
-    Some(asm.csel_e(0.into(), 1.into()))
+    asm.csel_e(0.into(), 1.into())
 }
 
 /// Compile a type check with a side exit
@@ -1226,10 +1227,10 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
 }
 
 /// Compile an identity check with a side exit
-fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected: VALUE, state: &FrameState) -> Option<lir::Opnd> {
+fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected: VALUE, state: &FrameState) -> lir::Opnd {
     asm.cmp(val, Opnd::Value(expected));
     asm.jnz(side_exit(jit, state, GuardBitEquals(expected)));
-    Some(val)
+    val
 }
 
 /// Generate code that increments a counter in ZJIT stats
@@ -1590,21 +1591,14 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Option<CodePtr> {
     })
 }
 
-fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>, state: &FrameState) -> Option<Opnd> {
-    let n = strings.len();
-
-    // concatstrings shouldn't have 0 strings
-    // If it happens we abort the compilation for now
-    if n == 0 {
-        return None;
-    }
-
+fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>, state: &FrameState) -> Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
 
     // Calculate the compile-time NATIVE_STACK_PTR offset from NATIVE_BASE_PTR
     // At this point, frame_setup(&[], jit.c_stack_slots) has been called,
     // which allocated aligned_stack_bytes(jit.c_stack_slots) on the stack
     let frame_size = aligned_stack_bytes(jit.c_stack_slots);
+    let n = strings.len();
     let allocation_size = aligned_stack_bytes(n);
 
     asm_comment!(asm, "allocate {} bytes on C stack for {} strings", allocation_size, n);
@@ -1628,7 +1622,7 @@ fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>
     asm_comment!(asm, "restore C stack pointer");
     asm.add_into(NATIVE_STACK_PTR, allocation_size.into());
 
-    Some(result)
+    result
 }
 
 /// Given the number of spill slots needed for a function, return the number of bytes
