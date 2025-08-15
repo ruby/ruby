@@ -336,16 +336,16 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state))?,
         Insn::Param { idx } => unreachable!("block.insns should not have Insn::Param({idx})"),
         Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
-        Insn::Jump(branch) => return gen_jump(jit, asm, branch),
-        Insn::IfTrue { val, target } => return gen_if_true(jit, asm, opnd!(val), target),
-        Insn::IfFalse { val, target } => return gen_if_false(jit, asm, opnd!(val), target),
+        Insn::Jump(branch) => { gen_jump(jit, asm, branch); return Some(()); },
+        Insn::IfTrue { val, target } => { gen_if_true(jit, asm, opnd!(val), target); return Some(()); },
+        Insn::IfFalse { val, target } => { gen_if_false(jit, asm, opnd!(val), target); return Some(()); },
         Insn::SendWithoutBlock { cd, state, self_val, args, .. } => gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args))?,
         // Give up SendWithoutBlockDirect for 6+ args since asm.ccall() doesn't support it.
         Insn::SendWithoutBlockDirect { cd, state, self_val, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
             gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args))?,
         Insn::SendWithoutBlockDirect { cme, iseq, self_val, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(self_val), opnds!(args), &function.frame_state(*state))?,
         Insn::InvokeBuiltin { bf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, opnds!(args))?,
-        Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
+        Insn::Return { val } => { gen_return(asm, opnd!(val)); return Some(()); },
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
         Insn::FixnumMult { left, right, state } => gen_fixnum_mult(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
@@ -791,18 +791,17 @@ fn gen_param(asm: &mut Assembler, idx: usize) -> lir::Opnd {
 }
 
 /// Compile a jump to a basic block
-fn gen_jump(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdge) -> Option<()> {
+fn gen_jump(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdge) {
     // Set basic block arguments
     gen_branch_params(jit, asm, branch);
 
     // Jump to the basic block
     let target = jit.get_label(asm, branch.target);
     asm.jmp(target);
-    Some(())
 }
 
 /// Compile a conditional branch to a basic block
-fn gen_if_true(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch: &BranchEdge) -> Option<()> {
+fn gen_if_true(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch: &BranchEdge) {
     // If val is zero, move on to the next instruction.
     let if_false = asm.new_label("if_false");
     asm.test(val, val);
@@ -815,12 +814,10 @@ fn gen_if_true(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch: 
     asm.jmp(if_true);
 
     asm.write_label(if_false);
-
-    Some(())
 }
 
 /// Compile a conditional branch to a basic block
-fn gen_if_false(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch: &BranchEdge) -> Option<()> {
+fn gen_if_false(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch: &BranchEdge) {
     // If val is not zero, move on to the next instruction.
     let if_true = asm.new_label("if_true");
     asm.test(val, val);
@@ -833,8 +830,6 @@ fn gen_if_false(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch:
     asm.jmp(if_false);
 
     asm.write_label(if_true);
-
-    Some(())
 }
 
 /// Compile a dynamic dispatch without block
@@ -1051,7 +1046,7 @@ fn gen_new_range(
 }
 
 /// Compile code that exits from JIT code with a return value
-fn gen_return(asm: &mut Assembler, val: lir::Opnd) -> Option<()> {
+fn gen_return(asm: &mut Assembler, val: lir::Opnd) {
     // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
     asm_comment!(asm, "pop stack frame");
@@ -1066,7 +1061,6 @@ fn gen_return(asm: &mut Assembler, val: lir::Opnd) -> Option<()> {
     // Return from the function
     asm.frame_teardown(&[]); // matching the setup in :bb0-prologue:
     asm.cret(C_RET_OPND);
-    Some(())
 }
 
 /// Compile Fixnum + Fixnum
