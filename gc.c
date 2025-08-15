@@ -4698,19 +4698,21 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                 APPEND_S("shared -> ");
                 rb_raw_obj_info(BUFF_ARGS, ARY_SHARED_ROOT(obj));
             }
-            else if (ARY_EMBED_P(obj)) {
-                APPEND_F("[%s%s] len: %ld (embed)",
-                         C(ARY_EMBED_P(obj),  "E"),
-                         C(ARY_SHARED_P(obj), "S"),
-                         RARRAY_LEN(obj));
-            }
             else {
-                APPEND_F("[%s%s] len: %ld, capa:%ld ptr:%p",
+                APPEND_F("[%s%s] ",
                          C(ARY_EMBED_P(obj),  "E"),
-                         C(ARY_SHARED_P(obj), "S"),
-                         RARRAY_LEN(obj),
-                         RARRAY(obj)->as.heap.aux.capa,
-                         (void *)RARRAY_CONST_PTR(obj));
+                         C(ARY_SHARED_P(obj), "S"));
+
+                if (ARY_EMBED_P(obj)) {
+                    APPEND_F("len: %ld (embed)",
+                             RARRAY_LEN(obj));
+                }
+                else {
+                    APPEND_F("len: %ld, capa:%ld ptr:%p",
+                             RARRAY_LEN(obj),
+                             RARRAY(obj)->as.heap.aux.capa,
+                             (void *)RARRAY_CONST_PTR(obj));
+                }
             }
             break;
           case T_STRING: {
