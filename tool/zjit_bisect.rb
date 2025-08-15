@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 require 'logger'
-require 'open3'
 require 'optparse'
 require 'shellwords'
 require 'tempfile'
@@ -73,26 +72,22 @@ def run_bisect(command, items)
 end
 
 def run_ruby *cmd
-  stdout_data = nil
-  stderr_data = nil
-  status = nil
-  Open3.popen3(*cmd) do |stdin, stdout, stderr, wait_thr|
-    pid = wait_thr.pid
-    begin
-      Timeout.timeout(ARGS[:timeout]) do
-        stdout_data = stdout.read
-        stderr_data = stderr.read
-        status = wait_thr.value
-      end
-    rescue Timeout::Error
-      Process.kill("KILL", pid)
-      stderr_data = "(killed due to timeout)"
-      # Wait for the process to be reaped
-      wait_thr.value
-      status = 1
+  pid = Process.spawn(*cmd, {
+    in: :close,
+    out: [File::NULL, File::RDWR],
+    err: [File::NULL, File::RDWR],
+  })
+  begin
+    status = Timeout.timeout(ARGS[:timeout]) do
+      Process::Status.wait(pid)
     end
+  rescue Timeout::Error
+    Process.kill("KILL", pid)
+    LOGGER.warn("Timed out after #{ARGS[:timeout]} seconds")
+    status = Process::Status.wait(pid)
   end
-  [stdout_data, stderr_data, status]
+
+  status
 end
 
 def run_with_jit_list(ruby, options, jit_list)
@@ -107,9 +102,8 @@ def run_with_jit_list(ruby, options, jit_list)
 end
 
 # Try running with no JIT list to get a stable baseline
-_, stderr, exitcode = run_with_jit_list(RUBY, OPTIONS, [])
-if exitcode != 0
-  raise "Command failed with empty JIT list: #{stderr}"
+unless run_with_jit_list(RUBY, OPTIONS, []).success?
+  raise "Command failed with empty JIT list"
 end
 # Collect the JIT list from the failing Ruby process
 jit_list = nil
@@ -119,14 +113,13 @@ Tempfile.create "jit_list" do |temp_file|
 end
 LOGGER.info("Starting with JIT list of #{jit_list.length} items.")
 # Try running without the optimizer
-_, stderr, exitcode = run_with_jit_list(RUBY, ["--zjit-disable-hir-opt", *OPTIONS], jit_list)
-if exitcode == 0
+status = run_with_jit_list(RUBY, ["--zjit-disable-hir-opt", *OPTIONS], jit_list)
+if status.success?
   LOGGER.warn "*** Command suceeded with HIR optimizer disabled. HIR optimizer is probably at fault. ***"
 end
 # Now narrow it down
 command = lambda do |items|
-  _, _, exitcode = run_with_jit_list(RUBY, OPTIONS, items)
-  exitcode == 0
+  run_with_jit_list(RUBY, OPTIONS, items).success?
 end
 result = run_bisect(command, jit_list)
 File.open("jitlist.txt", "w") do |file|
