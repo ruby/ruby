@@ -97,7 +97,7 @@ jobs:
 
       - name: List vcpkg directories
         run: |
-          dir src\vcpkg /s /b
+          dir src /s /b
         shell: cmd
 
       - name: Save vcpkg artifact
