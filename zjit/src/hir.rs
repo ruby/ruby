@@ -439,6 +439,7 @@ pub enum SideExitReason {
     CalleeSideExit,
     ObjToStringFallback,
     UnknownSpecialVariable(u64),
+    UnhandledDefinedType(usize),
 }
 
 impl std::fmt::Display for SideExitReason {
@@ -2957,6 +2958,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let pushval = get_arg(pc, 2);
                     let v = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    if op_type == DEFINED_METHOD.try_into().unwrap() {
+                        // TODO(Shopify/ruby#703): Fix codegen for defined?(method call expr)
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledDefinedType(op_type)});
+                        break; // End the block
+                    }
                     state.stack_push(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v, state: exit_id }));
                 }
                 YARVINSN_definedivar => {
