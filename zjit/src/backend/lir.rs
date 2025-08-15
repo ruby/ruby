@@ -15,6 +15,7 @@ pub use crate::backend::current::{
     NATIVE_STACK_PTR, NATIVE_BASE_PTR,
     C_ARG_OPNDS, C_RET_REG, C_RET_OPND,
 };
+pub const SCRATCH_OPND: Opnd = Opnd::Reg(Assembler::SCRATCH_REG);
 
 pub static JIT_PRESERVED_REGS: &'static [Opnd] = &[CFP, SP, EC];
 
