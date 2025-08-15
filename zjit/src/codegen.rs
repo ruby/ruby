@@ -46,12 +46,8 @@ impl JITState {
     }
 
     /// Retrieve the output of a given instruction that has been compiled
-    fn get_opnd(&self, insn_id: InsnId) -> Option<lir::Opnd> {
-        let opnd = self.opnds[insn_id.0];
-        if opnd.is_none() {
-            debug!("Failed to get_opnd({insn_id})");
-        }
-        opnd
+    fn get_opnd(&self, insn_id: InsnId) -> lir::Opnd {
+        self.opnds[insn_id.0].expect(&format!("Failed to get_opnd({insn_id})"))
     }
 
     /// Find or create a label for a given BlockId
@@ -313,14 +309,14 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     // Convert InsnId to lir::Opnd
     macro_rules! opnd {
         ($insn_id:ident) => {
-            jit.get_opnd($insn_id.clone())?
+            jit.get_opnd($insn_id.clone())
         };
     }
 
     macro_rules! opnds {
         ($insn_ids:ident) => {
             {
-                Option::from_iter($insn_ids.iter().map(|insn_id| jit.get_opnd(*insn_id)))?
+                $insn_ids.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect::<Vec<_>>()
             }
         };
     }
@@ -514,12 +510,12 @@ fn gen_setlocal_with_ep(asm: &mut Assembler, jit: &JITState, function: &Function
     // we can skip the write barrier.
     if function.type_of(val).is_immediate() {
         let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).ok()?);
-        asm.mov(Opnd::mem(64, ep, offset), jit.get_opnd(val)?);
+        asm.mov(Opnd::mem(64, ep, offset), jit.get_opnd(val));
     } else {
         // We're potentially writing a reference to an IMEMO/env object,
         // so take care of the write barrier with a function.
         let local_index = c_int::try_from(local_ep_offset).ok().and_then(|idx| idx.checked_mul(-1))?;
-        asm_ccall!(asm, rb_vm_env_write, ep, local_index.into(), jit.get_opnd(val)?);
+        asm_ccall!(asm, rb_vm_env_write, ep, local_index.into(), jit.get_opnd(val));
     }
     Some(())
 }
@@ -742,11 +738,11 @@ fn gen_branch_params(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdg
             match param_opnd(idx) {
                 Opnd::Reg(reg) => {
                     // If a parameter is a register, we need to parallel-move it
-                    moves.push((reg, jit.get_opnd(arg)?));
+                    moves.push((reg, jit.get_opnd(arg)));
                 },
                 param => {
                     // If a parameter is memory, we set it beforehand
-                    asm.mov(param, jit.get_opnd(arg)?);
+                    asm.mov(param, jit.get_opnd(arg));
                 }
             }
         }
@@ -1000,8 +996,8 @@ fn gen_new_hash(
     if !elements.is_empty() {
         let mut pairs = Vec::new();
         for (key_id, val_id) in elements.iter() {
-            let key = jit.get_opnd(*key_id)?;
-            let val = jit.get_opnd(*val_id)?;
+            let key = jit.get_opnd(*key_id);
+            let val = jit.get_opnd(*val_id);
             pairs.push(key);
             pairs.push(val);
         }
@@ -1280,7 +1276,7 @@ fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) -> 
     // TODO: Avoid spilling locals that have been spilled before and not changed.
     asm_comment!(asm, "spill locals");
     for (idx, &insn_id) in state.locals().enumerate() {
-        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id)?);
+        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
     }
     Some(())
 }
@@ -1291,7 +1287,7 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, state: &FrameState) -> O
     // gen_send_without_block_direct() spills stack slots above SP for arguments.
     asm_comment!(asm, "spill stack");
     for (idx, &insn_id) in state.stack().enumerate() {
-        asm.mov(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), jit.get_opnd(insn_id)?);
+        asm.mov(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
     }
     Some(())
 }
@@ -1416,12 +1412,12 @@ fn side_exit(jit: &mut JITState, state: &FrameState, reason: SideExitReason) -> 
 fn build_side_exit(jit: &mut JITState, state: &FrameState, reason: SideExitReason, label: Option<Label>) -> Option<Target> {
     let mut stack = Vec::new();
     for &insn_id in state.stack() {
-        stack.push(jit.get_opnd(insn_id)?);
+        stack.push(jit.get_opnd(insn_id));
     }
 
     let mut locals = Vec::new();
     for &insn_id in state.locals() {
-        locals.push(jit.get_opnd(insn_id)?);
+        locals.push(jit.get_opnd(insn_id));
     }
 
     let target = Target::SideExit {
