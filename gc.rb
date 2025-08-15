@@ -282,7 +282,7 @@ module GC
   #
   #   GC.stat_heap(2, :slot_size) # => 160
   #
-  # With arguments +nil+ and# +hash+ given,
+  # With arguments +nil+ and +hash+ given,
   # merges the statistics for all heaps into the given hash:
   #
   #   GC.stat_heap(nil, h).keys # => [:foo, :bar, 0, 1, 2, 3, 4]
