@@ -4709,7 +4709,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                          C(ARY_EMBED_P(obj),  "E"),
                          C(ARY_SHARED_P(obj), "S"),
                          RARRAY_LEN(obj),
-                         ARY_EMBED_P(obj) ? -1L : RARRAY(obj)->as.heap.aux.capa,
+                         RARRAY(obj)->as.heap.aux.capa,
                          (void *)RARRAY_CONST_PTR(obj));
             }
             break;
