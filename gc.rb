@@ -261,7 +261,7 @@ module GC
   #   GC.stat_heap.keys # => [0, 1, 2, 3, 4]
   #
   # On CRuby, each heap identifier is an integer;
-  # no other implementations, a heap identifier may be a string.
+  # on other implementations, a heap identifier may be a string.
   #
   # With only argument +heap_id+ given,
   # returns statistics for the given heap identifier:
