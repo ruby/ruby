@@ -877,6 +877,8 @@ static void
 check_stack_overflow(int sig, const void *addr)
 {
     int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
+    rb_execution_context_t *ec = rb_current_execution_context(false);
+    if (!ec) return;
     rb_thread_t *th = GET_THREAD();
     if (ruby_stack_overflowed_p(th, addr)) {
         reset_sigmask(sig);
