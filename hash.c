@@ -4911,9 +4911,9 @@ rb_hash_dig(int argc, VALUE *argv, VALUE self)
  *
  *  Accepts both String and Symbol keys for Hash lookup.
  *
- *    { foo: { bar: 1 } }.safe_dig(:foo, :bar)         #=> 1
- *    { foo: "none" }.safe_dig(:foo, :bar)             #=> nil
- *    { items: [{id: 1}, {id: 2}] }.safe_dig(:items, 1, :id)  #=> 2
+*    { foo: { bar: 1 } }.safe_dig(:foo, :bar)                #=> 1
+*    { foo: "none" }.safe_dig(:foo, :bar)                    #=> nil
+*    { items: [{id: 1}, {id: 2}] }.safe_dig(:items, 1, :id)  #=> 2
  *
  */
 static VALUE
