@@ -117,7 +117,7 @@ jobs:
             src\vcpkg\buildtrees
             src\vcpkg\downloads
           key: windows-${{ matrix.os }}-buildtrees-downloads-${{ hashFiles('src/vcpkg.json') }}
-        if: ${{ github.ref_name == 'master' || startsWith(github.ref_name, 'ruby_') }}
+        #if: ${{ github.ref_name == 'master' || startsWith(github.ref_name, 'ruby_') }}
 
       - name: setup env
         # Available Ruby versions: https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md#ruby
