@@ -1,0 +1,104 @@
+ARGFTest     Failing on Windows
+
+# NotImplementedError: fileno() function is unimplemented on this machine
+test_fileno(DirInstanceTest)
+test_fchdir(DirSingletonTest)
+test_for_fd(DirSingletonTest)
+
+# ArgumentError: user root doesn't exist
+test_home(DirSingletonTest)
+
+# NameError: uninitialized constant Etc::CS_PATH
+test_confstr(EtcSingletonTest)
+
+# NameError: uninitialized constant Etc::SC_ARG_MAX
+test_sysconf(EtcSingletonTest)
+
+# Errno::EACCES: Permission denied @ apply2files - C:/a/_temp/d20250813-10156-udw6rx/chmod
+test_chmod(FileInstanceTest)
+test_chmod(FileInstanceTest)
+test_truncate(FileInstanceTest)
+
+# Errno::EISDIR: Is a directory @ rb_sysopen - C:/a/ruby/ruby/src/gems/src/rbs/test/stdlib
+test_directory?(FileSingletonTest)
+
+# NotImplementedError: lutime() function is unimplemented on this machine
+test_lutime(FileSingletonTest)
+
+# NotImplementedError: mkfifo() function is unimplemented on this machine
+test_mkfifo(FileSingletonTest)
+
+# Returns `nil` on Windows
+test_getgrgid(EtcSingletonTest)
+test_getgrnam(EtcSingletonTest)
+test_getpwnam(EtcSingletonTest)
+test_getpwuid(EtcSingletonTest)
+
+# Returns `false`
+test_setgid?(FileSingletonTest)
+test_setuid?(FileSingletonTest)
+test_sticky?(FileSingletonTest)
+
+test_world_readable?(FileSingletonTest)     # Returns `420`
+test_world_readable?(FileStatInstanceTest)  # Returns `420`
+test_world_writable?(FileSingletonTest)     # Returns `nil`
+test_dev_major(FileStatInstanceTest)        # Returns `nil`
+test_dev_minor(FileStatInstanceTest)        # Returns `nil`
+test_rdev_major(FileStatInstanceTest)       # Returns `nil`
+test_rdev_minor(FileStatInstanceTest)       # Returns `nil`
+
+# ArgumentError: wrong number of arguments (given -403772944, expected 0+)
+test_curry(MethodInstanceTest)
+
+# ArgumentError: no output encoding given
+test_tolocale(KconvSingletonTest)
+
+# Errno::EINVAL: Invalid argument - :
+test_system(KernelInstanceTest)
+
+# OpenSSL::ConfigError: BIO_new_file: no such file
+test_load(OpenSSLConfigSingletonTest)
+
+# Errno::ENOENT: No such file or directory @ rb_sysopen -
+test_parse(OpenSSLConfigSingletonTest)
+test_parse_config(OpenSSLConfigSingletonTest)
+
+# OpenSSL::ConfigError: BIO_new_file: no such file
+test_each(OpenSSLConfigTest)
+test_lookup_and_set(OpenSSLConfigTest)
+test_sections(OpenSSLConfigTest)
+
+# OpenSSL::SSL::SSLError: SSL_connect returned=1 errno=0 peeraddr=185.199.108.153:443 state=error: certificate verify failed (unable to get local issuer certificate)
+test_URI_open(OpenURISingletonTest)
+
+# ArgumentError: both textmode and binmode specified
+test_binwrite(PathnameInstanceTest)
+
+# Errno::EACCES: Permission denied @ apply2files - C:/a/_temp/rbs-pathname-delete-test20250813-10156-mb3e9i
+test_delete(PathnameInstanceTest)
+# Errno::EACCES: Permission denied @ apply2files - C:/a/_temp/rbs-pathname-binwrite-test20250813-10156-sh8145
+test_open(PathnameInstanceTest)
+# Errno::EACCES: Permission denied @ rb_file_s_truncate - C:/a/_temp/rbs-pathname-truncate-test20250813-10156-dqqiw3
+test_truncate(PathnameInstanceTest)
+# Errno::EACCES: Permission denied @ rb_file_s_truncate - C:/a/_temp/rbs-pathname-truncate-test20250813-10156-dqqiw3
+test_unlink(PathnameInstanceTest)
+
+#  Errno::ENOENT: No such file or directory @ rb_sysopen - /etc/resolv.conf
+test_parse_resolv_conf(ResolvDNSConfigSingletonTest)
+# Resolv::ResolvError: no name for 127.0.0.1
+test_getname(ResolvInstanceTest)
+# Resolv::ResolvError: no name for 127.0.0.1
+test_getname(ResolvSingletonTest)
+
+# ArgumentError: unsupported signal 'SIGUSR2'
+test_trap(SignalSingletonTest)
+
+# Errno::ENOENT: No such file or directory @ rb_sysopen - /tmp/README.md20250813-10156-mgr4tx
+test_create(TempfileSingletonTest)
+
+# Errno::ENOENT: No such file or directory @ rb_sysopen - /tmp/README.md20250813-10156-hp9nzu
+test_initialize(TempfileSingletonTest)
+test_new(TempfileSingletonTest)
+
+# Errno::EACCES: Permission denied @ apply2files - C:/a/_temp/d20250813-10156-f8z9pn/test.gz
+test_open(ZlibGzipReaderSingletonTest)
