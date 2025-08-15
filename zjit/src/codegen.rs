@@ -376,7 +376,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Defined { op_type, obj, pushval, v, state } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v), &function.frame_state(*state))?,
         Insn::GetSpecialSymbol { symbol_type, state: _ } => gen_getspecial_symbol(asm, *symbol_type),
         Insn::GetSpecialNumber { nth, state } => gen_getspecial_number(asm, *nth, &function.frame_state(*state)),
-        &Insn::IncrCounter(counter) => return Some(gen_incr_counter(asm, counter)),
+        &Insn::IncrCounter(counter) => { gen_incr_counter(asm, counter); return Some(()); },
         Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state))?,
         Insn::ArrayExtend { .. }
         | Insn::ArrayMax { .. }
@@ -1233,7 +1233,7 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd,
 }
 
 /// Generate code that increments a counter in ZJIT stats
-fn gen_incr_counter(asm: &mut Assembler, counter: Counter) -> () {
+fn gen_incr_counter(asm: &mut Assembler, counter: Counter) {
     let ptr = counter_ptr(counter);
     let ptr_reg = asm.load(Opnd::const_ptr(ptr as *const u8));
     let counter_opnd = Opnd::mem(64, ptr_reg, 0);
