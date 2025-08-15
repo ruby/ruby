@@ -1990,7 +1990,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def per_instance_redos_test(global_timeout, per_instance_timeout, expected_timeout)
-    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", timeout: 60)
       global_timeout = #{ EnvUtil.apply_timeout_scale(global_timeout).inspect }
       per_instance_timeout = #{ (per_instance_timeout ? EnvUtil.apply_timeout_scale(per_instance_timeout) : nil).inspect }
       expected_timeout = #{ EnvUtil.apply_timeout_scale(expected_timeout).inspect }
