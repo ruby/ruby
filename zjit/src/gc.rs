@@ -119,6 +119,16 @@ pub extern "C" fn rb_zjit_iseq_update_references(payload: *mut c_void) {
     with_time_stat(gc_time_ns, || iseq_update_references(payload));
 }
 
+/// GC callback for updating object references after all object moves
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_root_update_references() {
+    if !ZJITState::has_instance() {
+        return;
+    }
+    let invariants = ZJITState::get_invariants();
+    invariants.update_references();
+}
+
 fn iseq_mark(payload: &IseqPayload) {
     // Mark objects retained by profiling instructions
     payload.profile.each_object(|object| {
