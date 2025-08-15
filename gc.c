@@ -4699,9 +4699,10 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                 rb_raw_obj_info(BUFF_ARGS, ARY_SHARED_ROOT(obj));
             }
             else {
-                APPEND_F("[%s%s] ",
-                         C(ARY_EMBED_P(obj),  "E"),
-                         C(ARY_SHARED_P(obj), "S"));
+                APPEND_F("[%s%s%s] ",
+                         C(ARY_EMBED_P(obj), "E"),
+                         C(ARY_SHARED_P(obj), "S"),
+                         C(ARY_SHARED_ROOT_P(obj), "R"));
 
                 if (ARY_EMBED_P(obj)) {
                     APPEND_F("len: %ld (embed)",
