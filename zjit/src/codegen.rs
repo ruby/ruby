@@ -370,7 +370,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::SetLocal { val, ep_offset, level } => return gen_setlocal_with_ep(asm, jit, function, val, ep_offset, level),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, *ic, &function.frame_state(*state))?,
         Insn::SetIvar { self_val, id, val, state: _ } => return gen_setivar(asm, opnd!(self_val), *id, opnd!(val)),
-        Insn::SideExit { state, reason } => return gen_side_exit(jit, asm, reason, &function.frame_state(*state)),
+        Insn::SideExit { state, reason } => { gen_side_exit(jit, asm, reason, &function.frame_state(*state)); return Some(()); },
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
         Insn::Defined { op_type, obj, pushval, v, state } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v), &function.frame_state(*state))?,
@@ -455,7 +455,7 @@ fn gen_objtostring(jit: &mut JITState, asm: &mut Assembler, val: Opnd, cd: *cons
     // Need to replicate what CALL_SIMPLE_METHOD does
     asm_comment!(asm, "side-exit if rb_vm_objtostring returns Qundef");
     asm.cmp(ret, Qundef.into());
-    asm.je(side_exit(jit, state, ObjToStringFallback)?);
+    asm.je(side_exit(jit, state, ObjToStringFallback));
 
     Some(ret)
 }
@@ -556,7 +556,7 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invarian
     let invariant = invariant.clone();
 
     // Compile a side exit. Fill nop instructions if the last patch point is too close.
-    asm.patch_point(build_side_exit(jit, state, PatchPoint(invariant), Some(label))?);
+    asm.patch_point(build_side_exit(jit, state, PatchPoint(invariant), Some(label)));
 
     // Remember the current address as a patch point
     asm.pos_marker(move |code_ptr, cb| {
@@ -621,9 +621,8 @@ fn gen_setglobal(jit: &mut JITState, asm: &mut Assembler, id: ID, val: Opnd, sta
 }
 
 /// Side-exit into the interpreter
-fn gen_side_exit(jit: &mut JITState, asm: &mut Assembler, reason: &SideExitReason, state: &FrameState) -> Option<()> {
-    asm.jmp(side_exit(jit, state, *reason)?);
-    Some(())
+fn gen_side_exit(jit: &mut JITState, asm: &mut Assembler, reason: &SideExitReason, state: &FrameState) {
+    asm.jmp(side_exit(jit, state, *reason));
 }
 
 /// Emit a special object lookup
@@ -1068,7 +1067,7 @@ fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, righ
     // Add left + right and test for overflow
     let left_untag = asm.sub(left, Opnd::Imm(1));
     let out_val = asm.add(left_untag, right);
-    asm.jo(side_exit(jit, state, FixnumAddOverflow)?);
+    asm.jo(side_exit(jit, state, FixnumAddOverflow));
 
     Some(out_val)
 }
@@ -1077,7 +1076,7 @@ fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, righ
 fn gen_fixnum_sub(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
     // Subtract left - right and test for overflow
     let val_untag = asm.sub(left, right);
-    asm.jo(side_exit(jit, state, FixnumSubOverflow)?);
+    asm.jo(side_exit(jit, state, FixnumSubOverflow));
     let out_val = asm.add(val_untag, Opnd::Imm(1));
 
     Some(out_val)
@@ -1092,7 +1091,7 @@ fn gen_fixnum_mult(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, rig
     let out_val = asm.mul(left_untag, right_untag);
 
     // Test for overflow
-    asm.jo_mul(side_exit(jit, state, FixnumMultOverflow)?);
+    asm.jo_mul(side_exit(jit, state, FixnumMultOverflow));
     let out_val = asm.add(out_val, Opnd::UImm(1));
 
     Some(out_val)
@@ -1172,27 +1171,27 @@ fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> Option<lir::Opnd> {
 fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard_type: Type, state: &FrameState) -> Option<lir::Opnd> {
     if guard_type.is_subtype(types::Fixnum) {
         asm.test(val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
-        asm.jz(side_exit(jit, state, GuardType(guard_type))?);
+        asm.jz(side_exit(jit, state, GuardType(guard_type)));
     } else if guard_type.is_subtype(types::Flonum) {
         // Flonum: (val & RUBY_FLONUM_MASK) == RUBY_FLONUM_FLAG
         let masked = asm.and(val, Opnd::UImm(RUBY_FLONUM_MASK as u64));
         asm.cmp(masked, Opnd::UImm(RUBY_FLONUM_FLAG as u64));
-        asm.jne(side_exit(jit, state, GuardType(guard_type))?);
+        asm.jne(side_exit(jit, state, GuardType(guard_type)));
     } else if guard_type.is_subtype(types::StaticSymbol) {
         // Static symbols have (val & 0xff) == RUBY_SYMBOL_FLAG
         // Use 8-bit comparison like YJIT does
         debug_assert!(val.try_num_bits(8).is_some(), "GuardType should not be used for a known constant, but val was: {val:?}");
         asm.cmp(val.try_num_bits(8)?, Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
-        asm.jne(side_exit(jit, state, GuardType(guard_type))?);
+        asm.jne(side_exit(jit, state, GuardType(guard_type)));
     } else if guard_type.is_subtype(types::NilClass) {
         asm.cmp(val, Qnil.into());
-        asm.jne(side_exit(jit, state, GuardType(guard_type))?);
+        asm.jne(side_exit(jit, state, GuardType(guard_type)));
     } else if guard_type.is_subtype(types::TrueClass) {
         asm.cmp(val, Qtrue.into());
-        asm.jne(side_exit(jit, state, GuardType(guard_type))?);
+        asm.jne(side_exit(jit, state, GuardType(guard_type)));
     } else if guard_type.is_subtype(types::FalseClass) {
         asm.cmp(val, Qfalse.into());
-        asm.jne(side_exit(jit, state, GuardType(guard_type))?);
+        asm.jne(side_exit(jit, state, GuardType(guard_type)));
     } else if guard_type.is_immediate() {
         // All immediate types' guard should have been handled above
         panic!("unexpected immediate guard type: {guard_type}");
@@ -1207,7 +1206,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         };
 
         // Check if it's a special constant
-        let side_exit = side_exit(jit, state, GuardType(guard_type))?;
+        let side_exit = side_exit(jit, state, GuardType(guard_type));
         asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
         asm.jnz(side_exit.clone());
 
@@ -1229,7 +1228,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
 /// Compile an identity check with a side exit
 fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected: VALUE, state: &FrameState) -> Option<lir::Opnd> {
     asm.cmp(val, Opnd::Value(expected));
-    asm.jnz(side_exit(jit, state, GuardBitEquals(expected))?);
+    asm.jnz(side_exit(jit, state, GuardBitEquals(expected)));
     Some(val)
 }
 
@@ -1394,12 +1393,12 @@ fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
 }
 
 /// Build a Target::SideExit for non-PatchPoint instructions
-fn side_exit(jit: &mut JITState, state: &FrameState, reason: SideExitReason) -> Option<Target> {
+fn side_exit(jit: &mut JITState, state: &FrameState, reason: SideExitReason) -> Target {
     build_side_exit(jit, state, reason, None)
 }
 
 /// Build a Target::SideExit out of a FrameState
-fn build_side_exit(jit: &mut JITState, state: &FrameState, reason: SideExitReason, label: Option<Label>) -> Option<Target> {
+fn build_side_exit(jit: &mut JITState, state: &FrameState, reason: SideExitReason, label: Option<Label>) -> Target {
     let mut stack = Vec::new();
     for &insn_id in state.stack() {
         stack.push(jit.get_opnd(insn_id));
@@ -1417,7 +1416,7 @@ fn build_side_exit(jit: &mut JITState, state: &FrameState, reason: SideExitReaso
         reason,
         label,
     };
-    Some(target)
+    target
 }
 
 /// Return true if a given ISEQ is known to escape EP to the heap on entry.
