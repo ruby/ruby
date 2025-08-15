@@ -78,27 +78,36 @@ module GC
   end
 
   # call-seq:
-  #   GC.stress -> integer, true, or false
+  #   GC.stress -> setting
   #
-  # Returns the current status of \GC stress mode.
+  # Returns the current \GC stress-mode setting,
+  # which initially is +false+.
+  #
+  # The stress mode may be set by method GC.stress=.
   def self.stress
     Primitive.gc_stress_get
   end
 
   # call-seq:
-  #   GC.stress = flag -> flag
+  #   GC.stress = value -> value
   #
-  # Updates the \GC stress mode.
+  # Enables or disables stress mode;
+  # enabling stress mode will degrade performance; it is only for debugging.
   #
-  # When stress mode is enabled, the \GC is invoked at every \GC opportunity:
-  # all memory and object allocations.
+  # Sets the current \GC stress mode to the given value:
   #
-  # Enabling stress mode will degrade performance; it is only for debugging.
+  # - If the value is +nil+ or +false+, disables stress mode.
+  # - If the value is an integer,
+  #   enables stress mode with certain flags; see below.
+  # - Otherwise, enables stress mode;
+  #   \GC is invoked at every \GC opportunity: all memory and object allocations.
   #
-  # The flag can be true, false, or an integer bitwise-ORed with the following flags:
-  #   0x01:: no major GC
-  #   0x02:: no immediate sweep
-  #   0x04:: full mark after malloc/calloc/realloc
+  # The flags are bits in the given integer:
+  #
+  # - +0x01+: No major \GC.
+  # - +0x02+: No immediate sweep.
+  # - +0x04+: Full mark after malloc/calloc/realloc.
+  #
   def self.stress=(flag)
     Primitive.gc_stress_set_m flag
   end
@@ -117,85 +126,127 @@ module GC
   end
 
   # call-seq:
-  #    GC.stat -> Hash
-  #    GC.stat(hash) -> Hash
-  #    GC.stat(:key) -> Numeric
+  #   GC.stat -> new_hash
+  #   GC.stat(key) -> value
+  #   GC.stat(hash) -> hash
   #
-  # Returns a Hash containing information about the \GC.
+  # This method is implementation-specific to CRuby.
   #
-  # The contents of the hash are implementation-specific and may change in
-  # the future without notice.
+  # Returns \GC statistics.
+  # The particular statistics are implementation-specific
+  # and may change in the future without notice.
   #
-  # The hash includes internal statistics about \GC such as:
+  # With no argument given,
+  # returns information about the most recent garbage collection:
   #
-  # [count]
+  #   GC.stat
+  #   # =>
+  #   {count: 28,
+  #    time: 1,
+  #    marking_time: 1,
+  #    sweeping_time: 0,
+  #    heap_allocated_pages: 521,
+  #    heap_empty_pages: 0,
+  #    heap_allocatable_slots: 0,
+  #    heap_available_slots: 539590,
+  #    heap_live_slots: 422243,
+  #    heap_free_slots: 117347,
+  #    heap_final_slots: 0,
+  #    heap_marked_slots: 264877,
+  #    heap_eden_pages: 521,
+  #    total_allocated_pages: 521,
+  #    total_freed_pages: 0,
+  #    total_allocated_objects: 2246376,
+  #    total_freed_objects: 1824133,
+  #    malloc_increase_bytes: 50982,
+  #    malloc_increase_bytes_limit: 18535172,
+  #    minor_gc_count: 18,
+  #    major_gc_count: 10,
+  #    compact_count: 0,
+  #    read_barrier_faults: 0,
+  #    total_moved_objects: 0,
+  #    remembered_wb_unprotected_objects: 0,
+  #    remembered_wb_unprotected_objects_limit: 2162,
+  #    old_objects: 216365,
+  #    old_objects_limit: 432540,
+  #    oldmalloc_increase_bytes: 1654232,
+  #    oldmalloc_increase_bytes_limit: 16846103}
+  #
+  # With symbol argument +key+ given,
+  # returns the value for that key:
+  #
+  #   GC.stat(:count) # => 30
+  #
+  # With hash argument +hash+ given,
+  # returns that hash with GC statistics merged into its content;
+  # this form may be useful in minimizing {probe effects}[https://en.wikipedia.org/wiki/Probe_effect]:
+  #
+  #   h = {foo: 0, bar: 1}
+  #   GC.stat(h)
+  #   h.keys.take(5) # => [:foo, :bar, :count, :time, :marking_time]
+  #
+  # The hash includes entries such as:
+  #
+  # - +:count+:
   #   The total number of garbage collections run since application start
-  #   (count includes both minor and major garbage collections)
-  # [time]
-  #   The total time spent in garbage collections (in milliseconds)
-  # [heap_allocated_pages]
-  #   The total number of +:heap_eden_pages+ + +:heap_tomb_pages+
-  # [heap_sorted_length]
-  #   The number of pages that can fit into the buffer that holds references to
-  #   all pages
-  # [heap_allocatable_pages]
-  #   The total number of pages the application could allocate without additional \GC
-  # [heap_available_slots]
-  #   The total number of slots in all +:heap_allocated_pages+
-  # [heap_live_slots]
-  #   The total number of slots which contain live objects
-  # [heap_free_slots]
-  #   The total number of slots which do not contain live objects
-  # [heap_final_slots]
-  #   The total number of slots with pending finalizers to be run
-  # [heap_marked_slots]
-  #   The total number of objects marked in the last \GC
-  # [heap_eden_pages]
-  #   The total number of pages which contain at least one live slot
-  # [heap_tomb_pages]
-  #   The total number of pages which do not contain any live slots
-  # [total_allocated_pages]
-  #   The cumulative number of pages allocated since application start
-  # [total_freed_pages]
-  #   The cumulative number of pages freed since application start
-  # [total_allocated_objects]
-  #   The cumulative number of objects allocated since application start
-  # [total_freed_objects]
-  #   The cumulative number of objects freed since application start
-  # [malloc_increase_bytes]
-  #   Amount of memory allocated on the heap for objects. Decreased by any \GC
-  # [malloc_increase_bytes_limit]
-  #   When +:malloc_increase_bytes+ crosses this limit, \GC is triggered
-  # [minor_gc_count]
-  #   The total number of minor garbage collections run since process start
-  # [major_gc_count]
-  #   The total number of major garbage collections run since process start
-  # [compact_count]
-  #   The total number of compactions run since process start
-  # [read_barrier_faults]
-  #   The total number of times the read barrier was triggered during
-  #   compaction
-  # [total_moved_objects]
-  #   The total number of objects compaction has moved
-  # [remembered_wb_unprotected_objects]
-  #   The total number of objects without write barriers
-  # [remembered_wb_unprotected_objects_limit]
-  #   When +:remembered_wb_unprotected_objects+ crosses this limit,
-  #   major \GC is triggered
-  # [old_objects]
-  #   Number of live, old objects which have survived at least 3 garbage collections
-  # [old_objects_limit]
-  #   When +:old_objects+ crosses this limit, major \GC is triggered
-  # [oldmalloc_increase_bytes]
-  #   Amount of memory allocated on the heap for objects. Decreased by major \GC
-  # [oldmalloc_increase_bytes_limit]
-  #   When +:oldmalloc_increase_bytes+ crosses this limit, major \GC is triggered
+  #   (count includes both minor and major garbage collections).
+  # - +:time+:
+  #   The total time spent in garbage collections (in milliseconds).
+  # - +:heap_allocated_pages+:
+  #   The total number of +:heap_eden_pages+ + +:heap_tomb_pages+.
+  # - +:heap_sorted_length+:
+  #   The number of pages that can fit into the buffer that holds references to  all pages.
+  # - +:heap_allocatable_pages+:
+  #   The total number of pages the application could allocate without additional \GC.
+  # - +:heap_available_slots+:
+  #   The total number of slots in all +:heap_allocated_pages+.
+  # - +:heap_live_slots+:
+  #   The total number of slots which contain live objects.
+  # - +:heap_free_slots+:
+  #   The total number of slots which do not contain live objects.
+  # - +:heap_final_slots+:
+  #   The total number of slots with pending finalizers to be run.
+  # - +:heap_marked_slots+:
+  #   The total number of objects marked in the last \GC.
+  # - +:heap_eden_pages+:
+  #   The total number of pages which contain at least one live slot.
+  # - +:heap_tomb_pages+:
+  #   The total number of pages which do not contain any live slots.
+  # - +:total_allocated_pages+:
+  #   The cumulative number of pages allocated since application start.
+  # - +:total_freed_pages+:
+  #   The cumulative number of pages freed since application start.
+  # - +:total_allocated_objects+:
+  #   The cumulative number of objects allocated since application start.
+  # - +:total_freed_objects+:
+  #   The cumulative number of objects freed since application start.
+  # - +:malloc_increase_bytes+:
+  #   Amount of memory allocated on the heap for objects. Decreased by any \GC.
+  # - +:malloc_increase_bytes_limit+:
+  #   When +:malloc_increase_bytes+ crosses this limit, \GC is triggered.
+  # - +:minor_gc_count+:
+  #   The total number of minor garbage collections run since process start.
+  # - +:major_gc_count+:
+  #   The total number of major garbage collections run since process start.
+  # - +:compact_count+:
+  #   The total number of compactions run since process start.
+  # - +:read_barrier_faults+:
+  #   The total number of times the read barrier was triggered during compaction.
+  # - +:total_moved_objects+:
+  #   The total number of objects compaction has moved.
+  # - +:remembered_wb_unprotected_objects+:
+  #   The total number of objects without write barriers.
+  # - +:remembered_wb_unprotected_objects_limit+:
+  #   When +:remembered_wb_unprotected_objects+ crosses this limit, major \GC is triggered.
+  # - +:old_objects+:
+  #   Number of live, old objects which have survived at least 3 garbage collections.
+  # - +:old_objects_limit+:
+  #   When +:old_objects+ crosses this limit, major \GC is triggered.
+  # - +:oldmalloc_increase_bytes+:
+  #   Amount of memory allocated on the heap for objects. Decreased by major \GC.
+  # - +:oldmalloc_increase_bytes_limit+:
+  #   When +:oldmalloc_increase_bytes+ crosses this limit, major \GC is triggered.
   #
-  # If the optional argument, hash, is given,
-  # it is overwritten and returned.
-  # This is intended to avoid the probe effect.
-  #
-  # This method is only expected to work on CRuby.
   def self.stat hash_or_key = nil
     Primitive.gc_stat hash_or_key
   end
@@ -292,7 +343,7 @@ module GC
   #
   # The single read-only entry for all implementations is:
   #
-  # - +implementation+:
+  # - +:implementation+:
   #   the string name of the implementation;
   #   for the Ruby default implementation, <tt>'default'</tt>.
   #
@@ -302,7 +353,7 @@ module GC
   #
   # For Ruby's default implementation the single entry is:
   #
-  # - +rgengc_allow_full_mark+:
+  # - +:rgengc_allow_full_mark+:
   #   Controls whether the \GC is allowed to run a full mark (young & old objects):
   #
   #   - +true+ (default): \GC interleaves major and minor collections.

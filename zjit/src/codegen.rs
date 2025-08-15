@@ -1395,26 +1395,24 @@ c_callable! {
     /// instructions, so this should be used primarily for cb.has_dropped_bytes() situations.
     fn function_stub_hit(iseq_call_ptr: *const c_void, ec: EcPtr, sp: *mut VALUE) -> *const u8 {
         with_vm_lock(src_loc!(), || {
-            /// gen_push_frame() doesn't set PC and SP, so we need to set them before exit
-            fn set_pc_and_sp(iseq: IseqPtr, ec: EcPtr, sp: *mut VALUE) {
-                let cfp = unsafe { get_ec_cfp(ec) };
-                let pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) }; // TODO: handle opt_pc once supported
-                unsafe { rb_set_cfp_pc(cfp, pc) };
-                unsafe { rb_set_cfp_sp(cfp, sp) };
-            }
+            // gen_push_frame() doesn't set PC and SP, so we need to set them before exit.
+            // function_stub_hit_body() may allocate and call gc_validate_pc(), so we always set PC.
+            let iseq_call = unsafe { Rc::from_raw(iseq_call_ptr as *const IseqCall) };
+            let cfp = unsafe { get_ec_cfp(ec) };
+            let pc = unsafe { rb_iseq_pc_at_idx(iseq_call.iseq, 0) }; // TODO: handle opt_pc once supported
+            unsafe { rb_set_cfp_pc(cfp, pc) };
+            unsafe { rb_set_cfp_sp(cfp, sp) };
 
             // If we already know we can't compile the ISEQ, fail early without cb.mark_all_executable().
             // TODO: Alan thinks the payload status part of this check can happen without the VM lock, since the whole
             // code path can be made read-only. But you still need the check as is while holding the VM lock in any case.
             let cb = ZJITState::get_code_block();
-            let iseq_call = unsafe { Rc::from_raw(iseq_call_ptr as *const IseqCall) };
             let payload = get_or_create_iseq_payload(iseq_call.iseq);
             if cb.has_dropped_bytes() || payload.status == IseqStatus::CantCompile {
                 // We'll use this Rc again, so increment the ref count decremented by from_raw.
                 unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
 
                 // Exit to the interpreter
-                set_pc_and_sp(iseq_call.iseq, ec, sp);
                 return ZJITState::get_exit_trampoline().raw_ptr(cb);
             }
 
@@ -1424,7 +1422,6 @@ c_callable! {
                 code_ptr
             } else {
                 // Exit to the interpreter
-                set_pc_and_sp(iseq_call.iseq, ec, sp);
                 ZJITState::get_exit_trampoline()
             };
             cb.mark_all_executable();
@@ -1605,7 +1602,7 @@ struct IseqCall {
 }
 
 impl IseqCall {
-    /// Allocate a new JITCall
+    /// Allocate a new IseqCall
     fn new(iseq: IseqPtr) -> Rc<Self> {
         Rc::new(IseqCall {
             iseq,
@@ -1614,7 +1611,7 @@ impl IseqCall {
         })
     }
 
-    /// Regenerate a JITCall with a given callback
+    /// Regenerate a IseqCall with a given callback
     fn regenerate(&self, cb: &mut CodeBlock, callback: impl Fn(&mut Assembler)) {
         cb.with_write_ptr(self.start_addr.get().unwrap(), |cb| {
             let mut asm = Assembler::new();

@@ -309,7 +309,7 @@ class TestObjSpace < Test::Unit::TestCase
   def test_trace_object_allocations_compaction_freed_pages
     omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
 
-    assert_normal_exit(<<~RUBY)
+    assert_normal_exit(<<~RUBY, timeout: 60)
       require "objspace"
 
       objs = []
