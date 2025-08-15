@@ -146,6 +146,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
   end
 
   def test_fd_passing_race_condition
+    omit 'randomly crashes on macOS' if RUBY_PLATFORM =~ /darwin/
     r1, w = IO.pipe
     s1, s2 = UNIXSocket.pair
     s1.nonblock = s2.nonblock = true

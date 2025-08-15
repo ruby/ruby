@@ -18,6 +18,14 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_enable_through_env
+    child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => '1'}
+    assert_in_out_err([child_env, '-v'], '') do |stdout, stderr|
+      assert_includes(stdout.first, '+ZJIT')
+      assert_equal([], stderr)
+    end
+  end
+
   def test_call_itself
     assert_compiles '42', <<~RUBY, call_threshold: 2
       def test = 42.itself
@@ -1211,6 +1219,106 @@ class TestZJIT < Test::Unit::TestCase
       def test = 1.nil?
       test
     }, insns: [:opt_nil_p]
+  end
+
+  def test_getspecial_last_match
+    assert_compiles '"hello"', %q{
+      def test(str)
+        str =~ /hello/
+        $&
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_match_pre
+    assert_compiles '"hello "', %q{
+      def test(str)
+        str =~ /world/
+        $`
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_match_post
+    assert_compiles '" world"', %q{
+      def test(str)
+        str =~ /hello/
+        $'
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_match_last_group
+    assert_compiles '"world"', %q{
+      def test(str)
+        str =~ /(hello) (world)/
+        $+
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_numbered_match_1
+    assert_compiles '"hello"', %q{
+      def test(str)
+        str =~ /(hello) (world)/
+        $1
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_numbered_match_2
+    assert_compiles '"world"', %q{
+      def test(str)
+        str =~ /(hello) (world)/
+        $2
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_numbered_match_nonexistent
+    assert_compiles 'nil', %q{
+      def test(str)
+        str =~ /(hello)/
+        $2
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_no_match
+    assert_compiles 'nil', %q{
+      def test(str)
+        str =~ /xyz/
+        $&
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_complex_pattern
+    assert_compiles '"123"', %q{
+      def test(str)
+        str =~ /(\d+)/
+        $1
+      end
+      test("abc123def")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_multiple_groups
+    assert_compiles '"456"', %q{
+      def test(str)
+        str =~ /(\d+)-(\d+)/
+        $2
+      end
+      test("123-456")
+    }, insns: [:getspecial]
   end
 
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
