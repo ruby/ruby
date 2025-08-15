@@ -443,7 +443,7 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
 }
 
 fn gen_objtostring(jit: &mut JITState, asm: &mut Assembler, val: Opnd, cd: *const rb_call_data, state: &FrameState) -> Option<Opnd> {
-    gen_prepare_non_leaf_call(jit, asm, state)?;
+    gen_prepare_non_leaf_call(jit, asm, state);
 
     let iseq_opnd = Opnd::Value(jit.iseq.into());
 
@@ -479,7 +479,7 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, 
         }
         _ => {
             // Save the PC and SP because the callee may allocate or call #respond_to?
-            gen_prepare_non_leaf_call(jit, asm, state)?;
+            gen_prepare_non_leaf_call(jit, asm, state);
 
             // TODO: Inline the cases for each op_type
             // Call vm_defined(ec, reg_cfp, op_type, obj, v)
@@ -526,7 +526,7 @@ fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_in
     }
 
     // Anything could be called on const_missing
-    gen_prepare_non_leaf_call(jit, asm, state)?;
+    gen_prepare_non_leaf_call(jit, asm, state);
 
     Some(asm_ccall!(asm, rb_vm_opt_getconstant_path, EC, CFP, Opnd::const_ptr(ic)))
 }
@@ -539,7 +539,7 @@ fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf
     }
 
     // Anything can happen inside builtin functions
-    gen_prepare_non_leaf_call(jit, asm, state)?;
+    gen_prepare_non_leaf_call(jit, asm, state);
 
     let mut cargs = vec![EC];
     cargs.extend(args);
@@ -614,7 +614,7 @@ fn gen_intern(asm: &mut Assembler, val: Opnd, state: &FrameState) -> Option<Opnd
 /// Set global variables
 fn gen_setglobal(jit: &mut JITState, asm: &mut Assembler, id: ID, val: Opnd, state: &FrameState) -> Option<()> {
     // When trace_var is used, setting a global variable can cause exceptions
-    gen_prepare_non_leaf_call(jit, asm, state)?;
+    gen_prepare_non_leaf_call(jit, asm, state);
 
     asm_ccall!(asm, rb_gvar_set, id.0.into(), val);
     Some(())
@@ -846,7 +846,7 @@ fn gen_send_without_block(
     self_val: Opnd,
     args: Vec<Opnd>,
 ) -> Option<lir::Opnd> {
-    gen_spill_locals(jit, asm, state)?;
+    gen_spill_locals(jit, asm, state);
     // Spill the receiver and the arguments onto the stack.
     // They need to be on the interpreter stack to let the interpreter access them.
     // TODO: Avoid spilling operands that have been spilled before.
@@ -893,8 +893,8 @@ fn gen_send_without_block_direct(
     gen_save_pc(asm, state);
     gen_save_sp(asm, state.stack().len() - args.len() - 1); // -1 for receiver
 
-    gen_spill_locals(jit, asm, state)?;
-    gen_spill_stack(jit, asm, state)?;
+    gen_spill_locals(jit, asm, state);
+    gen_spill_stack(jit, asm, state);
 
     // Set up the new frame
     // TODO: Lazily materialize caller frames on side exits or when needed
@@ -1272,30 +1272,27 @@ fn gen_save_sp(asm: &mut Assembler, stack_size: usize) {
 }
 
 /// Spill locals onto the stack.
-fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) -> Option<()> {
+fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
     // TODO: Avoid spilling locals that have been spilled before and not changed.
     asm_comment!(asm, "spill locals");
     for (idx, &insn_id) in state.locals().enumerate() {
         asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
     }
-    Some(())
 }
 
 /// Spill the virtual stack onto the stack.
-fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, state: &FrameState) -> Option<()> {
+fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
     // This function does not call gen_save_sp() at the moment because
     // gen_send_without_block_direct() spills stack slots above SP for arguments.
     asm_comment!(asm, "spill stack");
     for (idx, &insn_id) in state.stack().enumerate() {
         asm.mov(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
     }
-    Some(())
 }
 
 /// Prepare for calling a C function that may call an arbitrary method.
 /// Use gen_prepare_call_with_gc() if the method is leaf but allocates objects.
-#[must_use]
-fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, state: &FrameState) -> Option<()> {
+fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
     // TODO: Lazily materialize caller frames when needed
     // Save PC for backtraces and allocation tracing
     gen_save_pc(asm, state);
@@ -1303,11 +1300,10 @@ fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, state: &FrameS
     // Save SP and spill the virtual stack in case it raises an exception
     // and the interpreter uses the stack for handling the exception
     gen_save_sp(asm, state.stack().len());
-    gen_spill_stack(jit, asm, state)?;
+    gen_spill_stack(jit, asm, state);
 
     // Spill locals in case the method looks at caller Bindings
-    gen_spill_locals(jit, asm, state)?;
-    Some(())
+    gen_spill_locals(jit, asm, state);
 }
 
 /// Prepare for calling a C function that may allocate objects and trigger GC.
@@ -1610,7 +1606,7 @@ fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>
         return None;
     }
 
-    gen_prepare_non_leaf_call(jit, asm, state)?;
+    gen_prepare_non_leaf_call(jit, asm, state);
 
     // Calculate the compile-time NATIVE_STACK_PTR offset from NATIVE_BASE_PTR
     // At this point, frame_setup(&[], jit.c_stack_slots) has been called,
