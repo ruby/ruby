@@ -1313,6 +1313,7 @@ fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
     if !get_option!(disable_hir_opt) {
         function.optimize();
     }
+    function.dump_hir();
     #[cfg(debug_assertions)]
     if let Err(err) = function.validate() {
         debug!("ZJIT: compile_iseq: {err:?}");
