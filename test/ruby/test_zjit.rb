@@ -1245,6 +1245,14 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:defined]
   end
 
+  def test_defined_with_method_call
+    assert_compiles '["method", nil]', %q{
+      def test = return defined?("x".reverse(1)), defined?("x".reverse(1).reverse)
+
+      test
+    }, insns: [:defined]
+  end
+
   def test_defined_yield
     assert_compiles "nil", "defined?(yield)"
     assert_compiles '[nil, nil, "yield"]', %q{
