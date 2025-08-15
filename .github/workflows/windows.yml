@@ -95,6 +95,11 @@ jobs:
           vcpkg install --vcpkg-root=%USERPROFILE%\scoop\apps\vcpkg\current
         working-directory: src
 
+      - name: List vcpkg directories
+        run: |
+          dir src\vcpkg /s /b
+        shell: cmd
+
       - name: Save vcpkg artifact
         uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
