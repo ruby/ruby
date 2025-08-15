@@ -9,8 +9,8 @@ use crate::gc::{append_gc_offsets, get_or_create_iseq_payload, get_or_create_ise
 use crate::state::ZJITState;
 use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::compile_time_ns};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
-use crate::backend::lir::{self, asm_ccall, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, SCRATCH_OPND, SP};
-use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SELF_PARAM_IDX};
+use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SCRATCH_OPND, SP};
+use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SpecialBackrefSymbol, SELF_PARAM_IDX};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types, Type};
 use crate::options::get_option;
@@ -377,6 +377,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
         Insn::Defined { op_type, obj, pushval, v, state } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v), &function.frame_state(*state))?,
+        Insn::GetSpecialSymbol { symbol_type, state: _ } => gen_getspecial_symbol(asm, *symbol_type),
+        Insn::GetSpecialNumber { nth, state } => gen_getspecial_number(asm, *nth, &function.frame_state(*state)),
         &Insn::IncrCounter(counter) => return Some(gen_incr_counter(asm, counter)),
         Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state))?,
         Insn::ArrayExtend { .. }
@@ -637,6 +639,37 @@ fn gen_putspecialobject(asm: &mut Assembler, value_type: SpecialObjectType) -> O
     let ep_reg = asm.load(ep_opnd);
 
     asm_ccall!(asm, rb_vm_get_special_object, ep_reg, Opnd::UImm(u64::from(value_type)))
+}
+
+fn gen_getspecial_symbol(asm: &mut Assembler, symbol_type: SpecialBackrefSymbol) -> Opnd {
+    // Fetch a "special" backref based on the symbol type
+
+    let backref = asm_ccall!(asm, rb_backref_get,);
+
+    match symbol_type {
+        SpecialBackrefSymbol::LastMatch => {
+            asm_ccall!(asm, rb_reg_last_match, backref)
+        }
+        SpecialBackrefSymbol::PreMatch => {
+            asm_ccall!(asm, rb_reg_match_pre, backref)
+        }
+        SpecialBackrefSymbol::PostMatch => {
+            asm_ccall!(asm, rb_reg_match_post, backref)
+        }
+        SpecialBackrefSymbol::LastGroup => {
+            asm_ccall!(asm, rb_reg_match_last, backref)
+        }
+    }
+}
+
+fn gen_getspecial_number(asm: &mut Assembler, nth: u64, state: &FrameState) -> Opnd {
+    // Fetch the N-th match from the last backref based on type shifted by 1
+
+    let backref = asm_ccall!(asm, rb_backref_get,);
+
+    gen_prepare_call_with_gc(asm, state);
+
+    asm_ccall!(asm, rb_reg_nth_match, Opnd::Imm((nth >> 1).try_into().unwrap()), backref)
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
@@ -1312,6 +1345,7 @@ fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
     if !get_option!(disable_hir_opt) {
         function.optimize();
     }
+    function.dump_hir();
     #[cfg(debug_assertions)]
     if let Err(err) = function.validate() {
         debug!("ZJIT: compile_iseq: {err:?}");
