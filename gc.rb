@@ -285,11 +285,13 @@ module GC
   # With arguments +nil+ and +hash+ given,
   # merges the statistics for all heaps into the given hash:
   #
+  #   h = {foo: 0, bar: 1}
   #   GC.stat_heap(nil, h).keys # => [:foo, :bar, 0, 1, 2, 3, 4]
   #
   # With arguments +heap_id+ and +hash+ given,
   # merges the statistics for the given heap into the given hash:
   #
+  #   h = {foo: 0, bar: 1}
   #   GC.stat_heap(2, h).keys
   #   # =>
   #   [:foo,
