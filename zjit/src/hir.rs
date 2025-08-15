@@ -321,6 +321,29 @@ impl From<RangeType> for u32 {
     }
 }
 
+/// Special regex backref symbol types
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SpecialBackrefSymbol {
+    LastMatch,     // $&
+    PreMatch,      // $`
+    PostMatch,     // $'
+    LastGroup,     // $+
+}
+
+impl TryFrom<u8> for SpecialBackrefSymbol {
+    type Error = String;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value as char {
+            '&' => Ok(SpecialBackrefSymbol::LastMatch),
+            '`' => Ok(SpecialBackrefSymbol::PreMatch),
+            '\'' => Ok(SpecialBackrefSymbol::PostMatch),
+            '+' => Ok(SpecialBackrefSymbol::LastGroup),
+            c => Err(format!("invalid backref symbol: '{}'", c)),
+        }
+    }
+}
+
 /// Print adaptor for [`Const`]. See [`PtrPrintMap`].
 struct ConstPrinter<'a> {
     inner: &'a Const,
@@ -415,6 +438,7 @@ pub enum SideExitReason {
     PatchPoint(Invariant),
     CalleeSideExit,
     ObjToStringFallback,
+    UnknownSpecialVariable(u64),
 }
 
 impl std::fmt::Display for SideExitReason {
@@ -494,6 +518,8 @@ pub enum Insn {
     GetLocal { level: u32, ep_offset: u32 },
     /// Set a local variable in a higher scope or the heap
     SetLocal { level: u32, ep_offset: u32, val: InsnId },
+    GetSpecialSymbol { symbol_type: SpecialBackrefSymbol, state: InsnId },
+    GetSpecialNumber { nth: u64, state: InsnId },
 
     /// Own a FrameState so that instructions can look up their dominating FrameState when
     /// generating deopt side-exits and frame reconstruction metadata. Does not directly generate
@@ -774,6 +800,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy()),
             Insn::GetLocal { level, ep_offset } => write!(f, "GetLocal l{level}, EP@{ep_offset}"),
             Insn::SetLocal { val, level, ep_offset } => write!(f, "SetLocal l{level}, EP@{ep_offset}, {val}"),
+            Insn::GetSpecialSymbol { symbol_type, .. } => write!(f, "GetSpecialSymbol {symbol_type:?}"),
+            Insn::GetSpecialNumber { nth, .. } => write!(f, "GetSpecialNumber {nth}"),
             Insn::ToArray { val, .. } => write!(f, "ToArray {val}"),
             Insn::ToNewArray { val, .. } => write!(f, "ToNewArray {val}"),
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
@@ -1221,6 +1249,8 @@ impl Function {
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val: find!(val), state },
             &SetLocal { val, ep_offset, level } => SetLocal { val: find!(val), ep_offset, level },
+            &GetSpecialSymbol { symbol_type, state } => GetSpecialSymbol { symbol_type, state },
+            &GetSpecialNumber { nth, state } => GetSpecialNumber { nth, state },
             &ToArray { val, state } => ToArray { val: find!(val), state },
             &ToNewArray { val, state } => ToNewArray { val: find!(val), state },
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
@@ -1306,6 +1336,8 @@ impl Function {
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
+            Insn::GetSpecialSymbol { .. } => types::BasicObject,
+            Insn::GetSpecialNumber { .. } => types::BasicObject,
             Insn::ToNewArray { .. } => types::ArrayExact,
             Insn::ToArray { .. } => types::ArrayExact,
             Insn::ObjToString { .. } => types::BasicObject,
@@ -1995,6 +2027,8 @@ impl Function {
                 worklist.push_back(state);
             }
             &Insn::GetGlobal { state, .. } |
+            &Insn::GetSpecialSymbol { state, .. } |
+            &Insn::GetSpecialNumber { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
         }
     }
@@ -3324,6 +3358,29 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let anytostring = fun.push_insn(block, Insn::AnyToString { val, str, state: exit_id });
                     state.stack_push(anytostring);
+                }
+                YARVINSN_getspecial => {
+                    let key = get_arg(pc, 0).as_u64();
+                    let svar = get_arg(pc, 1).as_u64();
+
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+
+                    if svar == 0 {
+                        // TODO: Handle non-backref
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownSpecialVariable(key) });
+                        // End the block
+                        break;
+                    } else if svar & 0x01 != 0 {
+                        // Handle symbol backrefs like $&, $`, $', $+
+                        let shifted_svar: u8 = (svar >> 1).try_into().unwrap();
+                        let symbol_type = SpecialBackrefSymbol::try_from(shifted_svar).expect("invalid backref symbol");
+                        let result = fun.push_insn(block, Insn::GetSpecialSymbol { symbol_type, state: exit_id });
+                        state.stack_push(result);
+                    } else {
+                        // Handle number backrefs like $1, $2, $3
+                        let result = fun.push_insn(block, Insn::GetSpecialNumber { nth: svar, state: exit_id });
+                        state.stack_push(result);
+                    }
                 }
                 _ => {
                     // Unknown opcode; side-exit into the interpreter
