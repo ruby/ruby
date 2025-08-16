@@ -4133,10 +4133,13 @@ rb_str_hash_cmp(VALUE str1, VALUE str2)
  * call-seq:
  *   hash -> integer
  *
- * Returns the integer hash value for +self+.
- * The value is based on the length, content and encoding of +self+.
+ * Returns the integer hash value for self.
  *
- * Related: Object#hash.
+ * Two hashes with the same content and encoding have the same hash value
+ * (and will compare using #eql?);
+ * see Object#hash.
+ *
+ * Related: see {Querying}[rdoc-ref:String@Querying].
  */
 
 static VALUE
