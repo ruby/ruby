@@ -4902,6 +4902,69 @@ rb_hash_dig(int argc, VALUE *argv, VALUE self)
     return rb_obj_dig(argc, argv, self, Qnil);
 }
 
+/*
+ *  call-seq:
+ *    h.safe_dig(key, ...) -> object or nil
+ *
+ *  Traverses the given keys and returns the value found or +nil+ if any step
+ *  is not a Hash or Array, or the key/index is missing.
+ *
+ *  Accepts both String and Symbol keys for Hash lookup.
+ *
+*    { foo: { bar: 1 } }.safe_dig(:foo, :bar)                #=> 1
+*    { foo: "none" }.safe_dig(:foo, :bar)                    #=> nil
+*    { items: [{id: 1}, {id: 2}] }.safe_dig(:items, 1, :id)  #=> 2
+ *
+ */
+static VALUE
+rb_safe_hash_dig(int argc, VALUE *argv, VALUE self)
+{
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    VALUE curr = self;
+
+    for (; argc > 0; argv++, argc--)
+    {
+        VALUE key = *argv, val = Qundef;
+
+        if (RB_TYPE_P(curr, T_HASH))
+        {
+            val = rb_hash_lookup2(curr, key, Qundef);
+            if (val == Qundef)
+            {
+                if (RB_TYPE_P(key, T_SYMBOL))
+                {
+                    val = rb_hash_lookup2(curr, rb_sym2str(key), Qundef);
+                }
+                else if (RB_TYPE_P(key, T_STRING))
+                {
+                    val = rb_hash_lookup2(curr, ID2SYM(rb_intern_str(key)), Qundef);
+                }
+            }
+        }
+        else if (RB_TYPE_P(curr, T_ARRAY))
+        {
+            if (RB_INTEGER_TYPE_P(key))
+            {
+                val = rb_ary_entry(curr, NUM2LONG(key));
+            }
+            else
+            {
+                return Qnil;
+            }
+        }
+        else
+        {
+            return Qnil;
+        }
+
+        if (val == Qundef) return Qnil;
+        if (argc == 1) return val;
+        if (NIL_P(val)) return Qnil;
+        curr = val;
+    }
+    return curr;
+}
+
 static int
 hash_le_i(VALUE key, VALUE value, VALUE arg)
 {
@@ -7468,6 +7531,7 @@ Init_Hash(void)
 
     rb_define_method(rb_cHash, "any?", rb_hash_any_p, -1);
     rb_define_method(rb_cHash, "dig", rb_hash_dig, -1);
+    rb_define_method(rb_cHash, "safe_dig", rb_safe_hash_dig, -1);
 
     rb_define_method(rb_cHash, "<=", rb_hash_le, 1);
     rb_define_method(rb_cHash, "<", rb_hash_lt, 1);
