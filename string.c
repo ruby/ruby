@@ -4501,8 +4501,7 @@ rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
 
 /*
  *  call-seq:
- *    index(substring, offset = 0) -> integer or nil
- *    index(regexp, offset = 0) -> integer or nil
+ *    index(pattern, offset = 0) -> integer or nil
  *
  *  :include: doc/string/index.rdoc
  *
