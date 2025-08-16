@@ -113,6 +113,7 @@ jobs:
         shell: pwsh
 
       - name: Restore vcpkg artifact
+        id: restore-vcpkg
         uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: src\vcpkg_installed
@@ -122,13 +123,14 @@ jobs:
         run: |
           vcpkg install --vcpkg-root=C:\Users\runneradmin\scoop\apps\vcpkg\current
         working-directory: src
+        if: ${{ ! steps.restore-vcpkg.outputs.cache-hit }}
 
       - name: Save vcpkg artifact
         uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: src\vcpkg_installed
           key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
-        if: ${{ github.ref_name == 'master' || startsWith(github.ref_name, 'ruby_') }}
+        if: ${{ ! steps.restore-vcpkg.outputs.cache-hit && (github.ref_name == 'master' || startsWith(github.ref_name, 'ruby_')) }}
 
       - name: setup env
         # Available Ruby versions: https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md#ruby
