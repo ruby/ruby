@@ -275,11 +275,22 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
         }
 
         // Compile all instructions
+        let mut last_snapshot = None;
         for &insn_id in block.insns() {
             let insn = function.find(insn_id);
+            if let Insn::Snapshot { .. } = &insn {
+                last_snapshot = Some(insn_id);
+            }
             if gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn).is_none() {
-                debug!("Failed to compile insn: {insn_id} {insn}");
-                return None;
+                let Some(last_snapshot) = last_snapshot else {
+                    debug!("ZJIT: gen_function: No snapshot found for side-exit. Aborting compilation.");
+                    return None;
+                };
+                debug!("ZJIT: gen_function: Failed to compile insn: {insn_id} {insn}. Generating side-exit.");
+                gen_side_exit(&mut jit, &mut asm, &SideExitReason::UnhandledInstruction(insn_id), &function.frame_state(last_snapshot))?;
+                // Don't bother generating code after a side-exit. We won't run it.
+                // TODO(max): Generate ud2 or equivalent.
+                break;
             }
         }
         // Make sure the last patch point has enough space to insert a jump
@@ -395,7 +406,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         | Insn::ToNewArray { .. }
         | Insn::Const { .. }
         => {
-            debug!("ZJIT: gen_function: unexpected insn {insn}");
             return None;
         }
     };

@@ -430,6 +430,7 @@ pub enum SideExitReason {
     UnknownNewarraySend(vm_opt_newarray_send_type),
     UnknownCallType,
     UnknownOpcode(u32),
+    UnhandledInstruction(InsnId),
     FixnumAddOverflow,
     FixnumSubOverflow,
     FixnumMultOverflow,
