@@ -144,8 +144,8 @@ jobs:
           set | C:\msys64\usr\bin\sort > old.env
           call %VCVARS% ${{ matrix.vcvars || '' }}
           nmake -f nul
-          set TMP=%USERPROFILE%\AppData\Local\Temp
-          set TEMP=%USERPROFILE%\AppData\Local\Temp
+          set TMP=%RUNNER_TEMP%
+          set TEMP=%RUNNER_TEMP%
           set MAKEFLAGS=l
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
           set RUBY_OPT_DIR=%GITHUB_WORKSPACE:\=/%/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
