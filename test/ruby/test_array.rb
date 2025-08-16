@@ -1213,6 +1213,23 @@ class TestArray < Test::Unit::TestCase
     $, = nil
   end
 
+  def test_join_with_block
+    assert_equal("", @cls[].join { |i| i ** 3 })
+    assert_equal("1", @cls[1].join { |i| i ** 3 })
+    assert_equal("18", @cls[1,2].join { |i| i ** 3 })
+    assert_equal("1827", @cls[1,2,3].join { |i| i ** 3 })
+
+    assert_equal("", @cls[].join(',') { |i| i ** 3 })
+    assert_equal("1", @cls[1].join(',') { |i| i ** 3 })
+    assert_equal("1,8", @cls[1,2].join(',') { |i| i ** 3 })
+    assert_equal("1,8,27", @cls[1,2,3].join(',') { |i| i ** 3 })
+
+    a = @cls['Hello', 'world', '!']
+    assert_equal("HELLOWORLD!", a.join { |s| s.upcase })
+    assert_equal("HELLO WORLD !", a.join(' ') { |s| s.upcase })
+    assert_equal("HELLO WORLD !", a.join(' ', &:upcase))
+  end
+
   def test_last
     assert_equal(nil, @cls[].last)
     assert_equal(1, @cls[1].last)
