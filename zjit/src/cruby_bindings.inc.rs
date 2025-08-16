@@ -30,6 +30,11 @@ impl<T> ::std::fmt::Debug for __IncompleteArrayField<T> {
         fmt.write_str("__IncompleteArrayField")
     }
 }
+pub const ONIG_OPTION_IGNORECASE: u32 = 1;
+pub const ONIG_OPTION_EXTEND: u32 = 2;
+pub const ONIG_OPTION_MULTILINE: u32 = 4;
+pub const ARG_ENCODING_FIXED: u32 = 16;
+pub const ARG_ENCODING_NONE: u32 = 32;
 pub const INTEGER_REDEFINED_OP_FLAG: u32 = 1;
 pub const FLOAT_REDEFINED_OP_FLAG: u32 = 2;
 pub const STRING_REDEFINED_OP_FLAG: u32 = 4;
