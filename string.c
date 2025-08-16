@@ -7083,13 +7083,17 @@ rb_str_reverse_bang(VALUE str)
  *  call-seq:
  *    include?(other_string) -> true or false
  *
- *  Returns +true+ if +self+ contains +other_string+, +false+ otherwise:
+ *  Returns whether +self+ contains +other_string+:
  *
- *    s = 'foo'
- *    s.include?('f')    # => true
- *    s.include?('fo')   # => true
- *    s.include?('food') # => false
+ *    s = 'bar'
+ *    s.include?('ba')  # => true
+ *    s.include?('ar')  # => true
+ *    s.include?('bar') # => true
+ *    s.include?('a')   # => true
+ *    s.include?('')    # => true
+ *    s.include?('foo') # => false
  *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 
 VALUE
