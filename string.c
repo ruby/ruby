@@ -10681,18 +10681,21 @@ rb_str_scan(VALUE str, VALUE pat)
  *  call-seq:
  *    hex -> integer
  *
- *  Interprets the leading substring of +self+ as a string of hexadecimal digits
- *  (with an optional sign and an optional <code>0x</code>) and returns the
- *  corresponding number;
- *  returns zero if there is no such leading substring:
+ *  Interprets the leading substring of +self+ as hexadecimal;
+ *  returns its integer value:
  *
- *    '0x0a'.hex        # => 10
- *    '-1234'.hex       # => -4660
- *    '0'.hex           # => 0
- *    'non-numeric'.hex # => 0
+ *    '0xFFFF'.hex     # => 65535
+ *    'FFzzzFF'.hex    # =>   255  # Hex ends at first non-hex character, 'z'.
+ *    'ffzzzFF'.hex    # =>   255  # Case does not matter.
+ *    '-FFzzzFF'.hex   # =>  -255  # May have leading '-'.
+ *    '0xFFzzzFF'.hex  # =>   255  # May have leading '0x'.
+ *    '-0xFFzzzFF'.hex # =>  -255  # May have leading '-0x'.
  *
- *  Related: String#oct.
+ *  Returns zero if there is no such leading substring:
  *
+ *    'zzz'.hex # => 0
+ *
+ *  Related: See {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
  */
 
 static VALUE
