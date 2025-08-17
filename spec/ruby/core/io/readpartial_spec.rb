@@ -93,6 +93,11 @@ describe "IO#readpartial" do
     @rd.readpartial(0).should == ""
   end
 
+  it "raises IOError if the stream is closed and the length argument is 0" do
+    @rd.close
+    -> { @rd.readpartial(0) }.should raise_error(IOError, "closed stream")
+  end
+
   it "clears and returns the given buffer if the length argument is 0" do
     buffer = +"existing content"
     @rd.readpartial(0, buffer).should == buffer
