@@ -135,6 +135,11 @@ jobs:
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
 
+      - name: test-pc
+        run: |
+          DESTDIR=${RUNNER_TEMP-${TMPDIR-/tmp}}/installed
+          $SETARCH make test-pc "DESTDIR=$DESTDIR"
+
       - uses: ./.github/actions/slack
         with:
           label: ${{ matrix.test_task }} ${{ matrix.configure }}${{ matrix.arch }}
