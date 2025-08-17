@@ -78,6 +78,11 @@ RSpec.describe MSpecCI, "#options" do
     @script.options []
   end
 
+  it "enables the repeat option" do
+    expect(@options).to receive(:repeat)
+    @script.options @argv
+  end
+
   it "calls #custom_options" do
     expect(@script).to receive(:custom_options).with(@options)
     @script.options []
