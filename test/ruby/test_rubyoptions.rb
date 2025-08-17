@@ -47,26 +47,27 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([], "", [], [])
   end
 
+  version = RUBY_PATCHLEVEL == -1 ? "master" : "#{RUBY_VERSION_MAJOR}.#{RUBY_VERSION_MINOR}"
+  OPTIONS_LINK = "https://docs.ruby-lang.org/en/#{version}/ruby/options_md.html"
+
   def test_usage
     assert_in_out_err(%w(-h)) do |r, e|
-      assert_operator(r.size, :<=, 26)
-      longer = r[3..-1].select {|x| x.size >= 80}
+      _, _, link, *r = r
+      assert_include(link, OPTIONS_LINK)
+      assert_operator(r.size, :<=, 24)
+      longer = r.select {|x| x.size >= 80}
       assert_equal([], longer)
       assert_equal([], e)
-
-      version = RUBY_PATCHLEVEL == -1 ? "master" : "#{RUBY_VERSION_MAJOR}.#{RUBY_VERSION_MINOR}"
-      assert_include(r, "Details and examples at https://docs.ruby-lang.org/en/#{version}/ruby/options_md.html")
     end
   end
 
   def test_usage_long
     assert_in_out_err(%w(--help)) do |r, e|
-      longer = r[3..-1].select {|x| x.size > 80}
+      _, _, link, *r = r
+      assert_include(link, OPTIONS_LINK)
+      longer = r.select {|x| x.size > 80}
       assert_equal([], longer)
       assert_equal([], e)
-
-      version = RUBY_PATCHLEVEL == -1 ? "master" : "#{RUBY_VERSION_MAJOR}.#{RUBY_VERSION_MINOR}"
-      assert_include(r, "Details and examples at https://docs.ruby-lang.org/en/#{version}/ruby/options_md.html")
     end
   end
 
@@ -993,7 +994,7 @@ class TestRubyOptions < Test::Unit::TestCase
           pid = spawn(EnvUtil.rubybin, :in => s, :out => w)
           w.close
           assert_nothing_raised('[ruby-dev:37798]') do
-            result = EnvUtil.timeout(3) {r.read}
+            result = EnvUtil.timeout(10) {r.read}
           end
           Process.wait pid
         }

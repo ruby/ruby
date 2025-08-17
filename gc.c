@@ -343,7 +343,7 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
         if (rb_obj_is_thread(obj)) return false;
         if (rb_obj_is_mutex(obj)) return false;
         if (rb_obj_is_fiber(obj)) return false;
-        if (rb_obj_is_main_ractor(obj)) return false;
+        if (rb_ractor_p(obj)) return false;
         if (rb_obj_is_fstring_table(obj)) return false;
         if (rb_obj_is_symbol_table(obj)) return false;
 

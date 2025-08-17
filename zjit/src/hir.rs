@@ -321,6 +321,29 @@ impl From<RangeType> for u32 {
     }
 }
 
+/// Special regex backref symbol types
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SpecialBackrefSymbol {
+    LastMatch,     // $&
+    PreMatch,      // $`
+    PostMatch,     // $'
+    LastGroup,     // $+
+}
+
+impl TryFrom<u8> for SpecialBackrefSymbol {
+    type Error = String;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value as char {
+            '&' => Ok(SpecialBackrefSymbol::LastMatch),
+            '`' => Ok(SpecialBackrefSymbol::PreMatch),
+            '\'' => Ok(SpecialBackrefSymbol::PostMatch),
+            '+' => Ok(SpecialBackrefSymbol::LastGroup),
+            c => Err(format!("invalid backref symbol: '{}'", c)),
+        }
+    }
+}
+
 /// Print adaptor for [`Const`]. See [`PtrPrintMap`].
 struct ConstPrinter<'a> {
     inner: &'a Const,
@@ -415,6 +438,7 @@ pub enum SideExitReason {
     PatchPoint(Invariant),
     CalleeSideExit,
     ObjToStringFallback,
+    UnknownSpecialVariable(u64),
 }
 
 impl std::fmt::Display for SideExitReason {
@@ -494,6 +518,8 @@ pub enum Insn {
     GetLocal { level: u32, ep_offset: u32 },
     /// Set a local variable in a higher scope or the heap
     SetLocal { level: u32, ep_offset: u32, val: InsnId },
+    GetSpecialSymbol { symbol_type: SpecialBackrefSymbol, state: InsnId },
+    GetSpecialNumber { nth: u64, state: InsnId },
 
     /// Own a FrameState so that instructions can look up their dominating FrameState when
     /// generating deopt side-exits and frame reconstruction metadata. Does not directly generate
@@ -774,6 +800,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy()),
             Insn::GetLocal { level, ep_offset } => write!(f, "GetLocal l{level}, EP@{ep_offset}"),
             Insn::SetLocal { val, level, ep_offset } => write!(f, "SetLocal l{level}, EP@{ep_offset}, {val}"),
+            Insn::GetSpecialSymbol { symbol_type, .. } => write!(f, "GetSpecialSymbol {symbol_type:?}"),
+            Insn::GetSpecialNumber { nth, .. } => write!(f, "GetSpecialNumber {nth}"),
             Insn::ToArray { val, .. } => write!(f, "ToArray {val}"),
             Insn::ToNewArray { val, .. } => write!(f, "ToNewArray {val}"),
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
@@ -1221,6 +1249,8 @@ impl Function {
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val: find!(val), state },
             &SetLocal { val, ep_offset, level } => SetLocal { val: find!(val), ep_offset, level },
+            &GetSpecialSymbol { symbol_type, state } => GetSpecialSymbol { symbol_type, state },
+            &GetSpecialNumber { nth, state } => GetSpecialNumber { nth, state },
             &ToArray { val, state } => ToArray { val: find!(val), state },
             &ToNewArray { val, state } => ToNewArray { val: find!(val), state },
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
@@ -1234,7 +1264,7 @@ impl Function {
         self.union_find.borrow_mut().make_equal_to(insn, replacement);
     }
 
-    fn type_of(&self, insn: InsnId) -> Type {
+    pub fn type_of(&self, insn: InsnId) -> Type {
         assert!(self.insns[insn.0].has_output());
         self.insn_types[self.union_find.borrow_mut().find(insn).0]
     }
@@ -1306,6 +1336,8 @@ impl Function {
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
+            Insn::GetSpecialSymbol { .. } => types::BasicObject,
+            Insn::GetSpecialNumber { .. } => types::BasicObject,
             Insn::ToNewArray { .. } => types::ArrayExact,
             Insn::ToArray { .. } => types::ArrayExact,
             Insn::ObjToString { .. } => types::BasicObject,
@@ -1995,6 +2027,8 @@ impl Function {
                 worklist.push_back(state);
             }
             &Insn::GetGlobal { state, .. } |
+            &Insn::GetSpecialSymbol { state, .. } |
+            &Insn::GetSpecialNumber { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
         }
     }
@@ -2143,7 +2177,10 @@ impl Function {
         #[cfg(debug_assertions)] self.assert_validates();
         self.eliminate_dead_code();
         #[cfg(debug_assertions)] self.assert_validates();
+    }
 
+    /// Dump HIR passed to codegen if specified by options.
+    pub fn dump_hir(&self) {
         // Dump HIR after optimization
         match get_option!(dump_hir_opt) {
             Some(DumpHIR::WithoutSnapshot) => println!("Optimized HIR:\n{}", FunctionPrinter::without_snapshot(&self)),
@@ -2156,7 +2193,6 @@ impl Function {
             println!("{}", FunctionGraphvizPrinter::new(&self));
         }
     }
-
 
     /// Validates the following:
     /// 1. Basic block jump args match parameter arity.
@@ -3323,6 +3359,29 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let anytostring = fun.push_insn(block, Insn::AnyToString { val, str, state: exit_id });
                     state.stack_push(anytostring);
                 }
+                YARVINSN_getspecial => {
+                    let key = get_arg(pc, 0).as_u64();
+                    let svar = get_arg(pc, 1).as_u64();
+
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+
+                    if svar == 0 {
+                        // TODO: Handle non-backref
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownSpecialVariable(key) });
+                        // End the block
+                        break;
+                    } else if svar & 0x01 != 0 {
+                        // Handle symbol backrefs like $&, $`, $', $+
+                        let shifted_svar: u8 = (svar >> 1).try_into().unwrap();
+                        let symbol_type = SpecialBackrefSymbol::try_from(shifted_svar).expect("invalid backref symbol");
+                        let result = fun.push_insn(block, Insn::GetSpecialSymbol { symbol_type, state: exit_id });
+                        state.stack_push(result);
+                    } else {
+                        // Handle number backrefs like $1, $2, $3
+                        let result = fun.push_insn(block, Insn::GetSpecialNumber { nth: svar, state: exit_id });
+                        state.stack_push(result);
+                    }
+                }
                 _ => {
                     // Unknown opcode; side-exit into the interpreter
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
@@ -3738,40 +3797,6 @@ mod infer_tests {
 mod tests {
     use super::*;
     use expect_test::{expect, Expect};
-
-    #[macro_export]
-    macro_rules! assert_matches {
-        ( $x:expr, $pat:pat ) => {
-            {
-                let val = $x;
-                if (!matches!(val, $pat)) {
-                    eprintln!("{} ({:?}) does not match pattern {}", stringify!($x), val, stringify!($pat));
-                    assert!(false);
-                }
-            }
-        };
-    }
-
-
-    #[track_caller]
-    fn assert_matches_value(insn: Option<&Insn>, val: VALUE) {
-        match insn {
-            Some(Insn::Const { val: Const::Value(spec) }) => {
-                assert_eq!(*spec, val);
-            }
-            _ => assert!(false, "Expected Const {val}, found {insn:?}"),
-        }
-    }
-
-    #[track_caller]
-    fn assert_matches_const(insn: Option<&Insn>, expected: Const) {
-        match insn {
-            Some(Insn::Const { val }) => {
-                assert_eq!(*val, expected, "{val:?} does not match {expected:?}");
-            }
-            _ => assert!(false, "Expected Const {expected:?}, found {insn:?}"),
-        }
-    }
 
     #[track_caller]
     fn assert_method_hir(method: &str, hir: Expect) {
