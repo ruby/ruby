@@ -342,12 +342,39 @@ $(LIBRUBY_$(LIBRUBY_WITH_EXT)): $(LIBRUBY_SO_UPDATE)
 PKG_CONFIG = @PKG_CONFIG@
 ruby_pc = @ruby_pc@
 $(ruby_pc): config.status Makefile
-	$(Q)./config.status --file=-:$(srcdir)/template/ruby.pc.in | \
+	$(Q) \
+	pkg="$(@libdirname@)/pkgconfig" prefix="$(prefix)"; \
+	if [ "$(LIBRUBY_RELATIVE)" = yes ]; then \
+	  case "$$pkg" in "$$prefix"/?*) \
+	    pkg="$${pkg#$$prefix/}"; \
+	    prefix='$${pcfiledir}'`echo "/$${pkg}" | sed -e 's|/[^/][^/]*|/..|g'`; \
+	  esac; \
+	fi; \
+	./config.status --file=-:$(srcdir)/template/ruby.pc.in | \
 	sed -e 's/\$$(\([A-Za-z_][A-Za-z0-9_]*\))/$${\1}/g' \
-	    -e 's|^prefix=.*|prefix=$(prefix)|' \
+	    -e "s|^prefix=.*|prefix=$$prefix|" \
 	    > ruby.tmp.pc
 	$(Q)pkg_config=${PKG_CONFIG} && PKG_CONFIG_PATH=. $${pkg_config:-:} --print-errors ruby.tmp
 	$(Q)$(MV) -f ruby.tmp.pc $(ruby_pc)
+
+test-pc: install-data
+	set -ex; \
+	[ -z "$${pkg_config=$(PKG_CONFIG)}" ] && exit; \
+	export PKG_CONFIG_PATH=$(DESTDIR)/$(libdir)/pkgconfig$${PKG_CONFIG_PATH:+:$$PKG_CONFIG_PATH}; \
+	$${pkg_config} --exists $(ruby_pc:.pc=); \
+	path=`$${pkg_config} --variable=prefix $(ruby_pc:.pc=)`; \
+	if [ "$(LIBRUBY_RELATIVE)" = yes ]; then \
+	    test "$$path" -ef "$(DESTDIR)$(prefix)"; \
+	else \
+	    test "$$path" = "$(prefix)"; \
+	fi
+
+install-data: pkgconfig-data pre-install-data do-install-data post-install-data
+pre-install-data:: install-prereq
+do-install-data: $(PREP) pre-install-data
+	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=data
+post-install-data::
+	@$(NULLCMD)
 
 modular-gc-precheck:
 	$(Q) if test -z $(modular_gc_dir); then \
