@@ -321,40 +321,37 @@ objid_hash(VALUE obj)
 #endif
 }
 
-/**
+/*
  * call-seq:
- *    obj.hash    -> integer
+ *   hash -> integer
  *
- * Generates an Integer hash value for this object.  This function must have the
- * property that <code>a.eql?(b)</code> implies <code>a.hash == b.hash</code>.
+ * Returns the integer hash value for +self+;
+ * has the property that if <tt>foo.eql?(bar)</tt>
+ * then <tt>foo.hash == bar.hash</tt>.
  *
- * The hash value is used along with #eql? by the Hash class to determine if
- * two objects reference the same hash key.  Any hash value that exceeds the
- * capacity of an Integer will be truncated before being used.
+ * \Class Hash uses both #hash and #eql? to determine whether two objects
+ * used as hash keys are to be treated as the same key.
+ * A hash value that exceeds the capacity of an Integer is truncated before being used.
  *
- * The hash value for an object may not be identical across invocations or
- * implementations of Ruby.  If you need a stable identifier across Ruby
- * invocations and implementations you will need to generate one with a custom
- * method.
+ * Many core classes override method Object#hash;
+ * visit {core methods}[https://docs.ruby-lang.org/en/master/table_of_contents.html#methods]
+ * and search for <tt>#hash</tt>.
+ * Other core classes (e.g., Integer) calculate the hash internally,
+ * and do not call the #hash method when used as a hash key.
  *
- * Certain core classes such as Integer use built-in hash calculations and
- * do not call the #hash method when used as a hash key.
- *
- * When implementing your own #hash based on multiple values, the best
- * practice is to combine the class and any values using the hash code of an
- * array:
- *
- * For example:
+ * When implementing #hash for a user-defined class,
+ * best practice is to use Array#hash with the class name and the values
+ * that are important in the instance;
+ * this takes advantage of that method's logic for safely and efficiently
+ * generating a hash value:
  *
  *   def hash
  *     [self.class, a, b, c].hash
  *   end
  *
- * The reason for this is that the Array#hash method already has logic for
- * safely and efficiently combining multiple hash values.
- *--
- * \private
- *++
+ * The hash value may differ among invocations or implementations of Ruby.
+ * If you need stable hash-like identifiers across Ruby invocations and implementations,
+ * use a custom method to generate them.
  */
 VALUE
 rb_obj_hash(VALUE obj)
