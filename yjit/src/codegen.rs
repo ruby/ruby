@@ -3104,7 +3104,7 @@ fn gen_set_ivar(
 
     // Get the iv index
     let shape_too_complex = comptime_receiver.shape_too_complex();
-    let ivar_index = if !shape_too_complex {
+    let ivar_index = if !comptime_receiver.special_const_p() && !shape_too_complex {
         let shape_id = comptime_receiver.shape_id_of();
         let mut ivar_index: u16 = 0;
         if unsafe { rb_shape_get_iv_index(shape_id, ivar_name, &mut ivar_index) } {
