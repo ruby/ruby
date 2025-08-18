@@ -3369,7 +3369,7 @@ fn gen_definedivar(
     // Specialize base on compile time values
     let comptime_receiver = jit.peek_at_self();
 
-    if comptime_receiver.shape_too_complex() || asm.ctx.get_chain_depth() >= GET_IVAR_MAX_DEPTH {
+    if comptime_receiver.special_object_p() || comptime_receiver.shape_too_complex() || asm.ctx.get_chain_depth() >= GET_IVAR_MAX_DEPTH {
         // Fall back to calling rb_ivar_defined
 
         // Save the PC and SP because the callee may allocate
@@ -3401,6 +3401,8 @@ fn gen_definedivar(
 
     // Guard heap object (recv_opnd must be used before stack_pop)
     guard_object_is_heap(asm, recv, SelfOpnd, Counter::definedivar_not_heap);
+
+    // After this point, we know the receiver is a heap object and therefore the shape_id is valid.
 
     let shape_id_offset = unsafe { rb_shape_id_offset() };
     let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, recv, shape_id_offset);
