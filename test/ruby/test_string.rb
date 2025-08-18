@@ -3251,18 +3251,12 @@ CODE
       assert_equal('"\\u3042\\u3044\\u3046"', S("\u3042\u3044\u3046".encode(e)).inspect)
       assert_equal('"ab\\"c"', S("ab\"c".encode(e)).inspect, bug4081)
     end
-    begin
-      verbose, $VERBOSE = $VERBOSE, nil
-      ext = Encoding.default_external
-      Encoding.default_external = "us-ascii"
-      $VERBOSE = verbose
+
+    EnvUtil.with_default_external(Encoding::US_ASCII) do
       i = S("abc\"\\".force_encoding("utf-8")).inspect
-    ensure
-      $VERBOSE = nil
-      Encoding.default_external = ext
-      $VERBOSE = verbose
+
+      assert_equal('"abc\\"\\\\"', i, bug4081)
     end
-    assert_equal('"abc\\"\\\\"', i, bug4081)
   end
 
   def test_dummy_inspect
