@@ -356,7 +356,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SendWithoutBlockDirect { cd, state, self_val, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
             gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args)),
         Insn::SendWithoutBlockDirect { cme, iseq, self_val, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(self_val), opnds!(args), &function.frame_state(*state)),
-        Insn::InvokeBuiltin { bf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, opnds!(args))?,
+        // Ensure we have enough room fit ec, self, and arguments
+        // TODO remove this check when we have stack args (we can use Time.new to test it)
+        Insn::InvokeBuiltin { bf, .. } if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) => return None,
+        Insn::InvokeBuiltin { bf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, opnds!(args)),
         Insn::Return { val } => no_output!(gen_return(asm, opnd!(val))),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state)),
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state)),
@@ -371,7 +374,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FixnumOr { left, right } => gen_fixnum_or(asm, opnd!(left), opnd!(right)),
         Insn::IsNil { val } => gen_isnil(asm, opnd!(val)),
         Insn::Test { val } => gen_test(asm, opnd!(val)),
-        Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state))?,
+        Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
         Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(jit, asm, opnd!(val), *expected, &function.frame_state(*state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfun, opnds!(args)),
@@ -542,22 +545,18 @@ fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_in
     asm_ccall!(asm, rb_vm_opt_getconstant_path, EC, CFP, Opnd::const_ptr(ic))
 }
 
-fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf: &rb_builtin_function, args: Vec<Opnd>) -> Option<lir::Opnd> {
-    // Ensure we have enough room fit ec, self, and arguments
-    // TODO remove this check when we have stack args (we can use Time.new to test it)
-    if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) {
-        return None;
-    }
-
+fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf: &rb_builtin_function, args: Vec<Opnd>) -> lir::Opnd {
+    assert!(bf.argc + 2 <= C_ARG_OPNDS.len() as i32,
+            "gen_invokebuiltin should not be called for builtin function {} with too many arguments: {}",
+            unsafe { std::ffi::CStr::from_ptr(bf.name).to_str().unwrap() },
+            bf.argc);
     // Anything can happen inside builtin functions
     gen_prepare_non_leaf_call(jit, asm, state);
 
     let mut cargs = vec![EC];
     cargs.extend(args);
 
-    let val = asm.ccall(bf.func_ptr as *const u8, cargs);
-
-    Some(val)
+    asm.ccall(bf.func_ptr as *const u8, cargs)
 }
 
 /// Record a patch point that should be invalidated on a given invariant
@@ -1172,7 +1171,7 @@ fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
 }
 
 /// Compile a type check with a side exit
-fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard_type: Type, state: &FrameState) -> Option<lir::Opnd> {
+fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard_type: Type, state: &FrameState) -> lir::Opnd {
     if guard_type.is_subtype(types::Fixnum) {
         asm.test(val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
         asm.jz(side_exit(jit, state, GuardType(guard_type)));
@@ -1185,7 +1184,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         // Static symbols have (val & 0xff) == RUBY_SYMBOL_FLAG
         // Use 8-bit comparison like YJIT does
         debug_assert!(val.try_num_bits(8).is_some(), "GuardType should not be used for a known constant, but val was: {val:?}");
-        asm.cmp(val.try_num_bits(8)?, Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
+        asm.cmp(val.with_num_bits(8), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
         asm.jne(side_exit(jit, state, GuardType(guard_type)));
     } else if guard_type.is_subtype(types::NilClass) {
         asm.cmp(val, Qnil.into());
@@ -1226,7 +1225,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
     } else {
         unimplemented!("unsupported type: {guard_type}");
     }
-    Some(val)
+    val
 }
 
 /// Compile an identity check with a side exit
