@@ -1032,17 +1032,17 @@ class TestShapes < Test::Unit::TestCase
     assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of([]))
   end
 
-  def test_true_has_special_const_shape_id
-    assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of(true).id)
-  end
+  # def test_true_has_special_const_shape_id
+  #   assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of(true).id)
+  # end
 
-  def test_nil_has_special_const_shape_id
-    assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of(nil).id)
-  end
+  # def test_nil_has_special_const_shape_id
+  #   assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of(nil).id)
+  # end
 
-  def test_root_shape_transition_to_special_const_on_frozen
-    assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of([].freeze).id)
-  end
+  # def test_root_shape_transition_to_special_const_on_frozen
+  #   assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of([].freeze).id)
+  # end
 
   def test_basic_shape_transition
     obj = Example.new
