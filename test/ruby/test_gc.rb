@@ -447,7 +447,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_singleton_method_added
-    assert_in_out_err([], <<-EOS, [], [], "[ruby-dev:44436]")
+    assert_in_out_err([], <<-EOS, [], [], "[ruby-dev:44436]", timeout: 30)
       class BasicObject
         undef singleton_method_added
         def singleton_method_added(mid)
