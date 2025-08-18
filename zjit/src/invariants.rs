@@ -75,7 +75,7 @@ impl Invariants {
             old_iseq == new_iseq
         });
 
-        for &new_iseq in moved.iter() {
+        for new_iseq in moved {
             iseqs.insert(new_iseq);
         }
     }
