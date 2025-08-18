@@ -131,7 +131,7 @@ fn gen_iseq_entry_point_body(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<CodePt
 
     // Stub callee ISEQs for JIT-to-JIT calls
     for iseq_call in jit.iseq_calls.iter() {
-        gen_iseq_call(cb, iseq, iseq_call.clone())?;
+        gen_iseq_call(cb, iseq, iseq_call)?;
     }
 
     // Remember the block address to reuse it later
@@ -145,7 +145,7 @@ fn gen_iseq_entry_point_body(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<CodePt
 }
 
 /// Stub a branch for a JIT-to-JIT call
-fn gen_iseq_call(cb: &mut CodeBlock, caller_iseq: IseqPtr, iseq_call: Rc<RefCell<IseqCall>>) -> Option<()> {
+fn gen_iseq_call(cb: &mut CodeBlock, caller_iseq: IseqPtr, iseq_call: &Rc<RefCell<IseqCall>>) -> Option<()> {
     // Compile a function stub
     let Some(stub_ptr) = gen_function_stub(cb, iseq_call.clone()) else {
         // Failed to compile the stub. Bail out of compiling the caller ISEQ.
@@ -1475,7 +1475,7 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &Rc<RefCell<IseqCall>>)
     };
 
     // Stub callee ISEQs for JIT-to-JIT calls
-    for callee_iseq_call in iseq_calls.into_iter() {
+    for callee_iseq_call in iseq_calls.iter() {
         gen_iseq_call(cb, iseq_call.borrow().iseq, callee_iseq_call)?;
     }
 
