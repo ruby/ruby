@@ -152,8 +152,9 @@ fn gen_iseq_call(cb: &mut CodeBlock, caller_iseq: IseqPtr, iseq_call: &Rc<RefCel
 
     // Update the JIT-to-JIT call to call the stub
     let stub_addr = stub_ptr.raw_ptr(cb);
+    let iseq = iseq_call.borrow().iseq;
     iseq_call.borrow_mut().regenerate(cb, |asm| {
-        asm_comment!(asm, "call function stub: {}", iseq_get_location(iseq_call.borrow().iseq, 0));
+        asm_comment!(asm, "call function stub: {}", iseq_get_location(iseq, 0));
         asm.ccall(stub_addr, vec![]);
     });
     Some(())
@@ -1520,8 +1521,9 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &Rc<RefCell<IseqCall>>)
 
     // Update the stub to call the code pointer
     let code_addr = code_ptr.raw_ptr(cb);
+    let iseq = iseq_call.borrow().iseq;
     iseq_call.borrow_mut().regenerate(cb, |asm| {
-        asm_comment!(asm, "call compiled function: {}", iseq_get_location(iseq_call.borrow().iseq, 0));
+        asm_comment!(asm, "call compiled function: {}", iseq_get_location(iseq, 0));
         asm.ccall(code_addr, vec![]);
     });
 
