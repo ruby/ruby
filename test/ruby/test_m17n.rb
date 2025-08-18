@@ -248,20 +248,11 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_object_utf16_32_inspect
-    EnvUtil.suppress_warning do
-      begin
-        orig_int = Encoding.default_internal
-        orig_ext = Encoding.default_external
-        Encoding.default_internal = nil
-        Encoding.default_external = Encoding::UTF_8
-        o = Object.new
-        [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].each do |e|
-          o.instance_eval "undef inspect;def inspect;'abc'.encode('#{e}');end"
-          assert_equal '[abc]', [o].inspect
-        end
-      ensure
-        Encoding.default_internal = orig_int
-        Encoding.default_external = orig_ext
+    EnvUtil.with_default_external(Encoding::UTF_8) do
+      o = Object.new
+      [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].each do |e|
+        o.instance_eval "undef inspect;def inspect;'abc'.encode('#{e}');end"
+        assert_equal '[abc]', [o].inspect
       end
     end
   end
