@@ -1,16 +1,16 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-CONFIG" "1" "July 2025" ""
+.TH "BUNDLE\-CONFIG" "1" "August 2025" ""
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
 .SH "SYNOPSIS"
-\fBbundle config\fR list
+\fBbundle config\fR [list]
 .br
-\fBbundle config\fR [get] NAME
+\fBbundle config\fR [get [\-\-local|\-\-global]] NAME
 .br
-\fBbundle config\fR [set] NAME VALUE
+\fBbundle config\fR [set [\-\-local|\-\-global]] NAME VALUE
 .br
-\fBbundle config\fR unset NAME
+\fBbundle config\fR unset [\-\-local|\-\-global] NAME
 .SH "DESCRIPTION"
 This command allows you to interact with Bundler's configuration system\.
 .P
@@ -25,23 +25,40 @@ Global config (\fB~/\.bundle/config\fR)
 Bundler default config
 .IP "" 0
 .P
+Executing \fBbundle\fR with the \fBBUNDLE_IGNORE_CONFIG\fR environment variable set will cause it to ignore all configuration\.
+.SH "SUB\-COMMANDS"
+.SS "list (default command)"
 Executing \fBbundle config list\fR will print a list of all bundler configuration for the current bundle, and where that configuration was set\.
+.SS "get"
+Executing \fBbundle config get <name>\fR will print the value of that configuration setting, and all locations where it was set\.
 .P
-Executing \fBbundle config get <name>\fR will print the value of that configuration setting, and where it was set\.
+\fBOPTIONS\fR
+.TP
+\fB\-\-local\fR
+Get configuration from configuration file for the local application, namely, \fB<project_root>/\.bundle/config\fR, or \fB$BUNDLE_APP_CONFIG/config\fR if \fBBUNDLE_APP_CONFIG\fR is set\.
+.TP
+\fB\-\-global\fR
+Get configuration from configuration file global to all bundles executed as the current user, namely, from \fB~/\.bundle/config\fR\.
+.SS "set"
+Executing \fBbundle config set <name> <value>\fR defaults to setting \fBlocal\fR configuration if executing from within a local application, otherwise it will set \fBglobal\fR configuration\.
 .P
-Executing \fBbundle config set <name> <value>\fR defaults to setting \fBlocal\fR configuration if executing from within a local application, otherwise it will set \fBglobal\fR configuration\. See \fB\-\-local\fR and \fB\-\-global\fR options below\.
-.P
+\fBOPTIONS\fR
+.TP
+\fB\-\-local\fR
 Executing \fBbundle config set \-\-local <name> <value>\fR will set that configuration in the directory for the local application\. The configuration will be stored in \fB<project_root>/\.bundle/config\fR\. If \fBBUNDLE_APP_CONFIG\fR is set, the configuration will be stored in \fB$BUNDLE_APP_CONFIG/config\fR\.
-.P
+.TP
+\fB\-\-global\fR
 Executing \fBbundle config set \-\-global <name> <value>\fR will set that configuration to the value specified for all bundles executed as the current user\. The configuration will be stored in \fB~/\.bundle/config\fR\. If \fIname\fR already is set, \fIname\fR will be overridden and user will be warned\.
-.P
+.SS "unset"
 Executing \fBbundle config unset <name>\fR will delete the configuration in both local and global sources\.
 .P
-Executing \fBbundle config unset \-\-global <name>\fR will delete the configuration only from the user configuration\.
-.P
+\fBOPTIONS\fR
+.TP
+\fB\-\-local\fR
 Executing \fBbundle config unset \-\-local <name>\fR will delete the configuration only from the local application\.
-.P
-Executing bundle with the \fBBUNDLE_IGNORE_CONFIG\fR environment variable set will cause it to ignore all configuration\.
+.TP
+\fB\-\-global\fR
+Executing \fBbundle config unset \-\-global <name>\fR will delete the configuration only from the user configuration\.
 .SH "CONFIGURATION KEYS"
 Configuration keys in bundler have two forms: the canonical form and the environment variable form\.
 .P

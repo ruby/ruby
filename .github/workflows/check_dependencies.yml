@@ -48,11 +48,7 @@ jobs:
       - name: Run configure
         run: ./configure -C --disable-install-doc --disable-rubygems --with-gcc 'optflags=-O0' 'debugflags=-save-temps=obj -g'
 
-      - run: make all golf
-
-      - run: ./goruby -veh
-
-      - run: ruby tool/update-deps --fix
+      - run: make fix-depends
 
       - run: git diff --no-ext-diff --ignore-submodules --exit-code
 

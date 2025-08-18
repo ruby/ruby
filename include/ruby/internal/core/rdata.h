@@ -143,8 +143,8 @@ struct RData {
     RUBY_DATA_FUNC dfree;
 
     /** Pointer to the actual C level struct that you want to wrap.
-      * This is in between dmark and dfree to allow DATA_PTR to continue
-      * to work for both RData and non-embedded RTypedData.
+      * This is after dmark and dfree to allow DATA_PTR to continue to work for
+      * both RData and non-embedded RTypedData.
       */
     void *data;
 };

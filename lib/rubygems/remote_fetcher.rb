@@ -72,7 +72,7 @@ class Gem::RemoteFetcher
   # +headers+: A set of additional HTTP headers to be sent to the server when
   #            fetching the gem.
 
-  def initialize(proxy=nil, dns=nil, headers={})
+  def initialize(proxy = nil, dns = nil, headers = {})
     require_relative "core_ext/tcpsocket_init" if Gem.configuration.ipv4_fallback_enabled
     require_relative "vendored_net_http"
     require_relative "vendor/uri/lib/uri"

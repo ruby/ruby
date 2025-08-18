@@ -302,7 +302,7 @@ $ ruby -n -e 'p $_' desiderata.txt
 "be on good terms with all persons.\n"
 ```
 
-With option `-l' (chopped):
+With option `-l` (chopped):
 
 ```console
 $ ruby -ln -e 'p $_' desiderata.txt

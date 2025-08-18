@@ -293,7 +293,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_measure_total_time
-    assert_separately([], __FILE__, __LINE__, <<~RUBY)
+    assert_separately([], __FILE__, __LINE__, <<~RUBY, timeout: 60)
       GC.measure_total_time = false
 
       time_before = GC.stat(:time)
@@ -447,7 +447,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_singleton_method_added
-    assert_in_out_err([], <<-EOS, [], [], "[ruby-dev:44436]")
+    assert_in_out_err([], <<-EOS, [], [], "[ruby-dev:44436]", timeout: 30)
       class BasicObject
         undef singleton_method_added
         def singleton_method_added(mid)

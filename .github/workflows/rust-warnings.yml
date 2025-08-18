@@ -30,9 +30,7 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Document')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
@@ -44,10 +42,10 @@ jobs:
         run: rustup default beta
 
       - name: Rust warnings
+        shell: bash
         run: |
-          set -euo pipefail
+          set -eu
           cargo check --quiet --all-features --message-format=json \
-            | jq -r 'select(.reason == "compiler-message" and .message.level == "warning") | .message.rendered' \
-            > warnings.txt
-          cat warnings.txt
-          ! grep --quiet '[^[:space:]]' warnings.txt
+            | jq -r 'select(.message.level == "warning" or .message.level == "error") | .message.rendered' \
+            | tee messages.txt
+          (exit "${PIPESTATUS[0]}") && ! grep --quiet '[^[:space:]]' messages.txt

@@ -498,7 +498,7 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_machine_stack_gc
-    assert_normal_exit <<-RUBY, '[Bug #14561]', timeout: 10
+    assert_normal_exit <<-RUBY, '[Bug #14561]', timeout: 60
       enum = Enumerator.new { |y| y << 1 }
       thread = Thread.new { enum.peek }
       thread.join

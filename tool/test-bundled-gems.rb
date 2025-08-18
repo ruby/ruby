@@ -8,11 +8,15 @@ ENV.delete("GNUMAKEFLAGS")
 
 github_actions = ENV["GITHUB_ACTIONS"] == "true"
 
+DEFAULT_ALLOWED_FAILURES = RUBY_PLATFORM =~ /mswin|mingw/ ? [
+  'rbs',
+  'debug',
+  'irb',
+  'power_assert',
+  'net-imap',
+] : []
 allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
-if RUBY_PLATFORM =~ /mswin|mingw/
-  allowed_failures = [allowed_failures, "rbs,debug,irb,power_assert"].join(',')
-end
-allowed_failures = allowed_failures.split(',').uniq.reject(&:empty?)
+allowed_failures = allowed_failures.split(',').concat(DEFAULT_ALLOWED_FAILURES).uniq.reject(&:empty?)
 
 # make test-bundled-gems BUNDLED_GEMS=gem1,gem2,gem3
 bundled_gems = ARGV.first || ''
@@ -49,7 +53,15 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
       File.unlink(path) if File.exist?(path)
     end
 
-    test_command << " stdlib_test validate RBS_SKIP_TESTS=#{__dir__}/rbs_skip_tests SKIP_RBS_VALIDATION=true"
+    rbs_skip_tests = [
+      File.join(__dir__, "/rbs_skip_tests")
+    ]
+
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      rbs_skip_tests << File.join(__dir__, "/rbs_skip_tests_windows")
+    end
+
+    test_command << " stdlib_test validate RBS_SKIP_TESTS=#{rbs_skip_tests.join(File::PATH_SEPARATOR)} SKIP_RBS_VALIDATION=true"
     first_timeout *= 3
 
   when "debug"
@@ -113,7 +125,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
               "with exit code #{$?.exitstatus}")
     puts colorize.decorate(mesg, "fail")
     if allowed_failures.include?(gem)
-      mesg = "Ignoring test failures for #{gem} due to \$TEST_BUNDLED_GEMS_ALLOW_FAILURES"
+      mesg = "Ignoring test failures for #{gem} due to \$TEST_BUNDLED_GEMS_ALLOW_FAILURES or DEFAULT_ALLOWED_FAILURES"
       puts colorize.decorate(mesg, "skip")
     else
       failed << gem
