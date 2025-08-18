@@ -4033,7 +4033,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       tap { m }
       GC.start
       tap { m }
-    }, bug8964
+    }, bug8964, timeout: 30
     assert_normal_exit %q{
       prc = Proc.new {|a: []|}
       GC.stress = true
