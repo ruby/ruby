@@ -369,7 +369,7 @@ RUBY_FUNC_EXPORTED shape_id_t
 rb_obj_shape_id(VALUE obj)
 {
     if (RB_SPECIAL_CONST_P(obj)) {
-        return SPECIAL_CONST_SHAPE_ID;
+        rb_bug("rb_obj_shape_id: called on a special constant");
     }
 
     if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
