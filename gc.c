@@ -332,8 +332,6 @@ rb_gc_multi_ractor_p(void)
     return rb_multi_ractor_p();
 }
 
-bool rb_obj_is_main_ractor(VALUE gv);
-
 bool
 rb_gc_shutdown_call_finalizer_p(VALUE obj)
 {
