@@ -258,40 +258,33 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_object_inspect_external
-    orig_v, $VERBOSE = $VERBOSE, false
-    orig_int, Encoding.default_internal = Encoding.default_internal, nil
-    orig_ext = Encoding.default_external
-
     omit "https://bugs.ruby-lang.org/issues/18338"
 
     o = Object.new
 
-    Encoding.default_external = Encoding::UTF_16BE
-    def o.inspect
-      "abc"
-    end
-    assert_nothing_raised(Encoding::CompatibilityError) { [o].inspect }
+    EnvUtil.with_default_external(Encoding::UTF_16BE) do
+      def o.inspect
+        "abc"
+      end
+      assert_nothing_raised(Encoding::CompatibilityError) { [o].inspect }
 
-    def o.inspect
-      "abc".encode(Encoding.default_external)
+      def o.inspect
+        "abc".encode(Encoding.default_external)
+      end
+      assert_equal '[abc]', [o].inspect
     end
 
-    assert_equal '[abc]', [o].inspect
+    EnvUtil.with_default_external(Encoding::US_ASCII) do
+      def o.inspect
+        "\u3042"
+      end
+      assert_equal '[\u3042]', [o].inspect
 
-    Encoding.default_external = Encoding::US_ASCII
-    def o.inspect
-      "\u3042"
+      def o.inspect
+        "\x82\xa0".force_encoding(Encoding::Windows_31J)
+      end
+      assert_equal '[\x{82A0}]', [o].inspect
     end
-    assert_equal '[\u3042]', [o].inspect
-
-    def o.inspect
-      "\x82\xa0".force_encoding(Encoding::Windows_31J)
-    end
-    assert_equal '[\x{82A0}]', [o].inspect
-  ensure
-    Encoding.default_internal = orig_int
-    Encoding.default_external = orig_ext
-    $VERBOSE = orig_v
   end
 
   def test_str_dump
