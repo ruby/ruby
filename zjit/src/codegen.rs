@@ -1,6 +1,6 @@
 use std::cell::Cell;
 use std::rc::Rc;
-use std::ffi::{c_int, c_void};
+use std::ffi::{c_int, c_long, c_void};
 
 use crate::asm::Label;
 use crate::backend::current::{Reg, ALLOC_REGS};
@@ -332,6 +332,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     let out_opnd = match insn {
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
         Insn::NewArray { elements, state } => gen_new_array(asm, opnds!(elements), &function.frame_state(*state)),
+        Insn::NewHash { elements, state } => gen_new_hash(jit, asm, elements, &function.frame_state(*state))?,
         Insn::NewRange { low, high, flag, state } => gen_new_range(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
@@ -388,7 +389,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         | Insn::FixnumDiv { .. }
         | Insn::FixnumMod { .. }
         | Insn::HashDup { .. }
-        | Insn::NewHash { .. }
         | Insn::Send { .. }
         | Insn::Throw { .. }
         | Insn::ToArray { .. }
@@ -974,7 +974,7 @@ fn gen_new_array(
 ) -> lir::Opnd {
     gen_prepare_call_with_gc(asm, state);
 
-    let length: ::std::os::raw::c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+    let length: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
     let new_array = asm_ccall!(asm, rb_ary_new_capa, length.into());
 
@@ -983,6 +983,61 @@ fn gen_new_array(
     }
 
     new_array
+}
+
+/// Compile a new hash instruction
+fn gen_new_hash(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    elements: &Vec<(InsnId, InsnId)>,
+    state: &FrameState,
+) -> Option<lir::Opnd> {
+    gen_prepare_non_leaf_call(jit, asm, state)?;
+
+    let cap: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+    let new_hash = asm_ccall!(asm, rb_hash_new_with_size, lir::Opnd::Imm(cap));
+
+    if !elements.is_empty() {
+        let mut pairs = Vec::new();
+        for (key_id, val_id) in elements.iter() {
+            let key = jit.get_opnd(*key_id)?;
+            let val = jit.get_opnd(*val_id)?;
+            pairs.push(key);
+            pairs.push(val);
+        }
+
+        let n = pairs.len();
+
+        // Calculate the compile-time NATIVE_STACK_PTR offset from NATIVE_BASE_PTR
+        // At this point, frame_setup(&[], jit.c_stack_slots) has been called,
+        // which allocated aligned_stack_bytes(jit.c_stack_slots) on the stack
+        let frame_size = aligned_stack_bytes(jit.c_stack_slots);
+        let allocation_size = aligned_stack_bytes(n);
+
+        asm_comment!(asm, "allocate {} bytes on C stack for {} hash elements", allocation_size, n);
+        asm.sub_into(NATIVE_STACK_PTR, allocation_size.into());
+
+        // Calculate the total offset from NATIVE_BASE_PTR to our buffer
+        let total_offset_from_base = (frame_size + allocation_size) as i32;
+
+        for (idx, &pair_opnd) in pairs.iter().enumerate() {
+            let slot_offset = -total_offset_from_base + (idx as i32 * SIZEOF_VALUE_I32);
+            asm.mov(
+                Opnd::mem(VALUE_BITS, NATIVE_BASE_PTR, slot_offset),
+                pair_opnd
+            );
+        }
+
+        let argv = asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, -total_offset_from_base));
+
+        let argc = (elements.len() * 2) as ::std::os::raw::c_long;
+        asm_ccall!(asm, rb_hash_bulk_insert, lir::Opnd::Imm(argc), argv, new_hash);
+
+        asm_comment!(asm, "restore C stack pointer");
+        asm.add_into(NATIVE_STACK_PTR, allocation_size.into());
+    }
+
+    Some(new_hash)
 }
 
 /// Compile a new range instruction
