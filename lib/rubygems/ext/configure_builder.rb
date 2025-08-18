@@ -7,8 +7,8 @@
 #++
 
 class Gem::Ext::ConfigureBuilder < Gem::Ext::Builder
-  def self.build(extension, dest_path, results, args=[], lib_dir=nil, configure_dir=Dir.pwd,
-    target_rbconfig=Gem.target_rbconfig)
+  def self.build(extension, dest_path, results, args = [], lib_dir = nil, configure_dir = Dir.pwd,
+    target_rbconfig = Gem.target_rbconfig)
     if target_rbconfig.path
       warn "--target-rbconfig is not yet supported for configure-based extensions. Ignoring"
     end

@@ -165,7 +165,7 @@ module Bundler
       PubGrub::VersionConstraint.new(package, range: range)
     end
 
-    def versions_for(package, range=VersionRange.any)
+    def versions_for(package, range = VersionRange.any)
       range.select_versions(@sorted_versions[package])
     end
 

@@ -321,6 +321,29 @@ impl From<RangeType> for u32 {
     }
 }
 
+/// Special regex backref symbol types
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SpecialBackrefSymbol {
+    LastMatch,     // $&
+    PreMatch,      // $`
+    PostMatch,     // $'
+    LastGroup,     // $+
+}
+
+impl TryFrom<u8> for SpecialBackrefSymbol {
+    type Error = String;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value as char {
+            '&' => Ok(SpecialBackrefSymbol::LastMatch),
+            '`' => Ok(SpecialBackrefSymbol::PreMatch),
+            '\'' => Ok(SpecialBackrefSymbol::PostMatch),
+            '+' => Ok(SpecialBackrefSymbol::LastGroup),
+            c => Err(format!("invalid backref symbol: '{}'", c)),
+        }
+    }
+}
+
 /// Print adaptor for [`Const`]. See [`PtrPrintMap`].
 struct ConstPrinter<'a> {
     inner: &'a Const,
@@ -414,6 +437,9 @@ pub enum SideExitReason {
     GuardBitEquals(VALUE),
     PatchPoint(Invariant),
     CalleeSideExit,
+    ObjToStringFallback,
+    UnknownSpecialVariable(u64),
+    UnhandledDefinedType(usize),
 }
 
 impl std::fmt::Display for SideExitReason {
@@ -444,7 +470,7 @@ pub enum Insn {
     Param { idx: usize },
 
     StringCopy { val: InsnId, chilled: bool, state: InsnId },
-    StringIntern { val: InsnId },
+    StringIntern { val: InsnId, state: InsnId },
     StringConcat { strings: Vec<InsnId>, state: InsnId },
 
     /// Put special object (VMCORE, CBASE, etc.) based on value_type
@@ -493,6 +519,8 @@ pub enum Insn {
     GetLocal { level: u32, ep_offset: u32 },
     /// Set a local variable in a higher scope or the heap
     SetLocal { level: u32, ep_offset: u32, val: InsnId },
+    GetSpecialSymbol { symbol_type: SpecialBackrefSymbol, state: InsnId },
+    GetSpecialNumber { nth: u64, state: InsnId },
 
     /// Own a FrameState so that instructions can look up their dominating FrameState when
     /// generating deopt side-exits and frame reconstruction metadata. Does not directly generate
@@ -773,11 +801,14 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy()),
             Insn::GetLocal { level, ep_offset } => write!(f, "GetLocal l{level}, EP@{ep_offset}"),
             Insn::SetLocal { val, level, ep_offset } => write!(f, "SetLocal l{level}, EP@{ep_offset}, {val}"),
+            Insn::GetSpecialSymbol { symbol_type, .. } => write!(f, "GetSpecialSymbol {symbol_type:?}"),
+            Insn::GetSpecialNumber { nth, .. } => write!(f, "GetSpecialNumber {nth}"),
             Insn::ToArray { val, .. } => write!(f, "ToArray {val}"),
             Insn::ToNewArray { val, .. } => write!(f, "ToNewArray {val}"),
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
             Insn::ArrayPush { array, val, .. } => write!(f, "ArrayPush {array}, {val}"),
             Insn::ObjToString { val, .. } => { write!(f, "ObjToString {val}") },
+            Insn::StringIntern { val, .. } => { write!(f, "StringIntern {val}") },
             Insn::AnyToString { val, str, .. } => { write!(f, "AnyToString {val}, str: {str}") },
             Insn::SideExit { reason, .. } => write!(f, "SideExit {reason}"),
             Insn::PutSpecialObject { value_type } => write!(f, "PutSpecialObject {value_type}"),
@@ -801,7 +832,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, ", {val}")
             }
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
-            insn => { write!(f, "{insn:?}") }
         }
     }
 }
@@ -1147,7 +1177,7 @@ impl Function {
             &Return { val } => Return { val: find!(val) },
             &Throw { throw_state, val } => Throw { throw_state, val: find!(val) },
             &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
-            &StringIntern { val } => StringIntern { val: find!(val) },
+            &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
             &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
@@ -1220,6 +1250,8 @@ impl Function {
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val: find!(val), state },
             &SetLocal { val, ep_offset, level } => SetLocal { val: find!(val), ep_offset, level },
+            &GetSpecialSymbol { symbol_type, state } => GetSpecialSymbol { symbol_type, state },
+            &GetSpecialNumber { nth, state } => GetSpecialNumber { nth, state },
             &ToArray { val, state } => ToArray { val: find!(val), state },
             &ToNewArray { val, state } => ToNewArray { val: find!(val), state },
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
@@ -1233,7 +1265,7 @@ impl Function {
         self.union_find.borrow_mut().make_equal_to(insn, replacement);
     }
 
-    fn type_of(&self, insn: InsnId) -> Type {
+    pub fn type_of(&self, insn: InsnId) -> Type {
         assert!(self.insns[insn.0].has_output());
         self.insn_types[self.union_find.borrow_mut().find(insn).0]
     }
@@ -1271,7 +1303,7 @@ impl Function {
             Insn::IsNil { val } if !self.type_of(*val).could_be(types::NilClass) => Type::from_cbool(false),
             Insn::IsNil { .. } => types::CBool,
             Insn::StringCopy { .. } => types::StringExact,
-            Insn::StringIntern { .. } => types::StringExact,
+            Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
@@ -1299,12 +1331,14 @@ impl Function {
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
             Insn::InvokeBuiltin { return_type, .. } => return_type.unwrap_or(types::BasicObject),
-            Insn::Defined { .. } => types::BasicObject,
+            Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::DefinedIvar { .. } => types::BasicObject,
             Insn::GetConstantPath { .. } => types::BasicObject,
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
+            Insn::GetSpecialSymbol { .. } => types::BasicObject,
+            Insn::GetSpecialNumber { .. } => types::BasicObject,
             Insn::ToNewArray { .. } => types::ArrayExact,
             Insn::ToArray { .. } => types::ArrayExact,
             Insn::ObjToString { .. } => types::BasicObject,
@@ -1615,13 +1649,12 @@ impl Function {
                         self.insn_types[replacement.0] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
-                    Insn::ObjToString { val, cd, state, .. } => {
+                    Insn::ObjToString { val, .. } => {
                         if self.is_a(val, types::String) {
                             // behaves differently from `SendWithoutBlock` with `mid:to_s` because ObjToString should not have a patch point for String to_s being redefined
                             self.make_equal_to(insn_id, val);
                         } else {
-                            let replacement = self.push_insn(block, Insn::SendWithoutBlock { self_val: val, cd, args: vec![], state });
-                            self.make_equal_to(insn_id, replacement)
+                            self.push_insn_id(block, insn_id);
                         }
                     }
                     Insn::AnyToString { str, .. } => {
@@ -1906,15 +1939,15 @@ impl Function {
                 worklist.extend(strings);
                 worklist.push_back(state);
             }
-            | &Insn::StringIntern { val }
             | &Insn::Return { val }
             | &Insn::Throw { val, .. }
-            | &Insn::Defined { v: val, .. }
             | &Insn::Test { val }
             | &Insn::SetLocal { val, .. }
             | &Insn::IsNil { val } =>
                 worklist.push_back(val),
             &Insn::SetGlobal { val, state, .. }
+            | &Insn::Defined { v: val, state, .. }
+            | &Insn::StringIntern { val, state }
             | &Insn::StringCopy { val, state, .. }
             | &Insn::GuardType { val, state, .. }
             | &Insn::GuardBitEquals { val, state, .. }
@@ -1995,6 +2028,8 @@ impl Function {
                 worklist.push_back(state);
             }
             &Insn::GetGlobal { state, .. } |
+            &Insn::GetSpecialSymbol { state, .. } |
+            &Insn::GetSpecialNumber { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
         }
     }
@@ -2143,7 +2178,10 @@ impl Function {
         #[cfg(debug_assertions)] self.assert_validates();
         self.eliminate_dead_code();
         #[cfg(debug_assertions)] self.assert_validates();
+    }
 
+    /// Dump HIR passed to codegen if specified by options.
+    pub fn dump_hir(&self) {
         // Dump HIR after optimization
         match get_option!(dump_hir_opt) {
             Some(DumpHIR::WithoutSnapshot) => println!("Optimized HIR:\n{}", FunctionPrinter::without_snapshot(&self)),
@@ -2156,7 +2194,6 @@ impl Function {
             println!("{}", FunctionGraphvizPrinter::new(&self));
         }
     }
-
 
     /// Validates the following:
     /// 1. Basic block jump args match parameter arity.
@@ -2815,7 +2852,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_putself => { state.stack_push(self_param); }
                 YARVINSN_intern => {
                     let val = state.stack_pop()?;
-                    let insn_id = fun.push_insn(block, Insn::StringIntern { val });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let insn_id = fun.push_insn(block, Insn::StringIntern { val, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_concatstrings => {
@@ -2920,6 +2958,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let pushval = get_arg(pc, 2);
                     let v = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    if op_type == DEFINED_METHOD.try_into().unwrap() {
+                        // TODO(Shopify/ruby#703): Fix codegen for defined?(method call expr)
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledDefinedType(op_type)});
+                        break; // End the block
+                    }
                     state.stack_push(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v, state: exit_id }));
                 }
                 YARVINSN_definedivar => {
@@ -3321,6 +3364,29 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let anytostring = fun.push_insn(block, Insn::AnyToString { val, str, state: exit_id });
                     state.stack_push(anytostring);
+                }
+                YARVINSN_getspecial => {
+                    let key = get_arg(pc, 0).as_u64();
+                    let svar = get_arg(pc, 1).as_u64();
+
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+
+                    if svar == 0 {
+                        // TODO: Handle non-backref
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownSpecialVariable(key) });
+                        // End the block
+                        break;
+                    } else if svar & 0x01 != 0 {
+                        // Handle symbol backrefs like $&, $`, $', $+
+                        let shifted_svar: u8 = (svar >> 1).try_into().unwrap();
+                        let symbol_type = SpecialBackrefSymbol::try_from(shifted_svar).expect("invalid backref symbol");
+                        let result = fun.push_insn(block, Insn::GetSpecialSymbol { symbol_type, state: exit_id });
+                        state.stack_push(result);
+                    } else {
+                        // Handle number backrefs like $1, $2, $3
+                        let result = fun.push_insn(block, Insn::GetSpecialNumber { nth: svar, state: exit_id });
+                        state.stack_push(result);
+                    }
                 }
                 _ => {
                     // Unknown opcode; side-exit into the interpreter
@@ -3738,40 +3804,6 @@ mod tests {
     use super::*;
     use expect_test::{expect, Expect};
 
-    #[macro_export]
-    macro_rules! assert_matches {
-        ( $x:expr, $pat:pat ) => {
-            {
-                let val = $x;
-                if (!matches!(val, $pat)) {
-                    eprintln!("{} ({:?}) does not match pattern {}", stringify!($x), val, stringify!($pat));
-                    assert!(false);
-                }
-            }
-        };
-    }
-
-
-    #[track_caller]
-    fn assert_matches_value(insn: Option<&Insn>, val: VALUE) {
-        match insn {
-            Some(Insn::Const { val: Const::Value(spec) }) => {
-                assert_eq!(*spec, val);
-            }
-            _ => assert!(false, "Expected Const {val}, found {insn:?}"),
-        }
-    }
-
-    #[track_caller]
-    fn assert_matches_const(insn: Option<&Insn>, expected: Const) {
-        match insn {
-            Some(Insn::Const { val }) => {
-                assert_eq!(*val, expected, "{val:?} does not match {expected:?}");
-            }
-            _ => assert!(false, "Expected Const {expected:?}, found {insn:?}"),
-        }
-    }
-
     #[track_caller]
     fn assert_method_hir(method: &str, hir: Expect) {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
@@ -4178,10 +4210,10 @@ mod tests {
             fn test@<compiled>:2:
             bb0(v0:BasicObject):
               v2:NilClass = Const Value(nil)
-              v4:BasicObject = Defined constant, v2
-              v6:BasicObject = Defined func, v0
+              v4:StringExact|NilClass = Defined constant, v2
+              v6:StringExact|NilClass = Defined func, v0
               v7:NilClass = Const Value(nil)
-              v9:BasicObject = Defined global-variable, v7
+              v9:StringExact|NilClass = Defined global-variable, v7
               v11:ArrayExact = NewArray v4, v6, v9
               Return v11
         "#]]);
@@ -4493,6 +4525,26 @@ mod tests {
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = Send v1, 0x1000, :each
               Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn test_intern_interpolated_symbol() {
+        eval(r#"
+            def test
+              :"foo#{123}"
+            end
+        "#);
+        assert_method_hir_with_opcode("test", YARVINSN_intern, expect![[r#"
+            fn test@<compiled>:3:
+            bb0(v0:BasicObject):
+              v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v3:Fixnum[123] = Const Value(123)
+              v5:BasicObject = ObjToString v3
+              v7:String = AnyToString v3, str: v5
+              v9:StringExact = StringConcat v2, v7
+              v11:Symbol = StringIntern v9
+              Return v11
         "#]]);
     }
 
@@ -7241,8 +7293,8 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:Fixnum[1] = Const Value(1)
-              v11:BasicObject = SendWithoutBlock v3, :to_s
-              v7:String = AnyToString v3, str: v11
+              v5:BasicObject = ObjToString v3
+              v7:String = AnyToString v3, str: v5
               v9:StringExact = StringConcat v2, v7
               Return v9
         "#]]);

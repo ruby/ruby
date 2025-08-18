@@ -1394,10 +1394,8 @@ enc_names(VALUE self)
 static VALUE
 enc_list(VALUE klass)
 {
-    VALUE ary = rb_ary_new2(ENCODING_LIST_CAPA);
     VALUE list = RUBY_ATOMIC_VALUE_LOAD(rb_encoding_list);
-    rb_ary_replace(ary, list);
-    return ary;
+    return rb_ary_dup(list);
 }
 
 /*

@@ -6209,6 +6209,14 @@ vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
     return Qundef;
 }
 
+// ZJIT implementation is using the C function
+// and needs to call a non-static function
+VALUE
+rb_vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
+{
+    return vm_objtostring(iseq, recv, cd);
+}
+
 static VALUE
 vm_opt_ary_freeze(VALUE ary, int bop, ID id)
 {

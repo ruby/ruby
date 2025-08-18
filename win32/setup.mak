@@ -238,6 +238,16 @@ MACHINE = x86
 	@echo # ENCODING>>$(MAKEFILE)
 	@$(MAKE) -l -f $(srcdir)/win32/enc-setup.mak srcdir="$(srcdir)" MAKEFILE=$(MAKEFILE)
 
+!ifdef BASERUBY
+ruby = $(BASERUBY)
+!else ifndef ruby
+ruby = ruby
+!endif
+$(srcdir)/prism/srcs.mk:
+	$(ruby:/=\) $(srcdir)/prism/generate-srcs.mk.rb > $@
+
+-epilogue-: $(srcdir)/prism/srcs.mk
+
 -epilogue-: nul
 	@type << >>$(MAKEFILE)
 

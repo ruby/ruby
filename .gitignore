@@ -272,6 +272,7 @@ lcov*.info
 /prism/prettyprint.c
 /prism/serialize.c
 /prism/token_type.c
+/prism/srcs.mk
 
 # tool/update-NEWS-gemlist.rb
 /bundled_gems.json
