@@ -8,6 +8,7 @@ static VALUE rb_eClosedQueueError;
 /* Mutex */
 typedef struct rb_mutex_struct {
     rb_fiber_t *fiber;
+    rb_thread_t *thread;
     struct rb_mutex_struct *next_mutex;
     struct ccan_list_head waitq; /* protected by GVL */
 } rb_mutex_t;
@@ -128,8 +129,7 @@ mutex_free(void *ptr)
 {
     rb_mutex_t *mutex = ptr;
     if (mutex->fiber) {
-        /* rb_warn("free locked mutex"); */
-        const char *err = rb_mutex_unlock_th(mutex, rb_fiber_threadptr(mutex->fiber), mutex->fiber);
+        const char *err = rb_mutex_unlock_th(mutex, mutex->thread, mutex->fiber);
         if (err) rb_bug("%s", err);
     }
     ruby_xfree(ptr);
@@ -238,6 +238,8 @@ mutex_locked(rb_thread_t *th, VALUE self)
 {
     rb_mutex_t *mutex = mutex_ptr(self);
 
+    RUBY_ASSERT(mutex->fiber);
+    mutex->thread = rb_fiber_threadptr(mutex->fiber);
     thread_mutex_insert(th, mutex);
 }
 
@@ -463,6 +465,7 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
     struct sync_waiter *cur = 0, *next;
 
     mutex->fiber = 0;
+    mutex->thread = 0;
     thread_mutex_remove(th, mutex);
 
     ccan_list_for_each_safe(&mutex->waitq, cur, next, node) {
