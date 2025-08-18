@@ -592,7 +592,7 @@ class TestGemRemoteFetcher < Gem::TestCase
     end
   end
 
-  def assert_error(exception_class=Exception)
+  def assert_error(exception_class = Exception)
     got_exception = false
 
     begin

@@ -3,10 +3,10 @@ bundle-config(1) -- Set bundler configuration options
 
 ## SYNOPSIS
 
-`bundle config` list<br>
-`bundle config` [get] NAME<br>
-`bundle config` [set] NAME VALUE<br>
-`bundle config` unset NAME
+`bundle config` [list]<br>
+`bundle config` [get [--local|--global]] NAME<br>
+`bundle config` [set [--local|--global]] NAME VALUE<br>
+`bundle config` unset [--local|--global] NAME
 
 ## DESCRIPTION
 
@@ -19,38 +19,67 @@ Bundler loads configuration settings in this order:
 3. Global config (`~/.bundle/config`)
 4. Bundler default config
 
+Executing `bundle` with the `BUNDLE_IGNORE_CONFIG` environment variable set will
+cause it to ignore all configuration.
+
+## SUB-COMMANDS
+
+### list (default command)
+
 Executing `bundle config list` will print a list of all bundler
 configuration for the current bundle, and where that configuration
 was set.
 
+### get
+
 Executing `bundle config get <name>` will print the value of that configuration
-setting, and where it was set.
+setting, and all locations where it was set.
+
+**OPTIONS**
+
+* `--local`:
+  Get configuration from configuration file for the local application, namely,
+  `<project_root>/.bundle/config`, or `$BUNDLE_APP_CONFIG/config` if
+  `BUNDLE_APP_CONFIG` is set.
+
+* `--global`:
+  Get configuration from configuration file global to all bundles executed as
+  the current user, namely, from `~/.bundle/config`.
+
+### set
 
 Executing `bundle config set <name> <value>` defaults to setting `local`
 configuration if executing from within a local application, otherwise it will
-set `global` configuration. See `--local` and `--global` options below.
+set `global` configuration.
 
-Executing `bundle config set --local <name> <value>` will set that configuration
-in the directory for the local application. The configuration will be stored in
-`<project_root>/.bundle/config`. If `BUNDLE_APP_CONFIG` is set, the configuration
-will be stored in `$BUNDLE_APP_CONFIG/config`.
+**OPTIONS**
 
-Executing `bundle config set --global <name> <value>` will set that
-configuration to the value specified for all bundles executed as the current
-user. The configuration will be stored in `~/.bundle/config`. If <name> already
-is set, <name> will be overridden and user will be warned.
+* `--local`:
+  Executing `bundle config set --local <name> <value>` will set that configuration
+  in the directory for the local application. The configuration will be stored in
+  `<project_root>/.bundle/config`. If `BUNDLE_APP_CONFIG` is set, the configuration
+  will be stored in `$BUNDLE_APP_CONFIG/config`.
+
+* `--global`:
+  Executing `bundle config set --global <name> <value>` will set that
+  configuration to the value specified for all bundles executed as the current
+  user. The configuration will be stored in `~/.bundle/config`. If <name> already
+  is set, <name> will be overridden and user will be warned.
+
+### unset
 
 Executing `bundle config unset <name>` will delete the configuration in both
 local and global sources.
 
-Executing `bundle config unset --global <name>` will delete the configuration
-only from the user configuration.
+**OPTIONS**
 
-Executing `bundle config unset --local <name>` will delete the configuration
-only from the local application.
+* `--local`:
+  Executing `bundle config unset --local <name>` will delete the configuration
+  only from the local application.
 
-Executing bundle with the `BUNDLE_IGNORE_CONFIG` environment variable set will
-cause it to ignore all configuration.
+* `--global`:
+  Executing `bundle config unset --global <name>` will delete the configuration
+  only from the user configuration.
 
 ## CONFIGURATION KEYS
 

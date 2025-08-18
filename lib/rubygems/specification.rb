@@ -1757,7 +1757,7 @@ class Gem::Specification < Gem::BasicSpecification
   #
   #   [depending_gem, dependency, [list_of_gems_that_satisfy_dependency]]
 
-  def dependent_gems(check_dev=true)
+  def dependent_gems(check_dev = true)
     out = []
     Gem::Specification.each do |spec|
       deps = check_dev ? spec.dependencies : spec.runtime_dependencies

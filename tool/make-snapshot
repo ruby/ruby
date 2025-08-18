@@ -334,7 +334,7 @@ def package(vcs, rev, destdir, tmp = nil)
     FileUtils.rm(file, verbose: $VERBOSE)
   end
 
-  status = IO.read(File.dirname(__FILE__) + "/prereq.status")
+  status = File.read(File.dirname(__FILE__) + "/prereq.status")
   Dir.chdir(tmp) if tmp
 
   if !File.directory?(v)
@@ -346,10 +346,10 @@ def package(vcs, rev, destdir, tmp = nil)
   File.open("#{v}/revision.h", "wb") {|f|
     f.puts vcs.revision_header(revision, modified)
   }
-  version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
+  version ||= (versionhdr = File.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
   version ||=
     begin
-      include_ruby_versionhdr = IO.read("#{v}/include/ruby/version.h")
+      include_ruby_versionhdr = File.read("#{v}/include/ruby/version.h")
       api_major_version = include_ruby_versionhdr[/^\#define\s+RUBY_API_VERSION_MAJOR\s+([\d.]+)/, 1]
       api_minor_version = include_ruby_versionhdr[/^\#define\s+RUBY_API_VERSION_MINOR\s+([\d.]+)/, 1]
       version_teeny = versionhdr[/^\#define\s+RUBY_VERSION_TEENY\s+(\d+)/, 1]
@@ -358,14 +358,14 @@ def package(vcs, rev, destdir, tmp = nil)
   version or return
   if patchlevel
     unless tag.empty?
-      versionhdr ||= IO.read("#{v}/version.h")
+      versionhdr ||= File.read("#{v}/version.h")
       patchlevel = versionhdr[/^\#define\s+RUBY_PATCHLEVEL\s+(\d+)/, 1]
       tag = (patchlevel ? "p#{patchlevel}" : vcs.revision_name(revision))
     end
   elsif prerelease
-    versionhdr ||= IO.read("#{v}/version.h")
+    versionhdr ||= File.read("#{v}/version.h")
     versionhdr.sub!(/^\#\s*define\s+RUBY_PATCHLEVEL_STR\s+"\K.+?(?=")/, tag) or raise "no match of RUBY_PATCHLEVEL_STR to replace"
-    IO.write("#{v}/version.h", versionhdr)
+    File.write("#{v}/version.h", versionhdr)
   else
     tag ||= vcs.revision_name(revision)
   end
@@ -430,7 +430,7 @@ def package(vcs, rev, destdir, tmp = nil)
     puts "cross.rb:", File.read("cross.rb").gsub(/^/, "> "), "" if $VERBOSE
     unless File.exist?("configure")
       print "creating configure..."
-      unless system([ENV["AUTOCONF"]]*2)
+      unless system(File.exist?(gen = "./autogen.sh") ? gen : [ENV["AUTOCONF"]]*2)
         puts $colorize.fail(" failed")
         return
       end
@@ -439,11 +439,11 @@ def package(vcs, rev, destdir, tmp = nil)
     clean.add("autom4te.cache")
     clean.add("enc/unicode/data")
     print "creating prerequisites..."
-    if File.file?("common.mk") && /^prereq/ =~ commonmk = IO.read("common.mk")
+    if File.file?("common.mk") && /^prereq/ =~ commonmk = File.read("common.mk")
       puts
       extout = clean.add('tmp')
       begin
-        status = IO.read("tool/prereq.status")
+        status = File.read("tool/prereq.status")
       rescue Errno::ENOENT
         # use fallback file
       end
@@ -456,7 +456,7 @@ def package(vcs, rev, destdir, tmp = nil)
       File.binwrite("#{defaults}/ruby.rb", "")
       miniruby = ENV['MINIRUBY'] + " -I. -I#{extout} -rcross"
       baseruby = ENV["BASERUBY"]
-      mk = (IO.read("template/Makefile.in") rescue IO.read("Makefile.in")).
+      mk = (File.read("template/Makefile.in") rescue File.read("Makefile.in")).
              gsub(/^@.*\n/, '')
       vars = {
         "EXTOUT"=>extout,
@@ -480,7 +480,7 @@ def package(vcs, rev, destdir, tmp = nil)
       vars["UNICODE_VERSION"] = $unicode_version if $unicode_version
       args = vars.dup
       mk.gsub!(/@([A-Za-z_]\w*)@/) {args.delete($1); vars[$1] || ENV[$1]}
-      mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "").sub(/^revision\.tmp::$/, '\& Makefile')
+      mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "").gsub(/^!/, '-').sub(/^revision\.tmp::$/, '\& Makefile')
       mk << <<-'APPEND'
 
 update-download:: touch-unicode-files
