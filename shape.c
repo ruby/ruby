@@ -1424,6 +1424,9 @@ rb_shape_parent(VALUE self)
 static VALUE
 rb_shape_debug_shape(VALUE self, VALUE obj)
 {
+    if (RB_SPECIAL_CONST_P(obj)) {
+        rb_raise(rb_eArgError, "Can't get shape of special constant");
+    }
     return shape_id_t_to_rb_cShape(rb_obj_shape_id(obj));
 }
 
