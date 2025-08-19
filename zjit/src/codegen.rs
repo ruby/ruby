@@ -1183,8 +1183,8 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         asm.jne(side_exit(jit, state, GuardType(guard_type)));
     } else if guard_type.is_subtype(types::StaticSymbol) {
         // Static symbols have (val & 0xff) == RUBY_SYMBOL_FLAG
-        // Use 8-bit comparison like YJIT does
-        debug_assert!(val.try_num_bits(8).is_some(), "GuardType should not be used for a known constant, but val was: {val:?}");
+        // Use 8-bit comparison like YJIT does. GuardType should not be used
+        // for a known VALUE, which with_num_bits() does not support.
         asm.cmp(val.with_num_bits(8), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
         asm.jne(side_exit(jit, state, GuardType(guard_type)));
     } else if guard_type.is_subtype(types::NilClass) {
