@@ -1045,8 +1045,14 @@ class TestShapes < Test::Unit::TestCase
     assert_raise ArgumentError do
       RubyVM::Shape.of(0)
     end
+    # 32-bit platforms don't have flonums or static symbols as special
+    # constants
+    return if RUBY_PLATFORM =~ /i686/
     assert_raise ArgumentError do
       RubyVM::Shape.of(:foo)
+    end
+    assert_raise ArgumentError do
+      RubyVM::Shape.of(0.0)
     end
   end
 
