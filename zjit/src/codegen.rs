@@ -394,6 +394,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GetSpecialNumber { nth, state } => gen_getspecial_number(asm, *nth, &function.frame_state(*state)),
         &Insn::IncrCounter(counter) => no_output!(gen_incr_counter(asm, counter)),
         Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state)),
+        &Insn::ArrayArefFixnum { array, index } => gen_array_aref_fixnum(asm, opnd!(array), opnd!(index)),
         Insn::ArrayExtend { .. }
         | Insn::ArrayMax { .. }
         | Insn::ArrayPush { .. }
@@ -474,6 +475,11 @@ fn gen_objtostring(jit: &mut JITState, asm: &mut Assembler, val: Opnd, cd: *cons
     asm.je(side_exit(jit, state, ObjToStringFallback));
 
     ret
+}
+
+fn gen_array_aref_fixnum(asm: &mut Assembler, array: Opnd, index: Opnd) -> Opnd {
+    let index_untag = asm.rshift(index, Opnd::UImm(1));
+    asm_ccall!(asm, rb_yarv_ary_entry_internal, array, index_untag)
 }
 
 fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, pushval: VALUE, tested_value: Opnd, state: &FrameState) -> Opnd {

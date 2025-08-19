@@ -494,6 +494,8 @@ pub enum Insn {
     ArrayExtend { left: InsnId, right: InsnId, state: InsnId },
     /// Push `val` onto `array`, where `array` is already `Array`.
     ArrayPush { array: InsnId, val: InsnId, state: InsnId },
+    /// Get an element from array:ArrayExact at index:Fixnum or nil if it does not exist.
+    ArrayArefFixnum { array: InsnId, index: InsnId },
 
     HashDup { val: InsnId, state: InsnId },
 
@@ -840,6 +842,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ToNewArray { val, .. } => write!(f, "ToNewArray {val}"),
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
             Insn::ArrayPush { array, val, .. } => write!(f, "ArrayPush {array}, {val}"),
+            Insn::ArrayArefFixnum { array, index } => write!(f, "ArrayArefFixnum {array}, {index}"),
             Insn::ObjToString { val, .. } => { write!(f, "ObjToString {val}") },
             Insn::StringIntern { val, .. } => { write!(f, "StringIntern {val}") },
             Insn::AnyToString { val, str, .. } => { write!(f, "AnyToString {val}, str: {str}") },
@@ -1290,6 +1293,7 @@ impl Function {
             &ToNewArray { val, state } => ToNewArray { val: find!(val), state },
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
             &ArrayPush { array, val, state } => ArrayPush { array: find!(array), val: find!(val), state },
+            &ArrayArefFixnum { array, index } => ArrayArefFixnum { array: find!(array), index: find!(index) },
         }
     }
 
@@ -1305,7 +1309,7 @@ impl Function {
     }
 
     /// Check if the type of `insn` is a subtype of `ty`.
-    fn is_a(&self, insn: InsnId, ty: Type) -> bool {
+    pub fn is_a(&self, insn: InsnId, ty: Type) -> bool {
         self.type_of(insn).is_subtype(ty)
     }
 
@@ -1382,6 +1386,7 @@ impl Function {
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
+            Insn::ArrayArefFixnum { .. } => types::BasicObject,
         }
     }
 
@@ -1489,6 +1494,18 @@ impl Function {
         let left_profiled_type = self.profiled_type_of_at(left, iseq_insn_idx).unwrap_or(ProfiledType::empty());
         let right_profiled_type = self.profiled_type_of_at(right, iseq_insn_idx).unwrap_or(ProfiledType::empty());
         self.likely_is_fixnum(left, left_profiled_type) && self.likely_is_fixnum(right, right_profiled_type)
+    }
+
+    pub fn likely_a(&self, val: InsnId, ty: Type, state: InsnId) -> bool {
+        if self.type_of(val).is_subtype(ty) {
+            return true;
+        }
+        let frame_state = self.frame_state(state);
+        let iseq_insn_idx = frame_state.insn_idx as usize;
+        let Some(profiled_type) = self.profiled_type_of_at(val, iseq_insn_idx) else {
+            return false;
+        };
+        Type::from_profiled_type(profiled_type).is_subtype(ty)
     }
 
     fn try_rewrite_fixnum_op(&mut self, block: BlockId, orig_insn_id: InsnId, f: &dyn Fn(InsnId, InsnId) -> Insn, bop: u32, left: InsnId, right: InsnId, state: InsnId) {
@@ -1749,6 +1766,22 @@ impl Function {
             // Find the `argc` (arity) of the C method, which describes the parameters it expects
             let cfunc = unsafe { get_cme_def_body_cfunc(method) };
             let cfunc_argc = unsafe { get_mct_argc(cfunc) };
+            let Some(props) = ZJITState::get_method_annotations().get_cfunc_properties(method) else {
+                return Err(());
+            };
+            // Try replacing it with an inlined HIR instruction.
+            use crate::cruby_methods::InlineResult;
+            if let InlineResult::Inline(replacement, guards) = (props.inline)(&fun, self_val, &args, state) {
+                for (val, ty) in guards {
+                    // TODO(max): Figure out how to pipe these GuardType results through to the replacement
+                    if !fun.is_a(val, ty) {
+                        fun.push_insn(block, Insn::GuardType { val, guard_type: ty, state });
+                    }
+                }
+                let replacement_id = fun.push_insn(block, replacement);
+                fun.make_equal_to(send_insn_id, replacement_id);
+                return Ok(());
+            }
             match cfunc_argc {
                 0.. => {
                     // (self, arg0, arg1, ..., argc) form
@@ -1759,12 +1792,9 @@ impl Function {
                     }
 
                     // Filter for a leaf and GC free function
-                    use crate::cruby_methods::FnProperties;
-                    let Some(FnProperties { leaf: true, no_gc: true, return_type, elidable }) =
-                        ZJITState::get_method_annotations().get_cfunc_properties(method)
-                    else {
+                    if !props.leaf || !props.no_gc {
                         return Err(());
-                    };
+                    }
 
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
                     // Filter for simple call sites (i.e. no splats etc.)
@@ -1778,7 +1808,7 @@ impl Function {
                         let cfun = unsafe { get_mct_func(cfunc) }.cast();
                         let mut cfunc_args = vec![self_val];
                         cfunc_args.append(&mut args);
-                        let ccall = fun.push_insn(block, Insn::CCall { cfun, args: cfunc_args, name: method_id, return_type, elidable });
+                        let ccall = fun.push_insn(block, Insn::CCall { cfun, args: cfunc_args, name: method_id, return_type: props.return_type, elidable: props.elidable });
                         fun.make_equal_to(send_insn_id, ccall);
                         return Ok(());
                     }
@@ -2070,6 +2100,10 @@ impl Function {
             &Insn::GetSpecialSymbol { state, .. } |
             &Insn::GetSpecialNumber { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
+            &Insn::ArrayArefFixnum { array, index } => {
+                worklist.push_back(array);
+                worklist.push_back(index);
+            }
         }
     }
 
@@ -7891,6 +7925,23 @@ mod opt_tests {
               v7:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
               v8:BasicObject = GetIvar v7, :@foo
               Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_inline_array_aref_with_fixnum() {
+        eval("
+            def test(a, i) = a[i]
+            test [], 0
+            test [1,2,3], 1
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:2:
+            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+              v7:ArrayExact = GuardType v1, ArrayExact
+              v8:Fixnum = GuardType v2, Fixnum
+              v9:BasicObject = ArrayArefFixnum v1, v2
+              Return v9
         "#]]);
     }
 }

@@ -12,10 +12,17 @@ use crate::cruby::*;
 use std::collections::HashMap;
 use std::ffi::c_void;
 use crate::hir_type::{types, Type};
+use crate::hir;
 
 pub struct Annotations {
     cfuncs: HashMap<*mut c_void, FnProperties>,
     builtin_funcs: HashMap<*mut c_void, FnProperties>,
+}
+
+pub enum InlineResult {
+    NoInline,
+    /// Replacement and guards
+    Inline(hir::Insn, Vec<(hir::InsnId, Type)>),
 }
 
 /// Runtime behaviors of C functions that implement a Ruby method
@@ -29,6 +36,7 @@ pub struct FnProperties {
     pub return_type: Type,
     /// Whether it's legal to remove the call if the result is unused
     pub elidable: bool,
+    pub inline: fn(&hir::Function, hir::InsnId, &[hir::InsnId], hir::InsnId) -> InlineResult,
 }
 
 impl Annotations {
@@ -140,11 +148,16 @@ pub fn init() -> Annotations {
     let builtin_funcs = &mut HashMap::new();
 
     macro_rules! annotate {
-        ($module:ident, $method_name:literal, $return_type:expr, $($properties:ident),+) => {
-            let mut props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: $return_type };
+        ($module:ident, $method_name:literal, $inline:ident) => {
+            let props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: types::BasicObject, inline: $inline };
+            annotate_c_method(cfuncs, unsafe { $module }, $method_name, props);
+        };
+        ($module:ident, $method_name:literal, $return_type:expr, $(inline:$inline:ident,)? $($properties:ident),+) => {
+            let mut props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: $return_type, inline: no_inline };
             $(
                 props.$properties = true;
             )+
+            $(props.inline = $inline;)?
             annotate_c_method(cfuncs, unsafe { $module }, $method_name, props);
         }
     }
@@ -153,14 +166,16 @@ pub fn init() -> Annotations {
         ($module:ident, $method_name:literal, $return_type:expr) => {
             annotate_builtin!($module, $method_name, $return_type, no_gc, leaf, elidable)
         };
-        ($module:ident, $method_name:literal, $return_type:expr, $($properties:ident),+) => {
+        ($module:ident, $method_name:literal, $return_type:expr, $(inline:$inline:ident,)? $($properties:ident),+) => {
             let mut props = FnProperties {
                 no_gc: false,
                 leaf: false,
                 elidable: false,
-                return_type: $return_type
+                return_type: $return_type,
+                inline: no_inline,
             };
             $(props.$properties = true;)+
+            $(props.inline = $inline;)?
             annotate_builtin_method(builtin_funcs, unsafe { $module }, $method_name, props);
         }
     }
@@ -174,6 +189,8 @@ pub fn init() -> Annotations {
     annotate!(rb_cNilClass, "nil?", types::TrueClass, no_gc, leaf, elidable);
     annotate!(rb_mKernel, "nil?", types::FalseClass, no_gc, leaf, elidable);
 
+    annotate!(rb_cArray, "[]", array_aref_inline);
+
     annotate_builtin!(rb_mKernel, "Float", types::Float);
     annotate_builtin!(rb_mKernel, "Integer", types::Integer);
     annotate_builtin!(rb_mKernel, "class", types::Class, leaf);
@@ -182,4 +199,24 @@ pub fn init() -> Annotations {
         cfuncs: std::mem::take(cfuncs),
         builtin_funcs: std::mem::take(builtin_funcs),
     }
+}
+
+fn no_inline(_fun: &hir::Function, _recv: hir::InsnId, _args: &[hir::InsnId], _state: hir::InsnId) -> InlineResult {
+    InlineResult::NoInline
+}
+
+fn array_aref_inline(fun: &hir::Function, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> InlineResult {
+    eprintln!("lmao");
+    if fun.likely_a(recv, types::ArrayExact, state)
+        && args.len() == 1
+        && fun.likely_a(args[0], types::Fixnum, state) {
+        return InlineResult::Inline(
+            hir::Insn::ArrayArefFixnum { array: recv, index: args[0] },
+            vec![
+                (recv, types::ArrayExact),
+                (args[0], types::Fixnum),
+            ],
+        );
+    }
+    InlineResult::NoInline
 }
