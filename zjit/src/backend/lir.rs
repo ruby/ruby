@@ -1213,7 +1213,7 @@ impl Assembler
     /// Append an instruction onto the current list of instructions and update
     /// the live ranges of any instructions whose outputs are being used as
     /// operands to this instruction.
-    pub fn push_insn(&mut self, mut insn: Insn) {
+    pub fn push_insn(&mut self, insn: Insn) {
         // Index of this instruction
         let insn_idx = self.insns.len();
 
@@ -1225,7 +1225,7 @@ impl Assembler
         }
 
         // If we find any VReg from previous instructions, extend the live range to insn_idx
-        let mut opnd_iter = insn.opnd_iter_mut();
+        let mut opnd_iter = insn.opnd_iter();
         while let Some(opnd) = opnd_iter.next() {
             match *opnd {
                 Opnd::VReg { idx, .. } |
