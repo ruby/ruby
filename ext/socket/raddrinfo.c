@@ -387,7 +387,7 @@ allocate_getaddrinfo_arg(const char *hostp, const char *portp, const struct addr
 
     if (hostp) {
         arg->node = buf + hostp_offset;
-        strcpy(arg->node, hostp);
+        memcpy(arg->node, hostp, portp_offset - hostp_offset);
     }
     else {
         arg->node = NULL;
@@ -395,7 +395,7 @@ allocate_getaddrinfo_arg(const char *hostp, const char *portp, const struct addr
 
     if (portp) {
         arg->service = buf + portp_offset;
-        strcpy(arg->service, portp);
+        memcpy(arg->service, portp, bufsize - portp_offset);
     }
     else {
         arg->service = NULL;

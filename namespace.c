@@ -725,28 +725,31 @@ copy_ext_file(char *src_path, char *dst_path)
 #define IS_DLEXT(e) (strcmp((e), DLEXT) == 0)
 
 static void
-fname_without_suffix(char *fname, char *rvalue)
+fname_without_suffix(const char *fname, char *rvalue, size_t rsize)
 {
-    char *pos;
-    strcpy(rvalue, fname);
-    for (pos = rvalue + strlen(fname); pos > rvalue; pos--) {
+    size_t len = strlen(fname);
+    const char *pos;
+    for (pos = fname + len; pos > fname; pos--) {
         if (IS_SOEXT(pos) || IS_DLEXT(pos)) {
-            *pos = '\0';
-            return;
+            len = pos - fname;
+            break;
         }
     }
+    if (len > rsize - 1) len = rsize - 1;
+    memcpy(rvalue, fname, len);
+    rvalue[len] = '\0';
 }
 
 static void
-escaped_basename(char *path, char *fname, char *rvalue)
+escaped_basename(const char *path, const char *fname, char *rvalue, size_t rsize)
 {
-    char *pos, *leaf, *found;
-    leaf = path;
+    char *pos;
+    const char *leaf = path, *found;
     // `leaf + 1` looks uncomfortable (when leaf == path), but fname must not be the top-dir itself
     while ((found = strstr(leaf + 1, fname)) != NULL) {
         leaf = found; // find the last occurrence for the path like /etc/my-crazy-lib-dir/etc.so
     }
-    strcpy(rvalue, leaf);
+    strlcpy(rvalue, leaf, rsize);
     for (pos = rvalue; *pos; pos++) {
         if (isdirsep(*pos)) {
             *pos = '+';
@@ -762,8 +765,8 @@ rb_namespace_local_extension(VALUE namespace, VALUE fname, VALUE path)
     char *src_path = RSTRING_PTR(path), *fname_ptr = RSTRING_PTR(fname);
     rb_namespace_t *ns = rb_get_namespace_t(namespace);
 
-    fname_without_suffix(fname_ptr, fname2);
-    escaped_basename(src_path, fname2, basename);
+    fname_without_suffix(fname_ptr, fname2, sizeof(fname2));
+    escaped_basename(src_path, fname2, basename, sizeof(basename));
 
     wrote = sprint_ext_filename(ext_path, sizeof(ext_path), ns->ns_id, NAMESPACE_TMP_PREFIX, basename);
     if (wrote >= (int)sizeof(ext_path)) {
