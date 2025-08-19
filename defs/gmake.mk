@@ -309,7 +309,7 @@ HELP_EXTRA_TASKS = \
 # 4. "gem x.y.z URL" -> "gem-x.y.z"
 bundled-gems := $(shell sed \
 	-e 's/[ 	][ 	]*/ /g' \
-	-e 's/^ //;/\#/d;s/ *$$//;/^$$/d' \
+	-e 's/^ //;s/\#.*//;s/ *$$//;/^$$/d' \
 	$(if $(filter yes,$(HAVE_GIT)), \
 	-e 's/^\(.*\) \(.*\) \(.*\) \(.*\)/\1|\2|\4|\3/' \
 	) \
@@ -504,6 +504,9 @@ update-deps:
 	$(RMDIR) $(dir $(deps_dir))
 	$(GIT) --git-dir=$(GIT_DIR) merge --no-edit --ff-only $(update_deps)
 	$(GIT) --git-dir=$(GIT_DIR) branch --delete $(update_deps)
+
+fix-depends check-depends: all hello
+	$(BASERUBY) -C $(srcdir) tool/update-deps $(if $(filter fix-%,$@),--fix)
 
 # order-only-prerequisites doesn't work for $(RUBYSPEC_CAPIEXT)
 # because the same named directory exists in the source tree.

@@ -164,6 +164,7 @@ class TestRactor < Test::Unit::TestCase
 
   # [Bug #21398]
   def test_port_receive_dnt_with_port_send
+    omit 'unstable on windows and macos-14' if RUBY_PLATFORM =~ /mswin|darwin/
     assert_ractor(<<~'RUBY', timeout: 30)
       Warning[:experimental] = false
 

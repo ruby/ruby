@@ -1318,7 +1318,7 @@ no_feature_p(vm_ns_t *vm_ns, const char *feature, const char *ext, int rb, int e
     return 0;
 }
 
-// Documented in doc/globals.rdoc
+// Documented in doc/globals.md
 VALUE
 rb_resolve_feature_path(VALUE klass, VALUE fname)
 {

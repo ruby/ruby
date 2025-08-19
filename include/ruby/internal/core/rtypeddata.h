@@ -37,6 +37,7 @@
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/error.h"
 #include "ruby/internal/fl_type.h"
+#include "ruby/internal/static_assert.h"
 #include "ruby/internal/stdbool.h"
 #include "ruby/internal/value_type.h"
 
@@ -355,6 +356,9 @@ struct RTypedData {
     /** The part that all ruby objects have in common. */
     struct RBasic basic;
 
+    /** Direct reference to the slots that holds instance variables, if any **/
+    VALUE fields_obj;
+
     /**
      * This is a `const rb_data_type_t *const` value, with the low bits set:
      *
@@ -370,6 +374,10 @@ struct RTypedData {
     /** Pointer to the actual C level struct that you want to wrap. */
     void *data;
 };
+
+#if !defined(__cplusplus) || __cplusplus >= 201103L
+RBIMPL_STATIC_ASSERT(data_in_rtypeddata, offsetof(struct RData, data) == offsetof(struct RTypedData, data));
+#endif
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 RBIMPL_ATTR_NONNULL((3))

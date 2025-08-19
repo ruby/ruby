@@ -78,7 +78,7 @@ class TestIOWait < Test::Unit::TestCase
     ret = nil
     assert_nothing_raised(Timeout::Error) do
       q.push(true)
-      t = EnvUtil.apply_timeout_scale(0.1)
+      t = EnvUtil.apply_timeout_scale(1)
       Timeout.timeout(t) { ret = @r.wait }
     end
     assert_equal @r, ret

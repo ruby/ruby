@@ -98,19 +98,32 @@ fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize
         let obj = profiler.peek_at_stack((n - i - 1) as isize);
         // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
         // drop them or something
-        let ty = ProfiledType::new(obj.class_of(), obj.shape_id_of());
+        let ty = ProfiledType::new(obj);
         unsafe { rb_gc_writebarrier(profiler.iseq.into(), ty.class()) };
         types[i].observe(ty);
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Flags(u32);
+
+impl Flags {
+    const NONE: u32 = 0;
+    const IS_IMMEDIATE: u32 = 1 << 0;
+
+    pub fn none() -> Self { Self(Self::NONE) }
+
+    pub fn immediate() -> Self { Self(Self::IS_IMMEDIATE) }
+    pub fn is_immediate(self) -> bool { (self.0 & Self::IS_IMMEDIATE) != 0 }
 }
 
 /// opt_send_without_block/opt_plus/... should store:
 /// * the class of the receiver, so we can do method lookup
 /// * the shape of the receiver, so we can optimize ivar lookup
 /// with those two, pieces of information, we can also determine when an object is an immediate:
-/// * Integer + SPECIAL_CONST_SHAPE_ID == Fixnum
-/// * Float + SPECIAL_CONST_SHAPE_ID == Flonum
-/// * Symbol + SPECIAL_CONST_SHAPE_ID == StaticSymbol
+/// * Integer + IS_IMMEDIATE == Fixnum
+/// * Float + IS_IMMEDIATE == Flonum
+/// * Symbol + IS_IMMEDIATE == StaticSymbol
 /// * NilClass == Nil
 /// * TrueClass == True
 /// * FalseClass == False
@@ -118,6 +131,7 @@ fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize
 pub struct ProfiledType {
     class: VALUE,
     shape: ShapeId,
+    flags: Flags,
 }
 
 impl Default for ProfiledType {
@@ -127,12 +141,42 @@ impl Default for ProfiledType {
 }
 
 impl ProfiledType {
-    fn new(class: VALUE, shape: ShapeId) -> Self {
-        Self { class, shape }
+    fn new(obj: VALUE) -> Self {
+        if obj == Qfalse {
+            return Self { class: unsafe { rb_cFalseClass },
+                          shape: INVALID_SHAPE_ID,
+                          flags: Flags::immediate() };
+        }
+        if obj == Qtrue {
+            return Self { class: unsafe { rb_cTrueClass },
+                          shape: INVALID_SHAPE_ID,
+                          flags: Flags::immediate() };
+        }
+        if obj == Qnil {
+            return Self { class: unsafe { rb_cNilClass },
+                          shape: INVALID_SHAPE_ID,
+                          flags: Flags::immediate() };
+        }
+        if obj.fixnum_p() {
+            return Self { class: unsafe { rb_cInteger },
+                          shape: INVALID_SHAPE_ID,
+                          flags: Flags::immediate() };
+        }
+        if obj.flonum_p() {
+            return Self { class: unsafe { rb_cFloat },
+                          shape: INVALID_SHAPE_ID,
+                          flags: Flags::immediate() };
+        }
+        if obj.static_sym_p() {
+            return Self { class: unsafe { rb_cSymbol },
+                          shape: INVALID_SHAPE_ID,
+                          flags: Flags::immediate() };
+        }
+        Self { class: obj.class_of(), shape: obj.shape_id_of(), flags: Flags::none() }
     }
 
     pub fn empty() -> Self {
-        Self { class: VALUE(0), shape: INVALID_SHAPE_ID }
+        Self { class: VALUE(0), shape: INVALID_SHAPE_ID, flags: Flags::none() }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -148,27 +192,27 @@ impl ProfiledType {
     }
 
     pub fn is_fixnum(&self) -> bool {
-        self.class == unsafe { rb_cInteger } && self.shape == SPECIAL_CONST_SHAPE_ID
+        self.class == unsafe { rb_cInteger } && self.flags.is_immediate()
     }
 
     pub fn is_flonum(&self) -> bool {
-        self.class == unsafe { rb_cFloat } && self.shape == SPECIAL_CONST_SHAPE_ID
+        self.class == unsafe { rb_cFloat } && self.flags.is_immediate()
     }
 
     pub fn is_static_symbol(&self) -> bool {
-        self.class == unsafe { rb_cSymbol } && self.shape == SPECIAL_CONST_SHAPE_ID
+        self.class == unsafe { rb_cSymbol } && self.flags.is_immediate()
     }
 
     pub fn is_nil(&self) -> bool {
-        self.class == unsafe { rb_cNilClass } && self.shape == SPECIAL_CONST_SHAPE_ID
+        self.class == unsafe { rb_cNilClass } && self.flags.is_immediate()
     }
 
     pub fn is_true(&self) -> bool {
-        self.class == unsafe { rb_cTrueClass } && self.shape == SPECIAL_CONST_SHAPE_ID
+        self.class == unsafe { rb_cTrueClass } && self.flags.is_immediate()
     }
 
     pub fn is_false(&self) -> bool {
-        self.class == unsafe { rb_cFalseClass } && self.shape == SPECIAL_CONST_SHAPE_ID
+        self.class == unsafe { rb_cFalseClass } && self.flags.is_immediate()
     }
 }
 

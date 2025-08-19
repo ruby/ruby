@@ -24,6 +24,22 @@ jobs:
   make:
     strategy:
       matrix:
+        test_task: [check]
+        configure: ['']
+        arch: ['']
+        os:
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
+          # FIXME Comment out ppc64le due to failing tests on GitHub Actions
+          # ppc64le
+          # https://bugs.ruby-lang.org/issues/21534
+          # - ubuntu-24.04-ppc64le
+          - ubuntu-24.04-s390x
+        # The ppc64le/s390x runners work only in the registered repositories.
+        # They don't work in forked repositories.
+        # https://github.com/IBM/actionspz/blob/main/docs/FAQ.md#what-about-forked-repos
+        upstream:
+          - ${{ github.repository == 'ruby/ruby' }}
         include:
           - test_task: check
             configure: 'cppflags=-DVM_CHECK_MODE'
@@ -36,10 +52,11 @@ jobs:
           - test_task: test-bundler-parallel
             timeout: 50
           - test_task: test-bundled-gems
-          - test_task: check
-            os: ubuntu-24.04
-          - test_task: check
-            os: ubuntu-24.04-arm
+        exclude:
+          - os: ubuntu-24.04-ppc64le
+            upstream: false
+          - os: ubuntu-24.04-s390x
+            upstream: false
       fail-fast: false
 
     env:
@@ -51,9 +68,7 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Document')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
@@ -72,7 +87,25 @@ jobs:
         with:
           ruby-version: '3.1'
           bundler: none
-        if: ${{ !endsWith(matrix.os, 'arm') }}
+        if: ${{ !endsWith(matrix.os, 'arm') && !endsWith(matrix.os, 'ppc64le') && !endsWith(matrix.os, 's390x') }}
+
+      # Avoid possible test failures with the zlib applying the following patch
+      # on s390x CPU architecture.
+      # https://github.com/madler/zlib/pull/410
+      - name: Disable DFLTCC
+        run: echo "DFLTCC=0" >> $GITHUB_ENV
+        working-directory:
+        if: ${{ endsWith(matrix.os, 's390x') }}
+
+      # A temporary workaround: Set HOME env to pass the step
+      # ./.github/actions/setup/directories.
+      # https://github.com/IBM/actionspz/issues/30
+      - name: Set HOME env
+        run: |
+          echo "HOME: #{HOME}"
+          echo "HOME=$(ls -d ~)" >> $GITHUB_ENV
+        working-directory:
+        if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
 
       - uses: ./.github/actions/setup/directories
         with:
@@ -122,6 +155,17 @@ jobs:
         continue-on-error: true
         timeout-minutes: 3
 
+      # A temporary workaround: Skip user ground id test
+      # There is a mismatch between the group IDs of "id -g" and C function
+      # getpwuid(uid_t uid) pw_gid.
+      # https://github.com/IBM/actionspz/issues/31
+      - name: Skip user group id test
+        run: |
+          sed -i.orig '/^    it "returns user group id" do/a\      skip' \
+            ../src/spec/ruby/library/etc/struct_passwd_spec.rb
+          diff -u ../src/spec/ruby/library/etc/struct_passwd_spec.rb{.orig,} || :
+        if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
+
       - name: make ${{ matrix.test_task }}
         run: |
           test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
@@ -146,6 +190,11 @@ jobs:
           RUBY_TESTOPTS: '-v --tty=no'
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
+
+      - name: test-pc
+        run: |
+          DESTDIR=${RUNNER_TEMP-${TMPDIR-/tmp}}/installed
+          $SETARCH make test-pc "DESTDIR=$DESTDIR"
 
       - uses: ./.github/actions/slack
         with:

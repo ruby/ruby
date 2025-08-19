@@ -70,7 +70,7 @@ class TestStringIO < Test::Unit::TestCase
     assert_nil io.getc
   end
 
-  def test_pread_eof
+  def test_eof_null
     io = StringIO.new(nil)
     assert_predicate io, :eof?
   end

@@ -1,30 +1,45 @@
 // This module is responsible for marking/moving objects on GC.
 
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::{ffi::c_void, ops::Range};
+use crate::codegen::IseqCall;
 use crate::{cruby::*, profile::IseqProfile, state::ZJITState, stats::with_time_stat, virtualmem::CodePtr};
 use crate::stats::Counter::gc_time_ns;
 
 /// This is all the data ZJIT stores on an ISEQ. We mark objects in this struct on GC.
 #[derive(Debug)]
 pub struct IseqPayload {
+    /// Compilation status of the ISEQ. It has the JIT code address of the first block if Compiled.
+    pub status: IseqStatus,
+
     /// Type information of YARV instruction operands
     pub profile: IseqProfile,
 
-    /// JIT code address of the first block
-    pub start_ptr: Option<CodePtr>,
-
     /// GC offsets of the JIT code. These are the addresses of objects that need to be marked.
     pub gc_offsets: Vec<CodePtr>,
+
+    /// JIT-to-JIT calls in the ISEQ. The IseqPayload's ISEQ is the caller of it.
+    pub iseq_calls: Vec<Rc<RefCell<IseqCall>>>,
 }
 
 impl IseqPayload {
     fn new(iseq_size: u32) -> Self {
         Self {
+            status: IseqStatus::NotCompiled,
             profile: IseqProfile::new(iseq_size),
-            start_ptr: None,
             gc_offsets: vec![],
+            iseq_calls: vec![],
         }
     }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum IseqStatus {
+    /// CodePtr has the JIT code address of the first block
+    Compiled(CodePtr),
+    CantCompile,
+    NotCompiled,
 }
 
 /// Get a pointer to the payload object associated with an ISEQ. Create one if none exists.
@@ -104,6 +119,16 @@ pub extern "C" fn rb_zjit_iseq_update_references(payload: *mut c_void) {
     with_time_stat(gc_time_ns, || iseq_update_references(payload));
 }
 
+/// GC callback for updating object references after all object moves
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_root_update_references() {
+    if !ZJITState::has_instance() {
+        return;
+    }
+    let invariants = ZJITState::get_invariants();
+    invariants.update_references();
+}
+
 fn iseq_mark(payload: &IseqPayload) {
     // Mark objects retained by profiling instructions
     payload.profile.each_object(|object| {
@@ -127,9 +152,21 @@ fn iseq_mark(payload: &IseqPayload) {
 /// This is a mirror of [iseq_mark].
 fn iseq_update_references(payload: &mut IseqPayload) {
     // Move objects retained by profiling instructions
-    payload.profile.each_object_mut(|object| {
-        *object = unsafe { rb_gc_location(*object) };
+    payload.profile.each_object_mut(|old_object| {
+        let new_object = unsafe { rb_gc_location(*old_object) };
+        if *old_object != new_object {
+            *old_object = new_object;
+        }
     });
+
+    // Move ISEQ references in IseqCall
+    for iseq_call in payload.iseq_calls.iter_mut() {
+        let old_iseq = iseq_call.borrow().iseq;
+        let new_iseq = unsafe { rb_gc_location(VALUE(old_iseq as usize)) }.0 as IseqPtr;
+        if old_iseq != new_iseq {
+            iseq_call.borrow_mut().iseq = new_iseq;
+        }
+    }
 
     // Move objects baked in JIT code
     let cb = ZJITState::get_code_block();

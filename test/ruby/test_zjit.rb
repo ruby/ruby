@@ -18,6 +18,14 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_enable_through_env
+    child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => '1'}
+    assert_in_out_err([child_env, '-v'], '') do |stdout, stderr|
+      assert_includes(stdout.first, '+ZJIT')
+      assert_equal([], stderr)
+    end
+  end
+
   def test_call_itself
     assert_compiles '42', <<~RUBY, call_threshold: 2
       def test = 42.itself
@@ -59,6 +67,40 @@ class TestZJIT < Test::Unit::TestCase
       def test(n) = n
       test(5)
     }
+  end
+
+  def test_setglobal
+    assert_compiles '1', %q{
+      def test
+        $a = 1
+        $a
+      end
+
+      test
+    }, insns: [:setglobal]
+  end
+
+  def test_string_intern
+    assert_compiles ':foo123', %q{
+      def test
+        :"foo#{123}"
+      end
+
+      test
+    }, insns: [:intern]
+  end
+
+  def test_setglobal_with_trace_var_exception
+    assert_compiles '"rescued"', %q{
+      def test
+        $a = 1
+      rescue
+        "rescued"
+      end
+
+      trace_var(:$a) { raise }
+      test
+    }, insns: [:setglobal]
   end
 
   def test_setlocal
@@ -465,6 +507,116 @@ class TestZJIT < Test::Unit::TestCase
       test(2, 3) # profile opt_ge
       [test(0, 1), test(0, 0), test(1, 0)]
     }, insns: [:opt_ge], call_threshold: 2
+  end
+
+  def test_new_hash_empty
+    assert_compiles '{}', %q{
+      def test = {}
+      test
+    }, insns: [:newhash]
+  end
+
+  def test_new_hash_nonempty
+    assert_compiles '{"key" => "value", 42 => 100}', %q{
+      def test
+        key = "key"
+        value = "value"
+        num = 42
+        result = 100
+        {key => value, num => result}
+      end
+      test
+    }, insns: [:newhash]
+  end
+
+  def test_new_hash_single_key_value
+    assert_compiles '{"key" => "value"}', %q{
+      def test = {"key" => "value"}
+      test
+    }, insns: [:newhash]
+  end
+
+  def test_new_hash_with_computation
+    assert_compiles '{"sum" => 5, "product" => 6}', %q{
+      def test(a, b)
+        {"sum" => a + b, "product" => a * b}
+      end
+      test(2, 3)
+    }, insns: [:newhash]
+  end
+
+  def test_new_hash_with_user_defined_hash_method
+    assert_runs 'true', %q{
+      class CustomKey
+        attr_reader :val
+
+        def initialize(val)
+          @val = val
+        end
+
+        def hash
+          @val.hash
+        end
+
+        def eql?(other)
+          other.is_a?(CustomKey) && @val == other.val
+        end
+      end
+
+      def test
+        key = CustomKey.new("key")
+        hash = {key => "value"}
+        hash[key] == "value"
+      end
+      test
+    }
+  end
+
+  def test_new_hash_with_user_hash_method_exception
+    assert_runs 'RuntimeError', %q{
+      class BadKey
+        def hash
+          raise "Hash method failed!"
+        end
+      end
+
+      def test
+        key = BadKey.new
+        {key => "value"}
+      end
+
+      begin
+        test
+      rescue => e
+        e.class
+      end
+    }
+  end
+
+  def test_new_hash_with_user_eql_method_exception
+    assert_runs 'RuntimeError', %q{
+      class BadKey
+        def hash
+          42
+        end
+
+        def eql?(other)
+          raise "Eql method failed!"
+        end
+      end
+
+      def test
+        key1 = BadKey.new
+        key2 = BadKey.new
+        {key1 => "value1", key2 => "value2"}
+      end
+
+      begin
+        test
+      rescue => e
+        e.class
+      end
+    }
   end
 
   def test_opt_hash_freeze
@@ -1093,6 +1245,14 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:defined]
   end
 
+  def test_defined_with_method_call
+    assert_compiles '["method", nil]', %q{
+      def test = return defined?("x".reverse(1)), defined?("x".reverse(1).reverse)
+
+      test
+    }, insns: [:defined]
+  end
+
   def test_defined_yield
     assert_compiles "nil", "defined?(yield)"
     assert_compiles '[nil, nil, "yield"]', %q{
@@ -1177,6 +1337,106 @@ class TestZJIT < Test::Unit::TestCase
       def test = 1.nil?
       test
     }, insns: [:opt_nil_p]
+  end
+
+  def test_getspecial_last_match
+    assert_compiles '"hello"', %q{
+      def test(str)
+        str =~ /hello/
+        $&
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_match_pre
+    assert_compiles '"hello "', %q{
+      def test(str)
+        str =~ /world/
+        $`
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_match_post
+    assert_compiles '" world"', %q{
+      def test(str)
+        str =~ /hello/
+        $'
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_match_last_group
+    assert_compiles '"world"', %q{
+      def test(str)
+        str =~ /(hello) (world)/
+        $+
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_numbered_match_1
+    assert_compiles '"hello"', %q{
+      def test(str)
+        str =~ /(hello) (world)/
+        $1
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_numbered_match_2
+    assert_compiles '"world"', %q{
+      def test(str)
+        str =~ /(hello) (world)/
+        $2
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_numbered_match_nonexistent
+    assert_compiles 'nil', %q{
+      def test(str)
+        str =~ /(hello)/
+        $2
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_no_match
+    assert_compiles 'nil', %q{
+      def test(str)
+        str =~ /xyz/
+        $&
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_complex_pattern
+    assert_compiles '"123"', %q{
+      def test(str)
+        str =~ /(\d+)/
+        $1
+      end
+      test("abc123def")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_multiple_groups
+    assert_compiles '"456"', %q{
+      def test(str)
+        str =~ /(\d+)-(\d+)/
+        $2
+      end
+      test("123-456")
+    }, insns: [:getspecial]
   end
 
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
@@ -1317,6 +1577,71 @@ class TestZJIT < Test::Unit::TestCase
 
       results
     }, call_threshold: 2
+  end
+
+  def test_objtostring_calls_to_s_on_non_strings
+    assert_compiles '["foo", "foo"]', %q{
+      results = []
+
+      class Foo
+        def to_s
+          "foo"
+        end
+      end
+
+      def test(str)
+        "#{str}"
+      end
+
+      results << test(Foo.new)
+      results << test(Foo.new)
+
+      results
+    }
+  end
+
+  def test_objtostring_rewrite_does_not_call_to_s_on_strings
+    assert_compiles '["foo", "foo"]', %q{
+      results = []
+
+      class String
+        def to_s
+          "bad"
+        end
+      end
+
+      def test(foo)
+        "#{foo}"
+      end
+
+      results << test("foo")
+      results << test("foo")
+
+      results
+    }
+  end
+
+  def test_objtostring_rewrite_does_not_call_to_s_on_string_subclasses
+    assert_compiles '["foo", "foo"]', %q{
+      results = []
+
+      class StringSubclass < String
+        def to_s
+          "bad"
+        end
+      end
+
+      foo = StringSubclass.new("foo")
+
+      def test(str)
+        "#{str}"
+      end
+
+      results << test(foo)
+      results << test(foo)
+
+      results
+    }
   end
 
   def test_string_bytesize_with_guard
@@ -1504,6 +1829,22 @@ class TestZJIT < Test::Unit::TestCase
       test(Foo.new)
       test(false)
     }, call_threshold: 2
+  end
+
+  def test_string_concat
+    assert_compiles '"123"', %q{
+      def test = "#{1}#{2}#{3}"
+
+      test
+    }, insns: [:concatstrings]
+  end
+
+  def test_string_concat_empty
+    assert_compiles '""', %q{
+      def test = "#{}"
+
+      test
+    }, insns: [:concatstrings]
   end
 
   private

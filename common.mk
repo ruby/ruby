@@ -205,83 +205,6 @@ $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/util/.time:
 	$(Q) $(MAKEDIRS) $(@D)
 	@$(NULLCMD) > $@
 
-main: $(srcdir)/lib/prism/compiler.rb
-srcs: $(srcdir)/lib/prism/compiler.rb
-$(srcdir)/lib/prism/compiler.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/compiler.rb.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/compiler.rb $(srcdir)/lib/prism/compiler.rb
-
-main: $(srcdir)/lib/prism/dispatcher.rb
-srcs: $(srcdir)/lib/prism/dispatcher.rb
-$(srcdir)/lib/prism/dispatcher.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/dispatcher.rb.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/dispatcher.rb $(srcdir)/lib/prism/dispatcher.rb
-
-main: $(srcdir)/lib/prism/dsl.rb
-srcs: $(srcdir)/lib/prism/dsl.rb
-$(srcdir)/lib/prism/dsl.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/dsl.rb.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/dsl.rb $(srcdir)/lib/prism/dsl.rb
-
-main: $(srcdir)/lib/prism/inspect_visitor.rb
-srcs: $(srcdir)/lib/prism/inspect_visitor.rb
-$(srcdir)/lib/prism/inspect_visitor.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/inspect_visitor.rb.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/inspect_visitor.rb $(srcdir)/lib/prism/inspect_visitor.rb
-
-main: $(srcdir)/lib/prism/mutation_compiler.rb
-srcs: $(srcdir)/lib/prism/mutation_compiler.rb
-$(srcdir)/lib/prism/mutation_compiler.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/mutation_compiler.rb.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/mutation_compiler.rb $(srcdir)/lib/prism/mutation_compiler.rb
-
-main: $(srcdir)/lib/prism/node.rb
-srcs: $(srcdir)/lib/prism/node.rb
-$(srcdir)/lib/prism/node.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/node.rb.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/node.rb $(srcdir)/lib/prism/node.rb
-
-main: $(srcdir)/lib/prism/reflection.rb
-srcs: $(srcdir)/lib/prism/reflection.rb
-$(srcdir)/lib/prism/reflection.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/reflection.rb.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/reflection.rb $(srcdir)/lib/prism/reflection.rb
-
-main: $(srcdir)/lib/prism/serialize.rb
-srcs: $(srcdir)/lib/prism/serialize.rb
-$(srcdir)/lib/prism/serialize.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/serialize.rb.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/serialize.rb $(srcdir)/lib/prism/serialize.rb
-
-main: $(srcdir)/lib/prism/visitor.rb
-srcs: $(srcdir)/lib/prism/visitor.rb
-$(srcdir)/lib/prism/visitor.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/visitor.rb.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/visitor.rb $(srcdir)/lib/prism/visitor.rb
-
-srcs: prism/api_node.c
-prism/api_node.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/ext/prism/api_node.c.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb ext/prism/api_node.c $@
-
-srcs: prism/ast.h
-prism/ast.h: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/include/prism/ast.h.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb include/prism/ast.h $@
-
-srcs: prism/diagnostic.c
-prism/diagnostic.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/diagnostic.c.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb src/diagnostic.c $@
-
-srcs: prism/diagnostic.h
-prism/diagnostic.h: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/include/prism/diagnostic.h.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb include/prism/diagnostic.h $@
-
-srcs: prism/node.c
-prism/node.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/node.c.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb src/node.c $@
-
-srcs: prism/prettyprint.c
-prism/prettyprint.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/prettyprint.c.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb src/prettyprint.c $@
-
-srcs: prism/serialize.c
-prism/serialize.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/serialize.c.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb src/serialize.c $@
-
-srcs: prism/token_type.c
-prism/token_type.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/token_type.c.erb
-	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb src/token_type.c $@
-
 EXPORTOBJS    = $(DLNOBJ) \
 		localeinit.$(OBJEXT) \
 		loadpath.$(OBJEXT) \
@@ -797,7 +720,8 @@ clean-srcs-local::
 realclean-srcs-local:: clean-srcs-local
 	$(Q)$(CHDIR) $(srcdir) && $(RM) \
 	  parse.c parse.h lex.c enc/trans/newline.c $(PRELUDES) revision.h \
-	  id.c id.h probes.dmyh configure aclocal.m4 tool/config.guess tool/config.sub gems/*.gem \
+	  id.c id.h probes.dmyh configure aclocal.m4 tool/config.guess tool/config.sub \
+	  $(PRISM_SRCDIR)/srcs.mk gems/*.gem \
 	|| $(NULLCMD)
 
 clean-srcs-ext::
@@ -1290,7 +1214,6 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}known_errors.inc \
       {$(VPATH)}vm_call_iseq_optimized.inc $(srcdir)/revision.h \
       $(REVISION_H) \
       $(UNICODE_DATA_HEADERS) $(ENC_HEADERS) \
-      $(srcs_vpath)prism/ast.h $(srcs_vpath)prism/diagnostic.h \
       {$(VPATH)}id.h {$(VPATH)}probes.dmyh
 
 insns: $(INSNS)
@@ -1353,11 +1276,11 @@ preludes: {$(VPATH)}miniprelude.c
 
 {$(srcdir)}.rb.rbbin:
 	$(ECHO) making $@
-	$(Q) $(MINIRUBY) $(tooldir)/mk_rbbin.rb $< > $@
+	$(Q) $(MINIRUBY) $(tooldir)/mk_rbbin.rb $(SRC_FILE) > $(OS_DEST_FILE)
 
 {$(srcdir)}.rb.rbinc:
 	$(ECHO) making $@
-	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $<
+	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $(SRC_FILE)
 
 $(BUILTIN_BINARY:yes=built)in_binary.rbbin: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/template/builtin_binary.rbbin.tmpl
 	$(Q) $(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ \
@@ -1378,6 +1301,11 @@ $(REVISION_H)$(yes_baseruby:yes=~disabled~):
 
 # uncommon.mk: $(REVISION_H)
 # $(MKFILES): $(REVISION_H)
+
+# $(common_mk_includes) is set by config.status or GNUmakefile
+common_mk__$(gnumake:yes=artifact)_ = uncommon.mk
+common_mk_$(gnumake)_artifact_ = $(MKFILES)
+$(common_mk__artifact_): $(srcdir)/common.mk $(common_mk_includes)
 
 ripper_srcs: $(RIPPER_SRCS)
 
@@ -1539,12 +1467,14 @@ prepare-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=extract-gems)
 extract-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=outdate-bundled-gems)
 update-gems: $(HAVE_BASERUBY:yes=outdate-bundled-gems)
 
+split_option = -F"\s+|$(HASH_SIGN).*"
+
 update-gems$(sequential): PHONY
 	$(ECHO) Downloading bundled gem files...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
-	    -I./tool -rdownloader -answ \
+	    -I./tool -rdownloader $(split_option) -answ \
 	    -e 'gem, ver = *$$F' \
-	    -e 'next if !ver or /^#/=~gem' \
+	    -e 'next if !ver' \
 	    -e 'old = Dir.glob("gems/#{gem}-*.gem")' \
 	    -e 'gem = "#{gem}-#{ver}.gem"' \
 	    -e 'Downloader::RubyGems.download(gem, "gems", nil) and' \
@@ -1556,10 +1486,10 @@ update-gems$(sequential): PHONY
 extract-gems$(sequential): PHONY
 	$(ECHO) Extracting bundled gem files...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
-	    -Itool/lib -rfileutils -rbundled_gem -answ \
+	    -Itool/lib -rfileutils -rbundled_gem $(split_option) -answ \
 	    -e 'BEGIN {d = ".bundle/gems"}' \
 	    -e 'gem, ver, _, rev = *$$F' \
-	    -e 'next if !ver or /^#/=~gem' \
+	    -e 'next if !ver' \
 	    -e 'g = "#{gem}-#{ver}"' \
 	    -e 'unless File.directory?("#{d}/#{g}")' \
 	    -e   'if rev and File.exist?(gs = "gems/src/#{gem}/#{gem}.gemspec")' \
@@ -1623,7 +1553,7 @@ yes-install-for-test-bundled-gems: yes-update-default-gemspecs
 test-bundled-gems-fetch: yes-test-bundled-gems-fetch
 yes-test-bundled-gems-fetch: clone-bundled-gems-src
 clone-bundled-gems-src: PHONY
-	$(Q) $(BASERUBY) -C $(srcdir)/gems ../tool/fetch-bundled_gems.rb BUNDLED_GEMS="$(BUNDLED_GEMS)" src bundled_gems
+	$(Q) $(BASERUBY) -C $(srcdir) tool/fetch-bundled_gems.rb BUNDLED_GEMS="$(BUNDLED_GEMS)" gems/src gems/bundled_gems
 no-test-bundled-gems-fetch:
 
 test-bundled-gems-prepare: $(TEST_RUNNABLE)-test-bundled-gems-prepare
@@ -1913,6 +1843,9 @@ clean-gems:
 
 CLEAN_CACHE = clean-extlibs
 
+prepare-package: prereq after-update
+clean-cache: $(CLEAN_CACHE)
+
 info: info-program info-libruby_a info-libruby_so info-arch
 info-program: PHONY
 	@echo PROGRAM=$(PROGRAM)
@@ -2044,3 +1977,6 @@ help: PHONY
 
 $(CROSS_COMPILING:yes=)builtin.$(OBJEXT): {$(VPATH)}mini_builtin.c
 $(CROSS_COMPILING:yes=)builtin.$(OBJEXT): {$(VPATH)}miniprelude.c
+
+!include $(srcdir)/prism/srcs.mk
+!include $(srcdir)/depend

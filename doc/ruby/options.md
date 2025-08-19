@@ -1,3 +1,10 @@
+<!---
+  CAUTION
+
+  This page on docs.ruby-lang.org is displayed in Ruby's help message (-h and --help).
+  Please make sure you update the link when renaming or moving this file.
+--->
+
 # Ruby Command-Line Options
 
 ## About the Examples
@@ -295,7 +302,7 @@ $ ruby -n -e 'p $_' desiderata.txt
 "be on good terms with all persons.\n"
 ```
 
-With option `-l' (chopped):
+With option `-l` (chopped):
 
 ```console
 $ ruby -ln -e 'p $_' desiderata.txt

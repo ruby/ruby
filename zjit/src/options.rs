@@ -22,6 +22,10 @@ pub static mut OPTIONS: Option<Options> = None;
 
 #[derive(Clone, Debug)]
 pub struct Options {
+    /// Hard limit of the executable memory block to allocate in bytes.
+    /// Note that the command line argument is expressed in MiB and not bytes.
+    pub exec_mem_bytes: usize,
+
     /// Number of times YARV instructions should be profiled.
     pub num_profiles: u8,
 
@@ -30,6 +34,9 @@ pub struct Options {
 
     /// Enable debug logging
     pub debug: bool,
+
+    /// Turn off the HIR optimizer
+    pub disable_hir_opt: bool,
 
     /// Dump initial High-level IR before optimization
     pub dump_hir_init: Option<DumpHIR>,
@@ -58,9 +65,11 @@ pub struct Options {
 impl Default for Options {
     fn default() -> Self {
         Options {
+            exec_mem_bytes: 64 * 1024 * 1024,
             num_profiles: 1,
             stats: false,
             debug: false,
+            disable_hir_opt: false,
             dump_hir_init: None,
             dump_hir_opt: None,
             dump_hir_graphviz: false,
@@ -74,12 +83,18 @@ impl Default for Options {
 }
 
 /// `ruby --help` descriptions for user-facing options. Do not add options for ZJIT developers.
-/// Note that --help allows only 80 chars per line, including indentation.    80-char limit --> |
+/// Note that --help allows only 80 chars per line, including indentation, and it also puts the
+/// description in a separate line if the option name is too long.  80-char limit --> | (any character beyond this `|` column fails the test)
 pub const ZJIT_OPTIONS: &'static [(&str, &str)] = &[
-    ("--zjit-call-threshold=num", "Number of calls to trigger JIT (default: 2)."),
-    ("--zjit-num-profiles=num",   "Number of profiled calls before JIT (default: 1, max: 255)."),
-    ("--zjit-stats",              "Enable collecting ZJIT statistics."),
-    ("--zjit-perf",               "Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf."),
+    // TODO: Hide --zjit-exec-mem-size from ZJIT_OPTIONS once we add --zjit-mem-size (Shopify/ruby#686)
+    ("--zjit-exec-mem-size=num",
+                     "Size of executable memory block in MiB (default: 64)."),
+    ("--zjit-call-threshold=num",
+                     "Number of calls to trigger JIT (default: 2)."),
+    ("--zjit-num-profiles=num",
+                     "Number of profiled calls before JIT (default: 1, max: 255)."),
+    ("--zjit-stats", "Enable collecting ZJIT statistics."),
+    ("--zjit-perf",  "Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf."),
     ("--zjit-log-compiled-iseqs=path",
                      "Log compiled ISEQs to the file. The file will be truncated."),
 ];
@@ -163,6 +178,20 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
     match (opt_name, opt_val) {
         ("", "") => {}, // Simply --zjit
 
+        ("mem-size", _) => match opt_val.parse::<usize>() {
+            Ok(n) => {
+                // Reject 0 or too large values that could overflow.
+                // The upper bound is 1 TiB but we could make it smaller.
+                if n == 0 || n > 1024 * 1024 {
+                    return None
+                }
+
+                // Convert from MiB to bytes internally for convenience
+                options.exec_mem_bytes = n * 1024 * 1024;
+            }
+            Err(_) => return None,
+        },
+
         ("call-threshold", _) => match opt_val.parse() {
             Ok(n) => {
                 unsafe { rb_zjit_call_threshold = n; }
@@ -184,6 +213,8 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         }
 
         ("debug", "") => options.debug = true,
+
+        ("disable-hir-opt", "") => options.disable_hir_opt = true,
 
         // --zjit-dump-hir dumps the actual input to the codegen, which is currently the same as --zjit-dump-hir-opt.
         ("dump-hir" | "dump-hir-opt", "") => options.dump_hir_opt = Some(DumpHIR::WithoutSnapshot),
