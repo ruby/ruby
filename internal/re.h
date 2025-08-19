@@ -25,4 +25,9 @@ int rb_match_count(VALUE match);
 VALUE rb_reg_new_ary(VALUE ary, int options);
 VALUE rb_reg_last_defined(VALUE match);
 
+#define ARG_REG_OPTION_MASK \
+    (ONIG_OPTION_IGNORECASE|ONIG_OPTION_MULTILINE|ONIG_OPTION_EXTEND)
+#define ARG_ENCODING_FIXED    16
+#define ARG_ENCODING_NONE     32
+
 #endif /* INTERNAL_RE_H */

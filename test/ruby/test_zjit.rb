@@ -1847,6 +1847,14 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:concatstrings]
   end
 
+  def test_regexp_interpolation
+    assert_compiles '/123/', %q{
+      def test = /#{1}#{2}#{3}/
+
+      test
+    }, insns: [:toregexp]
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
