@@ -2584,6 +2584,26 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_case_dispatch]
   end
 
+  def test_stack_overflow
+    assert_compiles 'nil', %q{
+      def recurse(n)
+        return if n == 0
+        recurse(n-1)
+        nil # no tail call
+      end
+
+      recurse(2)
+      recurse(2)
+      begin
+        recurse(20_000)
+      rescue SystemStackError
+        # Not asserting an exception is raised here since main
+        # thread stack size is environment-sensitive. Only
+        # that we don't crash or infinite loop.
+      end
+    }, call_threshold: 2
+  end
+
   def test_invokeblock
     assert_compiles '42', %q{
       def test

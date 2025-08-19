@@ -464,6 +464,7 @@ pub enum SideExitReason {
     Interrupt,
     BlockParamProxyModified,
     BlockParamProxyNotIseqOrIfunc,
+    StackOverflow,
 }
 
 impl std::fmt::Display for SideExitReason {

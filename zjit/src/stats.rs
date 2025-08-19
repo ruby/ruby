@@ -102,6 +102,7 @@ make_counters! {
         exit_callee_side_exit,
         exit_obj_to_string_fallback,
         exit_interrupt,
+        exit_stackoverflow,
         exit_optional_arguments,
         exit_block_param_proxy_modified,
         exit_block_param_proxy_not_iseq_or_ifunc,
@@ -232,6 +233,7 @@ pub fn exit_counter_ptr(reason: crate::hir::SideExitReason) -> *mut u64 {
         CalleeSideExit                => exit_callee_side_exit,
         ObjToStringFallback           => exit_obj_to_string_fallback,
         Interrupt                     => exit_interrupt,
+        StackOverflow                 => exit_stackoverflow,
         BlockParamProxyModified       => exit_block_param_proxy_modified,
         BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
     };

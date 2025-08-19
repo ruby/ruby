@@ -20,6 +20,7 @@ use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, RangeType, 
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types, Type};
 use crate::options::get_option;
+use crate::cast::IntoUsize;
 
 /// Ephemeral code generation state
 struct JITState {
@@ -1042,6 +1043,19 @@ fn gen_send_without_block_direct(
     args: Vec<Opnd>,
     state: &FrameState,
 ) -> lir::Opnd {
+    let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.as_usize();
+    // Stack overflow check: fails if CFP<=SP at any point in the callee.
+    asm_comment!(asm, "stack overflow check");
+    let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.as_usize();
+    // vm_push_frame() checks it against a decremented cfp, and CHECK_VM_STACK_OVERFLOW0
+    // adds to the margin another control frame with `&bounds[1]`.
+    const { assert!(RUBY_SIZEOF_CONTROL_FRAME % SIZEOF_VALUE == 0, "sizeof(rb_control_frame_t) is a multiple of sizeof(VALUE)"); }
+    let cfp_growth = 2 * (RUBY_SIZEOF_CONTROL_FRAME / SIZEOF_VALUE);
+    let peak_offset = SIZEOF_VALUE * (stack_growth + cfp_growth);
+    let stack_limit = asm.add(SP, peak_offset.into());
+    asm.cmp(CFP, stack_limit);
+    asm.jbe(side_exit(jit, state, StackOverflow));
+
     // Save cfp->pc and cfp->sp for the caller frame
     gen_prepare_call_with_gc(asm, state);
     gen_save_sp(asm, state.stack().len() - args.len() - 1); // -1 for receiver
@@ -1059,8 +1073,7 @@ fn gen_send_without_block_direct(
     });
 
     asm_comment!(asm, "switch to new SP register");
-    let local_size = unsafe { get_iseq_body_local_table_size(iseq) } as usize;
-    let sp_offset = (state.stack().len() + local_size - args.len() + VM_ENV_DATA_SIZE as usize) * SIZEOF_VALUE;
+    let sp_offset = (state.stack().len() + local_size - args.len() + VM_ENV_DATA_SIZE.as_usize()) * SIZEOF_VALUE;
     let new_sp = asm.add(SP, sp_offset.into());
     asm.mov(SP, new_sp);
 
