@@ -10,11 +10,28 @@ class TestRange < Test::Unit::TestCase
     assert_equal((0..2), Range.new(0, 2))
     assert_equal((0..2), Range.new(0, 2, false))
     assert_equal((0...2), Range.new(0, 2, true))
+    assert_equal((0..2**100), Range.new(0, 2**100, false))
+    assert_equal((2**99..2**100), Range.new(2**99, 2**100, false))
+    assert_equal((0..2.5), Range.new(0, 2.5, false))
+    assert_equal((1.5..2.5), Range.new(1.5, 2.5, false))
+    assert_equal((0..5r/2), Range.new(0, 5r/2, false))
+    assert_equal((3r/2..5r/2), Range.new(3r/2, 5r/2, false))
+    assert_equal(Date.new(2023, 1, 1)..Date.new(2023, 12, 31), Range.new(Date.new(2023, 1, 1), Date.new(2023, 12, 31), false))
+    assert_equal(Time.at(0)..Time.at(100), Range.new(Time.at(0), Time.at(100), false))
+    assert_equal('a'..'z', Range.new('a', 'z', false))
+    assert_equal(:a..:z, Range.new(:a, :z, false))
 
     assert_raise(ArgumentError) { (1.."3") }
+    assert_raise(ArgumentError) { (1i..2i) }
 
     assert_equal((0..nil), Range.new(0, nil, false))
     assert_equal((0...nil), Range.new(0, nil, true))
+    assert_equal((0..), Range.new(0, nil, false))
+    assert_equal((0...), Range.new(0, nil, true))
+    assert_equal((..0), Range.new(nil, 0, false))
+    assert_equal((...0), Range.new(nil, 0, true))
+    assert_equal((nil..nil), Range.new(nil, nil, false))
+    assert_equal((nil...nil), Range.new(nil, nil, true))
 
     obj = Object.new
     def obj.<=>(other)
