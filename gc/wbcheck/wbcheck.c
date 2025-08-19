@@ -290,9 +290,38 @@ wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_
     // Collect missed references (lazily allocated)
     wbcheck_object_list_t *missed_refs = NULL;
 
+    // Use circular comparison for better performance when lists are mostly similar
+    size_t snapshot_idx = 0;
+
     // Check each object in current_refs to see if it's in either stored list
     for (size_t i = 0; i < current_refs->count; i++) {
         VALUE current_ref = current_refs->items[i];
+
+        // Usually the lists are nearly identical. We take advantage of this by
+        // attempting to loop over both lists in sequence. When the next element
+        // of the snapshot doesn't match the next element of our current_refs,
+        // we'll loop around the list to try to find it and continue from that
+        // match, so any runs of identical items can be matched efficiently.
+        //
+        // Pathologically this is O(N**2), but is O(N * num_changes)
+        bool found_in_snapshot = false;
+        if (gc_mark_snapshot && snapshot_count > 0) {
+            size_t start_idx = snapshot_idx;
+            do {
+                if (gc_mark_snapshot->items[snapshot_idx] == current_ref) {
+                    found_in_snapshot = true;
+                    snapshot_idx++;
+                    if (snapshot_idx >= snapshot_count) snapshot_idx = 0;
+                    break;
+                }
+                snapshot_idx++;
+                if (snapshot_idx >= snapshot_count) snapshot_idx = 0;
+            } while (snapshot_idx != start_idx);
+        }
+
+        if (found_in_snapshot) {
+            continue;
+        }
 
         // Sometimes these are set via RBASIC_SET_CLASS_RAW
         if (current_ref == rb_cArray || current_ref == rb_cString) {
@@ -304,17 +333,6 @@ wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_
             continue;
         }
 
-        // Check if reference exists in gc_mark_snapshot
-        if (gc_mark_snapshot) {
-            // Fast path: check if the reference is at the same index
-            if (i < gc_mark_snapshot->count && gc_mark_snapshot->items[i] == current_ref) {
-                continue;
-            }
-            // Slow path: search through the entire list
-            if (wbcheck_object_list_contains(gc_mark_snapshot, current_ref)) {
-                continue;
-            }
-        }
 
         // Check if reference exists in writebarrier_children
         if (writebarrier_children && wbcheck_object_list_contains(writebarrier_children, current_ref)) {
