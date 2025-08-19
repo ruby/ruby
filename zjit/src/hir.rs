@@ -1309,7 +1309,7 @@ impl Function {
     }
 
     /// Check if the type of `insn` is a subtype of `ty`.
-    pub fn is_a(&self, insn: InsnId, ty: Type) -> bool {
+    fn is_a(&self, insn: InsnId, ty: Type) -> bool {
         self.type_of(insn).is_subtype(ty)
     }
 
