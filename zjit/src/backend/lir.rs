@@ -1397,7 +1397,7 @@ impl Assembler
                 Some(Opnd::VReg { idx, .. }) => Some(*idx),
                 _ => None,
             };
-            if vreg_idx.is_some() && live_ranges[vreg_idx.unwrap()].end() != index {
+            if vreg_idx.is_some() {
                 // This is going to be the output operand that we will set on the
                 // instruction. CCall and LiveReg need to use a specific register.
                 let mut out_reg = match insn {
@@ -1474,6 +1474,16 @@ impl Assembler
                         *opnd = Opnd::Mem(Mem { base, disp, num_bits });
                     }
                     _ => {},
+                }
+            }
+
+            if let Some(idx) = vreg_idx {
+                if live_ranges[idx].end() == index {
+                    if let Some(reg) = reg_mapping[idx] {
+                        pool.dealloc_reg(&reg);
+                    } else {
+                        unreachable!("no register allocated for insn {:?}", insn);
+                    }
                 }
             }
 
