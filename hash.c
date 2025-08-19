@@ -334,9 +334,7 @@ objid_hash(VALUE obj)
  * A hash value that exceeds the capacity of an Integer is truncated before being used.
  *
  * Many core classes override method Object#hash;
- * visit {core methods}[https://docs.ruby-lang.org/en/master/table_of_contents.html#methods]
- * and search for <tt>#hash</tt>.
- * Other core classes (e.g., Integer) calculate the hash internally,
+ * other core classes (e.g., Integer) calculate the hash internally,
  * and do not call the #hash method when used as a hash key.
  *
  * When implementing #hash for a user-defined class,
