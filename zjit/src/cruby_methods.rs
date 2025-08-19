@@ -166,7 +166,7 @@ pub fn init() -> Annotations {
         ($module:ident, $method_name:literal, $return_type:expr) => {
             annotate_builtin!($module, $method_name, $return_type, no_gc, leaf, elidable)
         };
-        ($module:ident, $method_name:literal, $return_type:expr, $(inline:$inline:ident,)? $($properties:ident),+) => {
+        ($module:ident, $method_name:literal, $return_type:expr, $($properties:ident),+) => {
             let mut props = FnProperties {
                 no_gc: false,
                 leaf: false,
@@ -175,7 +175,6 @@ pub fn init() -> Annotations {
                 inline: no_inline,
             };
             $(props.$properties = true;)+
-            $(props.inline = $inline;)?
             annotate_builtin_method(builtin_funcs, unsafe { $module }, $method_name, props);
         }
     }
