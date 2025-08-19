@@ -1025,6 +1025,12 @@ rb_enc_set_index(VALUE obj, int idx)
     enc_set_index(obj, idx);
 }
 
+void
+rb_enc_set_index_fastpath(VALUE obj, int idx)
+{
+    enc_set_index(obj, idx);
+}
+
 VALUE
 rb_enc_associate_index(VALUE obj, int idx)
 {
