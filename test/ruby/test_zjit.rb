@@ -1855,6 +1855,21 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:toregexp]
   end
 
+  def test_new_range_non_leaf
+    assert_compiles '(0/1)..1', %q{
+      def jit_entry(v) = make_range_then_exit(v)
+
+      def make_range_then_exit(v)
+        range = (v..1)
+        super rescue range # TODO(alan): replace super with side-exit intrinsic
+      end
+
+      jit_entry(0)    # profile
+      jit_entry(0)    # compile
+      jit_entry(0/1r) # run without stub
+    }, call_threshold: 2
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
