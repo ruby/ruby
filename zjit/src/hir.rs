@@ -638,7 +638,6 @@ impl Insn {
             // NewHash's operands may be hashed and compared for equality, which could have
             // side-effects.
             Insn::NewHash { elements, .. } => elements.len() > 0,
-            Insn::NewRange { .. } => false,
             Insn::ArrayDup { .. } => false,
             Insn::HashDup { .. } => false,
             Insn::Test { .. } => false,
@@ -660,6 +659,9 @@ impl Insn {
             Insn::GetLocal   { .. } => false,
             Insn::IsNil      { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
+            // TODO: NewRange is effects free if we can prove the two ends to be Fixnum,
+            // but we don't have type information here in `impl Insn`. See rb_range_new().
+            Insn::NewRange { .. } => true,
             _ => true,
         }
     }
@@ -6195,6 +6197,29 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v4:Fixnum[5] = Const Value(5)
               Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn test_do_not_eliminate_new_range_non_fixnum() {
+        eval("
+            def test()
+              _ = (-'a'..'b')
+              0
+            end
+            test; test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:3:
+            bb0(v0:BasicObject):
+              v1:NilClass = Const Value(nil)
+              v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
+              v6:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v8:StringExact = StringCopy v6
+              v10:RangeExact = NewRange v4 NewRangeInclusive v8
+              v11:Fixnum[0] = Const Value(0)
+              Return v11
         "#]]);
     }
 
