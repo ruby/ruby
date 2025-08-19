@@ -1398,6 +1398,9 @@ impl Assembler
                 _ => None,
             };
             if vreg_idx.is_some() {
+                if live_ranges[vreg_idx.unwrap()].end() == index {
+                    debug!("Allocating a register for VReg({}) at instruction index {} even though it does not live past this index", vreg_idx.unwrap(), index);
+                }
                 // This is going to be the output operand that we will set on the
                 // instruction. CCall and LiveReg need to use a specific register.
                 let mut out_reg = match insn {
