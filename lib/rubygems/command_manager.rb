@@ -118,7 +118,7 @@ class Gem::CommandManager
   ##
   # Register the Symbol +command+ as a gem command.
 
-  def register_command(command, obj=false)
+  def register_command(command, obj = false)
     @commands[command] = obj
   end
 
@@ -148,7 +148,7 @@ class Gem::CommandManager
   ##
   # Run the command specified by +args+.
 
-  def run(args, build_args=nil)
+  def run(args, build_args = nil)
     process_args(args, build_args)
   rescue StandardError, Gem::Timeout::Error => ex
     if ex.respond_to?(:detailed_message)
@@ -165,7 +165,7 @@ class Gem::CommandManager
     terminate_interaction(1)
   end
 
-  def process_args(args, build_args=nil)
+  def process_args(args, build_args = nil)
     if args.empty?
       say Gem::Command::HELP
       terminate_interaction 1

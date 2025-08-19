@@ -369,7 +369,7 @@ RUBY_FUNC_EXPORTED shape_id_t
 rb_obj_shape_id(VALUE obj)
 {
     if (RB_SPECIAL_CONST_P(obj)) {
-        return SPECIAL_CONST_SHAPE_ID;
+        rb_bug("rb_obj_shape_id: called on a special constant");
     }
 
     if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
@@ -877,8 +877,17 @@ shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
 #endif
 
     VALUE klass;
-    if (IMEMO_TYPE_P(obj, imemo_fields)) { // HACK
-        klass = CLASS_OF(obj);
+    if (IMEMO_TYPE_P(obj, imemo_fields)) {
+        VALUE owner = rb_imemo_fields_owner(obj);
+        switch (BUILTIN_TYPE(owner)) {
+          case T_CLASS:
+          case T_MODULE:
+            klass = rb_singleton_class(owner);
+            break;
+          default:
+            klass = rb_obj_class(owner);
+            break;
+        }
     }
     else {
         klass = rb_obj_class(obj);
@@ -1171,6 +1180,7 @@ rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_t
         st_delete(table, &id, NULL);
     }
     rb_obj_init_too_complex(dest, table);
+    rb_gc_writebarrier_remember(dest);
 }
 
 size_t
@@ -1415,6 +1425,9 @@ rb_shape_parent(VALUE self)
 static VALUE
 rb_shape_debug_shape(VALUE self, VALUE obj)
 {
+    if (RB_SPECIAL_CONST_P(obj)) {
+        rb_raise(rb_eArgError, "Can't get shape of special constant");
+    }
     return shape_id_t_to_rb_cShape(rb_obj_shape_id(obj));
 }
 

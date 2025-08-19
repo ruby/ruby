@@ -345,7 +345,6 @@ pub fn uimm_num_bits(uimm: u64) -> u8
     return 64;
 }
 
-/*
 #[cfg(test)]
 mod tests
 {
@@ -381,32 +380,5 @@ mod tests
         assert_eq!(uimm_num_bits((u32::MAX as u64) + 1), 64);
         assert_eq!(uimm_num_bits(u64::MAX), 64);
     }
-
-    #[test]
-    fn test_code_size() {
-        // Write 4 bytes in the first page
-        let mut cb = CodeBlock::new_dummy(CodeBlock::PREFERRED_CODE_PAGE_SIZE * 2);
-        cb.write_bytes(&[0, 0, 0, 0]);
-        assert_eq!(cb.code_size(), 4);
-
-        // Moving to the next page should not increase code_size
-        cb.next_page(cb.get_write_ptr(), |_, _| {});
-        assert_eq!(cb.code_size(), 4);
-
-        // Write 4 bytes in the second page
-        cb.write_bytes(&[0, 0, 0, 0]);
-        assert_eq!(cb.code_size(), 8);
-
-        // Rewrite 4 bytes in the first page
-        let old_write_pos = cb.get_write_pos();
-        cb.set_pos(0);
-        cb.write_bytes(&[1, 1, 1, 1]);
-
-        // Moving from an old page to the next page should not increase code_size
-        cb.next_page(cb.get_write_ptr(), |_, _| {});
-        cb.set_pos(old_write_pos);
-        assert_eq!(cb.code_size(), 8);
-    }
 }
 
-*/

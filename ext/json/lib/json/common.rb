@@ -1002,7 +1002,7 @@ module JSON
     # See {Parsing Options}[#module-JSON-label-Parsing+Options], and {Generating Options}[#module-JSON-label-Generating+Options].
     #
     # For generation, the <tt>strict: true</tt> option is always set. When a Ruby object with no native \JSON counterpart is
-    # encoutered, the block provided to the initialize method is invoked, and must return a Ruby object that has a native
+    # encountered, the block provided to the initialize method is invoked, and must return a Ruby object that has a native
     # \JSON counterpart:
     #
     #  module MyApp

@@ -4,6 +4,7 @@ require 'socket'
 require 'timeout'
 require 'io/wait'
 require 'securerandom'
+require 'rbconfig'
 
 # Resolv is a thread-aware DNS resolver library written in Ruby.  Resolv can
 # handle multiple DNS requests concurrently without blocking the entire Ruby

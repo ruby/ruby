@@ -60,7 +60,6 @@ impl From<Conditional> for [u8; 4] {
     }
 }
 
-/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -72,4 +71,3 @@ mod tests {
         assert_eq!(0x9a821020, result);
     }
 }
-*/

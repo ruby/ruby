@@ -7,8 +7,8 @@
 #++
 
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
-  def self.build(extension, dest_path, results, args=[], lib_dir=nil, extension_dir=Dir.pwd,
-    target_rbconfig=Gem.target_rbconfig)
+  def self.build(extension, dest_path, results, args = [], lib_dir = nil, extension_dir = Dir.pwd,
+    target_rbconfig = Gem.target_rbconfig)
     require "fileutils"
     require "tempfile"
 
@@ -66,6 +66,10 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     end
 
     results
+  rescue Gem::Ext::Builder::NoMakefileError => error
+    results << error.message
+    results << "Skipping make for #{extension} as no Makefile was found."
+    # We are good, do not re-raise the error.
   ensure
     FileUtils.rm_rf tmp_dest if tmp_dest
   end

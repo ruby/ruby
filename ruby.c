@@ -301,6 +301,8 @@ ruby_show_usage_line(const char *name, const char *secondary, const char *descri
                     description, help, highlight, width, columns);
 }
 
+RUBY_EXTERN const char ruby_api_version_name[];
+
 static void
 usage(const char *name, int help, int highlight, int columns)
 {
@@ -404,6 +406,9 @@ usage(const char *name, int help, int highlight, int columns)
 #define SHOW(m) show_usage_line(&(m), help, highlight, w, columns)
 
     printf("%sUsage:%s %s [options] [--] [filepath] [arguments]\n", sb, se, name);
+    printf("\n""Details and examples at https://docs.ruby-lang.org/en/%s/ruby/options_md.html\n",
+           ruby_api_version_name);
+
     for (i = 0; i < num; ++i)
         SHOW(usage_msg[i]);
 
@@ -2349,7 +2354,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         if (!FEATURE_USED_P(opt->features, yjit) && env_var_truthy("RUBY_YJIT_ENABLE")) {
             FEATURE_SET(opt->features, FEATURE_BIT(yjit));
         }
-#elif USE_ZJIT
+#endif
+#if USE_ZJIT
         if (!FEATURE_USED_P(opt->features, zjit) && env_var_truthy("RUBY_ZJIT_ENABLE")) {
             FEATURE_SET(opt->features, FEATURE_BIT(zjit));
         }

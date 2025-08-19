@@ -44,9 +44,7 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Document')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
@@ -87,6 +85,7 @@ jobs:
         shell: pwsh
 
       - name: Restore vcpkg artifact
+        id: restore-vcpkg
         uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: src\vcpkg_installed
@@ -96,13 +95,14 @@ jobs:
         run: |
           vcpkg install --vcpkg-root=%USERPROFILE%\scoop\apps\vcpkg\current
         working-directory: src
+        if: ${{ ! steps.restore-vcpkg.outputs.cache-hit }}
 
       - name: Save vcpkg artifact
         uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: src\vcpkg_installed
           key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
-        if: ${{ github.ref_name == 'master' || startsWith(github.ref_name, 'ruby_') }}
+        if: ${{ ! steps.restore-vcpkg.outputs.cache-hit && (github.ref_name == 'master' || startsWith(github.ref_name, 'ruby_')) }}
 
       - name: setup env
         # Available Ruby versions: https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md#ruby
@@ -115,8 +115,8 @@ jobs:
             -arch=${{ matrix.target || 'amd64' }} ^
             ${{ matrix.vcvars && '-vcvars_ver=' || '' }}${{ matrix.vcvars }}
           nmake -f nul
-          set TMP=%USERPROFILE%\AppData\Local\Temp
-          set TEMP=%USERPROFILE%\AppData\Local\Temp
+          set TMP=%RUNNER_TEMP%
+          set TEMP=%RUNNER_TEMP%
           set MAKEFLAGS=l
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
           set RUBY_OPT_DIR=%GITHUB_WORKSPACE:\=/%/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%

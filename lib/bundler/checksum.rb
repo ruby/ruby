@@ -205,6 +205,12 @@ module Bundler
         @store[spec.lock_name].nil?
       end
 
+      def empty?(spec)
+        return false unless spec.source.is_a?(Bundler::Source::Rubygems)
+
+        @store[spec.lock_name].empty?
+      end
+
       def register(spec, checksum)
         register_checksum(spec.lock_name, checksum)
       end

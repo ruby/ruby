@@ -127,7 +127,7 @@ class Gem::DependencyInstaller
   # sources.  Gems are sorted with newer gems preferred over older gems, and
   # local gems preferred over remote gems.
 
-  def find_gems_with_sources(dep, best_only=false) # :nodoc:
+  def find_gems_with_sources(dep, best_only = false) # :nodoc:
     set = Gem::AvailableSet.new
 
     if consider_local?

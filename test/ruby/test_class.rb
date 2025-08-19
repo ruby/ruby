@@ -696,9 +696,11 @@ class TestClass < Test::Unit::TestCase
   def test_namescope_error_message
     m = Module.new
     o = m.module_eval "class A\u{3042}; self; end.new"
-    assert_raise_with_message(TypeError, /A\u{3042}/) {
-      o::Foo
-    }
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      assert_raise_with_message(TypeError, /A\u{3042}/) {
+        o::Foo
+      }
+    end
   end
 
   def test_redefinition_mismatch

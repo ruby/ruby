@@ -3104,7 +3104,7 @@ fn gen_set_ivar(
 
     // Get the iv index
     let shape_too_complex = comptime_receiver.shape_too_complex();
-    let ivar_index = if !shape_too_complex {
+    let ivar_index = if !comptime_receiver.special_const_p() && !shape_too_complex {
         let shape_id = comptime_receiver.shape_id_of();
         let mut ivar_index: u16 = 0;
         if unsafe { rb_shape_get_iv_index(shape_id, ivar_name, &mut ivar_index) } {
@@ -3369,7 +3369,7 @@ fn gen_definedivar(
     // Specialize base on compile time values
     let comptime_receiver = jit.peek_at_self();
 
-    if comptime_receiver.shape_too_complex() || asm.ctx.get_chain_depth() >= GET_IVAR_MAX_DEPTH {
+    if comptime_receiver.special_const_p() || comptime_receiver.shape_too_complex() || asm.ctx.get_chain_depth() >= GET_IVAR_MAX_DEPTH {
         // Fall back to calling rb_ivar_defined
 
         // Save the PC and SP because the callee may allocate
@@ -6656,16 +6656,24 @@ fn gen_block_given(
 ) {
     asm_comment!(asm, "block_given?");
 
-    // Same as rb_vm_frame_block_handler
-    let ep_opnd = gen_get_lep(jit, asm);
-    let block_handler = asm.load(
-        Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
-    );
+    // `yield` goes to the block handler stowed in the "local" iseq which is
+    // the current iseq or a parent. Only the "method" iseq type can be passed a
+    // block handler. (e.g. `yield` in the top level script is a syntax error.)
+    let local_iseq = unsafe { rb_get_iseq_body_local_iseq(jit.iseq) };
+    if unsafe { rb_get_iseq_body_type(local_iseq) } == ISEQ_TYPE_METHOD {
+        // Same as rb_vm_frame_block_handler
+        let ep_opnd = gen_get_lep(jit, asm);
+        let block_handler = asm.load(
+            Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
+        );
 
-    // Return `block_handler != VM_BLOCK_HANDLER_NONE`
-    asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
-    let block_given = asm.csel_ne(true_opnd, false_opnd);
-    asm.mov(out_opnd, block_given);
+        // Return `block_handler != VM_BLOCK_HANDLER_NONE`
+        asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
+        let block_given = asm.csel_ne(true_opnd, false_opnd);
+        asm.mov(out_opnd, block_given);
+    } else {
+        asm.mov(out_opnd, false_opnd);
+    }
 }
 
 // Codegen for rb_class_superclass()

@@ -126,7 +126,7 @@ module Gem
     # telling the user of +repl+ (unless +repl+ is :none) and the
     # Rubygems version that it is planned to go away.
 
-    def rubygems_deprecate(name, replacement=:none, version=nil)
+    def rubygems_deprecate(name, replacement = :none, version = nil)
       class_eval do
         old = "_deprecated_#{name}"
         alias_method old, name

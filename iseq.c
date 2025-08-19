@@ -1497,9 +1497,9 @@ rb_iseq_remove_coverage_all(void)
 /* define wrapper class methods (RubyVM::InstructionSequence) */
 
 static void
-iseqw_mark(void *ptr)
+iseqw_mark_and_move(void *ptr)
 {
-    rb_gc_mark_movable(*(VALUE *)ptr);
+    rb_gc_mark_and_move((VALUE *)ptr);
 }
 
 static size_t
@@ -1508,20 +1508,13 @@ iseqw_memsize(const void *ptr)
     return rb_iseq_memsize(*(const rb_iseq_t **)ptr);
 }
 
-static void
-iseqw_ref_update(void *ptr)
-{
-    VALUE *vptr = ptr;
-    *vptr = rb_gc_location(*vptr);
-}
-
 static const rb_data_type_t iseqw_data_type = {
     "T_IMEMO/iseq",
     {
-        iseqw_mark,
+        iseqw_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         iseqw_memsize,
-        iseqw_ref_update,
+        iseqw_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
 };

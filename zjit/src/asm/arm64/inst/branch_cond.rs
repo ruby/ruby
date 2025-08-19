@@ -47,7 +47,6 @@ impl From<BranchCond> for [u8; 4] {
     }
 }
 
-/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -77,4 +76,3 @@ mod tests {
         assert_eq!(0x54800000, result);
     }
 }
-*/

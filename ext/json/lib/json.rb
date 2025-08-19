@@ -133,7 +133,7 @@ require 'json/common'
 # When not specified:
 #   # The last value is used and a deprecation warning emitted.
 #   JSON.parse('{"a": 1, "a":2}') => {"a" => 2}
-#   # waring: detected duplicate keys in JSON object.
+#   # warning: detected duplicate keys in JSON object.
 #   # This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`
 #
 # When set to `+true+`

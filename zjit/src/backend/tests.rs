@@ -1,4 +1,3 @@
-/*
 #![cfg(test)]
 use crate::asm::CodeBlock;
 use crate::backend::*;
@@ -328,5 +327,3 @@ fn test_no_pos_marker_callback_when_compile_fails() {
     let cb = &mut CodeBlock::new_dummy(8);
     assert!(asm.compile(cb, None).is_none(), "should fail due to tiny size limit");
 }
-
-*/

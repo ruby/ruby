@@ -110,7 +110,7 @@ class Gem::SpecificGemNotFoundException < Gem::GemNotFoundException
   # and +version+.  Any +errors+ encountered when attempting to find the gem
   # are also stored.
 
-  def initialize(name, version, errors=nil)
+  def initialize(name, version, errors = nil)
     super "Could not find a valid gem '#{name}' (#{version}) locally or in a repository"
 
     @name = name
@@ -261,7 +261,7 @@ class Gem::UnsatisfiableDependencyError < Gem::DependencyError
   # Creates a new UnsatisfiableDependencyError for the unsatisfiable
   # Gem::Resolver::DependencyRequest +dep+
 
-  def initialize(dep, platform_mismatch=nil)
+  def initialize(dep, platform_mismatch = nil)
     if platform_mismatch && !platform_mismatch.empty?
       plats = platform_mismatch.map {|x| x.platform.to_s }.sort.uniq
       super "Unable to resolve dependency: No match for '#{dep}' on this platform. Found: #{plats.join(", ")}"

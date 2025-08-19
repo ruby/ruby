@@ -15,15 +15,12 @@ class TestGemExtExtConfBuilder < Gem::TestCase
   end
 
   def test_class_build
-    if Gem.java_platform?
-      pend("failing on jruby")
-    end
-
     if vc_windows? && !nmake_found?
       pend("test_class_build skipped - nmake not found")
     end
 
     File.open File.join(@ext, "extconf.rb"), "w" do |extconf|
+      extconf.puts "return if Gem.java_platform?"
       extconf.puts "require 'mkmf'\ncreate_makefile 'foo'"
     end
 
@@ -35,20 +32,22 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
     assert_match(/^current directory:/, output[0])
     assert_match(/^#{Regexp.quote(Gem.ruby)}.* extconf.rb/, output[1])
-    assert_equal "creating Makefile\n", output[2]
-    assert_match(/^current directory:/, output[3])
-    assert_contains_make_command "clean", output[4]
-    assert_contains_make_command "", output[7]
-    assert_contains_make_command "install", output[10]
+
+    if Gem.java_platform?
+      assert_includes(output, "Skipping make for extconf.rb as no Makefile was found.")
+    else
+      assert_equal "creating Makefile\n", output[2]
+      assert_match(/^current directory:/, output[3])
+      assert_contains_make_command "clean", output[4]
+      assert_contains_make_command "", output[7]
+      assert_contains_make_command "install", output[10]
+    end
+
     assert_empty Dir.glob(File.join(@ext, "siteconf*.rb"))
     assert_empty Dir.glob(File.join(@ext, ".gem.*"))
   end
 
   def test_class_build_rbconfig_make_prog
-    if Gem.java_platform?
-      pend("failing on jruby")
-    end
-
     configure_args do
       File.open File.join(@ext, "extconf.rb"), "w" do |extconf|
         extconf.puts "require 'mkmf'\ncreate_makefile 'foo'"
@@ -71,10 +70,6 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
     env_large_make = ENV.delete "MAKE"
     ENV["MAKE"] = "anothermake"
-
-    if Gem.java_platform?
-      pend("failing on jruby")
-    end
 
     configure_args "" do
       File.open File.join(@ext, "extconf.rb"), "w" do |extconf|
@@ -206,11 +201,11 @@ end
   end
 
   def test_class_make_no_Makefile
-    error = assert_raise Gem::InstallError do
+    error = assert_raise Gem::Ext::Builder::NoMakefileError do
       Gem::Ext::ExtConfBuilder.make @ext, ["output"], @ext
     end
 
-    assert_equal "Makefile not found", error.message
+    assert_match(/No Makefile found/, error.message)
   end
 
   def configure_args(args = nil)

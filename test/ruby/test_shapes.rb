@@ -149,11 +149,14 @@ class TestShapes < Test::Unit::TestCase
   def test_too_many_ivs_on_class
     obj = Class.new
 
-    (MANY_IVS + 1).times do
+    obj.instance_variable_set(:@test_too_many_ivs_on_class, 1)
+    refute_predicate RubyVM::Shape.of(obj), :too_complex?
+
+    MANY_IVS.times do
       obj.instance_variable_set(:"@a#{_1}", 1)
     end
 
-    assert_false RubyVM::Shape.of(obj).too_complex?
+    refute_predicate RubyVM::Shape.of(obj), :too_complex?
   end
 
   def test_removing_when_too_many_ivs_on_class
@@ -1029,12 +1032,22 @@ class TestShapes < Test::Unit::TestCase
     assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of([]))
   end
 
-  def test_true_has_special_const_shape_id
-    assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of(true).id)
-  end
-
-  def test_nil_has_special_const_shape_id
-    assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of(nil).id)
+  def test_raise_on_special_consts
+    assert_raise ArgumentError do
+      RubyVM::Shape.of(true)
+    end
+    assert_raise ArgumentError do
+      RubyVM::Shape.of(false)
+    end
+    assert_raise ArgumentError do
+      RubyVM::Shape.of(nil)
+    end
+    assert_raise ArgumentError do
+      RubyVM::Shape.of(0)
+    end
+    assert_raise ArgumentError do
+      RubyVM::Shape.of(:foo)
+    end
   end
 
   def test_root_shape_transition_to_special_const_on_frozen

@@ -505,6 +505,9 @@ update-deps:
 	$(GIT) --git-dir=$(GIT_DIR) merge --no-edit --ff-only $(update_deps)
 	$(GIT) --git-dir=$(GIT_DIR) branch --delete $(update_deps)
 
+fix-depends check-depends: all hello
+	$(BASERUBY) -C $(srcdir) tool/update-deps $(if $(filter fix-%,$@),--fix)
+
 # order-only-prerequisites doesn't work for $(RUBYSPEC_CAPIEXT)
 # because the same named directory exists in the source tree.
 $(RUBYSPEC_CAPIEXT)/%.$(DLEXT): $(srcdir)/$(RUBYSPEC_CAPIEXT)/%.c $(RUBYSPEC_CAPIEXT_DEPS) \

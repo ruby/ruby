@@ -1,10 +1,10 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-PLUGIN" "1" "July 2025" ""
+.TH "BUNDLE\-PLUGIN" "1" "August 2025" ""
 .SH "NAME"
 \fBbundle\-plugin\fR \- Manage Bundler plugins
 .SH "SYNOPSIS"
-\fBbundle plugin\fR install PLUGINS [\-\-source=\fISOURCE\fR] [\-\-version=\fIversion\fR] [\-\-git=\fIgit\-url\fR] [\-\-branch=\fIbranch\fR|\-\-ref=\fIrev\fR] [\-\-path=\fIpath\fR]
+\fBbundle plugin\fR install PLUGINS [\-\-source=SOURCE] [\-\-version=VERSION] [\-\-git=GIT] [\-\-branch=BRANCH|\-\-ref=REF] [\-\-local\-git=LOCAL_GIT] [\-\-path=PATH]
 .br
 \fBbundle plugin\fR uninstall PLUGINS [\-\-all]
 .br
@@ -16,18 +16,23 @@ You can install, uninstall, and list plugin(s) with this command to extend funct
 .SH "SUB\-COMMANDS"
 .SS "install"
 Install the given plugin(s)\.
+.P
+For example, \fBbundle plugin install bundler\-graph\fR will install bundler\-graph gem from globally configured sources (defaults to RubyGems\.org)\. Note that the global source specified in Gemfile is ignored\.
+.P
+\fBOPTIONS\fR
 .TP
-\fBbundle plugin install bundler\-graph\fR
-Install bundler\-graph gem from globally configured sources (defaults to RubyGems\.org)\. The global source, specified in source in Gemfile is ignored\.
+\fB\-\-source=SOURCE\fR
+Install the plugin gem from a specific source, rather than from globally configured sources\.
+.IP
+Example: \fBbundle plugin install bundler\-graph \-\-source https://example\.com\fR
 .TP
-\fBbundle plugin install bundler\-graph \-\-source https://example\.com\fR
-Install bundler\-graph gem from example\.com\. The global source, specified in source in Gemfile is not considered\.
+\fB\-\-version=VERSION\fR
+Specify a version of the plugin gem to install via \fB\-\-version\fR\.
+.IP
+Example: \fBbundle plugin install bundler\-graph \-\-version 0\.2\.1\fR
 .TP
-\fBbundle plugin install bundler\-graph \-\-version 0\.2\.1\fR
-You can specify the version of the gem via \fB\-\-version\fR\.
-.TP
-\fBbundle plugin install bundler\-graph \-\-git https://github\.com/rubygems/bundler\-graph\fR
-Install bundler\-graph gem from Git repository\. You can use standard Git URLs like:
+\fB\-\-git=GIT\fR
+Install the plugin gem from a Git repository\. You can use standard Git URLs like:
 .IP
 \fBssh://[user@]host\.xz[:port]/path/to/repo\.git\fR
 .br
@@ -37,12 +42,24 @@ Install bundler\-graph gem from Git repository\. You can use standard Git URLs l
 .br
 \fBfile:///path/to/repo\fR
 .IP
-When you specify \fB\-\-git\fR, you can use \fB\-\-branch\fR or \fB\-\-ref\fR to specify any branch, tag, or commit hash (revision) to use\.
+Example: \fBbundle plugin install bundler\-graph \-\-git https://github\.com/rubygems/bundler\-graph\fR
 .TP
-\fBbundle plugin install bundler\-graph \-\-path \.\./bundler\-graph\fR
-Install bundler\-graph gem from a local path\.
+\fB\-\-branch=BRANCH\fR
+When you specify \fB\-\-git\fR, you can use \fB\-\-branch\fR to use\.
 .TP
-\fBbundle plugin install bundler\-graph \-\-local\-git \.\./bundler\-graph\fR
+\fB\-\-ref=REF\fR
+When you specify \fB\-\-git\fR, you can use \fB\-\-ref\fR to specify any tag, or commit hash (revision) to use\.
+.TP
+\fB\-\-path=PATH\fR
+Install the plugin gem from a local path\.
+.IP
+Example: \fBbundle plugin install bundler\-graph \-\-path \.\./bundler\-graph\fR
+.TP
+\fB\-\-local\-git=LOCAL_GIT\fR
+Install the plugin gem from a local Git repository\.
+.IP
+Example: \fBbundle plugin install bundler\-graph \-\-local\-git \.\./bundler\-graph\fR\.
+.IP
 This option is deprecated in favor of \fB\-\-git\fR\.
 .SS "uninstall"
 Uninstall the plugin(s) specified in PLUGINS\.

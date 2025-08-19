@@ -1265,7 +1265,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             break;
     }
 
-    raise_parse_error("unreacheable: %s", state);
+    raise_parse_error("unreachable: %s", state);
 }
 
 static void json_ensure_eof(JSON_ParserState *state)

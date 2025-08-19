@@ -1,6 +1,6 @@
 use std::{collections::{HashMap, HashSet}, mem};
 
-use crate::{backend::lir::{asm_comment, Assembler}, cruby::{rb_callable_method_entry_t, ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag, ID}, gc::IseqPayload, hir::Invariant, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
+use crate::{backend::lir::{asm_comment, Assembler}, cruby::{rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag, ID, VALUE}, gc::IseqPayload, hir::Invariant, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
 use crate::stats::with_time_stat;
 use crate::stats::Counter::invalidation_time_ns;
 use crate::gc::remove_gc_offsets;
@@ -54,6 +54,31 @@ pub struct Invariants {
 
     /// Set of patch points that assume that the interpreter is running with only one ractor
     single_ractor_patch_points: HashSet<PatchPoint>,
+}
+
+impl Invariants {
+    /// Update object references in Invariants
+    pub fn update_references(&mut self) {
+        Self::update_iseq_references(&mut self.ep_escape_iseqs);
+        Self::update_iseq_references(&mut self.no_ep_escape_iseqs);
+    }
+
+    /// Update ISEQ references in a given HashSet<IseqPtr>
+    fn update_iseq_references(iseqs: &mut HashSet<IseqPtr>) {
+        let mut moved: Vec<IseqPtr> = Vec::with_capacity(iseqs.len());
+
+        iseqs.retain(|&old_iseq| {
+            let new_iseq = unsafe { rb_gc_location(VALUE(old_iseq as usize)) }.0 as IseqPtr;
+            if old_iseq != new_iseq {
+                moved.push(new_iseq);
+            }
+            old_iseq == new_iseq
+        });
+
+        for new_iseq in moved {
+            iseqs.insert(new_iseq);
+        }
+    }
 }
 
 /// Called when a basic operator is redefined. Note that all the blocks assuming

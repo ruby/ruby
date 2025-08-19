@@ -96,6 +96,15 @@ result.each {|k,v|
 # They can be referenced as $(top_srcdir)/filename.
 # % ruby -e 'def g(d) Dir.chdir(d) { Dir["**/*.{c,h,inc,dmyh}"] } end; puts((g("repo_source_dir_after_build") - g("repo_source_dir_original")).sort)'
 FILES_IN_SOURCE_DIRECTORY = %w[
+  prism/api_node.c
+  prism/ast.h
+  prism/diagnostic.c
+  prism/diagnostic.h
+  prism/node.c
+  prism/prettyprint.c
+  prism/serialize.c
+  prism/token_type.c
+  prism/version.h
 ]
 
 # Files built in the build directory (except extconf.h).
@@ -157,16 +166,6 @@ FILES_NEED_VPATH = %w[
   enc/trans/single_byte.c
   enc/trans/utf8_mac.c
   enc/trans/utf_16_32.c
-
-  prism/api_node.c
-  prism/ast.h
-  prism/diagnostic.c
-  prism/diagnostic.h
-  prism/node.c
-  prism/prettyprint.c
-  prism/serialize.c
-  prism/token_type.c
-  prism/version.h
 ]
 
 # Multiple files with same filename.

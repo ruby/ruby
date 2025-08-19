@@ -343,7 +343,7 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
         if (rb_obj_is_thread(obj)) return false;
         if (rb_obj_is_mutex(obj)) return false;
         if (rb_obj_is_fiber(obj)) return false;
-        if (rb_obj_is_main_ractor(obj)) return false;
+        if (rb_ractor_p(obj)) return false;
         if (rb_obj_is_fstring_table(obj)) return false;
         if (rb_obj_is_symbol_table(obj)) return false;
 
@@ -1921,7 +1921,7 @@ object_id(VALUE obj)
         // in fields.
         return class_object_id(obj);
       case T_IMEMO:
-        rb_bug("T_IMEMO can't have an object_id");
+        RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
         break;
       default:
         break;
@@ -1945,19 +1945,25 @@ build_id2ref_i(VALUE obj, void *data)
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
+        RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
         if (RCLASS(obj)->object_id) {
-            RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
             st_insert(id2ref_tbl, RCLASS(obj)->object_id, obj);
         }
         break;
       case T_IMEMO:
-      case T_NONE:
+        RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
+        if (IMEMO_TYPE_P(obj, imemo_fields) && rb_shape_obj_has_id(obj)) {
+            st_insert(id2ref_tbl, rb_obj_id(obj), rb_imemo_fields_owner(obj));
+        }
         break;
-      default:
+      case T_OBJECT:
+        RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
         if (rb_shape_obj_has_id(obj)) {
-            RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
             st_insert(id2ref_tbl, rb_obj_id(obj), obj);
         }
+        break;
+      default:
+        // For generic_fields, the T_IMEMO/fields is responsible for populating the entry.
         break;
     }
 }
@@ -4692,19 +4698,22 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                 APPEND_S("shared -> ");
                 rb_raw_obj_info(BUFF_ARGS, ARY_SHARED_ROOT(obj));
             }
-            else if (ARY_EMBED_P(obj)) {
-                APPEND_F("[%s%s] len: %ld (embed)",
-                         C(ARY_EMBED_P(obj),  "E"),
-                         C(ARY_SHARED_P(obj), "S"),
-                         RARRAY_LEN(obj));
-            }
             else {
-                APPEND_F("[%s%s] len: %ld, capa:%ld ptr:%p",
-                         C(ARY_EMBED_P(obj),  "E"),
+                APPEND_F("[%s%s%s] ",
+                         C(ARY_EMBED_P(obj), "E"),
                          C(ARY_SHARED_P(obj), "S"),
-                         RARRAY_LEN(obj),
-                         ARY_EMBED_P(obj) ? -1L : RARRAY(obj)->as.heap.aux.capa,
-                         (void *)RARRAY_CONST_PTR(obj));
+                         C(ARY_SHARED_ROOT_P(obj), "R"));
+
+                if (ARY_EMBED_P(obj)) {
+                    APPEND_F("len: %ld (embed)",
+                             RARRAY_LEN(obj));
+                }
+                else {
+                    APPEND_F("len: %ld, capa:%ld ptr:%p",
+                             RARRAY_LEN(obj),
+                             RARRAY(obj)->as.heap.aux.capa,
+                             (void *)RARRAY_CONST_PTR(obj));
+                }
             }
             break;
           case T_STRING: {
