@@ -321,6 +321,7 @@ fn main() {
         .allowlist_function("rb_yjit_mark_executable")
         .allowlist_function("rb_yjit_mark_unused")
         .allowlist_function("rb_yjit_get_page_size")
+        .allowlist_function("rb_yjit_get_cpu_time")
         .allowlist_function("rb_yjit_iseq_builtin_attrs")
         .allowlist_function("rb_yjit_iseq_inspect")
         .allowlist_function("rb_yjit_builtin_function")

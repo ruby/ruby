@@ -285,6 +285,9 @@ pub const DEFAULT_COUNTERS: &'static [Counter] = &[
     Counter::num_contexts_encoded,
     Counter::context_cache_hits,
 
+    Counter::branch_stub_hit,
+    Counter::branch_stub_old,
+
     Counter::invalidation_count,
     Counter::invalidate_method_lookup,
     Counter::invalidate_bop_redefined,
@@ -581,7 +584,9 @@ make_counters! {
 
     freed_iseq_count,
 
-    exit_from_branch_stub,
+    branch_stub_hit,
+    branch_stub_old,
+    branch_stub_exit,
 
     invalidation_count,
     invalidate_method_lookup,

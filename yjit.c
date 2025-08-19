@@ -30,6 +30,7 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
+#include <time.h>
 
 // For mmapp(), sysconf()
 #ifndef _WIN32
@@ -108,6 +109,17 @@ rb_yjit_mark_unused(void *mem_block, uint32_t mem_size)
     // On macOS, mprotect PROT_NONE seems to reduce RSS.
     // We also call this on Linux to avoid executing unused pages.
     return mprotect(mem_block, mem_size, PROT_NONE) == 0;
+}
+
+// Get the CPU time used by this process since starting
+double rb_yjit_get_cpu_time(void) {
+    struct timespec ts;
+    if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts) == 0) {
+        return ts.tv_sec + ts.tv_nsec * 1e-9;
+    }
+
+    // Return 0 if clock_gettime fails
+    return 0.0;
 }
 
 long
