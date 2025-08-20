@@ -202,6 +202,13 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # [Bug #20146]
+  def test_max_cpu_1
+    assert_ractor(<<~'RUBY', args: [{ "RUBY_MAX_CPU" => "1" }])
+      assert_equal :ok, Ractor.new { :ok }.value
+    RUBY
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
