@@ -510,7 +510,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
         }
 
         rb_gccct_clear_table(Qnil);
-}
+    }
 }
 
 static void
