@@ -2257,17 +2257,18 @@ static const struct rb_callcache *
 vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 {
 #if USE_DEBUG_COUNTER
-    const struct rb_callcache *old_cc = cd->cc;
+    const struct rb_callcache *old_cc = vm_cd_cc_load(cd);
 #endif
 
     const struct rb_callcache *cc = rb_vm_search_method_slowpath(cd->ci, klass);
 
 #if OPT_INLINE_METHOD_CACHE
-    cd->cc = cc;
-
     const struct rb_callcache *empty_cc = &vm_empty_cc;
     if (cd_owner && cc != empty_cc) {
-        RB_OBJ_WRITTEN(cd_owner, Qundef, cc);
+        vm_cd_cc_store(cd_owner, cd, cc);
+    }
+    else {
+        vm_cd_cc_store_raw(cd, cc);
     }
 
 #if USE_DEBUG_COUNTER
@@ -2301,7 +2302,7 @@ ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(VALUE 
 static const struct rb_callcache *
 vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 {
-    const struct rb_callcache *cc = cd->cc;
+    const struct rb_callcache *cc = vm_cd_cc_load(cd);
 
 #if OPT_INLINE_METHOD_CACHE
     if (LIKELY(vm_cc_class_check(cc, klass))) {
@@ -4631,9 +4632,9 @@ vm_call_refined(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_c
     const rb_callable_method_entry_t *ref_cme = search_refined_method(ec, cfp, calling);
 
     if (ref_cme) {
-        if (calling->cd->cc) {
+        if (vm_cd_cc_load(calling->cd)) {
             const struct rb_callcache *cc = calling->cc = vm_cc_new(vm_cc_cme(calling->cc)->defined_class, ref_cme, vm_call_general, cc_type_refinement);
-            RB_OBJ_WRITE(cfp->iseq, &calling->cd->cc, cc);
+            vm_cd_cc_store((VALUE)cfp->iseq, (struct rb_call_data *)calling->cd, cc);
             return vm_call_method(ec, cfp, calling);
         }
         else {
@@ -5105,7 +5106,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
     if (!klass) {
         /* bound instance method of module */
         cc = vm_cc_new(klass, NULL, vm_call_method_missing, cc_type_super);
-        RB_OBJ_WRITE(reg_cfp->iseq, &cd->cc, cc);
+        vm_cd_cc_store((VALUE)reg_cfp->iseq, cd, cc);
     }
     else {
         cc = vm_search_method_fastpath((VALUE)reg_cfp->iseq, cd, klass);
@@ -5114,16 +5115,17 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
         // define_method can cache for different method id
         if (cached_cme == NULL) {
             // empty_cc_for_super is not markable object
-            cd->cc = empty_cc_for_super();
+            vm_cd_cc_store_raw(cd, empty_cc_for_super());
         }
         else if (cached_cme->called_id != mid) {
             const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, mid);
             if (cme) {
                 cc = vm_cc_new(klass, cme, vm_call_super_method, cc_type_super);
-                RB_OBJ_WRITE(reg_cfp->iseq, &cd->cc, cc);
+                vm_cd_cc_store((VALUE)reg_cfp->iseq, cd, cc);
             }
             else {
-                cd->cc = cc = empty_cc_for_super();
+                cc = empty_cc_for_super();
+                vm_cd_cc_store_raw(cd, cc);
             }
         }
         else {
@@ -6082,8 +6084,8 @@ rb_vm_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd
 
         val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_method);
 
-        if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
-            RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
+        if (vm_cd_cc_load(cd) != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
+            vm_cd_cc_store((VALUE)GET_ISEQ(), cd, adjusted_cd.cd.cc);
         }
     }
     else {
@@ -6120,8 +6122,8 @@ rb_vm_invokesuper(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_
 
         val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_super);
 
-        if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
-            RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
+        if (vm_cd_cc_load(cd) != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
+            vm_cd_cc_store((VALUE)GET_ISEQ(), cd, adjusted_cd.cd.cc);
         }
     }
     else {
