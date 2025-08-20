@@ -587,6 +587,10 @@ start:
 
 #endif
 
+#define GETNAMEINFO_WONT_BLOCK(host, serv, flags) \
+    ((!(host) || ((flags) & NI_NUMERICHOST)) && \
+     (!(serv) || ((flags) & NI_NUMERICSERV)))
+
 #if GETADDRINFO_IMPL == 0
 
 int
@@ -624,6 +628,10 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
                char *host, size_t hostlen,
                char *serv, size_t servlen, int flags)
 {
+    if (GETNAMEINFO_WONT_BLOCK(host, serv, flags)) {
+        return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
+    }
+
     struct getnameinfo_arg arg;
     int ret;
     arg.sa = sa;
@@ -751,6 +759,10 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
     int retry;
     struct getnameinfo_arg *arg;
     int err, gni_errno = 0;
+
+    if (GETNAMEINFO_WONT_BLOCK(host, serv, flags)) {
+        return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
+    }
 
 start:
     retry = 0;
