@@ -1192,10 +1192,7 @@ fn can_direct_send(iseq: *const rb_iseq_t) -> bool {
 }
 
 enum EditAction {
-    MakeEqualTo(InsnId),
     Replace(InsnId),
-    ReplaceMultiple(Vec<InsnId>, InsnId),
-    ReplaceMultipleMakeEqualTo(Vec<InsnId>, InsnId),
     Remove,
     Keep,
 }
@@ -1214,53 +1211,16 @@ impl<'a> BlockEditor<'a> {
         let mut new_insns = vec![];
         for insn in self.insns.drain(..) {
             match f(&mut self.fun, insn) {
-                EditAction::MakeEqualTo(new) => {
-                    assert_ne!(new, insn, "Cannot replace instruction with itself");
-                    self.fun.make_equal_to(insn, new);
-                }
                 EditAction::Replace(new) => {
-                    assert_ne!(new, insn, "Cannot replace instruction with itself");
-                    // We're adding a new instruction; mark the two equivalent in the union-find
+                    // If we're adding a new instruction, mark the two equivalent in the union-find
                     // and do an incremental flow typing of the new instruction.
-                    self.fun.make_equal_to(insn, new);
-                    if self.fun.insns[new.0].has_output() {
-                        self.fun.insn_types[new.0] = self.fun.infer_type(new);
+                    if insn != new {
+                        self.fun.make_equal_to(insn, new);
+                        if self.fun.insns[new.0].has_output() {
+                            self.fun.insn_types[new.0] = self.fun.infer_type(new);
+                        }
                     }
                     new_insns.push(new);
-                    if self.fun.insns[new.0].is_terminator() {
-                        // If we've just folded an IfTrue into a Jump, for example, don't bother
-                        // copying over unreachable instructions afterward.
-                        break;
-                    }
-                }
-                EditAction::ReplaceMultiple(support, new) => {
-                    assert_ne!(new, insn, "Cannot replace instruction with itself");
-                    // We're adding a new instruction; mark the two equivalent in the union-find
-                    // and do an incremental flow typing of the new instruction.
-                    self.fun.make_equal_to(insn, new);
-                    for &new_insn in support.iter().chain(std::iter::once(&new)) {
-                        if self.fun.insns[new_insn.0].has_output() {
-                            self.fun.insn_types[new_insn.0] = self.fun.infer_type(new_insn);
-                        }
-                        new_insns.push(new_insn);
-                    }
-                    if self.fun.insns[new.0].is_terminator() {
-                        // If we've just folded an IfTrue into a Jump, for example, don't bother
-                        // copying over unreachable instructions afterward.
-                        break;
-                    }
-                }
-                EditAction::ReplaceMultipleMakeEqualTo(support, new) => {
-                    assert_ne!(new, insn, "Cannot replace instruction with itself");
-                    // We're adding a new instruction; mark the two equivalent in the union-find
-                    // and do an incremental flow typing of the new instruction.
-                    self.fun.make_equal_to(insn, new);
-                    for new_insn in support {
-                        if self.fun.insns[new_insn.0].has_output() {
-                            self.fun.insn_types[new_insn.0] = self.fun.infer_type(new_insn);
-                        }
-                        new_insns.push(new_insn);
-                    }
                     if self.fun.insns[new.0].is_terminator() {
                         // If we've just folded an IfTrue into a Jump, for example, don't bother
                         // copying over unreachable instructions afterward.
@@ -1709,11 +1669,9 @@ impl Function {
         return self.is_a(val, types::Fixnum) || profiled_type.is_fixnum();
     }
 
-    fn coerce_to_fixnum(&mut self, block: &mut Vec<InsnId>, val: InsnId, state: InsnId) -> InsnId {
+    fn coerce_to_fixnum(&mut self, block: BlockId, val: InsnId, state: InsnId) -> InsnId {
         if self.is_a(val, types::Fixnum) { return val; }
-        let val = self.new_insn(Insn::GuardType { val, guard_type: types::Fixnum, state });
-        block.push(val);
-        val
+        return self.push_insn(block, Insn::GuardType { val, guard_type: types::Fixnum, state });
     }
 
     fn arguments_likely_fixnums(&mut self, left: InsnId, right: InsnId, state: InsnId) -> bool {
@@ -1724,65 +1682,70 @@ impl Function {
         self.likely_is_fixnum(left, left_profiled_type) && self.likely_is_fixnum(right, right_profiled_type)
     }
 
-    fn try_rewrite_fixnum_op(&mut self, f: &dyn Fn(InsnId, InsnId) -> Insn, bop: u32, left: InsnId, right: InsnId, state: InsnId) -> EditAction {
+    fn try_rewrite_fixnum_op(&mut self, block: BlockId, orig_insn_id: InsnId, f: &dyn Fn(InsnId, InsnId) -> Insn, bop: u32, left: InsnId, right: InsnId, state: InsnId) {
         if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, INTEGER_REDEFINED_OP_FLAG) } {
             // If the basic operation is already redefined, we cannot optimize it.
-            return EditAction::Keep;
+            self.push_insn_id(block, orig_insn_id);
+            return;
         }
-        if !self.arguments_likely_fixnums(left, right, state) {
-            return EditAction::Keep;
+        if self.arguments_likely_fixnums(left, right, state) {
+            if bop == BOP_NEQ {
+                // For opt_neq, the interpreter checks that both neq and eq are unchanged.
+                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }, state });
+            }
+            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop }, state });
+            let left = self.coerce_to_fixnum(block, left, state);
+            let right = self.coerce_to_fixnum(block, right, state);
+            let result = self.push_insn(block, f(left, right));
+            self.make_equal_to(orig_insn_id, result);
+            self.insn_types[result.0] = self.infer_type(result);
+        } else {
+            self.push_insn_id(block, orig_insn_id);
         }
-        let mut replacements = vec![];
-        if bop == BOP_NEQ {
-            // For opt_neq, the interpreter checks that both neq and eq are unchanged.
-            replacements.push(self.new_insn(Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }, state }));
-        }
-        replacements.push(self.new_insn(Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop }, state }));
-        let left = self.coerce_to_fixnum(&mut replacements, left, state);
-        let right = self.coerce_to_fixnum(&mut replacements, right, state);
-        let result = self.new_insn(f(left, right));
-        return EditAction::ReplaceMultiple(replacements, result);
     }
 
-    fn rewrite_if_frozen(&mut self, self_val: InsnId, klass: u32, bop: u32, state: InsnId) -> EditAction {
+    fn rewrite_if_frozen(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, klass: u32, bop: u32, state: InsnId) {
         if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
             // If the basic operation is already redefined, we cannot optimize it.
-            return EditAction::Keep;
+            self.push_insn_id(block, orig_insn_id);
+            return;
         }
         let self_type = self.type_of(self_val);
         if let Some(obj) = self_type.ruby_object() {
             if obj.is_frozen() {
-                let patchpoint = self.new_insn(Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state });
-                return EditAction::ReplaceMultipleMakeEqualTo(vec![patchpoint], self_val);
+                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state });
+                self.make_equal_to(orig_insn_id, self_val);
+                return;
             }
         }
-        EditAction::Keep
+        self.push_insn_id(block, orig_insn_id);
     }
 
-    fn try_rewrite_freeze(&mut self, self_val: InsnId, state: InsnId) -> EditAction {
+    fn try_rewrite_freeze(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, state: InsnId) {
         if self.is_a(self_val, types::StringExact) {
-            self.rewrite_if_frozen(self_val, STRING_REDEFINED_OP_FLAG, BOP_FREEZE, state)
+            self.rewrite_if_frozen(block, orig_insn_id, self_val, STRING_REDEFINED_OP_FLAG, BOP_FREEZE, state);
         } else if self.is_a(self_val, types::ArrayExact) {
-            self.rewrite_if_frozen(self_val, ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE, state)
+            self.rewrite_if_frozen(block, orig_insn_id, self_val, ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE, state);
         } else if self.is_a(self_val, types::HashExact) {
-            self.rewrite_if_frozen(self_val, HASH_REDEFINED_OP_FLAG, BOP_FREEZE, state)
+            self.rewrite_if_frozen(block, orig_insn_id, self_val, HASH_REDEFINED_OP_FLAG, BOP_FREEZE, state);
         } else {
-            EditAction::Keep
+            self.push_insn_id(block, orig_insn_id);
         }
     }
 
-    fn try_rewrite_uminus(&mut self, self_val: InsnId, state: InsnId) -> EditAction {
+    fn try_rewrite_uminus(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, state: InsnId) {
         if self.is_a(self_val, types::StringExact) {
-            self.rewrite_if_frozen(self_val, STRING_REDEFINED_OP_FLAG, BOP_UMINUS, state)
+            self.rewrite_if_frozen(block, orig_insn_id, self_val, STRING_REDEFINED_OP_FLAG, BOP_UMINUS, state);
         } else {
-            EditAction::Keep
+            self.push_insn_id(block, orig_insn_id);
         }
     }
 
-    fn try_rewrite_aref(&mut self, self_val: InsnId, idx_val: InsnId, state: InsnId) -> EditAction {
+    fn try_rewrite_aref(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, idx_val: InsnId, state: InsnId) {
         if !unsafe { rb_BASIC_OP_UNREDEFINED_P(BOP_AREF, ARRAY_REDEFINED_OP_FLAG) } {
             // If the basic operation is already redefined, we cannot optimize it.
-            return EditAction::Keep;
+            self.push_insn_id(block, orig_insn_id);
+            return;
         }
         let self_type = self.type_of(self_val);
         let idx_type = self.type_of(idx_val);
@@ -1790,15 +1753,16 @@ impl Function {
             if let Some(array_obj) = self_type.ruby_object() {
                 if array_obj.is_frozen() {
                     if let Some(idx) = idx_type.fixnum_value() {
-                        let patchpoint = self.new_insn(Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop: BOP_AREF }, state });
+                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop: BOP_AREF }, state });
                         let val = unsafe { rb_yarv_ary_entry_internal(array_obj, idx) };
-                        let const_insn = self.new_insn(Insn::Const { val: Const::Value(val) });
-                        return EditAction::ReplaceMultiple(vec![patchpoint], const_insn);
+                        let const_insn = self.push_insn(block, Insn::Const { val: Const::Value(val) });
+                        self.make_equal_to(orig_insn_id, const_insn);
+                        return;
                     }
                 }
             }
         }
-        EditAction::Keep
+        self.push_insn_id(block, orig_insn_id);
     }
 
     /// Rewrite SendWithoutBlock opcodes into SendWithoutBlockDirect opcodes if we know the target
@@ -1806,51 +1770,51 @@ impl Function {
     fn optimize_direct_sends(&mut self) {
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.block_mut(block).insns);
-            let mut editor = BlockEditor::new(self, old_insns);
-            editor.edit(&mut |fun, insn_id| {
-                match fun.find(insn_id) {
+            assert!(self.block(block).insns.is_empty());
+            for insn_id in old_insns {
+                match self.find(insn_id) {
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(plus) && args.len() == 1 =>
-                        fun.try_rewrite_fixnum_op(&|left, right| Insn::FixnumAdd { left, right, state }, BOP_PLUS, self_val, args[0], state),
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAdd { left, right, state }, BOP_PLUS, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minus) && args.len() == 1 =>
-                        fun.try_rewrite_fixnum_op(&|left, right| Insn::FixnumSub { left, right, state }, BOP_MINUS, self_val, args[0], state),
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumSub { left, right, state }, BOP_MINUS, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(mult) && args.len() == 1 =>
-                        fun.try_rewrite_fixnum_op(&|left, right| Insn::FixnumMult { left, right, state }, BOP_MULT, self_val, args[0], state),
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMult { left, right, state }, BOP_MULT, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(div) && args.len() == 1 =>
-                        fun.try_rewrite_fixnum_op(&|left, right| Insn::FixnumDiv { left, right, state }, BOP_DIV, self_val, args[0], state),
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumDiv { left, right, state }, BOP_DIV, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(modulo) && args.len() == 1 =>
-                        fun.try_rewrite_fixnum_op(&|left, right| Insn::FixnumMod { left, right, state }, BOP_MOD, self_val, args[0], state),
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMod { left, right, state }, BOP_MOD, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(eq) && args.len() == 1 =>
-                        fun.try_rewrite_fixnum_op(&|left, right| Insn::FixnumEq { left, right }, BOP_EQ, self_val, args[0], state),
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumEq { left, right }, BOP_EQ, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(neq) && args.len() == 1 =>
-                        fun.try_rewrite_fixnum_op(&|left, right| Insn::FixnumNeq { left, right }, BOP_NEQ, self_val, args[0], state),
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumNeq { left, right }, BOP_NEQ, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(lt) && args.len() == 1 =>
-                        fun.try_rewrite_fixnum_op(&|left, right| Insn::FixnumLt { left, right }, BOP_LT, self_val, args[0], state),
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLt { left, right }, BOP_LT, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(le) && args.len() == 1 =>
-                        fun.try_rewrite_fixnum_op(&|left, right| Insn::FixnumLe { left, right }, BOP_LE, self_val, args[0], state),
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLe { left, right }, BOP_LE, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(gt) && args.len() == 1 =>
-                        fun.try_rewrite_fixnum_op(&|left, right| Insn::FixnumGt { left, right }, BOP_GT, self_val, args[0], state),
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGt { left, right }, BOP_GT, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(ge) && args.len() == 1 =>
-                        fun.try_rewrite_fixnum_op(&|left, right| Insn::FixnumGe { left, right }, BOP_GE, self_val, args[0], state),
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGe { left, right }, BOP_GE, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(and) && args.len() == 1 =>
-                        fun.try_rewrite_fixnum_op(&|left, right| Insn::FixnumAnd { left, right }, BOP_AND, self_val, args[0], state),
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAnd { left, right }, BOP_AND, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(or) && args.len() == 1 =>
-                        fun.try_rewrite_fixnum_op(&|left, right| Insn::FixnumOr { left, right }, BOP_OR, self_val, args[0], state),
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumOr { left, right }, BOP_OR, self_val, args[0], state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.len() == 0 =>
-                        fun.try_rewrite_freeze(self_val, state),
+                        self.try_rewrite_freeze(block, insn_id, self_val, state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.len() == 0 =>
-                        fun.try_rewrite_uminus(self_val, state),
+                        self.try_rewrite_uminus(block, insn_id, self_val, state),
                     Insn::SendWithoutBlock { self_val, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(aref) && args.len() == 1 =>
-                        fun.try_rewrite_aref(self_val, args[0], state),
+                        self.try_rewrite_aref(block, insn_id, self_val, args[0], state),
                     Insn::SendWithoutBlock { mut self_val, cd, args, state } => {
-                        let frame_state = fun.frame_state(state);
-                        let (klass, profiled_type) = if let Some(klass) = fun.type_of(self_val).runtime_exact_ruby_class() {
+                        let frame_state = self.frame_state(state);
+                        let (klass, profiled_type) = if let Some(klass) = self.type_of(self_val).runtime_exact_ruby_class() {
                             // If we know the class statically, use it to fold the lookup at compile-time.
                             (klass, None)
                         } else {
                             // If we know that self is reasonably monomorphic from profile information, guard and use it to fold the lookup at compile-time.
                             // TODO(max): Figure out how to handle top self?
-                            let Some(recv_type) = fun.profiled_type_of_at(self_val, frame_state.insn_idx) else {
-                                return EditAction::Keep;
+                            let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
+                                self.push_insn_id(block, insn_id); continue;
                             };
                             (recv_type.class(), Some(recv_type))
                         };
@@ -1859,7 +1823,7 @@ impl Function {
                         // Do method lookup
                         let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
                         if cme.is_null() {
-                            return EditAction::Keep;
+                            self.push_insn_id(block, insn_id); continue;
                         }
                         // Load an overloaded cme if applicable. See vm_search_cc().
                         // It allows you to use a faster ISEQ if possible.
@@ -1871,69 +1835,64 @@ impl Function {
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                             if !can_direct_send(iseq) {
-                                return EditAction::Keep;
+                                self.push_insn_id(block, insn_id); continue;
                             }
-                            let mut replacements = vec![];
-                            replacements.push(fun.new_insn(Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state }));
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             if let Some(profiled_type) = profiled_type {
-                                self_val = fun.new_insn(Insn::GuardType { val: self_val, guard_type: Type::from_profiled_type(profiled_type), state });
-                                replacements.push(self_val);
+                                self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
-                            let send_direct = fun.new_insn(Insn::SendWithoutBlockDirect { self_val, cd, cme, iseq, args, state });
-                            EditAction::ReplaceMultiple(replacements, send_direct)
+                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, cd, cme, iseq, args, state });
+                            self.make_equal_to(insn_id, send_direct);
                         } else if def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
-                            let mut replacements = vec![];
-                            replacements.push(fun.new_insn(Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state }));
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             if let Some(profiled_type) = profiled_type {
-                                self_val = fun.new_insn(Insn::GuardType { val: self_val, guard_type: Type::from_profiled_type(profiled_type), state });
-                                replacements.push(self_val);
+                                self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
-                            let getivar = fun.new_insn(Insn::GetIvar { self_val, id, state });
-                            EditAction::ReplaceMultiple(replacements, getivar)
+                            let getivar = self.push_insn(block, Insn::GetIvar { self_val, id, state });
+                            self.make_equal_to(insn_id, getivar);
                         } else {
-                            EditAction::Keep
+                            self.push_insn_id(block, insn_id); continue;
                         }
                     }
                     Insn::GetConstantPath { ic, state, .. } => {
                         let idlist: *const ID = unsafe { (*ic).segments };
                         let ice = unsafe { (*ic).entry };
                         if ice.is_null() {
-                            return EditAction::Keep;
+                            self.push_insn_id(block, insn_id); continue;
                         }
                         let cref_sensitive = !unsafe { (*ice).ic_cref }.is_null();
                         let multi_ractor_mode = unsafe { rb_zjit_multi_ractor_p() };
                         if cref_sensitive || multi_ractor_mode {
-                            return EditAction::Keep;
+                            self.push_insn_id(block, insn_id); continue;
                         }
-                        let mut replacements = vec![];
                         // Assume single-ractor mode.
-                        replacements.push(fun.new_insn(Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state }));
+                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
                         // Invalidate output code on any constant writes associated with constants
                         // referenced after the PatchPoint.
-                        replacements.push(fun.new_insn(Insn::PatchPoint { invariant: Invariant::StableConstantNames { idlist }, state }));
-                        let result = fun.new_insn(Insn::Const { val: Const::Value(unsafe { (*ice).value }) });
-                        EditAction::ReplaceMultiple(replacements, result)
+                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::StableConstantNames { idlist }, state });
+                        let replacement = self.push_insn(block, Insn::Const { val: Const::Value(unsafe { (*ice).value }) });
+                        self.insn_types[replacement.0] = self.infer_type(replacement);
+                        self.make_equal_to(insn_id, replacement);
                     }
                     Insn::ObjToString { val, .. } => {
-                        if fun.is_a(val, types::String) {
+                        if self.is_a(val, types::String) {
                             // behaves differently from `SendWithoutBlock` with `mid:to_s` because ObjToString should not have a patch point for String to_s being redefined
-                            EditAction::MakeEqualTo(val)
+                            self.make_equal_to(insn_id, val);
                         } else {
-                            EditAction::Keep
+                            self.push_insn_id(block, insn_id);
                         }
                     }
                     Insn::AnyToString { str, .. } => {
-                        if fun.is_a(str, types::String) {
-                            EditAction::MakeEqualTo(str)
+                        if self.is_a(str, types::String) {
+                            self.make_equal_to(insn_id, str);
                         } else {
-                            EditAction::Keep
+                            self.push_insn_id(block, insn_id);
                         }
                     }
-                    _ => { EditAction::Keep }
+                    _ => { self.push_insn_id(block, insn_id); }
                 }
-            });
-            self.block_mut(block).insns = editor.insns;
+            }
         }
         self.infer_types();
     }
@@ -2078,7 +2037,7 @@ impl Function {
                 match fun.find(insn_id) {
                     Insn::GuardType { val, guard_type, .. } if fun.is_a(val, guard_type) => {
                         // Don't bother re-inferring the type of val; we already know it.
-                        EditAction::MakeEqualTo(val)
+                        EditAction::Replace(val)
                     }
                     Insn::FixnumAdd { left, right, .. } => {
                         fun.fold_fixnum_bop(left, right, |l, r| match (l, r) {
