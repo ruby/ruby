@@ -1782,7 +1782,14 @@ cache_callable_method_entry(VALUE klass, ID mid, const rb_callable_method_entry_
 #endif
     }
     else {
-        vm_ccs_create(klass, cc_tbl, mid, cme);
+        if (rb_multi_ractor_p()) {
+            VALUE new_cc_tbl = rb_vm_cc_table_dup(cc_tbl);
+            vm_ccs_create(klass, new_cc_tbl, mid, cme);
+            RB_OBJ_ATOMIC_WRITE(klass, &RCLASSEXT_CC_TBL(RCLASS_EXT_WRITABLE(klass)), new_cc_tbl);
+        }
+        else {
+            vm_ccs_create(klass, cc_tbl, mid, cme);
+        }
     }
 }
 
