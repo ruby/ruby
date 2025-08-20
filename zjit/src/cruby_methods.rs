@@ -205,7 +205,6 @@ fn no_inline(_fun: &hir::Function, _recv: hir::InsnId, _args: &[hir::InsnId], _s
 }
 
 fn array_aref_inline(fun: &hir::Function, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> InlineResult {
-    eprintln!("lmao");
     if fun.likely_a(recv, types::ArrayExact, state)
         && args.len() == 1
         && fun.likely_a(args[0], types::Fixnum, state) {
