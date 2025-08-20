@@ -1573,6 +1573,33 @@ assert_equal 'true', %q{
   rs.map{|r| r.value} == Array.new(RN){n}
 }
 
+# check method cache invalidation
+assert_equal 'true', %q{
+  class Foo
+    def hello = nil
+  end
+
+  r1 = Ractor.new do
+    1000.times do
+      class Foo
+        def hello = nil
+      end
+    end
+  end
+
+  r2 = Ractor.new do
+    1000.times do
+      o = Foo.new
+      o.hello
+    end
+  end
+
+  r1.value
+  r2.value
+
+  true
+}
+
 # check experimental warning
 assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor is experimental/, %q{
   Warning[:experimental] = $VERBOSE = true

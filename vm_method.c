@@ -428,6 +428,8 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
     if (rb_objspace_garbage_object_p(klass)) return;
 
     RB_VM_LOCKING() {
+        rb_vm_barrier();
+
         if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL)) {
             // no subclasses
             // check only current class
@@ -1752,6 +1754,8 @@ cached_callable_method_entry(VALUE klass, ID mid)
             return ccs->cme;
         }
         else {
+            rb_vm_barrier();
+
             rb_managed_id_table_delete(cc_tbl, mid);
             rb_vm_ccs_invalidate_and_free(ccs);
         }
