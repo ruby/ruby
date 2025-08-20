@@ -613,7 +613,7 @@ static inline bool
 vm_cc_check_cme(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme)
 {
     bool valid;
-    RB_VM_LOCKING() {
+    RB_VM_LOCKING_NO_BARRIER() {
         valid = vm_cc_cme(cc) == cme ||
             (cme->def->iseq_overload && vm_cc_cme(cc) == rb_vm_lookup_overloaded_cme(cme));
     }
