@@ -1466,9 +1466,7 @@ shareable_p_enter(VALUE obj)
     else if (RB_TYPE_P(obj, T_CLASS)  ||
              RB_TYPE_P(obj, T_MODULE) ||
              RB_TYPE_P(obj, T_ICLASS)) {
-        // TODO: remove it
-        mark_shareable(obj);
-        return traverse_skip;
+        UNREACHABLE;
     }
     else if (RB_OBJ_FROZEN_RAW(obj) &&
              allow_frozen_shareable_p(obj)) {
