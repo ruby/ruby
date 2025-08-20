@@ -737,25 +737,26 @@ fn gen_entry_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block) {
 }
 
 /// Set branch params to basic block arguments
-fn gen_branch_params(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdge) -> Option<()> {
-    if !branch.args.is_empty() {
-        asm_comment!(asm, "set branch params: {}", branch.args.len());
-        let mut moves: Vec<(Reg, Opnd)> = vec![];
-        for (idx, &arg) in branch.args.iter().enumerate() {
-            match param_opnd(idx) {
-                Opnd::Reg(reg) => {
-                    // If a parameter is a register, we need to parallel-move it
-                    moves.push((reg, jit.get_opnd(arg)));
-                },
-                param => {
-                    // If a parameter is memory, we set it beforehand
-                    asm.mov(param, jit.get_opnd(arg));
-                }
+fn gen_branch_params(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdge) {
+    if branch.args.is_empty() {
+        return;
+    }
+
+    asm_comment!(asm, "set branch params: {}", branch.args.len());
+    let mut moves: Vec<(Reg, Opnd)> = vec![];
+    for (idx, &arg) in branch.args.iter().enumerate() {
+        match param_opnd(idx) {
+            Opnd::Reg(reg) => {
+                // If a parameter is a register, we need to parallel-move it
+                moves.push((reg, jit.get_opnd(arg)));
+            },
+            param => {
+                // If a parameter is memory, we set it beforehand
+                asm.mov(param, jit.get_opnd(arg));
             }
         }
-        asm.parallel_mov(moves);
     }
-    Some(())
+    asm.parallel_mov(moves);
 }
 
 /// Get a method parameter on JIT entry. As of entry, whether EP is escaped or not solely
