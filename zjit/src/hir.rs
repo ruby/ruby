@@ -1191,6 +1191,50 @@ fn can_direct_send(iseq: *const rb_iseq_t) -> bool {
     else { true }
 }
 
+enum EditAction {
+    Replace(InsnId),
+    Remove,
+    Keep,
+}
+
+struct BlockEditor<'a> {
+    fun: &'a mut Function,
+    insns: Vec<InsnId>,
+}
+
+impl<'a> BlockEditor<'a> {
+    fn new(fun: &'a mut Function, insns: Vec<InsnId>) -> Self {
+        Self { fun, insns }
+    }
+
+    fn edit(&mut self, f: &mut dyn FnMut(&mut Function, InsnId) -> EditAction) {
+        let mut new_insns = vec![];
+        for insn in self.insns.drain(..) {
+            match f(&mut self.fun, insn) {
+                EditAction::Replace(new) => {
+                    // If we're adding a new instruction, mark the two equivalent in the union-find
+                    // and do an incremental flow typing of the new instruction.
+                    if insn != new {
+                        self.fun.make_equal_to(insn, new);
+                        if self.fun.insns[new.0].has_output() {
+                            self.fun.insn_types[new.0] = self.fun.infer_type(new);
+                        }
+                    }
+                    new_insns.push(new);
+                    if self.fun.insns[new.0].is_terminator() {
+                        // If we've just folded an IfTrue into a Jump, for example, don't bother
+                        // copying over unreachable instructions afterward.
+                        break;
+                    }
+                }
+                EditAction::Remove => {}
+                EditAction::Keep => new_insns.push(insn),
+            }
+        }
+        self.insns = new_insns;
+    }
+}
+
 /// A [`Function`], which is analogous to a Ruby ISeq, is a control-flow graph of [`Block`]s
 /// containing instructions.
 #[derive(Debug)]
@@ -1961,19 +2005,19 @@ impl Function {
     }
 
     /// Fold a binary operator on fixnums.
-    fn fold_fixnum_bop(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<i64>) -> InsnId {
+    fn fold_fixnum_bop(&mut self, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<i64>) -> EditAction {
         f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
             .filter(|&n| n >= (RUBY_FIXNUM_MIN as i64) && n <= RUBY_FIXNUM_MAX as i64)
-            .map(|n| self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_isize(n as isize)) }))
-            .unwrap_or(insn_id)
+            .map(|n| EditAction::Replace(self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_isize(n as isize)) })))
+            .unwrap_or(EditAction::Keep)
     }
 
     /// Fold a binary predicate on fixnums.
-    fn fold_fixnum_pred(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<bool>) -> InsnId {
+    fn fold_fixnum_pred(&mut self, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<bool>) -> EditAction {
         f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
             .map(|b| if b { Qtrue } else { Qfalse })
-            .map(|b| self.new_insn(Insn::Const { val: Const::Value(b) }))
-            .unwrap_or(insn_id)
+            .map(|b| EditAction::Replace(self.new_insn(Insn::Const { val: Const::Value(b) })))
+            .unwrap_or(EditAction::Keep)
     }
 
     /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
@@ -1988,103 +2032,88 @@ impl Function {
         // function-level infer_types after each pruned branch.
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.block_mut(block).insns);
-            let mut new_insns = vec![];
-            for insn_id in old_insns {
-                let replacement_id = match self.find(insn_id) {
-                    Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
-                        self.make_equal_to(insn_id, val);
+            let mut editor = BlockEditor::new(self, old_insns);
+            editor.edit(&mut |fun, insn_id| {
+                match fun.find(insn_id) {
+                    Insn::GuardType { val, guard_type, .. } if fun.is_a(val, guard_type) => {
                         // Don't bother re-inferring the type of val; we already know it.
-                        continue;
+                        EditAction::Replace(val)
                     }
                     Insn::FixnumAdd { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                        fun.fold_fixnum_bop(left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => l.checked_add(r),
                             _ => None,
                         })
                     }
                     Insn::FixnumSub { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                        fun.fold_fixnum_bop(left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => l.checked_sub(r),
                             _ => None,
                         })
                     }
                     Insn::FixnumMult { left, right, .. } => {
-                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                        fun.fold_fixnum_bop(left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => l.checked_mul(r),
                             (Some(0), _) | (_, Some(0)) => Some(0),
                             _ => None,
                         })
                     }
                     Insn::FixnumEq { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                        fun.fold_fixnum_pred(left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l == r),
                             _ => None,
                         })
                     }
                     Insn::FixnumNeq { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                        fun.fold_fixnum_pred(left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l != r),
                             _ => None,
                         })
                     }
                     Insn::FixnumLt { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                        fun.fold_fixnum_pred(left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l < r),
                             _ => None,
                         })
                     }
                     Insn::FixnumLe { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                        fun.fold_fixnum_pred(left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l <= r),
                             _ => None,
                         })
                     }
                     Insn::FixnumGt { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                        fun.fold_fixnum_pred(left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l > r),
                             _ => None,
                         })
                     }
                     Insn::FixnumGe { left, right, .. } => {
-                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                        fun.fold_fixnum_pred(left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l >= r),
                             _ => None,
                         })
                     }
-                    Insn::Test { val } if self.type_of(val).is_known_falsy() => {
-                        self.new_insn(Insn::Const { val: Const::CBool(false) })
+                    Insn::Test { val } if fun.type_of(val).is_known_falsy() => {
+                        EditAction::Replace(fun.new_insn(Insn::Const { val: Const::CBool(false) }))
                     }
-                    Insn::Test { val } if self.type_of(val).is_known_truthy() => {
-                        self.new_insn(Insn::Const { val: Const::CBool(true) })
+                    Insn::Test { val } if fun.type_of(val).is_known_truthy() => {
+                        EditAction::Replace(fun.new_insn(Insn::Const { val: Const::CBool(true) }))
                     }
-                    Insn::IfTrue { val, target } if self.is_a(val, Type::from_cbool(true)) => {
-                        self.new_insn(Insn::Jump(target))
+                    Insn::IfTrue { val, target } if fun.is_a(val, Type::from_cbool(true)) => {
+                        EditAction::Replace(fun.new_insn(Insn::Jump(target)))
                     }
-                    Insn::IfFalse { val, target } if self.is_a(val, Type::from_cbool(false)) => {
-                        self.new_insn(Insn::Jump(target))
+                    Insn::IfFalse { val, target } if fun.is_a(val, Type::from_cbool(false)) => {
+                        EditAction::Replace(fun.new_insn(Insn::Jump(target)))
                     }
                     // If we know that the branch condition is never going to cause a branch,
                     // completely drop the branch from the block.
-                    Insn::IfTrue { val, .. } if self.is_a(val, Type::from_cbool(false)) => continue,
-                    Insn::IfFalse { val, .. } if self.is_a(val, Type::from_cbool(true)) => continue,
-                    _ => insn_id,
-                };
-                // If we're adding a new instruction, mark the two equivalent in the union-find and
-                // do an incremental flow typing of the new instruction.
-                if insn_id != replacement_id {
-                    self.make_equal_to(insn_id, replacement_id);
-                    if self.insns[replacement_id.0].has_output() {
-                        self.insn_types[replacement_id.0] = self.infer_type(replacement_id);
-                    }
+                    Insn::IfTrue { val, .. } if fun.is_a(val, Type::from_cbool(false)) => EditAction::Remove,
+                    Insn::IfFalse { val, .. } if fun.is_a(val, Type::from_cbool(true)) => EditAction::Remove,
+                    _ => EditAction::Keep,
                 }
-                new_insns.push(replacement_id);
-                // If we've just folded an IfTrue into a Jump, for example, don't bother copying
-                // over unreachable instructions afterward.
-                if self.insns[replacement_id.0].is_terminator() {
-                    break;
-                }
-            }
-            self.block_mut(block).insns = new_insns;
+            });
+            self.block_mut(block).insns = editor.insns;
         }
     }
 
