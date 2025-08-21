@@ -1680,21 +1680,6 @@ AS_IF([test "$rb_cv_func_weak" != x], [
    AC_DEFINE(HAVE_FUNC_WEAK)
 ])
 
-AC_CACHE_CHECK([for __attribute__((__deprecated__(msg))) in C++],
-  rb_cv_CentOS6_CXX_workaround,
-  RUBY_WERROR_FLAG([
-    AC_LANG_PUSH([C++])
-    AC_COMPILE_IFELSE(
-      [AC_LANG_PROGRAM(
-        [],
-        [__attribute__((__deprecated__("message"))) int conftest(...);])],
-      [rb_cv_CentOS6_CXX_workaround=yes],
-      [rb_cv_CentOS6_CXX_workaround=no])
-    AC_LANG_POP()]))
-AS_IF([test "$rb_cv_CentOS6_CXX_workaround" != no],[
-  AC_DEFINE([RUBY_CXX_DEPRECATED(msg)],
-    [__attribute__((__deprecated__(msg)))])])
-
 AC_CACHE_CHECK([for std::nullptr_t], rb_cv_CXX_nullptr, [
   AC_LANG_PUSH([C++])
   AC_COMPILE_IFELSE(
