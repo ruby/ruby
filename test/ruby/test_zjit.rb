@@ -220,6 +220,22 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_send_exit_with_uninitialized_locals
+    assert_runs 'nil', %q{
+      def entry(init)
+        function_stub_exit(init)
+      end
+
+      def function_stub_exit(init)
+        uninitialized_local = 1 if init
+        uninitialized_local
+      end
+
+      entry(true) # profile and set 1 to the local slot
+      entry(false)
+    }, call_threshold: 2, allowed_iseqs: 'entry@-e:2'
+  end
+
   def test_invokebuiltin
     omit 'Test fails at the moment due to not handling optional parameters'
     assert_compiles '["."]', %q{
@@ -1927,6 +1943,7 @@ class TestZJIT < Test::Unit::TestCase
     zjit: true,
     stats: false,
     debug: true,
+    allowed_iseqs: nil,
     timeout: 1000,
     pipe_fd:
   )
@@ -1936,6 +1953,12 @@ class TestZJIT < Test::Unit::TestCase
       args << "--zjit-num-profiles=#{num_profiles}"
       args << "--zjit-stats" if stats
       args << "--zjit-debug" if debug
+      if allowed_iseqs
+        jitlist = Tempfile.new("jitlist")
+        jitlist.write(allowed_iseqs)
+        jitlist.close
+        args << "--zjit-allowed-iseqs=#{jitlist.path}"
+      end
     end
     args << "-e" << script_shell_encode(script)
     pipe_r, pipe_w = IO.pipe
@@ -1955,6 +1978,7 @@ class TestZJIT < Test::Unit::TestCase
     pipe_reader&.join(timeout)
     pipe_r&.close
     pipe_w&.close
+    jitlist&.unlink
   end
 
   def script_shell_encode(s)

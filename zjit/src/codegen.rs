@@ -1,6 +1,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::ffi::{c_int, c_long, c_void};
+use std::slice;
 
 use crate::asm::Label;
 use crate::backend::current::{Reg, ALLOC_REGS};
@@ -1348,9 +1349,15 @@ fn local_idx_to_ep_offset(iseq: IseqPtr, local_idx: usize) -> i32 {
     local_size_and_idx_to_ep_offset(local_size as usize, local_idx)
 }
 
-/// Convert the number of locals and a local index to an offset in the EP
+/// Convert the number of locals and a local index to an offset from the EP
 pub fn local_size_and_idx_to_ep_offset(local_size: usize, local_idx: usize) -> i32 {
     local_size as i32 - local_idx as i32 - 1 + VM_ENV_DATA_SIZE as i32
+}
+
+/// Convert the number of locals and a local index to an offset from the BP.
+/// We don't move the SP register after entry, so we often use SP as BP.
+pub fn local_size_and_idx_to_bp_offset(local_size: usize, local_idx: usize) -> i32 {
+    local_size_and_idx_to_ep_offset(local_size, local_idx) + 1
 }
 
 /// Convert ISEQ into High-level IR
@@ -1448,26 +1455,41 @@ c_callable! {
     /// This function is expected to be called repeatedly when ZJIT fails to compile the stub.
     /// We should be able to compile most (if not all) function stubs by side-exiting at unsupported
     /// instructions, so this should be used primarily for cb.has_dropped_bytes() situations.
-    fn function_stub_hit(iseq_call_ptr: *const c_void, ec: EcPtr, sp: *mut VALUE) -> *const u8 {
+    fn function_stub_hit(iseq_call_ptr: *const c_void, cfp: CfpPtr, sp: *mut VALUE) -> *const u8 {
         with_vm_lock(src_loc!(), || {
-            // gen_push_frame() doesn't set PC and SP, so we need to set them before exit.
+            // gen_push_frame() doesn't set PC, so we need to set them before exit.
             // function_stub_hit_body() may allocate and call gc_validate_pc(), so we always set PC.
             let iseq_call = unsafe { Rc::from_raw(iseq_call_ptr as *const RefCell<IseqCall>) };
-            let cfp = unsafe { get_ec_cfp(ec) };
-            let pc = unsafe { rb_iseq_pc_at_idx(iseq_call.borrow().iseq, 0) }; // TODO: handle opt_pc once supported
+            let iseq = iseq_call.borrow().iseq;
+            let pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) }; // TODO: handle opt_pc once supported
             unsafe { rb_set_cfp_pc(cfp, pc) };
-            unsafe { rb_set_cfp_sp(cfp, sp) };
+
+            // JIT-to-JIT calls don't set SP or fill nils to uninitialized (non-argument) locals.
+            // We need to set them if we side-exit from function_stub_hit.
+            fn spill_stack(iseq: IseqPtr, cfp: CfpPtr, sp: *mut VALUE) {
+                unsafe {
+                    // Set SP which gen_push_frame() doesn't set
+                    rb_set_cfp_sp(cfp, sp);
+
+                    // Fill nils to uninitialized (non-argument) locals
+                    let local_size = get_iseq_body_local_table_size(iseq) as usize;
+                    let num_params = get_iseq_body_param_size(iseq) as usize;
+                    let base = sp.offset(-local_size_and_idx_to_bp_offset(local_size, num_params) as isize);
+                    slice::from_raw_parts_mut(base, local_size - num_params).fill(Qnil);
+                }
+            }
 
             // If we already know we can't compile the ISEQ, fail early without cb.mark_all_executable().
             // TODO: Alan thinks the payload status part of this check can happen without the VM lock, since the whole
             // code path can be made read-only. But you still need the check as is while holding the VM lock in any case.
             let cb = ZJITState::get_code_block();
-            let payload = get_or_create_iseq_payload(iseq_call.borrow().iseq);
+            let payload = get_or_create_iseq_payload(iseq);
             if cb.has_dropped_bytes() || payload.status == IseqStatus::CantCompile {
                 // We'll use this Rc again, so increment the ref count decremented by from_raw.
                 unsafe { Rc::increment_strong_count(iseq_call_ptr as *const RefCell<IseqCall>); }
 
                 // Exit to the interpreter
+                spill_stack(iseq, cfp, sp);
                 return ZJITState::get_exit_trampoline().raw_ptr(cb);
             }
 
@@ -1477,6 +1499,7 @@ c_callable! {
                 code_ptr
             } else {
                 // Exit to the interpreter
+                spill_stack(iseq, cfp, sp);
                 ZJITState::get_exit_trampoline()
             };
             cb.mark_all_executable();
@@ -1540,7 +1563,7 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Option<CodePtr> {
     const { assert!(ALLOC_REGS.len() % 2 == 0, "x86_64 would need to push one more if we push an odd number of regs"); }
 
     // Compile the stubbed ISEQ
-    let jump_addr = asm_ccall!(asm, function_stub_hit, SCRATCH_OPND, EC, SP);
+    let jump_addr = asm_ccall!(asm, function_stub_hit, SCRATCH_OPND, CFP, SP);
     asm.mov(SCRATCH_OPND, jump_addr);
 
     asm_comment!(asm, "restore argument registers");
