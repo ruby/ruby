@@ -1247,7 +1247,7 @@ mod tests {
 
     #[test]
     fn test_reorder_c_args_no_cycle() {
-        rb_zjit_prepare_options();
+        crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
         asm.ccall(0 as _, vec![
@@ -1264,7 +1264,7 @@ mod tests {
 
     #[test]
     fn test_reorder_c_args_single_cycle() {
-        rb_zjit_prepare_options();
+        crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
         // rdi and rsi form a cycle
@@ -1286,7 +1286,7 @@ mod tests {
 
     #[test]
     fn test_reorder_c_args_two_cycles() {
-        rb_zjit_prepare_options();
+        crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
         // rdi and rsi form a cycle, and rdx and rcx form another cycle
@@ -1312,7 +1312,7 @@ mod tests {
 
     #[test]
     fn test_reorder_c_args_large_cycle() {
-        rb_zjit_prepare_options();
+        crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
         // rdi, rsi, and rdx form a cycle
