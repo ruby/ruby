@@ -83,6 +83,11 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+        if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
+
       - uses: ruby/setup-ruby@a9bfc2ecf3dd40734a9418f89a7e9d484c32b990 # v1.248.0
         with:
           ruby-version: '3.1'
