@@ -47,6 +47,10 @@ Note: We're only listing outstanding class updates.
     * `IO.select` accepts +Float::INFINITY+ as a timeout argument.
       [[Feature #20610]]
 
+* Math
+
+    * `Math.log1p` and `Math.expm1` are added. [[Feature #21527]]
+
 * Socket
 
     * `Socket.tcp` & `TCPSocket.new` accepts `open_timeout` as a keyword argument to specify
@@ -254,3 +258,4 @@ The following bundled gems are updated.
 [Feature #21287]: https://bugs.ruby-lang.org/issues/21287
 [Feature #21347]: https://bugs.ruby-lang.org/issues/21347
 [Feature #21360]: https://bugs.ruby-lang.org/issues/21360
+[Feature #21527]: https://bugs.ruby-lang.org/issues/21527
