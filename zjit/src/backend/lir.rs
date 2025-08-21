@@ -1391,8 +1391,7 @@ impl Assembler
                 }
             }
 
-            // If the output VReg of this instruction is used by another instruction,
-            // we need to allocate a register to it
+            // Allocate a register for the output operand if it exists
             let vreg_idx = match insn.out_opnd() {
                 Some(Opnd::VReg { idx, .. }) => Some(*idx),
                 _ => None,
@@ -1480,6 +1479,8 @@ impl Assembler
                 }
             }
 
+            // If we have an output that dies at its definition (it is unused), free up the
+            // register
             if let Some(idx) = vreg_idx {
                 if live_ranges[idx].end() == index {
                     if let Some(reg) = reg_mapping[idx] {
