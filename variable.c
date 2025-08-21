@@ -1247,7 +1247,7 @@ rb_obj_fields(VALUE obj, ID field_name)
           generic_fields:
             {
                 rb_execution_context_t *ec = GET_EC();
-                if (ec->gen_fields_cache.obj == obj) {
+                if (ec->gen_fields_cache.obj == obj && rb_imemo_fields_owner(ec->gen_fields_cache.fields_obj) == obj) {
                     fields_obj = ec->gen_fields_cache.fields_obj;
                 }
                 else {

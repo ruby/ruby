@@ -3,6 +3,7 @@
 #include "id_table.h"
 #include "internal.h"
 #include "internal/imemo.h"
+#include "internal/object.h"
 #include "internal/st.h"
 #include "vm_callinfo.h"
 
@@ -208,6 +209,8 @@ rb_imemo_fields_clear(VALUE fields_obj)
     else {
         RBASIC_SET_SHAPE_ID(fields_obj, ROOT_SHAPE_ID);
     }
+    // Invalidate the ec->gen_fields_cache.
+    RBASIC_CLEAR_CLASS(fields_obj);
 }
 
 /* =========================================================================
