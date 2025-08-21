@@ -1202,7 +1202,7 @@ impl Assembler
     /// Append an instruction onto the current list of instructions and update
     /// the live ranges of any instructions whose outputs are being used as
     /// operands to this instruction.
-    pub fn push_insn(&mut self, mut insn: Insn) {
+    pub fn push_insn(&mut self, insn: Insn) {
         // Index of this instruction
         let insn_idx = self.insns.len();
 
@@ -1214,7 +1214,7 @@ impl Assembler
         }
 
         // If we find any VReg from previous instructions, extend the live range to insn_idx
-        let mut opnd_iter = insn.opnd_iter_mut();
+        let mut opnd_iter = insn.opnd_iter();
         while let Some(opnd) = opnd_iter.next() {
             match *opnd {
                 Opnd::VReg { idx, .. } |
@@ -1380,13 +1380,15 @@ impl Assembler
                 }
             }
 
-            // If the output VReg of this instruction is used by another instruction,
-            // we need to allocate a register to it
+            // Allocate a register for the output operand if it exists
             let vreg_idx = match insn.out_opnd() {
                 Some(Opnd::VReg { idx, .. }) => Some(*idx),
                 _ => None,
             };
-            if vreg_idx.is_some() && live_ranges[vreg_idx.unwrap()].end() != index {
+            if vreg_idx.is_some() {
+                if live_ranges[vreg_idx.unwrap()].end() == index {
+                    debug!("Allocating a register for VReg({}) at instruction index {} even though it does not live past this index", vreg_idx.unwrap(), index);
+                }
                 // This is going to be the output operand that we will set on the
                 // instruction. CCall and LiveReg need to use a specific register.
                 let mut out_reg = match insn {
@@ -1463,6 +1465,18 @@ impl Assembler
                         *opnd = Opnd::Mem(Mem { base, disp, num_bits });
                     }
                     _ => {},
+                }
+            }
+
+            // If we have an output that dies at its definition (it is unused), free up the
+            // register
+            if let Some(idx) = vreg_idx {
+                if live_ranges[idx].end() == index {
+                    if let Some(reg) = reg_mapping[idx] {
+                        pool.dealloc_reg(&reg);
+                    } else {
+                        unreachable!("no register allocated for insn {:?}", insn);
+                    }
                 }
             }
 
