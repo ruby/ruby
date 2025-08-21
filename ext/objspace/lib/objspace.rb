@@ -81,7 +81,7 @@ module ObjectSpace
   # This is an experimental method and is subject to change.
   # In particular, the function signature and output format are
   # not guaranteed to be compatible in future versions of ruby.
-  def dump_all(output: :file, full: false, since: nil, shapes: true)
+  def dump_all(output: :file, full: false, since: nil, shapes: true, string_value: true)
     out = case output
     when :file, nil
       require 'tempfile'
@@ -97,7 +97,7 @@ module ObjectSpace
     end
 
     shapes = 0 if shapes == true
-    ret = _dump_all(out, full, since, shapes)
+    ret = _dump_all(out, full, since, shapes, string_value)
     return nil if output == :stdout
     ret
   end
