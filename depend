@@ -6306,6 +6306,7 @@ imemo.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/gc.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/namespace.h
+imemo.$(OBJEXT): $(top_srcdir)/internal/object.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/serial.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/set_table.h
@@ -7158,7 +7159,6 @@ iseq.$(OBJEXT): $(top_srcdir)/prism/options.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/pack.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/parser.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
-iseq.$(OBJEXT): $(top_srcdir)/prism/prism.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/prism.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/regexp.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/static_literals.h
@@ -11675,7 +11675,6 @@ prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
-prism/prism.$(OBJEXT): $(top_srcdir)/prism/version.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/version.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/ast.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/defines.h

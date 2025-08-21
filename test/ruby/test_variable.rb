@@ -447,6 +447,19 @@ class TestVariable < Test::Unit::TestCase
     assert_equal(%i[α b], b.local_variables)
   end
 
+  def test_genivar_cache
+    bug21547 = '[Bug #21547]'
+    klass = Class.new(Array)
+    instance = klass.new
+    instance.instance_variable_set(:@a1, 1)
+    instance.instance_variable_set(:@a2, 2)
+    Fiber.new do
+      instance.instance_variable_set(:@a3, 3)
+      instance.instance_variable_set(:@a4, 4)
+    end.resume
+    assert_equal 4, instance.instance_variable_get(:@a4)
+  end
+
   private
   def with_kwargs_11(v1:, v2:, v3:, v4:, v5:, v6:, v7:, v8:, v9:, v10:, v11:)
     local_variables
