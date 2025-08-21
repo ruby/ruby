@@ -165,13 +165,16 @@ class TestRactor < Test::Unit::TestCase
   # [Bug #21398]
   def test_port_receive_dnt_with_port_send
     omit 'unstable on windows and macos-14' if RUBY_PLATFORM =~ /mswin|darwin/
-    assert_ractor(<<~'RUBY', timeout: 90)
-      THREADS = 10
-      JOBS_PER_THREAD = 50
-      ARRAY_SIZE = 20_000
+    assert_ractor(<<~'RUBY', timeout: 30)
+      Warning[:experimental] = false
+
+      THREADS = 2
+      JOBS_PER_THREAD = 1000
+      ARRAY_SIZE = 2000
+      WORKERS = 2
       def ractor_job(job_count, array_size)
         port = Ractor::Port.new
-        workers = (1..4).map do |i|
+        workers = WORKERS.times.map do |i|
           Ractor.new(port) do |job_port|
             while job = Ractor.receive
               result = job.map { |x| x * 2 }.sum
@@ -179,25 +182,42 @@ class TestRactor < Test::Unit::TestCase
             end
           end
         end
-        jobs = Array.new(job_count) { Array.new(array_size) { rand(1000) } }
+        jobs = Array.new(job_count) { Array.new(array_size) { |i| i } }
         jobs.each_with_index do |job, i|
-          w_idx = i % 4
+          w_idx = i % WORKERS
           workers[w_idx].send(job)
         end
-        results = []
-        jobs.size.times do
-          result = port.receive # dnt receive
-          results << result
+        jobs.map do
+          port.receive # dnt receive
         end
-        results
       end
       threads = []
-      # creates 40 ractors (THREADSx4)
       THREADS.times do
         threads << Thread.new do
           ractor_job(JOBS_PER_THREAD, ARRAY_SIZE)
         end
       end
+      threads.each(&:join)
+    RUBY
+  end
+
+  # [Bug #20346]
+  def test_many_ractors_in_threads
+    assert_ractor(<<~'RUBY')
+      Warning[:experimental] = false
+
+      N = 100
+      ractors = N.times.map do
+        Ractor.new do
+          Ractor.recv # Ractor doesn't start until explicitly told to
+          # Do some calculations
+          fib = ->(x) { x < 2 ? 1 : fib.call(x - 1) + fib.call(x - 2) }
+          fib.call(20)
+        end
+      end
+
+      threads = ractors.map { |r| Thread.new { r.value } }
+      ractors.each { |r| r.send(nil) }
       threads.each(&:join)
     RUBY
   end
