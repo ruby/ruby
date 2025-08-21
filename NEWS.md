@@ -243,6 +243,22 @@ The following bundled gems are updated.
 
 ## JIT
 
+* YJIT
+    * YJIT stats
+        * `ratio_in_yjit` no longer works in the default build.
+          Use `--enable-yjit=stats` on `configure` to enable it on `--yjit-stats`.
+        * Add `invalidate_everything` to default stats, which is
+          incremented when every code is invalidated by TracePoint.
+    * Add `mem_size:` and `call_threshold:` options to `RubyVM::YJIT.enable`.
+* ZJIT
+    * Add an experimental method-based JIT compiler.
+      Use `--enable-zjit` on `configure` to enable the `--zjit` support.
+    * As of Ruby 3.5.0-preview2, ZJIT is not yet ready for speeding up most benchmarks.
+      Please refrain from evaluating ZJIT just yet. Stay tuned for the Ruby 3.5 release.
+* RJIT
+    * `--rjit` is removed. We will move the implementation of the third-party JIT API
+      to the [ruby/rjit](https://github.com/ruby/rjit) repository.
+
 [Feature #17473]: https://bugs.ruby-lang.org/issues/17473
 [Feature #18455]: https://bugs.ruby-lang.org/issues/18455
 [Feature #19908]: https://bugs.ruby-lang.org/issues/19908
