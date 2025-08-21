@@ -2079,6 +2079,7 @@ mod tests {
 
     #[test]
     fn test_reorder_c_args_single_cycle() {
+        crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
         // x0 and x1 form a cycle
