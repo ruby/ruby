@@ -2052,6 +2052,9 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
     /* If we still don't have a free page and not allowed to create a new page,
      * we should start a new GC cycle. */
     if (heap->free_pages == NULL) {
+        GC_ASSERT(objspace->empty_pages_count == 0);
+        GC_ASSERT(objspace->heap_pages.allocatable_slots == 0);
+
         if (gc_start(objspace, GPR_FLAG_NEWOBJ) == FALSE) {
             rb_memerror();
         }
@@ -3930,11 +3933,28 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *sweep_heap)
         if (gc_sweep_step(objspace, heap)) {
             GC_ASSERT(heap->free_pages != NULL);
         }
-        else if (heap == sweep_heap && objspace->empty_pages_count == 0 && objspace->heap_pages.allocatable_slots == 0) {
-            /* Not allowed to create a new page so finish sweeping. */
-            gc_sweep_rest(objspace);
-            GC_ASSERT(gc_mode(objspace) == gc_mode_none);
-            break;
+        else if (heap == sweep_heap) {
+            if (objspace->empty_pages_count > 0 || objspace->heap_pages.allocatable_slots > 0) {
+                /* [Bug #21548]
+                 *
+                 * If this heap is the heap we want to sweep, but we weren't able
+                 * to free any slots, but we also either have empty pages or could
+                 * allocate new pages, then we want to preemptively claim a page
+                 * because it's possible that sweeping another heap will call
+                 * gc_sweep_finish_heap, which may use up all of the
+                 * empty/allocatable pages. If other heaps are not finished sweeping
+                 * then we do not finish this GC and we will end up triggering a new
+                 * GC cycle during this GC phase. */
+                heap_page_allocate_and_initialize(objspace, heap);
+
+                GC_ASSERT(heap->free_pages != NULL);
+            }
+            else {
+                /* Not allowed to create a new page so finish sweeping. */
+                gc_sweep_rest(objspace);
+                GC_ASSERT(gc_mode(objspace) == gc_mode_none);
+                break;
+            }
         }
     }
 
