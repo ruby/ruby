@@ -2324,14 +2324,15 @@ vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     return vm_search_method_slowpath0(cd_owner, cd, klass);
 }
 
-static const struct rb_callcache *
+static const struct rb_callable_method_entry_struct *
 vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
 {
     VALUE klass = CLASS_OF(recv);
     VM_ASSERT(klass != Qfalse);
     VM_ASSERT(RBASIC_CLASS(klass) == 0 || rb_obj_is_kind_of(klass, rb_cClass));
 
-    return vm_search_method_fastpath(cd_owner, cd, klass);
+    const struct rb_callcache *cc = vm_search_method_fastpath(cd_owner, cd, klass);
+    return vm_cc_cme(cc);
 }
 
 #if __has_attribute(transparent_union)
@@ -2394,8 +2395,8 @@ static inline int
 vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type func)
 {
     VM_ASSERT(iseq != NULL);
-    const struct rb_callcache *cc = vm_search_method((VALUE)iseq, cd, recv);
-    return check_cfunc(vm_cc_cme(cc), func);
+    const struct rb_callable_method_entry_struct *cme = vm_search_method((VALUE)iseq, cd, recv);
+    return check_cfunc(cme, func);
 }
 
 #define check_cfunc(me, func) check_cfunc(me, make_cfunc_type(func))
@@ -6161,11 +6162,11 @@ vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
         return recv;
     }
 
-    const struct rb_callcache *cc = vm_search_method((VALUE)iseq, cd, recv);
+    const struct rb_callable_method_entry_struct *cme = vm_search_method((VALUE)iseq, cd, recv);
 
     switch (type) {
       case T_SYMBOL:
-        if (check_method_basic_definition(vm_cc_cme(cc))) {
+        if (check_method_basic_definition(cme)) {
             // rb_sym_to_s() allocates a mutable string, but since we are only
             // going to use this string for interpolation, it's fine to use the
             // frozen string.
@@ -6174,7 +6175,7 @@ vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
         break;
       case T_MODULE:
       case T_CLASS:
-        if (check_cfunc(vm_cc_cme(cc), rb_mod_to_s)) {
+        if (check_cfunc(cme, rb_mod_to_s)) {
             // rb_mod_to_s() allocates a mutable string, but since we are only
             // going to use this string for interpolation, it's fine to use the
             // frozen string.
@@ -6186,22 +6187,22 @@ vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
         }
         break;
       case T_NIL:
-        if (check_cfunc(vm_cc_cme(cc), rb_nil_to_s)) {
+        if (check_cfunc(cme, rb_nil_to_s)) {
             return rb_nil_to_s(recv);
         }
         break;
       case T_TRUE:
-        if (check_cfunc(vm_cc_cme(cc), rb_true_to_s)) {
+        if (check_cfunc(cme, rb_true_to_s)) {
             return rb_true_to_s(recv);
         }
         break;
       case T_FALSE:
-        if (check_cfunc(vm_cc_cme(cc), rb_false_to_s)) {
+        if (check_cfunc(cme, rb_false_to_s)) {
             return rb_false_to_s(recv);
         }
         break;
       case T_FIXNUM:
-        if (check_cfunc(vm_cc_cme(cc), rb_int_to_s)) {
+        if (check_cfunc(cme, rb_int_to_s)) {
             return rb_fix_to_s(recv);
         }
         break;
