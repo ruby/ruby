@@ -606,11 +606,11 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
 
   class Bug10557
-    def [](_)
+    def [](_, &)
       block_given?
     end
 
-    def []=(_, _)
+    def []=(_, _, &)
       block_given?
     end
   end
