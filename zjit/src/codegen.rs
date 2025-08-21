@@ -395,6 +395,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GetSpecialNumber { nth, state } => gen_getspecial_number(asm, *nth, &function.frame_state(*state)),
         &Insn::IncrCounter(counter) => no_output!(gen_incr_counter(asm, counter)),
         Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state)),
+        &Insn::CheckInterrupts { state } => no_output!(gen_check_interrupts(jit, asm, &function.frame_state(state))),
         Insn::ArrayExtend { .. }
         | Insn::ArrayMax { .. }
         | Insn::ArrayPush { .. }
@@ -672,6 +673,17 @@ fn gen_getspecial_number(asm: &mut Assembler, nth: u64, state: &FrameState) -> O
     gen_prepare_call_with_gc(asm, state);
 
     asm_ccall!(asm, rb_reg_nth_match, Opnd::Imm((nth >> 1).try_into().unwrap()), backref)
+}
+
+fn gen_check_interrupts(jit: &mut JITState, asm: &mut Assembler, state: &FrameState) {
+    // Check for interrupts
+    // see RUBY_VM_CHECK_INTS(ec) macro
+    asm_comment!(asm, "RUBY_VM_CHECK_INTS(ec)");
+    // Not checking interrupt_mask since it's zero outside finalize_deferred_heap_pages,
+    // signal_exec, or rb_postponed_job_flush.
+    let interrupt_flag = asm.load(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG));
+    asm.test(interrupt_flag, interrupt_flag);
+    asm.jnz(side_exit(jit, state, SideExitReason::Interrupt));
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ

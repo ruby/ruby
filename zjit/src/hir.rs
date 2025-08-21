@@ -440,6 +440,7 @@ pub enum SideExitReason {
     ObjToStringFallback,
     UnknownSpecialVariable(u64),
     UnhandledDefinedType(usize),
+    Interrupt,
 }
 
 impl std::fmt::Display for SideExitReason {
@@ -600,6 +601,10 @@ pub enum Insn {
 
     /// Increment a counter in ZJIT stats
     IncrCounter(Counter),
+
+    /// Equivalent of RUBY_VM_CHECK_INTS. Automatically inserted by the compiler before jumps and
+    /// return instructions.
+    CheckInterrupts { state: InsnId },
 }
 
 impl Insn {
@@ -610,7 +615,8 @@ impl Insn {
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
-            | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) => false,
+            | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_)
+            | Insn::CheckInterrupts { .. } => false,
             _ => true,
         }
     }
@@ -867,6 +873,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, ", {val}")
             }
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
+            Insn::CheckInterrupts { .. } => write!(f, "CheckInterrupts"),
         }
     }
 }
@@ -1292,6 +1299,7 @@ impl Function {
             &ToNewArray { val, state } => ToNewArray { val: find!(val), state },
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
             &ArrayPush { array, val, state } => ArrayPush { array: find!(array), val: find!(val), state },
+            &CheckInterrupts { state } => CheckInterrupts { state },
         }
     }
 
@@ -1318,7 +1326,8 @@ impl Function {
             Insn::SetGlobal { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
-            | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_) =>
+            | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
+            | Insn::CheckInterrupts { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -1952,6 +1961,7 @@ impl Function {
             | &Insn::IncrCounter(_) =>
                 {}
             &Insn::PatchPoint { state, .. }
+            | &Insn::CheckInterrupts { state }
             | &Insn::GetConstantPath { ic: _, state } => {
                 worklist.push_back(state);
             }
