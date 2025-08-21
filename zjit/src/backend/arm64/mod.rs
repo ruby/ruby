@@ -2059,4 +2059,92 @@ mod tests {
             0x4: adds x1, x0, #1
         "});
     }
+
+    #[test]
+    fn test_reorder_c_args_no_cycle() {
+        crate::options::rb_zjit_prepare_options();
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.ccall(0 as _, vec![
+            C_ARG_OPNDS[0], // mov x0, x0 (optimized away)
+            C_ARG_OPNDS[1], // mov x1, x1 (optimized away)
+        ]);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm!(cb, "100080d200023fd6", {"
+            0x0: mov x16, #0
+            0x4: blr x16
+        "});
+    }
+
+    #[test]
+    fn test_reorder_c_args_single_cycle() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // x0 and x1 form a cycle
+        asm.ccall(0 as _, vec![
+            C_ARG_OPNDS[1], // mov x0, x1
+            C_ARG_OPNDS[0], // mov x1, x0
+            C_ARG_OPNDS[2], // mov x2, x2 (optimized away)
+        ]);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm!(cb, "f00300aae00301aae10310aa100080d200023fd6", {"
+            0x0: mov x16, x0
+            0x4: mov x0, x1
+            0x8: mov x1, x16
+            0xc: mov x16, #0
+            0x10: blr x16
+        "});
+    }
+
+    #[test]
+    fn test_reorder_c_args_two_cycles() {
+        crate::options::rb_zjit_prepare_options();
+        let (mut asm, mut cb) = setup_asm();
+
+        // x0 and x1 form a cycle, and x2 and rcx form another cycle
+        asm.ccall(0 as _, vec![
+            C_ARG_OPNDS[1], // mov x0, x1
+            C_ARG_OPNDS[0], // mov x1, x0
+            C_ARG_OPNDS[3], // mov x2, rcx
+            C_ARG_OPNDS[2], // mov rcx, x2
+        ]);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm!(cb, "f00302aae20303aae30310aaf00300aae00301aae10310aa100080d200023fd6", {"
+            0x0: mov x16, x2
+            0x4: mov x2, x3
+            0x8: mov x3, x16
+            0xc: mov x16, x0
+            0x10: mov x0, x1
+            0x14: mov x1, x16
+            0x18: mov x16, #0
+            0x1c: blr x16
+        "});
+    }
+
+    #[test]
+    fn test_reorder_c_args_large_cycle() {
+        crate::options::rb_zjit_prepare_options();
+        let (mut asm, mut cb) = setup_asm();
+
+        // x0, x1, and x2 form a cycle
+        asm.ccall(0 as _, vec![
+            C_ARG_OPNDS[1], // mov x0, x1
+            C_ARG_OPNDS[2], // mov x1, x2
+            C_ARG_OPNDS[0], // mov x2, x0
+        ]);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm!(cb, "f00300aae00301aae10302aae20310aa100080d200023fd6", {"
+            0x0: mov x16, x0
+            0x4: mov x0, x1
+            0x8: mov x1, x2
+            0xc: mov x2, x16
+            0x10: mov x16, #0
+            0x14: blr x16
+        "});
+    }
+
 }
