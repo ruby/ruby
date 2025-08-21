@@ -4133,10 +4133,8 @@ rb_str_hash_cmp(VALUE str1, VALUE str2)
  * call-seq:
  *   hash -> integer
  *
- * Returns the integer hash value for +self+.
- * The value is based on the length, content and encoding of +self+.
+ * :include: doc/string/hash.rdoc
  *
- * Related: Object#hash.
  */
 
 static VALUE
