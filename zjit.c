@@ -347,7 +347,6 @@ rb_zjit_shape_obj_too_complex_p(VALUE obj)
 }
 
 enum {
-    RB_SPECIAL_CONST_SHAPE_ID = SPECIAL_CONST_SHAPE_ID,
     RB_INVALID_SHAPE_ID = INVALID_SHAPE_ID,
 };
 

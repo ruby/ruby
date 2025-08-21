@@ -1051,8 +1051,10 @@ class TestShapes < Test::Unit::TestCase
     # RUBY_PLATFORM =~ /i686/
   end
 
-  def test_root_shape_transition_to_special_const_on_frozen
-    assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of([].freeze).id)
+  def test_root_shape_frozen
+    frozen_root_shape = RubyVM::Shape.of([].freeze)
+    assert_predicate(frozen_root_shape, :frozen?)
+    assert_equal(RubyVM::Shape.root_shape.id, frozen_root_shape.raw_id)
   end
 
   def test_basic_shape_transition

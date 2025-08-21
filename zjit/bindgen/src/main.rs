@@ -361,7 +361,6 @@ fn main() {
         .allowlist_function("rb_zjit_singleton_class_p")
         .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
-        .allowlist_var("RB_SPECIAL_CONST_SHAPE_ID")
         .allowlist_var("RB_INVALID_SHAPE_ID")
 
         // From jit.c

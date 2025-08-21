@@ -269,7 +269,6 @@ pub type IseqPtr = *const rb_iseq_t;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ShapeId(pub u32);
 
-pub const SPECIAL_CONST_SHAPE_ID: ShapeId = ShapeId(RB_SPECIAL_CONST_SHAPE_ID);
 pub const INVALID_SHAPE_ID: ShapeId = ShapeId(RB_INVALID_SHAPE_ID);
 
 // Given an ISEQ pointer, convert PC to insn_idx
