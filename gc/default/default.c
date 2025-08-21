@@ -1853,7 +1853,10 @@ static struct heap_page *
 heap_page_resurrect(rb_objspace_t *objspace)
 {
     struct heap_page *page = NULL;
-    if (objspace->empty_pages != NULL) {
+    if (objspace->empty_pages == NULL) {
+        GC_ASSERT(objspace->empty_pages_count == 0);
+    }
+    else {
         GC_ASSERT(objspace->empty_pages_count > 0);
         objspace->empty_pages_count--;
         page = objspace->empty_pages;
@@ -1973,6 +1976,8 @@ heap_page_allocate_and_initialize(rb_objspace_t *objspace, rb_heap_t *heap)
     if (page == NULL && objspace->heap_pages.allocatable_slots > 0) {
         page = heap_page_allocate(objspace);
         allocated = true;
+
+        GC_ASSERT(page != NULL);
     }
 
     if (page != NULL) {
@@ -3922,12 +3927,14 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *sweep_heap)
 
     for (int i = 0; i < HEAP_COUNT; i++) {
         rb_heap_t *heap = &heaps[i];
-        if (!gc_sweep_step(objspace, heap)) {
-            if (heap == sweep_heap && objspace->empty_pages_count == 0 && objspace->heap_pages.allocatable_slots == 0) {
-                /* Not allowed to create a new page so finish sweeping. */
-                gc_sweep_rest(objspace);
-                break;
-            }
+        if (gc_sweep_step(objspace, heap)) {
+            GC_ASSERT(heap->free_pages != NULL);
+        }
+        else if (heap == sweep_heap && objspace->empty_pages_count == 0 && objspace->heap_pages.allocatable_slots == 0) {
+            /* Not allowed to create a new page so finish sweeping. */
+            gc_sweep_rest(objspace);
+            GC_ASSERT(gc_mode(objspace) == gc_mode_none);
+            break;
         }
     }
 
