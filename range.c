@@ -47,6 +47,7 @@ static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 static void
 range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
 {
+    // Changing this condition has implications for JITs. If you do, please let maintainers know.
     if ((!FIXNUM_P(beg) || !FIXNUM_P(end)) && !NIL_P(beg) && !NIL_P(end)) {
         VALUE v;
 

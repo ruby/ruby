@@ -473,6 +473,9 @@ pub enum Insn {
     StringIntern { val: InsnId, state: InsnId },
     StringConcat { strings: Vec<InsnId>, state: InsnId },
 
+    /// Combine count stack values into a regexp
+    ToRegexp { opt: usize, values: Vec<InsnId>, state: InsnId },
+
     /// Put special object (VMCORE, CBASE, etc.) based on value_type
     PutSpecialObject { value_type: SpecialObjectType },
 
@@ -635,7 +638,6 @@ impl Insn {
             // NewHash's operands may be hashed and compared for equality, which could have
             // side-effects.
             Insn::NewHash { elements, .. } => elements.len() > 0,
-            Insn::NewRange { .. } => false,
             Insn::ArrayDup { .. } => false,
             Insn::HashDup { .. } => false,
             Insn::Test { .. } => false,
@@ -657,6 +659,9 @@ impl Insn {
             Insn::GetLocal   { .. } => false,
             Insn::IsNil      { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
+            // TODO: NewRange is effects free if we can prove the two ends to be Fixnum,
+            // but we don't have type information here in `impl Insn`. See rb_range_new().
+            Insn::NewRange { .. } => true,
             _ => true,
         }
     }
@@ -667,6 +672,14 @@ pub struct InsnPrinter<'a> {
     inner: Insn,
     ptr_map: &'a PtrPrintMap,
 }
+
+static REGEXP_FLAGS: &[(u32, &str)] = &[
+    (ONIG_OPTION_MULTILINE, "MULTILINE"),
+    (ONIG_OPTION_IGNORECASE, "IGNORECASE"),
+    (ONIG_OPTION_EXTEND, "EXTENDED"),
+    (ARG_ENCODING_FIXED, "FIXEDENCODING"),
+    (ARG_ENCODING_NONE, "NOENCODING"),
+];
 
 impl<'a> std::fmt::Display for InsnPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -712,6 +725,28 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 for string in strings {
                     write!(f, "{prefix}{string}")?;
                     prefix = ", ";
+                }
+
+                Ok(())
+            }
+            Insn::ToRegexp { values, opt, .. } => {
+                write!(f, "ToRegexp")?;
+                let mut prefix = " ";
+                for value in values {
+                    write!(f, "{prefix}{value}")?;
+                    prefix = ", ";
+                }
+
+                let opt = *opt as u32;
+                if opt != 0 {
+                    write!(f, ", ")?;
+                    let mut sep = "";
+                    for (flag, name) in REGEXP_FLAGS {
+                        if opt & flag != 0 {
+                            write!(f, "{sep}{name}")?;
+                            sep = "|";
+                        }
+                    }
                 }
 
                 Ok(())
@@ -1179,6 +1214,7 @@ impl Function {
             &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
             &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
             &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
+            &ToRegexp { opt, ref values, state } => ToRegexp { opt, values: find_vec!(values), state },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
             &Jump(ref target) => Jump(find_branch_edge!(target)),
@@ -1305,6 +1341,7 @@ impl Function {
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
+            Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
             Insn::NewHash { .. } => types::HashExact,
@@ -1937,6 +1974,10 @@ impl Function {
             }
             &Insn::StringConcat { ref strings, state, .. } => {
                 worklist.extend(strings);
+                worklist.push_back(state);
+            }
+            &Insn::ToRegexp { ref values, state, .. } => {
+                worklist.extend(values);
                 worklist.push_back(state);
             }
             | &Insn::Return { val }
@@ -2861,6 +2902,15 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let strings = state.stack_pop_n(count as usize)?;
                     let insn_id = fun.push_insn(block, Insn::StringConcat { strings, state: exit_id });
+                    state.stack_push(insn_id);
+                }
+                YARVINSN_toregexp => {
+                    // First arg contains the options (multiline, extended, ignorecase) used to create the regexp
+                    let opt = get_arg(pc, 0).as_usize();
+                    let count = get_arg(pc, 1).as_usize();
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let values = state.stack_pop_n(count)?;
+                    let insn_id = fun.push_insn(block, Insn::ToRegexp { opt, values, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_newarray => {
@@ -5331,6 +5381,47 @@ mod tests {
     }
 
     #[test]
+    fn test_toregexp() {
+        eval(r##"
+            def test = /#{1}#{2}#{3}/
+        "##);
+        assert_method_hir_with_opcode("test", YARVINSN_toregexp, expect![[r#"
+            fn test@<compiled>:2:
+            bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              v4:BasicObject = ObjToString v2
+              v6:String = AnyToString v2, str: v4
+              v7:Fixnum[2] = Const Value(2)
+              v9:BasicObject = ObjToString v7
+              v11:String = AnyToString v7, str: v9
+              v12:Fixnum[3] = Const Value(3)
+              v14:BasicObject = ObjToString v12
+              v16:String = AnyToString v12, str: v14
+              v18:RegexpExact = ToRegexp v6, v11, v16
+              Return v18
+        "#]]);
+    }
+
+    #[test]
+    fn test_toregexp_with_options() {
+        eval(r##"
+            def test = /#{1}#{2}/mixn
+        "##);
+        assert_method_hir_with_opcode("test", YARVINSN_toregexp, expect![[r#"
+            fn test@<compiled>:2:
+            bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              v4:BasicObject = ObjToString v2
+              v6:String = AnyToString v2, str: v4
+              v7:Fixnum[2] = Const Value(2)
+              v9:BasicObject = ObjToString v7
+              v11:String = AnyToString v7, str: v9
+              v13:RegexpExact = ToRegexp v6, v11, MULTILINE|IGNORECASE|EXTENDED|NOENCODING
+              Return v13
+        "#]]);
+    }
+
+    #[test]
     fn throw() {
         eval("
             define_method(:throw_return) { return 1 }
@@ -6106,6 +6197,29 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v4:Fixnum[5] = Const Value(5)
               Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn test_do_not_eliminate_new_range_non_fixnum() {
+        eval("
+            def test()
+              _ = (-'a'..'b')
+              0
+            end
+            test; test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test@<compiled>:3:
+            bb0(v0:BasicObject):
+              v1:NilClass = Const Value(nil)
+              v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
+              v6:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v8:StringExact = StringCopy v6
+              v10:RangeExact = NewRange v4 NewRangeInclusive v8
+              v11:Fixnum[0] = Const Value(0)
+              Return v11
         "#]]);
     }
 

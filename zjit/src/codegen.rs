@@ -338,7 +338,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
         Insn::NewArray { elements, state } => gen_new_array(asm, opnds!(elements), &function.frame_state(*state)),
         Insn::NewHash { elements, state } => gen_new_hash(jit, asm, elements, &function.frame_state(*state)),
-        Insn::NewRange { low, high, flag, state } => gen_new_range(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
+        Insn::NewRange { low, high, flag, state } => gen_new_range(jit, asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
         // concatstrings shouldn't have 0 strings
@@ -346,6 +346,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::StringConcat { strings, .. } if strings.is_empty() => return None,
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, opnds!(strings), &function.frame_state(*state)),
         Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state)),
+        Insn::ToRegexp { opt, values, state } => gen_toregexp(jit, asm, *opt, opnds!(values), &function.frame_state(*state)),
         Insn::Param { idx } => unreachable!("block.insns should not have Insn::Param({idx})"),
         Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
         Insn::Jump(branch) => no_output!(gen_jump(jit, asm, branch)),
@@ -356,7 +357,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SendWithoutBlockDirect { cd, state, self_val, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
             gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args)),
         Insn::SendWithoutBlockDirect { cme, iseq, self_val, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(self_val), opnds!(args), &function.frame_state(*state)),
-        Insn::InvokeBuiltin { bf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, opnds!(args))?,
+        // Ensure we have enough room fit ec, self, and arguments
+        // TODO remove this check when we have stack args (we can use Time.new to test it)
+        Insn::InvokeBuiltin { bf, .. } if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) => return None,
+        Insn::InvokeBuiltin { bf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, opnds!(args)),
         Insn::Return { val } => no_output!(gen_return(asm, opnd!(val))),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state)),
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state)),
@@ -371,7 +375,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FixnumOr { left, right } => gen_fixnum_or(asm, opnd!(left), opnd!(right)),
         Insn::IsNil { val } => gen_isnil(asm, opnd!(val)),
         Insn::Test { val } => gen_test(asm, opnd!(val)),
-        Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state))?,
+        Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
         Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(jit, asm, opnd!(val), *expected, &function.frame_state(*state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfun, opnds!(args)),
@@ -542,22 +546,18 @@ fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_in
     asm_ccall!(asm, rb_vm_opt_getconstant_path, EC, CFP, Opnd::const_ptr(ic))
 }
 
-fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf: &rb_builtin_function, args: Vec<Opnd>) -> Option<lir::Opnd> {
-    // Ensure we have enough room fit ec, self, and arguments
-    // TODO remove this check when we have stack args (we can use Time.new to test it)
-    if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) {
-        return None;
-    }
-
+fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf: &rb_builtin_function, args: Vec<Opnd>) -> lir::Opnd {
+    assert!(bf.argc + 2 <= C_ARG_OPNDS.len() as i32,
+            "gen_invokebuiltin should not be called for builtin function {} with too many arguments: {}",
+            unsafe { std::ffi::CStr::from_ptr(bf.name).to_str().unwrap() },
+            bf.argc);
     // Anything can happen inside builtin functions
     gen_prepare_non_leaf_call(jit, asm, state);
 
     let mut cargs = vec![EC];
     cargs.extend(args);
 
-    let val = asm.ccall(bf.func_ptr as *const u8, cargs);
-
-    Some(val)
+    asm.ccall(bf.func_ptr as *const u8, cargs)
 }
 
 /// Record a patch point that should be invalidated on a given invariant
@@ -737,25 +737,26 @@ fn gen_entry_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block) {
 }
 
 /// Set branch params to basic block arguments
-fn gen_branch_params(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdge) -> Option<()> {
-    if !branch.args.is_empty() {
-        asm_comment!(asm, "set branch params: {}", branch.args.len());
-        let mut moves: Vec<(Reg, Opnd)> = vec![];
-        for (idx, &arg) in branch.args.iter().enumerate() {
-            match param_opnd(idx) {
-                Opnd::Reg(reg) => {
-                    // If a parameter is a register, we need to parallel-move it
-                    moves.push((reg, jit.get_opnd(arg)));
-                },
-                param => {
-                    // If a parameter is memory, we set it beforehand
-                    asm.mov(param, jit.get_opnd(arg));
-                }
+fn gen_branch_params(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdge) {
+    if branch.args.is_empty() {
+        return;
+    }
+
+    asm_comment!(asm, "set branch params: {}", branch.args.len());
+    let mut moves: Vec<(Reg, Opnd)> = vec![];
+    for (idx, &arg) in branch.args.iter().enumerate() {
+        match param_opnd(idx) {
+            Opnd::Reg(reg) => {
+                // If a parameter is a register, we need to parallel-move it
+                moves.push((reg, jit.get_opnd(arg)));
+            },
+            param => {
+                // If a parameter is memory, we set it beforehand
+                asm.mov(param, jit.get_opnd(arg));
             }
         }
-        asm.parallel_mov(moves);
     }
-    Some(())
+    asm.parallel_mov(moves);
 }
 
 /// Get a method parameter on JIT entry. As of entry, whether EP is escaped or not solely
@@ -1040,13 +1041,15 @@ fn gen_new_hash(
 
 /// Compile a new range instruction
 fn gen_new_range(
+    jit: &JITState,
     asm: &mut Assembler,
     low: lir::Opnd,
     high: lir::Opnd,
     flag: RangeType,
     state: &FrameState,
 ) -> lir::Opnd {
-    gen_prepare_call_with_gc(asm, state);
+    // Sometimes calls `low.<=>(high)`
+    gen_prepare_non_leaf_call(jit, asm, state);
 
     // Call rb_range_new(low, high, flag)
     asm_ccall!(asm, rb_range_new, low, high, (flag as i64).into())
@@ -1172,7 +1175,7 @@ fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
 }
 
 /// Compile a type check with a side exit
-fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard_type: Type, state: &FrameState) -> Option<lir::Opnd> {
+fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard_type: Type, state: &FrameState) -> lir::Opnd {
     if guard_type.is_subtype(types::Fixnum) {
         asm.test(val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
         asm.jz(side_exit(jit, state, GuardType(guard_type)));
@@ -1183,9 +1186,9 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         asm.jne(side_exit(jit, state, GuardType(guard_type)));
     } else if guard_type.is_subtype(types::StaticSymbol) {
         // Static symbols have (val & 0xff) == RUBY_SYMBOL_FLAG
-        // Use 8-bit comparison like YJIT does
-        debug_assert!(val.try_num_bits(8).is_some(), "GuardType should not be used for a known constant, but val was: {val:?}");
-        asm.cmp(val.try_num_bits(8)?, Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
+        // Use 8-bit comparison like YJIT does. GuardType should not be used
+        // for a known VALUE, which with_num_bits() does not support.
+        asm.cmp(val.with_num_bits(8), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
         asm.jne(side_exit(jit, state, GuardType(guard_type)));
     } else if guard_type.is_subtype(types::NilClass) {
         asm.cmp(val, Qnil.into());
@@ -1226,7 +1229,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
     } else {
         unimplemented!("unsupported type: {guard_type}");
     }
-    Some(val)
+    val
 }
 
 /// Compile an identity check with a side exit
@@ -1595,36 +1598,58 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Option<CodePtr> {
     })
 }
 
-fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>, state: &FrameState) -> Opnd {
-    gen_prepare_non_leaf_call(jit, asm, state);
+fn gen_push_opnds(jit: &mut JITState, asm: &mut Assembler, opnds: &[Opnd]) -> lir::Opnd {
+    let n = opnds.len();
 
     // Calculate the compile-time NATIVE_STACK_PTR offset from NATIVE_BASE_PTR
     // At this point, frame_setup(&[], jit.c_stack_slots) has been called,
     // which allocated aligned_stack_bytes(jit.c_stack_slots) on the stack
     let frame_size = aligned_stack_bytes(jit.c_stack_slots);
-    let n = strings.len();
     let allocation_size = aligned_stack_bytes(n);
 
-    asm_comment!(asm, "allocate {} bytes on C stack for {} strings", allocation_size, n);
+    asm_comment!(asm, "allocate {} bytes on C stack for {} values", allocation_size, n);
     asm.sub_into(NATIVE_STACK_PTR, allocation_size.into());
 
     // Calculate the total offset from NATIVE_BASE_PTR to our buffer
     let total_offset_from_base = (frame_size + allocation_size) as i32;
 
-    for (idx, &string_opnd) in strings.iter().enumerate() {
+    for (idx, &opnd) in opnds.iter().enumerate() {
         let slot_offset = -total_offset_from_base + (idx as i32 * SIZEOF_VALUE_I32);
         asm.mov(
             Opnd::mem(VALUE_BITS, NATIVE_BASE_PTR, slot_offset),
-            string_opnd
+            opnd
         );
     }
 
-    let first_string_ptr = asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, -total_offset_from_base));
+    asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, -total_offset_from_base))
+}
 
-    let result = asm_ccall!(asm, rb_str_concat_literals, n.into(), first_string_ptr);
-
+fn gen_pop_opnds(asm: &mut Assembler, opnds: &[Opnd]) {
     asm_comment!(asm, "restore C stack pointer");
+    let allocation_size = aligned_stack_bytes(opnds.len());
     asm.add_into(NATIVE_STACK_PTR, allocation_size.into());
+}
+
+fn gen_toregexp(jit: &mut JITState, asm: &mut Assembler, opt: usize, values: Vec<Opnd>, state: &FrameState) -> Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    let first_opnd_ptr = gen_push_opnds(jit, asm, &values);
+
+    let tmp_ary = asm_ccall!(asm, rb_ary_tmp_new_from_values, Opnd::Imm(0), values.len().into(), first_opnd_ptr);
+    let result = asm_ccall!(asm, rb_reg_new_ary, tmp_ary, opt.into());
+    asm_ccall!(asm, rb_ary_clear, tmp_ary);
+
+    gen_pop_opnds(asm, &values);
+
+    result
+}
+
+fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>, state: &FrameState) -> Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    let first_string_ptr = gen_push_opnds(jit, asm, &strings);
+    let result = asm_ccall!(asm, rb_str_concat_literals, strings.len().into(), first_string_ptr);
+    gen_pop_opnds(asm, &strings);
 
     result
 }

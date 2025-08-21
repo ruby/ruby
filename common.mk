@@ -205,13 +205,6 @@ $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/util/.time:
 	$(Q) $(MAKEDIRS) $(@D)
 	@$(NULLCMD) > $@
 
-$(PRISM_SRCDIR)/srcs.mk: $(HAVE_BASERUBY:yes=$(PRISM_SRCDIR)/templates/template.rb) \
-		$(HAVE_BASERUBY:yes=$(PRISM_SRCDIR)/generate-srcs.mk.rb)
-	$(ECHO) Updating prism/srcs.mk
-	$(BASERUBY) $(PRISM_SRCDIR)/generate-srcs.mk.rb > $@
-
-srcs: $(PRISM_SRCDIR)/srcs.mk
-
 EXPORTOBJS    = $(DLNOBJ) \
 		localeinit.$(OBJEXT) \
 		loadpath.$(OBJEXT) \
@@ -1221,7 +1214,6 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}known_errors.inc \
       {$(VPATH)}vm_call_iseq_optimized.inc $(srcdir)/revision.h \
       $(REVISION_H) \
       $(UNICODE_DATA_HEADERS) $(ENC_HEADERS) \
-      $(top_srcdir)/prism/ast.h $(top_srcdir)/prism/diagnostic.h \
       {$(VPATH)}id.h {$(VPATH)}probes.dmyh
 
 insns: $(INSNS)
@@ -1309,6 +1301,11 @@ $(REVISION_H)$(yes_baseruby:yes=~disabled~):
 
 # uncommon.mk: $(REVISION_H)
 # $(MKFILES): $(REVISION_H)
+
+# $(common_mk_includes) is set by config.status or GNUmakefile
+common_mk__$(gnumake:yes=artifact)_ = uncommon.mk
+common_mk_$(gnumake)_artifact_ = $(MKFILES)
+$(common_mk__artifact_): $(srcdir)/common.mk $(common_mk_includes)
 
 ripper_srcs: $(RIPPER_SRCS)
 
@@ -1982,3 +1979,4 @@ $(CROSS_COMPILING:yes=)builtin.$(OBJEXT): {$(VPATH)}mini_builtin.c
 $(CROSS_COMPILING:yes=)builtin.$(OBJEXT): {$(VPATH)}miniprelude.c
 
 !include $(srcdir)/prism/srcs.mk
+!include $(srcdir)/depend

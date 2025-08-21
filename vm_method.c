@@ -428,6 +428,8 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
     if (rb_objspace_garbage_object_p(klass)) return;
 
     RB_VM_LOCKING() {
+        rb_vm_barrier();
+
         if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL)) {
             // no subclasses
             // check only current class
@@ -510,7 +512,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
         }
 
         rb_gccct_clear_table(Qnil);
-}
+    }
 }
 
 static void
@@ -1752,6 +1754,8 @@ cached_callable_method_entry(VALUE klass, ID mid)
             return ccs->cme;
         }
         else {
+            rb_vm_barrier();
+
             rb_managed_id_table_delete(cc_tbl, mid);
             rb_vm_ccs_invalidate_and_free(ccs);
         }
@@ -1782,7 +1786,14 @@ cache_callable_method_entry(VALUE klass, ID mid, const rb_callable_method_entry_
 #endif
     }
     else {
-        vm_ccs_create(klass, cc_tbl, mid, cme);
+        if (rb_multi_ractor_p()) {
+            VALUE new_cc_tbl = rb_vm_cc_table_dup(cc_tbl);
+            vm_ccs_create(klass, new_cc_tbl, mid, cme);
+            RB_OBJ_ATOMIC_WRITE(klass, &RCLASSEXT_CC_TBL(RCLASS_EXT_WRITABLE(klass)), new_cc_tbl);
+        }
+        else {
+            vm_ccs_create(klass, cc_tbl, mid, cme);
+        }
     }
 }
 

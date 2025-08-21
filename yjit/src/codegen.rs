@@ -4315,11 +4315,11 @@ fn gen_opt_ary_freeze(
         return None;
     }
 
-    let str = jit.get_arg(0);
+    let ary = jit.get_arg(0);
 
     // Push the return value onto the stack
     let stack_ret = asm.stack_push(Type::CArray);
-    asm.mov(stack_ret, str.into());
+    asm.mov(stack_ret, ary.into());
 
     Some(KeepCompiling)
 }
@@ -4332,11 +4332,11 @@ fn gen_opt_hash_freeze(
         return None;
     }
 
-    let str = jit.get_arg(0);
+    let hash = jit.get_arg(0);
 
     // Push the return value onto the stack
     let stack_ret = asm.stack_push(Type::CHash);
-    asm.mov(stack_ret, str.into());
+    asm.mov(stack_ret, hash.into());
 
     Some(KeepCompiling)
 }

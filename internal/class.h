@@ -630,7 +630,7 @@ RCLASS_WRITE_CALLABLE_M_TBL(VALUE klass, struct rb_id_table *table)
 static inline void
 RCLASS_WRITE_CC_TBL(VALUE klass, VALUE table)
 {
-    RB_OBJ_WRITE(klass, &RCLASSEXT_CC_TBL(RCLASS_EXT_WRITABLE(klass)), table);
+    RB_OBJ_ATOMIC_WRITE(klass, &RCLASSEXT_CC_TBL(RCLASS_EXT_WRITABLE(klass)), table);
 }
 
 static inline void
