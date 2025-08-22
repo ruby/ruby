@@ -818,7 +818,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             },
-            Insn::Snapshot { state } => write!(f, "Snapshot {}", state),
+            Insn::Snapshot { state } => write!(f, "Snapshot {}", state.print(self.ptr_map)),
             Insn::Defined { op_type, v, .. } => {
                 // op_type (enum defined_type) printing logic from iseq.c.
                 // Not sure why rb_iseq_defined_string() isn't exhaustive.
@@ -2513,11 +2513,10 @@ pub struct FrameState {
     locals: Vec<InsnId>,
 }
 
-impl FrameState {
-    /// Get the opcode for the current instruction
-    pub fn get_opcode(&self) -> i32 {
-        unsafe { rb_iseq_opcode_at_pc(self.iseq, self.pc) }
-    }
+/// Print adaptor for [`FrameState`]. See [`PtrPrintMap`].
+pub struct FrameStatePrinter<'a> {
+    inner: &'a FrameState,
+    ptr_map: &'a PtrPrintMap,
 }
 
 /// Compute the index of a local variable from its slot index
@@ -2624,14 +2623,24 @@ impl FrameState {
         args.extend(self.locals.iter().chain(self.stack.iter()).map(|op| *op));
         args
     }
+
+    /// Get the opcode for the current instruction
+    pub fn get_opcode(&self) -> i32 {
+        unsafe { rb_iseq_opcode_at_pc(self.iseq, self.pc) }
+    }
+
+    pub fn print<'a>(&'a self, ptr_map: &'a PtrPrintMap) -> FrameStatePrinter<'a> {
+        FrameStatePrinter { inner: self, ptr_map }
+    }
 }
 
-impl std::fmt::Display for FrameState {
+impl Display for FrameStatePrinter<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "FrameState {{ pc: {:?}, stack: ", self.pc)?;
-        write_vec(f, &self.stack)?;
+        let inner = self.inner;
+        write!(f, "FrameState {{ pc: {:?}, stack: ", self.ptr_map.map_ptr(inner.pc))?;
+        write_vec(f, &inner.stack)?;
         write!(f, ", locals: ")?;
-        write_vec(f, &self.locals)?;
+        write_vec(f, &inner.locals)?;
         write!(f, " }}")
     }
 }
@@ -3195,9 +3204,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let aref_arg = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                     let args = vec![aref_arg];
 
+                    let mut send_state = state.clone();
+                    send_state.stack_push(aref_arg);
+                    let send_state = fun.push_insn(block, Insn::Snapshot { state: send_state });
                     let recv = state.stack_pop()?;
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, cd, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, cd, args, state: send_state });
                     state.stack_push(send);
                 }
                 YARVINSN_opt_neq => {
@@ -3917,6 +3928,12 @@ mod tests {
     #[track_caller]
     pub fn assert_function_hir(function: Function, expected_hir: Expect) {
         let actual_hir = format!("{}", FunctionPrinter::without_snapshot(&function));
+        expected_hir.assert_eq(&actual_hir);
+    }
+
+    #[track_caller]
+    pub fn assert_function_hir_with_frame_state(function: Function, expected_hir: Expect) {
+        let actual_hir = format!("{}", FunctionPrinter::with_snapshot(&function));
         expected_hir.assert_eq(&actual_hir);
     }
 
@@ -5154,11 +5171,18 @@ mod tests {
         eval("
             def test(a) = a['string lit triggers aref_with']
         ");
-        assert_method_hir("test",  expect![[r#"
+
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", "test"));
+        assert!(iseq_contains_opcode(iseq, YARVINSN_opt_aref_with));
+        let function = iseq_to_hir(iseq).unwrap();
+        assert_function_hir_with_frame_state(function, expect![[r#"
             fn test@<compiled>:2:
             bb0(v0:BasicObject, v1:BasicObject):
-              v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v2:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [v1] }
+              v3:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v4:Any = Snapshot FrameState { pc: 0x1010, stack: [v1, v3], locals: [v1] }
               v5:BasicObject = SendWithoutBlock v1, :[], v3
+              v6:Any = Snapshot FrameState { pc: 0x1018, stack: [v5], locals: [v1] }
               CheckInterrupts
               Return v5
         "#]]);

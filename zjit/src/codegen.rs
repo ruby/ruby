@@ -353,10 +353,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Jump(branch) => no_output!(gen_jump(jit, asm, branch)),
         Insn::IfTrue { val, target } => no_output!(gen_if_true(jit, asm, opnd!(val), target)),
         Insn::IfFalse { val, target } => no_output!(gen_if_false(jit, asm, opnd!(val), target)),
-        Insn::SendWithoutBlock { cd, state, self_val, args, .. } => gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args)),
+        Insn::SendWithoutBlock { cd, state, .. } => gen_send_without_block(jit, asm, *cd, &function.frame_state(*state)),
         // Give up SendWithoutBlockDirect for 6+ args since asm.ccall() doesn't support it.
-        Insn::SendWithoutBlockDirect { cd, state, self_val, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
-            gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args)),
+        Insn::SendWithoutBlockDirect { cd, state, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
+            gen_send_without_block(jit, asm, *cd, &function.frame_state(*state)),
         Insn::SendWithoutBlockDirect { cme, iseq, self_val, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(self_val), opnds!(args), &function.frame_state(*state)),
         // Ensure we have enough room fit ec, self, and arguments
         // TODO remove this check when we have stack args (we can use Time.new to test it)
@@ -859,26 +859,19 @@ fn gen_send_without_block(
     asm: &mut Assembler,
     cd: *const rb_call_data,
     state: &FrameState,
-    self_val: Opnd,
-    args: Vec<Opnd>,
 ) -> lir::Opnd {
-    gen_spill_locals(jit, asm, state);
-    // Spill the receiver and the arguments onto the stack.
-    // They need to be on the interpreter stack to let the interpreter access them.
-    // TODO: Avoid spilling operands that have been spilled before.
-    // TODO: Despite https://github.com/ruby/ruby/pull/13468, Kokubun thinks this should
-    // spill the whole stack in case it raises an exception. The HIR might need to change
-    // for opt_aref_with, which pushes to the stack in the middle of the instruction.
-    asm_comment!(asm, "spill receiver and arguments");
-    for (idx, &val) in [self_val].iter().chain(args.iter()).enumerate() {
-        // Currently, we don't move the SP register. So it's equal to the base pointer.
-        let stack_opnd = Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32);
-        asm.mov(stack_opnd, val);
-    }
+    // Note that it's incorrect to use this frame state to side exit because
+    // the state might not be on the boundary of an interpreter instruction.
+    // For example, `opt_aref_with` pushes to the stack and then sends.
+    asm_comment!(asm, "spill frame state");
 
     // Save PC and SP
     gen_save_pc(asm, state);
-    gen_save_sp(asm, 1 + args.len()); // +1 for receiver
+    gen_save_sp(asm, state.stack().len());
+
+    // Spill locals and stack
+    gen_spill_locals(jit, asm, state);
+    gen_spill_stack(jit, asm, state);
 
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
     unsafe extern "C" {
