@@ -209,6 +209,8 @@ The following bundled gems are updated.
 
     [[Feature #21262]]
 
+* `ObjectSpace._id2ref` is deprecated. [[Feature #15408]]
+
 ## Stdlib compatibility issues
 
 * CGI library is removed from the default gems. Now we only provide `cgi/escape` for
@@ -259,6 +261,7 @@ The following bundled gems are updated.
     * `--rjit` is removed. We will move the implementation of the third-party JIT API
       to the [ruby/rjit](https://github.com/ruby/rjit) repository.
 
+[Feature #15408]: https://bugs.ruby-lang.org/issues/15408
 [Feature #17473]: https://bugs.ruby-lang.org/issues/17473
 [Feature #18455]: https://bugs.ruby-lang.org/issues/18455
 [Feature #19908]: https://bugs.ruby-lang.org/issues/19908
