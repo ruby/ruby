@@ -1008,25 +1008,29 @@ class TestZJIT < Test::Unit::TestCase
       test
     }
 
-    assert_compiles '1', %q{
+    # TODO(Shopify/ruby#716): Support spills and change to assert_compiles
+    assert_runs '1', %q{
       def a(n1,n2,n3,n4,n5,n6,n7,n8,n9) = n1+n9
       a(2,0,0,0,0,0,0,0,-1)
     }
 
-    assert_compiles '0', %q{
+    # TODO(Shopify/ruby#716): Support spills and change to assert_compiles
+    assert_runs '0', %q{
       def a(n1,n2,n3,n4,n5,n6,n7,n8) = n8
       a(1,1,1,1,1,1,1,0)
     }
 
+    # TODO(Shopify/ruby#716): Support spills and change to assert_compiles
     # self param with spilled param
-    assert_compiles '"main"', %q{
+    assert_runs '"main"', %q{
       def a(n1,n2,n3,n4,n5,n6,n7,n8) = self
       a(1,0,0,0,0,0,0,0).to_s
     }
   end
 
   def test_spilled_param_new_arary
-    assert_compiles '[:ok]', %q{
+    # TODO(Shopify/ruby#716): Support spills and change to assert_compiles
+    assert_runs '[:ok]', %q{
       def a(n1,n2,n3,n4,n5,n6,n7,n8) = [n8]
       a(0,0,0,0,0,0,0, :ok)
     }
