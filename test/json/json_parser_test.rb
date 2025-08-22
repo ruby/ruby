@@ -128,6 +128,7 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal(1.0/0, parse('Infinity', :allow_nan => true))
     assert_raise(ParserError) { parse('-Infinity') }
     assert_equal(-1.0/0, parse('-Infinity', :allow_nan => true))
+    capture_output { assert_equal(Float::INFINITY, parse("23456789012E666")) }
   end
 
   def test_parse_bigdecimals
