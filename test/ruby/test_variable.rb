@@ -512,7 +512,7 @@ class TestVariable < Test::Unit::TestCase
       instance.instance_variable_set(:@a3, 3)
       instance.instance_variable_set(:@a4, 4)
     end.resume
-    assert_equal 4, instance.instance_variable_get(:@a4)
+    assert_equal 4, instance.instance_variable_get(:@a4), bug21547
   end
 
   private
