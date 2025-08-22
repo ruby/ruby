@@ -19,6 +19,11 @@ class << RubyVM::ZJIT
     Primitive.cexpr! 'RBOOL(rb_zjit_enabled_p)'
   end
 
+  # Check if `--zjit-stats` is used
+  def stats_enabled?
+    Primitive.rb_zjit_stats_enabled_p
+  end
+
   # Return ZJIT statistics as a Hash
   def stats
     stats = Primitive.rb_zjit_stats
