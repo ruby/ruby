@@ -10,6 +10,188 @@
 # For documentation, see class Pathname.
 #
 
+#
+# Pathname represents the name of a file or directory on the filesystem,
+# but not the file itself.
+#
+# The pathname depends on the Operating System: Unix, Windows, etc.
+# This library works with pathnames of local OS, however non-Unix pathnames
+# are supported experimentally.
+#
+# A Pathname can be relative or absolute.  It's not until you try to
+# reference the file that it even matters whether the file exists or not.
+#
+# Pathname is immutable.  It has no method for destructive update.
+#
+# The goal of this class is to manipulate file path information in a neater
+# way than standard Ruby provides.  The examples below demonstrate the
+# difference.
+#
+# *All* functionality from File, FileTest, and some from Dir and FileUtils is
+# included, in an unsurprising way.  It is essentially a facade for all of
+# these, and more.
+#
+# == Examples
+#
+# === Example 1: Using Pathname
+#
+#   require 'pathname'
+#   pn = Pathname.new("/usr/bin/ruby")
+#   size = pn.size              # 27662
+#   isdir = pn.directory?       # false
+#   dir  = pn.dirname           # Pathname:/usr/bin
+#   base = pn.basename          # Pathname:ruby
+#   dir, base = pn.split        # [Pathname:/usr/bin, Pathname:ruby]
+#   data = pn.read
+#   pn.open { |f| _ }
+#   pn.each_line { |line| _ }
+#
+# === Example 2: Using standard Ruby
+#
+#   pn = "/usr/bin/ruby"
+#   size = File.size(pn)        # 27662
+#   isdir = File.directory?(pn) # false
+#   dir  = File.dirname(pn)     # "/usr/bin"
+#   base = File.basename(pn)    # "ruby"
+#   dir, base = File.split(pn)  # ["/usr/bin", "ruby"]
+#   data = File.read(pn)
+#   File.open(pn) { |f| _ }
+#   File.foreach(pn) { |line| _ }
+#
+# === Example 3: Special features
+#
+#   p1 = Pathname.new("/usr/lib")   # Pathname:/usr/lib
+#   p2 = p1 + "ruby/1.8"            # Pathname:/usr/lib/ruby/1.8
+#   p3 = p1.parent                  # Pathname:/usr
+#   p4 = p2.relative_path_from(p3)  # Pathname:lib/ruby/1.8
+#   pwd = Pathname.pwd              # Pathname:/home/gavin
+#   pwd.absolute?                   # true
+#   p5 = Pathname.new "."           # Pathname:.
+#   p5 = p5 + "music/../articles"   # Pathname:music/../articles
+#   p5.cleanpath                    # Pathname:articles
+#   p5.realpath                     # Pathname:/home/gavin/articles
+#   p5.children                     # [Pathname:/home/gavin/articles/linux, ...]
+#
+# == Breakdown of functionality
+#
+# === Core methods
+#
+# These methods are effectively manipulating a String, because that's
+# all a path is.  None of these access the file system except for
+# #mountpoint?, #children, #each_child, #realdirpath and #realpath.
+#
+# - +
+# - #join
+# - #parent
+# - #root?
+# - #absolute?
+# - #relative?
+# - #relative_path_from
+# - #each_filename
+# - #cleanpath
+# - #realpath
+# - #realdirpath
+# - #children
+# - #each_child
+# - #mountpoint?
+#
+# === File status predicate methods
+#
+# These methods are a facade for FileTest:
+# - #blockdev?
+# - #chardev?
+# - #directory?
+# - #executable?
+# - #executable_real?
+# - #exist?
+# - #file?
+# - #grpowned?
+# - #owned?
+# - #pipe?
+# - #readable?
+# - #world_readable?
+# - #readable_real?
+# - #setgid?
+# - #setuid?
+# - #size
+# - #size?
+# - #socket?
+# - #sticky?
+# - #symlink?
+# - #writable?
+# - #world_writable?
+# - #writable_real?
+# - #zero?
+#
+# === File property and manipulation methods
+#
+# These methods are a facade for File:
+# - #atime
+# - #birthtime
+# - #ctime
+# - #mtime
+# - #chmod(mode)
+# - #lchmod(mode)
+# - #chown(owner, group)
+# - #lchown(owner, group)
+# - #fnmatch(pattern, *args)
+# - #fnmatch?(pattern, *args)
+# - #ftype
+# - #make_link(old)
+# - #open(*args, &block)
+# - #readlink
+# - #rename(to)
+# - #stat
+# - #lstat
+# - #make_symlink(old)
+# - #truncate(length)
+# - #utime(atime, mtime)
+# - #lutime(atime, mtime)
+# - #basename(*args)
+# - #dirname
+# - #extname
+# - #expand_path(*args)
+# - #split
+#
+# === Directory methods
+#
+# These methods are a facade for Dir:
+# - Pathname.glob(*args)
+# - Pathname.getwd / Pathname.pwd
+# - #rmdir
+# - #entries
+# - #each_entry(&block)
+# - #mkdir(*args)
+# - #opendir(*args)
+#
+# === IO
+#
+# These methods are a facade for IO:
+# - #each_line(*args, &block)
+# - #read(*args)
+# - #binread(*args)
+# - #readlines(*args)
+# - #sysopen(*args)
+# - #write(*args)
+# - #binwrite(*args)
+#
+# === Utilities
+#
+# These methods are a mixture of Find, FileUtils, and others:
+# - #find(&block)
+# - #mkpath
+# - #rmtree
+# - #unlink / #delete
+#
+#
+# == Method documentation
+#
+# As the above section shows, most of the methods in Pathname are facades.  The
+# documentation for these methods generally just says, for instance, "See
+# FileTest.writable?", as you should be familiar with the original method
+# anyway, and its documentation (e.g. through +ri+) will contain more
+# information.  In some cases, a brief description will follow.
+#
 class Pathname
 
   # The version string.
@@ -27,6 +209,106 @@ class Pathname
     proc {|a, b| a == b}
   end
 
+  attr_reader :path
+  protected :path
+
+  # :startdoc:
+
+  #
+  # Create a Pathname object from the given String (or String-like object).
+  # If +path+ contains a NUL character (<tt>\0</tt>), an ArgumentError is raised.
+  #
+  def initialize(path)
+    path = path.to_path if path.respond_to? :to_path
+    if path.include?("\0")
+      raise ArgumentError, "pathname contains \\0: #{path.inspect}"
+    end
+
+    @path = path.dup
+  end
+
+  def freeze
+    super
+    @path.freeze
+    self
+  end
+
+  #
+  # Compare this pathname with +other+.  The comparison is string-based.
+  # Be aware that two different paths (<tt>foo.txt</tt> and <tt>./foo.txt</tt>)
+  # can refer to the same file.
+  #
+  def ==(other)
+    return false unless Pathname === other
+    other.path == @path
+  end
+  alias === ==
+  alias eql? ==
+
+  unless method_defined?(:<=>, false)
+    # Provides for comparing pathnames, case-sensitively.
+    def <=>(other)
+      return nil unless Pathname === other
+      @path.tr('/', "\0") <=> other.path.tr('/', "\0")
+    end
+  end
+
+  def hash # :nodoc:
+    @path.hash
+  end
+
+  # Return the path as a String.
+  def to_s
+    @path.dup
+  end
+
+  # to_path is implemented so Pathname objects are usable with File.open, etc.
+  alias_method TO_PATH, :to_s
+
+  def inspect # :nodoc:
+    "#<#{self.class}:#{@path}>"
+  end
+
+  unless method_defined?(:sub, false)
+    # Return a pathname which is substituted by String#sub.
+    def sub(pattern, *args, **kwargs, &block)
+      if block
+        path = @path.sub(pattern, *args, **kwargs) {|*sub_args|
+          begin
+            old = Thread.current[:pathname_sub_matchdata]
+            Thread.current[:pathname_sub_matchdata] = $~
+            eval("$~ = Thread.current[:pathname_sub_matchdata]", block.binding)
+          ensure
+            Thread.current[:pathname_sub_matchdata] = old
+          end
+          yield(*sub_args)
+        }
+      else
+        path = @path.sub(pattern, *args, **kwargs)
+      end
+      self.class.new(path)
+    end
+  end
+
+  # Return a pathname with +repl+ added as a suffix to the basename.
+  #
+  # If self has no extension part, +repl+ is appended.
+  #
+  #	Pathname.new('/usr/bin/shutdown').sub_ext('.rb')
+  #	    #=> #<Pathname:/usr/bin/shutdown.rb>
+  def sub_ext(repl)
+    ext = File.extname(@path)
+
+    # File.extname("foo.bar:stream") returns ".bar" on NTFS and not ".bar:stream"
+    # (see ruby_enc_find_extname()).
+    # The behavior of Pathname#sub_ext is to replace everything
+    # from the start of the extname until the end of the path with repl.
+    unless @path.end_with?(ext)
+      ext = @path[@path.rindex(ext)..]
+    end
+
+    self.class.new(@path.chomp(ext) + repl)
+  end
 
   if File::ALT_SEPARATOR
     SEPARATOR_LIST = "#{Regexp.quote File::ALT_SEPARATOR}#{Regexp.quote File::SEPARATOR}"
@@ -382,7 +664,7 @@ class Pathname
   #
   def +(other)
     other = Pathname.new(other) unless Pathname === other
-    Pathname.new(plus(@path, other.to_s))
+    Pathname.new(plus(@path, other.path))
   end
   alias / +
 
@@ -543,8 +825,8 @@ class Pathname
   #
   def relative_path_from(base_directory)
     base_directory = Pathname.new(base_directory) unless base_directory.is_a? Pathname
-    dest_directory = self.cleanpath.to_s
-    base_directory = base_directory.cleanpath.to_s
+    dest_directory = self.cleanpath.path
+    base_directory = base_directory.cleanpath.path
     dest_prefix = dest_directory
     dest_names = []
     while r = chop_basename(dest_prefix)
@@ -577,4 +859,306 @@ class Pathname
       Pathname.new(File.join(*relpath_names))
     end
   end
+end
+
+class Pathname    # * IO *
+  #
+  # #each_line iterates over the line in the file.  It yields a String object
+  # for each line.
+  #
+  # This method has existed since 1.8.1.
+  #
+  def each_line(...) # :yield: line
+    IO.foreach(@path, ...)
+  end
+
+  # See <tt>IO.read</tt>.  Returns all data from the file, or the first +N+ bytes
+  # if specified.
+  def read(...) IO.read(@path, ...) end
+
+  # See <tt>IO.binread</tt>.  Returns all the bytes from the file, or the first +N+
+  # if specified.
+  def binread(...) IO.binread(@path, ...) end
+
+  # See <tt>IO.readlines</tt>.  Returns all the lines from the file.
+  def readlines(...) IO.readlines(@path, ...) end
+
+  # See <tt>IO.sysopen</tt>.
+  def sysopen(...) IO.sysopen(@path, ...) end
+
+  # Writes +contents+ to the file. See <tt>File.write</tt>.
+  def write(...) IO.write(@path, ...) end
+
+  # Writes +contents+ to the file, opening it in binary mode.
+  #
+  # See File.binwrite.
+  def binwrite(...) IO.binwrite(@path, ...) end
+end
+
+
+class Pathname    # * File *
+
+  # See <tt>File.atime</tt>.  Returns last access time.
+  def atime() File.atime(@path) end
+
+  # Returns the birth time for the file.
+  # If the platform doesn't have birthtime, raises NotImplementedError.
+  #
+  # See File.birthtime.
+  def birthtime() File.birthtime(@path) end
+
+  # See <tt>File.ctime</tt>.  Returns last (directory entry, not file) change time.
+  def ctime() File.ctime(@path) end
+
+  # See <tt>File.mtime</tt>.  Returns last modification time.
+  def mtime() File.mtime(@path) end
+
+  # See <tt>File.chmod</tt>.  Changes permissions.
+  def chmod(mode) File.chmod(mode, @path) end
+
+  # See <tt>File.lchmod</tt>.
+  def lchmod(mode) File.lchmod(mode, @path) end
+
+  # See <tt>File.chown</tt>.  Change owner and group of file.
+  def chown(owner, group) File.chown(owner, group, @path) end
+
+  # See <tt>File.lchown</tt>.
+  def lchown(owner, group) File.lchown(owner, group, @path) end
+
+  # See <tt>File.fnmatch</tt>.  Return +true+ if the receiver matches the given
+  # pattern.
+  def fnmatch(pattern, ...) File.fnmatch(pattern, @path, ...) end
+
+  # See <tt>File.fnmatch?</tt> (same as #fnmatch).
+  def fnmatch?(pattern, ...) File.fnmatch?(pattern, @path, ...) end
+
+  # See <tt>File.ftype</tt>.  Returns "type" of file ("file", "directory",
+  # etc).
+  def ftype() File.ftype(@path) end
+
+  # See <tt>File.link</tt>.  Creates a hard link.
+  def make_link(old) File.link(old, @path) end
+
+  # See <tt>File.open</tt>.  Opens the file for reading or writing.
+  def open(...) # :yield: file
+    File.open(@path, ...)
+  end
+
+  # See <tt>File.readlink</tt>.  Read symbolic link.
+  def readlink() self.class.new(File.readlink(@path)) end
+
+  # See <tt>File.rename</tt>.  Rename the file.
+  def rename(to) File.rename(@path, to) end
+
+  # See <tt>File.stat</tt>.  Returns a <tt>File::Stat</tt> object.
+  def stat() File.stat(@path) end
+
+  # See <tt>File.lstat</tt>.
+  def lstat() File.lstat(@path) end
+
+  # See <tt>File.symlink</tt>.  Creates a symbolic link.
+  def make_symlink(old) File.symlink(old, @path) end
+
+  # See <tt>File.truncate</tt>.  Truncate the file to +length+ bytes.
+  def truncate(length) File.truncate(@path, length) end
+
+  # See <tt>File.utime</tt>.  Update the access and modification times.
+  def utime(atime, mtime) File.utime(atime, mtime, @path) end
+
+  # See <tt>File.basename</tt>.  Returns the last component of the path.
+  def basename(...) self.class.new(File.basename(@path, ...)) end
+
+  # See <tt>File.dirname</tt>.  Returns all but the last component of the path.
+  def dirname() self.class.new(File.dirname(@path)) end
+
+  # See <tt>File.extname</tt>.  Returns the file's extension.
+  def extname() File.extname(@path) end
+
+  # See <tt>File.expand_path</tt>.
+  def expand_path(...) self.class.new(File.expand_path(@path, ...)) end
+
+  # See <tt>File.split</tt>.  Returns the #dirname and the #basename in an
+  # Array.
+  def split()
+    array = File.split(@path)
+    raise TypeError, 'wrong argument type nil (expected Array)' unless Array === array
+    array.map {|f| self.class.new(f) }
+  end
+
+  # Returns the real (absolute) pathname for +self+ in the actual filesystem.
+  #
+  # Does not contain symlinks or useless dots, +..+ and +.+.
+  #
+  # All components of the pathname must exist when this method is called.
+  def realpath(...) self.class.new(File.realpath(@path, ...)) end
+end
+
+
+class Pathname    # * FileTest *
+
+  # See <tt>FileTest.blockdev?</tt>.
+  def blockdev?() FileTest.blockdev?(@path) end
+
+  # See <tt>FileTest.chardev?</tt>.
+  def chardev?() FileTest.chardev?(@path) end
+
+  # Tests the file is empty.
+  #
+  # See Dir#empty? and FileTest.empty?.
+  def empty?
+    if FileTest.directory?(@path)
+      Dir.empty?(@path)
+    else
+      File.empty?(@path)
+    end
+  end
+
+  # See <tt>FileTest.executable?</tt>.
+  def executable?() FileTest.executable?(@path) end
+
+  # See <tt>FileTest.executable_real?</tt>.
+  def executable_real?() FileTest.executable_real?(@path) end
+
+  # See <tt>FileTest.exist?</tt>.
+  def exist?() FileTest.exist?(@path) end
+
+  # See <tt>FileTest.grpowned?</tt>.
+  def grpowned?() FileTest.grpowned?(@path) end
+
+  # See <tt>FileTest.directory?</tt>.
+  def directory?() FileTest.directory?(@path) end
+
+  # See <tt>FileTest.file?</tt>.
+  def file?() FileTest.file?(@path) end
+
+  # See <tt>FileTest.pipe?</tt>.
+  def pipe?() FileTest.pipe?(@path) end
+
+  # See <tt>FileTest.socket?</tt>.
+  def socket?() FileTest.socket?(@path) end
+
+  # See <tt>FileTest.owned?</tt>.
+  def owned?() FileTest.owned?(@path) end
+
+  # See <tt>FileTest.readable?</tt>.
+  def readable?() FileTest.readable?(@path) end
+
+  # See <tt>FileTest.world_readable?</tt>.
+  def world_readable?() File.world_readable?(@path) end
+
+  # See <tt>FileTest.readable_real?</tt>.
+  def readable_real?() FileTest.readable_real?(@path) end
+
+  # See <tt>FileTest.setuid?</tt>.
+  def setuid?() FileTest.setuid?(@path) end
+
+  # See <tt>FileTest.setgid?</tt>.
+  def setgid?() FileTest.setgid?(@path) end
+
+  # See <tt>FileTest.size</tt>.
+  def size() FileTest.size(@path) end
+
+  # See <tt>FileTest.size?</tt>.
+  def size?() FileTest.size?(@path) end
+
+  # See <tt>FileTest.sticky?</tt>.
+  def sticky?() FileTest.sticky?(@path) end
+
+  # See <tt>FileTest.symlink?</tt>.
+  def symlink?() FileTest.symlink?(@path) end
+
+  # See <tt>FileTest.writable?</tt>.
+  def writable?() FileTest.writable?(@path) end
+
+  # See <tt>FileTest.world_writable?</tt>.
+  def world_writable?() File.world_writable?(@path) end
+
+  # See <tt>FileTest.writable_real?</tt>.
+  def writable_real?() FileTest.writable_real?(@path) end
+
+  # See <tt>FileTest.zero?</tt>.
+  def zero?() FileTest.zero?(@path) end
+end
+
+
+class Pathname    # * Dir *
+  # See <tt>Dir.glob</tt>.  Returns or yields Pathname objects.
+  def Pathname.glob(*args, **kwargs) # :yield: pathname
+    if block_given?
+      Dir.glob(*args, **kwargs) {|f| yield self.new(f) }
+    else
+      Dir.glob(*args, **kwargs).map {|f| self.new(f) }
+    end
+  end
+
+  # Returns or yields Pathname objects.
+  #
+  #  Pathname("ruby-2.4.2").glob("R*.md")
+  #  #=> [#<Pathname:ruby-2.4.2/README.md>, #<Pathname:ruby-2.4.2/README.ja.md>]
+  #
+  # See Dir.glob.
+  # This method uses the +base+ keyword argument of Dir.glob.
+  def glob(*args, **kwargs) # :yield: pathname
+    if block_given?
+      Dir.glob(*args, **kwargs, base: @path) {|f| yield self + f }
+    else
+      Dir.glob(*args, **kwargs, base: @path).map {|f| self + f }
+    end
+  end
+
+  # See <tt>Dir.getwd</tt>.  Returns the current working directory as a Pathname.
+  def Pathname.getwd() self.new(Dir.getwd) end
+  class << self
+    alias pwd getwd
+  end
+
+  # Return the entries (files and subdirectories) in the directory, each as a
+  # Pathname object.
+  def entries() Dir.entries(@path).map {|f| self.class.new(f) } end
+
+  # Iterates over the entries (files and subdirectories) in the directory.  It
+  # yields a Pathname object for each entry.
+  #
+  # This method has existed since 1.8.1.
+  def each_entry(&block) # :yield: pathname
+    return to_enum(__method__) unless block_given?
+    Dir.foreach(@path) {|f| yield self.class.new(f) }
+  end
+
+  # See <tt>Dir.mkdir</tt>.  Create the referenced directory.
+  def mkdir(...) Dir.mkdir(@path, ...) end
+
+  # See <tt>Dir.rmdir</tt>.  Remove the referenced directory.
+  def rmdir() Dir.rmdir(@path) end
+
+  # See <tt>Dir.open</tt>.
+  def opendir(&block) # :yield: dir
+    Dir.open(@path, &block)
+  end
+end
+
+class Pathname    # * mixed *
+  # Removes a file or directory, using <tt>File.unlink</tt> or
+  # <tt>Dir.unlink</tt> as necessary.
+  def unlink()
+    Dir.unlink @path
+  rescue Errno::ENOTDIR
+    File.unlink @path
+  end
+  alias delete unlink
+end
+
+class Pathname
+  undef =~ if Kernel.method_defined?(:=~)
+end
+
+module Kernel
+  # create a pathname object.
+  #
+  # This method is available since 1.8.5.
+  def Pathname(path) # :doc:
+    return path if Pathname === path
+    Pathname.new(path)
+  end
+  private :Pathname
 end
