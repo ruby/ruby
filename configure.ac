@@ -4688,7 +4688,7 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	    echo common_mk_includes "@S|@*" # generate the macro assignment
 	    shift
 	    common_mk_includes="`echo \"@S|@*\" | sed 's|\$(srcdir)|.|g'`"
-	    (PWD= cd ${srcdir} && sed -f tool/prereq.status common.mk ${common_mk_includes})
+	    (cd ${srcdir} && sed -f tool/prereq.status common.mk ${common_mk_includes})
             AS_IF([test "$YJIT_SUPPORT" = yes], [
                 cat ${srcdir}/yjit/not_gmake.mk
                 echo ['$(MKFILES): ${srcdir}/yjit/not_gmake.mk']
