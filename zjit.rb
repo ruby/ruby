@@ -19,10 +19,15 @@ class << RubyVM::ZJIT
     Primitive.cexpr! 'RBOOL(rb_zjit_enabled_p)'
   end
 
+  # Check if `--zjit-stats` is used
+  def stats_enabled?
+    Primitive.rb_zjit_stats_enabled_p
+  end
+
   # Return ZJIT statistics as a Hash
-  def stats
-    stats = Primitive.rb_zjit_stats
-    return nil if stats.nil?
+  def stats(key = nil)
+    stats = Primitive.rb_zjit_stats(key)
+    return stats if stats.nil? || !key.nil?
 
     if stats.key?(:vm_insns_count) && stats.key?(:zjit_insns_count)
       stats[:total_insns_count] = stats[:vm_insns_count] + stats[:zjit_insns_count]

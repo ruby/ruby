@@ -18,6 +18,15 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_stats_enabled
+    assert_runs 'false', <<~RUBY, stats: false
+      RubyVM::ZJIT.stats_enabled?
+    RUBY
+    assert_runs 'true', <<~RUBY, stats: true
+      RubyVM::ZJIT.stats_enabled?
+    RUBY
+  end
+
   def test_enable_through_env
     child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => '1'}
     assert_in_out_err([child_env, '-v'], '') do |stdout, stderr|
@@ -1486,10 +1495,13 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_stats
-    assert_runs 'true', %q{
+    assert_runs '[true, true]', %q{
       def test = 1
       test
-      RubyVM::ZJIT.stats[:zjit_insns_count] > 0
+      [
+        RubyVM::ZJIT.stats[:zjit_insns_count] > 0,
+        RubyVM::ZJIT.stats(:zjit_insns_count) > 0,
+      ]
     }, stats: true
   end
 

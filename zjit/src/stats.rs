@@ -72,29 +72,41 @@ fn incr_counter(counter: Counter, amount: u64) {
 
 /// Return a Hash object that contains ZJIT statistics
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE) -> VALUE {
+pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> VALUE {
     if !zjit_enabled_p() {
         return Qnil;
     }
 
-    fn set_stat(hash: VALUE, key: &str, value: u64) {
-        unsafe { rb_hash_aset(hash, rust_str_to_sym(key), VALUE::fixnum_from_usize(value as usize)); }
+    macro_rules! set_stat {
+        ($hash:ident, $key:expr, $value:expr) => {
+            let key = rust_str_to_sym($key);
+            // Evaluate $value only when it's needed
+            if key == target_key {
+                return VALUE::fixnum_from_usize($value as usize);
+            } else if $hash != Qnil {
+                #[allow(unused_unsafe)]
+                unsafe { rb_hash_aset($hash, key, VALUE::fixnum_from_usize($value as usize)); }
+            }
+        }
     }
 
-    let hash = unsafe { rb_hash_new() };
+    let hash = if target_key.nil_p() {
+        unsafe { rb_hash_new() }
+    } else {
+        Qnil
+    };
     let counters = ZJITState::get_counters();
 
     for &counter in DEFAULT_COUNTERS {
-        let counter_val = unsafe { *counter_ptr(counter) };
-        set_stat(hash, &counter.name(), counter_val);
+        set_stat!(hash, &counter.name(), unsafe { *counter_ptr(counter) });
     }
 
     // Set counters that are enabled when --zjit-stats is enabled
     if get_option!(stats) {
-        set_stat(hash, "zjit_insns_count", counters.zjit_insns_count);
+        set_stat!(hash, "zjit_insns_count", counters.zjit_insns_count);
 
         if unsafe { rb_vm_insns_count } > 0 {
-            set_stat(hash, "vm_insns_count", unsafe { rb_vm_insns_count });
+            set_stat!(hash, "vm_insns_count", unsafe { rb_vm_insns_count });
         }
     }
 
