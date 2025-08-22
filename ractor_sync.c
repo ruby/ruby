@@ -98,14 +98,14 @@ ractor_port_init(VALUE rpv, rb_ractor_t *r)
  *  Returns a new Ractor::Port object.
  */
 static VALUE
-ractor_port_initialzie(VALUE self)
+ractor_port_initialize(VALUE self)
 {
     return ractor_port_init(self, GET_RACTOR());
 }
 
 /* :nodoc: */
 static VALUE
-ractor_port_initialzie_copy(VALUE self, VALUE orig)
+ractor_port_initialize_copy(VALUE self, VALUE orig)
 {
     struct ractor_port *dst = RACTOR_PORT_PTR(self);
     struct ractor_port *src = RACTOR_PORT_PTR(orig);
@@ -1498,8 +1498,8 @@ Init_RactorPort(void)
 {
     rb_cRactorPort = rb_define_class_under(rb_cRactor, "Port", rb_cObject);
     rb_define_alloc_func(rb_cRactorPort, ractor_port_alloc);
-    rb_define_method(rb_cRactorPort, "initialize", ractor_port_initialzie, 0);
-    rb_define_method(rb_cRactorPort, "initialize_copy", ractor_port_initialzie_copy, 1);
+    rb_define_method(rb_cRactorPort, "initialize", ractor_port_initialize, 0);
+    rb_define_method(rb_cRactorPort, "initialize_copy", ractor_port_initialize_copy, 1);
 
 #if USE_RACTOR_SELECTOR
     rb_init_ractor_selector();
