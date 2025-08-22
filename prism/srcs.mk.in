@@ -4,6 +4,20 @@ require_relative 'templates/template'
 script = File.basename(__FILE__)
 srcs = output ? File.basename(output) : script.chomp('.in')
 mk = 'uncommon.mk'
+temps = Prism::Template::TEMPLATES.grep(/\.(?:[ch]|rb)\z/).map {|t|
+  [t.sub(%r[\A(?:src|(?:ext|include)/prism)/], '$(PRISM_SRCDIR)/'), t]
+}
+def each_fold(ary, w)
+  s = +""
+  ary.each do |a|
+    if s.size + a.size + 1 >= w
+      yield s
+      s = +""
+    end
+    s << " " << a
+  end
+  yield s unless s.empty?
+end
 
 # %>
 PRISM_TEMPLATES_DIR = $(PRISM_SRCDIR)/templates
@@ -20,20 +34,16 @@ prism/$(HAVE_BASERUBY:yes=.srcs.mk.time): \
 
 realclean-prism-srcs::
 	$(RM) $(PRISM_SRCDIR)/<%=%><%=srcs%>
+% each_fold(temps.map(&:first).sort, 64) do |s|
+	$(RM)<%=%><%=s%>
+% end
 
 realclean-srcs-local:: realclean-prism-srcs
-<% Prism::Template::TEMPLATES.map do |t|
-  /\.(?:[ch]|rb)\z/ =~ t or next
-  s = t.sub(%r[\A(?:src|(?:ext|include)/prism)/], '$(PRISM_SRCDIR)/')
-  target = s.end_with?('.h') ? 'incs' : 'srcs'
-# %>
 
-main <%=%><%=target%>: <%=%><%=s%>
+% temps.each do |s, t|
+main <%=%><%=s.end_with?('.h') ? 'incs' : 'srcs'%>: <%=%><%=s%>
 <%=%><%=s%>: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/<%=%><%=t%>.erb
 	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) <%=%><%=t%> $@
+% end
 
-realclean-prism-srcs::
-	$(RM) <%=%><%=s%>
-<%
-end
-# %>
+# <%=srcs%>
