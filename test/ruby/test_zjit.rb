@@ -1902,6 +1902,17 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_raise_in_second_argument
+    assert_compiles '{ok: true}', %q{
+      def write(hash, key)
+        hash[key] = raise rescue true
+        hash
+      end
+
+      write({}, :ok)
+    }
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
