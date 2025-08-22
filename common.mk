@@ -85,30 +85,30 @@ MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
 
 PRISM_BUILD_DIR = prism
 
-PRISM_OBJS    = ./prism/api_node.$(OBJEXT) \
-		./prism/api_pack.$(OBJEXT) \
-		./prism/diagnostic.$(OBJEXT) \
-		./prism/encoding.$(OBJEXT) \
-		./prism/extension.$(OBJEXT) \
-		./prism/node.$(OBJEXT) \
-		./prism/options.$(OBJEXT) \
-		./prism/pack.$(OBJEXT) \
-		./prism/prettyprint.$(OBJEXT) \
-		./prism/regexp.$(OBJEXT) \
-		./prism/serialize.$(OBJEXT) \
-		./prism/static_literals.$(OBJEXT) \
-		./prism/token_type.$(OBJEXT) \
-		./prism/util/pm_buffer.$(OBJEXT) \
-		./prism/util/pm_char.$(OBJEXT) \
-		./prism/util/pm_constant_pool.$(OBJEXT) \
-		./prism/util/pm_integer.$(OBJEXT) \
-		./prism/util/pm_list.$(OBJEXT) \
-		./prism/util/pm_memchr.$(OBJEXT) \
-		./prism/util/pm_newline_list.$(OBJEXT) \
-		./prism/util/pm_string.$(OBJEXT) \
-		./prism/util/pm_strncasecmp.$(OBJEXT) \
-		./prism/util/pm_strpbrk.$(OBJEXT) \
-		./prism/prism.$(OBJEXT) \
+PRISM_OBJS    = $(prismobjdir)/api_node.$(OBJEXT) \
+		$(prismobjdir)/api_pack.$(OBJEXT) \
+		$(prismobjdir)/diagnostic.$(OBJEXT) \
+		$(prismobjdir)/encoding.$(OBJEXT) \
+		$(prismobjdir)/extension.$(OBJEXT) \
+		$(prismobjdir)/node.$(OBJEXT) \
+		$(prismobjdir)/options.$(OBJEXT) \
+		$(prismobjdir)/pack.$(OBJEXT) \
+		$(prismobjdir)/prettyprint.$(OBJEXT) \
+		$(prismobjdir)/regexp.$(OBJEXT) \
+		$(prismobjdir)/serialize.$(OBJEXT) \
+		$(prismobjdir)/static_literals.$(OBJEXT) \
+		$(prismobjdir)/token_type.$(OBJEXT) \
+		$(prismobjdir)/util/pm_buffer.$(OBJEXT) \
+		$(prismobjdir)/util/pm_char.$(OBJEXT) \
+		$(prismobjdir)/util/pm_constant_pool.$(OBJEXT) \
+		$(prismobjdir)/util/pm_integer.$(OBJEXT) \
+		$(prismobjdir)/util/pm_list.$(OBJEXT) \
+		$(prismobjdir)/util/pm_memchr.$(OBJEXT) \
+		$(prismobjdir)/util/pm_newline_list.$(OBJEXT) \
+		$(prismobjdir)/util/pm_string.$(OBJEXT) \
+		$(prismobjdir)/util/pm_strncasecmp.$(OBJEXT) \
+		$(prismobjdir)/util/pm_strpbrk.$(OBJEXT) \
+		$(prismobjdir)/prism.$(OBJEXT) \
 		prism_init.$(OBJEXT)
 
 COMMONOBJS    = \

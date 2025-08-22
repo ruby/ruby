@@ -12,6 +12,7 @@ TZ =				# skip timezone tests
 PWD = $(MAKEDIR)
 empty =
 tooldir = $(srcdir)/tool
+prismobjdir = prism
 
 !ifndef MFLAGS
 MFLAGS=-l
@@ -1358,28 +1359,28 @@ modular-gc-precheck:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) -o $@ $(<:\=/)
 
-{$(srcdir)/prism}.c.obj:
+{$(srcdir)/prism}.c{prism/}.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
-{$(srcdir)/prism/enc}.c.obj:
+{$(srcdir)/prism/enc}.c{prism/enc}.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
-{$(srcdir)/prism/util}.c.obj:
+{$(srcdir)/prism/util}.c{prism/util}.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
-{$(srcdir)/enc/trans}.c.obj:
+{$(srcdir)/enc/trans}.c{enc/trans}.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
-{$(srcdir)/enc}.c.obj:
+{$(srcdir)/enc}.c{enc}.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
 {$(srcdir)/missing}.c.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
-{$(win_srcdir)}.c.obj:
+{$(win_srcdir)}.c{win32}.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
-{$(srcdir)}.c{}.obj:
+{$(srcdir)}.c{.}.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
 .c.obj:
