@@ -1495,10 +1495,13 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_stats
-    assert_runs 'true', %q{
+    assert_runs '[true, true]', %q{
       def test = 1
       test
-      RubyVM::ZJIT.stats[:zjit_insns_count] > 0
+      [
+        RubyVM::ZJIT.stats[:zjit_insns_count] > 0,
+        RubyVM::ZJIT.stats(:zjit_insns_count) > 0,
+      ]
     }, stats: true
   end
 
