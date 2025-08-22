@@ -126,6 +126,12 @@
 # === File property and manipulation methods
 #
 # These methods are a facade for File:
+# - #each_line(*args, &block)
+# - #read(*args)
+# - #binread(*args)
+# - #readlines(*args)
+# - #write(*args)
+# - #binwrite(*args)
 # - #atime
 # - #birthtime
 # - #ctime
@@ -166,14 +172,8 @@
 #
 # === IO
 #
-# These methods are a facade for IO:
-# - #each_line(*args, &block)
-# - #read(*args)
-# - #binread(*args)
-# - #readlines(*args)
+# This method is a facade for IO:
 # - #sysopen(*args)
-# - #write(*args)
-# - #binwrite(*args)
 #
 # === Utilities
 #
@@ -865,6 +865,11 @@ class Pathname
 end
 
 class Pathname    # * IO *
+  # See <tt>IO.sysopen</tt>.
+  def sysopen(...) IO.sysopen(@path, ...) end
+end
+
+class Pathname    # * File *
   #
   # #each_line iterates over the line in the file.  It yields a String object
   # for each line.
@@ -872,34 +877,27 @@ class Pathname    # * IO *
   # This method has existed since 1.8.1.
   #
   def each_line(...) # :yield: line
-    IO.foreach(@path, ...)
+    File.foreach(@path, ...)
   end
 
-  # See <tt>IO.read</tt>.  Returns all data from the file, or the first +N+ bytes
+  # See <tt>File.read</tt>.  Returns all data from the file, or the first +N+ bytes
   # if specified.
-  def read(...) IO.read(@path, ...) end
+  def read(...) File.read(@path, ...) end
 
-  # See <tt>IO.binread</tt>.  Returns all the bytes from the file, or the first +N+
+  # See <tt>File.binread</tt>.  Returns all the bytes from the file, or the first +N+
   # if specified.
-  def binread(...) IO.binread(@path, ...) end
+  def binread(...) File.binread(@path, ...) end
 
-  # See <tt>IO.readlines</tt>.  Returns all the lines from the file.
-  def readlines(...) IO.readlines(@path, ...) end
-
-  # See <tt>IO.sysopen</tt>.
-  def sysopen(...) IO.sysopen(@path, ...) end
+  # See <tt>File.readlines</tt>.  Returns all the lines from the file.
+  def readlines(...) File.readlines(@path, ...) end
 
   # Writes +contents+ to the file. See <tt>File.write</tt>.
-  def write(...) IO.write(@path, ...) end
+  def write(...) File.write(@path, ...) end
 
   # Writes +contents+ to the file, opening it in binary mode.
   #
   # See File.binwrite.
-  def binwrite(...) IO.binwrite(@path, ...) end
-end
-
-
-class Pathname    # * File *
+  def binwrite(...) File.binwrite(@path, ...) end
 
   # See <tt>File.atime</tt>.  Returns last access time.
   def atime() File.atime(@path) end
