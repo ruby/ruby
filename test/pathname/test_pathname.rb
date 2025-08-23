@@ -348,7 +348,7 @@ class TestPathname < Test::Unit::TestCase
     rescue NotImplementedError
       return false
     rescue Errno::ENOENT
-      return false
+      return true
     rescue Errno::EACCES
       return false
     end
