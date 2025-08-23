@@ -219,9 +219,10 @@ class Pathname
   # If +path+ contains a NUL character (<tt>\0</tt>), an ArgumentError is raised.
   #
   def initialize(path)
-    path = path.to_path if path.respond_to? :to_path
-
-    raise TypeError unless path.is_a?(String) # Compatibility for C version
+    unless String === path
+      path = path.to_path if path.respond_to? :to_path
+      raise TypeError unless String === path
+    end
 
     if path.include?("\0")
       raise ArgumentError, "pathname contains \\0: #{path.inspect}"
