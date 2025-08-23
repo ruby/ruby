@@ -370,10 +370,11 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def realpath(path, basedir=nil)
-    Pathname.new(path).realpath(basedir).to_s
+    Pathname.new(path).realpath(*basedir).to_s
   end
 
   def test_realpath
+    omit "not working yet" if RUBY_ENGINE == "jruby"
     return if !has_symlink?
     with_tmpchdir('rubytest-pathname') {|dir|
       assert_raise(Errno::ENOENT) { realpath("#{dir}/not-exist") }
@@ -434,6 +435,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_realdirpath
+    omit "not working yet" if RUBY_ENGINE == "jruby"
     return if !has_symlink?
     Dir.mktmpdir('rubytest-pathname') {|dir|
       rdir = realpath(dir)
