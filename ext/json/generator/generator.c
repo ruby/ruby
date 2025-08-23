@@ -1026,6 +1026,9 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     }
 
     VALUE key_to_s;
+    bool as_json_called = false;
+
+  start:
     switch (rb_type(key)) {
         case T_STRING:
             if (RB_LIKELY(RBASIC_CLASS(key) == rb_cString)) {
@@ -1039,7 +1042,13 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
             break;
         default:
             if (data->state->strict) {
-                raise_generator_error(key, "%"PRIsVALUE" not allowed in JSON", rb_funcall(key, i_to_s, 0));
+                if (RTEST(data->state->as_json) && !as_json_called) {
+                    key = rb_proc_call_with_block(data->state->as_json, 1, &key, Qnil);
+                    as_json_called = true;
+                    goto start;
+                } else {
+                    raise_generator_error(key, "%"PRIsVALUE" not allowed as object key in JSON", CLASS_OF(key));
+                }
             }
             key_to_s = rb_convert_type(key, T_STRING, "String", "to_s");
             break;
