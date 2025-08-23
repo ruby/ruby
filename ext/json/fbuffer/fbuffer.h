@@ -24,6 +24,14 @@ typedef unsigned char _Bool;
 #endif
 #endif
 
+#ifndef NOINLINE
+#if defined(__has_attribute) && __has_attribute(noinline)
+#define NOINLINE() __attribute__((noinline))
+#else
+#define NOINLINE()
+#endif
+#endif
+
 #ifndef RB_UNLIKELY
 #define RB_UNLIKELY(expr) expr
 #endif

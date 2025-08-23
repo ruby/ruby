@@ -56,6 +56,11 @@ module JSON
             buffer_initial_length: buffer_initial_length,
           }
 
+          allow_duplicate_key = allow_duplicate_key?
+          unless allow_duplicate_key.nil?
+            result[:allow_duplicate_key] = allow_duplicate_key
+          end
+
           instance_variables.each do |iv|
             iv = iv.to_s[1..-1]
             result[iv.to_sym] = self[iv]

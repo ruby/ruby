@@ -186,6 +186,25 @@ module JSON
 
     private
 
+    # Called from the extension when a hash has both string and symbol keys
+    def on_mixed_keys_hash(hash, do_raise)
+      set = {}
+      hash.each_key do |key|
+        key_str = key.to_s
+
+        if set[key_str]
+          message = "detected duplicate key #{key_str.inspect} in #{hash.inspect}"
+          if do_raise
+            raise GeneratorError, message
+          else
+            deprecation_warning("#{message}.\nThis will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`")
+          end
+        else
+          set[key_str] = true
+        end
+      end
+    end
+
     def deprecated_singleton_attr_accessor(*attrs)
       args = RUBY_VERSION >= "3.0" ? ", category: :deprecated" : ""
       attrs.each do |attr|
