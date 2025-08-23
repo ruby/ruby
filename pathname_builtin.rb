@@ -130,6 +130,7 @@
 # - #read(*args)
 # - #binread(*args)
 # - #readlines(*args)
+# - #sysopen(*args)
 # - #write(*args)
 # - #binwrite(*args)
 # - #atime
@@ -169,11 +170,6 @@
 # - #each_entry(&block)
 # - #mkdir(*args)
 # - #opendir(*args)
-#
-# === IO
-#
-# This method is a facade for IO:
-# - #sysopen(*args)
 #
 # === Utilities
 #
@@ -865,11 +861,6 @@ class Pathname
   end
 end
 
-class Pathname    # * IO *
-  # See <tt>IO.sysopen</tt>.
-  def sysopen(...) IO.sysopen(@path, ...) end
-end
-
 class Pathname    # * File *
   #
   # #each_line iterates over the line in the file.  It yields a String object
@@ -891,6 +882,9 @@ class Pathname    # * File *
 
   # See <tt>File.readlines</tt>.  Returns all the lines from the file.
   def readlines(...) File.readlines(@path, ...) end
+
+  # See <tt>File.sysopen</tt>.
+  def sysopen(...) File.sysopen(@path, ...) end
 
   # Writes +contents+ to the file. See <tt>File.write</tt>.
   def write(...) File.write(@path, ...) end
