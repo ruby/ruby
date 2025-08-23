@@ -1054,7 +1054,11 @@ class TestPathname < Test::Unit::TestCase
       latime = Time.utc(2000)
       lmtime = Time.utc(1999)
       File.symlink("a", "l")
-      Pathname("l").utime(latime, lmtime)
+      begin
+        Pathname("l").lutime(latime, lmtime)
+      rescue NotImplementedError
+        next
+      end
       s = File.lstat("a")
       ls = File.lstat("l")
       assert_equal(atime, s.atime)
