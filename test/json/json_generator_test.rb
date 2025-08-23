@@ -404,6 +404,18 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_raise JSON::GeneratorError do
       generate(Object.new, strict: true)
     end
+
+    assert_raise JSON::GeneratorError do
+      generate([Object.new], strict: true)
+    end
+
+    assert_raise JSON::GeneratorError do
+      generate({ "key" => Object.new }, strict: true)
+    end
+
+    assert_raise JSON::GeneratorError do
+      generate({ Object.new => "value" }, strict: true)
+    end
   end
 
   def test_nesting

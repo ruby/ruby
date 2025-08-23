@@ -1038,6 +1038,9 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
             key_to_s = rb_sym2str(key);
             break;
         default:
+            if (data->state->strict) {
+                raise_generator_error(key, "%"PRIsVALUE" not allowed in JSON", rb_funcall(key, i_to_s, 0));
+            }
             key_to_s = rb_convert_type(key, T_STRING, "String", "to_s");
             break;
     }
