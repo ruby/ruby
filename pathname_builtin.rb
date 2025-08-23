@@ -1158,12 +1158,8 @@ module Kernel
   #
   # This method is available since 1.8.5.
   def Pathname(path) # :doc:
-    Kernel.Pathname(path)
-  end
-  private :Pathname
-
-  def self.Pathname(path) # Compatibility for C version
     return path if Pathname === path
     Pathname.new(path)
   end
+  module_function :Pathname
 end
