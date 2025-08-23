@@ -1016,16 +1016,13 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     JSON_Generator_State *state = data->state;
 
     long depth = state->depth;
-    int j;
 
     if (arg->iter > 0) fbuffer_append_char(buffer, ',');
     if (RB_UNLIKELY(data->state->object_nl)) {
         fbuffer_append_str(buffer, data->state->object_nl);
     }
     if (RB_UNLIKELY(data->state->indent)) {
-        for (j = 0; j < depth; j++) {
-            fbuffer_append_str(buffer, data->state->indent);
-        }
+        fbuffer_append_str_repeat(buffer, data->state->indent, depth);
     }
 
     VALUE key_to_s;
@@ -1071,7 +1068,6 @@ static inline long increase_depth(struct generate_json_data *data)
 
 static void generate_json_object(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
-    int j;
     long depth = increase_depth(data);
 
     if (RHASH_SIZE(obj) == 0) {
@@ -1092,9 +1088,7 @@ static void generate_json_object(FBuffer *buffer, struct generate_json_data *dat
     if (RB_UNLIKELY(data->state->object_nl)) {
         fbuffer_append_str(buffer, data->state->object_nl);
         if (RB_UNLIKELY(data->state->indent)) {
-            for (j = 0; j < depth; j++) {
-                fbuffer_append_str(buffer, data->state->indent);
-            }
+            fbuffer_append_str_repeat(buffer, data->state->indent, depth);
         }
     }
     fbuffer_append_char(buffer, '}');
@@ -1102,7 +1096,6 @@ static void generate_json_object(FBuffer *buffer, struct generate_json_data *dat
 
 static void generate_json_array(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
-    int i, j;
     long depth = increase_depth(data);
 
     if (RARRAY_LEN(obj) == 0) {
@@ -1113,15 +1106,13 @@ static void generate_json_array(FBuffer *buffer, struct generate_json_data *data
 
     fbuffer_append_char(buffer, '[');
     if (RB_UNLIKELY(data->state->array_nl)) fbuffer_append_str(buffer, data->state->array_nl);
-    for (i = 0; i < RARRAY_LEN(obj); i++) {
+    for (int i = 0; i < RARRAY_LEN(obj); i++) {
         if (i > 0) {
             fbuffer_append_char(buffer, ',');
             if (RB_UNLIKELY(data->state->array_nl)) fbuffer_append_str(buffer, data->state->array_nl);
         }
         if (RB_UNLIKELY(data->state->indent)) {
-            for (j = 0; j < depth; j++) {
-                fbuffer_append_str(buffer, data->state->indent);
-            }
+            fbuffer_append_str_repeat(buffer, data->state->indent, depth);
         }
         generate_json(buffer, data, RARRAY_AREF(obj, i));
     }
@@ -1129,9 +1120,7 @@ static void generate_json_array(FBuffer *buffer, struct generate_json_data *data
     if (RB_UNLIKELY(data->state->array_nl)) {
         fbuffer_append_str(buffer, data->state->array_nl);
         if (RB_UNLIKELY(data->state->indent)) {
-            for (j = 0; j < depth; j++) {
-                fbuffer_append_str(buffer, data->state->indent);
-            }
+            fbuffer_append_str_repeat(buffer, data->state->indent, depth);
         }
     }
     fbuffer_append_char(buffer, ']');

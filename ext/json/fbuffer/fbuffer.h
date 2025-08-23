@@ -197,9 +197,20 @@ static void fbuffer_append_str(FBuffer *fb, VALUE str)
     const char *newstr = StringValuePtr(str);
     unsigned long len = RSTRING_LEN(str);
 
-    RB_GC_GUARD(str);
-
     fbuffer_append(fb, newstr, len);
+}
+
+static void fbuffer_append_str_repeat(FBuffer *fb, VALUE str, size_t repeat)
+{
+    unsigned long len = RSTRING_LEN(str);
+
+    size_t total = repeat * len;
+    fbuffer_inc_capa(fb, total);
+
+    while (repeat) {
+        fbuffer_append_str(fb, str);
+        repeat--;
+    }
 }
 
 static inline void fbuffer_append_char(FBuffer *fb, char newchr)
