@@ -993,6 +993,13 @@ class Pathname    # * File *
   #
   # All components of the pathname must exist when this method is called.
   def realpath(...) self.class.new(File.realpath(@path, ...)) end
+
+  # Returns the real (absolute) pathname of +self+ in the actual filesystem.
+  #
+  # Does not contain symlinks or useless dots, +..+ and +.+.
+  #
+  # The last component of the real pathname can be nonexistent.
+  def realdirpath(...) self.class.new(File.realdirpath(@path, ...)) end
 end
 
 
