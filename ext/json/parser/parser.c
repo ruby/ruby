@@ -975,7 +975,7 @@ static inline bool FORCE_INLINE string_scan(JSON_ParserState *state)
         if (RB_UNLIKELY(string_scan_table[(unsigned char)*state->cursor])) {
             return 1;
         }
-        *state->cursor++;
+        state->cursor++;
     }
     return 0;
 }
