@@ -1,0 +1,57 @@
+
+Returns a printable version of +self+, enclosed in double-quotes.
+
+Most printable characters are rendered simply as themselves:
+
+  'abc'.inspect        # => "\"abc\""
+  '012'.inspect        # => "\"012\""
+  ''.inspect           # => "\"\""
+  "\u000012".inspect   # => "\"\\u000012\""
+  'тест'.inspect       # => "\"тест\""
+  'こんにちは'.inspect  # => "\"こんにちは\""
+
+But printable characters double-quote (<tt>'"'</tt>) and backslash and (<tt>'\\'</tt>) are escaped:
+
+  '"'.inspect  # => "\"\\\"\""
+  '\\'.inspect # => "\"\\\\\""
+
+Unprintable characters are rendered thus;
+see {ASCII}[https://en.wikipedia.org/wiki/ASCII]:
+
+  a = (0..31).to_a.push(127) # ASCII chars with these values are unprintable.
+  a.each {|i| p [i, i.chr.inspect] }
+  [0, "\"\\x00\""]
+  [1, "\"\\x01\""]
+  [2, "\"\\x02\""]
+  [3, "\"\\x03\""]
+  [4, "\"\\x04\""]
+  [5, "\"\\x05\""]
+  [6, "\"\\x06\""]
+  [7, "\"\\a\""]      # BEL
+  [8, "\"\\b\""]      # BS
+  [9, "\"\\t\""]      # TAB
+  [10, "\"\\n\""]     # LF
+  [11, "\"\\v\""]     # VT
+  [12, "\"\\f\""]     # FF
+  [13, "\"\\r\""]     # CR
+  [14, "\"\\x0E\""]
+  [15, "\"\\x0F\""]
+  [16, "\"\\x10\""]
+  [17, "\"\\x11\""]
+  [18, "\"\\x12\""]
+  [19, "\"\\x13\""]
+  [20, "\"\\x14\""]
+  [21, "\"\\x15\""]
+  [22, "\"\\x16\""]
+  [23, "\"\\x17\""]
+  [24, "\"\\x18\""]
+  [25, "\"\\x19\""]
+  [26, "\"\\x1A\""]
+  [27, "\"\\e\""]     # ESC
+  [28, "\"\\x1C\""]
+  [29, "\"\\x1D\""]
+  [30, "\"\\x1E\""]
+  [31, "\"\\x1F\""]
+  [127, "\"\\x7F\""]  # DEL
+
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].

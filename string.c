@@ -7313,12 +7313,7 @@ rb_str_escape(VALUE str)
  *  call-seq:
  *    inspect -> string
  *
- *  Returns a printable version of +self+, enclosed in double-quotes,
- *  and with special characters escaped:
- *
- *    s = "foo\tbar\tbaz\n"
- *    s.inspect
- *    # => "\"foo\\tbar\\tbaz\\n\""
+ *  :include: doc/string/inspect.rdoc
  *
  */
 
