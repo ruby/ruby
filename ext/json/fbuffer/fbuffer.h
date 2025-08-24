@@ -169,12 +169,17 @@ static inline void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
     }
 }
 
-static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len)
+static inline void fbuffer_append_reserved(FBuffer *fb, const char *newstr, unsigned long len)
+{
+    MEMCPY(fb->ptr + fb->len, newstr, char, len);
+    fbuffer_consumed(fb, len);
+}
+
+static inline void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len)
 {
     if (len > 0) {
         fbuffer_inc_capa(fb, len);
-        MEMCPY(fb->ptr + fb->len, newstr, char, len);
-        fbuffer_consumed(fb, len);
+        fbuffer_append_reserved(fb, newstr, len);
     }
 }
 
@@ -202,13 +207,15 @@ static void fbuffer_append_str(FBuffer *fb, VALUE str)
 
 static void fbuffer_append_str_repeat(FBuffer *fb, VALUE str, size_t repeat)
 {
+    const char *newstr = StringValuePtr(str);
     unsigned long len = RSTRING_LEN(str);
 
-    size_t total = repeat * len;
-    fbuffer_inc_capa(fb, total);
-
+    fbuffer_inc_capa(fb, repeat * len);
     while (repeat) {
-        fbuffer_append_str(fb, str);
+#ifdef JSON_DEBUG
+        fb->requested = len;
+#endif
+        fbuffer_append_reserved(fb, newstr, len);
         repeat--;
     }
 }
