@@ -1,0 +1,16 @@
+Returns the Symbol object derived from +self+,
+creating it if it did not already exist:
+
+  'foo'.intern       # => :foo
+  'тест'.intern      # => :тест
+  'こんにちは'.intern # => :こんにちは
+
+May be useful for creating a symbol that cannot be created as a symbol literal:
+
+  'foo bar'.intern              # => :"foo bar"
+  ':foo'.intern                 # => :":foo"
+  '\\foo'.intern                # => :"\\foo"
+  "foo\tbar\nbaz\tbat\n".intern # => :"foo\tbar\nbaz\tbat\n"
+
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
+
