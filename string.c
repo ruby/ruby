@@ -9703,11 +9703,53 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    lines(Line_sep = $/, chomp: false) -> array_of_strings
+ *    lines(record_separator = $/, chomp: false) -> array_of_strings
  *
- *  Forms substrings ("lines") of +self+ according to the given arguments
- *  (see String#each_line for details); returns the lines in an array.
+ *  Returns substrings ("lines") of +self+
+ *  according to the given arguments:
  *
+ *    s = <<~EOT
+ *    This is the first line.
+ *    This is line two.
+ *
+ *    This is line four.
+ *    This is line five.
+ *    EOT
+ *
+ *  With the default argument values:
+ *
+ *    $/ # => "\n"
+ *    s.lines
+ *    # =>
+ *    ["This is the first line.\n",
+ *     "This is line two.\n",
+ *     "\n",
+ *     "This is line four.\n",
+ *     "This is line five.\n"]
+ *
+ *  With a different +record_separator+:
+ *
+ *    record_separator = ' is '
+ *    s.lines(record_separator)
+ *    # =>
+ *    ["This is ",
+ *     "the first line.\nThis is ",
+ *     "line two.\n\nThis is ",
+ *     "line four.\nThis is ",
+ *     "line five.\n"]
+ *
+ *  With keyword argument +chomp+ as +true+,
+ *  removes the trailing newline from each line:
+ *
+ *    s.lines(chomp: true)
+ *    # =>
+ *    ["This is the first line.",
+ *     "This is line two.",
+ *     "",
+ *     "This is line four.",
+ *     "This is line five."]
+ *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
  */
 
 static VALUE
