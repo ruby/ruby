@@ -391,7 +391,7 @@ module JSON
   #
   # Returns a \String containing the generated \JSON data.
   #
-  # See also JSON.fast_generate, JSON.pretty_generate.
+  # See also JSON.pretty_generate.
   #
   # Argument +obj+ is the Ruby object to be converted to \JSON.
   #
