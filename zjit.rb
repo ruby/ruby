@@ -39,19 +39,31 @@ class << RubyVM::ZJIT
 
   # Get the summary of ZJIT statistics as a String
   def stats_string
-    buf = +''
+    buf = +"***ZJIT: Printing ZJIT statistics on exit***\n"
     stats = self.stats
 
-    [
+    print_counters_with_prefix(prefix: 'failed_', prompt: 'compilation failure reasons', buf:, stats:)
+    print_counters([
+      :compiled_iseq_count,
+      :compilation_failure,
+
       :compile_time_ns,
       :profile_time_ns,
       :gc_time_ns,
       :invalidation_time_ns,
+
       :total_insns_count,
       :vm_insns_count,
       :zjit_insns_count,
       :ratio_in_zjit,
-    ].each do |key|
+    ], buf:, stats:)
+
+    buf
+  end
+
+  def print_counters(keys, buf:, stats:)
+    left_pad = keys.map(&:size).max + 1
+    keys.each do |key|
       # Some stats like vm_insns_count and ratio_in_zjit are not supported on the release build
       next unless stats.key?(key)
       value = stats[key]
@@ -66,9 +78,16 @@ class << RubyVM::ZJIT
         value = number_with_delimiter(value)
       end
 
-      buf << "#{'%-18s' % "#{key}:"} #{value}\n"
+      buf << "#{"%-#{left_pad}s" % "#{key}:"} #{value}\n"
     end
-    buf
+  end
+
+  def print_counters_with_prefix(buf:, stats:, prefix:, prompt:)
+    keys = stats.keys.select { |key| key.start_with?(prefix) && stats[key] > 0 }
+    unless keys.empty?
+      buf << "#{prompt}:\n"
+      print_counters(keys, buf:, stats:)
+    end
   end
 
   # Assert that any future ZJIT compilation will return a function pointer
