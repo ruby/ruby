@@ -380,8 +380,6 @@ RBASIC_FIELDS_COUNT(VALUE obj)
     return RSHAPE(rb_obj_shape_id(obj))->next_field_index;
 }
 
-bool rb_obj_set_shape_id(VALUE obj, shape_id_t shape_id);
-
 static inline bool
 rb_shape_obj_has_id(VALUE obj)
 {

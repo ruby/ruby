@@ -1672,7 +1672,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         MEMCPY(ROBJECT_FIELDS(obj), fields, VALUE, new_fields_count);
         xfree(fields);
     }
-    rb_obj_set_shape_id(obj, next_shape_id);
+    RBASIC_SET_SHAPE_ID(obj, next_shape_id);
 
     return val;
 
@@ -1925,7 +1925,7 @@ rb_obj_ivar_set(VALUE obj, ID id, VALUE val)
                     "next_shape_id: 0x%" PRIx32 " RSHAPE_TYPE(next_shape_id): %d",
                     next_shape_id, (int)RSHAPE_TYPE(next_shape_id));
         RUBY_ASSERT(index == (RSHAPE_INDEX(next_shape_id)));
-        rb_obj_set_shape_id(obj, next_shape_id);
+        RBASIC_SET_SHAPE_ID(obj, next_shape_id);
     }
 
     VALUE *table = ROBJECT_FIELDS(obj);
@@ -1971,7 +1971,7 @@ obj_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val)
         }
 
         if (RSHAPE_LEN(target_shape_id) > RSHAPE_LEN(current_shape_id)) {
-            rb_obj_set_shape_id(obj, target_shape_id);
+            RBASIC_SET_SHAPE_ID(obj, target_shape_id);
         }
 
         VALUE *table = ROBJECT_FIELDS(obj);
@@ -1989,18 +1989,6 @@ rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val)
     rb_check_frozen(obj);
     rb_obj_ivar_set(obj, id, val);
     return val;
-}
-
-bool
-rb_obj_set_shape_id(VALUE obj, shape_id_t shape_id)
-{
-    shape_id_t old_shape_id = rb_obj_shape_id(obj);
-    if (old_shape_id == shape_id) {
-        return false;
-    }
-
-    RB_SET_SHAPE_ID(obj, shape_id);
-    return true;
 }
 
 void rb_obj_freeze_inline(VALUE x)
@@ -2281,7 +2269,7 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
         }
 
         if (!RSHAPE_LEN(dest_shape_id)) {
-            rb_obj_set_shape_id(dest, dest_shape_id);
+            RBASIC_SET_SHAPE_ID(dest, dest_shape_id);
             return;
         }
 
