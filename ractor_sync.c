@@ -395,7 +395,6 @@ ractor_add_port(rb_ractor_t *r, st_data_t id)
 
     RACTOR_LOCK(r);
     {
-        // memo: can cause GC, but GC doesn't use ractor locking.
         st_insert(r->sync.ports, id, (st_data_t)rq);
     }
     RACTOR_UNLOCK(r);

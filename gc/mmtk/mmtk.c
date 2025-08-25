@@ -661,21 +661,21 @@ rb_gc_impl_size_allocatable_p(size_t size)
 
 // Malloc
 void *
-rb_gc_impl_malloc(void *objspace_ptr, size_t size)
+rb_gc_impl_malloc(void *objspace_ptr, size_t size, bool gc_allowed)
 {
     // TODO: don't use system malloc
     return malloc(size);
 }
 
 void *
-rb_gc_impl_calloc(void *objspace_ptr, size_t size)
+rb_gc_impl_calloc(void *objspace_ptr, size_t size, bool gc_allowed)
 {
     // TODO: don't use system calloc
     return calloc(1, size);
 }
 
 void *
-rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size)
+rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size, bool gc_allowed)
 {
     // TODO: don't use system realloc
     return realloc(ptr, new_size);

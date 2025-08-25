@@ -625,9 +625,9 @@ typedef struct gc_function_map {
     size_t (*heap_id_for_size)(void *objspace_ptr, size_t size);
     bool (*size_allocatable_p)(size_t size);
     // Malloc
-    void *(*malloc)(void *objspace_ptr, size_t size);
-    void *(*calloc)(void *objspace_ptr, size_t size);
-    void *(*realloc)(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size);
+    void *(*malloc)(void *objspace_ptr, size_t size, bool gc_allowed);
+    void *(*calloc)(void *objspace_ptr, size_t size, bool gc_allowed);
+    void *(*realloc)(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size, bool gc_allowed);
     void (*free)(void *objspace_ptr, void *ptr, size_t old_size);
     void (*adjust_memory_usage)(void *objspace_ptr, ssize_t diff);
     // Marking
@@ -5118,6 +5118,14 @@ ruby_xmalloc(size_t size)
     return handle_malloc_failure(ruby_xmalloc_body(size));
 }
 
+static bool
+malloc_gc_allowed(void)
+{
+    rb_ractor_t *r = rb_current_ractor_raw(false);
+
+    return r == NULL || !r->malloc_gc_disabled;
+}
+
 static void *
 ruby_xmalloc_body(size_t size)
 {
@@ -5125,7 +5133,7 @@ ruby_xmalloc_body(size_t size)
         negative_size_allocation_error("too large allocation size");
     }
 
-    return rb_gc_impl_malloc(rb_gc_get_objspace(), size);
+    return rb_gc_impl_malloc(rb_gc_get_objspace(), size, malloc_gc_allowed());
 }
 
 void
@@ -5155,7 +5163,7 @@ ruby_xmalloc2(size_t n, size_t size)
 static void *
 ruby_xmalloc2_body(size_t n, size_t size)
 {
-    return rb_gc_impl_malloc(rb_gc_get_objspace(), xmalloc2_size(n, size));
+    return rb_gc_impl_malloc(rb_gc_get_objspace(), xmalloc2_size(n, size), malloc_gc_allowed());
 }
 
 static void *ruby_xcalloc_body(size_t n, size_t size);
@@ -5169,7 +5177,7 @@ ruby_xcalloc(size_t n, size_t size)
 static void *
 ruby_xcalloc_body(size_t n, size_t size)
 {
-    return rb_gc_impl_calloc(rb_gc_get_objspace(), xmalloc2_size(n, size));
+    return rb_gc_impl_calloc(rb_gc_get_objspace(), xmalloc2_size(n, size), malloc_gc_allowed());
 }
 
 static void *ruby_sized_xrealloc_body(void *ptr, size_t new_size, size_t old_size);
@@ -5190,7 +5198,7 @@ ruby_sized_xrealloc_body(void *ptr, size_t new_size, size_t old_size)
         negative_size_allocation_error("too large allocation size");
     }
 
-    return rb_gc_impl_realloc(rb_gc_get_objspace(), ptr, new_size, old_size);
+    return rb_gc_impl_realloc(rb_gc_get_objspace(), ptr, new_size, old_size, malloc_gc_allowed());
 }
 
 void *
@@ -5214,7 +5222,7 @@ static void *
 ruby_sized_xrealloc2_body(void *ptr, size_t n, size_t size, size_t old_n)
 {
     size_t len = xmalloc2_size(n, size);
-    return rb_gc_impl_realloc(rb_gc_get_objspace(), ptr, len, old_n * size);
+    return rb_gc_impl_realloc(rb_gc_get_objspace(), ptr, len, old_n * size, malloc_gc_allowed());
 }
 
 void *
