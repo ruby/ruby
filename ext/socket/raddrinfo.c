@@ -589,7 +589,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
            char *host, size_t hostlen,
            char *serv, size_t servlen, int flags)
 {
-    return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
+    return getnameinfo(sa, salen, host, (socklen_t)hostlen, serv, (socklen_t)servlen, flags);
 }
 
 #elif GETADDRINFO_IMPL == 1
