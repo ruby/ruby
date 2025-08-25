@@ -752,7 +752,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
     int err = 0, gni_errno = 0;
 
     if (GETNAMEINFO_WONT_BLOCK(host, serv, flags)) {
-        return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
+        return getnameinfo(sa, salen, host, (socklen_t)hostlen, serv, (socklen_t)servlen, flags);
     }
 
 start:
