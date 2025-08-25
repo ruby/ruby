@@ -326,6 +326,7 @@ RSHAPE_LEN(shape_id_t shape_id)
 static inline attr_index_t
 RSHAPE_INDEX(shape_id_t shape_id)
 {
+    RUBY_ASSERT(RSHAPE_LEN(shape_id) > 0);
     return RSHAPE_LEN(shape_id) - 1;
 }
 
