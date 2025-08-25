@@ -564,6 +564,9 @@ pub enum Insn {
         return_type: Option<Type>,  // None for unannotated builtins
     },
 
+    /// Parallel of `opt_aref_with` in the interpreter.
+    ArefWith { receiver: InsnId, key: InsnId, send_state: InsnId, cd: *const rb_call_data },
+
     /// Control flow instructions
     Return { val: InsnId },
     /// Non-local control flow. See the throw YARV instruction
@@ -849,6 +852,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ToNewArray { val, .. } => write!(f, "ToNewArray {val}"),
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
             Insn::ArrayPush { array, val, .. } => write!(f, "ArrayPush {array}, {val}"),
+            Insn::ArefWith { receiver, key, .. } => write!(f, "ArefWith {receiver}, {key}"),
             Insn::ObjToString { val, .. } => { write!(f, "ObjToString {val}") },
             Insn::StringIntern { val, .. } => { write!(f, "StringIntern {val}") },
             Insn::AnyToString { val, str, .. } => { write!(f, "AnyToString {val}, str: {str}") },
@@ -1289,6 +1293,7 @@ impl Function {
                 NewHash { elements: found_elements, state: find!(state) }
             }
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
+            &ArefWith { receiver: self_val, key, send_state, cd } => ArefWith { receiver: find!(self_val), key: find!(key), send_state: find!(send_state), cd },
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
@@ -1382,6 +1387,7 @@ impl Function {
             Insn::DefinedIvar { .. } => types::BasicObject,
             Insn::GetConstantPath { .. } => types::BasicObject,
             Insn::ArrayMax { .. } => types::BasicObject,
+            Insn::ArefWith { .. } => types::BasicObject,
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
             Insn::GetSpecialSymbol { .. } => types::BasicObject,
@@ -2018,6 +2024,7 @@ impl Function {
             | &Insn::FixnumDiv { left, right, state }
             | &Insn::FixnumMod { left, right, state }
             | &Insn::ArrayExtend { left, right, state }
+            | &Insn::ArefWith { receiver: left, key: right, send_state: state, cd: _ }
             => {
                 worklist.push_back(left);
                 worklist.push_back(right);
@@ -3193,23 +3200,18 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // NB: opt_aref_with has an instruction argument for the call at get_arg(0)
                     let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     if unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
                         // Unknown call type; side-exit into the interpreter
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownCallType });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
                     assert_eq!(1, argc, "opt_aref_with should only be emitted for argc=1");
-                    let aref_arg = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let args = vec![aref_arg];
-
-                    let mut send_state = state.clone();
-                    send_state.stack_push(aref_arg);
-                    let send_state = fun.push_insn(block, Insn::Snapshot { state: send_state });
+                    let key = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                     let recv = state.stack_pop()?;
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, cd, args, state: send_state });
+                    let send = fun.push_insn(block, Insn::ArefWith { receiver: recv, key, cd, send_state: exit_id });
                     state.stack_push(send);
                 }
                 YARVINSN_opt_neq => {
@@ -5229,8 +5231,8 @@ mod tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
-          v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v5:BasicObject = SendWithoutBlock v1, :[], v3
+          v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v5:BasicObject = ArefWith v1, v4
           CheckInterrupts
           Return v5
         ");

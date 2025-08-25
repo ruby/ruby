@@ -370,6 +370,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::InvokeBuiltin { bf, .. } if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) => return None,
         Insn::InvokeBuiltin { bf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, opnds!(args)),
         Insn::Return { val } => no_output!(gen_return(asm, opnd!(val))),
+        &Insn::ArefWith { receiver: _, key, cd, send_state } => gen_opt_aref_with(jit, asm, cd, opnd!(key), &function.frame_state(send_state)),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state)),
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state)),
         Insn::FixnumMult { left, right, state } => gen_fixnum_mult(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state)),
@@ -861,6 +862,10 @@ fn gen_if_false(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch:
     asm.write_label(if_true);
 }
 
+unsafe extern "C" {
+    fn rb_vm_opt_send_without_block(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
+}
+
 /// Compile a dynamic dispatch without block
 fn gen_send_without_block(
     jit: &mut JITState,
@@ -868,9 +873,6 @@ fn gen_send_without_block(
     cd: *const rb_call_data,
     state: &FrameState,
 ) -> lir::Opnd {
-    // Note that it's incorrect to use this frame state to side exit because
-    // the state might not be on the boundary of an interpreter instruction.
-    // For example, `opt_aref_with` pushes to the stack and then sends.
     asm_comment!(asm, "spill frame state");
 
     // Save PC and SP
@@ -882,9 +884,6 @@ fn gen_send_without_block(
     gen_spill_stack(jit, asm, state);
 
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
-    unsafe extern "C" {
-        fn rb_vm_opt_send_without_block(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
-    }
     let ret = asm.ccall(
         rb_vm_opt_send_without_block as *const u8,
         vec![EC, CFP, (cd as usize).into()],
@@ -956,6 +955,31 @@ fn gen_send_without_block_direct(
     asm_comment!(asm, "restore SP register for the caller");
     let new_sp = asm.sub(SP, sp_offset.into());
     asm.mov(SP, new_sp);
+
+    ret
+}
+
+/// Compile the equivalent of the general path of `opt_aref_with`
+fn gen_opt_aref_with(jit: &mut JITState, asm: &mut Assembler, cd: *const rb_call_data, key: Opnd, state: &FrameState) -> Opnd {
+    // First, resurrect the string key. Save PC before allocating.
+    gen_save_pc(asm, state);
+    let key = asm_ccall!(asm, rb_str_resurrect, key);
+
+    // Put resurrected key at the top of the stack
+    asm.mov(Opnd::mem(VALUE_BITS, SP, state.stack().len() as i32 * SIZEOF_VALUE_I32), key);
+
+    // Spill the rest of the frame
+    gen_spill_stack(jit, asm, state);
+    gen_save_sp(asm, state.stack().len() + 1); // +1 for the key
+    gen_spill_locals(jit, asm, state);
+
+    asm_comment!(asm, "call [] with dynamic dispatch");
+    let ret = asm.ccall(
+        rb_vm_opt_send_without_block as *const u8,
+        vec![EC, CFP, (cd as usize).into()],
+    );
+    // TODO(max): Add a PatchPoint here that can side-exit the function if the callee messed with
+    // the frame's locals
 
     ret
 }

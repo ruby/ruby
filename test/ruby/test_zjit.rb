@@ -1058,10 +1058,16 @@ class TestZJIT < Test::Unit::TestCase
 
   def test_opt_aref_with
     assert_compiles ':ok', %q{
-      def aref_with(hash) = hash["key"]
+      def test(hash) = hash["key"]
 
-      aref_with({ "key" => :ok })
-    }
+      test({ "key" => :ok })
+    }, insns: [:opt_aref_with]
+
+    assert_compiles 'nil', %q{
+      def self.[](key) = (raise if key.frozen?)
+      def test = self["frozen string literal: false"]
+      test
+    }, insns: [:opt_aref_with]
   end
 
   def test_putself

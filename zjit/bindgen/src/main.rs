@@ -246,6 +246,7 @@ fn main() {
         .allowlist_function("rb_obj_as_string_result")
         .allowlist_function("rb_str_byte_substr")
         .allowlist_function("rb_str_substr_two_fixnums")
+        .allowlist_function("rb_str_resurrect")
 
         // From include/ruby/internal/intern/parse.h
         .allowlist_function("rb_backref_get")

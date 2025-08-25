@@ -724,8 +724,8 @@ pub const DEFINED_REF: defined_type = 15;
 pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
-pub const RB_INVALID_SHAPE_ID: _bindgen_ty_38 = 4294967295;
-pub type _bindgen_ty_38 = u32;
+pub const RB_INVALID_SHAPE_ID: _bindgen_ty_12 = 4294967295;
+pub type _bindgen_ty_12 = u32;
 pub type rb_iseq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
 unsafe extern "C" {
     pub fn ruby_xfree(ptr: *mut ::std::os::raw::c_void);
@@ -818,6 +818,7 @@ unsafe extern "C" {
     ) -> VALUE;
     pub fn rb_str_buf_append(dst: VALUE, src: VALUE) -> VALUE;
     pub fn rb_str_dup(str_: VALUE) -> VALUE;
+    pub fn rb_str_resurrect(str_: VALUE) -> VALUE;
     pub fn rb_str_intern(str_: VALUE) -> VALUE;
     pub fn rb_mod_name(mod_: VALUE) -> VALUE;
     pub fn rb_ivar_get(obj: VALUE, name: ID) -> VALUE;
