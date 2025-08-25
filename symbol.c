@@ -927,22 +927,10 @@ rb_gc_free_dsymbol(VALUE sym)
 
 /*
  *  call-seq:
- *     str.intern   -> symbol
- *     str.to_sym   -> symbol
+ *    intern   -> symbol
  *
- *  Returns the +Symbol+ corresponding to <i>str</i>, creating the
- *  symbol if it did not previously exist. See Symbol#id2name.
+ *  :include: doc/string/intern.rdoc
  *
- *     "Koala".intern         #=> :Koala
- *     s = 'cat'.to_sym       #=> :cat
- *     s == :cat              #=> true
- *     s = '@cat'.to_sym      #=> :@cat
- *     s == :@cat             #=> true
- *
- *  This can also be used to create symbols that cannot be represented using the
- *  <code>:xxx</code> notation.
- *
- *     'cat and dog'.to_sym   #=> :"cat and dog"
  */
 
 VALUE
