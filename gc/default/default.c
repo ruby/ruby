@@ -7970,7 +7970,7 @@ objspace_malloc_gc_stress(rb_objspace_t *objspace)
 }
 
 static inline bool
-objspace_malloc_increase_report(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type)
+objspace_malloc_increase_report(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type, bool gc_allowed)
 {
     if (0) fprintf(stderr, "increase - ptr: %p, type: %s, new_size: %"PRIdSIZE", old_size: %"PRIdSIZE"\n",
                    mem,
@@ -7982,7 +7982,7 @@ objspace_malloc_increase_report(rb_objspace_t *objspace, void *mem, size_t new_s
 }
 
 static bool
-objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type)
+objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type, bool gc_allowed)
 {
     if (new_size > old_size) {
         RUBY_ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
@@ -7997,7 +7997,7 @@ objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_siz
 #endif
     }
 
-    if (type == MEMOP_TYPE_MALLOC) {
+    if (type == MEMOP_TYPE_MALLOC && gc_allowed) {
       retry:
         if (malloc_increase > malloc_limit && ruby_native_thread_p() && !dont_gc_val()) {
             if (ruby_thread_has_gvl_p() && is_lazy_sweeping(objspace)) {
@@ -8079,10 +8079,10 @@ malloc_during_gc_p(rb_objspace_t *objspace)
 }
 
 static inline void *
-objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
+objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size, bool gc_allowed)
 {
     size = objspace_malloc_size(objspace, mem, size);
-    objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC) {}
+    objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC, gc_allowed) {}
 
 #if CALC_EXACT_MALLOC_SIZE
     {
@@ -8114,10 +8114,10 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
             GPR_FLAG_MALLOC;                                 \
         objspace_malloc_gc_stress(objspace);                 \
                                                              \
-        if (RB_LIKELY((expr))) {                                \
+        if (RB_LIKELY((expr))) {                             \
             /* Success on 1st try */                         \
         }                                                    \
-        else if (!garbage_collect_with_gvl(objspace, gpr)) { \
+        else if (gc_allowed && !garbage_collect_with_gvl(objspace, gpr)) { \
             /* @shyouhei thinks this doesn't happen */       \
             GC_MEMERROR("TRY_WITH_GC: could not GC");        \
         }                                                    \
@@ -8160,7 +8160,7 @@ rb_gc_impl_free(void *objspace_ptr, void *ptr, size_t old_size)
 #endif
     old_size = objspace_malloc_size(objspace, ptr, old_size);
 
-    objspace_malloc_increase(objspace, ptr, 0, old_size, MEMOP_TYPE_FREE) {
+    objspace_malloc_increase(objspace, ptr, 0, old_size, MEMOP_TYPE_FREE, true) {
         free(ptr);
         ptr = NULL;
         RB_DEBUG_COUNTER_INC(heap_xfree);
@@ -8168,7 +8168,7 @@ rb_gc_impl_free(void *objspace_ptr, void *ptr, size_t old_size)
 }
 
 void *
-rb_gc_impl_malloc(void *objspace_ptr, size_t size)
+rb_gc_impl_malloc(void *objspace_ptr, size_t size, bool gc_allowed)
 {
     rb_objspace_t *objspace = objspace_ptr;
     check_malloc_not_in_gc(objspace, "malloc");
@@ -8179,11 +8179,11 @@ rb_gc_impl_malloc(void *objspace_ptr, size_t size)
     TRY_WITH_GC(size, mem = malloc(size));
     RB_DEBUG_COUNTER_INC(heap_xmalloc);
     if (!mem) return mem;
-    return objspace_malloc_fixup(objspace, mem, size);
+    return objspace_malloc_fixup(objspace, mem, size, gc_allowed);
 }
 
 void *
-rb_gc_impl_calloc(void *objspace_ptr, size_t size)
+rb_gc_impl_calloc(void *objspace_ptr, size_t size, bool gc_allowed)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
@@ -8199,11 +8199,11 @@ rb_gc_impl_calloc(void *objspace_ptr, size_t size)
     size = objspace_malloc_prepare(objspace, size);
     TRY_WITH_GC(size, mem = calloc1(size));
     if (!mem) return mem;
-    return objspace_malloc_fixup(objspace, mem, size);
+    return objspace_malloc_fixup(objspace, mem, size, gc_allowed);
 }
 
 void *
-rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size)
+rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size, bool gc_allowed)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
@@ -8211,7 +8211,7 @@ rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_si
 
     void *mem;
 
-    if (!ptr) return rb_gc_impl_malloc(objspace, new_size);
+    if (!ptr) return rb_gc_impl_malloc(objspace, new_size, gc_allowed);
 
     /*
      * The behavior of realloc(ptr, 0) is implementation defined.
@@ -8219,7 +8219,7 @@ rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_si
      * see http://www.open-std.org/jtc1/sc22/wg14/www/docs/dr_400.htm
      */
     if (new_size == 0) {
-        if ((mem = rb_gc_impl_malloc(objspace, 0)) != NULL) {
+        if ((mem = rb_gc_impl_malloc(objspace, 0, gc_allowed)) != NULL) {
             /*
              * - OpenBSD's malloc(3) man page says that when 0 is passed, it
              *   returns a non-NULL pointer to an access-protected memory page.
@@ -8278,7 +8278,7 @@ rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_si
     }
 #endif
 
-    objspace_malloc_increase(objspace, mem, new_size, old_size, MEMOP_TYPE_REALLOC);
+    objspace_malloc_increase(objspace, mem, new_size, old_size, MEMOP_TYPE_REALLOC, gc_allowed);
 
     RB_DEBUG_COUNTER_INC(heap_xrealloc);
     return mem;
@@ -8290,10 +8290,10 @@ rb_gc_impl_adjust_memory_usage(void *objspace_ptr, ssize_t diff)
     rb_objspace_t *objspace = objspace_ptr;
 
     if (diff > 0) {
-        objspace_malloc_increase(objspace, 0, diff, 0, MEMOP_TYPE_REALLOC);
+        objspace_malloc_increase(objspace, 0, diff, 0, MEMOP_TYPE_REALLOC, true);
     }
     else if (diff < 0) {
-        objspace_malloc_increase(objspace, 0, 0, -diff, MEMOP_TYPE_REALLOC);
+        objspace_malloc_increase(objspace, 0, 0, -diff, MEMOP_TYPE_REALLOC, true);
     }
 }
 

@@ -71,6 +71,7 @@ ractor_lock(rb_ractor_t *r, const char *file, int line)
 
     ASSERT_ractor_unlocking(r);
     rb_native_mutex_lock(&r->sync.lock);
+    r->malloc_gc_disabled = true;
 
 #if RACTOR_CHECK_MODE > 0
     if (rb_current_execution_context(false) != NULL) {
@@ -99,6 +100,10 @@ ractor_unlock(rb_ractor_t *r, const char *file, int line)
 #if RACTOR_CHECK_MODE > 0
     r->sync.locked_by = Qnil;
 #endif
+
+    VM_ASSERT(r->malloc_gc_disabled);
+
+    r->malloc_gc_disabled = false;
     rb_native_mutex_unlock(&r->sync.lock);
 
     RUBY_DEBUG_LOG2(file, line, "r:%u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
