@@ -1,4 +1,3 @@
-
 Returns a printable version of +self+, enclosed in double-quotes.
 
 Most printable characters are rendered simply as themselves:
@@ -15,43 +14,26 @@ But printable characters double-quote (<tt>'"'</tt>) and backslash and (<tt>'\\'
   '"'.inspect  # => "\"\\\"\""
   '\\'.inspect # => "\"\\\\\""
 
-Unprintable characters are rendered thus;
-see {ASCII}[https://en.wikipedia.org/wiki/ASCII]:
+Unprintable characters are the {ASCII characters}[https://en.wikipedia.org/wiki/ASCII]
+whose values are in range <tt>0..31</tt>,
+along with the character whose value is +127+.
 
-  a = (0..31).to_a.push(127) # ASCII chars with these values are unprintable.
-  a.each {|i| p [i, i.chr.inspect] }
-  [0, "\"\\x00\""]
-  [1, "\"\\x01\""]
-  [2, "\"\\x02\""]
-  [3, "\"\\x03\""]
-  [4, "\"\\x04\""]
-  [5, "\"\\x05\""]
-  [6, "\"\\x06\""]
-  [7, "\"\\a\""]      # BEL
-  [8, "\"\\b\""]      # BS
-  [9, "\"\\t\""]      # TAB
-  [10, "\"\\n\""]     # LF
-  [11, "\"\\v\""]     # VT
-  [12, "\"\\f\""]     # FF
-  [13, "\"\\r\""]     # CR
-  [14, "\"\\x0E\""]
-  [15, "\"\\x0F\""]
-  [16, "\"\\x10\""]
-  [17, "\"\\x11\""]
-  [18, "\"\\x12\""]
-  [19, "\"\\x13\""]
-  [20, "\"\\x14\""]
-  [21, "\"\\x15\""]
-  [22, "\"\\x16\""]
-  [23, "\"\\x17\""]
-  [24, "\"\\x18\""]
-  [25, "\"\\x19\""]
-  [26, "\"\\x1A\""]
-  [27, "\"\\e\""]     # ESC
-  [28, "\"\\x1C\""]
-  [29, "\"\\x1D\""]
-  [30, "\"\\x1E\""]
-  [31, "\"\\x1F\""]
-  [127, "\"\\x7F\""]  # DEL
+Most of these characters are rendered thus:
+
+  0.chr.inspect # => "\"\\x00\""
+  1.chr.inspect # => "\"\\x01\""
+  2.chr.inspect # => "\"\\x02\""
+  # ...
+
+A few, however, have special renderings:
+
+  7.chr.inspect  # => "\"\\a\""  # BEL
+  8.chr.inspect  # => "\"\\b\""  # BS
+  9.chr.inspect  # => "\"\\t\""  # TAB
+  10.chr.inspect # => "\"\\n\""  # LF
+  11.chr.inspect # => "\"\\v\""  # VT
+  12.chr.inspect # => "\"\\f\""  # FF
+  13.chr.inspect # => "\"\\r\""  # CR
+  27.chr.inspect # => "\"\\e\""  # ESC
 
 Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
