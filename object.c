@@ -362,7 +362,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     }
 
     rb_shape_copy_fields(dest, dest_buf, dest_shape_id, src_buf, src_shape_id);
-    rb_obj_set_shape_id(dest, dest_shape_id);
+    RBASIC_SET_SHAPE_ID(dest, dest_shape_id);
 }
 
 static void
@@ -496,7 +496,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
 
         if (RB_OBJ_FROZEN(obj)) {
             shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
-            rb_obj_set_shape_id(clone, next_shape_id);
+            RBASIC_SET_SHAPE_ID(clone, next_shape_id);
         }
         break;
       case Qtrue: {
