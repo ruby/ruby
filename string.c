@@ -11043,11 +11043,9 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
 
 /*
  *  call-seq:
- *    ljust(size, pad_string = ' ') -> new_string
+ *    ljust(width, pad_string = ' ') -> new_string
  *
  *  :include: doc/string/ljust.rdoc
- *
- *  Related: String#rjust, String#center.
  *
  */
 
