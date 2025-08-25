@@ -2490,6 +2490,10 @@ count_objects(int argc, VALUE *argv, VALUE os)
         types[i] = type_sym(i);
     }
 
+    // Same as type_sym, we need to create all key symbols in advance
+    VALUE total = ID2SYM(rb_intern("TOTAL"));
+    VALUE free = ID2SYM(rb_intern("FREE"));
+
     rb_gc_impl_each_object(rb_gc_get_objspace(), count_objects_i, &data);
 
     if (NIL_P(hash)) {
@@ -2498,8 +2502,8 @@ count_objects(int argc, VALUE *argv, VALUE os)
     else if (!RHASH_EMPTY_P(hash)) {
         rb_hash_stlike_foreach(hash, set_zero, hash);
     }
-    rb_hash_aset(hash, ID2SYM(rb_intern("TOTAL")), SIZET2NUM(data.total));
-    rb_hash_aset(hash, ID2SYM(rb_intern("FREE")), SIZET2NUM(data.freed));
+    rb_hash_aset(hash, total, SIZET2NUM(data.total));
+    rb_hash_aset(hash, free, SIZET2NUM(data.freed));
 
     for (size_t i = 0; i <= T_MASK; i++) {
         if (data.counts[i]) {
