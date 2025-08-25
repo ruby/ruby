@@ -4535,43 +4535,30 @@ rb_iv_set(VALUE obj, const char *name, VALUE val)
 static bool
 class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool concurrent, VALUE *new_fields_obj)
 {
-    bool existing = true;
     const VALUE original_fields_obj = fields_obj;
     fields_obj = original_fields_obj ? original_fields_obj : rb_imemo_fields_new(klass, 1);
 
     shape_id_t current_shape_id = RBASIC_SHAPE_ID(fields_obj);
-    shape_id_t next_shape_id = current_shape_id;
 
     if (UNLIKELY(rb_shape_too_complex_p(current_shape_id))) {
         goto too_complex;
     }
 
-    attr_index_t index;
-    if (!rb_shape_get_iv_index(current_shape_id, id, &index)) {
-        existing = false;
+    bool new_ivar;
+    shape_id_t next_shape_id = generic_shape_ivar(fields_obj, id, &new_ivar);
 
-        index = RSHAPE_LEN(current_shape_id);
-        if (index >= SHAPE_MAX_FIELDS) {
-            rb_raise(rb_eArgError, "too many instance variables");
-        }
+    if (UNLIKELY(rb_shape_too_complex_p(next_shape_id))) {
+        fields_obj = imemo_fields_complex_from_obj(klass, fields_obj, next_shape_id);
+        goto too_complex;
+    }
 
-        next_shape_id = rb_shape_transition_add_ivar(fields_obj, id);
-        if (UNLIKELY(rb_shape_too_complex_p(next_shape_id))) {
-            fields_obj = imemo_fields_complex_from_obj(klass, fields_obj, next_shape_id);
-            goto too_complex;
-        }
-
-        attr_index_t next_capacity = RSHAPE_CAPACITY(next_shape_id);
-        attr_index_t current_capacity = RSHAPE_CAPACITY(current_shape_id);
-
-        if (next_capacity > current_capacity) {
+    attr_index_t index = RSHAPE_INDEX(next_shape_id);
+    if (new_ivar) {
+        if (index >= RSHAPE_CAPACITY(current_shape_id)) {
             // We allocate a new fields_obj even when concurrency isn't a concern
             // so that we're embedded as long as possible.
-            fields_obj = imemo_fields_copy_capa(klass, fields_obj, next_capacity);
+            fields_obj = imemo_fields_copy_capa(klass, fields_obj, RSHAPE_CAPACITY(next_shape_id));
         }
-
-        RUBY_ASSERT(RSHAPE(next_shape_id)->type == SHAPE_IVAR);
-        RUBY_ASSERT(index == (RSHAPE_LEN(next_shape_id) - 1));
     }
 
     VALUE *fields = rb_imemo_fields_ptr(fields_obj);
@@ -4588,12 +4575,12 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
         RB_OBJ_WRITE(fields_obj, &fields[index], val);
     }
 
-    if (!existing) {
+    if (new_ivar) {
         RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
     }
 
     *new_fields_obj = fields_obj;
-    return existing;
+    return new_ivar;
 
 too_complex:
     {
@@ -4605,7 +4592,7 @@ too_complex:
         }
 
         st_table *table = rb_imemo_fields_complex_tbl(fields_obj);
-        existing = st_insert(table, (st_data_t)id, (st_data_t)val);
+        new_ivar = !st_insert(table, (st_data_t)id, (st_data_t)val);
         RB_OBJ_WRITTEN(fields_obj, Qundef, val);
 
         if (fields_obj != original_fields_obj) {
@@ -4614,7 +4601,7 @@ too_complex:
     }
 
     *new_fields_obj = fields_obj;
-    return existing;
+    return new_ivar;
 }
 
 bool
@@ -4628,7 +4615,7 @@ rb_class_ivar_set(VALUE obj, ID id, VALUE val)
     const VALUE original_fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
     VALUE new_fields_obj = 0;
 
-    bool existing = class_fields_ivar_set(obj, original_fields_obj, id, val, rb_multi_ractor_p(), &new_fields_obj);
+    bool new_ivar = class_fields_ivar_set(obj, original_fields_obj, id, val, rb_multi_ractor_p(), &new_fields_obj);
 
     if (new_fields_obj != original_fields_obj) {
         RCLASS_WRITABLE_SET_FIELDS_OBJ(obj, new_fields_obj);
@@ -4640,7 +4627,7 @@ rb_class_ivar_set(VALUE obj, ID id, VALUE val)
     // Perhaps INVALID_SHAPE_ID?
     RBASIC_SET_SHAPE_ID(obj, RBASIC_SHAPE_ID(new_fields_obj));
 
-    return !existing;
+    return new_ivar;
 }
 
 void
