@@ -3898,8 +3898,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 
     if (do_tailcallopt &&
         (IS_INSN_ID(iobj, send) ||
-         IS_INSN_ID(iobj, opt_aref_with) ||
-         IS_INSN_ID(iobj, opt_aset_with) ||
          IS_INSN_ID(iobj, invokesuper))) {
         /*
          *  send ...
@@ -8965,25 +8963,6 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
         }
         return TRUE;
     }
-    /* optimization shortcut
-     *   obj["literal"] -> opt_aref_with(obj, "literal")
-     */
-    if (get_node_call_nd_mid(node) == idAREF && !private_recv_p(node) && get_nd_args(node) &&
-        nd_type_p(get_nd_args(node), NODE_LIST) && RNODE_LIST(get_nd_args(node))->as.nd_alen == 1 &&
-        (nd_type_p(RNODE_LIST(get_nd_args(node))->nd_head, NODE_STR) || nd_type_p(RNODE_LIST(get_nd_args(node))->nd_head, NODE_FILE)) &&
-        ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
-        !frozen_string_literal_p(iseq) &&
-        ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-        VALUE str = get_string_value(RNODE_LIST(get_nd_args(node))->nd_head);
-        CHECK(COMPILE(ret, "recv", get_nd_recv(node)));
-        ADD_INSN2(ret, line_node, opt_aref_with, str,
-                  new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE));
-        RB_OBJ_WRITTEN(iseq, Qundef, str);
-        if (popped) {
-            ADD_INSN(ret, line_node, pop);
-        }
-        return TRUE;
-    }
     return FALSE;
 }
 
@@ -10310,31 +10289,6 @@ compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
     VALUE argc;
     LABEL *else_label = NULL;
     VALUE branches = Qfalse;
-
-    /* optimization shortcut
-     *   obj["literal"] = value -> opt_aset_with(obj, "literal", value)
-     */
-    if (!ISEQ_COMPILE_DATA(iseq)->in_masgn &&
-        mid == idASET && !private_recv_p(node) && RNODE_ATTRASGN(node)->nd_args &&
-        nd_type_p(RNODE_ATTRASGN(node)->nd_args, NODE_LIST) && RNODE_LIST(RNODE_ATTRASGN(node)->nd_args)->as.nd_alen == 2 &&
-        (nd_type_p(RNODE_LIST(RNODE_ATTRASGN(node)->nd_args)->nd_head, NODE_STR) || nd_type_p(RNODE_LIST(RNODE_ATTRASGN(node)->nd_args)->nd_head, NODE_FILE)) &&
-        ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
-        !frozen_string_literal_p(iseq) &&
-        ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction)
-    {
-        VALUE str = get_string_value(RNODE_LIST(RNODE_ATTRASGN(node)->nd_args)->nd_head);
-        CHECK(COMPILE(ret, "recv", RNODE_ATTRASGN(node)->nd_recv));
-        CHECK(COMPILE(ret, "value", RNODE_LIST(RNODE_LIST(RNODE_ATTRASGN(node)->nd_args)->nd_next)->nd_head));
-        if (!popped) {
-            ADD_INSN(ret, node, swap);
-            ADD_INSN1(ret, node, topn, INT2FIX(1));
-        }
-        ADD_INSN2(ret, node, opt_aset_with, str,
-                  new_callinfo(iseq, idASET, 2, 0, NULL, FALSE));
-        RB_OBJ_WRITTEN(iseq, Qundef, str);
-        ADD_INSN(ret, node, pop);
-        return COMPILE_OK;
-    }
 
     INIT_ANCHOR(recv);
     INIT_ANCHOR(args);

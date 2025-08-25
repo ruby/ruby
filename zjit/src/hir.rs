@@ -3191,29 +3191,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         n -= 1;
                     }
                 }
-                YARVINSN_opt_aref_with => {
-                    // NB: opt_aref_with has an instruction argument for the call at get_arg(0)
-                    let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
-                    let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
-                        // Unknown call type; side-exit into the interpreter
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownCallType });
-                        break;  // End the block
-                    }
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
-
-                    assert_eq!(1, argc, "opt_aref_with should only be emitted for argc=1");
-                    let aref_arg = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let args = vec![aref_arg];
-
-                    let mut send_state = state.clone();
-                    send_state.stack_push(aref_arg);
-                    let send_state = fun.push_insn(block, Insn::Snapshot { state: send_state });
-                    let recv = state.stack_pop()?;
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, cd, args, state: send_state });
-                    state.stack_push(send);
-                }
                 YARVINSN_opt_neq => {
                     // NB: opt_neq has two cd; get_arg(0) is for eq and get_arg(1) is for neq
                     let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
@@ -5218,22 +5195,6 @@ mod tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
           v5:BasicObject = SendWithoutBlock v1, :[], v2
-          CheckInterrupts
-          Return v5
-        ");
-    }
-
-    #[test]
-    fn test_aref_with() {
-        eval("
-            def test(a) = a['string lit triggers aref_with']
-        ");
-        assert_contains_opcode("test", YARVINSN_opt_aref_with);
-        assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:2:
-        bb0(v0:BasicObject, v1:BasicObject):
-          v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v5:BasicObject = SendWithoutBlock v1, :[], v3
           CheckInterrupts
           Return v5
         ");
