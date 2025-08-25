@@ -964,7 +964,7 @@ module Net   #:nodoc:
     #
     # - For arguments +address+ and +port+, see Net::HTTP.new.
     # - For proxy-defining arguments +p_addr+ through +p_pass+,
-    #   see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
+    #   see {Proxy Server}[rdoc-ref:Net::HTTPSession@Proxy+Server].
     # - For argument +opts+, see below.
     #
     # With no block given:
@@ -1095,7 +1095,7 @@ module Net   #:nodoc:
     #   http.port # => 8000
     #
     # For proxy-defining arguments +p_addr+ through +p_no_proxy+,
-    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
+    # see {Proxy Server}[rdoc-ref:Net::HTTPSession@Proxy+Server].
     #
     def HTTP.new(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, p_no_proxy = nil, p_use_ssl = nil)
       http = super address, port
@@ -1303,23 +1303,24 @@ module Net   #:nodoc:
 
     # Sets whether to determine the proxy from environment variable
     # '<tt>ENV['http_proxy']</tt>';
-    # see {Proxy Using ENV['http_proxy']}[rdoc-ref:Net::HTTP@Proxy+Using+-27ENV-5B-27http_proxy-27-5D-27].
+    #
+    # see {Proxy Using ENV['http_proxy']}[rdoc-ref:Net::HTTPSession@Proxy+Using+-27ENV-5B-27http_proxy-27-5D-27].
     attr_writer :proxy_from_env
 
     # Sets the proxy address;
-    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
+    # see {Proxy Server}[rdoc-ref:Net::HTTPSession@Proxy+Server].
     attr_writer :proxy_address
 
     # Sets the proxy port;
-    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
+    # see {Proxy Server}[rdoc-ref:Net::HTTPSession@Proxy+Server].
     attr_writer :proxy_port
 
     # Sets the proxy user;
-    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
+    # see {Proxy Server}[rdoc-ref:Net::HTTPSession@Proxy+Server].
     attr_writer :proxy_user
 
     # Sets the proxy password;
-    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
+    # see {Proxy Server}[rdoc-ref:Net::HTTPSession@Proxy+Server].
     attr_writer :proxy_pass
     attr_writer :proxy_use_ssl
 
@@ -1848,14 +1849,14 @@ module Net   #:nodoc:
     end
 
     # Returns +true+ if a proxy server is defined, +false+ otherwise;
-    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
+    # see {Proxy Server}[rdoc-ref:Net::HTTPSession@Proxy+Server].
     def proxy?
       !!(@proxy_from_env ? proxy_uri : @proxy_address)
     end
 
     # Returns +true+ if the proxy server is defined in the environment,
     # +false+ otherwise;
-    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
+    # see {Proxy Server}[rdoc-ref:Net::HTTPSession@Proxy+Server].
     def proxy_from_env?
       @proxy_from_env
     end
@@ -1870,7 +1871,7 @@ module Net   #:nodoc:
     end
 
     # Returns the address of the proxy server, if defined, +nil+ otherwise;
-    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
+    # see {Proxy Server}[rdoc-ref:Net::HTTPSession@Proxy+Server].
     def proxy_address
       if @proxy_from_env then
         proxy_uri&.hostname
@@ -1880,7 +1881,7 @@ module Net   #:nodoc:
     end
 
     # Returns the port number of the proxy server, if defined, +nil+ otherwise;
-    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
+    # see {Proxy Server}[rdoc-ref:Net::HTTPSession@Proxy+Server].
     def proxy_port
       if @proxy_from_env then
         proxy_uri&.port
@@ -1890,7 +1891,7 @@ module Net   #:nodoc:
     end
 
     # Returns the user name of the proxy server, if defined, +nil+ otherwise;
-    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
+    # see {Proxy Server}[rdoc-ref:Net::HTTPSession@Proxy+Server].
     def proxy_user
       if @proxy_from_env
         user = proxy_uri&.user
@@ -1901,7 +1902,7 @@ module Net   #:nodoc:
     end
 
     # Returns the password of the proxy server, if defined, +nil+ otherwise;
-    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
+    # see {Proxy Server}[rdoc-ref:Net::HTTPSession@Proxy+Server].
     def proxy_pass
       if @proxy_from_env
         pass = proxy_uri&.password
