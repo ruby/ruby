@@ -2498,7 +2498,7 @@ impl<'a> std::fmt::Display for FunctionGraphvizPrinter<'a> {
             }
             writeln!(f, "</TABLE>>];")?;
             for (src, dst) in edges {
-                writeln!(f, "  {block_id}:{src} -> {dst}:params;")?;
+                writeln!(f, "  {block_id}:{src} -> {dst}:params:n;")?;
             }
         }
         writeln!(f, "}}")
@@ -5674,7 +5674,7 @@ mod graphviz_tests {
         <TR><TD ALIGN="left" PORT="v9">CheckInterrupts&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v10">Return v7&nbsp;</TD></TR>
         </TABLE>>];
-          bb0:v6 -> bb1:params;
+          bb0:v6 -> bb1:params:n;
           bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v11:BasicObject, v12:BasicObject)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v14">v14:Fixnum[4] = Const Value(4)&nbsp;</TD></TR>
