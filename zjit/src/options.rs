@@ -44,7 +44,8 @@ pub struct Options {
     /// Dump High-level IR after optimization, right before codegen.
     pub dump_hir_opt: Option<DumpHIR>,
 
-    pub dump_hir_graphviz: bool,
+    /// Dump High-level IR to the given file in Graphviz format after optimization
+    pub dump_hir_graphviz: Option<std::path::PathBuf>,
 
     /// Dump low-level IR
     pub dump_lir: bool,
@@ -72,7 +73,7 @@ impl Default for Options {
             disable_hir_opt: false,
             dump_hir_init: None,
             dump_hir_opt: None,
-            dump_hir_graphviz: false,
+            dump_hir_graphviz: None,
             dump_lir: false,
             dump_disasm: false,
             perf: false,
@@ -220,11 +221,24 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("dump-hir" | "dump-hir-opt", "") => options.dump_hir_opt = Some(DumpHIR::WithoutSnapshot),
         ("dump-hir" | "dump-hir-opt", "all") => options.dump_hir_opt = Some(DumpHIR::All),
         ("dump-hir" | "dump-hir-opt", "debug") => options.dump_hir_opt = Some(DumpHIR::Debug),
-        ("dump-hir-graphviz", "") => options.dump_hir_graphviz = true,
 
         ("dump-hir-init", "") => options.dump_hir_init = Some(DumpHIR::WithoutSnapshot),
         ("dump-hir-init", "all") => options.dump_hir_init = Some(DumpHIR::All),
         ("dump-hir-init", "debug") => options.dump_hir_init = Some(DumpHIR::Debug),
+
+        ("dump-hir-graphviz", "") => options.dump_hir_graphviz = Some("/dev/stderr".into()),
+        ("dump-hir-graphviz", _) => {
+            // Truncate the file if it exists
+            std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(opt_val)
+                .map_err(|e| eprintln!("Failed to open file '{}': {}", opt_val, e))
+                .ok();
+            let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
+            options.dump_hir_graphviz = Some(opt_val);
+        }
 
         ("dump-lir", "") => options.dump_lir = true,
 
