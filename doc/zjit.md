@@ -51,12 +51,16 @@ make zjit-test ZJIT_TESTS=test_putobject
 ```
 
 If you expect that your changes cause tests to fail and they do, you can have
-`expect-test` fix the expected value for you by putting `UPDATE_EXPECT=1`
+`insta` fix the expected value for you by putting `INSTA_UPDATE=always`
 before your test command, like so:
 
 ```
-UPDATE_EXPECT=1 make zjit-test ZJIT_TESTS=test_putobject
+INSTA_UPDATE=always make zjit-test ZJIT_TESTS=test_putobject
 ```
+
+Note that if you have several insta invocations back to back in the same tests,
+you may have to either repeat this command multiple times or use
+`INSTA_FORCE_PASS=1`.
 
 Test changes will be reviewed alongside code changes.
 
