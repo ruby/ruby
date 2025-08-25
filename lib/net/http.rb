@@ -50,7 +50,7 @@ module Net   #:nodoc:
   # - If you will make only a few requests of all kinds,
   #   consider using the various singleton convenience methods in this class.
   #   Each of the following methods automatically starts and finishes
-  #   a {session}[rdoc-ref:Net::HTTP@Sessions] that sends a single request:
+  #   a {session}[rdoc-ref:Net::HTTPSession@HTTP+Sessions] that sends a single request:
   #
   #     # Return string response body.
   #     Net::HTTP.get(hostname, path)
@@ -71,7 +71,7 @@ module Net   #:nodoc:
   #     Net::HTTP.put(uri, data)
   #
   # - If performance is important, consider using sessions, which lower request overhead.
-  #   This {session}[rdoc-ref:Net::HTTP@Sessions] has multiple requests for
+  #   This {session}[rdoc-ref:Net::HTTPSession@HTTP+Sessions] has multiple requests for
   #   {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods]
   #   and {WebDAV methods}[https://en.wikipedia.org/wiki/WebDAV#Implementation]:
   #
@@ -183,7 +183,7 @@ module Net   #:nodoc:
   # - May contain any number of requests.
   # - Is ended by instance method Net::HTTP#finish.
   #
-  # See example sessions at {Strategies}[rdoc-ref:Net::HTTP@Strategies].
+  # See example sessions at {Strategies}[rdoc-ref:Net::HTTPSession@Strategies].
   #
   # === Session Using \Net::HTTP.start
   #
