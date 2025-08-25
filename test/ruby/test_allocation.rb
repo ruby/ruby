@@ -54,12 +54,7 @@ class TestAllocation < Test::Unit::TestCase
         RB
 
         if num_arrays != $allocations[0]
-          if $allocations[0] - num_arrays == 1 && RUBY_PLATFORM =~ /mswin|mingw/
-            # TODO: Must fix this condition
-            # Windows platforms may allocate an extra array after https://github.com/ruby/ruby/pull/14303
-          else
-            failures << "Expected \#{num_arrays} array allocations for \#{check_code.inspect}, but \#{$allocations[0]} arrays allocated"
-          end
+          failures << "Expected \#{num_arrays} array allocations for \#{check_code.inspect}, but \#{$allocations[0]} arrays allocated"
         end
         if num_hashes != $allocations[1]
           failures << "Expected \#{num_hashes} hash allocations for \#{check_code.inspect}, but \#{$allocations[1]} hashes allocated"
