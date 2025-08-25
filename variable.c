@@ -1895,53 +1895,47 @@ rb_obj_copy_fields_to_hash_table(VALUE obj, st_table *table)
     rb_field_foreach(obj, rb_obj_copy_ivs_to_hash_table_i, (st_data_t)table, false);
 }
 
+static attr_index_t
+obj_complex_ivar_set(VALUE obj, ID id, VALUE val)
+{
+    RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
+
+    st_table *table = ROBJECT_FIELDS_HASH(obj);
+    st_insert(table, (st_data_t)id, (st_data_t)val);
+    RB_OBJ_WRITTEN(obj, Qundef, val);
+    return 0;
+}
+
 attr_index_t
 rb_obj_ivar_set(VALUE obj, ID id, VALUE val)
 {
     shape_id_t current_shape_id = RBASIC_SHAPE_ID(obj);
 
     if (UNLIKELY(rb_shape_too_complex_p(current_shape_id))) {
-        goto too_complex;
+        return obj_complex_ivar_set(obj, id, val);
     }
 
-    attr_index_t index;
-    if (!rb_shape_get_iv_index(current_shape_id, id, &index)) {
-        index = RSHAPE_LEN(current_shape_id);
-        if (index >= SHAPE_MAX_FIELDS) {
-            rb_raise(rb_eArgError, "too many instance variables");
+    bool newivar;
+    shape_id_t target_shape_id = generic_shape_ivar(obj, id, &newivar);
+    attr_index_t index = RSHAPE_INDEX(target_shape_id);
+
+    if (newivar) {
+        if (UNLIKELY(rb_shape_too_complex_p(target_shape_id))) {
+            rb_evict_fields_to_hash(obj);
+            return obj_complex_ivar_set(obj, id, val);
         }
 
-        shape_id_t next_shape_id = rb_shape_transition_add_ivar(obj, id);
-        if (UNLIKELY(rb_shape_too_complex_p(next_shape_id))) {
-            current_shape_id = rb_evict_fields_to_hash(obj);
-            goto too_complex;
-        }
-        else if (UNLIKELY(RSHAPE_CAPACITY(next_shape_id) != RSHAPE_CAPACITY(current_shape_id))) {
-            RUBY_ASSERT(RSHAPE_CAPACITY(next_shape_id) > RSHAPE_CAPACITY(current_shape_id));
-            rb_ensure_iv_list_size(obj, RSHAPE_CAPACITY(current_shape_id), RSHAPE_CAPACITY(next_shape_id));
+        if (UNLIKELY(RSHAPE_CAPACITY(target_shape_id) != RSHAPE_CAPACITY(current_shape_id))) {
+            RUBY_ASSERT(RSHAPE_CAPACITY(target_shape_id) > RSHAPE_CAPACITY(current_shape_id));
+            rb_ensure_iv_list_size(obj, RSHAPE_CAPACITY(current_shape_id), RSHAPE_CAPACITY(target_shape_id));
         }
 
-        RUBY_ASSERT(RSHAPE_TYPE_P(next_shape_id, SHAPE_IVAR),
-                    "next_shape_id: 0x%" PRIx32 " RSHAPE_TYPE(next_shape_id): %d",
-                    next_shape_id, (int)RSHAPE_TYPE(next_shape_id));
-        RUBY_ASSERT(index == (RSHAPE_INDEX(next_shape_id)));
-        RBASIC_SET_SHAPE_ID(obj, next_shape_id);
+        RBASIC_SET_SHAPE_ID(obj, target_shape_id);
     }
 
-    VALUE *table = ROBJECT_FIELDS(obj);
-    RB_OBJ_WRITE(obj, &table[index], val);
+    RB_OBJ_WRITE(obj, &ROBJECT_FIELDS(obj)[index], val);
 
     return index;
-
-too_complex:
-    {
-        RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
-
-        st_table *table = ROBJECT_FIELDS_HASH(obj);
-        st_insert(table, (st_data_t)id, (st_data_t)val);
-        RB_OBJ_WRITTEN(obj, Qundef, val);
-    }
-    return 0;
 }
 
 static void
