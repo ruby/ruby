@@ -36,7 +36,7 @@
 # See:
 #
 # - {Request header Accept-Encoding}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Accept-Encoding]
-#   and {Compression and Decompression}[rdoc-ref:Net::HTTP@Compression+and+Decompression].
+#   and {Compression and Decompression}[rdoc-ref:Net::HTTPSession@Compression+and+Decompression].
 # - {Request header Accept}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#accept-request-header].
 # - {Request header User-Agent}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#user-agent-request-header].
 # - {Request header Host}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#host-request-header].
