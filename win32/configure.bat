@@ -240,8 +240,7 @@ goto :loop ;
 goto :loop ;
 :gmp
   echo>> %config_make% WITH_GMP = yes
-  echo>>%confargs%  %1=1 \
-  shift
+  echo>>%confargs%  %1 \
   shift
 goto :loop ;
 :gmp-dir
