@@ -2372,3 +2372,26 @@ assert_equal 'ok', <<~'RUBY'
   ractors.each(&:join)
   :ok
 RUBY
+
+# This test checks that we do not trigger a GC when we have malloc with Ractor
+# locks. We cannot trigger a GC with Ractor locks because GC requires VM lock
+# and Ractor barrier. If another Ractor is waiting on this Ractor lock, then it
+# will deadlock because the other Ractor will never join the barrier.
+#
+# Creating Ractor::Port requires locking the Ractor and inserting into an
+# st_table, which can call malloc.
+assert_equal 'ok', <<~'RUBY'
+  r = Ractor.new do
+    loop do
+      Ractor::Port.new
+    end
+  end
+
+  10.times do
+    10_000.times do
+      r.send(nil)
+    end
+    sleep(0.01)
+  end
+  :ok
+RUBY
