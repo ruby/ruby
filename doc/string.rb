@@ -280,7 +280,8 @@
 # If the argument +capture+ is provided and not <tt>0</tt>,
 # it should be either a capture group index (integer)
 # or a capture group name (String or Symbol);
-# the slice is the specified capture (see Regexp@Groups and Captures):
+# the slice is the specified capture
+# (see {Groups and Captures}[rdoc-ref:Regexp@Groups+and+Captures]):
 #
 #   s = 'hello there'
 #   s[/[aeiou](.)\1/, 1] # => "l"
