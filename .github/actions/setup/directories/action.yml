@@ -110,7 +110,7 @@ runs:
 
     - if: runner.os == 'Linux'
       shell: bash
-      run: echo "GNUMAKEFLAGS=-sj$((1 + $(nproc --all)))" >> "$GITHUB_ENV"
+      run: echo "GNUMAKEFLAGS=-sj$((1 + $(nproc)))" >> "$GITHUB_ENV"
 
     # macOS' GNU make is so old that they doesn't understand `GNUMAKEFLAGS`.
     - if: runner.os == 'macOS'
