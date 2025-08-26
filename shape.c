@@ -1270,6 +1270,11 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
     // Make sure SHAPE_ID_HAS_IVAR_MASK is valid.
     if (rb_shape_too_complex_p(shape_id)) {
         RUBY_ASSERT(shape_id & SHAPE_ID_HAS_IVAR_MASK);
+
+        // Ensure complex object don't appear as embedded
+        if (RB_TYPE_P(obj, T_OBJECT) || IMEMO_TYPE_P(obj, imemo_fields)) {
+            RUBY_ASSERT(!FL_TEST_RAW(obj, ROBJECT_EMBED));
+        }
     }
     else {
         attr_index_t ivar_count = RSHAPE_LEN(shape_id);
