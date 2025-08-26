@@ -2044,8 +2044,8 @@ rb_set_size(VALUE set)
  * Here, class \Set provides methods that are useful for:
  *
  * - {Creating an Array}[rdoc-ref:Array@Methods+for+Creating+an+Array]
- * - {Creating a Set}[rdoc-ref:Array@Methods+for+Creating+a+Set]
- * - {Set Operations}[rdoc-ref:Array@Methods+for+Set+Operations]
+ * - {Creating a Set}[rdoc-ref:Set@Methods+for+Creating+a+Set]
+ * - {Set Operations}[rdoc-ref:Set@Methods+for+Set+Operations]
  * - {Comparing}[rdoc-ref:Array@Methods+for+Comparing]
  * - {Querying}[rdoc-ref:Array@Methods+for+Querying]
  * - {Assigning}[rdoc-ref:Array@Methods+for+Assigning]
