@@ -46,7 +46,7 @@
 
 /* Flags of RObject
  *
- * 1:    ROBJECT_EMBED
+ * 4:    ROBJECT_EMBED
  *           The object has its instance variables embedded (the array of
  *           instance variables directly follow the object, rather than being
  *           on a separately allocated buffer).
