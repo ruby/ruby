@@ -313,8 +313,8 @@ mark_and_move_method_entry(rb_method_entry_t *ment, bool reference_updating)
             break;
           case VM_METHOD_TYPE_BMETHOD:
             rb_gc_mark_and_move(&def->body.bmethod.proc);
-            if (!reference_updating) {
-                if (def->body.bmethod.hooks) rb_hook_list_mark(def->body.bmethod.hooks);
+            if (def->body.bmethod.hooks) {
+                rb_hook_list_mark_and_move(def->body.bmethod.hooks);
             }
             break;
           case VM_METHOD_TYPE_ALIAS:
