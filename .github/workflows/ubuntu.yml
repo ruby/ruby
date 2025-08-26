@@ -24,6 +24,7 @@ jobs:
   make:
     strategy:
       matrix:
+        # We enumerate every job in matrix.include to save build time
         include:
           - test_task: check
             configure: 'cppflags=-DVM_CHECK_MODE'

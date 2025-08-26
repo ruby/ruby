@@ -1,4 +1,4 @@
-name: Ubuntu
+name: Ubuntu IBM
 on:
   push:
     paths-ignore:
@@ -28,8 +28,6 @@ jobs:
         configure: ['']
         arch: ['']
         os:
-          - ubuntu-24.04
-          - ubuntu-24.04-arm
           # FIXME Comment out ppc64le due to failing tests on GitHub Actions
           # ppc64le
           # https://bugs.ruby-lang.org/issues/21534
@@ -40,18 +38,6 @@ jobs:
         # https://github.com/IBM/actionspz/blob/main/docs/FAQ.md#what-about-forked-repos
         upstream:
           - ${{ github.repository == 'ruby/ruby' }}
-        include:
-          - test_task: check
-            configure: 'cppflags=-DVM_CHECK_MODE'
-          - test_task: check
-            arch: i686
-          - test_task: check
-            configure: '--disable-yjit'
-          - test_task: check
-            configure: '--enable-shared --enable-load-relative'
-          - test_task: test-bundler-parallel
-            timeout: 50
-          - test_task: test-bundled-gems
         exclude:
           - os: ubuntu-24.04-ppc64le
             upstream: false
@@ -201,16 +187,6 @@ jobs:
           label: ${{ matrix.test_task }} ${{ matrix.configure }}${{ matrix.arch }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
-
-  result:
-    if: ${{ always() }}
-    name: ${{ github.workflow }} result
-    runs-on: ubuntu-latest
-    needs: [make]
-    steps:
-      - run: exit 1
-        working-directory:
-        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
 
 defaults:
   run:
