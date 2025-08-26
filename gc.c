@@ -1264,16 +1264,18 @@ rb_gc_obj_free(void *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (rb_shape_obj_too_complex_p(obj)) {
-            RB_DEBUG_COUNTER_INC(obj_obj_too_complex);
-            st_free_table(ROBJECT_FIELDS_HASH(obj));
-        }
-        else if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-            RB_DEBUG_COUNTER_INC(obj_obj_embed);
+        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+            if (rb_shape_obj_too_complex_p(obj)) {
+                RB_DEBUG_COUNTER_INC(obj_obj_too_complex);
+                st_free_table(ROBJECT_FIELDS_HASH(obj));
+            }
+            else {
+                xfree(ROBJECT(obj)->as.heap.fields);
+                RB_DEBUG_COUNTER_INC(obj_obj_ptr);
+            }
         }
         else {
-            xfree(ROBJECT(obj)->as.heap.fields);
-            RB_DEBUG_COUNTER_INC(obj_obj_ptr);
+            RB_DEBUG_COUNTER_INC(obj_obj_embed);
         }
         break;
       case T_MODULE:
@@ -2313,11 +2315,13 @@ rb_obj_memsize_of(VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (rb_shape_obj_too_complex_p(obj)) {
-            size += rb_st_memsize(ROBJECT_FIELDS_HASH(obj));
-        }
-        else if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
-            size += ROBJECT_FIELDS_CAPACITY(obj) * sizeof(VALUE);
+        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+            if (rb_shape_obj_too_complex_p(obj)) {
+                size += rb_st_memsize(ROBJECT_FIELDS_HASH(obj));
+            }
+            else {
+                size += ROBJECT_FIELDS_CAPACITY(obj) * sizeof(VALUE);
+            }
         }
         break;
       case T_MODULE:
@@ -3543,19 +3547,21 @@ gc_ref_update_object(void *objspace, VALUE v)
 {
     VALUE *ptr = ROBJECT_FIELDS(v);
 
-    if (rb_shape_obj_too_complex_p(v)) {
-        gc_ref_update_table_values_only(ROBJECT_FIELDS_HASH(v));
-        return;
-    }
+    if (FL_TEST_RAW(v, ROBJECT_HEAP)) {
+        if (rb_shape_obj_too_complex_p(v)) {
+            gc_ref_update_table_values_only(ROBJECT_FIELDS_HASH(v));
+            return;
+        }
 
-    size_t slot_size = rb_gc_obj_slot_size(v);
-    size_t embed_size = rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(v));
-    if (slot_size >= embed_size && !RB_FL_TEST_RAW(v, ROBJECT_EMBED)) {
-        // Object can be re-embedded
-        memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
-        RB_FL_SET_RAW(v, ROBJECT_EMBED);
-        xfree(ptr);
-        ptr = ROBJECT(v)->as.ary;
+        size_t slot_size = rb_gc_obj_slot_size(v);
+        size_t embed_size = rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(v));
+        if (slot_size >= embed_size) {
+            // Object can be re-embedded
+            memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
+            FL_UNSET_RAW(v, ROBJECT_HEAP);
+            xfree(ptr);
+            ptr = ROBJECT(v)->as.ary;
+        }
     }
 
     for (uint32_t i = 0; i < ROBJECT_FIELDS_COUNT(v); i++) {
@@ -4773,20 +4779,17 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             }
           case T_OBJECT:
             {
-                if (rb_shape_obj_too_complex_p(obj)) {
-                    size_t hash_len = rb_st_table_size(ROBJECT_FIELDS_HASH(obj));
-                    APPEND_F("(too_complex) len:%zu", hash_len);
-                }
-                else {
-                    uint32_t len = ROBJECT_FIELDS_CAPACITY(obj);
-
-                    if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-                        APPEND_F("(embed) len:%d", len);
+                if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+                    if (rb_shape_obj_too_complex_p(obj)) {
+                        size_t hash_len = rb_st_table_size(ROBJECT_FIELDS_HASH(obj));
+                        APPEND_F("(too_complex) len:%zu", hash_len);
                     }
                     else {
-                        VALUE *ptr = ROBJECT_FIELDS(obj);
-                        APPEND_F("len:%d ptr:%p", len, (void *)ptr);
+                        APPEND_F("(embed) len:%d", ROBJECT_FIELDS_CAPACITY(obj));
                     }
+                }
+                else {
+                    APPEND_F("len:%d ptr:%p", ROBJECT_FIELDS_CAPACITY(obj), (void *)ROBJECT_FIELDS(obj));
                 }
             }
             break;

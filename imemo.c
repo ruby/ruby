@@ -116,12 +116,12 @@ imemo_fields_new(VALUE owner, size_t capa)
     if (rb_gc_size_allocatable_p(embedded_size)) {
         VALUE fields = rb_imemo_new(imemo_fields, owner, embedded_size);
         RUBY_ASSERT(IMEMO_TYPE_P(fields, imemo_fields));
-        FL_SET_RAW(fields, OBJ_FIELD_EMBED);
         return fields;
     }
     else {
         VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields));
         IMEMO_OBJ_FIELDS(fields)->as.external.ptr = ALLOC_N(VALUE, capa);
+        FL_SET_RAW(fields, OBJ_FIELD_HEAP);
         return fields;
     }
 }
@@ -137,7 +137,7 @@ imemo_fields_new_complex(VALUE owner, size_t capa)
 {
     VALUE fields = imemo_fields_new(owner, 1);
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = st_init_numtable_with_size(capa);
-    FL_UNSET_RAW(fields, OBJ_FIELD_EMBED);
+    FL_SET_RAW(fields, OBJ_FIELD_HEAP);
     return fields;
 }
 
@@ -166,8 +166,8 @@ VALUE
 rb_imemo_fields_new_complex_tbl(VALUE owner, st_table *tbl)
 {
     VALUE fields = imemo_fields_new(owner, sizeof(struct rb_fields));
-    FL_UNSET_RAW(fields, OBJ_FIELD_EMBED);
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = tbl;
+    FL_SET_RAW(fields, OBJ_FIELD_HEAP);
     st_foreach(tbl, imemo_fields_trigger_wb_i, (st_data_t)fields);
     return fields;
 }
@@ -257,11 +257,13 @@ rb_imemo_memsize(VALUE obj)
 
         break;
       case imemo_fields:
-        if (rb_shape_obj_too_complex_p(obj)) {
-            size += st_memsize(IMEMO_OBJ_FIELDS(obj)->as.complex.table);
-        }
-        else if (!FL_TEST_RAW(obj, OBJ_FIELD_EMBED)) {
-            size += RSHAPE_CAPACITY(RBASIC_SHAPE_ID(obj)) * sizeof(VALUE);
+        if (FL_TEST_RAW(obj, OBJ_FIELD_HEAP)) {
+            if (rb_shape_obj_too_complex_p(obj)) {
+                size += st_memsize(IMEMO_OBJ_FIELDS(obj)->as.complex.table);
+            }
+            else {
+                size += RSHAPE_CAPACITY(RBASIC_SHAPE_ID(obj)) * sizeof(VALUE);
+            }
         }
         break;
       default:
@@ -535,11 +537,13 @@ rb_free_const_table(struct rb_id_table *tbl)
 static inline void
 imemo_fields_free(struct rb_fields *fields)
 {
-    if (rb_shape_obj_too_complex_p((VALUE)fields)) {
-        st_free_table(fields->as.complex.table);
-    }
-    else if (!FL_TEST_RAW((VALUE)fields, OBJ_FIELD_EMBED)) {
-        xfree(fields->as.external.ptr);
+    if (FL_TEST_RAW((VALUE)fields, OBJ_FIELD_HEAP)) {
+        if (rb_shape_obj_too_complex_p((VALUE)fields)) {
+            st_free_table(fields->as.complex.table);
+        }
+        else {
+            xfree(fields->as.external.ptr);
+        }
     }
 }
 

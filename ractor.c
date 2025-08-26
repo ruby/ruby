@@ -1913,7 +1913,7 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
         rb_replace_generic_ivar(data->replacement, obj);
     }
 
-    VALUE flags = T_OBJECT | FL_FREEZE | ROBJECT_EMBED | (RBASIC(obj)->flags & FL_PROMOTED);
+    VALUE flags = T_OBJECT | FL_FREEZE | (RBASIC(obj)->flags & FL_PROMOTED);
 
     // Avoid mutations using bind_call, etc.
     MEMZERO((char *)obj, char, sizeof(struct RBasic));

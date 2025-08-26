@@ -2916,7 +2916,7 @@ fn gen_get_ivar(
     guard_object_is_heap(asm, recv, recv_opnd, Counter::getivar_not_heap);
 
     // Compile time self is embedded and the ivar index lands within the object
-    let embed_test_result = unsafe { FL_TEST_RAW(comptime_receiver, VALUE(ROBJECT_EMBED.as_usize())) != VALUE(0) };
+    let embed_test_result = comptime_receiver.embedded_p();
 
     let expected_shape = unsafe { rb_obj_shape_id(comptime_receiver) };
     let shape_id_offset = unsafe { rb_shape_id_offset() };
