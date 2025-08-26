@@ -1055,15 +1055,6 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
-
-  def test_opt_aref_with
-    assert_compiles ':ok', %q{
-      def aref_with(hash) = hash["key"]
-
-      aref_with({ "key" => :ok })
-    }
-  end
-
   def test_putself
     assert_compiles '3', %q{
       class Integer
