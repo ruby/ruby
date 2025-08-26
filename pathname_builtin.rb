@@ -1163,9 +1163,7 @@ class Pathname
 end
 
 module Kernel
-  # create a pathname object.
-  #
-  # This method is available since 1.8.5.
+  # Creates a Pathname object.
   def Pathname(path) # :doc:
     return path if Pathname === path
     Pathname.new(path)
