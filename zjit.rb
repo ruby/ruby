@@ -61,6 +61,7 @@ class << RubyVM::ZJIT
     buf
   end
 
+  # Outputs counters into +buf+.
   def print_counters(keys, buf:, stats:)
     left_pad = keys.map(&:size).max + 1
     keys.each do |key|
@@ -82,6 +83,7 @@ class << RubyVM::ZJIT
     end
   end
 
+  # Similar to #print_counters but only includes keys that start with +prefix+.
   def print_counters_with_prefix(buf:, stats:, prefix:, prompt:)
     keys = stats.keys.select { |key| key.start_with?(prefix) && stats[key] > 0 }
     unless keys.empty?
