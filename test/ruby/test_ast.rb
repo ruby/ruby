@@ -365,6 +365,50 @@ class TestAst < Test::Unit::TestCase
     assert_equal node.node_id, node_id
   end
 
+  def add(x, y)
+  end
+
+  def test_node_id_for_backtrace_location_of_method_definition
+    omit if ParserSupport.prism_enabled?
+
+    begin
+      add(1)
+    rescue ArgumentError => exc
+      loc = exc.backtrace_locations.first
+      node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(loc)
+      node = RubyVM::AbstractSyntaxTree.of(method(:add))
+      assert_equal node.node_id, node_id
+    end
+  end
+
+  def test_node_id_for_backtrace_location_of_lambda
+    omit if ParserSupport.prism_enabled?
+
+    v = -> {}
+    begin
+      v.call(1)
+    rescue ArgumentError => exc
+      loc = exc.backtrace_locations.first
+      node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(loc)
+      node = RubyVM::AbstractSyntaxTree.of(v)
+      assert_equal node.node_id, node_id
+    end
+  end
+
+  def test_node_id_for_backtrace_location_of_lambda_method
+    omit if ParserSupport.prism_enabled?
+
+    v = lambda {}
+    begin
+      v.call(1)
+    rescue ArgumentError => exc
+      loc = exc.backtrace_locations.first
+      node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(loc)
+      node = RubyVM::AbstractSyntaxTree.of(v)
+      assert_equal node.node_id, node_id
+    end
+  end
+
   def test_node_id_for_backtrace_location_raises_argument_error
     bug19262 = '[ruby-core:111435]'
 
