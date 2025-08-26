@@ -431,6 +431,7 @@ pub enum SideExitReason {
     UnknownNewarraySend(vm_opt_newarray_send_type),
     UnknownCallType,
     UnknownOpcode(u32),
+    UnhandledInstruction(InsnId),
     FixnumAddOverflow,
     FixnumSubOverflow,
     FixnumMultOverflow,
@@ -567,7 +568,7 @@ pub enum Insn {
     /// Control flow instructions
     Return { val: InsnId },
     /// Non-local control flow. See the throw YARV instruction
-    Throw { throw_state: u32, val: InsnId },
+    Throw { throw_state: u32, val: InsnId, state: InsnId },
 
     /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=, &, |
     FixnumAdd  { left: InsnId, right: InsnId, state: InsnId },
@@ -854,7 +855,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::AnyToString { val, str, .. } => { write!(f, "AnyToString {val}, str: {str}") },
             Insn::SideExit { reason, .. } => write!(f, "SideExit {reason}"),
             Insn::PutSpecialObject { value_type } => write!(f, "PutSpecialObject {value_type}"),
-            Insn::Throw { throw_state, val } => {
+            Insn::Throw { throw_state, val, .. } => {
                 write!(f, "Throw ")?;
                 match throw_state & VM_THROW_STATE_MASK {
                     RUBY_TAG_NONE   => write!(f, "TAG_NONE"),
@@ -1218,7 +1219,7 @@ impl Function {
                     }
                 },
             &Return { val } => Return { val: find!(val) },
-            &Throw { throw_state, val } => Throw { throw_state, val: find!(val) },
+            &Throw { throw_state, val, state } => Throw { throw_state, val: find!(val), state },
             &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
             &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
             &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
@@ -1992,7 +1993,6 @@ impl Function {
                 worklist.push_back(state);
             }
             | &Insn::Return { val }
-            | &Insn::Throw { val, .. }
             | &Insn::Test { val }
             | &Insn::SetLocal { val, .. }
             | &Insn::IsNil { val } =>
@@ -2040,7 +2040,9 @@ impl Function {
                 worklist.push_back(val);
                 worklist.extend(args);
             }
-            &Insn::ArrayDup { val, state } | &Insn::HashDup { val, state } => {
+            &Insn::ArrayDup { val, state }
+            | &Insn::Throw { val, state, .. }
+            | &Insn::HashDup { val, state } => {
                 worklist.push_back(val);
                 worklist.push_back(state);
             }
@@ -3261,7 +3263,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_throw => {
-                    fun.push_insn(block, Insn::Throw { throw_state: get_arg(pc, 0).as_u32(), val: state.stack_pop()? });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    fun.push_insn(block, Insn::Throw { throw_state: get_arg(pc, 0).as_u32(), val: state.stack_pop()?, state: exit_id });
                     break;  // Don't enqueue the next block as a successor
                 }
 

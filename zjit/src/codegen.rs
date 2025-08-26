@@ -281,11 +281,15 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
         // Compile all instructions
         for &insn_id in block.insns() {
             let insn = function.find(insn_id);
-            if gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn).is_none() {
-                debug!("Failed to compile insn: {insn_id} {insn}");
+            if let Err(last_snapshot) = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn) {
+                debug!("ZJIT: gen_function: Failed to compile insn: {insn_id} {insn}. Generating side-exit.");
                 incr_counter!(failed_gen_insn);
-                return None;
-            }
+                gen_side_exit(&mut jit, &mut asm, &SideExitReason::UnhandledInstruction(insn_id), &function.frame_state(last_snapshot));
+                // Don't bother generating code after a side-exit. We won't run it.
+                // TODO(max): Generate ud2 or equivalent.
+                break;
+            };
+            // It's fine; we generated the instruction
         }
         // Make sure the last patch point has enough space to insert a jump
         asm.pad_patch_point();
@@ -316,7 +320,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
 }
 
 /// Compile an instruction
-fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_id: InsnId, insn: &Insn) -> Option<()> {
+fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_id: InsnId, insn: &Insn) -> Result<(), InsnId> {
     // Convert InsnId to lir::Opnd
     macro_rules! opnd {
         ($insn_id:ident) => {
@@ -334,7 +338,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
 
     macro_rules! no_output {
         ($call:expr) => {
-            { let () = $call; return Some(()); }
+            { let () = $call; return Ok(()); }
         };
     }
 
@@ -344,6 +348,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
 
     let out_opnd = match insn {
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
+        Insn::Const { .. } => panic!("Unexpected Const in gen_insn: {insn}"),
         Insn::NewArray { elements, state } => gen_new_array(asm, opnds!(elements), &function.frame_state(*state)),
         Insn::NewHash { elements, state } => gen_new_hash(jit, asm, elements, &function.frame_state(*state)),
         Insn::NewRange { low, high, flag, state } => gen_new_range(jit, asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
@@ -351,12 +356,12 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
         // concatstrings shouldn't have 0 strings
         // If it happens we abort the compilation for now
-        Insn::StringConcat { strings, .. } if strings.is_empty() => return None,
+        Insn::StringConcat { strings, state, .. } if strings.is_empty() => return Err(*state),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, opnds!(strings), &function.frame_state(*state)),
         Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state)),
         Insn::ToRegexp { opt, values, state } => gen_toregexp(jit, asm, *opt, opnds!(values), &function.frame_state(*state)),
         Insn::Param { idx } => unreachable!("block.insns should not have Insn::Param({idx})"),
-        Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
+        Insn::Snapshot { .. } => return Ok(()), // we don't need to do anything for this instruction at the moment
         Insn::Jump(branch) => no_output!(gen_jump(jit, asm, branch)),
         Insn::IfTrue { val, target } => no_output!(gen_if_true(jit, asm, opnd!(val), target)),
         Insn::IfFalse { val, target } => no_output!(gen_if_false(jit, asm, opnd!(val), target)),
@@ -367,7 +372,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SendWithoutBlockDirect { cme, iseq, self_val, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(self_val), opnds!(args), &function.frame_state(*state)),
         // Ensure we have enough room fit ec, self, and arguments
         // TODO remove this check when we have stack args (we can use Time.new to test it)
-        Insn::InvokeBuiltin { bf, .. } if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) => return None,
+        Insn::InvokeBuiltin { bf, state, .. } if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) => return Err(*state),
         Insn::InvokeBuiltin { bf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, opnds!(args)),
         Insn::Return { val } => no_output!(gen_return(asm, opnd!(val))),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state)),
@@ -403,22 +408,20 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::IncrCounter(counter) => no_output!(gen_incr_counter(asm, counter)),
         Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state)),
         &Insn::CheckInterrupts { state } => no_output!(gen_check_interrupts(jit, asm, &function.frame_state(state))),
-        Insn::ArrayExtend { .. }
-        | Insn::ArrayMax { .. }
-        | Insn::ArrayPush { .. }
-        | Insn::DefinedIvar { .. }
-        | Insn::FixnumDiv { .. }
-        | Insn::FixnumMod { .. }
-        | Insn::HashDup { .. }
-        | Insn::Send { .. }
-        | Insn::Throw { .. }
-        | Insn::ToArray { .. }
-        | Insn::ToNewArray { .. }
-        | Insn::Const { .. }
+        &Insn::ArrayExtend { state, .. }
+        | &Insn::ArrayMax { state, .. }
+        | &Insn::ArrayPush { state, .. }
+        | &Insn::DefinedIvar { state, .. }
+        | &Insn::FixnumDiv { state, .. }
+        | &Insn::FixnumMod { state, .. }
+        | &Insn::HashDup { state, .. }
+        | &Insn::Send { state, .. }
+        | &Insn::Throw { state, .. }
+        | &Insn::ToArray { state, .. }
+        | &Insn::ToNewArray { state, .. }
         => {
-            debug!("ZJIT: gen_function: unexpected insn {insn}");
             incr_counter!(failed_gen_insn_unexpected);
-            return None;
+            return Err(state);
         }
     };
 
@@ -427,7 +430,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     // If the instruction has an output, remember it in jit.opnds
     jit.opnds[insn_id.0] = Some(out_opnd);
 
-    Some(())
+    Ok(())
 }
 
 /// Gets the EP of the ISeq of the containing method, or "local level".
