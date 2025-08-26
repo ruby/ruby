@@ -239,6 +239,20 @@ module ErrorHighlight
       when :OP_CDECL
         spot_op_cdecl
 
+      when :DEFN
+        raise NotImplementedError if @point_type != :name
+        spot_defn
+
+      when :DEFS
+        raise NotImplementedError if @point_type != :name
+        spot_defs
+
+      when :LAMBDA
+        spot_lambda
+
+      when :ITER
+        spot_iter
+
       when :call_node
         case @point_type
         when :name
@@ -279,6 +293,30 @@ module ErrorHighlight
 
       when :constant_path_operator_write_node
         prism_spot_constant_path_operator_write
+
+      when :def_node
+        case @point_type
+        when :name
+          prism_spot_def_for_name
+        when :args
+          raise NotImplementedError
+        end
+
+      when :lambda_node
+        case @point_type
+        when :name
+          prism_spot_lambda_for_name
+        when :args
+          raise NotImplementedError
+        end
+
+      when :block_node
+        case @point_type
+        when :name
+          prism_spot_block_for_name
+        when :args
+          raise NotImplementedError
+        end
 
       end
 
@@ -621,6 +659,55 @@ module ErrorHighlight
       end
     end
 
+    # Example:
+    #   def bar; end
+    #       ^^^
+    def spot_defn
+      mid, = @node.children
+      fetch_line(@node.first_lineno)
+      if @snippet.match(/\Gdef\s+(#{ Regexp.quote(mid) }\b)/, @node.first_column)
+        @beg_column = $~.begin(1)
+        @end_column = $~.end(1)
+      end
+    end
+
+    # Example:
+    #   def Foo.bar; end
+    #          ^^^^
+    def spot_defs
+      nd_recv, mid, = @node.children
+      fetch_line(nd_recv.last_lineno)
+      if @snippet.match(/\G\s*(\.\s*#{ Regexp.quote(mid) }\b)/, nd_recv.last_column)
+        @beg_column = $~.begin(1)
+        @end_column = $~.end(1)
+      end
+    end
+
+    # Example:
+    #   -> { ... }
+    #   ^^
+    def spot_lambda
+      fetch_line(@node.first_lineno)
+      if @snippet.match(/\G->/, @node.first_column)
+        @beg_column = $~.begin(0)
+        @end_column = $~.end(0)
+      end
+    end
+
+    # Example:
+    #   lambda { ... }
+    #          ^
+    #   define_method :foo do
+    #                      ^^
+    def spot_iter
+      _nd_fcall, nd_scope = @node.children
+      fetch_line(nd_scope.first_lineno)
+      if @snippet.match(/\G(?:do\b|\{)/, nd_scope.first_column)
+        @beg_column = $~.begin(0)
+        @end_column = $~.end(0)
+      end
+    end
+
     def fetch_line(lineno)
       @beg_lineno = @end_lineno = lineno
       @snippet = @fetch[lineno]
@@ -825,6 +912,31 @@ module ErrorHighlight
       else
         prism_location(@node.binary_operator_loc.chop)
       end
+    end
+
+    # Example:
+    #   def foo()
+    #       ^^^
+    def prism_spot_def_for_name
+      location = @node.name_loc
+      location = location.join(@node.operator_loc) if @node.operator_loc
+      prism_location(location)
+    end
+
+    # Example:
+    #   -> x, y { }
+    #   ^^
+    def prism_spot_lambda_for_name
+      prism_location(@node.operator_loc)
+    end
+
+    # Example:
+    #   lambda { }
+    #          ^
+    #   define_method :foo do |x, y|
+    #                      ^
+    def prism_spot_block_for_name
+      prism_location(@node.opening_loc)
     end
   end
 
