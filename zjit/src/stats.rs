@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{cruby::*, options::get_option, state::zjit_enabled_p};
+use crate::{cruby::*, options::get_option, state::{zjit_enabled_p, ZJITState}};
 
 macro_rules! make_counters {
     (
@@ -73,12 +73,14 @@ make_counters! {
     zjit_insns_count,
 
     // failed_: Compilation failure reasons
+    failed_iseq_stack_too_large,
     failed_hir_compile,
     failed_hir_compile_validate,
     failed_hir_optimize,
-    failed_gen_insn,
-    failed_gen_insn_unexpected,
     failed_asm_compile,
+
+    // exit_: Side exit reasons (ExitCounters shares the same prefix)
+    exit_compilation_failure,
 }
 
 /// Increase a counter by a specified amount
@@ -94,6 +96,16 @@ macro_rules! incr_counter {
     }
 }
 pub(crate) use incr_counter;
+
+/// The number of side exits from each YARV instruction
+pub type ExitCounters = [u64; VM_INSTRUCTION_SIZE as usize];
+
+/// Return a raw pointer to the exit counter for the YARV instruction at a given PC
+pub fn exit_counter_ptr(pc: *const VALUE) -> *mut u64 {
+    let opcode = unsafe { rb_vm_insn_addr2opcode((*pc).as_ptr()) };
+    let exit_counters = ZJITState::get_exit_counters();
+    unsafe { exit_counters.get_unchecked_mut(opcode as usize) }
+}
 
 /// Return a Hash object that contains ZJIT statistics
 #[unsafe(no_mangle)]
@@ -133,6 +145,18 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     for &counter in ALL_COUNTERS {
         set_stat!(hash, &counter.name(), unsafe { *counter_ptr(counter) });
     }
+
+    // Set side exit stats
+    let exit_counters = ZJITState::get_exit_counters();
+    let mut side_exit_count = 0;
+    for op_idx in 0..VM_INSTRUCTION_SIZE as usize {
+        let op_name = insn_name(op_idx);
+        let key_string = "exit_".to_owned() + &op_name;
+        let count = exit_counters[op_idx];
+        side_exit_count += count;
+        set_stat!(hash, &key_string, count);
+    }
+    set_stat!(hash, "side_exit_count", side_exit_count);
 
     if unsafe { rb_vm_insns_count } > 0 {
         set_stat!(hash, "vm_insns_count", unsafe { rb_vm_insns_count });
