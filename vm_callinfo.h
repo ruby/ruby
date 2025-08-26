@@ -434,7 +434,7 @@ vm_cc_call(const struct rb_callcache *cc)
     VM_ASSERT(cc->call_ != NULL);
     VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc));
     VM_ASSERT(cc_check_class(cc->klass));
-    return (vm_call_handler)rbimpl_atomic_ptr_load((void **)&cc->call_, RBIMPL_ATOMIC_RELAXED);
+    return cc->call_;
 }
 
 static inline void
@@ -484,7 +484,7 @@ vm_cc_call_set(const struct rb_callcache *cc, vm_call_handler call)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc != vm_cc_empty());
-    rbimpl_atomic_ptr_store((volatile void **)&cc->call_, (void *)call, RBIMPL_ATOMIC_RELAXED);
+    *(vm_call_handler *)&cc->call_ = call;
 }
 
 static inline void
