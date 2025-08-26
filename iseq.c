@@ -432,7 +432,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
         VM_ASSERT(ISEQ_EXECUTABLE_P(iseq));
 
         if (iseq->aux.exec.local_hooks) {
-            rb_hook_list_mark_and_update(iseq->aux.exec.local_hooks);
+            rb_hook_list_mark_and_move(iseq->aux.exec.local_hooks);
         }
     }
 
