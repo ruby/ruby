@@ -311,7 +311,9 @@ class Pathname
   end
 
   if File::ALT_SEPARATOR
+    # Separator list string.
     SEPARATOR_LIST = "#{Regexp.quote File::ALT_SEPARATOR}#{Regexp.quote File::SEPARATOR}"
+    # Regexp that matches a separator.
     SEPARATOR_PAT = /[#{SEPARATOR_LIST}]/
   else
     SEPARATOR_LIST = "#{Regexp.quote File::SEPARATOR}"
@@ -319,6 +321,7 @@ class Pathname
   end
 
   if File.dirname('A:') == 'A:.' # DOSish drive letter
+    # Regexp that matches an absoltute path.
     ABSOLUTE_PATH = /\A(?:[A-Za-z]:|#{SEPARATOR_PAT})/
   else
     ABSOLUTE_PATH = /\A#{SEPARATOR_PAT}/
@@ -1163,9 +1166,7 @@ class Pathname
 end
 
 module Kernel
-  # create a pathname object.
-  #
-  # This method is available since 1.8.5.
+  # Creates a Pathname object.
   def Pathname(path) # :doc:
     return path if Pathname === path
     Pathname.new(path)
