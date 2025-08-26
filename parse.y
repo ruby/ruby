@@ -1061,8 +1061,8 @@ rb_discard_node(struct parser_params *p, NODE *n)
     rb_ast_delete_node(p->ast, n);
 }
 
-static rb_node_scope_t *rb_node_scope_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc);
-static rb_node_scope_t *rb_node_scope_new2(struct parser_params *p, rb_ast_id_table_t *nd_tbl, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc);
+static rb_node_scope_t *rb_node_scope_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, NODE *nd_parent, const YYLTYPE *loc);
+static rb_node_scope_t *rb_node_scope_new2(struct parser_params *p, rb_ast_id_table_t *nd_tbl, rb_node_args_t *nd_args, NODE *nd_body, NODE *nd_parent, const YYLTYPE *loc);
 static rb_node_block_t *rb_node_block_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc);
 static rb_node_if_t *rb_node_if_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, NODE *nd_else, const YYLTYPE *loc, const YYLTYPE* if_keyword_loc, const YYLTYPE* then_keyword_loc, const YYLTYPE* end_keyword_loc);
 static rb_node_unless_t *rb_node_unless_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, NODE *nd_else, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *then_keyword_loc, const YYLTYPE *end_keyword_loc);
@@ -1169,8 +1169,8 @@ static rb_node_line_t *rb_node_line_new(struct parser_params *p, const YYLTYPE *
 static rb_node_file_t *rb_node_file_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
 static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE *loc);
 
-#define NEW_SCOPE(a,b,loc) (NODE *)rb_node_scope_new(p,a,b,loc)
-#define NEW_SCOPE2(t,a,b,loc) (NODE *)rb_node_scope_new2(p,t,a,b,loc)
+#define NEW_SCOPE(a,b,c,loc) (NODE *)rb_node_scope_new(p,a,b,c,loc)
+#define NEW_SCOPE2(t,a,b,c,loc) (NODE *)rb_node_scope_new2(p,t,a,b,c,loc)
 #define NEW_BLOCK(a,loc) (NODE *)rb_node_block_new(p,a,loc)
 #define NEW_IF(c,t,e,loc,ik_loc,tk_loc,ek_loc) (NODE *)rb_node_if_new(p,c,t,e,loc,ik_loc,tk_loc,ek_loc)
 #define NEW_UNLESS(c,t,e,loc,k_loc,t_loc,e_loc) (NODE *)rb_node_unless_new(p,c,t,e,loc,k_loc,t_loc,e_loc)
@@ -1634,11 +1634,11 @@ aryptn_pre_args(struct parser_params *p, VALUE pre_arg, VALUE pre_args)
 #define KWD2EID(t, v) keyword_##t
 
 static NODE *
-new_scope_body(struct parser_params *p, rb_node_args_t *args, NODE *body, const YYLTYPE *loc)
+new_scope_body(struct parser_params *p, rb_node_args_t *args, NODE *body, NODE *parent, const YYLTYPE *loc)
 {
     body = remove_begin(body);
     reduce_nodes(p, &body);
-    NODE *n = NEW_SCOPE(args, body, loc);
+    NODE *n = NEW_SCOPE(args, body, parent, loc);
     nd_set_line(n, loc->end_pos.lineno);
     set_line_body(body, loc->beg_pos.lineno);
     return n;
@@ -2949,8 +2949,8 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                     {
                         endless_method_name(p, $head->nd_mid, &@head);
                         restore_defun(p, $head);
-                        $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
                         ($$ = $head->nd_def)->nd_loc = @$;
+                        $bodystmt = new_scope_body(p, $args, $bodystmt, $$, &@$);
                         RNODE_DEFN($$)->nd_defn = $bodystmt;
                     /*% ripper: bodystmt!($:bodystmt, Qnil, Qnil, Qnil) %*/
                     /*% ripper: def!($:head, $:args, $:$) %*/
@@ -2960,8 +2960,8 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                     {
                         endless_method_name(p, $head->nd_mid, &@head);
                         restore_defun(p, $head);
-                        $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
                         ($$ = $head->nd_def)->nd_loc = @$;
+                        $bodystmt = new_scope_body(p, $args, $bodystmt, $$, &@$);
                         RNODE_DEFS($$)->nd_defn = $bodystmt;
                     /*% ripper: bodystmt!($:bodystmt, Qnil, Qnil, Qnil) %*/
                     /*% ripper: defs!(*$:head[0..2], $:args, $:$) %*/
@@ -3176,7 +3176,7 @@ program		:  {
                             node = remove_begin(node);
                             void_expr(p, node);
                         }
-                        p->eval_tree = NEW_SCOPE(0, block_append(p, p->eval_tree, $2), &@$);
+                        p->eval_tree = NEW_SCOPE(0, block_append(p, p->eval_tree, $2), NULL, &@$);
                     /*% ripper[final]: program!($:2) %*/
                         local_pop(p);
                     }
@@ -3375,8 +3375,9 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                         restore_block_exit(p, $allow_exits);
                         p->ctxt = $k_END;
                         {
-                            NODE *scope = NEW_SCOPE2(0 /* tbl */, 0 /* args */, $compstmt /* body */, &@$);
+                            NODE *scope = NEW_SCOPE2(0 /* tbl */, 0 /* args */, $compstmt /* body */, NULL /* parent */, &@$);
                             $$ = NEW_POSTEXE(scope, &@$, &@1, &@3, &@5);
+                            RNODE_SCOPE(scope)->nd_parent = $$;
                         }
                     /*% ripper: END!($:compstmt) %*/
                     }
@@ -4567,9 +4568,10 @@ primary		: inline_primary
                     }
                     /* {|*internal_id| <m> = internal_id; ... } */
                     args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@for_var), &@for_var);
-                    scope = NEW_SCOPE2(tbl, args, $compstmt, &@$);
+                    scope = NEW_SCOPE2(tbl, args, $compstmt, NULL, &@$);
                     YYLTYPE do_keyword_loc = $do == keyword_do_cond ? @do : NULL_LOC;
                     $$ = NEW_FOR($5, scope, &@$, &@k_for, &@keyword_in, &do_keyword_loc, &@k_end);
+                    RNODE_SCOPE(scope)->nd_parent = $$;
                     fixpos($$, $for_var);
                 /*% ripper: for!($:for_var, $:expr_value, $:compstmt) %*/
                 }
@@ -4640,8 +4642,8 @@ primary		: inline_primary
               k_end
                 {
                     restore_defun(p, $head);
-                    $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
                     ($$ = $head->nd_def)->nd_loc = @$;
+                    $bodystmt = new_scope_body(p, $args, $bodystmt, $$, &@$);
                     RNODE_DEFN($$)->nd_defn = $bodystmt;
                 /*% ripper: def!($:head, $:args, $:bodystmt) %*/
                     local_pop(p);
@@ -4655,8 +4657,8 @@ primary		: inline_primary
               k_end
                 {
                     restore_defun(p, $head);
-                    $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
                     ($$ = $head->nd_def)->nd_loc = @$;
+                    $bodystmt = new_scope_body(p, $args, $bodystmt, $$, &@$);
                     RNODE_DEFS($$)->nd_defn = $bodystmt;
                 /*% ripper: defs!(*$:head[0..2], $:args, $:bodystmt) %*/
                     local_pop(p);
@@ -11208,24 +11210,26 @@ node_newnode(struct parser_params *p, enum node_type type, size_t size, size_t a
 #define NODE_NEWNODE(node_type, type, loc) (type *)(node_newnode(p, node_type, sizeof(type), RUBY_ALIGNOF(type), loc))
 
 static rb_node_scope_t *
-rb_node_scope_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc)
+rb_node_scope_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, NODE *nd_parent, const YYLTYPE *loc)
 {
     rb_ast_id_table_t *nd_tbl;
     nd_tbl = local_tbl(p);
     rb_node_scope_t *n = NODE_NEWNODE(NODE_SCOPE, rb_node_scope_t, loc);
     n->nd_tbl = nd_tbl;
     n->nd_body = nd_body;
+    n->nd_parent = nd_parent;
     n->nd_args = nd_args;
 
     return n;
 }
 
 static rb_node_scope_t *
-rb_node_scope_new2(struct parser_params *p, rb_ast_id_table_t *nd_tbl, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc)
+rb_node_scope_new2(struct parser_params *p, rb_ast_id_table_t *nd_tbl, rb_node_args_t *nd_args, NODE *nd_body, NODE *nd_parent, const YYLTYPE *loc)
 {
     rb_node_scope_t *n = NODE_NEWNODE(NODE_SCOPE, rb_node_scope_t, loc);
     n->nd_tbl = nd_tbl;
     n->nd_body = nd_body;
+    n->nd_parent = nd_parent;
     n->nd_args = nd_args;
 
     return n;
@@ -11413,8 +11417,9 @@ static rb_node_class_t *
 rb_node_class_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, NODE *nd_super, const YYLTYPE *loc, const YYLTYPE *class_keyword_loc, const YYLTYPE *inheritance_operator_loc, const YYLTYPE *end_keyword_loc)
 {
     /* Keep the order of node creation */
-    NODE *scope = NEW_SCOPE(0, nd_body, loc);
+    NODE *scope = NEW_SCOPE(0, nd_body, NULL, loc);
     rb_node_class_t *n = NODE_NEWNODE(NODE_CLASS, rb_node_class_t, loc);
+    RNODE_SCOPE(scope)->nd_parent = &n->node;
     n->nd_cpath = nd_cpath;
     n->nd_body = scope;
     n->nd_super = nd_super;
@@ -11429,8 +11434,9 @@ static rb_node_sclass_t *
 rb_node_sclass_new(struct parser_params *p, NODE *nd_recv, NODE *nd_body, const YYLTYPE *loc)
 {
     /* Keep the order of node creation */
-    NODE *scope = NEW_SCOPE(0, nd_body, loc);
+    NODE *scope = NEW_SCOPE(0, nd_body, NULL, loc);
     rb_node_sclass_t *n = NODE_NEWNODE(NODE_SCLASS, rb_node_sclass_t, loc);
+    RNODE_SCOPE(scope)->nd_parent = &n->node;
     n->nd_recv = nd_recv;
     n->nd_body = scope;
 
@@ -11441,8 +11447,9 @@ static rb_node_module_t *
 rb_node_module_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *module_keyword_loc, const YYLTYPE *end_keyword_loc)
 {
     /* Keep the order of node creation */
-    NODE *scope = NEW_SCOPE(0, nd_body, loc);
+    NODE *scope = NEW_SCOPE(0, nd_body, NULL, loc);
     rb_node_module_t *n = NODE_NEWNODE(NODE_MODULE, rb_node_module_t, loc);
+    RNODE_SCOPE(scope)->nd_parent = &n->node;
     n->nd_cpath = nd_cpath;
     n->nd_body = scope;
     n->module_keyword_loc = *module_keyword_loc;
@@ -11455,8 +11462,9 @@ static rb_node_iter_t *
 rb_node_iter_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc)
 {
     /* Keep the order of node creation */
-    NODE *scope = NEW_SCOPE(nd_args, nd_body, loc);
+    NODE *scope = NEW_SCOPE(nd_args, nd_body, NULL, loc);
     rb_node_iter_t *n = NODE_NEWNODE(NODE_ITER, rb_node_iter_t, loc);
+    RNODE_SCOPE(scope)->nd_parent = &n->node;
     n->nd_body = scope;
     n->nd_iter = 0;
 
@@ -11467,9 +11475,10 @@ static rb_node_lambda_t *
 rb_node_lambda_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
 {
     /* Keep the order of node creation */
-    NODE *scope = NEW_SCOPE(nd_args, nd_body, loc);
+    NODE *scope = NEW_SCOPE(nd_args, nd_body, NULL, loc);
     YYLTYPE lambda_loc = code_loc_gen(operator_loc, closing_loc);
     rb_node_lambda_t *n = NODE_NEWNODE(NODE_LAMBDA, rb_node_lambda_t, &lambda_loc);
+    RNODE_SCOPE(scope)->nd_parent = &n->node;
     n->nd_body = scope;
     n->operator_loc = *operator_loc;
     n->opening_loc = *opening_loc;
