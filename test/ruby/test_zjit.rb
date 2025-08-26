@@ -18,6 +18,15 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_stats_enabled
+    assert_runs 'false', <<~RUBY, stats: false
+      RubyVM::ZJIT.stats_enabled?
+    RUBY
+    assert_runs 'true', <<~RUBY, stats: true
+      RubyVM::ZJIT.stats_enabled?
+    RUBY
+  end
+
   def test_enable_through_env
     child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => '1'}
     assert_in_out_err([child_env, '-v'], '') do |stdout, stderr|
@@ -1008,25 +1017,29 @@ class TestZJIT < Test::Unit::TestCase
       test
     }
 
-    assert_compiles '1', %q{
+    # TODO(Shopify/ruby#716): Support spills and change to assert_compiles
+    assert_runs '1', %q{
       def a(n1,n2,n3,n4,n5,n6,n7,n8,n9) = n1+n9
       a(2,0,0,0,0,0,0,0,-1)
     }
 
-    assert_compiles '0', %q{
+    # TODO(Shopify/ruby#716): Support spills and change to assert_compiles
+    assert_runs '0', %q{
       def a(n1,n2,n3,n4,n5,n6,n7,n8) = n8
       a(1,1,1,1,1,1,1,0)
     }
 
+    # TODO(Shopify/ruby#716): Support spills and change to assert_compiles
     # self param with spilled param
-    assert_compiles '"main"', %q{
+    assert_runs '"main"', %q{
       def a(n1,n2,n3,n4,n5,n6,n7,n8) = self
       a(1,0,0,0,0,0,0,0).to_s
     }
   end
 
   def test_spilled_param_new_arary
-    assert_compiles '[:ok]', %q{
+    # TODO(Shopify/ruby#716): Support spills and change to assert_compiles
+    assert_runs '[:ok]', %q{
       def a(n1,n2,n3,n4,n5,n6,n7,n8) = [n8]
       a(0,0,0,0,0,0,0, :ok)
     }
@@ -1482,10 +1495,13 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_stats
-    assert_runs 'true', %q{
+    assert_runs '[true, true]', %q{
       def test = 1
       test
-      RubyVM::ZJIT.stats[:zjit_insns_count] > 0
+      [
+        RubyVM::ZJIT.stats[:zjit_insns_count] > 0,
+        RubyVM::ZJIT.stats(:zjit_insns_count) > 0,
+      ]
     }, stats: true
   end
 
@@ -1884,6 +1900,17 @@ class TestZJIT < Test::Unit::TestCase
       jit_entry(0)    # compile
       jit_entry(0/1r) # run without stub
     }, call_threshold: 2
+  end
+
+  def test_raise_in_second_argument
+    assert_compiles '{ok: true}', %q{
+      def write(hash, key)
+        hash[key] = raise rescue true
+        hash
+      end
+
+      write({}, :ok)
+    }
   end
 
   private

@@ -82,3 +82,12 @@ RactorInstanceTest  Ractor API was changed https://bugs.ruby-lang.org/issues/212
 # https://github.com/ruby/fileutils/pull/139
 # https://github.com/ruby/actions/actions/runs/16425309325/job/46414287784
 test_ln_sr(FileUtilsSingletonTest)
+
+# https://github.com/ruby/ruby/pull/14303
+# NoMethodError: undefined method 'respond_to?' for an instance of RBS::UnitTest::Convertibles::ToStr
+test_join(PathnameInstanceTest)
+test_plus(PathnameInstanceTest)
+test_relative_path_from(PathnameInstanceTest)
+test_slash(PathnameInstanceTest)
+test_Pathname(PathnameKernelTest)
+test_initialize(PathnameSingletonTest)

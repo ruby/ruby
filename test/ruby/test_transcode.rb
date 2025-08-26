@@ -2361,6 +2361,52 @@ class TestTranscode < Test::Unit::TestCase
     end;
   end
 
+  def test_ractor_asciicompat_encoding_exists
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      rs = []
+      7.times do
+        rs << Ractor.new do
+          string = "ISO-2022-JP"
+          encoding = Encoding.find(string)
+          20_000.times do
+            Encoding::Converter.asciicompat_encoding(string)
+            Encoding::Converter.asciicompat_encoding(encoding)
+          end
+        end
+      end
+
+      while rs.any?
+        r, _obj = Ractor.select(*rs)
+        rs.delete(r)
+      end
+      assert rs.empty?
+    end;
+  end
+
+  def test_ractor_asciicompat_encoding_doesnt_exist
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      rs = []
+      NO_EXIST = "I".freeze
+      7.times do
+        rs << Ractor.new do
+          50.times do
+            if (val = Encoding::Converter.asciicompat_encoding(NO_EXIST))
+              raise "Got #{val}, expected nil"
+            end
+          end
+        end
+      end
+
+      while rs.any?
+        r, _obj = Ractor.select(*rs)
+        rs.delete(r)
+      end
+      assert rs.empty?
+    end;
+  end
+
   private
 
   def assert_conversion_both_ways_utf8(utf8, raw, encoding)
