@@ -243,6 +243,23 @@ The following bundled gems are updated.
 
 ## Implementation improvements
 
+### Ractor
+
+A lot of work has gone into making Ractors more stable, performant, and usable. These improvements bring Ractors implementation closer to leaving experimental status.
+
+* Performance improvements
+    * Frozen strings and the symbol table internally use a lock-free hash set
+    * Method cache lookups avoid locking in most cases
+    * Class (and geniv) instance variable access is faster and avoids locking
+    * Cache contention is avoided during object allocation
+    * `object_id` avoids locking in most cases
+* Bug fixes and stability
+    * Fixed possible deadlocks when combining Ractors and Threads
+    * Fixed issues with require and autoload in a Ractor
+    * Fixed encoding/transcoding issues across Ractors
+    * Fixed race conditions in GC operations and method invalidation
+    * Fixed issues with processes forking after starting a Ractor
+
 ## JIT
 
 * YJIT
