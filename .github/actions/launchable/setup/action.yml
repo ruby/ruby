@@ -238,6 +238,8 @@ runs:
         shell: bash
         working-directory: ${{ inputs.builddir }}
         post: |
+          cat "${stdout_report_path}"
+          cat "${stderr_report_path}"
           if [[ "${test_all_enabled}" = "true" ]]; then \
             launchable record attachment \
               --session "${test_all_session}" \
