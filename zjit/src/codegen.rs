@@ -873,7 +873,7 @@ fn gen_send_without_block(
 ) -> lir::Opnd {
     // Note that it's incorrect to use this frame state to side exit because
     // the state might not be on the boundary of an interpreter instruction.
-    // For example, `opt_aref_with` pushes to the stack and then sends.
+    // For example, `opt_str_uminus` pushes to the stack and then sends.
     asm_comment!(asm, "spill frame state");
 
     // Save PC and SP

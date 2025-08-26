@@ -1330,7 +1330,7 @@ assert_equal '[42, :default]', %q{
   ]
 }
 
-# Test default value block for Hash with opt_aref_with
+# Test default value block for Hash
 assert_equal "false", <<~RUBY, frozen_string_literal: false
   def index_with_string(h)
     h["foo"]
