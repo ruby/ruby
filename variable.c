@@ -1532,7 +1532,10 @@ obj_transition_too_complex(VALUE obj, st_table *table)
       case T_OBJECT:
         {
             VALUE *old_fields = NULL;
-            if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
+            if (FL_TEST_RAW(obj, ROBJECT_EMBED)) {
+                FL_UNSET_RAW(obj, ROBJECT_EMBED);
+            }
+            else {
                 old_fields = ROBJECT_FIELDS(obj);
             }
             RBASIC_SET_SHAPE_ID(obj, shape_id);
