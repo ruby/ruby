@@ -1272,13 +1272,13 @@ because the optimization uses memoization (which may invoke large memory consump
 
 == References
 
-Read (online PDF books):
+Read:
 
-- {Mastering Regular Expressions}[https://ia903204.us.archive.org/34/items/allitebooks-02/Mastering%20Regular%20Expressions%2C%203rd%20Edition.pdf]
+- <i>Mastering Regular Expressions</i>
   by Jeffrey E.F. Friedl.
-- {Regular Expressions Cookbook}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf]
+- <i>Regular Expressions Cookbook</i>
   by Jan Goyvaerts & Steven Levithan.
 
-Explore, test (interactive online editor):
+Explore, test:
 
-- {Rubular}[https://rubular.com/].
+- {Rubular}[https://rubular.com/]: interactive online editor.
