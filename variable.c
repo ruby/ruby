@@ -1362,47 +1362,35 @@ rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
     RUBY_ASSERT(!SPECIAL_CONST_P(obj));
     RUBY_ASSERT(RSHAPE_TYPE_P(target_shape_id, SHAPE_IVAR) || RSHAPE_TYPE_P(target_shape_id, SHAPE_OBJ_ID));
 
-    if (rb_shape_too_complex_p(target_shape_id)) {
-        st_table *fields_hash;
-        switch (BUILTIN_TYPE(obj)) {
-          case T_CLASS:
-          case T_MODULE:
-            fields_hash = rb_imemo_fields_complex_tbl(RCLASS_WRITABLE_FIELDS_OBJ(obj));
-            break;
-          case T_OBJECT:
-            fields_hash = ROBJECT_FIELDS_HASH(obj);
-            break;
-          case T_IMEMO:
-            fields_hash = rb_imemo_fields_complex_tbl(obj);
-            break;
-          default:
-            fields_hash = rb_imemo_fields_complex_tbl(rb_obj_fields(obj, RSHAPE_EDGE_NAME(target_shape_id)));
-            break;
-        }
+    VALUE fields_obj;
+
+    switch (BUILTIN_TYPE(obj)) {
+      case T_CLASS:
+      case T_MODULE:
+        fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+        break;
+      case T_OBJECT:
+        fields_obj = obj;
+        break;
+      case T_IMEMO:
+        RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
+        fields_obj = obj;
+        break;
+      default:
+        fields_obj = rb_obj_fields(obj, RSHAPE_EDGE_NAME(target_shape_id));
+        break;
+    }
+
+    if (UNLIKELY(rb_shape_too_complex_p(target_shape_id))) {
+        st_table *fields_hash = rb_imemo_fields_complex_tbl(fields_obj);
         VALUE value = Qundef;
         st_lookup(fields_hash, RSHAPE_EDGE_NAME(target_shape_id), &value);
         RUBY_ASSERT(!UNDEF_P(value));
         return value;
     }
 
-    attr_index_t attr_index = RSHAPE_INDEX(target_shape_id);
-    VALUE *fields;
-    switch (BUILTIN_TYPE(obj)) {
-      case T_CLASS:
-      case T_MODULE:
-        fields = rb_imemo_fields_ptr(RCLASS_WRITABLE_FIELDS_OBJ(obj));
-        break;
-      case T_OBJECT:
-        fields = ROBJECT_FIELDS(obj);
-        break;
-      case T_IMEMO:
-        fields = rb_imemo_fields_ptr(obj);
-        break;
-      default:
-        fields = rb_imemo_fields_ptr(rb_obj_fields(obj, RSHAPE_EDGE_NAME(target_shape_id)));
-        break;
-    }
-    return fields[attr_index];
+    attr_index_t index = RSHAPE_INDEX(target_shape_id);
+    return rb_imemo_fields_ptr(fields_obj)[index];
 }
 
 VALUE
