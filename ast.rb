@@ -218,6 +218,15 @@ module RubyVM::AbstractSyntaxTree
     end
 
     #  call-seq:
+    #     node.parent -> node
+    #
+    #  Returns the parent AST node.
+    #  Currently, it works only when the node is NODE_SCOPE.
+    def parent
+      Primitive.ast_node_parent
+    end
+
+    #  call-seq:
     #     node.inspect -> string
     #
     #  Returns debugging information about this node as a string.

@@ -526,6 +526,27 @@ class TestAst < Test::Unit::TestCase
     assert_nil(RubyVM::AbstractSyntaxTree.of(c.instance_method(:foo)))
   end
 
+  DUMMY_METHOD_FOR_TEST_PARENT = __LINE__ + 1
+  def dummy_method_for_test_parent
+  end
+
+  def test_parent
+    omit if ParserSupport.prism_enabled?
+
+    scope_node = RubyVM::AbstractSyntaxTree.of(method(:dummy_method_for_test_parent))
+    assert_equal(:SCOPE, scope_node.type)
+    def_node = scope_node.parent
+    assert_equal(DUMMY_METHOD_FOR_TEST_PARENT, def_node.first_lineno)
+
+    toplevel_node = RubyVM::AbstractSyntaxTree.parse("0")
+    assert_equal(:SCOPE, toplevel_node.type)
+    assert_nil(toplevel_node.parent)
+
+    int_node = toplevel_node.children[2]
+    assert_equal(:INTEGER, int_node.type)
+    assert_raise(NotImplementedError) { int_node.parent }
+  end
+
   def test_scope_local_variables
     node = RubyVM::AbstractSyntaxTree.parse("_x = 0")
     lv, _, body = *node.children

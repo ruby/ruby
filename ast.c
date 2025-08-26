@@ -747,6 +747,21 @@ ast_node_children(rb_execution_context_t *ec, VALUE self)
     return node_children(data->ast_value, data->node);
 }
 
+static VALUE
+ast_node_parent(rb_execution_context_t *ec, VALUE self)
+{
+    struct ASTNodeData *data;
+    TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
+
+    const NODE *node = data->node;
+    if (nd_type(node) == NODE_SCOPE) {
+        return NEW_CHILD(data->ast_value, RNODE_SCOPE(node)->nd_parent);
+    }
+    else {
+        rb_raise(rb_eNotImpError, "not NODE_SCOPE");
+    }
+}
+
 static int
 null_loc_p(rb_code_location_t *loc)
 {
