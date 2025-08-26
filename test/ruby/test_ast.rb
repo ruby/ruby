@@ -801,7 +801,7 @@ dummy
     node_proc = RubyVM::AbstractSyntaxTree.of(proc, keep_script_lines: true)
     node_method = RubyVM::AbstractSyntaxTree.of(method, keep_script_lines: true)
 
-    assert_equal("{ 1 + 2 }", node_proc.source)
+    assert_equal("Proc.new { 1 + 2 }", node_proc.source)
     assert_equal("def test_keep_script_lines_for_of\n", node_method.source.lines.first)
   end
 
@@ -878,7 +878,7 @@ dummy
     omit if ParserSupport.prism_enabled? || ParserSupport.prism_enabled_in_subprocess?
 
     assert_in_out_err(["-e", "def foo; end; pp RubyVM::AbstractSyntaxTree.of(method(:foo)).type"],
-                      "", [":SCOPE"], [])
+                      "", [":DEFN"], [])
   end
 
   def test_error_tolerant

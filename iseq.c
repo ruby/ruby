@@ -634,6 +634,18 @@ new_arena(void)
     return new_arena;
 }
 
+static int
+prepare_node_id(const NODE *node)
+{
+    if (!node) return -1;
+
+    if (nd_type(node) == NODE_SCOPE && RNODE_SCOPE(node)->nd_parent) {
+        return nd_node_id(RNODE_SCOPE(node)->nd_parent);
+    }
+
+    return nd_node_id(node);
+}
+
 static VALUE
 prepare_iseq_build(rb_iseq_t *iseq,
                    VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_code_location_t *code_location, const int node_id,
@@ -1031,7 +1043,7 @@ rb_iseq_new_with_opt(VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
         script_lines = ISEQ_BODY(parent)->variable.script_lines;
     }
 
-    prepare_iseq_build(iseq, name, path, realpath, first_lineno, node ? &node->nd_loc : NULL, node ? nd_node_id(node) : -1,
+    prepare_iseq_build(iseq, name, path, realpath, first_lineno, node ? &node->nd_loc : NULL, prepare_node_id(node),
                        parent, isolated_depth, type, script_lines, option);
 
     rb_iseq_compile_node(iseq, node);

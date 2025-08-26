@@ -9221,6 +9221,7 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
     rb_node_init(RNODE(&scope_node), NODE_SCOPE);
     scope_node.nd_tbl = tbl;
     scope_node.nd_body = mandatory_node(iseq, node);
+    scope_node.nd_parent = NULL;
     scope_node.nd_args = &args_node;
 
     VALUE ast_value = rb_ruby_ast_new(RNODE(&scope_node));
