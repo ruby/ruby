@@ -61,6 +61,14 @@ class << RubyVM::ZJIT
     buf
   end
 
+  # Assert that any future ZJIT compilation will return a function pointer
+  def assert_compiles # :nodoc:
+    Primitive.rb_zjit_assert_compiles
+  end
+
+  # :stopdoc:
+  private
+
   def print_counters(keys, buf:, stats:)
     left_pad = keys.map(&:size).max + 1
     keys.each do |key|
@@ -89,14 +97,6 @@ class << RubyVM::ZJIT
       print_counters(keys, buf:, stats:)
     end
   end
-
-  # Assert that any future ZJIT compilation will return a function pointer
-  def assert_compiles # :nodoc:
-    Primitive.rb_zjit_assert_compiles
-  end
-
-  # :stopdoc:
-  private
 
   def number_with_delimiter(number)
     s = number.to_s
