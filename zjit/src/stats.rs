@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{cruby::*, options::get_option, state::{zjit_enabled_p, ZJITState}};
+use crate::{cruby::*, options::get_option, state::zjit_enabled_p};
 
 macro_rules! make_counters {
     (
@@ -42,10 +42,16 @@ macro_rules! make_counters {
             }
         }
 
-        /// The list of counters that are available without --zjit-stats.
+        /// List of counters that are available without --zjit-stats.
         /// They are incremented only by `incr_counter()` and don't use `gen_incr_counter()`.
         pub const DEFAULT_COUNTERS: &'static [Counter] = &[
             $( Counter::$default_counter_name, )+
+        ];
+
+        /// List of all counters
+        pub const ALL_COUNTERS: &'static [Counter] = &[
+            $( Counter::$default_counter_name, )+
+            $( Counter::$counter_name, )+
         ];
     }
 }
@@ -54,6 +60,9 @@ macro_rules! make_counters {
 make_counters! {
     // Default counters that are available without --zjit-stats
     default {
+        compiled_iseq_count,
+        compilation_failure,
+
         compile_time_ns,
         profile_time_ns,
         gc_time_ns,
@@ -62,40 +71,71 @@ make_counters! {
 
     // The number of times YARV instructions are executed on JIT code
     zjit_insns_count,
+
+    // failed_: Compilation failure reasons
+    failed_hir_compile,
+    failed_hir_compile_validate,
+    failed_hir_optimize,
+    failed_gen_insn,
+    failed_gen_insn_unexpected,
+    failed_asm_compile,
 }
 
 /// Increase a counter by a specified amount
-fn incr_counter(counter: Counter, amount: u64) {
+pub fn incr_counter_by(counter: Counter, amount: u64) {
     let ptr = counter_ptr(counter);
     unsafe { *ptr += amount; }
 }
 
+/// Increment a counter by its identifier
+macro_rules! incr_counter {
+    ($counter_name:ident) => {
+        $crate::stats::incr_counter_by($crate::stats::Counter::$counter_name, 1)
+    }
+}
+pub(crate) use incr_counter;
+
 /// Return a Hash object that contains ZJIT statistics
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE) -> VALUE {
+pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> VALUE {
     if !zjit_enabled_p() {
         return Qnil;
     }
 
-    fn set_stat(hash: VALUE, key: &str, value: u64) {
-        unsafe { rb_hash_aset(hash, rust_str_to_sym(key), VALUE::fixnum_from_usize(value as usize)); }
-    }
-
-    let hash = unsafe { rb_hash_new() };
-    let counters = ZJITState::get_counters();
-
-    for &counter in DEFAULT_COUNTERS {
-        let counter_val = unsafe { *counter_ptr(counter) };
-        set_stat(hash, &counter.name(), counter_val);
-    }
-
-    // Set counters that are enabled when --zjit-stats is enabled
-    if get_option!(stats) {
-        set_stat(hash, "zjit_insns_count", counters.zjit_insns_count);
-
-        if unsafe { rb_vm_insns_count } > 0 {
-            set_stat(hash, "vm_insns_count", unsafe { rb_vm_insns_count });
+    macro_rules! set_stat {
+        ($hash:ident, $key:expr, $value:expr) => {
+            let key = rust_str_to_sym($key);
+            // Evaluate $value only when it's needed
+            if key == target_key {
+                return VALUE::fixnum_from_usize($value as usize);
+            } else if $hash != Qnil {
+                #[allow(unused_unsafe)]
+                unsafe { rb_hash_aset($hash, key, VALUE::fixnum_from_usize($value as usize)); }
+            }
         }
+    }
+
+    let hash = if target_key.nil_p() {
+        unsafe { rb_hash_new() }
+    } else {
+        Qnil
+    };
+
+    // If not --zjit-stats, set only default counters
+    if !get_option!(stats) {
+        for &counter in DEFAULT_COUNTERS {
+            set_stat!(hash, &counter.name(), unsafe { *counter_ptr(counter) });
+        }
+        return hash;
+    }
+
+    // Set all counters for --zjit-stats
+    for &counter in ALL_COUNTERS {
+        set_stat!(hash, &counter.name(), unsafe { *counter_ptr(counter) });
+    }
+
+    if unsafe { rb_vm_insns_count } > 0 {
+        set_stat!(hash, "vm_insns_count", unsafe { rb_vm_insns_count });
     }
 
     hash
@@ -106,7 +146,7 @@ pub fn with_time_stat<F, R>(counter: Counter, func: F) -> R where F: FnOnce() ->
     let start = Instant::now();
     let ret = func();
     let nanos = Instant::now().duration_since(start).as_nanos();
-    incr_counter(counter, nanos as u64);
+    incr_counter_by(counter, nanos as u64);
     ret
 }
 

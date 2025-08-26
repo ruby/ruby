@@ -17,7 +17,9 @@ tooldir = $(srcdir)/tool
 MFLAGS=-l
 !endif
 
-!if "$(BASERUBY)" == ""
+!if "$(HAVE_BASERUBY)" == "no"
+BASERUBY =
+!else if "$(BASERUBY)" == ""
 # After `nmake`, just built `ruby.exe` exists in the build directory,
 # and is searched first prior to $PATH.  Assume that no ruby
 # executable in $(tooldir).
@@ -28,7 +30,7 @@ MFLAGS=-l
 ! endif
 ! if [del baseruby.mk 2> nul]
 ! endif
-!else if "$(BASERUBY)" == "no" || [($(BASERUBY) -eexit) > nul 2> nul]
+!else if [($(BASERUBY) $(tooldir)/missing-baseruby.bat) > nul 2> nul]
 BASERUBY =
 !endif
 !if "$(BASERUBY)" == ""
@@ -122,9 +124,6 @@ TOUCH = $(BASERUBY) -run -e touch --
 CP = copy > nul
 MV = move > nul
 RM1 = del /f /q
-!if !defined(BASERUBY)
-BASERUBY = ruby
-!endif
 !if !defined(TEST_RUNNABLE)
 TEST_RUNNABLE = yes
 !endif

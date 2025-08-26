@@ -1223,19 +1223,13 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 {
     VALUE fields_obj;
 #if OPT_IC_FOR_IVAR
-    VALUE val = Qundef;
-    VALUE *ivar_list;
-
     if (SPECIAL_CONST_P(obj)) {
         return default_value;
     }
 
-    shape_id_t shape_id = RBASIC_SHAPE_ID_FOR_READ(obj);
-
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        ivar_list = ROBJECT_FIELDS(obj);
-        VM_ASSERT(rb_ractor_shareable_p(obj) ? rb_ractor_shareable_p(val) : true);
+        fields_obj = obj;
         break;
       case T_CLASS:
       case T_MODULE:
@@ -1257,26 +1251,20 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
             }
 
             fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
-            if (!fields_obj) {
-                return default_value;
-            }
-            ivar_list = rb_imemo_fields_ptr(fields_obj);
-            shape_id = RBASIC_SHAPE_ID_FOR_READ(fields_obj);
-
             break;
         }
       default:
-        if (rb_obj_exivar_p(obj)) {
-            VALUE fields_obj = rb_obj_fields(obj, id);
-            if (!fields_obj) {
-                return default_value;
-            }
-            ivar_list = rb_imemo_fields_ptr(fields_obj);
-        }
-        else {
-            return default_value;
-        }
+        fields_obj = rb_obj_fields(obj, id);
     }
+
+    if (!fields_obj) {
+        return default_value;
+    }
+
+    VALUE val = Qundef;
+
+    shape_id_t shape_id = RBASIC_SHAPE_ID_FOR_READ(fields_obj);
+    VALUE *ivar_list = rb_imemo_fields_ptr(fields_obj);
 
     shape_id_t cached_id;
     attr_index_t index;
@@ -1330,26 +1318,13 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
 #endif
 
-        if (rb_shape_too_complex_p(shape_id)) {
-            st_table *table = NULL;
-            switch (BUILTIN_TYPE(obj)) {
-              case T_CLASS:
-              case T_MODULE:
-                table = rb_imemo_fields_complex_tbl(fields_obj);
-                break;
+        if (UNLIKELY(rb_shape_too_complex_p(shape_id))) {
+            st_table *table = (st_table *)ivar_list;
 
-              case T_OBJECT:
-                table = ROBJECT_FIELDS_HASH(obj);
-                break;
+            RUBY_ASSERT(table);
+            RUBY_ASSERT(table == rb_imemo_fields_complex_tbl(fields_obj));
 
-              default: {
-                VALUE fields_obj = rb_obj_fields(obj, id);
-                table = rb_imemo_fields_complex_tbl(fields_obj);
-                break;
-              }
-            }
-
-            if (!table || !st_lookup(table, id, &val)) {
+            if (!st_lookup(table, id, &val)) {
                 val = default_value;
             }
         }
@@ -1382,14 +1357,12 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
                 val = default_value;
             }
         }
-
     }
 
     if (!UNDEF_P(default_value)) {
         RUBY_ASSERT(!UNDEF_P(val));
     }
 
-    RB_GC_GUARD(fields_obj);
     return val;
 
 general_path:

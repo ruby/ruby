@@ -326,6 +326,7 @@ RSHAPE_LEN(shape_id_t shape_id)
 static inline attr_index_t
 RSHAPE_INDEX(shape_id_t shape_id)
 {
+    RUBY_ASSERT(RSHAPE_LEN(shape_id) > 0);
     return RSHAPE_LEN(shape_id) - 1;
 }
 
@@ -350,6 +351,8 @@ ROBJECT_FIELDS_HASH(VALUE obj)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
     RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
+    RUBY_ASSERT(!FL_TEST_RAW(obj, ROBJECT_EMBED));
+
     return (st_table *)ROBJECT(obj)->as.heap.fields;
 }
 
@@ -358,6 +361,8 @@ ROBJECT_SET_FIELDS_HASH(VALUE obj, const st_table *tbl)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
     RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
+    RUBY_ASSERT(!FL_TEST_RAW(obj, ROBJECT_EMBED));
+
     ROBJECT(obj)->as.heap.fields = (VALUE *)tbl;
 }
 
@@ -379,8 +384,6 @@ RBASIC_FIELDS_COUNT(VALUE obj)
 {
     return RSHAPE(rb_obj_shape_id(obj))->next_field_index;
 }
-
-bool rb_obj_set_shape_id(VALUE obj, shape_id_t shape_id);
 
 static inline bool
 rb_shape_obj_has_id(VALUE obj)

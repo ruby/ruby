@@ -358,7 +358,7 @@ rb_zjit_singleton_class_p(VALUE klass)
 
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
-VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self);
+VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self, VALUE target_key);
 VALUE rb_zjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 
 // Preprocessed zjit.rb generated during build
