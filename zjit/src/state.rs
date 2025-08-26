@@ -155,12 +155,12 @@ impl ZJITState {
         let mut file = match std::fs::OpenOptions::new().create(true).append(true).open(filename) {
             Ok(f) => f,
             Err(e) => {
-                eprintln!("ZJIT: Failed to create file '{}': {}", filename, e);
+                eprintln!("ZJIT: Failed to create file '{}': {}", filename.display(), e);
                 return;
             }
         };
         if let Err(e) = writeln!(file, "{}", iseq_name) {
-            eprintln!("ZJIT: Failed to write to file '{}': {}", filename, e);
+            eprintln!("ZJIT: Failed to write to file '{}': {}", filename.display(), e);
         }
     }
 

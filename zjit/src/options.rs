@@ -59,7 +59,7 @@ pub struct Options {
     pub allowed_iseqs: Option<HashSet<String>>,
 
     /// Path to a file where compiled ISEQs will be saved.
-    pub log_compiled_iseqs: Option<String>,
+    pub log_compiled_iseqs: Option<std::path::PathBuf>,
 }
 
 impl Default for Options {
@@ -242,7 +242,8 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 .open(opt_val)
                 .map_err(|e| eprintln!("Failed to open file '{}': {}", opt_val, e))
                 .ok();
-            options.log_compiled_iseqs = Some(opt_val.into());
+            let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
+            options.log_compiled_iseqs = Some(opt_val);
         }
 
         _ => return None, // Option name not recognized
