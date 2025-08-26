@@ -3,7 +3,6 @@
 static VALUE rb_cPathname;
 static ID id_at_path;
 static ID id_sub;
-static ID id_realdirpath;
 
 static VALUE
 get_strpath(VALUE obj)
@@ -84,22 +83,6 @@ path_sub(int argc, VALUE *argv, VALUE self)
     return rb_class_new_instance(1, &str, rb_obj_class(self));
 }
 
-/*
- * Returns the real (absolute) pathname of +self+ in the actual filesystem.
- *
- * Does not contain symlinks or useless dots, +..+ and +.+.
- *
- * The last component of the real pathname can be nonexistent.
- */
-static VALUE
-path_realdirpath(int argc, VALUE *argv, VALUE self)
-{
-    VALUE basedir, str;
-    rb_scan_args(argc, argv, "01", &basedir);
-    str = rb_funcall(rb_cFile, id_realdirpath, 2, get_strpath(self), basedir);
-    return rb_class_new_instance(1, &str, rb_obj_class(self));
-}
-
 #include "pathname_builtin.rbinc"
 
 static void init_ids(void);
@@ -121,7 +104,6 @@ InitVM_pathname(void)
     rb_cPathname = rb_define_class("Pathname", rb_cObject);
     rb_define_method(rb_cPathname, "<=>", path_cmp, 1);
     rb_define_method(rb_cPathname, "sub", path_sub, -1);
-    rb_define_method(rb_cPathname, "realdirpath", path_realdirpath, -1);
 
     rb_provide("pathname.so");
 }
@@ -132,5 +114,4 @@ init_ids(void)
 #undef rb_intern
     id_at_path = rb_intern("@path");
     id_sub = rb_intern("sub");
-    id_realdirpath = rb_intern("realdirpath");
 }
