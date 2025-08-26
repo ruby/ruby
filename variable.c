@@ -4490,13 +4490,13 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
     fields_obj = original_fields_obj ? original_fields_obj : rb_imemo_fields_new(klass, 1);
 
     shape_id_t current_shape_id = RBASIC_SHAPE_ID(fields_obj);
-
+    shape_id_t next_shape_id = current_shape_id; // for too_complex
     if (UNLIKELY(rb_shape_too_complex_p(current_shape_id))) {
         goto too_complex;
     }
 
     bool new_ivar;
-    shape_id_t next_shape_id = generic_shape_ivar(fields_obj, id, &new_ivar);
+    next_shape_id = generic_shape_ivar(fields_obj, id, &new_ivar);
 
     if (UNLIKELY(rb_shape_too_complex_p(next_shape_id))) {
         fields_obj = imemo_fields_complex_from_obj(klass, fields_obj, next_shape_id);
