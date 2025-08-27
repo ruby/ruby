@@ -1604,6 +1604,18 @@ impl Assembler
                         Opnd::mem(64, SCRATCH_OPND, 0)
                     };
                     self.incr_counter(counter_opnd, 1.into());
+
+                    asm_comment!(self, "increment a specific exit counter");
+                    let counter = crate::stats::side_exit_reason_counter(reason);
+                    self.load_into(SCRATCH_OPND, Opnd::const_ptr(crate::stats::counter_ptr(counter)));
+                    let counter_opnd = if cfg!(target_arch = "aarch64") { // See arm64_split()
+                        // Using C_CRET_OPND since arm64_emit uses both SCRATCH0 and SCRATCH1 for IncrCounter.
+                        self.lea_into(C_RET_OPND, Opnd::mem(64, SCRATCH_OPND, 0));
+                        C_RET_OPND
+                    } else { // x86_emit expects Opnd::Mem
+                        Opnd::mem(64, SCRATCH_OPND, 0)
+                    };
+                    self.incr_counter(counter_opnd, 1.into());
                 }
 
                 asm_comment!(self, "exit to the interpreter");

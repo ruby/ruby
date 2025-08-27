@@ -81,6 +81,23 @@ make_counters! {
 
     // exit_: Side exit reasons (ExitCounters shares the same prefix)
     exit_compilation_failure,
+
+    // specific_exit_: Side exits counted by type, not by PC
+    specific_exit_unknown_newarray_send,
+    specific_exit_unknown_call_type,
+    specific_exit_unknown_opcode,
+    specific_exit_unhandled_instruction,
+    specific_exit_fixnum_add_overflow,
+    specific_exit_fixnum_sub_overflow,
+    specific_exit_fixnum_mult_overflow,
+    specific_exit_guard_type_failure,
+    specific_exit_guard_bit_equals_failure,
+    specific_exit_patchpoint,
+    specific_exit_callee_side_exit,
+    specific_exit_obj_to_string_fallback,
+    specific_exit_unknown_special_variable,
+    specific_exit_unhandled_defined_type,
+    specific_exit_interrupt,
 }
 
 /// Increase a counter by a specified amount
@@ -105,6 +122,27 @@ pub fn exit_counter_ptr(pc: *const VALUE) -> *mut u64 {
     let opcode = unsafe { rb_vm_insn_addr2opcode((*pc).as_ptr()) };
     let exit_counters = ZJITState::get_exit_counters();
     unsafe { exit_counters.get_unchecked_mut(opcode as usize) }
+}
+
+pub fn side_exit_reason_counter(reason: crate::hir::SideExitReason) -> Counter {
+    use crate::hir::SideExitReason;
+    match reason {
+        SideExitReason::UnknownNewarraySend(_) => Counter::specific_exit_unknown_newarray_send,
+        SideExitReason::UnknownCallType => Counter::specific_exit_unknown_call_type,
+        SideExitReason::UnknownOpcode(_) => Counter::specific_exit_unknown_opcode,
+        SideExitReason::UnhandledInstruction(_) => Counter::specific_exit_unhandled_instruction,
+        SideExitReason::FixnumAddOverflow => Counter::specific_exit_fixnum_add_overflow,
+        SideExitReason::FixnumSubOverflow => Counter::specific_exit_fixnum_sub_overflow,
+        SideExitReason::FixnumMultOverflow => Counter::specific_exit_fixnum_mult_overflow,
+        SideExitReason::GuardType(_) => Counter::specific_exit_guard_type_failure,
+        SideExitReason::GuardBitEquals(_) => Counter::specific_exit_guard_bit_equals_failure,
+        SideExitReason::PatchPoint(_) => Counter::specific_exit_patchpoint,
+        SideExitReason::CalleeSideExit => Counter::specific_exit_callee_side_exit,
+        SideExitReason::ObjToStringFallback => Counter::specific_exit_obj_to_string_fallback,
+        SideExitReason::UnknownSpecialVariable(_) => Counter::specific_exit_unknown_special_variable,
+        SideExitReason::UnhandledDefinedType(_) => Counter::specific_exit_unhandled_defined_type,
+        SideExitReason::Interrupt => Counter::specific_exit_interrupt,
+    }
 }
 
 /// Return a Hash object that contains ZJIT statistics
