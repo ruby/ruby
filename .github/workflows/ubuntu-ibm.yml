@@ -26,13 +26,14 @@ jobs:
       matrix:
         test_task: [check]
         configure: ['']
-        arch: ['']
         os:
           # FIXME Comment out ppc64le due to failing tests on GitHub Actions
           # ppc64le
           # https://bugs.ruby-lang.org/issues/21534
           # - ubuntu-24.04-ppc64le
           - ubuntu-24.04-s390x
+          # Add a x86_64 case to make this CI pass on fork repositories.
+          - ubuntu-24.04
         # The ppc64le/s390x runners work only in the registered repositories.
         # They don't work in forked repositories.
         # https://github.com/IBM/actionspz/blob/main/docs/FAQ.md#what-about-forked-repos
@@ -43,13 +44,15 @@ jobs:
             upstream: false
           - os: ubuntu-24.04-s390x
             upstream: false
+          - os: ubuntu-24.04
+            upstream: true
       fail-fast: false
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUBY_DEBUG: ci
 
-    runs-on: ${{ matrix.os || 'ubuntu-22.04' }}
+    runs-on: ${{ matrix.os }}
 
     if: >-
       ${{!(false
@@ -66,14 +69,12 @@ jobs:
           sparse-checkout: /.github
 
       - uses: ./.github/actions/setup/ubuntu
-        with:
-          arch: ${{ matrix.arch }}
 
       - uses: ruby/setup-ruby@a9bfc2ecf3dd40734a9418f89a7e9d484c32b990 # v1.248.0
         with:
           ruby-version: '3.1'
           bundler: none
-        if: ${{ !endsWith(matrix.os, 'arm') && !endsWith(matrix.os, 'ppc64le') && !endsWith(matrix.os, 's390x') }}
+        if: ${{ !endsWith(matrix.os, 'ppc64le') && !endsWith(matrix.os, 's390x') }}
 
       # Avoid possible test failures with the zlib applying the following patch
       # on s390x CPU architecture.
@@ -105,22 +106,17 @@ jobs:
 
       - name: Run configure
         env:
-          arch: ${{ matrix.arch }}
           configure: ${{ matrix.configure }}
         run: >-
-          $SETARCH ../src/configure -C --disable-install-doc ${configure:-cppflags=-DRUBY_DEBUG}
-          ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
+          ../src/configure -C --disable-install-doc ${configure:-cppflags=-DRUBY_DEBUG}
 
-      - run: $SETARCH make prepare-gems
-        if: ${{ matrix.test_task == 'test-bundled-gems' }}
+      - run: make
 
-      - run: $SETARCH make
-
-      - run: $SETARCH make hello
+      - run: make hello
 
       - name: runirb
         run: |
-          echo IRB::VERSION | $SETARCH make runirb RUNOPT="-- -f"
+          echo IRB::VERSION | make runirb RUNOPT="-- -f"
 
       - name: Set test options for skipped tests
         run: |
@@ -133,7 +129,7 @@ jobs:
         id: launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: ${{ matrix.os || 'ubuntu-22.04' }}
+          os: ${{ matrix.os }}
           test-opts: ${{ matrix.configure }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
@@ -157,7 +153,7 @@ jobs:
           test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
           test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
 
-          $SETARCH make -s ${{ matrix.test_task }} \
+          make -s ${{ matrix.test_task }} \
           ${TESTS:+TESTS="$TESTS"} \
           ${{ !contains(matrix.test_task, 'bundle') && 'RUBYOPT=-w' || '' }}
         timeout-minutes: ${{ matrix.timeout || 40 }}
@@ -170,7 +166,7 @@ jobs:
 
       - name: make skipped tests
         run: |
-          $SETARCH make -s test-all TESTS="${TESTS//-n!\//-n/}"
+          make -s test-all TESTS="${TESTS//-n!\//-n/}"
         env:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-v --tty=no'
@@ -180,11 +176,11 @@ jobs:
       - name: test-pc
         run: |
           DESTDIR=${RUNNER_TEMP-${TMPDIR-/tmp}}/installed
-          $SETARCH make test-pc "DESTDIR=$DESTDIR"
+          make test-pc "DESTDIR=$DESTDIR"
 
       - uses: ./.github/actions/slack
         with:
-          label: ${{ matrix.test_task }} ${{ matrix.configure }}${{ matrix.arch }}
+          label: ${{ matrix.test_task }} ${{ matrix.configure }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
