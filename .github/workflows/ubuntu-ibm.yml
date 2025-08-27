@@ -27,10 +27,7 @@ jobs:
         test_task: [check]
         configure: ['']
         os:
-          # FIXME Comment out ppc64le due to failing tests on GitHub Actions
-          # ppc64le
-          # https://bugs.ruby-lang.org/issues/21534
-          # - ubuntu-24.04-ppc64le
+          - ubuntu-24.04-ppc64le
           - ubuntu-24.04-s390x
           # Add a x86_64 case to make this CI pass on fork repositories.
           - ubuntu-24.04
@@ -107,8 +104,14 @@ jobs:
       - name: Run configure
         env:
           configure: ${{ matrix.configure }}
-        run: >-
-          ../src/configure -C --disable-install-doc ${configure:-cppflags=-DRUBY_DEBUG}
+        # Don't set cppflags=-DRUBY_DEBUG on ppc64le, due to some Ractor tests
+        # failing in the case.
+        # https://bugs.ruby-lang.org/issues/21534
+        run: |
+          if [ "$(uname -m)" != "ppc64le" ]; then
+            configure="${configure:-cppflags=-DRUBY_DEBUG}"
+          fi
+          ../src/configure -C --disable-install-doc ${configure}
 
       - run: make
 
