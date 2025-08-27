@@ -25,16 +25,8 @@ class << RubyVM::ZJIT
   end
 
   # Return ZJIT statistics as a Hash
-  def stats(key = nil)
-    stats = Primitive.rb_zjit_stats(key)
-    return stats if stats.nil? || !key.nil?
-
-    if stats.key?(:vm_insn_count) && stats.key?(:zjit_insn_count)
-      stats[:total_insn_count] = stats[:vm_insn_count] + stats[:zjit_insn_count]
-      stats[:ratio_in_zjit] = 100.0 * stats[:zjit_insn_count] / stats[:total_insn_count]
-    end
-
-    stats
+  def stats(target_key = nil)
+    Primitive.rb_zjit_stats(target_key)
   end
 
   # Get the summary of ZJIT statistics as a String
@@ -44,6 +36,8 @@ class << RubyVM::ZJIT
 
     print_counters_with_prefix(prefix: 'failed_', prompt: 'compilation failure reasons', buf:, stats:)
     print_counters([
+      :num_send_dynamic,
+
       :compiled_iseq_count,
       :compilation_failure,
 
@@ -56,7 +50,6 @@ class << RubyVM::ZJIT
       :total_insn_count,
       :vm_insn_count,
       :zjit_insn_count,
-      :zjit_dynamic_dispatch,
       :ratio_in_zjit,
     ], buf:, stats:)
     print_counters_with_prefix(prefix: 'exit_', prompt: 'side exit reasons', buf:, stats:, limit: 20)

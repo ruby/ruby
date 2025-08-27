@@ -6,7 +6,7 @@ use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_
 use crate::hir::SideExitReason;
 use crate::options::{debug, get_option};
 use crate::cruby::VALUE;
-use crate::stats::exit_counter_ptr;
+use crate::stats::{exit_counter_ptr, specific_exit_counter_ptr};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
 
@@ -1593,29 +1593,15 @@ impl Assembler
                 let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
                 self.store(cfp_sp, SCRATCH_OPND);
 
+                // Using C_RET_OPND as an additional scratch register, which is no longer used
                 if get_option!(stats) {
                     asm_comment!(self, "increment an exit counter");
                     self.load_into(SCRATCH_OPND, Opnd::const_ptr(exit_counter_ptr(pc)));
-                    let counter_opnd = if cfg!(target_arch = "aarch64") { // See arm64_split()
-                        // Using C_CRET_OPND since arm64_emit uses both SCRATCH0 and SCRATCH1 for IncrCounter.
-                        self.lea_into(C_RET_OPND, Opnd::mem(64, SCRATCH_OPND, 0));
-                        C_RET_OPND
-                    } else { // x86_emit expects Opnd::Mem
-                        Opnd::mem(64, SCRATCH_OPND, 0)
-                    };
-                    self.incr_counter(counter_opnd, 1.into());
+                    self.incr_counter_with_reg(Opnd::mem(64, SCRATCH_OPND, 0), 1.into(), C_RET_OPND);
 
                     asm_comment!(self, "increment a specific exit counter");
-                    let counter = crate::stats::side_exit_reason_counter(reason);
-                    self.load_into(SCRATCH_OPND, Opnd::const_ptr(crate::stats::counter_ptr(counter)));
-                    let counter_opnd = if cfg!(target_arch = "aarch64") { // See arm64_split()
-                        // Using C_CRET_OPND since arm64_emit uses both SCRATCH0 and SCRATCH1 for IncrCounter.
-                        self.lea_into(C_RET_OPND, Opnd::mem(64, SCRATCH_OPND, 0));
-                        C_RET_OPND
-                    } else { // x86_emit expects Opnd::Mem
-                        Opnd::mem(64, SCRATCH_OPND, 0)
-                    };
-                    self.incr_counter(counter_opnd, 1.into());
+                    self.load_into(SCRATCH_OPND, Opnd::const_ptr(specific_exit_counter_ptr(reason)));
+                    self.incr_counter_with_reg(Opnd::mem(64, SCRATCH_OPND, 0), 1.into(), C_RET_OPND);
                 }
 
                 asm_comment!(self, "exit to the interpreter");
@@ -1797,6 +1783,19 @@ impl Assembler {
 
     pub fn incr_counter(&mut self, mem: Opnd, value: Opnd) {
         self.push_insn(Insn::IncrCounter { mem, value });
+    }
+
+    /// incr_counter() but uses a specific register to split Insn::Lea
+    pub fn incr_counter_with_reg(&mut self, mem: Opnd, value: Opnd, reg: Opnd) {
+        assert!(matches!(reg, Opnd::Reg(_)), "incr_counter_with_reg should take a register, got: {reg:?}");
+        let counter_opnd = if cfg!(target_arch = "aarch64") { // See arm64_split()
+            assert_ne!(reg, SCRATCH_OPND, "SCRATCH_REG should be reserved for IncrCounter");
+            self.lea_into(reg, mem);
+            reg
+        } else { // x86_emit() expects Opnd::Mem
+            mem
+        };
+        self.incr_counter(counter_opnd, value);
     }
 
     pub fn jbe(&mut self, target: Target) {

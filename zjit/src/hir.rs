@@ -431,7 +431,9 @@ pub enum SideExitReason {
     UnknownNewarraySend(vm_opt_newarray_send_type),
     UnknownCallType,
     UnknownOpcode(u32),
+    UnknownSpecialVariable(u64),
     UnhandledInstruction(InsnId),
+    UnhandledDefinedType(usize),
     FixnumAddOverflow,
     FixnumSubOverflow,
     FixnumMultOverflow,
@@ -440,8 +442,6 @@ pub enum SideExitReason {
     PatchPoint(Invariant),
     CalleeSideExit,
     ObjToStringFallback,
-    UnknownSpecialVariable(u64),
-    UnhandledDefinedType(usize),
     Interrupt,
 }
 

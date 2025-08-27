@@ -73,7 +73,7 @@ make_counters! {
     zjit_insn_count,
 
     // The number of times we do a dynamic dispatch from JIT code
-    zjit_dynamic_dispatch,
+    num_send_dynamic,
 
     // failed_: Compilation failure reasons
     failed_iseq_stack_too_large,
@@ -89,7 +89,9 @@ make_counters! {
     specific_exit_unknown_newarray_send,
     specific_exit_unknown_call_type,
     specific_exit_unknown_opcode,
+    specific_exit_unknown_special_variable,
     specific_exit_unhandled_instruction,
+    specific_exit_unhandled_defined_type,
     specific_exit_fixnum_add_overflow,
     specific_exit_fixnum_sub_overflow,
     specific_exit_fixnum_mult_overflow,
@@ -98,8 +100,6 @@ make_counters! {
     specific_exit_patchpoint,
     specific_exit_callee_side_exit,
     specific_exit_obj_to_string_fallback,
-    specific_exit_unknown_special_variable,
-    specific_exit_unhandled_defined_type,
     specific_exit_interrupt,
 }
 
@@ -127,25 +127,27 @@ pub fn exit_counter_ptr(pc: *const VALUE) -> *mut u64 {
     unsafe { exit_counters.get_unchecked_mut(opcode as usize) }
 }
 
-pub fn side_exit_reason_counter(reason: crate::hir::SideExitReason) -> Counter {
-    use crate::hir::SideExitReason;
-    match reason {
-        SideExitReason::UnknownNewarraySend(_) => Counter::specific_exit_unknown_newarray_send,
-        SideExitReason::UnknownCallType => Counter::specific_exit_unknown_call_type,
-        SideExitReason::UnknownOpcode(_) => Counter::specific_exit_unknown_opcode,
-        SideExitReason::UnhandledInstruction(_) => Counter::specific_exit_unhandled_instruction,
-        SideExitReason::FixnumAddOverflow => Counter::specific_exit_fixnum_add_overflow,
-        SideExitReason::FixnumSubOverflow => Counter::specific_exit_fixnum_sub_overflow,
-        SideExitReason::FixnumMultOverflow => Counter::specific_exit_fixnum_mult_overflow,
-        SideExitReason::GuardType(_) => Counter::specific_exit_guard_type_failure,
-        SideExitReason::GuardBitEquals(_) => Counter::specific_exit_guard_bit_equals_failure,
-        SideExitReason::PatchPoint(_) => Counter::specific_exit_patchpoint,
-        SideExitReason::CalleeSideExit => Counter::specific_exit_callee_side_exit,
-        SideExitReason::ObjToStringFallback => Counter::specific_exit_obj_to_string_fallback,
-        SideExitReason::UnknownSpecialVariable(_) => Counter::specific_exit_unknown_special_variable,
-        SideExitReason::UnhandledDefinedType(_) => Counter::specific_exit_unhandled_defined_type,
-        SideExitReason::Interrupt => Counter::specific_exit_interrupt,
-    }
+pub fn specific_exit_counter_ptr(reason: crate::hir::SideExitReason) -> *mut u64 {
+    use crate::hir::SideExitReason::*;
+    use crate::stats::Counter::*;
+    let counter = match reason {
+        UnknownNewarraySend(_)    => specific_exit_unknown_newarray_send,
+        UnknownCallType           => specific_exit_unknown_call_type,
+        UnknownOpcode(_)          => specific_exit_unknown_opcode,
+        UnknownSpecialVariable(_) => specific_exit_unknown_special_variable,
+        UnhandledInstruction(_)   => specific_exit_unhandled_instruction,
+        UnhandledDefinedType(_)   => specific_exit_unhandled_defined_type,
+        FixnumAddOverflow         => specific_exit_fixnum_add_overflow,
+        FixnumSubOverflow         => specific_exit_fixnum_sub_overflow,
+        FixnumMultOverflow        => specific_exit_fixnum_mult_overflow,
+        GuardType(_)              => specific_exit_guard_type_failure,
+        GuardBitEquals(_)         => specific_exit_guard_bit_equals_failure,
+        PatchPoint(_)             => specific_exit_patchpoint,
+        CalleeSideExit            => specific_exit_callee_side_exit,
+        ObjToStringFallback       => specific_exit_obj_to_string_fallback,
+        Interrupt                 => specific_exit_interrupt,
+    };
+    counter_ptr(counter)
 }
 
 /// Return a Hash object that contains ZJIT statistics
@@ -158,13 +160,24 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     macro_rules! set_stat {
         ($hash:ident, $key:expr, $value:expr) => {
             let key = rust_str_to_sym($key);
-            // Evaluate $value only when it's needed
             if key == target_key {
-                return VALUE::fixnum_from_usize($value as usize);
+                return $value;
             } else if $hash != Qnil {
                 #[allow(unused_unsafe)]
-                unsafe { rb_hash_aset($hash, key, VALUE::fixnum_from_usize($value as usize)); }
+                unsafe { rb_hash_aset($hash, key, $value); }
             }
+        };
+    }
+
+    macro_rules! set_stat_usize {
+        ($hash:ident, $key:expr, $value:expr) => {
+            set_stat!($hash, $key, VALUE::fixnum_from_usize($value as usize))
+        }
+    }
+
+    macro_rules! set_stat_f64 {
+        ($hash:ident, $key:expr, $value:expr) => {
+            set_stat!($hash, $key, unsafe { rb_float_new($value) })
         }
     }
 
@@ -177,14 +190,14 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     // If not --zjit-stats, set only default counters
     if !get_option!(stats) {
         for &counter in DEFAULT_COUNTERS {
-            set_stat!(hash, &counter.name(), unsafe { *counter_ptr(counter) });
+            set_stat_usize!(hash, &counter.name(), unsafe { *counter_ptr(counter) });
         }
         return hash;
     }
 
     // Set all counters for --zjit-stats
     for &counter in ALL_COUNTERS {
-        set_stat!(hash, &counter.name(), unsafe { *counter_ptr(counter) });
+        set_stat_usize!(hash, &counter.name(), unsafe { *counter_ptr(counter) });
     }
 
     // Set side exit stats
@@ -195,12 +208,23 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
         let key_string = "exit_".to_owned() + &op_name;
         let count = exit_counters[op_idx];
         side_exit_count += count;
-        set_stat!(hash, &key_string, count);
+        set_stat_usize!(hash, &key_string, count);
     }
-    set_stat!(hash, "side_exit_count", side_exit_count);
+    set_stat_usize!(hash, "side_exit_count", side_exit_count);
 
+    // Share compilation_failure among both prefixes for side-exit stats
+    let counters = ZJITState::get_counters();
+    set_stat_usize!(hash, "specific_exit_compilation_failure", counters.exit_compilation_failure);
+
+    // Only ZJIT_STATS builds support rb_vm_insn_count
     if unsafe { rb_vm_insn_count } > 0 {
-        set_stat!(hash, "vm_insn_count", unsafe { rb_vm_insn_count });
+        let vm_insn_count = unsafe { rb_vm_insn_count };
+        set_stat_usize!(hash, "vm_insn_count", vm_insn_count);
+
+        let total_insn_count = vm_insn_count + counters.zjit_insn_count;
+        set_stat_usize!(hash, "total_insn_count", total_insn_count);
+
+        set_stat_f64!(hash, "ratio_in_yjit", 100.0 * vm_insn_count as f64 / total_insn_count as f64);
     }
 
     hash
