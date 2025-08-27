@@ -1,4 +1,4 @@
-use crate::codegen::{gen_exit_trampoline, gen_function_stub_exit_trapmoline, gen_function_stub_hit_trampoline};
+use crate::codegen::{gen_exit_trampoline, gen_function_stub_exit_trampoline, gen_function_stub_hit_trampoline};
 use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insns_count, EcPtr, Qnil, VALUE, VM_INSTRUCTION_SIZE};
 use crate::cruby_methods;
 use crate::invariants::Invariants;
@@ -114,7 +114,7 @@ impl ZJITState {
         // on the counter, so ZJIT_STATE needs to be initialized first.
         if get_option!(stats) {
             let cb = ZJITState::get_code_block();
-            let code_ptr = gen_function_stub_exit_trapmoline(cb, exit_trampoline).unwrap();
+            let code_ptr = gen_function_stub_exit_trampoline(cb, exit_trampoline).unwrap();
             ZJITState::get_instance().function_stub_exit_trampoline = code_ptr;
         }
     }

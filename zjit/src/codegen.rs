@@ -1593,7 +1593,7 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Option<CodePtr> {
 }
 
 /// Generate a trampoline that increments exit_compilation_failure and jumps to exit_trampoline.
-pub fn gen_function_stub_exit_trapmoline(cb: &mut CodeBlock, exit_trampoline: CodePtr) -> Option<CodePtr> {
+pub fn gen_function_stub_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: CodePtr) -> Option<CodePtr> {
     let mut asm = Assembler::new();
 
     asm_comment!(asm, "function stub exit trampoline");
