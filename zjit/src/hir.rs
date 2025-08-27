@@ -8118,6 +8118,24 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_specialize_basicobject_not_to_ccall() {
+        eval("
+            def test(a) = !a
+
+            test([])
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1000, !@0x1008, cme:0x1010)
+          v9:ArrayExact = GuardType v1, ArrayExact
+          v10:BoolExact = CCall !@0x1038, v9
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
     fn test_guard_fixnum_and_fixnum() {
         eval("
             def test(x, y) = x & y
