@@ -59,6 +59,7 @@ class << RubyVM::ZJIT
       :ratio_in_zjit,
     ], buf:, stats:)
     print_counters_with_prefix(prefix: 'exit_', prompt: 'side exit reasons', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'specific_exit_', prompt: 'specific side exit reasons', buf:, stats:, limit: 20)
 
     buf
   end
