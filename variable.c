@@ -1300,7 +1300,7 @@ rb_free_generic_ivar(VALUE obj)
     }
 }
 
-void
+static void
 rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fields_obj)
 {
     ivar_ractor_check(obj, field_name);
@@ -1555,6 +1555,10 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
             else {
                 val = rb_ivar_delete(fields_obj, id, undef);
             }
+            // TODO: What should we set as the T_CLASS shape_id?
+            // In most case we can replicate the single `fields_obj` shape
+            // but in namespaced case? Perhaps INVALID_SHAPE_ID?
+            RBASIC_SET_SHAPE_ID(obj, RBASIC_SHAPE_ID(fields_obj));
         }
         return val;
     }
@@ -1764,7 +1768,7 @@ imemo_fields_set(VALUE owner, VALUE fields_obj, shape_id_t target_shape_id, ID f
     return fields_obj;
 }
 
-static void
+static attr_index_t
 generic_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val)
 {
     if (!field_name) {
@@ -1776,6 +1780,7 @@ generic_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE va
     VALUE fields_obj = imemo_fields_set(obj, original_fields_obj, target_shape_id, field_name, val, false);
 
     rb_obj_set_fields(obj, fields_obj, field_name, original_fields_obj);
+    return rb_shape_too_complex_p(target_shape_id) ? ATTR_INDEX_NOT_SET : RSHAPE_INDEX(target_shape_id);
 }
 
 static shape_id_t
@@ -1800,12 +1805,12 @@ generic_shape_ivar(VALUE obj, ID id, bool *new_ivar_out)
     return target_shape_id;
 }
 
-static void
+static attr_index_t
 generic_ivar_set(VALUE obj, ID id, VALUE val)
 {
     bool dontcare;
     shape_id_t target_shape_id = generic_shape_ivar(obj, id, &dontcare);
-    generic_field_set(obj, target_shape_id, id, val);
+    return generic_field_set(obj, target_shape_id, id, val);
 }
 
 void
@@ -1886,8 +1891,8 @@ obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val)
     }
 }
 
-attr_index_t
-rb_obj_ivar_set(VALUE obj, ID id, VALUE val)
+static attr_index_t
+obj_ivar_set(VALUE obj, ID id, VALUE val)
 {
     bool dontcare;
     shape_id_t target_shape_id = generic_shape_ivar(obj, id, &dontcare);
@@ -1902,7 +1907,7 @@ VALUE
 rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val)
 {
     rb_check_frozen(obj);
-    rb_obj_ivar_set(obj, id, val);
+    obj_ivar_set(obj, id, val);
     return val;
 }
 
@@ -1922,26 +1927,25 @@ void rb_obj_freeze_inline(VALUE x)
     }
 }
 
-static void
+static attr_index_t class_ivar_set(VALUE obj, ID id, VALUE val, bool *new_ivar);
+
+static attr_index_t
 ivar_set(VALUE obj, ID id, VALUE val)
 {
     RB_DEBUG_COUNTER_INC(ivar_set_base);
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-      {
-        rb_obj_ivar_set(obj, id, val);
-        break;
-      }
+        return obj_ivar_set(obj, id, val);
       case T_CLASS:
       case T_MODULE:
-        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
-        rb_class_ivar_set(obj, id, val);
-
-        break;
+        {
+            IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
+            bool dontcare;
+            return class_ivar_set(obj, id, val, &dontcare);
+        }
       default:
-        generic_ivar_set(obj, id, val);
-        break;
+        return generic_ivar_set(obj, id, val);
     }
 }
 
@@ -1953,6 +1957,12 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
     return val;
 }
 
+attr_index_t
+rb_ivar_set_index(VALUE obj, ID id, VALUE val)
+{
+    return ivar_set(obj, id, val);
+}
+
 void
 rb_ivar_set_internal(VALUE obj, ID id, VALUE val)
 {
@@ -1962,21 +1972,19 @@ rb_ivar_set_internal(VALUE obj, ID id, VALUE val)
     ivar_set(obj, id, val);
 }
 
-void
+attr_index_t
 rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val)
 {
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        obj_field_set(obj, target_shape_id, field_name, val);
-        break;
+        return obj_field_set(obj, target_shape_id, field_name, val);
       case T_CLASS:
       case T_MODULE:
         // The only field is object_id and T_CLASS handle it differently.
         rb_bug("Unreachable");
         break;
       default:
-        generic_field_set(obj, target_shape_id, field_name, val);
-        break;
+        return generic_field_set(obj, target_shape_id, field_name, val);
     }
 }
 
@@ -4483,8 +4491,8 @@ rb_iv_set(VALUE obj, const char *name, VALUE val)
     return rb_ivar_set(obj, id, val);
 }
 
-static bool
-class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool concurrent, VALUE *new_fields_obj)
+static attr_index_t
+class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool concurrent, VALUE *new_fields_obj, bool *new_ivar_out)
 {
     const VALUE original_fields_obj = fields_obj;
     fields_obj = original_fields_obj ? original_fields_obj : rb_imemo_fields_new(klass, 1);
@@ -4531,7 +4539,8 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
     }
 
     *new_fields_obj = fields_obj;
-    return new_ivar;
+    *new_ivar_out = new_ivar;
+    return index;
 
 too_complex:
     {
@@ -4552,7 +4561,29 @@ too_complex:
     }
 
     *new_fields_obj = fields_obj;
-    return new_ivar;
+    *new_ivar_out = new_ivar;
+    return ATTR_INDEX_NOT_SET;
+}
+
+static attr_index_t
+class_ivar_set(VALUE obj, ID id, VALUE val, bool *new_ivar)
+{
+    rb_class_ensure_writable(obj);
+
+    const VALUE original_fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+    VALUE new_fields_obj = 0;
+
+    attr_index_t index = class_fields_ivar_set(obj, original_fields_obj, id, val, rb_multi_ractor_p(), &new_fields_obj, new_ivar);
+
+    if (new_fields_obj != original_fields_obj) {
+        RCLASS_WRITABLE_SET_FIELDS_OBJ(obj, new_fields_obj);
+    }
+
+    // TODO: What should we set as the T_CLASS shape_id?
+    // In most case we can replicate the single `fields_obj` shape
+    // but in namespaced case? Perhaps INVALID_SHAPE_ID?
+    RBASIC_SET_SHAPE_ID(obj, RBASIC_SHAPE_ID(new_fields_obj));
+    return index;
 }
 
 bool
@@ -4561,23 +4592,8 @@ rb_class_ivar_set(VALUE obj, ID id, VALUE val)
     RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
     rb_check_frozen(obj);
 
-    rb_class_ensure_writable(obj);
-
-    const VALUE original_fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
-    VALUE new_fields_obj = 0;
-
-    bool new_ivar = class_fields_ivar_set(obj, original_fields_obj, id, val, rb_multi_ractor_p(), &new_fields_obj);
-
-    if (new_fields_obj != original_fields_obj) {
-        RCLASS_WRITABLE_SET_FIELDS_OBJ(obj, new_fields_obj);
-    }
-
-    // TODO: What should we set as the T_CLASS shape_id?
-    // In most case we can replicate the single `fields_obj` shape
-    // but in namespaced case?
-    // Perhaps INVALID_SHAPE_ID?
-    RBASIC_SET_SHAPE_ID(obj, RBASIC_SHAPE_ID(new_fields_obj));
-
+    bool new_ivar;
+    class_ivar_set(obj, id, val, &new_ivar);
     return new_ivar;
 }
 
