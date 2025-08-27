@@ -1596,14 +1596,7 @@ impl Assembler
                 if get_option!(stats) {
                     asm_comment!(self, "increment an exit counter");
                     self.load_into(SCRATCH_OPND, Opnd::const_ptr(exit_counter_ptr(pc)));
-                    let counter_opnd = if cfg!(target_arch = "aarch64") { // See arm64_split()
-                        // Using C_CRET_OPND since arm64_emit uses both SCRATCH0 and SCRATCH1 for IncrCounter.
-                        self.lea_into(C_RET_OPND, Opnd::mem(64, SCRATCH_OPND, 0));
-                        C_RET_OPND
-                    } else { // x86_emit expects Opnd::Mem
-                        Opnd::mem(64, SCRATCH_OPND, 0)
-                    };
-                    self.incr_counter(counter_opnd, 1.into());
+                    self.incr_counter(Opnd::mem(64, SCRATCH_OPND, 0), 1.into());
                 }
 
                 asm_comment!(self, "exit to the interpreter");
@@ -1784,6 +1777,8 @@ impl Assembler {
     }
 
     pub fn incr_counter(&mut self, mem: Opnd, value: Opnd) {
+        assert!(matches!(mem, Opnd::Mem(_)));
+        assert!(matches!(value, Opnd::UImm(_) | Opnd::Imm(_)));
         self.push_insn(Insn::IncrCounter { mem, value });
     }
 

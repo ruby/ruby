@@ -199,11 +199,13 @@ impl Assembler
     /// This register is call-clobbered (so we don't have to save it before using it).
     /// Avoid using if you can since this is used to lower [Insn] internally and
     /// so conflicts are possible.
-    pub const SCRATCH_REG: Reg = X16_REG;
-    const SCRATCH0_REG: Reg = Self::SCRATCH_REG;
+    pub const SCRATCH_REG: Reg = Self::SCRATCH0_REG;
+    const SCRATCH0_REG: Reg = X16_REG;
     const SCRATCH1_REG: Reg = X17_REG;
+    const SCRATCH2_REG: Reg = X18_REG;
     const SCRATCH0: A64Opnd = A64Opnd::Reg(Self::SCRATCH0_REG);
     const SCRATCH1: A64Opnd = A64Opnd::Reg(Self::SCRATCH1_REG);
+    const SCRATCH2: A64Opnd = A64Opnd::Reg(Self::SCRATCH1_REG);
 
     /// Get the list of registers from which we will allocate on this platform
     pub fn get_alloc_regs() -> Vec<Reg> {
@@ -557,14 +559,6 @@ impl Assembler
                             asm.push_insn(insn);
                         }
                     }
-                },
-                Insn::IncrCounter { mem, value } => {
-                    let counter_addr = match mem {
-                        Opnd::Mem(_) => asm.lea(*mem),
-                        _ => *mem
-                    };
-
-                    asm.incr_counter(counter_addr, *value);
                 },
                 Insn::JmpOpnd(opnd) => {
                     if let Opnd::Mem(_) = opnd {
@@ -1306,10 +1300,15 @@ impl Assembler
                     last_patch_pos = Some(cb.get_write_pos());
                 },
                 Insn::IncrCounter { mem, value } => {
+                    let &Opnd::Mem(Mem { num_bits: _, base: MemBase::Reg(base_reg_no), disp }) = mem else {
+                        panic!("Unexpected Insn::IncrCounter operand in arm64_emit: {mem:?}");
+                    };
+                    load_effective_address(cb, Self::SCRATCH2, base_reg_no, disp);
+
                     let label = cb.new_label("incr_counter_loop".to_string());
                     cb.write_label(label);
 
-                    ldaxr(cb, Self::SCRATCH0, mem.into());
+                    ldaxr(cb, Self::SCRATCH0, Self::SCRATCH2);
                     add(cb, Self::SCRATCH0, Self::SCRATCH0, value.into());
 
                     // The status register that gets used to track whether or
@@ -1317,7 +1316,7 @@ impl Assembler
                     // store the SCRATCH registers as their 64-bit versions, we
                     // need to rewrap it here.
                     let status = A64Opnd::Reg(Self::SCRATCH1.unwrap_reg().with_num_bits(32));
-                    stlxr(cb, status, Self::SCRATCH0, mem.into());
+                    stlxr(cb, status, Self::SCRATCH0, Self::SCRATCH2);
 
                     cmp(cb, Self::SCRATCH1, A64Opnd::new_uimm(0));
                     emit_conditional_jump::<{Condition::NE}>(cb, Target::Label(label));
