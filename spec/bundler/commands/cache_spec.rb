@@ -291,6 +291,8 @@ RSpec.describe "bundle cache" do
   end
 
   context "with frozen configured" do
+    let(:app_cache) { bundled_app("vendor/cache") }
+
     before do
       bundle "config set --local frozen true"
     end
@@ -347,13 +349,49 @@ RSpec.describe "bundle cache" do
         BUNDLED WITH
            #{Bundler::VERSION}
       L
-      app_cache = bundled_app("vendor/cache")
       FileUtils.mkdir_p app_cache
 
       bundle "cache --no-install"
       expect(out).not_to include("Installing myrack 1.0.0")
       expect(out).to include("Fetching myrack 1.0.0")
       expect(app_cache.join("myrack-1.0.0.gem")).to exist
+    end
+
+    it "completes a partial cache when lockfile is in sync, even if the already cached gem is no longer available remotely" do
+      build_repo4 do
+        build_gem "foo", "1.0.0"
+      end
+
+      build_gem "bar", "1.0.0", path: bundled_app("vendor/cache")
+
+      gemfile <<-G
+        source "https://gem.repo4"
+        gem "foo"
+        gem "bar"
+      G
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            foo (1.0.0)
+            bar (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          foo
+          bar
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "cache --no-install"
+      expect(out).to include("Fetching foo 1.0.0")
+      expect(out).not_to include("Fetching bar 1.0.0")
+      expect(app_cache.join("foo-1.0.0.gem")).to exist
+      expect(app_cache.join("bar-1.0.0.gem")).to exist
     end
   end
 
