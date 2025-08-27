@@ -1846,7 +1846,7 @@ static VALUE cState_allow_duplicate_key_p(VALUE self)
             return Qtrue;
         case JSON_DEPRECATED:
             return Qnil;
-        case JSON_RAISE:
+        default:
             return Qfalse;
     }
 }
