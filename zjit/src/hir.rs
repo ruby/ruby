@@ -1671,7 +1671,14 @@ impl Function {
                                 self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
+
+                            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode
+                            if unsafe { rb_zjit_singleton_class_p(klass) } {
+                                let attached = unsafe { rb_class_attached_object(klass) };
+                                if unsafe { RB_TYPE_P(attached, RUBY_T_CLASS) || RB_TYPE_P(attached, RUBY_T_MODULE) } {
+                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
+                                }
+                            }
                             let getivar = self.push_insn(block, Insn::GetIvar { self_val, id, state });
                             self.make_equal_to(insn_id, getivar);
                         } else {
@@ -3324,7 +3331,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_getinstancevariable => {
                     let id = ID(get_arg(pc, 0).as_u64());
-
                     // ic is in arg 1
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     // TODO: We only really need this if self_val is a class/module
