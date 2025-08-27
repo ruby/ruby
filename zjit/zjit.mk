@@ -59,7 +59,7 @@ ZJIT_BINDGEN_DIFF_OPTS =
 # Generate Rust bindings. See source for details.
 # Needs `./configure --enable-zjit=dev` and Clang.
 ifneq ($(strip $(CARGO)),) # if configure found Cargo
-.PHONY: zjit-bindgen zjit-bindgen-show-unused zjit-test zjit-test-lldb
+.PHONY: zjit-bindgen zjit-bindgen-show-unused zjit-test zjit-test-lldb zjit-test-update
 zjit-bindgen: zjit.$(OBJEXT)
 	ZJIT_SRC_ROOT_PATH='$(top_srcdir)' BINDGEN_JIT_NAME=zjit $(CARGO) run --manifest-path '$(top_srcdir)/zjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
 	$(Q) if [ 'x$(HAVE_GIT)' = xyes ]; then $(GIT) -C "$(top_srcdir)" diff $(ZJIT_BINDGEN_DIFF_OPTS) zjit/src/cruby_bindings.inc.rs; fi
@@ -77,10 +77,23 @@ ZJIT_NEXTEST_ENV := RUBY_BUILD_DIR='$(TOP_BUILD_DIR)' \
 # On darwin, it's available through `brew install cargo-nextest`. See
 # https://nexte.st/docs/installation/pre-built-binaries/ otherwise.
 zjit-test: libminiruby.a
+	@set +e; \
 	$(ZJIT_NEXTEST_ENV) $(CARGO) nextest run \
 		--manifest-path '$(top_srcdir)/zjit/Cargo.toml' \
 		'--features=$(ZJIT_TEST_FEATURES)' \
-		$(ZJIT_TESTS)
+		$(ZJIT_TESTS); \
+	exit_code=$$?; \
+	if [ -f '$(top_srcdir)/zjit/src/.hir.rs.pending-snap' ]; then \
+		echo ""; \
+		echo "Pending snapshots found. Accept with: make zjit-test-update"; \
+	fi; \
+	exit $$exit_code
+
+# Accept all pending snapshots (requires cargo-insta)
+# Install with: cargo install cargo-insta
+zjit-test-update:
+	@$(CARGO) insta --version >/dev/null 2>&1 || { echo "Error: cargo-insta is not installed. Install with: cargo install cargo-insta"; exit 1; }
+	@$(CARGO) insta accept --manifest-path '$(top_srcdir)/zjit/Cargo.toml'
 
 # Run a ZJIT test written with Rust #[test] under LLDB
 zjit-test-lldb: libminiruby.a
