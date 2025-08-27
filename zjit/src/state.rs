@@ -1,4 +1,4 @@
-use crate::codegen::{gen_exit_trampoline, gen_function_stub_exit_trampoline, gen_function_stub_hit_trampoline};
+use crate::codegen::{gen_exit_trampoline, gen_exit_trampoline_with_counter, gen_function_stub_hit_trampoline};
 use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insns_count, EcPtr, Qnil, VALUE, VM_INSTRUCTION_SIZE};
 use crate::cruby_methods;
 use crate::invariants::Invariants;
@@ -39,11 +39,11 @@ pub struct ZJITState {
     /// Trampoline to side-exit without restoring PC or the stack
     exit_trampoline: CodePtr,
 
+    /// Trampoline to side-exit and increment exit_compilation_failure
+    exit_trampoline_with_counter: CodePtr,
+
     /// Trampoline to call function_stub_hit
     function_stub_hit_trampoline: CodePtr,
-
-    /// Trampoline to exit from function_stub_hit
-    function_stub_exit_trampoline: CodePtr,
 }
 
 /// Private singleton instance of the codegen globals
@@ -105,7 +105,7 @@ impl ZJITState {
             method_annotations: cruby_methods::init(),
             exit_trampoline,
             function_stub_hit_trampoline,
-            function_stub_exit_trampoline: exit_trampoline,
+            exit_trampoline_with_counter: exit_trampoline,
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
 
@@ -114,8 +114,8 @@ impl ZJITState {
         // on the counter, so ZJIT_STATE needs to be initialized first.
         if get_option!(stats) {
             let cb = ZJITState::get_code_block();
-            let code_ptr = gen_function_stub_exit_trampoline(cb, exit_trampoline).unwrap();
-            ZJITState::get_instance().function_stub_exit_trampoline = code_ptr;
+            let code_ptr = gen_exit_trampoline_with_counter(cb, exit_trampoline).unwrap();
+            ZJITState::get_instance().exit_trampoline_with_counter = code_ptr;
         }
     }
 
@@ -201,14 +201,14 @@ impl ZJITState {
         ZJITState::get_instance().exit_trampoline
     }
 
+    /// Return a code pointer to the exit trampoline for function stubs
+    pub fn get_exit_trampoline_with_counter() -> CodePtr {
+        ZJITState::get_instance().exit_trampoline_with_counter
+    }
+
     /// Return a code pointer to the function stub hit trampoline
     pub fn get_function_stub_hit_trampoline() -> CodePtr {
         ZJITState::get_instance().function_stub_hit_trampoline
-    }
-
-    /// Return a code pointer to the exit trampoline for function stubs
-    pub fn get_function_stub_exit_trampoline() -> CodePtr {
-        ZJITState::get_instance().function_stub_exit_trampoline
     }
 }
 

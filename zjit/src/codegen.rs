@@ -1504,7 +1504,7 @@ c_callable! {
 
                 // Exit to the interpreter
                 spill_stack(iseq, cfp, sp);
-                return ZJITState::get_function_stub_exit_trampoline().raw_ptr(cb);
+                return ZJITState::get_exit_trampoline_with_counter().raw_ptr(cb);
             }
 
             // Otherwise, attempt to compile the ISEQ. We have to mark_all_executable() beyond this point.
@@ -1514,7 +1514,7 @@ c_callable! {
             } else {
                 // Exit to the interpreter
                 spill_stack(iseq, cfp, sp);
-                ZJITState::get_function_stub_exit_trampoline()
+                ZJITState::get_exit_trampoline_with_counter()
             };
             cb.mark_all_executable();
             code_ptr.raw_ptr(cb)
@@ -1592,20 +1592,6 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Option<CodePtr> {
     })
 }
 
-/// Generate a trampoline that increments exit_compilation_failure and jumps to exit_trampoline.
-pub fn gen_function_stub_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: CodePtr) -> Option<CodePtr> {
-    let mut asm = Assembler::new();
-
-    asm_comment!(asm, "function stub exit trampoline");
-    gen_incr_counter(&mut asm, exit_compilation_failure);
-    asm.jmp(Target::CodePtr(exit_trampoline));
-
-    asm.compile(cb).map(|(code_ptr, gc_offsets)| {
-        assert_eq!(gc_offsets.len(), 0);
-        code_ptr
-    })
-}
-
 /// Generate a trampoline that is used when a function exits without restoring PC and the stack
 pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Option<CodePtr> {
     let mut asm = Assembler::new();
@@ -1613,6 +1599,20 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Option<CodePtr> {
     asm_comment!(asm, "side-exit trampoline");
     asm.frame_teardown(&[]); // matching the setup in :bb0-prologue:
     asm.cret(Qundef.into());
+
+    asm.compile(cb).map(|(code_ptr, gc_offsets)| {
+        assert_eq!(gc_offsets.len(), 0);
+        code_ptr
+    })
+}
+
+/// Generate a trampoline that increments exit_compilation_failure and jumps to exit_trampoline.
+pub fn gen_exit_trampoline_with_counter(cb: &mut CodeBlock, exit_trampoline: CodePtr) -> Option<CodePtr> {
+    let mut asm = Assembler::new();
+
+    asm_comment!(asm, "function stub exit trampoline");
+    gen_incr_counter(&mut asm, exit_compilation_failure);
+    asm.jmp(Target::CodePtr(exit_trampoline));
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
