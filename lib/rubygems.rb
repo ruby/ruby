@@ -9,11 +9,8 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "3.7.0.dev"
+  VERSION = "3.8.0.dev"
 end
-
-# Must be first since it unloads the prelude from 1.9.2
-require_relative "rubygems/compatibility"
 
 require_relative "rubygems/defaults"
 require_relative "rubygems/deprecate"
@@ -227,7 +224,7 @@ module Gem
     finish_resolve rs
   end
 
-  def self.finish_resolve(request_set=Gem::RequestSet.new)
+  def self.finish_resolve(request_set = Gem::RequestSet.new)
     request_set.import Gem::Specification.unresolved_deps.values
     request_set.import Gem.loaded_specs.values.map {|s| Gem::Dependency.new(s.name, s.version) }
 
@@ -248,6 +245,16 @@ module Gem
 
     find_spec_for_exe(name, exec_name, requirements).bin_file exec_name
   end
+
+  def self.find_and_activate_spec_for_exe(name, exec_name, requirements)
+    spec = find_spec_for_exe name, exec_name, requirements
+    Gem::LOADED_SPECS_MUTEX.synchronize do
+      spec.activate
+      finish_resolve
+    end
+    spec
+  end
+  private_class_method :find_and_activate_spec_for_exe
 
   def self.find_spec_for_exe(name, exec_name, requirements)
     raise ArgumentError, "you must supply exec_name" unless exec_name
@@ -274,6 +281,42 @@ module Gem
   private_class_method :find_spec_for_exe
 
   ##
+  # Find and load the full path to the executable for gem +name+.  If the
+  # +exec_name+ is not given, an exception will be raised, otherwise the
+  # specified executable's path is returned.  +requirements+ allows
+  # you to specify specific gem versions.
+  #
+  # A side effect of this method is that it will activate the gem that
+  # contains the executable.
+  #
+  # This method should *only* be used in bin stub files.
+
+  def self.activate_and_load_bin_path(name, exec_name = nil, *requirements)
+    spec = find_and_activate_spec_for_exe name, exec_name, requirements
+
+    if spec.name == "bundler"
+      # Old versions of Bundler need a workaround to support nested `bundle
+      # exec` invocations by overriding `Gem.activate_bin_path`. However,
+      # RubyGems now uses this new `Gem.activate_and_load_bin_path` helper in
+      # binstubs, which is of course not overridden in Bundler since it didn't
+      # exist at the time. So, include the override here to workaround that.
+      load ENV["BUNDLE_BIN_PATH"] if ENV["BUNDLE_BIN_PATH"] && spec.version <= "2.5.22"
+
+      # Make sure there's no version of Bundler in `$LOAD_PATH` that's different
+      # from the version we just activated. If that was the case (it happens
+      # when testing Bundler from ruby/ruby), we would load Bundler extensions
+      # to RubyGems from the copy in `$LOAD_PATH` but then load the binstub from
+      # an installed copy, causing those copies to be mixed and yet more
+      # redefinition warnings.
+      #
+      require_path = $LOAD_PATH.resolve_feature_path("bundler").last.delete_suffix("/bundler.rb")
+      Gem.load_bundler_extensions(spec.version) if spec.full_require_paths.include?(require_path)
+    end
+
+    load spec.bin_file(exec_name)
+  end
+
+  ##
   # Find the full path to the executable for gem +name+.  If the +exec_name+
   # is not given, an exception will be raised, otherwise the
   # specified executable's path is returned.  +requirements+ allows
@@ -285,12 +328,7 @@ module Gem
   # This method should *only* be used in bin stub files.
 
   def self.activate_bin_path(name, exec_name = nil, *requirements) # :nodoc:
-    spec = find_spec_for_exe name, exec_name, requirements
-    Gem::LOADED_SPECS_MUTEX.synchronize do
-      spec.activate
-      finish_resolve
-    end
-    spec.bin_file exec_name
+    find_and_activate_spec_for_exe(name, exec_name, requirements).bin_file exec_name
   end
 
   ##
@@ -303,7 +341,7 @@ module Gem
   ##
   # The path where gem executables are to be installed.
 
-  def self.bindir(install_dir=Gem.dir)
+  def self.bindir(install_dir = Gem.dir)
     return File.join install_dir, "bin" unless
       install_dir.to_s == Gem.default_dir.to_s
     Gem.default_bindir
@@ -312,7 +350,7 @@ module Gem
   ##
   # The path were rubygems plugins are to be installed.
 
-  def self.plugindir(install_dir=Gem.dir)
+  def self.plugindir(install_dir = Gem.dir)
     File.join install_dir, "plugins"
   end
 
@@ -496,7 +534,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Note that find_files will return all files even if they are from different
   # versions of the same gem.  See also find_latest_files
 
-  def self.find_files(glob, check_load_path=true)
+  def self.find_files(glob, check_load_path = true)
     files = []
 
     files = find_files_from_load_path glob if check_load_path
@@ -533,7 +571,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Unlike find_files, find_latest_files will return only files from the
   # latest version of a gem.
 
-  def self.find_latest_files(glob, check_load_path=true)
+  def self.find_latest_files(glob, check_load_path = true)
     files = []
 
     files = find_files_from_load_path glob if check_load_path
@@ -634,6 +672,30 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     require_relative "rubygems/safe_marshal"
 
     @safe_marshal_loaded = true
+  end
+
+  ##
+  # Load Bundler extensions to RubyGems, making sure to avoid redefinition
+  # warnings in platform constants
+
+  def self.load_bundler_extensions(version)
+    return unless version <= "2.6.9"
+
+    previous_platforms = {}
+
+    platform_const_list = ["JAVA", "MSWIN", "MSWIN64", "MINGW", "X64_MINGW_LEGACY", "X64_MINGW", "UNIVERSAL_MINGW", "WINDOWS", "X64_LINUX", "X64_LINUX_MUSL"]
+
+    platform_const_list.each do |platform|
+      previous_platforms[platform] = Gem::Platform.const_get(platform)
+      Gem::Platform.send(:remove_const, platform)
+    end
+
+    require "bundler/rubygems_ext"
+
+    platform_const_list.each do |platform|
+      Gem::Platform.send(:remove_const, platform) if Gem::Platform.const_defined?(platform)
+      Gem::Platform.const_set(platform, previous_platforms[platform])
+    end
   end
 
   ##
@@ -1144,7 +1206,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     ENV["BUNDLE_GEMFILE"] ||= File.expand_path(path)
     require_relative "rubygems/user_interaction"
-    require_relative "rubygems/bundler_integration"
+    require "bundler"
     begin
       Gem::DefaultUserInteraction.use_ui(ui) do
         Bundler.ui.silence do

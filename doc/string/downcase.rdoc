@@ -1,0 +1,12 @@
+Returns a new string containing the downcased characters in +self+:
+
+   'Hello, World!'.downcase      # => "hello, world!"
+   'ТЕСТ'.downcase               # => "тест"
+   'よろしくお願いします'.downcase # => "よろしくお願いします"
+
+Some characters do not have upcased and downcased versions.
+
+The casing may be affected by the given +mapping+;
+see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

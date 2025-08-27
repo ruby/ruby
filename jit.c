@@ -415,6 +415,14 @@ rb_assert_iseq_handle(VALUE handle)
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(handle, imemo_iseq));
 }
 
+// Assert that we have the VM lock. Relevant mostly for multi ractor situations.
+// The GC takes the lock before calling us, and this asserts that it indeed happens.
+void
+rb_assert_holding_vm_lock(void)
+{
+    ASSERT_vm_locking();
+}
+
 int
 rb_IMEMO_TYPE_P(VALUE imemo, enum imemo_type imemo_type)
 {
@@ -433,4 +441,16 @@ VALUE
 rb_yarv_ary_entry_internal(VALUE ary, long offset)
 {
     return rb_ary_entry_internal(ary, offset);
+}
+
+void
+rb_set_cfp_pc(struct rb_control_frame_struct *cfp, const VALUE *pc)
+{
+    cfp->pc = pc;
+}
+
+void
+rb_set_cfp_sp(struct rb_control_frame_struct *cfp, VALUE *sp)
+{
+    cfp->sp = sp;
 }

@@ -307,9 +307,6 @@ RUBY_TEST_TIMEOUT_SCALE=5 SYNTAX_SUGGEST_TIMEOUT=600 make check
 
 Please note, however, the following caveats!
 
-* ASAN will not work properly on any currently released version of Ruby; the
-  necessary support is currently only present on Ruby's master branch (and the
-  whole test suite passes only as of commit [Revision 9d0a5148]).
 * Due to [Bug #20243], Clang generates code for threadlocal variables which
   doesn't work with M:N threading. Thus, it's necessary to disable M:N
   threading support at build time for now (with the `-DUSE_MN_THREADS=0`

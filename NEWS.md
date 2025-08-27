@@ -47,9 +47,13 @@ Note: We're only listing outstanding class updates.
     * `IO.select` accepts +Float::INFINITY+ as a timeout argument.
       [[Feature #20610]]
 
+* Math
+
+    * `Math.log1p` and `Math.expm1` are added. [[Feature #21527]]
+
 * Socket
 
-    * `Socket.tcp` accepts `open_timeout` as a keyword argument to specify
+    * `Socket.tcp` & `TCPSocket.new` accepts `open_timeout` as a keyword argument to specify
       the timeout for the initial connection. [[Feature #21347]]
 
 * Ractor
@@ -104,6 +108,16 @@ Note: We're only listing outstanding class updates.
     * Update Unicode to Version 16.0.0 and Emoji Version 16.0.
       [[Feature #19908]][[Feature #20724]] (also applies to Regexp)
 
+* Thread
+
+    * Introduce support for `Thread#raise(cause:)` argument similar to
+      `Kernel#raise`. [[Feature #21360]]
+
+* Fiber
+
+    * Introduce support for `Fiber#raise(cause:)` argument similar to
+      `Kernel#raise`. [[Feature #21360]]
+
 * Fiber::Scheduler
 
     * Introduce `Fiber::Scheduler#fiber_interrupt` to interrupt a fiber with a
@@ -111,18 +125,23 @@ Note: We're only listing outstanding class updates.
       waiting on a blocking IO operation when the IO operation is closed.
       [[Feature #21166]]
 
+* Pathname
+
+    * Pathname has been promoted from a default gem to a core class of Ruby.
+      [[Feature #17473]]
+
 ## Stdlib updates
 
 The following bundled gems are promoted from default gems.
 
-* ostruct 0.6.2
+* ostruct 0.6.3
 * pstore 0.2.0
 * benchmark 0.4.1
 * logger 1.7.0
 * rdoc 6.14.2
 * win32ole 1.9.2
 * irb 1.15.2
-* reline 0.6.1
+* reline 0.6.2
 * readline 0.0.4
 * fiddle 1.1.8
 
@@ -138,14 +157,18 @@ The following default gem is added.
 
 The following default gems are updated.
 
-* RubyGems 3.7.0.dev
-* bundler 2.7.0.dev
-* erb 5.0.1
-* json 2.12.2
+* RubyGems 3.8.0.dev
+* bundler 2.8.0.dev
+* erb 5.0.2
+* etc 1.4.6
+* io-console 0.8.1
+* io-nonblock 0.3.2
+* io-wait 0.3.2
+* json 2.13.2
 * optparse 0.7.0.dev.2
 * prism 1.4.0
 * psych 5.2.6
-* resolv 0.6.1
+* resolv 0.6.2
 * stringio 3.1.8.dev
 * strscan 3.1.6.dev
 * uri 1.0.3
@@ -158,8 +181,8 @@ The following bundled gems are updated.
 
 * minitest 5.25.5
 * rake 13.3.0
-* test-unit 3.6.9
-* rexml 3.4.1
+* test-unit 3.7.0
+* rexml 3.4.2
 * net-imap 0.5.9
 * net-smtp 0.5.1
 * matrix 0.4.3
@@ -185,6 +208,8 @@ The following bundled gems are updated.
     * `Ractor#close_outgoging`
 
     [[Feature #21262]]
+
+* `ObjectSpace._id2ref` is deprecated. [[Feature #15408]]
 
 ## Stdlib compatibility issues
 
@@ -218,8 +243,43 @@ The following bundled gems are updated.
 
 ## Implementation improvements
 
+### Ractor
+
+A lot of work has gone into making Ractors more stable, performant, and usable. These improvements bring Ractors implementation closer to leaving experimental status.
+
+* Performance improvements
+    * Frozen strings and the symbol table internally use a lock-free hash set
+    * Method cache lookups avoid locking in most cases
+    * Class (and geniv) instance variable access is faster and avoids locking
+    * Cache contention is avoided during object allocation
+    * `object_id` avoids locking in most cases
+* Bug fixes and stability
+    * Fixed possible deadlocks when combining Ractors and Threads
+    * Fixed issues with require and autoload in a Ractor
+    * Fixed encoding/transcoding issues across Ractors
+    * Fixed race conditions in GC operations and method invalidation
+    * Fixed issues with processes forking after starting a Ractor
+
 ## JIT
 
+* YJIT
+    * YJIT stats
+        * `ratio_in_yjit` no longer works in the default build.
+          Use `--enable-yjit=stats` on `configure` to enable it on `--yjit-stats`.
+        * Add `invalidate_everything` to default stats, which is
+          incremented when every code is invalidated by TracePoint.
+    * Add `mem_size:` and `call_threshold:` options to `RubyVM::YJIT.enable`.
+* ZJIT
+    * Add an experimental method-based JIT compiler.
+      Use `--enable-zjit` on `configure` to enable the `--zjit` support.
+    * As of Ruby 3.5.0-preview2, ZJIT is not yet ready for speeding up most benchmarks.
+      Please refrain from evaluating ZJIT just yet. Stay tuned for the Ruby 3.5 release.
+* RJIT
+    * `--rjit` is removed. We will move the implementation of the third-party JIT API
+      to the [ruby/rjit](https://github.com/ruby/rjit) repository.
+
+[Feature #15408]: https://bugs.ruby-lang.org/issues/15408
+[Feature #17473]: https://bugs.ruby-lang.org/issues/17473
 [Feature #18455]: https://bugs.ruby-lang.org/issues/18455
 [Feature #19908]: https://bugs.ruby-lang.org/issues/19908
 [Feature #20610]: https://bugs.ruby-lang.org/issues/20610
@@ -233,3 +293,5 @@ The following bundled gems are updated.
 [Feature #21262]: https://bugs.ruby-lang.org/issues/21262
 [Feature #21287]: https://bugs.ruby-lang.org/issues/21287
 [Feature #21347]: https://bugs.ruby-lang.org/issues/21347
+[Feature #21360]: https://bugs.ruby-lang.org/issues/21360
+[Feature #21527]: https://bugs.ruby-lang.org/issues/21527

@@ -16,7 +16,6 @@ module Bundler
       setup_cache_all
       install
 
-      # TODO: move cache contents here now that all bundles are locked
       custom_path = Bundler.settings[:path] if options[:path]
 
       Bundler.settings.temporary(cache_all_platforms: options["all-platforms"]) do

@@ -48,7 +48,9 @@ enum shape_id_fl_type {
 
 // This masks allows to check if a shape_id contains any ivar.
 // It rely on ROOT_SHAPE_WITH_OBJ_ID==1.
-#define SHAPE_ID_HAS_IVAR_MASK (SHAPE_ID_FL_TOO_COMPLEX | (SHAPE_ID_OFFSET_MASK - 1))
+enum {
+    SHAPE_ID_HAS_IVAR_MASK = SHAPE_ID_FL_TOO_COMPLEX | (SHAPE_ID_OFFSET_MASK - 1),
+};
 
 // The interpreter doesn't care about frozen status or slot size when reading ivars.
 // So we normalize shape_id by clearing these bits to improve cache hits.
@@ -70,7 +72,6 @@ typedef uint32_t redblack_id_t;
 #define ROOT_SHAPE_WITH_OBJ_ID          0x1
 #define ROOT_TOO_COMPLEX_SHAPE_ID       (ROOT_SHAPE_ID | SHAPE_ID_FL_TOO_COMPLEX)
 #define ROOT_TOO_COMPLEX_WITH_OBJ_ID    (ROOT_SHAPE_WITH_OBJ_ID | SHAPE_ID_FL_TOO_COMPLEX | SHAPE_ID_FL_HAS_OBJECT_ID)
-#define SPECIAL_CONST_SHAPE_ID          (ROOT_SHAPE_ID | SHAPE_ID_FL_FROZEN)
 
 typedef struct redblack_node redblack_node_t;
 
@@ -121,6 +122,12 @@ typedef struct {
 RUBY_SYMBOL_EXPORT_BEGIN
 RUBY_EXTERN rb_shape_tree_t rb_shape_tree;
 RUBY_SYMBOL_EXPORT_END
+
+static inline shape_id_t
+rb_shapes_count(void)
+{
+    return (shape_id_t)RUBY_ATOMIC_LOAD(rb_shape_tree.next_shape_id);
+}
 
 union rb_attr_index_cache {
     uint64_t pack;
@@ -263,9 +270,16 @@ rb_shape_root(size_t heap_id)
 }
 
 static inline shape_id_t
-RSHAPE_PARENT(shape_id_t shape_id)
+RSHAPE_PARENT_RAW_ID(shape_id_t shape_id)
 {
     return RSHAPE(shape_id)->parent_id;
+}
+
+static inline bool
+RSHAPE_DIRECT_CHILD_P(shape_id_t parent_id, shape_id_t child_id)
+{
+    return (parent_id & SHAPE_ID_FLAGS_MASK) == (child_id & SHAPE_ID_FLAGS_MASK) &&
+        RSHAPE(child_id)->parent_id == (parent_id & SHAPE_ID_OFFSET_MASK);
 }
 
 static inline enum shape_type
@@ -312,6 +326,7 @@ RSHAPE_LEN(shape_id_t shape_id)
 static inline attr_index_t
 RSHAPE_INDEX(shape_id_t shape_id)
 {
+    RUBY_ASSERT(RSHAPE_LEN(shape_id) > 0);
     return RSHAPE_LEN(shape_id) - 1;
 }
 
@@ -336,6 +351,8 @@ ROBJECT_FIELDS_HASH(VALUE obj)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
     RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
+    RUBY_ASSERT(!FL_TEST_RAW(obj, ROBJECT_EMBED));
+
     return (st_table *)ROBJECT(obj)->as.heap.fields;
 }
 
@@ -344,6 +361,8 @@ ROBJECT_SET_FIELDS_HASH(VALUE obj, const st_table *tbl)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
     RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
+    RUBY_ASSERT(!FL_TEST_RAW(obj, ROBJECT_EMBED));
+
     ROBJECT(obj)->as.heap.fields = (VALUE *)tbl;
 }
 
@@ -365,8 +384,6 @@ RBASIC_FIELDS_COUNT(VALUE obj)
 {
     return RSHAPE(rb_obj_shape_id(obj))->next_field_index;
 }
-
-bool rb_obj_set_shape_id(VALUE obj, shape_id_t shape_id);
 
 static inline bool
 rb_shape_obj_has_id(VALUE obj)

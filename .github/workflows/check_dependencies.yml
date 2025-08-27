@@ -40,7 +40,7 @@ jobs:
 
       - uses: ./.github/actions/setup/directories
 
-      - uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.245.0
+      - uses: ruby/setup-ruby@a9bfc2ecf3dd40734a9418f89a7e9d484c32b990 # v1.248.0
         with:
           ruby-version: '3.1'
           bundler: none
@@ -48,11 +48,7 @@ jobs:
       - name: Run configure
         run: ./configure -C --disable-install-doc --disable-rubygems --with-gcc 'optflags=-O0' 'debugflags=-save-temps=obj -g'
 
-      - run: make all golf
-
-      - run: ./goruby -veh
-
-      - run: ruby tool/update-deps --fix
+      - run: make fix-depends
 
       - run: git diff --no-ext-diff --ignore-submodules --exit-code
 

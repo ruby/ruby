@@ -317,6 +317,7 @@ enc/ascii.$(OBJEXT): internal/intern/re.h
 enc/ascii.$(OBJEXT): internal/intern/ruby.h
 enc/ascii.$(OBJEXT): internal/intern/select.h
 enc/ascii.$(OBJEXT): internal/intern/select/largesize.h
+enc/ascii.$(OBJEXT): internal/intern/set.h
 enc/ascii.$(OBJEXT): internal/intern/signal.h
 enc/ascii.$(OBJEXT): internal/intern/sprintf.h
 enc/ascii.$(OBJEXT): internal/intern/string.h
@@ -479,6 +480,7 @@ enc/big5.$(OBJEXT): internal/intern/re.h
 enc/big5.$(OBJEXT): internal/intern/ruby.h
 enc/big5.$(OBJEXT): internal/intern/select.h
 enc/big5.$(OBJEXT): internal/intern/select/largesize.h
+enc/big5.$(OBJEXT): internal/intern/set.h
 enc/big5.$(OBJEXT): internal/intern/signal.h
 enc/big5.$(OBJEXT): internal/intern/sprintf.h
 enc/big5.$(OBJEXT): internal/intern/string.h
@@ -651,6 +653,7 @@ enc/cesu_8.$(OBJEXT): internal/intern/re.h
 enc/cesu_8.$(OBJEXT): internal/intern/ruby.h
 enc/cesu_8.$(OBJEXT): internal/intern/select.h
 enc/cesu_8.$(OBJEXT): internal/intern/select/largesize.h
+enc/cesu_8.$(OBJEXT): internal/intern/set.h
 enc/cesu_8.$(OBJEXT): internal/intern/signal.h
 enc/cesu_8.$(OBJEXT): internal/intern/sprintf.h
 enc/cesu_8.$(OBJEXT): internal/intern/string.h
@@ -813,6 +816,7 @@ enc/cp949.$(OBJEXT): internal/intern/re.h
 enc/cp949.$(OBJEXT): internal/intern/ruby.h
 enc/cp949.$(OBJEXT): internal/intern/select.h
 enc/cp949.$(OBJEXT): internal/intern/select/largesize.h
+enc/cp949.$(OBJEXT): internal/intern/set.h
 enc/cp949.$(OBJEXT): internal/intern/signal.h
 enc/cp949.$(OBJEXT): internal/intern/sprintf.h
 enc/cp949.$(OBJEXT): internal/intern/string.h
@@ -974,6 +978,7 @@ enc/emacs_mule.$(OBJEXT): internal/intern/re.h
 enc/emacs_mule.$(OBJEXT): internal/intern/ruby.h
 enc/emacs_mule.$(OBJEXT): internal/intern/select.h
 enc/emacs_mule.$(OBJEXT): internal/intern/select/largesize.h
+enc/emacs_mule.$(OBJEXT): internal/intern/set.h
 enc/emacs_mule.$(OBJEXT): internal/intern/signal.h
 enc/emacs_mule.$(OBJEXT): internal/intern/sprintf.h
 enc/emacs_mule.$(OBJEXT): internal/intern/string.h
@@ -1145,6 +1150,7 @@ enc/encdb.$(OBJEXT): internal/intern/re.h
 enc/encdb.$(OBJEXT): internal/intern/ruby.h
 enc/encdb.$(OBJEXT): internal/intern/select.h
 enc/encdb.$(OBJEXT): internal/intern/select/largesize.h
+enc/encdb.$(OBJEXT): internal/intern/set.h
 enc/encdb.$(OBJEXT): internal/intern/signal.h
 enc/encdb.$(OBJEXT): internal/intern/sprintf.h
 enc/encdb.$(OBJEXT): internal/intern/string.h
@@ -1309,6 +1315,7 @@ enc/euc_jp.$(OBJEXT): internal/intern/re.h
 enc/euc_jp.$(OBJEXT): internal/intern/ruby.h
 enc/euc_jp.$(OBJEXT): internal/intern/select.h
 enc/euc_jp.$(OBJEXT): internal/intern/select/largesize.h
+enc/euc_jp.$(OBJEXT): internal/intern/set.h
 enc/euc_jp.$(OBJEXT): internal/intern/signal.h
 enc/euc_jp.$(OBJEXT): internal/intern/sprintf.h
 enc/euc_jp.$(OBJEXT): internal/intern/string.h
@@ -1470,6 +1477,7 @@ enc/euc_kr.$(OBJEXT): internal/intern/re.h
 enc/euc_kr.$(OBJEXT): internal/intern/ruby.h
 enc/euc_kr.$(OBJEXT): internal/intern/select.h
 enc/euc_kr.$(OBJEXT): internal/intern/select/largesize.h
+enc/euc_kr.$(OBJEXT): internal/intern/set.h
 enc/euc_kr.$(OBJEXT): internal/intern/signal.h
 enc/euc_kr.$(OBJEXT): internal/intern/sprintf.h
 enc/euc_kr.$(OBJEXT): internal/intern/string.h
@@ -1631,6 +1639,7 @@ enc/euc_tw.$(OBJEXT): internal/intern/re.h
 enc/euc_tw.$(OBJEXT): internal/intern/ruby.h
 enc/euc_tw.$(OBJEXT): internal/intern/select.h
 enc/euc_tw.$(OBJEXT): internal/intern/select/largesize.h
+enc/euc_tw.$(OBJEXT): internal/intern/set.h
 enc/euc_tw.$(OBJEXT): internal/intern/signal.h
 enc/euc_tw.$(OBJEXT): internal/intern/sprintf.h
 enc/euc_tw.$(OBJEXT): internal/intern/string.h
@@ -1792,6 +1801,7 @@ enc/gb18030.$(OBJEXT): internal/intern/re.h
 enc/gb18030.$(OBJEXT): internal/intern/ruby.h
 enc/gb18030.$(OBJEXT): internal/intern/select.h
 enc/gb18030.$(OBJEXT): internal/intern/select/largesize.h
+enc/gb18030.$(OBJEXT): internal/intern/set.h
 enc/gb18030.$(OBJEXT): internal/intern/signal.h
 enc/gb18030.$(OBJEXT): internal/intern/sprintf.h
 enc/gb18030.$(OBJEXT): internal/intern/string.h
@@ -1953,6 +1963,7 @@ enc/gb2312.$(OBJEXT): internal/intern/re.h
 enc/gb2312.$(OBJEXT): internal/intern/ruby.h
 enc/gb2312.$(OBJEXT): internal/intern/select.h
 enc/gb2312.$(OBJEXT): internal/intern/select/largesize.h
+enc/gb2312.$(OBJEXT): internal/intern/set.h
 enc/gb2312.$(OBJEXT): internal/intern/signal.h
 enc/gb2312.$(OBJEXT): internal/intern/sprintf.h
 enc/gb2312.$(OBJEXT): internal/intern/string.h
@@ -2114,6 +2125,7 @@ enc/gbk.$(OBJEXT): internal/intern/re.h
 enc/gbk.$(OBJEXT): internal/intern/ruby.h
 enc/gbk.$(OBJEXT): internal/intern/select.h
 enc/gbk.$(OBJEXT): internal/intern/select/largesize.h
+enc/gbk.$(OBJEXT): internal/intern/set.h
 enc/gbk.$(OBJEXT): internal/intern/signal.h
 enc/gbk.$(OBJEXT): internal/intern/sprintf.h
 enc/gbk.$(OBJEXT): internal/intern/string.h
@@ -2276,6 +2288,7 @@ enc/iso_8859_1.$(OBJEXT): internal/intern/re.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/ruby.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/select.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/select/largesize.h
+enc/iso_8859_1.$(OBJEXT): internal/intern/set.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/signal.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/sprintf.h
 enc/iso_8859_1.$(OBJEXT): internal/intern/string.h
@@ -2438,6 +2451,7 @@ enc/iso_8859_10.$(OBJEXT): internal/intern/re.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/ruby.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/select.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/select/largesize.h
+enc/iso_8859_10.$(OBJEXT): internal/intern/set.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/signal.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/sprintf.h
 enc/iso_8859_10.$(OBJEXT): internal/intern/string.h
@@ -2599,6 +2613,7 @@ enc/iso_8859_11.$(OBJEXT): internal/intern/re.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/ruby.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/select.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/select/largesize.h
+enc/iso_8859_11.$(OBJEXT): internal/intern/set.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/signal.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/sprintf.h
 enc/iso_8859_11.$(OBJEXT): internal/intern/string.h
@@ -2761,6 +2776,7 @@ enc/iso_8859_13.$(OBJEXT): internal/intern/re.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/ruby.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/select.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/select/largesize.h
+enc/iso_8859_13.$(OBJEXT): internal/intern/set.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/signal.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/sprintf.h
 enc/iso_8859_13.$(OBJEXT): internal/intern/string.h
@@ -2923,6 +2939,7 @@ enc/iso_8859_14.$(OBJEXT): internal/intern/re.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/ruby.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/select.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/select/largesize.h
+enc/iso_8859_14.$(OBJEXT): internal/intern/set.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/signal.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/sprintf.h
 enc/iso_8859_14.$(OBJEXT): internal/intern/string.h
@@ -3085,6 +3102,7 @@ enc/iso_8859_15.$(OBJEXT): internal/intern/re.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/ruby.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/select.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/select/largesize.h
+enc/iso_8859_15.$(OBJEXT): internal/intern/set.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/signal.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/sprintf.h
 enc/iso_8859_15.$(OBJEXT): internal/intern/string.h
@@ -3247,6 +3265,7 @@ enc/iso_8859_16.$(OBJEXT): internal/intern/re.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/ruby.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/select.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/select/largesize.h
+enc/iso_8859_16.$(OBJEXT): internal/intern/set.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/signal.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/sprintf.h
 enc/iso_8859_16.$(OBJEXT): internal/intern/string.h
@@ -3409,6 +3428,7 @@ enc/iso_8859_2.$(OBJEXT): internal/intern/re.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/ruby.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/select.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/select/largesize.h
+enc/iso_8859_2.$(OBJEXT): internal/intern/set.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/signal.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/sprintf.h
 enc/iso_8859_2.$(OBJEXT): internal/intern/string.h
@@ -3571,6 +3591,7 @@ enc/iso_8859_3.$(OBJEXT): internal/intern/re.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/ruby.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/select.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/select/largesize.h
+enc/iso_8859_3.$(OBJEXT): internal/intern/set.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/signal.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/sprintf.h
 enc/iso_8859_3.$(OBJEXT): internal/intern/string.h
@@ -3733,6 +3754,7 @@ enc/iso_8859_4.$(OBJEXT): internal/intern/re.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/ruby.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/select.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/select/largesize.h
+enc/iso_8859_4.$(OBJEXT): internal/intern/set.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/signal.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/sprintf.h
 enc/iso_8859_4.$(OBJEXT): internal/intern/string.h
@@ -3894,6 +3916,7 @@ enc/iso_8859_5.$(OBJEXT): internal/intern/re.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/ruby.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/select.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/select/largesize.h
+enc/iso_8859_5.$(OBJEXT): internal/intern/set.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/signal.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/sprintf.h
 enc/iso_8859_5.$(OBJEXT): internal/intern/string.h
@@ -4055,6 +4078,7 @@ enc/iso_8859_6.$(OBJEXT): internal/intern/re.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/ruby.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/select.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/select/largesize.h
+enc/iso_8859_6.$(OBJEXT): internal/intern/set.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/signal.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/sprintf.h
 enc/iso_8859_6.$(OBJEXT): internal/intern/string.h
@@ -4216,6 +4240,7 @@ enc/iso_8859_7.$(OBJEXT): internal/intern/re.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/ruby.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/select.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/select/largesize.h
+enc/iso_8859_7.$(OBJEXT): internal/intern/set.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/signal.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/sprintf.h
 enc/iso_8859_7.$(OBJEXT): internal/intern/string.h
@@ -4377,6 +4402,7 @@ enc/iso_8859_8.$(OBJEXT): internal/intern/re.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/ruby.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/select.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/select/largesize.h
+enc/iso_8859_8.$(OBJEXT): internal/intern/set.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/signal.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/sprintf.h
 enc/iso_8859_8.$(OBJEXT): internal/intern/string.h
@@ -4539,6 +4565,7 @@ enc/iso_8859_9.$(OBJEXT): internal/intern/re.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/ruby.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/select.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/select/largesize.h
+enc/iso_8859_9.$(OBJEXT): internal/intern/set.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/signal.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/sprintf.h
 enc/iso_8859_9.$(OBJEXT): internal/intern/string.h
@@ -4700,6 +4727,7 @@ enc/koi8_r.$(OBJEXT): internal/intern/re.h
 enc/koi8_r.$(OBJEXT): internal/intern/ruby.h
 enc/koi8_r.$(OBJEXT): internal/intern/select.h
 enc/koi8_r.$(OBJEXT): internal/intern/select/largesize.h
+enc/koi8_r.$(OBJEXT): internal/intern/set.h
 enc/koi8_r.$(OBJEXT): internal/intern/signal.h
 enc/koi8_r.$(OBJEXT): internal/intern/sprintf.h
 enc/koi8_r.$(OBJEXT): internal/intern/string.h
@@ -4861,6 +4889,7 @@ enc/koi8_u.$(OBJEXT): internal/intern/re.h
 enc/koi8_u.$(OBJEXT): internal/intern/ruby.h
 enc/koi8_u.$(OBJEXT): internal/intern/select.h
 enc/koi8_u.$(OBJEXT): internal/intern/select/largesize.h
+enc/koi8_u.$(OBJEXT): internal/intern/set.h
 enc/koi8_u.$(OBJEXT): internal/intern/signal.h
 enc/koi8_u.$(OBJEXT): internal/intern/sprintf.h
 enc/koi8_u.$(OBJEXT): internal/intern/string.h
@@ -5025,6 +5054,7 @@ enc/shift_jis.$(OBJEXT): internal/intern/re.h
 enc/shift_jis.$(OBJEXT): internal/intern/ruby.h
 enc/shift_jis.$(OBJEXT): internal/intern/select.h
 enc/shift_jis.$(OBJEXT): internal/intern/select/largesize.h
+enc/shift_jis.$(OBJEXT): internal/intern/set.h
 enc/shift_jis.$(OBJEXT): internal/intern/signal.h
 enc/shift_jis.$(OBJEXT): internal/intern/sprintf.h
 enc/shift_jis.$(OBJEXT): internal/intern/string.h
@@ -5185,6 +5215,7 @@ enc/trans/big5.$(OBJEXT): internal/intern/re.h
 enc/trans/big5.$(OBJEXT): internal/intern/ruby.h
 enc/trans/big5.$(OBJEXT): internal/intern/select.h
 enc/trans/big5.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/big5.$(OBJEXT): internal/intern/set.h
 enc/trans/big5.$(OBJEXT): internal/intern/signal.h
 enc/trans/big5.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/big5.$(OBJEXT): internal/intern/string.h
@@ -5344,6 +5375,7 @@ enc/trans/cesu_8.$(OBJEXT): internal/intern/re.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/ruby.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/select.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/cesu_8.$(OBJEXT): internal/intern/set.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/signal.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/cesu_8.$(OBJEXT): internal/intern/string.h
@@ -5503,6 +5535,7 @@ enc/trans/chinese.$(OBJEXT): internal/intern/re.h
 enc/trans/chinese.$(OBJEXT): internal/intern/ruby.h
 enc/trans/chinese.$(OBJEXT): internal/intern/select.h
 enc/trans/chinese.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/chinese.$(OBJEXT): internal/intern/set.h
 enc/trans/chinese.$(OBJEXT): internal/intern/signal.h
 enc/trans/chinese.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/chinese.$(OBJEXT): internal/intern/string.h
@@ -5662,6 +5695,7 @@ enc/trans/ebcdic.$(OBJEXT): internal/intern/re.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/ruby.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/select.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/ebcdic.$(OBJEXT): internal/intern/set.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/signal.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/ebcdic.$(OBJEXT): internal/intern/string.h
@@ -5821,6 +5855,7 @@ enc/trans/emoji.$(OBJEXT): internal/intern/re.h
 enc/trans/emoji.$(OBJEXT): internal/intern/ruby.h
 enc/trans/emoji.$(OBJEXT): internal/intern/select.h
 enc/trans/emoji.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/emoji.$(OBJEXT): internal/intern/set.h
 enc/trans/emoji.$(OBJEXT): internal/intern/signal.h
 enc/trans/emoji.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/emoji.$(OBJEXT): internal/intern/string.h
@@ -5980,6 +6015,7 @@ enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/re.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/ruby.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/select.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/set.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/signal.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/intern/string.h
@@ -6139,6 +6175,7 @@ enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/re.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/ruby.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/select.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/set.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/signal.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/intern/string.h
@@ -6298,6 +6335,7 @@ enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/re.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/ruby.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/select.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/set.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/signal.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/intern/string.h
@@ -6457,6 +6495,7 @@ enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/re.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/ruby.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/select.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/set.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/signal.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/intern/string.h
@@ -6616,6 +6655,7 @@ enc/trans/escape.$(OBJEXT): internal/intern/re.h
 enc/trans/escape.$(OBJEXT): internal/intern/ruby.h
 enc/trans/escape.$(OBJEXT): internal/intern/select.h
 enc/trans/escape.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/escape.$(OBJEXT): internal/intern/set.h
 enc/trans/escape.$(OBJEXT): internal/intern/signal.h
 enc/trans/escape.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/escape.$(OBJEXT): internal/intern/string.h
@@ -6775,6 +6815,7 @@ enc/trans/gb18030.$(OBJEXT): internal/intern/re.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/ruby.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/select.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/gb18030.$(OBJEXT): internal/intern/set.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/signal.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/gb18030.$(OBJEXT): internal/intern/string.h
@@ -6934,6 +6975,7 @@ enc/trans/gbk.$(OBJEXT): internal/intern/re.h
 enc/trans/gbk.$(OBJEXT): internal/intern/ruby.h
 enc/trans/gbk.$(OBJEXT): internal/intern/select.h
 enc/trans/gbk.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/gbk.$(OBJEXT): internal/intern/set.h
 enc/trans/gbk.$(OBJEXT): internal/intern/signal.h
 enc/trans/gbk.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/gbk.$(OBJEXT): internal/intern/string.h
@@ -7094,6 +7136,7 @@ enc/trans/iso2022.$(OBJEXT): internal/intern/re.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/ruby.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/select.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/iso2022.$(OBJEXT): internal/intern/set.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/signal.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/iso2022.$(OBJEXT): internal/intern/string.h
@@ -7253,6 +7296,7 @@ enc/trans/japanese.$(OBJEXT): internal/intern/re.h
 enc/trans/japanese.$(OBJEXT): internal/intern/ruby.h
 enc/trans/japanese.$(OBJEXT): internal/intern/select.h
 enc/trans/japanese.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/japanese.$(OBJEXT): internal/intern/set.h
 enc/trans/japanese.$(OBJEXT): internal/intern/signal.h
 enc/trans/japanese.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/japanese.$(OBJEXT): internal/intern/string.h
@@ -7412,6 +7456,7 @@ enc/trans/japanese_euc.$(OBJEXT): internal/intern/re.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/ruby.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/select.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/japanese_euc.$(OBJEXT): internal/intern/set.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/signal.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/japanese_euc.$(OBJEXT): internal/intern/string.h
@@ -7571,6 +7616,7 @@ enc/trans/japanese_sjis.$(OBJEXT): internal/intern/re.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/ruby.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/select.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/japanese_sjis.$(OBJEXT): internal/intern/set.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/signal.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/intern/string.h
@@ -7730,6 +7776,7 @@ enc/trans/korean.$(OBJEXT): internal/intern/re.h
 enc/trans/korean.$(OBJEXT): internal/intern/ruby.h
 enc/trans/korean.$(OBJEXT): internal/intern/select.h
 enc/trans/korean.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/korean.$(OBJEXT): internal/intern/set.h
 enc/trans/korean.$(OBJEXT): internal/intern/signal.h
 enc/trans/korean.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/korean.$(OBJEXT): internal/intern/string.h
@@ -7888,6 +7935,7 @@ enc/trans/newline.$(OBJEXT): internal/intern/re.h
 enc/trans/newline.$(OBJEXT): internal/intern/ruby.h
 enc/trans/newline.$(OBJEXT): internal/intern/select.h
 enc/trans/newline.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/newline.$(OBJEXT): internal/intern/set.h
 enc/trans/newline.$(OBJEXT): internal/intern/signal.h
 enc/trans/newline.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/newline.$(OBJEXT): internal/intern/string.h
@@ -8047,6 +8095,7 @@ enc/trans/single_byte.$(OBJEXT): internal/intern/re.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/ruby.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/select.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/single_byte.$(OBJEXT): internal/intern/set.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/signal.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/single_byte.$(OBJEXT): internal/intern/string.h
@@ -8206,6 +8255,7 @@ enc/trans/transdb.$(OBJEXT): internal/intern/re.h
 enc/trans/transdb.$(OBJEXT): internal/intern/ruby.h
 enc/trans/transdb.$(OBJEXT): internal/intern/select.h
 enc/trans/transdb.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/transdb.$(OBJEXT): internal/intern/set.h
 enc/trans/transdb.$(OBJEXT): internal/intern/signal.h
 enc/trans/transdb.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/transdb.$(OBJEXT): internal/intern/string.h
@@ -8366,6 +8416,7 @@ enc/trans/utf8_mac.$(OBJEXT): internal/intern/re.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/ruby.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/select.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/utf8_mac.$(OBJEXT): internal/intern/set.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/signal.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/utf8_mac.$(OBJEXT): internal/intern/string.h
@@ -8525,6 +8576,7 @@ enc/trans/utf_16_32.$(OBJEXT): internal/intern/re.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/ruby.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/select.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/select/largesize.h
+enc/trans/utf_16_32.$(OBJEXT): internal/intern/set.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/signal.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/sprintf.h
 enc/trans/utf_16_32.$(OBJEXT): internal/intern/string.h
@@ -8687,6 +8739,7 @@ enc/unicode.$(OBJEXT): internal/intern/re.h
 enc/unicode.$(OBJEXT): internal/intern/ruby.h
 enc/unicode.$(OBJEXT): internal/intern/select.h
 enc/unicode.$(OBJEXT): internal/intern/select/largesize.h
+enc/unicode.$(OBJEXT): internal/intern/set.h
 enc/unicode.$(OBJEXT): internal/intern/signal.h
 enc/unicode.$(OBJEXT): internal/intern/sprintf.h
 enc/unicode.$(OBJEXT): internal/intern/string.h
@@ -8858,6 +8911,7 @@ enc/us_ascii.$(OBJEXT): internal/intern/re.h
 enc/us_ascii.$(OBJEXT): internal/intern/ruby.h
 enc/us_ascii.$(OBJEXT): internal/intern/select.h
 enc/us_ascii.$(OBJEXT): internal/intern/select/largesize.h
+enc/us_ascii.$(OBJEXT): internal/intern/set.h
 enc/us_ascii.$(OBJEXT): internal/intern/signal.h
 enc/us_ascii.$(OBJEXT): internal/intern/sprintf.h
 enc/us_ascii.$(OBJEXT): internal/intern/string.h
@@ -9021,6 +9075,7 @@ enc/utf_16be.$(OBJEXT): internal/intern/re.h
 enc/utf_16be.$(OBJEXT): internal/intern/ruby.h
 enc/utf_16be.$(OBJEXT): internal/intern/select.h
 enc/utf_16be.$(OBJEXT): internal/intern/select/largesize.h
+enc/utf_16be.$(OBJEXT): internal/intern/set.h
 enc/utf_16be.$(OBJEXT): internal/intern/signal.h
 enc/utf_16be.$(OBJEXT): internal/intern/sprintf.h
 enc/utf_16be.$(OBJEXT): internal/intern/string.h
@@ -9183,6 +9238,7 @@ enc/utf_16le.$(OBJEXT): internal/intern/re.h
 enc/utf_16le.$(OBJEXT): internal/intern/ruby.h
 enc/utf_16le.$(OBJEXT): internal/intern/select.h
 enc/utf_16le.$(OBJEXT): internal/intern/select/largesize.h
+enc/utf_16le.$(OBJEXT): internal/intern/set.h
 enc/utf_16le.$(OBJEXT): internal/intern/signal.h
 enc/utf_16le.$(OBJEXT): internal/intern/sprintf.h
 enc/utf_16le.$(OBJEXT): internal/intern/string.h
@@ -9345,6 +9401,7 @@ enc/utf_32be.$(OBJEXT): internal/intern/re.h
 enc/utf_32be.$(OBJEXT): internal/intern/ruby.h
 enc/utf_32be.$(OBJEXT): internal/intern/select.h
 enc/utf_32be.$(OBJEXT): internal/intern/select/largesize.h
+enc/utf_32be.$(OBJEXT): internal/intern/set.h
 enc/utf_32be.$(OBJEXT): internal/intern/signal.h
 enc/utf_32be.$(OBJEXT): internal/intern/sprintf.h
 enc/utf_32be.$(OBJEXT): internal/intern/string.h
@@ -9507,6 +9564,7 @@ enc/utf_32le.$(OBJEXT): internal/intern/re.h
 enc/utf_32le.$(OBJEXT): internal/intern/ruby.h
 enc/utf_32le.$(OBJEXT): internal/intern/select.h
 enc/utf_32le.$(OBJEXT): internal/intern/select/largesize.h
+enc/utf_32le.$(OBJEXT): internal/intern/set.h
 enc/utf_32le.$(OBJEXT): internal/intern/signal.h
 enc/utf_32le.$(OBJEXT): internal/intern/sprintf.h
 enc/utf_32le.$(OBJEXT): internal/intern/string.h
@@ -9678,6 +9736,7 @@ enc/utf_8.$(OBJEXT): internal/intern/re.h
 enc/utf_8.$(OBJEXT): internal/intern/ruby.h
 enc/utf_8.$(OBJEXT): internal/intern/select.h
 enc/utf_8.$(OBJEXT): internal/intern/select/largesize.h
+enc/utf_8.$(OBJEXT): internal/intern/set.h
 enc/utf_8.$(OBJEXT): internal/intern/signal.h
 enc/utf_8.$(OBJEXT): internal/intern/sprintf.h
 enc/utf_8.$(OBJEXT): internal/intern/string.h
@@ -9841,6 +9900,7 @@ enc/windows_1250.$(OBJEXT): internal/intern/re.h
 enc/windows_1250.$(OBJEXT): internal/intern/ruby.h
 enc/windows_1250.$(OBJEXT): internal/intern/select.h
 enc/windows_1250.$(OBJEXT): internal/intern/select/largesize.h
+enc/windows_1250.$(OBJEXT): internal/intern/set.h
 enc/windows_1250.$(OBJEXT): internal/intern/signal.h
 enc/windows_1250.$(OBJEXT): internal/intern/sprintf.h
 enc/windows_1250.$(OBJEXT): internal/intern/string.h
@@ -10002,6 +10062,7 @@ enc/windows_1251.$(OBJEXT): internal/intern/re.h
 enc/windows_1251.$(OBJEXT): internal/intern/ruby.h
 enc/windows_1251.$(OBJEXT): internal/intern/select.h
 enc/windows_1251.$(OBJEXT): internal/intern/select/largesize.h
+enc/windows_1251.$(OBJEXT): internal/intern/set.h
 enc/windows_1251.$(OBJEXT): internal/intern/signal.h
 enc/windows_1251.$(OBJEXT): internal/intern/sprintf.h
 enc/windows_1251.$(OBJEXT): internal/intern/string.h
@@ -10164,6 +10225,7 @@ enc/windows_1252.$(OBJEXT): internal/intern/re.h
 enc/windows_1252.$(OBJEXT): internal/intern/ruby.h
 enc/windows_1252.$(OBJEXT): internal/intern/select.h
 enc/windows_1252.$(OBJEXT): internal/intern/select/largesize.h
+enc/windows_1252.$(OBJEXT): internal/intern/set.h
 enc/windows_1252.$(OBJEXT): internal/intern/signal.h
 enc/windows_1252.$(OBJEXT): internal/intern/sprintf.h
 enc/windows_1252.$(OBJEXT): internal/intern/string.h
@@ -10325,6 +10387,7 @@ enc/windows_1253.$(OBJEXT): internal/intern/re.h
 enc/windows_1253.$(OBJEXT): internal/intern/ruby.h
 enc/windows_1253.$(OBJEXT): internal/intern/select.h
 enc/windows_1253.$(OBJEXT): internal/intern/select/largesize.h
+enc/windows_1253.$(OBJEXT): internal/intern/set.h
 enc/windows_1253.$(OBJEXT): internal/intern/signal.h
 enc/windows_1253.$(OBJEXT): internal/intern/sprintf.h
 enc/windows_1253.$(OBJEXT): internal/intern/string.h
@@ -10487,6 +10550,7 @@ enc/windows_1254.$(OBJEXT): internal/intern/re.h
 enc/windows_1254.$(OBJEXT): internal/intern/ruby.h
 enc/windows_1254.$(OBJEXT): internal/intern/select.h
 enc/windows_1254.$(OBJEXT): internal/intern/select/largesize.h
+enc/windows_1254.$(OBJEXT): internal/intern/set.h
 enc/windows_1254.$(OBJEXT): internal/intern/signal.h
 enc/windows_1254.$(OBJEXT): internal/intern/sprintf.h
 enc/windows_1254.$(OBJEXT): internal/intern/string.h
@@ -10649,6 +10713,7 @@ enc/windows_1257.$(OBJEXT): internal/intern/re.h
 enc/windows_1257.$(OBJEXT): internal/intern/ruby.h
 enc/windows_1257.$(OBJEXT): internal/intern/select.h
 enc/windows_1257.$(OBJEXT): internal/intern/select/largesize.h
+enc/windows_1257.$(OBJEXT): internal/intern/set.h
 enc/windows_1257.$(OBJEXT): internal/intern/signal.h
 enc/windows_1257.$(OBJEXT): internal/intern/sprintf.h
 enc/windows_1257.$(OBJEXT): internal/intern/string.h
@@ -10813,6 +10878,7 @@ enc/windows_31j.$(OBJEXT): internal/intern/re.h
 enc/windows_31j.$(OBJEXT): internal/intern/ruby.h
 enc/windows_31j.$(OBJEXT): internal/intern/select.h
 enc/windows_31j.$(OBJEXT): internal/intern/select/largesize.h
+enc/windows_31j.$(OBJEXT): internal/intern/set.h
 enc/windows_31j.$(OBJEXT): internal/intern/signal.h
 enc/windows_31j.$(OBJEXT): internal/intern/sprintf.h
 enc/windows_31j.$(OBJEXT): internal/intern/string.h

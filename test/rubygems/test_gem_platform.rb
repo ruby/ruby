@@ -162,6 +162,8 @@ class TestGemPlatform < Gem::TestCase
       "x86_64-dotnetx86" => ["x86_64", "dotnet", nil],
       "x86_64-dalvik0" => ["x86_64", "dalvik", "0"],
       "x86_64-dotnet1." => ["x86_64", "dotnet", "1"],
+
+      "--" => [nil, "unknown", nil],
     }
 
     test_cases.each do |arch, expected|

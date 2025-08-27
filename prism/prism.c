@@ -1409,7 +1409,7 @@ pm_conditional_predicate_warn_write_literal_p(const pm_node_t *node) {
 static inline void
 pm_conditional_predicate_warn_write_literal(pm_parser_t *parser, const pm_node_t *node) {
     if (pm_conditional_predicate_warn_write_literal_p(node)) {
-        pm_parser_warn_node(parser, node, parser->version == PM_OPTIONS_VERSION_CRUBY_3_3 ? PM_WARN_EQUAL_IN_CONDITIONAL_3_3 : PM_WARN_EQUAL_IN_CONDITIONAL);
+        pm_parser_warn_node(parser, node, parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3 ? PM_WARN_EQUAL_IN_CONDITIONAL_3_3 : PM_WARN_EQUAL_IN_CONDITIONAL);
     }
 }
 
@@ -2976,7 +2976,7 @@ pm_call_and_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const
  */
 static void
 pm_index_arguments_check(pm_parser_t *parser, const pm_arguments_node_t *arguments, const pm_node_t *block) {
-    if (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3) {
+    if (parser->version >= PM_OPTIONS_VERSION_CRUBY_3_4) {
         if (arguments != NULL && PM_NODE_FLAG_P(arguments, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORDS)) {
             pm_node_t *node;
             PM_NODE_LIST_FOREACH(&arguments->arguments, index, node) {
@@ -5279,6 +5279,10 @@ pm_interpolated_string_node_append(pm_interpolated_string_node_t *node, pm_node_
 
     switch (PM_NODE_TYPE(part)) {
         case PM_STRING_NODE:
+            // If inner string is not frozen, clear flags for this string
+            if (!PM_NODE_FLAG_P(part, PM_STRING_FLAGS_FROZEN)) {
+                CLEAR_FLAGS(node);
+            }
             part->flags = (pm_node_flags_t) ((part->flags | PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN) & ~PM_STRING_FLAGS_MUTABLE);
             break;
         case PM_INTERPOLATED_STRING_NODE:
@@ -8582,85 +8586,66 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
 /* Context manipulations                                                      */
 /******************************************************************************/
 
-static bool
-context_terminator(pm_context_t context, pm_token_t *token) {
-    switch (context) {
-        case PM_CONTEXT_MAIN:
-        case PM_CONTEXT_DEF_PARAMS:
-        case PM_CONTEXT_DEFINED:
-        case PM_CONTEXT_MULTI_TARGET:
-        case PM_CONTEXT_TERNARY:
-        case PM_CONTEXT_RESCUE_MODIFIER:
-            return token->type == PM_TOKEN_EOF;
-        case PM_CONTEXT_DEFAULT_PARAMS:
-            return token->type == PM_TOKEN_COMMA || token->type == PM_TOKEN_PARENTHESIS_RIGHT;
-        case PM_CONTEXT_PREEXE:
-        case PM_CONTEXT_POSTEXE:
-            return token->type == PM_TOKEN_BRACE_RIGHT;
-        case PM_CONTEXT_MODULE:
-        case PM_CONTEXT_CLASS:
-        case PM_CONTEXT_SCLASS:
-        case PM_CONTEXT_LAMBDA_DO_END:
-        case PM_CONTEXT_DEF:
-        case PM_CONTEXT_BLOCK_KEYWORDS:
-            return token->type == PM_TOKEN_KEYWORD_END || token->type == PM_TOKEN_KEYWORD_RESCUE || token->type == PM_TOKEN_KEYWORD_ENSURE;
-        case PM_CONTEXT_WHILE:
-        case PM_CONTEXT_UNTIL:
-        case PM_CONTEXT_ELSE:
-        case PM_CONTEXT_FOR:
-        case PM_CONTEXT_BEGIN_ENSURE:
-        case PM_CONTEXT_BLOCK_ENSURE:
-        case PM_CONTEXT_CLASS_ENSURE:
-        case PM_CONTEXT_DEF_ENSURE:
-        case PM_CONTEXT_LAMBDA_ENSURE:
-        case PM_CONTEXT_MODULE_ENSURE:
-        case PM_CONTEXT_SCLASS_ENSURE:
-            return token->type == PM_TOKEN_KEYWORD_END;
-        case PM_CONTEXT_LOOP_PREDICATE:
-            return token->type == PM_TOKEN_KEYWORD_DO || token->type == PM_TOKEN_KEYWORD_THEN;
-        case PM_CONTEXT_FOR_INDEX:
-            return token->type == PM_TOKEN_KEYWORD_IN;
-        case PM_CONTEXT_CASE_WHEN:
-            return token->type == PM_TOKEN_KEYWORD_WHEN || token->type == PM_TOKEN_KEYWORD_END || token->type == PM_TOKEN_KEYWORD_ELSE;
-        case PM_CONTEXT_CASE_IN:
-            return token->type == PM_TOKEN_KEYWORD_IN || token->type == PM_TOKEN_KEYWORD_END || token->type == PM_TOKEN_KEYWORD_ELSE;
-        case PM_CONTEXT_IF:
-        case PM_CONTEXT_ELSIF:
-            return token->type == PM_TOKEN_KEYWORD_ELSE || token->type == PM_TOKEN_KEYWORD_ELSIF || token->type == PM_TOKEN_KEYWORD_END;
-        case PM_CONTEXT_UNLESS:
-            return token->type == PM_TOKEN_KEYWORD_ELSE || token->type == PM_TOKEN_KEYWORD_END;
-        case PM_CONTEXT_EMBEXPR:
-            return token->type == PM_TOKEN_EMBEXPR_END;
-        case PM_CONTEXT_BLOCK_BRACES:
-            return token->type == PM_TOKEN_BRACE_RIGHT;
-        case PM_CONTEXT_PARENS:
-            return token->type == PM_TOKEN_PARENTHESIS_RIGHT;
-        case PM_CONTEXT_BEGIN:
-        case PM_CONTEXT_BEGIN_RESCUE:
-        case PM_CONTEXT_BLOCK_RESCUE:
-        case PM_CONTEXT_CLASS_RESCUE:
-        case PM_CONTEXT_DEF_RESCUE:
-        case PM_CONTEXT_LAMBDA_RESCUE:
-        case PM_CONTEXT_MODULE_RESCUE:
-        case PM_CONTEXT_SCLASS_RESCUE:
-            return token->type == PM_TOKEN_KEYWORD_ENSURE || token->type == PM_TOKEN_KEYWORD_RESCUE || token->type == PM_TOKEN_KEYWORD_ELSE || token->type == PM_TOKEN_KEYWORD_END;
-        case PM_CONTEXT_BEGIN_ELSE:
-        case PM_CONTEXT_BLOCK_ELSE:
-        case PM_CONTEXT_CLASS_ELSE:
-        case PM_CONTEXT_DEF_ELSE:
-        case PM_CONTEXT_LAMBDA_ELSE:
-        case PM_CONTEXT_MODULE_ELSE:
-        case PM_CONTEXT_SCLASS_ELSE:
-            return token->type == PM_TOKEN_KEYWORD_ENSURE || token->type == PM_TOKEN_KEYWORD_END;
-        case PM_CONTEXT_LAMBDA_BRACES:
-            return token->type == PM_TOKEN_BRACE_RIGHT;
-        case PM_CONTEXT_PREDICATE:
-            return token->type == PM_TOKEN_KEYWORD_THEN || token->type == PM_TOKEN_NEWLINE || token->type == PM_TOKEN_SEMICOLON;
-        case PM_CONTEXT_NONE:
-            return false;
-    }
+static const uint32_t context_terminators[] = {
+    [PM_CONTEXT_NONE] = 0,
+    [PM_CONTEXT_BEGIN] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_BEGIN_ENSURE] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_BEGIN_ELSE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_BEGIN_RESCUE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_BLOCK_BRACES] = (1 << PM_TOKEN_BRACE_RIGHT),
+    [PM_CONTEXT_BLOCK_KEYWORDS] = (1 << PM_TOKEN_KEYWORD_END) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ENSURE),
+    [PM_CONTEXT_BLOCK_ENSURE] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_BLOCK_ELSE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_BLOCK_RESCUE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_CASE_WHEN] = (1 << PM_TOKEN_KEYWORD_WHEN) | (1 << PM_TOKEN_KEYWORD_END) | (1 << PM_TOKEN_KEYWORD_ELSE),
+    [PM_CONTEXT_CASE_IN] = (1 << PM_TOKEN_KEYWORD_IN) | (1 << PM_TOKEN_KEYWORD_END) | (1 << PM_TOKEN_KEYWORD_ELSE),
+    [PM_CONTEXT_CLASS] = (1 << PM_TOKEN_KEYWORD_END) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ENSURE),
+    [PM_CONTEXT_CLASS_ENSURE] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_CLASS_ELSE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_CLASS_RESCUE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_DEF] = (1 << PM_TOKEN_KEYWORD_END) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ENSURE),
+    [PM_CONTEXT_DEF_ENSURE] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_DEF_ELSE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_DEF_RESCUE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_DEF_PARAMS] = (1 << PM_TOKEN_EOF),
+    [PM_CONTEXT_DEFINED] = (1 << PM_TOKEN_EOF),
+    [PM_CONTEXT_DEFAULT_PARAMS] = (1 << PM_TOKEN_COMMA) | (1 << PM_TOKEN_PARENTHESIS_RIGHT),
+    [PM_CONTEXT_ELSE] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_ELSIF] = (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_ELSIF) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_EMBEXPR] = (1 << PM_TOKEN_EMBEXPR_END),
+    [PM_CONTEXT_FOR] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_FOR_INDEX] = (1 << PM_TOKEN_KEYWORD_IN),
+    [PM_CONTEXT_IF] = (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_ELSIF) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_LAMBDA_BRACES] = (1 << PM_TOKEN_BRACE_RIGHT),
+    [PM_CONTEXT_LAMBDA_DO_END] = (1 << PM_TOKEN_KEYWORD_END) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ENSURE),
+    [PM_CONTEXT_LAMBDA_ENSURE] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_LAMBDA_ELSE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_LAMBDA_RESCUE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_LOOP_PREDICATE] = (1 << PM_TOKEN_KEYWORD_DO) | (1 << PM_TOKEN_KEYWORD_THEN),
+    [PM_CONTEXT_MAIN] = (1 << PM_TOKEN_EOF),
+    [PM_CONTEXT_MODULE] = (1 << PM_TOKEN_KEYWORD_END) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ENSURE),
+    [PM_CONTEXT_MODULE_ENSURE] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_MODULE_ELSE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_MODULE_RESCUE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_MULTI_TARGET] = (1 << PM_TOKEN_EOF),
+    [PM_CONTEXT_PARENS] = (1 << PM_TOKEN_PARENTHESIS_RIGHT),
+    [PM_CONTEXT_POSTEXE] = (1 << PM_TOKEN_BRACE_RIGHT),
+    [PM_CONTEXT_PREDICATE] = (1 << PM_TOKEN_KEYWORD_THEN) | (1 << PM_TOKEN_NEWLINE) | (1 << PM_TOKEN_SEMICOLON),
+    [PM_CONTEXT_PREEXE] = (1 << PM_TOKEN_BRACE_RIGHT),
+    [PM_CONTEXT_RESCUE_MODIFIER] = (1 << PM_TOKEN_EOF),
+    [PM_CONTEXT_SCLASS] = (1 << PM_TOKEN_KEYWORD_END) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ENSURE),
+    [PM_CONTEXT_SCLASS_ENSURE] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_SCLASS_ELSE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_SCLASS_RESCUE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_TERNARY] = (1 << PM_TOKEN_EOF),
+    [PM_CONTEXT_UNLESS] = (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_UNTIL] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_WHILE] = (1 << PM_TOKEN_KEYWORD_END),
+};
 
-    return false;
+static inline bool
+context_terminator(pm_context_t context, pm_token_t *token) {
+    return token->type < 32 && (context_terminators[context] & (1 << token->type));
 }
 
 /**
@@ -9109,7 +9094,7 @@ lex_global_variable(pm_parser_t *parser) {
                 } while ((width = char_is_identifier(parser, parser->current.end, parser->end - parser->current.end)) > 0);
 
                 // $0 isn't allowed to be followed by anything.
-                pm_diagnostic_id_t diag_id = parser->version == PM_OPTIONS_VERSION_CRUBY_3_3 ? PM_ERR_INVALID_VARIABLE_GLOBAL_3_3 : PM_ERR_INVALID_VARIABLE_GLOBAL;
+                pm_diagnostic_id_t diag_id = parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3 ? PM_ERR_INVALID_VARIABLE_GLOBAL_3_3 : PM_ERR_INVALID_VARIABLE_GLOBAL;
                 PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, parser->current, diag_id);
             }
 
@@ -9146,7 +9131,7 @@ lex_global_variable(pm_parser_t *parser) {
             } else {
                 // If we get here, then we have a $ followed by something that
                 // isn't recognized as a global variable.
-                pm_diagnostic_id_t diag_id = parser->version == PM_OPTIONS_VERSION_CRUBY_3_3 ? PM_ERR_INVALID_VARIABLE_GLOBAL_3_3 : PM_ERR_INVALID_VARIABLE_GLOBAL;
+                pm_diagnostic_id_t diag_id = parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3 ? PM_ERR_INVALID_VARIABLE_GLOBAL_3_3 : PM_ERR_INVALID_VARIABLE_GLOBAL;
                 const uint8_t *end = parser->current.end + parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
                 PM_PARSER_ERR_FORMAT(parser, parser->current.start, end, diag_id, (int) (end - parser->current.start), (const char *) parser->current.start);
             }
@@ -10173,7 +10158,7 @@ lex_at_variable(pm_parser_t *parser) {
         }
     } else if (parser->current.end < end && pm_char_is_decimal_digit(*parser->current.end)) {
         pm_diagnostic_id_t diag_id = (type == PM_TOKEN_CLASS_VARIABLE) ? PM_ERR_INCOMPLETE_VARIABLE_CLASS : PM_ERR_INCOMPLETE_VARIABLE_INSTANCE;
-        if (parser->version == PM_OPTIONS_VERSION_CRUBY_3_3) {
+        if (parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3) {
             diag_id = (type == PM_TOKEN_CLASS_VARIABLE) ? PM_ERR_INCOMPLETE_VARIABLE_CLASS_3_3 : PM_ERR_INCOMPLETE_VARIABLE_INSTANCE_3_3;
         }
 
@@ -13143,14 +13128,6 @@ match8(const pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, 
 }
 
 /**
- * Returns true if the current token is any of the nine given types.
- */
-static inline bool
-match9(const pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, pm_token_type_t type3, pm_token_type_t type4, pm_token_type_t type5, pm_token_type_t type6, pm_token_type_t type7, pm_token_type_t type8, pm_token_type_t type9) {
-    return match1(parser, type1) || match1(parser, type2) || match1(parser, type3) || match1(parser, type4) || match1(parser, type5) || match1(parser, type6) || match1(parser, type7) || match1(parser, type8) || match1(parser, type9);
-}
-
-/**
  * If the current token is of the specified type, lex forward by one token and
  * return true. Otherwise, return false. For example:
  *
@@ -14671,7 +14648,7 @@ parse_parameters(
                     parser_lex(parser);
 
                     pm_constant_id_t name_id = pm_parser_constant_id_token(parser, &name);
-                    uint32_t reads = parser->version == PM_OPTIONS_VERSION_CRUBY_3_3 ? pm_locals_reads(&parser->current_scope->locals, name_id) : 0;
+                    uint32_t reads = parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3 ? pm_locals_reads(&parser->current_scope->locals, name_id) : 0;
 
                     if (accepts_blocks_in_defaults) pm_accepts_block_stack_push(parser, true);
                     pm_node_t *value = parse_value_expression(parser, binding_power, false, false, PM_ERR_PARAMETER_NO_DEFAULT, (uint16_t) (depth + 1));
@@ -14687,7 +14664,7 @@ parse_parameters(
                     // If the value of the parameter increased the number of
                     // reads of that parameter, then we need to warn that we
                     // have a circular definition.
-                    if ((parser->version == PM_OPTIONS_VERSION_CRUBY_3_3) && (pm_locals_reads(&parser->current_scope->locals, name_id) != reads)) {
+                    if ((parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3) && (pm_locals_reads(&parser->current_scope->locals, name_id) != reads)) {
                         PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, name, PM_ERR_PARAMETER_CIRCULAR);
                     }
 
@@ -14772,13 +14749,13 @@ parse_parameters(
 
                         if (token_begins_expression_p(parser->current.type)) {
                             pm_constant_id_t name_id = pm_parser_constant_id_token(parser, &local);
-                            uint32_t reads = parser->version == PM_OPTIONS_VERSION_CRUBY_3_3 ? pm_locals_reads(&parser->current_scope->locals, name_id) : 0;
+                            uint32_t reads = parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3 ? pm_locals_reads(&parser->current_scope->locals, name_id) : 0;
 
                             if (accepts_blocks_in_defaults) pm_accepts_block_stack_push(parser, true);
                             pm_node_t *value = parse_value_expression(parser, binding_power, false, false, PM_ERR_PARAMETER_NO_DEFAULT_KW, (uint16_t) (depth + 1));
                             if (accepts_blocks_in_defaults) pm_accepts_block_stack_pop(parser);
 
-                            if (parser->version == PM_OPTIONS_VERSION_CRUBY_3_3 && (pm_locals_reads(&parser->current_scope->locals, name_id) != reads)) {
+                            if (parser->version <= PM_OPTIONS_VERSION_CRUBY_3_3 && (pm_locals_reads(&parser->current_scope->locals, name_id) != reads)) {
                                 PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, local, PM_ERR_PARAMETER_CIRCULAR);
                             }
 
@@ -16482,7 +16459,7 @@ parse_variable(pm_parser_t *parser) {
             pm_node_list_append(&current_scope->implicit_parameters, node);
 
             return node;
-        } else if ((parser->version != PM_OPTIONS_VERSION_CRUBY_3_3) && pm_token_is_it(parser->previous.start, parser->previous.end)) {
+        } else if ((parser->version >= PM_OPTIONS_VERSION_CRUBY_3_4) && pm_token_is_it(parser->previous.start, parser->previous.end)) {
             pm_node_t *node = (pm_node_t *) pm_it_local_variable_read_node_create(parser, &parser->previous);
             pm_node_list_append(&current_scope->implicit_parameters, node);
 
@@ -17412,6 +17389,14 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
             // If we found a label, we need to immediately return to the caller.
             if (pm_symbol_node_label_p(node)) return node;
 
+            // Call nodes (arithmetic operations) are not allowed in patterns
+            if (PM_NODE_TYPE(node) == PM_CALL_NODE) {
+                pm_parser_err_node(parser, node, diag_id);
+                pm_missing_node_t *missing_node = pm_missing_node_create(parser, node->location.start, node->location.end);
+                pm_node_destroy(parser, node);
+                return (pm_node_t *) missing_node;
+            }
+
             // Now that we have a primitive, we need to check if it's part of a range.
             if (accept2(parser, PM_TOKEN_DOT_DOT, PM_TOKEN_DOT_DOT_DOT)) {
                 pm_token_t operator = parser->previous;
@@ -17694,7 +17679,7 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
         // Gather up all of the patterns into the list.
         while (accept1(parser, PM_TOKEN_COMMA)) {
             // Break early here in case we have a trailing comma.
-            if (match9(parser, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_SEMICOLON, PM_TOKEN_NEWLINE, PM_TOKEN_EOF,PM_TOKEN_KEYWORD_AND, PM_TOKEN_KEYWORD_OR)) {
+            if (match7(parser, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_SEMICOLON, PM_TOKEN_KEYWORD_AND, PM_TOKEN_KEYWORD_OR)) {
                 node = (pm_node_t *) pm_implicit_rest_node_create(parser, &parser->previous);
                 pm_node_list_append(&nodes, node);
                 trailing_rest = true;
@@ -19520,7 +19505,15 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_do_loop_stack_push(parser, false);
                 statements = (pm_node_t *) pm_statements_node_create(parser);
 
-                pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_DEFINED + 1, binding_power < PM_BINDING_POWER_COMPOSITION, false, PM_ERR_DEF_ENDLESS, (uint16_t) (depth + 1));
+                // In endless method bodies, we need to handle command calls carefully.
+                // We want to allow command calls in assignment context but maintain
+                // the same binding power to avoid changing how operators are parsed.
+                // Note that we're intentionally NOT allowing code like `private def foo = puts "Hello"`
+                // because the original parser, parse.y, can't handle it and we want to maintain the same behavior
+                bool allow_command_call = (binding_power == PM_BINDING_POWER_ASSIGNMENT) ||
+                                         (binding_power < PM_BINDING_POWER_COMPOSITION);
+
+                pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_DEFINED + 1, allow_command_call, false, PM_ERR_DEF_ENDLESS, (uint16_t) (depth + 1));
 
                 if (accept1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
                     context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
@@ -19774,6 +19767,20 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_token_t message = parser->previous;
             pm_arguments_t arguments = { 0 };
             pm_node_t *receiver = NULL;
+
+            // If we do not accept a command call, then we also do not accept a
+            // not without parentheses. In this case we need to reject this
+            // syntax.
+            if (!accepts_command_call && !match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
+                if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES)) {
+                    pm_parser_err(parser, parser->previous.end, parser->previous.end + 1, PM_ERR_EXPECT_LPAREN_AFTER_NOT_LPAREN);
+                } else {
+                    accept1(parser, PM_TOKEN_NEWLINE);
+                    pm_parser_err_current(parser, PM_ERR_EXPECT_LPAREN_AFTER_NOT_OTHER);
+                }
+
+                return (pm_node_t *) pm_missing_node_create(parser, parser->current.start, parser->current.end);
+            }
 
             accept1(parser, PM_TOKEN_NEWLINE);
 
@@ -21176,6 +21183,13 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 }
                 PRISM_FALLTHROUGH
                 case PM_CASE_WRITABLE: {
+                    // When we have `it = value`, we need to add `it` as a local
+                    // variable before parsing the value, in case the value
+                    // references the variable.
+                    if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
+                        pm_parser_local_add_location(parser, node->location.start, node->location.end, 0);
+                    }
+
                     parser_lex(parser);
                     pm_node_t *value = parse_assignment_values(parser, previous_binding_power, PM_NODE_TYPE_P(node, PM_MULTI_TARGET_NODE) ? PM_BINDING_POWER_MULTI_ASSIGNMENT + 1 : binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL, (uint16_t) (depth + 1));
 
@@ -22169,6 +22183,12 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
      ) {
         node = parse_expression_infix(parser, node, binding_power, current_binding_powers.right, accepts_command_call, (uint16_t) (depth + 1));
 
+        if (context_terminator(parser->current_context->context, &parser->current)) {
+            // If this token terminates the current context, then we need to
+            // stop parsing the expression, as it has become a statement.
+            return node;
+        }
+
         switch (PM_NODE_TYPE(node)) {
             case PM_MULTI_WRITE_NODE:
                 // Multi-write nodes are statements, and cannot be followed by
@@ -22623,6 +22643,12 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         }
     }
 
+    // Now that we have established the user-provided options, check if
+    // a version was given and parse as the latest version otherwise.
+    if (parser->version == PM_OPTIONS_VERSION_UNSET) {
+        parser->version = PM_OPTIONS_VERSION_LATEST;
+    }
+
     pm_accepts_block_stack_push(parser, true);
 
     // Skip past the UTF-8 BOM if it exists.
@@ -22816,7 +22842,7 @@ pm_parse(pm_parser_t *parser) {
  * otherwise return true.
  */
 static bool
-pm_parse_stream_read(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets) {
+pm_parse_stream_read(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof) {
 #define LINE_SIZE 4096
     char line[LINE_SIZE];
 
@@ -22851,6 +22877,12 @@ pm_parse_stream_read(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t 
             case 9:
                 if (strncmp(line, "__END__\r\n", 9) == 0) return false;
                 break;
+        }
+
+        // All data should be read via gets.  If the string returned by gets
+        // _doesn't_ end with a newline, then we assume we hit EOF condition.
+        if (stream_feof(stream)) {
+            break;
         }
     }
 
@@ -22887,16 +22919,17 @@ pm_parse_stream_unterminated_heredoc_p(pm_parser_t *parser) {
  * can stream stdin in to Ruby so we need to support a streaming API.
  */
 PRISM_EXPORTED_FUNCTION pm_node_t *
-pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, const pm_options_t *options) {
+pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options) {
     pm_buffer_init(buffer);
 
-    bool eof = pm_parse_stream_read(buffer, stream, stream_fgets);
+    bool eof = pm_parse_stream_read(buffer, stream, stream_fgets, stream_feof);
+
     pm_parser_init(parser, (const uint8_t *) pm_buffer_value(buffer), pm_buffer_length(buffer), options);
     pm_node_t *node = pm_parse(parser);
 
     while (!eof && parser->error_list.size > 0 && (parser->lex_modes.index > 0 || pm_parse_stream_unterminated_heredoc_p(parser))) {
         pm_node_destroy(parser, node);
-        eof = pm_parse_stream_read(buffer, stream, stream_fgets);
+        eof = pm_parse_stream_read(buffer, stream, stream_fgets, stream_feof);
 
         pm_parser_free(parser);
         pm_parser_init(parser, (const uint8_t *) pm_buffer_value(buffer), pm_buffer_length(buffer), options);
@@ -22988,13 +23021,13 @@ pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, cons
  * given stream into to the given buffer.
  */
 PRISM_EXPORTED_FUNCTION void
-pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, const char *data) {
+pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const char *data) {
     pm_parser_t parser;
     pm_options_t options = { 0 };
     pm_options_read(&options, data);
 
     pm_buffer_t parser_buffer;
-    pm_node_t *node = pm_parse_stream(&parser, &parser_buffer, stream, stream_fgets, &options);
+    pm_node_t *node = pm_parse_stream(&parser, &parser_buffer, stream, stream_fgets, stream_feof, &options);
     pm_serialize_header(buffer);
     pm_serialize_content(&parser, node, buffer);
     pm_buffer_append_byte(buffer, '\0');

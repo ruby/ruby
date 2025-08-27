@@ -44,6 +44,7 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
+#include "zjit.h"
 
 VALUE rb_cISeq;
 static VALUE iseqw_new(const rb_iseq_t *iseq);
@@ -112,7 +113,7 @@ remove_from_constant_cache(ID id, IC ic)
 
     if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
         set_table *ics = (set_table *)lookup_result;
-        set_delete(ics, &ic_data);
+        set_table_delete(ics, &ic_data);
 
         if (ics->num_entries == 0 &&
                 // See comment in vm_track_constant_cache on why we need this check
@@ -324,15 +325,13 @@ cc_is_active(const struct rb_callcache *cc, bool reference_updating)
             cc = (const struct rb_callcache *)rb_gc_location((VALUE)cc);
         }
 
-        if (vm_cc_markable(cc)) {
-            if (cc->klass) { // cc is not invalidated
-                const struct rb_callable_method_entry_struct *cme = vm_cc_cme(cc);
-                if (reference_updating) {
-                    cme = (const struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cme);
-                }
-                if (!METHOD_ENTRY_INVALIDATED(cme)) {
-                    return true;
-                }
+        if (vm_cc_markable(cc) && vm_cc_valid(cc)) {
+            const struct rb_callable_method_entry_struct *cme = vm_cc_cme(cc);
+            if (reference_updating) {
+                cme = (const struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cme);
+            }
+            if (!METHOD_ENTRY_INVALIDATED(cme)) {
+                return true;
             }
         }
     }
@@ -402,10 +401,16 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 #if USE_YJIT
             rb_yjit_iseq_update_references(iseq);
 #endif
+#if USE_ZJIT
+            rb_zjit_iseq_update_references(body->zjit_payload);
+#endif
         }
         else {
 #if USE_YJIT
             rb_yjit_iseq_mark(body->yjit_payload);
+#endif
+#if USE_ZJIT
+            rb_zjit_iseq_mark(body->zjit_payload);
 #endif
         }
     }
@@ -1492,9 +1497,9 @@ rb_iseq_remove_coverage_all(void)
 /* define wrapper class methods (RubyVM::InstructionSequence) */
 
 static void
-iseqw_mark(void *ptr)
+iseqw_mark_and_move(void *ptr)
 {
-    rb_gc_mark_movable(*(VALUE *)ptr);
+    rb_gc_mark_and_move((VALUE *)ptr);
 }
 
 static size_t
@@ -1503,20 +1508,13 @@ iseqw_memsize(const void *ptr)
     return rb_iseq_memsize(*(const rb_iseq_t **)ptr);
 }
 
-static void
-iseqw_ref_update(void *ptr)
-{
-    VALUE *vptr = ptr;
-    *vptr = rb_gc_location(*vptr);
-}
-
 static const rb_data_type_t iseqw_data_type = {
     "T_IMEMO/iseq",
     {
-        iseqw_mark,
+        iseqw_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         iseqw_memsize,
-        iseqw_ref_update,
+        iseqw_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
 };

@@ -970,8 +970,8 @@ st_index_t rb_str_hash(VALUE str);
  *
  * @param[in]  str1  A string.
  * @param[in]  str2  Another string.
- * @retval     1     They have identical contents, length, and encodings.
- * @retval     0     Otherwise.
+ * @retval     0     They have identical contents, length, and encodings.
+ * @retval     1     Otherwise.
  * @pre        Both   objects   must  not  be  any   arbitrary  objects  except
  *             ::RString.
  *

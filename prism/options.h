@@ -82,14 +82,20 @@ typedef void (*pm_options_shebang_callback_t)(struct pm_options *options, const 
  * parse in the same way as a specific version of CRuby would have.
  */
 typedef enum {
-    /** The current version of prism. */
-    PM_OPTIONS_VERSION_LATEST = 0,
+    /** If an explicit version is not provided, the current version of prism will be used. */
+    PM_OPTIONS_VERSION_UNSET = 0,
 
     /** The vendored version of prism in CRuby 3.3.x. */
     PM_OPTIONS_VERSION_CRUBY_3_3 = 1,
 
     /** The vendored version of prism in CRuby 3.4.x. */
-    PM_OPTIONS_VERSION_CRUBY_3_4 = 2
+    PM_OPTIONS_VERSION_CRUBY_3_4 = 2,
+
+    /** The vendored version of prism in CRuby 3.5.x. */
+    PM_OPTIONS_VERSION_CRUBY_3_5 = 3,
+
+    /** The current version of prism. */
+    PM_OPTIONS_VERSION_LATEST = PM_OPTIONS_VERSION_CRUBY_3_5
 } pm_options_version_t;
 
 /**

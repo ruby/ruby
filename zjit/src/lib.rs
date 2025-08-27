@@ -6,6 +6,7 @@
 pub use std;
 
 mod state;
+mod distribution;
 mod cruby;
 mod cruby_methods;
 mod hir;
@@ -23,3 +24,5 @@ mod profile;
 mod invariants;
 #[cfg(test)]
 mod assertions;
+mod bitset;
+mod gc;

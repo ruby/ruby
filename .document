@@ -22,6 +22,7 @@ marshal.rb
 numeric.rb
 nilclass.rb
 pack.rb
+pathname_builtin.rb
 ractor.rb
 string.rb
 symbol.rb

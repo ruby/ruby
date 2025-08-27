@@ -291,13 +291,3 @@ module Kernel
     end
   end
 end
-
-class Module
-  # Internal helper for built-in initializations to define methods only when YJIT is enabled.
-  # This method is removed in yjit_hook.rb.
-  private def with_yjit(&block) # :nodoc:
-    if defined?(RubyVM::YJIT)
-      RubyVM::YJIT.send(:add_yjit_hook, block)
-    end
-  end
-end

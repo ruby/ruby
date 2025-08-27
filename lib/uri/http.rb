@@ -61,6 +61,18 @@ module URI
       super(tmp)
     end
 
+    # Do not allow empty host names, as they are not allowed by RFC 3986.
+    def check_host(v)
+      ret = super
+
+      if ret && v.empty?
+        raise InvalidComponentError,
+          "bad component(expected host component): #{v}"
+      end
+
+      ret
+    end
+
     #
     # == Description
     #

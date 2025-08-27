@@ -128,6 +128,7 @@ path_to_class.o: $(hdrdir)/ruby/internal/intern/re.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/ruby.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/select.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+path_to_class.o: $(hdrdir)/ruby/internal/intern/set.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/signal.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/string.h

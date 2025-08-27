@@ -35,6 +35,8 @@
 #include "iseq.h"
 #include "symbol.h" // This includes a macro for a more performant rb_id2sym.
 #include "yjit.h"
+#include "insns.inc"
+#include "zjit.h"
 #include "ruby/st.h"
 #include "ruby/vm.h"
 #include "vm_core.h"
@@ -45,8 +47,6 @@
 #include "ractor_core.h"
 #include "vm_sync.h"
 #include "shape.h"
-#include "insns.inc"
-#include "zjit.h"
 
 #include "builtin.h"
 
@@ -607,7 +607,7 @@ rb_serial_t ruby_vm_global_cvar_state = 1;
 
 static const struct rb_callcache vm_empty_cc = {
     .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
-    .klass = Qfalse,
+    .klass = Qundef,
     .cme_  = NULL,
     .call_ = vm_call_general,
     .aux_  = {
@@ -617,7 +617,7 @@ static const struct rb_callcache vm_empty_cc = {
 
 static const struct rb_callcache vm_empty_cc_for_super = {
     .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
-    .klass = Qfalse,
+    .klass = Qundef,
     .cme_  = NULL,
     .call_ = vm_call_super_method,
     .aux_  = {
@@ -732,7 +732,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     SET(constant_cache_invalidations, ruby_vm_constant_cache_invalidations);
     SET(constant_cache_misses, ruby_vm_constant_cache_misses);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
-    SET(next_shape_id, (rb_serial_t)rb_shape_tree.next_shape_id);
+    SET(next_shape_id, (rb_serial_t)rb_shapes_count());
     SET(shape_cache_size, (rb_serial_t)rb_shape_tree.cache_size);
 #undef SET
 
@@ -3146,9 +3146,9 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_free_encoded_insn_data();
             rb_free_global_enc_table();
             rb_free_loaded_builtin_table();
+            rb_free_global_symbol_table();
 
             rb_free_shared_fiber_pool();
-            rb_free_static_symid_str();
             rb_free_transcoder_table();
             rb_free_vm_opt_tables();
             rb_free_warning();
@@ -3441,6 +3441,9 @@ rb_execution_context_update(rb_execution_context_t *ec)
     }
 
     ec->storage = rb_gc_location(ec->storage);
+
+    ec->gen_fields_cache.obj = rb_gc_location(ec->gen_fields_cache.obj);
+    ec->gen_fields_cache.fields_obj = rb_gc_location(ec->gen_fields_cache.fields_obj);
 }
 
 static enum rb_id_table_iterator_result
@@ -3505,6 +3508,9 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     rb_gc_mark(ec->private_const_reference);
 
     rb_gc_mark_movable(ec->storage);
+
+    rb_gc_mark_weak((VALUE *)&ec->gen_fields_cache.obj);
+    rb_gc_mark_weak((VALUE *)&ec->gen_fields_cache.fields_obj);
 }
 
 void rb_fiber_mark_self(rb_fiber_t *fib);
@@ -4510,13 +4516,20 @@ Init_vm_objects(void)
     vm->cc_refinement_table = rb_set_init_numtable();
 }
 
+#if USE_ZJIT
+extern VALUE rb_zjit_option_enabled_p(rb_execution_context_t *ec, VALUE self);
+#else
+static VALUE rb_zjit_option_enabled_p(rb_execution_context_t *ec, VALUE self) { return Qfalse; }
+#endif
+
+// Whether JIT is enabled or not, we need to load/undef `#with_jit` for other builtins.
+#include "jit_hook.rbinc"
+#include "jit_undef.rbinc"
+
 // Stub for builtin function when not building YJIT units
 #if !USE_YJIT
 void Init_builtin_yjit(void) {}
 #endif
-
-// Whether YJIT is enabled or not, we load yjit_hook.rb to remove Kernel#with_yjit.
-#include "yjit_hook.rbinc"
 
 // Stub for builtin function when not building ZJIT units
 #if !USE_ZJIT

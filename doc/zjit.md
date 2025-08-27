@@ -28,12 +28,12 @@ in a way that can be easily shared with other team members.
 
 Make sure you have a `--enable-zjit=dev` build, and run `brew install cargo-nextest` first.
 
-### make zjit-test-all
+### make zjit-check
 
 This command runs all ZJIT tests: `make zjit-test` and `test/ruby/test_zjit.rb`.
 
 ```
-make zjit-test-all
+make zjit-check
 ```
 
 ### make zjit-test
@@ -78,6 +78,16 @@ use `make`.
 
 </details>
 
+### make zjit-test-all
+
+```
+make zjit-test-all
+```
+
+This command runs all Ruby tests under `/test/ruby/` with ZJIT enabled.
+
+Certain tests are excluded under `/test/.excludes-zjit`.
+
 ### test/ruby/test\_zjit.rb
 
 This command runs Ruby execution tests.
@@ -91,3 +101,33 @@ You can also run a single test case by matching the method name:
 ```
 make test-all TESTS="test/ruby/test_zjit.rb -n TestZJIT#test_putobject"
 ```
+
+## ZJIT Glossary
+
+This glossary contains terms that are helpful for understanding ZJIT.
+
+Please note that some terms may appear in CRuby internals too but with different meanings.
+
+| Term | Definition |
+| ---  | -----------|
+| HIR | High-level Intermediate Representation. High-level (Ruby semantics) graph representation in static single-assignment (SSA) form |
+| LIR | Low-level Intermediate Representation. Low-level IR used in the backend for assembly generation |
+| SSA | Static Single Assignment. A form where each variable is assigned exactly once |
+| `opnd` | Operand. An operand to an IR instruction (can be register, memory, immediate, etc.) |
+| `dst` | Destination. The output operand of an instruction where the result is stored |
+| VReg | Virtual Register. A virtual register that gets lowered to physical register or memory |
+| `insn_id` | Instruction ID. An index of an instruction in a function |
+| `block_id` | The index of a basic block, which effectively acts like a pointer |
+| `branch` | Control flow edge between basic blocks in the compiled code |
+| `cb` | Code Block. Memory region for generated machine code |
+| `entry` | The starting address of compiled code for an ISEQ |
+| Patch Point | Location in generated code that can be modified later in case assumptions get invalidated |
+| Frame State | Captured state of the Ruby stack frame at a specific point for deoptimization |
+| Guard | A run-time check that ensures assumptions are still valid |
+| `invariant` | An assumption that JIT code relies on, requiring invalidation if broken |
+| Deopt | Deoptimization. Process of falling back from JIT code to interpreter |
+| Side Exit | Exit from JIT code back to interpreter |
+| Type Lattice | Hierarchy of types used for type inference and optimization |
+| Constant Folding | Optimization that evaluates constant expressions at compile time |
+| RSP | x86-64 stack pointer register used for native stack operations |
+| Register Spilling | Process of moving register values to memory when running out of physical registers |

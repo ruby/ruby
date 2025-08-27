@@ -279,9 +279,7 @@ struct rb_callcache {
     const VALUE flags;
 
     /* inline cache: key */
-    const VALUE klass; // should not mark it because klass can not be free'd
-                       // because of this marking. When klass is collected,
-                       // cc will be cleared (cc->klass = 0) at vm_ccs_free().
+    const VALUE klass; // Weak reference. When klass is collected, `cc->klass = Qundef`.
 
     /* inline cache: values */
     const struct rb_callable_method_entry_struct * const cme_;
@@ -324,12 +322,24 @@ vm_cc_attr_index_initialize(const struct rb_callcache *cc, shape_id_t shape_id)
     vm_cc_attr_index_set(cc, (attr_index_t)-1, shape_id);
 }
 
+static inline VALUE
+cc_check_class(VALUE klass)
+{
+    VM_ASSERT(klass == Qundef || RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
+    return klass;
+}
+
+VALUE rb_vm_cc_table_create(size_t capa);
+VALUE rb_vm_cc_table_dup(VALUE old_table);
+void rb_vm_cc_table_delete(VALUE table, ID mid);
+
 static inline const struct rb_callcache *
 vm_cc_new(VALUE klass,
           const struct rb_callable_method_entry_struct *cme,
           vm_call_handler call,
           enum vm_cc_type type)
 {
+    cc_check_class(klass);
     struct rb_callcache *cc = IMEMO_NEW(struct rb_callcache, imemo_callcache, klass);
     *((struct rb_callable_method_entry_struct **)&cc->cme_) = (struct rb_callable_method_entry_struct *)cme;
     *((vm_call_handler *)&cc->call_) = call;
@@ -374,7 +384,7 @@ vm_cc_refinement_p(const struct rb_callcache *cc)
             (imemo_callcache << FL_USHIFT) |  \
             VM_CALLCACHE_UNMARKABLE |         \
             VM_CALLCACHE_ON_STACK,            \
-        .klass = clazz,                       \
+        .klass = cc_check_class(clazz),       \
         .cme_  = cme,                         \
         .call_ = call,                        \
         .aux_  = aux,                         \
@@ -384,8 +394,7 @@ static inline bool
 vm_cc_class_check(const struct rb_callcache *cc, VALUE klass)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc->klass == 0 ||
-              RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
+    VM_ASSERT(cc_check_class(cc->klass));
     return cc->klass == klass;
 }
 
@@ -396,10 +405,21 @@ vm_cc_markable(const struct rb_callcache *cc)
     return FL_TEST_RAW((VALUE)cc, VM_CALLCACHE_UNMARKABLE) == 0;
 }
 
+static inline bool
+vm_cc_valid(const struct rb_callcache *cc)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc_check_class(cc->klass));
+
+    return !UNDEF_P(cc->klass);
+}
+
 static inline const struct rb_callable_method_entry_struct *
 vm_cc_cme(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc));
+    VM_ASSERT(cc_check_class(cc->klass));
     VM_ASSERT(cc->call_ == NULL   || // not initialized yet
               !vm_cc_markable(cc) ||
               cc->cme_ != NULL);
@@ -412,6 +432,8 @@ vm_cc_call(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc->call_ != NULL);
+    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc));
+    VM_ASSERT(cc_check_class(cc->klass));
     return cc->call_;
 }
 
@@ -447,7 +469,7 @@ vm_cc_cmethod_missing_reason(const struct rb_callcache *cc)
 static inline bool
 vm_cc_invalidated_p(const struct rb_callcache *cc)
 {
-    if (cc->klass && !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc))) {
+    if (vm_cc_valid(cc) && !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc))) {
         return false;
     }
     else {
@@ -543,9 +565,9 @@ vm_cc_invalidate(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc != vm_cc_empty());
-    VM_ASSERT(cc->klass != 0); // should be enable
+    VM_ASSERT(cc->klass != Qundef); // should be enable
 
-    *(VALUE *)&cc->klass = 0;
+    *(VALUE *)&cc->klass = Qundef;
     RB_DEBUG_COUNTER_INC(cc_ent_invalidate);
 }
 
@@ -567,8 +589,14 @@ struct rb_class_cc_entries {
         unsigned int argc;
         unsigned int flag;
         const struct rb_callcache *cc;
-    } *entries;
+    } entries[FLEX_ARY_LEN];
 };
+
+static inline size_t
+vm_ccs_alloc_size(size_t capa)
+{
+    return offsetof(struct rb_class_cc_entries, entries) + (sizeof(struct rb_class_cc_entries_entry) * capa);
+}
 
 #if VM_CHECK_MODE > 0
 
@@ -584,11 +612,14 @@ vm_ccs_p(const struct rb_class_cc_entries *ccs)
 static inline bool
 vm_cc_check_cme(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme)
 {
-    if (vm_cc_cme(cc) == cme ||
-        (cme->def->iseq_overload && vm_cc_cme(cc) == rb_vm_lookup_overloaded_cme(cme))) {
+    bool valid;
+    RB_VM_LOCKING_NO_BARRIER() {
+        valid = vm_cc_cme(cc) == cme ||
+            (cme->def->iseq_overload && vm_cc_cme(cc) == rb_vm_lookup_overloaded_cme(cme));
+    }
+    if (valid) {
         return true;
     }
-    else {
 #if 1
         // debug print
 
@@ -600,13 +631,9 @@ vm_cc_check_cme(const struct rb_callcache *cc, const rb_callable_method_entry_t 
         rp(vm_cc_cme(cc));
         rp(rb_vm_lookup_overloaded_cme(cme));
 #endif
-        return false;
-    }
+    return false;
 }
 
 #endif
-
-// gc.c
-void rb_vm_ccs_free(struct rb_class_cc_entries *ccs);
 
 #endif /* RUBY_VM_CALLINFO_H */

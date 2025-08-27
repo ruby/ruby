@@ -128,6 +128,7 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal(1.0/0, parse('Infinity', :allow_nan => true))
     assert_raise(ParserError) { parse('-Infinity') }
     assert_equal(-1.0/0, parse('-Infinity', :allow_nan => true))
+    capture_output { assert_equal(Float::INFINITY, parse("23456789012E666")) }
   end
 
   def test_parse_bigdecimals
@@ -333,10 +334,35 @@ class JSONParserTest < Test::Unit::TestCase
 
   def test_parse_duplicate_key
     expected = {"a" => 2}
+    expected_sym = {a: 2}
+
     assert_equal expected, parse('{"a": 1, "a": 2}', allow_duplicate_key: true)
     assert_raise(ParserError) { parse('{"a": 1, "a": 2}', allow_duplicate_key: false) }
-    assert_deprecated_warning(/duplicate keys/) do
+    assert_raise(ParserError) { parse('{"a": 1, "a": 2}', allow_duplicate_key: false, symbolize_names: true) }
+
+    assert_deprecated_warning(/duplicate key "a"/) do
       assert_equal expected, parse('{"a": 1, "a": 2}')
+    end
+    assert_deprecated_warning(/duplicate key "a"/) do
+      assert_equal expected_sym, parse('{"a": 1, "a": 2}', symbolize_names: true)
+    end
+
+    if RUBY_ENGINE == 'RUBY_ENGINE'
+      assert_deprecated_warning(/#{File.basename(__FILE__)}\:#{__LINE__ + 1}/) do
+        assert_equal expected, parse('{"a": 1, "a": 2}')
+      end
+    end
+
+    unless RUBY_ENGINE == 'jruby'
+      assert_raise(ParserError) do
+        fake_key = Object.new
+        JSON.load('{"a": 1, "a": 2}', -> (obj) { obj == "a" ? fake_key : obj }, allow_duplicate_key: false)
+      end
+
+      assert_deprecated_warning(/duplicate key #<Object:0x/) do
+        fake_key = Object.new
+        JSON.load('{"a": 1, "a": 2}', -> (obj) { obj == "a" ? fake_key : obj })
+      end
     end
   end
 

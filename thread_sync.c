@@ -374,7 +374,6 @@ do_mutex_lock(VALUE self, int interruptible_p)
                 rb_ractor_sleeper_threads_dec(th->ractor);
                 th->status = prev_status;
                 th->locking_mutex = Qfalse;
-                th->locking_mutex = Qfalse;
 
                 RUBY_DEBUG_LOG("%p wakeup", mutex);
             }

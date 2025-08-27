@@ -1,0 +1,18 @@
+Returns whether +self+ and +object+ have the same length and content:
+
+  s = 'foo'
+  s.eql?('foo')  # => true
+  s.eql?('food') # => false
+  s.eql?('FOO')  # => false
+
+Returns +false+ if the two strings' encodings are not compatible:
+
+  s0 = "äöü"                           # => "äöü"
+  s1 = s0.encode(Encoding::ISO_8859_1) # => "\xE4\xF6\xFC"
+  s0.encoding                          # => #<Encoding:UTF-8>
+  s1.encoding                          # => #<Encoding:ISO-8859-1>
+  s0.eql?(s1)                          # => false
+
+See {Encodings}[rdoc-ref:encodings.rdoc].
+
+Related: see {Querying}[rdoc-ref:String@Querying].

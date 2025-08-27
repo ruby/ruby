@@ -48,7 +48,7 @@ module JSON
         end
       end
 
-      # TODO: exctract :create_additions support to another gem for version 3.0
+      # TODO: extract :create_additions support to another gem for version 3.0
       def create_additions_proc(opts)
         if opts[:symbolize_names]
           raise ArgumentError, "options :symbolize_names and :create_additions cannot be  used in conjunction"
@@ -87,31 +87,32 @@ module JSON
         opts
       end
 
-      GEM_ROOT = File.expand_path("../../../", __FILE__) + "/"
       def create_additions_warning
-        message = "JSON.load implicit support for `create_additions: true` is deprecated " \
+        JSON.deprecation_warning "JSON.load implicit support for `create_additions: true` is deprecated " \
           "and will be removed in 3.0, use JSON.unsafe_load or explicitly " \
           "pass `create_additions: true`"
-
-        uplevel = 4
-        caller_locations(uplevel, 10).each do |frame|
-          if frame.path.nil? || frame.path.start_with?(GEM_ROOT) || frame.path.end_with?("/truffle/cext_ruby.rb", ".c")
-            uplevel += 1
-          else
-            break
-          end
-        end
-
-        if RUBY_VERSION >= "3.0"
-          warn(message, uplevel: uplevel - 1, category: :deprecated)
-        else
-          warn(message, uplevel: uplevel - 1)
-        end
       end
     end
   end
 
   class << self
+    def deprecation_warning(message, uplevel = 3) # :nodoc:
+      gem_root = File.expand_path("../../../", __FILE__) + "/"
+      caller_locations(uplevel, 10).each do |frame|
+        if frame.path.nil? || frame.path.start_with?(gem_root) || frame.path.end_with?("/truffle/cext_ruby.rb", ".c")
+          uplevel += 1
+        else
+          break
+        end
+      end
+
+      if RUBY_VERSION >= "3.0"
+        warn(message, uplevel: uplevel, category: :deprecated)
+      else
+        warn(message, uplevel: uplevel)
+      end
+    end
+
     # :call-seq:
     #   JSON[object] -> new_array or new_string
     #
@@ -184,6 +185,25 @@ module JSON
     attr_accessor :state
 
     private
+
+    # Called from the extension when a hash has both string and symbol keys
+    def on_mixed_keys_hash(hash, do_raise)
+      set = {}
+      hash.each_key do |key|
+        key_str = key.to_s
+
+        if set[key_str]
+          message = "detected duplicate key #{key_str.inspect} in #{hash.inspect}"
+          if do_raise
+            raise GeneratorError, message
+          else
+            deprecation_warning("#{message}.\nThis will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`")
+          end
+        else
+          set[key_str] = true
+        end
+      end
+    end
 
     def deprecated_singleton_attr_accessor(*attrs)
       args = RUBY_VERSION >= "3.0" ? ", category: :deprecated" : ""
@@ -390,7 +410,7 @@ module JSON
   #
   # Returns a \String containing the generated \JSON data.
   #
-  # See also JSON.fast_generate, JSON.pretty_generate.
+  # See also JSON.pretty_generate.
   #
   # Argument +obj+ is the Ruby object to be converted to \JSON.
   #
@@ -1001,7 +1021,7 @@ module JSON
     # See {Parsing Options}[#module-JSON-label-Parsing+Options], and {Generating Options}[#module-JSON-label-Generating+Options].
     #
     # For generation, the <tt>strict: true</tt> option is always set. When a Ruby object with no native \JSON counterpart is
-    # encoutered, the block provided to the initialize method is invoked, and must return a Ruby object that has a native
+    # encountered, the block provided to the initialize method is invoked, and must return a Ruby object that has a native
     # \JSON counterpart:
     #
     #  module MyApp

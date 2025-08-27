@@ -46,7 +46,7 @@
 
 /* Flags of RObject
  *
- * 1:    ROBJECT_EMBED
+ * 4:    ROBJECT_EMBED
  *           The object has its instance variables embedded (the array of
  *           instance variables directly follow the object, rather than being
  *           on a separately allocated buffer).
@@ -337,12 +337,10 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
         return;
     }
 
-    shape_id_t dest_shape_id = src_shape_id;
     shape_id_t initial_shape_id = RBASIC_SHAPE_ID(dest);
-
     RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
 
-    dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
+    shape_id_t dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
     if (UNLIKELY(rb_shape_too_complex_p(dest_shape_id))) {
         st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
         rb_obj_copy_ivs_to_hash_table(obj, table);
@@ -364,7 +362,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     }
 
     rb_shape_copy_fields(dest, dest_buf, dest_shape_id, src_buf, src_shape_id);
-    rb_obj_set_shape_id(dest, dest_shape_id);
+    RBASIC_SET_SHAPE_ID(dest, dest_shape_id);
 }
 
 static void
@@ -377,19 +375,19 @@ init_copy(VALUE dest, VALUE obj)
     // Copies the shape id from obj to dest
     RBASIC(dest)->flags |= RBASIC(obj)->flags & T_MASK;
     switch (BUILTIN_TYPE(obj)) {
-        case T_IMEMO:
-          rb_bug("Unreachable");
-          break;
-        case T_CLASS:
-        case T_MODULE:
-          // noop: handled in class.c: rb_mod_init_copy
-          break;
-        case T_OBJECT:
-          rb_obj_copy_ivar(dest, obj);
-          break;
-        default:
-          rb_copy_generic_ivar(dest, obj);
-          break;
+      case T_IMEMO:
+        rb_bug("Unreachable");
+        break;
+      case T_CLASS:
+      case T_MODULE:
+        // noop: handled in class.c: rb_mod_init_copy
+        break;
+      case T_OBJECT:
+        rb_obj_copy_ivar(dest, obj);
+        break;
+      default:
+        rb_copy_generic_ivar(dest, obj);
+        break;
     }
     rb_gc_copy_attributes(dest, obj);
 }
@@ -498,7 +496,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
 
         if (RB_OBJ_FROZEN(obj)) {
             shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
-            rb_obj_set_shape_id(clone, next_shape_id);
+            RBASIC_SET_SHAPE_ID(clone, next_shape_id);
         }
         break;
       case Qtrue: {

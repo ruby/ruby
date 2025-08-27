@@ -47,13 +47,16 @@ module Bundler
       git_author_name = use_git ? `git config user.name`.chomp : ""
       git_username = use_git ? `git config github.user`.chomp : ""
       git_user_email = use_git ? `git config user.email`.chomp : ""
+      github_username = github_username(git_username)
 
-      github_username = if options[:github_username].nil?
-        git_username
-      elsif options[:github_username] == false
-        ""
+      if github_username.empty?
+        homepage_uri = "TODO: Put your gem's website or public repo URL here."
+        source_code_uri = "TODO: Put your gem's public repo URL here."
+        changelog_uri = "TODO: Put your gem's CHANGELOG.md URL here."
       else
-        options[:github_username]
+        homepage_uri = "https://github.com/#{github_username}/#{name}"
+        source_code_uri = "https://github.com/#{github_username}/#{name}"
+        changelog_uri = "https://github.com/#{github_username}/#{name}/blob/main/CHANGELOG.md"
       end
 
       config = {
@@ -76,6 +79,9 @@ module Bundler
         rust_builder_required_rubygems_version: rust_builder_required_rubygems_version,
         minitest_constant_name: minitest_constant_name,
         ignore_paths: %w[bin/],
+        homepage_uri: homepage_uri,
+        source_code_uri: source_code_uri,
+        changelog_uri: changelog_uri,
       }
       ensure_safe_gem_name(name, constant_array)
 
@@ -162,9 +168,9 @@ module Bundler
       end
 
       if ask_and_set(:mit, "Do you want to license your code permissively under the MIT license?",
-        "This means that any other developer or company will be legally allowed to use your code " \
-        "for free as long as they admit you created it. You can read more about the MIT license " \
-        "at https://choosealicense.com/licenses/mit.")
+        "Using a MIT license means that any other developer or company will be legally allowed " \
+        "to use your code for free as long as they admit you created it. You can read more about " \
+        "the MIT license at https://choosealicense.com/licenses/mit.")
         config[:mit] = true
         Bundler.ui.info "MIT License enabled in config"
         templates.merge!("LICENSE.txt.tt" => "LICENSE.txt")
@@ -237,7 +243,7 @@ module Bundler
       end
 
       if use_git
-        Bundler.ui.info "Initializing git repo in #{target}"
+        Bundler.ui.info "\nInitializing git repo in #{target}"
         require "shellwords"
         `git init #{target.to_s.shellescape}`
 
@@ -269,7 +275,7 @@ module Bundler
       # Open gemspec in editor
       open_editor(options["edit"], target.join("#{name}.gemspec")) if options[:edit]
 
-      Bundler.ui.info "Gem '#{name}' was successfully created. " \
+      Bundler.ui.info "\nGem '#{name}' was successfully created. " \
         "For more information on making a RubyGem visit https://bundler.io/guides/creating_gem.html"
     end
 
@@ -279,13 +285,13 @@ module Bundler
       SharedHelpers.pwd.join(name).basename.to_s
     end
 
-    def ask_and_set(key, header, message)
+    def ask_and_set(key, prompt, explanation)
       choice = options[key]
       choice = Bundler.settings["gem.#{key}"] if choice.nil?
 
       if choice.nil?
-        Bundler.ui.confirm header
-        choice = Bundler.ui.yes? "#{message} y/(n):"
+        Bundler.ui.info "\n#{explanation}"
+        choice = Bundler.ui.yes? "#{prompt} y/(n):"
         Bundler.settings.set_global("gem.#{key}", choice)
       end
 
@@ -307,7 +313,7 @@ module Bundler
       test_framework = options[:test] || Bundler.settings["gem.test"]
 
       if test_framework.to_s.empty?
-        Bundler.ui.confirm "Do you want to generate tests with your gem?"
+        Bundler.ui.info "\nDo you want to generate tests with your gem?"
         Bundler.ui.info hint_text("test")
 
         result = Bundler.ui.ask "Enter a test framework. rspec/minitest/test-unit/(none):"
@@ -347,12 +353,11 @@ module Bundler
       ci_template = options[:ci] || Bundler.settings["gem.ci"]
 
       if ci_template.to_s.empty?
-        Bundler.ui.confirm "Do you want to set up continuous integration for your gem? " \
+        Bundler.ui.info "\nDo you want to set up continuous integration for your gem? " \
           "Supported services:\n" \
           "* CircleCI:       https://circleci.com/\n" \
           "* GitHub Actions: https://github.com/features/actions\n" \
-          "* GitLab CI:      https://docs.gitlab.com/ee/ci/\n" \
-          "\n"
+          "* GitLab CI:      https://docs.gitlab.com/ee/ci/\n"
         Bundler.ui.info hint_text("ci")
 
         result = Bundler.ui.ask "Enter a CI service. github/gitlab/circle/(none):"
@@ -380,11 +385,10 @@ module Bundler
       linter_template = deprecated_rubocop_option if linter_template.nil?
 
       if linter_template.to_s.empty?
-        Bundler.ui.confirm "Do you want to add a code linter and formatter to your gem? " \
+        Bundler.ui.info "\nDo you want to add a code linter and formatter to your gem? " \
           "Supported Linters:\n" \
           "* RuboCop:       https://rubocop.org\n" \
-          "* Standard:      https://github.com/standardrb/standard\n" \
-          "\n"
+          "* Standard:      https://github.com/standardrb/standard\n"
         Bundler.ui.info hint_text("linter")
 
         result = Bundler.ui.ask "Enter a linter. rubocop/standard/(none):"
@@ -480,6 +484,16 @@ module Bundler
 
     def standard_version
       "1.3"
+    end
+
+    def github_username(git_username)
+      if options[:github_username].nil?
+        git_username
+      elsif options[:github_username] == false
+        ""
+      else
+        options[:github_username]
+      end
     end
   end
 end

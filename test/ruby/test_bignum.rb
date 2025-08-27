@@ -605,6 +605,49 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(1, (-2**(BIGNUM_MIN_BITS*4))[BIGNUM_MIN_BITS*4])
   end
 
+  def test_aref2
+    x = (0x123456789abcdef << (BIGNUM_MIN_BITS + 32)) | 0x12345678
+    assert_equal(x, x[0, x.bit_length])
+    assert_equal(x >> 10, x[10, x.bit_length])
+    assert_equal(0x45678, x[0, 20])
+    assert_equal(0x6780, x[-4, 16])
+    assert_equal(0x123456, x[x.bit_length - 21, 40])
+    assert_equal(0x6789ab, x[x.bit_length - 41, 24])
+    assert_equal(0, x[-20, 10])
+    assert_equal(0, x[x.bit_length + 10, 10])
+
+    assert_equal(0, x[5, 0])
+    assert_equal(0, (-x)[5, 0])
+
+    assert_equal(x >> 5, x[5, -1])
+    assert_equal(x << 5, x[-5, -1])
+    assert_equal((-x) >> 5, (-x)[5, -1])
+    assert_equal((-x) << 5, (-x)[-5, -1])
+
+    assert_equal(x << 5, x[-5, FIXNUM_MAX])
+    assert_equal(x >> 5, x[5, FIXNUM_MAX])
+    assert_equal(0, x[FIXNUM_MIN, 100])
+    assert_equal(0, (-x)[FIXNUM_MIN, 100])
+
+    y = (x << 160) | 0x1234_0000_0000_0000_1234_0000_0000_0000
+    assert_equal(0xffffedcc00, (-y)[40, 40])
+    assert_equal(0xfffffffedc, (-y)[52, 40])
+    assert_equal(0xffffedcbff, (-y)[104, 40])
+    assert_equal(0xfffff6e5d4, (-y)[y.bit_length - 20, 40])
+    assert_equal(0, (-y)[-20, 10])
+    assert_equal(0xfff, (-y)[y.bit_length + 10, 12])
+
+    z = (1 << (BIGNUM_MIN_BITS * 2)) - 1
+    assert_equal(0x400, (-z)[-10, 20])
+    assert_equal(1, (-z)[0, 20])
+    assert_equal(0, (-z)[10, 20])
+    assert_equal(1, (-z)[0, z.bit_length])
+    assert_equal(0, (-z)[z.bit_length - 10, 10])
+    assert_equal(0x400, (-z)[z.bit_length - 10, 11])
+    assert_equal(0xfff, (-z)[z.bit_length, 12])
+    assert_equal(0xfff00, (-z)[z.bit_length - 8, 20])
+  end
+
   def test_hash
     assert_nothing_raised { T31P.hash }
   end

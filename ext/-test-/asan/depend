@@ -127,6 +127,7 @@ asan.o: $(hdrdir)/ruby/internal/intern/re.h
 asan.o: $(hdrdir)/ruby/internal/intern/ruby.h
 asan.o: $(hdrdir)/ruby/internal/intern/select.h
 asan.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+asan.o: $(hdrdir)/ruby/internal/intern/set.h
 asan.o: $(hdrdir)/ruby/internal/intern/signal.h
 asan.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 asan.o: $(hdrdir)/ruby/internal/intern/string.h

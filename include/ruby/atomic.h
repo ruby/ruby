@@ -77,8 +77,33 @@ typedef unsigned int rb_atomic_t;
 typedef LONG rb_atomic_t;
 #elif defined(__sun) && defined(HAVE_ATOMIC_H)
 typedef unsigned int rb_atomic_t;
+#elif defined(HAVE_STDATOMIC_H)
+# include <stdatomic.h>
+typedef unsigned int rb_atomic_t;
 #else
 # error No atomic operation found
+#endif
+
+/* Memory ordering constants */
+#if defined(HAVE_GCC_ATOMIC_BUILTINS)
+# define RBIMPL_ATOMIC_RELAXED __ATOMIC_RELAXED
+# define RBIMPL_ATOMIC_ACQUIRE __ATOMIC_ACQUIRE
+# define RBIMPL_ATOMIC_RELEASE __ATOMIC_RELEASE
+# define RBIMPL_ATOMIC_ACQ_REL __ATOMIC_ACQ_REL
+# define RBIMPL_ATOMIC_SEQ_CST __ATOMIC_SEQ_CST
+#elif defined(HAVE_STDATOMIC_H)
+# define RBIMPL_ATOMIC_RELAXED memory_order_relaxed
+# define RBIMPL_ATOMIC_ACQUIRE memory_order_acquire
+# define RBIMPL_ATOMIC_RELEASE memory_order_release
+# define RBIMPL_ATOMIC_ACQ_REL memory_order_acq_rel
+# define RBIMPL_ATOMIC_SEQ_CST memory_order_seq_cst
+#else
+/* Dummy values for unsupported platforms */
+# define RBIMPL_ATOMIC_RELAXED 0
+# define RBIMPL_ATOMIC_ACQUIRE 1
+# define RBIMPL_ATOMIC_RELEASE 2
+# define RBIMPL_ATOMIC_ACQ_REL 3
+# define RBIMPL_ATOMIC_SEQ_CST 4
 #endif
 
 /**
@@ -90,7 +115,7 @@ typedef unsigned int rb_atomic_t;
  * @return  What was stored in `var` before the addition.
  * @post    `var` holds `var + val`.
  */
-#define RUBY_ATOMIC_FETCH_ADD(var, val) rbimpl_atomic_fetch_add(&(var), (val))
+#define RUBY_ATOMIC_FETCH_ADD(var, val) rbimpl_atomic_fetch_add(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Atomically  replaces  the  value  pointed   by  `var`  with  the  result  of
@@ -101,7 +126,7 @@ typedef unsigned int rb_atomic_t;
  * @return  What was stored in `var` before the subtraction.
  * @post    `var` holds `var - val`.
  */
-#define RUBY_ATOMIC_FETCH_SUB(var, val) rbimpl_atomic_fetch_sub(&(var), (val))
+#define RUBY_ATOMIC_FETCH_SUB(var, val) rbimpl_atomic_fetch_sub(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Atomically  replaces  the  value  pointed   by  `var`  with  the  result  of
@@ -113,7 +138,7 @@ typedef unsigned int rb_atomic_t;
  * @post    `var` holds `var | val`.
  * @note    For portability, this macro can return void.
  */
-#define RUBY_ATOMIC_OR(var, val) rbimpl_atomic_or(&(var), (val))
+#define RUBY_ATOMIC_OR(var, val) rbimpl_atomic_or(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Atomically replaces the value pointed by  `var` with `val`.  This is just an
@@ -124,7 +149,7 @@ typedef unsigned int rb_atomic_t;
  * @return  What was stored in `var` before the assignment.
  * @post    `var` holds `val`.
  */
-#define RUBY_ATOMIC_EXCHANGE(var, val) rbimpl_atomic_exchange(&(var), (val))
+#define RUBY_ATOMIC_EXCHANGE(var, val) rbimpl_atomic_exchange(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Atomic compare-and-swap.   This stores  `val` to  `var` if  and only  if the
@@ -138,7 +163,7 @@ typedef unsigned int rb_atomic_t;
  * @retval  otherwise  Something else is at `var`; not updated.
  */
 #define RUBY_ATOMIC_CAS(var, oldval, newval) \
-    rbimpl_atomic_cas(&(var), (oldval), (newval))
+    rbimpl_atomic_cas(&(var), (oldval), (newval), RBIMPL_ATOMIC_SEQ_CST, RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Atomic load. This loads `var` with an atomic intrinsic and returns
@@ -147,7 +172,7 @@ typedef unsigned int rb_atomic_t;
  * @param var  A variable of ::rb_atomic_t
  * @return     What was stored in `var`j
  */
-#define RUBY_ATOMIC_LOAD(var) rbimpl_atomic_load(&(var))
+#define RUBY_ATOMIC_LOAD(var) rbimpl_atomic_load(&(var), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Identical to #RUBY_ATOMIC_EXCHANGE, except for the return type.
@@ -157,7 +182,7 @@ typedef unsigned int rb_atomic_t;
  * @return  void
  * @post    `var` holds `val`.
  */
-#define RUBY_ATOMIC_SET(var, val) rbimpl_atomic_set(&(var), (val))
+#define RUBY_ATOMIC_SET(var, val) rbimpl_atomic_store(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Identical to #RUBY_ATOMIC_FETCH_ADD, except for the return type.
@@ -167,7 +192,7 @@ typedef unsigned int rb_atomic_t;
  * @return  void
  * @post    `var` holds `var + val`.
  */
-#define RUBY_ATOMIC_ADD(var, val) rbimpl_atomic_add(&(var), (val))
+#define RUBY_ATOMIC_ADD(var, val) rbimpl_atomic_add(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Identical to #RUBY_ATOMIC_FETCH_SUB, except for the return type.
@@ -177,7 +202,7 @@ typedef unsigned int rb_atomic_t;
  * @return  void
  * @post    `var` holds `var - val`.
  */
-#define RUBY_ATOMIC_SUB(var, val) rbimpl_atomic_sub(&(var), (val))
+#define RUBY_ATOMIC_SUB(var, val) rbimpl_atomic_sub(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Atomically increments the value pointed by `var`.
@@ -186,7 +211,7 @@ typedef unsigned int rb_atomic_t;
  * @return  void
  * @post    `var` holds `var + 1`.
  */
-#define RUBY_ATOMIC_INC(var) rbimpl_atomic_inc(&(var))
+#define RUBY_ATOMIC_INC(var) rbimpl_atomic_inc(&(var), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Atomically decrements the value pointed by `var`.
@@ -195,7 +220,7 @@ typedef unsigned int rb_atomic_t;
  * @return  void
  * @post    `var` holds `var - 1`.
  */
-#define RUBY_ATOMIC_DEC(var) rbimpl_atomic_dec(&(var))
+#define RUBY_ATOMIC_DEC(var) rbimpl_atomic_dec(&(var), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Identical to #RUBY_ATOMIC_FETCH_ADD,  except it expects its arguments to be `size_t`.
@@ -207,7 +232,7 @@ typedef unsigned int rb_atomic_t;
  * @return  What was stored in `var` before the addition.
  * @post    `var` holds `var + val`.
  */
-#define RUBY_ATOMIC_SIZE_FETCH_ADD(var, val) rbimpl_atomic_size_fetch_add(&(var), (val))
+#define RUBY_ATOMIC_SIZE_FETCH_ADD(var, val) rbimpl_atomic_size_fetch_add(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Identical to #RUBY_ATOMIC_INC,  except it expects its  argument is `size_t`.
@@ -218,7 +243,7 @@ typedef unsigned int rb_atomic_t;
  * @return  void
  * @post    `var` holds `var + 1`.
  */
-#define RUBY_ATOMIC_SIZE_INC(var) rbimpl_atomic_size_inc(&(var))
+#define RUBY_ATOMIC_SIZE_INC(var) rbimpl_atomic_size_inc(&(var), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Identical to #RUBY_ATOMIC_DEC,  except it expects its  argument is `size_t`.
@@ -229,7 +254,7 @@ typedef unsigned int rb_atomic_t;
  * @return  void
  * @post    `var` holds `var - 1`.
  */
-#define RUBY_ATOMIC_SIZE_DEC(var) rbimpl_atomic_size_dec(&(var))
+#define RUBY_ATOMIC_SIZE_DEC(var) rbimpl_atomic_size_dec(&(var), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Identical  to #RUBY_ATOMIC_EXCHANGE,  except  it expects  its arguments  are
@@ -243,7 +268,7 @@ typedef unsigned int rb_atomic_t;
  * @post    `var` holds `val`.
  */
 #define RUBY_ATOMIC_SIZE_EXCHANGE(var, val) \
-    rbimpl_atomic_size_exchange(&(var), (val))
+    rbimpl_atomic_size_exchange(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Identical to #RUBY_ATOMIC_CAS, except it expects its arguments are `size_t`.
@@ -257,7 +282,7 @@ typedef unsigned int rb_atomic_t;
  * @retval  otherwise  Something else is at `var`; not updated.
  */
 #define RUBY_ATOMIC_SIZE_CAS(var, oldval, newval) \
-    rbimpl_atomic_size_cas(&(var), (oldval), (newval))
+    rbimpl_atomic_size_cas(&(var), (oldval), (newval), RBIMPL_ATOMIC_SEQ_CST, RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Identical to #RUBY_ATOMIC_ADD, except it expects its arguments are `size_t`.
@@ -269,7 +294,7 @@ typedef unsigned int rb_atomic_t;
  * @return  void
  * @post    `var` holds `var + val`.
  */
-#define RUBY_ATOMIC_SIZE_ADD(var, val) rbimpl_atomic_size_add(&(var), (val))
+#define RUBY_ATOMIC_SIZE_ADD(var, val) rbimpl_atomic_size_add(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Identical to #RUBY_ATOMIC_SUB, except it expects its arguments are `size_t`.
@@ -281,7 +306,7 @@ typedef unsigned int rb_atomic_t;
  * @return  void
  * @post    `var` holds `var - val`.
  */
-#define RUBY_ATOMIC_SIZE_SUB(var, val) rbimpl_atomic_size_sub(&(var), (val))
+#define RUBY_ATOMIC_SIZE_SUB(var, val) rbimpl_atomic_size_sub(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Identical  to #RUBY_ATOMIC_EXCHANGE,  except  it expects  its arguments  are
@@ -300,7 +325,7 @@ typedef unsigned int rb_atomic_t;
  * some pointers, most notably function pointers.
  */
 #define RUBY_ATOMIC_PTR_EXCHANGE(var, val) \
-    RBIMPL_CAST(rbimpl_atomic_ptr_exchange((void **)&(var), (void *)val))
+    RBIMPL_CAST(rbimpl_atomic_ptr_exchange((void **)&(var), (void *)val, RBIMPL_ATOMIC_SEQ_CST))
 
 /**
  * Identical to #RUBY_ATOMIC_LOAD, except it expects its arguments are `void*`.
@@ -311,7 +336,7 @@ typedef unsigned int rb_atomic_t;
  * @return             The value of `var` (without tearing)
  */
 #define RUBY_ATOMIC_PTR_LOAD(var) \
-    RBIMPL_CAST(rbimpl_atomic_ptr_load((void **)&var))
+    RBIMPL_CAST(rbimpl_atomic_ptr_load((void **)&var, RBIMPL_ATOMIC_SEQ_CST))
 
 /**
 * Identical  to #RUBY_ATOMIC_SET,  except  it expects  its arguments  are
@@ -324,7 +349,7 @@ typedef unsigned int rb_atomic_t;
 * @post    `var` holds `val`.
 */
 #define RUBY_ATOMIC_PTR_SET(var, val) \
-   rbimpl_atomic_ptr_set((volatile void **)&(var), (val))
+   rbimpl_atomic_ptr_store((volatile void **)&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Identical to #RUBY_ATOMIC_CAS, except it expects its arguments are `void*`.
@@ -338,7 +363,7 @@ typedef unsigned int rb_atomic_t;
  * @retval  otherwise  Something else is at `var`; not updated.
  */
 #define RUBY_ATOMIC_PTR_CAS(var, oldval, newval) \
-    RBIMPL_CAST(rbimpl_atomic_ptr_cas((void **)&(var), (void *)(oldval), (void *)(newval)))
+    RBIMPL_CAST(rbimpl_atomic_ptr_cas((void **)&(var), (void *)(oldval), (void *)(newval), RBIMPL_ATOMIC_SEQ_CST, RBIMPL_ATOMIC_SEQ_CST))
 
 /**
  * Identical  to #RUBY_ATOMIC_SET,  except  it expects  its arguments  are
@@ -351,7 +376,7 @@ typedef unsigned int rb_atomic_t;
  * @post    `var` holds `val`.
  */
 #define RUBY_ATOMIC_VALUE_SET(var, val) \
-    rbimpl_atomic_value_set(&(var), (val))
+    rbimpl_atomic_value_store(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Identical  to #RUBY_ATOMIC_EXCHANGE,  except  it expects  its arguments  are
@@ -365,7 +390,7 @@ typedef unsigned int rb_atomic_t;
  * @post    `var` holds `val`.
  */
 #define RUBY_ATOMIC_VALUE_EXCHANGE(var, val) \
-    rbimpl_atomic_value_exchange(&(var), (val))
+    rbimpl_atomic_value_exchange(&(var), (val), RBIMPL_ATOMIC_SEQ_CST)
 
 /**
  * Identical to #RUBY_ATOMIC_CAS, except it  expects its arguments are ::VALUE.
@@ -379,19 +404,20 @@ typedef unsigned int rb_atomic_t;
  * @retval  otherwise  Something else is at `var`; not updated.
  */
 #define RUBY_ATOMIC_VALUE_CAS(var, oldval, newval) \
-    rbimpl_atomic_value_cas(&(var), (oldval), (newval))
+    rbimpl_atomic_value_cas(&(var), (oldval), (newval), RBIMPL_ATOMIC_SEQ_CST, RBIMPL_ATOMIC_SEQ_CST)
 
 /** @cond INTERNAL_MACRO */
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline rb_atomic_t
-rbimpl_atomic_fetch_add(volatile rb_atomic_t *ptr, rb_atomic_t val)
+rbimpl_atomic_fetch_add(volatile rb_atomic_t *ptr, rb_atomic_t val, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
-    return __atomic_fetch_add(ptr, val, __ATOMIC_SEQ_CST);
+    return __atomic_fetch_add(ptr, val, memory_order);
 
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     return __sync_fetch_and_add(ptr, val);
@@ -408,6 +434,9 @@ rbimpl_atomic_fetch_add(volatile rb_atomic_t *ptr, rb_atomic_t val)
     RBIMPL_ASSERT_OR_ASSUME(val <= INT_MAX);
     return atomic_add_int_nv(ptr, val) - val;
 
+#elif defined(HAVE_STDATOMIC_H)
+    return atomic_fetch_add_explicit((_Atomic volatile rb_atomic_t *)ptr, val, memory_order);
+
 #else
 # error Unsupported platform.
 #endif
@@ -418,12 +447,13 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline size_t
-rbimpl_atomic_size_fetch_add(volatile size_t *ptr, size_t val)
+rbimpl_atomic_size_fetch_add(volatile size_t *ptr, size_t val, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
-    return __atomic_fetch_add(ptr, val, __ATOMIC_SEQ_CST);
+    return __atomic_fetch_add(ptr, val, memory_order);
 
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     return __sync_fetch_and_add(ptr, val);
@@ -436,12 +466,17 @@ rbimpl_atomic_size_fetch_add(volatile size_t *ptr, size_t val)
     RBIMPL_ASSERT_OR_ASSUME(val <= LONG_MAX);
     atomic_add_long(ptr, val);
 
-#else
+#elif defined(__sun) && defined(HAVE_ATOMIC_H)
     RBIMPL_STATIC_ASSERT(size_of_rb_atomic_t, sizeof *ptr == sizeof(rb_atomic_t));
 
     volatile rb_atomic_t *const tmp = RBIMPL_CAST((volatile rb_atomic_t *)ptr);
-    rbimpl_atomic_fetch_add(tmp, val);
+    rbimpl_atomic_fetch_add(tmp, val, memory_order);
 
+#elif defined(HAVE_STDATOMIC_H)
+    return atomic_fetch_add_explicit((_Atomic volatile size_t *)ptr, val, memory_order);
+
+#else
+# error Unsupported platform.
 #endif
 }
 
@@ -449,8 +484,9 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_add(volatile rb_atomic_t *ptr, rb_atomic_t val)
+rbimpl_atomic_add(volatile rb_atomic_t *ptr, rb_atomic_t val, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
@@ -459,7 +495,7 @@ rbimpl_atomic_add(volatile rb_atomic_t *ptr, rb_atomic_t val)
      * return value is not used, then compiles it into single `LOCK ADD`
      * instruction.
      */
-    __atomic_add_fetch(ptr, val, __ATOMIC_SEQ_CST);
+    __atomic_add_fetch(ptr, val, memory_order);
 
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     __sync_add_and_fetch(ptr, val);
@@ -477,6 +513,9 @@ rbimpl_atomic_add(volatile rb_atomic_t *ptr, rb_atomic_t val)
     RBIMPL_ASSERT_OR_ASSUME(val <= INT_MAX);
     atomic_add_int(ptr, val);
 
+#elif defined(HAVE_STDATOMIC_H)
+    atomic_fetch_add_explicit((_Atomic volatile rb_atomic_t *)ptr, val, memory_order);
+
 #else
 # error Unsupported platform.
 #endif
@@ -486,12 +525,13 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_size_add(volatile size_t *ptr, size_t val)
+rbimpl_atomic_size_add(volatile size_t *ptr, size_t val, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
-    __atomic_add_fetch(ptr, val, __ATOMIC_SEQ_CST);
+    __atomic_add_fetch(ptr, val, memory_order);
 
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     __sync_add_and_fetch(ptr, val);
@@ -505,12 +545,17 @@ rbimpl_atomic_size_add(volatile size_t *ptr, size_t val)
     RBIMPL_ASSERT_OR_ASSUME(val <= LONG_MAX);
     atomic_add_long(ptr, val);
 
-#else
+#elif defined(_WIN32) || (defined(__sun) && defined(HAVE_ATOMIC_H))
     RBIMPL_STATIC_ASSERT(size_of_rb_atomic_t, sizeof *ptr == sizeof(rb_atomic_t));
 
     volatile rb_atomic_t *const tmp = RBIMPL_CAST((volatile rb_atomic_t *)ptr);
-    rbimpl_atomic_add(tmp, val);
+    rbimpl_atomic_add(tmp, val, memory_order);
 
+#elif defined(HAVE_STDATOMIC_H)
+    atomic_fetch_add_explicit((_Atomic volatile size_t *)ptr, val, memory_order);
+
+#else
+# error Unsupported platform.
 #endif
 }
 
@@ -518,12 +563,13 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_inc(volatile rb_atomic_t *ptr)
+rbimpl_atomic_inc(volatile rb_atomic_t *ptr, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS) || defined(HAVE_GCC_SYNC_BUILTINS)
-    rbimpl_atomic_add(ptr, 1);
+    rbimpl_atomic_add(ptr, 1, memory_order);
 
 #elif defined(_WIN32)
     InterlockedIncrement(ptr);
@@ -531,9 +577,11 @@ rbimpl_atomic_inc(volatile rb_atomic_t *ptr)
 #elif defined(__sun) && defined(HAVE_ATOMIC_H)
     atomic_inc_uint(ptr);
 
-#else
-    rbimpl_atomic_add(ptr, 1);
+#elif defined(HAVE_STDATOMIC_H)
+    rbimpl_atomic_add(ptr, 1, memory_order);
 
+#else
+# error Unsupported platform.
 #endif
 }
 
@@ -541,12 +589,13 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_size_inc(volatile size_t *ptr)
+rbimpl_atomic_size_inc(volatile size_t *ptr, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS) || defined(HAVE_GCC_SYNC_BUILTINS)
-    rbimpl_atomic_size_add(ptr, 1);
+    rbimpl_atomic_size_add(ptr, 1, memory_order);
 
 #elif defined(_WIN64)
     InterlockedIncrement64(ptr);
@@ -554,11 +603,16 @@ rbimpl_atomic_size_inc(volatile size_t *ptr)
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     atomic_inc_ulong(ptr);
 
-#else
+#elif defined(_WIN32) || (defined(__sun) && defined(HAVE_ATOMIC_H))
     RBIMPL_STATIC_ASSERT(size_of_size_t, sizeof *ptr == sizeof(rb_atomic_t));
 
-    rbimpl_atomic_size_add(ptr, 1);
+    rbimpl_atomic_size_add(ptr, 1, memory_order);
 
+#elif defined(HAVE_STDATOMIC_H)
+    rbimpl_atomic_size_add(ptr, 1, memory_order);
+
+#else
+# error Unsupported platform.
 #endif
 }
 
@@ -566,12 +620,13 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline rb_atomic_t
-rbimpl_atomic_fetch_sub(volatile rb_atomic_t *ptr, rb_atomic_t val)
+rbimpl_atomic_fetch_sub(volatile rb_atomic_t *ptr, rb_atomic_t val, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
-    return __atomic_fetch_sub(ptr, val, __ATOMIC_SEQ_CST);
+    return __atomic_fetch_sub(ptr, val, memory_order);
 
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     return __sync_fetch_and_sub(ptr, val);
@@ -586,6 +641,9 @@ rbimpl_atomic_fetch_sub(volatile rb_atomic_t *ptr, rb_atomic_t val)
     RBIMPL_ASSERT_OR_ASSUME(val <= INT_MAX);
     return atomic_add_int_nv(ptr, neg * val) + val;
 
+#elif defined(HAVE_STDATOMIC_H)
+    return atomic_fetch_sub_explicit((_Atomic volatile rb_atomic_t *)ptr, val, memory_order);
+
 #else
 # error Unsupported platform.
 #endif
@@ -595,12 +653,13 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_sub(volatile rb_atomic_t *ptr, rb_atomic_t val)
+rbimpl_atomic_sub(volatile rb_atomic_t *ptr, rb_atomic_t val, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
-    __atomic_sub_fetch(ptr, val, __ATOMIC_SEQ_CST);
+    __atomic_sub_fetch(ptr, val, memory_order);
 
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     __sync_sub_and_fetch(ptr, val);
@@ -613,6 +672,9 @@ rbimpl_atomic_sub(volatile rb_atomic_t *ptr, rb_atomic_t val)
     RBIMPL_ASSERT_OR_ASSUME(val <= INT_MAX);
     atomic_add_int(ptr, neg * val);
 
+#elif defined(HAVE_STDATOMIC_H)
+    atomic_fetch_sub_explicit((_Atomic volatile rb_atomic_t *)ptr, val, memory_order);
+
 #else
 # error Unsupported platform.
 #endif
@@ -622,12 +684,13 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_size_sub(volatile size_t *ptr, size_t val)
+rbimpl_atomic_size_sub(volatile size_t *ptr, size_t val, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
-    __atomic_sub_fetch(ptr, val, __ATOMIC_SEQ_CST);
+    __atomic_sub_fetch(ptr, val, memory_order);
 
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     __sync_sub_and_fetch(ptr, val);
@@ -641,12 +704,17 @@ rbimpl_atomic_size_sub(volatile size_t *ptr, size_t val)
     RBIMPL_ASSERT_OR_ASSUME(val <= LONG_MAX);
     atomic_add_long(ptr, neg * val);
 
-#else
+#elif defined(_WIN32) || (defined(__sun) && defined(HAVE_ATOMIC_H))
     RBIMPL_STATIC_ASSERT(size_of_rb_atomic_t, sizeof *ptr == sizeof(rb_atomic_t));
 
     volatile rb_atomic_t *const tmp = RBIMPL_CAST((volatile rb_atomic_t *)ptr);
-    rbimpl_atomic_sub(tmp, val);
+    rbimpl_atomic_sub(tmp, val, memory_order);
 
+#elif defined(HAVE_STDATOMIC_H)
+    atomic_fetch_sub_explicit((_Atomic volatile size_t *)ptr, val, memory_order);
+
+#else
+# error Unsupported platform.
 #endif
 }
 
@@ -654,12 +722,13 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_dec(volatile rb_atomic_t *ptr)
+rbimpl_atomic_dec(volatile rb_atomic_t *ptr, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS) || defined(HAVE_GCC_SYNC_BUILTINS)
-    rbimpl_atomic_sub(ptr, 1);
+    rbimpl_atomic_sub(ptr, 1, memory_order);
 
 #elif defined(_WIN32)
     InterlockedDecrement(ptr);
@@ -667,9 +736,11 @@ rbimpl_atomic_dec(volatile rb_atomic_t *ptr)
 #elif defined(__sun) && defined(HAVE_ATOMIC_H)
     atomic_dec_uint(ptr);
 
-#else
-    rbimpl_atomic_sub(ptr, 1);
+#elif defined(HAVE_STDATOMIC_H)
+    rbimpl_atomic_sub(ptr, 1, memory_order);
 
+#else
+# error Unsupported platform.
 #endif
 }
 
@@ -677,12 +748,13 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_size_dec(volatile size_t *ptr)
+rbimpl_atomic_size_dec(volatile size_t *ptr, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS) || defined(HAVE_GCC_SYNC_BUILTINS)
-    rbimpl_atomic_size_sub(ptr, 1);
+    rbimpl_atomic_size_sub(ptr, 1, memory_order);
 
 #elif defined(_WIN64)
     InterlockedDecrement64(ptr);
@@ -690,11 +762,16 @@ rbimpl_atomic_size_dec(volatile size_t *ptr)
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     atomic_dec_ulong(ptr);
 
-#else
+#elif defined(_WIN32) || (defined(__sun) && defined(HAVE_ATOMIC_H))
     RBIMPL_STATIC_ASSERT(size_of_size_t, sizeof *ptr == sizeof(rb_atomic_t));
 
-    rbimpl_atomic_size_sub(ptr, 1);
+    rbimpl_atomic_size_sub(ptr, 1, memory_order);
 
+#elif defined(HAVE_STDATOMIC_H)
+    rbimpl_atomic_size_sub(ptr, 1, memory_order);
+
+#else
+# error Unsupported platform.
 #endif
 }
 
@@ -702,12 +779,13 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_or(volatile rb_atomic_t *ptr, rb_atomic_t val)
+rbimpl_atomic_or(volatile rb_atomic_t *ptr, rb_atomic_t val, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
-    __atomic_or_fetch(ptr, val, __ATOMIC_SEQ_CST);
+    __atomic_or_fetch(ptr, val, memory_order);
 
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     __sync_or_and_fetch(ptr, val);
@@ -731,6 +809,9 @@ rbimpl_atomic_or(volatile rb_atomic_t *ptr, rb_atomic_t val)
 #elif defined(__sun) && defined(HAVE_ATOMIC_H)
     atomic_or_uint(ptr, val);
 
+#elif !defined(_WIN32) && defined(HAVE_STDATOMIC_H)
+    atomic_fetch_or_explicit((_Atomic volatile rb_atomic_t *)ptr, val, memory_order);
+
 #else
 # error Unsupported platform.
 #endif
@@ -749,12 +830,13 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline rb_atomic_t
-rbimpl_atomic_exchange(volatile rb_atomic_t *ptr, rb_atomic_t val)
+rbimpl_atomic_exchange(volatile rb_atomic_t *ptr, rb_atomic_t val, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
-    return __atomic_exchange_n(ptr, val, __ATOMIC_SEQ_CST);
+    return __atomic_exchange_n(ptr, val, memory_order);
 
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     return __sync_lock_test_and_set(ptr, val);
@@ -765,6 +847,9 @@ rbimpl_atomic_exchange(volatile rb_atomic_t *ptr, rb_atomic_t val)
 #elif defined(__sun) && defined(HAVE_ATOMIC_H)
     return atomic_swap_uint(ptr, val);
 
+#elif defined(HAVE_STDATOMIC_H)
+    return atomic_exchange_explicit((_Atomic volatile rb_atomic_t *)ptr, val, memory_order);
+
 #else
 # error Unsupported platform.
 #endif
@@ -774,12 +859,13 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline size_t
-rbimpl_atomic_size_exchange(volatile size_t *ptr, size_t val)
+rbimpl_atomic_size_exchange(volatile size_t *ptr, size_t val, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
-    return __atomic_exchange_n(ptr, val, __ATOMIC_SEQ_CST);
+    return __atomic_exchange_n(ptr, val, memory_order);
 
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     return __sync_lock_test_and_set(ptr, val);
@@ -790,13 +876,18 @@ rbimpl_atomic_size_exchange(volatile size_t *ptr, size_t val)
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     return atomic_swap_ulong(ptr, val);
 
-#else
+#elif defined(_WIN32) || (defined(__sun) && defined(HAVE_ATOMIC_H))
     RBIMPL_STATIC_ASSERT(size_of_size_t, sizeof *ptr == sizeof(rb_atomic_t));
 
     volatile rb_atomic_t *const tmp = RBIMPL_CAST((volatile rb_atomic_t *)ptr);
-    const rb_atomic_t ret = rbimpl_atomic_exchange(tmp, val);
+    const rb_atomic_t ret = rbimpl_atomic_exchange(tmp, val, memory_order);
     return RBIMPL_CAST((size_t)ret);
 
+#elif defined(HAVE_STDATOMIC_H)
+    return atomic_exchange_explicit((_Atomic volatile size_t *)ptr, val, memory_order);
+
+#else
+# error Unsupported platform.
 #endif
 }
 
@@ -804,15 +895,16 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_size_set(volatile size_t *ptr, size_t val)
+rbimpl_atomic_size_store(volatile size_t *ptr, size_t val, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
-    __atomic_store_n(ptr, val, __ATOMIC_SEQ_CST);
+    __atomic_store_n(ptr, val, memory_order);
 
 #else
-    rbimpl_atomic_size_exchange(ptr, val);
+    rbimpl_atomic_size_exchange(ptr, val, memory_order);
 
 #endif
 }
@@ -821,8 +913,9 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void *
-rbimpl_atomic_ptr_exchange(void *volatile *ptr, const void *val)
+rbimpl_atomic_ptr_exchange(void *volatile *ptr, const void *val, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(InterlockedExchangePointer)
@@ -839,7 +932,7 @@ rbimpl_atomic_ptr_exchange(void *volatile *ptr, const void *val)
 
     const size_t sval = RBIMPL_CAST((size_t)val);
     volatile size_t *const sptr = RBIMPL_CAST((volatile size_t *)ptr);
-    const size_t sret = rbimpl_atomic_size_exchange(sptr, sval);
+    const size_t sret = rbimpl_atomic_size_exchange(sptr, sval, memory_order);
     return RBIMPL_CAST((void *)sret);
 
 #endif
@@ -849,26 +942,26 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_ptr_set(volatile void **ptr, void *val)
+rbimpl_atomic_ptr_store(volatile void **ptr, void *val, int memory_order)
 {
     RBIMPL_STATIC_ASSERT(sizeof_value, sizeof *ptr == sizeof(size_t));
 
     const size_t sval = RBIMPL_CAST((size_t)val);
     volatile size_t *const sptr = RBIMPL_CAST((volatile size_t *)ptr);
-    rbimpl_atomic_size_set(sptr, sval);
+    rbimpl_atomic_size_store(sptr, sval, memory_order);
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline VALUE
-rbimpl_atomic_value_exchange(volatile VALUE *ptr, VALUE val)
+rbimpl_atomic_value_exchange(volatile VALUE *ptr, VALUE val, int memory_order)
 {
     RBIMPL_STATIC_ASSERT(sizeof_value, sizeof *ptr == sizeof(size_t));
 
     const size_t sval = RBIMPL_CAST((size_t)val);
     volatile size_t *const sptr = RBIMPL_CAST((volatile size_t *)ptr);
-    const size_t sret = rbimpl_atomic_size_exchange(sptr, sval);
+    const size_t sret = rbimpl_atomic_size_exchange(sptr, sval, memory_order);
     return RBIMPL_CAST((VALUE)sret);
 }
 
@@ -876,27 +969,28 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_value_set(volatile VALUE *ptr, VALUE val)
+rbimpl_atomic_value_store(volatile VALUE *ptr, VALUE val, int memory_order)
 {
     RBIMPL_STATIC_ASSERT(sizeof_value, sizeof *ptr == sizeof(size_t));
 
     const size_t sval = RBIMPL_CAST((size_t)val);
     volatile size_t *const sptr = RBIMPL_CAST((volatile size_t *)ptr);
-    rbimpl_atomic_size_set(sptr, sval);
+    rbimpl_atomic_size_store(sptr, sval, memory_order);
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline rb_atomic_t
-rbimpl_atomic_load(volatile rb_atomic_t *ptr)
+rbimpl_atomic_load(volatile rb_atomic_t *ptr, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
-    return __atomic_load_n(ptr, __ATOMIC_SEQ_CST);
+    return __atomic_load_n(ptr, memory_order);
 #else
-    return rbimpl_atomic_fetch_add(ptr, 0);
+    return rbimpl_atomic_fetch_add(ptr, 0, memory_order);
 #endif
 }
 
@@ -904,16 +998,17 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void
-rbimpl_atomic_set(volatile rb_atomic_t *ptr, rb_atomic_t val)
+rbimpl_atomic_store(volatile rb_atomic_t *ptr, rb_atomic_t val, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
-    __atomic_store_n(ptr, val, __ATOMIC_SEQ_CST);
+    __atomic_store_n(ptr, val, memory_order);
 
 #else
     /* Maybe std::atomic<rb_atomic_t>::store can be faster? */
-    rbimpl_atomic_exchange(ptr, val);
+    rbimpl_atomic_exchange(ptr, val, memory_order);
 
 #endif
 }
@@ -922,13 +1017,15 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline rb_atomic_t
-rbimpl_atomic_cas(volatile rb_atomic_t *ptr, rb_atomic_t oldval, rb_atomic_t newval)
+rbimpl_atomic_cas(volatile rb_atomic_t *ptr, rb_atomic_t oldval, rb_atomic_t newval, int success_memorder, int failure_memorder)
 {
+    (void)success_memorder;
+    (void)failure_memorder;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
     __atomic_compare_exchange_n(
-        ptr, &oldval, newval, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+        ptr, &oldval, newval, 0, success_memorder, failure_memorder);
     return oldval;
 
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
@@ -946,6 +1043,11 @@ rbimpl_atomic_cas(volatile rb_atomic_t *ptr, rb_atomic_t oldval, rb_atomic_t new
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H)
     return atomic_cas_uint(ptr, oldval, newval);
+
+#elif defined(HAVE_STDATOMIC_H)
+    atomic_compare_exchange_strong_explicit(
+        (_Atomic volatile rb_atomic_t *)ptr, &oldval, newval, success_memorder, failure_memorder);
+    return oldval;
 
 #else
 # error Unsupported platform.
@@ -965,13 +1067,15 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline size_t
-rbimpl_atomic_size_cas(volatile size_t *ptr, size_t oldval, size_t newval)
+rbimpl_atomic_size_cas(volatile size_t *ptr, size_t oldval, size_t newval, int success_memorder, int failure_memorder)
 {
+    (void)success_memorder;
+    (void)failure_memorder;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
     __atomic_compare_exchange_n(
-        ptr, &oldval, newval, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+        ptr, &oldval, newval, 0, success_memorder, failure_memorder);
     return oldval;
 
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
@@ -983,12 +1087,19 @@ rbimpl_atomic_size_cas(volatile size_t *ptr, size_t oldval, size_t newval)
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     return atomic_cas_ulong(ptr, oldval, newval);
 
-#else
+#elif defined(_WIN32) || (defined(__sun) && defined(HAVE_ATOMIC_H))
     RBIMPL_STATIC_ASSERT(size_of_size_t, sizeof *ptr == sizeof(rb_atomic_t));
 
     volatile rb_atomic_t *tmp = RBIMPL_CAST((volatile rb_atomic_t *)ptr);
-    return rbimpl_atomic_cas(tmp, oldval, newval);
+    return rbimpl_atomic_cas(tmp, oldval, newval, success_memorder, failure_memorder);
 
+#elif defined(HAVE_STDATOMIC_H)
+    atomic_compare_exchange_strong_explicit(
+        (_Atomic volatile size_t *)ptr, &oldval, newval, success_memorder, failure_memorder);
+    return oldval;
+
+#else
+# error Unsupported platform.
 #endif
 }
 
@@ -996,8 +1107,10 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void *
-rbimpl_atomic_ptr_cas(void **ptr, const void *oldval, const void *newval)
+rbimpl_atomic_ptr_cas(void **ptr, const void *oldval, const void *newval, int success_memorder, int failure_memorder)
 {
+    (void)success_memorder;
+    (void)failure_memorder;
 #if 0
 
 #elif defined(InterlockedExchangePointer)
@@ -1020,7 +1133,7 @@ rbimpl_atomic_ptr_cas(void **ptr, const void *oldval, const void *newval)
     const size_t snew = RBIMPL_CAST((size_t)newval);
     const size_t sold = RBIMPL_CAST((size_t)oldval);
     volatile size_t *const sptr = RBIMPL_CAST((volatile size_t *)ptr);
-    const size_t sret = rbimpl_atomic_size_cas(sptr, sold, snew);
+    const size_t sret = rbimpl_atomic_size_cas(sptr, sold, snew, success_memorder, failure_memorder);
     return RBIMPL_CAST((void *)sret);
 
 #endif
@@ -1030,15 +1143,16 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline void *
-rbimpl_atomic_ptr_load(void **ptr)
+rbimpl_atomic_ptr_load(void **ptr, int memory_order)
 {
+    (void)memory_order;
 #if 0
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
-    return __atomic_load_n(ptr, __ATOMIC_SEQ_CST);
+    return __atomic_load_n(ptr, memory_order);
 #else
     void *val = *ptr;
-    return rbimpl_atomic_ptr_cas(ptr, val, val);
+    return rbimpl_atomic_ptr_cas(ptr, val, val, memory_order, memory_order);
 #endif
 }
 
@@ -1046,14 +1160,23 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline VALUE
-rbimpl_atomic_value_cas(volatile VALUE *ptr, VALUE oldval, VALUE newval)
+rbimpl_atomic_value_load(volatile VALUE *ptr, int memory_order)
+{
+    return RBIMPL_CAST((VALUE)rbimpl_atomic_ptr_load((void **)ptr, memory_order));
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_NONNULL((1))
+static inline VALUE
+rbimpl_atomic_value_cas(volatile VALUE *ptr, VALUE oldval, VALUE newval, int success_memorder, int failure_memorder)
 {
     RBIMPL_STATIC_ASSERT(sizeof_value, sizeof *ptr == sizeof(size_t));
 
     const size_t snew = RBIMPL_CAST((size_t)newval);
     const size_t sold = RBIMPL_CAST((size_t)oldval);
     volatile size_t *const sptr = RBIMPL_CAST((volatile size_t *)ptr);
-    const size_t sret = rbimpl_atomic_size_cas(sptr, sold, snew);
+    const size_t sret = rbimpl_atomic_size_cas(sptr, sold, snew, success_memorder, failure_memorder);
     return RBIMPL_CAST((VALUE)sret);
 }
 /** @endcond */

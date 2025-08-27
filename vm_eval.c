@@ -57,7 +57,7 @@ static inline VALUE vm_call0_cc(rb_execution_context_t *ec, VALUE recv, ID id, i
 VALUE
 rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *cme, int kw_splat)
 {
-    const struct rb_callcache cc = VM_CC_ON_STACK(Qfalse, vm_call_general, {{ 0 }}, cme);
+    const struct rb_callcache cc = VM_CC_ON_STACK(Qundef, vm_call_general, {{ 0 }}, cme);
     return vm_call0_cc(ec, recv, id, argc, argv, &cc, kw_splat);
 }
 
@@ -104,7 +104,7 @@ vm_call0_cc(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
 static VALUE
 vm_call0_cme(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv, const rb_callable_method_entry_t *cme)
 {
-    calling->cc = &VM_CC_ON_STACK(Qfalse, vm_call_general, {{ 0 }}, cme);
+    calling->cc = &VM_CC_ON_STACK(Qundef, vm_call_general, {{ 0 }}, cme);
     return vm_call0_body(ec, calling, argv);
 }
 
@@ -2886,7 +2886,6 @@ Init_vm_eval(void)
     rb_define_method(rb_eUncaughtThrow, "value", uncaught_throw_value, 0);
     rb_define_method(rb_eUncaughtThrow, "to_s", uncaught_throw_to_s, 0);
 
-    rb_define_singleton_method(rb_cModule, "gccct_clear_table", rb_gccct_clear_table, 0);
     id_result = rb_intern_const("result");
     id_tag = rb_intern_const("tag");
     id_value = rb_intern_const("value");

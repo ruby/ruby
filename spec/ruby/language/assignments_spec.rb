@@ -41,6 +41,37 @@ describe 'Assignments' do
         ScratchPad.recorded.should == [:rhs]
       end
     end
+
+    context "given block argument" do
+      before do
+        @klass = Class.new do
+          def initialize(h) @h = h end
+          def [](k, &block) @h[k]; end
+          def []=(k, v, &block) @h[k] = v; end
+        end
+      end
+
+      ruby_version_is ""..."3.4" do
+        it "accepts block argument" do
+          obj = @klass.new(a: 1)
+          block = proc {}
+
+          eval "obj[:a, &block] = 2"
+          eval("obj[:a, &block]").should == 2
+        end
+      end
+
+      ruby_version_is "3.4" do
+        it "raises SyntaxError" do
+          obj = @klass.new(a: 1)
+          block = proc {}
+
+          -> {
+            eval "obj[:a, &block] = 2"
+          }.should raise_error(SyntaxError, /unexpected block arg given in index assignment|block arg given in index assignment/)
+        end
+      end
+    end
   end
 
   describe 'using +=' do
@@ -112,6 +143,37 @@ describe 'Assignments' do
 
         a = klass_with_private_methods.new(k: 0)
         a.public_method(:k, 2).should == 2
+      end
+
+      context "given block argument" do
+        before do
+          @klass = Class.new do
+            def initialize(h) @h = h end
+            def [](k, &block) @h[k]; end
+            def []=(k, v, &block) @h[k] = v; end
+          end
+        end
+
+        ruby_version_is ""..."3.4" do
+          it "accepts block argument" do
+            obj = @klass.new(a: 1)
+            block = proc {}
+
+            eval "obj[:a, &block] += 2"
+            eval("obj[:a, &block]").should == 3
+          end
+        end
+
+        ruby_version_is "3.4" do
+          it "raises SyntaxError" do
+            obj = @klass.new(a: 1)
+            block = proc {}
+
+            -> {
+              eval "obj[:a, &block] += 2"
+            }.should raise_error(SyntaxError, /unexpected block arg given in index assignment|block arg given in index assignment/)
+          end
+        end
       end
 
       context 'splatted argument' do

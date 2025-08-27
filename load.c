@@ -372,6 +372,8 @@ features_index_add_single(vm_ns_t *vm_ns, const char* str, size_t len, VALUE off
 static void
 features_index_add(vm_ns_t *vm_ns, VALUE feature, VALUE offset)
 {
+    RUBY_ASSERT(rb_ractor_main_p());
+
     const char *feature_str, *feature_end, *ext, *p;
     bool rb = false;
 
@@ -1316,7 +1318,7 @@ no_feature_p(vm_ns_t *vm_ns, const char *feature, const char *ext, int rb, int e
     return 0;
 }
 
-// Documented in doc/globals.rdoc
+// Documented in doc/globals.md
 VALUE
 rb_resolve_feature_path(VALUE klass, VALUE fname)
 {
@@ -1344,14 +1346,14 @@ rb_resolve_feature_path(VALUE klass, VALUE fname)
 }
 
 static void
-ext_config_push(rb_thread_t *th, struct rb_ext_config *prev)
+ext_config_push(rb_thread_t *th, volatile struct rb_ext_config *prev)
 {
     *prev = th->ext_config;
     th->ext_config = (struct rb_ext_config){0};
 }
 
 static void
-ext_config_pop(rb_thread_t *th, struct rb_ext_config *prev)
+ext_config_pop(rb_thread_t *th, volatile struct rb_ext_config *prev)
 {
     th->ext_config = *prev;
 }
@@ -1405,7 +1407,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     VALUE realpaths = get_loaded_features_realpaths(vm_ns);
     VALUE realpath_map = get_loaded_features_realpath_map(vm_ns);
     volatile bool reset_ext_config = false;
-    struct rb_ext_config prev_ext_config;
+    volatile struct rb_ext_config prev_ext_config;
 
     path = rb_str_encode_ospath(fname);
     RUBY_DTRACE_HOOK(REQUIRE_ENTRY, RSTRING_PTR(fname));
@@ -1523,6 +1525,10 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
 int
 rb_require_internal_silent(VALUE fname)
 {
+    if (!rb_ractor_main_p()) {
+        return NUM2INT(rb_ractor_require(fname, true));
+    }
+
     rb_execution_context_t *ec = GET_EC();
     return require_internal(ec, fname, 1, false);
 }
@@ -1559,7 +1565,7 @@ rb_require_string_internal(VALUE fname, bool resurrect)
     // main ractor check
     if (!rb_ractor_main_p()) {
         if (resurrect) fname = rb_str_resurrect(fname);
-        return rb_ractor_require(fname);
+        return rb_ractor_require(fname, false);
     }
     else {
         int result = require_internal(ec, fname, 1, RTEST(ruby_verbose));

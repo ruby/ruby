@@ -1,4 +1,3 @@
-LIBRARY yay2
 EXPORTS
   Init_yay2
   yay_value

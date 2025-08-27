@@ -46,11 +46,9 @@ void rb_gvar_namespace_ready(const char *name);
  */
 VALUE rb_mod_set_temporary_name(VALUE, VALUE);
 
-int rb_gen_fields_tbl_get(VALUE obj, ID id, VALUE *fields_obj);
 void rb_obj_copy_ivs_to_hash_table(VALUE obj, st_table *table);
 void rb_obj_init_too_complex(VALUE obj, st_table *table);
 void rb_evict_ivars_to_hash(VALUE obj);
-shape_id_t rb_evict_fields_to_hash(VALUE obj);
 VALUE rb_obj_field_get(VALUE obj, shape_id_t target_shape_id);
 void rb_ivar_set_internal(VALUE obj, ID id, VALUE val);
 void rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val);

@@ -439,6 +439,10 @@ without including the tags in the match:
   /(?<=<b>)\w+(?=<\/b>)/.match("Fortune favors the <b>bold</b>.")
   # => #<MatchData "bold">
 
+The pattern in lookbehind must be fixed-width.
+But top-level alternatives can be of various lengths.
+ex. (?<=a|bc) is OK. (?<=aaa(?:b|cd)) is not allowed.
+
 ==== Match-Reset Anchor
 
 - <tt>\K</tt>: Match reset:
@@ -498,7 +502,7 @@ An added _quantifier_ specifies how many matches are required or allowed:
     /\w*/.match('x')
     # => #<MatchData "x">
     /\w*/.match('xyz')
-    # => #<MatchData "yz">
+    # => #<MatchData "xyz">
 
 - <tt>+</tt> - Matches one or more times:
 
@@ -709,7 +713,7 @@ Analysis:
 
 1. The leading subexpression <tt>"</tt> in the pattern matches the first character
    <tt>"</tt> in the target string.
-2. The next subexpression <tt>.*</tt> matches the next substring <tt>Quote“</tt>
+2. The next subexpression <tt>.*</tt> matches the next substring <tt>Quote"</tt>
    (including the trailing double-quote).
 3. Now there is nothing left in the target string to match
    the trailing subexpression <tt>"</tt> in the pattern;

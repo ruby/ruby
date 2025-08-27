@@ -32,15 +32,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - test_task: 'zjit-test'
+          - test_task: 'zjit-check'
             configure: '--enable-yjit=dev --enable-zjit'
+            rust_version: "1.85.0"
 
           - test_task: 'ruby' # build test for combo build
             configure: '--enable-yjit --enable-zjit'
 
-          - test_task: 'test-all'
+          - test_task: 'zjit-test-all'
             configure: '--enable-zjit=dev'
-            tests: '../src/test/ruby/test_zjit.rb'
+            testopts: '--seed=11831'
 
           - test_task: 'btest'
             configure: '--enable-zjit=dev'
@@ -49,15 +50,14 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.zjit_opts }}
       SPECOPTS: ${{ matrix.specopts }}
+      TESTOPTS: ${{ matrix.testopts }}
 
     runs-on: macos-14
 
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Document')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
@@ -80,13 +80,16 @@ jobs:
           # Set fetch-depth: 10 so that Launchable can receive commits information.
           fetch-depth: 10
 
+      - name: Install Rust
+        if: ${{ matrix.rust_version }}
+        run: |
+          rustup install ${{ matrix.rust_version }} --profile minimal
+          rustup default ${{ matrix.rust_version }}
+
       - uses: taiki-e/install-action@v2
         with:
           tool: nextest@0.9
-        if: ${{ matrix.test_task == 'zjit-test' }}
-
-      - name: Install Rust # TODO(alan): remove when GitHub images catch up past 1.85.0
-        run: rustup default 1.85.0
+        if: ${{ matrix.test_task == 'zjit-check' }}
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
@@ -112,6 +115,7 @@ jobs:
           ../src/bootstraptest/test_class.rb \
           ../src/bootstraptest/test_constant_cache.rb \
           ../src/bootstraptest/test_env.rb \
+          ../src/bootstraptest/test_eval.rb \
           ../src/bootstraptest/test_exception.rb \
           ../src/bootstraptest/test_fiber.rb \
           ../src/bootstraptest/test_finalizer.rb \
@@ -138,7 +142,6 @@ jobs:
           ../src/bootstraptest/test_yjit_30k_ifelse.rb \
           ../src/bootstraptest/test_yjit_30k_methods.rb \
           ../src/bootstraptest/test_yjit_rust_port.rb
-        # ../src/bootstraptest/test_eval.rb \
         # ../src/bootstraptest/test_yjit.rb \
         if: ${{ matrix.test_task == 'btest' }}
 
@@ -147,6 +150,7 @@ jobs:
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
           RUN_OPTS="$RUN_OPTS"
           SPECOPTS="$SPECOPTS"
+          TESTOPTS="$TESTOPTS"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'

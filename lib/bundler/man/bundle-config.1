@@ -1,16 +1,16 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-CONFIG" "1" "June 2025" ""
+.TH "BUNDLE\-CONFIG" "1" "August 2025" ""
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
 .SH "SYNOPSIS"
-\fBbundle config\fR list
+\fBbundle config\fR [list]
 .br
-\fBbundle config\fR [get] NAME
+\fBbundle config\fR [get [\-\-local|\-\-global]] NAME
 .br
-\fBbundle config\fR [set] NAME VALUE
+\fBbundle config\fR [set [\-\-local|\-\-global]] NAME VALUE
 .br
-\fBbundle config\fR unset NAME
+\fBbundle config\fR unset [\-\-local|\-\-global] NAME
 .SH "DESCRIPTION"
 This command allows you to interact with Bundler's configuration system\.
 .P
@@ -25,23 +25,40 @@ Global config (\fB~/\.bundle/config\fR)
 Bundler default config
 .IP "" 0
 .P
+Executing \fBbundle\fR with the \fBBUNDLE_IGNORE_CONFIG\fR environment variable set will cause it to ignore all configuration\.
+.SH "SUB\-COMMANDS"
+.SS "list (default command)"
 Executing \fBbundle config list\fR will print a list of all bundler configuration for the current bundle, and where that configuration was set\.
+.SS "get"
+Executing \fBbundle config get <name>\fR will print the value of that configuration setting, and all locations where it was set\.
 .P
-Executing \fBbundle config get <name>\fR will print the value of that configuration setting, and where it was set\.
+\fBOPTIONS\fR
+.TP
+\fB\-\-local\fR
+Get configuration from configuration file for the local application, namely, \fB<project_root>/\.bundle/config\fR, or \fB$BUNDLE_APP_CONFIG/config\fR if \fBBUNDLE_APP_CONFIG\fR is set\.
+.TP
+\fB\-\-global\fR
+Get configuration from configuration file global to all bundles executed as the current user, namely, from \fB~/\.bundle/config\fR\.
+.SS "set"
+Executing \fBbundle config set <name> <value>\fR defaults to setting \fBlocal\fR configuration if executing from within a local application, otherwise it will set \fBglobal\fR configuration\.
 .P
-Executing \fBbundle config set <name> <value>\fR defaults to setting \fBlocal\fR configuration if executing from within a local application, otherwise it will set \fBglobal\fR configuration\. See \fB\-\-local\fR and \fB\-\-global\fR options below\.
-.P
+\fBOPTIONS\fR
+.TP
+\fB\-\-local\fR
 Executing \fBbundle config set \-\-local <name> <value>\fR will set that configuration in the directory for the local application\. The configuration will be stored in \fB<project_root>/\.bundle/config\fR\. If \fBBUNDLE_APP_CONFIG\fR is set, the configuration will be stored in \fB$BUNDLE_APP_CONFIG/config\fR\.
-.P
+.TP
+\fB\-\-global\fR
 Executing \fBbundle config set \-\-global <name> <value>\fR will set that configuration to the value specified for all bundles executed as the current user\. The configuration will be stored in \fB~/\.bundle/config\fR\. If \fIname\fR already is set, \fIname\fR will be overridden and user will be warned\.
-.P
+.SS "unset"
 Executing \fBbundle config unset <name>\fR will delete the configuration in both local and global sources\.
 .P
-Executing \fBbundle config unset \-\-global <name>\fR will delete the configuration only from the user configuration\.
-.P
+\fBOPTIONS\fR
+.TP
+\fB\-\-local\fR
 Executing \fBbundle config unset \-\-local <name>\fR will delete the configuration only from the local application\.
-.P
-Executing bundle with the \fBBUNDLE_IGNORE_CONFIG\fR environment variable set will cause it to ignore all configuration\.
+.TP
+\fB\-\-global\fR
+Executing \fBbundle config unset \-\-global <name>\fR will delete the configuration only from the user configuration\.
 .SH "CONFIGURATION KEYS"
 Configuration keys in bundler have two forms: the canonical form and the environment variable form\.
 .P
@@ -55,9 +72,6 @@ The following is a list of all configuration keys and their purpose\. You can le
 .TP
 \fBallow_offline_install\fR (\fBBUNDLE_ALLOW_OFFLINE_INSTALL\fR)
 Allow Bundler to use cached data when installing without network access\.
-.TP
-\fBauto_clean_without_path\fR (\fBBUNDLE_AUTO_CLEAN_WITHOUT_PATH\fR)
-Automatically run \fBbundle clean\fR after installing when an explicit \fBpath\fR has not been set and Bundler is not installing into the system gems\.
 .TP
 \fBauto_install\fR (\fBBUNDLE_AUTO_INSTALL\fR)
 Automatically run \fBbundle install\fR when gems are missing\.
@@ -75,13 +89,13 @@ Cache gems for all platforms\.
 The directory that bundler will place cached gems in when running \fBbundle package\fR, and that bundler will look in when installing gems\. Defaults to \fBvendor/cache\fR\.
 .TP
 \fBclean\fR (\fBBUNDLE_CLEAN\fR)
-Whether Bundler should run \fBbundle clean\fR automatically after \fBbundle install\fR\.
+Whether Bundler should run \fBbundle clean\fR automatically after \fBbundle install\fR\. Defaults to \fBtrue\fR in Bundler 4, as long as \fBpath\fR is not explicitly configured\.
 .TP
 \fBconsole\fR (\fBBUNDLE_CONSOLE\fR)
 The console that \fBbundle console\fR starts\. Defaults to \fBirb\fR\.
 .TP
-\fBdefault_install_uses_path\fR (\fBBUNDLE_DEFAULT_INSTALL_USES_PATH\fR)
-Whether a \fBbundle install\fR without an explicit \fB\-\-path\fR argument defaults to installing gems in \fB\.bundle\fR\.
+\fBdefault_cli_command\fR (\fBBUNDLE_DEFAULT_CLI_COMMAND\fR)
+The command that running \fBbundle\fR without arguments should run\. Defaults to \fBcli_help\fR since Bundler 4, but can also be \fBinstall\fR which was the previous default\.
 .TP
 \fBdeployment\fR (\fBBUNDLE_DEPLOYMENT\fR)
 Equivalent to setting \fBfrozen\fR to \fBtrue\fR and \fBpath\fR to \fBvendor/bundle\fR\.
@@ -111,7 +125,7 @@ Ignore the current machine's platform and install only \fBruby\fR platform gems\
 Disallow any automatic changes to \fBGemfile\.lock\fR\. Bundler commands will be blocked unless the lockfile can be installed exactly as written\. Usually this will happen when changing the \fBGemfile\fR manually and forgetting to update the lockfile through \fBbundle lock\fR or \fBbundle install\fR\.
 .TP
 \fBgem\.github_username\fR (\fBBUNDLE_GEM__GITHUB_USERNAME\fR)
-Sets a GitHub username or organization to be used in \fBREADME\fR file when you create a new gem via \fBbundle gem\fR command\. It can be overridden by passing an explicit \fB\-\-github\-username\fR flag to \fBbundle gem\fR\.
+Sets a GitHub username or organization to be used in the \fBREADME\fR and \fB\.gemspec\fR files when you create a new gem via \fBbundle gem\fR command\. It can be overridden by passing an explicit \fB\-\-github\-username\fR flag to \fBbundle gem\fR\.
 .TP
 \fBgem\.push_key\fR (\fBBUNDLE_GEM__PUSH_KEY\fR)
 Sets the \fB\-\-key\fR parameter for \fBgem push\fR when using the \fBrake release\fR command with a private gemstash server\.
@@ -120,7 +134,7 @@ Sets the \fB\-\-key\fR parameter for \fBgem push\fR when using the \fBrake relea
 The name of the file that bundler should use as the \fBGemfile\fR\. This location of this file also sets the root of the project, which is used to resolve relative paths in the \fBGemfile\fR, among other things\. By default, bundler will search up from the current working directory until it finds a \fBGemfile\fR\.
 .TP
 \fBglobal_gem_cache\fR (\fBBUNDLE_GLOBAL_GEM_CACHE\fR)
-Whether Bundler should cache all gems globally, rather than locally to the installing Ruby installation\.
+Whether Bundler should cache all gems and compiled extensions globally, rather than locally to the configured installation path\.
 .TP
 \fBignore_funding_requests\fR (\fBBUNDLE_IGNORE_FUNDING_REQUESTS\fR)
 When set, no funding requests will be printed\.
@@ -147,13 +161,10 @@ Whether Bundler should leave outdated gems unpruned when caching\.
 A space\-separated list of groups to install only gems of the specified groups\.
 .TP
 \fBpath\fR (\fBBUNDLE_PATH\fR)
-The location on disk where all gems in your bundle will be located regardless of \fB$GEM_HOME\fR or \fB$GEM_PATH\fR values\. Bundle gems not found in this location will be installed by \fBbundle install\fR\. Defaults to \fBGem\.dir\fR\.
+The location on disk where all gems in your bundle will be located regardless of \fB$GEM_HOME\fR or \fB$GEM_PATH\fR values\. Bundle gems not found in this location will be installed by \fBbundle install\fR\. Defaults to \fB\.bundle\fR relative to repository root in Bundler 4, and to the default system path (\fBGem\.dir\fR) before Bundler 4\.
 .TP
 \fBpath\.system\fR (\fBBUNDLE_PATH__SYSTEM\fR)
 Whether Bundler will install gems into the default system path (\fBGem\.dir\fR)\.
-.TP
-\fBpath_relative_to_cwd\fR (\fBBUNDLE_PATH_RELATIVE_TO_CWD\fR)
-Makes \fB\-\-path\fR relative to the CWD instead of the \fBGemfile\fR\.
 .TP
 \fBplugins\fR (\fBBUNDLE_PLUGINS\fR)
 Enable Bundler's experimental plugin system\.
@@ -166,9 +177,6 @@ The number of redirects allowed for network requests\. Defaults to \fB5\fR\.
 .TP
 \fBretry\fR (\fBBUNDLE_RETRY\fR)
 The number of times to retry failed network requests\. Defaults to \fB3\fR\.
-.TP
-\fBsetup_makes_kernel_gem_public\fR (\fBBUNDLE_SETUP_MAKES_KERNEL_GEM_PUBLIC\fR)
-Have \fBBundler\.setup\fR make the \fBKernel#gem\fR method public, even though RubyGems declares it as private\.
 .TP
 \fBshebang\fR (\fBBUNDLE_SHEBANG\fR)
 The program name that should be invoked for generated binstubs\. Defaults to the ruby install name used to generate the binstub\.

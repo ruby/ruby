@@ -10,6 +10,7 @@ files:
   'zjit/src/cruby_bindings.inc.rs': []
   'doc/zjit*': [team:jit]
   'test/ruby/test_zjit*': [team:jit]
+  'test/.excludes-zjit/*': [team:jit]
   'defs/jit.mk': [team:jit]
 options:
   ignore_draft: true

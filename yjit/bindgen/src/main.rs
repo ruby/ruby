@@ -103,6 +103,10 @@ fn main() {
         .allowlist_function("rb_yjit_shape_capacity")
         .allowlist_function("rb_yjit_shape_index")
         .allowlist_var("SHAPE_ID_NUM_BITS")
+        .allowlist_var("SHAPE_ID_HAS_IVAR_MASK")
+
+        // From ruby/internal/eval.h
+        .allowlist_function("rb_funcall")
 
         // From ruby/internal/intern/object.h
         .allowlist_function("rb_obj_is_kind_of")
@@ -228,7 +232,6 @@ fn main() {
         .allowlist_function("rb_obj_as_string_result")
         .allowlist_function("rb_str_byte_substr")
         .allowlist_function("rb_str_substr_two_fixnums")
-        .allowlist_function("rb_str_dup_m")
 
         // From include/ruby/internal/intern/parse.h
         .allowlist_function("rb_backref_get")
@@ -269,6 +272,7 @@ fn main() {
         .allowlist_function("rb_float_new")
 
         // From vm_core.h
+        .allowlist_var("rb_cRubyVM")
         .allowlist_var("rb_mRubyVMFrozenCore")
         .allowlist_var("VM_BLOCK_HANDLER_NONE")
         .allowlist_type("vm_frame_env_flags")
@@ -341,13 +345,15 @@ fn main() {
         .allowlist_function("rb_yjit_exit_locations_dict")
         .allowlist_function("rb_yjit_icache_invalidate")
         .allowlist_function("rb_optimized_call")
-        .allowlist_function("rb_yjit_assert_holding_vm_lock")
         .allowlist_function("rb_yjit_sendish_sp_pops")
         .allowlist_function("rb_yjit_invokeblock_sp_pops")
         .allowlist_function("rb_yjit_set_exception_return")
         .allowlist_function("rb_yjit_str_concat_codepoint")
         .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
+
+        // From jit.c
+        .allowlist_function("rb_assert_holding_vm_lock")
 
         // from vm_sync.h
         .allowlist_function("rb_vm_barrier")
@@ -381,6 +387,7 @@ fn main() {
         .allowlist_function("rb_ivar_defined")
         .allowlist_function("rb_ivar_get")
         .allowlist_function("rb_mod_name")
+        .allowlist_function("rb_const_get")
 
         // From internal/vm.h
         .allowlist_var("rb_vm_insns_count")

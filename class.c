@@ -734,13 +734,13 @@ static void
 class_initialize_method_table(VALUE c)
 {
     // initialize the prime classext m_tbl
-    RCLASS_SET_M_TBL_EVEN_WHEN_PROMOTED(c, rb_id_table_create(0));
+    RCLASS_SET_M_TBL(c, rb_id_table_create(0));
 }
 
 static void
 class_clear_method_table(VALUE c)
 {
-    RCLASS_WRITE_M_TBL_EVEN_WHEN_PROMOTED(c, rb_id_table_create(0));
+    RCLASS_WRITE_M_TBL(c, rb_id_table_create(0));
 }
 
 static VALUE
@@ -978,7 +978,7 @@ copy_tables(VALUE clone, VALUE orig)
         RCLASS_WRITE_CVC_TBL(clone, rb_cvc_tbl_dup);
     }
     rb_id_table_free(RCLASS_M_TBL(clone));
-    RCLASS_WRITE_M_TBL_EVEN_WHEN_PROMOTED(clone, 0);
+    RCLASS_WRITE_M_TBL(clone, 0);
     if (!RB_TYPE_P(clone, T_ICLASS)) {
         rb_fields_tbl_copy(clone, orig);
     }
@@ -1053,9 +1053,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         struct clone_method_arg arg;
         arg.old_klass = orig;
         arg.new_klass = clone;
-        // TODO: use class_initialize_method_table() instead of RCLASS_SET_M_TBL_*
-        //       after RCLASS_SET_M_TBL is protected by write barrier
-        RCLASS_SET_M_TBL_EVEN_WHEN_PROMOTED(clone, rb_id_table_create(0));
+        class_initialize_method_table(clone);
         rb_id_table_foreach(RCLASS_M_TBL(orig), clone_method_i, &arg);
     }
 
@@ -1081,9 +1079,6 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
                 rb_bug("non iclass between module/class and origin");
             }
             clone_p = class_alloc(T_ICLASS, METACLASS_OF(p));
-            /* We should set the m_tbl right after allocation before anything
-             * that can trigger GC to avoid clone_p from becoming old and
-             * needing to fire write barriers. */
             RCLASS_SET_M_TBL(clone_p, RCLASS_M_TBL(p));
             rb_class_set_super(prev_clone_p, clone_p);
             prev_clone_p = clone_p;
@@ -1931,6 +1926,11 @@ ensure_origin(VALUE klass)
         rb_class_set_super(origin, RCLASS_SUPER(klass));
         rb_class_set_super(klass, origin); // writes origin into RCLASS_SUPER(klass)
         RCLASS_WRITE_ORIGIN(klass, origin);
+
+        // RCLASS_WRITE_ORIGIN marks origin as an origin, so this is the first
+        // point that it sees M_TBL and may mark it
+        rb_gc_writebarrier_remember(origin);
+
         class_clear_method_table(klass);
         rb_id_table_foreach(RCLASS_M_TBL(origin), cache_clear_refined_method, (void *)klass);
         rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)klass);
@@ -1968,7 +1968,7 @@ rb_prepend_module(VALUE klass, VALUE module)
                 if (klass_had_no_origin && klass_origin_m_tbl == RCLASS_M_TBL(subclass)) {
                     // backfill an origin iclass to handle refinements and future prepends
                     rb_id_table_foreach(RCLASS_M_TBL(subclass), clear_module_cache_i, (void *)subclass);
-                    RCLASS_WRITE_M_TBL_EVEN_WHEN_PROMOTED(subclass, klass_m_tbl);
+                    RCLASS_WRITE_M_TBL(subclass, klass_m_tbl);
                     VALUE origin = rb_include_class_new(klass_origin, RCLASS_SUPER(subclass));
                     rb_class_set_super(subclass, origin);
                     RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(subclass));

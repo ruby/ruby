@@ -68,32 +68,40 @@ def base_type name
   [type, exact]
 end
 
+# Define a new type that cannot be subclassed.
+def final_type name
+  type = $object.subtype name
+  $builtin_exact << type.name
+  type
+end
+
 base_type "String"
 base_type "Array"
 base_type "Hash"
 base_type "Range"
 base_type "Set"
 base_type "Regexp"
-base_type "Class"
+module_class, _ = base_type "Module"
+module_class.subtype "Class"
 
-(integer, integer_exact) = base_type "Integer"
+integer_exact = final_type "Integer"
 # CRuby partitions Integer into immediate and non-immediate variants.
 fixnum = integer_exact.subtype "Fixnum"
 integer_exact.subtype "Bignum"
 
-(float, float_exact) = base_type "Float"
+float_exact = final_type "Float"
 # CRuby partitions Float into immediate and non-immediate variants.
 flonum = float_exact.subtype "Flonum"
 float_exact.subtype "HeapFloat"
 
-(symbol, symbol_exact) = base_type "Symbol"
+symbol_exact = final_type "Symbol"
 # CRuby partitions Symbol into immediate and non-immediate variants.
 static_sym = symbol_exact.subtype "StaticSymbol"
 symbol_exact.subtype "DynamicSymbol"
 
-_, nil_exact = base_type "NilClass"
-_, true_exact = base_type "TrueClass"
-_, false_exact = base_type "FalseClass"
+nil_exact = final_type "NilClass"
+true_exact = final_type "TrueClass"
+false_exact = final_type "FalseClass"
 
 # Build the cvalue object universe. This is for C-level types that may be
 # passed around when calling into the Ruby VM or after some strength reduction
@@ -148,6 +156,8 @@ add_union "BuiltinExact", $builtin_exact
 add_union "Subclass", $subclass
 add_union "BoolExact", [true_exact.name, false_exact.name]
 add_union "Immediate", [fixnum.name, flonum.name, static_sym.name, nil_exact.name, true_exact.name, false_exact.name, undef_.name]
+$bits["HeapObject"] = ["BasicObject & !Immediate"]
+$numeric_bits["HeapObject"] = $numeric_bits["BasicObject"] & ~$numeric_bits["Immediate"]
 
 # ===== Finished generating the DAG; write Rust code =====
 

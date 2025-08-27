@@ -1,12 +1,12 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-DOCTOR" "1" "June 2025" ""
+.TH "BUNDLE\-DOCTOR" "1" "August 2025" ""
 .SH "NAME"
 \fBbundle\-doctor\fR \- Checks the bundle for common problems
 .SH "SYNOPSIS"
 \fBbundle doctor [diagnose]\fR [\-\-quiet] [\-\-gemfile=GEMFILE] [\-\-ssl]
 .br
-\fBbundle doctor ssl\fR [\-\-host=HOST] [\-\-tls\-version=VERSION] [\-\-verify\-mode=MODE]
+\fBbundle doctor ssl\fR [\-\-host=HOST] [\-\-tls\-version=TLS\-VERSION] [\-\-verify\-mode=VERIFY\-MODE]
 .br
 \fBbundle doctor\fR help [COMMAND]
 .SH "DESCRIPTION"
@@ -57,12 +57,12 @@ Open a TLS connection and verify the outcome\.
 \fB\-\-host=HOST\fR
 Perform the diagnostic on HOST\. Defaults to \fBrubygems\.org\fR\.
 .TP
-\fB\-\-tls\-version=VERSION\fR
+\fB\-\-tls\-version=TLS\-VERSION\fR
 Specify the TLS version when opening the connection to HOST\.
 .IP
 Accepted values are: \fB1\.1\fR or \fB1\.2\fR\.
 .TP
-\fB\-\-verify\-mode=MODE\fR
+\fB\-\-verify\-mode=VERIFY\-MODE\fR
 Specify the TLS verify mode when opening the connection to HOST\. Defaults to \fBSSL_VERIFY_PEER\fR\.
 .IP
 Accepted values are: \fBCLIENT_ONCE\fR, \fBFAIL_IF_NO_PEER_CERT\fR, \fBNONE\fR, \fBPEER\fR\.

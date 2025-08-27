@@ -91,6 +91,18 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     assert_match(/ok/i, store.error_string)
     assert_equal(OpenSSL::X509::V_OK, store.error)
     assert_equal([ee1_cert, ca2_cert, ca1_cert], store.chain)
+
+    # Manually instantiated StoreContext
+    # Nothing trusted
+    store = OpenSSL::X509::Store.new
+    ctx = OpenSSL::X509::StoreContext.new(store, ee1_cert)
+    assert_nil(ctx.current_cert)
+    assert_nil(ctx.current_crl)
+    assert_equal(false, ctx.verify)
+    assert_equal(OpenSSL::X509::V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY, ctx.error)
+    assert_equal(0, ctx.error_depth)
+    assert_equal([ee1_cert], ctx.chain)
+    assert_equal(ee1_cert, ctx.current_cert)
   end
 
   def test_verify_callback

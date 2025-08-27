@@ -151,7 +151,7 @@ RSpec.describe "bundle clean" do
     bundle :clean
 
     digest = Digest(:SHA1).hexdigest(git_path.to_s)
-    cache_path = Bundler.feature_flag.global_gem_cache? ? home(".bundle/cache/git/foo-1.0-#{digest}") : vendored_gems("cache/bundler/git/foo-1.0-#{digest}")
+    cache_path = vendored_gems("cache/bundler/git/foo-1.0-#{digest}")
     expect(cache_path).to exist
   end
 
@@ -427,7 +427,7 @@ RSpec.describe "bundle clean" do
     should_not_have_gems "foo-1.0"
   end
 
-  it "automatically cleans when path has not been set", bundler: "4" do
+  it "automatically cleans when path has not been set", bundler: "5" do
     build_repo2
 
     install_gemfile <<-G

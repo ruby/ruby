@@ -56,7 +56,7 @@ static VALUE sGroup;
 #endif
 RUBY_EXTERN char *getlogin(void);
 
-#define RUBY_ETC_VERSION "1.4.5"
+#define RUBY_ETC_VERSION "1.4.6"
 
 #define SYMBOL_LIT(str) ID2SYM(rb_intern_const(str ""))
 

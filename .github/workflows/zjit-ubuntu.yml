@@ -37,12 +37,13 @@ jobs:
             configure: '--enable-zjit=dev --with-gcc=clang-14'
             libclang_path: '/usr/lib/llvm-14/lib/libclang.so.1'
 
-          - test_task: 'zjit-test'
+          - test_task: 'zjit-check'
             configure: '--enable-yjit --enable-zjit=dev'
+            rust_version: '1.85.0'
 
-          - test_task: 'test-all'
+          - test_task: 'zjit-test-all'
             configure: '--enable-zjit=dev'
-            tests: '../src/test/ruby/test_zjit.rb'
+            testopts: '--seed=18140'
 
           - test_task: 'btest'
             configure: '--enable-zjit=dev'
@@ -52,6 +53,7 @@ jobs:
       RUN_OPTS: ${{ matrix.zjit_opts }}
       YJIT_BENCH_OPTS: ${{ matrix.yjit_bench_opts }}
       SPECOPTS: ${{ matrix.specopts }}
+      TESTOPTS: ${{ matrix.testopts }}
       RUBY_DEBUG: ci
       BUNDLE_JOBS: 8 # for yjit-bench
       RUST_BACKTRACE: 1
@@ -61,9 +63,7 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Document')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
@@ -76,7 +76,7 @@ jobs:
 
       - uses: ./.github/actions/setup/ubuntu
 
-      - uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.245.0
+      - uses: ruby/setup-ruby@a9bfc2ecf3dd40734a9418f89a7e9d484c32b990 # v1.248.0
         with:
           ruby-version: '3.1'
           bundler: none
@@ -84,7 +84,7 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: nextest@0.9
-        if: ${{ matrix.test_task == 'zjit-test' }}
+        if: ${{ matrix.test_task == 'zjit-check' }}
 
 
       - uses: ./.github/actions/setup/directories
@@ -97,7 +97,10 @@ jobs:
           fetch-depth: 10
 
       - name: Install Rust
-        run: rustup default 1.85.0
+        if: ${{ matrix.rust_version }}
+        run: |
+          rustup install ${{ matrix.rust_version }} --profile minimal
+          rustup default ${{ matrix.rust_version }}
 
       - name: Install rustfmt
         if: ${{ matrix.test_task == 'zjit-bindgen' }}
@@ -134,6 +137,7 @@ jobs:
           ../src/bootstraptest/test_class.rb \
           ../src/bootstraptest/test_constant_cache.rb \
           ../src/bootstraptest/test_env.rb \
+          ../src/bootstraptest/test_env.rb \
           ../src/bootstraptest/test_exception.rb \
           ../src/bootstraptest/test_fiber.rb \
           ../src/bootstraptest/test_finalizer.rb \
@@ -160,7 +164,6 @@ jobs:
           ../src/bootstraptest/test_yjit_30k_ifelse.rb \
           ../src/bootstraptest/test_yjit_30k_methods.rb \
           ../src/bootstraptest/test_yjit_rust_port.rb
-        # ../src/bootstraptest/test_eval.rb \
         # ../src/bootstraptest/test_yjit.rb \
         if: ${{ matrix.test_task == 'btest' }}
 
@@ -168,6 +171,7 @@ jobs:
         run: >-
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
           RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug SPECOPTS="$SPECOPTS"
+          TESTOPTS="$TESTOPTS"
           ZJIT_BINDGEN_DIFF_OPTS="$ZJIT_BINDGEN_DIFF_OPTS"
         timeout-minutes: 90
         env:

@@ -1372,6 +1372,7 @@ AC_CHECK_HEADERS(process.h)
 AC_CHECK_HEADERS(pwd.h)
 AC_CHECK_HEADERS(sanitizer/asan_interface.h)
 AC_CHECK_HEADERS(sanitizer/msan_interface.h)
+AC_CHECK_HEADERS(sanitizer/tsan_interface.h)
 AC_CHECK_HEADERS(setjmpex.h)
 AC_CHECK_HEADERS(stdalign.h)
 AC_CHECK_HEADERS(stdio.h)
@@ -1678,21 +1679,6 @@ RUBY_FUNC_ATTRIBUTE(__weak__, WEAK, rb_cv_func_weak)
 AS_IF([test "$rb_cv_func_weak" != x], [
    AC_DEFINE(HAVE_FUNC_WEAK)
 ])
-
-AC_CACHE_CHECK([for __attribute__((__deprecated__(msg))) in C++],
-  rb_cv_CentOS6_CXX_workaround,
-  RUBY_WERROR_FLAG([
-    AC_LANG_PUSH([C++])
-    AC_COMPILE_IFELSE(
-      [AC_LANG_PROGRAM(
-        [],
-        [__attribute__((__deprecated__("message"))) int conftest(...);])],
-      [rb_cv_CentOS6_CXX_workaround=yes],
-      [rb_cv_CentOS6_CXX_workaround=no])
-    AC_LANG_POP()]))
-AS_IF([test "$rb_cv_CentOS6_CXX_workaround" != no],[
-  AC_DEFINE([RUBY_CXX_DEPRECATED(msg)],
-    [__attribute__((__deprecated__(msg)))])])
 
 AC_CACHE_CHECK([for std::nullptr_t], rb_cv_CXX_nullptr, [
   AC_LANG_PUSH([C++])
@@ -3975,7 +3961,7 @@ AS_CASE(["${YJIT_SUPPORT}"],
 
 ZJIT_LIBS=
 AS_CASE(["${ZJIT_SUPPORT}"],
-[yes|dev|dev_nodebug], [
+[yes|dev|dev_nodebug|stats], [
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
     )
@@ -3986,11 +3972,16 @@ AS_CASE(["${ZJIT_SUPPORT}"],
     [dev], [
         rb_cargo_features="$rb_cargo_features,disasm"
         JIT_CARGO_SUPPORT=dev
-	AC_DEFINE(RUBY_DEBUG, 1)
+        AC_DEFINE(RUBY_DEBUG, 1)
     ],
     [dev_nodebug], [
         rb_cargo_features="$rb_cargo_features,disasm"
         JIT_CARGO_SUPPORT=dev_nodebug
+        AC_DEFINE(ZJIT_STATS, 1)
+    ],
+    [stats], [
+        JIT_CARGO_SUPPORT=stats
+        AC_DEFINE(ZJIT_STATS, 1)
     ])
 
     ZJIT_LIBS="target/release/libzjit.a"
@@ -4014,10 +4005,16 @@ AS_IF([test x"$JIT_CARGO_SUPPORT" != "xno" -o \( x"$YJIT_SUPPORT" != "xno" -a x"
     YJIT_LIBS=
     ZJIT_LIBS=
 
+    # There's more processing below to get the feature set for the
+    # top-level crate, so capture at this point for feature set of
+    # just the zjit crate.
+    ZJIT_TEST_FEATURES="${rb_cargo_features}"
+
     AS_IF([test x"${YJIT_SUPPORT}" != x"no"], [
         rb_cargo_features="$rb_cargo_features,yjit"
     ])
     AS_IF([test x"${ZJIT_SUPPORT}" != x"no"], [
+        AC_SUBST(ZJIT_TEST_FEATURES)
         rb_cargo_features="$rb_cargo_features,zjit"
     ])
     # if YJIT and ZJIT release mode
@@ -4686,8 +4683,12 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	sed '/^MISSING/s/\$U\././g;/^VCS *=/s#@VCS@#'"$VCS"'#;/^VCSUP *=/s#@VCSUP@#'"$VCSUP"'#' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
 	AS_IF([test "$gnumake" != yes], [
-	    echo ['$(MKFILES): $(srcdir)/common.mk']
-	    sed ['s/{\$([^(){}]*)[^{}]*}//g'] ${srcdir}/common.mk
+	    # extract NMake-style include list
+	    set = `sed -n 's/^!include  *//p' ${srcdir}/common.mk`
+	    echo common_mk_includes "@S|@*" # generate the macro assignment
+	    shift
+	    common_mk_includes="`echo \"@S|@*\" | sed 's|\$(srcdir)|.|g'`"
+	    (PWD= cd ${srcdir} && sed -f tool/prereq.status common.mk ${common_mk_includes})
             AS_IF([test "$YJIT_SUPPORT" = yes], [
                 cat ${srcdir}/yjit/not_gmake.mk
                 echo ['$(MKFILES): ${srcdir}/yjit/not_gmake.mk']
@@ -4710,6 +4711,7 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	]) &&
 	test -z "`${MAKE-make} -f $tmpgmk info-program | grep '^PROGRAM=ruby$'`" &&
 	echo 'ruby: $(PROGRAM);' >> $tmpmk
+	rm -f uncommon.mk # remove stale uncommon.mk, it should be updated by GNUmakefile
 	test "$tmpmk" = "$tmpgmk" || rm -f "$tmpgmk"
     ]) && mv -f $tmpmk Makefile],
 [EXEEXT='$EXEEXT' MAKE='${MAKE-make}' gnumake='$gnumake' GIT='$GIT' YJIT_SUPPORT='$YJIT_SUPPORT'])

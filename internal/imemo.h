@@ -37,12 +37,10 @@ enum imemo_type {
     imemo_ment           =  6,
     imemo_iseq           =  7,
     imemo_tmpbuf         =  8,
-    imemo_ast            =  9, // Obsolete due to the universal parser
-    imemo_parser_strterm = 10,
-    imemo_callinfo       = 11,
-    imemo_callcache      = 12,
-    imemo_constcache     = 13,
-    imemo_fields   = 14,
+    imemo_callinfo       = 10,
+    imemo_callcache      = 11,
+    imemo_constcache     = 12,
+    imemo_fields   = 13,
 };
 
 /* CREF (Class REFerence) is defined in method.h */
@@ -149,10 +147,7 @@ static inline void MEMO_V1_SET(struct MEMO *m, VALUE v);
 static inline void MEMO_V2_SET(struct MEMO *m, VALUE v);
 
 size_t rb_imemo_memsize(VALUE obj);
-void rb_cc_table_mark(VALUE klass);
 void rb_imemo_mark_and_move(VALUE obj, bool reference_updating);
-void rb_cc_table_free(VALUE klass);
-void rb_cc_tbl_free(struct rb_id_table *cc_tbl, VALUE klass);
 void rb_imemo_free(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -275,42 +270,62 @@ struct rb_fields {
     } as;
 };
 
-#define OBJ_FIELD_EXTERNAL IMEMO_FL_USER0
+// IMEMO/fields and T_OBJECT have exactly the same layout.
+// This is useful for JIT and common codepaths.
+#define OBJ_FIELD_EMBED ROBJECT_EMBED
+STATIC_ASSERT(imemo_fields_flags, OBJ_FIELD_EMBED == IMEMO_FL_USER0);
+STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.ary) == offsetof(struct rb_fields, as.embed.fields));
+STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.external.ptr));
+STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.complex.table));
+
 #define IMEMO_OBJ_FIELDS(fields) ((struct rb_fields *)fields)
 
-VALUE rb_imemo_fields_new(VALUE klass, size_t capa);
-VALUE rb_imemo_fields_new_complex(VALUE klass, size_t capa);
-VALUE rb_imemo_fields_new_complex_tbl(VALUE klass, st_table *tbl);
+VALUE rb_imemo_fields_new(VALUE owner, size_t capa);
+VALUE rb_imemo_fields_new_complex(VALUE owner, size_t capa);
+VALUE rb_imemo_fields_new_complex_tbl(VALUE owner, st_table *tbl);
 VALUE rb_imemo_fields_clone(VALUE fields_obj);
 void rb_imemo_fields_clear(VALUE fields_obj);
 
-static inline VALUE *
-rb_imemo_fields_ptr(VALUE obj_fields)
+static inline VALUE
+rb_imemo_fields_owner(VALUE fields_obj)
 {
-    if (!obj_fields) {
+    RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields));
+
+    return CLASS_OF(fields_obj);
+}
+
+static inline VALUE *
+rb_imemo_fields_ptr(VALUE fields_obj)
+{
+    if (!fields_obj) {
         return NULL;
     }
 
-    RUBY_ASSERT(IMEMO_TYPE_P(obj_fields, imemo_fields));
+    RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields) || RB_TYPE_P(fields_obj, T_OBJECT));
 
-    if (RB_UNLIKELY(FL_TEST_RAW(obj_fields, OBJ_FIELD_EXTERNAL))) {
-        return IMEMO_OBJ_FIELDS(obj_fields)->as.external.ptr;
+    if (RB_LIKELY(FL_TEST_RAW(fields_obj, OBJ_FIELD_EMBED))) {
+        return IMEMO_OBJ_FIELDS(fields_obj)->as.embed.fields;
     }
     else {
-        return IMEMO_OBJ_FIELDS(obj_fields)->as.embed.fields;
+        return IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr;
     }
 }
 
 static inline st_table *
-rb_imemo_fields_complex_tbl(VALUE obj_fields)
+rb_imemo_fields_complex_tbl(VALUE fields_obj)
 {
-    if (!obj_fields) {
+    if (!fields_obj) {
         return NULL;
     }
 
-    RUBY_ASSERT(IMEMO_TYPE_P(obj_fields, imemo_fields));
+    RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields) || RB_TYPE_P(fields_obj, T_OBJECT));
+    RUBY_ASSERT(!FL_TEST_RAW(fields_obj, OBJ_FIELD_EMBED));
 
-    return IMEMO_OBJ_FIELDS(obj_fields)->as.complex.table;
+    // Some codepaths unconditionally access the fields_ptr, and assume it can be used as st_table if the
+    // shape is too_complex.
+    RUBY_ASSERT((st_table *)rb_imemo_fields_ptr(fields_obj) == IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table);
+
+    return IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table;
 }
 
 #endif /* INTERNAL_IMEMO_H */

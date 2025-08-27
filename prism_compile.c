@@ -556,7 +556,7 @@ parse_regexp_concat(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm
 static void pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node);
 
 static int
-pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const pm_node_location_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, rb_encoding *implicit_regexp_encoding, rb_encoding *explicit_regexp_encoding)
+pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const pm_node_location_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, rb_encoding *implicit_regexp_encoding, rb_encoding *explicit_regexp_encoding, bool mutable_result)
 {
     int stack_size = 0;
     size_t parts_size = parts->size;
@@ -666,7 +666,7 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
         if (RTEST(current_string)) {
             current_string = rb_fstring(current_string);
 
-            if (stack_size == 0 && interpolated) {
+            if (stack_size == 0 && (interpolated || mutable_result)) {
                 PUSH_INSN1(ret, current_location, putstring, current_string);
             }
             else {
@@ -690,7 +690,7 @@ pm_compile_regexp_dynamic(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_
     rb_encoding *explicit_regexp_encoding = parse_regexp_encoding(scope_node, node);
     rb_encoding *implicit_regexp_encoding = explicit_regexp_encoding != NULL ? explicit_regexp_encoding : scope_node->encoding;
 
-    int length = pm_interpolated_node_compile(iseq, parts, node_location, ret, popped, scope_node, implicit_regexp_encoding, explicit_regexp_encoding);
+    int length = pm_interpolated_node_compile(iseq, parts, node_location, ret, popped, scope_node, implicit_regexp_encoding, explicit_regexp_encoding, false);
     PUSH_INSN2(ret, *node_location, toregexp, INT2FIX(parse_regexp_flags(node) & 0xFF), INT2FIX(length));
 }
 
@@ -887,7 +887,7 @@ pm_compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_node_t *cond, LAB
 static void
 pm_compile_flip_flop_bound(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    const pm_node_location_t location = { .line = ISEQ_BODY(iseq)->location.first_lineno, .node_id = -1 };
+    const pm_node_location_t location = PM_NODE_START_LOCATION(scope_node->parser, node);
 
     if (PM_NODE_TYPE_P(node, PM_INTEGER_NODE)) {
         PM_COMPILE_NOT_POPPED(node);
@@ -906,7 +906,7 @@ pm_compile_flip_flop_bound(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *
 static void
 pm_compile_flip_flop(const pm_flip_flop_node_t *flip_flop_node, LABEL *else_label, LABEL *then_label, rb_iseq_t *iseq, const int lineno, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    const pm_node_location_t location = { .line = ISEQ_BODY(iseq)->location.first_lineno, .node_id = -1 };
+    const pm_node_location_t location = { .line = lineno, .node_id = -1 };
     LABEL *lend = NEW_LABEL(location.line);
 
     int again = !(flip_flop_node->base.flags & PM_RANGE_FLAGS_EXCLUDE_END);
@@ -1762,9 +1762,14 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                     break;
                 }
 
-                orig_argc += 2;
+                if (has_splat) {
+                    // If we already have a splat, we're concatenating to existing array
+                    orig_argc += 1;
+                } else {
+                    orig_argc += 2;
+                }
 
-                *flags |= VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_SPLAT_MUT | VM_CALL_ARGS_BLOCKARG | VM_CALL_KW_SPLAT;
+                *flags |= VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_KW_SPLAT;
 
                 // Forwarding arguments nodes are treated as foo(*, **, &)
                 // So foo(...) equals foo(*, **, &) and as such the local
@@ -1773,7 +1778,13 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                 // Push the *
                 pm_local_index_t mult_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_MULT, 0);
                 PUSH_GETLOCAL(ret, location, mult_local.index, mult_local.level);
-                PUSH_INSN1(ret, location, splatarray, Qtrue);
+
+                if (has_splat) {
+                    // If we already have a splat, we need to concatenate arrays
+                    PUSH_INSN(ret, location, concattoarray);
+                } else {
+                    PUSH_INSN1(ret, location, splatarray, Qfalse);
+                }
 
                 // Push the **
                 pm_local_index_t pow_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_POW, 0);
@@ -1782,7 +1793,6 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                 // Push the &
                 pm_local_index_t and_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_AND, 0);
                 PUSH_INSN2(ret, location, getblockparamproxy, INT2FIX(and_local.index + VM_ENV_DATA_SIZE - 1), INT2FIX(and_local.level));
-                PUSH_INSN(ret, location, splatkw);
 
                 break;
               }
@@ -5517,44 +5527,6 @@ pm_opt_str_freeze_p(const rb_iseq_t *iseq, const pm_call_node_t *node)
 }
 
 /**
- * Returns true if the given call node can use the opt_aref_with optimization
- * with the current iseq options.
- */
-static inline bool
-pm_opt_aref_with_p(const rb_iseq_t *iseq, const pm_call_node_t *node)
-{
-    return (
-        !PM_NODE_FLAG_P(node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
-        node->arguments != NULL &&
-        PM_NODE_TYPE_P((const pm_node_t *) node->arguments, PM_ARGUMENTS_NODE) &&
-        ((const pm_arguments_node_t *) node->arguments)->arguments.size == 1 &&
-        PM_NODE_TYPE_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_NODE) &&
-        node->block == NULL &&
-        !PM_NODE_FLAG_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_FLAGS_FROZEN) &&
-        ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction
-    );
-}
-
-/**
- * Returns true if the given call node can use the opt_aset_with optimization
- * with the current iseq options.
- */
-static inline bool
-pm_opt_aset_with_p(const rb_iseq_t *iseq, const pm_call_node_t *node)
-{
-    return (
-        !PM_NODE_FLAG_P(node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
-        node->arguments != NULL &&
-        PM_NODE_TYPE_P((const pm_node_t *) node->arguments, PM_ARGUMENTS_NODE) &&
-        ((const pm_arguments_node_t *) node->arguments)->arguments.size == 2 &&
-        PM_NODE_TYPE_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_NODE) &&
-        node->block == NULL &&
-        !PM_NODE_FLAG_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_FLAGS_FROZEN) &&
-        ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction
-    );
-}
-
-/**
  * Compile the instructions necessary to read a constant, based on the options
  * of the current iseq.
  */
@@ -7383,44 +7355,6 @@ pm_compile_call_node(rb_iseq_t *iseq, const pm_call_node_t *node, LINK_ANCHOR *c
             const struct rb_callinfo *callinfo = new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE);
             PUSH_INSN2(ret, location, opt_str_freeze, value, callinfo);
             if (popped) PUSH_INSN(ret, location, pop);
-            return;
-        }
-        break;
-      }
-      case idAREF: {
-        if (pm_opt_aref_with_p(iseq, node)) {
-            const pm_string_node_t *string = (const pm_string_node_t *) ((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0];
-            VALUE value = parse_static_literal_string(iseq, scope_node, (const pm_node_t *) string, &string->unescaped);
-
-            PM_COMPILE_NOT_POPPED(node->receiver);
-
-            const struct rb_callinfo *callinfo = new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE);
-            PUSH_INSN2(ret, location, opt_aref_with, value, callinfo);
-
-            if (popped) {
-                PUSH_INSN(ret, location, pop);
-            }
-
-            return;
-        }
-        break;
-      }
-      case idASET: {
-        if (pm_opt_aset_with_p(iseq, node)) {
-            const pm_string_node_t *string = (const pm_string_node_t *) ((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0];
-            VALUE value = parse_static_literal_string(iseq, scope_node, (const pm_node_t *) string, &string->unescaped);
-
-            PM_COMPILE_NOT_POPPED(node->receiver);
-            PM_COMPILE_NOT_POPPED(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[1]);
-
-            if (!popped) {
-                PUSH_INSN(ret, location, swap);
-                PUSH_INSN1(ret, location, topn, INT2FIX(1));
-            }
-
-            const struct rb_callinfo *callinfo = new_callinfo(iseq, idASET, 2, 0, NULL, FALSE);
-            PUSH_INSN2(ret, location, opt_aset_with, value, callinfo);
-            PUSH_INSN(ret, location, pop);
             return;
         }
         break;
@@ -9627,7 +9561,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         else {
             const pm_interpolated_string_node_t *cast = (const pm_interpolated_string_node_t *) node;
-            int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node, NULL, NULL);
+            int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node, NULL, NULL, !PM_NODE_FLAG_P(cast, PM_INTERPOLATED_STRING_NODE_FLAGS_FROZEN));
             if (length > 1) PUSH_INSN1(ret, location, concatstrings, INT2FIX(length));
             if (popped) PUSH_INSN(ret, location, pop);
         }
@@ -9638,7 +9572,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // :"foo #{bar}"
         // ^^^^^^^^^^^^^
         const pm_interpolated_symbol_node_t *cast = (const pm_interpolated_symbol_node_t *) node;
-        int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node, NULL, NULL);
+        int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node, NULL, NULL, false);
 
         if (length > 1) {
             PUSH_INSN1(ret, location, concatstrings, INT2FIX(length));
@@ -9660,7 +9594,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         PUSH_INSN(ret, location, putself);
 
-        int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, false, scope_node, NULL, NULL);
+        int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, false, scope_node, NULL, NULL, false);
         if (length > 1) PUSH_INSN1(ret, location, concatstrings, INT2FIX(length));
 
         PUSH_SEND_WITH_FLAG(ret, location, idBackquote, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
@@ -10613,7 +10547,9 @@ pm_parse_errors_format_sort(const pm_parser_t *parser, const pm_list_t *error_li
     if (errors == NULL) return NULL;
 
     int32_t start_line = parser->start_line;
-    for (pm_diagnostic_t *error = (pm_diagnostic_t *) error_list->head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
+    pm_diagnostic_t *finish = (pm_diagnostic_t * )error_list->tail->next;
+
+    for (pm_diagnostic_t *error = (pm_diagnostic_t *) error_list->head; error != finish; error = (pm_diagnostic_t *) error->node.next) {
         pm_line_column_t start = pm_newline_list_line_column(newline_list, error->location.start, start_line);
         pm_line_column_t end = pm_newline_list_line_column(newline_list, error->location.end, start_line);
 
@@ -11480,6 +11416,18 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *
     return pm_parse_process(result, node, script_lines);
 }
 
+struct rb_stdin_wrapper {
+    VALUE rb_stdin;
+    int eof_seen;
+};
+
+static int
+pm_parse_stdin_eof(void *stream)
+{
+    struct rb_stdin_wrapper * wrapped_stdin = (struct rb_stdin_wrapper *)stream;
+    return wrapped_stdin->eof_seen;
+}
+
 /**
  * An implementation of fgets that is suitable for use with Ruby IO objects.
  */
@@ -11488,7 +11436,9 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
 {
     RUBY_ASSERT(size > 0);
 
-    VALUE line = rb_funcall((VALUE) stream, rb_intern("gets"), 1, INT2FIX(size - 1));
+    struct rb_stdin_wrapper * wrapped_stdin = (struct rb_stdin_wrapper *)stream;
+
+    VALUE line = rb_funcall(wrapped_stdin->rb_stdin, rb_intern("gets"), 1, INT2FIX(size - 1));
     if (NIL_P(line)) {
         return NULL;
     }
@@ -11498,6 +11448,13 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
 
     memcpy(string, cstr, length);
     string[length] = '\0';
+
+    // We're reading strings from stdin via gets.  We'll assume that if the
+    // string is smaller than the requested length, and doesn't end with a
+    // newline, that we hit EOF.
+    if (length < (size - 1) && string[length - 1] != '\n') {
+        wrapped_stdin->eof_seen = 1;
+    }
 
     return string;
 }
@@ -11515,8 +11472,13 @@ pm_parse_stdin(pm_parse_result_t *result)
 {
     pm_options_frozen_string_literal_init(&result->options);
 
+    struct rb_stdin_wrapper wrapped_stdin = {
+        rb_stdin,
+        0
+    };
+
     pm_buffer_t buffer;
-    pm_node_t *node = pm_parse_stream(&result->parser, &buffer, (void *) rb_stdin, pm_parse_stdin_fgets, &result->options);
+    pm_node_t *node = pm_parse_stream(&result->parser, &buffer, (void *) &wrapped_stdin, pm_parse_stdin_fgets, pm_parse_stdin_eof, &result->options);
 
     // Copy the allocated buffer contents into the input string so that it gets
     // freed. At this point we've handed over ownership, so we don't need to

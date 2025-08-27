@@ -29,6 +29,13 @@
 # endif
 #endif
 
+#ifdef HAVE_SANITIZER_TSAN_INTERFACE_H
+# if __has_feature(thread_sanitizer) || defined(__SANITIZE_THREAD__)
+#  define RUBY_TSAN_ENABLED
+#  include <sanitizer/tsan_interface.h>
+# endif
+#endif
+
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for VALUE */
 
@@ -42,6 +49,9 @@
 #elif defined(RUBY_MSAN_ENABLED)
     # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
     __attribute__((__no_sanitize__("memory"), __noinline__)) x
+#elif defined(RUBY_TSAN_ENABLED)
+# define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
+    __attribute__((__no_sanitize__("thread"), __noinline__)) x
 #elif defined(NO_SANITIZE_ADDRESS)
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
     NO_SANITIZE_ADDRESS(NOINLINE(x))

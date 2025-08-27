@@ -9,6 +9,32 @@ require_relative '../lib/jit_support'
 return unless JITSupport.zjit_supported?
 
 class TestZJIT < Test::Unit::TestCase
+  def test_enabled
+    assert_runs 'false', <<~RUBY, zjit: false
+      RubyVM::ZJIT.enabled?
+    RUBY
+    assert_runs 'true', <<~RUBY, zjit: true
+      RubyVM::ZJIT.enabled?
+    RUBY
+  end
+
+  def test_stats_enabled
+    assert_runs 'false', <<~RUBY, stats: false
+      RubyVM::ZJIT.stats_enabled?
+    RUBY
+    assert_runs 'true', <<~RUBY, stats: true
+      RubyVM::ZJIT.stats_enabled?
+    RUBY
+  end
+
+  def test_enable_through_env
+    child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => '1'}
+    assert_in_out_err([child_env, '-v'], '') do |stdout, stderr|
+      assert_includes(stdout.first, '+ZJIT')
+      assert_equal([], stderr)
+    end
+  end
+
   def test_call_itself
     assert_compiles '42', <<~RUBY, call_threshold: 2
       def test = 42.itself
@@ -52,6 +78,40 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_setglobal
+    assert_compiles '1', %q{
+      def test
+        $a = 1
+        $a
+      end
+
+      test
+    }, insns: [:setglobal]
+  end
+
+  def test_string_intern
+    assert_compiles ':foo123', %q{
+      def test
+        :"foo#{123}"
+      end
+
+      test
+    }, insns: [:intern]
+  end
+
+  def test_setglobal_with_trace_var_exception
+    assert_compiles '"rescued"', %q{
+      def test
+        $a = 1
+      rescue
+        "rescued"
+      end
+
+      trace_var(:$a) { raise }
+      test
+    }, insns: [:setglobal]
+  end
+
   def test_setlocal
     assert_compiles '3', %q{
       def test(n)
@@ -59,6 +119,31 @@ class TestZJIT < Test::Unit::TestCase
         m
       end
       test(3)
+    }
+  end
+
+  def test_setlocal_on_eval
+    assert_compiles '1', %q{
+      @b = binding
+      eval('a = 1', @b)
+      eval('a', @b)
+    }
+  end
+
+  def test_call_a_forwardable_method
+    assert_runs '[]', %q{
+      def test_root = forwardable
+      def forwardable(...) = Array.[](...)
+      test_root
+      test_root
+    }, call_threshold: 2
+  end
+
+  def test_setlocal_on_eval_with_spill
+    assert_compiles '1', %q{
+      @b = binding
+      eval('a = 1; itself', @b)
+      eval('a', @b)
     }
   end
 
@@ -115,6 +200,49 @@ class TestZJIT < Test::Unit::TestCase
 
       [test1, test2, test3]
     }
+  end
+
+  def test_send_with_six_args
+    assert_compiles '[1, 2, 3, 4, 5, 6]', %q{
+      def foo(a1, a2, a3, a4, a5, a6)
+        [a1, a2, a3, a4, a5, a6]
+      end
+
+      def test
+        foo(1, 2, 3, 4, 5, 6)
+      end
+
+      test # profile send
+      test
+    }, call_threshold: 2
+  end
+
+  def test_send_on_heap_object_in_spilled_arg
+    # This leads to a register spill, so not using `assert_compiles`
+    assert_runs 'Hash', %q{
+      def entry(a1, a2, a3, a4, a5, a6, a7, a8, a9)
+        a9.itself.class
+      end
+
+      entry(1, 2, 3, 4, 5, 6, 7, 8, {}) # profile
+      entry(1, 2, 3, 4, 5, 6, 7, 8, {})
+    }, call_threshold: 2
+  end
+
+  def test_send_exit_with_uninitialized_locals
+    assert_runs 'nil', %q{
+      def entry(init)
+        function_stub_exit(init)
+      end
+
+      def function_stub_exit(init)
+        uninitialized_local = 1 if init
+        uninitialized_local
+      end
+
+      entry(true) # profile and set 1 to the local slot
+      entry(false)
+    }, call_threshold: 2, allowed_iseqs: 'entry@-e:2'
   end
 
   def test_invokebuiltin
@@ -252,6 +380,14 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_eq], call_threshold: 2
   end
 
+  def test_opt_eq_with_minus_one
+    assert_compiles '[false, true]', %q{
+      def test(a) = a == -1
+      test(1) # profile opt_eq
+      [test(0), test(-1)]
+    }, insns: [:opt_eq], call_threshold: 2
+  end
+
   def test_opt_neq_dynamic
     # TODO(max): Don't split this test; instead, run all tests with and without
     # profiling.
@@ -330,6 +466,52 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_fixnum_and
+    assert_compiles '1', %q{
+      def test(a, b) = a & b
+      test(2, 2)
+      test(2, 2)
+      test(5, 3)
+    }, call_threshold: 2, insns: [:opt_and]
+  end
+
+  def test_fixnum_and_side_exit
+    assert_compiles 'false', %q{
+      def test(a, b) = a & b
+      test(2, 2)
+      test(2, 2)
+      test(true, false)
+    }, call_threshold: 2, insns: [:opt_and]
+  end
+
+  def test_fixnum_or
+    assert_compiles '3', %q{
+      def test(a, b) = a | b
+      test(5, 3)
+      test(5, 3)
+      test(1, 2)
+    }, call_threshold: 2, insns: [:opt_or]
+  end
+
+  def test_fixnum_or_side_exit
+    assert_compiles 'true', %q{
+      def test(a, b) = a | b
+      test(2, 2)
+      test(2, 2)
+      test(true, false)
+    }, call_threshold: 2, insns: [:opt_or]
+  end
+
+  def test_fixnum_mul
+    assert_compiles '12', %q{
+      C = 3
+      def test(n) = C * n
+      test(4)
+      test(4)
+      test(4)
+    }, call_threshold: 2, insns: [:opt_mult]
+  end
+
   def test_opt_not
     assert_compiles('[true, true, false]', <<~RUBY, insns: [:opt_not])
       def test(obj) = !obj
@@ -350,6 +532,116 @@ class TestZJIT < Test::Unit::TestCase
       test(2, 3) # profile opt_ge
       [test(0, 1), test(0, 0), test(1, 0)]
     }, insns: [:opt_ge], call_threshold: 2
+  end
+
+  def test_new_hash_empty
+    assert_compiles '{}', %q{
+      def test = {}
+      test
+    }, insns: [:newhash]
+  end
+
+  def test_new_hash_nonempty
+    assert_compiles '{"key" => "value", 42 => 100}', %q{
+      def test
+        key = "key"
+        value = "value"
+        num = 42
+        result = 100
+        {key => value, num => result}
+      end
+      test
+    }, insns: [:newhash]
+  end
+
+  def test_new_hash_single_key_value
+    assert_compiles '{"key" => "value"}', %q{
+      def test = {"key" => "value"}
+      test
+    }, insns: [:newhash]
+  end
+
+  def test_new_hash_with_computation
+    assert_compiles '{"sum" => 5, "product" => 6}', %q{
+      def test(a, b)
+        {"sum" => a + b, "product" => a * b}
+      end
+      test(2, 3)
+    }, insns: [:newhash]
+  end
+
+  def test_new_hash_with_user_defined_hash_method
+    assert_runs 'true', %q{
+      class CustomKey
+        attr_reader :val
+
+        def initialize(val)
+          @val = val
+        end
+
+        def hash
+          @val.hash
+        end
+
+        def eql?(other)
+          other.is_a?(CustomKey) && @val == other.val
+        end
+      end
+
+      def test
+        key = CustomKey.new("key")
+        hash = {key => "value"}
+        hash[key] == "value"
+      end
+      test
+    }
+  end
+
+  def test_new_hash_with_user_hash_method_exception
+    assert_runs 'RuntimeError', %q{
+      class BadKey
+        def hash
+          raise "Hash method failed!"
+        end
+      end
+
+      def test
+        key = BadKey.new
+        {key => "value"}
+      end
+
+      begin
+        test
+      rescue => e
+        e.class
+      end
+    }
+  end
+
+  def test_new_hash_with_user_eql_method_exception
+    assert_runs 'RuntimeError', %q{
+      class BadKey
+        def hash
+          42
+        end
+
+        def eql?(other)
+          raise "Eql method failed!"
+        end
+      end
+
+      def test
+        key1 = BadKey.new
+        key2 = BadKey.new
+        {key1 => "value1", key2 => "value2"}
+      end
+
+      begin
+        test
+      rescue => e
+        e.class
+      end
+    }
   end
 
   def test_opt_hash_freeze
@@ -724,13 +1016,42 @@ class TestZJIT < Test::Unit::TestCase
 
       test
     }
+
+    # TODO(Shopify/ruby#716): Support spills and change to assert_compiles
+    assert_runs '1', %q{
+      def a(n1,n2,n3,n4,n5,n6,n7,n8,n9) = n1+n9
+      a(2,0,0,0,0,0,0,0,-1)
+    }
+
+    # TODO(Shopify/ruby#716): Support spills and change to assert_compiles
+    assert_runs '0', %q{
+      def a(n1,n2,n3,n4,n5,n6,n7,n8) = n8
+      a(1,1,1,1,1,1,1,0)
+    }
+
+    # TODO(Shopify/ruby#716): Support spills and change to assert_compiles
+    # self param with spilled param
+    assert_runs '"main"', %q{
+      def a(n1,n2,n3,n4,n5,n6,n7,n8) = self
+      a(1,0,0,0,0,0,0,0).to_s
+    }
   end
 
-  def test_opt_aref_with
-    assert_compiles ':ok', %q{
-      def aref_with(hash) = hash["key"]
+  def test_spilled_param_new_arary
+    # TODO(Shopify/ruby#716): Support spills and change to assert_compiles
+    assert_runs '[:ok]', %q{
+      def a(n1,n2,n3,n4,n5,n6,n7,n8) = [n8]
+      a(0,0,0,0,0,0,0, :ok)
+    }
+  end
 
-      aref_with({ "key" => :ok })
+  def test_forty_param_method
+    # This used to a trigger a miscomp on A64 due
+    # to a memory displacement larger than 9 bits.
+    assert_compiles '1', %Q{
+      def foo(#{'_,' * 39} n40) = n40
+
+      foo(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1)
     }
   end
 
@@ -768,6 +1089,38 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_attr_reader
+    assert_compiles '[4, 4]', %q{
+      class C
+        attr_reader :foo
+
+        def initialize
+          @foo = 4
+        end
+      end
+
+      def test(c) = c.foo
+      c = C.new
+      [test(c), test(c)]
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
+  def test_attr_accessor
+    assert_compiles '[4, 4]', %q{
+      class C
+        attr_accessor :foo
+
+        def initialize
+          @foo = 4
+        end
+      end
+
+      def test(c) = c.foo
+      c = C.new
+      [test(c), test(c)]
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
   def test_uncached_getconstant_path
     assert_compiles RUBY_COPYRIGHT.dump, %q{
       def test = RUBY_COPYRIGHT
@@ -787,6 +1140,68 @@ class TestZJIT < Test::Unit::TestCase
         test
       }, call_threshold: 1, insns: [:opt_getconstant_path]
     end
+  end
+
+  def test_constant_invalidation
+    assert_compiles '123', <<~RUBY, call_threshold: 2, insns: [:opt_getconstant_path]
+      class C; end
+      def test = C
+      test
+      test
+
+      C = 123
+      test
+    RUBY
+  end
+
+  def test_constant_path_invalidation
+    assert_compiles '["Foo::C", "Foo::C", "Bar::C"]', <<~RUBY, call_threshold: 2, insns: [:opt_getconstant_path]
+      module A
+        module B; end
+      end
+
+      module Foo
+        C = "Foo::C"
+      end
+
+      module Bar
+        C = "Bar::C"
+      end
+
+      A::B = Foo
+
+      def test = A::B::C
+
+      result = []
+
+      result << test
+      result << test
+
+      A::B = Bar
+
+      result << test
+      result
+    RUBY
+  end
+
+  def test_single_ractor_mode_invalidation
+    # Without invalidating the single-ractor mode, the test would crash
+    assert_compiles '"errored but not crashed"', <<~RUBY, call_threshold: 2, insns: [:opt_getconstant_path]
+      C = Object.new
+
+      def test
+        C
+      rescue Ractor::IsolationError
+        "errored but not crashed"
+      end
+
+      test
+      test
+
+      Ractor.new {
+        test
+      }.value
+    RUBY
   end
 
   def test_dupn
@@ -830,6 +1245,34 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_defined_with_defined_values
+    assert_compiles '["constant", "method", "global-variable"]', %q{
+      class Foo; end
+      def bar; end
+      $ruby = 1
+
+      def test = return defined?(Foo), defined?(bar), defined?($ruby)
+
+      test
+    }, insns: [:defined]
+  end
+
+  def test_defined_with_undefined_values
+    assert_compiles '[nil, nil, nil]', %q{
+      def test = return defined?(Foo), defined?(bar), defined?($ruby)
+
+      test
+    }, insns: [:defined]
+  end
+
+  def test_defined_with_method_call
+    assert_compiles '["method", nil]', %q{
+      def test = return defined?("x".reverse(1)), defined?("x".reverse(1).reverse)
+
+      test
+    }, insns: [:defined]
+  end
+
   def test_defined_yield
     assert_compiles "nil", "defined?(yield)"
     assert_compiles '[nil, nil, "yield"]', %q{
@@ -851,6 +1294,20 @@ class TestZJIT < Test::Unit::TestCase
 
       [test, test, test{}]
     }, call_threshold: 2, insns: [:defined]
+  end
+
+  def test_invokeblock_without_block_after_jit_call
+    assert_compiles '"no block given (yield)"', %q{
+      def test(*arr, &b)
+        arr.class
+        yield
+      end
+      begin
+        test
+      rescue => e
+        e.message
+      end
+    }
   end
 
   def test_putspecialobject_vm_core_and_cbase
@@ -902,6 +1359,106 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_nil_p]
   end
 
+  def test_getspecial_last_match
+    assert_compiles '"hello"', %q{
+      def test(str)
+        str =~ /hello/
+        $&
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_match_pre
+    assert_compiles '"hello "', %q{
+      def test(str)
+        str =~ /world/
+        $`
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_match_post
+    assert_compiles '" world"', %q{
+      def test(str)
+        str =~ /hello/
+        $'
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_match_last_group
+    assert_compiles '"world"', %q{
+      def test(str)
+        str =~ /(hello) (world)/
+        $+
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_numbered_match_1
+    assert_compiles '"hello"', %q{
+      def test(str)
+        str =~ /(hello) (world)/
+        $1
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_numbered_match_2
+    assert_compiles '"world"', %q{
+      def test(str)
+        str =~ /(hello) (world)/
+        $2
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_numbered_match_nonexistent
+    assert_compiles 'nil', %q{
+      def test(str)
+        str =~ /(hello)/
+        $2
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_no_match
+    assert_compiles 'nil', %q{
+      def test(str)
+        str =~ /xyz/
+        $&
+      end
+      test("hello world")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_complex_pattern
+    assert_compiles '"123"', %q{
+      def test(str)
+        str =~ /(\d+)/
+        $1
+      end
+      test("abc123def")
+    }, insns: [:getspecial]
+  end
+
+  def test_getspecial_multiple_groups
+    assert_compiles '"456"', %q{
+      def test(str)
+        str =~ /(\d+)-(\d+)/
+        $2
+      end
+      test("123-456")
+    }, insns: [:getspecial]
+  end
+
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
   # b) being reliably ordered after all the other instructions.
   def test_instruction_order
@@ -913,6 +1470,438 @@ class TestZJIT < Test::Unit::TestCase
       assert zjit_index > other_index, "'#{insn_names[zjit_index]}' at #{zjit_index} "\
         "must be defined after '#{insn_names[other_index]}' at #{other_index}"
     end
+  end
+
+  def test_require_rubygems
+    assert_runs 'true', %q{
+      require 'rubygems'
+    }, call_threshold: 2
+  end
+
+  def test_require_rubygems_with_auto_compact
+    assert_runs 'true', %q{
+      GC.auto_compact = true
+      require 'rubygems'
+    }, call_threshold: 2
+  end
+
+  def test_stats
+    assert_runs '[true, true]', %q{
+      def test = 1
+      test
+      [
+        RubyVM::ZJIT.stats[:zjit_insns_count] > 0,
+        RubyVM::ZJIT.stats(:zjit_insns_count) > 0,
+      ]
+    }, stats: true
+  end
+
+  def test_zjit_option_uses_array_each_in_ruby
+    omit 'ZJIT wrongly compiles Array#each, so it is disabled for now'
+    assert_runs '"<internal:array>"', %q{
+      Array.instance_method(:each).source_location&.first
+    }
+  end
+
+  def test_profile_under_nested_jit_call
+    assert_compiles '[nil, nil, 3]', %q{
+      def profile
+        1 + 2
+      end
+
+      def jit_call(flag)
+        if flag
+          profile
+        end
+      end
+
+      def entry(flag)
+        jit_call(flag)
+      end
+
+      [entry(false), entry(false), entry(true)]
+    }, call_threshold: 2
+  end
+
+  def test_bop_redefinition
+    assert_runs '[3, :+, 100]', %q{
+      def test
+        1 + 2
+      end
+
+      test # profile opt_plus
+      [test, Integer.class_eval { def +(_) = 100 }, test]
+    }, call_threshold: 2
+  end
+
+  def test_bop_redefinition_with_adjacent_patch_points
+    assert_runs '[15, :+, 100]', %q{
+      def test
+        1 + 2 + 3 + 4 + 5
+      end
+
+      test # profile opt_plus
+      [test, Integer.class_eval { def +(_) = 100 }, test]
+    }, call_threshold: 2
+  end
+
+  # ZJIT currently only generates a MethodRedefined patch point when the method
+  # is called on the top-level self.
+  def test_method_redefinition_with_top_self
+    assert_runs '["original", "redefined"]', %q{
+      def foo
+        "original"
+      end
+
+      def test = foo
+
+      test; test
+
+      result1 = test
+
+      # Redefine the method
+      def foo
+        "redefined"
+      end
+
+      result2 = test
+
+      [result1, result2]
+    }, call_threshold: 2
+  end
+
+  def test_module_name_with_guard_passes
+    assert_compiles '"Integer"', %q{
+      def test(mod)
+        mod.name
+      end
+
+      test(String)
+      test(Integer)
+    }, call_threshold: 2
+  end
+
+  def test_module_name_with_guard_side_exit
+    # This test demonstrates that the guard side exit works correctly
+    # In this case, when we call with a non-Class object, it should fall back to interpreter
+    assert_compiles '["String", "Integer", "Bar"]', %q{
+      class MyClass
+        def name = "Bar"
+      end
+
+      def test(mod)
+        mod.name
+      end
+
+      results = []
+      results << test(String)
+      results << test(Integer)
+      results << test(MyClass.new)
+
+      results
+    }, call_threshold: 2
+  end
+
+  def test_objtostring_calls_to_s_on_non_strings
+    assert_compiles '["foo", "foo"]', %q{
+      results = []
+
+      class Foo
+        def to_s
+          "foo"
+        end
+      end
+
+      def test(str)
+        "#{str}"
+      end
+
+      results << test(Foo.new)
+      results << test(Foo.new)
+
+      results
+    }
+  end
+
+  def test_objtostring_rewrite_does_not_call_to_s_on_strings
+    assert_compiles '["foo", "foo"]', %q{
+      results = []
+
+      class String
+        def to_s
+          "bad"
+        end
+      end
+
+      def test(foo)
+        "#{foo}"
+      end
+
+      results << test("foo")
+      results << test("foo")
+
+      results
+    }
+  end
+
+  def test_objtostring_rewrite_does_not_call_to_s_on_string_subclasses
+    assert_compiles '["foo", "foo"]', %q{
+      results = []
+
+      class StringSubclass < String
+        def to_s
+          "bad"
+        end
+      end
+
+      foo = StringSubclass.new("foo")
+
+      def test(str)
+        "#{str}"
+      end
+
+      results << test(foo)
+      results << test(foo)
+
+      results
+    }
+  end
+
+  def test_string_bytesize_with_guard
+    assert_compiles '5', %q{
+      def test(str)
+        str.bytesize
+      end
+
+      test('hello')
+      test('world')
+    }, call_threshold: 2
+  end
+
+  def test_nil_value_nil_opt_with_guard
+    assert_compiles 'true', %q{
+      def test(val) = val.nil?
+
+      test(nil)
+      test(nil)
+    }, call_threshold: 2, insns: [:opt_nil_p]
+  end
+
+  def test_nil_value_nil_opt_with_guard_side_exit
+    assert_compiles 'false', %q{
+      def test(val) = val.nil?
+
+      test(nil)
+      test(nil)
+      test(1)
+    }, call_threshold: 2, insns: [:opt_nil_p]
+  end
+
+  def test_true_nil_opt_with_guard
+    assert_compiles 'false', %q{
+      def test(val) = val.nil?
+
+      test(true)
+      test(true)
+    }, call_threshold: 2, insns: [:opt_nil_p]
+  end
+
+  def test_true_nil_opt_with_guard_side_exit
+    assert_compiles 'true', %q{
+      def test(val) = val.nil?
+
+      test(true)
+      test(true)
+      test(nil)
+    }, call_threshold: 2, insns: [:opt_nil_p]
+  end
+
+  def test_false_nil_opt_with_guard
+    assert_compiles 'false', %q{
+      def test(val) = val.nil?
+
+      test(false)
+      test(false)
+    }, call_threshold: 2, insns: [:opt_nil_p]
+  end
+
+  def test_false_nil_opt_with_guard_side_exit
+    assert_compiles 'true', %q{
+      def test(val) = val.nil?
+
+      test(false)
+      test(false)
+      test(nil)
+    }, call_threshold: 2, insns: [:opt_nil_p]
+  end
+
+  def test_integer_nil_opt_with_guard
+    assert_compiles 'false', %q{
+      def test(val) = val.nil?
+
+      test(1)
+      test(2)
+    }, call_threshold: 2, insns: [:opt_nil_p]
+  end
+
+  def test_integer_nil_opt_with_guard_side_exit
+    assert_compiles 'true', %q{
+      def test(val) = val.nil?
+
+      test(1)
+      test(2)
+      test(nil)
+    }, call_threshold: 2, insns: [:opt_nil_p]
+  end
+
+  def test_float_nil_opt_with_guard
+    assert_compiles 'false', %q{
+      def test(val) = val.nil?
+
+      test(1.0)
+      test(2.0)
+    }, call_threshold: 2, insns: [:opt_nil_p]
+  end
+
+  def test_float_nil_opt_with_guard_side_exit
+    assert_compiles 'true', %q{
+      def test(val) = val.nil?
+
+      test(1.0)
+      test(2.0)
+      test(nil)
+    }, call_threshold: 2, insns: [:opt_nil_p]
+  end
+
+  def test_symbol_nil_opt_with_guard
+    assert_compiles 'false', %q{
+      def test(val) = val.nil?
+
+      test(:foo)
+      test(:bar)
+    }, call_threshold: 2, insns: [:opt_nil_p]
+  end
+
+  def test_symbol_nil_opt_with_guard_side_exit
+    assert_compiles 'true', %q{
+      def test(val) = val.nil?
+
+      test(:foo)
+      test(:bar)
+      test(nil)
+    }, call_threshold: 2, insns: [:opt_nil_p]
+  end
+
+  def test_class_nil_opt_with_guard
+    assert_compiles 'false', %q{
+      def test(val) = val.nil?
+
+      test(String)
+      test(Integer)
+    }, call_threshold: 2, insns: [:opt_nil_p]
+  end
+
+  def test_class_nil_opt_with_guard_side_exit
+    assert_compiles 'true', %q{
+      def test(val) = val.nil?
+
+      test(String)
+      test(Integer)
+      test(nil)
+    }, call_threshold: 2, insns: [:opt_nil_p]
+  end
+
+  def test_module_nil_opt_with_guard
+    assert_compiles 'false', %q{
+      def test(val) = val.nil?
+
+      test(Enumerable)
+      test(Kernel)
+    }, call_threshold: 2, insns: [:opt_nil_p]
+  end
+
+  def test_module_nil_opt_with_guard_side_exit
+    assert_compiles 'true', %q{
+      def test(val) = val.nil?
+
+      test(Enumerable)
+      test(Kernel)
+      test(nil)
+    }, call_threshold: 2, insns: [:opt_nil_p]
+  end
+
+  def test_basic_object_guard_works_with_immediate
+    assert_compiles 'NilClass', %q{
+      class Foo; end
+
+      def test(val) = val.class
+
+      test(Foo.new)
+      test(Foo.new)
+      test(nil)
+    }, call_threshold: 2
+  end
+
+  def test_basic_object_guard_works_with_false
+    assert_compiles 'FalseClass', %q{
+      class Foo; end
+
+      def test(val) = val.class
+
+      test(Foo.new)
+      test(Foo.new)
+      test(false)
+    }, call_threshold: 2
+  end
+
+  def test_string_concat
+    assert_compiles '"123"', %q{
+      def test = "#{1}#{2}#{3}"
+
+      test
+    }, insns: [:concatstrings]
+  end
+
+  def test_string_concat_empty
+    assert_compiles '""', %q{
+      def test = "#{}"
+
+      test
+    }, insns: [:concatstrings]
+  end
+
+  def test_regexp_interpolation
+    assert_compiles '/123/', %q{
+      def test = /#{1}#{2}#{3}/
+
+      test
+    }, insns: [:toregexp]
+  end
+
+  def test_new_range_non_leaf
+    assert_compiles '(0/1)..1', %q{
+      def jit_entry(v) = make_range_then_exit(v)
+
+      def make_range_then_exit(v)
+        range = (v..1)
+        super rescue range # TODO(alan): replace super with side-exit intrinsic
+      end
+
+      jit_entry(0)    # profile
+      jit_entry(0)    # compile
+      jit_entry(0/1r) # run without stub
+    }, call_threshold: 2
+  end
+
+  def test_raise_in_second_argument
+    assert_compiles '{ok: true}', %q{
+      def write(hash, key)
+        hash[key] = raise rescue true
+        hash
+      end
+
+      write({}, :ok)
+    }
   end
 
   private
@@ -965,13 +1954,30 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   # Run a Ruby process with ZJIT options and a pipe for writing test results
-  def eval_with_jit(script, call_threshold: 1, num_profiles: 1, timeout: 1000, pipe_fd:, debug: true)
-    args = [
-      "--disable-gems",
-      "--zjit-call-threshold=#{call_threshold}",
-      "--zjit-num-profiles=#{num_profiles}",
-    ]
-    args << "--zjit-debug" if debug
+  def eval_with_jit(
+    script,
+    call_threshold: 1,
+    num_profiles: 1,
+    zjit: true,
+    stats: false,
+    debug: true,
+    allowed_iseqs: nil,
+    timeout: 1000,
+    pipe_fd:
+  )
+    args = ["--disable-gems"]
+    if zjit
+      args << "--zjit-call-threshold=#{call_threshold}"
+      args << "--zjit-num-profiles=#{num_profiles}"
+      args << "--zjit-stats" if stats
+      args << "--zjit-debug" if debug
+      if allowed_iseqs
+        jitlist = Tempfile.new("jitlist")
+        jitlist.write(allowed_iseqs)
+        jitlist.close
+        args << "--zjit-allowed-iseqs=#{jitlist.path}"
+      end
+    end
     args << "-e" << script_shell_encode(script)
     pipe_r, pipe_w = IO.pipe
     # Separate thread so we don't deadlock when
@@ -990,6 +1996,7 @@ class TestZJIT < Test::Unit::TestCase
     pipe_reader&.join(timeout)
     pipe_r&.close
     pipe_w&.close
+    jitlist&.unlink
   end
 
   def script_shell_encode(s)

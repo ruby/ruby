@@ -45,5 +45,5 @@ bundle exec rake test TEST="test/test_foo.rb"
 To run a single test case:
 
 ```shell
-bundle exec rake test TEST="test/test_foo.rb" TESTOPS="--name=/test_mytest/"
+bundle exec rake test TEST="test/test_foo.rb" TESTOPTS="--name=/test_mytest/"
 ```

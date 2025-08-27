@@ -7,8 +7,8 @@ bundle-doctor(1) -- Checks the bundle for common problems
                            [--gemfile=GEMFILE]
                            [--ssl]<br>
 `bundle doctor ssl` [--host=HOST]
-                    [--tls-version=VERSION]
-                    [--verify-mode=MODE]<br>
+                    [--tls-version=TLS-VERSION]
+                    [--verify-mode=VERIFY-MODE]<br>
 `bundle doctor` help [COMMAND]
 
 ## DESCRIPTION
@@ -65,12 +65,12 @@ The diagnostic will perform a few checks such as:
 * `--host=HOST`:
   Perform the diagnostic on HOST. Defaults to `rubygems.org`.
 
-* `--tls-version=VERSION`:
+* `--tls-version=TLS-VERSION`:
   Specify the TLS version when opening the connection to HOST.
 
   Accepted values are: `1.1` or `1.2`.
 
-* `--verify-mode=MODE`:
+* `--verify-mode=VERIFY-MODE`:
   Specify the TLS verify mode when opening the connection to HOST.
   Defaults to `SSL_VERIFY_PEER`.
 

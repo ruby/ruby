@@ -996,6 +996,7 @@ opt_nil_p
 (CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_nil_p(GET_ISEQ(), cd, recv);
 
@@ -1480,6 +1481,7 @@ opt_and
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_and(recv, obj);
 
@@ -1494,6 +1496,7 @@ opt_or
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_or(recv, obj);
 
@@ -1534,44 +1537,6 @@ opt_aset
     val = vm_opt_aset(recv, obj, set);
 
     if (UNDEF_P(val)) {
-        CALL_SIMPLE_METHOD();
-    }
-}
-
-/* recv[str] = set */
-DEFINE_INSN
-opt_aset_with
-(VALUE key, CALL_DATA cd)
-(VALUE recv, VALUE val)
-(VALUE val)
-/* Same discussion as opt_aset. */
-// attr bool leaf = false; /* has rb_funcall() */ /* calls #hash */
-{
-    VALUE tmp = vm_opt_aset_with(recv, key, val);
-
-    if (!UNDEF_P(tmp)) {
-        val = tmp;
-    }
-    else {
-        TOPN(0) = rb_str_resurrect(key);
-        PUSH(val);
-        CALL_SIMPLE_METHOD();
-    }
-}
-
-/* recv[str] */
-DEFINE_INSN
-opt_aref_with
-(VALUE key, CALL_DATA cd)
-(VALUE recv)
-(VALUE val)
-/* Same discussion as opt_aref. */
-// attr bool leaf = false; /* has rb_funcall() */ /* calls #yield */
-{
-    val = vm_opt_aref_with(recv, key);
-
-    if (UNDEF_P(val)) {
-        PUSH(rb_str_resurrect(key));
         CALL_SIMPLE_METHOD();
     }
 }

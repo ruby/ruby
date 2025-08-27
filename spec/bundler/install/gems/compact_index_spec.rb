@@ -1010,11 +1010,7 @@ RSpec.describe "compact index api" do
         gem "myrack"
       G
 
-      gem_path = if Bundler.feature_flag.global_gem_cache?
-        default_cache_path.dirname.join("cache", "gems", "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "myrack-1.0.0.gem")
-      else
-        default_cache_path.dirname.join("myrack-1.0.0.gem")
-      end
+      gem_path = default_cache_path.dirname.join("myrack-1.0.0.gem")
 
       expect(exitstatus).to eq(37)
       expect(err).to eq <<~E.strip

@@ -131,6 +131,7 @@ md5.o: $(hdrdir)/ruby/internal/intern/re.h
 md5.o: $(hdrdir)/ruby/internal/intern/ruby.h
 md5.o: $(hdrdir)/ruby/internal/intern/select.h
 md5.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+md5.o: $(hdrdir)/ruby/internal/intern/set.h
 md5.o: $(hdrdir)/ruby/internal/intern/signal.h
 md5.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 md5.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -293,6 +294,7 @@ md5init.o: $(hdrdir)/ruby/internal/intern/re.h
 md5init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 md5init.o: $(hdrdir)/ruby/internal/intern/select.h
 md5init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+md5init.o: $(hdrdir)/ruby/internal/intern/set.h
 md5init.o: $(hdrdir)/ruby/internal/intern/signal.h
 md5init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 md5init.o: $(hdrdir)/ruby/internal/intern/string.h

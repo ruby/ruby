@@ -167,6 +167,7 @@ fn main() {
         .allowlist_function("rb_gc_mark_movable")
         .allowlist_function("rb_gc_location")
         .allowlist_function("rb_gc_writebarrier")
+        .allowlist_function("rb_gc_writebarrier_remember")
 
         // VALUE variables for Ruby class objects
         // From include/ruby/internal/globals.h
@@ -258,6 +259,13 @@ fn main() {
 
         // From internal/re.h
         .allowlist_function("rb_reg_new_ary")
+        .allowlist_var("ARG_ENCODING_FIXED")
+        .allowlist_var("ARG_ENCODING_NONE")
+
+        // From include/ruby/onigmo.h
+        .allowlist_var("ONIG_OPTION_IGNORECASE")
+        .allowlist_var("ONIG_OPTION_EXTEND")
+        .allowlist_var("ONIG_OPTION_MULTILINE")
 
         // `ruby_value_type` is a C enum and this stops it from
         // prefixing all the members with the name of the type
@@ -335,6 +343,7 @@ fn main() {
         .allowlist_function("rb_zjit_get_page_size")
         .allowlist_function("rb_zjit_iseq_builtin_attrs")
         .allowlist_function("rb_zjit_iseq_inspect")
+        .allowlist_function("rb_zjit_iseq_insn_set")
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_c_method_tracing_currently_enabled")
         .allowlist_function("rb_full_cfunc_return")
@@ -349,8 +358,13 @@ fn main() {
         .allowlist_function("rb_optimized_call")
         .allowlist_function("rb_zjit_icache_invalidate")
         .allowlist_function("rb_zjit_print_exception")
+        .allowlist_function("rb_zjit_singleton_class_p")
         .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
+        .allowlist_var("RB_INVALID_SHAPE_ID")
+
+        // From jit.c
+        .allowlist_function("rb_assert_holding_vm_lock")
 
         // from vm_sync.h
         .allowlist_function("rb_vm_barrier")
@@ -386,6 +400,9 @@ fn main() {
         .allowlist_function("rb_ivar_get")
         .allowlist_function("rb_ivar_set")
         .allowlist_function("rb_mod_name")
+
+        // From internal/vm.h
+        .allowlist_var("rb_vm_insns_count")
 
         // From include/ruby/internal/intern/vm.h
         .allowlist_function("rb_get_alloc_func")

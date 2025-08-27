@@ -127,6 +127,7 @@ eval.o: $(hdrdir)/ruby/internal/intern/re.h
 eval.o: $(hdrdir)/ruby/internal/intern/ruby.h
 eval.o: $(hdrdir)/ruby/internal/intern/select.h
 eval.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+eval.o: $(hdrdir)/ruby/internal/intern/set.h
 eval.o: $(hdrdir)/ruby/internal/intern/signal.h
 eval.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 eval.o: $(hdrdir)/ruby/internal/intern/string.h

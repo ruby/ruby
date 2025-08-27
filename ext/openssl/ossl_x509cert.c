@@ -54,14 +54,9 @@ ossl_x509_new(X509 *x509)
     VALUE obj;
 
     obj = NewX509(cX509Cert);
-    if (!x509) {
-	new = X509_new();
-    } else {
-	new = X509_dup(x509);
-    }
-    if (!new) {
-	ossl_raise(eX509CertError, NULL);
-    }
+    new = X509_dup(x509);
+    if (!new)
+        ossl_raise(eX509CertError, "X509_dup");
     SetX509(obj, new);
 
     return obj;
@@ -509,7 +504,7 @@ ossl_x509_get_public_key(VALUE self)
 	ossl_raise(eX509CertError, NULL);
     }
 
-    return ossl_pkey_new(pkey); /* NO DUP - OK */
+    return ossl_pkey_wrap(pkey);
 }
 
 /*

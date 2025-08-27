@@ -23,13 +23,13 @@
 #include "insns_info.inc"
 #include "vm_sync.h"
 #include "yjit.h"
+#include "zjit.h"
 #include "vm_insnhelper.h"
 #include "probes.h"
 #include "probes_helper.h"
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
-#include "zjit.h"
 
 // For mmapp(), sysconf()
 #ifndef _WIN32
@@ -499,18 +499,6 @@ rb_yjit_str_simple_append(VALUE str1, VALUE str2)
     return rb_str_cat(str1, RSTRING_PTR(str2), RSTRING_LEN(str2));
 }
 
-void
-rb_set_cfp_pc(struct rb_control_frame_struct *cfp, const VALUE *pc)
-{
-    cfp->pc = pc;
-}
-
-void
-rb_set_cfp_sp(struct rb_control_frame_struct *cfp, VALUE *sp)
-{
-    cfp->sp = sp;
-}
-
 extern VALUE *rb_vm_base_ptr(struct rb_control_frame_struct *cfp);
 
 // YJIT needs this function to never allocate and never raise
@@ -634,8 +622,9 @@ rb_yjit_iseq_inspect(const rb_iseq_t *iseq)
     const char *path = RSTRING_PTR(rb_iseq_path(iseq));
     int lineno = iseq->body->location.code_location.beg_pos.lineno;
 
-    char *buf = ZALLOC_N(char, strlen(label) + strlen(path) + num_digits(lineno) + 3);
-    sprintf(buf, "%s@%s:%d", label, path, lineno);
+    const size_t size = strlen(label) + strlen(path) + num_digits(lineno) + 3;
+    char *buf = ZALLOC_N(char, size);
+    snprintf(buf, size, "%s@%s:%d", label, path, lineno);
     return buf;
 }
 
@@ -732,7 +721,8 @@ rb_yjit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line
 void
 rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception)
 {
-    RB_VM_LOCKING() {    rb_vm_barrier();
+    RB_VM_LOCKING() {
+        rb_vm_barrier();
 
         // Compile a block version starting at the current instruction
         uint8_t *rb_yjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception); // defined in Rust
@@ -765,7 +755,7 @@ VALUE
 rb_object_shape_count(void)
 {
     // next_shape_id starts from 0, so it's the same as the count
-    return ULONG2NUM((unsigned long)rb_shape_tree.next_shape_id);
+    return ULONG2NUM((unsigned long)rb_shapes_count());
 }
 
 bool
@@ -790,14 +780,6 @@ attr_index_t
 rb_yjit_shape_index(shape_id_t shape_id)
 {
     return RSHAPE_INDEX(shape_id);
-}
-
-// Assert that we have the VM lock. Relevant mostly for multi ractor situations.
-// The GC takes the lock before calling us, and this asserts that it indeed happens.
-void
-rb_yjit_assert_holding_vm_lock(void)
-{
-    ASSERT_vm_locking();
 }
 
 // The number of stack slots that vm_sendish() pops for send and invokesuper.

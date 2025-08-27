@@ -99,16 +99,6 @@ module Prism
       "seattlerb/regexp_esc_C_slash.txt",
     ]
 
-    # These files are either failing to parse or failing to translate, so we'll
-    # skip them for now.
-    skip_all = skip_incorrect | [
-    ]
-
-    # Not sure why these files are failing on JRuby, but skipping them for now.
-    if RUBY_ENGINE == "jruby"
-      skip_all.push("emoji_method_calls.txt", "symbols.txt")
-    end
-
     # These files are failing to translate their lexer output into the lexer
     # output expected by the parser gem, so we'll skip them for now.
     skip_tokens = [
@@ -147,7 +137,7 @@ module Prism
       define_method(fixture.test_name) do
         assert_equal_parses(
           fixture,
-          compare_asts: !skip_all.include?(fixture.path),
+          compare_asts: !skip_incorrect.include?(fixture.path),
           compare_tokens: !skip_tokens.include?(fixture.path),
           compare_comments: fixture.path != "embdoc_no_newline_at_end.txt"
         )
@@ -173,6 +163,22 @@ module Prism
       end
     end
 
+    def test_invalid_syntax
+      code = <<~RUBY
+        foo do
+          case bar
+          when
+          end
+        end
+      RUBY
+      buffer = Parser::Source::Buffer.new("(string)")
+      buffer.source = code
+
+      parser = Prism::Translation::Parser33.new
+      parser.diagnostics.all_errors_are_fatal = true
+      assert_raise(Parser::SyntaxError) { parser.tokenize(buffer) }
+    end
+
     def test_it_block_parameter_syntax
       it_fixture_path = Pathname(__dir__).join("../../../test/prism/fixtures/it.txt")
 
@@ -181,9 +187,13 @@ module Prism
       actual_ast = Prism::Translation::Parser34.new.tokenize(buffer)[0]
 
       it_block_parameter_sexp = parse_sexp {
+        s(:begin,
         s(:itblock,
           s(:send, nil, :x), :it,
-          s(:lvar, :it))
+          s(:lvar, :it)),
+        s(:itblock,
+          s(:lambda), :it,
+          s(:lvar, :it)))
       }
 
       assert_equal(it_block_parameter_sexp, actual_ast.to_sexp)

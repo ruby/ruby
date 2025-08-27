@@ -860,7 +860,7 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
         v
       }
       unless strvars.empty?
-        prepare << "char " << strvars.map {|v| "#{v}[1024]"}.join(", ") << "; "
+        prepare << "char " << strvars.map {|v| %[#{v}[1024] = ""]}.join(", ") << "; "
       end
     when nil
       call = ""

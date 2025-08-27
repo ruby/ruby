@@ -15,6 +15,7 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
+#include "zjit.h"
 #include "vm_sync.h"
 #include "vm_insnhelper.h"
 #include "probes.h"
@@ -22,7 +23,6 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
-#include "zjit.h"
 
 // For mmapp(), sysconf()
 #ifndef _WIN32
@@ -31,8 +31,6 @@
 #endif
 
 #include <errno.h>
-
-RUBY_EXTERN VALUE rb_cSet; // defined in set.c and it's not exposed yet
 
 uint32_t
 rb_zjit_get_page_size(void)
@@ -164,7 +162,8 @@ void rb_zjit_profile_disable(const rb_iseq_t *iseq);
 void
 rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception)
 {
-    RB_VM_LOCKING() {    rb_vm_barrier();
+    RB_VM_LOCKING() {
+        rb_vm_barrier();
 
         // Convert ZJIT instructions back to bare instructions
         rb_zjit_profile_disable(iseq);
@@ -296,6 +295,18 @@ rb_zjit_profile_disable(const rb_iseq_t *iseq)
     }
 }
 
+// Update a YARV instruction to a given opcode (to disable ZJIT profiling).
+void
+rb_zjit_iseq_insn_set(const rb_iseq_t *iseq, unsigned int insn_idx, enum ruby_vminsn_type bare_insn)
+{
+#if RUBY_DEBUG
+    int insn = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[insn_idx]);
+    RUBY_ASSERT(vm_zjit_insn_to_bare_insn(insn) == (int)bare_insn);
+#endif
+    const void *const *insn_table = rb_vm_get_insns_address_table();
+    iseq->body->iseq_encoded[insn_idx] = (VALUE)insn_table[bare_insn];
+}
+
 // Get profiling information for ISEQ
 void *
 rb_iseq_get_zjit_payload(const rb_iseq_t *iseq)
@@ -320,9 +331,6 @@ rb_iseq_set_zjit_payload(const rb_iseq_t *iseq, void *payload)
     iseq->body->zjit_payload = payload;
 }
 
-// Primitives used by zjit.rb
-VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
-
 void
 rb_zjit_print_exception(void)
 {
@@ -337,6 +345,21 @@ rb_zjit_shape_obj_too_complex_p(VALUE obj)
 {
     return rb_shape_obj_too_complex_p(obj);
 }
+
+enum {
+    RB_INVALID_SHAPE_ID = INVALID_SHAPE_ID,
+};
+
+bool
+rb_zjit_singleton_class_p(VALUE klass)
+{
+    return RCLASS_SINGLETON_P(klass);
+}
+
+// Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
+VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
+VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self, VALUE target_key);
+VALUE rb_zjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 
 // Preprocessed zjit.rb generated during build
 #include "zjit.rbinc"

@@ -994,6 +994,14 @@ profile_file(int argc, VALUE *argv, VALUE self) {
     return Qnil;
 }
 
+static int
+parse_stream_eof(void *stream) {
+    if (rb_funcall((VALUE) stream, rb_intern("eof?"), 0)) {
+        return 1;
+    }
+    return 0;
+}
+
 /**
  * An implementation of fgets that is suitable for use with Ruby IO objects.
  */
@@ -1034,7 +1042,7 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
     pm_parser_t parser;
     pm_buffer_t buffer;
 
-    pm_node_t *node = pm_parse_stream(&parser, &buffer, (void *) stream, parse_stream_fgets, &options);
+    pm_node_t *node = pm_parse_stream(&parser, &buffer, (void *) stream, parse_stream_fgets, parse_stream_eof, &options);
     rb_encoding *encoding = rb_enc_find(parser.encoding->name);
 
     VALUE source = pm_source_new(&parser, encoding, options.freeze);

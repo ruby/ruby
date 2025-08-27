@@ -13,4 +13,7 @@ Otherwise removes the last character if it exists.
   'こんにちは'.chop # => "こんにち"
   ''.chop         # => ""
 
-If you only need to remove the newline separator at the end of the string, String#chomp is a better alternative.
+If you only need to remove the newline separator at the end of the string,
+String#chomp is a better alternative.
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

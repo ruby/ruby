@@ -9,8 +9,8 @@
 minitest            5.25.5  https://github.com/minitest/minitest
 power_assert        2.0.5   https://github.com/ruby/power_assert f88e406e7c9e0810cc149869582afbae1fb84c4a
 rake                13.3.0  https://github.com/ruby/rake
-test-unit           3.6.9   https://github.com/test-unit/test-unit
-rexml               3.4.1   https://github.com/ruby/rexml
+test-unit           3.7.0   https://github.com/test-unit/test-unit
+rexml               3.4.2   https://github.com/ruby/rexml
 rss                 0.3.1   https://github.com/ruby/rss
 net-ftp             0.3.8   https://github.com/ruby/net-ftp
 net-imap            0.5.9   https://github.com/ruby/net-imap
@@ -18,7 +18,7 @@ net-pop             0.1.2   https://github.com/ruby/net-pop
 net-smtp            0.5.1   https://github.com/ruby/net-smtp
 matrix              0.4.3   https://github.com/ruby/matrix
 prime               0.1.4   https://github.com/ruby/prime
-rbs                 3.9.4   https://github.com/ruby/rbs
+rbs                 3.9.4   https://github.com/ruby/rbs 368bf4b1ab52a9335e2022618ac4545a4d9cacdf
 typeprof            0.30.1  https://github.com/ruby/typeprof
 debug               1.11.0  https://github.com/ruby/debug
 racc                1.8.1   https://github.com/ruby/racc
@@ -35,13 +35,13 @@ nkf                 0.2.0   https://github.com/ruby/nkf
 syslog              0.3.0   https://github.com/ruby/syslog
 csv                 3.3.5   https://github.com/ruby/csv
 repl_type_completor 0.1.11  https://github.com/ruby/repl_type_completor 25108aa8d69ddaba0b5da3feff1c0035371524b2
-ostruct             0.6.2   https://github.com/ruby/ostruct
+ostruct             0.6.3   https://github.com/ruby/ostruct
 pstore              0.2.0   https://github.com/ruby/pstore
 benchmark           0.4.1   https://github.com/ruby/benchmark
 logger              1.7.0   https://github.com/ruby/logger
 rdoc                6.14.2  https://github.com/ruby/rdoc
 win32ole            1.9.2   https://github.com/ruby/win32ole
 irb                 1.15.2  https://github.com/ruby/irb 331c4e851296b115db766c291e8cf54a2492fb36
-reline              0.6.1   https://github.com/ruby/reline
+reline              0.6.2   https://github.com/ruby/reline
 readline            0.0.4   https://github.com/ruby/readline
 fiddle              1.1.8   https://github.com/ruby/fiddle

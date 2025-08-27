@@ -103,11 +103,11 @@ RSpec.configure do |config|
 
     build_repo1
 
-    reset_paths!
+    reset!
   end
 
   config.around :each do |example|
-    FileUtils.cp_r pristine_system_gem_path, system_gem_path
+    default_system_gems
 
     with_gem_path_as(system_gem_path) do
       Bundler.ui.silence { example.run }

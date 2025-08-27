@@ -2,6 +2,9 @@ use super::super::arg::Sf;
 
 /// Which operation is being performed.
 enum Op {
+    /// A movn operation which inverts the immediate and zeroes out the other bits.
+    MOVN = 0b00,
+
     /// A movz operation which zeroes out the other bits.
     MOVZ = 0b10,
 
@@ -61,6 +64,12 @@ impl Mov {
         Self { rd, imm16, hw: hw.into(), op: Op::MOVK, sf: num_bits.into() }
     }
 
+    /// MOVN
+    /// <https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/MOVN--Move-wide-with-NOT->
+    pub fn movn(rd: u8, imm16: u16, hw: u8, num_bits: u8) -> Self {
+        Self { rd, imm16, hw: hw.into(), op: Op::MOVN, sf: num_bits.into() }
+    }
+
     /// MOVZ
     /// <https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/MOVZ--Move-wide-with-zero-?lang=en>
     pub fn movz(rd: u8, imm16: u16, hw: u8, num_bits: u8) -> Self {
@@ -102,6 +111,34 @@ mod tests {
         let inst = Mov::movk(0, 123, 0, 64);
         let result: u32 = inst.into();
         assert_eq!(0xf2800f60, result);
+    }
+
+    #[test]
+    fn test_movn_unshifted() {
+        let inst = Mov::movn(0, 123, 0, 64);
+        let result: u32 = inst.into();
+        assert_eq!(0x92800f60, result);
+    }
+
+    #[test]
+    fn test_movn_shifted_16() {
+        let inst = Mov::movn(0, 123, 16, 64);
+        let result: u32 = inst.into();
+        assert_eq!(0x92a00f60, result);
+    }
+
+    #[test]
+    fn test_movn_shifted_32() {
+        let inst = Mov::movn(0, 123, 32, 64);
+        let result: u32 = inst.into();
+        assert_eq!(0x92c00f60, result);
+    }
+
+    #[test]
+    fn test_movn_shifted_48() {
+        let inst = Mov::movn(0, 123, 48, 64);
+        let result: u32 = inst.into();
+        assert_eq!(0x92e00f60, result);
     }
 
     #[test]

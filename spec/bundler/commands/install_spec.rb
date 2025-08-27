@@ -30,22 +30,29 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "does not create ./.bundle by default" do
-      gemfile <<-G
+      install_gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
       G
 
-      bundle :install # can't use install_gemfile since it sets retry
       expect(bundled_app(".bundle")).not_to exist
     end
 
-    it "does not create ./.bundle by default when installing to system gems" do
-      gemfile <<-G
+    it "will create a ./.bundle by default", bundler: "5" do
+      install_gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
       G
 
-      bundle :install, env: { "BUNDLE_PATH__SYSTEM" => "true" } # can't use install_gemfile since it sets retry
+      expect(bundled_app(".bundle")).to exist
+    end
+
+    it "does not create ./.bundle by default when installing to system gems" do
+      install_gemfile <<-G, env: { "BUNDLE_PATH__SYSTEM" => "true" }
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
       expect(bundled_app(".bundle")).not_to exist
     end
 
@@ -1105,7 +1112,7 @@ RSpec.describe "bundle install with gem sources" do
       FileUtils.chmod("-x", foo_path)
 
       begin
-        bundle "install --redownload", raise_on_error: false
+        bundle "install --force", raise_on_error: false
       ensure
         FileUtils.chmod("+x", foo_path)
       end
@@ -1141,7 +1148,7 @@ RSpec.describe "bundle install with gem sources" do
       FileUtils.chmod("-w", gem_home)
 
       begin
-        bundle "install --redownload"
+        bundle "install --force"
       ensure
         FileUtils.chmod("+w", gem_home)
       end
@@ -1175,7 +1182,7 @@ RSpec.describe "bundle install with gem sources" do
 
       FileUtils.chmod(0o777, gems_path)
 
-      bundle "install --redownload", raise_on_error: false
+      bundle "install --force", raise_on_error: false
 
       expect(err).to include("Bundler cannot reinstall foo-1.0.0 because there's a previous installation of it at #{gems_path}/foo-1.0.0 that is unsafe to remove")
     end

@@ -129,6 +129,7 @@ init.o: $(hdrdir)/ruby/internal/intern/re.h
 init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 init.o: $(hdrdir)/ruby/internal/intern/select.h
 init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+init.o: $(hdrdir)/ruby/internal/intern/set.h
 init.o: $(hdrdir)/ruby/internal/intern/signal.h
 init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 init.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -289,6 +290,7 @@ invalid.o: $(hdrdir)/ruby/internal/intern/re.h
 invalid.o: $(hdrdir)/ruby/internal/intern/ruby.h
 invalid.o: $(hdrdir)/ruby/internal/intern/select.h
 invalid.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+invalid.o: $(hdrdir)/ruby/internal/intern/set.h
 invalid.o: $(hdrdir)/ruby/internal/intern/signal.h
 invalid.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 invalid.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -449,6 +451,7 @@ rb_fatal.o: $(hdrdir)/ruby/internal/intern/re.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/ruby.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/select.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+rb_fatal.o: $(hdrdir)/ruby/internal/intern/set.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/signal.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/string.h

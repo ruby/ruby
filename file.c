@@ -12,6 +12,7 @@
 **********************************************************************/
 
 #include "ruby/internal/config.h"
+#include "ruby/internal/attr/nonstring.h"
 
 #ifdef _WIN32
 # include "missing/file.h"
@@ -373,7 +374,7 @@ rb_str_normalize_ospath(const char *ptr, long len)
         int r = rb_enc_precise_mbclen(p, e, enc);
         if (!MBCLEN_CHARFOUND_P(r)) {
             /* invalid byte shall not happen but */
-            static const char invalid[3] = "\xEF\xBF\xBD";
+            RBIMPL_ATTR_NONSTRING() static const char invalid[3] = "\xEF\xBF\xBD";
             rb_str_append_normalized_ospath(str, p1, p-p1);
             rb_str_cat(str, invalid, sizeof(invalid));
             p += 1;

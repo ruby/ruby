@@ -128,6 +128,7 @@ update.o: $(hdrdir)/ruby/internal/intern/re.h
 update.o: $(hdrdir)/ruby/internal/intern/ruby.h
 update.o: $(hdrdir)/ruby/internal/intern/select.h
 update.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+update.o: $(hdrdir)/ruby/internal/intern/set.h
 update.o: $(hdrdir)/ruby/internal/intern/signal.h
 update.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 update.o: $(hdrdir)/ruby/internal/intern/string.h

@@ -16,7 +16,7 @@ RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_invalidations;
 RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_misses;
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 
-#if USE_YJIT && YJIT_STATS // We want vm_insns_count only on stats builds.
+#if YJIT_STATS || ZJIT_STATS // We want vm_insns_count only on stats builds.
 // Increment vm_insns_count for --yjit-stats. We increment this even when
 // --yjit or --yjit-stats is not used because branching to skip it is slower.
 // We also don't use ATOMIC_INC for performance, allowing inaccuracy on Ractors.

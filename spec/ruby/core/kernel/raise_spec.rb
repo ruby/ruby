@@ -203,6 +203,84 @@ describe "Kernel#raise" do
       e.cause.should == e1
     end
   end
+
+  it "re-raises a previously rescued exception that doesn't have a cause and isn't a cause of any other exception with setting a cause implicitly" do
+    begin
+      begin
+        raise "Error 1"
+      rescue => e1
+        begin
+          raise "Error 2"
+        rescue => e2
+          raise "Error 3"
+        end
+      end
+    rescue => e
+      e.message.should == "Error 3"
+      e.cause.should == e2
+    end
+  end
+
+  it "re-raises a previously rescued exception that doesn't have a cause and is a cause of other exception without setting a cause implicitly" do
+    begin
+      begin
+        raise "Error 1"
+      rescue => e1
+        begin
+          raise "Error 2"
+        rescue => e2
+          e1.cause.should == nil
+          e2.cause.should == e1
+          raise e1
+        end
+      end
+    rescue => e
+      e.should == e1
+      e.cause.should == nil
+    end
+  end
+
+  it "re-raises a previously rescued exception that doesn't have a cause and is a cause of other exception (that wasn't raised explicitly) without setting a cause implicitly" do
+    begin
+      begin
+        raise "Error 1"
+      rescue => e1
+        begin
+          foo # raises NameError
+        rescue => e2
+          e1.cause.should == nil
+          e2.cause.should == e1
+          raise e1
+        end
+      end
+    rescue => e
+      e.should == e1
+      e.cause.should == nil
+    end
+  end
+
+  it "re-raises a previously rescued exception that has a cause but isn't a cause of any other exception without setting a cause implicitly" do
+    begin
+      begin
+        raise "Error 1"
+      rescue => e1
+        begin
+          raise "Error 2"
+        rescue => e2
+          begin
+            raise "Error 3", cause: RuntimeError.new("Error 4")
+          rescue => e3
+            e2.cause.should == e1
+            e3.cause.should_not == e2
+            raise e2
+          end
+        end
+      end
+    rescue => e
+      e.should == e2
+      e.cause.should == e1
+    end
+  end
 end
 
 describe "Kernel#raise" do

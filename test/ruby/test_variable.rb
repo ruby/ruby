@@ -419,6 +419,7 @@ class TestVariable < Test::Unit::TestCase
         x
       end
     end
+    objs or flunk
   end
 
   def test_local_variables_with_kwarg
@@ -440,10 +441,23 @@ class TestVariable < Test::Unit::TestCase
   end
 
   def test_local_variables_encoding
-    α = 1
+    α = 1 or flunk
     b = binding
     b.eval("".encode("us-ascii"))
     assert_equal(%i[α b], b.local_variables)
+  end
+
+  def test_genivar_cache
+    bug21547 = '[Bug #21547]'
+    klass = Class.new(Array)
+    instance = klass.new
+    instance.instance_variable_set(:@a1, 1)
+    instance.instance_variable_set(:@a2, 2)
+    Fiber.new do
+      instance.instance_variable_set(:@a3, 3)
+      instance.instance_variable_set(:@a4, 4)
+    end.resume
+    assert_equal 4, instance.instance_variable_get(:@a4)
   end
 
   private
