@@ -80,6 +80,7 @@ zjit-test: libminiruby.a
 	@set +e; \
 	$(ZJIT_NEXTEST_ENV) $(CARGO) nextest run \
 		--manifest-path '$(top_srcdir)/zjit/Cargo.toml' \
+		--no-fail-fast \
 		'--features=$(ZJIT_TEST_FEATURES)' \
 		$(ZJIT_TESTS); \
 	exit_code=$$?; \
