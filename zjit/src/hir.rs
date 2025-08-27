@@ -1671,6 +1671,7 @@ impl Function {
                                 self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
                             let getivar = self.push_insn(block, Insn::GetIvar { self_val, id, state });
                             self.make_equal_to(insn_id, getivar);
                         } else {
@@ -3323,8 +3324,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_getinstancevariable => {
                     let id = ID(get_arg(pc, 0).as_u64());
+
                     // ic is in arg 1
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    // TODO: We only really need this if self_val is a class/module
+                    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state: exit_id });
                     let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, state: exit_id });
                     state.stack_push(result);
                 }
@@ -3332,6 +3336,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let id = ID(get_arg(pc, 0).as_u64());
                     // ic is in arg 1
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    // TODO: We only really need this if self_val is a class/module
+                    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state: exit_id });
                     let val = state.stack_pop()?;
                     fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, val, state: exit_id });
                 }
@@ -5044,9 +5050,10 @@ mod tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v3:BasicObject = GetIvar v0, :@foo
+          PatchPoint SingleRactorMode
+          v4:BasicObject = GetIvar v0, :@foo
           CheckInterrupts
-          Return v3
+          Return v4
         ");
     }
 
@@ -5061,6 +5068,7 @@ mod tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
           v2:Fixnum[1] = Const Value(1)
+          PatchPoint SingleRactorMode
           SetIvar v0, :@foo, v2
           CheckInterrupts
           Return v2
@@ -5336,12 +5344,15 @@ mod tests {
           v1:NilClass = Const Value(nil)
           v2:NilClass = Const Value(nil)
           v3:NilClass = Const Value(nil)
-          v6:BasicObject = GetIvar v0, :@a
-          v8:BasicObject = GetIvar v0, :@b
-          v10:BasicObject = GetIvar v0, :@c
-          v12:ArrayExact = NewArray v6, v8, v10
+          PatchPoint SingleRactorMode
+          v7:BasicObject = GetIvar v0, :@a
+          PatchPoint SingleRactorMode
+          v10:BasicObject = GetIvar v0, :@b
+          PatchPoint SingleRactorMode
+          v13:BasicObject = GetIvar v0, :@c
+          v15:ArrayExact = NewArray v7, v10, v13
           CheckInterrupts
-          Return v12
+          Return v15
         ");
         assert_contains_opcode("reverse_even", YARVINSN_opt_reverse);
         assert_snapshot!(hir_string("reverse_even"), @r"
@@ -5351,13 +5362,17 @@ mod tests {
           v2:NilClass = Const Value(nil)
           v3:NilClass = Const Value(nil)
           v4:NilClass = Const Value(nil)
-          v7:BasicObject = GetIvar v0, :@a
-          v9:BasicObject = GetIvar v0, :@b
-          v11:BasicObject = GetIvar v0, :@c
-          v13:BasicObject = GetIvar v0, :@d
-          v15:ArrayExact = NewArray v7, v9, v11, v13
+          PatchPoint SingleRactorMode
+          v8:BasicObject = GetIvar v0, :@a
+          PatchPoint SingleRactorMode
+          v11:BasicObject = GetIvar v0, :@b
+          PatchPoint SingleRactorMode
+          v14:BasicObject = GetIvar v0, :@c
+          PatchPoint SingleRactorMode
+          v17:BasicObject = GetIvar v0, :@d
+          v19:ArrayExact = NewArray v8, v11, v14, v17
           CheckInterrupts
-          Return v15
+          Return v19
         ");
     }
 
@@ -7421,9 +7436,10 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v3:BasicObject = GetIvar v0, :@foo
+          PatchPoint SingleRactorMode
+          v4:BasicObject = GetIvar v0, :@foo
           CheckInterrupts
-          Return v3
+          Return v4
         ");
     }
 
@@ -7436,6 +7452,7 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
           v2:Fixnum[1] = Const Value(1)
+          PatchPoint SingleRactorMode
           SetIvar v0, :@foo, v2
           CheckInterrupts
           Return v2
