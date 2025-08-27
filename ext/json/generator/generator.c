@@ -9,6 +9,12 @@
 
 /* ruby api and some helpers */
 
+enum duplicate_key_action {
+    JSON_DEPRECATED = 0,
+    JSON_IGNORE,
+    JSON_RAISE,
+};
+
 typedef struct JSON_Generator_StateStruct {
     VALUE indent;
     VALUE space;
@@ -20,6 +26,8 @@ typedef struct JSON_Generator_StateStruct {
     long max_nesting;
     long depth;
     long buffer_initial_length;
+
+    enum duplicate_key_action on_duplicate_key;
 
     bool allow_nan;
     bool ascii_only;
@@ -34,7 +42,7 @@ typedef struct JSON_Generator_StateStruct {
 static VALUE mJSON, cState, cFragment, eGeneratorError, eNestingError, Encoding_UTF_8;
 
 static ID i_to_s, i_to_json, i_new, i_pack, i_unpack, i_create_id, i_extend, i_encode;
-static VALUE sym_indent, sym_space, sym_space_before, sym_object_nl, sym_array_nl, sym_max_nesting, sym_allow_nan,
+static VALUE sym_indent, sym_space, sym_space_before, sym_object_nl, sym_array_nl, sym_max_nesting, sym_allow_nan, sym_allow_duplicate_key,
              sym_ascii_only, sym_depth, sym_buffer_initial_length, sym_script_safe, sym_escape_slash, sym_strict, sym_as_json;
 
 
@@ -987,8 +995,11 @@ static inline VALUE vstate_get(struct generate_json_data *data)
 }
 
 struct hash_foreach_arg {
+    VALUE hash;
     struct generate_json_data *data;
-    int iter;
+    int first_key_type;
+    bool first;
+    bool mixed_keys_encountered;
 };
 
 static VALUE
@@ -1006,6 +1017,22 @@ convert_string_subclass(VALUE key)
     return key_to_s;
 }
 
+NOINLINE()
+static void
+json_inspect_hash_with_mixed_keys(struct hash_foreach_arg *arg)
+{
+    if (arg->mixed_keys_encountered) {
+        return;
+    }
+    arg->mixed_keys_encountered = true;
+
+    JSON_Generator_State *state = arg->data->state;
+    if (state->on_duplicate_key != JSON_IGNORE) {
+        VALUE do_raise = state->on_duplicate_key == JSON_RAISE ? Qtrue : Qfalse;
+        rb_funcall(mJSON, rb_intern("on_mixed_keys_hash"), 2, arg->hash, do_raise);
+    }
+}
+
 static int
 json_object_i(VALUE key, VALUE val, VALUE _arg)
 {
@@ -1016,21 +1043,33 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     JSON_Generator_State *state = data->state;
 
     long depth = state->depth;
-    int j;
+    int key_type = rb_type(key);
 
-    if (arg->iter > 0) fbuffer_append_char(buffer, ',');
+    if (arg->first) {
+        arg->first = false;
+        arg->first_key_type = key_type;
+    }
+    else {
+        fbuffer_append_char(buffer, ',');
+    }
+
     if (RB_UNLIKELY(data->state->object_nl)) {
         fbuffer_append_str(buffer, data->state->object_nl);
     }
     if (RB_UNLIKELY(data->state->indent)) {
-        for (j = 0; j < depth; j++) {
-            fbuffer_append_str(buffer, data->state->indent);
-        }
+        fbuffer_append_str_repeat(buffer, data->state->indent, depth);
     }
 
     VALUE key_to_s;
-    switch (rb_type(key)) {
+    bool as_json_called = false;
+
+  start:
+    switch (key_type) {
         case T_STRING:
+            if (RB_UNLIKELY(arg->first_key_type != T_STRING)) {
+                json_inspect_hash_with_mixed_keys(arg);
+            }
+
             if (RB_LIKELY(RBASIC_CLASS(key) == rb_cString)) {
                 key_to_s = key;
             } else {
@@ -1038,9 +1077,23 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
             }
             break;
         case T_SYMBOL:
+            if (RB_UNLIKELY(arg->first_key_type != T_SYMBOL)) {
+                json_inspect_hash_with_mixed_keys(arg);
+            }
+
             key_to_s = rb_sym2str(key);
             break;
         default:
+            if (data->state->strict) {
+                if (RTEST(data->state->as_json) && !as_json_called) {
+                    key = rb_proc_call_with_block(data->state->as_json, 1, &key, Qnil);
+                    key_type = rb_type(key);
+                    as_json_called = true;
+                    goto start;
+                } else {
+                    raise_generator_error(key, "%"PRIsVALUE" not allowed as object key in JSON", CLASS_OF(key));
+                }
+            }
             key_to_s = rb_convert_type(key, T_STRING, "String", "to_s");
             break;
     }
@@ -1055,7 +1108,6 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     if (RB_UNLIKELY(state->space)) fbuffer_append_str(buffer, data->state->space);
     generate_json(buffer, data, val);
 
-    arg->iter++;
     return ST_CONTINUE;
 }
 
@@ -1071,7 +1123,6 @@ static inline long increase_depth(struct generate_json_data *data)
 
 static void generate_json_object(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
-    int j;
     long depth = increase_depth(data);
 
     if (RHASH_SIZE(obj) == 0) {
@@ -1083,8 +1134,9 @@ static void generate_json_object(FBuffer *buffer, struct generate_json_data *dat
     fbuffer_append_char(buffer, '{');
 
     struct hash_foreach_arg arg = {
+        .hash = obj,
         .data = data,
-        .iter = 0,
+        .first = true,
     };
     rb_hash_foreach(obj, json_object_i, (VALUE)&arg);
 
@@ -1092,9 +1144,7 @@ static void generate_json_object(FBuffer *buffer, struct generate_json_data *dat
     if (RB_UNLIKELY(data->state->object_nl)) {
         fbuffer_append_str(buffer, data->state->object_nl);
         if (RB_UNLIKELY(data->state->indent)) {
-            for (j = 0; j < depth; j++) {
-                fbuffer_append_str(buffer, data->state->indent);
-            }
+            fbuffer_append_str_repeat(buffer, data->state->indent, depth);
         }
     }
     fbuffer_append_char(buffer, '}');
@@ -1102,7 +1152,6 @@ static void generate_json_object(FBuffer *buffer, struct generate_json_data *dat
 
 static void generate_json_array(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
-    int i, j;
     long depth = increase_depth(data);
 
     if (RARRAY_LEN(obj) == 0) {
@@ -1113,15 +1162,13 @@ static void generate_json_array(FBuffer *buffer, struct generate_json_data *data
 
     fbuffer_append_char(buffer, '[');
     if (RB_UNLIKELY(data->state->array_nl)) fbuffer_append_str(buffer, data->state->array_nl);
-    for (i = 0; i < RARRAY_LEN(obj); i++) {
+    for (int i = 0; i < RARRAY_LEN(obj); i++) {
         if (i > 0) {
             fbuffer_append_char(buffer, ',');
             if (RB_UNLIKELY(data->state->array_nl)) fbuffer_append_str(buffer, data->state->array_nl);
         }
         if (RB_UNLIKELY(data->state->indent)) {
-            for (j = 0; j < depth; j++) {
-                fbuffer_append_str(buffer, data->state->indent);
-            }
+            fbuffer_append_str_repeat(buffer, data->state->indent, depth);
         }
         generate_json(buffer, data, RARRAY_AREF(obj, i));
     }
@@ -1129,9 +1176,7 @@ static void generate_json_array(FBuffer *buffer, struct generate_json_data *data
     if (RB_UNLIKELY(data->state->array_nl)) {
         fbuffer_append_str(buffer, data->state->array_nl);
         if (RB_UNLIKELY(data->state->indent)) {
-            for (j = 0; j < depth; j++) {
-                fbuffer_append_str(buffer, data->state->indent);
-            }
+            fbuffer_append_str_repeat(buffer, data->state->indent, depth);
         }
     }
     fbuffer_append_char(buffer, ']');
@@ -1793,6 +1838,19 @@ static VALUE cState_ascii_only_set(VALUE self, VALUE enable)
     return Qnil;
 }
 
+static VALUE cState_allow_duplicate_key_p(VALUE self)
+{
+    GET_STATE(self);
+    switch (state->on_duplicate_key) {
+        case JSON_IGNORE:
+            return Qtrue;
+        case JSON_DEPRECATED:
+            return Qnil;
+        case JSON_RAISE:
+            return Qfalse;
+    }
+}
+
 /*
  * call-seq: depth
  *
@@ -1882,6 +1940,7 @@ static int configure_state_i(VALUE key, VALUE val, VALUE _arg)
     else if (key == sym_script_safe)           { state->script_safe = RTEST(val); }
     else if (key == sym_escape_slash)          { state->script_safe = RTEST(val); }
     else if (key == sym_strict)                { state->strict = RTEST(val); }
+    else if (key == sym_allow_duplicate_key)   { state->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
     else if (key == sym_as_json)               {
         VALUE proc = RTEST(val) ? rb_convert_type(val, T_DATA, "Proc", "to_proc") : Qfalse;
         state_write_value(data, &state->as_json, proc);
@@ -2007,6 +2066,8 @@ void Init_generator(void)
     rb_define_method(cState, "generate", cState_generate, -1);
     rb_define_alias(cState, "generate_new", "generate"); // :nodoc:
 
+    rb_define_private_method(cState, "allow_duplicate_key?", cState_allow_duplicate_key_p, 0);
+
     rb_define_singleton_method(cState, "generate", cState_m_generate, 3);
 
     VALUE mGeneratorMethods = rb_define_module_under(mGenerator, "GeneratorMethods");
@@ -2071,6 +2132,7 @@ void Init_generator(void)
     sym_escape_slash = ID2SYM(rb_intern("escape_slash"));
     sym_strict = ID2SYM(rb_intern("strict"));
     sym_as_json = ID2SYM(rb_intern("as_json"));
+    sym_allow_duplicate_key = ID2SYM(rb_intern("allow_duplicate_key"));
 
     usascii_encindex = rb_usascii_encindex();
     utf8_encindex = rb_utf8_encindex();

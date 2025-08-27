@@ -519,9 +519,6 @@ make_counters! {
     opt_aset_not_fixnum,
     opt_aset_not_hash,
 
-    opt_aref_with_qundef,
-    opt_aset_with_qundef,
-
     opt_case_dispatch_megamorphic,
 
     opt_getconstant_path_ic_miss,
@@ -792,8 +789,8 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         set_stat_usize!(hash, "context_cache_bytes", crate::core::CTX_ENCODE_CACHE_BYTES + crate::core::CTX_DECODE_CACHE_BYTES);
 
         // VM instructions count
-        if rb_vm_insns_count > 0 {
-            set_stat_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
+        if rb_vm_insn_count > 0 {
+            set_stat_usize!(hash, "vm_insns_count", rb_vm_insn_count as usize);
         }
 
         set_stat_usize!(hash, "live_iseq_count", rb_yjit_live_iseq_count as usize);
@@ -864,8 +861,8 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         set_stat_double!(hash, "avg_len_in_yjit", avg_len_in_yjit);
 
         // Proportion of instructions that retire in YJIT
-        if rb_vm_insns_count > 0 {
-            let total_insns_count = retired_in_yjit + rb_vm_insns_count;
+        if rb_vm_insn_count > 0 {
+            let total_insns_count = retired_in_yjit + rb_vm_insn_count;
             set_stat_usize!(hash, "total_insns_count", total_insns_count as usize);
 
             let ratio_in_yjit: f64 = 100.0 * retired_in_yjit as f64 / total_insns_count as f64;

@@ -1273,7 +1273,7 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
 
         // Ensure complex object don't appear as embedded
         if (RB_TYPE_P(obj, T_OBJECT) || IMEMO_TYPE_P(obj, imemo_fields)) {
-            RUBY_ASSERT(!FL_TEST_RAW(obj, ROBJECT_EMBED));
+            RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
         }
     }
     else {

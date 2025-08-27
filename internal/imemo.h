@@ -272,8 +272,8 @@ struct rb_fields {
 
 // IMEMO/fields and T_OBJECT have exactly the same layout.
 // This is useful for JIT and common codepaths.
-#define OBJ_FIELD_EMBED ROBJECT_EMBED
-STATIC_ASSERT(imemo_fields_flags, OBJ_FIELD_EMBED == IMEMO_FL_USER0);
+#define OBJ_FIELD_HEAP ROBJECT_HEAP
+STATIC_ASSERT(imemo_fields_flags, OBJ_FIELD_HEAP == IMEMO_FL_USER0);
 STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.ary) == offsetof(struct rb_fields, as.embed.fields));
 STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.external.ptr));
 STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.complex.table));
@@ -303,11 +303,11 @@ rb_imemo_fields_ptr(VALUE fields_obj)
 
     RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields) || RB_TYPE_P(fields_obj, T_OBJECT));
 
-    if (RB_LIKELY(FL_TEST_RAW(fields_obj, OBJ_FIELD_EMBED))) {
-        return IMEMO_OBJ_FIELDS(fields_obj)->as.embed.fields;
+    if (UNLIKELY(FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP))) {
+        return IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr;
     }
     else {
-        return IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr;
+        return IMEMO_OBJ_FIELDS(fields_obj)->as.embed.fields;
     }
 }
 
@@ -319,7 +319,7 @@ rb_imemo_fields_complex_tbl(VALUE fields_obj)
     }
 
     RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields) || RB_TYPE_P(fields_obj, T_OBJECT));
-    RUBY_ASSERT(!FL_TEST_RAW(fields_obj, OBJ_FIELD_EMBED));
+    RUBY_ASSERT(FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP));
 
     // Some codepaths unconditionally access the fields_ptr, and assume it can be used as st_table if the
     // shape is too_complex.

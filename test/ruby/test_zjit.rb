@@ -1055,15 +1055,6 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
-
-  def test_opt_aref_with
-    assert_compiles ':ok', %q{
-      def aref_with(hash) = hash["key"]
-
-      aref_with({ "key" => :ok })
-    }
-  end
-
   def test_putself
     assert_compiles '3', %q{
       class Integer
@@ -1499,8 +1490,8 @@ class TestZJIT < Test::Unit::TestCase
       def test = 1
       test
       [
-        RubyVM::ZJIT.stats[:zjit_insns_count] > 0,
-        RubyVM::ZJIT.stats(:zjit_insns_count) > 0,
+        RubyVM::ZJIT.stats[:zjit_insn_count] > 0,
+        RubyVM::ZJIT.stats(:zjit_insn_count) > 0,
       ]
     }, stats: true
   end

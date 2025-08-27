@@ -2244,8 +2244,11 @@ impl Function {
             None => {},
         }
 
-        if get_option!(dump_hir_graphviz) {
-            println!("{}", FunctionGraphvizPrinter::new(&self));
+        if let Some(filename) = &get_option!(dump_hir_graphviz) {
+            use std::fs::OpenOptions;
+            use std::io::Write;
+            let mut file = OpenOptions::new().append(true).open(filename).unwrap();
+            writeln!(file, "{}", FunctionGraphvizPrinter::new(&self)).unwrap();
         }
     }
 
@@ -2498,7 +2501,7 @@ impl<'a> std::fmt::Display for FunctionGraphvizPrinter<'a> {
             }
             writeln!(f, "</TABLE>>];")?;
             for (src, dst) in edges {
-                writeln!(f, "  {block_id}:{src} -> {dst}:params;")?;
+                writeln!(f, "  {block_id}:{src} -> {dst}:params:n;")?;
             }
         }
         writeln!(f, "}}")
@@ -2875,9 +2878,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             let exit_state = state.clone();
             profiles.profile_stack(&exit_state);
 
-            // Increment zjit_insns_count for each YARV instruction if --zjit-stats is enabled.
+            // Increment zjit_insn_count for each YARV instruction if --zjit-stats is enabled.
             if get_option!(stats) {
-                fun.push_insn(block, Insn::IncrCounter(Counter::zjit_insns_count));
+                fun.push_insn(block, Insn::IncrCounter(Counter::zjit_insn_count));
             }
 
             // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
@@ -3190,29 +3193,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         state.stack_pop()?;
                         n -= 1;
                     }
-                }
-                YARVINSN_opt_aref_with => {
-                    // NB: opt_aref_with has an instruction argument for the call at get_arg(0)
-                    let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
-                    let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
-                        // Unknown call type; side-exit into the interpreter
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownCallType });
-                        break;  // End the block
-                    }
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
-
-                    assert_eq!(1, argc, "opt_aref_with should only be emitted for argc=1");
-                    let aref_arg = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let args = vec![aref_arg];
-
-                    let mut send_state = state.clone();
-                    send_state.stack_push(aref_arg);
-                    let send_state = fun.push_insn(block, Insn::Snapshot { state: send_state });
-                    let recv = state.stack_pop()?;
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, cd, args, state: send_state });
-                    state.stack_push(send);
                 }
                 YARVINSN_opt_neq => {
                     // NB: opt_neq has two cd; get_arg(0) is for eq and get_arg(1) is for neq
@@ -5224,22 +5204,6 @@ mod tests {
     }
 
     #[test]
-    fn test_aref_with() {
-        eval("
-            def test(a) = a['string lit triggers aref_with']
-        ");
-        assert_contains_opcode("test", YARVINSN_opt_aref_with);
-        assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:2:
-        bb0(v0:BasicObject, v1:BasicObject):
-          v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v5:BasicObject = SendWithoutBlock v1, :[], v3
-          CheckInterrupts
-          Return v5
-        ");
-    }
-
-    #[test]
     fn opt_empty_p() {
         eval("
             def test(x) = x.empty?
@@ -5713,7 +5677,7 @@ mod graphviz_tests {
         <TR><TD ALIGN="left" PORT="v9">CheckInterrupts&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v10">Return v7&nbsp;</TD></TR>
         </TABLE>>];
-          bb0:v6 -> bb1:params;
+          bb0:v6 -> bb1:params:n;
           bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v11:BasicObject, v12:BasicObject)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v14">v14:Fixnum[4] = Const Value(4)&nbsp;</TD></TR>

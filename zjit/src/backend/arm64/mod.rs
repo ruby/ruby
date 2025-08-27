@@ -1737,7 +1737,7 @@ mod tests {
     fn test_store_unserviceable() {
         let (mut asm, mut cb) = setup_asm();
         // This would put the source into SCRATCH_REG, messing up the destination
-        asm.store(Opnd::mem(64, Opnd::Reg(Assembler::SCRATCH_REG), 0), 0x83902.into());
+        asm.store(Opnd::mem(64, SCRATCH_OPND, 0), 0x83902.into());
 
         asm.compile_with_num_regs(&mut cb, 0);
     }

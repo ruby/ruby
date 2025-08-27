@@ -9,7 +9,7 @@ use crate::invariants::{track_bop_assumption, track_cme_assumption, track_single
 use crate::gc::{append_gc_offsets, get_or_create_iseq_payload, get_or_create_iseq_payload_ptr, IseqPayload, IseqStatus};
 use crate::state::ZJITState;
 use crate::stats::incr_counter;
-use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::compile_time_ns};
+use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_ns, exit_compilation_failure}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SCRATCH_OPND, SP};
 use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SpecialBackrefSymbol, SELF_PARAM_IDX};
@@ -73,45 +73,36 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
         return std::ptr::null();
     }
 
-    // Reject ISEQs with very large temp stacks.
-    // We cannot encode too large offsets to access locals in arm64.
-    let stack_max = unsafe { rb_get_iseq_body_stack_max(iseq) };
-    if stack_max >= i8::MAX as u32 {
-        debug!("ISEQ stack too large: {stack_max}");
-        return std::ptr::null();
-    }
-
     // Take a lock to avoid writing to ISEQ in parallel with Ractors.
     // with_vm_lock() does nothing if the program doesn't use Ractors.
-    let code_ptr = with_vm_lock(src_loc!(), || {
-        with_time_stat(compile_time_ns, || gen_iseq_entry_point(iseq))
-    });
+    with_vm_lock(src_loc!(), || {
+        let cb = ZJITState::get_code_block();
+        let mut code_ptr = with_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq));
 
-    // Assert that the ISEQ compiles if RubyVM::ZJIT.assert_compiles is enabled
-    if ZJITState::assert_compiles_enabled() && code_ptr.is_null() {
-        let iseq_location = iseq_get_location(iseq, 0);
-        panic!("Failed to compile: {iseq_location}");
-    }
+        if code_ptr.is_none() {
+            // Assert that the ISEQ compiles if RubyVM::ZJIT.assert_compiles is enabled
+            if ZJITState::assert_compiles_enabled() {
+                let iseq_location = iseq_get_location(iseq, 0);
+                panic!("Failed to compile: {iseq_location}");
+            }
 
-    code_ptr
-}
+            // For --zjit-stats, generate an entry that just increments exit_compilation_failure and exits
+            if get_option!(stats) {
+                code_ptr = gen_compilation_failure_counter(cb);
+            }
+        }
 
-/// See [gen_iseq_entry_point_body]. This wrapper is to make sure cb.mark_all_executable()
-/// is called even if gen_iseq_entry_point_body() partially fails and returns a null pointer.
-fn gen_iseq_entry_point(iseq: IseqPtr) -> *const u8 {
-    let cb = ZJITState::get_code_block();
-    let code_ptr = gen_iseq_entry_point_body(cb, iseq);
+        // Always mark the code region executable if asm.compile() has been used.
+        // We need to do this even if code_ptr is None because, whether gen_entry()
+        // fails or not, gen_iseq() may have already used asm.compile().
+        cb.mark_all_executable();
 
-    // Always mark the code region executable if asm.compile() has been used.
-    // We need to do this even if code_ptr is null because, whether gen_entry() or
-    // gen_function_stub() fails or not, gen_function() has already used asm.compile().
-    cb.mark_all_executable();
-
-    code_ptr.map_or(std::ptr::null(), |ptr| ptr.raw_ptr(cb))
+        code_ptr.map_or(std::ptr::null(), |ptr| ptr.raw_ptr(cb))
+    })
 }
 
 /// Compile an entry point for a given ISEQ
-fn gen_iseq_entry_point_body(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<CodePtr> {
+fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<CodePtr> {
     // Compile ISEQ into High-level IR
     let Some(function) = compile_iseq(iseq) else {
         incr_counter!(compilation_failure);
@@ -283,7 +274,6 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
             let insn = function.find(insn_id);
             if let Err(last_snapshot) = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn) {
                 debug!("ZJIT: gen_function: Failed to compile insn: {insn_id} {insn}. Generating side-exit.");
-                incr_counter!(failed_gen_insn);
                 gen_side_exit(&mut jit, &mut asm, &SideExitReason::UnhandledInstruction(insn_id), &function.frame_state(last_snapshot));
                 // Don't bother generating code after a side-exit. We won't run it.
                 // TODO(max): Generate ud2 or equivalent.
@@ -419,10 +409,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         | &Insn::Throw { state, .. }
         | &Insn::ToArray { state, .. }
         | &Insn::ToNewArray { state, .. }
-        => {
-            incr_counter!(failed_gen_insn_unexpected);
-            return Err(state);
-        }
+        => return Err(state),
     };
 
     assert!(insn.has_output(), "Cannot write LIR output of HIR instruction with no output: {insn}");
@@ -873,7 +860,7 @@ fn gen_send_without_block(
 ) -> lir::Opnd {
     // Note that it's incorrect to use this frame state to side exit because
     // the state might not be on the boundary of an interpreter instruction.
-    // For example, `opt_aref_with` pushes to the stack and then sends.
+    // For example, `opt_str_uminus` pushes to the stack and then sends.
     asm_comment!(asm, "spill frame state");
 
     // Save PC and SP
@@ -1378,6 +1365,15 @@ pub fn local_size_and_idx_to_bp_offset(local_size: usize, local_idx: usize) -> i
 
 /// Convert ISEQ into High-level IR
 fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
+    // Reject ISEQs with very large temp stacks.
+    // We cannot encode too large offsets to access locals in arm64.
+    let stack_max = unsafe { rb_get_iseq_body_stack_max(iseq) };
+    if stack_max >= i8::MAX as u32 {
+        debug!("ISEQ stack too large: {stack_max}");
+        incr_counter!(failed_iseq_stack_too_large);
+        return None;
+    }
+
     let mut function = match iseq_to_hir(iseq) {
         Ok(function) => function,
         Err(err) => {
@@ -1508,7 +1504,7 @@ c_callable! {
 
                 // Exit to the interpreter
                 spill_stack(iseq, cfp, sp);
-                return ZJITState::get_exit_trampoline().raw_ptr(cb);
+                return ZJITState::get_exit_trampoline_with_counter().raw_ptr(cb);
             }
 
             // Otherwise, attempt to compile the ISEQ. We have to mark_all_executable() beyond this point.
@@ -1518,7 +1514,7 @@ c_callable! {
             } else {
                 // Exit to the interpreter
                 spill_stack(iseq, cfp, sp);
-                ZJITState::get_exit_trampoline()
+                ZJITState::get_exit_trampoline_with_counter()
             };
             cb.mark_all_executable();
             code_ptr.raw_ptr(cb)
@@ -1610,6 +1606,20 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Option<CodePtr> {
     })
 }
 
+/// Generate a trampoline that increments exit_compilation_failure and jumps to exit_trampoline.
+pub fn gen_exit_trampoline_with_counter(cb: &mut CodeBlock, exit_trampoline: CodePtr) -> Option<CodePtr> {
+    let mut asm = Assembler::new();
+
+    asm_comment!(asm, "function stub exit trampoline");
+    gen_incr_counter(&mut asm, exit_compilation_failure);
+    asm.jmp(Target::CodePtr(exit_trampoline));
+
+    asm.compile(cb).map(|(code_ptr, gc_offsets)| {
+        assert_eq!(gc_offsets.len(), 0);
+        code_ptr
+    })
+}
+
 fn gen_push_opnds(jit: &mut JITState, asm: &mut Assembler, opnds: &[Opnd]) -> lir::Opnd {
     let n = opnds.len();
 
@@ -1664,6 +1674,18 @@ fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>
     gen_pop_opnds(asm, &strings);
 
     result
+}
+
+/// Generate a JIT entry that just increments exit_compilation_failure and exits
+fn gen_compilation_failure_counter(cb: &mut CodeBlock) -> Option<CodePtr> {
+    let mut asm = Assembler::new();
+    gen_incr_counter(&mut asm, exit_compilation_failure);
+    asm.cret(Qundef.into());
+
+    asm.compile(cb).map(|(code_ptr, gc_offsets)| {
+        assert_eq!(0, gc_offsets.len());
+        code_ptr
+    })
 }
 
 /// Given the number of spill slots needed for a function, return the number of bytes

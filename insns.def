@@ -1541,44 +1541,6 @@ opt_aset
     }
 }
 
-/* recv[str] = set */
-DEFINE_INSN
-opt_aset_with
-(VALUE key, CALL_DATA cd)
-(VALUE recv, VALUE val)
-(VALUE val)
-/* Same discussion as opt_aset. */
-// attr bool leaf = false; /* has rb_funcall() */ /* calls #hash */
-{
-    VALUE tmp = vm_opt_aset_with(recv, key, val);
-
-    if (!UNDEF_P(tmp)) {
-        val = tmp;
-    }
-    else {
-        TOPN(0) = rb_str_resurrect(key);
-        PUSH(val);
-        CALL_SIMPLE_METHOD();
-    }
-}
-
-/* recv[str] */
-DEFINE_INSN
-opt_aref_with
-(VALUE key, CALL_DATA cd)
-(VALUE recv)
-(VALUE val)
-/* Same discussion as opt_aref. */
-// attr bool leaf = false; /* has rb_funcall() */ /* calls #yield */
-{
-    val = vm_opt_aref_with(recv, key);
-
-    if (UNDEF_P(val)) {
-        PUSH(rb_str_resurrect(key));
-        CALL_SIMPLE_METHOD();
-    }
-}
-
 /* optimized length */
 DEFINE_INSN
 opt_length

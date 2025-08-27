@@ -499,7 +499,7 @@ impl VALUE {
 
     pub fn embedded_p(self) -> bool {
         unsafe {
-            FL_TEST_RAW(self, VALUE(ROBJECT_EMBED as usize)) != VALUE(0)
+            FL_TEST_RAW(self, VALUE(ROBJECT_HEAP as usize)) == VALUE(0)
         }
     }
 

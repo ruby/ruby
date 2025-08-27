@@ -46,10 +46,9 @@
 
 /* Flags of RObject
  *
- * 4:    ROBJECT_EMBED
- *           The object has its instance variables embedded (the array of
- *           instance variables directly follow the object, rather than being
- *           on a separately allocated buffer).
+ * 4:    ROBJECT_HEAP
+ *           The object has its instance variables in a separately allocated buffer.
+ *           This can be either a flat buffer of reference, or an st_table for complex objects.
  */
 
 /*!
@@ -126,7 +125,7 @@ rb_class_allocate_instance(VALUE klass)
     }
 
     NEWOBJ_OF(o, struct RObject, klass,
-              T_OBJECT | ROBJECT_EMBED | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0), size, 0);
+              T_OBJECT | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0), size, 0);
     VALUE obj = (VALUE)o;
 
     RUBY_ASSERT(RSHAPE_TYPE_P(RBASIC_SHAPE_ID(obj), SHAPE_ROOT));
