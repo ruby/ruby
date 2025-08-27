@@ -1266,12 +1266,12 @@ impl Assembler
             // then load SCRATCH_REG into the destination when it's safe.
             if !old_moves.is_empty() {
                 // Make sure it's safe to use SCRATCH_REG
-                assert!(old_moves.iter().all(|&(_, opnd)| opnd != Opnd::Reg(Assembler::SCRATCH_REG)));
+                assert!(old_moves.iter().all(|&(_, opnd)| opnd != SCRATCH_OPND));
 
                 // Move SCRATCH <- opnd, and delay reg <- SCRATCH
                 let (reg, opnd) = old_moves.remove(0);
                 new_moves.push((Assembler::SCRATCH_REG, opnd));
-                old_moves.push((reg, Opnd::Reg(Assembler::SCRATCH_REG)));
+                old_moves.push((reg, SCRATCH_OPND));
             }
         }
         new_moves
@@ -1586,12 +1586,12 @@ impl Assembler
 
                 asm_comment!(self, "save cfp->pc");
                 self.load_into(SCRATCH_OPND, Opnd::const_ptr(pc));
-                self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::Reg(Assembler::SCRATCH_REG));
+                self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), SCRATCH_OPND);
 
                 asm_comment!(self, "save cfp->sp");
                 self.lea_into(SCRATCH_OPND, Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
                 let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
-                self.store(cfp_sp, Opnd::Reg(Assembler::SCRATCH_REG));
+                self.store(cfp_sp, SCRATCH_OPND);
 
                 if get_option!(stats) {
                     asm_comment!(self, "increment an exit counter");
