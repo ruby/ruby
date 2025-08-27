@@ -355,6 +355,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Jump(branch) => no_output!(gen_jump(jit, asm, branch)),
         Insn::IfTrue { val, target } => no_output!(gen_if_true(jit, asm, opnd!(val), target)),
         Insn::IfFalse { val, target } => no_output!(gen_if_false(jit, asm, opnd!(val), target)),
+        &Insn::Send { cd, blockiseq, state, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state)),
         Insn::SendWithoutBlock { cd, state, .. } => gen_send_without_block(jit, asm, *cd, &function.frame_state(*state)),
         // Give up SendWithoutBlockDirect for 6+ args since asm.ccall() doesn't support it.
         Insn::SendWithoutBlockDirect { cd, state, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
@@ -407,7 +408,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ArrayMax { state, .. }
         | &Insn::FixnumDiv { state, .. }
         | &Insn::FixnumMod { state, .. }
-        | &Insn::Send { state, .. }
         | &Insn::Throw { state, .. }
         => return Err(state),
     };
@@ -881,6 +881,36 @@ fn gen_if_false(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch:
     asm.jmp(if_false);
 
     asm.write_label(if_true);
+}
+
+/// Compile a dynamic dispatch with block
+fn gen_send(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    cd: *const rb_call_data,
+    blockiseq: IseqPtr,
+    state: &FrameState,
+) -> lir::Opnd {
+    // Save PC and SP
+    gen_save_pc(asm, state);
+    gen_save_sp(asm, state.stack().len());
+
+    // Spill locals and stack
+    gen_spill_locals(jit, asm, state);
+    gen_spill_stack(jit, asm, state);
+
+    asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
+    unsafe extern "C" {
+        fn rb_vm_send(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
+    }
+    let ret = asm.ccall(
+        rb_vm_send as *const u8,
+        vec![EC, CFP, (cd as usize).into(), VALUE(blockiseq as usize).into()],
+    );
+    // TODO: Add a PatchPoint here that can side-exit the function if the callee messed with
+    // the frame's locals
+
+    ret
 }
 
 /// Compile a dynamic dispatch without block
@@ -1383,7 +1413,7 @@ fn param_opnd(idx: usize) -> Opnd {
 }
 
 /// Inverse of ep_offset_to_local_idx(). See ep_offset_to_local_idx() for details.
-fn local_idx_to_ep_offset(iseq: IseqPtr, local_idx: usize) -> i32 {
+pub fn local_idx_to_ep_offset(iseq: IseqPtr, local_idx: usize) -> i32 {
     let local_size = unsafe { get_iseq_body_local_table_size(iseq) };
     local_size_and_idx_to_ep_offset(local_size as usize, local_idx)
 }

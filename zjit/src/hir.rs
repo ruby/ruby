@@ -4,7 +4,7 @@
 #![allow(non_upper_case_globals)]
 
 use crate::{
-    cast::IntoUsize, cruby::*, gc::{get_or_create_iseq_payload, IseqPayload}, options::{get_option, DumpHIR}, state::ZJITState
+    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, gc::{get_or_create_iseq_payload, IseqPayload}, options::{get_option, DumpHIR}, state::ZJITState
 };
 use std::{
     cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_int, c_void, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
@@ -3138,7 +3138,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     if iseq_type == ISEQ_TYPE_EVAL || has_send {
                         // On eval, the locals are always on the heap, so read the local using EP.
-                        state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 }));
+                        let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
+                        state.setlocal(ep_offset, val);
+                        state.stack_push(val);
                     } else {
                         // TODO(alan): This implementation doesn't read from EP, so will miss writes
                         // from nested ISeqs. This will need to be amended when we add codegen for
@@ -3324,6 +3326,15 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let send = fun.push_insn(block, Insn::Send { self_val: recv, cd, blockiseq, args, state: exit_id });
                     state.stack_push(send);
+
+                    // Reload locals that may have been modified by the blockiseq.
+                    // TODO: Avoid reloading locals that are not referenced by the blockiseq
+                    // or not used after this. Max thinks we could eventually DCE them.
+                    for local_idx in 0..state.locals.len() {
+                        let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
+                        let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
+                        state.setlocal(ep_offset, val);
+                    }
                 }
                 YARVINSN_getglobal => {
                     let id = ID(get_arg(pc, 0).as_u64());
@@ -4698,6 +4709,7 @@ mod tests {
         bb0(v0:BasicObject, v1:BasicObject):
           v3:BasicObject = GetLocal l0, EP@3
           v5:BasicObject = Send v3, 0x1000, :each
+          v6:BasicObject = GetLocal l0, EP@3
           CheckInterrupts
           Return v5
         ");
@@ -7246,9 +7258,9 @@ mod opt_tests {
           v3:Fixnum[1] = Const Value(1)
           SetLocal l0, EP@3, v3
           v6:BasicObject = Send v0, 0x1000, :foo
-          v7:BasicObject = GetLocal l0, EP@3
+          v8:BasicObject = GetLocal l0, EP@3
           CheckInterrupts
-          Return v7
+          Return v8
         ");
     }
 
