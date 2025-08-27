@@ -1401,22 +1401,20 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 #if OPT_IC_FOR_IVAR
     RB_DEBUG_COUNTER_INC(ivar_set_ic_miss);
 
-    if (BUILTIN_TYPE(obj) == T_OBJECT) {
-        rb_check_frozen(obj);
+    rb_check_frozen(obj);
 
-        attr_index_t index = rb_obj_ivar_set(obj, id, val);
+    attr_index_t index = rb_ivar_set_index(obj, id, val);
+    shape_id_t next_shape_id = RBASIC_SHAPE_ID(obj);
 
-        shape_id_t next_shape_id = RBASIC_SHAPE_ID(obj);
-
-        if (!rb_shape_too_complex_p(next_shape_id)) {
-            populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
-        }
-
-        RB_DEBUG_COUNTER_INC(ivar_set_obj_miss);
-        return val;
+    if (!rb_shape_too_complex_p(next_shape_id)) {
+        populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
     }
-#endif
+
+    RB_DEBUG_COUNTER_INC(ivar_set_obj_miss);
+    return val;
+#else
     return rb_ivar_set(obj, id, val);
+#endif
 }
 
 static VALUE
@@ -1429,6 +1427,49 @@ static VALUE
 vm_setivar_slowpath_attr(VALUE obj, ID id, VALUE val, const struct rb_callcache *cc)
 {
     return vm_setivar_slowpath(obj, id, val, NULL, NULL, cc, true);
+}
+
+NOINLINE(static VALUE vm_setivar_class(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t index));
+static VALUE
+vm_setivar_class(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t index)
+{
+    if (UNLIKELY(!rb_ractor_main_p())) {
+        return Qundef;
+    }
+
+    VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+    if (UNLIKELY(!fields_obj)) {
+        return Qundef;
+    }
+
+    shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
+
+    // Cache hit case
+    if (shape_id == dest_shape_id) {
+        RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
+    }
+    else if (dest_shape_id != INVALID_SHAPE_ID) {
+        if (RSHAPE_DIRECT_CHILD_P(shape_id, dest_shape_id) && RSHAPE_EDGE_NAME(dest_shape_id) == id && RSHAPE_CAPACITY(shape_id) == RSHAPE_CAPACITY(dest_shape_id)) {
+            RUBY_ASSERT(index < RSHAPE_CAPACITY(dest_shape_id));
+        }
+        else {
+            return Qundef;
+        }
+    }
+    else {
+        return Qundef;
+    }
+
+    RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[index], val);
+
+    if (shape_id != dest_shape_id) {
+        RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
+        RBASIC_SET_SHAPE_ID(fields_obj, dest_shape_id);
+    }
+
+    RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
+
+    return val;
 }
 
 NOINLINE(static VALUE vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t index));
@@ -1627,8 +1668,12 @@ vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC i
     if (UNLIKELY(UNDEF_P(vm_setivar(obj, id, val, dest_shape_id, index)))) {
         switch (BUILTIN_TYPE(obj)) {
           case T_OBJECT:
+            break;
           case T_CLASS:
           case T_MODULE:
+            if (!UNDEF_P(vm_setivar_class(obj, id, val, dest_shape_id, index))) {
+                return;
+            }
             break;
           default:
             if (!UNDEF_P(vm_setivar_default(obj, id, val, dest_shape_id, index))) {
@@ -4001,8 +4046,15 @@ vm_call_attrset_direct(rb_execution_context_t *ec, rb_control_frame_t *cfp, cons
     if (UNDEF_P(res)) {
         switch (BUILTIN_TYPE(obj)) {
           case T_OBJECT:
+            break;
           case T_CLASS:
           case T_MODULE:
+            {
+                res = vm_setivar_class(obj, id, val, dest_shape_id, index);
+                if (!UNDEF_P(res)) {
+                    return res;
+                }
+            }
             break;
           default:
             {
