@@ -142,6 +142,7 @@ RB_DEBUG_COUNTER(ivar_get_ic_miss)  // All misses
 RB_DEBUG_COUNTER(ivar_set_ic_hit)   // All hits
 RB_DEBUG_COUNTER(ivar_set_obj_hit)  // Only T_OBJECT hits
 RB_DEBUG_COUNTER(ivar_set_obj_miss) // Only T_OBJECT misses
+RB_DEBUG_COUNTER(ivar_set_obj_uncacheable) // T_OBJECT miss that can't be cached (need resize)
 RB_DEBUG_COUNTER(ivar_set_ic_miss)  // All misses
 RB_DEBUG_COUNTER(ivar_set_ic_miss_noobject)  // Miss because non T_OBJECT
 RB_DEBUG_COUNTER(ivar_get_base) // Calls to `rb_ivar_get` (very slow path)
