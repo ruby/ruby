@@ -1,10 +1,10 @@
-use crate::codegen::{gen_exit_trampoline, gen_function_stub_hit_trampoline};
-use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insns_count, EcPtr, Qnil, VALUE};
+use crate::codegen::{gen_exit_trampoline, gen_exit_trampoline_with_counter, gen_function_stub_hit_trampoline};
+use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, EcPtr, Qnil, VALUE, VM_INSTRUCTION_SIZE};
 use crate::cruby_methods;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
 use crate::options::get_option;
-use crate::stats::Counters;
+use crate::stats::{Counters, ExitCounters};
 use crate::virtualmem::CodePtr;
 
 #[allow(non_upper_case_globals)]
@@ -24,6 +24,9 @@ pub struct ZJITState {
     /// ZJIT statistics
     counters: Counters,
 
+    /// Side-exit counters
+    exit_counters: ExitCounters,
+
     /// Assumptions that require invalidation
     invariants: Invariants,
 
@@ -35,6 +38,9 @@ pub struct ZJITState {
 
     /// Trampoline to side-exit without restoring PC or the stack
     exit_trampoline: CodePtr,
+
+    /// Trampoline to side-exit and increment exit_compilation_failure
+    exit_trampoline_with_counter: CodePtr,
 
     /// Trampoline to call function_stub_hit
     function_stub_hit_trampoline: CodePtr,
@@ -93,13 +99,24 @@ impl ZJITState {
         let zjit_state = ZJITState {
             code_block: cb,
             counters: Counters::default(),
+            exit_counters: [0; VM_INSTRUCTION_SIZE as usize],
             invariants: Invariants::default(),
             assert_compiles: false,
             method_annotations: cruby_methods::init(),
             exit_trampoline,
             function_stub_hit_trampoline,
+            exit_trampoline_with_counter: exit_trampoline,
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
+
+        // With --zjit-stats, use a different trampoline on function stub exits
+        // to count exit_compilation_failure. Note that the trampoline code depends
+        // on the counter, so ZJIT_STATE needs to be initialized first.
+        if get_option!(stats) {
+            let cb = ZJITState::get_code_block();
+            let code_ptr = gen_exit_trampoline_with_counter(cb, exit_trampoline).unwrap();
+            ZJITState::get_instance().exit_trampoline_with_counter = code_ptr;
+        }
     }
 
     /// Return true if zjit_state has been initialized
@@ -142,6 +159,11 @@ impl ZJITState {
         &mut ZJITState::get_instance().counters
     }
 
+    /// Get a mutable reference to side-exit counters
+    pub fn get_exit_counters() -> &'static mut ExitCounters {
+        &mut ZJITState::get_instance().exit_counters
+    }
+
     /// Was --zjit-save-compiled-iseqs specified?
     pub fn should_log_compiled_iseqs() -> bool {
         get_option!(log_compiled_iseqs).is_some()
@@ -179,6 +201,11 @@ impl ZJITState {
         ZJITState::get_instance().exit_trampoline
     }
 
+    /// Return a code pointer to the exit trampoline for function stubs
+    pub fn get_exit_trampoline_with_counter() -> CodePtr {
+        ZJITState::get_instance().exit_trampoline_with_counter
+    }
+
     /// Return a code pointer to the function stub hit trampoline
     pub fn get_function_stub_hit_trampoline() -> CodePtr {
         ZJITState::get_instance().function_stub_hit_trampoline
@@ -199,7 +226,7 @@ pub extern "C" fn rb_zjit_init() {
         rb_bug_panic_hook();
 
         // Discard the instruction count for boot which we never compile
-        unsafe { rb_vm_insns_count = 0; }
+        unsafe { rb_vm_insn_count = 0; }
 
         // ZJIT enabled and initialized successfully
         assert!(unsafe{ !rb_zjit_enabled_p });

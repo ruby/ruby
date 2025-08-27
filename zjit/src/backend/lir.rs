@@ -6,6 +6,7 @@ use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_
 use crate::hir::SideExitReason;
 use crate::options::{debug, get_option};
 use crate::cruby::VALUE;
+use crate::stats::exit_counter_ptr;
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
 
@@ -1265,12 +1266,12 @@ impl Assembler
             // then load SCRATCH_REG into the destination when it's safe.
             if !old_moves.is_empty() {
                 // Make sure it's safe to use SCRATCH_REG
-                assert!(old_moves.iter().all(|&(_, opnd)| opnd != Opnd::Reg(Assembler::SCRATCH_REG)));
+                assert!(old_moves.iter().all(|&(_, opnd)| opnd != SCRATCH_OPND));
 
                 // Move SCRATCH <- opnd, and delay reg <- SCRATCH
                 let (reg, opnd) = old_moves.remove(0);
                 new_moves.push((Assembler::SCRATCH_REG, opnd));
-                old_moves.push((reg, Opnd::Reg(Assembler::SCRATCH_REG)));
+                old_moves.push((reg, SCRATCH_OPND));
             }
         }
         new_moves
@@ -1584,13 +1585,26 @@ impl Assembler
                 }
 
                 asm_comment!(self, "save cfp->pc");
-                self.load_into(Opnd::Reg(Assembler::SCRATCH_REG), Opnd::const_ptr(pc));
-                self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::Reg(Assembler::SCRATCH_REG));
+                self.load_into(SCRATCH_OPND, Opnd::const_ptr(pc));
+                self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), SCRATCH_OPND);
 
                 asm_comment!(self, "save cfp->sp");
-                self.lea_into(Opnd::Reg(Assembler::SCRATCH_REG), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
+                self.lea_into(SCRATCH_OPND, Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
                 let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
-                self.store(cfp_sp, Opnd::Reg(Assembler::SCRATCH_REG));
+                self.store(cfp_sp, SCRATCH_OPND);
+
+                if get_option!(stats) {
+                    asm_comment!(self, "increment an exit counter");
+                    self.load_into(SCRATCH_OPND, Opnd::const_ptr(exit_counter_ptr(pc)));
+                    let counter_opnd = if cfg!(target_arch = "aarch64") { // See arm64_split()
+                        // Using C_CRET_OPND since arm64_emit uses both SCRATCH0 and SCRATCH1 for IncrCounter.
+                        self.lea_into(C_RET_OPND, Opnd::mem(64, SCRATCH_OPND, 0));
+                        C_RET_OPND
+                    } else { // x86_emit expects Opnd::Mem
+                        Opnd::mem(64, SCRATCH_OPND, 0)
+                    };
+                    self.incr_counter(counter_opnd, 1.into());
+                }
 
                 asm_comment!(self, "exit to the interpreter");
                 self.frame_teardown(&[]); // matching the setup in :bb0-prologue:
