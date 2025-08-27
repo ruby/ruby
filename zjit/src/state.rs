@@ -1,5 +1,5 @@
 use crate::codegen::{gen_exit_trampoline, gen_exit_trampoline_with_counter, gen_function_stub_hit_trampoline};
-use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insns_count, EcPtr, Qnil, VALUE, VM_INSTRUCTION_SIZE};
+use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, EcPtr, Qnil, VALUE, VM_INSTRUCTION_SIZE};
 use crate::cruby_methods;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
@@ -226,7 +226,7 @@ pub extern "C" fn rb_zjit_init() {
         rb_bug_panic_hook();
 
         // Discard the instruction count for boot which we never compile
-        unsafe { rb_vm_insns_count = 0; }
+        unsafe { rb_vm_insn_count = 0; }
 
         // ZJIT enabled and initialized successfully
         assert!(unsafe{ !rb_zjit_enabled_p });

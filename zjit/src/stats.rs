@@ -70,7 +70,7 @@ make_counters! {
     }
 
     // The number of times YARV instructions are executed on JIT code
-    zjit_insns_count,
+    zjit_insn_count,
 
     // failed_: Compilation failure reasons
     failed_iseq_stack_too_large,
@@ -158,8 +158,8 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     }
     set_stat!(hash, "side_exit_count", side_exit_count);
 
-    if unsafe { rb_vm_insns_count } > 0 {
-        set_stat!(hash, "vm_insns_count", unsafe { rb_vm_insns_count });
+    if unsafe { rb_vm_insn_count } > 0 {
+        set_stat!(hash, "vm_insn_count", unsafe { rb_vm_insn_count });
     }
 
     hash

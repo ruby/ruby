@@ -2878,9 +2878,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             let exit_state = state.clone();
             profiles.profile_stack(&exit_state);
 
-            // Increment zjit_insns_count for each YARV instruction if --zjit-stats is enabled.
+            // Increment zjit_insn_count for each YARV instruction if --zjit-stats is enabled.
             if get_option!(stats) {
-                fun.push_insn(block, Insn::IncrCounter(Counter::zjit_insns_count));
+                fun.push_insn(block, Insn::IncrCounter(Counter::zjit_insn_count));
             }
 
             // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.

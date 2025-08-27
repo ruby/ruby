@@ -1490,8 +1490,8 @@ class TestZJIT < Test::Unit::TestCase
       def test = 1
       test
       [
-        RubyVM::ZJIT.stats[:zjit_insns_count] > 0,
-        RubyVM::ZJIT.stats(:zjit_insns_count) > 0,
+        RubyVM::ZJIT.stats[:zjit_insn_count] > 0,
+        RubyVM::ZJIT.stats(:zjit_insn_count) > 0,
       ]
     }, stats: true
   end

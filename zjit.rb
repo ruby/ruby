@@ -29,9 +29,9 @@ class << RubyVM::ZJIT
     stats = Primitive.rb_zjit_stats(key)
     return stats if stats.nil? || !key.nil?
 
-    if stats.key?(:vm_insns_count) && stats.key?(:zjit_insns_count)
-      stats[:total_insns_count] = stats[:vm_insns_count] + stats[:zjit_insns_count]
-      stats[:ratio_in_zjit] = 100.0 * stats[:zjit_insns_count] / stats[:total_insns_count]
+    if stats.key?(:vm_insn_count) && stats.key?(:zjit_insn_count)
+      stats[:total_insn_count] = stats[:vm_insn_count] + stats[:zjit_insn_count]
+      stats[:ratio_in_zjit] = 100.0 * stats[:zjit_insn_count] / stats[:total_insn_count]
     end
 
     stats
@@ -53,9 +53,9 @@ class << RubyVM::ZJIT
       :invalidation_time_ns,
 
       :side_exit_count,
-      :total_insns_count,
-      :vm_insns_count,
-      :zjit_insns_count,
+      :total_insn_count,
+      :vm_insn_count,
+      :zjit_insn_count,
       :ratio_in_zjit,
     ], buf:, stats:)
     print_counters_with_prefix(prefix: 'exit_', prompt: 'side exit reasons', buf:, stats:, limit: 20)
@@ -74,7 +74,7 @@ class << RubyVM::ZJIT
   def print_counters(keys, buf:, stats:)
     left_pad = keys.map { |key| key.to_s.sub(/_time_ns\z/, '_time').size }.max + 1
     keys.each do |key|
-      # Some stats like vm_insns_count and ratio_in_zjit are not supported on the release build
+      # Some stats like vm_insn_count and ratio_in_zjit are not supported on the release build
       next unless stats.key?(key)
       value = stats[key]
 
