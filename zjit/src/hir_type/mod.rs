@@ -247,6 +247,7 @@ impl Type {
         else if val.is_false() { types::FalseClass }
         else if val.class() == unsafe { rb_cString } { types::StringExact }
         else if val.class() == unsafe { rb_cArray } { types::ArrayExact }
+        else if val.class() == unsafe { rb_cHash } { types::HashExact }
         else {
             // TODO(max): Add more cases for inferring type bits from built-in types
             Type { bits: bits::HeapObject, spec: Specialization::TypeExact(val.class()) }

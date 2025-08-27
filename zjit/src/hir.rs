@@ -8164,7 +8164,7 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           PatchPoint MethodRedefined(Hash@0x1000, empty?@0x1008, cme:0x1010)
-          v9:HeapObject[class_exact:Hash] = GuardType v1, HeapObject[class_exact:Hash]
+          v9:HashExact = GuardType v1, HashExact
           v10:BoolExact = CCall empty?@0x1038, v9
           CheckInterrupts
           Return v10
