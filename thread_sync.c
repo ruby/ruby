@@ -694,12 +694,12 @@ struct rb_szqueue {
 } RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END();
 
 static void
-queue_mark(void *ptr)
+queue_mark_and_move(void *ptr)
 {
     struct rb_queue *q = ptr;
 
     /* no need to mark threads in waitq, they are on stack */
-    rb_gc_mark(q->que);
+    rb_gc_mark_and_move((VALUE *)UNALIGNED_MEMBER_PTR(q, que));
 }
 
 static size_t
@@ -710,7 +710,7 @@ queue_memsize(const void *ptr)
 
 static const rb_data_type_t queue_data_type = {
     "queue",
-    {queue_mark, RUBY_TYPED_DEFAULT_FREE, queue_memsize,},
+    {queue_mark_and_move, RUBY_TYPED_DEFAULT_FREE, queue_memsize, queue_mark_and_move},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
 };
 
@@ -770,11 +770,11 @@ queue_timeout2hrtime(VALUE timeout)
 }
 
 static void
-szqueue_mark(void *ptr)
+szqueue_mark_and_move(void *ptr)
 {
     struct rb_szqueue *sq = ptr;
 
-    queue_mark(&sq->q);
+    queue_mark_and_move(&sq->q);
 }
 
 static size_t
@@ -785,7 +785,7 @@ szqueue_memsize(const void *ptr)
 
 static const rb_data_type_t szqueue_data_type = {
     "sized_queue",
-    {szqueue_mark, RUBY_TYPED_DEFAULT_FREE, szqueue_memsize,},
+    {szqueue_mark_and_move, RUBY_TYPED_DEFAULT_FREE, szqueue_memsize, szqueue_mark_and_move},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
 };
 
