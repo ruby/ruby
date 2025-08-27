@@ -1575,6 +1575,7 @@ opt_empty_p
 (CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_empty_p(recv);
 
@@ -1603,6 +1604,7 @@ opt_not
 (CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_not(GET_ISEQ(), cd, recv);
 

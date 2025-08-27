@@ -8118,6 +8118,79 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_specialize_basicobject_not_to_ccall() {
+        eval("
+            def test(a) = !a
+
+            test([])
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1000, !@0x1008, cme:0x1010)
+          v9:ArrayExact = GuardType v1, ArrayExact
+          v10:BoolExact = CCall !@0x1038, v9
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
+    fn test_specialize_array_empty_p_to_ccall() {
+        eval("
+            def test(a) = a.empty?
+
+            test([])
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1000, empty?@0x1008, cme:0x1010)
+          v9:ArrayExact = GuardType v1, ArrayExact
+          v10:BoolExact = CCall empty?@0x1038, v9
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
+    fn test_specialize_hash_empty_p_to_ccall() {
+        eval("
+            def test(a) = a.empty?
+
+            test({})
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(Hash@0x1000, empty?@0x1008, cme:0x1010)
+          v9:HashExact = GuardType v1, HashExact
+          v10:BoolExact = CCall empty?@0x1038, v9
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
+    fn test_specialize_basic_object_eq_to_ccall() {
+        eval("
+            class C; end
+            def test(a, b) = a == b
+
+            test(C.new, C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, ==@0x1008, cme:0x1010)
+          v10:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
+          v11:BoolExact = CCall ==@0x1038, v10, v2
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
     fn test_guard_fixnum_and_fixnum() {
         eval("
             def test(x, y) = x & y
