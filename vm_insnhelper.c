@@ -4185,7 +4185,7 @@ static enum method_missing_reason
 ci_missing_reason(const struct rb_callinfo *ci)
 {
     enum method_missing_reason stat = MISSING_NOENTRY;
-    if (vm_ci_flag(ci) & VM_CALL_VCALL) stat |= MISSING_VCALL;
+    if (vm_ci_flag(ci) & VM_CALL_VCALL && !(vm_ci_flag(ci) & VM_CALL_FORWARDING)) stat |= MISSING_VCALL;
     if (vm_ci_flag(ci) & VM_CALL_FCALL) stat |= MISSING_FCALL;
     if (vm_ci_flag(ci) & VM_CALL_SUPER) stat |= MISSING_SUPER;
     return stat;
