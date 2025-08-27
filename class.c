@@ -677,6 +677,7 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool namespaceable)
     VALUE flags = type;
     if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
     if (namespaceable) flags |= RCLASS_NAMESPACEABLE;
+    flags |= RUBY_FL_SHAREABLE;
 
     NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
 
