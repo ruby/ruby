@@ -56,6 +56,7 @@ class << RubyVM::ZJIT
       :total_insn_count,
       :vm_insn_count,
       :zjit_insn_count,
+      :zjit_dynamic_dispatch,
       :ratio_in_zjit,
     ], buf:, stats:)
     print_counters_with_prefix(prefix: 'exit_', prompt: 'side exit reasons', buf:, stats:, limit: 20)

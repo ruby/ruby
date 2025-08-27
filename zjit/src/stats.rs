@@ -72,6 +72,9 @@ make_counters! {
     // The number of times YARV instructions are executed on JIT code
     zjit_insn_count,
 
+    // The number of times we do a dynamic dispatch from JIT code
+    zjit_dynamic_dispatch,
+
     // failed_: Compilation failure reasons
     failed_iseq_stack_too_large,
     failed_hir_compile,

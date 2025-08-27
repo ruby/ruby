@@ -858,6 +858,10 @@ fn gen_send_without_block(
     cd: *const rb_call_data,
     state: &FrameState,
 ) -> lir::Opnd {
+    if get_option!(stats) {
+        gen_incr_counter(asm, Counter::zjit_dynamic_dispatch);
+    }
+
     // Note that it's incorrect to use this frame state to side exit because
     // the state might not be on the boundary of an interpreter instruction.
     // For example, `opt_str_uminus` pushes to the stack and then sends.
