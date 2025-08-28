@@ -1494,6 +1494,26 @@ rb_ivar_get_at(VALUE obj, attr_index_t index, ID id)
 }
 
 VALUE
+rb_ivar_get_at_no_ractor_check(VALUE obj, attr_index_t index)
+{
+    // Used by JITs, but never for T_OBJECT.
+
+    VALUE fields_obj;
+    switch (BUILTIN_TYPE(obj)) {
+      case T_OBJECT:
+        UNREACHABLE_RETURN(Qundef);
+      case T_CLASS:
+      case T_MODULE:
+        fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+        break;
+      default:
+        fields_obj = rb_obj_fields_no_ractor_check(obj);
+        break;
+    }
+    return rb_imemo_fields_ptr(fields_obj)[index];
+}
+
+VALUE
 rb_attr_get(VALUE obj, ID id)
 {
     return rb_ivar_lookup(obj, id, Qnil);
