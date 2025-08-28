@@ -424,6 +424,16 @@ impl PtrPrintMap {
     fn map_id(&self, id: u64) -> *const c_void {
         self.map_ptr(id as *const c_void)
     }
+
+    /// Map an index into a Ruby object (e.g. for an ivar) for printing
+    fn map_index(&self, id: u64) -> *const c_void {
+        self.map_ptr(id as *const c_void)
+    }
+
+    /// Map shape ID into a pointer for printing
+    fn map_shape(&self, id: ShapeId) -> *const c_void {
+        self.map_ptr(id.0 as *const c_void)
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -438,6 +448,7 @@ pub enum SideExitReason {
     FixnumSubOverflow,
     FixnumMultOverflow,
     GuardType(Type),
+    GuardShape(ShapeId),
     GuardBitEquals(VALUE),
     PatchPoint(Invariant),
     CalleeSideExit,
@@ -521,6 +532,11 @@ pub enum Insn {
     /// Check whether an instance variable exists on `self_val`
     DefinedIvar { self_val: InsnId, id: ID, pushval: VALUE, state: InsnId },
 
+    /// Read an instance variable at the given index, embedded in the object
+    LoadIvarEmbedded { self_val: InsnId, id: ID, index: u16 },
+    /// Read an instance variable at the given index, from the extended table
+    LoadIvarExtended { self_val: InsnId, id: ID, index: u16 },
+
     /// Get a local variable from a higher scope or the heap
     GetLocal { level: u32, ep_offset: u32 },
     /// Set a local variable in a higher scope or the heap
@@ -593,6 +609,8 @@ pub enum Insn {
     GuardType { val: InsnId, guard_type: Type, state: InsnId },
     /// Side-exit if val is not the expected VALUE.
     GuardBitEquals { val: InsnId, expected: VALUE, state: InsnId },
+    /// Side-exit if val doesn't have the expected shape.
+    GuardShape { val: InsnId, shape: ShapeId, state: InsnId },
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
@@ -666,6 +684,8 @@ impl Insn {
             Insn::FixnumOr   { .. } => false,
             Insn::GetLocal   { .. } => false,
             Insn::IsNil      { .. } => false,
+            Insn::LoadIvarEmbedded { .. } => false,
+            Insn::LoadIvarExtended { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
             // TODO: NewRange is effects free if we can prove the two ends to be Fixnum,
             // but we don't have type information here in `impl Insn`. See rb_range_new().
@@ -811,6 +831,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumOr   { left, right, .. } => { write!(f, "FixnumOr {left}, {right}") },
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
+            &Insn::GuardShape { val, shape, .. } => { write!(f, "GuardShape {val}, {:p}", self.ptr_map.map_shape(shape)) },
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::CCall { cfun, args, name, return_type: _, elidable: _ } => {
@@ -839,6 +860,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::DefinedIvar { self_val, id, .. } => write!(f, "DefinedIvar {self_val}, :{}", id.contents_lossy()),
             Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy()),
+            &Insn::LoadIvarEmbedded { self_val, id, index } => write!(f, "LoadIvarEmbedded {self_val}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_index(index as u64)),
+            &Insn::LoadIvarExtended { self_val, id, index } => write!(f, "LoadIvarExtended {self_val}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_index(index as u64)),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy()),
             Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy()),
             Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy()),
@@ -1231,6 +1254,7 @@ impl Function {
             &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
             &GuardType { val, guard_type, state } => GuardType { val: find!(val), guard_type: guard_type, state },
             &GuardBitEquals { val, expected, state } => GuardBitEquals { val: find!(val), expected: expected, state },
+            &GuardShape { val, shape, state } => GuardShape { val: find!(val), shape, state },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
             &FixnumSub { left, right, state } => FixnumSub { left: find!(left), right: find!(right), state },
             &FixnumMult { left, right, state } => FixnumMult { left: find!(left), right: find!(right), state },
@@ -1293,6 +1317,8 @@ impl Function {
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
+            &LoadIvarEmbedded { self_val, id, index } => LoadIvarEmbedded { self_val: find!(self_val), id, index },
+            &LoadIvarExtended { self_val, id, index } => LoadIvarExtended { self_val: find!(self_val), id, index },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val: find!(val), state },
             &SetLocal { val, ep_offset, level } => SetLocal { val: find!(val), ep_offset, level },
             &GetSpecialSymbol { symbol_type, state } => GetSpecialSymbol { symbol_type, state },
@@ -1361,6 +1387,7 @@ impl Function {
             Insn::CCall { return_type, .. } => *return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_value(*expected)),
+            Insn::GuardShape { val, .. } => self.type_of(*val),
             Insn::FixnumAdd  { .. } => types::Fixnum,
             Insn::FixnumSub  { .. } => types::Fixnum,
             Insn::FixnumMult { .. } => types::Fixnum,
@@ -1385,6 +1412,8 @@ impl Function {
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
+            Insn::LoadIvarEmbedded { .. } => types::BasicObject,
+            Insn::LoadIvarExtended { .. } => types::BasicObject,
             Insn::GetSpecialSymbol { .. } => types::BasicObject,
             Insn::GetSpecialNumber { .. } => types::BasicObject,
             Insn::ToNewArray { .. } => types::ArrayExact,
@@ -1469,14 +1498,25 @@ impl Function {
         }
     }
 
+    fn chase_insn(&self, insn: InsnId) -> InsnId {
+        let id = self.union_find.borrow().find_const(insn);
+        match self.insns[id.0] {
+            Insn::GuardType { val, .. } => self.chase_insn(val),
+            Insn::GuardShape { val, .. } => self.chase_insn(val),
+            Insn::GuardBitEquals { val, .. } => self.chase_insn(val),
+            _ => id,
+        }
+    }
+
     /// Return the interpreter-profiled type of the HIR instruction at the given ISEQ instruction
     /// index, if it is known. This historical type record is not a guarantee and must be checked
     /// with a GuardType or similar.
     fn profiled_type_of_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<ProfiledType> {
         let Some(ref profiles) = self.profiles else { return None };
         let Some(entries) = profiles.types.get(&iseq_insn_idx) else { return None };
+        let insn = self.chase_insn(insn);
         for (entry_insn, entry_type_summary) in entries {
-            if self.union_find.borrow().find_const(*entry_insn) == self.union_find.borrow().find_const(insn) {
+            if self.union_find.borrow().find_const(*entry_insn) == insn {
                 if entry_type_summary.is_monomorphic() || entry_type_summary.is_skewed_polymorphic() {
                     return Some(entry_type_summary.bucket(0));
                 } else {
@@ -1720,6 +1760,56 @@ impl Function {
                         } else {
                             self.push_insn_id(block, insn_id);
                         }
+                    }
+                    _ => { self.push_insn_id(block, insn_id); }
+                }
+            }
+        }
+        self.infer_types();
+    }
+
+    fn optimize_getivar(&mut self) {
+        for block in self.rpo() {
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            assert!(self.blocks[block.0].insns.is_empty());
+            for insn_id in old_insns {
+                match self.find(insn_id) {
+                    Insn::GetIvar { self_val, id, state } => {
+                        let frame_state = self.frame_state(state);
+                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
+                            // No (monomorphic) profile info
+                            self.push_insn_id(block, insn_id); continue;
+                        };
+                        if recv_type.flags().is_immediate() {
+                            // Instance variable lookups on immediate values are always nil
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        assert!(recv_type.shape().is_valid());
+                        if !recv_type.flags().is_t_object() {
+                            // Check if the receiver is a T_OBJECT
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        if recv_type.shape().is_too_complex() {
+                            // too-complex shapes can't use index access
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapObject, state });
+                        let self_val = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
+                        let mut ivar_index: u16 = 0;
+                        let replacement = if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
+                            // If there is no IVAR index, then the ivar was undefined when we
+                            // entered the compiler.  That means we can just return nil for this
+                            // shape + iv name
+                            Insn::Const { val: Const::Value(Qnil) }
+                        } else {
+                            if recv_type.flags().is_embedded() {
+                                Insn::LoadIvarEmbedded { self_val, id, index: ivar_index }
+                            } else {
+                                Insn::LoadIvarExtended { self_val, id, index: ivar_index }
+                            }
+                        };
+                        let replacement = self.push_insn(block, replacement);
+                        self.make_equal_to(insn_id, replacement);
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
@@ -2012,6 +2102,7 @@ impl Function {
             | &Insn::StringCopy { val, state, .. }
             | &Insn::GuardType { val, state, .. }
             | &Insn::GuardBitEquals { val, state, .. }
+            | &Insn::GuardShape { val, state, .. }
             | &Insn::ToArray { val, state }
             | &Insn::ToNewArray { val, state } => {
                 worklist.push_back(val);
@@ -2089,6 +2180,10 @@ impl Function {
                 worklist.push_back(val);
                 worklist.push_back(str);
                 worklist.push_back(state);
+            }
+            &Insn::LoadIvarEmbedded { self_val, .. }
+            | &Insn::LoadIvarExtended { self_val, .. } => {
+                worklist.push_back(self_val);
             }
             &Insn::GetGlobal { state, .. } |
             &Insn::GetSpecialSymbol { state, .. } |
@@ -2232,6 +2327,8 @@ impl Function {
     pub fn optimize(&mut self) {
         // Function is assumed to have types inferred already
         self.optimize_direct_sends();
+        #[cfg(debug_assertions)] self.assert_validates();
+        self.optimize_getivar();
         #[cfg(debug_assertions)] self.assert_validates();
         self.optimize_c_calls();
         #[cfg(debug_assertions)] self.assert_validates();
@@ -2795,6 +2892,18 @@ impl ProfileOracle {
             entry.push((insn, TypeDistributionSummary::new(insn_type_distribution)))
         }
     }
+
+    /// Map the interpreter-recorded types of self onto the HIR self
+    fn profile_self(&mut self, state: &FrameState, self_param: InsnId) {
+        let iseq_insn_idx = state.insn_idx;
+        let Some(operand_types) = self.payload.profile.get_operand_types(iseq_insn_idx) else { return };
+        let entry = self.types.entry(iseq_insn_idx).or_insert_with(|| vec![]);
+        if operand_types.is_empty() {
+           return;
+        }
+        let self_type_distribution = &operand_types[0];
+        entry.push((self_param, TypeDistributionSummary::new(self_type_distribution)))
+    }
 }
 
 /// The index of the self parameter in the HIR function
@@ -2892,17 +3001,22 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
             state.pc = pc;
             let exit_state = state.clone();
-            profiles.profile_stack(&exit_state);
-
-            // Increment zjit_insn_count for each YARV instruction if --zjit-stats is enabled.
-            if get_option!(stats) {
-                fun.push_insn(block, Insn::IncrCounter(Counter::zjit_insn_count));
-            }
 
             // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
             let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
                 .try_into()
                 .unwrap();
+
+            if opcode == YARVINSN_getinstancevariable {
+                profiles.profile_self(&exit_state, self_param);
+            } else {
+                profiles.profile_stack(&exit_state);
+            }
+
+            // Increment zjit_insn_count for each YARV instruction if --zjit-stats is enabled.
+            if get_option!(stats) {
+                fun.push_insn(block, Insn::IncrCounter(Counter::zjit_insn_count));
+            }
             // Move to the next instruction to compile
             insn_idx += insn_len(opcode as usize);
 
@@ -8320,6 +8434,96 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_optimize_getivar_embedded() {
+        eval("
+            class C
+              attr_reader :foo
+              def initialize
+                @foo = 42
+              end
+            end
+
+            O = C.new
+            def test(o) = o.foo
+            test O
+            test O
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:10:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          v9:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
+          v12:HeapObject[class_exact:C] = GuardShape v9, 0x1038
+          v13:BasicObject = LoadIvarEmbedded v12, :@foo@0x1039
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_extended() {
+        eval("
+            class C
+              attr_reader :foo
+              def initialize
+                @foo = 42
+              end
+            end
+
+            O = C.new
+            def test(o) = o.foo
+            test O
+            test O
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:10:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          v9:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
+          v12:HeapObject[class_exact:C] = GuardShape v9, 0x1038
+          v13:BasicObject = LoadIvarEmbedded v12, :@foo@0x1039
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_getivar_polymorphic() {
+        crate::options::rb_zjit_prepare_options();
+        crate::options::internal_set_num_profiles(3);
+        eval("
+            class C
+              attr_reader :foo, :bar
+
+              def foo_then_bar
+                @foo = 1
+                @bar = 2
+              end
+
+              def bar_then_foo
+                @bar = 3
+                @foo = 4
+              end
+            end
+
+            O1 = C.new
+            O1.foo_then_bar
+            O2 = C.new
+            O2.bar_then_foo
+            def test(o) = o.foo
+            test O1
+            test O2
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:20:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v4:BasicObject = SendWithoutBlock v1, :foo
+          CheckInterrupts
+          Return v4
+        ");
+    }
+
+    #[test]
     fn test_inline_attr_reader_constant() {
         eval("
             class C
@@ -8338,9 +8542,11 @@ mod opt_tests {
           PatchPoint StableConstantNames(0x1000, O)
           v11:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(C@0x1010, foo@0x1018, cme:0x1020)
-          v13:BasicObject = GetIvar v11, :@foo
+          v14:HeapObject[VALUE(0x1008)] = GuardType v11, HeapObject
+          v15:HeapObject[VALUE(0x1008)] = GuardShape v14, 0x1048
+          v16:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v13
+          Return v16
         ");
     }
 
@@ -8363,9 +8569,11 @@ mod opt_tests {
           PatchPoint StableConstantNames(0x1000, O)
           v11:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(C@0x1010, foo@0x1018, cme:0x1020)
-          v13:BasicObject = GetIvar v11, :@foo
+          v14:HeapObject[VALUE(0x1008)] = GuardType v11, HeapObject
+          v15:HeapObject[VALUE(0x1008)] = GuardShape v14, 0x1048
+          v16:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v13
+          Return v16
         ");
     }
 
@@ -8385,9 +8593,10 @@ mod opt_tests {
         bb0(v0:BasicObject, v1:BasicObject):
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
           v9:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
-          v10:BasicObject = GetIvar v9, :@foo
+          v12:HeapObject[class_exact:C] = GuardShape v9, 0x1038
+          v13:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v10
+          Return v13
         ");
     }
 
@@ -8407,9 +8616,10 @@ mod opt_tests {
         bb0(v0:BasicObject, v1:BasicObject):
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
           v9:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
-          v10:BasicObject = GetIvar v9, :@foo
+          v12:HeapObject[class_exact:C] = GuardShape v9, 0x1038
+          v13:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v10
+          Return v13
         ");
     }
 }

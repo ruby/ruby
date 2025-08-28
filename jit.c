@@ -14,6 +14,12 @@
 #include "iseq.h"
 #include "internal/gc.h"
 
+// Field offsets for the RObject struct
+enum robject_offsets {
+    ROBJECT_OFFSET_AS_HEAP_FIELDS = offsetof(struct RObject, as.heap.fields),
+    ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary),
+};
+
 unsigned int
 rb_iseq_encoded_size(const rb_iseq_t *iseq)
 {

@@ -724,6 +724,9 @@ pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
 pub const RB_INVALID_SHAPE_ID: _bindgen_ty_38 = 4294967295;
 pub type _bindgen_ty_38 = u32;
+pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: robject_offsets = 16;
+pub const ROBJECT_OFFSET_AS_ARY: robject_offsets = 16;
+pub type robject_offsets = u32;
 pub type rb_iseq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
 unsafe extern "C" {
     pub fn ruby_xfree(ptr: *mut ::std::os::raw::c_void);
@@ -946,6 +949,7 @@ unsafe extern "C" {
     pub fn rb_zjit_shape_obj_too_complex_p(obj: VALUE) -> bool;
     pub fn rb_zjit_singleton_class_p(klass: VALUE) -> bool;
     pub fn rb_zjit_defined_ivar(obj: VALUE, id: ID, pushval: VALUE) -> VALUE;
+    pub fn rb_zjit_shape_too_complex_p(shape_id: shape_id_t) -> bool;
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_pc_at_idx(iseq: *const rb_iseq_t, insn_idx: u32) -> *mut VALUE;
     pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;

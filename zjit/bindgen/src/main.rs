@@ -361,12 +361,14 @@ fn main() {
         .allowlist_function("rb_zjit_print_exception")
         .allowlist_function("rb_zjit_singleton_class_p")
         .allowlist_function("rb_zjit_defined_ivar")
+        .allowlist_function("rb_zjit_shape_too_complex_p")
         .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
         .allowlist_var("RB_INVALID_SHAPE_ID")
 
         // From jit.c
         .allowlist_function("rb_assert_holding_vm_lock")
+        .allowlist_type("robject_offsets")
 
         // from vm_sync.h
         .allowlist_function("rb_vm_barrier")

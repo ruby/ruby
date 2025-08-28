@@ -37,6 +37,10 @@ impl Profiler {
             *(sp.offset(-1 - n))
         }
     }
+
+    fn peek_at_self(&self) -> VALUE {
+        unsafe { rb_get_cfp_self(self.cfp) }
+    }
 }
 
 /// API called from zjit_* instruction. opcode is the bare (non-zjit_*) instruction.
@@ -68,6 +72,7 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
         YARVINSN_opt_or    => profile_operands(profiler, profile, 2),
         YARVINSN_opt_empty_p => profile_operands(profiler, profile, 1),
         YARVINSN_opt_not   => profile_operands(profiler, profile, 1),
+        YARVINSN_getinstancevariable => profile_self(profiler, profile),
         YARVINSN_opt_send_without_block => {
             let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
             let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -106,8 +111,21 @@ fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize
     }
 }
 
+fn profile_self(profiler: &mut Profiler, profile: &mut IseqProfile) {
+    let types = &mut profile.opnd_types[profiler.insn_idx];
+    if types.is_empty() {
+        types.resize(1, TypeDistribution::new());
+    }
+    let obj = profiler.peek_at_self();
+    // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
+    // drop them or something
+    let ty = ProfiledType::new(obj);
+    unsafe { rb_gc_writebarrier(profiler.iseq.into(), ty.class()) };
+    types[0].observe(ty);
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Flags(u32);
+pub struct Flags(u32);
 
 impl Flags {
     const NONE: u32 = 0;
@@ -204,6 +222,10 @@ impl ProfiledType {
 
     pub fn shape(&self) -> ShapeId {
         self.shape
+    }
+
+    pub fn flags(&self) -> Flags {
+        self.flags
     }
 
     pub fn is_fixnum(&self) -> bool {

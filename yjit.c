@@ -39,12 +39,6 @@
 
 #include <errno.h>
 
-// Field offsets for the RObject struct
-enum robject_offsets {
-    ROBJECT_OFFSET_AS_HEAP_FIELDS = offsetof(struct RObject, as.heap.fields),
-    ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary),
-};
-
 // Field offsets for the RString struct
 enum rstring_offsets {
     RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len)
