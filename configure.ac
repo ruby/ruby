@@ -4699,21 +4699,7 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 
 	echo; echo '$(srcdir)/$(CONFIGURE):RUBY_M4_INCLUDED \
 	$(empty)'
-    } > $tmpmk && AS_IF([! grep '^ruby:' $tmpmk > /dev/null], [
-	AS_IF([test "${gnumake}" = yes], [
-	    tmpgmk=confgmk$$.tmp
-	    {
-		echo "include $tmpmk"
-		echo "-include uncommon.mk"
-	    } > $tmpgmk
-	], [
-	    tmpgmk=$tmpmk
-	]) &&
-	test -z "`${MAKE-make} -f $tmpgmk info-program | grep '^PROGRAM=ruby$'`" &&
-	echo 'ruby: $(PROGRAM);' >> $tmpmk
-	rm -f uncommon.mk # remove stale uncommon.mk, it should be updated by GNUmakefile
-	test "$tmpmk" = "$tmpgmk" || rm -f "$tmpgmk"
-    ]) && mv -f $tmpmk Makefile],
+    } > $tmpmk && mv -f $tmpmk Makefile],
 [EXEEXT='$EXEEXT' MAKE='${MAKE-make}' gnumake='$gnumake' GIT='$GIT' YJIT_SUPPORT='$YJIT_SUPPORT'])
 
 AC_ARG_WITH([ruby-pc],

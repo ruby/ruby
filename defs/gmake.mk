@@ -161,6 +161,10 @@ endif
 
 config.status: $(wildcard config.cache)
 
+ifneq (ruby,$(PROGRAM))
+ruby: $(PROGRAM);
+endif
+
 STUBPROGRAM = rubystub$(EXEEXT)
 IGNOREDPATTERNS = %~ .% %.orig %.rej \#%\#
 SCRIPTBINDIR := $(if $(EXEEXT),,exec/)

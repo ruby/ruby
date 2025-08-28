@@ -540,6 +540,7 @@ ECHO_END =
 all: $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(srcdir)/common.mk $(srcdir)/depend
 prog: config
 
+# The default non-transformed names without $(EXEEXT).
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
 stub: $(STUBPROGRAM)
