@@ -359,6 +359,7 @@ fn main() {
         .allowlist_function("rb_zjit_icache_invalidate")
         .allowlist_function("rb_zjit_print_exception")
         .allowlist_function("rb_zjit_singleton_class_p")
+        .allowlist_function("rb_zjit_defined_ivar")
         .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
         .allowlist_var("RB_INVALID_SHAPE_ID")
