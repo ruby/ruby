@@ -384,7 +384,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfun, opnds!(args)),
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
-        Insn::GetGlobal { id, state: _ } => gen_getglobal(asm, *id),
+        Insn::GetGlobal { id, state } => gen_getglobal(jit, asm, *id, &function.frame_state(*state)),
         &Insn::GetLocal { ep_offset, level } => gen_getlocal_with_ep(asm, ep_offset, level),
         &Insn::SetLocal { val, ep_offset, level } => no_output!(gen_setlocal_with_ep(asm, opnd!(val), function.type_of(val), ep_offset, level)),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, *ic, &function.frame_state(*state)),
@@ -609,7 +609,10 @@ fn gen_setivar(asm: &mut Assembler, recv: Opnd, id: ID, val: Opnd) {
 }
 
 /// Look up global variables
-fn gen_getglobal(asm: &mut Assembler, id: ID) -> Opnd {
+fn gen_getglobal(jit: &mut JITState, asm: &mut Assembler, id: ID, state: &FrameState) -> Opnd {
+    // `Warning` module's method `warn` can be called when reading certain global variables
+    gen_prepare_non_leaf_call(jit, asm, state);
+
     asm_ccall!(asm, rb_gvar_get, id.0.into())
 }
 

@@ -78,6 +78,27 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_getglobal_with_warning
+    assert_compiles('"rescued"', %q{
+      Warning[:deprecated] = true
+
+      module Warning
+        def warn(message)
+          raise
+        end
+      end
+
+      def test
+        $=
+      rescue
+        "rescued"
+      end
+
+      $VERBOSE = true
+      test
+    }, insns: [:getglobal])
+  end
+
   def test_setglobal
     assert_compiles '1', %q{
       def test
