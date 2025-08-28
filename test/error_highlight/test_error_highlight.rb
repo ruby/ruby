@@ -891,27 +891,13 @@ uninitialized constant ErrorHighlightTest::NotDefined
     end
   end
 
-  if ErrorHighlight.const_get(:Spotter).const_get(:OPT_GETCONSTANT_PATH)
-    def test_COLON2_5
-      # Unfortunately, we cannot identify which `NotDefined` caused the NameError
-      assert_error_message(NameError, <<~END) do
-  uninitialized constant ErrorHighlightTest::NotDefined
-      END
-
-        ErrorHighlightTest::NotDefined::NotDefined
-      end
-    end
-  else
-    def test_COLON2_5
-      assert_error_message(NameError, <<~END) do
+  def test_COLON2_5
+    # Unfortunately, we cannot identify which `NotDefined` caused the NameError
+    assert_error_message(NameError, <<~END) do
 uninitialized constant ErrorHighlightTest::NotDefined
+    END
 
-        ErrorHighlightTest::NotDefined::NotDefined
-                          ^^^^^^^^^^^^
-      END
-
-        ErrorHighlightTest::NotDefined::NotDefined
-      end
+      ErrorHighlightTest::NotDefined::NotDefined
     end
   end
 
@@ -1617,7 +1603,6 @@ wrong number of arguments (given 1, expected 0) (ArgumentError)
   end
 
   def test_wrong_number_of_arguments_for_define_method
-    v = lambda { }
     lineno = __LINE__
     assert_error_message(ArgumentError, <<~END) do
 wrong number of arguments (given 1, expected 2) (ArgumentError)
