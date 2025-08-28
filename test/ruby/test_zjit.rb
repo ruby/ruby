@@ -118,6 +118,27 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:pushtoarray]
   end
 
+  def test_splatarray_new_array
+    assert_compiles '[1, 2, 3]', %q{
+      def test a
+        [*a, 3]
+      end
+      test [1, 2]
+    }, insns: [:splatarray]
+  end
+
+  def test_splatarray_existing_array
+    assert_compiles '[1, 2, 3]', %q{
+      def foo v
+        [1, 2, v]
+      end
+      def test a
+        foo(*a)
+      end
+      test [3]
+    }, insns: [:splatarray]
+  end
+
   def test_setglobal_with_trace_var_exception
     assert_compiles '"rescued"', %q{
       def test

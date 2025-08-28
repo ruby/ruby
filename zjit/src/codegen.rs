@@ -400,6 +400,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::CheckInterrupts { state } => no_output!(gen_check_interrupts(jit, asm, &function.frame_state(state))),
         &Insn::HashDup { val, state } => { gen_hash_dup(asm, opnd!(val), &function.frame_state(state)) },
         &Insn::ArrayPush { array, val, state } => { no_output!(gen_array_push(asm, opnd!(array), opnd!(val), &function.frame_state(state))) },
+        &Insn::ToNewArray { val, state } => { gen_to_new_array(jit, asm, opnd!(val), &function.frame_state(state)) },
+        &Insn::ToArray { val, state } => { gen_to_array(jit, asm, opnd!(val), &function.frame_state(state)) },
         &Insn::ArrayExtend { state, .. }
         | &Insn::ArrayMax { state, .. }
         | &Insn::DefinedIvar { state, .. }
@@ -407,8 +409,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         | &Insn::FixnumMod { state, .. }
         | &Insn::Send { state, .. }
         | &Insn::Throw { state, .. }
-        | &Insn::ToArray { state, .. }
-        | &Insn::ToNewArray { state, .. }
         => return Err(state),
     };
 
@@ -692,6 +692,16 @@ fn gen_hash_dup(asm: &mut Assembler, val: Opnd, state: &FrameState) -> lir::Opnd
 fn gen_array_push(asm: &mut Assembler, array: Opnd, val: Opnd, state: &FrameState) {
     gen_prepare_call_with_gc(asm, state);
     asm_ccall!(asm, rb_ary_push, array, val);
+}
+
+fn gen_to_new_array(jit: &mut JITState, asm: &mut Assembler, val: Opnd, state: &FrameState) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+    asm_ccall!(asm, rb_vm_splat_array, Opnd::Value(Qtrue), val)
+}
+
+fn gen_to_array(jit: &mut JITState, asm: &mut Assembler, val: Opnd, state: &FrameState) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+    asm_ccall!(asm, rb_vm_splat_array, Opnd::Value(Qfalse), val)
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
