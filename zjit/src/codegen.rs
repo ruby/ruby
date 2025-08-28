@@ -398,13 +398,13 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::IncrCounter(counter) => no_output!(gen_incr_counter(asm, counter)),
         Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state)),
         &Insn::CheckInterrupts { state } => no_output!(gen_check_interrupts(jit, asm, &function.frame_state(state))),
+        &Insn::HashDup { val, state } => { gen_hash_dup(asm, opnd!(val), &function.frame_state(state)) },
         &Insn::ArrayExtend { state, .. }
         | &Insn::ArrayMax { state, .. }
         | &Insn::ArrayPush { state, .. }
         | &Insn::DefinedIvar { state, .. }
         | &Insn::FixnumDiv { state, .. }
         | &Insn::FixnumMod { state, .. }
-        | &Insn::HashDup { state, .. }
         | &Insn::Send { state, .. }
         | &Insn::Throw { state, .. }
         | &Insn::ToArray { state, .. }
@@ -682,6 +682,11 @@ fn gen_check_interrupts(jit: &mut JITState, asm: &mut Assembler, state: &FrameSt
     let interrupt_flag = asm.load(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG));
     asm.test(interrupt_flag, interrupt_flag);
     asm.jnz(side_exit(jit, state, SideExitReason::Interrupt));
+}
+
+fn gen_hash_dup(asm: &mut Assembler, val: Opnd, state: &FrameState) -> lir::Opnd {
+    gen_prepare_call_with_gc(asm, state);
+    asm_ccall!(asm, rb_hash_resurrect, val)
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
