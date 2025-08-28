@@ -2864,7 +2864,7 @@ fn gen_get_ivar(
 
     // NOTE: This assumes T_OBJECT can't ever have the same shape_id as any other type.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || comptime_receiver.shape_too_complex() || megamorphic {
+    if !comptime_receiver.heap_object_p() || comptime_receiver.shape_too_complex() || megamorphic {
         // General case. Call rb_ivar_get().
         // VALUE rb_ivar_get(VALUE obj, ID id)
         asm_comment!(asm, "call rb_ivar_get()");
@@ -2900,9 +2900,6 @@ fn gen_get_ivar(
     // Guard heap object (recv_opnd must be used before stack_pop)
     guard_object_is_heap(asm, recv, recv_opnd, Counter::getivar_not_heap);
 
-    // Compile time self is embedded and the ivar index lands within the object
-    let embed_test_result = comptime_receiver.embedded_p();
-
     let expected_shape = unsafe { rb_obj_shape_id(comptime_receiver) };
     let shape_id_offset = unsafe { rb_shape_id_offset() };
     let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, recv, shape_id_offset);
@@ -2931,28 +2928,33 @@ fn gen_get_ivar(
             asm.mov(out_opnd, Qnil.into());
         }
         Some(ivar_index) => {
-            if embed_test_result {
-                // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+            let ivar_opnd = if receiver_t_object {
+                if comptime_receiver.embedded_p() {
+                   // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
 
-                // Load the variable
-                let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
-                let ivar_opnd = Opnd::mem(64, recv, offs);
+                   // Load the variable
+                   let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
+                   Opnd::mem(64, recv, offs)
+               } else {
+                   // Compile time value is *not* embedded.
 
-                // Push the ivar on the stack
-                let out_opnd = asm.stack_push(Type::Unknown);
-                asm.mov(out_opnd, ivar_opnd);
+                   // Get a pointer to the extended table
+                   let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
+
+                   // Read the ivar from the extended table
+                   Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32)
+               }
             } else {
-                // Compile time value is *not* embedded.
+                asm_comment!(asm, "call rb_ivar_get_at()");
 
-                // Get a pointer to the extended table
-                let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
+                // The function could raise RactorIsolationError.
+                jit_prepare_non_leaf_call(jit, asm);
+                asm.ccall(rb_ivar_get_at as *const u8, vec![recv, Opnd::UImm((ivar_index as u32).into()), Opnd::UImm(ivar_name)])
+            };
 
-                // Read the ivar from the extended table
-                let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32);
-
-                let out_opnd = asm.stack_push(Type::Unknown);
-                asm.mov(out_opnd, ivar_opnd);
-            }
+            // Push the ivar on the stack
+            let out_opnd = asm.stack_push(Type::Unknown);
+            asm.mov(out_opnd, ivar_opnd);
         }
     }
 

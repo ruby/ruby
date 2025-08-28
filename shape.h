@@ -24,6 +24,7 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 //              index in rb_shape_tree.shape_list. Allow to access `rb_shape_t *`.
 //      19-21 SHAPE_ID_HEAP_INDEX_MASK
 //              index in rb_shape_tree.capacities. Allow to access slot size.
+//              Always 0 except for T_OBJECT.
 //      22 SHAPE_ID_FL_FROZEN
 //              Whether the object is frozen or not.
 //      23 SHAPE_ID_FL_HAS_OBJECT_ID
