@@ -109,6 +109,15 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:duphash]
   end
 
+  def test_pushtoarray
+    assert_compiles '[1, 2, 3]', %q{
+      def test
+        [*[], 1, 2, 3]
+      end
+      test
+    }, insns: [:pushtoarray]
+  end
+
   def test_setglobal_with_trace_var_exception
     assert_compiles '"rescued"', %q{
       def test
