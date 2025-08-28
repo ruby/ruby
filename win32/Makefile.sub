@@ -569,6 +569,7 @@ ACTIONS_ENDGROUP = @::
 ABI_VERSION_HDR = $(hdrdir)/ruby/internal/abi.h
 
 !include $(srcdir)/common.mk
+!include $(srcdir)/depend
 
 !ifdef SCRIPTPROGRAMS
 !else if [echo>scriptbin.mk SCRIPTPROGRAMS = \]

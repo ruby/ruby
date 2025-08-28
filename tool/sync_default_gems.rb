@@ -330,7 +330,6 @@ module SyncDefaultGems
       rm_rf("test/prism/snapshots")
 
       rm("prism/extconf.rb")
-      `git checkout prism/srcs.mk*`
     when "resolv"
       rm_rf(%w[lib/resolv.* ext/win32/resolv test/resolv ext/win32/lib/win32/resolv.rb])
       cp_r("#{upstream}/lib/resolv.rb", "lib")

@@ -4683,12 +4683,8 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	sed '/^MISSING/s/\$U\././g;/^VCS *=/s#@VCS@#'"$VCS"'#;/^VCSUP *=/s#@VCSUP@#'"$VCSUP"'#' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
 	AS_IF([test "$gnumake" != yes], [
-	    # extract NMake-style include list
-	    set = `sed -n 's/^!include  *//p' ${srcdir}/common.mk`
-	    echo common_mk_includes "@S|@*" # generate the macro assignment
-	    shift
-	    common_mk_includes="`echo \"@S|@*\" | sed 's|\$(srcdir)|.|g'`"
-	    (PWD= cd ${srcdir} && sed -f tool/prereq.status common.mk ${common_mk_includes})
+	    echo ['$(MKFILES): $(srcdir)/common.mk $(srcdir)/depend']
+	    sed ['s/{\$([^(){}]*)[^{}]*}//g'] ${srcdir}/common.mk ${srcdir}/depend
             AS_IF([test "$YJIT_SUPPORT" = yes], [
                 cat ${srcdir}/yjit/not_gmake.mk
                 echo ['$(MKFILES): ${srcdir}/yjit/not_gmake.mk']
@@ -4711,7 +4707,6 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	]) &&
 	test -z "`${MAKE-make} -f $tmpgmk info-program | grep '^PROGRAM=ruby$'`" &&
 	echo 'ruby: $(PROGRAM);' >> $tmpmk
-	rm -f uncommon.mk # remove stale uncommon.mk, it should be updated by GNUmakefile
 	test "$tmpmk" = "$tmpgmk" || rm -f "$tmpgmk"
     ]) && mv -f $tmpmk Makefile],
 [EXEEXT='$EXEEXT' MAKE='${MAKE-make}' gnumake='$gnumake' GIT='$GIT' YJIT_SUPPORT='$YJIT_SUPPORT'])

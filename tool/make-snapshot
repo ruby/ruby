@@ -480,13 +480,6 @@ def package(vcs, rev, destdir, tmp = nil)
       vars["UNICODE_VERSION"] = $unicode_version if $unicode_version
       args = vars.dup
       mk.gsub!(/@([A-Za-z_]\w*)@/) {args.delete($1); vars[$1] || ENV[$1]}
-      commonmk.gsub!(/^!(?:include \$\(srcdir\)\/(.*))?/) do
-        if inc = $1 and File.exist?(inc)
-          File.binread(inc).gsub(/^!/, '# !')
-        else
-          "#"
-        end
-      end
       mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "").sub(/^revision\.tmp::$/, '\& Makefile')
       mk << <<-'APPEND'
 
