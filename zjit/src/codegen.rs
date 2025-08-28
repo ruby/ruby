@@ -721,6 +721,7 @@ fn gen_array_extend(jit: &mut JITState, asm: &mut Assembler, left: Opnd, right: 
 
 fn gen_guard_shape(jit: &mut JITState, asm: &mut Assembler, val: Opnd, shape: ShapeId, state: &FrameState) -> Opnd {
     let shape_id_offset = unsafe { rb_shape_id_offset() };
+    let val = asm.load(val);
     let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, val, shape_id_offset);
     asm.cmp(shape_opnd, Opnd::UImm(shape.0 as u64));
     asm.jne(side_exit(jit, state, SideExitReason::GuardShape(shape)));
@@ -732,6 +733,7 @@ fn gen_load_ivar_embedded(asm: &mut Assembler, self_val: Opnd, id: ID, index: u1
 
     asm_comment!(asm, "Load embedded ivar id={} index={}", id.contents_lossy(), index);
     let offs = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * index as usize) as i32;
+    let self_val = asm.load(self_val);
     let ivar_opnd = Opnd::mem(64, self_val, offs);
     asm.load(ivar_opnd)
 }
@@ -741,6 +743,7 @@ fn gen_load_ivar_extended(asm: &mut Assembler, self_val: Opnd, id: ID, index: u1
     // Compile time value is *not* embedded.
 
     // Get a pointer to the extended table
+    let self_val = asm.load(self_val);
     let tbl_opnd = asm.load(Opnd::mem(64, self_val, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
 
     // Read the ivar from the extended table
