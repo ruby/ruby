@@ -1665,6 +1665,23 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_method_redefinition_with_module
+    assert_runs '["original", "redefined"]', %q{
+      module Foo
+        def self.foo = "original"
+      end
+
+      def test = Foo.foo
+      test
+      result1 = test
+
+      def Foo.foo = "redefined"
+      result2 = test
+
+      [result1, result2]
+    }, call_threshold: 2
+  end
+
   def test_module_name_with_guard_passes
     assert_compiles '"Integer"', %q{
       def test(mod)
