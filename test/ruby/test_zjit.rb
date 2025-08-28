@@ -99,6 +99,16 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:intern]
   end
 
+  def test_duphash
+    assert_compiles '{a: 1}', %q{
+      def test
+        {a: 1}
+      end
+
+      test
+    }, insns: [:duphash]
+  end
+
   def test_setglobal_with_trace_var_exception
     assert_compiles '"rescued"', %q{
       def test
