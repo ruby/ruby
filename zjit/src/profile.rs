@@ -112,11 +112,14 @@ struct Flags(u32);
 impl Flags {
     const NONE: u32 = 0;
     const IS_IMMEDIATE: u32 = 1 << 0;
+    /// Object is embedded and the ivar index lands within the object
+    const IS_EMBEDDED: u32 = 1 << 1;
 
     pub fn none() -> Self { Self(Self::NONE) }
 
     pub fn immediate() -> Self { Self(Self::IS_IMMEDIATE) }
     pub fn is_immediate(self) -> bool { (self.0 & Self::IS_IMMEDIATE) != 0 }
+    pub fn is_embedded(self) -> bool { (self.0 & Self::IS_EMBEDDED) != 0 }
 }
 
 /// opt_send_without_block/opt_plus/... should store:
@@ -174,7 +177,11 @@ impl ProfiledType {
                           shape: INVALID_SHAPE_ID,
                           flags: Flags::immediate() };
         }
-        Self { class: obj.class_of(), shape: obj.shape_id_of(), flags: Flags::none() }
+        let mut flags = Flags::none();
+        if obj.embedded_p() {
+            flags.0 |= Flags::IS_EMBEDDED;
+        }
+        Self { class: obj.class_of(), shape: obj.shape_id_of(), flags }
     }
 
     pub fn empty() -> Self {
