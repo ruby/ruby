@@ -947,7 +947,6 @@ unsafe extern "C" {
     pub fn rb_iseq_get_zjit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
     pub fn rb_iseq_set_zjit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
     pub fn rb_zjit_print_exception();
-    pub fn rb_zjit_shape_obj_too_complex_p(obj: VALUE) -> bool;
     pub fn rb_zjit_singleton_class_p(klass: VALUE) -> bool;
     pub fn rb_zjit_defined_ivar(obj: VALUE, id: ID, pushval: VALUE) -> VALUE;
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
@@ -1029,4 +1028,5 @@ unsafe extern "C" {
     pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_set_cfp_pc(cfp: *mut rb_control_frame_struct, pc: *const VALUE);
     pub fn rb_set_cfp_sp(cfp: *mut rb_control_frame_struct, sp: *mut VALUE);
+    pub fn rb_jit_shape_too_complex_p(shape_id: shape_id_t) -> bool;
 }

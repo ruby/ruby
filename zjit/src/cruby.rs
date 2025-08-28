@@ -499,10 +499,6 @@ impl VALUE {
         unsafe { rb_obj_frozen_p(self) != VALUE(0) }
     }
 
-    pub fn shape_too_complex(self) -> bool {
-        unsafe { rb_zjit_shape_obj_too_complex_p(self) }
-    }
-
     pub fn shape_id_of(self) -> ShapeId {
         ShapeId(unsafe { rb_obj_shape_id(self) })
     }
