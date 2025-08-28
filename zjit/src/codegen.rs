@@ -274,7 +274,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
             let insn = function.find(insn_id);
             if let Err(last_snapshot) = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn) {
                 debug!("ZJIT: gen_function: Failed to compile insn: {insn_id} {insn}. Generating side-exit.");
-                gen_side_exit(&mut jit, &mut asm, &SideExitReason::UnhandledInstruction(insn_id), &function.frame_state(last_snapshot));
+                gen_side_exit(&mut jit, &mut asm, &SideExitReason::UnhandledHIRInsn(insn_id), &function.frame_state(last_snapshot));
                 // Don't bother generating code after a side-exit. We won't run it.
                 // TODO(max): Generate ud2 or equivalent.
                 break;
