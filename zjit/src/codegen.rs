@@ -403,8 +403,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ToNewArray { val, state } => { gen_to_new_array(jit, asm, opnd!(val), &function.frame_state(state)) },
         &Insn::ToArray { val, state } => { gen_to_array(jit, asm, opnd!(val), &function.frame_state(state)) },
         &Insn::DefinedIvar { self_val, id, pushval, .. } => { gen_defined_ivar(asm, opnd!(self_val), id, pushval) },
-        &Insn::ArrayExtend { state, .. }
-        | &Insn::ArrayMax { state, .. }
+        &Insn::ArrayExtend { left, right, state } => { no_output!(gen_array_extend(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state))) },
+        &Insn::ArrayMax { state, .. }
         | &Insn::FixnumDiv { state, .. }
         | &Insn::FixnumMod { state, .. }
         | &Insn::Send { state, .. }
@@ -706,6 +706,11 @@ fn gen_to_array(jit: &mut JITState, asm: &mut Assembler, val: Opnd, state: &Fram
 
 fn gen_defined_ivar(asm: &mut Assembler, self_val: Opnd, id: ID, pushval: VALUE) -> lir::Opnd {
     asm_ccall!(asm, rb_zjit_defined_ivar, self_val, id.0.into(), Opnd::Value(pushval))
+}
+
+fn gen_array_extend(jit: &mut JITState, asm: &mut Assembler, left: Opnd, right: Opnd, state: &FrameState) {
+    gen_prepare_non_leaf_call(jit, asm, state);
+    asm_ccall!(asm, rb_ary_concat, left, right);
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ

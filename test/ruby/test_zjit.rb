@@ -139,6 +139,15 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:splatarray]
   end
 
+  def test_concattoarray
+    assert_compiles '[1, 2, 3]', %q{
+      def test(*a)
+        [1, 2, *a]
+      end
+      test 3
+    }, insns: [:concattoarray]
+  end
+
   def test_definedivar
     assert_compiles '[nil, "instance-variable", nil]', %q{
       def test
