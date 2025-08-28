@@ -858,9 +858,7 @@ fn gen_send_without_block(
     cd: *const rb_call_data,
     state: &FrameState,
 ) -> lir::Opnd {
-    if get_option!(stats) {
-        gen_incr_counter(asm, Counter::zjit_dynamic_dispatch);
-    }
+    gen_incr_counter(asm, Counter::dynamic_send_count);
 
     // Note that it's incorrect to use this frame state to side exit because
     // the state might not be on the boundary of an interpreter instruction.
@@ -1223,14 +1221,16 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd,
     val
 }
 
-/// Generate code that increments a counter in ZJIT stats
+/// Generate code that increments a counter if --zjit-stats
 fn gen_incr_counter(asm: &mut Assembler, counter: Counter) {
-    let ptr = counter_ptr(counter);
-    let ptr_reg = asm.load(Opnd::const_ptr(ptr as *const u8));
-    let counter_opnd = Opnd::mem(64, ptr_reg, 0);
+    if get_option!(stats) {
+        let ptr = counter_ptr(counter);
+        let ptr_reg = asm.load(Opnd::const_ptr(ptr as *const u8));
+        let counter_opnd = Opnd::mem(64, ptr_reg, 0);
 
-    // Increment and store the updated value
-    asm.incr_counter(counter_opnd, Opnd::UImm(1));
+        // Increment and store the updated value
+        asm.incr_counter(counter_opnd, Opnd::UImm(1));
+    }
 }
 
 /// Save the incremented PC on the CFP.

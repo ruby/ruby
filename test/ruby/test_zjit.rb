@@ -1485,7 +1485,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_stats
+  def test_stats_availability
     assert_runs '[true, true]', %q{
       def test = 1
       test
@@ -1493,6 +1493,21 @@ class TestZJIT < Test::Unit::TestCase
         RubyVM::ZJIT.stats[:zjit_insn_count] > 0,
         RubyVM::ZJIT.stats(:zjit_insn_count) > 0,
       ]
+    }, stats: true
+  end
+
+  def test_stats_consistency
+    assert_runs '[]', %q{
+      def test = 1
+      test # increment some counters
+
+      RubyVM::ZJIT.stats.to_a.filter_map do |key, value|
+        # The value may be incremented, but the class should stay the same
+        other_value = RubyVM::ZJIT.stats(key)
+        if value.class != other_value.class
+          [key, value, other_value]
+        end
+      end
     }, stats: true
   end
 
