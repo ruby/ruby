@@ -1617,16 +1617,6 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         rb_free_generic_ivar(obj);
     }
 
-    if (RB_TYPE_P(obj, T_OBJECT) &&
-        FL_TEST_RAW(obj, ROBJECT_HEAP) &&
-        rb_obj_embedded_size(new_fields_count) <= rb_gc_obj_slot_size(obj)) {
-        // Re-embed objects when instances become small enough
-        // This is necessary because YJIT assumes that objects with the same shape
-        // have the same embeddedness for efficiency (avoid extra checks)
-        FL_UNSET_RAW(obj, ROBJECT_HEAP);
-        MEMCPY(ROBJECT_FIELDS(obj), fields, VALUE, new_fields_count);
-        xfree(fields);
-    }
     RBASIC_SET_SHAPE_ID(obj, next_shape_id);
 
     return val;

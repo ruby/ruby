@@ -1182,4 +1182,52 @@ class TestShapes < Test::Unit::TestCase
       tc.send("a#{_1}_m")
     end
   end
+
+  def test_embed_and_non_embed_distinct_shape
+    # Ensure that embedded and external objects don't have the same shape.
+    # This is necessary because YJIT assumes that objects with the same shape
+    # have the same embeddedness for efficiency (avoid extra checks)
+    embedded_class = Class.new do
+      def initialize
+        @a = 1
+        @b = 2
+        @c = 3
+        @d = 4
+      end
+    end
+    embed = embedded_class.new
+
+    external = Class.new(Object).new
+    external.instance_variable_set(:@a, 1)
+    external.instance_variable_set(:@b, 2)
+    external.instance_variable_set(:@c, 3)
+    external.instance_variable_set(:@d, 4)
+
+    assert_equal embed.instance_variables, external.instance_variables
+
+    assert JSON.parse(ObjectSpace.dump(embed))["embedded"], ObjectSpace.dump(external)
+    refute JSON.parse(ObjectSpace.dump(external))["embedded"], ObjectSpace.dump(external)
+
+    # raw_id is the tree node
+    assert_equal RubyVM::Shape.of(embed).raw_id, RubyVM::Shape.of(external).raw_id
+    assert_not_equal RubyVM::Shape.of(embed).id, RubyVM::Shape.of(external).id
+
+    embed.remove_instance_variable(:@d)
+    external.remove_instance_variable(:@d)
+
+    assert JSON.parse(ObjectSpace.dump(embed))["embedded"], ObjectSpace.dump(external)
+    refute JSON.parse(ObjectSpace.dump(external))["embedded"], ObjectSpace.dump(external)
+
+    assert_equal RubyVM::Shape.of(embed).raw_id, RubyVM::Shape.of(external).raw_id
+    assert_not_equal RubyVM::Shape.of(embed).id, RubyVM::Shape.of(external).id
+
+    embed.instance_variable_set(:@e, 5)
+    external.instance_variable_set(:@e, 5)
+
+    assert JSON.parse(ObjectSpace.dump(embed))["embedded"], ObjectSpace.dump(external)
+    refute JSON.parse(ObjectSpace.dump(external))["embedded"], ObjectSpace.dump(external)
+
+    assert_equal RubyVM::Shape.of(embed).raw_id, RubyVM::Shape.of(external).raw_id
+    assert_not_equal RubyVM::Shape.of(embed).id, RubyVM::Shape.of(external).id
+  end
 end if defined?(RubyVM::Shape)
