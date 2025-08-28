@@ -224,7 +224,7 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
         let total_insn_count = vm_insn_count + counters.zjit_insn_count;
         set_stat_usize!(hash, "total_insn_count", total_insn_count);
 
-        set_stat_f64!(hash, "ratio_in_zjit", 100.0 * vm_insn_count as f64 / total_insn_count as f64);
+        set_stat_f64!(hash, "ratio_in_zjit", 100.0 * counters.zjit_insn_count as f64 / total_insn_count as f64);
     }
 
     hash
