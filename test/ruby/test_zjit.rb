@@ -139,6 +139,20 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:splatarray]
   end
 
+  def test_definedivar
+    assert_compiles '[nil, "instance-variable", nil]', %q{
+      def test
+        v0 = defined?(@a)
+        @a = nil
+        v1 = defined?(@a)
+        remove_instance_variable :@a
+        v2 = defined?(@a)
+        [v0, v1, v2]
+      end
+      test
+    }, insns: [:definedivar]
+  end
+
   def test_setglobal_with_trace_var_exception
     assert_compiles '"rescued"', %q{
       def test

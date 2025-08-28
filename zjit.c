@@ -356,6 +356,13 @@ rb_zjit_singleton_class_p(VALUE klass)
     return RCLASS_SINGLETON_P(klass);
 }
 
+VALUE
+rb_zjit_defined_ivar(VALUE obj, ID id, VALUE pushval)
+{
+    VALUE result = rb_ivar_defined(obj, id);
+    return result ? pushval : Qnil;
+}
+
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self, VALUE target_key);

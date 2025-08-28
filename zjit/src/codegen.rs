@@ -402,9 +402,9 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ArrayPush { array, val, state } => { no_output!(gen_array_push(asm, opnd!(array), opnd!(val), &function.frame_state(state))) },
         &Insn::ToNewArray { val, state } => { gen_to_new_array(jit, asm, opnd!(val), &function.frame_state(state)) },
         &Insn::ToArray { val, state } => { gen_to_array(jit, asm, opnd!(val), &function.frame_state(state)) },
+        &Insn::DefinedIvar { self_val, id, pushval, .. } => { gen_defined_ivar(asm, opnd!(self_val), id, pushval) },
         &Insn::ArrayExtend { state, .. }
         | &Insn::ArrayMax { state, .. }
-        | &Insn::DefinedIvar { state, .. }
         | &Insn::FixnumDiv { state, .. }
         | &Insn::FixnumMod { state, .. }
         | &Insn::Send { state, .. }
@@ -702,6 +702,10 @@ fn gen_to_new_array(jit: &mut JITState, asm: &mut Assembler, val: Opnd, state: &
 fn gen_to_array(jit: &mut JITState, asm: &mut Assembler, val: Opnd, state: &FrameState) -> lir::Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_ccall!(asm, rb_vm_splat_array, Opnd::Value(Qfalse), val)
+}
+
+fn gen_defined_ivar(asm: &mut Assembler, self_val: Opnd, id: ID, pushval: VALUE) -> lir::Opnd {
+    asm_ccall!(asm, rb_zjit_defined_ivar, self_val, id.0.into(), Opnd::Value(pushval))
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
