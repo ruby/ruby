@@ -360,12 +360,6 @@ rb_zjit_defined_ivar(VALUE obj, ID id, VALUE pushval)
     return result ? pushval : Qnil;
 }
 
-bool
-rb_zjit_shape_too_complex_p(shape_id_t shape_id)
-{
-    return rb_shape_too_complex_p(shape_id);
-}
-
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self, VALUE target_key);

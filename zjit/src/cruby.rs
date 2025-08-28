@@ -277,7 +277,7 @@ impl ShapeId {
     }
 
     pub fn is_too_complex(self) -> bool {
-        unsafe { rb_zjit_shape_too_complex_p(self.0) }
+        unsafe { rb_jit_shape_too_complex_p(self.0) }
     }
 }
 

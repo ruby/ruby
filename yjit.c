@@ -753,12 +753,6 @@ rb_object_shape_count(void)
 }
 
 bool
-rb_yjit_shape_too_complex_p(shape_id_t shape_id)
-{
-    return rb_shape_too_complex_p(shape_id);
-}
-
-bool
 rb_yjit_shape_obj_too_complex_p(VALUE obj)
 {
     return rb_shape_obj_too_complex_p(obj);
