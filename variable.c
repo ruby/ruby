@@ -1614,12 +1614,12 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
             MEMMOVE(&fields[removed_index], &fields[removed_index + 1], VALUE, trailing_fields);
             RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
 
-            if (type == T_OBJECT && FL_TEST_RAW(obj, ROBJECT_HEAP) && rb_obj_embedded_size(new_fields_count) <= rb_gc_obj_slot_size(obj)) {
+            if (FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP) && rb_obj_embedded_size(new_fields_count) <= rb_gc_obj_slot_size(fields_obj)) {
                 // Re-embed objects when instances become small enough
                 // This is necessary because YJIT assumes that objects with the same shape
                 // have the same embeddedness for efficiency (avoid extra checks)
-                FL_UNSET_RAW(obj, ROBJECT_HEAP);
-                MEMCPY(ROBJECT_FIELDS(obj), fields, VALUE, new_fields_count);
+                FL_UNSET_RAW(fields_obj, ROBJECT_HEAP);
+                MEMCPY(rb_imemo_fields_ptr(fields_obj), fields, VALUE, new_fields_count);
                 xfree(fields);
             }
         }
