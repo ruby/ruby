@@ -2947,8 +2947,10 @@ fn gen_get_ivar(
             } else {
                 asm_comment!(asm, "call rb_ivar_get_at()");
 
-                // The function could raise RactorIsolationError.
-                jit_prepare_non_leaf_call(jit, asm);
+                if !assume_single_ractor_mode(jit, asm) {
+                    // The function could raise RactorIsolationError.
+                    jit_prepare_non_leaf_call(jit, asm);
+                }
                 asm.ccall(rb_ivar_get_at as *const u8, vec![recv, Opnd::UImm((ivar_index as u32).into()), Opnd::UImm(ivar_name)])
             };
 
