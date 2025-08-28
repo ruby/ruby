@@ -114,12 +114,15 @@ impl Flags {
     const IS_IMMEDIATE: u32 = 1 << 0;
     /// Object is embedded and the ivar index lands within the object
     const IS_EMBEDDED: u32 = 1 << 1;
+    /// Object is a T_OBJECT
+    const IS_T_OBJECT: u32 = 1 << 2;
 
     pub fn none() -> Self { Self(Self::NONE) }
 
     pub fn immediate() -> Self { Self(Self::IS_IMMEDIATE) }
     pub fn is_immediate(self) -> bool { (self.0 & Self::IS_IMMEDIATE) != 0 }
     pub fn is_embedded(self) -> bool { (self.0 & Self::IS_EMBEDDED) != 0 }
+    pub fn is_t_object(self) -> bool { (self.0 & Self::IS_T_OBJECT) != 0 }
 }
 
 /// opt_send_without_block/opt_plus/... should store:
@@ -180,6 +183,9 @@ impl ProfiledType {
         let mut flags = Flags::none();
         if obj.embedded_p() {
             flags.0 |= Flags::IS_EMBEDDED;
+        }
+        if unsafe { RB_TYPE_P(obj, RUBY_T_OBJECT) } {
+            flags.0 |= Flags::IS_T_OBJECT;
         }
         Self { class: obj.class_of(), shape: obj.shape_id_of(), flags }
     }
