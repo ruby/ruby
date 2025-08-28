@@ -1458,17 +1458,19 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:e, :f], c.class_eval { attr_reader :e, :f })
     assert_equal([:enabled?], c.class_eval { attr_reader :enabled? })
     assert_equal([:active?, :valid?], c.class_eval { attr_reader :active?, :valid? })
-    c.class_eval do
-      attr_reader :ready?
-      def initialize
-        @ready = true
-      end
-    end
+
+    c.class_eval { attr_reader :ready?; def initialize; @ready = true; end }
     o = c.new
     assert_equal(true, o.ready?)
-    assert_equal(true, o.ready)
     assert_respond_to(o, :ready?)
-    assert_respond_to(o, :ready)
+    assert_not_respond_to(o, :ready)
+
+    c.class_eval { def existing; "method"; end; attr_reader :existing? }
+    assert_equal("method", o.existing)
+    assert_equal("method", o.existing?)
+    assert_respond_to(o, :existing)
+    assert_respond_to(o, :existing?)
+
     assert_equal([:g=], c.class_eval { attr_writer :g })
     assert_equal([:h=, :i=], c.class_eval { attr_writer :h, :i })
     assert_equal([:j, :j=], c.class_eval { attr_accessor :j })
