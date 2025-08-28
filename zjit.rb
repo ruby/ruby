@@ -46,6 +46,7 @@ class << RubyVM::ZJIT
       :gc_time_ns,
       :invalidation_time_ns,
 
+      :code_region_bytes,
       :side_exit_count,
       :total_insn_count,
       :vm_insn_count,

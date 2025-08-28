@@ -187,6 +187,9 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
         Qnil
     };
 
+    // Memory usage stats (part of default counters)
+    set_stat_usize!(hash, "code_region_bytes", ZJITState::get_code_block().mapped_region_size());
+
     // If not --zjit-stats, set only default counters
     if !get_option!(stats) {
         for &counter in DEFAULT_COUNTERS {
