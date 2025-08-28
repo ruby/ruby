@@ -1369,6 +1369,9 @@ pub fn local_size_and_idx_to_bp_offset(local_size: usize, local_idx: usize) -> i
 
 /// Convert ISEQ into High-level IR
 fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
+    // Convert ZJIT instructions back to bare instructions
+    unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+
     // Reject ISEQs with very large temp stacks.
     // We cannot encode too large offsets to access locals in arm64.
     let stack_max = unsafe { rb_get_iseq_body_stack_max(iseq) };
