@@ -858,7 +858,7 @@ fn gen_send_without_block(
     cd: *const rb_call_data,
     state: &FrameState,
 ) -> lir::Opnd {
-    gen_incr_counter(asm, Counter::num_send_dynamic);
+    gen_incr_counter(asm, Counter::dynamic_send_count);
 
     // Note that it's incorrect to use this frame state to side exit because
     // the state might not be on the boundary of an interpreter instruction.

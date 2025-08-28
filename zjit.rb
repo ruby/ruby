@@ -36,7 +36,7 @@ class << RubyVM::ZJIT
 
     print_counters_with_prefix(prefix: 'failed_', prompt: 'compilation failure reasons', buf:, stats:)
     print_counters([
-      :num_send_dynamic,
+      :dynamic_send_count,
 
       :compiled_iseq_count,
       :compilation_failure,

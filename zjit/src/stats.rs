@@ -73,7 +73,7 @@ make_counters! {
     zjit_insn_count,
 
     // The number of times we do a dynamic dispatch from JIT code
-    num_send_dynamic,
+    dynamic_send_count,
 
     // failed_: Compilation failure reasons
     failed_iseq_stack_too_large,
