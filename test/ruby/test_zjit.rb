@@ -1919,6 +1919,85 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_ivar_attr_reader_optimization_with_multi_ractor_mode
+    assert_compiles '42', %q{
+      class Foo
+        class << self
+          attr_accessor :bar
+
+          def get_bar
+            bar
+          rescue Ractor::IsolationError
+            42
+          end
+        end
+      end
+
+      Foo.bar = [] # needs to be a ractor unshareable object
+
+      def test
+        Foo.get_bar
+      end
+
+      test
+      test
+
+      Ractor.new { test }.value
+    }, call_threshold: 2
+  end
+
+  def test_ivar_get_with_multi_ractor_mode
+    assert_compiles '42', %q{
+      class Foo
+        def self.set_bar
+          @bar = [] # needs to be a ractor unshareable object
+        end
+
+        def self.bar
+          @bar
+        rescue Ractor::IsolationError
+          42
+        end
+      end
+
+      Foo.set_bar
+
+      def test
+        Foo.bar
+      end
+
+      test
+      test
+
+      Ractor.new { test }.value
+    }
+  end
+
+  def test_ivar_set_with_multi_ractor_mode
+    assert_compiles '42', %q{
+      class Foo
+        def self.bar
+          _foo = 1
+          _bar = 2
+          begin
+            @bar = _foo + _bar
+          rescue Ractor::IsolationError
+            42
+          end
+        end
+      end
+
+      def test
+        Foo.bar
+      end
+
+      test
+      test
+
+      Ractor.new { test }.value
+    }
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
