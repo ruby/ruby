@@ -2309,6 +2309,15 @@ check_setter_id(VALUE obj, VALUE *pname,
 }
 
 static int
+rb_is_predicate_name(VALUE name)
+{
+    if (RB_TYPE_P(name, T_STRING) && RSTRING_LEN(name) > 1) {
+        return RSTRING_END(name)[-1] == '?';
+    }
+    return 0;
+}
+
+static int
 rb_is_attr_name(VALUE name)
 {
     return rb_is_local_name(name) || rb_is_const_name(name);
@@ -2338,6 +2347,8 @@ id_for_attr(VALUE obj, VALUE name)
  *  Creates instance variables and corresponding methods that return the
  *  value of each instance variable. Equivalent to calling
  *  ``<code>attr</code><i>:name</i>'' on each name in turn.
+ *  Names ending in `?` create predicate methods that correspond to
+ *  instance variables without the trailing `?`.
  *  String arguments are converted to symbols.
  *  Returns an array of defined method names as symbols.
  */
@@ -2349,9 +2360,33 @@ rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
     VALUE names = rb_ary_new2(argc);
 
     for (i=0; i<argc; i++) {
-        ID id = id_for_attr(klass, argv[i]);
-        rb_attr(klass, id, TRUE, FALSE, TRUE);
-        rb_ary_push(names, ID2SYM(id));
+        VALUE name_sym = argv[i];
+        VALUE name_str = rb_sym2str(name_sym);
+
+        if (rb_is_predicate_name(name_str)) {
+            const char *name_cstr = StringValueCStr(name_str);
+            long len = RSTRING_LEN(name_str);
+            VALUE stripped_str = rb_str_new(name_cstr, len - 1);
+
+            ID stripped_id = rb_intern_str(stripped_str);
+            ID question_id = rb_intern_str(name_str);
+
+            if (!rb_method_boundp(klass, stripped_id, 0)) {
+                rb_attr(klass, stripped_id, TRUE, FALSE, TRUE);
+                rb_alias(klass, question_id, stripped_id);
+                rb_undef_method(klass, rb_id2name(stripped_id));
+            }
+            else {
+                rb_alias(klass, question_id, stripped_id);
+            }
+
+            rb_ary_push(names, ID2SYM(question_id));
+        }
+        else {
+            ID id = id_for_attr(klass, name_sym);
+            rb_attr(klass, id, TRUE, FALSE, TRUE);
+            rb_ary_push(names, ID2SYM(id));
+        }
     }
     return names;
 }
