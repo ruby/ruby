@@ -67,9 +67,14 @@ impl JITState {
 
 /// CRuby API to compile a given ISEQ
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *const u8 {
+pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> *const u8 {
     // Do not test the JIT code in HIR tests
     if cfg!(test) {
+        return std::ptr::null();
+    }
+
+    // Check if c_call or c_return tracing is enabled - if so, don't compile
+    if unsafe { rb_c_method_tracing_currently_enabled(ec) } {
         return std::ptr::null();
     }
 
