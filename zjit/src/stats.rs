@@ -48,9 +48,8 @@ macro_rules! make_counters {
             $( Counter::$default_counter_name, )+
         ];
 
-        /// List of all counters
-        pub const ALL_COUNTERS: &'static [Counter] = &[
-            $( Counter::$default_counter_name, )+
+        /// List of counters that are available only for --zjit-stats.
+        pub const STATS_ONLY_COUNTERS: &'static [Counter] = &[
             $( Counter::$counter_name, )+
         ];
     }
@@ -187,19 +186,21 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
         Qnil
     };
 
-    // Memory usage stats (part of default counters)
+    // Set default counters
+    for &counter in DEFAULT_COUNTERS {
+        set_stat_usize!(hash, &counter.name(), unsafe { *counter_ptr(counter) });
+    }
+
+    // Memory usage stats
     set_stat_usize!(hash, "code_region_bytes", ZJITState::get_code_block().mapped_region_size());
 
-    // If not --zjit-stats, set only default counters
+    // End of default stats. Every counter beyond this is provided only for --zjit-stats.
     if !get_option!(stats) {
-        for &counter in DEFAULT_COUNTERS {
-            set_stat_usize!(hash, &counter.name(), unsafe { *counter_ptr(counter) });
-        }
         return hash;
     }
 
-    // Set all counters for --zjit-stats
-    for &counter in ALL_COUNTERS {
+    // Set stats-only counters
+    for &counter in STATS_ONLY_COUNTERS {
         set_stat_usize!(hash, &counter.name(), unsafe { *counter_ptr(counter) });
     }
 
