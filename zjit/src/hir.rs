@@ -4108,7 +4108,7 @@ mod tests {
     }
 
     #[track_caller]
-    fn hir_string_function(function: &Function) -> String {
+    pub fn hir_string_function(function: &Function) -> String {
         format!("{}", FunctionPrinter::without_snapshot(&function))
     }
 
@@ -5902,6 +5902,7 @@ mod graphviz_tests {
 mod opt_tests {
     use super::*;
     use insta::assert_snapshot;
+    use tests::hir_string_function;
 
     #[track_caller]
     fn hir_string(method: &str) -> String {
@@ -8564,9 +8565,13 @@ mod opt_tests {
             O2.bar_then_foo
             O1.foo
             O2.foo
-            foo = C.instance_method(:foo)
         ");
-        assert_snapshot!(hir_string("foo"), @r"
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("C", "foo"));
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+        let mut function = iseq_to_hir(iseq).unwrap();
+        function.optimize();
+        function.validate().unwrap();
+        assert_snapshot!(hir_string_function(&function), @r"
         fn test@<compiled>:20:
         bb0(v0:BasicObject, v1:BasicObject):
           v4:BasicObject = SendWithoutBlock v1, :foo
