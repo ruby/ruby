@@ -1732,7 +1732,7 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let cref_sensitive = !unsafe { (*ice).ic_cref }.is_null();
-                        let multi_ractor_mode = unsafe { rb_zjit_multi_ractor_p() };
+                        let multi_ractor_mode = unsafe { rb_jit_multi_ractor_p() };
                         if cref_sensitive || multi_ractor_mode {
                             self.push_insn_id(block, insn_id); continue;
                         }
