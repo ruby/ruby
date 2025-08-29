@@ -361,6 +361,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SendWithoutBlockDirect { cd, state, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
             gen_send_without_block(jit, asm, *cd, &function.frame_state(*state)),
         Insn::SendWithoutBlockDirect { cme, iseq, self_val, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(self_val), opnds!(args), &function.frame_state(*state)),
+        Insn::InvokeSuperWithoutBlock { cd, state, .. } => gen_invoke_super_without_block(jit, asm, *cd, &function.frame_state(*state)),
         // Ensure we have enough room fit ec, self, and arguments
         // TODO remove this check when we have stack args (we can use Time.new to test it)
         Insn::InvokeBuiltin { bf, state, .. } if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) => return Err(*state),
@@ -409,6 +410,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         | &Insn::FixnumDiv { state, .. }
         | &Insn::FixnumMod { state, .. }
         | &Insn::Throw { state, .. }
+        | &Insn::InvokeSuper { state, .. }
         => return Err(state),
     };
 
@@ -942,6 +944,39 @@ fn gen_send_without_block(
     let ret = asm.ccall(
         rb_vm_opt_send_without_block as *const u8,
         vec![EC, CFP, (cd as usize).into()],
+    );
+    // TODO(max): Add a PatchPoint here that can side-exit the function if the callee messed with
+    // the frame's locals
+
+    ret
+}
+
+/// Compile a dynamic dispatch without block
+fn gen_invoke_super_without_block(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    cd: *const rb_call_data,
+    state: &FrameState,
+) -> lir::Opnd {
+    gen_incr_counter(asm, Counter::dynamic_send_count);
+
+    asm_comment!(asm, "spill frame state");
+
+    // Save PC and SP
+    gen_save_pc(asm, state);
+    gen_save_sp(asm, state.stack().len());
+
+    // Spill locals and stack
+    gen_spill_locals(jit, asm, state);
+    gen_spill_stack(jit, asm, state);
+
+    asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
+    unsafe extern "C" {
+        fn rb_vm_invokesuper(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
+    }
+    let ret = asm.ccall(
+        rb_vm_invokesuper as *const u8,
+        vec![EC, CFP, (cd as usize).into(), Opnd::const_ptr(std::ptr::null::<IseqPtr>())],
     );
     // TODO(max): Add a PatchPoint here that can side-exit the function if the callee messed with
     // the frame's locals
