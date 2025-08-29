@@ -101,18 +101,12 @@ jobs:
           - test_task: 'test-bundled-gems'
             configure: '--enable-yjit=dev'
 
-          - test_task: 'yjit-bench'
-            configure: '--enable-yjit=dev'
-            yjit_bench_opts: '--yjit-stats'
-            continue-on-test_task: true
-
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.yjit_opts }}
       YJIT_BENCH_OPTS: ${{ matrix.yjit_bench_opts }}
       SPECOPTS: ${{ matrix.specopts }}
       RUBY_DEBUG: ci
-      BUNDLE_JOBS: 8 # for yjit-bench
       RUST_BACKTRACE: 1
 
     runs-on: ubuntu-22.04
@@ -207,13 +201,6 @@ jobs:
           LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
           LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
-
-      - name: Show ${{ github.event.pull_request.base.ref }} GitHub URL for yjit-bench comparison
-        run: echo "https://github.com/${BASE_REPO}/commit/${BASE_SHA}"
-        env:
-          BASE_REPO: ${{ github.event.pull_request.base.repo.full_name }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        if: ${{ matrix.test_task == 'yjit-bench' && startsWith(github.event_name, 'pull') }}
 
       - uses: ./.github/actions/slack
         with:
