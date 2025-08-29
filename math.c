@@ -1054,7 +1054,7 @@ math_gamma(VALUE unused_obj, VALUE x)
  *
  *    [Math.log(Math.gamma(x).abs), Math.gamma(x) < 0 ? -1 : 1]
  *
- *  See {logarithmic gamma function}[https://en.wikipedia.org/wiki/Gamma_function#The_log-gamma_function].
+ *  See {log gamma function}[https://en.wikipedia.org/wiki/Gamma_function#Log-gamma_function].
  *
  *  - Domain: <tt>(-INFINITY, INFINITY]</tt>.
  *  - Range of first element: <tt>(-INFINITY, INFINITY]</tt>.
