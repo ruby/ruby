@@ -93,7 +93,34 @@ const DISTRIBUTION_SIZE: usize = 4;
 
 pub type TypeDistribution = Distribution<ProfiledType, DISTRIBUTION_SIZE>;
 
+impl std::fmt::Display for TypeDistribution {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "TypeDistribution(")?;
+        let mut sep = "";
+        for (ty, count) in self.each_item().zip(self.each_count()) {
+            write!(f, "{sep}[class: {}, shape: {:x?}, flags: {:x}, count: {}]", ty.class(), ty.shape(), ty.flags().0, count)?;
+            sep = ", ";
+        }
+        write!(f, "{sep}other: {})", self.other_count())
+    }
+}
+
 pub type TypeDistributionSummary = DistributionSummary<ProfiledType, DISTRIBUTION_SIZE>;
+
+impl std::fmt::Display for TypeDistributionSummary {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "TypeDistributionSummary(kind: {:?}, buckets: [", self.kind())?;
+        let mut sep = "";
+        for ty in self.each_item() {
+            if ty == ProfiledType::default() {
+                break;
+            }
+            write!(f, "{sep}[class: {}, shape: {:x?}, flags: {:x}]", ty.class(), ty.shape(), ty.flags().0)?;
+            sep = ", ";
+        }
+        write!(f, ")")
+    }
+}
 
 /// Profile the Type of top-`n` stack operands
 fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize) {
