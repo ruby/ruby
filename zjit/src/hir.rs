@@ -429,7 +429,7 @@ impl PtrPrintMap {
 #[derive(Debug, Clone, Copy)]
 pub enum SideExitReason {
     UnknownNewarraySend(vm_opt_newarray_send_type),
-    UnknownCallType,
+    UnhandledCallType(CallType),
     UnknownSpecialVariable(u64),
     UnhandledHIRInsn(InsnId),
     UnhandledYARVInsn(u32),
@@ -2711,7 +2711,7 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t) -> BytecodeInfo {
     BytecodeInfo { jump_targets: result, has_send }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum CallType {
     Splat,
     BlockArg,
@@ -2749,19 +2749,19 @@ fn num_locals(iseq: *const rb_iseq_t) -> usize {
 }
 
 /// If we can't handle the type of send (yet), bail out.
-fn unknown_call_type(flag: u32) -> bool {
-    if (flag & VM_CALL_KW_SPLAT_MUT) != 0 { return true; }
-    if (flag & VM_CALL_ARGS_SPLAT_MUT) != 0 { return true; }
-    if (flag & VM_CALL_ARGS_SPLAT) != 0 { return true; }
-    if (flag & VM_CALL_KW_SPLAT) != 0 { return true; }
-    if (flag & VM_CALL_ARGS_BLOCKARG) != 0 { return true; }
-    if (flag & VM_CALL_KWARG) != 0 { return true; }
-    if (flag & VM_CALL_TAILCALL) != 0 { return true; }
-    if (flag & VM_CALL_SUPER) != 0 { return true; }
-    if (flag & VM_CALL_ZSUPER) != 0 { return true; }
-    if (flag & VM_CALL_OPT_SEND) != 0 { return true; }
-    if (flag & VM_CALL_FORWARDING) != 0 { return true; }
-    false
+fn unknown_call_type(flag: u32) -> Result<(), CallType> {
+    if (flag & VM_CALL_KW_SPLAT_MUT) != 0 { return Err(CallType::KwSplatMut); }
+    if (flag & VM_CALL_ARGS_SPLAT_MUT) != 0 { return Err(CallType::SplatMut); }
+    if (flag & VM_CALL_ARGS_SPLAT) != 0 { return Err(CallType::Splat); }
+    if (flag & VM_CALL_KW_SPLAT) != 0 { return Err(CallType::KwSplat); }
+    if (flag & VM_CALL_ARGS_BLOCKARG) != 0 { return Err(CallType::BlockArg); }
+    if (flag & VM_CALL_KWARG) != 0 { return Err(CallType::Kwarg); }
+    if (flag & VM_CALL_TAILCALL) != 0 { return Err(CallType::Tailcall); }
+    if (flag & VM_CALL_SUPER) != 0 { return Err(CallType::Super); }
+    if (flag & VM_CALL_ZSUPER) != 0 { return Err(CallType::Zsuper); }
+    if (flag & VM_CALL_OPT_SEND) != 0 { return Err(CallType::OptSend); }
+    if (flag & VM_CALL_FORWARDING) != 0 { return Err(CallType::Forwarding); }
+    Ok(())
 }
 
 /// We have IseqPayload, which keeps track of HIR Types in the interpreter, but this is not useful
@@ -3210,10 +3210,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // NB: opt_neq has two cd; get_arg(0) is for eq and get_arg(1) is for neq
                     let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
+                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
                         // Unknown call type; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownCallType });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -3231,10 +3231,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // NB: these instructions have the recv for the call at get_arg(0)
                     let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
+                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
                         // Unknown call type; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownCallType });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -3289,10 +3289,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_send_without_block => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
+                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
                         // Unknown call type; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownCallType });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -3307,10 +3307,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
+                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
                         // Unknown call type; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownCallType });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -3435,8 +3435,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
 
-                    if unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
-                        assert!(false, "objtostring should not have unknown call type");
+                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
+                        assert!(false, "objtostring should not have unknown call type {call_type:?}");
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     assert_eq!(0, argc, "objtostring should not have args");
@@ -4758,12 +4758,12 @@ mod tests {
         eval("
             def test(a) = foo(*a)
         ");
-        assert_snapshot!(hir_string("test"), @r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v4:ArrayExact = ToArray v1
-              SideExit UnknownCallType
-        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v4:ArrayExact = ToArray v1
+          SideExit UnhandledCallType(Splat)
+        ");
     }
 
     #[test]
@@ -4775,7 +4775,7 @@ mod tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           v3:BasicObject = GetLocal l0, EP@3
-          SideExit UnknownCallType
+          SideExit UnhandledCallType(BlockArg)
         ");
     }
 
@@ -4784,12 +4784,12 @@ mod tests {
         eval("
             def test(a) = foo(a: 1)
         ");
-        assert_snapshot!(hir_string("test"), @r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:Fixnum[1] = Const Value(1)
-              SideExit UnknownCallType
-        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v3:Fixnum[1] = Const Value(1)
+          SideExit UnhandledCallType(Kwarg)
+        ");
     }
 
     #[test]
@@ -4797,11 +4797,11 @@ mod tests {
         eval("
             def test(a) = foo(**a)
         ");
-        assert_snapshot!(hir_string("test"), @r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              SideExit UnknownCallType
-        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          SideExit UnhandledCallType(KwSplat)
+        ");
     }
 
     // TODO(max): Figure out how to generate a call with TAILCALL flag
@@ -4851,18 +4851,18 @@ mod tests {
         eval("
             def test(a) = foo **a, b: 1
         ");
-        assert_snapshot!(hir_string("test"), @r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
-              v5:HashExact = NewHash
-              v7:BasicObject = SendWithoutBlock v3, :core#hash_merge_kwd, v5, v1
-              v8:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
-              v9:StaticSymbol[:b] = Const Value(VALUE(0x1008))
-              v10:Fixnum[1] = Const Value(1)
-              v12:BasicObject = SendWithoutBlock v8, :core#hash_merge_ptr, v7, v9, v10
-              SideExit UnknownCallType
-        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v3:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
+          v5:HashExact = NewHash
+          v7:BasicObject = SendWithoutBlock v3, :core#hash_merge_kwd, v5, v1
+          v8:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
+          v9:StaticSymbol[:b] = Const Value(VALUE(0x1008))
+          v10:Fixnum[1] = Const Value(1)
+          v12:BasicObject = SendWithoutBlock v8, :core#hash_merge_ptr, v7, v9, v10
+          SideExit UnhandledCallType(KwSplatMut)
+        ");
     }
 
     #[test]
@@ -4870,14 +4870,14 @@ mod tests {
         eval("
             def test(*) = foo *, 1
         ");
-        assert_snapshot!(hir_string("test"), @r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:ArrayExact):
-              v4:ArrayExact = ToNewArray v1
-              v5:Fixnum[1] = Const Value(1)
-              ArrayPush v4, v5
-              SideExit UnknownCallType
-        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:ArrayExact):
+          v4:ArrayExact = ToNewArray v1
+          v5:Fixnum[1] = Const Value(1)
+          ArrayPush v4, v5
+          SideExit UnhandledCallType(SplatMut)
+        ");
     }
 
     #[test]
@@ -7284,12 +7284,12 @@ mod opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              SideExit UnknownCallType
-        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v2:Fixnum[1] = Const Value(1)
+          SideExit UnhandledCallType(Kwarg)
+        ");
     }
 
     #[test]
@@ -7300,12 +7300,12 @@ mod opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              SideExit UnknownCallType
-        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v2:Fixnum[1] = Const Value(1)
+          SideExit UnhandledCallType(Kwarg)
+        ");
     }
 
     #[test]
