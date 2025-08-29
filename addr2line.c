@@ -637,12 +637,13 @@ follow_debuglink_build_id(const char *build_id, size_t build_id_size, int num_tr
                           obj_info_t **objp, line_info_t *lines, int offset, FILE *errout)
 {
     static const char global_debug_dir[] = "/usr/lib/debug/.build-id/";
+    static const char debug_suffix[] = ".debug";
     const size_t global_debug_dir_len = sizeof(global_debug_dir) - 1;
     char *p;
     obj_info_t *o1 = *objp, *o2;
     size_t i;
 
-    if (PATH_MAX < global_debug_dir_len + 1 + build_id_size * 2 + 6) return;
+    if (PATH_MAX < global_debug_dir_len + build_id_size * 2 + sizeof(debug_suffix)) return;
 
     memcpy(binary_filename, global_debug_dir, global_debug_dir_len);
     p = binary_filename + global_debug_dir_len;
@@ -653,7 +654,7 @@ follow_debuglink_build_id(const char *build_id, size_t build_id_size, int num_tr
         *p++ = tbl[n % 16];
         if (i == 0) *p++ = '/';
     }
-    strcpy(p, ".debug");
+    memcpy(p, debug_suffix, sizeof(debug_suffix));
 
     append_obj(objp);
     o2 = *objp;
