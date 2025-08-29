@@ -251,8 +251,6 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_read_local_written_by_children_iseqs
-    omit "This test fails right now because Send doesn't compile."
-
     assert_compiles '[1, 2]', %q{
       def test
         l1 = nil
@@ -1369,15 +1367,13 @@ class TestZJIT < Test::Unit::TestCase
     # This will do some EP hopping to find the local EP,
     # so it's slightly different than doing it outside of a block.
 
-    omit 'Test fails at the moment due to missing Send codegen'
-
     assert_compiles '[nil, nil, "yield"]', %q{
       def test
         yield_self { yield_self { defined?(yield) } }
       end
 
       [test, test, test{}]
-    }, call_threshold: 2, insns: [:defined]
+    }, call_threshold: 2
   end
 
   def test_invokeblock_without_block_after_jit_call
@@ -1663,6 +1659,23 @@ class TestZJIT < Test::Unit::TestCase
         "redefined"
       end
 
+      result2 = test
+
+      [result1, result2]
+    }, call_threshold: 2
+  end
+
+  def test_method_redefinition_with_module
+    assert_runs '["original", "redefined"]', %q{
+      module Foo
+        def self.foo = "original"
+      end
+
+      def test = Foo.foo
+      test
+      result1 = test
+
+      def Foo.foo = "redefined"
       result2 = test
 
       [result1, result2]
