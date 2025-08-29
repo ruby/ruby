@@ -790,15 +790,15 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            Insn::InvokeSuperWithoutBlock { self_val, cd, args, .. } => {
-                write!(f, "InvokeSuperWithoutBlock {self_val}, :{}", ruby_call_method_name(*cd))?;
+            &Insn::InvokeSuperWithoutBlock { self_val, ref args, .. } => {
+                write!(f, "InvokeSuperWithoutBlock {self_val}")?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
             }
-            Insn::InvokeSuper { self_val, cd, args, blockiseq, .. } => {
-                write!(f, "InvokeSuper {self_val}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
+            &Insn::InvokeSuper { self_val, ref args, blockiseq, .. } => {
+                write!(f, "InvokeSuper {self_val}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -4883,27 +4883,47 @@ mod tests {
     // TODO(max): Figure out how to generate a call with TAILCALL flag
 
     #[test]
-    fn test_cant_compile_super() {
+    fn test_compile_super() {
         eval("
             def test = super()
         ");
-        assert_snapshot!(hir_string("test"), @r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              SideExit UnknownOpcode(invokesuper)
-        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v3:BasicObject = InvokeSuperWithoutBlock v0
+          CheckInterrupts
+          Return v3
+        ");
     }
 
     #[test]
-    fn test_cant_compile_zsuper() {
+    fn test_compile_super_with_args() {
+        eval("
+            def test = super 1, 2
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v2:Fixnum[1] = Const Value(1)
+          v3:Fixnum[2] = Const Value(2)
+          v5:BasicObject = InvokeSuperWithoutBlock v0, v2, v3
+          CheckInterrupts
+          Return v5
+        ");
+    }
+
+    #[test]
+    fn test_compile_zsuper() {
         eval("
             def test = super
         ");
-        assert_snapshot!(hir_string("test"), @r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              SideExit UnknownOpcode(invokesuper)
-        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v3:BasicObject = InvokeSuperWithoutBlock v0
+          CheckInterrupts
+          Return v3
+        ");
     }
 
     #[test]
