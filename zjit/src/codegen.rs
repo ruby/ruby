@@ -1305,7 +1305,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
 
         asm.cmp(klass, Opnd::Value(expected_class));
         asm.jne(side_exit);
-    } else if guard_type.is_subtype(types::HeapObject) {
+    } else if guard_type.bit_equal(types::HeapObject) {
         let side_exit = side_exit(jit, state, GuardType(guard_type));
         asm.cmp(val, Opnd::Value(Qfalse));
         asm.je(side_exit.clone());
