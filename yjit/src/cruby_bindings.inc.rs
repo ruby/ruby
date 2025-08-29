@@ -994,12 +994,12 @@ pub const DEFINED_REF: defined_type = 15;
 pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
-pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: robject_offsets = 16;
-pub const ROBJECT_OFFSET_AS_ARY: robject_offsets = 16;
-pub type robject_offsets = u32;
 pub const RUBY_OFFSET_RSTRING_LEN: rstring_offsets = 16;
 pub type rstring_offsets = u32;
 pub type rb_seq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
+pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: robject_offsets = 16;
+pub const ROBJECT_OFFSET_AS_ARY: robject_offsets = 16;
+pub type robject_offsets = u32;
 pub type rb_iseq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
 extern "C" {
     pub fn ruby_xfree(ptr: *mut ::std::os::raw::c_void);
@@ -1238,7 +1238,6 @@ extern "C" {
         line: ::std::os::raw::c_int,
     );
     pub fn rb_object_shape_count() -> VALUE;
-    pub fn rb_yjit_shape_too_complex_p(shape_id: shape_id_t) -> bool;
     pub fn rb_yjit_shape_obj_too_complex_p(obj: VALUE) -> bool;
     pub fn rb_yjit_shape_capacity(shape_id: shape_id_t) -> attr_index_t;
     pub fn rb_yjit_shape_index(shape_id: shape_id_t) -> attr_index_t;
@@ -1328,4 +1327,5 @@ extern "C" {
     pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_set_cfp_pc(cfp: *mut rb_control_frame_struct, pc: *const VALUE);
     pub fn rb_set_cfp_sp(cfp: *mut rb_control_frame_struct, sp: *mut VALUE);
+    pub fn rb_jit_shape_too_complex_p(shape_id: shape_id_t) -> bool;
 }

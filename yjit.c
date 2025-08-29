@@ -39,12 +39,6 @@
 
 #include <errno.h>
 
-// Field offsets for the RObject struct
-enum robject_offsets {
-    ROBJECT_OFFSET_AS_HEAP_FIELDS = offsetof(struct RObject, as.heap.fields),
-    ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary),
-};
-
 // Field offsets for the RString struct
 enum rstring_offsets {
     RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len)
@@ -756,12 +750,6 @@ rb_object_shape_count(void)
 {
     // next_shape_id starts from 0, so it's the same as the count
     return ULONG2NUM((unsigned long)rb_shapes_count());
-}
-
-bool
-rb_yjit_shape_too_complex_p(shape_id_t shape_id)
-{
-    return rb_shape_too_complex_p(shape_id);
 }
 
 bool

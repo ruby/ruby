@@ -337,12 +337,6 @@ rb_zjit_print_exception(void)
     rb_warn("Ruby error: %"PRIsVALUE"", rb_funcall(exception, rb_intern("full_message"), 0));
 }
 
-bool
-rb_zjit_shape_obj_too_complex_p(VALUE obj)
-{
-    return rb_shape_obj_too_complex_p(obj);
-}
-
 enum {
     RB_INVALID_SHAPE_ID = INVALID_SHAPE_ID,
 };

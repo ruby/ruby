@@ -271,6 +271,16 @@ pub struct ShapeId(pub u32);
 
 pub const INVALID_SHAPE_ID: ShapeId = ShapeId(RB_INVALID_SHAPE_ID);
 
+impl ShapeId {
+    pub fn is_valid(self) -> bool {
+        self != INVALID_SHAPE_ID
+    }
+
+    pub fn is_too_complex(self) -> bool {
+        unsafe { rb_jit_shape_too_complex_p(self.0) }
+    }
+}
+
 // Given an ISEQ pointer, convert PC to insn_idx
 pub fn iseq_pc_to_insn_idx(iseq: IseqPtr, pc: *mut VALUE) -> Option<u16> {
     let pc_zero = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
@@ -487,10 +497,6 @@ impl VALUE {
 
     pub fn is_frozen(self) -> bool {
         unsafe { rb_obj_frozen_p(self) != VALUE(0) }
-    }
-
-    pub fn shape_too_complex(self) -> bool {
-        unsafe { rb_zjit_shape_obj_too_complex_p(self) }
     }
 
     pub fn shape_id_of(self) -> ShapeId {

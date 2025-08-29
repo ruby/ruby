@@ -405,6 +405,9 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ToArray { val, state } => { gen_to_array(jit, asm, opnd!(val), &function.frame_state(state)) },
         &Insn::DefinedIvar { self_val, id, pushval, .. } => { gen_defined_ivar(asm, opnd!(self_val), id, pushval) },
         &Insn::ArrayExtend { left, right, state } => { no_output!(gen_array_extend(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state))) },
+        &Insn::GuardShape { val, shape, state } => gen_guard_shape(jit, asm, opnd!(val), shape, &function.frame_state(state)),
+        &Insn::LoadIvarEmbedded { self_val, id, index } => gen_load_ivar_embedded(asm, opnd!(self_val), id, index),
+        &Insn::LoadIvarExtended { self_val, id, index } => gen_load_ivar_extended(asm, opnd!(self_val), id, index),
         &Insn::ArrayMax { state, .. }
         | &Insn::FixnumDiv { state, .. }
         | &Insn::FixnumMod { state, .. }
@@ -714,6 +717,38 @@ fn gen_defined_ivar(asm: &mut Assembler, self_val: Opnd, id: ID, pushval: VALUE)
 fn gen_array_extend(jit: &mut JITState, asm: &mut Assembler, left: Opnd, right: Opnd, state: &FrameState) {
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_ccall!(asm, rb_ary_concat, left, right);
+}
+
+fn gen_guard_shape(jit: &mut JITState, asm: &mut Assembler, val: Opnd, shape: ShapeId, state: &FrameState) -> Opnd {
+    let shape_id_offset = unsafe { rb_shape_id_offset() };
+    let val = asm.load(val);
+    let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, val, shape_id_offset);
+    asm.cmp(shape_opnd, Opnd::UImm(shape.0 as u64));
+    asm.jne(side_exit(jit, state, SideExitReason::GuardShape(shape)));
+    val
+}
+
+fn gen_load_ivar_embedded(asm: &mut Assembler, self_val: Opnd, id: ID, index: u16) -> Opnd {
+    // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+
+    asm_comment!(asm, "Load embedded ivar id={} index={}", id.contents_lossy(), index);
+    let offs = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * index as usize) as i32;
+    let self_val = asm.load(self_val);
+    let ivar_opnd = Opnd::mem(64, self_val, offs);
+    asm.load(ivar_opnd)
+}
+
+fn gen_load_ivar_extended(asm: &mut Assembler, self_val: Opnd, id: ID, index: u16) -> Opnd {
+    asm_comment!(asm, "Load extended ivar id={} index={}", id.contents_lossy(), index);
+    // Compile time value is *not* embedded.
+
+    // Get a pointer to the extended table
+    let self_val = asm.load(self_val);
+    let tbl_opnd = asm.load(Opnd::mem(64, self_val, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
+
+    // Read the ivar from the extended table
+    let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * index as usize) as i32);
+    asm.load(ivar_opnd)
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
@@ -1270,6 +1305,12 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
 
         asm.cmp(klass, Opnd::Value(expected_class));
         asm.jne(side_exit);
+    } else if guard_type.bit_equal(types::HeapObject) {
+        let side_exit = side_exit(jit, state, GuardType(guard_type));
+        asm.cmp(val, Opnd::Value(Qfalse));
+        asm.je(side_exit.clone());
+        asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
+        asm.jnz(side_exit);
     } else {
         unimplemented!("unsupported type: {guard_type}");
     }

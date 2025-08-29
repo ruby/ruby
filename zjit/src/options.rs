@@ -279,6 +279,14 @@ fn update_profile_threshold() {
     }
 }
 
+pub fn internal_set_num_profiles(n: u8) {
+    let options = unsafe { OPTIONS.as_mut().unwrap() };
+    options.num_profiles = n;
+    let call_threshold = n.saturating_add(1);
+    unsafe { rb_zjit_call_threshold = call_threshold as u64; }
+    update_profile_threshold();
+}
+
 /// Print YJIT options for `ruby --help`. `width` is width of option parts, and
 /// `columns` is indent width of descriptions.
 #[unsafe(no_mangle)]

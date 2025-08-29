@@ -99,7 +99,6 @@ fn main() {
         .allowlist_function("rb_shape_get_iv_index")
         .allowlist_function("rb_shape_transition_add_ivar_no_warnings")
         .allowlist_function("rb_yjit_shape_obj_too_complex_p")
-        .allowlist_function("rb_yjit_shape_too_complex_p")
         .allowlist_function("rb_yjit_shape_capacity")
         .allowlist_function("rb_yjit_shape_index")
         .allowlist_var("SHAPE_ID_NUM_BITS")
@@ -351,11 +350,12 @@ fn main() {
         .allowlist_function("rb_yjit_invokeblock_sp_pops")
         .allowlist_function("rb_yjit_set_exception_return")
         .allowlist_function("rb_yjit_str_concat_codepoint")
-        .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
 
         // From jit.c
         .allowlist_function("rb_assert_holding_vm_lock")
+        .allowlist_function("rb_jit_shape_too_complex_p")
+        .allowlist_type("robject_offsets")
 
         // from vm_sync.h
         .allowlist_function("rb_vm_barrier")

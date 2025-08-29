@@ -1162,6 +1162,36 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_getinstancevariable_miss
+    assert_compiles '[1, 1, 4]', %q{
+      class C
+        def foo
+          @foo
+        end
+
+        def foo_then_bar
+          @foo = 1
+          @bar = 2
+        end
+
+        def bar_then_foo
+          @bar = 3
+          @foo = 4
+        end
+      end
+
+      o1 = C.new
+      o1.foo_then_bar
+      result = []
+      result << o1.foo
+      result << o1.foo
+      o2 = C.new
+      o2.bar_then_foo
+      result << o2.foo
+      result
+    }
+  end
+
   def test_setinstancevariable
     assert_compiles '1', %q{
       def test() = @foo = 1
