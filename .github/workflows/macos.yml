@@ -141,7 +141,7 @@ jobs:
 
           ulimit -c unlimited
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
-        timeout-minutes: 60
+        timeout-minutes: 90
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
