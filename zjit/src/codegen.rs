@@ -342,6 +342,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::NewArray { elements, state } => gen_new_array(asm, opnds!(elements), &function.frame_state(*state)),
         Insn::NewHash { elements, state } => gen_new_hash(jit, asm, elements, &function.frame_state(*state)),
         Insn::NewRange { low, high, flag, state } => gen_new_range(jit, asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
+        Insn::NewRangeFixnum { low, high, flag } => gen_new_range_fixnum(jit, asm, opnd!(low), opnd!(high), *flag),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
         // concatstrings shouldn't have 0 strings
@@ -1132,6 +1133,17 @@ fn gen_new_range(
 
     // Call rb_range_new(low, high, flag)
     asm_ccall!(asm, rb_range_new, low, high, (flag as i64).into())
+}
+
+fn gen_new_range_fixnum(
+    jit: &JITState,
+    asm: &mut Assembler,
+    low: lir::Opnd,
+    high: lir::Opnd,
+    flag: RangeType,
+    // no FrameState param: this is leaf/pure and never deopts here
+) -> lir::Opnd {
+    asm_ccall!(asm, rb_range_new, low, high, (flag as i64).into()) // What should I use here? Idk.
 }
 
 /// Compile code that exits from JIT code with a return value

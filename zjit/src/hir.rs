@@ -501,6 +501,7 @@ pub enum Insn {
     /// NewHash contains a vec of (key, value) pairs
     NewHash { elements: Vec<(InsnId,InsnId)>, state: InsnId },
     NewRange { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
+    NewRangeFixnum { low: InsnId, high: InsnId, flag: RangeType },
     ArrayDup { val: InsnId, state: InsnId },
     ArrayMax { elements: Vec<InsnId>, state: InsnId },
     /// Extend `left` with the elements from `right`. `left` and `right` must both be `Array`.
@@ -689,6 +690,7 @@ impl Insn {
             // TODO: NewRange is effects free if we can prove the two ends to be Fixnum,
             // but we don't have type information here in `impl Insn`. See rb_range_new().
             Insn::NewRange { .. } => true,
+            Insn::NewRangeFixnum { .. } => false,
             _ => true,
         }
     }
@@ -733,6 +735,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::NewRange { low, high, flag, .. } => {
                 write!(f, "NewRange {low} {flag} {high}")
+            }
+            Insn::NewRangeFixnum { low, high, flag, .. } => {
+                write!(f, "NewRangeFixnum {low} {flag} {high}")
             }
             Insn::ArrayMax { elements, .. } => {
                 write!(f, "ArrayMax")?;
@@ -1313,6 +1318,7 @@ impl Function {
                 NewHash { elements: found_elements, state: find!(state) }
             }
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
+            &NewRangeFixnum { low, high, flag } => NewRangeFixnum { low: find!(low), high: find!(high), flag },
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
@@ -1383,6 +1389,7 @@ impl Function {
             Insn::NewHash { .. } => types::HashExact,
             Insn::HashDup { .. } => types::HashExact,
             Insn::NewRange { .. } => types::RangeExact,
+            Insn::NewRangeFixnum { .. } => types::RangeExact,
             Insn::CCall { return_type, .. } => *return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_value(*expected)),
@@ -1940,6 +1947,55 @@ impl Function {
             .unwrap_or(insn_id)
     }
 
+    fn optimize_ranges(&mut self) {
+        for block in self.rpo() {
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            assert!(self.blocks[block.0].insns.is_empty());
+
+            for insn_id in old_insns {
+                match self.find(insn_id) {
+                    Insn::NewRange { low, high, flag, state } => {
+                        let low_is_fix  = self.is_a(low,  types::Fixnum);
+                        let high_is_fix = self.is_a(high, types::Fixnum);
+
+                        if low_is_fix && high_is_fix {
+                            // Both statically fixnum → specialize directly
+                            let repl = self.push_insn(block, Insn::NewRangeFixnum { low, high, flag });
+                            self.make_equal_to(insn_id, repl);
+                            self.insn_types[repl.0] = self.infer_type(repl);
+                        } else if low_is_fix {
+                            // Only left is fixnum → guard right
+                            let high_fix = self.coerce_to_fixnum(block, high, state);
+                            let repl = self.push_insn(block, Insn::NewRangeFixnum { low, high: high_fix, flag });
+                            self.make_equal_to(insn_id, repl);
+                            self.insn_types[repl.0] = self.infer_type(repl);
+                        } else if high_is_fix {
+                            // Only right is fixnum → guard left
+                            let low_fix = self.coerce_to_fixnum(block, low, state);
+                            let repl = self.push_insn(block, Insn::NewRangeFixnum { low: low_fix, high, flag });
+                            self.make_equal_to(insn_id, repl);
+                            self.insn_types[repl.0] = self.infer_type(repl);
+                        } else if self.arguments_likely_fixnums(low, high, state) {
+                            // Both likely fixnum from profiles → guard both
+                            let low_fix  = self.coerce_to_fixnum(block, low,  state);
+                            let high_fix = self.coerce_to_fixnum(block, high, state);
+                            let repl = self.push_insn(block, Insn::NewRangeFixnum { low: low_fix, high: high_fix, flag });
+                            self.make_equal_to(insn_id, repl);
+                            self.insn_types[repl.0] = self.infer_type(repl);
+                        } else {
+                            // Keep generic op
+                            self.push_insn_id(block, insn_id);
+                        }
+                    }
+                    _ => {
+                        self.push_insn_id(block, insn_id);
+                    }
+                }
+            }
+        }
+        self.infer_types();
+    }
+
     /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
     ///
     /// It can fold fixnum math, truthiness tests, and branches with constant conditionals.
@@ -2081,6 +2137,10 @@ impl Function {
                 worklist.push_back(low);
                 worklist.push_back(high);
                 worklist.push_back(state);
+            }
+            &Insn::NewRangeFixnum { low, high, .. } => {
+                worklist.push_back(low);
+                worklist.push_back(high);
             }
             &Insn::StringConcat { ref strings, state, .. } => {
                 worklist.extend(strings);
@@ -2330,6 +2390,8 @@ impl Function {
         self.optimize_getivar();
         #[cfg(debug_assertions)] self.assert_validates();
         self.optimize_c_calls();
+        #[cfg(debug_assertions)] self.assert_validates();
+        self.optimize_ranges();
         #[cfg(debug_assertions)] self.assert_validates();
         self.fold_constants();
         #[cfg(debug_assertions)] self.assert_validates();
@@ -6549,7 +6611,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_optimize_new_range_fixnum_inclusive_literals() {
+    fn test_optimize_range_fixnum_inclusive_literals() {
         eval(r#"
             def test()
               (1..2)
@@ -6559,30 +6621,45 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
-          v1:Fixnum[1] = Const Value(1)
-          v2:Fixnum[2] = Const Value(2)
-          v3:RangeExact = NewRangeFixnum v1 NewRangeInclusive v2
+          v2:RangeExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           CheckInterrupts
-          Return v3
+          Return v2
         ");
     }
 
     #[test]
-    fn test_optimize_new_range_fixnum_exclusive_literals() {
+    fn test_optimize_range_fixnum_exclusive_literals() {
         eval(r#"
             def test()
-              (1..2)
+              (1...2)
             end
             test; test
         "#);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
-          v1:Fixnum[1] = Const Value(1)
-          v2:Fixnum[2] = Const Value(2)
-          v3:RangeExact = NewRangeFixnum v1 NewRangeExclusive v2
+          v2:RangeExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           CheckInterrupts
-          Return v3
+          Return v2
+        ");
+    }
+
+    #[test]
+    fn test_optimize_range_fixnum_inclusive_right_profiled() {
+        eval(r#"
+            def test(a)
+              (1..a)
+            end
+            test(2); test(3)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v3:Fixnum[1] = Const Value(1)
+          v9:Fixnum = GuardType v1, Fixnum
+          v10:RangeExact = NewRangeFixnum v3 NewRangeInclusive v9
+          CheckInterrupts
+          Return v10
         ");
     }
 
