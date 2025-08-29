@@ -19102,7 +19102,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_binding_power_t binding_power = pm_binding_powers[parser->current.type].left;
 
                 if (binding_power == PM_BINDING_POWER_UNSET || binding_power >= PM_BINDING_POWER_RANGE) {
+                    pm_token_t next = parser->current;
                     parse_arguments(parser, &arguments, false, PM_TOKEN_EOF, (uint16_t) (depth + 1));
+
+                    // Reject `foo && return bar`.
+                    if (!accepts_command_call && arguments.arguments != NULL) {
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, next, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(next.type));
+                    }
                 }
             }
 
