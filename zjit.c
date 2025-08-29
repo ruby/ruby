@@ -238,17 +238,6 @@ rb_zjit_icache_invalidate(void *start, void *end)
 #endif
 }
 
-// Acquire the VM lock and then signal all other Ruby threads (ractors) to
-// contend for the VM lock, putting them to sleep. ZJIT uses this to evict
-// threads running inside generated code so among other things, it can
-// safely change memory protection of regions housing generated code.
-void
-rb_zjit_vm_lock_then_barrier(unsigned int *recursive_lock_level, const char *file, int line)
-{
-    rb_vm_lock_enter(recursive_lock_level, file, line);
-    rb_vm_barrier();
-}
-
 // Convert a given ISEQ's instructions to zjit_* instructions
 void
 rb_zjit_profile_enable(const rb_iseq_t *iseq)

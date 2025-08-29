@@ -686,17 +686,6 @@ rb_yjit_obj_written(VALUE old, VALUE young, const char *file, int line)
     rb_obj_written(old, Qundef, young, file, line);
 }
 
-// Acquire the VM lock and then signal all other Ruby threads (ractors) to
-// contend for the VM lock, putting them to sleep. YJIT uses this to evict
-// threads running inside generated code so among other things, it can
-// safely change memory protection of regions housing generated code.
-void
-rb_yjit_vm_lock_then_barrier(unsigned int *recursive_lock_level, const char *file, int line)
-{
-    rb_vm_lock_enter(recursive_lock_level, file, line);
-    rb_vm_barrier();
-}
-
 // Release the VM lock. The lock level must point to the same integer used to
 // acquire the lock.
 void

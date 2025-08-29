@@ -328,7 +328,6 @@ fn main() {
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_c_method_tracing_currently_enabled")
         .allowlist_function("rb_full_cfunc_return")
-        .allowlist_function("rb_yjit_vm_lock_then_barrier")
         .allowlist_function("rb_yjit_vm_unlock")
         .allowlist_function("rb_assert_(iseq|cme)_handle")
         .allowlist_function("rb_IMEMO_TYPE_P")
@@ -355,6 +354,7 @@ fn main() {
         .allowlist_function("rb_assert_holding_vm_lock")
         .allowlist_function("rb_jit_shape_too_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")
+        .allowlist_function("rb_jit_vm_lock_then_barrier")
         .allowlist_type("robject_offsets")
 
         // from vm_sync.h
