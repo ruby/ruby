@@ -8581,6 +8581,8 @@ mod opt_tests {
         ");
     }
 
+    // TODO(max): Add test for not optimizing megamorphic ivar access
+
     #[test]
     fn test_inline_attr_reader_constant() {
         eval("
