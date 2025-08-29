@@ -52,6 +52,7 @@ PLATFORMS
   ruby
   universal-java
   x64-mingw-ucrt
+  x64-mswin64-140
   x86_64-darwin
   x86_64-linux
 
