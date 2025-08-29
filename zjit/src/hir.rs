@@ -1507,23 +1507,31 @@ impl Function {
         }
     }
 
-    /// Return the interpreter-profiled type of the HIR instruction at the given ISEQ instruction
-    /// index, if it is known. This historical type record is not a guarantee and must be checked
-    /// with a GuardType or similar.
-    fn profiled_type_of_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<ProfiledType> {
+    /// Return the interpreter-profiled types of the HIR instruction at the given ISEQ instruction
+    /// index, if they are known. This historical type record is not a guarantee and must be checked
+    /// at run-time.
+    fn profiled_types_of_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<&TypeDistributionSummary> {
         let Some(ref profiles) = self.profiles else { return None };
         let Some(entries) = profiles.types.get(&iseq_insn_idx) else { return None };
         let insn = self.chase_insn(insn);
         for (entry_insn, entry_type_summary) in entries {
             if self.union_find.borrow().find_const(*entry_insn) == insn {
-                if entry_type_summary.is_monomorphic() || entry_type_summary.is_skewed_polymorphic() {
-                    return Some(entry_type_summary.bucket(0));
-                } else {
-                    return None;
-                }
+                return Some(entry_type_summary);
             }
         }
         None
+    }
+
+    /// Return the interpreter-profiled type of the HIR instruction at the given ISEQ instruction
+    /// index, if it is known. This historical type record is not a guarantee and must be checked
+    /// with a GuardType or similar.
+    fn profiled_type_of_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<ProfiledType> {
+        let summary = self.profiled_types_of_at(insn, iseq_insn_idx)?;
+        if summary.is_monomorphic() {
+            Some(summary.bucket(0))
+        } else {
+            None
+        }
     }
 
     fn likely_is_fixnum(&self, val: InsnId, profiled_type: ProfiledType) -> bool {
@@ -1775,10 +1783,15 @@ impl Function {
                 match self.find(insn_id) {
                     Insn::GetIvar { self_val, id, state } => {
                         let frame_state = self.frame_state(state);
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
-                            // No (monomorphic) profile info
+                        let Some(summary) = self.profiled_types_of_at(self_val, frame_state.insn_idx) else {
+                            // No profile info at all
                             self.push_insn_id(block, insn_id); continue;
                         };
+                        if !summary.is_monomorphic() {
+                            // No (monomorphic) profile info
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        let recv_type = summary.bucket(0);
                         if recv_type.flags().is_immediate() {
                             // Instance variable lookups on immediate values are always nil
                             self.push_insn_id(block, insn_id); continue;
