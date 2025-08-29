@@ -431,7 +431,6 @@ pub enum SideExitReason {
     UnknownNewarraySend(vm_opt_newarray_send_type),
     UnknownCallType,
     UnknownSpecialVariable(u64),
-    UnhandledDefinedType(usize),
     UnhandledHIRInsn(InsnId),
     UnhandledYARVInsn(u32),
     FixnumAddOverflow,
@@ -3049,11 +3048,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let pushval = get_arg(pc, 2);
                     let v = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    if op_type == DEFINED_METHOD.try_into().unwrap() {
-                        // TODO(Shopify/ruby#703): Fix codegen for defined?(method call expr)
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledDefinedType(op_type)});
-                        break; // End the block
-                    }
                     state.stack_push(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v, state: exit_id }));
                 }
                 YARVINSN_definedivar => {
