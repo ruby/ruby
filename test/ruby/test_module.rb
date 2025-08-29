@@ -1452,6 +1452,7 @@ class TestModule < Test::Unit::TestCase
       c.instance_eval { attr_reader :"." }
     end
 
+    c = Class.new
     assert_equal([:a], c.class_eval { attr :a })
     assert_equal([:b, :c], c.class_eval { attr :b, :c })
     assert_equal([:d], c.class_eval { attr_reader :d })
@@ -1460,6 +1461,16 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:h=, :i=], c.class_eval { attr_writer :h, :i })
     assert_equal([:j, :j=], c.class_eval { attr_accessor :j })
     assert_equal([:k, :k=, :l, :l=], c.class_eval { attr_accessor :k, :l })
+
+    c = Class.new
+    assert_equal([:a], c.class_eval { attr "a" })
+    assert_equal([:b, :c], c.class_eval { attr "b", "c" })
+    assert_equal([:d], c.class_eval { attr_reader "d" })
+    assert_equal([:e, :f], c.class_eval { attr_reader "e", "f" })
+    assert_equal([:g=], c.class_eval { attr_writer "g" })
+    assert_equal([:h=, :i=], c.class_eval { attr_writer "h", "i" })
+    assert_equal([:j, :j=], c.class_eval { attr_accessor "j" })
+    assert_equal([:k, :k=, :l, :l=], c.class_eval { attr_accessor "k", "l" })
   end
 
   def test_alias_method
