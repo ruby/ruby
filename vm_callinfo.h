@@ -578,6 +578,27 @@ struct rb_call_data {
     const struct rb_callcache *cc;
 };
 
+static inline const struct rb_callcache *
+vm_cd_cc_load(const struct rb_call_data *cd)
+{
+    return rbimpl_atomic_ptr_load((void **)&cd->cc, RBIMPL_ATOMIC_ACQUIRE);
+}
+
+static inline void
+vm_cd_cc_store_raw(struct rb_call_data *cd, const struct rb_callcache *cc)
+{
+    rbimpl_atomic_ptr_store((volatile void **)&cd->cc, (void *)cc, RBIMPL_ATOMIC_RELEASE);
+}
+
+static inline void
+vm_cd_cc_store(VALUE owner, struct rb_call_data *cd, const struct rb_callcache *cc)
+{
+    RUBY_ASSERT(vm_cc_markable(cc));
+
+    vm_cd_cc_store_raw(cd, cc);
+    RB_OBJ_WRITTEN(owner, Qundef, cc);
+}
+
 struct rb_class_cc_entries {
 #if VM_CHECK_MODE > 0
     VALUE debug_sig;

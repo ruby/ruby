@@ -63,23 +63,14 @@ race_top:RVALUE_AGE_SET
 # Inline caches and call cache updates
 # Multiple threads can race when updating shared call caches during method lookups
 # and argument forwarding. These races involve reading/writing cd->cc fields.
-race_top:vm_cc_call_set
-race_top:vm_cc_class_check
-race_top:vm_search_cc
-race_top:vm_search_method_slowpath0
 race_top:rb_vm_opt_getconstant_path
-race_top:vm_ic_attr_index_set
 race:vm_ic_update
-race:vm_caller_setup_fwd_args
 
 # Race in shape_get_next where multiple threads simultaneously access and modify
 # RCLASS_MAX_IV_COUNT and RCLASS_VARIATION_COUNT fields in class objects.
 # One thread reads the field while another thread calls RCLASS_SET_MAX_IV_COUNT.
 # This happens during instance variable shape transitions in multi-threaded code.
 race:shape_get_next
-
-# Non-atomic reads/writes
-race:gccct_method_search
 
 # Ignore exit for now
 race:rb_ec_finalize

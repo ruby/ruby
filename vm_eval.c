@@ -417,7 +417,8 @@ gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, unsigned int index, const
 
     vm_search_method_slowpath0(vm->self, &cd, klass);
 
-    return vm->global_cc_cache_table[index] = cd.cc;
+    rbimpl_atomic_ptr_store((volatile void **)&vm->global_cc_cache_table[index], (void **)cd.cc, RBIMPL_ATOMIC_RELEASE);
+    return cd.cc;
 }
 
 static void
@@ -467,7 +468,7 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct
     // search global method cache
     unsigned int index = (unsigned int)(gccct_hash(klass, ns_value, mid) % VM_GLOBAL_CC_CACHE_TABLE_SIZE);
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
-    const struct rb_callcache *cc = vm->global_cc_cache_table[index];
+    const struct rb_callcache *cc = rbimpl_atomic_ptr_load((void **)&vm->global_cc_cache_table[index], RBIMPL_ATOMIC_ACQUIRE);
 
     if (LIKELY(cc)) {
         if (LIKELY(vm_cc_class_check(cc, klass))) {

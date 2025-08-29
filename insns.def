@@ -874,8 +874,8 @@ sendforward
     val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_method);
     JIT_EXEC(ec, val);
 
-    if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
-        RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
+    if (vm_cd_cc_load(cd) != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
+        vm_cd_cc_store((VALUE)GET_ISEQ(), cd, adjusted_cd.cd.cc);
     }
 
     if (UNDEF_P(val)) {
@@ -1114,8 +1114,8 @@ invokesuperforward
     val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_super);
     JIT_EXEC(ec, val);
 
-    if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
-        RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
+    if (vm_cd_cc_load(cd) != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
+        vm_cd_cc_store((VALUE)GET_ISEQ(), cd, adjusted_cd.cd.cc);
     }
 
     if (UNDEF_P(val)) {
