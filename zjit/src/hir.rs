@@ -6549,6 +6549,44 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_optimize_new_range_fixnum_inclusive_literals() {
+        eval(r#"
+            def test()
+              (1..2)
+            end
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:Fixnum[1] = Const Value(1)
+          v2:Fixnum[2] = Const Value(2)
+          v3:RangeExact = NewRangeFixnum v1 NewRangeInclusive v2
+          CheckInterrupts
+          Return v3
+        ");
+    }
+
+    #[test]
+    fn test_optimize_new_range_fixnum_exclusive_literals() {
+        eval(r#"
+            def test()
+              (1..2)
+            end
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:Fixnum[1] = Const Value(1)
+          v2:Fixnum[2] = Const Value(2)
+          v3:RangeExact = NewRangeFixnum v1 NewRangeExclusive v2
+          CheckInterrupts
+          Return v3
+        ");
+    }
+
+    #[test]
     fn test_eliminate_new_array() {
         eval("
             def test()
