@@ -4198,6 +4198,11 @@ call_args	: value_expr(command)
                         $$ = NEW_LIST($1, &@$);
                     /*% ripper: args_add!(args_new!, $:1) %*/
                     }
+                | def_endless_method(endless_command)
+                    {
+                        $$ = NEW_LIST($1, &@$);
+                    /*% ripper: args_add!(args_new!, $:1) %*/
+                    }
                 | args opt_block_arg
                     {
                         $$ = arg_blk_pass($1, $2);
