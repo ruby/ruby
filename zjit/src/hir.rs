@@ -8566,17 +8566,18 @@ mod opt_tests {
             O1.foo
             O2.foo
         ");
-        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("C", "foo"));
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("O1", "foo"));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         let mut function = iseq_to_hir(iseq).unwrap();
         function.optimize();
         function.validate().unwrap();
         assert_snapshot!(hir_string_function(&function), @r"
-        fn test@<compiled>:20:
-        bb0(v0:BasicObject, v1:BasicObject):
-          v4:BasicObject = SendWithoutBlock v1, :foo
+        fn foo@<compiled>:14:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          v8:BasicObject = LoadIvarPolymorphic v0, :@foo, N=2
           CheckInterrupts
-          Return v4
+          Return v8
         ");
     }
 
