@@ -686,14 +686,6 @@ rb_yjit_obj_written(VALUE old, VALUE young, const char *file, int line)
     rb_obj_written(old, Qundef, young, file, line);
 }
 
-// Release the VM lock. The lock level must point to the same integer used to
-// acquire the lock.
-void
-rb_yjit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line)
-{
-    rb_vm_lock_leave(recursive_lock_level, file, line);
-}
-
 void
 rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception)
 {

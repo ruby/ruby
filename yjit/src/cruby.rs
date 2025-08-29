@@ -697,7 +697,7 @@ where
         }
     };
 
-    unsafe { rb_yjit_vm_unlock(&mut recursive_lock_level, file, line) };
+    unsafe { rb_jit_vm_unlock(&mut recursive_lock_level, file, line) };
 
     ret
 }

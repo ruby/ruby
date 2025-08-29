@@ -181,13 +181,6 @@ rb_zjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
     return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
 }
 
-// Release the VM lock. The lock level must point to the same integer used to
-// acquire the lock.
-void
-rb_zjit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line)
-{
-    rb_vm_lock_leave(recursive_lock_level, file, line);
-}
 
 bool
 rb_zjit_mark_writable(void *mem_block, uint32_t mem_size)

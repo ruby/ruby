@@ -484,3 +484,11 @@ rb_jit_vm_lock_then_barrier(unsigned int *recursive_lock_level, const char *file
     rb_vm_lock_enter(recursive_lock_level, file, line);
     rb_vm_barrier();
 }
+
+// Release the VM lock. The lock level must point to the same integer used to
+// acquire the lock.
+void
+rb_jit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line)
+{
+    rb_vm_lock_leave(recursive_lock_level, file, line);
+}
