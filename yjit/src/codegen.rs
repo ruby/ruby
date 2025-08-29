@@ -3128,9 +3128,32 @@ fn gen_set_ivar(
         None
     };
 
-    // If the receiver isn't a T_OBJECT, then just write out the IV write as a function call.
-    // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || shape_too_complex || new_shape_too_complex || megamorphic {
+    // If the receiver isn't a T_OBJECT but the ivar_index is known,
+    // we can call into an optimized function.
+    if !receiver_t_object && ivar_index.is_some() {
+        if !assume_single_ractor_mode(jit, asm) {
+            // The function could raise RactorIsolationError.
+            // Note that this modifies REG_SP, which is why we do it first
+            jit_prepare_non_leaf_call(jit, asm);
+        }
+
+        // Get the operands from the stack
+        let val_opnd = asm.stack_opnd(0);
+
+        asm_comment!(asm, "call rb_ivar_set_at()");
+        asm.ccall(
+            rb_ivar_set_at as *const u8,
+            vec![
+                Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF),
+                Opnd::UImm((ivar_index.unwrap() as u32).into()),
+                ivar_name.into(),
+                val_opnd,
+            ],
+        );
+    } else if !receiver_t_object || shape_too_complex || new_shape_too_complex || megamorphic {
+        // If the receiver isn't a T_OBJECT and the ivar_index isn't known,
+        // then just write out the IV write as a function call.
+        // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
         // The function could raise FrozenError.
         // Note that this modifies REG_SP, which is why we do it first
         jit_prepare_non_leaf_call(jit, asm);

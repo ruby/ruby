@@ -1514,6 +1514,30 @@ rb_ivar_get_at_no_ractor_check(VALUE obj, attr_index_t index)
 }
 
 VALUE
+rb_ivar_set_at(VALUE obj, attr_index_t index, ID id, VALUE val)
+{
+    // The JIT ensure we're never called for a frozen object
+    RUBY_ASSERT(!OBJ_FROZEN(obj));
+
+    VALUE fields_obj;
+    switch (BUILTIN_TYPE(obj)) {
+      case T_OBJECT:
+        fields_obj = obj;
+        break;
+      case T_CLASS:
+      case T_MODULE:
+        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
+        fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+        break;
+      default:
+        fields_obj = rb_obj_fields(obj, id);
+        break;
+    }
+    RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[index], val);
+    return val;
+}
+
+VALUE
 rb_attr_get(VALUE obj, ID id)
 {
     return rb_ivar_lookup(obj, id, Qnil);
