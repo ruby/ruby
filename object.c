@@ -4529,6 +4529,8 @@ InitVM_Object(void)
     rb_define_method(rb_cNilClass, "|", false_or, 1);
     rb_define_method(rb_cNilClass, "^", false_xor, 1);
     rb_define_method(rb_cNilClass, "===", case_equal, 1);
+    rb_define_method(rb_cNilClass, "true?", rb_false, 0);
+    rb_define_method(rb_cNilClass, "false?", rb_false, 0);
 
     rb_define_method(rb_cNilClass, "nil?", rb_true, 0);
     rb_undef_alloc_func(rb_cNilClass);
@@ -4614,6 +4616,8 @@ InitVM_Object(void)
     rb_define_method(rb_cTrueClass, "===", case_equal, 1);
     rb_undef_alloc_func(rb_cTrueClass);
     rb_undef_method(CLASS_OF(rb_cTrueClass), "new");
+    rb_define_method(rb_cTrueClass, "true?", rb_true, 0);
+    rb_define_method(rb_cTrueClass, "false?", rb_false, 0);
 
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
     rb_cFalseClass_to_s = rb_fstring_enc_lit("false", rb_usascii_encoding());
@@ -4626,6 +4630,8 @@ InitVM_Object(void)
     rb_define_method(rb_cFalseClass, "===", case_equal, 1);
     rb_undef_alloc_func(rb_cFalseClass);
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
+    rb_define_method(rb_cFalseClass, "true?", rb_false, 0);
+    rb_define_method(rb_cFalseClass, "false?", rb_true, 0);
 }
 
 #include "kernel.rbinc"

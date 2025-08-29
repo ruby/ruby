@@ -1970,6 +1970,32 @@ rb_str_dup_m(VALUE str)
     }
 }
 
+/*
+ *  call-seq:
+ *    true? -> true or false
+ *
+ *  Returns +true+ if +str+ is +true+, +false+ otherwise.
+ */
+VALUE
+rb_str_true_p(VALUE str)
+{
+    VALUE target = rb_str_new_cstr("true");
+    return rb_str_equal(str, target);
+}
+
+/*
+ *  call-seq:
+ *    false? -> true or false
+ *
+ *  Returns +true+ if +str+ is +false+, +false+ otherwise.
+ */
+VALUE
+rb_str_false_p(VALUE str)
+{
+    VALUE target = rb_str_new_cstr("false");
+    return rb_str_equal(str, target);
+}
+
 VALUE
 rb_str_resurrect(VALUE str)
 {
@@ -12733,6 +12759,8 @@ Init_String(void)
     rb_define_method(rb_cString, "-@", str_uminus, 0);
     rb_define_method(rb_cString, "dup", rb_str_dup_m, 0);
     rb_define_alias(rb_cString, "dedup", "-@");
+    rb_define_method(rb_cString, "true?", rb_str_true_p, 0);
+    rb_define_method(rb_cString, "false?", rb_str_false_p, 0);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);
