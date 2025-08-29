@@ -430,10 +430,10 @@ impl PtrPrintMap {
 pub enum SideExitReason {
     UnknownNewarraySend(vm_opt_newarray_send_type),
     UnknownCallType,
-    UnknownOpcode(u32),
     UnknownSpecialVariable(u64),
-    UnhandledInstruction(InsnId),
     UnhandledDefinedType(usize),
+    UnhandledHIRInsn(InsnId),
+    UnhandledYARVInsn(u32),
     FixnumAddOverflow,
     FixnumSubOverflow,
     FixnumMultOverflow,
@@ -448,7 +448,7 @@ pub enum SideExitReason {
 impl std::fmt::Display for SideExitReason {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            SideExitReason::UnknownOpcode(opcode) => write!(f, "UnknownOpcode({})", insn_name(*opcode as usize)),
+            SideExitReason::UnhandledYARVInsn(opcode) => write!(f, "UnhandledYARVInsn({})", insn_name(*opcode as usize)),
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_MAX) => write!(f, "UnknownNewarraySend(MAX)"),
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_MIN) => write!(f, "UnknownNewarraySend(MIN)"),
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_HASH) => write!(f, "UnknownNewarraySend(HASH)"),
@@ -3484,9 +3484,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                 }
                 _ => {
-                    // Unknown opcode; side-exit into the interpreter
+                    // Unhandled opcode; side-exit into the interpreter
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownOpcode(opcode) });
+                    fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledYARVInsn(opcode) });
                     break;  // End the block
                 }
             }
@@ -4817,11 +4817,11 @@ mod tests {
         eval("
             def test = super()
         ");
-        assert_snapshot!(hir_string("test"), @r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              SideExit UnknownOpcode(invokesuper)
-        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          SideExit UnhandledYARVInsn(invokesuper)
+        ");
     }
 
     #[test]
@@ -4829,11 +4829,11 @@ mod tests {
         eval("
             def test = super
         ");
-        assert_snapshot!(hir_string("test"), @r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              SideExit UnknownOpcode(invokesuper)
-        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          SideExit UnhandledYARVInsn(invokesuper)
+        ");
     }
 
     #[test]
@@ -5460,13 +5460,13 @@ mod tests {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("Dir", "open"));
         assert!(iseq_contains_opcode(iseq, YARVINSN_opt_invokebuiltin_delegate), "iseq Dir.open does not contain invokebuiltin");
         let function = iseq_to_hir(iseq).unwrap();
-        assert_snapshot!(hir_string_function(&function), @r#"
-            fn open@<internal:dir>:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject):
-              v5:NilClass = Const Value(nil)
-              v8:BasicObject = InvokeBuiltin dir_s_open, v0, v1, v2
-              SideExit UnknownOpcode(getblockparamproxy)
-        "#);
+        assert_snapshot!(hir_string_function(&function), @r"
+        fn open@<internal:dir>:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject):
+          v5:NilClass = Const Value(nil)
+          v8:BasicObject = InvokeBuiltin dir_s_open, v0, v1, v2
+          SideExit UnhandledYARVInsn(getblockparamproxy)
+        ");
     }
 
     #[test]
