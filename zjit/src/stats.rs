@@ -153,6 +153,7 @@ pub fn exit_counter_ptr(reason: crate::hir::SideExitReason) -> *mut u64 {
         GuardType(_)              => exit_guard_type_failure,
         GuardBitEquals(_)         => exit_guard_bit_equals_failure,
         GuardShape(_)             => exit_guard_shape_failure,
+        GuardShapePolymorphic     => exit_guard_shape_failure,
         PatchPoint(_)             => exit_patchpoint,
         CalleeSideExit            => exit_callee_side_exit,
         ObjToStringFallback       => exit_obj_to_string_fallback,

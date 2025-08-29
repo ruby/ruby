@@ -448,6 +448,7 @@ pub enum SideExitReason {
     FixnumMultOverflow,
     GuardType(Type),
     GuardShape(ShapeId),
+    GuardShapePolymorphic,
     GuardBitEquals(VALUE),
     PatchPoint(Invariant),
     CalleeSideExit,
@@ -471,6 +472,41 @@ impl std::fmt::Display for SideExitReason {
             _ => write!(f, "{self:?}"),
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct LoadIvarInfo {
+    pub shape: ShapeId,
+    // If there is no IVAR index, then the ivar was undefined when we
+    // entered the compiler.  That means we can just return nil for this
+    // shape + iv name
+    pub index: Option<u16>,
+    pub is_embedded: bool,
+}
+
+fn build_load_ivar_info(id: ID, recv_type: ProfiledType) -> Option<LoadIvarInfo> {
+    if recv_type.flags().is_immediate() {
+        // Instance variable lookups on immediate values are always nil
+        return None;
+    }
+    assert!(recv_type.shape().is_valid());
+    if !recv_type.flags().is_t_object() {
+        // Check if the receiver is a T_OBJECT
+        return None;
+    }
+    if recv_type.shape().is_too_complex() {
+        // too-complex shapes can't use index access
+        return None;
+    }
+    let mut ivar_index: u16 = 0;
+    if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
+        return Some(LoadIvarInfo { shape: recv_type.shape(), index: None, is_embedded: false });
+    }
+    Some(LoadIvarInfo {
+        shape: recv_type.shape(),
+        index: Some(ivar_index),
+        is_embedded: recv_type.flags().is_embedded(),
+    })
 }
 
 /// An instruction in the SSA IR. The output of an instruction is referred to by the index of
@@ -535,6 +571,9 @@ pub enum Insn {
     LoadIvarEmbedded { self_val: InsnId, id: ID, index: u16 },
     /// Read an instance variable at the given index, from the extended table
     LoadIvarExtended { self_val: InsnId, id: ID, index: u16 },
+    /// A sled of cmp/load/jmp to read an instance variable at one of several possible indices (or
+    /// jump into the interpreter if none match)
+    LoadIvarPolymorphic { self_val: InsnId, id: ID, infos: Vec<LoadIvarInfo>, state: InsnId },
 
     /// Get a local variable from a higher scope or the heap
     GetLocal { level: u32, ep_offset: u32 },
@@ -685,6 +724,7 @@ impl Insn {
             Insn::IsNil      { .. } => false,
             Insn::LoadIvarEmbedded { .. } => false,
             Insn::LoadIvarExtended { .. } => false,
+            Insn::LoadIvarPolymorphic { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
             // TODO: NewRange is effects free if we can prove the two ends to be Fixnum,
             // but we don't have type information here in `impl Insn`. See rb_range_new().
@@ -861,6 +901,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy()),
             &Insn::LoadIvarEmbedded { self_val, id, index } => write!(f, "LoadIvarEmbedded {self_val}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_index(index as u64)),
             &Insn::LoadIvarExtended { self_val, id, index } => write!(f, "LoadIvarExtended {self_val}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_index(index as u64)),
+            &Insn::LoadIvarPolymorphic { self_val, id, ref infos, .. } => write!(f, "LoadIvarPolymorphic {self_val}, :{}, N={}", id.contents_lossy(), infos.len()),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy()),
             Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy()),
             Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy()),
@@ -1318,6 +1359,7 @@ impl Function {
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
             &LoadIvarEmbedded { self_val, id, index } => LoadIvarEmbedded { self_val: find!(self_val), id, index },
             &LoadIvarExtended { self_val, id, index } => LoadIvarExtended { self_val: find!(self_val), id, index },
+            &LoadIvarPolymorphic { self_val, id, ref infos, state } => LoadIvarPolymorphic { self_val: find!(self_val), id, infos: infos.clone(), state: find!(state) },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val: find!(val), state },
             &SetLocal { val, ep_offset, level } => SetLocal { val: find!(val), ep_offset, level },
             &GetSpecialSymbol { symbol_type, state } => GetSpecialSymbol { symbol_type, state },
@@ -1413,6 +1455,7 @@ impl Function {
             Insn::GetIvar { .. } => types::BasicObject,
             Insn::LoadIvarEmbedded { .. } => types::BasicObject,
             Insn::LoadIvarExtended { .. } => types::BasicObject,
+            Insn::LoadIvarPolymorphic { .. } => types::BasicObject,
             Insn::GetSpecialSymbol { .. } => types::BasicObject,
             Insn::GetSpecialNumber { .. } => types::BasicObject,
             Insn::ToNewArray { .. } => types::ArrayExact,
@@ -1787,41 +1830,39 @@ impl Function {
                             // No profile info at all
                             self.push_insn_id(block, insn_id); continue;
                         };
-                        if !summary.is_monomorphic() {
-                            // No (monomorphic) profile info
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let recv_type = summary.bucket(0);
-                        if recv_type.flags().is_immediate() {
-                            // Instance variable lookups on immediate values are always nil
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        assert!(recv_type.shape().is_valid());
-                        if !recv_type.flags().is_t_object() {
-                            // Check if the receiver is a T_OBJECT
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if recv_type.shape().is_too_complex() {
-                            // too-complex shapes can't use index access
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapObject, state });
-                        let self_val = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
-                        let mut ivar_index: u16 = 0;
-                        let replacement = if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
-                            // If there is no IVAR index, then the ivar was undefined when we
-                            // entered the compiler.  That means we can just return nil for this
-                            // shape + iv name
-                            Insn::Const { val: Const::Value(Qnil) }
+                        if summary.is_monomorphic() {
+                            let recv_type = summary.bucket(0);
+                            let Some(info) = build_load_ivar_info(id, recv_type) else {
+                                // Not eligible for optimization
+                                self.push_insn_id(block, insn_id); continue;
+                            };
+                            let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapObject, state });
+                            let self_val = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
+                            let replacement = match info.index {
+                                // If there is no IVAR index, then the ivar was undefined when we
+                                // entered the compiler.  That means we can just return nil for this
+                                // shape + iv name
+                                None => Insn::Const { val: Const::Value(Qnil) },
+                                Some(index) if info.is_embedded => Insn::LoadIvarEmbedded { self_val, id, index },
+                                Some(index) => Insn::LoadIvarExtended { self_val, id, index },
+                            };
+                            let replacement = self.push_insn(block, replacement);
+                            self.make_equal_to(insn_id, replacement);
+                        } else if summary.is_polymorphic() {
+                            let infos: Option<Vec<LoadIvarInfo>> = summary.each_item()
+                                .take_while(|&ty| ty != ProfiledType::default())
+                                .map(|ty| build_load_ivar_info(id, ty))
+                                .collect();
+                            let Some(infos) = infos else {
+                                // Not eligible for optimization
+                                self.push_insn_id(block, insn_id); continue;
+                            };
+                            let replacement = self.push_insn(block, Insn::LoadIvarPolymorphic { self_val, id, infos, state });
+                            self.make_equal_to(insn_id, replacement);
                         } else {
-                            if recv_type.flags().is_embedded() {
-                                Insn::LoadIvarEmbedded { self_val, id, index: ivar_index }
-                            } else {
-                                Insn::LoadIvarExtended { self_val, id, index: ivar_index }
-                            }
-                        };
-                        let replacement = self.push_insn(block, replacement);
-                        self.make_equal_to(insn_id, replacement);
+                            // Not eligible for optimization
+                            self.push_insn_id(block, insn_id); continue;
+                        }
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
@@ -2170,7 +2211,9 @@ impl Function {
                 worklist.push_back(state)
             }
             &Insn::CCall { ref args, .. } => worklist.extend(args),
-            &Insn::GetIvar { self_val, state, .. } | &Insn::DefinedIvar { self_val, state, .. } => {
+            &Insn::GetIvar { self_val, state, .. }
+            | &Insn::DefinedIvar { self_val, state, .. }
+            | &Insn::LoadIvarPolymorphic { self_val, state, .. } => {
                 worklist.push_back(self_val);
                 worklist.push_back(state);
             }
@@ -8500,8 +8543,6 @@ mod opt_tests {
         crate::options::internal_set_num_profiles(3);
         eval("
             class C
-              attr_reader :foo, :bar
-
               def foo_then_bar
                 @foo = 1
                 @bar = 2
@@ -8511,17 +8552,21 @@ mod opt_tests {
                 @bar = 3
                 @foo = 4
               end
+
+              def foo
+                @foo
+              end
             end
 
             O1 = C.new
             O1.foo_then_bar
             O2 = C.new
             O2.bar_then_foo
-            def test(o) = o.foo
-            test O1
-            test O2
+            O1.foo
+            O2.foo
+            foo = C.instance_method(:foo)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("foo"), @r"
         fn test@<compiled>:20:
         bb0(v0:BasicObject, v1:BasicObject):
           v4:BasicObject = SendWithoutBlock v1, :foo

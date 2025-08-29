@@ -124,6 +124,10 @@ impl<T: Copy + PartialEq + Default + std::fmt::Debug, const N: usize> Distributi
         self.kind == DistributionKind::Monomorphic
     }
 
+    pub fn is_polymorphic(&self) -> bool {
+        self.kind == DistributionKind::Polymorphic
+    }
+
     pub fn is_skewed_polymorphic(&self) -> bool {
         self.kind == DistributionKind::SkewedPolymorphic
     }
