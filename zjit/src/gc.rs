@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::{ffi::c_void, ops::Range};
 use crate::codegen::IseqCall;
+use crate::stats::CompileError;
 use crate::{cruby::*, profile::IseqProfile, state::ZJITState, stats::with_time_stat, virtualmem::CodePtr};
 use crate::stats::Counter::gc_time_ns;
 
@@ -38,7 +39,7 @@ impl IseqPayload {
 pub enum IseqStatus {
     /// CodePtr has the JIT code address of the first block
     Compiled(CodePtr),
-    CantCompile,
+    CantCompile(CompileError),
     NotCompiled,
 }
 

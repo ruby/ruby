@@ -2,6 +2,7 @@ use std::mem::take;
 
 use crate::asm::*;
 use crate::asm::x86_64::*;
+use crate::stats::CompileError;
 use crate::virtualmem::CodePtr;
 use crate::cruby::*;
 use crate::backend::lir::*;
@@ -892,7 +893,7 @@ impl Assembler
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Option<(CodePtr, Vec<CodePtr>)> {
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         let asm = self.x86_split();
         let mut asm = asm.alloc_regs(regs)?;
         asm.compile_side_exits();
@@ -908,12 +909,10 @@ impl Assembler
 
         if let (Some(gc_offsets), false) = (gc_offsets, cb.has_dropped_bytes()) {
             cb.link_labels();
-
-            Some((start_ptr, gc_offsets))
+            Ok((start_ptr, gc_offsets))
         } else {
             cb.clear_labels();
-
-            None
+            Err(CompileError::OutOfMemory)
         }
     }
 }
