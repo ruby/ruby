@@ -122,6 +122,9 @@ impl std::fmt::Display for TypeDistributionSummary {
     }
 }
 
+// TODO(max): Add is_monomorphic_class function to TypeDistributionSummary that checks if all the
+// class objects are the same (even if shapes differ)
+
 /// Profile the Type of top-`n` stack operands
 fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize) {
     let types = &mut profile.opnd_types[profiler.insn_idx];
