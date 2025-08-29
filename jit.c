@@ -13,6 +13,7 @@
 #include "insns_info.inc"
 #include "iseq.h"
 #include "internal/gc.h"
+#include "vm_sync.h"
 
 // Field offsets for the RObject struct
 enum robject_offsets {
@@ -465,4 +466,10 @@ bool
 rb_jit_shape_too_complex_p(shape_id_t shape_id)
 {
     return rb_shape_too_complex_p(shape_id);
+}
+
+bool
+rb_jit_multi_ractor_p(void)
+{
+    return rb_multi_ractor_p();
 }

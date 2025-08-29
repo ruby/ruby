@@ -920,7 +920,6 @@ unsafe extern "C" {
     pub fn rb_zjit_reserve_addr_space(mem_size: u32) -> *mut u8;
     pub fn rb_zjit_profile_disable(iseq: *const rb_iseq_t);
     pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
-    pub fn rb_zjit_multi_ractor_p() -> bool;
     pub fn rb_zjit_constcache_shareable(ice: *const iseq_inline_constant_cache_entry) -> bool;
     pub fn rb_zjit_vm_unlock(
         recursive_lock_level: *mut ::std::os::raw::c_uint,
@@ -1029,4 +1028,5 @@ unsafe extern "C" {
     pub fn rb_set_cfp_pc(cfp: *mut rb_control_frame_struct, pc: *const VALUE);
     pub fn rb_set_cfp_sp(cfp: *mut rb_control_frame_struct, sp: *mut VALUE);
     pub fn rb_jit_shape_too_complex_p(shape_id: shape_id_t) -> bool;
+    pub fn rb_jit_multi_ractor_p() -> bool;
 }

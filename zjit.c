@@ -16,7 +16,6 @@
 #include "insns.inc"
 #include "insns_info.inc"
 #include "zjit.h"
-#include "vm_sync.h"
 #include "vm_insnhelper.h"
 #include "probes.h"
 #include "probes_helper.h"
@@ -175,12 +174,6 @@ rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
 }
 
 extern VALUE *rb_vm_base_ptr(struct rb_control_frame_struct *cfp);
-
-bool
-rb_zjit_multi_ractor_p(void)
-{
-    return rb_multi_ractor_p();
-}
 
 bool
 rb_zjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)

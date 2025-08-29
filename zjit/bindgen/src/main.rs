@@ -367,6 +367,7 @@ fn main() {
         // From jit.c
         .allowlist_function("rb_assert_holding_vm_lock")
         .allowlist_function("rb_jit_shape_too_complex_p")
+        .allowlist_function("rb_jit_multi_ractor_p")
         .allowlist_type("robject_offsets")
 
         // from vm_sync.h
@@ -433,7 +434,6 @@ fn main() {
         .allowlist_function("rb_get_cfp_ep")
         .allowlist_function("rb_get_cfp_ep_level")
         .allowlist_function("rb_get_cme_def_type")
-        .allowlist_function("rb_zjit_multi_ractor_p")
         .allowlist_function("rb_zjit_constcache_shareable")
         .allowlist_function("rb_get_cme_def_body_attr_id")
         .allowlist_function("rb_get_symbol_id")

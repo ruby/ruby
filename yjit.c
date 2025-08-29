@@ -21,7 +21,6 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
-#include "vm_sync.h"
 #include "yjit.h"
 #include "zjit.h"
 #include "vm_insnhelper.h"
@@ -636,12 +635,6 @@ int
 rb_ENCODING_GET(VALUE obj)
 {
     return RB_ENCODING_GET(obj);
-}
-
-bool
-rb_yjit_multi_ractor_p(void)
-{
-    return rb_multi_ractor_p();
 }
 
 bool
