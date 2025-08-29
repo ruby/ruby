@@ -1355,6 +1355,29 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:defined]
   end
 
+  def test_defined_method_raise
+    assert_compiles '[nil, nil, nil]', %q{
+      class C
+        def assert_equal expected, actual
+          if expected != actual
+            raise "NO"
+          end
+        end
+
+        def test_defined_method
+          assert_equal(nil, defined?("x".reverse(1).reverse))
+        end
+      end
+
+      c = C.new
+      result = []
+      result << c.test_defined_method
+      result << c.test_defined_method
+      result << c.test_defined_method
+      result
+    }
+  end
+
   def test_defined_yield
     assert_compiles "nil", "defined?(yield)"
     assert_compiles '[nil, nil, "yield"]', %q{
