@@ -260,7 +260,6 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_class_hierarchy_inside_initialize_dup_bug_21538
-    initialize_dup_called = false
     ancestors = sc_ancestors = nil
     b = Class.new
     b.define_singleton_method(:initialize_dup) do |x|
@@ -282,7 +281,6 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_class_hierarchy_inside_initialize_clone_bug_21538
-    initialize_dup_called = false
     ancestors = sc_ancestors = nil
     a = Class.new
     a.define_singleton_method(:initialize_clone) do |x|
