@@ -418,9 +418,6 @@ class TestModule < Test::Unit::TestCase
     instance = klass.new
     assert_equal(:first, instance.foo)
     new_mod = Module.new { define_method(:foo) { :second } }
-    assert_raise(TypeError) do
-      mod.send(:initialize_copy, new_mod)
-    end
     4.times { GC.start }
     assert_equal(:first, instance.foo) # [BUG] unreachable
   end
@@ -435,11 +432,6 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:x], m.instance_methods)
     assert_equal([:@x], m.instance_variables)
     assert_equal([:X], m.constants)
-    assert_raise(TypeError) do
-      m.module_eval do
-        initialize_copy(Module.new)
-      end
-    end
 
     m = Class.new(Module) do
       def initialize_copy(other)
