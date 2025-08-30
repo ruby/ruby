@@ -1955,6 +1955,10 @@ impl Function {
             for insn_id in old_insns {
                 match self.find(insn_id) {
                     Insn::NewRange { low, high, flag, state } => {
+
+                        // The NewRange rewrite triggers mostly on literals because that is the
+                        // case we can easily prove Fixnum statically and cheaply guard the other
+                        // side.
                         let low_is_fix  = self.is_a(low,  types::Fixnum);
                         let high_is_fix = self.is_a(high, types::Fixnum);
 
@@ -1973,13 +1977,6 @@ impl Function {
                             // Only right is fixnum → guard left
                             let low_fix = self.coerce_to_fixnum(block, low, state);
                             let repl = self.push_insn(block, Insn::NewRangeFixnum { low: low_fix, high, flag, state });
-                            self.make_equal_to(insn_id, repl);
-                            self.insn_types[repl.0] = self.infer_type(repl);
-                        } else if self.arguments_likely_fixnums(low, high, state) {
-                            // Both likely fixnum from profiles → guard both
-                            let low_fix  = self.coerce_to_fixnum(block, low,  state);
-                            let high_fix = self.coerce_to_fixnum(block, high, state);
-                            let repl = self.push_insn(block, Insn::NewRangeFixnum { low: low_fix, high: high_fix, flag, state });
                             self.make_equal_to(insn_id, repl);
                             self.insn_types[repl.0] = self.infer_type(repl);
                         } else {
@@ -6716,25 +6713,6 @@ mod opt_tests {
           v3:Fixnum[10] = Const Value(10)
           v9:Fixnum = GuardType v1, Fixnum
           v10:RangeExact = NewRangeFixnum v9 NewRangeExclusive v3
-          CheckInterrupts
-          Return v10
-        ");
-    }
-
-    #[test]
-    fn test_optimize_range_fixnum_inclusive_both_profiled() {
-        eval(r#"
-            def test(a, b)
-              (a..b)
-            end
-            test(2, 4); test(5, 9)
-        "#);
-        assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:3:
-        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-          v3:Fixnum = GuardType v1, Fixnum
-          v9:Fixnum = GuardType v2, Fixnum
-          v10:RangeExact = NewRangeFixnum v3 NewRangeInclusive v9
           CheckInterrupts
           Return v10
         ");
