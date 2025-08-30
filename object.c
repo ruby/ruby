@@ -318,7 +318,7 @@ rb_obj_class(VALUE obj)
     return cl;
 }
 
-VALUE
+static inline VALUE
 rb_obj_class_must(VALUE obj)
 {
     return class_real(CLASS_OF(obj));
