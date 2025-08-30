@@ -99,18 +99,31 @@ static const VALUE *
 VM_EP_RUBY_LEP(const rb_execution_context_t *ec, const rb_control_frame_t *current_cfp)
 {
     const VALUE *ep = current_cfp->ep;
+    const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
     const rb_control_frame_t *cfp, *checkpoint_cfp = current_cfp;
 
     while (!VM_ENV_LOCAL_P(ep) || VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
         while (!VM_ENV_LOCAL_P(ep)) {
             ep = VM_ENV_PREV_EP(ep);
         }
-        while (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
+        while (VM_ENV_FLAGS(ep, VM_FRAME_FLAG_CFRAME) != 0) {
             if (!cfp) {
                 cfp = rb_vm_search_cf_from_ep(ec, checkpoint_cfp, ep);
+                VM_ASSERT(cfp, "rb_vm_search_cf_from_ep should return a valid cfp for the ep");
+            }
+            if (VM_FRAME_FINISHED_P(cfp)) {
+                printf("The control frame is flagged as FINISH\n");
             }
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+            if (cfp >= eocfp) {
+                return NULL;
+            }
+            VM_ASSERT(cfp, "CFUNC should have a valid previous control frame");
             ep = cfp->ep;
+            if (!ep) {
+                printf("cfp->ep is NULL, cfp\n");
+                return NULL;
+            }
         }
         checkpoint_cfp = cfp;
         cfp = NULL;

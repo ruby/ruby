@@ -2246,6 +2246,12 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
     VM_ASSERT(cc);
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc == vm_cc_empty() || cc->klass == klass);
+    if (cc != vm_cc_empty()) {
+        const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
+        if (cme != NULL && !IMEMO_TYPE_P((VALUE)cme, imemo_ment)) {
+            rb_bug("imemo_type:%s, mid:%s", rb_imemo_name(imemo_type((VALUE)cme)), rb_id2name(ci->mid));
+        }
+    }
     VM_ASSERT(cc == vm_cc_empty() || callable_method_entry_p(vm_cc_cme(cc)));
     VM_ASSERT(cc == vm_cc_empty() || !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc)));
     VM_ASSERT(cc == vm_cc_empty() || vm_cc_cme(cc)->called_id == vm_ci_mid(ci));
