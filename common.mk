@@ -85,11 +85,8 @@ MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
 
 PRISM_BUILD_DIR = prism
 
-PRISM_FILES = prism/api_node.$(OBJEXT) \
-		prism/api_pack.$(OBJEXT) \
-		prism/diagnostic.$(OBJEXT) \
+LIBPRISM_OBJS = prism/diagnostic.$(OBJEXT) \
 		prism/encoding.$(OBJEXT) \
-		prism/extension.$(OBJEXT) \
 		prism/node.$(OBJEXT) \
 		prism/options.$(OBJEXT) \
 		prism/pack.$(OBJEXT) \
@@ -108,8 +105,14 @@ PRISM_FILES = prism/api_node.$(OBJEXT) \
 		prism/util/pm_string.$(OBJEXT) \
 		prism/util/pm_strncasecmp.$(OBJEXT) \
 		prism/util/pm_strpbrk.$(OBJEXT) \
-		prism/prism.$(OBJEXT) \
+		prism/prism.$(OBJEXT)
+
+EXTPRISM_OBJS = prism/api_node.$(OBJEXT) \
+		prism/api_pack.$(OBJEXT) \
+		prism/extension.$(OBJEXT) \
 		prism_init.$(OBJEXT)
+
+PRISM_OBJS = $(LIBPRISM_OBJS) $(EXTPRISM_OBJS)
 
 COMMONOBJS    = \
 		array.$(OBJEXT) \
@@ -188,7 +191,7 @@ COMMONOBJS    = \
 		vm_sync.$(OBJEXT) \
 		vm_trace.$(OBJEXT) \
 		weakmap.$(OBJEXT) \
-		$(PRISM_FILES) \
+		$(PRISM_OBJS) \
 		$(YJIT_OBJ) \
 		$(ZJIT_OBJ) \
 		$(JIT_OBJ) \
@@ -199,7 +202,7 @@ COMMONOBJS    = \
 		$(BUILTIN_TRANSOBJS) \
 		$(MISSING)
 
-$(PRISM_FILES): $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/util/.time
+$(PRISM_OBJS): $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/util/.time
 
 $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/util/.time:
 	$(Q) $(MAKEDIRS) $(@D)
@@ -1280,7 +1283,7 @@ preludes: {$(VPATH)}miniprelude.c
 
 {$(srcdir)}.rb.rbinc:
 	$(ECHO) making $@
-	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $(SRC_FILE)
+	$(Q) $(BASERUBY) $(tooldir)/mk_builtin_loader.rb $(tooldir)/dump_ast$(EXEEXT) $(SRC_FILE)
 
 $(BUILTIN_BINARY:yes=built)in_binary.rbbin: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/template/builtin_binary.rbbin.tmpl
 	$(Q) $(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ \
@@ -1290,7 +1293,11 @@ $(BUILTIN_BINARY:yes=built)in_binary.rbbin: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)
 $(BUILTIN_BINARY:no=builtin)_binary.rbbin:
 	$(Q) echo> $@ // empty $(@F)
 
-$(BUILTIN_RB_INCS): $(top_srcdir)/tool/mk_builtin_loader.rb
+$(BUILTIN_RB_INCS): $(tooldir)/mk_builtin_loader.rb $(tooldir)/dump_ast$(EXEEXT)
+
+$(tooldir)/dump_ast$(EXEEXT): $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
+	$(ECHO) compiling $@
+	$(Q) $(CC) $(OUTFLAG)$@ $(INCFLAGS) $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
 
 $(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
 
@@ -1434,7 +1441,6 @@ up$(DOT_WAIT)::
 yes::
 no::
 
-after-update:: common-srcs
 after-update:: $(REVISION_H)
 after-update:: extract-extlibs
 after-update:: extract-gems
