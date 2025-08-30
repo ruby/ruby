@@ -409,7 +409,7 @@ init_copy(VALUE dest, VALUE obj)
         break;
       case T_CLASS:
       case T_MODULE:
-        // noop: handled in class.c: rb_mod_init_copy
+        rb_mod_init_copy(dest, obj);
         break;
       case T_OBJECT:
         rb_obj_copy_ivar(dest, obj);
@@ -4571,7 +4571,6 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "<=", rb_class_inherited_p, 1);
     rb_define_method(rb_cModule, ">",  rb_mod_gt, 1);
     rb_define_method(rb_cModule, ">=", rb_mod_ge, 1);
-    rb_define_method(rb_cModule, "initialize_copy", rb_mod_init_copy, 1); /* in class.c */
     rb_define_method(rb_cModule, "to_s", rb_mod_to_s, 0);
     rb_define_alias(rb_cModule, "inspect", "to_s");
     rb_define_method(rb_cModule, "included_modules", rb_mod_included_modules, 0); /* in class.c */
