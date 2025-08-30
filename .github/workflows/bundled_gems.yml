@@ -100,47 +100,48 @@ jobs:
           gems: ${{ steps.diff.outputs.gems }}
         if: ${{ steps.diff.outputs.update }}
 
-      - name: Fetch more logs
-        id: logs
-        run: |
-          file=gems/bundled_gems days=30
-          { echo days=$days; echo file=$file; } >> $GITHUB_OUTPUT
-          since=$(date --date=-$[days * 2 + 10]day +'%F')
-          set -x
-          git sparse-checkout set --no-cone /$file
-          git fetch --shallow-since="$since" --no-tags origin ${GITHUB_REF}
-
       - name: Development revision of bundled gems
         run: |
           #!ruby
-          file = ENV["file"]
-          days = ENV["days"].to_i
-          today = Time.new("#{ENV['TODAY']}T00:00:00Z").to_i
-          limit = today - days * 86400
+          file = "gems/bundled_gems"
 
-          ok = true
+          SECONDS_IN_DAY = 86400
+          today = Time.new("#{ENV['TODAY']}Z")
+          if !(december = today.month == 12)
+            days = 30
+          elsif (days = 26 - today.day).positive?
+            days += 4
+          else
+            puts "::info:: just after released"
+            exit
+          end
+
+          since = "#{today.year-1}-12-26"
+          ref = ENV['GITHUB_REF']
+          puts "::group::\e[94mfetching \e[1m#{file}\e[22m since \e[1m#{since}\e[22m from \e[1m#{ref}\e[m"
+          system(*%W[git fetch --shallow-since=#{since} --no-tags origin #{ref}], exception: true)
+          puts "::endgroup::"
+
+          puts "\e[94mchecking development version bundled gems older than \e[1m#{days}\e[22m days\e[m"
+          limit = today.to_i - days * SECONDS_IN_DAY
+          old = 0
           IO.popen(%W"git blame --line-porcelain -- #{file}") do |blame|
             while head = blame.gets("\n\t") and s = blame.gets
               next unless (gem = s.split(/\s+|#.*/)).size > 3
               time = head[/^committer-time \K\d+/].to_i
               next if (d = limit - time) <= 0
-              d /= 86400
+              d /= SECONDS_IN_DAY
               line = head[/\A\h+ \d+ \K\d+/].to_i
-              level = if d < days; 'warning'; else ok = false; 'error'; end
+              level = if d < days; 'warning'; else old += 1; 'error'; end
               d += days
               puts "::#{level} file=#{file},line=#{line},title=Older than #{d} days::#{gem[0]} #{gem[3]}"
             end
           end
-          # exit ok
+          abort "::error title=Too long-standing gems::The release comes soon." if december and old.nonzero?
         shell: ruby {0}
         env:
           file: ${{ steps.logs.outputs.file }}
           days: ${{ steps.logs.outputs.days }}
-
-      - name: Restore sparse checkout
-        run: |
-          git sparse-checkout disable
-        if: always()
 
       - name: Install libraries
         uses: ./.github/actions/setup/ubuntu
