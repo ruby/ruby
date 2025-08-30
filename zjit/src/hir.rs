@@ -6643,7 +6643,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_optimize_range_fixnum_inclusive_high_profiled() {
+    fn test_optimize_range_fixnum_inclusive_high_guarded() {
         eval(r#"
             def test(a)
               (1..a)
@@ -6662,7 +6662,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_optimize_range_fixnum_exclusive_high_profiled() {
+    fn test_optimize_range_fixnum_exclusive_high_guarded() {
         eval(r#"
             def test(a)
               (1...a)
@@ -6681,7 +6681,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_optimize_range_fixnum_inclusive_low_profiled() {
+    fn test_optimize_range_fixnum_inclusive_low_guarded() {
         eval(r#"
             def test(a)
               (a..10)
@@ -6700,7 +6700,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_optimize_range_fixnum_exclusive_low_profiled() {
+    fn test_optimize_range_fixnum_exclusive_low_guarded() {
         eval(r#"
             def test(a)
               (a...10)
