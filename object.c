@@ -288,10 +288,23 @@ rb_class_real(VALUE cl)
     return cl;
 }
 
+static inline VALUE
+fake_class_p(VALUE klass)
+{
+    RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
+    STATIC_ASSERT(t_iclass_overlap, !(T_CLASS & T_ICLASS));
+
+    return FL_TEST_RAW(klass, T_ICLASS | FL_SINGLETON);
+}
+
 VALUE
 rb_obj_class(VALUE obj)
 {
-    return rb_class_real(CLASS_OF(obj));
+    VALUE cl = CLASS_OF(obj);
+    while (RB_UNLIKELY(cl && fake_class_p(cl))) {
+        cl = RCLASS_SUPER(cl);
+    }
+    return cl;
 }
 
 /*
