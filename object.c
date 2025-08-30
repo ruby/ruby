@@ -278,23 +278,23 @@ rb_obj_not_equal(VALUE obj1, VALUE obj2)
     return rb_obj_not(result);
 }
 
-VALUE
-rb_class_real(VALUE cl)
-{
-    while (cl &&
-        (RCLASS_SINGLETON_P(cl) || BUILTIN_TYPE(cl) == T_ICLASS)) {
-        cl = RCLASS_SUPER(cl);
-    }
-    return cl;
-}
-
 static inline VALUE
 fake_class_p(VALUE klass)
 {
-    RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
-    STATIC_ASSERT(t_iclass_overlap, !(T_CLASS & T_ICLASS));
+    RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
+    STATIC_ASSERT(t_iclass_overlap_t_class, !(T_CLASS & T_ICLASS));
+    STATIC_ASSERT(t_iclass_overlap_t_module, !(T_MODULE & T_ICLASS));
 
     return FL_TEST_RAW(klass, T_ICLASS | FL_SINGLETON);
+}
+
+VALUE
+rb_class_real(VALUE cl)
+{
+    while (RB_UNLIKELY(cl && fake_class_p(cl))) {
+        cl = RCLASS_SUPER(cl);
+    }
+    return cl;
 }
 
 VALUE
