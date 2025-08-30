@@ -281,6 +281,7 @@ rb_obj_not_equal(VALUE obj1, VALUE obj2)
 static inline VALUE
 fake_class_p(VALUE klass)
 {
+    RUBY_ASSERT(klass);
     RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
     STATIC_ASSERT(t_iclass_overlap_t_class, !(T_CLASS & T_ICLASS));
     STATIC_ASSERT(t_iclass_overlap_t_module, !(T_MODULE & T_ICLASS));
@@ -302,6 +303,17 @@ rb_obj_class(VALUE obj)
 {
     VALUE cl = CLASS_OF(obj);
     while (RB_UNLIKELY(cl && fake_class_p(cl))) {
+        cl = RCLASS_SUPER(cl);
+    }
+    return cl;
+}
+
+VALUE
+rb_obj_class_must(VALUE obj)
+{
+    VALUE cl = CLASS_OF(obj);
+    RUBY_ASSERT(cl);
+    while (RB_UNLIKELY(fake_class_p(cl))) {
         cl = RCLASS_SUPER(cl);
     }
     return cl;
