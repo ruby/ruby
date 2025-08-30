@@ -1023,8 +1023,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: class << [nd_recv]; [nd_body]; end");
         ANN("example: class << obj; ..; end");
         F_NODE(nd_recv, RNODE_SCLASS, "receiver");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_SCLASS, "singleton class definition");
+        F_LOC(class_keyword_loc, RNODE_SCLASS);
+        F_LOC(operator_loc, RNODE_SCLASS);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_SCLASS);
         return;
 
       case NODE_COLON2:
