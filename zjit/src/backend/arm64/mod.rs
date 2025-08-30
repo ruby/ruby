@@ -4,6 +4,7 @@ use crate::asm::{CodeBlock, Label};
 use crate::asm::arm64::*;
 use crate::cruby::*;
 use crate::backend::lir::*;
+use crate::stats::CompileError;
 use crate::virtualmem::CodePtr;
 use crate::cast::*;
 
@@ -1369,7 +1370,7 @@ impl Assembler
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Option<(CodePtr, Vec<CodePtr>)> {
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         let asm = self.arm64_split();
         let mut asm = asm.alloc_regs(regs)?;
         asm.compile_side_exits();
@@ -1389,11 +1390,10 @@ impl Assembler
             // Invalidate icache for newly written out region so we don't run stale code.
             unsafe { rb_zjit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
 
-            Some((start_ptr, gc_offsets))
+            Ok((start_ptr, gc_offsets))
         } else {
             cb.clear_labels();
-
-            None
+            Err(CompileError::OutOfMemory)
         }
     }
 }
@@ -1521,7 +1521,7 @@ mod tests {
 
         let opnd = asm.add(Opnd::Reg(X0_REG), Opnd::Reg(X1_REG));
         asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
-        asm.compile_with_regs(&mut cb, vec![X3_REG]);
+        asm.compile_with_regs(&mut cb, vec![X3_REG]).unwrap();
 
         // Assert that only 2 instructions were written.
         assert_eq!(8, cb.get_write_pos());

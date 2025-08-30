@@ -6,7 +6,7 @@ use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_
 use crate::hir::SideExitReason;
 use crate::options::{debug, get_option};
 use crate::cruby::VALUE;
-use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, exit_counter_ptr_for_call_type};
+use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_call_type, exit_counter_ptr_for_opcode, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
 
@@ -1280,7 +1280,7 @@ impl Assembler
     /// Sets the out field on the various instructions that require allocated
     /// registers because their output is used as the operand on a subsequent
     /// instruction. This is our implementation of the linear scan algorithm.
-    pub(super) fn alloc_regs(mut self, regs: Vec<Reg>) -> Option<Assembler> {
+    pub(super) fn alloc_regs(mut self, regs: Vec<Reg>) -> Result<Assembler, CompileError> {
         // Dump live registers for register spill debugging.
         fn dump_live_regs(insns: Vec<Insn>, live_ranges: Vec<LiveRange>, num_regs: usize, spill_index: usize) {
             // Convert live_ranges to live_regs: the number of live registers at each index
@@ -1331,7 +1331,7 @@ impl Assembler
                             new_reg
                         } else {
                             debug!("spilling VReg is not implemented yet, can't evacuate C_RET_REG on CCall");
-                            return None;
+                            return Err(CompileError::RegisterSpillOnCCall);
                         };
                         asm.mov(Opnd::Reg(new_reg), C_RET_OPND);
                         pool.dealloc_reg(&C_RET_REG);
@@ -1436,7 +1436,7 @@ impl Assembler
                                     dump_live_regs(insns, live_ranges, regs.len(), index);
                                 }
                                 debug!("Register spill not supported");
-                                return None;
+                                return Err(CompileError::RegisterSpillOnAlloc);
                             }
                         }
                     };
@@ -1522,13 +1522,13 @@ impl Assembler
         }
 
         assert!(pool.is_empty(), "Expected all registers to be returned to the pool");
-        Some(asm)
+        Ok(asm)
     }
 
     /// Compile the instructions down to machine code.
     /// Can fail due to lack of code memory and inopportune code placement, among other reasons.
     #[must_use]
-    pub fn compile(self, cb: &mut CodeBlock) -> Option<(CodePtr, Vec<CodePtr>)> {
+    pub fn compile(self, cb: &mut CodeBlock) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         #[cfg(feature = "disasm")]
         let start_addr = cb.get_write_ptr();
         let alloc_regs = Self::get_alloc_regs();

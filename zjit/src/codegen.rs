@@ -8,12 +8,12 @@ use crate::backend::current::{Reg, ALLOC_REGS};
 use crate::invariants::{track_bop_assumption, track_cme_assumption, track_single_ractor_assumption, track_stable_constant_names_assumption};
 use crate::gc::{append_gc_offsets, get_or_create_iseq_payload, get_or_create_iseq_payload_ptr, IseqPayload, IseqStatus};
 use crate::state::ZJITState;
-use crate::stats::incr_counter;
-use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_ns, exit_compilation_failure}};
+use crate::stats::{exit_counter_for_compile_error, incr_counter, incr_counter_by, CompileError};
+use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SCRATCH_OPND, SP};
 use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SpecialBackrefSymbol, SELF_PARAM_IDX};
-use crate::hir::{Const, FrameState, Function, Insn, InsnId};
+use crate::hir::{Const, FrameState, Function, Insn, InsnId, ParseError};
 use crate::hir_type::{types, Type};
 use crate::options::get_option;
 
@@ -79,7 +79,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
         let cb = ZJITState::get_code_block();
         let mut code_ptr = with_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq));
 
-        if code_ptr.is_none() {
+        if let Err(err) = &code_ptr {
             // Assert that the ISEQ compiles if RubyVM::ZJIT.assert_compiles is enabled
             if ZJITState::assert_compiles_enabled() {
                 let iseq_location = iseq_get_location(iseq, 0);
@@ -88,7 +88,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
 
             // For --zjit-stats, generate an entry that just increments exit_compilation_failure and exits
             if get_option!(stats) {
-                code_ptr = gen_compilation_failure_counter(cb);
+                code_ptr = gen_compile_error_counter(cb, err);
             }
         }
 
@@ -102,37 +102,49 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
 }
 
 /// Compile an entry point for a given ISEQ
-fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<CodePtr> {
+fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr) -> Result<CodePtr, CompileError> {
     // Compile ISEQ into High-level IR
-    let Some(function) = compile_iseq(iseq) else {
-        incr_counter!(compilation_failure);
-        return None;
+    let function = match compile_iseq(iseq) {
+        Ok(function) => function,
+        Err(err) => {
+            incr_counter!(failed_iseq_count);
+            return Err(err);
+        }
     };
 
     // Compile the High-level IR
-    let Some(start_ptr) = gen_iseq(cb, iseq, Some(&function)) else {
-        debug!("Failed to compile iseq: gen_iseq failed: {}", iseq_get_location(iseq, 0));
-        return None;
+    let start_ptr = match gen_iseq(cb, iseq, Some(&function)) {
+        Ok(start_ptr) => start_ptr,
+        Err(err) => {
+            debug!("Failed to compile iseq: gen_iseq failed: {}", iseq_get_location(iseq, 0));
+            return Err(err);
+        }
     };
 
     // Compile an entry point to the JIT code
-    let Some(entry_ptr) = gen_entry(cb, iseq, &function, start_ptr) else {
-        debug!("Failed to compile iseq: gen_entry failed: {}", iseq_get_location(iseq, 0));
-        return None;
+    let entry_ptr = match gen_entry(cb, iseq, &function, start_ptr) {
+        Ok(entry_ptr) => entry_ptr,
+        Err(err) => {
+            debug!("Failed to compile iseq: gen_entry failed: {}", iseq_get_location(iseq, 0));
+            return Err(err);
+        }
     };
 
     // Return a JIT code address
-    Some(entry_ptr)
+    Ok(entry_ptr)
 }
 
 /// Stub a branch for a JIT-to-JIT call
-fn gen_iseq_call(cb: &mut CodeBlock, caller_iseq: IseqPtr, iseq_call: &Rc<RefCell<IseqCall>>) -> Option<()> {
+fn gen_iseq_call(cb: &mut CodeBlock, caller_iseq: IseqPtr, iseq_call: &Rc<RefCell<IseqCall>>) -> Result<(), CompileError> {
     // Compile a function stub
-    let Some(stub_ptr) = gen_function_stub(cb, iseq_call.clone()) else {
-        // Failed to compile the stub. Bail out of compiling the caller ISEQ.
-        debug!("Failed to compile iseq: could not compile stub: {} -> {}",
-               iseq_get_location(caller_iseq, 0), iseq_get_location(iseq_call.borrow().iseq, 0));
-        return None;
+    let stub_ptr = match gen_function_stub(cb, iseq_call.clone()) {
+        Ok(stub_ptr) => stub_ptr,
+        Err(err) => {
+            // Failed to compile the stub. Bail out of compiling the caller ISEQ.
+            debug!("Failed to compile iseq: could not compile stub: {} -> {}",
+                   iseq_get_location(caller_iseq, 0), iseq_get_location(iseq_call.borrow().iseq, 0));
+            return Err(err);
+        }
     };
 
     // Update the JIT-to-JIT call to call the stub
@@ -142,7 +154,7 @@ fn gen_iseq_call(cb: &mut CodeBlock, caller_iseq: IseqPtr, iseq_call: &Rc<RefCel
         asm_comment!(asm, "call function stub: {}", iseq_get_location(iseq, 0));
         asm.ccall(stub_addr, vec![]);
     });
-    Some(())
+    Ok(())
 }
 
 /// Write an entry to the perf map in /tmp
@@ -160,7 +172,7 @@ fn register_with_perf(iseq_name: String, start_ptr: usize, code_size: usize) {
 }
 
 /// Compile a JIT entry
-fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_ptr: CodePtr) -> Option<CodePtr> {
+fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_ptr: CodePtr) -> Result<CodePtr, CompileError> {
     // Set up registers for CFP, EC, SP, and basic block arguments
     let mut asm = Assembler::new();
     gen_entry_prologue(&mut asm, iseq);
@@ -187,33 +199,36 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_pt
         let iseq_name = iseq_get_location(iseq, 0);
         register_with_perf(format!("entry for {iseq_name}"), start_ptr, code_size);
     }
-    Some(code_ptr)
+    Ok(code_ptr)
 }
 
 /// Compile an ISEQ into machine code if not compiled yet
-fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> Option<CodePtr> {
+fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> Result<CodePtr, CompileError> {
     // Return an existing pointer if it's already compiled
     let payload = get_or_create_iseq_payload(iseq);
-    match payload.status {
-        IseqStatus::Compiled(start_ptr) => return Some(start_ptr),
-        IseqStatus::CantCompile => return None,
+    match &payload.status {
+        IseqStatus::Compiled(start_ptr) => return Ok(*start_ptr),
+        IseqStatus::CantCompile(err) => return Err(err.clone()),
         IseqStatus::NotCompiled => {},
     }
 
     // Compile the ISEQ
     let code_ptr = gen_iseq_body(cb, iseq, function, payload);
-    if let Some(start_ptr) = code_ptr {
-        payload.status = IseqStatus::Compiled(start_ptr);
-        incr_counter!(compiled_iseq_count);
-    } else {
-        payload.status = IseqStatus::CantCompile;
-        incr_counter!(compilation_failure);
+    match &code_ptr {
+        Ok(start_ptr) => {
+            payload.status = IseqStatus::Compiled(*start_ptr);
+            incr_counter!(compiled_iseq_count);
+        }
+        Err(err) => {
+            payload.status = IseqStatus::CantCompile(err.clone());
+            incr_counter!(failed_iseq_count);
+        }
     }
     code_ptr
 }
 
 /// Compile an ISEQ into machine code
-fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>, payload: &mut IseqPayload) -> Option<CodePtr> {
+fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>, payload: &mut IseqPayload) -> Result<CodePtr, CompileError> {
     // Convert ISEQ into optimized High-level IR if not given
     let function = match function {
         Some(function) => function,
@@ -231,11 +246,11 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>,
     // Prepare for GC
     payload.iseq_calls.extend(iseq_calls.clone());
     append_gc_offsets(iseq, &gc_offsets);
-    Some(start_ptr)
+    Ok(start_ptr)
 }
 
 /// Compile a function
-fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Option<(CodePtr, Vec<CodePtr>, Vec<Rc<RefCell<IseqCall>>>)> {
+fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Result<(CodePtr, Vec<CodePtr>, Vec<Rc<RefCell<IseqCall>>>), CompileError> {
     let c_stack_slots = max_num_params(function).saturating_sub(ALLOC_REGS.len());
     let mut jit = JITState::new(iseq, function.num_insns(), function.num_blocks(), c_stack_slots);
     let mut asm = Assembler::new();
@@ -291,7 +306,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
 
     // Generate code if everything can be compiled
     let result = asm.compile(cb);
-    if let Some((start_ptr, _)) = result {
+    if let Ok((start_ptr, _)) = result {
         if get_option!(perf) {
             let start_usize = start_ptr.raw_ptr(cb) as usize;
             let end_usize = cb.get_write_ptr().raw_ptr(cb) as usize;
@@ -303,8 +318,6 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
             let iseq_name = iseq_get_location(iseq, 0);
             ZJITState::log_compile(iseq_name);
         }
-    } else {
-        incr_counter!(failed_asm_compile);
     }
     result.map(|(start_ptr, gc_offsets)| (start_ptr, gc_offsets, jit.iseq_calls))
 }
@@ -1473,7 +1486,7 @@ pub fn local_size_and_idx_to_bp_offset(local_size: usize, local_idx: usize) -> i
 }
 
 /// Convert ISEQ into High-level IR
-fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
+fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
     // Convert ZJIT instructions back to bare instructions
     unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
 
@@ -1482,8 +1495,7 @@ fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
     let stack_max = unsafe { rb_get_iseq_body_stack_max(iseq) };
     if stack_max >= i8::MAX as u32 {
         debug!("ISEQ stack too large: {stack_max}");
-        incr_counter!(failed_iseq_stack_too_large);
-        return None;
+        return Err(CompileError::IseqStackTooLarge);
     }
 
     let mut function = match iseq_to_hir(iseq) {
@@ -1491,8 +1503,7 @@ fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
         Err(err) => {
             let name = crate::cruby::iseq_get_location(iseq, 0);
             debug!("ZJIT: iseq_to_hir: {err:?}: {name}");
-            incr_counter!(failed_hir_compile);
-            return None;
+            return Err(CompileError::ParseError(err));
         }
     };
     if !get_option!(disable_hir_opt) {
@@ -1502,10 +1513,9 @@ fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
     #[cfg(debug_assertions)]
     if let Err(err) = function.validate() {
         debug!("ZJIT: compile_iseq: {err:?}");
-        incr_counter!(failed_hir_optimize);
-        return None;
+        return Err(CompileError::ParseError(ParseError::Validation(err)));
     }
-    Some(function)
+    Ok(function)
 }
 
 /// Build a Target::SideExit for non-PatchPoint instructions
@@ -1592,7 +1602,7 @@ c_callable! {
 
             // JIT-to-JIT calls don't set SP or fill nils to uninitialized (non-argument) locals.
             // We need to set them if we side-exit from function_stub_hit.
-            fn spill_stack(iseq: IseqPtr, cfp: CfpPtr, sp: *mut VALUE) {
+            fn prepare_for_exit(iseq: IseqPtr, cfp: CfpPtr, sp: *mut VALUE, compile_error: &CompileError) {
                 unsafe {
                     // Set SP which gen_push_frame() doesn't set
                     rb_set_cfp_sp(cfp, sp);
@@ -1603,6 +1613,11 @@ c_callable! {
                     let base = sp.offset(-local_size_and_idx_to_bp_offset(local_size, num_params) as isize);
                     slice::from_raw_parts_mut(base, local_size - num_params).fill(Qnil);
                 }
+
+                // Increment a compile error counter for --zjit-stats
+                if get_option!(stats) {
+                    incr_counter_by(exit_counter_for_compile_error(compile_error), 1);
+                }
             }
 
             // If we already know we can't compile the ISEQ, fail early without cb.mark_all_executable().
@@ -1610,23 +1625,27 @@ c_callable! {
             // code path can be made read-only. But you still need the check as is while holding the VM lock in any case.
             let cb = ZJITState::get_code_block();
             let payload = get_or_create_iseq_payload(iseq);
-            if cb.has_dropped_bytes() || payload.status == IseqStatus::CantCompile {
+            let compile_error = match &payload.status {
+                IseqStatus::CantCompile(err) => Some(err),
+                _ if cb.has_dropped_bytes() => Some(&CompileError::OutOfMemory),
+                _ => None,
+            };
+            if let Some(compile_error) = compile_error {
                 // We'll use this Rc again, so increment the ref count decremented by from_raw.
                 unsafe { Rc::increment_strong_count(iseq_call_ptr as *const RefCell<IseqCall>); }
 
-                // Exit to the interpreter
-                spill_stack(iseq, cfp, sp);
+                prepare_for_exit(iseq, cfp, sp, compile_error);
                 return ZJITState::get_exit_trampoline_with_counter().raw_ptr(cb);
             }
 
             // Otherwise, attempt to compile the ISEQ. We have to mark_all_executable() beyond this point.
             let code_ptr = with_time_stat(compile_time_ns, || function_stub_hit_body(cb, &iseq_call));
-            let code_ptr = if let Some(code_ptr) = code_ptr {
-                code_ptr
-            } else {
-                // Exit to the interpreter
-                spill_stack(iseq, cfp, sp);
-                ZJITState::get_exit_trampoline_with_counter()
+            let code_ptr = match code_ptr {
+                Ok(code_ptr) => code_ptr,
+                Err(compile_error) => {
+                    prepare_for_exit(iseq, cfp, sp, &compile_error);
+                    ZJITState::get_exit_trampoline_with_counter()
+                }
             };
             cb.mark_all_executable();
             code_ptr.raw_ptr(cb)
@@ -1635,11 +1654,14 @@ c_callable! {
 }
 
 /// Compile an ISEQ for a function stub
-fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &Rc<RefCell<IseqCall>>) -> Option<CodePtr> {
+fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &Rc<RefCell<IseqCall>>) -> Result<CodePtr, CompileError> {
     // Compile the stubbed ISEQ
-    let Some(code_ptr) = gen_iseq(cb, iseq_call.borrow().iseq, None) else {
-        debug!("Failed to compile iseq: gen_iseq failed: {}", iseq_get_location(iseq_call.borrow().iseq, 0));
-        return None;
+    let code_ptr = match gen_iseq(cb, iseq_call.borrow().iseq, None) {
+        Ok(code_ptr) => code_ptr,
+        Err(err) => {
+            debug!("Failed to compile iseq: gen_iseq failed: {}", iseq_get_location(iseq_call.borrow().iseq, 0));
+            return Err(err);
+        }
     };
 
     // Update the stub to call the code pointer
@@ -1650,11 +1672,11 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &Rc<RefCell<IseqCall>>)
         asm.ccall(code_addr, vec![]);
     });
 
-    Some(code_ptr)
+    Ok(code_ptr)
 }
 
 /// Compile a stub for an ISEQ called by SendWithoutBlockDirect
-fn gen_function_stub(cb: &mut CodeBlock, iseq_call: Rc<RefCell<IseqCall>>) -> Option<CodePtr> {
+fn gen_function_stub(cb: &mut CodeBlock, iseq_call: Rc<RefCell<IseqCall>>) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
     asm_comment!(asm, "Stub: {}", iseq_get_location(iseq_call.borrow().iseq, 0));
 
@@ -1670,7 +1692,7 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: Rc<RefCell<IseqCall>>) -> Op
 }
 
 /// Generate a trampoline that is used when a
-pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Option<CodePtr> {
+pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
     asm_comment!(asm, "function_stub_hit trampoline");
 
@@ -1705,7 +1727,7 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Option<CodePtr> {
 }
 
 /// Generate a trampoline that is used when a function exits without restoring PC and the stack
-pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Option<CodePtr> {
+pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
 
     asm_comment!(asm, "side-exit trampoline");
@@ -1719,11 +1741,11 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Option<CodePtr> {
 }
 
 /// Generate a trampoline that increments exit_compilation_failure and jumps to exit_trampoline.
-pub fn gen_exit_trampoline_with_counter(cb: &mut CodeBlock, exit_trampoline: CodePtr) -> Option<CodePtr> {
+pub fn gen_exit_trampoline_with_counter(cb: &mut CodeBlock, exit_trampoline: CodePtr) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
 
     asm_comment!(asm, "function stub exit trampoline");
-    gen_incr_counter(&mut asm, exit_compilation_failure);
+    gen_incr_counter(&mut asm, exit_compile_error);
     asm.jmp(Target::CodePtr(exit_trampoline));
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
@@ -1789,9 +1811,10 @@ fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>
 }
 
 /// Generate a JIT entry that just increments exit_compilation_failure and exits
-fn gen_compilation_failure_counter(cb: &mut CodeBlock) -> Option<CodePtr> {
+fn gen_compile_error_counter(cb: &mut CodeBlock, compile_error: &CompileError) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
-    gen_incr_counter(&mut asm, exit_compilation_failure);
+    gen_incr_counter(&mut asm, exit_compile_error);
+    gen_incr_counter(&mut asm, exit_counter_for_compile_error(compile_error));
     asm.cret(Qundef.into());
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {

@@ -34,13 +34,18 @@ class << RubyVM::ZJIT
     buf = +"***ZJIT: Printing ZJIT statistics on exit***\n"
     stats = self.stats
 
-    print_counters_with_prefix(prefix: 'failed_', prompt: 'compilation failure reasons', buf:, stats:)
+    # Show exit reasons, ordered by the typical amount of exits for the prefix at the time
     print_counters_with_prefix(prefix: 'unhandled_call_', prompt: 'unhandled call types', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'unhandled_yarv_insn_', prompt: 'unhandled YARV insns', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'compile_error_', prompt: 'compile error reasons', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'exit_', prompt: 'side exit reasons', buf:, stats:, limit: 20)
+
+    # Show the most important stats ratio_in_zjit at the end
     print_counters([
       :dynamic_send_count,
 
       :compiled_iseq_count,
-      :compilation_failure,
+      :failed_iseq_count,
 
       :compile_time_ns,
       :profile_time_ns,
@@ -54,8 +59,6 @@ class << RubyVM::ZJIT
       :zjit_insn_count,
       :ratio_in_zjit,
     ], buf:, stats:)
-    print_counters_with_prefix(prefix: 'unhandled_yarv_insn_', prompt: 'unhandled YARV insns', buf:, stats:, limit: 20)
-    print_counters_with_prefix(prefix: 'exit_', prompt: 'side exit reasons', buf:, stats:, limit: 20)
 
     buf
   end

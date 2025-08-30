@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{cruby::*, options::get_option, state::{zjit_enabled_p, ZJITState}};
+use crate::{cruby::*, hir::ParseError, options::get_option, state::{zjit_enabled_p, ZJITState}};
 
 macro_rules! make_counters {
     (
@@ -72,7 +72,7 @@ make_counters! {
     // Default counters that are available without --zjit-stats
     default {
         compiled_iseq_count,
-        compilation_failure,
+        failed_iseq_count,
 
         compile_time_ns,
         profile_time_ns,
@@ -83,7 +83,7 @@ make_counters! {
     // Exit counters that are summed as side_exit_count
     exit {
         // exit_: Side exits reasons
-        exit_compilation_failure,
+        exit_compile_error,
         exit_unknown_newarray_send,
         exit_unhandled_call_type,
         exit_unknown_special_variable,
@@ -114,12 +114,17 @@ make_counters! {
     unhandled_call_splat_mut,
     unhandled_call_forwarding,
 
-    // failed_: Compilation failure reasons
-    failed_iseq_stack_too_large,
-    failed_hir_compile,
-    failed_hir_compile_validate,
-    failed_hir_optimize,
-    failed_asm_compile,
+    // compile_error_: Compile error reasons
+    compile_error_iseq_stack_too_large,
+    compile_error_out_of_memory,
+    compile_error_register_spill_on_ccall,
+    compile_error_register_spill_on_alloc,
+    compile_error_parse_stack_underflow,
+    compile_error_parse_malformed_iseq,
+    compile_error_parse_validation,
+    compile_error_parse_not_allowed,
+    compile_error_parse_parameter_type_optional,
+    compile_error_parse_parameter_type_forwardable,
 
     // The number of times YARV instructions are executed on JIT code
     zjit_insn_count,
@@ -169,6 +174,40 @@ pub fn exit_counter_ptr_for_call_type(call_type: crate::hir::CallType) -> *mut u
         Forwarding => unhandled_call_forwarding,
     };
     counter_ptr(counter)
+}
+
+/// Reason why ZJIT failed to produce any JIT code
+#[derive(Clone, Debug, PartialEq)]
+pub enum CompileError {
+    IseqStackTooLarge,
+    OutOfMemory,
+    RegisterSpillOnAlloc,
+    RegisterSpillOnCCall,
+    ParseError(ParseError),
+}
+
+/// Return a raw pointer to the exit counter for a given CompileError
+pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
+    use crate::hir::ParseError::*;
+    use crate::hir::ParameterType::*;
+    use crate::stats::CompileError::*;
+    use crate::stats::Counter::*;
+    match compile_error {
+        IseqStackTooLarge     => compile_error_iseq_stack_too_large,
+        OutOfMemory           => compile_error_out_of_memory,
+        RegisterSpillOnAlloc  => compile_error_register_spill_on_alloc,
+        RegisterSpillOnCCall  => compile_error_register_spill_on_ccall,
+        ParseError(parse_error) => match parse_error {
+            StackUnderflow(_) => compile_error_parse_stack_underflow,
+            MalformedIseq(_)  => compile_error_parse_malformed_iseq,
+            Validation(_)     => compile_error_parse_validation,
+            NotAllowed        => compile_error_parse_not_allowed,
+            UnknownParameterType(parameter_type) => match parameter_type {
+                Optional      => compile_error_parse_parameter_type_optional,
+                Forwardable   => compile_error_parse_parameter_type_forwardable,
+            }
+        }
+    }
 }
 
 pub fn exit_counter_ptr(reason: crate::hir::SideExitReason) -> *mut u64 {
