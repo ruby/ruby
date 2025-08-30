@@ -45,14 +45,22 @@ impl<T: Copy + PartialEq + Default, const N: usize> Distribution<T, N> {
             .filter_map(|(&bucket, &count)| if count > 0 { Some(bucket) } else { None })
     }
 
+    pub fn each_count(&self) -> impl Iterator<Item = usize> + '_ {
+        self.counts.into_iter().filter(|&count| count > 0)
+    }
+
     pub fn each_item_mut(&mut self) -> impl Iterator<Item = &mut T> + '_ {
         self.buckets.iter_mut().zip(self.counts.iter())
             .filter_map(|(bucket, &count)| if count > 0 { Some(bucket) } else { None })
     }
+
+    pub fn other_count(&self) -> usize {
+        self.other
+    }
 }
 
 #[derive(PartialEq, Debug, Clone, Copy)]
-enum DistributionKind {
+pub enum DistributionKind {
     /// No types seen
     Empty,
     /// One type seen
@@ -108,8 +116,16 @@ impl<T: Copy + PartialEq + Default + std::fmt::Debug, const N: usize> Distributi
         Self { kind, buckets: dist.buckets.clone() }
     }
 
+    pub fn kind(&self) -> DistributionKind {
+        self.kind
+    }
+
     pub fn is_monomorphic(&self) -> bool {
         self.kind == DistributionKind::Monomorphic
+    }
+
+    pub fn is_polymorphic(&self) -> bool {
+        self.kind == DistributionKind::Polymorphic
     }
 
     pub fn is_skewed_polymorphic(&self) -> bool {
@@ -123,6 +139,10 @@ impl<T: Copy + PartialEq + Default + std::fmt::Debug, const N: usize> Distributi
     pub fn bucket(&self, idx: usize) -> T {
         assert!(idx < N, "index {idx} out of bounds for buckets[{N}]");
         self.buckets[idx]
+    }
+
+    pub fn each_item(&self) -> impl Iterator<Item = T> + '_ {
+        self.buckets.into_iter()
     }
 }
 

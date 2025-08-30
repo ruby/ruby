@@ -408,6 +408,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardShape { val, shape, state } => gen_guard_shape(jit, asm, opnd!(val), shape, &function.frame_state(state)),
         &Insn::LoadIvarEmbedded { self_val, id, index } => gen_load_ivar_embedded(asm, opnd!(self_val), id, index),
         &Insn::LoadIvarExtended { self_val, id, index } => gen_load_ivar_extended(asm, opnd!(self_val), id, index),
+        &Insn::LoadIvarPolymorphic { self_val, id, ref infos, state } => gen_load_ivar_polymorphic(jit, asm, opnd!(self_val), id, infos, &function.frame_state(state)),
         &Insn::ArrayMax { state, .. }
         | &Insn::FixnumDiv { state, .. }
         | &Insn::FixnumMod { state, .. }
@@ -719,15 +720,20 @@ fn gen_array_extend(jit: &mut JITState, asm: &mut Assembler, left: Opnd, right: 
     asm_ccall!(asm, rb_ary_concat, left, right);
 }
 
-fn gen_guard_shape(jit: &mut JITState, asm: &mut Assembler, val: Opnd, shape: ShapeId, state: &FrameState) -> Opnd {
+fn gen_load_shape(asm: &mut Assembler, val: Opnd) -> Opnd {
     let shape_id_offset = unsafe { rb_shape_id_offset() };
     let val = asm.load(val);
-    let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, val, shape_id_offset);
+    Opnd::mem(SHAPE_ID_NUM_BITS as u8, val, shape_id_offset)
+}
+
+fn gen_guard_shape(jit: &mut JITState, asm: &mut Assembler, val: Opnd, shape: ShapeId, state: &FrameState) -> Opnd {
+    let shape_opnd = gen_load_shape(asm, val);
     asm.cmp(shape_opnd, Opnd::UImm(shape.0 as u64));
     asm.jne(side_exit(jit, state, SideExitReason::GuardShape(shape)));
     val
 }
 
+// Must not use SCRATCH_OPND
 fn gen_load_ivar_embedded(asm: &mut Assembler, self_val: Opnd, id: ID, index: u16) -> Opnd {
     // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
 
@@ -738,6 +744,7 @@ fn gen_load_ivar_embedded(asm: &mut Assembler, self_val: Opnd, id: ID, index: u1
     asm.load(ivar_opnd)
 }
 
+// Must not use SCRATCH_OPND
 fn gen_load_ivar_extended(asm: &mut Assembler, self_val: Opnd, id: ID, index: u16) -> Opnd {
     asm_comment!(asm, "Load extended ivar id={} index={}", id.contents_lossy(), index);
     // Compile time value is *not* embedded.
@@ -749,6 +756,34 @@ fn gen_load_ivar_extended(asm: &mut Assembler, self_val: Opnd, id: ID, index: u1
     // Read the ivar from the extended table
     let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * index as usize) as i32);
     asm.load(ivar_opnd)
+}
+
+fn gen_load_ivar_polymorphic(jit: &mut JITState, asm: &mut Assembler, self_val: Opnd, id: ID, infos: &Vec<crate::hir::LoadIvarInfo>, state: &FrameState) -> Opnd {
+    let self_val = asm.load(self_val);
+    let shape = gen_load_shape(asm, self_val);
+    let success = asm.new_label("ivar_success");
+    for info in infos {
+        asm.cmp(shape, Opnd::UImm(info.shape.0 as u64));
+        let next_entry = asm.new_label("ivar_next_entry");
+        asm.jne(next_entry.clone());
+        let result = match info.index {
+            None => Opnd::Value(Qnil),
+            Some(index) => {
+                if info.is_embedded {
+                    gen_load_ivar_embedded(asm, self_val, id, index)
+                } else {
+                    gen_load_ivar_extended(asm, self_val, id, index)
+                }
+            }
+        };
+        asm.mov(SCRATCH_OPND, result);
+        asm.jmp(success.clone());
+        asm.write_label(next_entry);
+    }
+    // Side-exit if no shapes matched
+    asm.jmp(side_exit(jit, state, SideExitReason::GuardShapePolymorphic));
+    asm.write_label(success);
+    SCRATCH_OPND
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
