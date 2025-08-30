@@ -979,7 +979,7 @@ pub use manual_defs::*;
 pub mod test_utils {
     use std::{ptr::null, sync::Once};
 
-    use crate::{options::rb_zjit_prepare_options, state::rb_zjit_enabled_p, state::ZJITState};
+    use crate::{options::{internal_set_num_profiles, rb_zjit_call_threshold, rb_zjit_prepare_options, DEFAULT_CALL_THRESHOLD}, state::{rb_zjit_enabled_p, ZJITState}};
 
     use super::*;
 
@@ -1003,6 +1003,11 @@ pub mod test_utils {
             ruby_init_stack(&mut var as *mut VALUE as *mut _);
             rb_zjit_prepare_options(); // enable `#with_jit` on builtins
             ruby_init();
+
+            // The default rb_zjit_profile_threshold is too high, so lower it for HIR tests.
+            if rb_zjit_call_threshold == DEFAULT_CALL_THRESHOLD {
+                internal_set_num_profiles(1);
+            }
 
             // Pass command line options so the VM loads core library methods defined in
             // ruby such as from `kernel.rb`.
