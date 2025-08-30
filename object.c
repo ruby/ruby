@@ -2361,7 +2361,14 @@ rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
 
     for (i=0; i<argc; i++) {
         VALUE name_sym = argv[i];
-        VALUE name_str = rb_sym2str(name_sym);
+        VALUE name_str;
+        if (SYMBOL_P(name_sym)) {
+            name_str = rb_sym2str(name_sym);
+        }
+        else {
+            name_str = StringValue(name_sym);
+            name_sym = rb_str_intern(name_str);
+        }
 
         if (rb_is_predicate_name(name_str)) {
             const char *name_cstr = StringValueCStr(name_str);
@@ -2369,7 +2376,7 @@ rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
             VALUE stripped_str = rb_str_new(name_cstr, len - 1);
 
             ID stripped_id = rb_intern_str(stripped_str);
-            ID question_id = rb_intern_str(name_str);
+            ID question_id = SYM2ID(name_sym);
 
             if (!rb_method_boundp(klass, stripped_id, 0)) {
                 rb_attr(klass, stripped_id, TRUE, FALSE, TRUE);
