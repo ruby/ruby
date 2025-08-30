@@ -289,11 +289,21 @@ fake_class_p(VALUE klass)
     return FL_TEST_RAW(klass, T_ICLASS | FL_SINGLETON);
 }
 
+static inline VALUE
+class_real(VALUE cl)
+{
+    RUBY_ASSERT(cl);
+    while (RB_UNLIKELY(fake_class_p(cl))) {
+        cl = RCLASS_SUPER(cl);
+    }
+    return cl;
+}
+
 VALUE
 rb_class_real(VALUE cl)
 {
-    while (RB_UNLIKELY(cl && fake_class_p(cl))) {
-        cl = RCLASS_SUPER(cl);
+    if (cl) {
+        cl = class_real(cl);
     }
     return cl;
 }
@@ -302,8 +312,8 @@ VALUE
 rb_obj_class(VALUE obj)
 {
     VALUE cl = CLASS_OF(obj);
-    while (RB_UNLIKELY(cl && fake_class_p(cl))) {
-        cl = RCLASS_SUPER(cl);
+    if (cl) {
+        cl = class_real(cl);
     }
     return cl;
 }
@@ -311,12 +321,7 @@ rb_obj_class(VALUE obj)
 VALUE
 rb_obj_class_must(VALUE obj)
 {
-    VALUE cl = CLASS_OF(obj);
-    RUBY_ASSERT(cl);
-    while (RB_UNLIKELY(fake_class_p(cl))) {
-        cl = RCLASS_SUPER(cl);
-    }
-    return cl;
+    return class_real(CLASS_OF(obj));
 }
 
 /*
