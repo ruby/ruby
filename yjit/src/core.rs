@@ -1818,7 +1818,7 @@ pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
         callback(iseq);
     }
     let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
-    unsafe { rb_yjit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
+    unsafe { rb_jit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
 }
 
 /// Iterate over all on-stack ISEQs

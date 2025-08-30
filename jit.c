@@ -492,3 +492,72 @@ rb_jit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line)
 {
     rb_vm_lock_leave(recursive_lock_level, file, line);
 }
+
+// Is anyone listening for :c_call and :c_return event currently?
+bool
+rb_c_method_tracing_currently_enabled(const rb_execution_context_t *ec)
+{
+    rb_event_flag_t tracing_events;
+    if (rb_multi_ractor_p()) {
+        tracing_events = ruby_vm_event_enabled_global_flags;
+    }
+    else {
+        // At the time of writing, events are never removed from
+        // ruby_vm_event_enabled_global_flags so always checking using it would
+        // mean we don't compile even after tracing is disabled.
+        tracing_events = rb_ec_ractor_hooks(ec)->events;
+    }
+
+    return tracing_events & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN);
+}
+
+void
+rb_iseq_reset_jit_func(const rb_iseq_t *iseq)
+{
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    iseq->body->jit_entry = NULL;
+    iseq->body->jit_exception = NULL;
+    // Enable re-compiling this ISEQ. Event when it's invalidated for TracePoint,
+    // we'd like to re-compile ISEQs that haven't been converted to trace_* insns.
+    iseq->body->jit_entry_calls = 0;
+    iseq->body->jit_exception_calls = 0;
+}
+
+// Callback type for rb_jit_for_each_iseq
+typedef void (*rb_iseq_callback)(const rb_iseq_t *iseq, void *data);
+
+// Callback data for rb_jit_for_each_iseq
+struct iseq_callback_data {
+    rb_iseq_callback callback;
+    void *data;
+};
+
+// Heap-walking callback for rb_jit_for_each_iseq
+static int
+for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
+{
+    const struct iseq_callback_data *callback_data = (struct iseq_callback_data *)data;
+    VALUE v = (VALUE)vstart;
+    for (; v != (VALUE)vend; v += stride) {
+        void *ptr = rb_asan_poisoned_object_p(v);
+        rb_asan_unpoison_object(v, false);
+
+        if (rb_obj_is_iseq(v)) {
+            rb_iseq_t *iseq = (rb_iseq_t *)v;
+            callback_data->callback(iseq, callback_data->data);
+        }
+
+        if (ptr) {
+            rb_asan_poison_object(v);
+        }
+    }
+    return 0;
+}
+
+// Walk all ISEQs in the heap and invoke the callback - shared between YJIT and ZJIT
+void
+rb_jit_for_each_iseq(rb_iseq_callback callback, void *data)
+{
+    struct iseq_callback_data callback_data = { .callback = callback, .data = data };
+    rb_objspace_each_objects(for_each_iseq_i, (void *)&callback_data);
+}

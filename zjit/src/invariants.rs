@@ -269,3 +269,53 @@ pub extern "C" fn rb_zjit_before_ractor_spawn() {
         cb.mark_all_executable();
     });
 }
+
+/// Main invalidation function called when TracePoint is enabled
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_tracing_invalidate_all() {
+    use crate::gc::{for_each_iseq, for_each_on_stack_iseq, get_or_create_iseq_payload, IseqStatus};
+    use crate::cruby::rb_iseq_reset_jit_func;
+    use std::collections::HashSet;
+
+    // If ZJIT isn't enabled, do nothing
+    if !zjit_enabled_p() {
+        return;
+    }
+
+    // Stop other ractors since we are going to patch machine code.
+    with_vm_lock(src_loc!(), || {
+        debug!("Invalidating all ZJIT compiled code due to TracePoint");
+
+        let mut on_stack_iseqs = HashSet::new();
+        for_each_on_stack_iseq(|iseq| {
+            on_stack_iseqs.insert(iseq);
+        });
+
+        for_each_iseq(|iseq| {
+            let payload = get_or_create_iseq_payload(iseq);
+
+            // Reset status to NotCompiled
+            payload.status = IseqStatus::NotCompiled;
+
+            if on_stack_iseqs.contains(&iseq) {
+                // TODO: How do we clear on-stack ISEQs in ZJIT
+            } else {
+                // TODO: Do we free the IseqPayload?
+                payload.gc_offsets.clear();
+                payload.iseq_calls.clear();
+            }
+
+            // Reset output code entry point
+            unsafe { rb_iseq_reset_jit_func(iseq) };
+        });
+
+        // TODO: Do we need to clear variants?
+        let invariants = ZJITState::get_invariants();
+        invariants.ep_escape_iseqs.clear();
+        invariants.no_ep_escape_iseqs.clear();
+        invariants.bop_patch_points.clear();
+        invariants.cme_patch_points.clear();
+        invariants.constant_state_patch_points.clear();
+        invariants.single_ractor_patch_points.clear();
+    });
+}

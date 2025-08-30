@@ -333,7 +333,6 @@ fn main() {
         .allowlist_function("rb_yjit_constcache_shareable")
         .allowlist_function("rb_iseq_reset_jit_func")
         .allowlist_function("rb_yjit_dump_iseq_loc")
-        .allowlist_function("rb_yjit_for_each_iseq")
         .allowlist_function("rb_yjit_obj_written")
         .allowlist_function("rb_yjit_str_simple_append")
         .allowlist_function("rb_RSTRING_PTR")
@@ -355,6 +354,7 @@ fn main() {
         .allowlist_function("rb_jit_multi_ractor_p")
         .allowlist_function("rb_jit_vm_lock_then_barrier")
         .allowlist_function("rb_jit_vm_unlock")
+        .allowlist_function("rb_jit_for_each_iseq")
         .allowlist_type("robject_offsets")
 
         // from vm_sync.h
