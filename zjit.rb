@@ -35,6 +35,7 @@ class << RubyVM::ZJIT
     stats = self.stats
 
     print_counters_with_prefix(prefix: 'failed_', prompt: 'compilation failure reasons', buf:, stats:)
+    print_counters_with_prefix(prefix: 'unhandled_call_', prompt: 'unhandled call types', buf:, stats:, limit: 20)
     print_counters([
       :dynamic_send_count,
 

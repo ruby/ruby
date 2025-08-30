@@ -82,6 +82,66 @@ jobs:
           echo gems=$gems >> $GITHUB_OUTPUT
           echo update=${news:-$gems} >> $GITHUB_OUTPUT
 
+      - name: Commit
+        id: commit
+        run: |
+          git pull --ff-only origin ${GITHUB_REF#refs/heads/}
+          message="Update bundled gems list"
+          if [ -z "${gems}" ]; then
+            git commit --message="[DOC] ${message} at ${GITHUB_SHA:0:30}"
+          else
+            git commit --message="${message} as of ${TODAY}"
+          fi
+        env:
+          TODAY: ${{ steps.bundled_gems.outputs.latest_date || env.TODAY }}
+          EMAIL: svn-admin@ruby-lang.org
+          GIT_AUTHOR_NAME: git
+          GIT_COMMITTER_NAME: git
+          gems: ${{ steps.diff.outputs.gems }}
+        if: ${{ steps.diff.outputs.update }}
+
+      - name: Fetch more logs
+        id: logs
+        run: |
+          file=gems/bundled_gems days=30
+          { echo days=$days; echo file=$file; } >> $GITHUB_OUTPUT
+          since=$(date --date=-$[days * 2 + 10]day +'%F')
+          set -x
+          git sparse-checkout set --no-cone /$file
+          git fetch --shallow-since="$since" --no-tags origin ${GITHUB_REF}
+
+      - name: Development revision of bundled gems
+        run: |
+          #!ruby
+          file = ENV["file"]
+          days = ENV["days"].to_i
+          today = Time.new("#{ENV['TODAY']}T00:00:00Z").to_i
+          limit = today - days * 86400
+
+          ok = true
+          IO.popen(%W"git blame --line-porcelain -- #{file}") do |blame|
+            while head = blame.gets("\n\t") and s = blame.gets
+              next unless (gem = s.split(/\s+|#.*/)).size > 3
+              time = head[/^committer-time \K\d+/].to_i
+              next if (d = limit - time) <= 0
+              d /= 86400
+              line = head[/\A\h+ \d+ \K\d+/].to_i
+              level = if d < days; 'warning'; else ok = false; 'error'; end
+              d += days
+              puts "::#{level} file=#{file},line=#{line},title=Older than #{d} days::#{gem[0]} #{gem[3]}"
+            end
+          end
+          # exit ok
+        shell: ruby {0}
+        env:
+          file: ${{ steps.logs.outputs.file }}
+          days: ${{ steps.logs.outputs.days }}
+
+      - name: Restore sparse checkout
+        run: |
+          git sparse-checkout disable
+        if: always()
+
       - name: Install libraries
         uses: ./.github/actions/setup/ubuntu
         if: ${{ steps.diff.outputs.gems }}
@@ -107,27 +167,14 @@ jobs:
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
         if: ${{ steps.diff.outputs.gems }}
 
-      - name: Commit
+      - name: Push
         run: |
-          git pull --ff-only origin ${GITHUB_REF#refs/heads/}
-          message="Update bundled gems list"
-          if [ -z "${gems}" ]; then
-            git commit --message="[DOC] ${message} at ${GITHUB_SHA:0:30}"
-          else
-            git commit --message="${message} as of ${TODAY}"
-          fi
           git push origin ${GITHUB_REF#refs/heads/}
-        env:
-          TODAY: ${{ steps.bundled_gems.outputs.latest_date || env.TODAY }}
-          EMAIL: svn-admin@ruby-lang.org
-          GIT_AUTHOR_NAME: git
-          GIT_COMMITTER_NAME: git
-          gems: ${{ steps.diff.outputs.gems }}
         if: >-
           ${{
           github.repository == 'ruby/ruby' &&
           !startsWith(github.event_name, 'pull') &&
-          steps.diff.outputs.update
+          steps.commit.outcome == 'success'
           }}
 
       - uses: ./.github/actions/slack

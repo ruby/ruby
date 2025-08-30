@@ -21,7 +21,6 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
-#include "vm_sync.h"
 #include "yjit.h"
 #include "zjit.h"
 #include "vm_insnhelper.h"
@@ -639,12 +638,6 @@ rb_ENCODING_GET(VALUE obj)
 }
 
 bool
-rb_yjit_multi_ractor_p(void)
-{
-    return rb_multi_ractor_p();
-}
-
-bool
 rb_yjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
 {
     return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
@@ -691,25 +684,6 @@ void
 rb_yjit_obj_written(VALUE old, VALUE young, const char *file, int line)
 {
     rb_obj_written(old, Qundef, young, file, line);
-}
-
-// Acquire the VM lock and then signal all other Ruby threads (ractors) to
-// contend for the VM lock, putting them to sleep. YJIT uses this to evict
-// threads running inside generated code so among other things, it can
-// safely change memory protection of regions housing generated code.
-void
-rb_yjit_vm_lock_then_barrier(unsigned int *recursive_lock_level, const char *file, int line)
-{
-    rb_vm_lock_enter(recursive_lock_level, file, line);
-    rb_vm_barrier();
-}
-
-// Release the VM lock. The lock level must point to the same integer used to
-// acquire the lock.
-void
-rb_yjit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line)
-{
-    rb_vm_lock_leave(recursive_lock_level, file, line);
 }
 
 void

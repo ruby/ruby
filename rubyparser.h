@@ -914,6 +914,9 @@ typedef struct RNode_SCLASS {
 
     struct RNode *nd_recv;
     struct RNode *nd_body;
+    rb_code_location_t class_keyword_loc;
+    rb_code_location_t operator_loc;
+    rb_code_location_t end_keyword_loc;
 } rb_node_sclass_t;
 
 typedef struct RNode_COLON2 {

@@ -85,7 +85,7 @@ make_counters! {
         // exit_: Side exits reasons
         exit_compilation_failure,
         exit_unknown_newarray_send,
-        exit_unknown_call_type,
+        exit_unhandled_call_type,
         exit_unknown_special_variable,
         exit_unhandled_hir_insn,
         exit_unhandled_yarv_insn,
@@ -100,6 +100,19 @@ make_counters! {
         exit_obj_to_string_fallback,
         exit_interrupt,
     }
+
+    // unhanded_call_: Unhandled call types
+    unhandled_call_splat,
+    unhandled_call_block_arg,
+    unhandled_call_kwarg,
+    unhandled_call_kw_splat,
+    unhandled_call_tailcall,
+    unhandled_call_super,
+    unhandled_call_zsuper,
+    unhandled_call_optsend,
+    unhandled_call_kw_splat_mut,
+    unhandled_call_splat_mut,
+    unhandled_call_forwarding,
 
     // failed_: Compilation failure reasons
     failed_iseq_stack_too_large,
@@ -138,12 +151,32 @@ pub fn exit_counter_ptr_for_opcode(opcode: u32) -> *mut u64 {
     unsafe { exit_counters.get_unchecked_mut(opcode as usize) }
 }
 
+/// Return a raw pointer to the exit counter for a given call type
+pub fn exit_counter_ptr_for_call_type(call_type: crate::hir::CallType) -> *mut u64 {
+    use crate::hir::CallType::*;
+    use crate::stats::Counter::*;
+    let counter = match call_type {
+        Splat      => unhandled_call_splat,
+        BlockArg   => unhandled_call_block_arg,
+        Kwarg      => unhandled_call_kwarg,
+        KwSplat    => unhandled_call_kw_splat,
+        Tailcall   => unhandled_call_tailcall,
+        Super      => unhandled_call_super,
+        Zsuper     => unhandled_call_zsuper,
+        OptSend    => unhandled_call_optsend,
+        KwSplatMut => unhandled_call_kw_splat_mut,
+        SplatMut   => unhandled_call_splat_mut,
+        Forwarding => unhandled_call_forwarding,
+    };
+    counter_ptr(counter)
+}
+
 pub fn exit_counter_ptr(reason: crate::hir::SideExitReason) -> *mut u64 {
     use crate::hir::SideExitReason::*;
     use crate::stats::Counter::*;
     let counter = match reason {
         UnknownNewarraySend(_)    => exit_unknown_newarray_send,
-        UnknownCallType           => exit_unknown_call_type,
+        UnhandledCallType(_)      => exit_unhandled_call_type,
         UnknownSpecialVariable(_) => exit_unknown_special_variable,
         UnhandledHIRInsn(_)       => exit_unhandled_hir_insn,
         UnhandledYARVInsn(_)      => exit_unhandled_yarv_insn,

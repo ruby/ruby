@@ -927,6 +927,8 @@ fn gen_send(
     blockiseq: IseqPtr,
     state: &FrameState,
 ) -> lir::Opnd {
+    gen_incr_counter(asm, Counter::dynamic_send_count);
+
     // Save PC and SP
     gen_save_pc(asm, state);
     gen_save_sp(asm, state.stack().len());

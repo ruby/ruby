@@ -1636,6 +1636,14 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 0, 1, 6]])
     end
 
+    def test_sclass_locations
+      node = ast_parse("class << self; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 18], [1, 0, 1, 5], [1, 6, 1, 8], [1, 15, 1, 18]])
+
+      node = ast_parse("class << obj; foo; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 22], [1, 0, 1, 5], [1, 6, 1, 8], [1, 19, 1, 22]])
+    end
+
     def test_splat_locations
       node = ast_parse("a = *1")
       assert_locations(node.children[-1].children[1].locations, [[1, 4, 1, 6], [1, 4, 1, 5]])
