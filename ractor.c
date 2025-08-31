@@ -72,6 +72,11 @@ ractor_lock(rb_ractor_t *r, const char *file, int line)
     ASSERT_ractor_unlocking(r);
     rb_native_mutex_lock(&r->sync.lock);
 
+    if (rb_current_execution_context(false)) {
+        VM_ASSERT(!GET_RACTOR()->malloc_gc_disabled);
+        GET_RACTOR()->malloc_gc_disabled = true;
+    }
+
 #if RACTOR_CHECK_MODE > 0
     if (rb_current_execution_context(false) != NULL) {
         rb_ractor_t *cr = rb_current_ractor_raw(false);
@@ -99,6 +104,12 @@ ractor_unlock(rb_ractor_t *r, const char *file, int line)
 #if RACTOR_CHECK_MODE > 0
     r->sync.locked_by = Qnil;
 #endif
+
+    if (rb_current_execution_context(false)) {
+        VM_ASSERT(GET_RACTOR()->malloc_gc_disabled);
+        GET_RACTOR()->malloc_gc_disabled = false;
+    }
+
     rb_native_mutex_unlock(&r->sync.lock);
 
     RUBY_DEBUG_LOG2(file, line, "r:%u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
@@ -583,14 +594,6 @@ rb_ractor_main_p_(void)
     VM_ASSERT(rb_multi_ractor_p());
     rb_execution_context_t *ec = GET_EC();
     return rb_ec_ractor_ptr(ec) == rb_ec_vm_ptr(ec)->ractor.main_ractor;
-}
-
-bool
-rb_obj_is_main_ractor(VALUE gv)
-{
-    if (!rb_ractor_p(gv)) return false;
-    rb_ractor_t *r = DATA_PTR(gv);
-    return r == GET_VM()->ractor.main_ractor;
 }
 
 int
@@ -1916,7 +1919,7 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
         rb_replace_generic_ivar(data->replacement, obj);
     }
 
-    VALUE flags = T_OBJECT | FL_FREEZE | ROBJECT_EMBED | (RBASIC(obj)->flags & FL_PROMOTED);
+    VALUE flags = T_OBJECT | FL_FREEZE | (RBASIC(obj)->flags & FL_PROMOTED);
 
     // Avoid mutations using bind_call, etc.
     MEMZERO((char *)obj, char, sizeof(struct RBasic));

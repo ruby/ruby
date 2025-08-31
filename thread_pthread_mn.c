@@ -397,11 +397,15 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
 
     rb_native_mutex_lock(&vm->ractor.sched.lock);
     {
-        unsigned int snt_cnt = vm->ractor.sched.snt_cnt;
-        if (!vm->ractor.main_ractor->threads.sched.enable_mn_threads) snt_cnt++; // do not need snt for main ractor
+        unsigned int schedulable_ractor_cnt = vm->ractor.cnt;
+        RUBY_ASSERT(schedulable_ractor_cnt >= 1);
 
+        if (!vm->ractor.main_ractor->threads.sched.enable_mn_threads)
+            schedulable_ractor_cnt--; // do not need snt for main ractor
+
+        unsigned int snt_cnt = vm->ractor.sched.snt_cnt;
         if (((int)snt_cnt < MINIMUM_SNT) ||
-            (snt_cnt < vm->ractor.cnt  &&
+            (snt_cnt < schedulable_ractor_cnt  &&
              snt_cnt < vm->ractor.sched.max_cpu)) {
 
             RUBY_DEBUG_LOG("added snt:%u dnt:%u ractor_cnt:%u grq_cnt:%u",

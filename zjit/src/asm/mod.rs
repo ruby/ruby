@@ -84,6 +84,11 @@ impl CodeBlock {
         }
     }
 
+    /// Size of the region in bytes that we have allocated physical memory for.
+    pub fn mapped_region_size(&self) -> usize {
+        self.mem_block.borrow().mapped_region_size()
+    }
+
     /// Add an assembly comment if the feature is on.
     pub fn add_comment(&mut self, comment: &str) {
         if !self.keep_comments {

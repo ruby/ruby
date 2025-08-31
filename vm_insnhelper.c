@@ -1223,19 +1223,13 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 {
     VALUE fields_obj;
 #if OPT_IC_FOR_IVAR
-    VALUE val = Qundef;
-    VALUE *ivar_list;
-
     if (SPECIAL_CONST_P(obj)) {
         return default_value;
     }
 
-    shape_id_t shape_id = RBASIC_SHAPE_ID_FOR_READ(obj);
-
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        ivar_list = ROBJECT_FIELDS(obj);
-        VM_ASSERT(rb_ractor_shareable_p(obj) ? rb_ractor_shareable_p(val) : true);
+        fields_obj = obj;
         break;
       case T_CLASS:
       case T_MODULE:
@@ -1257,26 +1251,20 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
             }
 
             fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
-            if (!fields_obj) {
-                return default_value;
-            }
-            ivar_list = rb_imemo_fields_ptr(fields_obj);
-            shape_id = RBASIC_SHAPE_ID_FOR_READ(fields_obj);
-
             break;
         }
       default:
-        if (rb_obj_exivar_p(obj)) {
-            VALUE fields_obj = rb_obj_fields(obj, id);
-            if (!fields_obj) {
-                return default_value;
-            }
-            ivar_list = rb_imemo_fields_ptr(fields_obj);
-        }
-        else {
-            return default_value;
-        }
+        fields_obj = rb_obj_fields(obj, id);
     }
+
+    if (!fields_obj) {
+        return default_value;
+    }
+
+    VALUE val = Qundef;
+
+    shape_id_t shape_id = RBASIC_SHAPE_ID_FOR_READ(fields_obj);
+    VALUE *ivar_list = rb_imemo_fields_ptr(fields_obj);
 
     shape_id_t cached_id;
     attr_index_t index;
@@ -1330,26 +1318,13 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
 #endif
 
-        if (rb_shape_too_complex_p(shape_id)) {
-            st_table *table = NULL;
-            switch (BUILTIN_TYPE(obj)) {
-              case T_CLASS:
-              case T_MODULE:
-                table = rb_imemo_fields_complex_tbl(fields_obj);
-                break;
+        if (UNLIKELY(rb_shape_too_complex_p(shape_id))) {
+            st_table *table = (st_table *)ivar_list;
 
-              case T_OBJECT:
-                table = ROBJECT_FIELDS_HASH(obj);
-                break;
+            RUBY_ASSERT(table);
+            RUBY_ASSERT(table == rb_imemo_fields_complex_tbl(fields_obj));
 
-              default: {
-                VALUE fields_obj = rb_obj_fields(obj, id);
-                table = rb_imemo_fields_complex_tbl(fields_obj);
-                break;
-              }
-            }
-
-            if (!table || !st_lookup(table, id, &val)) {
+            if (!st_lookup(table, id, &val)) {
                 val = default_value;
             }
         }
@@ -1382,14 +1357,12 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
                 val = default_value;
             }
         }
-
     }
 
     if (!UNDEF_P(default_value)) {
         RUBY_ASSERT(!UNDEF_P(val));
     }
 
-    RB_GC_GUARD(fields_obj);
     return val;
 
 general_path:
@@ -1428,22 +1401,20 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 #if OPT_IC_FOR_IVAR
     RB_DEBUG_COUNTER_INC(ivar_set_ic_miss);
 
-    if (BUILTIN_TYPE(obj) == T_OBJECT) {
-        rb_check_frozen(obj);
+    rb_check_frozen(obj);
 
-        attr_index_t index = rb_obj_ivar_set(obj, id, val);
+    attr_index_t index = rb_ivar_set_index(obj, id, val);
+    shape_id_t next_shape_id = RBASIC_SHAPE_ID(obj);
 
-        shape_id_t next_shape_id = RBASIC_SHAPE_ID(obj);
-
-        if (!rb_shape_too_complex_p(next_shape_id)) {
-            populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
-        }
-
-        RB_DEBUG_COUNTER_INC(ivar_set_obj_miss);
-        return val;
+    if (!rb_shape_too_complex_p(next_shape_id)) {
+        populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
     }
-#endif
+
+    RB_DEBUG_COUNTER_INC(ivar_set_obj_miss);
+    return val;
+#else
     return rb_ivar_set(obj, id, val);
+#endif
 }
 
 static VALUE
@@ -1456,6 +1427,49 @@ static VALUE
 vm_setivar_slowpath_attr(VALUE obj, ID id, VALUE val, const struct rb_callcache *cc)
 {
     return vm_setivar_slowpath(obj, id, val, NULL, NULL, cc, true);
+}
+
+NOINLINE(static VALUE vm_setivar_class(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t index));
+static VALUE
+vm_setivar_class(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t index)
+{
+    if (UNLIKELY(!rb_ractor_main_p())) {
+        return Qundef;
+    }
+
+    VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+    if (UNLIKELY(!fields_obj)) {
+        return Qundef;
+    }
+
+    shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
+
+    // Cache hit case
+    if (shape_id == dest_shape_id) {
+        RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
+    }
+    else if (dest_shape_id != INVALID_SHAPE_ID) {
+        if (RSHAPE_DIRECT_CHILD_P(shape_id, dest_shape_id) && RSHAPE_EDGE_NAME(dest_shape_id) == id && RSHAPE_CAPACITY(shape_id) == RSHAPE_CAPACITY(dest_shape_id)) {
+            RUBY_ASSERT(index < RSHAPE_CAPACITY(dest_shape_id));
+        }
+        else {
+            return Qundef;
+        }
+    }
+    else {
+        return Qundef;
+    }
+
+    RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[index], val);
+
+    if (shape_id != dest_shape_id) {
+        RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
+        RBASIC_SET_SHAPE_ID(fields_obj, dest_shape_id);
+    }
+
+    RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
+
+    return val;
 }
 
 NOINLINE(static VALUE vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t index));
@@ -1654,8 +1668,12 @@ vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC i
     if (UNLIKELY(UNDEF_P(vm_setivar(obj, id, val, dest_shape_id, index)))) {
         switch (BUILTIN_TYPE(obj)) {
           case T_OBJECT:
+            break;
           case T_CLASS:
           case T_MODULE:
+            if (!UNDEF_P(vm_setivar_class(obj, id, val, dest_shape_id, index))) {
+                return;
+            }
             break;
           default:
             if (!UNDEF_P(vm_setivar_default(obj, id, val, dest_shape_id, index))) {
@@ -2324,14 +2342,15 @@ vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     return vm_search_method_slowpath0(cd_owner, cd, klass);
 }
 
-static const struct rb_callcache *
+static const struct rb_callable_method_entry_struct *
 vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
 {
     VALUE klass = CLASS_OF(recv);
     VM_ASSERT(klass != Qfalse);
     VM_ASSERT(RBASIC_CLASS(klass) == 0 || rb_obj_is_kind_of(klass, rb_cClass));
 
-    return vm_search_method_fastpath(cd_owner, cd, klass);
+    const struct rb_callcache *cc = vm_search_method_fastpath(cd_owner, cd, klass);
+    return vm_cc_cme(cc);
 }
 
 #if __has_attribute(transparent_union)
@@ -2394,8 +2413,8 @@ static inline int
 vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type func)
 {
     VM_ASSERT(iseq != NULL);
-    const struct rb_callcache *cc = vm_search_method((VALUE)iseq, cd, recv);
-    return check_cfunc(vm_cc_cme(cc), func);
+    const struct rb_callable_method_entry_struct *cme = vm_search_method((VALUE)iseq, cd, recv);
+    return check_cfunc(cme, func);
 }
 
 #define check_cfunc(me, func) check_cfunc(me, make_cfunc_type(func))
@@ -4027,8 +4046,15 @@ vm_call_attrset_direct(rb_execution_context_t *ec, rb_control_frame_t *cfp, cons
     if (UNDEF_P(res)) {
         switch (BUILTIN_TYPE(obj)) {
           case T_OBJECT:
+            break;
           case T_CLASS:
           case T_MODULE:
+            {
+                res = vm_setivar_class(obj, id, val, dest_shape_id, index);
+                if (!UNDEF_P(res)) {
+                    return res;
+                }
+            }
             break;
           default:
             {
@@ -4240,7 +4266,7 @@ static enum method_missing_reason
 ci_missing_reason(const struct rb_callinfo *ci)
 {
     enum method_missing_reason stat = MISSING_NOENTRY;
-    if (vm_ci_flag(ci) & VM_CALL_VCALL) stat |= MISSING_VCALL;
+    if (vm_ci_flag(ci) & VM_CALL_VCALL && !(vm_ci_flag(ci) & VM_CALL_FORWARDING)) stat |= MISSING_VCALL;
     if (vm_ci_flag(ci) & VM_CALL_FCALL) stat |= MISSING_FCALL;
     if (vm_ci_flag(ci) & VM_CALL_SUPER) stat |= MISSING_SUPER;
     return stat;
@@ -6069,25 +6095,26 @@ VALUE
 rb_vm_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd, ISEQ blockiseq)
 {
     stack_check(ec);
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
+    VALUE val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
+    VM_EXEC(ec, val);
+    return val;
+}
+
+VALUE
+rb_vm_sendforward(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd, ISEQ blockiseq)
+{
+    stack_check(ec);
 
     struct rb_forwarding_call_data adjusted_cd;
     struct rb_callinfo adjusted_ci;
 
-    VALUE bh;
-    VALUE val;
+    VALUE bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), cd, blockiseq, false, &adjusted_cd, &adjusted_ci);
 
-    if (vm_ci_flag(cd->ci) & VM_CALL_FORWARDING) {
-        bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), cd, blockiseq, false, &adjusted_cd, &adjusted_ci);
+    VALUE val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_method);
 
-        val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_method);
-
-        if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
-            RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
-        }
-    }
-    else {
-        bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
-        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
+    if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
+        RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
     }
 
     VM_EXEC(ec, val);
@@ -6161,11 +6188,11 @@ vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
         return recv;
     }
 
-    const struct rb_callcache *cc = vm_search_method((VALUE)iseq, cd, recv);
+    const struct rb_callable_method_entry_struct *cme = vm_search_method((VALUE)iseq, cd, recv);
 
     switch (type) {
       case T_SYMBOL:
-        if (check_method_basic_definition(vm_cc_cme(cc))) {
+        if (check_method_basic_definition(cme)) {
             // rb_sym_to_s() allocates a mutable string, but since we are only
             // going to use this string for interpolation, it's fine to use the
             // frozen string.
@@ -6174,7 +6201,7 @@ vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
         break;
       case T_MODULE:
       case T_CLASS:
-        if (check_cfunc(vm_cc_cme(cc), rb_mod_to_s)) {
+        if (check_cfunc(cme, rb_mod_to_s)) {
             // rb_mod_to_s() allocates a mutable string, but since we are only
             // going to use this string for interpolation, it's fine to use the
             // frozen string.
@@ -6186,22 +6213,22 @@ vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
         }
         break;
       case T_NIL:
-        if (check_cfunc(vm_cc_cme(cc), rb_nil_to_s)) {
+        if (check_cfunc(cme, rb_nil_to_s)) {
             return rb_nil_to_s(recv);
         }
         break;
       case T_TRUE:
-        if (check_cfunc(vm_cc_cme(cc), rb_true_to_s)) {
+        if (check_cfunc(cme, rb_true_to_s)) {
             return rb_true_to_s(recv);
         }
         break;
       case T_FALSE:
-        if (check_cfunc(vm_cc_cme(cc), rb_false_to_s)) {
+        if (check_cfunc(cme, rb_false_to_s)) {
             return rb_false_to_s(recv);
         }
         break;
       case T_FIXNUM:
-        if (check_cfunc(vm_cc_cme(cc), rb_int_to_s)) {
+        if (check_cfunc(cme, rb_int_to_s)) {
             return rb_fix_to_s(recv);
         }
         break;
@@ -6970,45 +6997,6 @@ vm_opt_aset(VALUE recv, VALUE obj, VALUE set)
     else {
         return Qundef;
     }
-}
-
-static VALUE
-vm_opt_aref_with(VALUE recv, VALUE key)
-{
-    if (!SPECIAL_CONST_P(recv) && RBASIC_CLASS(recv) == rb_cHash &&
-        BASIC_OP_UNREDEFINED_P(BOP_AREF, HASH_REDEFINED_OP_FLAG) &&
-        rb_hash_compare_by_id_p(recv) == Qfalse &&
-        !FL_TEST(recv, RHASH_PROC_DEFAULT)) {
-        return rb_hash_aref(recv, key);
-    }
-    else {
-        return Qundef;
-    }
-}
-
-VALUE
-rb_vm_opt_aref_with(VALUE recv, VALUE key)
-{
-    return vm_opt_aref_with(recv, key);
-}
-
-static VALUE
-vm_opt_aset_with(VALUE recv, VALUE key, VALUE val)
-{
-    if (!SPECIAL_CONST_P(recv) && RBASIC_CLASS(recv) == rb_cHash &&
-        BASIC_OP_UNREDEFINED_P(BOP_ASET, HASH_REDEFINED_OP_FLAG) &&
-        rb_hash_compare_by_id_p(recv) == Qfalse) {
-        return rb_hash_aset(recv, key, val);
-    }
-    else {
-        return Qundef;
-    }
-}
-
-VALUE
-rb_vm_opt_aset_with(VALUE recv, VALUE key, VALUE value)
-{
-    return vm_opt_aset_with(recv, key, value);
 }
 
 static VALUE

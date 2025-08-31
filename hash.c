@@ -7610,7 +7610,7 @@ Init_Hash(void)
      *
      * - ::assoc: Returns a 2-element array containing the name and value
      *   of the named environment variable if it exists:
-     * - ::clone: Returns +ENV+ (and issues a warning).
+     * - ::clone: Raises an exception.
      * - ::except: Returns a hash of all name/value pairs except those given.
      * - ::fetch: Returns the value for the given name.
      * - ::inspect: Returns the contents of +ENV+ as a string.

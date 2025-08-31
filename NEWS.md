@@ -47,6 +47,10 @@ Note: We're only listing outstanding class updates.
     * `IO.select` accepts +Float::INFINITY+ as a timeout argument.
       [[Feature #20610]]
 
+* Math
+
+    * `Math.log1p` and `Math.expm1` are added. [[Feature #21527]]
+
 * Socket
 
     * `Socket.tcp` & `TCPSocket.new` accepts `open_timeout` as a keyword argument to specify
@@ -178,8 +182,8 @@ The following bundled gems are updated.
 * minitest 5.25.5
 * rake 13.3.0
 * test-unit 3.7.0
-* rexml 3.4.1
-* net-imap 0.5.9
+* rexml 3.4.2
+* net-imap 0.5.10
 * net-smtp 0.5.1
 * matrix 0.4.3
 * prime 0.1.4
@@ -204,6 +208,8 @@ The following bundled gems are updated.
     * `Ractor#close_outgoging`
 
     [[Feature #21262]]
+
+* `ObjectSpace._id2ref` is deprecated. [[Feature #15408]]
 
 ## Stdlib compatibility issues
 
@@ -237,8 +243,42 @@ The following bundled gems are updated.
 
 ## Implementation improvements
 
+### Ractor
+
+A lot of work has gone into making Ractors more stable, performant, and usable. These improvements bring Ractors implementation closer to leaving experimental status.
+
+* Performance improvements
+    * Frozen strings and the symbol table internally use a lock-free hash set
+    * Method cache lookups avoid locking in most cases
+    * Class (and geniv) instance variable access is faster and avoids locking
+    * Cache contention is avoided during object allocation
+    * `object_id` avoids locking in most cases
+* Bug fixes and stability
+    * Fixed possible deadlocks when combining Ractors and Threads
+    * Fixed issues with require and autoload in a Ractor
+    * Fixed encoding/transcoding issues across Ractors
+    * Fixed race conditions in GC operations and method invalidation
+    * Fixed issues with processes forking after starting a Ractor
+
 ## JIT
 
+* YJIT
+    * YJIT stats
+        * `ratio_in_yjit` no longer works in the default build.
+          Use `--enable-yjit=stats` on `configure` to enable it on `--yjit-stats`.
+        * Add `invalidate_everything` to default stats, which is
+          incremented when every code is invalidated by TracePoint.
+    * Add `mem_size:` and `call_threshold:` options to `RubyVM::YJIT.enable`.
+* ZJIT
+    * Add an experimental method-based JIT compiler.
+      Use `--enable-zjit` on `configure` to enable the `--zjit` support.
+    * As of Ruby 3.5.0-preview2, ZJIT is not yet ready for speeding up most benchmarks.
+      Please refrain from evaluating ZJIT just yet. Stay tuned for the Ruby 3.5 release.
+* RJIT
+    * `--rjit` is removed. We will move the implementation of the third-party JIT API
+      to the [ruby/rjit](https://github.com/ruby/rjit) repository.
+
+[Feature #15408]: https://bugs.ruby-lang.org/issues/15408
 [Feature #17473]: https://bugs.ruby-lang.org/issues/17473
 [Feature #18455]: https://bugs.ruby-lang.org/issues/18455
 [Feature #19908]: https://bugs.ruby-lang.org/issues/19908
@@ -254,3 +294,4 @@ The following bundled gems are updated.
 [Feature #21287]: https://bugs.ruby-lang.org/issues/21287
 [Feature #21347]: https://bugs.ruby-lang.org/issues/21347
 [Feature #21360]: https://bugs.ruby-lang.org/issues/21360
+[Feature #21527]: https://bugs.ruby-lang.org/issues/21527

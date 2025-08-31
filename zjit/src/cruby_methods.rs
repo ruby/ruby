@@ -171,8 +171,12 @@ pub fn init() -> Annotations {
     annotate!(rb_cModule, "===", types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cArray, "size", types::Fixnum, no_gc, leaf, elidable);
+    annotate!(rb_cArray, "empty?", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cNilClass, "nil?", types::TrueClass, no_gc, leaf, elidable);
     annotate!(rb_mKernel, "nil?", types::FalseClass, no_gc, leaf, elidable);
+    annotate!(rb_cBasicObject, "==", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cBasicObject, "!", types::BoolExact, no_gc, leaf, elidable);
 
     annotate_builtin!(rb_mKernel, "Float", types::Float);
     annotate_builtin!(rb_mKernel, "Integer", types::Integer);

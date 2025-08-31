@@ -322,7 +322,6 @@ module RubyVM::YJIT
         leave
         objtostring
         opt_aref
-        opt_aref_with
         opt_aset
         opt_case_dispatch
         opt_div

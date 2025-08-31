@@ -355,6 +355,7 @@ invalidate_method_cache_in_cc_table(VALUE tbl, ID mid)
     if (tbl && rb_managed_id_table_lookup(tbl, mid, &ccs_data)) {
         struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_data;
         rb_yjit_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
+        rb_zjit_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
         if (NIL_P(ccs->cme->owner)) invalidate_negative_cache(mid);
         rb_vm_ccs_invalidate_and_free(ccs);
         rb_managed_id_table_delete(tbl, mid);
@@ -367,9 +368,8 @@ invalidate_callable_method_entry_in_callable_m_table(struct rb_id_table *tbl, ID
 {
     VALUE cme;
     if (tbl && rb_id_table_lookup(tbl, mid, &cme)) {
-        if (rb_yjit_enabled_p) {
-            rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
-        }
+        rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
+        rb_zjit_cme_invalidate((rb_callable_method_entry_t *)cme);
         rb_id_table_delete(tbl, mid);
         RB_DEBUG_COUNTER_INC(cc_invalidate_leaf_callable);
     }
@@ -413,9 +413,8 @@ invalidate_complemented_method_entry_in_callable_m_table(struct rb_id_table *tbl
 {
     VALUE cme;
     if (tbl && rb_id_table_lookup(tbl, mid, &cme)) {
-        if (rb_yjit_enabled_p) {
-            rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
-        }
+        rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
+        rb_zjit_cme_invalidate((rb_callable_method_entry_t *)cme);
         rb_id_table_delete(tbl, mid);
         RB_DEBUG_COUNTER_INC(cc_invalidate_tree_callable);
     }
@@ -1822,6 +1821,25 @@ callable_method_entry_or_negative(VALUE klass, ID mid, VALUE *defined_class_ptr)
     const rb_callable_method_entry_t *cme;
 
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
+
+    /* Fast path: lock-free read from cache */
+    VALUE cc_tbl = RUBY_ATOMIC_VALUE_LOAD(RCLASS_WRITABLE_CC_TBL(klass));
+    if (cc_tbl) {
+        VALUE ccs_data;
+        if (rb_managed_id_table_lookup(cc_tbl, mid, &ccs_data)) {
+            struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_data;
+            VM_ASSERT(vm_ccs_p(ccs));
+
+            if (LIKELY(!METHOD_ENTRY_INVALIDATED(ccs->cme))) {
+                VM_ASSERT(ccs->cme->called_id == mid);
+                if (defined_class_ptr != NULL) *defined_class_ptr = ccs->cme->defined_class;
+                RB_DEBUG_COUNTER_INC(ccs_found);
+                return ccs->cme;
+            }
+        }
+    }
+
+    /* Slow path: need to lock and potentially populate cache */
     RB_VM_LOCKING() {
         cme = cached_callable_method_entry(klass, mid);
 
@@ -2959,13 +2977,14 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
             switch (me->def->type) {
               case VM_METHOD_TYPE_ISEQ:
                 if (ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.has_rest &&
+                        !ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.has_post &&
                         !ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.has_kw &&
                         !ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.has_kwrest) {
                     ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.ruby2_keywords = 1;
                     rb_clear_method_cache(module, name);
                 }
                 else {
-                    rb_warn("Skipping set of ruby2_keywords flag for %"PRIsVALUE" (method accepts keywords or method does not accept argument splat)", QUOTE_ID(name));
+                    rb_warn("Skipping set of ruby2_keywords flag for %"PRIsVALUE" (method accepts keywords or post arguments or method does not accept argument splat)", QUOTE_ID(name));
                 }
                 break;
               case VM_METHOD_TYPE_BMETHOD: {
@@ -2978,13 +2997,14 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
                     const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(procval);
                     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
                     if (ISEQ_BODY(iseq)->param.flags.has_rest &&
+                            !ISEQ_BODY(iseq)->param.flags.has_post &&
                             !ISEQ_BODY(iseq)->param.flags.has_kw &&
                             !ISEQ_BODY(iseq)->param.flags.has_kwrest) {
                         ISEQ_BODY(iseq)->param.flags.ruby2_keywords = 1;
                         rb_clear_method_cache(module, name);
                     }
                     else {
-                        rb_warn("Skipping set of ruby2_keywords flag for %"PRIsVALUE" (method accepts keywords or method does not accept argument splat)", QUOTE_ID(name));
+                        rb_warn("Skipping set of ruby2_keywords flag for %"PRIsVALUE" (method accepts keywords or post arguments or method does not accept argument splat)", QUOTE_ID(name));
                     }
                     break;
                 }

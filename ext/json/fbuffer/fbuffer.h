@@ -24,6 +24,14 @@ typedef unsigned char _Bool;
 #endif
 #endif
 
+#ifndef NOINLINE
+#if defined(__has_attribute) && __has_attribute(noinline)
+#define NOINLINE() __attribute__((noinline))
+#else
+#define NOINLINE()
+#endif
+#endif
+
 #ifndef RB_UNLIKELY
 #define RB_UNLIKELY(expr) expr
 #endif
@@ -169,12 +177,17 @@ static inline void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
     }
 }
 
-static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len)
+static inline void fbuffer_append_reserved(FBuffer *fb, const char *newstr, unsigned long len)
+{
+    MEMCPY(fb->ptr + fb->len, newstr, char, len);
+    fbuffer_consumed(fb, len);
+}
+
+static inline void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len)
 {
     if (len > 0) {
         fbuffer_inc_capa(fb, len);
-        MEMCPY(fb->ptr + fb->len, newstr, char, len);
-        fbuffer_consumed(fb, len);
+        fbuffer_append_reserved(fb, newstr, len);
     }
 }
 
@@ -197,9 +210,22 @@ static void fbuffer_append_str(FBuffer *fb, VALUE str)
     const char *newstr = StringValuePtr(str);
     unsigned long len = RSTRING_LEN(str);
 
-    RB_GC_GUARD(str);
-
     fbuffer_append(fb, newstr, len);
+}
+
+static void fbuffer_append_str_repeat(FBuffer *fb, VALUE str, size_t repeat)
+{
+    const char *newstr = StringValuePtr(str);
+    unsigned long len = RSTRING_LEN(str);
+
+    fbuffer_inc_capa(fb, repeat * len);
+    while (repeat) {
+#ifdef JSON_DEBUG
+        fb->requested = len;
+#endif
+        fbuffer_append_reserved(fb, newstr, len);
+        repeat--;
+    }
 }
 
 static inline void fbuffer_append_char(FBuffer *fb, char newchr)

@@ -459,6 +459,16 @@ enc_registered(struct enc_table *enc_table, const char *name)
     return -1;
 }
 
+int
+rb_enc_registered(const char *name)
+{
+    int idx;
+    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
+        idx = enc_registered(enc_table, name);
+    }
+    return idx;
+}
+
 void
 rb_encdb_declare(const char *name)
 {
@@ -1600,8 +1610,10 @@ enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const cha
         /* Already set */
         overridden = TRUE;
 
+    int index = 0;
     if (!NIL_P(encoding)) {
         enc_check_encoding(encoding); // loads it if necessary. Needs to be done outside of VM lock.
+        index = rb_enc_to_index(rb_to_encoding(encoding));
     }
 
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
@@ -1619,7 +1631,7 @@ enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const cha
                       (st_data_t)UNSPECIFIED_ENCODING);
         }
         else {
-            def->index = rb_enc_to_index(rb_to_encoding(encoding));
+            def->index = index;
             def->enc = 0;
             enc_alias_internal(enc_table, name, def->index);
         }

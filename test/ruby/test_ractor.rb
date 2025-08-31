@@ -164,7 +164,7 @@ class TestRactor < Test::Unit::TestCase
 
   # [Bug #21398]
   def test_port_receive_dnt_with_port_send
-    omit 'unstable on windows and macos-14' if RUBY_PLATFORM =~ /mswin|darwin/
+    omit 'unstable on windows and macos-14' if RUBY_PLATFORM =~ /mswin|mingw|darwin/
     assert_ractor(<<~'RUBY', timeout: 90)
       THREADS = 10
       JOBS_PER_THREAD = 50
@@ -199,6 +199,13 @@ class TestRactor < Test::Unit::TestCase
         end
       end
       threads.each(&:join)
+    RUBY
+  end
+
+  # [Bug #20146]
+  def test_max_cpu_1
+    assert_ractor(<<~'RUBY', args: [{ "RUBY_MAX_CPU" => "1" }])
+      assert_equal :ok, Ractor.new { :ok }.value
     RUBY
   end
 

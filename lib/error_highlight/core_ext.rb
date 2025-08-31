@@ -3,9 +3,38 @@ require_relative "formatter"
 module ErrorHighlight
   module CoreExt
     private def generate_snippet
-      spot = ErrorHighlight.spot(self)
-      return "" unless spot
-      return ErrorHighlight.formatter.message_for(spot)
+      if ArgumentError === self && message =~ /\A(?:wrong number of arguments|missing keyword|unknown keyword|no keywords accepted)\b/
+        locs = self.backtrace_locations
+        return "" if locs.size < 2
+        callee_loc, caller_loc = locs
+        callee_spot = ErrorHighlight.spot(self, backtrace_location: callee_loc, point_type: :name)
+        caller_spot = ErrorHighlight.spot(self, backtrace_location: caller_loc, point_type: :name)
+        if caller_spot && callee_spot &&
+            caller_loc.path == callee_loc.path &&
+            caller_loc.lineno == callee_loc.lineno &&
+            caller_spot == callee_spot
+          callee_loc = callee_spot = nil
+        end
+        ret = +"\n"
+        [["caller", caller_loc, caller_spot], ["callee", callee_loc, callee_spot]].each do |header, loc, spot|
+          out = nil
+          if loc
+            out = "    #{ header }: #{ loc.path }:#{ loc.lineno }"
+            if spot
+              _, _, snippet, highlight = ErrorHighlight.formatter.message_for(spot).lines
+              out += "\n    | #{ snippet }      #{ highlight }"
+            else
+              out += "\n    (cannot create a snippet of the method definition; use Ruby 3.5 or later)"
+            end
+          end
+          ret << "\n" + out if out
+        end
+        ret
+      else
+        spot = ErrorHighlight.spot(self)
+        return "" unless spot
+        return ErrorHighlight.formatter.message_for(spot)
+      end
     end
 
     if Exception.method_defined?(:detailed_message)

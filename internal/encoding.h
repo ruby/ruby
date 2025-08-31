@@ -29,6 +29,7 @@ void rb_encdb_declare(const char *name);
 void rb_enc_set_base(const char *name, const char *orig);
 int rb_enc_set_dummy(int index);
 void rb_enc_raw_set(VALUE obj, rb_encoding *enc);
+int rb_enc_registered(const char *name);
 
 PUREFUNC(int rb_data_is_encoding(VALUE obj));
 

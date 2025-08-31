@@ -71,7 +71,7 @@ rb_hook_list_mark(rb_hook_list_t *hooks)
 }
 
 void
-rb_hook_list_mark_and_update(rb_hook_list_t *hooks)
+rb_hook_list_mark_and_move(rb_hook_list_t *hooks)
 {
     rb_event_hook_t *hook = hooks->hooks;
 

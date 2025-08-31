@@ -2848,22 +2848,10 @@ fn gen_get_ivar(
     recv: Opnd,
     recv_opnd: YARVOpnd,
 ) -> Option<CodegenStatus> {
-    let comptime_val_klass = comptime_receiver.class_of();
-
     // If recv isn't already a register, load it.
     let recv = match recv {
         Opnd::InsnOut { .. } => recv,
         _ => asm.load(recv),
-    };
-
-    // Check if the comptime class uses a custom allocator
-    let custom_allocator = unsafe { rb_get_alloc_func(comptime_val_klass) };
-    let uses_custom_allocator = match custom_allocator {
-        Some(alloc_fun) => {
-            let allocate_instance = rb_class_allocate_instance as *const u8;
-            alloc_fun as *const u8 != allocate_instance
-        }
-        None => false,
     };
 
     // Check if the comptime receiver is a T_OBJECT
@@ -2874,12 +2862,9 @@ fn gen_get_ivar(
         gen_counter_incr(jit, asm, Counter::num_getivar_megamorphic);
     }
 
-    // If the class uses the default allocator, instances should all be T_OBJECT
-    // NOTE: This assumes nobody changes the allocator of the class after allocation.
-    //       Eventually, we can encode whether an object is T_OBJECT or not
-    //       inside object shapes.
+    // NOTE: This assumes T_OBJECT can't ever have the same shape_id as any other type.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || uses_custom_allocator || comptime_receiver.shape_too_complex() || megamorphic {
+    if !comptime_receiver.heap_object_p() || comptime_receiver.shape_too_complex() || megamorphic {
         // General case. Call rb_ivar_get().
         // VALUE rb_ivar_get(VALUE obj, ID id)
         asm_comment!(asm, "call rb_ivar_get()");
@@ -2915,9 +2900,6 @@ fn gen_get_ivar(
     // Guard heap object (recv_opnd must be used before stack_pop)
     guard_object_is_heap(asm, recv, recv_opnd, Counter::getivar_not_heap);
 
-    // Compile time self is embedded and the ivar index lands within the object
-    let embed_test_result = unsafe { FL_TEST_RAW(comptime_receiver, VALUE(ROBJECT_EMBED.as_usize())) != VALUE(0) };
-
     let expected_shape = unsafe { rb_obj_shape_id(comptime_receiver) };
     let shape_id_offset = unsafe { rb_shape_id_offset() };
     let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, recv, shape_id_offset);
@@ -2946,28 +2928,37 @@ fn gen_get_ivar(
             asm.mov(out_opnd, Qnil.into());
         }
         Some(ivar_index) => {
-            if embed_test_result {
-                // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+            let ivar_opnd = if receiver_t_object {
+                if comptime_receiver.embedded_p() {
+                   // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
 
-                // Load the variable
-                let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
-                let ivar_opnd = Opnd::mem(64, recv, offs);
+                   // Load the variable
+                   let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
+                   Opnd::mem(64, recv, offs)
+               } else {
+                   // Compile time value is *not* embedded.
 
-                // Push the ivar on the stack
-                let out_opnd = asm.stack_push(Type::Unknown);
-                asm.mov(out_opnd, ivar_opnd);
+                   // Get a pointer to the extended table
+                   let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
+
+                   // Read the ivar from the extended table
+                   Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32)
+               }
             } else {
-                // Compile time value is *not* embedded.
+                asm_comment!(asm, "call rb_ivar_get_at()");
 
-                // Get a pointer to the extended table
-                let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
+                if assume_single_ractor_mode(jit, asm) {
+                    asm.ccall(rb_ivar_get_at_no_ractor_check as *const u8, vec![recv, Opnd::UImm((ivar_index as u32).into())])
+                } else {
+                    // The function could raise RactorIsolationError.
+                    jit_prepare_non_leaf_call(jit, asm);
+                    asm.ccall(rb_ivar_get_at as *const u8, vec![recv, Opnd::UImm((ivar_index as u32).into()), Opnd::UImm(ivar_name)])
+                }
+            };
 
-                // Read the ivar from the extended table
-                let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32);
-
-                let out_opnd = asm.stack_push(Type::Unknown);
-                asm.mov(out_opnd, ivar_opnd);
-            }
+            // Push the ivar on the stack
+            let out_opnd = asm.stack_push(Type::Unknown);
+            asm.mov(out_opnd, ivar_opnd);
         }
     }
 
@@ -3073,8 +3064,6 @@ fn gen_set_ivar(
     recv_opnd: YARVOpnd,
     ic: Option<*const iseq_inline_iv_cache_entry>,
 ) -> Option<CodegenStatus> {
-    let comptime_val_klass = comptime_receiver.class_of();
-
     // If the comptime receiver is frozen, writing an IV will raise an exception
     // and we don't want to JIT code to deal with that situation.
     if comptime_receiver.is_frozen() {
@@ -3083,16 +3072,6 @@ fn gen_set_ivar(
     }
 
     let stack_type = asm.ctx.get_opnd_type(StackOpnd(0));
-
-    // Check if the comptime class uses a custom allocator
-    let custom_allocator = unsafe { rb_get_alloc_func(comptime_val_klass) };
-    let uses_custom_allocator = match custom_allocator {
-        Some(alloc_fun) => {
-            let allocate_instance = rb_class_allocate_instance as *const u8;
-            alloc_fun as *const u8 != allocate_instance
-        }
-        None => false,
-    };
 
     // Check if the comptime receiver is a T_OBJECT
     let receiver_t_object = unsafe { RB_TYPE_P(comptime_receiver, RUBY_T_OBJECT) };
@@ -3124,7 +3103,7 @@ fn gen_set_ivar(
 
         // If the VM ran out of shapes, or this class generated too many leaf,
         // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
-        new_shape_too_complex = unsafe { rb_yjit_shape_too_complex_p(next_shape_id) };
+        new_shape_too_complex = unsafe { rb_jit_shape_too_complex_p(next_shape_id) };
         if new_shape_too_complex {
             Some((next_shape_id, None, 0_usize))
         } else {
@@ -3149,10 +3128,9 @@ fn gen_set_ivar(
         None
     };
 
-    // If the receiver isn't a T_OBJECT, or uses a custom allocator,
-    // then just write out the IV write as a function call.
+    // If the receiver isn't a T_OBJECT, then just write out the IV write as a function call.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || uses_custom_allocator || shape_too_complex || new_shape_too_complex || megamorphic {
+    if !receiver_t_object || shape_too_complex || new_shape_too_complex || megamorphic {
         // The function could raise FrozenError.
         // Note that this modifies REG_SP, which is why we do it first
         jit_prepare_non_leaf_call(jit, asm);
@@ -3888,40 +3866,6 @@ fn gen_opt_aref(
     }
 }
 
-fn gen_opt_aset_with(
-    jit: &mut JITState,
-    asm: &mut Assembler,
-) -> Option<CodegenStatus> {
-    // We might allocate or raise
-    jit_prepare_non_leaf_call(jit, asm);
-
-    let key_opnd = Opnd::Value(jit.get_arg(0));
-    let recv_opnd = asm.stack_opnd(1);
-    let value_opnd = asm.stack_opnd(0);
-
-    extern "C" {
-        fn rb_vm_opt_aset_with(recv: VALUE, key: VALUE, value: VALUE) -> VALUE;
-    }
-
-    let val_opnd = asm.ccall(
-        rb_vm_opt_aset_with as *const u8,
-        vec![
-            recv_opnd,
-            key_opnd,
-            value_opnd,
-        ],
-    );
-    asm.stack_pop(2); // Keep it on stack during GC
-
-    asm.cmp(val_opnd, Qundef.into());
-    asm.je(Target::side_exit(Counter::opt_aset_with_qundef));
-
-    let top = asm.stack_push(Type::Unknown);
-    asm.mov(top, val_opnd);
-
-    return Some(KeepCompiling);
-}
-
 fn gen_opt_aset(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -4015,38 +3959,6 @@ fn gen_opt_aset(
     } else {
         gen_opt_send_without_block(jit, asm)
     }
-}
-
-fn gen_opt_aref_with(
-    jit: &mut JITState,
-    asm: &mut Assembler,
-) -> Option<CodegenStatus>{
-    // We might allocate or raise
-    jit_prepare_non_leaf_call(jit, asm);
-
-    let key_opnd = Opnd::Value(jit.get_arg(0));
-    let recv_opnd = asm.stack_opnd(0);
-
-    extern "C" {
-        fn rb_vm_opt_aref_with(recv: VALUE, key: VALUE) -> VALUE;
-    }
-
-    let val_opnd = asm.ccall(
-        rb_vm_opt_aref_with as *const u8,
-        vec![
-            recv_opnd,
-            key_opnd
-        ],
-    );
-    asm.stack_pop(1); // Keep it on stack during GC
-
-    asm.cmp(val_opnd, Qundef.into());
-    asm.je(Target::side_exit(Counter::opt_aref_with_qundef));
-
-    let top = asm.stack_push(Type::Unknown);
-    asm.mov(top, val_opnd);
-
-    return Some(KeepCompiling);
 }
 
 fn gen_opt_and(
@@ -9652,7 +9564,24 @@ fn gen_sendforward(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
-    return gen_send(jit, asm);
+    // Generate specialized code if possible
+    let cd = jit.get_arg(0).as_ptr();
+    let block = jit.get_arg(1).as_optional_ptr().map(|iseq| BlockHandler::BlockISeq(iseq));
+    if let Some(status) = perf_call! { gen_send_general(jit, asm, cd, block) } {
+        return Some(status);
+    }
+
+    // Otherwise, fallback to dynamic dispatch using the interpreter's implementation of sendforward
+    let blockiseq = jit.get_arg(1).as_iseq();
+    gen_send_dynamic(jit, asm, cd, unsafe { rb_yjit_sendish_sp_pops((*cd).ci) }, |asm| {
+        extern "C" {
+            fn rb_vm_sendforward(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
+        }
+        asm.ccall(
+            rb_vm_sendforward as *const u8,
+            vec![EC, CFP, (cd as usize).into(), VALUE(blockiseq as usize).into()],
+        )
+    })
 }
 
 fn gen_invokeblock(
@@ -10792,8 +10721,6 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_neq => Some(gen_opt_neq),
         YARVINSN_opt_aref => Some(gen_opt_aref),
         YARVINSN_opt_aset => Some(gen_opt_aset),
-        YARVINSN_opt_aref_with => Some(gen_opt_aref_with),
-        YARVINSN_opt_aset_with => Some(gen_opt_aset_with),
         YARVINSN_opt_mult => Some(gen_opt_mult),
         YARVINSN_opt_div => Some(gen_opt_div),
         YARVINSN_opt_ltlt => Some(gen_opt_ltlt),

@@ -1247,13 +1247,14 @@ mod tests {
 
     #[test]
     fn test_reorder_c_args_no_cycle() {
+        crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
         asm.ccall(0 as _, vec![
             C_ARG_OPNDS[0], // mov rdi, rdi (optimized away)
             C_ARG_OPNDS[1], // mov rsi, rsi (optimized away)
         ]);
-        asm.compile_with_num_regs(&mut cb, 0);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm!(cb, "b800000000ffd0", {"
             0x0: mov eax, 0
@@ -1263,6 +1264,7 @@ mod tests {
 
     #[test]
     fn test_reorder_c_args_single_cycle() {
+        crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
         // rdi and rsi form a cycle
@@ -1271,7 +1273,7 @@ mod tests {
             C_ARG_OPNDS[0], // mov rsi, rdi
             C_ARG_OPNDS[2], // mov rdx, rdx (optimized away)
         ]);
-        asm.compile_with_num_regs(&mut cb, 0);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm!(cb, "4989f34889fe4c89dfb800000000ffd0", {"
             0x0: mov r11, rsi
@@ -1284,6 +1286,7 @@ mod tests {
 
     #[test]
     fn test_reorder_c_args_two_cycles() {
+        crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
         // rdi and rsi form a cycle, and rdx and rcx form another cycle
@@ -1293,7 +1296,7 @@ mod tests {
             C_ARG_OPNDS[3], // mov rdx, rcx
             C_ARG_OPNDS[2], // mov rcx, rdx
         ]);
-        asm.compile_with_num_regs(&mut cb, 0);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm!(cb, "4989f34889fe4c89df4989cb4889d14c89dab800000000ffd0", {"
             0x0: mov r11, rsi
@@ -1309,6 +1312,7 @@ mod tests {
 
     #[test]
     fn test_reorder_c_args_large_cycle() {
+        crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
         // rdi, rsi, and rdx form a cycle
@@ -1317,7 +1321,7 @@ mod tests {
             C_ARG_OPNDS[2], // mov rsi, rdx
             C_ARG_OPNDS[0], // mov rdx, rdi
         ]);
-        asm.compile_with_num_regs(&mut cb, 0);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm!(cb, "4989f34889d64889fa4c89dfb800000000ffd0", {"
             0x0: mov r11, rsi

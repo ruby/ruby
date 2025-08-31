@@ -44,7 +44,7 @@ calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
         }
         if (lineno) *lineno = ISEQ_BODY(iseq)->location.first_lineno;
 #ifdef USE_ISEQ_NODE_ID
-        if (node_id) *node_id = -1;
+        if (node_id) *node_id = ISEQ_BODY(iseq)->location.node_id;
 #endif
         return 1;
     }
@@ -400,7 +400,7 @@ location_path_m(VALUE self)
 static int
 location_node_id(rb_backtrace_location_t *loc)
 {
-    if (loc->iseq && loc->pc) {
+    if (loc->iseq) {
         return calc_node_id(loc->iseq, loc->pc);
     }
     return -1;

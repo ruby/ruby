@@ -11,7 +11,7 @@ publish = false         # Don't publish to crates.io
 capstone = { version = "0.13.0", optional = true }
 
 [dev-dependencies]
-expect-test = "1.5.1"
+insta = "1.43.1"
 
 # NOTE: Development builds select a set of these via configure.ac
 # For debugging, `make V=1` shows exact cargo invocation.

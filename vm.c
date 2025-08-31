@@ -1541,6 +1541,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     rb_node_init(RNODE(&tmp_node), NODE_SCOPE);
     tmp_node.nd_tbl = dyns;
     tmp_node.nd_body = 0;
+    tmp_node.nd_parent = NULL;
     tmp_node.nd_args = 0;
 
     VALUE ast_value = rb_ruby_ast_new(RNODE(&tmp_node));

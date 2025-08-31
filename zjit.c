@@ -16,7 +16,6 @@
 #include "insns.inc"
 #include "insns_info.inc"
 #include "zjit.h"
-#include "vm_sync.h"
 #include "vm_insnhelper.h"
 #include "probes.h"
 #include "probes_helper.h"
@@ -165,9 +164,6 @@ rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
     RB_VM_LOCKING() {
         rb_vm_barrier();
 
-        // Convert ZJIT instructions back to bare instructions
-        rb_zjit_profile_disable(iseq);
-
         // Compile a block version starting at the current instruction
         uint8_t *rb_zjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec); // defined in Rust
         uintptr_t code_ptr = (uintptr_t)rb_zjit_iseq_gen_entry_point(iseq, ec);
@@ -180,24 +176,11 @@ rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
 extern VALUE *rb_vm_base_ptr(struct rb_control_frame_struct *cfp);
 
 bool
-rb_zjit_multi_ractor_p(void)
-{
-    return rb_multi_ractor_p();
-}
-
-bool
 rb_zjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
 {
     return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
 }
 
-// Release the VM lock. The lock level must point to the same integer used to
-// acquire the lock.
-void
-rb_zjit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line)
-{
-    rb_vm_lock_leave(recursive_lock_level, file, line);
-}
 
 bool
 rb_zjit_mark_writable(void *mem_block, uint32_t mem_size)
@@ -246,17 +229,6 @@ rb_zjit_icache_invalidate(void *start, void *end)
 #elif defined(__aarch64__)
 #error No instruction cache clear available with this compiler on Aarch64!
 #endif
-}
-
-// Acquire the VM lock and then signal all other Ruby threads (ractors) to
-// contend for the VM lock, putting them to sleep. ZJIT uses this to evict
-// threads running inside generated code so among other things, it can
-// safely change memory protection of regions housing generated code.
-void
-rb_zjit_vm_lock_then_barrier(unsigned int *recursive_lock_level, const char *file, int line)
-{
-    rb_vm_lock_enter(recursive_lock_level, file, line);
-    rb_vm_barrier();
 }
 
 // Convert a given ISEQ's instructions to zjit_* instructions
@@ -340,14 +312,7 @@ rb_zjit_print_exception(void)
     rb_warn("Ruby error: %"PRIsVALUE"", rb_funcall(exception, rb_intern("full_message"), 0));
 }
 
-bool
-rb_zjit_shape_obj_too_complex_p(VALUE obj)
-{
-    return rb_shape_obj_too_complex_p(obj);
-}
-
 enum {
-    RB_SPECIAL_CONST_SHAPE_ID = SPECIAL_CONST_SHAPE_ID,
     RB_INVALID_SHAPE_ID = INVALID_SHAPE_ID,
 };
 
@@ -357,9 +322,16 @@ rb_zjit_singleton_class_p(VALUE klass)
     return RCLASS_SINGLETON_P(klass);
 }
 
+VALUE
+rb_zjit_defined_ivar(VALUE obj, ID id, VALUE pushval)
+{
+    VALUE result = rb_ivar_defined(obj, id);
+    return result ? pushval : Qnil;
+}
+
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
-VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self);
+VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self, VALUE target_key);
 VALUE rb_zjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 
 // Preprocessed zjit.rb generated during build

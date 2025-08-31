@@ -72,9 +72,9 @@ GC_IMPL_FN bool rb_gc_impl_size_allocatable_p(size_t size);
  * memory just return NULL (with appropriate errno set).
  * The caller side takes care of that situation.
  */
-GC_IMPL_FN void *rb_gc_impl_malloc(void *objspace_ptr, size_t size);
-GC_IMPL_FN void *rb_gc_impl_calloc(void *objspace_ptr, size_t size);
-GC_IMPL_FN void *rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size);
+GC_IMPL_FN void *rb_gc_impl_malloc(void *objspace_ptr, size_t size, bool gc_allowed);
+GC_IMPL_FN void *rb_gc_impl_calloc(void *objspace_ptr, size_t size, bool gc_allowed);
+GC_IMPL_FN void *rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size, bool gc_allowed);
 GC_IMPL_FN void rb_gc_impl_free(void *objspace_ptr, void *ptr, size_t old_size);
 GC_IMPL_FN void rb_gc_impl_adjust_memory_usage(void *objspace_ptr, ssize_t diff);
 // Marking

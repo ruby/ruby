@@ -17,7 +17,7 @@ module Kernel
   #
   def class
     Primitive.attr! :leaf
-    Primitive.cexpr! 'rb_obj_class(self)'
+    Primitive.cexpr! 'rb_obj_class_must(self)'
   end
 
   #

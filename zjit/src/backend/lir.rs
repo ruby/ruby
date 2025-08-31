@@ -6,6 +6,7 @@ use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_
 use crate::hir::SideExitReason;
 use crate::options::{debug, get_option};
 use crate::cruby::VALUE;
+use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, exit_counter_ptr_for_call_type};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
 
@@ -1202,7 +1203,7 @@ impl Assembler
     /// Append an instruction onto the current list of instructions and update
     /// the live ranges of any instructions whose outputs are being used as
     /// operands to this instruction.
-    pub fn push_insn(&mut self, mut insn: Insn) {
+    pub fn push_insn(&mut self, insn: Insn) {
         // Index of this instruction
         let insn_idx = self.insns.len();
 
@@ -1214,7 +1215,7 @@ impl Assembler
         }
 
         // If we find any VReg from previous instructions, extend the live range to insn_idx
-        let mut opnd_iter = insn.opnd_iter_mut();
+        let mut opnd_iter = insn.opnd_iter();
         while let Some(opnd) = opnd_iter.next() {
             match *opnd {
                 Opnd::VReg { idx, .. } |
@@ -1265,12 +1266,12 @@ impl Assembler
             // then load SCRATCH_REG into the destination when it's safe.
             if !old_moves.is_empty() {
                 // Make sure it's safe to use SCRATCH_REG
-                assert!(old_moves.iter().all(|&(_, opnd)| opnd != Opnd::Reg(Assembler::SCRATCH_REG)));
+                assert!(old_moves.iter().all(|&(_, opnd)| opnd != SCRATCH_OPND));
 
                 // Move SCRATCH <- opnd, and delay reg <- SCRATCH
                 let (reg, opnd) = old_moves.remove(0);
                 new_moves.push((Assembler::SCRATCH_REG, opnd));
-                old_moves.push((reg, Opnd::Reg(Assembler::SCRATCH_REG)));
+                old_moves.push((reg, SCRATCH_OPND));
             }
         }
         new_moves
@@ -1380,13 +1381,15 @@ impl Assembler
                 }
             }
 
-            // If the output VReg of this instruction is used by another instruction,
-            // we need to allocate a register to it
+            // Allocate a register for the output operand if it exists
             let vreg_idx = match insn.out_opnd() {
                 Some(Opnd::VReg { idx, .. }) => Some(*idx),
                 _ => None,
             };
-            if vreg_idx.is_some() && live_ranges[vreg_idx.unwrap()].end() != index {
+            if vreg_idx.is_some() {
+                if live_ranges[vreg_idx.unwrap()].end() == index {
+                    debug!("Allocating a register for VReg({}) at instruction index {} even though it does not live past this index", vreg_idx.unwrap(), index);
+                }
                 // This is going to be the output operand that we will set on the
                 // instruction. CCall and LiveReg need to use a specific register.
                 let mut out_reg = match insn {
@@ -1463,6 +1466,18 @@ impl Assembler
                         *opnd = Opnd::Mem(Mem { base, disp, num_bits });
                     }
                     _ => {},
+                }
+            }
+
+            // If we have an output that dies at its definition (it is unused), free up the
+            // register
+            if let Some(idx) = vreg_idx {
+                if live_ranges[idx].end() == index {
+                    if let Some(reg) = reg_mapping[idx] {
+                        pool.dealloc_reg(&reg);
+                    } else {
+                        unreachable!("no register allocated for insn {:?}", insn);
+                    }
                 }
             }
 
@@ -1570,13 +1585,31 @@ impl Assembler
                 }
 
                 asm_comment!(self, "save cfp->pc");
-                self.load_into(Opnd::Reg(Assembler::SCRATCH_REG), Opnd::const_ptr(pc));
-                self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::Reg(Assembler::SCRATCH_REG));
+                self.load_into(SCRATCH_OPND, Opnd::const_ptr(pc));
+                self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), SCRATCH_OPND);
 
                 asm_comment!(self, "save cfp->sp");
-                self.lea_into(Opnd::Reg(Assembler::SCRATCH_REG), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
+                self.lea_into(SCRATCH_OPND, Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
                 let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
-                self.store(cfp_sp, Opnd::Reg(Assembler::SCRATCH_REG));
+                self.store(cfp_sp, SCRATCH_OPND);
+
+                // Using C_RET_OPND as an additional scratch register, which is no longer used
+                if get_option!(stats) {
+                    asm_comment!(self, "increment a side exit counter");
+                    self.load_into(SCRATCH_OPND, Opnd::const_ptr(exit_counter_ptr(reason)));
+                    self.incr_counter_with_reg(Opnd::mem(64, SCRATCH_OPND, 0), 1.into(), C_RET_OPND);
+
+                    if let SideExitReason::UnhandledYARVInsn(opcode) = reason {
+                        asm_comment!(self, "increment an unhandled YARV insn counter");
+                        self.load_into(SCRATCH_OPND, Opnd::const_ptr(exit_counter_ptr_for_opcode(opcode)));
+                        self.incr_counter_with_reg(Opnd::mem(64, SCRATCH_OPND, 0), 1.into(), C_RET_OPND);
+                    }
+                    if let SideExitReason::UnhandledCallType(call_type) = reason {
+                        asm_comment!(self, "increment an unknown call type counter");
+                        self.load_into(SCRATCH_OPND, Opnd::const_ptr(exit_counter_ptr_for_call_type(call_type)));
+                        self.incr_counter_with_reg(Opnd::mem(64, SCRATCH_OPND, 0), 1.into(), C_RET_OPND);
+                    }
+                }
 
                 asm_comment!(self, "exit to the interpreter");
                 self.frame_teardown(&[]); // matching the setup in :bb0-prologue:
@@ -1757,6 +1790,19 @@ impl Assembler {
 
     pub fn incr_counter(&mut self, mem: Opnd, value: Opnd) {
         self.push_insn(Insn::IncrCounter { mem, value });
+    }
+
+    /// incr_counter() but uses a specific register to split Insn::Lea
+    pub fn incr_counter_with_reg(&mut self, mem: Opnd, value: Opnd, reg: Opnd) {
+        assert!(matches!(reg, Opnd::Reg(_)), "incr_counter_with_reg should take a register, got: {reg:?}");
+        let counter_opnd = if cfg!(target_arch = "aarch64") { // See arm64_split()
+            assert_ne!(reg, SCRATCH_OPND, "SCRATCH_REG should be reserved for IncrCounter");
+            self.lea_into(reg, mem);
+            reg
+        } else { // x86_emit() expects Opnd::Mem
+            mem
+        };
+        self.incr_counter(counter_opnd, value);
     }
 
     pub fn jbe(&mut self, target: Target) {

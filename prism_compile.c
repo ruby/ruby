@@ -5527,44 +5527,6 @@ pm_opt_str_freeze_p(const rb_iseq_t *iseq, const pm_call_node_t *node)
 }
 
 /**
- * Returns true if the given call node can use the opt_aref_with optimization
- * with the current iseq options.
- */
-static inline bool
-pm_opt_aref_with_p(const rb_iseq_t *iseq, const pm_call_node_t *node)
-{
-    return (
-        !PM_NODE_FLAG_P(node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
-        node->arguments != NULL &&
-        PM_NODE_TYPE_P((const pm_node_t *) node->arguments, PM_ARGUMENTS_NODE) &&
-        ((const pm_arguments_node_t *) node->arguments)->arguments.size == 1 &&
-        PM_NODE_TYPE_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_NODE) &&
-        node->block == NULL &&
-        !PM_NODE_FLAG_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_FLAGS_FROZEN) &&
-        ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction
-    );
-}
-
-/**
- * Returns true if the given call node can use the opt_aset_with optimization
- * with the current iseq options.
- */
-static inline bool
-pm_opt_aset_with_p(const rb_iseq_t *iseq, const pm_call_node_t *node)
-{
-    return (
-        !PM_NODE_FLAG_P(node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
-        node->arguments != NULL &&
-        PM_NODE_TYPE_P((const pm_node_t *) node->arguments, PM_ARGUMENTS_NODE) &&
-        ((const pm_arguments_node_t *) node->arguments)->arguments.size == 2 &&
-        PM_NODE_TYPE_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_NODE) &&
-        node->block == NULL &&
-        !PM_NODE_FLAG_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_FLAGS_FROZEN) &&
-        ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction
-    );
-}
-
-/**
  * Compile the instructions necessary to read a constant, based on the options
  * of the current iseq.
  */
@@ -7393,44 +7355,6 @@ pm_compile_call_node(rb_iseq_t *iseq, const pm_call_node_t *node, LINK_ANCHOR *c
             const struct rb_callinfo *callinfo = new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE);
             PUSH_INSN2(ret, location, opt_str_freeze, value, callinfo);
             if (popped) PUSH_INSN(ret, location, pop);
-            return;
-        }
-        break;
-      }
-      case idAREF: {
-        if (pm_opt_aref_with_p(iseq, node)) {
-            const pm_string_node_t *string = (const pm_string_node_t *) ((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0];
-            VALUE value = parse_static_literal_string(iseq, scope_node, (const pm_node_t *) string, &string->unescaped);
-
-            PM_COMPILE_NOT_POPPED(node->receiver);
-
-            const struct rb_callinfo *callinfo = new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE);
-            PUSH_INSN2(ret, location, opt_aref_with, value, callinfo);
-
-            if (popped) {
-                PUSH_INSN(ret, location, pop);
-            }
-
-            return;
-        }
-        break;
-      }
-      case idASET: {
-        if (pm_opt_aset_with_p(iseq, node)) {
-            const pm_string_node_t *string = (const pm_string_node_t *) ((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0];
-            VALUE value = parse_static_literal_string(iseq, scope_node, (const pm_node_t *) string, &string->unescaped);
-
-            PM_COMPILE_NOT_POPPED(node->receiver);
-            PM_COMPILE_NOT_POPPED(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[1]);
-
-            if (!popped) {
-                PUSH_INSN(ret, location, swap);
-                PUSH_INSN1(ret, location, topn, INT2FIX(1));
-            }
-
-            const struct rb_callinfo *callinfo = new_callinfo(iseq, idASET, 2, 0, NULL, FALSE);
-            PUSH_INSN2(ret, location, opt_aset_with, value, callinfo);
-            PUSH_INSN(ret, location, pop);
             return;
         }
         break;

@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'objspace'
 require 'json'
+require 'securerandom'
 
 # These test the functionality of object shapes
 class TestShapes < Test::Unit::TestCase
@@ -1051,8 +1052,10 @@ class TestShapes < Test::Unit::TestCase
     # RUBY_PLATFORM =~ /i686/
   end
 
-  def test_root_shape_transition_to_special_const_on_frozen
-    assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of([].freeze).id)
+  def test_root_shape_frozen
+    frozen_root_shape = RubyVM::Shape.of([].freeze)
+    assert_predicate(frozen_root_shape, :frozen?)
+    assert_equal(RubyVM::Shape.root_shape.id, frozen_root_shape.raw_id)
   end
 
   def test_basic_shape_transition
@@ -1179,5 +1182,31 @@ class TestShapes < Test::Unit::TestCase
       tc = TooComplex.new
       tc.send("a#{_1}_m")
     end
+  end
+
+  def assert_too_complex_during_delete(obj)
+    obj.instance_variable_set("@___#{SecureRandom.hex}", 1)
+
+    (RubyVM::Shape::SHAPE_MAX_VARIATIONS * 2).times do |i|
+      obj.instance_variable_set("@ivar#{i}", i)
+    end
+
+    refute_predicate RubyVM::Shape.of(obj), :too_complex?
+    (RubyVM::Shape::SHAPE_MAX_VARIATIONS * 2).times do |i|
+      obj.remove_instance_variable("@ivar#{i}")
+    end
+    assert_predicate RubyVM::Shape.of(obj), :too_complex?
+  end
+
+  def test_object_too_complex_during_delete
+    assert_too_complex_during_delete(Class.new.new)
+  end
+
+  def test_class_too_complex_during_delete
+    assert_too_complex_during_delete(Module.new)
+  end
+
+  def test_generic_too_complex_during_delete
+    assert_too_complex_during_delete(Class.new(Array).new)
   end
 end if defined?(RubyVM::Shape)

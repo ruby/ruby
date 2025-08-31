@@ -3,6 +3,7 @@
 #include "id_table.h"
 #include "internal.h"
 #include "internal/imemo.h"
+#include "internal/object.h"
 #include "internal/st.h"
 #include "vm_callinfo.h"
 
@@ -119,8 +120,8 @@ imemo_fields_new(VALUE owner, size_t capa)
     }
     else {
         VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields));
-        FL_SET_RAW(fields, OBJ_FIELD_EXTERNAL);
         IMEMO_OBJ_FIELDS(fields)->as.external.ptr = ALLOC_N(VALUE, capa);
+        FL_SET_RAW(fields, OBJ_FIELD_HEAP);
         return fields;
     }
 }
@@ -134,8 +135,9 @@ rb_imemo_fields_new(VALUE owner, size_t capa)
 static VALUE
 imemo_fields_new_complex(VALUE owner, size_t capa)
 {
-    VALUE fields = imemo_fields_new(owner, sizeof(struct rb_fields));
+    VALUE fields = imemo_fields_new(owner, 1);
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = st_init_numtable_with_size(capa);
+    FL_SET_RAW(fields, OBJ_FIELD_HEAP);
     return fields;
 }
 
@@ -165,6 +167,7 @@ rb_imemo_fields_new_complex_tbl(VALUE owner, st_table *tbl)
 {
     VALUE fields = imemo_fields_new(owner, sizeof(struct rb_fields));
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = tbl;
+    FL_SET_RAW(fields, OBJ_FIELD_HEAP);
     st_foreach(tbl, imemo_fields_trigger_wb_i, (st_data_t)fields);
     return fields;
 }
@@ -208,6 +211,8 @@ rb_imemo_fields_clear(VALUE fields_obj)
     else {
         RBASIC_SET_SHAPE_ID(fields_obj, ROOT_SHAPE_ID);
     }
+    // Invalidate the ec->gen_fields_cache.
+    RBASIC_CLEAR_CLASS(fields_obj);
 }
 
 /* =========================================================================
@@ -252,11 +257,13 @@ rb_imemo_memsize(VALUE obj)
 
         break;
       case imemo_fields:
-        if (rb_shape_obj_too_complex_p(obj)) {
-            size += st_memsize(IMEMO_OBJ_FIELDS(obj)->as.complex.table);
-        }
-        else if (FL_TEST_RAW(obj, OBJ_FIELD_EXTERNAL)) {
-            size += RSHAPE_CAPACITY(RBASIC_SHAPE_ID(obj)) * sizeof(VALUE);
+        if (FL_TEST_RAW(obj, OBJ_FIELD_HEAP)) {
+            if (rb_shape_obj_too_complex_p(obj)) {
+                size += st_memsize(IMEMO_OBJ_FIELDS(obj)->as.complex.table);
+            }
+            else {
+                size += RSHAPE_CAPACITY(RBASIC_SHAPE_ID(obj)) * sizeof(VALUE);
+            }
         }
         break;
       default:
@@ -306,8 +313,8 @@ mark_and_move_method_entry(rb_method_entry_t *ment, bool reference_updating)
             break;
           case VM_METHOD_TYPE_BMETHOD:
             rb_gc_mark_and_move(&def->body.bmethod.proc);
-            if (!reference_updating) {
-                if (def->body.bmethod.hooks) rb_hook_list_mark(def->body.bmethod.hooks);
+            if (def->body.bmethod.hooks) {
+                rb_hook_list_mark_and_move(def->body.bmethod.hooks);
             }
             break;
           case VM_METHOD_TYPE_ALIAS:
@@ -530,11 +537,13 @@ rb_free_const_table(struct rb_id_table *tbl)
 static inline void
 imemo_fields_free(struct rb_fields *fields)
 {
-    if (rb_shape_obj_too_complex_p((VALUE)fields)) {
-        st_free_table(fields->as.complex.table);
-    }
-    else if (FL_TEST_RAW((VALUE)fields, OBJ_FIELD_EXTERNAL)) {
-        xfree(fields->as.external.ptr);
+    if (FL_TEST_RAW((VALUE)fields, OBJ_FIELD_HEAP)) {
+        if (rb_shape_obj_too_complex_p((VALUE)fields)) {
+            st_free_table(fields->as.complex.table);
+        }
+        else {
+            xfree(fields->as.external.ptr);
+        }
     }
 }
 

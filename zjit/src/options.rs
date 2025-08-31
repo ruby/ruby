@@ -44,7 +44,8 @@ pub struct Options {
     /// Dump High-level IR after optimization, right before codegen.
     pub dump_hir_opt: Option<DumpHIR>,
 
-    pub dump_hir_graphviz: bool,
+    /// Dump High-level IR to the given file in Graphviz format after optimization
+    pub dump_hir_graphviz: Option<std::path::PathBuf>,
 
     /// Dump low-level IR
     pub dump_lir: bool,
@@ -59,7 +60,7 @@ pub struct Options {
     pub allowed_iseqs: Option<HashSet<String>>,
 
     /// Path to a file where compiled ISEQs will be saved.
-    pub log_compiled_iseqs: Option<String>,
+    pub log_compiled_iseqs: Option<std::path::PathBuf>,
 }
 
 impl Default for Options {
@@ -72,7 +73,7 @@ impl Default for Options {
             disable_hir_opt: false,
             dump_hir_init: None,
             dump_hir_opt: None,
-            dump_hir_graphviz: false,
+            dump_hir_graphviz: None,
             dump_lir: false,
             dump_disasm: false,
             perf: false,
@@ -220,11 +221,24 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("dump-hir" | "dump-hir-opt", "") => options.dump_hir_opt = Some(DumpHIR::WithoutSnapshot),
         ("dump-hir" | "dump-hir-opt", "all") => options.dump_hir_opt = Some(DumpHIR::All),
         ("dump-hir" | "dump-hir-opt", "debug") => options.dump_hir_opt = Some(DumpHIR::Debug),
-        ("dump-hir-graphviz", "") => options.dump_hir_graphviz = true,
 
         ("dump-hir-init", "") => options.dump_hir_init = Some(DumpHIR::WithoutSnapshot),
         ("dump-hir-init", "all") => options.dump_hir_init = Some(DumpHIR::All),
         ("dump-hir-init", "debug") => options.dump_hir_init = Some(DumpHIR::Debug),
+
+        ("dump-hir-graphviz", "") => options.dump_hir_graphviz = Some("/dev/stderr".into()),
+        ("dump-hir-graphviz", _) => {
+            // Truncate the file if it exists
+            std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(opt_val)
+                .map_err(|e| eprintln!("Failed to open file '{}': {}", opt_val, e))
+                .ok();
+            let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
+            options.dump_hir_graphviz = Some(opt_val);
+        }
 
         ("dump-lir", "") => options.dump_lir = true,
 
@@ -242,7 +256,8 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 .open(opt_val)
                 .map_err(|e| eprintln!("Failed to open file '{}': {}", opt_val, e))
                 .ok();
-            options.log_compiled_iseqs = Some(opt_val.into());
+            let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
+            options.log_compiled_iseqs = Some(opt_val);
         }
 
         _ => return None, // Option name not recognized
@@ -262,6 +277,14 @@ fn update_profile_threshold() {
         let num_profiles = get_option!(num_profiles) as u64;
         unsafe { rb_zjit_profile_threshold = rb_zjit_call_threshold.saturating_sub(num_profiles).max(1) };
     }
+}
+
+pub fn internal_set_num_profiles(n: u8) {
+    let options = unsafe { OPTIONS.as_mut().unwrap() };
+    options.num_profiles = n;
+    let call_threshold = n.saturating_add(1);
+    unsafe { rb_zjit_call_threshold = call_threshold as u64; }
+    update_profile_threshold();
 }
 
 /// Print YJIT options for `ruby --help`. `width` is width of option parts, and

@@ -975,7 +975,7 @@ static inline bool FORCE_INLINE string_scan(JSON_ParserState *state)
         if (RB_UNLIKELY(string_scan_table[(unsigned char)*state->cursor])) {
             return 1;
         }
-        *state->cursor++;
+        state->cursor++;
     }
     return 0;
 }
@@ -1314,7 +1314,7 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
     else if (key == sym_symbolize_names)      { config->symbolize_names = RTEST(val); }
     else if (key == sym_freeze)               { config->freeze = RTEST(val); }
     else if (key == sym_on_load)              { config->on_load_proc = RTEST(val) ? val : Qfalse; }
-    else if (key == sym_allow_duplicate_key) { config->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
+    else if (key == sym_allow_duplicate_key)  { config->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
     else if (key == sym_decimal_class)        {
         if (RTEST(val)) {
             if (rb_respond_to(val, i_try_convert)) {

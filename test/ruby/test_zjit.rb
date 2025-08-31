@@ -18,6 +18,15 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_stats_enabled
+    assert_runs 'false', <<~RUBY, stats: false
+      RubyVM::ZJIT.stats_enabled?
+    RUBY
+    assert_runs 'true', <<~RUBY, stats: true
+      RubyVM::ZJIT.stats_enabled?
+    RUBY
+  end
+
   def test_enable_through_env
     child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => '1'}
     assert_in_out_err([child_env, '-v'], '') do |stdout, stderr|
@@ -69,6 +78,27 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_getglobal_with_warning
+    assert_compiles('"rescued"', %q{
+      Warning[:deprecated] = true
+
+      module Warning
+        def warn(message)
+          raise
+        end
+      end
+
+      def test
+        $=
+      rescue
+        "rescued"
+      end
+
+      $VERBOSE = true
+      test
+    }, insns: [:getglobal])
+  end
+
   def test_setglobal
     assert_compiles '1', %q{
       def test
@@ -88,6 +118,69 @@ class TestZJIT < Test::Unit::TestCase
 
       test
     }, insns: [:intern]
+  end
+
+  def test_duphash
+    assert_compiles '{a: 1}', %q{
+      def test
+        {a: 1}
+      end
+
+      test
+    }, insns: [:duphash]
+  end
+
+  def test_pushtoarray
+    assert_compiles '[1, 2, 3]', %q{
+      def test
+        [*[], 1, 2, 3]
+      end
+      test
+    }, insns: [:pushtoarray]
+  end
+
+  def test_splatarray_new_array
+    assert_compiles '[1, 2, 3]', %q{
+      def test a
+        [*a, 3]
+      end
+      test [1, 2]
+    }, insns: [:splatarray]
+  end
+
+  def test_splatarray_existing_array
+    assert_compiles '[1, 2, 3]', %q{
+      def foo v
+        [1, 2, v]
+      end
+      def test a
+        foo(*a)
+      end
+      test [3]
+    }, insns: [:splatarray]
+  end
+
+  def test_concattoarray
+    assert_compiles '[1, 2, 3]', %q{
+      def test(*a)
+        [1, 2, *a]
+      end
+      test 3
+    }, insns: [:concattoarray]
+  end
+
+  def test_definedivar
+    assert_compiles '[nil, "instance-variable", nil]', %q{
+      def test
+        v0 = defined?(@a)
+        @a = nil
+        v1 = defined?(@a)
+        remove_instance_variable :@a
+        v2 = defined?(@a)
+        [v0, v1, v2]
+      end
+      test
+    }, insns: [:definedivar]
   end
 
   def test_setglobal_with_trace_var_exception
@@ -158,8 +251,6 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_read_local_written_by_children_iseqs
-    omit "This test fails right now because Send doesn't compile."
-
     assert_compiles '[1, 2]', %q{
       def test
         l1 = nil
@@ -218,6 +309,22 @@ class TestZJIT < Test::Unit::TestCase
       entry(1, 2, 3, 4, 5, 6, 7, 8, {}) # profile
       entry(1, 2, 3, 4, 5, 6, 7, 8, {})
     }, call_threshold: 2
+  end
+
+  def test_send_exit_with_uninitialized_locals
+    assert_runs 'nil', %q{
+      def entry(init)
+        function_stub_exit(init)
+      end
+
+      def function_stub_exit(init)
+        uninitialized_local = 1 if init
+        uninitialized_local
+      end
+
+      entry(true) # profile and set 1 to the local slot
+      entry(false)
+    }, call_threshold: 2, allowed_iseqs: 'entry@-e:2'
   end
 
   def test_invokebuiltin
@@ -992,25 +1099,29 @@ class TestZJIT < Test::Unit::TestCase
       test
     }
 
-    assert_compiles '1', %q{
+    # TODO(Shopify/ruby#716): Support spills and change to assert_compiles
+    assert_runs '1', %q{
       def a(n1,n2,n3,n4,n5,n6,n7,n8,n9) = n1+n9
       a(2,0,0,0,0,0,0,0,-1)
     }
 
-    assert_compiles '0', %q{
+    # TODO(Shopify/ruby#716): Support spills and change to assert_compiles
+    assert_runs '0', %q{
       def a(n1,n2,n3,n4,n5,n6,n7,n8) = n8
       a(1,1,1,1,1,1,1,0)
     }
 
+    # TODO(Shopify/ruby#716): Support spills and change to assert_compiles
     # self param with spilled param
-    assert_compiles '"main"', %q{
+    assert_runs '"main"', %q{
       def a(n1,n2,n3,n4,n5,n6,n7,n8) = self
       a(1,0,0,0,0,0,0,0).to_s
     }
   end
 
   def test_spilled_param_new_arary
-    assert_compiles '[:ok]', %q{
+    # TODO(Shopify/ruby#716): Support spills and change to assert_compiles
+    assert_runs '[:ok]', %q{
       def a(n1,n2,n3,n4,n5,n6,n7,n8) = [n8]
       a(0,0,0,0,0,0,0, :ok)
     }
@@ -1023,15 +1134,6 @@ class TestZJIT < Test::Unit::TestCase
       def foo(#{'_,' * 39} n40) = n40
 
       foo(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1)
-    }
-  end
-
-
-  def test_opt_aref_with
-    assert_compiles ':ok', %q{
-      def aref_with(hash) = hash["key"]
-
-      aref_with({ "key" => :ok })
     }
   end
 
@@ -1057,6 +1159,36 @@ class TestZJIT < Test::Unit::TestCase
       def test() = @foo
 
       test()
+    }
+  end
+
+  def test_getinstancevariable_miss
+    assert_compiles '[1, 1, 4]', %q{
+      class C
+        def foo
+          @foo
+        end
+
+        def foo_then_bar
+          @foo = 1
+          @bar = 2
+        end
+
+        def bar_then_foo
+          @bar = 3
+          @foo = 4
+        end
+      end
+
+      o1 = C.new
+      o1.foo_then_bar
+      result = []
+      result << o1.foo
+      result << o1.foo
+      o2 = C.new
+      o2.bar_then_foo
+      result << o2.foo
+      result
     }
   end
 
@@ -1253,6 +1385,29 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:defined]
   end
 
+  def test_defined_method_raise
+    assert_compiles '[nil, nil, nil]', %q{
+      class C
+        def assert_equal expected, actual
+          if expected != actual
+            raise "NO"
+          end
+        end
+
+        def test_defined_method
+          assert_equal(nil, defined?("x".reverse(1).reverse))
+        end
+      end
+
+      c = C.new
+      result = []
+      result << c.test_defined_method
+      result << c.test_defined_method
+      result << c.test_defined_method
+      result
+    }
+  end
+
   def test_defined_yield
     assert_compiles "nil", "defined?(yield)"
     assert_compiles '[nil, nil, "yield"]', %q{
@@ -1265,15 +1420,13 @@ class TestZJIT < Test::Unit::TestCase
     # This will do some EP hopping to find the local EP,
     # so it's slightly different than doing it outside of a block.
 
-    omit 'Test fails at the moment due to missing Send codegen'
-
     assert_compiles '[nil, nil, "yield"]', %q{
       def test
         yield_self { yield_self { defined?(yield) } }
       end
 
       [test, test, test{}]
-    }, call_threshold: 2, insns: [:defined]
+    }, call_threshold: 2
   end
 
   def test_invokeblock_without_block_after_jit_call
@@ -1465,11 +1618,29 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_stats
-    assert_runs 'true', %q{
+  def test_stats_availability
+    assert_runs '[true, true]', %q{
       def test = 1
       test
-      RubyVM::ZJIT.stats[:zjit_insns_count] > 0
+      [
+        RubyVM::ZJIT.stats[:zjit_insn_count] > 0,
+        RubyVM::ZJIT.stats(:zjit_insn_count) > 0,
+      ]
+    }, stats: true
+  end
+
+  def test_stats_consistency
+    assert_runs '[]', %q{
+      def test = 1
+      test # increment some counters
+
+      RubyVM::ZJIT.stats.to_a.filter_map do |key, value|
+        # The value may be incremented, but the class should stay the same
+        other_value = RubyVM::ZJIT.stats(key)
+        if value.class != other_value.class
+          [key, value, other_value]
+        end
+      end
     }, stats: true
   end
 
@@ -1541,6 +1712,23 @@ class TestZJIT < Test::Unit::TestCase
         "redefined"
       end
 
+      result2 = test
+
+      [result1, result2]
+    }, call_threshold: 2
+  end
+
+  def test_method_redefinition_with_module
+    assert_runs '["original", "redefined"]', %q{
+      module Foo
+        def self.foo = "original"
+      end
+
+      def test = Foo.foo
+      test
+      result1 = test
+
+      def Foo.foo = "redefined"
       result2 = test
 
       [result1, result2]
@@ -1870,6 +2058,96 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_raise_in_second_argument
+    assert_compiles '{ok: true}', %q{
+      def write(hash, key)
+        hash[key] = raise rescue true
+        hash
+      end
+
+      write({}, :ok)
+    }
+  end
+
+  def test_ivar_attr_reader_optimization_with_multi_ractor_mode
+    assert_compiles '42', %q{
+      class Foo
+        class << self
+          attr_accessor :bar
+
+          def get_bar
+            bar
+          rescue Ractor::IsolationError
+            42
+          end
+        end
+      end
+
+      Foo.bar = [] # needs to be a ractor unshareable object
+
+      def test
+        Foo.get_bar
+      end
+
+      test
+      test
+
+      Ractor.new { test }.value
+    }, call_threshold: 2
+  end
+
+  def test_ivar_get_with_multi_ractor_mode
+    assert_compiles '42', %q{
+      class Foo
+        def self.set_bar
+          @bar = [] # needs to be a ractor unshareable object
+        end
+
+        def self.bar
+          @bar
+        rescue Ractor::IsolationError
+          42
+        end
+      end
+
+      Foo.set_bar
+
+      def test
+        Foo.bar
+      end
+
+      test
+      test
+
+      Ractor.new { test }.value
+    }
+  end
+
+  def test_ivar_set_with_multi_ractor_mode
+    assert_compiles '42', %q{
+      class Foo
+        def self.bar
+          _foo = 1
+          _bar = 2
+          begin
+            @bar = _foo + _bar
+          rescue Ractor::IsolationError
+            42
+          end
+        end
+      end
+
+      def test
+        Foo.bar
+      end
+
+      test
+      test
+
+      Ractor.new { test }.value
+    }
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
@@ -1927,6 +2205,7 @@ class TestZJIT < Test::Unit::TestCase
     zjit: true,
     stats: false,
     debug: true,
+    allowed_iseqs: nil,
     timeout: 1000,
     pipe_fd:
   )
@@ -1936,6 +2215,12 @@ class TestZJIT < Test::Unit::TestCase
       args << "--zjit-num-profiles=#{num_profiles}"
       args << "--zjit-stats" if stats
       args << "--zjit-debug" if debug
+      if allowed_iseqs
+        jitlist = Tempfile.new("jitlist")
+        jitlist.write(allowed_iseqs)
+        jitlist.close
+        args << "--zjit-allowed-iseqs=#{jitlist.path}"
+      end
     end
     args << "-e" << script_shell_encode(script)
     pipe_r, pipe_w = IO.pipe
@@ -1955,6 +2240,7 @@ class TestZJIT < Test::Unit::TestCase
     pipe_reader&.join(timeout)
     pipe_r&.close
     pipe_w&.close
+    jitlist&.unlink
   end
 
   def script_shell_encode(s)

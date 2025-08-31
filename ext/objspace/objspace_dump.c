@@ -587,7 +587,7 @@ dump_object(VALUE obj, struct dump_config *dc)
         break;
 
       case T_OBJECT:
-        if (FL_TEST(obj, ROBJECT_EMBED)) {
+        if (!FL_TEST_RAW(obj, ROBJECT_HEAP)) {
             dump_append(dc, ", \"embedded\":true");
         }
 

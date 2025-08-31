@@ -332,8 +332,6 @@ rb_gc_multi_ractor_p(void)
     return rb_multi_ractor_p();
 }
 
-bool rb_obj_is_main_ractor(VALUE gv);
-
 bool
 rb_gc_shutdown_call_finalizer_p(VALUE obj)
 {
@@ -372,7 +370,7 @@ rb_gc_get_shape(VALUE obj)
 void
 rb_gc_set_shape(VALUE obj, uint32_t shape_id)
 {
-    rb_obj_set_shape_id(obj, (uint32_t)shape_id);
+    RBASIC_SET_SHAPE_ID(obj, (uint32_t)shape_id);
 }
 
 uint32_t
@@ -627,9 +625,9 @@ typedef struct gc_function_map {
     size_t (*heap_id_for_size)(void *objspace_ptr, size_t size);
     bool (*size_allocatable_p)(size_t size);
     // Malloc
-    void *(*malloc)(void *objspace_ptr, size_t size);
-    void *(*calloc)(void *objspace_ptr, size_t size);
-    void *(*realloc)(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size);
+    void *(*malloc)(void *objspace_ptr, size_t size, bool gc_allowed);
+    void *(*calloc)(void *objspace_ptr, size_t size, bool gc_allowed);
+    void *(*realloc)(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size, bool gc_allowed);
     void (*free)(void *objspace_ptr, void *ptr, size_t old_size);
     void (*adjust_memory_usage)(void *objspace_ptr, ssize_t diff);
     // Marking
@@ -1266,16 +1264,18 @@ rb_gc_obj_free(void *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (rb_shape_obj_too_complex_p(obj)) {
-            RB_DEBUG_COUNTER_INC(obj_obj_too_complex);
-            st_free_table(ROBJECT_FIELDS_HASH(obj));
-        }
-        else if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-            RB_DEBUG_COUNTER_INC(obj_obj_embed);
+        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+            if (rb_shape_obj_too_complex_p(obj)) {
+                RB_DEBUG_COUNTER_INC(obj_obj_too_complex);
+                st_free_table(ROBJECT_FIELDS_HASH(obj));
+            }
+            else {
+                xfree(ROBJECT(obj)->as.heap.fields);
+                RB_DEBUG_COUNTER_INC(obj_obj_ptr);
+            }
         }
         else {
-            xfree(ROBJECT(obj)->as.heap.fields);
-            RB_DEBUG_COUNTER_INC(obj_obj_ptr);
+            RB_DEBUG_COUNTER_INC(obj_obj_embed);
         }
         break;
       case T_MODULE:
@@ -2315,11 +2315,13 @@ rb_obj_memsize_of(VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (rb_shape_obj_too_complex_p(obj)) {
-            size += rb_st_memsize(ROBJECT_FIELDS_HASH(obj));
-        }
-        else if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
-            size += ROBJECT_FIELDS_CAPACITY(obj) * sizeof(VALUE);
+        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+            if (rb_shape_obj_too_complex_p(obj)) {
+                size += rb_st_memsize(ROBJECT_FIELDS_HASH(obj));
+            }
+            else {
+                size += ROBJECT_FIELDS_CAPACITY(obj) * sizeof(VALUE);
+            }
         }
         break;
       case T_MODULE:
@@ -2492,6 +2494,10 @@ count_objects(int argc, VALUE *argv, VALUE os)
         types[i] = type_sym(i);
     }
 
+    // Same as type_sym, we need to create all key symbols in advance
+    VALUE total = ID2SYM(rb_intern("TOTAL"));
+    VALUE free = ID2SYM(rb_intern("FREE"));
+
     rb_gc_impl_each_object(rb_gc_get_objspace(), count_objects_i, &data);
 
     if (NIL_P(hash)) {
@@ -2500,8 +2506,8 @@ count_objects(int argc, VALUE *argv, VALUE os)
     else if (!RHASH_EMPTY_P(hash)) {
         rb_hash_stlike_foreach(hash, set_zero, hash);
     }
-    rb_hash_aset(hash, ID2SYM(rb_intern("TOTAL")), SIZET2NUM(data.total));
-    rb_hash_aset(hash, ID2SYM(rb_intern("FREE")), SIZET2NUM(data.freed));
+    rb_hash_aset(hash, total, SIZET2NUM(data.total));
+    rb_hash_aset(hash, free, SIZET2NUM(data.freed));
 
     for (size_t i = 0; i <= T_MASK; i++) {
         if (data.counts[i]) {
@@ -3541,19 +3547,21 @@ gc_ref_update_object(void *objspace, VALUE v)
 {
     VALUE *ptr = ROBJECT_FIELDS(v);
 
-    if (rb_shape_obj_too_complex_p(v)) {
-        gc_ref_update_table_values_only(ROBJECT_FIELDS_HASH(v));
-        return;
-    }
+    if (FL_TEST_RAW(v, ROBJECT_HEAP)) {
+        if (rb_shape_obj_too_complex_p(v)) {
+            gc_ref_update_table_values_only(ROBJECT_FIELDS_HASH(v));
+            return;
+        }
 
-    size_t slot_size = rb_gc_obj_slot_size(v);
-    size_t embed_size = rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(v));
-    if (slot_size >= embed_size && !RB_FL_TEST_RAW(v, ROBJECT_EMBED)) {
-        // Object can be re-embedded
-        memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
-        RB_FL_SET_RAW(v, ROBJECT_EMBED);
-        xfree(ptr);
-        ptr = ROBJECT(v)->as.ary;
+        size_t slot_size = rb_gc_obj_slot_size(v);
+        size_t embed_size = rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(v));
+        if (slot_size >= embed_size) {
+            // Object can be re-embedded
+            memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
+            FL_UNSET_RAW(v, ROBJECT_HEAP);
+            xfree(ptr);
+            ptr = ROBJECT(v)->as.ary;
+        }
     }
 
     for (uint32_t i = 0; i < ROBJECT_FIELDS_COUNT(v); i++) {
@@ -4771,20 +4779,17 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             }
           case T_OBJECT:
             {
-                if (rb_shape_obj_too_complex_p(obj)) {
-                    size_t hash_len = rb_st_table_size(ROBJECT_FIELDS_HASH(obj));
-                    APPEND_F("(too_complex) len:%zu", hash_len);
-                }
-                else {
-                    uint32_t len = ROBJECT_FIELDS_CAPACITY(obj);
-
-                    if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-                        APPEND_F("(embed) len:%d", len);
+                if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+                    if (rb_shape_obj_too_complex_p(obj)) {
+                        size_t hash_len = rb_st_table_size(ROBJECT_FIELDS_HASH(obj));
+                        APPEND_F("(too_complex) len:%zu", hash_len);
                     }
                     else {
-                        VALUE *ptr = ROBJECT_FIELDS(obj);
-                        APPEND_F("len:%d ptr:%p", len, (void *)ptr);
+                        APPEND_F("(embed) len:%d", ROBJECT_FIELDS_CAPACITY(obj));
                     }
+                }
+                else {
+                    APPEND_F("len:%d ptr:%p", ROBJECT_FIELDS_CAPACITY(obj), (void *)ROBJECT_FIELDS(obj));
                 }
             }
             break;
@@ -5120,6 +5125,14 @@ ruby_xmalloc(size_t size)
     return handle_malloc_failure(ruby_xmalloc_body(size));
 }
 
+static bool
+malloc_gc_allowed(void)
+{
+    rb_ractor_t *r = rb_current_ractor_raw(false);
+
+    return r == NULL || !r->malloc_gc_disabled;
+}
+
 static void *
 ruby_xmalloc_body(size_t size)
 {
@@ -5127,7 +5140,7 @@ ruby_xmalloc_body(size_t size)
         negative_size_allocation_error("too large allocation size");
     }
 
-    return rb_gc_impl_malloc(rb_gc_get_objspace(), size);
+    return rb_gc_impl_malloc(rb_gc_get_objspace(), size, malloc_gc_allowed());
 }
 
 void
@@ -5157,7 +5170,7 @@ ruby_xmalloc2(size_t n, size_t size)
 static void *
 ruby_xmalloc2_body(size_t n, size_t size)
 {
-    return rb_gc_impl_malloc(rb_gc_get_objspace(), xmalloc2_size(n, size));
+    return rb_gc_impl_malloc(rb_gc_get_objspace(), xmalloc2_size(n, size), malloc_gc_allowed());
 }
 
 static void *ruby_xcalloc_body(size_t n, size_t size);
@@ -5171,7 +5184,7 @@ ruby_xcalloc(size_t n, size_t size)
 static void *
 ruby_xcalloc_body(size_t n, size_t size)
 {
-    return rb_gc_impl_calloc(rb_gc_get_objspace(), xmalloc2_size(n, size));
+    return rb_gc_impl_calloc(rb_gc_get_objspace(), xmalloc2_size(n, size), malloc_gc_allowed());
 }
 
 static void *ruby_sized_xrealloc_body(void *ptr, size_t new_size, size_t old_size);
@@ -5192,7 +5205,7 @@ ruby_sized_xrealloc_body(void *ptr, size_t new_size, size_t old_size)
         negative_size_allocation_error("too large allocation size");
     }
 
-    return rb_gc_impl_realloc(rb_gc_get_objspace(), ptr, new_size, old_size);
+    return rb_gc_impl_realloc(rb_gc_get_objspace(), ptr, new_size, old_size, malloc_gc_allowed());
 }
 
 void *
@@ -5216,7 +5229,7 @@ static void *
 ruby_sized_xrealloc2_body(void *ptr, size_t n, size_t size, size_t old_n)
 {
     size_t len = xmalloc2_size(n, size);
-    return rb_gc_impl_realloc(rb_gc_get_objspace(), ptr, len, old_n * size);
+    return rb_gc_impl_realloc(rb_gc_get_objspace(), ptr, len, old_n * size, malloc_gc_allowed());
 }
 
 void *
