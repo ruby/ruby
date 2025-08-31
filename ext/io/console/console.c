@@ -96,6 +96,8 @@ extern VALUE rb_scheduler_timeout(struct timeval *timeout);
 # define rb_fiber_scheduler_make_timeout rb_scheduler_timeout
 #endif
 
+extern VALUE rb_fiber_scheduler_current(void);
+
 #ifndef HAVE_RB_IO_DESCRIPTOR
 static int
 io_descriptor_fallback(VALUE io)
@@ -1701,6 +1703,22 @@ console_dev(int argc, VALUE *argv, VALUE klass)
         out = rb_io_open_descriptor(klass, fd, FMODE_WRITABLE | FMODE_SYNC, path, Qnil, NULL);
 #endif
         fd = rb_cloexec_open(CONSOLE_DEVICE_FOR_READING, O_RDWR, 0);
+#ifdef HAVE_SYS_EVENT_H
+        VALUE scheduler = rb_fiber_scheduler_current();
+        if (!NIL_P(scheduler) && (isatty(0) || isatty(1) || isatty(2))) {
+            if (isatty(0)) {
+                fd = dup(0);
+                path = rb_obj_freeze(rb_str_new2("<STDIN>"));
+            } else if (isatty(1)) {
+                fd = dup(1);
+                path = rb_obj_freeze(rb_str_new2("<STDOUT>"));
+            } else if (isatty(2)) {
+                fd = dup(2);
+                path = rb_obj_freeze(rb_str_new2("<STDERR>"));
+            }
+        }
+#endif
+
         if (fd < 0) {
 #ifdef CONSOLE_DEVICE_FOR_WRITING
             rb_io_close(out);
