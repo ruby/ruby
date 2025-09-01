@@ -2256,6 +2256,52 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_line_tracepoint_on_c_method
+    assert_compiles '"[[:line, true]]"', %q{
+      events = []
+      events.instance_variable_set(
+        :@tp,
+        TracePoint.new(:line) { |tp| events << [tp.event, tp.lineno] if tp.path == __FILE__ }
+      )
+      def events.to_str
+        @tp.enable; ''
+      end
+
+      # Stay in generated code while enabling tracing
+      def events.compiled(obj)
+        String(obj)
+        @tp.disable; __LINE__
+      end
+
+      line = events.compiled(events)
+      events[0][-1] = (events[0][-1] == line)
+
+      events.to_s # can't dump events as it's a singleton object AND it has a TracePoint instance variable, which also can't be dumped
+    }
+  end
+
+  def test_targeted_line_tracepoint_in_c_method_call
+    assert_compiles '"[true]"', %q{
+      events = []
+      events.instance_variable_set(:@tp, TracePoint.new(:line) { |tp| events << tp.lineno })
+      def events.to_str
+        @tp.enable(target: method(:compiled))
+        ''
+      end
+
+      # Stay in generated code while enabling tracing
+      def events.compiled(obj)
+        String(obj)
+        __LINE__
+      end
+
+      line = events.compiled(events)
+      events[0] = (events[0] == line)
+
+      events.to_s # can't dump events as it's a singleton object AND it has a TracePoint instance variable, which also can't be dumped
+    }
+  end
+
   def test_opt_case_dispatch
     assert_compiles '[true, false]', %q{
       def test(x)

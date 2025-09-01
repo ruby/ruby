@@ -330,6 +330,7 @@ fn main() {
         .allowlist_type("vm_check_match_type")
         .allowlist_type("vm_opt_newarray_send_type")
         .allowlist_type("rb_iseq_type")
+        .allowlist_type("rb_event_flag_t")
 
         // From zjit.c
         .allowlist_function("rb_object_shape_count")

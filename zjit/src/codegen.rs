@@ -9,7 +9,7 @@ use std::slice;
 
 use crate::asm::Label;
 use crate::backend::current::{Reg, ALLOC_REGS};
-use crate::invariants::{track_bop_assumption, track_cme_assumption, track_single_ractor_assumption, track_stable_constant_names_assumption};
+use crate::invariants::{track_bop_assumption, track_cme_assumption, track_single_ractor_assumption, track_stable_constant_names_assumption, track_no_trace_point_assumption};
 use crate::gc::{append_gc_offsets, get_or_create_iseq_payload, get_or_create_iseq_payload_ptr, IseqPayload, IseqStatus};
 use crate::state::ZJITState;
 use crate::stats::{exit_counter_for_compile_error, incr_counter, incr_counter_by, CompileError};
@@ -592,6 +592,10 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invarian
             Invariant::StableConstantNames { idlist } => {
                 let side_exit_ptr = cb.resolve_label(label);
                 track_stable_constant_names_assumption(idlist, code_ptr, side_exit_ptr, payload_ptr);
+            }
+            Invariant::NoTracePoint => {
+                let side_exit_ptr = cb.resolve_label(label);
+                track_no_trace_point_assumption(code_ptr, side_exit_ptr, payload_ptr);
             }
             Invariant::SingleRactorMode => {
                 let side_exit_ptr = cb.resolve_label(label);
