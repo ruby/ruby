@@ -455,6 +455,40 @@ beta-gems.example.com is not a URI
     assert_equal "", @ui.error
   end
 
+  def test_remove_default_also_present_in_configuration
+    Gem.configuration.sources = [@gem_repo]
+
+    @cmd.handle_options %W[--remove #{@gem_repo}]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = "WARNING:  Removing a default source when it is the only source has no effect. Add a different source to #{Gem.configuration.config_file_name} if you want to stop using it as a source.\n"
+
+    assert_equal "", @ui.output
+    assert_equal expected, @ui.error
+  ensure
+    Gem.configuration.sources = nil
+  end
+
+  def test_remove_default_also_present_in_configuration_when_there_are_more_configured_sources
+    Gem.configuration.sources = [@gem_repo, "https://other.repo"]
+
+    @cmd.handle_options %W[--remove #{@gem_repo}]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = "#{@gem_repo} removed from sources\n"
+
+    assert_equal expected, @ui.output
+    assert_equal "", @ui.error
+  ensure
+    Gem.configuration.sources = nil
+  end
+
   def test_execute_remove_redundant_source_trailing_slash
     repo_with_slash = "http://sample.repo/"
 

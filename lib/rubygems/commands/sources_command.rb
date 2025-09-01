@@ -208,7 +208,11 @@ To remove a source use the --remove argument:
       Gem.sources.delete source
       Gem.configuration.write
 
-      say "#{source_uri} removed from sources"
+      if default_sources.include?(source) && configured_sources.one?
+        alert_warning "Removing a default source when it is the only source has no effect. Add a different source to #{config_file_name} if you want to stop using it as a source."
+      else
+        say "#{source_uri} removed from sources"
+      end
     elsif configured_sources
       say "source #{source_uri} cannot be removed because it's not present in #{config_file_name}"
     else
@@ -238,6 +242,10 @@ To remove a source use the --remove argument:
   end
 
   private
+
+  def default_sources
+    Gem::SourceList.from(Gem.default_sources)
+  end
 
   def configured_sources
     return @configured_sources if defined?(@configured_sources)
