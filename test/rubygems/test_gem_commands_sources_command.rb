@@ -424,6 +424,23 @@ beta-gems.example.com is not a URI
   end
 
   def test_execute_remove_not_present
+    Gem.configuration.sources = ["https://other.repo"]
+
+    @cmd.handle_options %W[--remove #{@new_repo}]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = "source #{@new_repo} cannot be removed because it's not present in #{Gem.configuration.config_file_name}\n"
+
+    assert_equal expected, @ui.output
+    assert_equal "", @ui.error
+  ensure
+    Gem.configuration.sources = nil
+  end
+
+  def test_execute_remove_nothing_configured
     spec_fetcher
 
     @cmd.handle_options %W[--remove https://does.not.exist]
@@ -432,7 +449,7 @@ beta-gems.example.com is not a URI
       @cmd.execute
     end
 
-    expected = "source https://does.not.exist not present in cache\n"
+    expected = "source https://does.not.exist cannot be removed because there are no configured sources in #{Gem.configuration.config_file_name}\n"
 
     assert_equal expected, @ui.output
     assert_equal "", @ui.error
