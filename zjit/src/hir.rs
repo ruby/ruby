@@ -2130,12 +2130,8 @@ impl Function {
                 }
                 worklist.push_back(state);
             }
-            &Insn::NewRange { low, high, state, .. } => {
-                worklist.push_back(low);
-                worklist.push_back(high);
-                worklist.push_back(state);
-            }
-            &Insn::NewRangeFixnum { low, high, state, .. } => {
+            &Insn::NewRange { low, high, state, .. }
+            | &Insn::NewRangeFixnum { low, high, state, .. } => {
                 worklist.push_back(low);
                 worklist.push_back(high);
                 worklist.push_back(state);
@@ -6610,12 +6606,12 @@ mod opt_tests {
 
     #[test]
     fn test_optimize_range_fixnum_inclusive_literals() {
-        eval(r#"
+        eval("
             def test()
               (1..2)
             end
             test; test
-        "#);
+        ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
@@ -6627,12 +6623,12 @@ mod opt_tests {
 
     #[test]
     fn test_optimize_range_fixnum_exclusive_literals() {
-        eval(r#"
+        eval("
             def test()
               (1...2)
             end
             test; test
-        "#);
+        ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
@@ -6644,12 +6640,12 @@ mod opt_tests {
 
     #[test]
     fn test_optimize_range_fixnum_inclusive_high_guarded() {
-        eval(r#"
+        eval("
             def test(a)
               (1..a)
             end
             test(2); test(3)
-        "#);
+        ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0(v0:BasicObject, v1:BasicObject):
@@ -6663,12 +6659,12 @@ mod opt_tests {
 
     #[test]
     fn test_optimize_range_fixnum_exclusive_high_guarded() {
-        eval(r#"
+        eval("
             def test(a)
               (1...a)
             end
             test(2); test(3)
-        "#);
+        ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0(v0:BasicObject, v1:BasicObject):
@@ -6682,12 +6678,12 @@ mod opt_tests {
 
     #[test]
     fn test_optimize_range_fixnum_inclusive_low_guarded() {
-        eval(r#"
+        eval("
             def test(a)
               (a..10)
             end
             test(2); test(3)
-        "#);
+        ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0(v0:BasicObject, v1:BasicObject):
@@ -6701,12 +6697,12 @@ mod opt_tests {
 
     #[test]
     fn test_optimize_range_fixnum_exclusive_low_guarded() {
-        eval(r#"
+        eval("
             def test(a)
               (a...10)
             end
             test(2); test(3)
-        "#);
+        ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0(v0:BasicObject, v1:BasicObject):
