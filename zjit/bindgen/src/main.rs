@@ -349,7 +349,6 @@ fn main() {
         .allowlist_function("rb_full_cfunc_return")
         .allowlist_function("rb_assert_(iseq|cme)_handle")
         .allowlist_function("rb_IMEMO_TYPE_P")
-        .allowlist_function("rb_iseq_reset_jit_func")
         .allowlist_function("rb_RSTRING_PTR")
         .allowlist_function("rb_RSTRING_LEN")
         .allowlist_function("rb_ENCODING_GET")
@@ -368,6 +367,8 @@ fn main() {
         .allowlist_function("rb_jit_multi_ractor_p")
         .allowlist_function("rb_jit_vm_lock_then_barrier")
         .allowlist_function("rb_jit_vm_unlock")
+        .allowlist_function("rb_jit_for_each_iseq")
+        .allowlist_function("rb_iseq_reset_jit_func")
         .allowlist_type("robject_offsets")
 
         // from vm_sync.h

@@ -269,3 +269,25 @@ pub extern "C" fn rb_zjit_before_ractor_spawn() {
         cb.mark_all_executable();
     });
 }
+
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_tracing_invalidate_all() {
+    use crate::gc::{get_or_create_iseq_payload, IseqStatus};
+    use crate::cruby::{for_each_iseq, rb_iseq_reset_jit_func};
+
+    if !zjit_enabled_p() {
+        return;
+    }
+
+    // Stop other ractors since we are going to patch machine code.
+    with_vm_lock(src_loc!(), || {
+        debug!("Invalidating all ZJIT compiled code due to TracePoint");
+
+        for_each_iseq(|iseq| {
+            let payload = get_or_create_iseq_payload(iseq);
+
+            payload.status = IseqStatus::NotCompiled;
+            unsafe { rb_iseq_reset_jit_func(iseq) };
+        });
+    });
+}
