@@ -74,7 +74,10 @@ module Prism
       "whitequark/ruby_bug_11989.txt",
       "whitequark/ruby_bug_18878.txt",
       "whitequark/ruby_bug_19281.txt",
-      "whitequark/slash_newline_in_heredocs.txt"
+      "whitequark/slash_newline_in_heredocs.txt",
+
+      # Ruby >= 3.5 specific syntax
+      "endless_methods_command_call.txt",
     ]
 
     Fixture.each(except: failures) do |fixture|

@@ -45,6 +45,9 @@ module Prism
     # https://bugs.ruby-lang.org/issues/20925
     except << "leading_logical.txt"
 
+    # https://bugs.ruby-lang.org/issues/17398#note-12
+    except << "endless_methods_command_call.txt"
+
     Fixture.each(except: except) do |fixture|
       define_method(fixture.test_name) { assert_lex(fixture) }
     end

@@ -29,7 +29,10 @@ module Prism
       "whitequark/lvar_injecting_match.txt",
 
       # Ripper fails to understand some structures that span across heredocs.
-      "spanning_heredoc.txt"
+      "spanning_heredoc.txt",
+
+      # https://bugs.ruby-lang.org/issues/17398#note-12
+      "endless_methods_command_call.txt",
     ]
 
     # Skip these tests that we haven't implemented yet.
