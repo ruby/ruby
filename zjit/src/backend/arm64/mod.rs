@@ -140,17 +140,17 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
         // If the value fits into a single movz
         // instruction, then we'll use that.
         movz(cb, rd, A64Opnd::new_uimm(current), 0);
-        return 1;
+        1
     } else if u16::try_from(!value).is_ok() {
         // For small negative values, use a single movn
         movn(cb, rd, A64Opnd::new_uimm(!value), 0);
-        return 1;
+        1
     } else if BitmaskImmediate::try_from(current).is_ok() {
         // Otherwise, if the immediate can be encoded
         // with the special bitmask immediate encoding,
         // we'll use that.
         mov(cb, rd, A64Opnd::new_uimm(current));
-        return 1;
+        1
     } else {
         // Finally we'll fall back to encoding the value
         // using movz for the first 16 bits and movk for
@@ -176,7 +176,7 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
             movk(cb, rd, A64Opnd::new_uimm(current & 0xffff), 48);
             num_insns += 1;
         }
-        return num_insns;
+        num_insns
     }
 }
 

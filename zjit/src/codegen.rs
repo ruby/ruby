@@ -1522,14 +1522,13 @@ fn build_side_exit(jit: &mut JITState, state: &FrameState, reason: SideExitReaso
         locals.push(jit.get_opnd(insn_id));
     }
 
-    let target = Target::SideExit {
+    Target::SideExit {
         pc: state.pc,
         stack,
         locals,
         reason,
         label,
-    };
-    target
+    }
 }
 
 /// Return true if a given ISEQ is known to escape EP to the heap on entry.
