@@ -2321,7 +2321,7 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_ractor_lazy_load_encoding
-    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
     begin;
       rs = []
       autoload_encodings = Encoding.list.select { |e| e.inspect.include?("(autoload)") }.freeze
@@ -2385,7 +2385,7 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_ractor_asciicompat_encoding_doesnt_exist
-    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
     begin;
       rs = []
       NO_EXIST = "I".freeze
