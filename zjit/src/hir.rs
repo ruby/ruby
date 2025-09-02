@@ -1968,13 +1968,13 @@ impl Function {
                             self.make_equal_to(insn_id, repl);
                             self.insn_types[repl.0] = self.infer_type(repl);
                         } else if low_is_fix {
-                            // Only left is fixnum → guard right
+                            // Only left is fixnum => guard right
                             let high_fix = self.coerce_to_fixnum(block, high, state);
                             let repl = self.push_insn(block, Insn::NewRangeFixnum { low, high: high_fix, flag, state });
                             self.make_equal_to(insn_id, repl);
                             self.insn_types[repl.0] = self.infer_type(repl);
                         } else if high_is_fix {
-                            // Only right is fixnum → guard left
+                            // Only right is fixnum => guard left
                             let low_fix = self.coerce_to_fixnum(block, low, state);
                             let repl = self.push_insn(block, Insn::NewRangeFixnum { low: low_fix, high, flag, state });
                             self.make_equal_to(insn_id, repl);
