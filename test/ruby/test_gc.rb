@@ -747,7 +747,7 @@ class TestGc < Test::Unit::TestCase
       Signal.trap(:INT, 'DEFAULT')
       pid = $$
       Thread.start do
-        10.times {
+        1000.times {
           sleep 0.1
           Process.kill("INT", pid) rescue break
         }
