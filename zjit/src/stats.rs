@@ -116,6 +116,7 @@ make_counters! {
 
     // compile_error_: Compile error reasons
     compile_error_iseq_stack_too_large,
+    compile_error_exception_handler,
     compile_error_out_of_memory,
     compile_error_register_spill_on_ccall,
     compile_error_register_spill_on_alloc,
@@ -180,6 +181,7 @@ pub fn exit_counter_ptr_for_call_type(call_type: crate::hir::CallType) -> *mut u
 #[derive(Clone, Debug, PartialEq)]
 pub enum CompileError {
     IseqStackTooLarge,
+    ExceptionHandler,
     OutOfMemory,
     RegisterSpillOnAlloc,
     RegisterSpillOnCCall,
@@ -194,6 +196,7 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
     use crate::stats::Counter::*;
     match compile_error {
         IseqStackTooLarge     => compile_error_iseq_stack_too_large,
+        ExceptionHandler      => compile_error_exception_handler,
         OutOfMemory           => compile_error_out_of_memory,
         RegisterSpillOnAlloc  => compile_error_register_spill_on_alloc,
         RegisterSpillOnCCall  => compile_error_register_spill_on_ccall,

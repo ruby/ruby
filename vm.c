@@ -445,7 +445,7 @@ jit_compile(rb_execution_context_t *ec)
 
         // At call-threshold, compile the ISEQ with ZJIT.
         if (body->jit_entry_calls == rb_zjit_call_threshold) {
-            rb_zjit_compile_iseq(iseq, ec, false);
+            rb_zjit_compile_iseq(iseq, false);
         }
     }
 #endif
@@ -493,8 +493,25 @@ jit_compile_exception(rb_execution_context_t *ec)
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
-    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
+#if USE_ZJIT
+    if (body->jit_exception == NULL && rb_zjit_enabled_p) {
+        body->jit_exception_calls++;
+
+        // At profile-threshold, rewrite some of the YARV instructions
+        // to zjit_* instructions to profile these instructions.
+        if (body->jit_exception_calls == rb_zjit_profile_threshold) {
+            rb_zjit_profile_enable(iseq);
+        }
+
+        // At call-threshold, compile the ISEQ with ZJIT.
+        if (body->jit_exception_calls == rb_zjit_call_threshold) {
+            rb_zjit_compile_iseq(iseq, true);
+        }
+    }
+#endif
+
 #if USE_YJIT
+    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
     if (body->jit_exception == NULL && rb_yjit_enabled_p) {
         body->jit_exception_calls++;
         if (body->jit_exception_calls == rb_yjit_call_threshold) {
