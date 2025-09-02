@@ -930,7 +930,7 @@ fn gen_send(
     gen_incr_counter(asm, Counter::dynamic_send_count);
 
     // Save PC and SP
-    gen_save_pc(asm, state);
+    gen_prepare_call_with_gc(asm, state);
     gen_save_sp(asm, state.stack().len());
 
     // Spill locals and stack
@@ -966,7 +966,7 @@ fn gen_send_without_block(
     asm_comment!(asm, "spill frame state");
 
     // Save PC and SP
-    gen_save_pc(asm, state);
+    gen_prepare_call_with_gc(asm, state);
     gen_save_sp(asm, state.stack().len());
 
     // Spill locals and stack
@@ -999,7 +999,7 @@ fn gen_send_without_block_direct(
     state: &FrameState,
 ) -> lir::Opnd {
     // Save cfp->pc and cfp->sp for the caller frame
-    gen_save_pc(asm, state);
+    gen_prepare_call_with_gc(asm, state);
     gen_save_sp(asm, state.stack().len() - args.len() - 1); // -1 for receiver
 
     gen_spill_locals(jit, asm, state);
@@ -1350,9 +1350,13 @@ fn gen_incr_counter(asm: &mut Assembler, counter: Counter) {
     }
 }
 
-/// Save the incremented PC on the CFP.
-/// This is necessary when callees can raise or allocate.
-fn gen_save_pc(asm: &mut Assembler, state: &FrameState) {
+/// Save the current PC on the CFP as a preparation for calling a C function
+/// that may allocate objects and trigger GC. Use gen_prepare_non_leaf_call()
+/// if it may raise exceptions or call arbitrary methods.
+///
+/// Unlike YJIT, we don't need to save the stack slots to protect them from GC
+/// because the backend spills all live registers onto the C stack on CCall.
+fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState) {
     let opcode: usize = state.get_opcode().try_into().unwrap();
     let next_pc: *const VALUE = unsafe { state.pc.offset(insn_len(opcode) as isize) };
 
@@ -1396,7 +1400,7 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
 fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
     // TODO: Lazily materialize caller frames when needed
     // Save PC for backtraces and allocation tracing
-    gen_save_pc(asm, state);
+    gen_prepare_call_with_gc(asm, state);
 
     // Save SP and spill the virtual stack in case it raises an exception
     // and the interpreter uses the stack for handling the exception
@@ -1405,15 +1409,6 @@ fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, state: &FrameS
 
     // Spill locals in case the method looks at caller Bindings
     gen_spill_locals(jit, asm, state);
-}
-
-/// Prepare for calling a C function that may allocate objects and trigger GC.
-/// Use gen_prepare_non_leaf_call() if it may also call an arbitrary method.
-fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState) {
-    // Save PC for allocation tracing
-    gen_save_pc(asm, state);
-    // Unlike YJIT, we don't need to save the stack to protect them from GC
-    // because the backend spills all live registers onto the C stack on asm.ccall().
 }
 
 /// Frame metadata written by gen_push_frame()
