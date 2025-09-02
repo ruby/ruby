@@ -1012,7 +1012,7 @@ impl<T: Copy + Into<usize> + PartialEq> UnionFind<T> {
 
     /// Private. Return the internal representation of the forwarding pointer for a given element.
     fn at(&self, idx: T) -> Option<T> {
-        self.forwarded.get(idx.into()).map(|x| *x).flatten()
+        self.forwarded.get(idx.into()).copied().flatten()
     }
 
     /// Private. Set the internal representation of the forwarding pointer for the given element
