@@ -2240,6 +2240,24 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_opt_case_dispatch
+    assert_compiles '[true, false]', %q{
+      def test(x)
+        case x
+        when :foo
+          true
+        else
+          false
+        end
+      end
+
+      results = []
+      results << test(:foo)
+      results << test(1)
+      results
+    }, insns: [:opt_case_dispatch]
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
