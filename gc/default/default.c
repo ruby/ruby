@@ -2012,7 +2012,10 @@ static void
 gc_continue(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     unsigned int lock_lev;
-    gc_enter(objspace, gc_enter_event_continue, &lock_lev);
+    bool needs_gc = is_incremental_marking(objspace) || (heap->free_pages == NULL && is_lazy_sweeping(objspace));
+    if (!needs_gc) return;
+
+    gc_enter(objspace, gc_enter_event_continue, &lock_lev); // takes vm barrier, try to avoid
 
     /* Continue marking if in incremental marking. */
     if (is_incremental_marking(objspace)) {
