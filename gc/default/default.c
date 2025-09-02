@@ -4395,7 +4395,15 @@ gc_mark_check_t_none(rb_objspace_t *objspace, VALUE obj)
         char obj_info_buf[256];
         rb_raw_obj_info(obj_info_buf, 256, obj);
 
-        rb_bug("try to mark T_NONE object (obj: %s)", obj_info_buf);
+        char parent_obj_info_buf[256];
+        if (objspace->rgengc.parent_object == Qfalse) {
+            strcpy(parent_obj_info_buf, "(none)");
+        }
+        else {
+            rb_raw_obj_info(parent_obj_info_buf, 256, objspace->rgengc.parent_object);
+        }
+
+        rb_bug("try to mark T_NONE object (obj: %s, parent: %s)", obj_info_buf, parent_obj_info_buf);
     }
 }
 
