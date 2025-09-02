@@ -1107,8 +1107,8 @@ impl Assembler
                     // be stored is first and the address is second. However in
                     // our IR we have the address first and the register second.
                     match dest_num_bits {
-                        64 | 32 => stur(cb, src.into(), dest.into()),
-                        16 => sturh(cb, src.into(), dest.into()),
+                        64 | 32 => stur(cb, src, dest),
+                        16 => sturh(cb, src, dest),
                         num_bits => panic!("unexpected dest num_bits: {} (src: {:#?}, dest: {:#?})", num_bits, src, dest),
                     }
                 },
