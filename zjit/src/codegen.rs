@@ -342,6 +342,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::NewArray { elements, state } => gen_new_array(asm, opnds!(elements), &function.frame_state(*state)),
         Insn::NewHash { elements, state } => gen_new_hash(jit, asm, elements, &function.frame_state(*state)),
         Insn::NewRange { low, high, flag, state } => gen_new_range(jit, asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
+        Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
         // concatstrings shouldn't have 0 strings
@@ -1133,6 +1134,17 @@ fn gen_new_range(
     gen_prepare_non_leaf_call(jit, asm, state);
 
     // Call rb_range_new(low, high, flag)
+    asm_ccall!(asm, rb_range_new, low, high, (flag as i64).into())
+}
+
+fn gen_new_range_fixnum(
+    asm: &mut Assembler,
+    low: lir::Opnd,
+    high: lir::Opnd,
+    flag: RangeType,
+    state: &FrameState,
+) -> lir::Opnd {
+    gen_prepare_call_with_gc(asm, state);
     asm_ccall!(asm, rb_range_new, low, high, (flag as i64).into())
 }
 
