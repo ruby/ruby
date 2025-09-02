@@ -162,6 +162,87 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { JSON.load('', nil, :allow_blank => false) }
   end
 
+  def test_unsafe_load
+    string_able_klass = Class.new do
+      def initialize(str)
+        @str = str
+      end
+
+      def to_str
+        @str
+      end
+    end
+
+    io_able_klass = Class.new do
+      def initialize(str)
+        @str = str
+      end
+
+      def to_io
+        StringIO.new(@str)
+      end
+    end
+
+    assert_equal @hash, JSON.unsafe_load(@json)
+    tempfile = Tempfile.open('@json')
+    tempfile.write @json
+    tempfile.rewind
+    assert_equal @hash, JSON.unsafe_load(tempfile)
+    stringio = StringIO.new(@json)
+    stringio.rewind
+    assert_equal @hash, JSON.unsafe_load(stringio)
+    string_able = string_able_klass.new(@json)
+    assert_equal @hash, JSON.unsafe_load(string_able)
+    io_able = io_able_klass.new(@json)
+    assert_equal @hash, JSON.unsafe_load(io_able)
+    assert_equal nil, JSON.unsafe_load(nil)
+    assert_equal nil, JSON.unsafe_load('')
+  ensure
+    tempfile.close!
+  end
+
+  def test_unsafe_load_with_proc
+    visited = []
+    JSON.unsafe_load('{"foo": [1, 2, 3], "bar": {"baz": "plop"}}', proc { |o| visited << JSON.dump(o); o })
+
+    expected = [
+      '"foo"',
+      '1',
+      '2',
+      '3',
+      '[1,2,3]',
+      '"bar"',
+      '"baz"',
+      '"plop"',
+      '{"baz":"plop"}',
+      '{"foo":[1,2,3],"bar":{"baz":"plop"}}',
+    ]
+    assert_equal expected, visited
+  end
+
+  def test_unsafe_load_default_options
+    too_deep = '[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[["Too deep"]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
+    assert JSON.unsafe_load(too_deep, nil).is_a?(Array)
+    nan_json = '{ "foo": NaN }'
+    assert JSON.unsafe_load(nan_json, nil)['foo'].nan?
+    assert_equal nil, JSON.unsafe_load(nil, nil)
+    t = Time.now
+    assert_equal t, JSON.unsafe_load(JSON(t))
+  end
+
+  def test_unsafe_load_with_options
+    nan_json = '{ "foo": NaN }'
+    assert_raise(JSON::ParserError) { JSON.unsafe_load(nan_json, nil, :allow_nan => false)['foo'].nan? }
+    # make sure it still uses the defaults when something is provided
+    assert JSON.unsafe_load(nan_json, nil, :allow_blank => true)['foo'].nan?
+  end
+
+  def test_unsafe_load_null
+    assert_equal nil, JSON.unsafe_load(nil, nil, :allow_blank => true)
+    assert_raise(TypeError) { JSON.unsafe_load(nil, nil, :allow_blank => false) }
+    assert_raise(JSON::ParserError) { JSON.unsafe_load('', nil, :allow_blank => false) }
+  end
+
   def test_dump
     too_deep = '[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
     obj = eval(too_deep)
