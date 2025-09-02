@@ -104,48 +104,28 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
 /// Compile an entry point for a given ISEQ
 fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr) -> Result<CodePtr, CompileError> {
     // Compile ISEQ into High-level IR
-    let function = match compile_iseq(iseq) {
-        Ok(function) => function,
-        Err(err) => {
-            incr_counter!(failed_iseq_count);
-            return Err(err);
-        }
-    };
+    let function = compile_iseq(iseq).inspect_err(|_| {
+        incr_counter!(failed_iseq_count);
+    })?;
 
     // Compile the High-level IR
-    let start_ptr = match gen_iseq(cb, iseq, Some(&function)) {
-        Ok(start_ptr) => start_ptr,
-        Err(err) => {
-            debug!("Failed to compile iseq: gen_iseq failed: {}", iseq_get_location(iseq, 0));
-            return Err(err);
-        }
-    };
+    let start_ptr = gen_iseq(cb, iseq, Some(&function)).inspect_err(|err| {
+        debug!("{err:?}: gen_iseq failed: {}", iseq_get_location(iseq, 0));
+    })?;
 
     // Compile an entry point to the JIT code
-    let entry_ptr = match gen_entry(cb, iseq, &function, start_ptr) {
-        Ok(entry_ptr) => entry_ptr,
-        Err(err) => {
-            debug!("Failed to compile iseq: gen_entry failed: {}", iseq_get_location(iseq, 0));
-            return Err(err);
-        }
-    };
-
-    // Return a JIT code address
-    Ok(entry_ptr)
+    gen_entry(cb, iseq, &function, start_ptr).inspect_err(|err| {
+        debug!("{err:?}: gen_entry failed: {}", iseq_get_location(iseq, 0));
+    })
 }
 
 /// Stub a branch for a JIT-to-JIT call
 fn gen_iseq_call(cb: &mut CodeBlock, caller_iseq: IseqPtr, iseq_call: &Rc<RefCell<IseqCall>>) -> Result<(), CompileError> {
     // Compile a function stub
-    let stub_ptr = match gen_function_stub(cb, iseq_call.clone()) {
-        Ok(stub_ptr) => stub_ptr,
-        Err(err) => {
-            // Failed to compile the stub. Bail out of compiling the caller ISEQ.
-            debug!("Failed to compile iseq: could not compile stub: {} -> {}",
-                   iseq_get_location(caller_iseq, 0), iseq_get_location(iseq_call.borrow().iseq, 0));
-            return Err(err);
-        }
-    };
+    let stub_ptr = gen_function_stub(cb, iseq_call.clone()).inspect_err(|err| {
+        debug!("{err:?}: gen_function_stub failed: {} -> {}",
+               iseq_get_location(caller_iseq, 0), iseq_get_location(iseq_call.borrow().iseq, 0));
+    })?;
 
     // Update the JIT-to-JIT call to call the stub
     let stub_addr = stub_ptr.raw_ptr(cb);
@@ -1647,13 +1627,10 @@ c_callable! {
 
             // Otherwise, attempt to compile the ISEQ. We have to mark_all_executable() beyond this point.
             let code_ptr = with_time_stat(compile_time_ns, || function_stub_hit_body(cb, &iseq_call));
-            let code_ptr = match code_ptr {
-                Ok(code_ptr) => code_ptr,
-                Err(compile_error) => {
-                    prepare_for_exit(iseq, cfp, sp, &compile_error);
-                    ZJITState::get_exit_trampoline_with_counter()
-                }
-            };
+            let code_ptr = code_ptr.unwrap_or_else(|compile_error| {
+                prepare_for_exit(iseq, cfp, sp, &compile_error);
+                ZJITState::get_exit_trampoline_with_counter()
+            });
             cb.mark_all_executable();
             code_ptr.raw_ptr(cb)
         })
@@ -1663,13 +1640,9 @@ c_callable! {
 /// Compile an ISEQ for a function stub
 fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &Rc<RefCell<IseqCall>>) -> Result<CodePtr, CompileError> {
     // Compile the stubbed ISEQ
-    let code_ptr = match gen_iseq(cb, iseq_call.borrow().iseq, None) {
-        Ok(code_ptr) => code_ptr,
-        Err(err) => {
-            debug!("Failed to compile iseq: gen_iseq failed: {}", iseq_get_location(iseq_call.borrow().iseq, 0));
-            return Err(err);
-        }
-    };
+    let code_ptr = gen_iseq(cb, iseq_call.borrow().iseq, None).inspect_err(|err| {
+        debug!("{err:?}: gen_iseq failed: {}", iseq_get_location(iseq_call.borrow().iseq, 0));
+    })?;
 
     // Update the stub to call the code pointer
     let code_addr = code_ptr.raw_ptr(cb);
