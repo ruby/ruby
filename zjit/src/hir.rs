@@ -1963,7 +1963,7 @@ impl Function {
                         let high_is_fix = self.is_a(high, types::Fixnum);
 
                         if low_is_fix && high_is_fix {
-                            // Both statically fixnum → specialize directly
+                            // Both statically fixnum => specialize directly
                             let repl = self.push_insn(block, Insn::NewRangeFixnum { low, high, flag, state });
                             self.make_equal_to(insn_id, repl);
                             self.insn_types[repl.0] = self.infer_type(repl);
