@@ -1568,7 +1568,7 @@ impl Assembler
                 let side_exit_label = if let Some(label) = label {
                     Target::Label(label)
                 } else {
-                    self.new_label("side_exit".into())
+                    self.new_label("side_exit")
                 };
                 self.write_label(side_exit_label.clone());
 
