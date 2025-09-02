@@ -12,7 +12,7 @@ use std::{
 use crate::hir_type::{Type, types};
 use crate::bitset::BitSet;
 use crate::profile::{TypeDistributionSummary, ProfiledType};
-use crate::stats::{incr_counter, Counter};
+use crate::stats::Counter;
 
 /// An index of an [`Insn`] in a [`Function`]. This is a popular
 /// type since this effectively acts as a pointer to an [`Insn`].
@@ -1063,7 +1063,7 @@ impl<T: Copy + Into<usize> + PartialEq> UnionFind<T> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ValidationError {
     BlockHasNoTerminator(BlockId),
     // The terminator and its actual position
@@ -2879,7 +2879,7 @@ pub enum CallType {
     Forwarding,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ParameterType {
     Optional,
     /// For example, `foo(...)`. Interaction of JIT
@@ -2887,7 +2887,7 @@ pub enum ParameterType {
     Forwardable,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ParseError {
     StackUnderflow(FrameState),
     UnknownParameterType(ParameterType),
@@ -3675,7 +3675,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
     fun.profiles = Some(profiles);
     if let Err(e) = fun.validate() {
-        incr_counter!(failed_hir_compile_validate);
         return Err(ParseError::Validation(e));
     }
     Ok(fun)
