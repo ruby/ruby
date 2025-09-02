@@ -3,18 +3,25 @@ use std::os::raw::{c_char, c_int, c_uint};
 use crate::cruby::*;
 use std::collections::HashSet;
 
+/// Default --zjit-num-profiles
+const DEFAULT_NUM_PROFILES: u8 = 5;
+
+/// Default --zjit-call-threshold. This should be large enough to avoid compiling
+/// warmup code, but small enough to perform well on micro-benchmarks.
+pub const DEFAULT_CALL_THRESHOLD: u64 = 30;
+
 /// Number of calls to start profiling YARV instructions.
 /// They are profiled `rb_zjit_call_threshold - rb_zjit_profile_threshold` times,
 /// which is equal to --zjit-num-profiles.
 #[unsafe(no_mangle)]
 #[allow(non_upper_case_globals)]
-pub static mut rb_zjit_profile_threshold: u64 = 1;
+pub static mut rb_zjit_profile_threshold: u64 = DEFAULT_CALL_THRESHOLD - DEFAULT_NUM_PROFILES as u64;
 
 /// Number of calls to compile ISEQ with ZJIT at jit_compile() in vm.c.
 /// --zjit-call-threshold=1 compiles on first execution without profiling information.
 #[unsafe(no_mangle)]
 #[allow(non_upper_case_globals)]
-pub static mut rb_zjit_call_threshold: u64 = 2;
+pub static mut rb_zjit_call_threshold: u64 = DEFAULT_CALL_THRESHOLD;
 
 /// ZJIT command-line options. This is set before rb_zjit_init() sets
 /// ZJITState so that we can query some options while loading builtins.
@@ -67,7 +74,7 @@ impl Default for Options {
     fn default() -> Self {
         Options {
             exec_mem_bytes: 64 * 1024 * 1024,
-            num_profiles: 1,
+            num_profiles: DEFAULT_NUM_PROFILES,
             stats: false,
             debug: false,
             disable_hir_opt: false,
@@ -279,6 +286,7 @@ fn update_profile_threshold() {
     }
 }
 
+#[cfg(test)]
 pub fn internal_set_num_profiles(n: u8) {
     let options = unsafe { OPTIONS.as_mut().unwrap() };
     options.num_profiles = n;
