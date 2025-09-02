@@ -4388,6 +4388,25 @@ gc_grey(rb_objspace_t *objspace, VALUE obj)
     push_mark_stack(&objspace->mark_stack, obj);
 }
 
+static inline void
+gc_mark_check_t_none(rb_objspace_t *objspace, VALUE obj)
+{
+    if (RB_UNLIKELY(RB_TYPE_P(obj, T_NONE))) {
+        char obj_info_buf[256];
+        rb_raw_obj_info(obj_info_buf, 256, obj);
+
+        char parent_obj_info_buf[256];
+        if (objspace->rgengc.parent_object == Qfalse) {
+            strcpy(parent_obj_info_buf, "(none)");
+        }
+        else {
+            rb_raw_obj_info(parent_obj_info_buf, 256, objspace->rgengc.parent_object);
+        }
+
+        rb_bug("try to mark T_NONE object (obj: %s, parent: %s)", obj_info_buf, parent_obj_info_buf);
+    }
+}
+
 static void
 gc_mark(rb_objspace_t *objspace, VALUE obj)
 {
@@ -4407,10 +4426,7 @@ gc_mark(rb_objspace_t *objspace, VALUE obj)
         }
     }
 
-    if (RB_UNLIKELY(RB_TYPE_P(obj, T_NONE))) {
-        rb_obj_info_dump(obj);
-        rb_bug("try to mark T_NONE object"); /* check here will help debugging */
-    }
+    gc_mark_check_t_none(objspace, obj);
 
     gc_aging(objspace, obj);
     gc_grey(objspace, obj);
@@ -4504,10 +4520,7 @@ rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
 
     VALUE obj = *ptr;
 
-    if (RB_UNLIKELY(RB_TYPE_P(obj, T_NONE))) {
-        rb_obj_info_dump(obj);
-        rb_bug("try to mark T_NONE object");
-    }
+    gc_mark_check_t_none(objspace, obj);
 
     /* If we are in a minor GC and the other object is old, then obj should
      * already be marked and cannot be reclaimed in this GC cycle so we don't
