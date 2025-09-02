@@ -253,8 +253,8 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("perf", "") => options.perf = true,
 
-        ("allowed-iseqs", _) if opt_val != "" => options.allowed_iseqs = Some(parse_jit_list(opt_val)),
-        ("log-compiled-iseqs", _) if opt_val != "" => {
+        ("allowed-iseqs", _) if !opt_val.is_empty() => options.allowed_iseqs = Some(parse_jit_list(opt_val)),
+        ("log-compiled-iseqs", _) if !opt_val.is_empty() => {
             // Truncate the file if it exists
             std::fs::OpenOptions::new()
                 .create(true)
