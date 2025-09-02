@@ -88,7 +88,7 @@
 #![allow(unused_imports)]
 
 use std::convert::From;
-use std::ffi::{CString, CStr};
+use std::ffi::{c_void, CString, CStr};
 use std::fmt::{Debug, Formatter};
 use std::os::raw::{c_char, c_int, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
@@ -291,6 +291,17 @@ pub fn iseq_pc_to_insn_idx(iseq: IseqPtr, pc: *mut VALUE) -> Option<u16> {
 pub fn iseq_opcode_at_idx(iseq: IseqPtr, insn_idx: u32) -> u32 {
     let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
     unsafe { rb_iseq_opcode_at_pc(iseq, pc) as u32 }
+}
+
+/// Iterate over all existing ISEQs
+pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
+    unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
+        // SAFETY: points to the local below
+        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = unsafe { std::mem::transmute(&mut *data) };
+        callback(iseq);
+    }
+    let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
+    unsafe { rb_jit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
 }
 
 /// Return a poison value to be set above the stack top to verify leafness.

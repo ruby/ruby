@@ -413,18 +413,6 @@ rb_iseq_set_yjit_payload(const rb_iseq_t *iseq, void *payload)
     iseq->body->yjit_payload = payload;
 }
 
-void
-rb_iseq_reset_jit_func(const rb_iseq_t *iseq)
-{
-    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    iseq->body->jit_entry = NULL;
-    iseq->body->jit_exception = NULL;
-    // Enable re-compiling this ISEQ. Event when it's invalidated for TracePoint,
-    // we'd like to re-compile ISEQs that haven't been converted to trace_* insns.
-    iseq->body->jit_entry_calls = 0;
-    iseq->body->jit_exception_calls = 0;
-}
-
 rb_proc_t *
 rb_yjit_get_proc_ptr(VALUE procv)
 {
@@ -641,41 +629,6 @@ bool
 rb_yjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
 {
     return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
-}
-
-// Used for passing a callback and other data over rb_objspace_each_objects
-struct iseq_callback_data {
-    rb_iseq_callback callback;
-    void *data;
-};
-
-// Heap-walking callback for rb_yjit_for_each_iseq().
-static int
-for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
-{
-    const struct iseq_callback_data *callback_data = (struct iseq_callback_data *)data;
-    VALUE v = (VALUE)vstart;
-    for (; v != (VALUE)vend; v += stride) {
-        void *ptr = rb_asan_poisoned_object_p(v);
-        rb_asan_unpoison_object(v, false);
-
-        if (rb_obj_is_iseq(v)) {
-            rb_iseq_t *iseq = (rb_iseq_t *)v;
-            callback_data->callback(iseq, callback_data->data);
-        }
-
-        asan_poison_object_if(ptr, v);
-    }
-    return 0;
-}
-
-// Iterate through the whole GC heap and invoke a callback for each iseq.
-// Used for global code invalidation.
-void
-rb_yjit_for_each_iseq(rb_iseq_callback callback, void *data)
-{
-    struct iseq_callback_data callback_data = { .callback = callback, .data = data };
-    rb_objspace_each_objects(for_each_iseq_i, (void *)&callback_data);
 }
 
 // For running write barriers from Rust. Required when we add a new edge in the

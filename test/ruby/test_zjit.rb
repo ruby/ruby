@@ -2202,6 +2202,44 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_global_tracepoint
+    assert_compiles 'true', %q{
+      def foo = 1
+
+      foo
+      foo
+
+      called = false
+
+      tp = TracePoint.new(:return) { |event|
+        if event.method_id == :foo
+          called = true
+        end
+      }
+      tp.enable do
+        foo
+      end
+      called
+    }
+  end
+
+  def test_local_tracepoint
+    assert_compiles 'true', %q{
+      def foo = 1
+
+      foo
+      foo
+
+      called = false
+
+      tp = TracePoint.new(:return) { |_| called = true }
+      tp.enable(target: method(:foo)) do
+        foo
+      end
+      called
+    }
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
