@@ -581,7 +581,7 @@ fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf
 fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invariant, state: &FrameState) {
     let payload_ptr = get_or_create_iseq_payload_ptr(jit.iseq);
     let label = asm.new_label("patch_point").unwrap_label();
-    let invariant = invariant.clone();
+    let invariant = *invariant;
 
     // Compile a side exit. Fill nop instructions if the last patch point is too close.
     asm.patch_point(build_side_exit(jit, state, PatchPoint(invariant), Some(label)));
