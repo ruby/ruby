@@ -336,7 +336,7 @@ pub extern "C" fn rb_zjit_option_enabled_p(_ec: EcPtr, _self: VALUE) -> VALUE {
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_stats_enabled_p(_ec: EcPtr, _self: VALUE) -> VALUE {
     // Builtin zjit.rb calls this even if ZJIT is disabled, so OPTIONS may not be set.
-    if unsafe { OPTIONS.as_ref() }.map_or(false, |opts| opts.stats) {
+    if unsafe { OPTIONS.as_ref() }.is_some_and(|opts| opts.stats) {
         Qtrue
     } else {
         Qfalse
