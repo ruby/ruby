@@ -4388,6 +4388,15 @@ gc_grey(rb_objspace_t *objspace, VALUE obj)
     push_mark_stack(&objspace->mark_stack, obj);
 }
 
+static inline void
+gc_mark_check_t_none(VALUE obj)
+{
+    if (RB_UNLIKELY(RB_TYPE_P(obj, T_NONE))) {
+        rb_obj_info_dump(obj);
+        rb_bug("try to mark T_NONE object");
+    }
+}
+
 static void
 gc_mark(rb_objspace_t *objspace, VALUE obj)
 {
@@ -4407,10 +4416,7 @@ gc_mark(rb_objspace_t *objspace, VALUE obj)
         }
     }
 
-    if (RB_UNLIKELY(RB_TYPE_P(obj, T_NONE))) {
-        rb_obj_info_dump(obj);
-        rb_bug("try to mark T_NONE object"); /* check here will help debugging */
-    }
+    gc_mark_check_t_none(obj);
 
     gc_aging(objspace, obj);
     gc_grey(objspace, obj);
@@ -4504,10 +4510,7 @@ rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
 
     VALUE obj = *ptr;
 
-    if (RB_UNLIKELY(RB_TYPE_P(obj, T_NONE))) {
-        rb_obj_info_dump(obj);
-        rb_bug("try to mark T_NONE object");
-    }
+    gc_mark_check_t_none(obj);
 
     /* If we are in a minor GC and the other object is old, then obj should
      * already be marked and cannot be reclaimed in this GC cycle so we don't
