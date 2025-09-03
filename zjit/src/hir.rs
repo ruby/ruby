@@ -3274,6 +3274,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     });
                     queue.push_back((state.clone(), target, target_idx));
                 }
+                YARVINSN_opt_case_dispatch => {
+                    // TODO: Some keys are visible at compile time, so in the future we can
+                    // compile jump targets for certain cases
+                    // Pop the key from the stack and fallback to the === branches for now
+                    state.stack_pop()?;
+                }
                 YARVINSN_opt_new => {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
