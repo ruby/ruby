@@ -93,7 +93,7 @@ impl Default for Options {
 /// `ruby --help` descriptions for user-facing options. Do not add options for ZJIT developers.
 /// Note that --help allows only 80 chars per line, including indentation, and it also puts the
 /// description in a separate line if the option name is too long.  80-char limit --> | (any character beyond this `|` column fails the test)
-pub const ZJIT_OPTIONS: &'static [(&str, &str)] = &[
+pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
     // TODO: Hide --zjit-exec-mem-size from ZJIT_OPTIONS once we add --zjit-mem-size (Shopify/ruby#686)
     ("--zjit-exec-mem-size=num",
                      "Size of executable memory block in MiB (default: 64)."),

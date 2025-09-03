@@ -18,7 +18,7 @@ pub use crate::backend::current::{
 };
 pub const SCRATCH_OPND: Opnd = Opnd::Reg(Assembler::SCRATCH_REG);
 
-pub static JIT_PRESERVED_REGS: &'static [Opnd] = &[CFP, SP, EC];
+pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
 
 // Memory operand base
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
