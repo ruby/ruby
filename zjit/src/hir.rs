@@ -1272,7 +1272,7 @@ impl Function {
             &FixnumOr { left, right } => FixnumOr { left: find!(left), right: find!(right) },
             &ObjToString { val, cd, state } => ObjToString {
                 val: find!(val),
-                cd: cd,
+                cd,
                 state,
             },
             &AnyToString { val, str, state } => AnyToString {
