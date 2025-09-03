@@ -2038,7 +2038,7 @@ mod tests {
         assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
         assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
 
-        assert!(matches!(opnd_iter.next(), None));
+        assert!(opnd_iter.next().is_none());
     }
 
     #[test]
@@ -2049,7 +2049,7 @@ mod tests {
         assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
         assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
 
-        assert!(matches!(opnd_iter.next(), None));
+        assert!(opnd_iter.next().is_none());
     }
 
     #[test]
