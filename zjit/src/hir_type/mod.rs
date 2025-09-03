@@ -642,7 +642,7 @@ mod tests {
 
     #[test]
     fn integer_has_exact_ruby_class() {
-        assert_eq!(Type::fixnum(3).exact_ruby_class(), Some(unsafe { rb_cInteger }.into()));
+        assert_eq!(Type::fixnum(3).exact_ruby_class(), Some(unsafe { rb_cInteger }));
         assert_eq!(types::Fixnum.exact_ruby_class(), None);
         assert_eq!(types::Integer.exact_ruby_class(), None);
     }
@@ -669,7 +669,7 @@ mod tests {
 
     #[test]
     fn integer_has_ruby_class() {
-        assert_eq!(Type::fixnum(3).inexact_ruby_class(), Some(unsafe { rb_cInteger }.into()));
+        assert_eq!(Type::fixnum(3).inexact_ruby_class(), Some(unsafe { rb_cInteger }));
         assert_eq!(types::Fixnum.inexact_ruby_class(), None);
         assert_eq!(types::Integer.inexact_ruby_class(), None);
     }

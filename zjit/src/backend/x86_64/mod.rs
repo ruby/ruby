@@ -84,7 +84,7 @@ impl From<&Opnd> for X86Opnd {
 /// List of registers that can be used for register allocation.
 /// This has the same number of registers for x86_64 and arm64.
 /// SCRATCH_REG is excluded.
-pub const ALLOC_REGS: &'static [Reg] = &[
+pub const ALLOC_REGS: &[Reg] = &[
     RDI_REG,
     RSI_REG,
     RDX_REG,
@@ -155,7 +155,7 @@ impl Assembler
             let vreg_outlives_insn = |vreg_idx| {
                 live_ranges
                     .get(vreg_idx)
-                    .map_or(false, |live_range: &LiveRange| live_range.end() > index)
+                    .is_some_and(|live_range: &LiveRange| live_range.end() > index)
             };
 
             // We are replacing instructions here so we know they are already
@@ -343,7 +343,7 @@ impl Assembler
                     // Load each operand into the corresponding argument register.
                     if !opnds.is_empty() {
                         let mut args: Vec<(Reg, Opnd)> = vec![];
-                        for (idx, opnd) in opnds.into_iter().enumerate() {
+                        for (idx, opnd) in opnds.iter_mut().enumerate() {
                             args.push((C_ARG_OPNDS[idx].unwrap_reg(), *opnd));
                         }
                         asm.parallel_mov(args);
@@ -877,18 +877,18 @@ impl Assembler
 
         // Error if we couldn't write out everything
         if cb.has_dropped_bytes() {
-            return None
+            None
         } else {
             // No bytes dropped, so the pos markers point to valid code
             for (insn_idx, pos) in pos_markers {
                 if let Insn::PosMarker(callback) = self.insns.get(insn_idx).unwrap() {
-                    callback(pos, &cb);
+                    callback(pos, cb);
                 } else {
                     panic!("non-PosMarker in pos_markers insn_idx={insn_idx} {self:?}");
                 }
             }
 
-            return Some(gc_offsets)
+            Some(gc_offsets)
         }
     }
 

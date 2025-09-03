@@ -66,7 +66,7 @@ mod bits {
   pub const Symbol: u64 = DynamicSymbol | StaticSymbol;
   pub const TrueClass: u64 = 1u64 << 40;
   pub const Undef: u64 = 1u64 << 41;
-  pub const AllBitPatterns: [(&'static str, u64); 66] = [
+  pub const AllBitPatterns: [(&str, u64); 66] = [
     ("Any", Any),
     ("RubyValue", RubyValue),
     ("Immediate", Immediate),

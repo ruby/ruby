@@ -163,10 +163,7 @@ impl X86Opnd {
     }
 
     pub fn is_some(&self) -> bool {
-        match self {
-            X86Opnd::None => false,
-            _ => true
-        }
+        !matches!(self, X86Opnd::None)
     }
 
 }
@@ -284,11 +281,11 @@ pub fn mem_opnd(num_bits: u8, base_reg: X86Opnd, disp: i32) -> X86Opnd
     } else {
         X86Opnd::Mem(
             X86Mem {
-                num_bits: num_bits,
+                num_bits,
                 base_reg_no: base_reg.reg_no,
                 idx_reg_no: None,
                 scale_exp: 0,
-                disp: disp,
+                disp,
             }
         )
     }

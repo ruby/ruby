@@ -103,13 +103,14 @@ fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize
     if types.is_empty() {
         types.resize(n, TypeDistribution::new());
     }
-    for i in 0..n {
+
+    for (i, profile_type) in types.iter_mut().enumerate() {
         let obj = profiler.peek_at_stack((n - i - 1) as isize);
         // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
         // drop them or something
         let ty = ProfiledType::new(obj);
         unsafe { rb_gc_writebarrier(profiler.iseq.into(), ty.class()) };
-        types[i].observe(ty);
+        profile_type.observe(ty);
     }
 }
 
@@ -148,7 +149,7 @@ impl Flags {
 /// opt_send_without_block/opt_plus/... should store:
 /// * the class of the receiver, so we can do method lookup
 /// * the shape of the receiver, so we can optimize ivar lookup
-/// with those two, pieces of information, we can also determine when an object is an immediate:
+///   with those two, pieces of information, we can also determine when an object is an immediate:
 /// * Integer + IS_IMMEDIATE == Fixnum
 /// * Float + IS_IMMEDIATE == Flonum
 /// * Symbol + IS_IMMEDIATE == StaticSymbol

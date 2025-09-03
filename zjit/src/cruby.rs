@@ -81,6 +81,7 @@
 #![allow(non_camel_case_types)]
 // A lot of imported CRuby globals aren't all-caps
 #![allow(non_upper_case_globals)]
+#![allow(clippy::upper_case_acronyms)]
 
 // Some of this code may not be used yet
 #![allow(dead_code)]
@@ -713,7 +714,7 @@ pub fn rust_str_to_sym(str: &str) -> VALUE {
 
 /// Produce an owned Rust String from a C char pointer
 pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
-    assert!(c_char_ptr != std::ptr::null());
+    assert!(!c_char_ptr.is_null());
 
     let c_str: &CStr = unsafe { CStr::from_ptr(c_char_ptr) };
 
@@ -743,13 +744,13 @@ pub fn iseq_get_location(iseq: IseqPtr, pos: u32) -> String {
     let iseq_lineno = unsafe { rb_iseq_line_no(iseq, pos as usize) };
 
     let mut s = iseq_name(iseq);
-    s.push_str("@");
+    s.push('@');
     if iseq_path == Qnil {
         s.push_str("None");
     } else {
         s.push_str(&ruby_str_to_rust_string(iseq_path));
     }
-    s.push_str(":");
+    s.push(':');
     s.push_str(&iseq_lineno.to_string());
     s
 }
@@ -762,10 +763,7 @@ fn ruby_str_to_rust_string(v: VALUE) -> String {
     let str_ptr = unsafe { rb_RSTRING_PTR(v) } as *mut u8;
     let str_len: usize = unsafe { rb_RSTRING_LEN(v) }.try_into().unwrap();
     let str_slice: &[u8] = unsafe { std::slice::from_raw_parts(str_ptr, str_len) };
-    match String::from_utf8(str_slice.to_vec()) {
-        Ok(utf8) => utf8,
-        Err(_) => String::new(),
-    }
+    String::from_utf8(str_slice.to_vec()).unwrap_or_default()
 }
 
 pub fn ruby_sym_to_rust_string(v: VALUE) -> String {
@@ -1041,7 +1039,7 @@ pub mod test_utils {
 
     /// Make sure the Ruby VM is set up and run a given callback with rb_protect()
     pub fn with_rubyvm<T>(mut func: impl FnMut() -> T) -> T {
-        RUBY_VM_INIT.call_once(|| boot_rubyvm());
+        RUBY_VM_INIT.call_once(boot_rubyvm);
 
         // Set up a callback wrapper to store a return value
         let mut result: Option<T> = None;
@@ -1121,7 +1119,7 @@ pub mod test_utils {
             if line.len() > spaces {
                 unindented.extend_from_slice(&line.as_bytes()[spaces..]);
             } else {
-                unindented.extend_from_slice(&line.as_bytes());
+                unindented.extend_from_slice(line.as_bytes());
             }
         }
         String::from_utf8(unindented).unwrap()
