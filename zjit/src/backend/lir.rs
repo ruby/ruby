@@ -1510,7 +1510,7 @@ impl Assembler
             if is_ccall {
                 // On x86_64, maintain 16-byte stack alignment
                 if cfg!(target_arch = "x86_64") && saved_regs.len() % 2 == 1 {
-                    asm.cpop_into(Opnd::Reg(saved_regs.last().unwrap().0.clone()));
+                    asm.cpop_into(Opnd::Reg(saved_regs.last().unwrap().0));
                 }
                 // Restore saved registers
                 for &(reg, vreg_idx) in saved_regs.iter().rev() {
