@@ -12,10 +12,10 @@ enum Index {
     None = 0b00,
 
     /// Mutate the register after the read.
-    PostIndex = 0b01,
+    Post = 0b01,
 
     /// Mutate the register before the read.
-    PreIndex = 0b11
+    Pre = 0b11
 }
 
 /// The struct that represents an A64 halfword instruction that can be encoded.
@@ -61,13 +61,13 @@ impl HalfwordImm {
     /// LDRH (pre-index)
     /// <https://developer.arm.com/documentation/ddi0602/2022-06/Base-Instructions/LDRH--immediate---Load-Register-Halfword--immediate-->
     pub fn ldrh_pre(rt: u8, rn: u8, imm9: i16) -> Self {
-        Self { rt, rn, index: Index::PreIndex, imm: imm9, op: Op::Load }
+        Self { rt, rn, index: Index::Pre, imm: imm9, op: Op::Load }
     }
 
     /// LDRH (post-index)
     /// <https://developer.arm.com/documentation/ddi0602/2022-06/Base-Instructions/LDRH--immediate---Load-Register-Halfword--immediate-->
     pub fn ldrh_post(rt: u8, rn: u8, imm9: i16) -> Self {
-        Self { rt, rn, index: Index::PostIndex, imm: imm9, op: Op::Load }
+        Self { rt, rn, index: Index::Post, imm: imm9, op: Op::Load }
     }
 
     /// STRH
@@ -79,13 +79,13 @@ impl HalfwordImm {
     /// STRH (pre-index)
     /// <https://developer.arm.com/documentation/ddi0602/2022-06/Base-Instructions/STRH--immediate---Store-Register-Halfword--immediate-->
     pub fn strh_pre(rt: u8, rn: u8, imm9: i16) -> Self {
-        Self { rt, rn, index: Index::PreIndex, imm: imm9, op: Op::Store }
+        Self { rt, rn, index: Index::Pre, imm: imm9, op: Op::Store }
     }
 
     /// STRH (post-index)
     /// <https://developer.arm.com/documentation/ddi0602/2022-06/Base-Instructions/STRH--immediate---Store-Register-Halfword--immediate-->
     pub fn strh_post(rt: u8, rn: u8, imm9: i16) -> Self {
-        Self { rt, rn, index: Index::PostIndex, imm: imm9, op: Op::Store }
+        Self { rt, rn, index: Index::Post, imm: imm9, op: Op::Store }
     }
 }
 
@@ -101,7 +101,7 @@ impl From<HalfwordImm> for u32 {
                 let imm12 = truncate_imm::<_, 12>(inst.imm / 2);
                 (0b100, imm12)
             },
-            Index::PreIndex | Index::PostIndex => {
+            Index::Pre | Index::Post => {
                 let imm9 = truncate_imm::<_, 9>(inst.imm);
                 (0b000, (imm9 << 2) | (inst.index as u32))
             }
