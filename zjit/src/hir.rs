@@ -3788,7 +3788,7 @@ mod validation_tests {
             Err(validation_err) => {
                 assert_eq!(validation_err, expected);
             }
-            Ok(_) => assert!(false, "Expected validation error"),
+            Ok(_) => panic!("Expected validation error"),
         }
     }
 
