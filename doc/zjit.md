@@ -24,6 +24,10 @@ To run code snippets with ZJIT:
 You can also try https://www.rubyexplorer.xyz/ to view Ruby YARV disasm output with syntax highlighting
 in a way that can be easily shared with other team members.
 
+## Documentation
+
+You can generate and open the source level documentation in your browser using `cargo doc --open --document-private-items`.
+
 ## Testing
 
 Make sure you have a `--enable-zjit=dev` build, and install the following tools:
