@@ -159,7 +159,7 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_pt
     gen_entry_params(&mut asm, iseq, function.block(BlockId(0)));
 
     // Jump to the first block using a call instruction
-    asm.ccall(function_ptr.raw_ptr(cb) as *const u8, vec![]);
+    asm.ccall(function_ptr.raw_ptr(cb), vec![]);
 
     // Restore registers for CFP, EC, and SP after use
     asm_comment!(asm, "return to the interpreter");
