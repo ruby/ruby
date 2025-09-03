@@ -183,7 +183,7 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
 /// List of registers that can be used for register allocation.
 /// This has the same number of registers for x86_64 and arm64.
 /// SCRATCH0 and SCRATCH1 are excluded.
-pub const ALLOC_REGS: &'static [Reg] = &[
+pub const ALLOC_REGS: &[Reg] = &[
     X0_REG,
     X1_REG,
     X2_REG,
@@ -386,15 +386,12 @@ impl Assembler
             let mut opnd_iter = insn.opnd_iter_mut();
 
             while let Some(opnd) = opnd_iter.next() {
-                match opnd {
-                    Opnd::Value(value) => {
-                        if value.special_const_p() {
-                            *opnd = Opnd::UImm(value.as_u64());
-                        } else if !is_load {
-                            *opnd = asm.load(*opnd);
-                        }
-                    },
-                    _ => {}
+                if let Opnd::Value(value) = opnd {
+                    if value.special_const_p() {
+                        *opnd = Opnd::UImm(value.as_u64());
+                    } else if !is_load {
+                        *opnd = asm.load(*opnd);
+                    }
                 };
             }
 
@@ -481,7 +478,7 @@ impl Assembler
                     // which is both the return value and first argument register
                     if !opnds.is_empty() {
                         let mut args: Vec<(Reg, Opnd)> = vec![];
-                        for (idx, opnd) in opnds.into_iter().enumerate().rev() {
+                        for (idx, opnd) in opnds.iter_mut().enumerate().rev() {
                             // If the value that we're sending is 0, then we can use
                             // the zero register, so in this case we'll just send
                             // a UImm of 0 along as the argument to the move.
@@ -1411,7 +1408,7 @@ impl Assembler
 ///
 /// If a, b, and c are all registers.
 fn merge_three_reg_mov(
-    live_ranges: &Vec<LiveRange>,
+    live_ranges: &[LiveRange],
     iterator: &mut std::iter::Peekable<impl Iterator<Item = (usize, Insn)>>,
     left: &Opnd,
     right: &Opnd,
@@ -1566,7 +1563,7 @@ mod tests {
 
     #[test]
     fn frame_setup_and_teardown() {
-        const THREE_REGS: &'static [Opnd] = &[Opnd::Reg(X19_REG), Opnd::Reg(X20_REG), Opnd::Reg(X21_REG)];
+        const THREE_REGS: &[Opnd] = &[Opnd::Reg(X19_REG), Opnd::Reg(X20_REG), Opnd::Reg(X21_REG)];
         // Test 3 preserved regs (odd), odd slot_count
         {
             let (mut asm, mut cb) = setup_asm();
@@ -1607,7 +1604,7 @@ mod tests {
 
         // Test 4 preserved regs (even), odd slot_count
         {
-            static FOUR_REGS: &'static [Opnd] = &[Opnd::Reg(X19_REG), Opnd::Reg(X20_REG), Opnd::Reg(X21_REG), Opnd::Reg(X22_REG)];
+            static FOUR_REGS: &[Opnd] = &[Opnd::Reg(X19_REG), Opnd::Reg(X20_REG), Opnd::Reg(X21_REG), Opnd::Reg(X22_REG)];
             let (mut asm, mut cb) = setup_asm();
             asm.frame_setup(FOUR_REGS, 3);
             asm.frame_teardown(FOUR_REGS);

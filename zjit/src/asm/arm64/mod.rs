@@ -1594,7 +1594,7 @@ mod tests {
 
     #[test]
     fn test_nop() {
-        check_bytes("1f2003d5", |cb| nop(cb));
+        check_bytes("1f2003d5", nop);
     }
 
     #[test]

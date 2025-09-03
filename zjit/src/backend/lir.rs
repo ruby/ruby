@@ -18,7 +18,7 @@ pub use crate::backend::current::{
 };
 pub const SCRATCH_OPND: Opnd = Opnd::Reg(Assembler::SCRATCH_REG);
 
-pub static JIT_PRESERVED_REGS: &'static [Opnd] = &[CFP, SP, EC];
+pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
 
 // Memory operand base
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -99,8 +99,8 @@ impl Opnd
                 assert!(base_reg.num_bits == 64);
                 Opnd::Mem(Mem {
                     base: MemBase::Reg(base_reg.reg_no),
-                    disp: disp,
-                    num_bits: num_bits,
+                    disp,
+                    num_bits,
                 })
             },
 
@@ -108,8 +108,8 @@ impl Opnd
                 assert!(num_bits <= out_num_bits);
                 Opnd::Mem(Mem {
                     base: MemBase::VReg(idx),
-                    disp: disp,
-                    num_bits: num_bits,
+                    disp,
+                    num_bits,
                 })
             },
 
@@ -1215,8 +1215,8 @@ impl Assembler
         }
 
         // If we find any VReg from previous instructions, extend the live range to insn_idx
-        let mut opnd_iter = insn.opnd_iter();
-        while let Some(opnd) = opnd_iter.next() {
+        let opnd_iter = insn.opnd_iter();
+        for opnd in opnd_iter {
             match *opnd {
                 Opnd::VReg { idx, .. } |
                 Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
@@ -1243,16 +1243,16 @@ impl Assembler
 
     // Shuffle register moves, sometimes adding extra moves using SCRATCH_REG,
     // so that they will not rewrite each other before they are used.
-    pub fn resolve_parallel_moves(old_moves: &Vec<(Reg, Opnd)>) -> Vec<(Reg, Opnd)> {
+    pub fn resolve_parallel_moves(old_moves: &[(Reg, Opnd)]) -> Vec<(Reg, Opnd)> {
         // Return the index of a move whose destination is not used as a source if any.
-        fn find_safe_move(moves: &Vec<(Reg, Opnd)>) -> Option<usize> {
+        fn find_safe_move(moves: &[(Reg, Opnd)]) -> Option<usize> {
             moves.iter().enumerate().find(|&(_, &(dest_reg, _))| {
                 moves.iter().all(|&(_, src_opnd)| src_opnd != Opnd::Reg(dest_reg))
             }).map(|(index, _)| index)
         }
 
         // Remove moves whose source and destination are the same
-        let mut old_moves: Vec<(Reg, Opnd)> = old_moves.clone().into_iter()
+        let mut old_moves: Vec<(Reg, Opnd)> = old_moves.iter().copied()
             .filter(|&(reg, opnd)| Opnd::Reg(reg) != opnd).collect();
 
         let mut new_moves = vec![];
@@ -1386,19 +1386,19 @@ impl Assembler
                 Some(Opnd::VReg { idx, .. }) => Some(*idx),
                 _ => None,
             };
-            if vreg_idx.is_some() {
-                if live_ranges[vreg_idx.unwrap()].end() == index {
-                    debug!("Allocating a register for VReg({}) at instruction index {} even though it does not live past this index", vreg_idx.unwrap(), index);
+            if let Some(vreg_idx) = vreg_idx {
+                if live_ranges[vreg_idx].end() == index {
+                    debug!("Allocating a register for VReg({}) at instruction index {} even though it does not live past this index", vreg_idx, index);
                 }
                 // This is going to be the output operand that we will set on the
                 // instruction. CCall and LiveReg need to use a specific register.
                 let mut out_reg = match insn {
                     Insn::CCall { .. } => {
-                        Some(pool.take_reg(&C_RET_REG, vreg_idx.unwrap()))
+                        Some(pool.take_reg(&C_RET_REG, vreg_idx))
                     }
                     Insn::LiveReg { opnd, .. } => {
                         let reg = opnd.unwrap_reg();
-                        Some(pool.take_reg(&reg, vreg_idx.unwrap()))
+                        Some(pool.take_reg(&reg, vreg_idx))
                     }
                     _ => None
                 };
@@ -1414,7 +1414,7 @@ impl Assembler
                     if let Some(Opnd::VReg{ idx, .. }) = opnd_iter.next() {
                         if live_ranges[*idx].end() == index {
                             if let Some(reg) = reg_mapping[*idx] {
-                                out_reg = Some(pool.take_reg(&reg, vreg_idx.unwrap()));
+                                out_reg = Some(pool.take_reg(&reg, vreg_idx));
                             }
                         }
                     }
@@ -1423,21 +1423,19 @@ impl Assembler
                 // Allocate a new register for this instruction if one is not
                 // already allocated.
                 if out_reg.is_none() {
-                    out_reg = match &insn {
-                        _ => match pool.alloc_reg(vreg_idx.unwrap()) {
-                            Some(reg) => Some(reg),
-                            None => {
-                                if get_option!(debug) {
-                                    let mut insns = asm.insns;
+                    out_reg = match pool.alloc_reg(vreg_idx) {
+                        Some(reg) => Some(reg),
+                        None => {
+                            if get_option!(debug) {
+                                let mut insns = asm.insns;
+                                insns.push(insn);
+                                for (_, insn) in iterator.by_ref() {
                                     insns.push(insn);
-                                    while let Some((_, insn)) = iterator.next() {
-                                        insns.push(insn);
-                                    }
-                                    dump_live_regs(insns, live_ranges, regs.len(), index);
                                 }
-                                debug!("Register spill not supported");
-                                return Err(CompileError::RegisterSpillOnAlloc);
+                                dump_live_regs(insns, live_ranges, regs.len(), index);
                             }
+                            debug!("Register spill not supported");
+                            return Err(CompileError::RegisterSpillOnAlloc);
                         }
                     };
                 }
@@ -1510,7 +1508,7 @@ impl Assembler
             if is_ccall {
                 // On x86_64, maintain 16-byte stack alignment
                 if cfg!(target_arch = "x86_64") && saved_regs.len() % 2 == 1 {
-                    asm.cpop_into(Opnd::Reg(saved_regs.last().unwrap().0.clone()));
+                    asm.cpop_into(Opnd::Reg(saved_regs.last().unwrap().0));
                 }
                 // Restore saved registers
                 for &(reg, vreg_idx) in saved_regs.iter().rev() {
@@ -2037,7 +2035,7 @@ mod tests {
         assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
         assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
 
-        assert!(matches!(opnd_iter.next(), None));
+        assert!(opnd_iter.next().is_none());
     }
 
     #[test]
@@ -2048,7 +2046,7 @@ mod tests {
         assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
         assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
 
-        assert!(matches!(opnd_iter.next(), None));
+        assert!(opnd_iter.next().is_none());
     }
 
     #[test]
