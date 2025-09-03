@@ -101,6 +101,7 @@ make_counters! {
         exit_callee_side_exit,
         exit_obj_to_string_fallback,
         exit_interrupt,
+        exit_optional_arguments,
     }
 
     // unhanded_call_: Unhandled call types
@@ -126,7 +127,6 @@ make_counters! {
     compile_error_parse_malformed_iseq,
     compile_error_parse_validation,
     compile_error_parse_not_allowed,
-    compile_error_parse_parameter_type_optional,
     compile_error_parse_parameter_type_forwardable,
 
     // The number of times YARV instructions are executed on JIT code
@@ -208,7 +208,6 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
             Validation(_)     => compile_error_parse_validation,
             NotAllowed        => compile_error_parse_not_allowed,
             UnknownParameterType(parameter_type) => match parameter_type {
-                Optional      => compile_error_parse_parameter_type_optional,
                 Forwardable   => compile_error_parse_parameter_type_forwardable,
             }
         }

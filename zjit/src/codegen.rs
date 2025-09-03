@@ -770,7 +770,22 @@ fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
     // Load the current SP from the CFP into REG_SP
     asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
 
-    // TODO: Support entry chain guard when ISEQ has_opt
+    // Currently, we support only the case that no optional arguments are given.
+    // Bail out if any optional argument is supplied.
+    let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
+    if opt_num > 0 {
+        asm_comment!(asm, "guard no optional arguments");
+        let no_opts_pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
+        asm.cmp(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(no_opts_pc));
+        let no_opts_label = asm.new_label("no_opts");
+        asm.je(no_opts_label.clone());
+
+        gen_incr_counter(asm, Counter::exit_optional_arguments);
+        asm.frame_teardown(lir::JIT_PRESERVED_REGS);
+        asm.cret(Qundef.into());
+
+        asm.write_label(no_opts_label);
+    }
 }
 
 /// Assign method arguments to basic block arguments at JIT entry
