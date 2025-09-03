@@ -2208,7 +2208,7 @@ impl Function {
                 worklist.extend(args);
                 worklist.push_back(state)
             }
-            &Insn::CCall { ref args, .. } => worklist.extend(args),
+            Insn::CCall { args, .. } => worklist.extend(args),
             &Insn::GetIvar { self_val, state, .. } | &Insn::DefinedIvar { self_val, state, .. } => {
                 worklist.push_back(self_val);
                 worklist.push_back(state);
