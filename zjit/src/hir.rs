@@ -1805,12 +1805,10 @@ impl Function {
                             // entered the compiler.  That means we can just return nil for this
                             // shape + iv name
                             Insn::Const { val: Const::Value(Qnil) }
+                        } else if recv_type.flags().is_embedded() {
+                            Insn::LoadIvarEmbedded { self_val, id, index: ivar_index }
                         } else {
-                            if recv_type.flags().is_embedded() {
-                                Insn::LoadIvarEmbedded { self_val, id, index: ivar_index }
-                            } else {
-                                Insn::LoadIvarExtended { self_val, id, index: ivar_index }
-                            }
+                            Insn::LoadIvarExtended { self_val, id, index: ivar_index }
                         };
                         let replacement = self.push_insn(block, replacement);
                         self.make_equal_to(insn_id, replacement);
