@@ -3602,7 +3602,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
 
                     if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
-                        assert!(false, "objtostring should not have unknown call type {call_type:?}");
+                        panic!("objtostring should not have unknown call type {call_type:?}");
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     assert_eq!(0, argc, "objtostring should not have args");
