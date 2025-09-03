@@ -2937,7 +2937,7 @@ impl ProfileOracle {
     fn profile_stack(&mut self, state: &FrameState) {
         let iseq_insn_idx = state.insn_idx;
         let Some(operand_types) = self.payload.profile.get_operand_types(iseq_insn_idx) else { return };
-        let entry = self.types.entry(iseq_insn_idx).or_insert_with(|| vec![]);
+        let entry = self.types.entry(iseq_insn_idx).or_default();
         // operand_types is always going to be <= stack size (otherwise it would have an underflow
         // at run-time) so use that to drive iteration.
         for (idx, insn_type_distribution) in operand_types.iter().rev().enumerate() {
