@@ -655,7 +655,7 @@ rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
         else {
             iseq->body->jit_entry = (rb_jit_func_t)code_ptr;
         }
-}
+    }
 }
 
 // GC root for interacting with the GC

@@ -65,9 +65,11 @@ impl JITState {
     }
 }
 
-/// CRuby API to compile a given ISEQ
+/// CRuby API to compile a given ISEQ.
+/// If jit_exception is true, compile JIT code for handling exceptions.
+/// See jit_compile_exception() for details.
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *const u8 {
+pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, jit_exception: bool) -> *const u8 {
     // Do not test the JIT code in HIR tests
     if cfg!(test) {
         return std::ptr::null();
@@ -77,11 +79,12 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
     // with_vm_lock() does nothing if the program doesn't use Ractors.
     with_vm_lock(src_loc!(), || {
         let cb = ZJITState::get_code_block();
-        let mut code_ptr = with_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq));
+        let mut code_ptr = with_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq, jit_exception));
 
         if let Err(err) = &code_ptr {
-            // Assert that the ISEQ compiles if RubyVM::ZJIT.assert_compiles is enabled
-            if ZJITState::assert_compiles_enabled() {
+            // Assert that the ISEQ compiles if RubyVM::ZJIT.assert_compiles is enabled.
+            // We assert only `jit_exception: false` cases until we support exception handlers.
+            if ZJITState::assert_compiles_enabled() && !jit_exception {
                 let iseq_location = iseq_get_location(iseq, 0);
                 panic!("Failed to compile: {iseq_location}");
             }
@@ -102,7 +105,12 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
 }
 
 /// Compile an entry point for a given ISEQ
-fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr) -> Result<CodePtr, CompileError> {
+fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) -> Result<CodePtr, CompileError> {
+    // We don't support exception handlers yet
+    if jit_exception {
+        return Err(CompileError::ExceptionHandler);
+    }
+
     // Compile ISEQ into High-level IR
     let function = compile_iseq(iseq).inspect_err(|_| {
         incr_counter!(failed_iseq_count);

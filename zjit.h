@@ -13,7 +13,7 @@
 extern bool rb_zjit_enabled_p;
 extern uint64_t rb_zjit_call_threshold;
 extern uint64_t rb_zjit_profile_threshold;
-void rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception);
+void rb_zjit_compile_iseq(const rb_iseq_t *iseq, bool jit_exception);
 void rb_zjit_profile_insn(uint32_t insn, rb_execution_context_t *ec);
 void rb_zjit_profile_enable(const rb_iseq_t *iseq);
 void rb_zjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop);
@@ -26,7 +26,7 @@ void rb_zjit_before_ractor_spawn(void);
 void rb_zjit_tracing_invalidate_all(void);
 #else
 #define rb_zjit_enabled_p false
-static inline void rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception) {}
+static inline void rb_zjit_compile_iseq(const rb_iseq_t *iseq, bool jit_exception) {}
 static inline void rb_zjit_profile_insn(uint32_t insn, rb_execution_context_t *ec) {}
 static inline void rb_zjit_profile_enable(const rb_iseq_t *iseq) {}
 static inline void rb_zjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop) {}
