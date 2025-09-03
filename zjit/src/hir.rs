@@ -2159,7 +2159,7 @@ impl Function {
                 worklist.push_back(val);
                 worklist.push_back(state);
             }
-            &Insn::Snapshot { ref state } => {
+            Insn::Snapshot { state } => {
                 worklist.extend(&state.stack);
                 worklist.extend(&state.locals);
             }
@@ -2397,8 +2397,8 @@ impl Function {
     pub fn dump_hir(&self) {
         // Dump HIR after optimization
         match get_option!(dump_hir_opt) {
-            Some(DumpHIR::WithoutSnapshot) => println!("Optimized HIR:\n{}", FunctionPrinter::without_snapshot(&self)),
-            Some(DumpHIR::All) => println!("Optimized HIR:\n{}", FunctionPrinter::with_snapshot(&self)),
+            Some(DumpHIR::WithoutSnapshot) => println!("Optimized HIR:\n{}", FunctionPrinter::without_snapshot(self)),
+            Some(DumpHIR::All) => println!("Optimized HIR:\n{}", FunctionPrinter::with_snapshot(self)),
             Some(DumpHIR::Debug) => println!("Optimized HIR:\n{:#?}", &self),
             None => {},
         }
@@ -2407,7 +2407,7 @@ impl Function {
             use std::fs::OpenOptions;
             use std::io::Write;
             let mut file = OpenOptions::new().append(true).open(filename).unwrap();
-            writeln!(file, "{}", FunctionGraphvizPrinter::new(&self)).unwrap();
+            writeln!(file, "{}", FunctionGraphvizPrinter::new(self)).unwrap();
         }
     }
 
