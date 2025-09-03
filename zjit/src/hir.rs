@@ -1532,12 +1532,12 @@ impl Function {
     }
 
     fn likely_is_fixnum(&self, val: InsnId, profiled_type: ProfiledType) -> bool {
-        return self.is_a(val, types::Fixnum) || profiled_type.is_fixnum();
+        self.is_a(val, types::Fixnum) || profiled_type.is_fixnum()
     }
 
     fn coerce_to_fixnum(&mut self, block: BlockId, val: InsnId, state: InsnId) -> InsnId {
         if self.is_a(val, types::Fixnum) { return val; }
-        return self.push_insn(block, Insn::GuardType { val, guard_type: types::Fixnum, state });
+        self.push_insn(block, Insn::GuardType { val, guard_type: types::Fixnum, state })
     }
 
     fn arguments_likely_fixnums(&mut self, left: InsnId, right: InsnId, state: InsnId) -> bool {
