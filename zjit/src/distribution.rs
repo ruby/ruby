@@ -4,7 +4,7 @@
 #[derive(Debug, Clone)]
 pub struct Distribution<T: Copy + PartialEq + Default, const N: usize> {
     /// buckets and counts have the same length
-    /// buckets[0] is always the most common item
+    /// `buckets[0]` is always the most common item
     buckets: [T; N],
     counts: [usize; N],
     /// if there is no more room, increment the fallback

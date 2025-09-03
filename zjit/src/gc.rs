@@ -219,7 +219,7 @@ pub fn remove_gc_offsets(payload_ptr: *mut IseqPayload, removed_range: &Range<Co
     });
 }
 
-/// Return true if given Range<CodePtr> ranges overlap with each other
+/// Return true if given `Range<CodePtr>` ranges overlap with each other
 fn ranges_overlap<T>(left: &Range<T>, right: &Range<T>) -> bool where T: PartialOrd {
     left.start < right.end && right.start < left.end
 }

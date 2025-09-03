@@ -63,7 +63,7 @@ impl Invariants {
         Self::update_iseq_references(&mut self.no_ep_escape_iseqs);
     }
 
-    /// Update ISEQ references in a given HashSet<IseqPtr>
+    /// Update ISEQ references in a given `HashSet<IseqPtr>`
     fn update_iseq_references(iseqs: &mut HashSet<IseqPtr>) {
         let mut moved: Vec<IseqPtr> = Vec::with_capacity(iseqs.len());
 
