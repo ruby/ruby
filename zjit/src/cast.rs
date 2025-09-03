@@ -31,7 +31,7 @@ impl IntoUsize for u32 {
 
 impl IntoUsize for u16 {
     /// Alias for `.into()`. For convenience so you could use the trait for
-    /// all unsgined types.
+    /// all unsigned types.
     fn as_usize(self) -> usize {
         self.into()
     }
