@@ -49,7 +49,7 @@ impl JITState {
 
     /// Retrieve the output of a given instruction that has been compiled
     fn get_opnd(&self, insn_id: InsnId) -> lir::Opnd {
-        self.opnds[insn_id.0].expect(&format!("Failed to get_opnd({insn_id})"))
+        self.opnds[insn_id.0].unwrap_or_else(|| panic!("Failed to get_opnd({insn_id})"))
     }
 
     /// Find or create a label for a given BlockId
@@ -509,7 +509,7 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, 
 /// can't optimize the level=0 case using the SP register.
 fn gen_getlocal_with_ep(asm: &mut Assembler, local_ep_offset: u32, level: u32) -> lir::Opnd {
     let ep = gen_get_ep(asm, level);
-    let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).expect(&format!("Could not convert local_ep_offset {local_ep_offset} to i32")));
+    let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).unwrap_or_else(|_| panic!("Could not convert local_ep_offset {local_ep_offset} to i32")));
     asm.load(Opnd::mem(64, ep, offset))
 }
 
@@ -522,12 +522,12 @@ fn gen_setlocal_with_ep(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep
     // When we've proved that we're writing an immediate,
     // we can skip the write barrier.
     if val_type.is_immediate() {
-        let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).expect(&format!("Could not convert local_ep_offset {local_ep_offset} to i32")));
+        let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).unwrap_or_else(|_| panic!("Could not convert local_ep_offset {local_ep_offset} to i32")));
         asm.mov(Opnd::mem(64, ep, offset), val);
     } else {
         // We're potentially writing a reference to an IMEMO/env object,
         // so take care of the write barrier with a function.
-        let local_index = c_int::try_from(local_ep_offset).ok().and_then(|idx| idx.checked_mul(-1)).expect(&format!("Could not turn {local_ep_offset} into a negative c_int"));
+        let local_index = c_int::try_from(local_ep_offset).ok().and_then(|idx| idx.checked_mul(-1)).unwrap_or_else(|| panic!("Could not turn {local_ep_offset} into a negative c_int"));
         asm_ccall!(asm, rb_vm_env_write, ep, local_index.into(), val);
     }
 }
