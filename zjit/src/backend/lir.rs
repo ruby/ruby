@@ -99,8 +99,8 @@ impl Opnd
                 assert!(base_reg.num_bits == 64);
                 Opnd::Mem(Mem {
                     base: MemBase::Reg(base_reg.reg_no),
-                    disp: disp,
-                    num_bits: num_bits,
+                    disp,
+                    num_bits,
                 })
             },
 
@@ -108,8 +108,8 @@ impl Opnd
                 assert!(num_bits <= out_num_bits);
                 Opnd::Mem(Mem {
                     base: MemBase::VReg(idx),
-                    disp: disp,
-                    num_bits: num_bits,
+                    disp,
+                    num_bits,
                 })
             },
 
