@@ -478,7 +478,7 @@ impl Assembler
                     // which is both the return value and first argument register
                     if !opnds.is_empty() {
                         let mut args: Vec<(Reg, Opnd)> = vec![];
-                        for (idx, opnd) in opnds.into_iter().enumerate().rev() {
+                        for (idx, opnd) in opnds.iter_mut().enumerate().rev() {
                             // If the value that we're sending is 0, then we can use
                             // the zero register, so in this case we'll just send
                             // a UImm of 0 along as the argument to the move.
