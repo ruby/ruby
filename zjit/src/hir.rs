@@ -20,9 +20,9 @@ use crate::stats::Counter;
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub struct InsnId(pub usize);
 
-impl Into<usize> for InsnId {
-    fn into(self) -> usize {
-        self.0
+impl From<InsnId> for usize {
+    fn from(val: InsnId) -> Self {
+        val.0
     }
 }
 
@@ -36,9 +36,9 @@ impl std::fmt::Display for InsnId {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct BlockId(pub usize);
 
-impl Into<usize> for BlockId {
-    fn into(self) -> usize {
-        self.0
+impl From<BlockId> for usize {
+    fn from(val: BlockId) -> Self {
+        val.0
     }
 }
 
