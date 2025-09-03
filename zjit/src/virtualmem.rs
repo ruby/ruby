@@ -314,11 +314,10 @@ pub mod tests {
 
     #[derive(Debug)]
     enum AllocRequest {
-        MarkWritable{ start_idx: usize, length: usize },
-        MarkExecutable{ start_idx: usize, length: usize },
-        MarkUnused,
+        Writable{ start_idx: usize, length: usize },
+        Executable{ start_idx: usize, length: usize },
+        Unused,
     }
-    use AllocRequest::*;
 
     impl TestingAllocator {
         pub fn new(mem_size: usize) -> Self {
@@ -345,14 +344,14 @@ pub mod tests {
     impl super::Allocator for TestingAllocator {
         fn mark_writable(&mut self, ptr: *const u8, length: u32) -> bool {
             let index = self.bounds_check_request(ptr, length);
-            self.requests.push(MarkWritable { start_idx: index, length: length as usize });
+            self.requests.push(AllocRequest::Writable { start_idx: index, length: length as usize });
 
             true
         }
 
         fn mark_executable(&mut self, ptr: *const u8, length: u32) {
             let index = self.bounds_check_request(ptr, length);
-            self.requests.push(MarkExecutable { start_idx: index, length: length as usize });
+            self.requests.push(AllocRequest::Executable { start_idx: index, length: length as usize });
 
             // We don't try to execute generated code in cfg(test)
             // so no need to actually request executable memory.
@@ -360,7 +359,7 @@ pub mod tests {
 
         fn mark_unused(&mut self, ptr: *const u8, length: u32) -> bool {
             self.bounds_check_request(ptr, length);
-            self.requests.push(MarkUnused);
+            self.requests.push(AllocRequest::Unused);
 
             true
         }
@@ -412,7 +411,7 @@ pub mod tests {
         assert!(
             matches!(
                 virt.allocator.requests[..],
-                [MarkWritable { start_idx: 0, length: PAGE_SIZE }],
+                [AllocRequest::Writable { start_idx: 0, length: PAGE_SIZE }],
             )
         );
     }
@@ -443,8 +442,8 @@ pub mod tests {
             matches!(
                 virt.allocator.requests[..],
                 [
-                    MarkWritable { start_idx: 0, length: THREE_PAGES },
-                    MarkExecutable { start_idx: 0, length: THREE_PAGES },
+                    AllocRequest::Writable { start_idx: 0, length: THREE_PAGES },
+                    AllocRequest::Executable { start_idx: 0, length: THREE_PAGES },
                 ]
             ),
         );
