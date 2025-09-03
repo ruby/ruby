@@ -30,8 +30,8 @@ enum Opc {
 /// What kind of indexing to perform for this instruction.
 enum Index {
     None = 0b00,
-    PostIndex = 0b01,
-    PreIndex = 0b11
+    Post = 0b01,
+    Pre = 0b11
 }
 
 /// The struct that represents an A64 load or store instruction that can be
@@ -68,13 +68,13 @@ impl LoadStore {
     /// LDR (immediate, post-index)
     /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/LDR--immediate---Load-Register--immediate-->
     pub fn ldr_post(rt: u8, rn: u8, imm9: i16, num_bits: u8) -> Self {
-        Self { rt, rn, idx: Index::PostIndex, imm9, opc: Opc::LDR, size: num_bits.into() }
+        Self { rt, rn, idx: Index::Post, imm9, opc: Opc::LDR, size: num_bits.into() }
     }
 
     /// LDR (immediate, pre-index)
     /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/LDR--immediate---Load-Register--immediate-->
     pub fn ldr_pre(rt: u8, rn: u8, imm9: i16, num_bits: u8) -> Self {
-        Self { rt, rn, idx: Index::PreIndex, imm9, opc: Opc::LDR, size: num_bits.into() }
+        Self { rt, rn, idx: Index::Pre, imm9, opc: Opc::LDR, size: num_bits.into() }
     }
 
     /// LDUR (load register, unscaled)
@@ -104,13 +104,13 @@ impl LoadStore {
     /// STR (immediate, post-index)
     /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/STR--immediate---Store-Register--immediate-->
     pub fn str_post(rt: u8, rn: u8, imm9: i16, num_bits: u8) -> Self {
-        Self { rt, rn, idx: Index::PostIndex, imm9, opc: Opc::STR, size: num_bits.into() }
+        Self { rt, rn, idx: Index::Post, imm9, opc: Opc::STR, size: num_bits.into() }
     }
 
     /// STR (immediate, pre-index)
     /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/STR--immediate---Store-Register--immediate-->
     pub fn str_pre(rt: u8, rn: u8, imm9: i16, num_bits: u8) -> Self {
-        Self { rt, rn, idx: Index::PreIndex, imm9, opc: Opc::STR, size: num_bits.into() }
+        Self { rt, rn, idx: Index::Pre, imm9, opc: Opc::STR, size: num_bits.into() }
     }
 
     /// STUR (store register, unscaled)
