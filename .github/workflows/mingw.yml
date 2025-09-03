@@ -63,7 +63,7 @@ jobs:
       )}}
 
     steps:
-      - uses: msys2/setup-msys2@40677d36a502eb2cf0fb808cc9dec31bf6152638 # v2.28.0
+      - uses: msys2/setup-msys2@fb197b72ce45fb24f17bf3f807a388985654d1f2 # v2.29.0
         id: msys2
         with:
           msystem: UCRT64
