@@ -1,3 +1,5 @@
+//! This module is for native code generation.
+
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::ffi::{c_int, c_long, c_void};

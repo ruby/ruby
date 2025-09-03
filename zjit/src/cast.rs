@@ -1,3 +1,5 @@
+//! Optimized [usize] casting trait.
+
 /// Trait for casting to [usize] that allows you to say `.as_usize()`.
 /// Implementation conditional on the cast preserving the numeric value on
 /// all inputs and being inexpensive.
