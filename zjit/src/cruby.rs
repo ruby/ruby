@@ -714,7 +714,7 @@ pub fn rust_str_to_sym(str: &str) -> VALUE {
 
 /// Produce an owned Rust String from a C char pointer
 pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
-    assert!(c_char_ptr != std::ptr::null());
+    assert!(!c_char_ptr.is_null());
 
     let c_str: &CStr = unsafe { CStr::from_ptr(c_char_ptr) };
 
