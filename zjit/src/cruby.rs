@@ -1041,7 +1041,7 @@ pub mod test_utils {
 
     /// Make sure the Ruby VM is set up and run a given callback with rb_protect()
     pub fn with_rubyvm<T>(mut func: impl FnMut() -> T) -> T {
-        RUBY_VM_INIT.call_once(|| boot_rubyvm());
+        RUBY_VM_INIT.call_once(boot_rubyvm);
 
         // Set up a callback wrapper to store a return value
         let mut result: Option<T> = None;
