@@ -1411,7 +1411,7 @@ impl Assembler
 ///
 /// If a, b, and c are all registers.
 fn merge_three_reg_mov(
-    live_ranges: &Vec<LiveRange>,
+    live_ranges: &[LiveRange],
     iterator: &mut std::iter::Peekable<impl Iterator<Item = (usize, Insn)>>,
     left: &Opnd,
     right: &Opnd,

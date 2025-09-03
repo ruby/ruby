@@ -1087,7 +1087,7 @@ fn gen_new_array(
 fn gen_new_hash(
     jit: &mut JITState,
     asm: &mut Assembler,
-    elements: &Vec<(InsnId, InsnId)>,
+    elements: &[(InsnId, InsnId)],
     state: &FrameState,
 ) -> lir::Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
