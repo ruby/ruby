@@ -1251,7 +1251,7 @@ impl Function {
             &ToRegexp { opt, ref values, state } => ToRegexp { opt, values: find_vec!(values), state },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
-            &Jump(ref target) => Jump(find_branch_edge!(target)),
+            Jump(target) => Jump(find_branch_edge!(target)),
             &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
             &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
             &GuardType { val, guard_type, state } => GuardType { val: find!(val), guard_type: guard_type, state },
