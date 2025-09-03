@@ -744,13 +744,13 @@ pub fn iseq_get_location(iseq: IseqPtr, pos: u32) -> String {
     let iseq_lineno = unsafe { rb_iseq_line_no(iseq, pos as usize) };
 
     let mut s = iseq_name(iseq);
-    s.push_str("@");
+    s.push('@');
     if iseq_path == Qnil {
         s.push_str("None");
     } else {
         s.push_str(&ruby_str_to_rust_string(iseq_path));
     }
-    s.push_str(":");
+    s.push(':');
     s.push_str(&iseq_lineno.to_string());
     s
 }
