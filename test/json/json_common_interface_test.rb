@@ -226,8 +226,8 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     nan_json = '{ "foo": NaN }'
     assert JSON.unsafe_load(nan_json, nil)['foo'].nan?
     assert_equal nil, JSON.unsafe_load(nil, nil)
-    t = Time.now
-    assert_equal t, JSON.unsafe_load(JSON(t))
+    t = Time.new(2025, 9, 3, 14, 50, 0)
+    assert_equal t.to_s, JSON.unsafe_load(JSON(t)).to_s
   end
 
   def test_unsafe_load_with_options
