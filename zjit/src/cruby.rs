@@ -81,6 +81,7 @@
 #![allow(non_camel_case_types)]
 // A lot of imported CRuby globals aren't all-caps
 #![allow(non_upper_case_globals)]
+#![allow(clippy::upper_case_acronyms)]
 
 // Some of this code may not be used yet
 #![allow(dead_code)]
