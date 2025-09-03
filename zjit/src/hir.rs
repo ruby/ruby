@@ -2785,7 +2785,7 @@ impl FrameState {
         // TODO: Modify the register allocator to allow reusing an argument
         // of another basic block.
         let mut args = vec![self_param];
-        args.extend(self.locals.iter().chain(self.stack.iter()).map(|op| *op));
+        args.extend(self.locals.iter().chain(self.stack.iter()).copied());
         args
     }
 
