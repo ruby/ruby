@@ -3,6 +3,8 @@
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
+#![allow(clippy::if_same_then_else)]
+#![allow(clippy::match_like_matches_macro)]
 use crate::{
     cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, gc::{get_or_create_iseq_payload, IseqPayload}, options::{get_option, DumpHIR}, state::ZJITState
 };

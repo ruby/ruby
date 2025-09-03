@@ -1527,7 +1527,6 @@ impl Assembler
 
     /// Compile the instructions down to machine code.
     /// Can fail due to lack of code memory and inopportune code placement, among other reasons.
-    #[must_use]
     pub fn compile(self, cb: &mut CodeBlock) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         #[cfg(feature = "disasm")]
         let start_addr = cb.get_write_ptr();

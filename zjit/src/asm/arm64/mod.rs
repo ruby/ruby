@@ -1,4 +1,8 @@
 #![allow(dead_code)] // For instructions and operands we're not currently using.
+#![allow(clippy::upper_case_acronyms)]
+#![allow(clippy::identity_op)]
+#![allow(clippy::self_named_constructors)]
+#![allow(clippy::unusual_byte_groupings)]
 
 use crate::asm::CodeBlock;
 

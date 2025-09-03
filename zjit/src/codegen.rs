@@ -1,5 +1,7 @@
 //! This module is for native code generation.
 
+#![allow(clippy::let_and_return)]
+
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::ffi::{c_int, c_long, c_void};
