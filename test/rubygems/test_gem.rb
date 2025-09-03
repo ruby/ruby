@@ -586,6 +586,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_default_sources
+    Gem.remove_instance_variable :@default_sources
     assert_equal %w[https://rubygems.org/], Gem.default_sources
   end
 
@@ -1198,6 +1199,8 @@ class TestGem < Gem::TestCase
     Gem.sources = nil
     Gem.configuration.sources = %w[http://test.example.com/]
     assert_equal %w[http://test.example.com/], Gem.sources
+  ensure
+    Gem.configuration.sources = nil
   end
 
   def test_try_activate_returns_true_for_activated_specs

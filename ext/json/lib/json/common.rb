@@ -662,6 +662,7 @@ module JSON
   #     when Array
   #       obj.map! {|v| deserialize_obj v }
   #     end
+  #     obj
   #   })
   #   pp ruby
   # Output:
@@ -703,9 +704,13 @@ module JSON
     if opts[:allow_blank] && (source.nil? || source.empty?)
       source = 'null'
     end
-    result = parse(source, opts)
-    recurse_proc(result, &proc) if proc
-    result
+
+    if proc
+      opts = opts.dup
+      opts[:on_load] = proc.to_proc
+    end
+
+    parse(source, opts)
   end
 
   # :call-seq:
@@ -822,6 +827,7 @@ module JSON
   #     when Array
   #       obj.map! {|v| deserialize_obj v }
   #     end
+  #     obj
   #   })
   #   pp ruby
   # Output:

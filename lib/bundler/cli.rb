@@ -415,6 +415,10 @@ module Bundler
       print_remembered_flag_deprecation("--all", "cache_all", "true") if ARGV.include?("--all")
       print_remembered_flag_deprecation("--no-all", "cache_all", "false") if ARGV.include?("--no-all")
 
+      %w[frozen no-prune].each do |option|
+        remembered_flag_deprecation(option)
+      end
+
       if flag_passed?("--path")
         message =
           "The `--path` flag is deprecated because its semantics are unclear. " \
@@ -513,23 +517,9 @@ module Bundler
       end
     end
 
-    unless Bundler.feature_flag.bundler_4_mode?
-      desc "viz [OPTIONS]", "Generates a visual dependency graph", hide: true
-      long_desc <<-D
-        Viz generates a PNG file of the current Gemfile as a dependency graph.
-        Viz requires the ruby-graphviz gem (and its dependencies).
-        The associated gems must also be installed via 'bundle install'.
-      D
-      method_option :file, type: :string, default: "gem_graph", aliases: "-f", banner: "The name to use for the generated file. see format option"
-      method_option :format, type: :string, default: "png", aliases: "-F", banner: "This is output format option. Supported format is png, jpg, svg, dot ..."
-      method_option :requirements, type: :boolean, default: false, aliases: "-R", banner: "Set to show the version of each required dependency."
-      method_option :version, type: :boolean, default: false, aliases: "-v", banner: "Set to show each gem version."
-      method_option :without, type: :array, default: [], aliases: "-W", banner: "Exclude gems that are part of the specified named group."
-      def viz
-        SharedHelpers.major_deprecation 2, "The `viz` command has been renamed to `graph` and moved to a plugin. See https://github.com/rubygems/bundler-graph"
-        require_relative "cli/viz"
-        Viz.new(options.dup).run
-      end
+    desc "viz [OPTIONS]", "Generates a visual dependency graph", hide: true
+    def viz
+      SharedHelpers.feature_removed! "The `viz` command has been renamed to `graph` and moved to a plugin. See https://github.com/rubygems/bundler-graph"
     end
 
     desc "gem NAME [OPTIONS]", "Creates a skeleton for creating a rubygem"
@@ -559,7 +549,7 @@ module Bundler
       File.expand_path("templates", __dir__)
     end
 
-    desc "clean [OPTIONS]", "Cleans up unused gems in your bundler directory", hide: true
+    desc "clean [OPTIONS]", "Cleans up unused gems in your bundler directory"
     method_option "dry-run", type: :boolean, default: false, banner: "Only print out changes, do not clean gems"
     method_option "force", type: :boolean, default: false, banner: "Forces cleaning up unused gems even if Bundler is configured to use globally installed gems. As a consequence, removes all system gems except for the ones in the current application."
     def clean
@@ -575,12 +565,8 @@ module Bundler
     end
 
     desc "inject GEM VERSION", "Add the named gem, with version requirements, to the resolved Gemfile", hide: true
-    method_option "source", type: :string, banner: "Install gem from the given source"
-    method_option "group", type: :string, banner: "Install gem into a bundler group"
-    def inject(name, version)
-      SharedHelpers.major_deprecation 2, "The `inject` command has been replaced by the `add` command"
-      require_relative "cli/inject"
-      Inject.new(options.dup, name, version).run
+    def inject(*)
+      SharedHelpers.feature_removed! "The `inject` command has been replaced by the `add` command"
     end
 
     desc "lock", "Creates a lockfile without installing"

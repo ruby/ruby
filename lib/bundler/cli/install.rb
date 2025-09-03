@@ -42,8 +42,6 @@ module Bundler
                                  "before deploying."
         end
 
-        options[:local] = true if Bundler.app_cache.exist?
-
         Bundler.settings.set_command_option :deployment, true if options[:deployment]
         Bundler.settings.set_command_option :frozen, true if options[:frozen]
       end
