@@ -1215,8 +1215,8 @@ impl Assembler
         }
 
         // If we find any VReg from previous instructions, extend the live range to insn_idx
-        let mut opnd_iter = insn.opnd_iter();
-        while let Some(opnd) = opnd_iter.next() {
+
+        for opnd in insn.opnd_iter() {
             match *opnd {
                 Opnd::VReg { idx, .. } |
                 Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
@@ -1386,19 +1386,19 @@ impl Assembler
                 Some(Opnd::VReg { idx, .. }) => Some(*idx),
                 _ => None,
             };
-            if vreg_idx.is_some() {
-                if live_ranges[vreg_idx.unwrap()].end() == index {
-                    debug!("Allocating a register for VReg({}) at instruction index {} even though it does not live past this index", vreg_idx.unwrap(), index);
+            if let Some(vreg_idx) = vreg_idx {
+                if live_ranges[vreg_idx].end() == index {
+                    debug!("Allocating a register for VReg({}) at instruction index {} even though it does not live past this index", vreg_idx, index);
                 }
                 // This is going to be the output operand that we will set on the
                 // instruction. CCall and LiveReg need to use a specific register.
                 let mut out_reg = match insn {
                     Insn::CCall { .. } => {
-                        Some(pool.take_reg(&C_RET_REG, vreg_idx.unwrap()))
+                        Some(pool.take_reg(&C_RET_REG, vreg_idx))
                     }
                     Insn::LiveReg { opnd, .. } => {
                         let reg = opnd.unwrap_reg();
-                        Some(pool.take_reg(&reg, vreg_idx.unwrap()))
+                        Some(pool.take_reg(&reg, vreg_idx))
                     }
                     _ => None
                 };
@@ -1414,7 +1414,7 @@ impl Assembler
                     if let Some(Opnd::VReg{ idx, .. }) = opnd_iter.next() {
                         if live_ranges[*idx].end() == index {
                             if let Some(reg) = reg_mapping[*idx] {
-                                out_reg = Some(pool.take_reg(&reg, vreg_idx.unwrap()));
+                                out_reg = Some(pool.take_reg(&reg, vreg_idx));
                             }
                         }
                     }
@@ -1423,21 +1423,19 @@ impl Assembler
                 // Allocate a new register for this instruction if one is not
                 // already allocated.
                 if out_reg.is_none() {
-                    out_reg = match &insn {
-                        _ => match pool.alloc_reg(vreg_idx.unwrap()) {
-                            Some(reg) => Some(reg),
-                            None => {
-                                if get_option!(debug) {
-                                    let mut insns = asm.insns;
+                    out_reg = match pool.alloc_reg(vreg_idx) {
+                        Some(reg) => Some(reg),
+                        None => {
+                            if get_option!(debug) {
+                                let mut insns = asm.insns;
+                                insns.push(insn);
+                                for (_, insn) in iterator.by_ref() {
                                     insns.push(insn);
-                                    while let Some((_, insn)) = iterator.next() {
-                                        insns.push(insn);
-                                    }
-                                    dump_live_regs(insns, live_ranges, regs.len(), index);
                                 }
-                                debug!("Register spill not supported");
-                                return Err(CompileError::RegisterSpillOnAlloc);
+                                dump_live_regs(insns, live_ranges, regs.len(), index);
                             }
+                            debug!("Register spill not supported");
+                            return Err(CompileError::RegisterSpillOnAlloc);
                         }
                     };
                 }
