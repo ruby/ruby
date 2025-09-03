@@ -102,7 +102,7 @@ fn test_cmp() {
 
 #[test]
 fn test_cqo() {
-    check_bytes("4899", |cb| cqo(cb));
+    check_bytes("4899", cqo);
 }
 
 #[test]
@@ -341,7 +341,7 @@ fn test_push() {
 
 #[test]
 fn test_ret() {
-    check_bytes("c3", |cb| ret(cb));
+    check_bytes("c3", ret);
 }
 
 #[test]
