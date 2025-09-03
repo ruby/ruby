@@ -790,7 +790,7 @@ pub fn smulh(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
             assert!(rd.num_bits == rn.num_bits && rn.num_bits == rm.num_bits, "Expected registers to be the same size");
             assert!(rd.num_bits == 64, "smulh only applicable to 64-bit registers");
 
-            SMulH::smulh(rd.reg_no, rn.reg_no, rm.reg_no).into()
+            SMulH::new(rd.reg_no, rn.reg_no, rm.reg_no).into()
         },
         _ => panic!("Invalid operand combination to mul instruction")
     };

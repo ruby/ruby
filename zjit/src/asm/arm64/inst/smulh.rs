@@ -23,7 +23,7 @@ pub struct SMulH {
 impl SMulH {
     /// SMULH
     /// <https://developer.arm.com/documentation/ddi0602/2023-06/Base-Instructions/SMULH--Signed-Multiply-High->
-    pub fn smulh(rd: u8, rn: u8, rm: u8) -> Self {
+    pub fn new(rd: u8, rn: u8, rm: u8) -> Self {
         Self { rd, rn, ra: 0b11111, rm }
     }
 }
@@ -54,7 +54,7 @@ mod tests {
 
     #[test]
     fn test_smulh() {
-        let result: u32 = SMulH::smulh(0, 1, 2).into();
+        let result: u32 = SMulH::new(0, 1, 2).into();
         assert_eq!(0x9b427c20, result);
     }
 }
