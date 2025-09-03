@@ -1118,7 +1118,7 @@ pub mod test_utils {
             if line.len() > spaces {
                 unindented.extend_from_slice(&line.as_bytes()[spaces..]);
             } else {
-                unindented.extend_from_slice(&line.as_bytes());
+                unindented.extend_from_slice(line.as_bytes());
             }
         }
         String::from_utf8(unindented).unwrap()
