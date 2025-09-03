@@ -133,8 +133,8 @@ struct rb_thread_sched {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
   NOINLINE(void rb_current_ec_set(struct rb_execution_context_struct *));
 
-  # if defined(__arm64__) || defined(__aarch64__)
-    // on Arm64, TLS can not be accessed across .so
+  # if defined(__arm64__) || defined(__aarch64__) || defined(__powerpc64__)
+    // TLS can not be accessed across .so on arm64 and perhaps ppc64le too.
     NOINLINE(struct rb_execution_context_struct *rb_current_ec(void));
   # else
     RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER struct rb_execution_context_struct *ruby_current_ec;

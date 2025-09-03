@@ -594,7 +594,7 @@ rb_current_ec_set(rb_execution_context_t *ec)
 }
 
 
-#if defined(__arm64__) || defined(__aarch64__)
+#if defined(__arm64__) || defined(__aarch64__) || defined(__powerpc64__)
 rb_execution_context_t *
 rb_current_ec(void)
 {
