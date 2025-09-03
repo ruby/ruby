@@ -1555,8 +1555,8 @@ static VALUE rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd);
  * between 0.0 and +max+, including 0.0 and excluding +max+. Note that it
  * behaves differently from Kernel.rand.
  *
- *   prng.rand(1.5)       # => 1.4600282860034115
- *   Kernel.rand(1.5)     # => 0
+ *   prng.rand(1.5)  # => 1.4600282860034115
+ *   rand(1.5)       # => 0
  *
  * When +range+ is a Range, +rand+ returns a random number where
  * <code>range.member?(number) == true</code>.
