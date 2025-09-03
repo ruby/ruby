@@ -1078,13 +1078,17 @@ pub enum ValidationError {
 }
 
 fn can_direct_send(iseq: *const rb_iseq_t) -> bool {
-    if unsafe { rb_get_iseq_flags_has_rest(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_opt(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_kw(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_kwrest(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_block(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_forwardable(iseq) } { false }
-    else { true }
+    if unsafe {
+        rb_get_iseq_flags_has_rest(iseq)
+            || rb_get_iseq_flags_has_opt(iseq)
+            || rb_get_iseq_flags_has_kw(iseq)
+            || rb_get_iseq_flags_has_kwrest(iseq)
+            || rb_get_iseq_flags_has_block(iseq)
+    } {
+        false
+    } else {
+        !unsafe { rb_get_iseq_flags_forwardable(iseq) }
+    }
 }
 
 /// A [`Function`], which is analogous to a Ruby ISeq, is a control-flow graph of [`Block`]s
