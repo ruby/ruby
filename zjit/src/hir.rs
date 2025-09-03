@@ -2950,7 +2950,7 @@ impl ProfileOracle {
     fn profile_self(&mut self, state: &FrameState, self_param: InsnId) {
         let iseq_insn_idx = state.insn_idx;
         let Some(operand_types) = self.payload.profile.get_operand_types(iseq_insn_idx) else { return };
-        let entry = self.types.entry(iseq_insn_idx).or_insert_with(|| vec![]);
+        let entry = self.types.entry(iseq_insn_idx).or_default();
         if operand_types.is_empty() {
            return;
         }
