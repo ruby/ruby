@@ -814,7 +814,7 @@ pub fn mvn(cb: &mut CodeBlock, rd: A64Opnd, rm: A64Opnd) {
 
 /// NOP - no-operation, used for alignment purposes
 pub fn nop(cb: &mut CodeBlock) {
-    let bytes: [u8; 4] = Nop::nop().into();
+    let bytes: [u8; 4] = Nop.into();
 
     cb.write_bytes(&bytes);
 }

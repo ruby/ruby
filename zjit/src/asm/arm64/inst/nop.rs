@@ -8,14 +8,6 @@
 ///
 pub struct Nop;
 
-impl Nop {
-    /// NOP
-    /// <https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/NOP--No-Operation->
-    pub fn nop() -> Self {
-        Self {}
-    }
-}
-
 impl From<Nop> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(_inst: Nop) -> Self {
@@ -37,7 +29,7 @@ mod tests {
 
     #[test]
     fn test_nop() {
-        let inst = Nop::nop();
+        let inst = Nop;
         let result: u32 = inst.into();
         assert_eq!(0xd503201f, result);
     }
