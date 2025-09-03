@@ -11,12 +11,12 @@ enum Opc {
 
 /// The kind of indexing to perform for this instruction.
 enum Index {
-    StorePostIndex = 0b010,
-    LoadPostIndex = 0b011,
+    StorePost = 0b010,
+    LoadPost = 0b011,
     StoreSignedOffset = 0b100,
     LoadSignedOffset = 0b101,
-    StorePreIndex = 0b110,
-    LoadPreIndex = 0b111
+    StorePre = 0b110,
+    LoadPre = 0b111
 }
 
 /// A convenience function so that we can convert the number of bits of a
@@ -78,14 +78,14 @@ impl RegisterPair {
     /// `LDP <Xt1>, <Xt2>, [<Xn|SP>, #<imm>]!`
     /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDP--Load-Pair-of-Registers-?lang=en>
     pub fn ldp_pre(rt1: u8, rt2: u8, rn: u8, disp: i16, num_bits: u8) -> Self {
-        Self::new(rt1, rt2, rn, disp, Index::LoadPreIndex, num_bits)
+        Self::new(rt1, rt2, rn, disp, Index::LoadPre, num_bits)
     }
 
     /// LDP (post-index)
     /// `LDP <Xt1>, <Xt2>, [<Xn|SP>], #<imm>`
     /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDP--Load-Pair-of-Registers-?lang=en>
     pub fn ldp_post(rt1: u8, rt2: u8, rn: u8, disp: i16, num_bits: u8) -> Self {
-        Self::new(rt1, rt2, rn, disp, Index::LoadPostIndex, num_bits)
+        Self::new(rt1, rt2, rn, disp, Index::LoadPost, num_bits)
     }
 
     /// STP (signed offset)
@@ -99,14 +99,14 @@ impl RegisterPair {
     /// `STP <Xt1>, <Xt2>, [<Xn|SP>, #<imm>]!`
     /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/STP--Store-Pair-of-Registers-?lang=en>
     pub fn stp_pre(rt1: u8, rt2: u8, rn: u8, disp: i16, num_bits: u8) -> Self {
-        Self::new(rt1, rt2, rn, disp, Index::StorePreIndex, num_bits)
+        Self::new(rt1, rt2, rn, disp, Index::StorePre, num_bits)
     }
 
     /// STP (post-index)
     /// `STP <Xt1>, <Xt2>, [<Xn|SP>], #<imm>`
     /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/STP--Store-Pair-of-Registers-?lang=en>
     pub fn stp_post(rt1: u8, rt2: u8, rn: u8, disp: i16, num_bits: u8) -> Self {
-        Self::new(rt1, rt2, rn, disp, Index::StorePostIndex, num_bits)
+        Self::new(rt1, rt2, rn, disp, Index::StorePost, num_bits)
     }
 }
 
