@@ -1542,9 +1542,9 @@ impl Function {
 
     fn arguments_likely_fixnums(&mut self, left: InsnId, right: InsnId, state: InsnId) -> bool {
         let frame_state = self.frame_state(state);
-        let iseq_insn_idx = frame_state.insn_idx as usize;
-        let left_profiled_type = self.profiled_type_of_at(left, iseq_insn_idx).unwrap_or(ProfiledType::empty());
-        let right_profiled_type = self.profiled_type_of_at(right, iseq_insn_idx).unwrap_or(ProfiledType::empty());
+        let iseq_insn_idx = frame_state.insn_idx;
+        let left_profiled_type = self.profiled_type_of_at(left, iseq_insn_idx).unwrap_or_default();
+        let right_profiled_type = self.profiled_type_of_at(right, iseq_insn_idx).unwrap_or_default();
         self.likely_is_fixnum(left, left_profiled_type) && self.likely_is_fixnum(right, right_profiled_type)
     }
 
