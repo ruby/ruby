@@ -33,7 +33,7 @@ fn test_add() {
 fn test_add_unsigned() {
     // ADD r/m8, imm8
     check_bytes("4180c001", |cb| add(cb, R8B, uimm_opnd(1)));
-    check_bytes("4180c07f", |cb| add(cb, R8B, imm_opnd(i8::MAX.try_into().unwrap())));
+    check_bytes("4180c07f", |cb| add(cb, R8B, imm_opnd(i8::MAX.into())));
 
     // ADD r/m16, imm16
     check_bytes("664183c001", |cb| add(cb, R8W, uimm_opnd(1)));
