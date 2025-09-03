@@ -299,11 +299,10 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
 
     // Set side-exit counters for UnhandledYARVInsn
     let exit_counters = ZJITState::get_exit_counters();
-    for op_idx in 0..VM_INSTRUCTION_SIZE as usize {
+    for (op_idx, count) in exit_counters.iter().enumerate() {
         let op_name = insn_name(op_idx);
         let key_string = "unhandled_yarv_insn_".to_owned() + &op_name;
-        let count = exit_counters[op_idx];
-        set_stat_usize!(hash, &key_string, count);
+        set_stat_usize!(hash, &key_string, *count);
     }
 
     // Only ZJIT_STATS builds support rb_vm_insn_count
