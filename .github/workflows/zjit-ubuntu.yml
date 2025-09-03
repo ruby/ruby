@@ -27,6 +27,25 @@ permissions:
   contents: read
 
 jobs:
+  lint:
+    name: cargo clippy
+
+    runs-on: ubuntu-22.04
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - run: cargo clippy --all-targets --all-features
+        working-directory: zjit
+
   make:
     strategy:
       fail-fast: false
