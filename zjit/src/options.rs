@@ -1,3 +1,5 @@
+//! Configurable options for ZJIT.
+
 use std::{ffi::{CStr, CString}, ptr::null};
 use std::os::raw::{c_char, c_int, c_uint};
 use crate::cruby::*;

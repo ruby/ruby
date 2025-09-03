@@ -1,3 +1,5 @@
+//! Optimized bitset implementation.
+
 type Entry = u128;
 
 const ENTRY_NUM_BITS: usize = Entry::BITS as usize;

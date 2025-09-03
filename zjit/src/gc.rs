@@ -1,4 +1,4 @@
-// This module is responsible for marking/moving objects on GC.
+//! This module is responsible for marking/moving objects on GC.
 
 use std::cell::RefCell;
 use std::rc::Rc;

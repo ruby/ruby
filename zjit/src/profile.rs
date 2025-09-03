@@ -1,3 +1,5 @@
+//! Profiler for runtime information.
+
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 

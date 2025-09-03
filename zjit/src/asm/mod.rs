@@ -1,3 +1,5 @@
+//! Model for creating generating textual assembler code.
+
 use std::collections::BTreeMap;
 use std::fmt;
 use std::ops::Range;

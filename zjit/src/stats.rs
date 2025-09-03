@@ -1,3 +1,5 @@
+//! Counters and associated methods for events when ZJIT is run.
+
 use std::time::Instant;
 
 use crate::{cruby::*, hir::ParseError, options::get_option, state::{zjit_enabled_p, ZJITState}};
