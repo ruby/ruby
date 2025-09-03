@@ -1552,9 +1552,11 @@ static VALUE rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd);
  *   prng.rand(100)       # => 42
  *
  * When +max+ is a Float, +rand+ returns a random floating point number
- * between 0.0 and +max+, including 0.0 and excluding +max+.
+ * between 0.0 and +max+, including 0.0 and excluding +max+. Note that it
+ * behaves differently from Kernel.rand.
  *
  *   prng.rand(1.5)       # => 1.4600282860034115
+ *   Kernel.rand(1.5)     # => 0
  *
  * When +range+ is a Range, +rand+ returns a random number where
  * <code>range.member?(number) == true</code>.
@@ -1692,7 +1694,9 @@ rand_mt_equal(VALUE self, VALUE other)
  * Kernel.srand may be used to ensure that sequences of random numbers are
  * reproducible between different runs of a program.
  *
- * See also Random.rand.
+ * Related: Random.rand.
+ *   rand(100.0)        # => 64 (Integer because max.to_i is 100)
+ *   Random.rand(100.0) # => 30.315320967824523
  */
 
 static VALUE
