@@ -4106,7 +4106,7 @@ mod tests {
 
     #[track_caller]
     fn hir_string_function(function: &Function) -> String {
-        format!("{}", FunctionPrinter::without_snapshot(&function))
+        format!("{}", FunctionPrinter::without_snapshot(function))
     }
 
     #[track_caller]
