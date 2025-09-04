@@ -327,6 +327,22 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, allowed_iseqs: 'entry@-e:2'
   end
 
+  def test_send_optional_arguments
+    assert_compiles '[[1, 2], [3, 4]]', %q{
+      def test(a, b = 2) = [a, b]
+      def entry = [test(1), test(3, 4)]
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_iseq_with_optional_arguments
+    assert_compiles '[[1, 2], [3, 4]]', %q{
+      def test(a, b = 2) = [a, b]
+      [test(1), test(3, 4)]
+    }
+  end
+
   def test_invokebuiltin
     omit 'Test fails at the moment due to not handling optional parameters'
     assert_compiles '["."]', %q{

@@ -2883,7 +2883,6 @@ pub enum CallType {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ParameterType {
-    Optional,
     /// For example, `foo(...)`. Interaction of JIT
     /// calling convention and side exits currently unsolved.
     Forwardable,
@@ -2967,7 +2966,6 @@ impl ProfileOracle {
 pub const SELF_PARAM_IDX: usize = 0;
 
 fn filter_unknown_parameter_type(iseq: *const rb_iseq_t) -> Result<(), ParseError> {
-    if unsafe { rb_get_iseq_body_param_opt_num(iseq) } != 0 { return Err(ParseError::UnknownParameterType(ParameterType::Optional)); }
     if unsafe { rb_get_iseq_flags_forwardable(iseq) } { return Err(ParseError::UnknownParameterType(ParameterType::Forwardable)); }
     Ok(())
 }
@@ -4129,9 +4127,16 @@ mod tests {
     }
 
     #[test]
-    fn test_cant_compile_optional() {
+    fn test_compile_optional() {
         eval("def test(x=1) = 123");
-        assert_compile_fails("test", ParseError::UnknownParameterType(ParameterType::Optional));
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v3:Fixnum[1] = Const Value(1)
+          v4:Fixnum[123] = Const Value(123)
+          CheckInterrupts
+          Return v4
+        ");
     }
 
     #[test]
