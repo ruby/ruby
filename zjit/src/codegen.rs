@@ -17,7 +17,7 @@ use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SCRATCH_OPND, SP};
 use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SpecialBackrefSymbol, SELF_PARAM_IDX};
-use crate::hir::{Const, FrameState, Function, Insn, InsnId, ParseError};
+use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types, Type};
 use crate::options::get_option;
 
@@ -1531,6 +1531,7 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
     #[cfg(debug_assertions)]
     if let Err(err) = function.validate() {
         debug!("ZJIT: compile_iseq: {err:?}");
+        use crate::hir::ParseError;
         return Err(CompileError::ParseError(ParseError::Validation(err)));
     }
     Ok(function)
