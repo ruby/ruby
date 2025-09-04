@@ -162,6 +162,7 @@ pub const RMODULE_IS_REFINEMENT: ruby_rmodule_flags = 8192;
 pub type ruby_rmodule_flags = u32;
 pub const ROBJECT_HEAP: ruby_robject_flags = 65536;
 pub type ruby_robject_flags = u32;
+pub type rb_event_flag_t = u32;
 pub const RUBY_ENCODING_INLINE_MAX: ruby_encoding_consts = 127;
 pub const RUBY_ENCODING_SHIFT: ruby_encoding_consts = 22;
 pub const RUBY_ENCODING_MASK: ruby_encoding_consts = 532676608;

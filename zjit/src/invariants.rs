@@ -54,6 +54,9 @@ pub struct Invariants {
     /// Map from constant ID to patch points that assume the constant hasn't been redefined
     constant_state_patch_points: HashMap<ID, HashSet<PatchPoint>>,
 
+    /// Set of patch points that assume that the TracePoint is not enabled
+    no_trace_point_patch_points: HashSet<PatchPoint>,
+
     /// Set of patch points that assume that the interpreter is running with only one ractor
     single_ractor_patch_points: HashSet<PatchPoint>,
 }
@@ -272,6 +275,15 @@ pub extern "C" fn rb_zjit_before_ractor_spawn() {
     });
 }
 
+pub fn track_no_trace_point_assumption(patch_point_ptr: CodePtr, side_exit_ptr: CodePtr, payload_ptr: *mut IseqPayload) {
+    let invariants = ZJITState::get_invariants();
+    invariants.no_trace_point_patch_points.insert(PatchPoint {
+        patch_point_ptr,
+        side_exit_ptr,
+        payload_ptr,
+    });
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_tracing_invalidate_all() {
     use crate::gc::{get_or_create_iseq_payload, IseqStatus};
@@ -291,5 +303,12 @@ pub extern "C" fn rb_zjit_tracing_invalidate_all() {
             payload.status = IseqStatus::NotCompiled;
             unsafe { rb_iseq_reset_jit_func(iseq) };
         });
+
+        let cb = ZJITState::get_code_block();
+        let patch_points = mem::take(&mut ZJITState::get_invariants().no_trace_point_patch_points);
+
+        compile_patch_points!(cb, patch_points, "TracePoint is enabled, invalidating no TracePoint assumption");
+
+        cb.mark_all_executable();
     });
 }
