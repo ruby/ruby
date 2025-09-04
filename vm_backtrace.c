@@ -1729,7 +1729,6 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
 {
     int i;
     const rb_control_frame_t *cfp = ec->cfp, *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
-    const rb_control_frame_t *top = cfp;
     const rb_callable_method_entry_t *cme;
 
     // If this function is called inside a thread after thread creation, but
@@ -1761,16 +1760,13 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
             }
 
             if (lines) {
-                // The topmost frame may not have an updated PC because the JIT
-                // may not have set one.  The JIT compiler will update the PC
-                // before entering a new function (so that `caller` will work),
-                // so only the topmost frame could possibly have an out of date PC
-                if (cfp == top && cfp->jit_return) {
-                    lines[i] = 0;
+                VALUE *pc = cfp->pc;
+                VALUE *iseq_encoded = ISEQ_BODY(cfp->iseq)->iseq_encoded;
+                // JIT code may not set the PC, so use a valid one when out-of-range
+                if (cfp->pc < iseq_encoded || cfp->pc > iseq_encoded) {
+                    pc = iseq_encoded;
                 }
-                else {
-                    lines[i] = calc_lineno(cfp->iseq, cfp->pc);
-                }
+                lines[i] = calc_lineno(cfp->iseq, pc);
             }
 
             i++;
