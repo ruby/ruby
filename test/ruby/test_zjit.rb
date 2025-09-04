@@ -250,7 +250,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 3, insns: [:getlocal, :setlocal, :getlocal_WC_0, :setlocal_WC_1]
   end
 
-  def test_read_local_written_by_children_iseqs
+  def test_send_with_local_written_by_blockiseq
     assert_compiles '[1, 2]', %q{
       def test
         l1 = nil
@@ -340,6 +340,46 @@ class TestZJIT < Test::Unit::TestCase
     assert_compiles '[[1, 2], [3, 4]]', %q{
       def test(a, b = 2) = [a, b]
       [test(1), test(3, 4)]
+    }
+  end
+
+  def test_invokesuper
+    assert_compiles '[6, 60]', %q{
+      class Foo
+        def foo(a) = a + 1
+        def bar(a) = a + 10
+      end
+
+      class Bar < Foo
+        def foo(a) = super(a) + 2
+        def bar(a) = super + 20
+      end
+
+      bar = Bar.new
+      [bar.foo(3), bar.bar(30)]
+    }
+  end
+
+  def test_invokesuper_with_local_written_by_blockiseq
+    # Using `assert_runs` because we don't compile invokeblock yet
+    assert_runs '3', %q{
+      class Foo
+        def test
+          yield
+        end
+      end
+
+      class Bar < Foo
+        def test
+          a = 1
+          super do
+            a += 2
+          end
+          a
+        end
+      end
+
+      Bar.new.test
     }
   end
 
