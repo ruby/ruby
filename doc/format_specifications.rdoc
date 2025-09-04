@@ -30,8 +30,9 @@ It consists of:
 
 - A leading percent character.
 - Zero or more _flags_ (each is a character).
-- An optional _width_ _specifier_ (an integer).
-- An optional _precision_ _specifier_ (a period followed by a non-negative integer).
+- An optional _width_ _specifier_ (an integer, or <tt>*</tt>).
+- An optional _precision_ _specifier_ (a period followed by a non-negative
+  integer, or <tt>*</tt>).
 - A _type_ _specifier_ (a character).
 
 Except for the leading percent character,
