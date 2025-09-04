@@ -125,13 +125,6 @@ Left-pad with zeros instead of spaces:
   sprintf('%6d', 100)  # => "   100"
   sprintf('%06d', 100) # => "000100"
 
-=== <tt>'*'</tt> Flag
-
-Use the next argument as the field width:
-
-  sprintf('%d', 20, 14)  # => "20"
-  sprintf('%*d', 20, 14) # => "                  14"
-
 === <tt>'n$'</tt> Flag
 
 Format the (1-based) <tt>n</tt>th argument into this field:
@@ -151,6 +144,11 @@ of the formatted field:
 
   # Ignore if too small.
   sprintf('%1d', 100)   # => "100"
+
+If the width specifier is <tt>'*'</tt> instead of an integer, the actual minimum
+width is taken from the argument list:
+
+  sprintf('%*d', 20, 14) # => "                  14"
 
 == Precision Specifier
 
