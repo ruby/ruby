@@ -43,7 +43,7 @@ jobs:
             configure: '--enable-zjit=dev'
             testopts: '--seed=11831'
 
-          - test_task: 'btest'
+          - test_task: 'test'
             configure: '--enable-zjit=dev'
             zjit_opts: '--zjit-call-threshold=1'
 
