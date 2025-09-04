@@ -327,10 +327,19 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, allowed_iseqs: 'entry@-e:2'
   end
 
-  def test_optional_arguments
-    assert_compiles '[1, 2]', %q{
+  def test_send_optional_arguments
+    assert_compiles '[[1, 2], [3, 4]]', %q{
       def test(a, b = 2) = [a, b]
-      test(1)
+      def entry = [test(1), test(3, 4)]
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_iseq_with_optional_arguments
+    assert_compiles '[[1, 2], [3, 4]]', %q{
+      def test(a, b = 2) = [a, b]
+      [test(1), test(3, 4)]
     }
   end
 
