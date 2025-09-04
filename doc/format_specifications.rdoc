@@ -192,6 +192,11 @@ the number of characters to write:
   sprintf('%s', Time.now)    # => "2022-05-04 11:59:16 -0400"
   sprintf('%.10s', Time.now) # => "2022-05-04"
 
+If the precision specifier is <tt>'*'</tt> instead of a non-negative integer,
+the actual precision is taken from the argument list:
+
+  sprintf('%.*d', 20, 1)    # => "00000000000000000001"
+
 == Type Specifier Details and Examples
 
 === Specifiers +a+ and +A+
