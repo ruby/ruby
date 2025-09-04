@@ -565,10 +565,13 @@ pub enum Insn {
     /// `name` is for printing purposes only
     CCall { cfun: *const u8, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
 
-    /// Send without block with dynamic dispatch
+    /// Un-optimized fallback implementation (dynamic dispatch) for send-ish instructions
     /// Ignoring keyword arguments etc for now
     SendWithoutBlock { self_val: InsnId, cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
     Send { self_val: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
+    InvokeSuper { self_val: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
+
+    /// Optimized ISEQ call
     SendWithoutBlockDirect {
         self_val: InsnId,
         cd: *const rb_call_data,
@@ -812,6 +815,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 // between runs, making tests fail. Instead, pick an arbitrary hex value to
                 // use as a "pointer" so we can check the rest of the HIR.
                 write!(f, "Send {self_val}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                Ok(())
+            }
+            Insn::InvokeSuper { self_val, blockiseq, args, .. } => {
+                write!(f, "InvokeSuper {self_val}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1310,6 +1320,13 @@ impl Function {
                 args: find_vec!(args),
                 state,
             },
+            &InvokeSuper { self_val, cd, blockiseq, ref args, state } => InvokeSuper {
+                self_val: find!(self_val),
+                cd,
+                blockiseq,
+                args: find_vec!(args),
+                state,
+            },
             &InvokeBuiltin { bf, ref args, state, return_type } => InvokeBuiltin { bf, args: find_vec!(args), state, return_type },
             &ArrayDup { val, state } => ArrayDup { val: find!(val), state },
             &HashDup { val, state } => HashDup { val: find!(val), state },
@@ -1418,6 +1435,7 @@ impl Function {
             Insn::SendWithoutBlock { .. } => types::BasicObject,
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
+            Insn::InvokeSuper { .. } => types::BasicObject,
             Insn::InvokeBuiltin { return_type, .. } => return_type.unwrap_or(types::BasicObject),
             Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::DefinedIvar { .. } => types::BasicObject,
@@ -2206,7 +2224,8 @@ impl Function {
             }
             &Insn::Send { self_val, ref args, state, .. }
             | &Insn::SendWithoutBlock { self_val, ref args, state, .. }
-            | &Insn::SendWithoutBlockDirect { self_val, ref args, state, .. } => {
+            | &Insn::SendWithoutBlockDirect { self_val, ref args, state, .. }
+            | &Insn::InvokeSuper { self_val, ref args, state, .. } => {
                 worklist.push_back(self_val);
                 worklist.extend(args);
                 worklist.push_back(state);
@@ -2830,14 +2849,14 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
 
 struct BytecodeInfo {
     jump_targets: Vec<u32>,
-    has_send: bool,
+    has_blockiseq: bool,
 }
 
 fn compute_bytecode_info(iseq: *const rb_iseq_t) -> BytecodeInfo {
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     let mut insn_idx = 0;
     let mut jump_targets = HashSet::new();
-    let mut has_send = false;
+    let mut has_blockiseq = false;
     while insn_idx < iseq_size {
         // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
@@ -2861,13 +2880,18 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t) -> BytecodeInfo {
                     jump_targets.insert(insn_idx);
                 }
             }
-            YARVINSN_send => has_send = true,
+            YARVINSN_send | YARVINSN_invokesuper => {
+                let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
+                if !blockiseq.is_null() {
+                    has_blockiseq = true;
+                }
+            }
             _ => {}
         }
     }
     let mut result = jump_targets.into_iter().collect::<Vec<_>>();
     result.sort();
-    BytecodeInfo { jump_targets: result, has_send }
+    BytecodeInfo { jump_targets: result, has_blockiseq }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -2984,7 +3008,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut profiles = ProfileOracle::new(payload);
     let mut fun = Function::new(iseq);
     // Compute a map of PC->Block by finding jump targets
-    let BytecodeInfo { jump_targets, has_send } = compute_bytecode_info(iseq);
+    let BytecodeInfo { jump_targets, has_blockiseq } = compute_bytecode_info(iseq);
     let mut insn_idx_to_block = HashMap::new();
     for insn_idx in jump_targets {
         if insn_idx == 0 {
@@ -3321,7 +3345,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_getlocal_WC_0 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    if iseq_type == ISEQ_TYPE_EVAL || has_send {
+                    if iseq_type == ISEQ_TYPE_EVAL || has_blockiseq {
                         // On eval, the locals are always on the heap, so read the local using EP.
                         let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
                         state.setlocal(ep_offset, val);
@@ -3341,7 +3365,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let val = state.stack_pop()?;
                     state.setlocal(ep_offset, val);
-                    if iseq_type == ISEQ_TYPE_EVAL || has_send {
+                    if iseq_type == ISEQ_TYPE_EVAL || has_blockiseq {
                         // On eval, the locals are always on the heap, so write the local using EP.
                         fun.push_insn(block, Insn::SetLocal { val, ep_offset, level: 0 });
                     }
@@ -3519,6 +3543,34 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
                         let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
                         state.setlocal(ep_offset, val);
+                    }
+                }
+                YARVINSN_invokesuper => {
+                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                    let call_info = unsafe { rb_get_call_data_ci(cd) };
+                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) } & !VM_CALL_SUPER & !VM_CALL_ZSUPER) {
+                        // Unknown call type; side-exit into the interpreter
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
+                        break;  // End the block
+                    }
+                    let argc = unsafe { vm_ci_argc((*cd).ci) };
+                    let args = state.stack_pop_n(argc as usize)?;
+                    let recv = state.stack_pop()?;
+                    let blockiseq: IseqPtr = get_arg(pc, 1).as_ptr();
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let result = fun.push_insn(block, Insn::InvokeSuper { self_val: recv, cd, blockiseq, args, state: exit_id });
+                    state.stack_push(result);
+
+                    if !blockiseq.is_null() {
+                        // Reload locals that may have been modified by the blockiseq.
+                        // TODO: Avoid reloading locals that are not referenced by the blockiseq
+                        // or not used after this. Max thinks we could eventually DCE them.
+                        for local_idx in 0..state.locals.len() {
+                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
+                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
+                            state.setlocal(ep_offset, val);
+                        }
                     }
                 }
                 YARVINSN_getglobal => {
@@ -4971,7 +5023,6 @@ mod tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
-          v5:BasicObject = GetLocal l0, EP@3
           SideExit UnhandledCallType(BlockArg)
         ");
     }
@@ -5004,26 +5055,30 @@ mod tests {
     // TODO(max): Figure out how to generate a call with TAILCALL flag
 
     #[test]
-    fn test_cant_compile_super() {
+    fn test_compile_super() {
         eval("
             def test = super()
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          SideExit UnhandledYARVInsn(invokesuper)
+          v5:BasicObject = InvokeSuper v0, 0x1000
+          CheckInterrupts
+          Return v5
         ");
     }
 
     #[test]
-    fn test_cant_compile_zsuper() {
+    fn test_compile_zsuper() {
         eval("
             def test = super
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          SideExit UnhandledYARVInsn(invokesuper)
+          v5:BasicObject = InvokeSuper v0, 0x1000
+          CheckInterrupts
+          Return v5
         ");
     }
 
