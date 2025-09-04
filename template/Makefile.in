@@ -679,6 +679,7 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(tooldir)/ruby_vm/views/_comptime_insn_stack_increase.erb \
 	  $(tooldir)/ruby_vm/views/_copyright.erb \
 	  $(tooldir)/ruby_vm/views/_insn_entry.erb \
+	  $(tooldir)/ruby_vm/views/_insn_leaf_info.erb \
 	  $(tooldir)/ruby_vm/views/_insn_len_info.erb \
 	  $(tooldir)/ruby_vm/views/_insn_name_info.erb \
 	  $(tooldir)/ruby_vm/views/_insn_operand_info.erb \

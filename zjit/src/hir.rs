@@ -136,6 +136,8 @@ pub enum Invariant {
     },
     /// TracePoint is not enabled. If TracePoint is enabled, this is invalidated.
     NoTracePoint,
+    /// cfp->ep is not escaped to the heap on the ISEQ
+    NoEPEscape(IseqPtr),
     /// There is one ractor running. If a non-root ractor gets spawned, this is invalidated.
     SingleRactorMode,
 }
@@ -250,6 +252,7 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                 write!(f, ")")
             }
             Invariant::NoTracePoint => write!(f, "NoTracePoint"),
+            Invariant::NoEPEscape(iseq) => write!(f, "NoEPEscape({})", &iseq_name(iseq)),
             Invariant::SingleRactorMode => write!(f, "SingleRactorMode"),
         }
     }
@@ -2705,6 +2708,15 @@ pub struct FrameState {
     locals: Vec<InsnId>,
 }
 
+impl FrameState {
+    /// Return itself without locals. Useful for side-exiting without spilling locals.
+    fn without_locals(&self) -> Self {
+        let mut state = self.clone();
+        state.locals.clear();
+        state
+    }
+}
+
 /// Print adaptor for [`FrameState`]. See [`PtrPrintMap`].
 pub struct FrameStatePrinter<'a> {
     inner: &'a FrameState,
@@ -3049,13 +3061,13 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         }
         fun.param_types.push(param_type);
     }
-    queue.push_back((entry_state, fun.entry_block, /*insn_idx=*/0_u32));
+    queue.push_back((entry_state, fun.entry_block, /*insn_idx=*/0_u32, /*local_inval=*/false));
 
     let mut visited = HashSet::new();
 
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     let iseq_type = unsafe { get_iseq_body_type(iseq) };
-    while let Some((incoming_state, block, mut insn_idx)) = queue.pop_front() {
+    while let Some((incoming_state, block, mut insn_idx, mut local_inval)) = queue.pop_front() {
         if visited.contains(&block) { continue; }
         visited.insert(block);
         let (self_param, mut state) = if insn_idx == 0 {
@@ -3096,12 +3108,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 profiles.profile_stack(&exit_state);
             }
 
-            unsafe extern "C" {
-                fn rb_iseq_event_flags(iseq: IseqPtr, pos: usize) -> rb_event_flag_t;
+            // Flag a future getlocal/setlocal to add a patch point if this instruction is not leaf.
+            if unsafe { !rb_zjit_insn_leaf(opcode as i32, pc.offset(1)) } {
+                local_inval = true;
             }
 
             // We add NoTracePoint patch points before every instruction that could be affected by TracePoint.
             // This ensures that if TracePoint is enabled, we can exit the generated code as fast as possible.
+            unsafe extern "C" {
+                fn rb_iseq_event_flags(iseq: IseqPtr, pos: usize) -> rb_event_flag_t;
+            }
             if unsafe { rb_iseq_event_flags(iseq, insn_idx as usize) } != 0 {
                 let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
                 fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoTracePoint, state: exit_id });
@@ -3283,7 +3299,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         val: test_id,
                         target: BranchEdge { target, args: state.as_args(self_param) }
                     });
-                    queue.push_back((state.clone(), target, target_idx));
+                    queue.push_back((state.clone(), target, target_idx, local_inval));
                 }
                 YARVINSN_branchif => {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
@@ -3297,7 +3313,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         val: test_id,
                         target: BranchEdge { target, args: state.as_args(self_param) }
                     });
-                    queue.push_back((state.clone(), target, target_idx));
+                    queue.push_back((state.clone(), target, target_idx, local_inval));
                 }
                 YARVINSN_branchnil => {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
@@ -3311,7 +3327,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         val: test_id,
                         target: BranchEdge { target, args: state.as_args(self_param) }
                     });
-                    queue.push_back((state.clone(), target, target_idx));
+                    queue.push_back((state.clone(), target, target_idx, local_inval));
                 }
                 YARVINSN_opt_case_dispatch => {
                     // TODO: Some keys are visible at compile time, so in the future we can
@@ -3328,7 +3344,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // Skip the fast-path and go straight to the fallback code. We will let the
                     // optimizer take care of the converting Class#new->alloc+initialize instead.
                     fun.push_insn(block, Insn::Jump(BranchEdge { target, args: state.as_args(self_param) }));
-                    queue.push_back((state.clone(), target, target_idx));
+                    queue.push_back((state.clone(), target, target_idx, local_inval));
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_jump => {
@@ -3340,7 +3356,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let _branch_id = fun.push_insn(block, Insn::Jump(
                         BranchEdge { target, args: state.as_args(self_param) }
                     ));
-                    queue.push_back((state.clone(), target, target_idx));
+                    queue.push_back((state.clone(), target, target_idx, local_inval));
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_getlocal_WC_0 => {
@@ -3348,27 +3364,34 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     if iseq_type == ISEQ_TYPE_EVAL || has_blockiseq {
                         // On eval, the locals are always on the heap, so read the local using EP.
                         let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
-                        state.setlocal(ep_offset, val);
+                        state.setlocal(ep_offset, val); // remember the result to spill on side-exits
                         state.stack_push(val);
                     } else {
-                        // TODO(alan): This implementation doesn't read from EP, so will miss writes
-                        // from nested ISeqs. This will need to be amended when we add codegen for
-                        // Send.
+                        if local_inval {
+                            // If there has been any non-leaf call since JIT entry or the last patch point,
+                            // add a patch point to make sure locals have not been escaped.
+                            let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() }); // skip spilling locals
+                            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
+                            local_inval = false;
+                        }
                         let val = state.getlocal(ep_offset);
                         state.stack_push(val);
                     }
                 }
                 YARVINSN_setlocal_WC_0 => {
-                    // TODO(alan): This implementation doesn't write to EP, where nested scopes
-                    // read, so they'll miss these writes. This will need to be amended when we
-                    // add codegen for Send.
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let val = state.stack_pop()?;
-                    state.setlocal(ep_offset, val);
                     if iseq_type == ISEQ_TYPE_EVAL || has_blockiseq {
                         // On eval, the locals are always on the heap, so write the local using EP.
                         fun.push_insn(block, Insn::SetLocal { val, ep_offset, level: 0 });
+                    } else if local_inval {
+                        // If there has been any non-leaf call since JIT entry or the last patch point,
+                        // add a patch point to make sure locals have not been escaped.
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() }); // skip spilling locals
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
+                        local_inval = false;
                     }
+                    state.setlocal(ep_offset, val);
                 }
                 YARVINSN_getlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -3731,7 +3754,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             if insn_idx_to_block.contains_key(&insn_idx) {
                 let target = insn_idx_to_block[&insn_idx];
                 fun.push_insn(block, Insn::Jump(BranchEdge { target, args: state.as_args(self_param) }));
-                queue.push_back((state, target, insn_idx));
+                queue.push_back((state, target, insn_idx, local_inval));
                 break;  // End the block
             }
         }
@@ -4656,14 +4679,17 @@ mod tests {
           v8:CBool = Test v1
           IfFalse v8, bb1(v0, v1, v2)
           v12:Fixnum[3] = Const Value(3)
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
           Jump bb2(v0, v1, v12)
-        bb1(v16:BasicObject, v17:BasicObject, v18:NilClass):
-          v22:Fixnum[4] = Const Value(4)
-          Jump bb2(v16, v17, v22)
-        bb2(v24:BasicObject, v25:BasicObject, v26:Fixnum):
+        bb1(v18:BasicObject, v19:BasicObject, v20:NilClass):
+          v24:Fixnum[4] = Const Value(4)
+          PatchPoint NoEPEscape(test)
+          Jump bb2(v18, v19, v24)
+        bb2(v28:BasicObject, v29:BasicObject, v30:Fixnum):
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v26
+          Return v30
         ");
     }
 
@@ -4851,20 +4877,23 @@ mod tests {
           CheckInterrupts
           Jump bb2(v0, v6, v9)
         bb2(v15:BasicObject, v16:BasicObject, v17:BasicObject):
-          v19:Fixnum[0] = Const Value(0)
-          v23:BasicObject = SendWithoutBlock v17, :>, v19
+          PatchPoint NoEPEscape(test)
+          v21:Fixnum[0] = Const Value(0)
+          v25:BasicObject = SendWithoutBlock v17, :>, v21
           CheckInterrupts
-          v26:CBool = Test v23
-          IfTrue v26, bb1(v15, v16, v17)
-          v28:NilClass = Const Value(nil)
+          v28:CBool = Test v25
+          IfTrue v28, bb1(v15, v16, v17)
+          v30:NilClass = Const Value(nil)
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v16
-        bb1(v36:BasicObject, v37:BasicObject, v38:BasicObject):
-          v42:Fixnum[1] = Const Value(1)
-          v46:BasicObject = SendWithoutBlock v37, :+, v42
-          v49:Fixnum[1] = Const Value(1)
-          v53:BasicObject = SendWithoutBlock v38, :-, v49
-          Jump bb2(v36, v46, v53)
+        bb1(v40:BasicObject, v41:BasicObject, v42:BasicObject):
+          PatchPoint NoEPEscape(test)
+          v48:Fixnum[1] = Const Value(1)
+          v52:BasicObject = SendWithoutBlock v41, :+, v48
+          v55:Fixnum[1] = Const Value(1)
+          v59:BasicObject = SendWithoutBlock v42, :-, v55
+          Jump bb2(v40, v52, v59)
         ");
     }
 
@@ -5121,11 +5150,12 @@ mod tests {
         bb0(v0:BasicObject, v1:BasicObject):
           v5:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
           v7:HashExact = NewHash
-          v9:BasicObject = SendWithoutBlock v5, :core#hash_merge_kwd, v7, v1
-          v10:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
-          v11:StaticSymbol[:b] = Const Value(VALUE(0x1008))
-          v12:Fixnum[1] = Const Value(1)
-          v14:BasicObject = SendWithoutBlock v10, :core#hash_merge_ptr, v9, v11, v12
+          PatchPoint NoEPEscape(test)
+          v11:BasicObject = SendWithoutBlock v5, :core#hash_merge_kwd, v7, v1
+          v12:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
+          v13:StaticSymbol[:b] = Const Value(VALUE(0x1008))
+          v14:Fixnum[1] = Const Value(1)
+          v16:BasicObject = SendWithoutBlock v12, :core#hash_merge_ptr, v11, v13, v14
           SideExit UnhandledCallType(KwSplatMut)
         ");
     }
@@ -5639,9 +5669,10 @@ mod tests {
           v12:BasicObject = GetIvar v0, :@b
           PatchPoint SingleRactorMode
           v15:BasicObject = GetIvar v0, :@c
-          v19:ArrayExact = NewArray v9, v12, v15
+          PatchPoint NoEPEscape(reverse_odd)
+          v21:ArrayExact = NewArray v9, v12, v15
           CheckInterrupts
-          Return v19
+          Return v21
         ");
         assert_contains_opcode("reverse_even", YARVINSN_opt_reverse);
         assert_snapshot!(hir_string("reverse_even"), @r"
@@ -5659,9 +5690,10 @@ mod tests {
           v16:BasicObject = GetIvar v0, :@c
           PatchPoint SingleRactorMode
           v19:BasicObject = GetIvar v0, :@d
-          v23:ArrayExact = NewArray v10, v13, v16, v19
+          PatchPoint NoEPEscape(reverse_even)
+          v25:ArrayExact = NewArray v10, v13, v16, v19
           CheckInterrupts
-          Return v23
+          Return v25
         ");
     }
 
@@ -5724,6 +5756,7 @@ mod tests {
         bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject):
           v5:NilClass = Const Value(nil)
           v10:BasicObject = InvokeBuiltin dir_s_open, v0, v1, v2
+          PatchPoint NoEPEscape(open)
           SideExit UnhandledYARVInsn(getblockparamproxy)
         ");
     }
@@ -6877,9 +6910,10 @@ mod opt_tests {
           v8:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v10:StringExact = StringCopy v8
           v12:RangeExact = NewRange v6 NewRangeInclusive v10
-          v15:Fixnum[0] = Const Value(0)
+          PatchPoint NoEPEscape(test)
+          v17:Fixnum[0] = Const Value(0)
           CheckInterrupts
-          Return v15
+          Return v17
         ");
     }
 
@@ -6916,9 +6950,10 @@ mod opt_tests {
         bb0(v0:BasicObject):
           v1:NilClass = Const Value(nil)
           v6:HashExact = NewHash
-          v9:Fixnum[5] = Const Value(5)
+          PatchPoint NoEPEscape(test)
+          v11:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v9
+          Return v11
         ");
     }
 
@@ -6937,9 +6972,10 @@ mod opt_tests {
           v7:StaticSymbol[:a] = Const Value(VALUE(0x1000))
           v8:StaticSymbol[:b] = Const Value(VALUE(0x1008))
           v10:HashExact = NewHash v7: v1, v8: v2
-          v13:Fixnum[5] = Const Value(5)
+          PatchPoint NoEPEscape(test)
+          v15:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v13
+          Return v15
         ");
     }
 
@@ -7324,10 +7360,11 @@ mod opt_tests {
           v1:NilClass = Const Value(nil)
           v6:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
-          v18:BasicObject = CCall itself@0x1038, v6
-          v11:Fixnum[1] = Const Value(1)
+          v20:BasicObject = CCall itself@0x1038, v6
+          PatchPoint NoEPEscape(test)
+          v13:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v11
+          Return v13
         ");
     }
 
@@ -7347,12 +7384,13 @@ mod opt_tests {
           v1:NilClass = Const Value(nil)
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, M)
-          v19:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v21:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(Module@0x1010, name@0x1018, cme:0x1020)
-          v21:StringExact|NilClass = CCall name@0x1048, v19
-          v11:Fixnum[1] = Const Value(1)
+          v23:StringExact|NilClass = CCall name@0x1048, v21
+          PatchPoint NoEPEscape(test)
+          v13:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v11
+          Return v13
         ");
     }
 
