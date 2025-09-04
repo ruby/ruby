@@ -5083,6 +5083,19 @@ mod tests {
     }
 
     #[test]
+    fn test_cant_compile_super_nil_blockarg() {
+        eval("
+            def test = super(&nil)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:NilClass = Const Value(nil)
+          SideExit UnhandledCallType(BlockArg)
+        ");
+    }
+
+    #[test]
     fn test_cant_compile_super_forward() {
         eval("
             def test(...) = super(...)
