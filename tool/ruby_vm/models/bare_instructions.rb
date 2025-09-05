@@ -107,10 +107,6 @@ class RubyVM::BareInstructions
     /\b(false|0)\b/ !~ @attrs.fetch('handles_sp').expr.expr
   end
 
-  def always_leaf?
-    @attrs.fetch('leaf').expr.expr == 'true;'
-  end
-
   def handle_canary stmt
     # Stack canary is basically a good thing that we want to add, however:
     #
