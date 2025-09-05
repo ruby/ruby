@@ -196,6 +196,32 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:setglobal]
   end
 
+  def test_toplevel_binding
+    # Not using assert_compiles, which doesn't use the toplevel frame for `test_script`.
+    out, err, status = eval_with_jit(%q{
+      a = 1
+      b = 2
+      TOPLEVEL_BINDING.local_variable_set(:b, 3)
+      c = 4
+      print [a, b, c]
+    })
+    assert_success(out, err, status)
+    assert_equal "[1, 3, 4]", out
+  end
+
+  def test_toplevel_local_after_eval
+    # Not using assert_compiles, which doesn't use the toplevel frame for `test_script`.
+    out, err, status = eval_with_jit(%q{
+      a = 1
+      b = 2
+      eval('b = 3')
+      c = 4
+      print [a, b, c]
+    })
+    assert_success(out, err, status)
+    assert_equal "[1, 3, 4]", out
+  end
+
   def test_getlocal_after_eval
     assert_compiles '2', %q{
       def test
@@ -2428,12 +2454,8 @@ class TestZJIT < Test::Unit::TestCase
       IO.open(#{pipe_fd}).write(Marshal.dump(result))
     RUBY
 
-    status, out, err, result = eval_with_jit(script, pipe_fd:, **opts)
-
-    message = "exited with status #{status.to_i}"
-    message << "\nstdout:\n```\n#{out}```\n" unless out.empty?
-    message << "\nstderr:\n```\n#{err}```\n" unless err.empty?
-    assert status.success?, message
+    out, err, status, result = eval_with_jit(script, pipe_fd:, **opts)
+    assert_success(out, err, status)
 
     result = Marshal.load(result)
     assert_equal(expected, result.fetch(:ret_val).inspect)
@@ -2462,7 +2484,7 @@ class TestZJIT < Test::Unit::TestCase
     debug: true,
     allowed_iseqs: nil,
     timeout: 1000,
-    pipe_fd:
+    pipe_fd: nil
   )
     args = ["--disable-gems"]
     if zjit
@@ -2478,24 +2500,38 @@ class TestZJIT < Test::Unit::TestCase
       end
     end
     args << "-e" << script_shell_encode(script)
-    pipe_r, pipe_w = IO.pipe
-    # Separate thread so we don't deadlock when
-    # the child ruby blocks writing the output to pipe_fd
-    pipe_out = nil
-    pipe_reader = Thread.new do
-      pipe_out = pipe_r.read
-      pipe_r.close
+    ios = {}
+    if pipe_fd
+      pipe_r, pipe_w = IO.pipe
+      # Separate thread so we don't deadlock when
+      # the child ruby blocks writing the output to pipe_fd
+      pipe_out = nil
+      pipe_reader = Thread.new do
+        pipe_out = pipe_r.read
+        pipe_r.close
+      end
+      ios[pipe_fd] = pipe_w
     end
-    out, err, status = EnvUtil.invoke_ruby(args, '', true, true, rubybin: RbConfig.ruby, timeout: timeout, ios: { pipe_fd => pipe_w })
-    pipe_w.close
-    pipe_reader.join(timeout)
-    [status, out, err, pipe_out]
+    result = EnvUtil.invoke_ruby(args, '', true, true, rubybin: RbConfig.ruby, timeout: timeout, ios:)
+    if pipe_fd
+      pipe_w.close
+      pipe_reader.join(timeout)
+      result << pipe_out
+    end
+    result
   ensure
     pipe_reader&.kill
     pipe_reader&.join(timeout)
     pipe_r&.close
     pipe_w&.close
     jitlist&.unlink
+  end
+
+  def assert_success(out, err, status)
+    message = "exited with status #{status.to_i}"
+    message << "\nstdout:\n```\n#{out}```\n" unless out.empty?
+    message << "\nstderr:\n```\n#{err}```\n" unless err.empty?
+    assert status.success?, message
   end
 
   def script_shell_encode(s)

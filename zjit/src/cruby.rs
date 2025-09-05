@@ -294,6 +294,17 @@ pub fn iseq_opcode_at_idx(iseq: IseqPtr, insn_idx: u32) -> u32 {
     unsafe { rb_iseq_opcode_at_pc(iseq, pc) as u32 }
 }
 
+/// Return true if the ISEQ always uses a frame with escaped EP.
+pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
+    match unsafe { get_iseq_body_type(iseq) } {
+        // The EP of the <main> frame points to TOPLEVEL_BINDING
+        ISEQ_TYPE_MAIN |
+        // eval frames point to the EP of another frame or scope
+        ISEQ_TYPE_EVAL => true,
+        _ => false,
+    }
+}
+
 /// Iterate over all existing ISEQs
 pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
