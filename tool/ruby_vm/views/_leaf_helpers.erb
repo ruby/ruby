@@ -25,7 +25,7 @@ leafness_of_defined(rb_num_t op_type)
       case DEFINED_YIELD:
       case DEFINED_REF:
       case DEFINED_ZSUPER:
-        return false;
+        return true;
       case DEFINED_CONST:
       case DEFINED_CONST_FROM:
         /* has rb_autoload_load(); */
