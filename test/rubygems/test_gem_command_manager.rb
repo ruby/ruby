@@ -72,7 +72,7 @@ class TestGemCommandManager < Gem::TestCase
   end
 
   def test_find_command_unknown_suggestions
-    omit "randomly fails on ruby/ruby CI" if ENV["GITHUB_ACTION_REPOSITORY"] == "ruby/ruby"
+    omit "randomly fails on ruby/ruby CI" if ENV["GITHUB_REPOSITORY"] == "ruby/ruby"
     e = assert_raise Gem::UnknownCommandError do
       @command_manager.find_command "pish"
     end
