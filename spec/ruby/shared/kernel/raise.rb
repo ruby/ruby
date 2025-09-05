@@ -191,8 +191,8 @@ describe :kernel_raise, shared: true do
 
       -> do
         @object.raise(error, cause: error)
-      end.should raise_error(RuntimeError, "message") do |error|
-        error.cause.should == nil
+      end.should raise_error(RuntimeError, "message") do |e|
+        e.cause.should == nil
       end
     end
 
