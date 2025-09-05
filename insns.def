@@ -1206,7 +1206,7 @@ jump
 ()
 ()
 /* Same discussion as leave. */
-// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
 {
     RUBY_VM_CHECK_INTS(ec);
     JUMP(dst);
@@ -1219,7 +1219,7 @@ branchif
 (VALUE val)
 ()
 /* Same discussion as jump. */
-// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
 {
     if (RTEST(val)) {
         RUBY_VM_CHECK_INTS(ec);
@@ -1234,7 +1234,7 @@ branchunless
 (VALUE val)
 ()
 /* Same discussion as jump. */
-// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
 {
     if (!RTEST(val)) {
         RUBY_VM_CHECK_INTS(ec);
@@ -1249,7 +1249,7 @@ branchnil
 (VALUE val)
 ()
 /* Same discussion as jump. */
-// attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
+// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
 {
     if (NIL_P(val)) {
         RUBY_VM_CHECK_INTS(ec);

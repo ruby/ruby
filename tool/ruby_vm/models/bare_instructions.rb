@@ -111,10 +111,6 @@ class RubyVM::BareInstructions
     @attrs.fetch('leaf').expr.expr == 'true;'
   end
 
-  def leaf_without_check_ints?
-    @attrs.fetch('leaf').expr.expr == 'leafness_of_check_ints;'
-  end
-
   def handle_canary stmt
     # Stack canary is basically a good thing that we want to add, however:
     #
