@@ -767,7 +767,7 @@ impl Assembler
                     // Here we're going to save enough space for ourselves and
                     // then come back and write the instruction once we know the
                     // offset.
-                    cb.label_ref(label_idx,  (cb.conditional_jump_insns() / 4) as usize, |cb, src_addr, dst_addr| {
+                    cb.label_ref(label_idx,  (cb.conditional_jump_insns() * 4) as usize, |cb, src_addr, dst_addr| {
                         generate_branch::<CONDITION>(cb, src_addr, dst_addr);
                     });
                 },
@@ -2049,7 +2049,7 @@ mod tests {
 
         // `IMMEDIATE_MAX_VALUE` number of dummy instructions will be generated
         // plus a compare, a jump instruction, and a label.
-        const MEMORY_REQUIRED: usize = (IMMEDIATE_MAX_VALUE + 3)*4;
+        const MEMORY_REQUIRED: usize = (IMMEDIATE_MAX_VALUE + 8)*4;
 
         let mut asm = Assembler::new();
         let mut cb = CodeBlock::new_dummy_sized(MEMORY_REQUIRED);
