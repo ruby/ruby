@@ -55,9 +55,6 @@ locale_charmap(VALUE (*conv)(const char *))
 #elif defined HAVE_LANGINFO_H
     codeset = nl_langinfo(CODESET);
     ASSUME(codeset);
-# ifdef __APPLE__
-    if (!*codeset) codeset = "UTF-8";
-# endif
 #else
 # error locale_charmap() is not implemented
 #endif
