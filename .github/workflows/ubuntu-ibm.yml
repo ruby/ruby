@@ -86,7 +86,7 @@ jobs:
       # https://github.com/IBM/actionspz/issues/30
       - name: Set HOME env
         run: |
-          echo "HOME: #{HOME}"
+          echo "HOME: ${HOME}"
           echo "HOME=$(ls -d ~)" >> $GITHUB_ENV
         working-directory:
         if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
