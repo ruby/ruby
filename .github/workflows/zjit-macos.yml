@@ -32,28 +32,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - test_task: 'zjit-check'
+          - test_task: 'check'
+            configure: '--enable-zjit=dev'
+            run_opts: '--zjit-call-threshold=1'
+            specopts: '-T --zjit-call-threshold=1'
+
+          - test_task: 'zjit-check' # zjit-test + quick feedback of test_zjit.rb
             configure: '--enable-yjit=dev --enable-zjit'
             rust_version: "1.85.0"
 
-          - test_task: 'ruby' # build test for combo build
+          - test_task: 'ruby'
+            hint: 'combo build test'
             configure: '--enable-yjit --enable-zjit'
-
-          - test_task: 'zjit-test-all'
-            configure: '--enable-zjit=dev'
-            testopts: '--seed=11831'
-
-          - test_task: 'test'
-            configure: '--enable-zjit=dev'
-            zjit_opts: '--zjit-call-threshold=1'
-
-          - test_task: 'test-spec'
-            configure: '--enable-zjit=dev'
-            specopts: '-T --zjit-call-threshold=1'
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      RUN_OPTS: ${{ matrix.zjit_opts }}
+      RUN_OPTS: ${{ matrix.run_opts }}
       SPECOPTS: ${{ matrix.specopts }}
       TESTOPTS: ${{ matrix.testopts }}
 
@@ -117,6 +111,7 @@ jobs:
           RUN_OPTS="$RUN_OPTS"
           SPECOPTS="$SPECOPTS"
           TESTOPTS="$TESTOPTS"
+          TEST_EXCLUDES="$TEST_EXCLUDES"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
@@ -124,6 +119,7 @@ jobs:
           SYNTAX_SUGGEST_TIMEOUT: '5'
           PRECHECK_BUNDLED_GEMS: 'no'
           TESTS: ${{ matrix.tests }}
+          TEST_EXCLUDES: '--excludes-dir=../src/test/.excludes-zjit --name=!/memory_leak/'
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
   result:
