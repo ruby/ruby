@@ -3019,6 +3019,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let payload = get_or_create_iseq_payload(iseq);
     let mut profiles = ProfileOracle::new(payload);
     let mut fun = Function::new(iseq);
+
     // Compute a map of PC->Block by finding jump targets
     let BytecodeInfo { jump_targets, has_blockiseq } = compute_bytecode_info(iseq);
     let mut insn_idx_to_block = HashMap::new();
@@ -3028,6 +3029,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         }
         insn_idx_to_block.insert(insn_idx, fun.new_block(insn_idx));
     }
+
+    // Check if the EP is escaped for the ISEQ from the beginning. We give up
+    // optimizing locals in that case because they're shared with other frames.
+    let ep_escaped = iseq_escapes_ep(iseq);
 
     // Iteratively fill out basic blocks using a queue
     // TODO(max): Basic block arguments at edges
@@ -3066,7 +3071,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut visited = HashSet::new();
 
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
-    let iseq_type = unsafe { get_iseq_body_type(iseq) };
     while let Some((incoming_state, block, mut insn_idx, mut local_inval)) = queue.pop_front() {
         if visited.contains(&block) { continue; }
         visited.insert(block);
@@ -3361,8 +3365,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_getlocal_WC_0 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    if iseq_type == ISEQ_TYPE_EVAL || has_blockiseq {
-                        // On eval, the locals are always on the heap, so read the local using EP.
+                    if ep_escaped || has_blockiseq { // TODO: figure out how to drop has_blockiseq here
+                        // Read the local using EP
                         let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
                         state.setlocal(ep_offset, val); // remember the result to spill on side-exits
                         state.stack_push(val);
@@ -3374,6 +3378,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
                             local_inval = false;
                         }
+                        // Read the local from FrameState
                         let val = state.getlocal(ep_offset);
                         state.stack_push(val);
                     }
@@ -3381,8 +3386,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_setlocal_WC_0 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let val = state.stack_pop()?;
-                    if iseq_type == ISEQ_TYPE_EVAL || has_blockiseq {
-                        // On eval, the locals are always on the heap, so write the local using EP.
+                    if ep_escaped || has_blockiseq { // TODO: figure out how to drop has_blockiseq here
+                        // Write the local using EP
                         fun.push_insn(block, Insn::SetLocal { val, ep_offset, level: 0 });
                     } else if local_inval {
                         // If there has been any non-leaf call since JIT entry or the last patch point,
@@ -3391,6 +3396,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
                         local_inval = false;
                     }
+                    // Write the local into FrameState
                     state.setlocal(ep_offset, val);
                 }
                 YARVINSN_getlocal_WC_1 => {

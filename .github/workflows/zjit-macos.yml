@@ -47,6 +47,10 @@ jobs:
             configure: '--enable-zjit=dev'
             zjit_opts: '--zjit-call-threshold=1'
 
+          - test_task: 'test-spec'
+            configure: '--enable-zjit=dev'
+            specopts: '-T --zjit-call-threshold=1'
+
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.zjit_opts }}
