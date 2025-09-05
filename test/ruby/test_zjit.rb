@@ -196,6 +196,50 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:setglobal]
   end
 
+  def test_getlocal_after_eval
+    assert_compiles '2', %q{
+      def test
+        a = 1
+        eval('a = 2')
+        a
+      end
+      test
+    }
+  end
+
+  def test_getlocal_after_instance_eval
+    assert_compiles '2', %q{
+      def test
+        a = 1
+        instance_eval('a = 2')
+        a
+      end
+      test
+    }
+  end
+
+  def test_getlocal_after_module_eval
+    assert_compiles '2', %q{
+      def test
+        a = 1
+        Kernel.module_eval('a = 2')
+        a
+      end
+      test
+    }
+  end
+
+  def test_getlocal_after_class_eval
+    assert_compiles '2', %q{
+      def test
+        a = 1
+        Kernel.class_eval('a = 2')
+        a
+      end
+      test
+    }
+  end
+
   def test_setlocal
     assert_compiles '3', %q{
       def test(n)
@@ -1453,8 +1497,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_bop_invalidation
-    omit 'Invalidation on BOP redefinition is not implemented yet'
-    assert_compiles '', %q{
+    assert_compiles '100', %q{
       def test
         eval(<<~RUBY)
           class Integer

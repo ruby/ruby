@@ -1061,7 +1061,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     // Invalidate JIT code that assumes cfp->ep == vm_base_ptr(cfp).
     if (env->iseq) {
         rb_yjit_invalidate_ep_is_bp(env->iseq);
-        rb_zjit_invalidate_ep_is_bp(env->iseq);
+        rb_zjit_invalidate_no_ep_escape(env->iseq);
     }
 
     return (VALUE)env;

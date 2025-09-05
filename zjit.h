@@ -18,7 +18,7 @@ void rb_zjit_profile_insn(uint32_t insn, rb_execution_context_t *ec);
 void rb_zjit_profile_enable(const rb_iseq_t *iseq);
 void rb_zjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop);
 void rb_zjit_cme_invalidate(const rb_callable_method_entry_t *cme);
-void rb_zjit_invalidate_ep_is_bp(const rb_iseq_t *iseq);
+void rb_zjit_invalidate_no_ep_escape(const rb_iseq_t *iseq);
 void rb_zjit_constant_state_changed(ID id);
 void rb_zjit_iseq_mark(void *payload);
 void rb_zjit_iseq_update_references(void *payload);
@@ -31,7 +31,7 @@ static inline void rb_zjit_profile_insn(uint32_t insn, rb_execution_context_t *e
 static inline void rb_zjit_profile_enable(const rb_iseq_t *iseq) {}
 static inline void rb_zjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop) {}
 static inline void rb_zjit_cme_invalidate(const rb_callable_method_entry_t *cme) {}
-static inline void rb_zjit_invalidate_ep_is_bp(const rb_iseq_t *iseq) {}
+static inline void rb_zjit_invalidate_no_ep_escape(const rb_iseq_t *iseq) {}
 static inline void rb_zjit_constant_state_changed(ID id) {}
 static inline void rb_zjit_before_ractor_spawn(void) {}
 static inline void rb_zjit_tracing_invalidate_all(void) {}
