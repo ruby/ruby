@@ -8282,6 +8282,26 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_objtostring_anytostring_param_profiled() {
+        eval("
+            def test(a)
+              \"#{a}\"
+            end
+            test('foo'); test('foo')
+        ");
+
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v6:String = GuardType v1, String
+          v8:StringExact = StringConcat v4, v6
+          CheckInterrupts
+          Return v8
+        ");
+    }
+
+    #[test]
     fn test_branchnil_nil() {
         eval("
             def test
