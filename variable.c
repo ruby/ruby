@@ -1164,7 +1164,7 @@ rb_alias_variable(ID name1, ID name2)
                 free_global_variable(var);
             }
         }
-        if (entry1) {
+        if (entry1->var != entry2->var) {
             entry2->var->counter++;
             entry1->var = entry2->var;
         }
