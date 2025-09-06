@@ -4947,7 +4947,7 @@ rb_io_each_codepoint(VALUE io)
             fptr->cbuf.off += n;
             fptr->cbuf.len -= n;
             rb_yield(UINT2NUM(c));
-            rb_io_check_byte_readable(fptr);
+            rb_io_check_char_readable(fptr);
         }
     }
     NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
