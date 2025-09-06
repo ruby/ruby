@@ -30,8 +30,9 @@ It consists of:
 
 - A leading percent character.
 - Zero or more _flags_ (each is a character).
-- An optional _width_ _specifier_ (an integer).
-- An optional _precision_ _specifier_ (a period followed by a non-negative integer).
+- An optional _width_ _specifier_ (an integer, or <tt>*</tt>).
+- An optional _precision_ _specifier_ (a period followed by a non-negative
+  integer, or <tt>*</tt>).
 - A _type_ _specifier_ (a character).
 
 Except for the leading percent character,
@@ -125,13 +126,6 @@ Left-pad with zeros instead of spaces:
   sprintf('%6d', 100)  # => "   100"
   sprintf('%06d', 100) # => "000100"
 
-=== <tt>'*'</tt> Flag
-
-Use the next argument as the field width:
-
-  sprintf('%d', 20, 14)  # => "20"
-  sprintf('%*d', 20, 14) # => "                  14"
-
 === <tt>'n$'</tt> Flag
 
 Format the (1-based) <tt>n</tt>th argument into this field:
@@ -151,6 +145,11 @@ of the formatted field:
 
   # Ignore if too small.
   sprintf('%1d', 100)   # => "100"
+
+If the width specifier is <tt>'*'</tt> instead of an integer, the actual minimum
+width is taken from the argument list:
+
+  sprintf('%*d', 20, 14) # => "                  14"
 
 == Precision Specifier
 
@@ -193,6 +192,11 @@ the number of characters to write:
 
   sprintf('%s', Time.now)    # => "2022-05-04 11:59:16 -0400"
   sprintf('%.10s', Time.now) # => "2022-05-04"
+
+If the precision specifier is <tt>'*'</tt> instead of a non-negative integer,
+the actual precision is taken from the argument list:
+
+  sprintf('%.*d', 20, 1)    # => "00000000000000000001"
 
 == Type Specifier Details and Examples
 
