@@ -310,6 +310,18 @@ impl CodeBlock {
 
         Self::new(Rc::new(RefCell::new(virt_mem)), false)
     }
+
+    pub fn new_dummy_sized(mem_size: usize) -> Self {
+        use std::ptr::NonNull;
+        use crate::virtualmem::*;
+        use crate::virtualmem::tests::TestingAllocator;
+
+        let alloc = TestingAllocator::new(mem_size);
+        let mem_start: *const u8 = alloc.mem_start();
+        let virt_mem = VirtualMem::new(alloc, 1, NonNull::new(mem_start as *mut u8).unwrap(), mem_size, 128 * 1024 * 1024);
+
+        Self::new(Rc::new(RefCell::new(virt_mem)), false)
+    }
 }
 
 impl crate::virtualmem::CodePtrBase for CodeBlock {
