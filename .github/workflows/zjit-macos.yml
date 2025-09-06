@@ -1,4 +1,4 @@
-name: ZJIT macOS Arm64
+name: ZJIT macOS
 on:
   push:
     branches:
