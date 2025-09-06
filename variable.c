@@ -1150,7 +1150,7 @@ rb_alias_variable(ID name1, ID name2)
     RB_VM_LOCKING() {
         entry2 = rb_global_entry(name2);
         if (!rb_id_table_lookup(gtbl, name1, &data1)) {
-            entry1 = ALLOC(struct rb_global_entry);
+            entry1 = ZALLOC(struct rb_global_entry);
             entry1->id = name1;
             rb_id_table_insert(gtbl, name1, (VALUE)entry1);
         }
