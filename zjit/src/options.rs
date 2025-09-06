@@ -41,6 +41,9 @@ pub struct Options {
     /// Enable YJIT statsitics
     pub stats: bool,
 
+    /// Print stats on exit (when stats is also true)
+    pub print_stats: bool,
+
     /// Enable debug logging
     pub debug: bool,
 
@@ -78,6 +81,7 @@ impl Default for Options {
             exec_mem_bytes: 64 * 1024 * 1024,
             num_profiles: DEFAULT_NUM_PROFILES,
             stats: false,
+            print_stats: false,
             debug: false,
             disable_hir_opt: false,
             dump_hir_init: None,
@@ -103,7 +107,7 @@ pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
                      "Number of calls to trigger JIT (default: 2)."),
     ("--zjit-num-profiles=num",
                      "Number of profiled calls before JIT (default: 1, max: 255)."),
-    ("--zjit-stats", "Enable collecting ZJIT statistics."),
+    ("--zjit-stats[=quiet]", "Enable collecting ZJIT statistics (=quiet to suppress output)."),
     ("--zjit-perf",  "Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf."),
     ("--zjit-log-compiled-iseqs=path",
                      "Log compiled ISEQs to the file. The file will be truncated."),
@@ -220,6 +224,11 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("stats", "") => {
             options.stats = true;
+            options.print_stats = true;
+        }
+        ("stats", "quiet") => {
+            options.stats = true;
+            options.print_stats = false;
         }
 
         ("debug", "") => options.debug = true,
@@ -339,6 +348,17 @@ pub extern "C" fn rb_zjit_option_enabled_p(_ec: EcPtr, _self: VALUE) -> VALUE {
 pub extern "C" fn rb_zjit_stats_enabled_p(_ec: EcPtr, _self: VALUE) -> VALUE {
     // Builtin zjit.rb calls this even if ZJIT is disabled, so OPTIONS may not be set.
     if unsafe { OPTIONS.as_ref() }.is_some_and(|opts| opts.stats) {
+        Qtrue
+    } else {
+        Qfalse
+    }
+}
+
+/// Return Qtrue if stats should be printed at exit.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_print_stats_p(_ec: EcPtr, _self: VALUE) -> VALUE {
+    // Builtin zjit.rb calls this even if ZJIT is disabled, so OPTIONS may not be set.
+    if unsafe { OPTIONS.as_ref() }.is_some_and(|opts| opts.stats && opts.print_stats) {
         Qtrue
     } else {
         Qfalse
