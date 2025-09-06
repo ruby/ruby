@@ -519,11 +519,16 @@ pub enum Insn {
 
     HashDup { val: InsnId, state: InsnId },
 
+    /// Allocate an instance of the `val` class without calling `#initialize` on it.
+    ObjectAlloc { val: InsnId, state: InsnId },
+
     /// Check if the value is truthy and "return" a C boolean. In reality, we will likely fuse this
     /// with IfTrue/IfFalse in the backend to generate jcc.
     Test { val: InsnId },
     /// Return C `true` if `val` is `Qnil`, else `false`.
     IsNil { val: InsnId },
+    /// Return C `true` if `val`'s method on cd resolves to the cfunc.
+    IsMethodCfunc { val: InsnId, cd: *const rb_call_data, cfunc: *const u8 },
     Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId, state: InsnId },
     GetConstantPath { ic: *const iseq_inline_constant_cache, state: InsnId },
 
@@ -761,6 +766,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ArrayDup { val, .. } => { write!(f, "ArrayDup {val}") }
             Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
+            Insn::ObjectAlloc { val, .. } => { write!(f, "ObjectAlloc {val}") }
             Insn::StringCopy { val, .. } => { write!(f, "StringCopy {val}") }
             Insn::StringConcat { strings, .. } => {
                 write!(f, "StringConcat")?;
@@ -796,6 +802,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::Test { val } => { write!(f, "Test {val}") }
             Insn::IsNil { val } => { write!(f, "IsNil {val}") }
+            Insn::IsMethodCfunc { val, cd, .. } => { write!(f, "IsMethodCFunc {val}, :{}", ruby_call_method_name(*cd)) }
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
             Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}") }
@@ -1273,6 +1280,7 @@ impl Function {
             &ToRegexp { opt, ref values, state } => ToRegexp { opt, values: find_vec!(values), state },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
+            &IsMethodCfunc { val, cd, cfunc } => IsMethodCfunc { val: find!(val), cd, cfunc },
             Jump(target) => Jump(find_branch_edge!(target)),
             &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
             &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
@@ -1333,6 +1341,7 @@ impl Function {
             &InvokeBuiltin { bf, ref args, state, return_type } => InvokeBuiltin { bf, args: find_vec!(args), state, return_type },
             &ArrayDup { val, state } => ArrayDup { val: find!(val), state },
             &HashDup { val, state } => HashDup { val: find!(val), state },
+            &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun, args: find_vec!(args), name, return_type, elidable },
             &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
@@ -1407,6 +1416,7 @@ impl Function {
             Insn::IsNil { val } if self.is_a(*val, types::NilClass) => Type::from_cbool(true),
             Insn::IsNil { val } if !self.type_of(*val).could_be(types::NilClass) => Type::from_cbool(false),
             Insn::IsNil { .. } => types::CBool,
+            Insn::IsMethodCfunc { .. } => types::CBool,
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
@@ -1417,6 +1427,7 @@ impl Function {
             Insn::HashDup { .. } => types::HashExact,
             Insn::NewRange { .. } => types::RangeExact,
             Insn::NewRangeFixnum { .. } => types::RangeExact,
+            Insn::ObjectAlloc { .. } => types::HeapObject,
             Insn::CCall { return_type, .. } => *return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_value(*expected)),
@@ -2173,12 +2184,14 @@ impl Function {
             | &Insn::Return { val }
             | &Insn::Test { val }
             | &Insn::SetLocal { val, .. }
-            | &Insn::IsNil { val } =>
+            | &Insn::IsNil { val }
+            | &Insn::IsMethodCfunc { val, .. } =>
                 worklist.push_back(val),
             &Insn::SetGlobal { val, state, .. }
             | &Insn::Defined { v: val, state, .. }
             | &Insn::StringIntern { val, state }
             | &Insn::StringCopy { val, state, .. }
+            | &Insn::ObjectAlloc { val, state }
             | &Insn::GuardType { val, state, .. }
             | &Insn::GuardBitEquals { val, state, .. }
             | &Insn::GuardShape { val, state, .. }
@@ -3340,16 +3353,30 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_pop()?;
                 }
                 YARVINSN_opt_new => {
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
-                    let offset = get_arg(pc, 1).as_i64();
-                    let target_idx = insn_idx_at_offset(insn_idx, offset);
+                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                    let dst = get_arg(pc, 1).as_i64();
+
+                    // Check if #new resolves to rb_class_new_instance_pass_kw.
+                    // TODO: Guard on a profiled class and add a patch point for #new redefinition
+                    let argc = unsafe { vm_ci_argc((*cd).ci) } as usize;
+                    let val = state.stack_topn(argc)?;
+                    let test_id = fun.push_insn(block, Insn::IsMethodCfunc { val, cd, cfunc: rb_class_new_instance_pass_kw as *const u8 });
+
+                    // Jump to the fallback block if it's not the expected function.
+                    // Skip CheckInterrupts since the #new call will do it very soon anyway.
+                    let target_idx = insn_idx_at_offset(insn_idx, dst);
                     let target = insn_idx_to_block[&target_idx];
-                    // Skip the fast-path and go straight to the fallback code. We will let the
-                    // optimizer take care of the converting Class#new->alloc+initialize instead.
-                    fun.push_insn(block, Insn::Jump(BranchEdge { target, args: state.as_args(self_param) }));
+                    let _branch_id = fun.push_insn(block, Insn::IfFalse {
+                        val: test_id,
+                        target: BranchEdge { target, args: state.as_args(self_param) }
+                    });
                     queue.push_back((state.clone(), target, target_idx, local_inval));
-                    break;  // Don't enqueue the next block as a successor
+
+                    // Move on to the fast path
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let insn_id = fun.push_insn(block, Insn::ObjectAlloc { val, state: exit_id });
+                    state.stack_setn(argc, insn_id);
+                    state.stack_setn(argc + 1, insn_id);
                 }
                 YARVINSN_jump => {
                     let offset = get_arg(pc, 0).as_i64();
@@ -5201,14 +5228,18 @@ mod tests {
         bb0(v0:BasicObject):
           v5:BasicObject = GetConstantPath 0x1000
           v6:NilClass = Const Value(nil)
+          v7:CBool = IsMethodCFunc v5, :new
+          IfFalse v7, bb1(v0, v6, v5)
+          v10:HeapObject = ObjectAlloc v5
+          v12:BasicObject = SendWithoutBlock v10, :initialize
           CheckInterrupts
-          Jump bb1(v0, v6, v5)
-        bb1(v10:BasicObject, v11:NilClass, v12:BasicObject):
-          v15:BasicObject = SendWithoutBlock v12, :new
-          Jump bb2(v10, v15, v11)
-        bb2(v17:BasicObject, v18:BasicObject, v19:NilClass):
+          Jump bb2(v0, v10, v12)
+        bb1(v16:BasicObject, v17:NilClass, v18:BasicObject):
+          v21:BasicObject = SendWithoutBlock v18, :new
+          Jump bb2(v16, v21, v17)
+        bb2(v23:BasicObject, v24:BasicObject, v25:BasicObject):
           CheckInterrupts
-          Return v18
+          Return v24
         ");
     }
 
@@ -7842,12 +7873,20 @@ mod opt_tests {
         bb0(v0:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, C)
-          v28:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v6:NilClass = Const Value(nil)
+          v7:CBool = IsMethodCFunc v34, :new
+          IfFalse v7, bb1(v0, v6, v34)
+          v10:HeapObject = ObjectAlloc v34
+          v12:BasicObject = SendWithoutBlock v10, :initialize
           CheckInterrupts
-          v15:BasicObject = SendWithoutBlock v28, :new
+          Jump bb2(v0, v10, v12)
+        bb1(v16:BasicObject, v17:NilClass, v18:Class[VALUE(0x1008)]):
+          v21:BasicObject = SendWithoutBlock v18, :new
+          Jump bb2(v16, v21, v17)
+        bb2(v23:BasicObject, v24:BasicObject, v25:BasicObject):
           CheckInterrupts
-          Return v15
+          Return v24
         ");
     }
 
@@ -7867,13 +7906,23 @@ mod opt_tests {
         bb0(v0:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, C)
-          v30:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v36:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v6:NilClass = Const Value(nil)
           v7:Fixnum[1] = Const Value(1)
+          v8:CBool = IsMethodCFunc v36, :new
+          IfFalse v8, bb1(v0, v6, v36, v7)
+          v11:HeapObject = ObjectAlloc v36
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1010, cme:0x1018)
+          v38:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
+          v39:BasicObject = SendWithoutBlockDirect v38, :initialize (0x1040), v7
           CheckInterrupts
-          v17:BasicObject = SendWithoutBlock v30, :new, v7
+          Jump bb2(v0, v11, v39)
+        bb1(v17:BasicObject, v18:NilClass, v19:Class[VALUE(0x1008)], v20:Fixnum[1]):
+          v23:BasicObject = SendWithoutBlock v19, :new, v20
+          Jump bb2(v17, v23, v18)
+        bb2(v25:BasicObject, v26:BasicObject, v27:BasicObject):
           CheckInterrupts
-          Return v17
+          Return v26
         ");
     }
 

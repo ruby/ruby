@@ -2417,6 +2417,12 @@ vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type f
     return check_cfunc(cme, func);
 }
 
+int
+rb_vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type func)
+{
+    return vm_method_cfunc_is(iseq, cd, recv, func);
+}
+
 #define check_cfunc(me, func) check_cfunc(me, make_cfunc_type(func))
 #define vm_method_cfunc_is(iseq, cd, recv, func) vm_method_cfunc_is(iseq, cd, recv, make_cfunc_type(func))
 

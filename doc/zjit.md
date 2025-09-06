@@ -96,16 +96,6 @@ use `make`.
 
 </details>
 
-### make zjit-test-all
-
-```
-make zjit-test-all
-```
-
-This command runs all Ruby tests under `/test/ruby/` with ZJIT enabled.
-
-Certain tests are excluded under `/test/.excludes-zjit`.
-
 ### test/ruby/test\_zjit.rb
 
 This command runs Ruby execution tests.

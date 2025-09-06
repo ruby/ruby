@@ -111,7 +111,6 @@ jobs:
           RUN_OPTS="$RUN_OPTS"
           SPECOPTS="$SPECOPTS"
           TESTOPTS="$TESTOPTS"
-          TEST_EXCLUDES="$TEST_EXCLUDES"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
@@ -119,7 +118,6 @@ jobs:
           SYNTAX_SUGGEST_TIMEOUT: '5'
           PRECHECK_BUNDLED_GEMS: 'no'
           TESTS: ${{ matrix.tests }}
-          TEST_EXCLUDES: '--excludes-dir=../src/test/.excludes-zjit --name=!/memory_leak/'
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
   result:

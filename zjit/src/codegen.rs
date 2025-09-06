@@ -349,6 +349,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::NewRange { low, high, flag, state } => gen_new_range(jit, asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
+        Insn::ObjectAlloc { val, state } => gen_object_alloc(asm, opnd!(val), &function.frame_state(*state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
         // concatstrings shouldn't have 0 strings
         // If it happens we abort the compilation for now
@@ -385,6 +386,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FixnumAnd { left, right } => gen_fixnum_and(asm, opnd!(left), opnd!(right)),
         Insn::FixnumOr { left, right } => gen_fixnum_or(asm, opnd!(left), opnd!(right)),
         Insn::IsNil { val } => gen_isnil(asm, opnd!(val)),
+        &Insn::IsMethodCfunc { val, cd, cfunc } => gen_is_method_cfunc(jit, asm, opnd!(val), cd, cfunc),
         Insn::Test { val } => gen_test(asm, opnd!(val)),
         Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
         Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(jit, asm, opnd!(val), *expected, &function.frame_state(*state)),
@@ -1190,6 +1192,11 @@ fn gen_new_range_fixnum(
     asm_ccall!(asm, rb_range_new, low, high, (flag as i64).into())
 }
 
+fn gen_object_alloc(asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
+    gen_prepare_call_with_gc(asm, state);
+    asm_ccall!(asm, rb_obj_alloc, val)
+}
+
 /// Compile code that exits from JIT code with a return value
 fn gen_return(asm: &mut Assembler, val: lir::Opnd) {
     // Pop the current frame (ec->cfp++)
@@ -1290,6 +1297,13 @@ fn gen_isnil(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
     asm.cmp(val, Qnil.into());
     // TODO: Implement and use setcc
     asm.csel_e(Opnd::Imm(1), Opnd::Imm(0))
+}
+
+fn gen_is_method_cfunc(jit: &JITState, asm: &mut Assembler, val: lir::Opnd, cd: *const rb_call_data, cfunc: *const u8) -> lir::Opnd {
+    unsafe extern "C" {
+        fn rb_vm_method_cfunc_is(iseq: IseqPtr, cd: *const rb_call_data, recv: VALUE, cfunc: *const u8) -> VALUE;
+    }
+    asm_ccall!(asm, rb_vm_method_cfunc_is, VALUE(jit.iseq as usize).into(), (cd as usize).into(), val, (cfunc as usize).into())
 }
 
 fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, str: lir::Opnd, state: &FrameState) -> lir::Opnd {
