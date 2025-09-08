@@ -81,6 +81,16 @@ module LangSendSpecs
     end
   end
 
+  class RawToProc
+    def initialize(to_proc)
+      @to_proc = to_proc
+    end
+
+    def to_proc
+      @to_proc
+    end
+  end
+
   class ToAry
     def initialize(obj)
       @obj = obj
