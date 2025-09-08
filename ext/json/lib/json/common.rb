@@ -73,7 +73,7 @@ module JSON
             if opts[:create_additions] != false
               if class_name = object[JSON.create_id]
                 klass = JSON.deep_const_get(class_name)
-                if (klass.respond_to?(:json_creatable?) && klass.json_creatable?) || klass.respond_to?(:json_create)
+                if klass.respond_to?(:json_creatable?) ? klass.json_creatable? : klass.respond_to?(:json_create)
                   create_additions_warning if create_additions.nil?
                   object = klass.json_create(object)
                 end
