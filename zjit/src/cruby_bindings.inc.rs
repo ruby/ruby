@@ -806,7 +806,13 @@ unsafe extern "C" {
     pub fn rb_id2str(id: ID) -> VALUE;
     pub fn rb_sym2str(symbol: VALUE) -> VALUE;
     pub fn rb_class2name(klass: VALUE) -> *const ::std::os::raw::c_char;
+    pub fn rb_class_new_instance_pass_kw(
+        argc: ::std::os::raw::c_int,
+        argv: *const VALUE,
+        klass: VALUE,
+    ) -> VALUE;
     pub fn rb_obj_is_kind_of(obj: VALUE, klass: VALUE) -> VALUE;
+    pub fn rb_obj_alloc(klass: VALUE) -> VALUE;
     pub fn rb_obj_frozen_p(obj: VALUE) -> VALUE;
     pub fn rb_class_inherited_p(scion: VALUE, ascendant: VALUE) -> VALUE;
     pub fn rb_backref_get() -> VALUE;

@@ -50,10 +50,6 @@ zjit-check:
 	$(MAKE) zjit-test
 	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_zjit.rb'
 
-.PHONY: zjit-test-all
-zjit-test-all:
-	$(MAKE) test-all RUST_BACKTRACE=1 TEST_EXCLUDES='--excludes-dir=$(top_srcdir)/test/.excludes-zjit --name=!/memory_leak/' RUN_OPTS='--zjit-call-threshold=1'
-
 ZJIT_BINDGEN_DIFF_OPTS =
 
 # Generate Rust bindings. See source for details.

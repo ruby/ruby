@@ -766,6 +766,37 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_ge], call_threshold: 2
   end
 
+  def test_opt_new_does_not_push_frame
+    assert_compiles 'nil', %q{
+      class Foo
+        attr_reader :backtrace
+
+        def initialize
+          @backtrace = caller
+        end
+      end
+      def test = Foo.new
+
+      foo = test
+      foo.backtrace.find do |frame|
+        frame.include?('Class#new')
+      end
+    }, insns: [:opt_new]
+  end
+
+  def test_opt_new_with_redefinition
+    assert_compiles '"foo"', %q{
+      class Foo
+        def self.new = "foo"
+
+        def initialize = raise("unreachable")
+      end
+      def test = Foo.new
+
+      test
+    }, insns: [:opt_new]
+  end
+
   def test_new_hash_empty
     assert_compiles '{}', %q{
       def test = {}
