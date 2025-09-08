@@ -2041,6 +2041,32 @@ mod tests {
     }
 
     #[test]
+    fn test_label_branch_generate_bounds() {
+        // The immediate in a conditional branch is a 19 bit unsigned integer
+        // which has a max value of 2^18 - 1.
+        const IMMEDIATE_MAX_VALUE: usize = 2usize.pow(18) - 1;
+
+        // `IMMEDIATE_MAX_VALUE` number of dummy instructions will be generated
+        // plus a compare, a jump instruction, and a label.
+        const MEMORY_REQUIRED: usize = (IMMEDIATE_MAX_VALUE + 8)*4;
+
+        let mut asm = Assembler::new();
+        let mut cb = CodeBlock::new_dummy_sized(MEMORY_REQUIRED);
+
+        let far_label = asm.new_label("far");
+
+        asm.cmp(Opnd::Reg(X0_REG), Opnd::UImm(1));
+        asm.je(far_label.clone());
+
+        (0..IMMEDIATE_MAX_VALUE).for_each(|_| {
+            asm.mov(Opnd::Reg(TEMP_REGS[0]), Opnd::Reg(TEMP_REGS[2]));
+        });
+
+        asm.write_label(far_label.clone());
+        asm.compile_with_num_regs(&mut cb, 1);
+    }
+
+    #[test]
     fn test_add_with_immediate() {
         let (mut asm, mut cb) = setup_asm();
 
