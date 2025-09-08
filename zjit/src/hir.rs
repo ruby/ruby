@@ -475,7 +475,7 @@ impl std::fmt::Display for SideExitReason {
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_PACK_BUFFER) => write!(f, "UnknownNewarraySend(PACK_BUFFER)"),
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_INCLUDE_P) => write!(f, "UnknownNewarraySend(INCLUDE_P)"),
             SideExitReason::GuardType(guard_type) => write!(f, "GuardType({guard_type})"),
-            SideExitReason::GuardTypeNot(guard_type) => write!(f, "GuardType({guard_type})"),
+            SideExitReason::GuardTypeNot(guard_type) => write!(f, "GuardTypeNot({guard_type})"),
             SideExitReason::GuardBitEquals(value) => write!(f, "GuardBitEquals({})", value.print(&PtrPrintMap::identity())),
             SideExitReason::PatchPoint(invariant) => write!(f, "PatchPoint({invariant})"),
             _ => write!(f, "{self:?}"),
@@ -3553,7 +3553,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     break;  // Don't enqueue the next block as a successor
                 }
 
-                // These are opt_send_without_block and all the opt_* instructions specialized to a certain method that could also be serviced
+                // These are opt_send_without_block and all the opt_* instructions
+                // specialized to a certain method that could also be serviced
                 // using the general send implementation. The optimizer start from
                 // a general send for all of these later in the pipeline.
                 YARVINSN_opt_nil_p |
