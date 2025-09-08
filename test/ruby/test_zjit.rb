@@ -2088,7 +2088,7 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
-  def test_objtostring_rewrite_with_type_guard
+  def test_objtostring_profiled_string_fastpath
     assert_compiles '"foo"', %q{
       def test(str)
         "#{str}"
@@ -2097,7 +2097,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_objtostring_rewrite_with_type_guard_exit
+  def test_objtostring_profiled_string_fastpath_exits_on_nonstring
     assert_compiles '"1"', %q{
       def test(str)
         "#{str}"
@@ -2108,7 +2108,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_objtostring_rewrite_with_type_guard_not
+  def test_objtostring_profiled_nonstring_calls_to_s
     assert_compiles '"[1, 2, 3]"', %q{
       def test(str)
         "#{str}"
@@ -2119,7 +2119,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_objtostring_rewrite_with_type_guard_not_exit
+  def test_objtostring_profiled_nonstring_guard_exits_when_string
     assert_compiles '"foo"', %q{
       def test(str)
         "#{str}"
