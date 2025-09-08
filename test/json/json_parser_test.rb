@@ -347,7 +347,7 @@ class JSONParserTest < Test::Unit::TestCase
       assert_equal expected_sym, parse('{"a": 1, "a": 2}', symbolize_names: true)
     end
 
-    if RUBY_ENGINE == 'RUBY_ENGINE'
+    if RUBY_ENGINE == 'ruby'
       assert_deprecated_warning(/#{File.basename(__FILE__)}\:#{__LINE__ + 1}/) do
         assert_equal expected, parse('{"a": 1, "a": 2}')
       end
