@@ -700,8 +700,7 @@ pub const YARVINSN_zjit_opt_and: ruby_vminsn_type = 232;
 pub const YARVINSN_zjit_opt_or: ruby_vminsn_type = 233;
 pub const YARVINSN_zjit_opt_empty_p: ruby_vminsn_type = 234;
 pub const YARVINSN_zjit_opt_not: ruby_vminsn_type = 235;
-pub const YARVINSN_zjit_objtostring: ruby_vminsn_type = 236;
-pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 237;
+pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 236;
 pub type ruby_vminsn_type = u32;
 pub type rb_iseq_callback = ::std::option::Option<
     unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
