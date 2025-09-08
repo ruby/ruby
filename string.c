@@ -1006,6 +1006,8 @@ str_alloc_embed(VALUE klass, size_t capa)
     NEWOBJ_OF(str, struct RString, klass,
             T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size, 0);
 
+    str->len = 0;
+
     return (VALUE)str;
 }
 
@@ -1014,6 +1016,10 @@ str_alloc_heap(VALUE klass)
 {
     NEWOBJ_OF(str, struct RString, klass,
             T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), sizeof(struct RString), 0);
+
+    str->len = 0;
+    str->as.heap.aux.capa = 0;
+    str->as.heap.ptr = NULL;
 
     return (VALUE)str;
 }
@@ -1866,6 +1872,8 @@ ec_str_alloc_embed(struct rb_execution_context_struct *ec, VALUE klass, size_t c
     NEWOBJ_OF(str, struct RString, klass,
             T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size, ec);
 
+    str->len = 0;
+
     return (VALUE)str;
 }
 
@@ -1874,6 +1882,9 @@ ec_str_alloc_heap(struct rb_execution_context_struct *ec, VALUE klass)
 {
     NEWOBJ_OF(str, struct RString, klass,
             T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), sizeof(struct RString), ec);
+
+    str->as.heap.aux.capa = 0;
+    str->as.heap.ptr = NULL;
 
     return (VALUE)str;
 }
