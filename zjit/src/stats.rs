@@ -237,6 +237,21 @@ pub fn exit_counter_ptr(reason: crate::hir::SideExitReason) -> *mut u64 {
     counter_ptr(counter)
 }
 
+/// Primitive called in zjit.rb. Zero out all the counters.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_reset_stats_bang(_ec: EcPtr, _self: VALUE) -> VALUE {
+    let counters = ZJITState::get_counters();
+    let exit_counters = ZJITState::get_exit_counters();
+
+    // Reset all counters to zero
+    *counters = Counters::default();
+
+    // Reset exit counters for YARV instructions
+    exit_counters.as_mut_slice().fill(0);
+
+    Qnil
+}
+
 /// Return a Hash object that contains ZJIT statistics
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> VALUE {

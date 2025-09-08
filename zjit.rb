@@ -29,6 +29,11 @@ class << RubyVM::ZJIT
     Primitive.rb_zjit_stats(target_key)
   end
 
+  # Discard statistics collected for `--zjit-stats`.
+  def reset_stats!
+    Primitive.rb_zjit_reset_stats_bang
+  end
+
   # Get the summary of ZJIT statistics as a String
   def stats_string
     buf = +"***ZJIT: Printing ZJIT statistics on exit***\n"
