@@ -756,7 +756,6 @@ impl Assembler
                 (num_insns..cb.conditional_jump_insns()).for_each(|_| nop(cb));
             }
 
-
             match target {
                 Target::CodePtr(dst_ptr) => {
                     let dst_addr = dst_ptr.as_offset();
