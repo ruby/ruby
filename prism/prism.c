@@ -18570,17 +18570,11 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     call->closing_loc = arguments.closing_loc;
                     call->block = arguments.block;
 
-                    if (arguments.block != NULL) {
-                        call->base.location.end = arguments.block->location.end;
-                    } else if (arguments.closing_loc.start == NULL) {
-                        if (arguments.arguments != NULL) {
-                            call->base.location.end = arguments.arguments->base.location.end;
-                        } else {
-                            call->base.location.end = call->message_loc.end;
-                        }
-                    } else {
-                        call->base.location.end = arguments.closing_loc.end;
+                    const uint8_t *end = pm_arguments_end(&arguments);
+                    if (!end) {
+                        end = call->message_loc.end;
                     }
+                    call->base.location.end = end;
                 }
             } else {
                 // Otherwise, we know the identifier is in the local table. This
