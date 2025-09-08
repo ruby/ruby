@@ -247,9 +247,7 @@ pub extern "C" fn rb_zjit_reset_stats_bang(_ec: EcPtr, _self: VALUE) -> VALUE {
     *counters = Counters::default();
 
     // Reset exit counters for YARV instructions
-    for i in 0..(VM_INSTRUCTION_SIZE as usize) {
-        exit_counters[i] = 0;
-    }
+    exit_counters.as_mut_slice().fill(0);
 
     Qnil
 }
