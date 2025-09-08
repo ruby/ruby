@@ -54,6 +54,9 @@ rb_imemo_tmpbuf_new(void)
     VALUE flags = T_IMEMO | (imemo_tmpbuf << FL_USHIFT);
     NEWOBJ_OF(obj, rb_imemo_tmpbuf_t, 0, flags, sizeof(rb_imemo_tmpbuf_t), NULL);
 
+    obj->ptr = NULL;
+    obj->cnt = 0;
+
     return (VALUE)obj;
 }
 
