@@ -1847,6 +1847,28 @@ class TestZJIT < Test::Unit::TestCase
     }, stats: true
   end
 
+  def test_reset_stats
+    assert_runs 'true', %q{
+      def test = 1
+      100.times { test }
+
+      # Get initial stats and verify they're non-zero
+      initial_stats = RubyVM::ZJIT.stats
+
+      # Reset the stats
+      RubyVM::ZJIT.reset_stats!
+
+      # Get stats after reset
+      reset_stats = RubyVM::ZJIT.stats
+
+      [
+        # After reset, counters should be zero or at least much smaller
+        # (some instructions might execute between reset and reading stats)
+        :zjit_insn_count.then { |s| initial_stats[s] > 0 && reset_stats[s] < initial_stats[s] },
+      ].all?
+    }, stats: true
+  end
+
   def test_zjit_option_uses_array_each_in_ruby
     omit 'ZJIT wrongly compiles Array#each, so it is disabled for now'
     assert_runs '"<internal:array>"', %q{
