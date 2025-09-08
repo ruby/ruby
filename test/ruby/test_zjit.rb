@@ -2094,16 +2094,32 @@ class TestZJIT < Test::Unit::TestCase
         "#{str}"
       end
       test('foo'); test('foo') # profile as string
-    }
+    }, call_threshold: 2
   end
 
   def test_objtostring_rewrite_with_type_guard_exit
-    assert_compiles '"1"', %q{
+    assert_compiles '["foo", "expected"]', %q{
+
+      class String
+        def to_s
+          "bad"
+        end
+      end
+
+      class Integer
+        def to_s
+          "expected"
+        end
+      end
+
+      results = []
+
       def test(str)
         "#{str}"
       end
-      test('foo'); test(1) # profile as string,
-    }
+      results << test('foo'); # profile as string
+      results << test(1)
+    }, call_threshold: 2
   end
 
   def test_string_bytesize_with_guard
