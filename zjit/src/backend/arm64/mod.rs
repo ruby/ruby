@@ -706,70 +706,67 @@ impl Assembler
         /// Emit a conditional jump instruction to a specific target. This is
         /// called when lowering any of the conditional jump instructions.
         fn emit_conditional_jump<const CONDITION: u8>(cb: &mut CodeBlock, target: Target) {
+            fn generate_branch<const CONDITION: u8>(cb: &mut CodeBlock, src_addr: i64, dst_addr: i64) {
+                let num_insns = if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
+                    // If the jump offset fits into the conditional jump as
+                    // an immediate value and it's properly aligned, then we
+                    // can use the b.cond instruction directly. We're safe
+                    // to use as i32 here since we already checked that it
+                    // fits.
+                    let bytes = (dst_addr - src_addr) as i32;
+                    bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
+
+                    // Here we're going to return 1 because we've only
+                    // written out 1 instruction.
+                    1
+                } else if b_offset_fits_bits((dst_addr - (src_addr + 4)) / 4) { // + 4 for bcond
+                    // If the jump offset fits into the unconditional jump as
+                    // an immediate value, we can use inverse b.cond + b.
+                    //
+                    // We're going to write out the inverse condition so
+                    // that if it doesn't match it will skip over the
+                    // instruction used for branching.
+                    bcond(cb, Condition::inverse(CONDITION), 2.into());
+                    b(cb, InstructionOffset::from_bytes((dst_addr - (src_addr + 4)) as i32)); // + 4 for bcond
+
+                    // We've only written out 2 instructions.
+                    2
+                } else {
+                    // Otherwise, we need to load the address into a
+                    // register and use the branch register instruction.
+                    let load_insns: i32 = emit_load_size(dst_addr as u64).into();
+
+                    // We're going to write out the inverse condition so
+                    // that if it doesn't match it will skip over the
+                    // instructions used for branching.
+                    bcond(cb, Condition::inverse(CONDITION), (load_insns + 2).into());
+                    emit_load_value(cb, Assembler::SCRATCH0, dst_addr as u64);
+                    br(cb, Assembler::SCRATCH0);
+
+                    // Here we'll return the number of instructions that it
+                    // took to write out the destination address + 1 for the
+                    // b.cond and 1 for the br.
+                    load_insns + 2
+                };
+
+                // We need to make sure we have at least 6 instructions for
+                // every kind of jump for invalidation purposes, so we're
+                // going to write out padding nop instructions here.
+                assert!(num_insns <= cb.conditional_jump_insns());
+                (num_insns..cb.conditional_jump_insns()).for_each(|_| nop(cb));
+            }
+
             match target {
                 Target::CodePtr(dst_ptr) => {
                     let dst_addr = dst_ptr.as_offset();
                     let src_addr = cb.get_write_ptr().as_offset();
-
-                    let num_insns = if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
-                        // If the jump offset fits into the conditional jump as
-                        // an immediate value and it's properly aligned, then we
-                        // can use the b.cond instruction directly. We're safe
-                        // to use as i32 here since we already checked that it
-                        // fits.
-                        let bytes = (dst_addr - src_addr) as i32;
-                        bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
-
-                        // Here we're going to return 1 because we've only
-                        // written out 1 instruction.
-                        1
-                    } else if b_offset_fits_bits((dst_addr - (src_addr + 4)) / 4) { // + 4 for bcond
-                        // If the jump offset fits into the unconditional jump as
-                        // an immediate value, we can use inverse b.cond + b.
-                        //
-                        // We're going to write out the inverse condition so
-                        // that if it doesn't match it will skip over the
-                        // instruction used for branching.
-                        bcond(cb, Condition::inverse(CONDITION), 2.into());
-                        b(cb, InstructionOffset::from_bytes((dst_addr - (src_addr + 4)) as i32)); // + 4 for bcond
-
-                        // We've only written out 2 instructions.
-                        2
-                    } else {
-                        // Otherwise, we need to load the address into a
-                        // register and use the branch register instruction.
-                        let dst_addr = (dst_ptr.raw_ptr(cb) as usize).as_u64();
-                        let load_insns: i32 = emit_load_size(dst_addr).into();
-
-                        // We're going to write out the inverse condition so
-                        // that if it doesn't match it will skip over the
-                        // instructions used for branching.
-                        bcond(cb, Condition::inverse(CONDITION), (load_insns + 2).into());
-                        emit_load_value(cb, Assembler::SCRATCH0, dst_addr);
-                        br(cb, Assembler::SCRATCH0);
-
-                        // Here we'll return the number of instructions that it
-                        // took to write out the destination address + 1 for the
-                        // b.cond and 1 for the br.
-                        load_insns + 2
-                    };
-
-                    if let Target::CodePtr(_) = target {
-                        // We need to make sure we have at least 6 instructions for
-                        // every kind of jump for invalidation purposes, so we're
-                        // going to write out padding nop instructions here.
-                        assert!(num_insns <= cb.conditional_jump_insns());
-                        for _ in num_insns..cb.conditional_jump_insns() { nop(cb); }
-                    }
+                    generate_branch::<CONDITION>(cb, src_addr, dst_addr);
                 },
                 Target::Label(label_idx) => {
-                    // Here we're going to save enough space for ourselves and
-                    // then come back and write the instruction once we know the
-                    // offset. We're going to assume we can fit into a single
-                    // b.cond instruction. It will panic otherwise.
-                    cb.label_ref(label_idx, 4, |cb, src_addr, dst_addr| {
-                        let bytes: i32 = (dst_addr - (src_addr - 4)).try_into().unwrap();
-                        bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
+                    // We save `cb.conditional_jump_insns` number of bytes since we may use up to that amount
+                    // `generate_branch` will pad the emitted branch instructions with `nop`s for each unused byte.
+                    cb.label_ref(label_idx, (cb.conditional_jump_insns() * 4) as usize, |cb, src_addr, dst_addr| {
+                        generate_branch::<CONDITION>(cb, src_addr - (cb.conditional_jump_insns() * 4) as i64, dst_addr);
                     });
                 },
                 Target::SideExit { .. } => {
@@ -2040,6 +2037,32 @@ mod tests {
             0x4: mov x1, #0
             0x8: csel x1, x0, x1, lt
         "});
+    }
+
+    #[test]
+    fn test_label_branch_generate_bounds() {
+        // The immediate in a conditional branch is a 19 bit unsigned integer
+        // which has a max value of 2^18 - 1.
+        const IMMEDIATE_MAX_VALUE: usize = 2usize.pow(18) - 1;
+
+        // `IMMEDIATE_MAX_VALUE` number of dummy instructions will be generated
+        // plus a compare, a jump instruction, and a label.
+        const MEMORY_REQUIRED: usize = (IMMEDIATE_MAX_VALUE + 8)*4;
+
+        let mut asm = Assembler::new();
+        let mut cb = CodeBlock::new_dummy_sized(MEMORY_REQUIRED);
+
+        let far_label = asm.new_label("far");
+
+        asm.cmp(Opnd::Reg(X0_REG), Opnd::UImm(1));
+        asm.je(far_label.clone());
+
+        (0..IMMEDIATE_MAX_VALUE).for_each(|_| {
+            asm.mov(Opnd::Reg(TEMP_REGS[0]), Opnd::Reg(TEMP_REGS[2]));
+        });
+
+        asm.write_label(far_label.clone());
+        asm.compile_with_num_regs(&mut cb, 1);
     }
 
     #[test]
