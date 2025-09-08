@@ -682,6 +682,8 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool namespaceable)
 
     NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
 
+    obj->object_id = 0;
+
     memset(RCLASS_EXT_PRIME(obj), 0, sizeof(rb_classext_t));
 
     /* ZALLOC
