@@ -102,6 +102,8 @@ make_counters! {
         exit_obj_to_string_fallback,
         exit_interrupt,
         exit_optional_arguments,
+        exit_block_param_proxy_modified,
+        exit_block_param_proxy_not_iseq_or_ifunc,
     }
 
     // unhanded_call_: Unhandled call types
@@ -218,21 +220,23 @@ pub fn exit_counter_ptr(reason: crate::hir::SideExitReason) -> *mut u64 {
     use crate::hir::SideExitReason::*;
     use crate::stats::Counter::*;
     let counter = match reason {
-        UnknownNewarraySend(_)    => exit_unknown_newarray_send,
-        UnhandledCallType(_)      => exit_unhandled_call_type,
-        UnknownSpecialVariable(_) => exit_unknown_special_variable,
-        UnhandledHIRInsn(_)       => exit_unhandled_hir_insn,
-        UnhandledYARVInsn(_)      => exit_unhandled_yarv_insn,
-        FixnumAddOverflow         => exit_fixnum_add_overflow,
-        FixnumSubOverflow         => exit_fixnum_sub_overflow,
-        FixnumMultOverflow        => exit_fixnum_mult_overflow,
-        GuardType(_)              => exit_guard_type_failure,
-        GuardBitEquals(_)         => exit_guard_bit_equals_failure,
-        GuardShape(_)             => exit_guard_shape_failure,
-        PatchPoint(_)             => exit_patchpoint,
-        CalleeSideExit            => exit_callee_side_exit,
-        ObjToStringFallback       => exit_obj_to_string_fallback,
-        Interrupt                 => exit_interrupt,
+        UnknownNewarraySend(_)        => exit_unknown_newarray_send,
+        UnhandledCallType(_)          => exit_unhandled_call_type,
+        UnknownSpecialVariable(_)     => exit_unknown_special_variable,
+        UnhandledHIRInsn(_)           => exit_unhandled_hir_insn,
+        UnhandledYARVInsn(_)          => exit_unhandled_yarv_insn,
+        FixnumAddOverflow             => exit_fixnum_add_overflow,
+        FixnumSubOverflow             => exit_fixnum_sub_overflow,
+        FixnumMultOverflow            => exit_fixnum_mult_overflow,
+        GuardType(_)                  => exit_guard_type_failure,
+        GuardBitEquals(_)             => exit_guard_bit_equals_failure,
+        GuardShape(_)                 => exit_guard_shape_failure,
+        PatchPoint(_)                 => exit_patchpoint,
+        CalleeSideExit                => exit_callee_side_exit,
+        ObjToStringFallback           => exit_obj_to_string_fallback,
+        Interrupt                     => exit_interrupt,
+        BlockParamProxyModified       => exit_block_param_proxy_modified,
+        BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
     };
     counter_ptr(counter)
 }

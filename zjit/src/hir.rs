@@ -461,6 +461,8 @@ pub enum SideExitReason {
     CalleeSideExit,
     ObjToStringFallback,
     Interrupt,
+    BlockParamProxyModified,
+    BlockParamProxyNotIseqOrIfunc,
 }
 
 impl std::fmt::Display for SideExitReason {
@@ -554,6 +556,9 @@ pub enum Insn {
     GetLocal { level: u32, ep_offset: u32 },
     /// Set a local variable in a higher scope or the heap
     SetLocal { level: u32, ep_offset: u32, val: InsnId },
+    /// Get a special singleton instance `rb_block_param_proxy` if the block
+    /// handler for the EP specified by `level` is an ISEQ or an ifunc.
+    GetBlockParamProxy { level: u32, state: InsnId },
     GetSpecialSymbol { symbol_type: SpecialBackrefSymbol, state: InsnId },
     GetSpecialNumber { nth: u64, state: InsnId },
 
@@ -896,6 +901,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy()),
             Insn::GetLocal { level, ep_offset } => write!(f, "GetLocal l{level}, EP@{ep_offset}"),
             Insn::SetLocal { val, level, ep_offset } => write!(f, "SetLocal l{level}, EP@{ep_offset}, {val}"),
+            Insn::GetBlockParamProxy { level, .. } => write!(f, "GetBlockParamProxy l{level}"),
             Insn::GetSpecialSymbol { symbol_type, .. } => write!(f, "GetSpecialSymbol {symbol_type:?}"),
             Insn::GetSpecialNumber { nth, .. } => write!(f, "GetSpecialNumber {nth}"),
             Insn::ToArray { val, .. } => write!(f, "ToArray {val}"),
@@ -1356,6 +1362,7 @@ impl Function {
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
             &NewRangeFixnum { low, high, flag, state } => NewRangeFixnum { low: find!(low), high: find!(high), flag, state: find!(state) },
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
+            &GetBlockParamProxy { level, state } => GetBlockParamProxy { level, state: find!(state) },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
             &LoadIvarEmbedded { self_val, id, index } => LoadIvarEmbedded { self_val: find!(self_val), id, index },
@@ -1466,6 +1473,7 @@ impl Function {
             Insn::ObjToString { .. } => types::BasicObject,
             Insn::AnyToString { .. } => types::String,
             Insn::GetLocal { .. } => types::BasicObject,
+            Insn::GetBlockParamProxy { .. } => types::BasicObject,
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
@@ -2278,6 +2286,7 @@ impl Function {
             | &Insn::LoadIvarExtended { self_val, .. } => {
                 worklist.push_back(self_val);
             }
+            &Insn::GetBlockParamProxy { state, .. } |
             &Insn::GetGlobal { state, .. } |
             &Insn::GetSpecialSymbol { state, .. } |
             &Insn::GetSpecialNumber { state, .. } |
@@ -3443,6 +3452,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let level = get_arg(pc, 1).as_u32();
                     fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level });
+                }
+                YARVINSN_getblockparamproxy => {
+                    let level = get_arg(pc, 1).as_u32();
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    state.stack_push(fun.push_insn(block, Insn::GetBlockParamProxy { level, state: exit_id }));
                 }
                 YARVINSN_pop => { state.stack_pop()?; }
                 YARVINSN_dup => { state.stack_push(state.stack_top()?); }
@@ -5794,7 +5808,16 @@ mod tests {
           v5:NilClass = Const Value(nil)
           v10:BasicObject = InvokeBuiltin dir_s_open, v0, v1, v2
           PatchPoint NoEPEscape(open)
-          SideExit UnhandledYARVInsn(getblockparamproxy)
+          v16:BasicObject = GetBlockParamProxy l0
+          CheckInterrupts
+          v19:CBool = Test v16
+          IfFalse v19, bb1(v0, v1, v2, v3, v4, v10)
+          PatchPoint NoEPEscape(open)
+          SideExit UnhandledYARVInsn(invokeblock)
+        bb1(v27:BasicObject, v28:BasicObject, v29:BasicObject, v30:BasicObject, v31:BasicObject, v32:BasicObject):
+          PatchPoint NoEPEscape(open)
+          CheckInterrupts
+          Return v32
         ");
     }
 
@@ -7955,6 +7978,19 @@ mod opt_tests {
           v18:Fixnum = CCall size@0x1038, v7
           CheckInterrupts
           Return v18
+        ");
+    }
+
+    #[test]
+    fn test_getblockparamproxy() {
+        eval("
+            def test(&block) = tap(&block)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v6:BasicObject = GetBlockParamProxy l0
+          SideExit UnhandledCallType(BlockArg)
         ");
     }
 
