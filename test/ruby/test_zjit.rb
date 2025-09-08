@@ -2098,27 +2098,35 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_objtostring_rewrite_with_type_guard_exit
-    assert_compiles '["foo", "expected"]', %q{
-
-      class String
-        def to_s
-          "bad"
-        end
-      end
-
-      class Integer
-        def to_s
-          "expected"
-        end
-      end
-
-      results = []
-
+    assert_compiles '"1"', %q{
       def test(str)
         "#{str}"
       end
-      results << test('foo'); # profile as string
-      results << test(1)
+
+      test('foo') # profile as string
+      test(1)
+    }, call_threshold: 2
+  end
+
+  def test_objtostring_rewrite_with_type_guard_not
+    assert_compiles '"[1, 2, 3]"', %q{
+      def test(str)
+        "#{str}"
+      end
+
+      test([1,2,3]); # profile as nonstring
+      test([1,2,3]);
+    }, call_threshold: 2
+  end
+
+  def test_objtostring_rewrite_with_type_guard_not_exit
+    assert_compiles '"foo"', %q{
+      def test(str)
+        "#{str}"
+      end
+
+      test([1,2,3]); # profiles as nonstring
+      test('foo');
     }, call_threshold: 2
   end
 

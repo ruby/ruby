@@ -1393,7 +1393,13 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
 }
 
 fn gen_guard_type_not(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard_type: Type, state: &FrameState) -> lir::Opnd {
-    // TODO: implement
+    if guard_type.is_subtype(types::String) {
+        let tag = asm.and(val, Opnd::UImm(RUBY_T_MASK as u64));
+        asm.cmp(tag, Opnd::UImm(RUBY_T_STRING as u64));
+        asm.je(side_exit(jit, state, GuardType(guard_type)));
+    } else {
+        unimplemented!("unsupported type: {guard_type}");
+    }
     val
 }
 

@@ -1435,7 +1435,7 @@ impl Function {
             Insn::ObjectAlloc { .. } => types::HeapObject,
             Insn::CCall { return_type, .. } => *return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
-            Insn::GuardTypeNot { val, guard_type, .. } => types::BasicObject,
+            Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_value(*expected)),
             Insn::GuardShape { val, .. } => self.type_of(*val),
             Insn::FixnumAdd  { .. } => types::Fixnum,
