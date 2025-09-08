@@ -695,6 +695,11 @@ ary_alloc_heap(VALUE klass)
     NEWOBJ_OF(ary, struct RArray, klass,
                      T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
                      sizeof(struct RArray), 0);
+
+    ary->as.heap.len = 0;
+    ary->as.heap.aux.capa = 0;
+    ary->as.heap.ptr = NULL;
+
     return (VALUE)ary;
 }
 
@@ -808,6 +813,11 @@ ec_ary_alloc_heap(rb_execution_context_t *ec, VALUE klass)
     NEWOBJ_OF(ary, struct RArray, klass,
             T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
             sizeof(struct RArray), ec);
+
+    ary->as.heap.len = 0;
+    ary->as.heap.aux.capa = 0;
+    ary->as.heap.ptr = NULL;
+
     return (VALUE)ary;
 }
 
