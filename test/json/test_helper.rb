@@ -1,5 +1,13 @@
 $LOAD_PATH.unshift(File.expand_path('../../../ext', __FILE__), File.expand_path('../../../lib', __FILE__))
 
+begin
+  require 'simplecov'
+rescue LoadError
+  # Don't fail Ruby's test suite
+else
+  SimpleCov.start
+end
+
 require 'json'
 require 'test/unit'
 
