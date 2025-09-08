@@ -5116,24 +5116,26 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    match?(pattern, offset = 0) -> true or false
  *
- *  Returns +true+ or +false+ based on whether a match is found for +self+ and +pattern+.
+ *  Returns whether a match is found for +self+ and the given arguments;
+ *  does not update {Regexp Global Variables}[rdoc-ref:Regexp@Global+Variables].
  *
- *  Note: does not update Regexp@Global+Variables.
+ *  Computes +regexp+ by converting +pattern+ (if not already a Regexp):
  *
- *  Computes +regexp+ by converting +pattern+ (if not already a Regexp).
  *    regexp = Regexp.new(pattern)
  *
- *  Returns +true+ if <tt>self+.match(regexp)</tt> returns a MatchData object,
+ *  Returns +true+ if <tt>self[offset].match(regexp)</tt> returns a MatchData object,
  *  +false+ otherwise:
  *
  *    'foo'.match?(/o/) # => true
  *    'foo'.match?('o') # => true
  *    'foo'.match?(/x/) # => false
  *
- *  If Integer argument +offset+ is given, the search begins at index +offset+:
+ *  If integer argument +offset+ is given, the search begins at index +offset+:
+ *
  *    'foo'.match?('f', 1) # => false
  *    'foo'.match?('o', 1) # => true
  *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 
 static VALUE
