@@ -635,6 +635,7 @@ class JSONParserTest < Test::Unit::TestCase
   def test_parse_array_custom_non_array_derived_class
     res = parse('[1,2]', :array_class => SubArrayWrapper)
     assert_equal([1,2], res.data)
+    assert_equal(1, res[0])
     assert_equal(SubArrayWrapper, res.class)
     assert res.shifted?
   end
@@ -696,6 +697,7 @@ class JSONParserTest < Test::Unit::TestCase
     def test_parse_object_custom_non_hash_derived_class
       res = parse('{"foo":"bar"}', :object_class => SubOpenStruct)
       assert_equal "bar", res.foo
+      assert_equal "bar", res[:foo]
       assert_equal(SubOpenStruct, res.class)
       assert res.item_set?
     end
