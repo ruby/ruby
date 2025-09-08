@@ -1062,7 +1062,7 @@ typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_
     RBIMPL_NONNULL_ARG(type);
     if (klass) rb_data_object_check(klass);
     bool wb_protected = (type->flags & RUBY_FL_WB_PROTECTED) || !type->function.dmark;
-    return newobj_of(GET_RACTOR(), klass, T_DATA, 0, ((VALUE)type) | IS_TYPED_DATA | typed_flag, (VALUE)datap, wb_protected, size);
+    return newobj_of(GET_RACTOR(), klass, T_DATA | RUBY_TYPED_FL_IS_TYPED_DATA, 0, ((VALUE)type) | typed_flag, (VALUE)datap, wb_protected, size);
 }
 
 VALUE
