@@ -2281,7 +2281,6 @@ fn gen_expandarray(
         jit_guard_known_klass(
             jit,
             asm,
-            comptime_recv.class_of(),
             array_opnd,
             array_opnd.into(),
             comptime_recv,
@@ -3696,7 +3695,6 @@ fn gen_equality_specialized(
         jit_guard_known_klass(
             jit,
             asm,
-            unsafe { rb_cString },
             a_opnd,
             a_opnd.into(),
             comptime_a,
@@ -3722,7 +3720,6 @@ fn gen_equality_specialized(
             jit_guard_known_klass(
                 jit,
                 asm,
-                unsafe { rb_cString },
                 b_opnd,
                 b_opnd.into(),
                 comptime_b,
@@ -3819,7 +3816,6 @@ fn gen_opt_aref(
         jit_guard_known_klass(
             jit,
             asm,
-            unsafe { rb_cArray },
             recv_opnd,
             recv_opnd.into(),
             comptime_recv,
@@ -3859,7 +3855,6 @@ fn gen_opt_aref(
         jit_guard_known_klass(
             jit,
             asm,
-            unsafe { rb_cHash },
             recv_opnd,
             recv_opnd.into(),
             comptime_recv,
@@ -3912,7 +3907,6 @@ fn gen_opt_aset(
         jit_guard_known_klass(
             jit,
             asm,
-            unsafe { rb_cArray },
             recv,
             recv.into(),
             comptime_recv,
@@ -3924,7 +3918,6 @@ fn gen_opt_aset(
         jit_guard_known_klass(
             jit,
             asm,
-            unsafe { rb_cInteger },
             key,
             key.into(),
             comptime_key,
@@ -3957,7 +3950,6 @@ fn gen_opt_aset(
         jit_guard_known_klass(
             jit,
             asm,
-            unsafe { rb_cHash },
             recv,
             recv.into(),
             comptime_recv,
@@ -4916,13 +4908,13 @@ fn gen_jump(
 fn jit_guard_known_klass(
     jit: &mut JITState,
     asm: &mut Assembler,
-    known_klass: VALUE,
     obj_opnd: Opnd,
     insn_opnd: YARVOpnd,
     sample_instance: VALUE,
     max_chain_depth: u8,
     counter: Counter,
 ) {
+    let known_klass = sample_instance.class_of();
     let val_type = asm.ctx.get_opnd_type(insn_opnd);
 
     if val_type.known_class() == Some(known_klass) {
@@ -5028,7 +5020,7 @@ fn jit_guard_known_klass(
             assert_eq!(sample_instance.class_of(), rb_cString, "context says class is exactly ::String")
         };
     } else {
-        assert!(!val_type.is_imm());
+        assert!(!val_type.is_imm(), "{insn_opnd:?} should be a heap object, but was {val_type:?} for {sample_instance:?}");
 
         // Check that the receiver is a heap object
         // Note: if we get here, the class doesn't have immediate instances.
@@ -5672,7 +5664,6 @@ fn jit_rb_float_plus(
         jit_guard_known_klass(
             jit,
             asm,
-            comptime_obj.class_of(),
             obj,
             obj.into(),
             comptime_obj,
@@ -5714,7 +5705,6 @@ fn jit_rb_float_minus(
         jit_guard_known_klass(
             jit,
             asm,
-            comptime_obj.class_of(),
             obj,
             obj.into(),
             comptime_obj,
@@ -5756,7 +5746,6 @@ fn jit_rb_float_mul(
         jit_guard_known_klass(
             jit,
             asm,
-            comptime_obj.class_of(),
             obj,
             obj.into(),
             comptime_obj,
@@ -5798,7 +5787,6 @@ fn jit_rb_float_div(
         jit_guard_known_klass(
             jit,
             asm,
-            comptime_obj.class_of(),
             obj,
             obj.into(),
             comptime_obj,
@@ -6062,7 +6050,6 @@ fn jit_rb_str_getbyte(
         jit_guard_known_klass(
             jit,
             asm,
-            comptime_idx.class_of(),
             idx,
             idx.into(),
             comptime_idx,
@@ -9068,7 +9055,6 @@ fn gen_send_general(
     perf_call!("gen_send_general: ", jit_guard_known_klass(
         jit,
         asm,
-        comptime_recv_klass,
         recv,
         recv_opnd,
         comptime_recv,
@@ -9982,7 +9968,6 @@ fn gen_objtostring(
         jit_guard_known_klass(
             jit,
             asm,
-            comptime_recv.class_of(),
             recv,
             recv.into(),
             comptime_recv,
@@ -9996,7 +9981,6 @@ fn gen_objtostring(
         jit_guard_known_klass(
             jit,
             asm,
-            comptime_recv.class_of(),
             recv,
             recv.into(),
             comptime_recv,
