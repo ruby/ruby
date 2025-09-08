@@ -27,6 +27,30 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_stats_quiet
+    # Test that --zjit-stats=quiet collects stats but doesn't print them
+    script = <<~RUBY
+      def test = 42
+      test
+      test
+      puts RubyVM::ZJIT.stats_enabled?
+    RUBY
+
+    stats_header = "***ZJIT: Printing ZJIT statistics on exit***"
+
+    # With --zjit-stats, stats should be printed to stderr
+    out, err, status = eval_with_jit(script, stats: true)
+    assert_success(out, err, status)
+    assert_includes(err, stats_header)
+    assert_equal("true\n", out)
+
+    # With --zjit-stats=quiet, stats should NOT be printed but still enabled
+    out, err, status = eval_with_jit(script, stats: :quiet)
+    assert_success(out, err, status)
+    refute_includes(err, stats_header)
+    assert_equal("true\n", out)
+  end
+
   def test_enable_through_env
     child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => '1'}
     assert_in_out_err([child_env, '-v'], '') do |stdout, stderr|
@@ -2490,7 +2514,7 @@ class TestZJIT < Test::Unit::TestCase
     if zjit
       args << "--zjit-call-threshold=#{call_threshold}"
       args << "--zjit-num-profiles=#{num_profiles}"
-      args << "--zjit-stats" if stats
+      args << "--zjit-stats#{"=#{stats}" unless stats == true}" if stats
       args << "--zjit-debug" if debug
       if allowed_iseqs
         jitlist = Tempfile.new("jitlist")

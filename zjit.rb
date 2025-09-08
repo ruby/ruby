@@ -8,7 +8,7 @@
 # for which CRuby is built.
 module RubyVM::ZJIT
   # Avoid calling a Ruby method here to avoid interfering with compilation tests
-  if Primitive.rb_zjit_stats_enabled_p
+  if Primitive.rb_zjit_print_stats_p
     at_exit { print_stats }
   end
 end
