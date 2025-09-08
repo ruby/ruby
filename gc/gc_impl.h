@@ -55,7 +55,7 @@ GC_IMPL_FN VALUE rb_gc_impl_stress_get(void *objspace_ptr);
 GC_IMPL_FN VALUE rb_gc_impl_config_get(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_config_set(void *objspace_ptr, VALUE hash);
 // Object allocation
-GC_IMPL_FN VALUE rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size);
+GC_IMPL_FN VALUE rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size);
 GC_IMPL_FN size_t rb_gc_impl_obj_slot_size(VALUE obj);
 GC_IMPL_FN size_t rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size);
 GC_IMPL_FN bool rb_gc_impl_size_allocatable_p(size_t size);
