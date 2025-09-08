@@ -75,6 +75,7 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
         YARVINSN_opt_empty_p => profile_operands(profiler, profile, 1),
         YARVINSN_opt_not   => profile_operands(profiler, profile, 1),
         YARVINSN_getinstancevariable => profile_self(profiler, profile),
+        YARVINSN_objtostring   => profile_operands(profiler, profile, 1),
         YARVINSN_opt_send_without_block => {
             let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
             let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -233,6 +234,10 @@ impl ProfiledType {
 
     pub fn is_fixnum(&self) -> bool {
         self.class == unsafe { rb_cInteger } && self.flags.is_immediate()
+    }
+
+    pub fn is_string(&self) -> bool {
+        self.class == unsafe { rb_cString }
     }
 
     pub fn is_flonum(&self) -> bool {

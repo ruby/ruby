@@ -2088,6 +2088,24 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_objtostring_rewrite_with_type_guard
+    assert_compiles '"foo"', %q{
+      def test(str)
+        "#{str}"
+      end
+      test('foo'); test('foo') # profile as string
+    }
+  end
+
+  def test_objtostring_rewrite_with_type_guard_exit
+    assert_compiles '"1"', %q{
+      def test(str)
+        "#{str}"
+      end
+      test('foo'); test(1) # profile as string,
+    }
+  end
+
   def test_string_bytesize_with_guard
     assert_compiles '5', %q{
       def test(str)

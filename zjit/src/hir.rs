@@ -1791,10 +1791,22 @@ impl Function {
                         self.insn_types[replacement.0] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
-                    Insn::ObjToString { val, .. } => {
+                    Insn::ObjToString { val, state, .. } => {
                         if self.is_a(val, types::String) {
                             // behaves differently from `SendWithoutBlock` with `mid:to_s` because ObjToString should not have a patch point for String to_s being redefined
-                            self.make_equal_to(insn_id, val);
+                            self.make_equal_to(insn_id, val); continue;
+                        }
+
+                        let frame_state = self.frame_state(state);
+                        let Some(recv_type) = self.profiled_type_of_at(val, frame_state.insn_idx) else {
+                            self.push_insn_id(block, insn_id); continue
+                        };
+
+                        if recv_type.is_string() {
+                            let guard = self.push_insn(block, Insn::GuardType { val: val, guard_type: types::String, state: state });
+                            // Infer type so AnyToString can fold off this
+                            self.insn_types[guard.0] = self.infer_type(guard);
+                            self.make_equal_to(insn_id, guard);
                         } else {
                             self.push_insn_id(block, insn_id);
                         }
@@ -3531,8 +3543,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     break;  // Don't enqueue the next block as a successor
                 }
 
-                // These are opt_send_without_block and all the opt_* instructions
-                // specialized to a certain method that could also be serviced
+                // These are opt_send_without_block and all the opt_* instructions specialized to a certain method that could also be serviced
                 // using the general send implementation. The optimizer start from
                 // a general send for all of these later in the pipeline.
                 YARVINSN_opt_nil_p |
@@ -8282,7 +8293,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_objtostring_anytostring_param_profiled() {
+    fn test_optimize_objtostring_anytostring_recv_profiled() {
         eval("
             def test(a)
               \"#{a}\"
@@ -8291,13 +8302,13 @@ mod opt_tests {
         ");
 
         assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:2:
+        fn test@<compiled>:3:
         bb0(v0:BasicObject, v1:BasicObject):
-          v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v6:String = GuardType v1, String
-          v8:StringExact = StringConcat v4, v6
+          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v17:String = GuardType v1, String
+          v11:StringExact = StringConcat v5, v17
           CheckInterrupts
-          Return v8
+          Return v11
         ");
     }
 

@@ -1339,6 +1339,10 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         // for a known VALUE, which with_num_bits() does not support.
         asm.cmp(val.with_num_bits(8), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
         asm.jne(side_exit(jit, state, GuardType(guard_type)));
+    } else if guard_type.is_subtype(types::String) {
+        let tag = asm.and(val, Opnd::UImm(RUBY_T_MASK as u64));
+        asm.cmp(tag, Opnd::UImm(RUBY_T_STRING as u64));
+        asm.jne(side_exit(jit, state, GuardType(guard_type)));
     } else if guard_type.is_subtype(types::NilClass) {
         asm.cmp(val, Qnil.into());
         asm.jne(side_exit(jit, state, GuardType(guard_type)));
