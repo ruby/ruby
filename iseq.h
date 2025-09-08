@@ -175,7 +175,12 @@ ISEQ_COMPILE_DATA_CLEAR(rb_iseq_t *iseq)
 static inline rb_iseq_t *
 iseq_imemo_alloc(void)
 {
-    return IMEMO_NEW(rb_iseq_t, imemo_iseq, 0);
+    rb_iseq_t *iseq = IMEMO_NEW(rb_iseq_t, imemo_iseq, 0);
+
+    // Clear out the whole iseq except for the flags.
+    memset((char *)iseq + sizeof(VALUE), 0, sizeof(rb_iseq_t) - sizeof(VALUE));
+
+    return iseq;
 }
 
 VALUE rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt);
