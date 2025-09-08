@@ -89,7 +89,13 @@ class TestGemCommandManager < Gem::TestCase
       actual_message = e.message
     end
 
-    assert_equal message, actual_message
+    assert_equal message, actual_message, proc {|msg|
+      msg + {
+         unknown_command: e.unknown_command,
+        spell_checker: e.spell_checker,
+        corrections: e.corrections,
+      }.pretty_inspect
+    }
   end
 
   def test_run_interrupt
