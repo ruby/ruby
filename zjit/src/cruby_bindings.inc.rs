@@ -311,8 +311,6 @@ pub type ruby_vm_throw_flags = u32;
 pub struct iseq_inline_constant_cache_entry {
     pub flags: VALUE,
     pub value: VALUE,
-    pub _unused1: VALUE,
-    pub _unused2: VALUE,
     pub ic_cref: *const rb_cref_t,
 }
 #[repr(C)]
