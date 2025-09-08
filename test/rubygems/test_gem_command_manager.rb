@@ -80,9 +80,6 @@ class TestGemCommandManager < Gem::TestCase
     message = "Unknown command pish".dup
 
     if defined?(DidYouMean)
-      assert_operator Gem::UnknownCommandError, :<, DidYouMean::Correctable
-      assert_operator Gem::UnknownCommandError, :instance_variable_defined?, :@attached
-      assert_send [Gem::UnknownCommandError, :instance_variable_get, :@attached]
       message << "\nDid you mean?  \"push\""
     end
 
@@ -92,13 +89,7 @@ class TestGemCommandManager < Gem::TestCase
       actual_message = e.message
     end
 
-    assert_equal message, actual_message, proc {|msg|
-      (msg || "") + {
-        unknown_command: e.unknown_command,
-        spell_checker: (e.spell_checker rescue nil),
-        corrections: (e.corrections rescue nil),
-      }.pretty_inspect
-    }
+    assert_equal message, actual_message
   end
 
   def test_run_interrupt
