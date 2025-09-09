@@ -568,8 +568,8 @@ fn gen_get_block_param_proxy(jit: &JITState, asm: &mut Assembler, level: u32, st
     asm.test(block_handler, 0x1.into());
     asm.jz(side_exit(jit, state, SideExitReason::BlockParamProxyNotIseqOrIfunc));
 
-    // Return the rb_block_param_proxy instance
-    Opnd::const_ptr(unsafe { rb_block_param_proxy.0 } as *const u8)
+    // Return the rb_block_param_proxy instance (GC root, so put as a number to avoid unnecessary GC tracing)
+    unsafe { rb_block_param_proxy }.as_u64().into()
 }
 
 fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_inline_constant_cache, state: &FrameState) -> Opnd {
