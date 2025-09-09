@@ -815,29 +815,30 @@ static Bigint *
 pow5mult(Bigint *b, int k)
 {
     Bigint *b1, *p5, *p51;
-    Bigint *p5tmp;
     int i;
     static const int p05[3] = { 5, 25, 125 };
 
     if ((i = k & 3) != 0)
         b = multadd(b, p05[i-1], 0);
+#define b_cache(var, addr, new_expr) \
+    if ((var = addr) != 0) {} else { \
+        Bigint *tmp = 0; \
+        ACQUIRE_DTOA_LOCK(1); \
+        if (!(var = addr) && (var = (new_expr)) != 0) { \
+            var->next = 0; \
+            tmp = ATOMIC_PTR_CAS(addr, NULL, var); \
+        } \
+        FREE_DTOA_LOCK(1); \
+        if (UNLIKELY(tmp)) { \
+            Bfree(var); \
+            var = tmp; \
+        } \
+    }
 
     if (!(k >>= 2))
         return b;
-    if (!(p5 = p5s)) {
-        /* first time */
-        ACQUIRE_DTOA_LOCK(1);
-        if (!(p5 = p5s)) {
-            p5 = i2b(625);
-            p5->next = 0;
-            p5tmp = ATOMIC_PTR_CAS(p5s, NULL, p5);
-            if (UNLIKELY(p5tmp)) {
-                Bfree(p5);
-                p5 = p5tmp;
-            }
-        }
-        FREE_DTOA_LOCK(1);
-    }
+    /* first time */
+    b_cache(p5, p5s, i2b(625));
     for (;;) {
         if (k & 1) {
             b1 = mult(b, p5);
@@ -846,19 +847,7 @@ pow5mult(Bigint *b, int k)
         }
         if (!(k >>= 1))
             break;
-        if (!(p51 = p5->next)) {
-            ACQUIRE_DTOA_LOCK(1);
-            if (!(p51 = p5->next)) {
-                p51 = mult(p5,p5);
-                p51->next = 0;
-                p5tmp = ATOMIC_PTR_CAS(p5->next, NULL, p51);
-                if (UNLIKELY(p5tmp)) {
-                    Bfree(p51);
-                    p51 = p5tmp;
-                }
-            }
-            FREE_DTOA_LOCK(1);
-        }
+        b_cache(p51, p5->next, mult(p5, p5));
         p5 = p51;
     }
     return b;
