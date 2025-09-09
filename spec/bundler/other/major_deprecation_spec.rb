@@ -735,4 +735,16 @@ RSpec.describe "major deprecations" do
       end
     end
   end
+
+  context " bundle gem --ext parameter with no value" do
+    it "prints error when used before gem name" do
+      bundle "gem --ext foo", raise_on_error: false
+      expect(err).to include "Extensions can now be generated using C or Rust, so `--ext` with no arguments has been removed. Please select a language, e.g. `--ext=rust` to generate a Rust extension."
+    end
+
+    it "prints error when used after gem name" do
+      bundle "gem foo --ext", raise_on_error: false
+      expect(err).to include "Extensions can now be generated using C or Rust, so `--ext` with no arguments has been removed. Please select a language, e.g. `--ext=rust` to generate a Rust extension."
+    end
+  end
 end
