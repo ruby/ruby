@@ -162,6 +162,12 @@ jobs:
           TESTS: ${{ matrix.tests }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
+      - uses: ./.github/actions/slack
+        with:
+          label: ${{ matrix.test_task }} ${{ matrix.configure }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}
+
   result:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
