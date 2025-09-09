@@ -711,7 +711,7 @@ RSpec.describe "major deprecations" do
     pending "fails with a helpful message", bundler: "4"
   end
 
-  describe "deprecating rubocop" do
+  describe "removing rubocop" do
     before do
       global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false",
                     "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__CHANGELOG" => "false"
@@ -722,9 +722,9 @@ RSpec.describe "major deprecations" do
         bundle "gem my_new_gem --rubocop", raise_on_error: false
       end
 
-      it "prints a deprecation warning" do
-        expect(deprecations).to include \
-          "--rubocop is deprecated, use --linter=rubocop"
+      it "prints an error" do
+        expect(err).to include \
+          "--rubocop has been removed, use --linter=rubocop"
       end
     end
 
@@ -733,31 +733,9 @@ RSpec.describe "major deprecations" do
         bundle "gem my_new_gem --no-rubocop", raise_on_error: false
       end
 
-      it "prints a deprecation warning" do
-        expect(deprecations).to include \
-          "--no-rubocop is deprecated, use --no-linter"
-      end
-    end
-
-    context "bundle gem with gem.rubocop set to true" do
-      before do
-        bundle "gem my_new_gem", env: { "BUNDLE_GEM__RUBOCOP" => "true" }, raise_on_error: false
-      end
-
-      it "prints a deprecation warning" do
-        expect(deprecations).to include \
-          "config gem.rubocop is deprecated; we've updated your config to use gem.linter instead"
-      end
-    end
-
-    context "bundle gem with gem.rubocop set to false" do
-      before do
-        bundle "gem my_new_gem", env: { "BUNDLE_GEM__RUBOCOP" => "false" }, raise_on_error: false
-      end
-
-      it "prints a deprecation warning" do
-        expect(deprecations).to include \
-          "config gem.rubocop is deprecated; we've updated your config to use gem.linter instead"
+      it "prints an error" do
+        expect(err).to include \
+          "--no-rubocop has been removed, use --no-linter"
       end
     end
   end
