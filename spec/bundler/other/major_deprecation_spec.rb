@@ -484,53 +484,62 @@ RSpec.describe "major deprecations" do
 
   context "bundle install with multiple sources" do
     before do
-      install_gemfile <<-G
+      install_gemfile <<-G, raise_on_error: false
         source "https://gem.repo3"
         source "https://gem.repo1"
       G
     end
 
-    it "shows a deprecation" do
-      expect(deprecations).to include(
-        "Your Gemfile contains multiple global sources. " \
-        "Using `source` more than once without a block is a security risk, and " \
-        "may result in installing unexpected gems. To resolve this warning, use " \
-        "a block to indicate which gems should come from the secondary source."
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "This Gemfile contains multiple global sources. " \
+        "Each source after the first must include a block to indicate which gems " \
+        "should come from that source"
       )
     end
 
     it "doesn't show lockfile deprecations if there's a lockfile" do
-      bundle "install"
+      lockfile <<~L
+        GEM
+          remote: https://gem.repo3/
+          remote: https://gem.repo1/
+          specs:
 
-      expect(deprecations).to include(
-        "Your Gemfile contains multiple global sources. " \
-        "Using `source` more than once without a block is a security risk, and " \
-        "may result in installing unexpected gems. To resolve this warning, use " \
-        "a block to indicate which gems should come from the secondary source."
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+      bundle "install", raise_on_error: false
+
+      expect(err).to include(
+        "This Gemfile contains multiple global sources. " \
+        "Each source after the first must include a block to indicate which gems " \
+        "should come from that source"
       )
-      expect(deprecations).not_to include(
+      expect(err).not_to include(
         "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. " \
         "Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
       )
       bundle "config set --local frozen true"
-      bundle "install"
+      bundle "install", raise_on_error: false
 
-      expect(deprecations).to include(
-        "Your Gemfile contains multiple global sources. " \
-        "Using `source` more than once without a block is a security risk, and " \
-        "may result in installing unexpected gems. To resolve this warning, use " \
-        "a block to indicate which gems should come from the secondary source."
+      expect(err).to include(
+        "This Gemfile contains multiple global sources. " \
+        "Each source after the first must include a block to indicate which gems " \
+        "should come from that source"
       )
-      expect(deprecations).not_to include(
+      expect(err).not_to include(
         "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. " \
         "Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
       )
     end
-
-    pending "fails with a helpful error", bundler: "4"
   end
 
-  context "bundle install in frozen mode with a lockfile with a single rubygems section with multiple remotes" do
+  context "bundle install with a lockfile with a single rubygems section with multiple remotes" do
     before do
       build_repo3 do
         build_gem "myrack", "0.9.1"
@@ -559,17 +568,13 @@ RSpec.describe "major deprecations" do
         BUNDLED WITH
            #{Bundler::VERSION}
       L
-
-      bundle "config set --local frozen true"
     end
 
-    it "shows a deprecation" do
-      bundle "install"
+    it "shows an error" do
+      bundle "install", raise_on_error: false
 
-      expect(deprecations).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure.")
+      expect(err).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure.")
     end
-
-    pending "fails with a helpful error", bundler: "4"
   end
 
   context "when Bundler.setup is run in a ruby script" do

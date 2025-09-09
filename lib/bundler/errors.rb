@@ -77,11 +77,6 @@ module Bundler
     def mismatch_resolution_instructions
       removable, remote = [@existing, @checksum].partition(&:removable?)
       case removable.size
-      when 0
-        msg = +"Mismatched checksums each have an authoritative source:\n"
-        msg << "  1. #{@existing.sources.reject(&:removable?).map(&:to_s).join(" and ")}\n"
-        msg << "  2. #{@checksum.sources.reject(&:removable?).map(&:to_s).join(" and ")}\n"
-        msg << "You may need to alter your Gemfile sources to resolve this issue.\n"
       when 1
         msg = +"If you trust #{remote.first.sources.first}, to resolve this issue you can:\n"
         msg << removable.first.removal_instructions

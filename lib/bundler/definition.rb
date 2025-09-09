@@ -119,16 +119,12 @@ module Bundler
         end
 
         locked_gem_sources = @originally_locked_sources.select {|s| s.is_a?(Source::Rubygems) }
-        @multisource_lockfile = locked_gem_sources.size == 1 && locked_gem_sources.first.multiple_remotes?
+        multisource_lockfile = locked_gem_sources.size == 1 && locked_gem_sources.first.multiple_remotes?
 
-        if @multisource_lockfile && Bundler.frozen_bundle?
-          unless sources.aggregate_global_source?
-            msg = "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
+        if multisource_lockfile
+          msg = "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
 
-            Bundler::SharedHelpers.major_deprecation 2, msg
-          end
-
-          @sources.merged_gem_lockfile_sections!(locked_gem_sources.first)
+          Bundler::SharedHelpers.feature_removed! msg
         end
       else
         @locked_gems = nil
@@ -765,7 +761,7 @@ module Bundler
     end
 
     def precompute_source_requirements_for_indirect_dependencies?
-      sources.non_global_rubygems_sources.all?(&:dependency_api_available?) && !sources.aggregate_global_source?
+      sources.non_global_rubygems_sources.all?(&:dependency_api_available?)
     end
 
     def current_platform_locked?
@@ -1139,7 +1135,7 @@ module Bundler
     end
 
     def additional_base_requirements_to_prevent_downgrades(resolution_base)
-      return resolution_base unless @locked_gems && !@multisource_lockfile
+      return resolution_base unless @locked_gems
       @originally_locked_specs.each do |locked_spec|
         next if locked_spec.source.is_a?(Source::Path) || locked_spec.source_changed?
 
