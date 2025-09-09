@@ -669,13 +669,11 @@ RSpec.describe "major deprecations" do
     end
 
     context "with --install" do
-      it "shows a deprecation warning" do
-        bundle "remove myrack --install"
+      it "fails with a helpful message" do
+        bundle "remove myrack --install", raise_on_error: false
 
-        expect(err).to include "[DEPRECATED] The `--install` flag has been deprecated. `bundle install` is triggered by default."
+        expect(err).to include "The `--install` flag has been removed. `bundle install` is triggered by default."
       end
-
-      pending "fails with a helpful message", bundler: "4"
     end
   end
 

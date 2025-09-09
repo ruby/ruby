@@ -187,12 +187,11 @@ module Bundler
     long_desc <<-D
       Removes the given gems from the Gemfile while ensuring that the resulting Gemfile is still valid. If the gem is not found, Bundler prints a error message and if gem could not be removed due to any reason Bundler will display a warning.
     D
-    method_option "install", type: :boolean, banner: "Runs 'bundle install' after removing the gems from the Gemfile"
+    method_option "install", type: :boolean, banner: "Runs 'bundle install' after removing the gems from the Gemfile (removed)"
     def remove(*gems)
       if ARGV.include?("--install")
-        message = "The `--install` flag has been deprecated. `bundle install` is triggered by default."
         removed_message = "The `--install` flag has been removed. `bundle install` is triggered by default."
-        SharedHelpers.major_deprecation(2, message, removed_message: removed_message)
+        raise InvalidOption, removed_message
       end
 
       require_relative "cli/remove"
