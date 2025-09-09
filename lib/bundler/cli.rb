@@ -428,7 +428,8 @@ module Bundler
         removed_message =
           "The `--path` flag has been removed because its semantics were unclear. " \
           "Use `bundle config cache_path` to configure the path of your cache of gems, " \
-          "and `bundle config path` to configure the path where your gems are installed."
+          "and `bundle config path` to configure the path where your gems are installed, " \
+          "and stop using this flag"
         SharedHelpers.major_deprecation 2, message, removed_message: removed_message
       end
 
