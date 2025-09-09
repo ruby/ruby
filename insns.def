@@ -939,6 +939,7 @@ objtostring
 (VALUE recv)
 (VALUE val)
 // attr bool leaf = false;
+// attr bool zjit_profile = true;
 {
     val = vm_objtostring(GET_ISEQ(), recv, cd);
 

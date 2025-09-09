@@ -455,6 +455,7 @@ pub enum SideExitReason {
     FixnumSubOverflow,
     FixnumMultOverflow,
     GuardType(Type),
+    GuardTypeNot(Type),
     GuardShape(ShapeId),
     GuardBitEquals(VALUE),
     PatchPoint(Invariant),
@@ -474,6 +475,7 @@ impl std::fmt::Display for SideExitReason {
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_PACK_BUFFER) => write!(f, "UnknownNewarraySend(PACK_BUFFER)"),
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_INCLUDE_P) => write!(f, "UnknownNewarraySend(INCLUDE_P)"),
             SideExitReason::GuardType(guard_type) => write!(f, "GuardType({guard_type})"),
+            SideExitReason::GuardTypeNot(guard_type) => write!(f, "GuardTypeNot({guard_type})"),
             SideExitReason::GuardBitEquals(value) => write!(f, "GuardBitEquals({})", value.print(&PtrPrintMap::identity())),
             SideExitReason::PatchPoint(invariant) => write!(f, "PatchPoint({invariant})"),
             _ => write!(f, "{self:?}"),
@@ -623,6 +625,7 @@ pub enum Insn {
 
     /// Side-exit if val doesn't have the expected type.
     GuardType { val: InsnId, guard_type: Type, state: InsnId },
+    GuardTypeNot { val: InsnId, guard_type: Type, state: InsnId },
     /// Side-exit if val is not the expected VALUE.
     GuardBitEquals { val: InsnId, expected: VALUE, state: InsnId },
     /// Side-exit if val doesn't have the expected shape.
@@ -859,6 +862,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumAnd  { left, right, .. } => { write!(f, "FixnumAnd {left}, {right}") },
             Insn::FixnumOr   { left, right, .. } => { write!(f, "FixnumOr {left}, {right}") },
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
+            Insn::GuardTypeNot { val, guard_type, .. } => { write!(f, "GuardTypeNot {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
             &Insn::GuardShape { val, shape, .. } => { write!(f, "GuardShape {val}, {:p}", self.ptr_map.map_shape(shape)) },
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
@@ -1285,6 +1289,7 @@ impl Function {
             &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
             &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
             &GuardType { val, guard_type, state } => GuardType { val: find!(val), guard_type, state },
+            &GuardTypeNot { val, guard_type, state } => GuardTypeNot { val: find!(val), guard_type, state },
             &GuardBitEquals { val, expected, state } => GuardBitEquals { val: find!(val), expected, state },
             &GuardShape { val, shape, state } => GuardShape { val: find!(val), shape, state },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
@@ -1430,6 +1435,7 @@ impl Function {
             Insn::ObjectAlloc { .. } => types::HeapObject,
             Insn::CCall { return_type, .. } => *return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
+            Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_value(*expected)),
             Insn::GuardShape { val, .. } => self.type_of(*val),
             Insn::FixnumAdd  { .. } => types::Fixnum,
@@ -1546,9 +1552,10 @@ impl Function {
     fn chase_insn(&self, insn: InsnId) -> InsnId {
         let id = self.union_find.borrow().find_const(insn);
         match self.insns[id.0] {
-            Insn::GuardType { val, .. } => self.chase_insn(val),
-            Insn::GuardShape { val, .. } => self.chase_insn(val),
-            Insn::GuardBitEquals { val, .. } => self.chase_insn(val),
+            Insn::GuardType { val, .. }
+            | Insn::GuardTypeNot { val, .. }
+            | Insn::GuardShape { val, .. }
+            | Insn::GuardBitEquals { val, .. } => self.chase_insn(val),
             _ => id,
         }
     }
@@ -1791,12 +1798,26 @@ impl Function {
                         self.insn_types[replacement.0] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
-                    Insn::ObjToString { val, .. } => {
+                    Insn::ObjToString { val, cd, state, .. } => {
                         if self.is_a(val, types::String) {
                             // behaves differently from `SendWithoutBlock` with `mid:to_s` because ObjToString should not have a patch point for String to_s being redefined
-                            self.make_equal_to(insn_id, val);
+                            self.make_equal_to(insn_id, val); continue;
+                        }
+
+                        let frame_state = self.frame_state(state);
+                        let Some(recv_type) = self.profiled_type_of_at(val, frame_state.insn_idx) else {
+                            self.push_insn_id(block, insn_id); continue
+                        };
+
+                        if recv_type.is_string() {
+                            let guard = self.push_insn(block, Insn::GuardType { val: val, guard_type: types::String, state: state });
+                            // Infer type so AnyToString can fold off this
+                            self.insn_types[guard.0] = self.infer_type(guard);
+                            self.make_equal_to(insn_id, guard);
                         } else {
-                            self.push_insn_id(block, insn_id);
+                            self.push_insn(block, Insn::GuardTypeNot { val: val, guard_type: types::String, state: state});
+                            let send_to_s = self.push_insn(block, Insn::SendWithoutBlock { self_val: val, cd: cd, args: vec![], state: state});
+                            self.make_equal_to(insn_id, send_to_s);
                         }
                     }
                     Insn::AnyToString { str, .. } => {
@@ -2193,6 +2214,7 @@ impl Function {
             | &Insn::StringCopy { val, state, .. }
             | &Insn::ObjectAlloc { val, state }
             | &Insn::GuardType { val, state, .. }
+            | &Insn::GuardTypeNot { val, state, .. }
             | &Insn::GuardBitEquals { val, state, .. }
             | &Insn::GuardShape { val, state, .. }
             | &Insn::ToArray { val, state }
@@ -8276,6 +8298,71 @@ mod opt_tests {
           v7:BasicObject = ObjToString v5
           v9:String = AnyToString v5, str: v7
           v11:StringExact = StringConcat v4, v9
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_optimize_objtostring_anytostring_recv_profiled() {
+        eval("
+            def test(a)
+              \"#{a}\"
+            end
+            test('foo'); test('foo')
+        ");
+
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v17:String = GuardType v1, String
+          v11:StringExact = StringConcat v5, v17
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_optimize_objtostring_anytostring_recv_profiled_string_subclass() {
+        eval("
+            class MyString < String; end
+
+            def test(a)
+              \"#{a}\"
+            end
+            foo = MyString.new('foo')
+            test(MyString.new(foo)); test(MyString.new(foo))
+        ");
+
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v17:String = GuardType v1, String
+          v11:StringExact = StringConcat v5, v17
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_optimize_objtostring_profiled_nonstring_falls_back_to_send() {
+        eval("
+            def test(a)
+              \"#{a}\"
+            end
+            test([1,2,3]); test([1,2,3]) # No fast path for array
+        ");
+
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v17:BasicObject = GuardTypeNot v1, String
+          v18:BasicObject = SendWithoutBlock v1, :to_s
+          v9:String = AnyToString v1, str: v18
+          v11:StringExact = StringConcat v5, v9
           CheckInterrupts
           Return v11
         ");
