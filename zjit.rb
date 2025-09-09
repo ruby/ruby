@@ -101,7 +101,7 @@ class << RubyVM::ZJIT
     counters = stats.select { |key, value| key.start_with?(prefix) && value > 0 }
     return if stats.empty?
 
-    counters.transform_keys! { |key| key.to_s.delete_prefix!(prefix) }
+    counters.transform_keys! { |key| key.to_s.delete_prefix(prefix) }
     left_pad = counters.keys.map(&:size).max
     right_pad = counters.values.map { |value| number_with_delimiter(value).size }.max
     total = counters.values.sum

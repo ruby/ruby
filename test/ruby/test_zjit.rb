@@ -2097,6 +2097,61 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_objtostring_profiled_string_fastpath
+    assert_compiles '"foo"', %q{
+      def test(str)
+        "#{str}"
+      end
+      test('foo'); test('foo') # profile as string
+    }, call_threshold: 2
+  end
+
+  def test_objtostring_profiled_string_subclass_fastpath
+    assert_compiles '"foo"', %q{
+      class MyString < String; end
+
+      def test(str)
+        "#{str}"
+      end
+
+      foo = MyString.new("foo")
+      test(foo); test(foo) # still profiles as string
+    }, call_threshold: 2
+  end
+
+  def test_objtostring_profiled_string_fastpath_exits_on_nonstring
+    assert_compiles '"1"', %q{
+      def test(str)
+        "#{str}"
+      end
+
+      test('foo') # profile as string
+      test(1)
+    }, call_threshold: 2
+  end
+
+  def test_objtostring_profiled_nonstring_calls_to_s
+    assert_compiles '"[1, 2, 3]"', %q{
+      def test(str)
+        "#{str}"
+      end
+
+      test([1,2,3]); # profile as nonstring
+      test([1,2,3]);
+    }, call_threshold: 2
+  end
+
+  def test_objtostring_profiled_nonstring_guard_exits_when_string
+    assert_compiles '"foo"', %q{
+      def test(str)
+        "#{str}"
+      end
+
+      test([1,2,3]); # profiles as nonstring
+      test('foo');
+    }, call_threshold: 2
+  end
+
   def test_string_bytesize_with_guard
     assert_compiles '5', %q{
       def test(str)
