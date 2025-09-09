@@ -122,26 +122,4 @@ RSpec.describe "bundle cache with path" do
     expect(err).to be_empty
     expect(bundled_app("vendor/cache/foo-1.0")).to exist
   end
-
-  it "stores the given flag" do
-    build_lib "foo"
-
-    install_gemfile <<-G
-      source "https://gem.repo1"
-      gem "foo", :path => '#{lib_path("foo-1.0")}'
-    G
-
-    bundle "config set cache_all true"
-    bundle :cache
-    build_lib "bar"
-
-    install_gemfile <<-G
-      source "https://gem.repo1"
-      gem "foo", :path => '#{lib_path("foo-1.0")}'
-      gem "bar", :path => '#{lib_path("bar-1.0")}'
-    G
-
-    bundle :cache
-    expect(bundled_app("vendor/cache/bar-1.0")).to exist
-  end
 end
