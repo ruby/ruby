@@ -487,7 +487,6 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_invokebuiltin
-    omit 'Test fails at the moment due to not handling optional parameters'
     assert_compiles '["."]', %q{
       def test = Dir.glob(".")
       test
