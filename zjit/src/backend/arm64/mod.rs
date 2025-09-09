@@ -182,6 +182,8 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
 /// List of registers that can be used for register allocation.
 /// This has the same number of registers for x86_64 and arm64.
 /// SCRATCH0 and SCRATCH1 are excluded.
+/// Note that we allocate param_opnd() out of this, and the first
+/// six registers of this need to agree with C_ARG_OPNDS for now.
 pub const ALLOC_REGS: &[Reg] = &[
     X0_REG,
     X1_REG,
@@ -190,7 +192,6 @@ pub const ALLOC_REGS: &[Reg] = &[
     X4_REG,
     X5_REG,
     X11_REG,
-    X12_REG,
 ];
 
 impl Assembler
@@ -204,6 +205,7 @@ impl Assembler
     const SCRATCH1_REG: Reg = X17_REG;
     const SCRATCH0: A64Opnd = A64Opnd::Reg(Self::SCRATCH0_REG);
     const SCRATCH1: A64Opnd = A64Opnd::Reg(Self::SCRATCH1_REG);
+    pub const SPILL_BASE_REG: Reg = X12_REG;
 
     /// Get the list of registers from which we will allocate on this platform
     pub fn get_alloc_regs() -> Vec<Reg> {
@@ -476,7 +478,7 @@ impl Assembler
                     // Note: the iteration order is reversed to avoid corrupting x0,
                     // which is both the return value and first argument register
                     if !opnds.is_empty() {
-                        let mut args: Vec<(Reg, Opnd)> = vec![];
+                        let mut args: Vec<(Opnd, Opnd)> = vec![];
                         for (idx, opnd) in opnds.iter_mut().enumerate().rev() {
                             // If the value that we're sending is 0, then we can use
                             // the zero register, so in this case we'll just send
@@ -486,7 +488,7 @@ impl Assembler
                                 Opnd::Mem(_) => split_memory_address(asm, *opnd),
                                 _ => *opnd
                             };
-                            args.push((C_ARG_OPNDS[idx].unwrap_reg(), value));
+                            args.push((C_ARG_OPNDS[idx], value));
                         }
                         asm.parallel_mov(args);
                     }
@@ -1144,16 +1146,36 @@ impl Assembler
                         _ => unreachable!()
                     };
                 },
+                Insn::ReserveRegs(_) |
                 Insn::ParallelMov { .. } => unreachable!("{insn:?} should have been lowered at alloc_regs()"),
                 Insn::Mov { dest, src } => {
-                    // This supports the following two kinds of immediates:
-                    //   * The value fits into a single movz instruction
-                    //   * It can be encoded with the special bitmask immediate encoding
-                    // arm64_split() should have split other immediates that require multiple instructions.
-                    match src {
-                        Opnd::UImm(uimm) if *uimm <= 0xffff => {
+                    match (dest, src) {
+                        (Opnd::Reg(_), Opnd::Mem(_)) => {
+                            match src.rm_num_bits() {
+                                64 | 32 => ldur(cb, dest.into(), src.into()),
+                                16 => ldurh(cb, dest.into(), src.into()),
+                                8 => ldurb(cb, dest.into(), src.into()),
+                                num_bits => panic!("unexpected num_bits: {}", num_bits)
+                            }
+                        }
+                        (_, Opnd::UImm(uimm)) if *uimm <= 0xffff => {
                             movz(cb, dest.into(), A64Opnd::new_uimm(*uimm), 0);
                         },
+                        (Opnd::Reg(_), &Opnd::UImm(uimm)) if BitmaskImmediate::try_from(uimm).is_err() => {
+                            emit_load_value(cb, SCRATCH_OPND.into(), uimm);
+                            mov(cb, dest.into(), SCRATCH_OPND.into());
+                        }
+                        (Opnd::Reg(_), &Opnd::Imm(imm)) => {
+                            emit_load_value(cb, SCRATCH_OPND.into(), imm as u64);
+                            mov(cb, dest.into(), SCRATCH_OPND.into());
+                        }
+                        (Opnd::Mem(Mem { num_bits: dest_num_bits, .. }), _) => {
+                            match dest_num_bits {
+                                64 | 32 => stur(cb, src.into(), dest.into()),
+                                16 => sturh(cb, src.into(), dest.into()),
+                                num_bits => panic!("unexpected dest num_bits: {} (src: {:#?}, dest: {:#?})", num_bits, src, dest),
+                            }
+                        }
                         _ => {
                             mov(cb, dest.into(), src.into());
                         }
@@ -1870,10 +1892,12 @@ mod tests {
         // Assert that three instructions were written: ADD, LDUR, and STUR.
         assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: add x0, x21, #0x400
-        0x4: ldur x0, [x0]
-        0x8: stur x0, [x21]
+        0x4: stur x0, [x29, #-8]
+        0x8: ldur x12, [x29, #-8]
+        0xc: ldur x0, [x12]
+        0x10: stur x0, [x21]
         ");
-        assert_snapshot!(cb.hexdump(), @"a0021091000040f8a00200f8");
+        assert_snapshot!(cb.hexdump(), @"a0021091a0831ff8ac835ff8800140f8a00200f8");
     }
 
     #[test]
@@ -1888,10 +1912,12 @@ mod tests {
         assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: mov x0, #0x1001
         0x4: add x0, x21, x0, uxtx
-        0x8: ldur x0, [x0]
-        0xc: stur x0, [x21]
+        0x8: stur x0, [x29, #-8]
+        0xc: ldur x12, [x29, #-8]
+        0x10: ldur x0, [x12]
+        0x14: stur x0, [x21]
         ");
-        assert_snapshot!(cb.hexdump(), @"200082d2a062208b000040f8a00200f8");
+        assert_snapshot!(cb.hexdump(), @"200082d2a062208ba0831ff8ac835ff8800140f8a00200f8");
     }
 
     #[test]
