@@ -54,6 +54,7 @@ jobs:
           - test_task: 'check'
             configure: '--enable-zjit=dev'
             run_opts: '--zjit-call-threshold=1'
+            testopts: '--seed=18140'
             specopts: '-T --zjit-call-threshold=1'
 
           - test_task: 'zjit-check' # zjit-test + quick feedback of test_zjit.rb
