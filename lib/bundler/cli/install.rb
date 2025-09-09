@@ -38,12 +38,6 @@ module Bundler
 
       Bundler::Fetcher.disable_endpoint = options["full-index"]
 
-      if options["binstubs"]
-        Bundler::SharedHelpers.major_deprecation 2,
-          "The --binstubs option will be removed in favor of `bundle binstubs --all`",
-          removed_message: "The --binstubs option have been removed in favor of `bundle binstubs --all`"
-      end
-
       Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.feature_flag.plugins?
 
       # For install we want to enable strict validation
