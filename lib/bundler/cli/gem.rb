@@ -431,7 +431,7 @@ module Bundler
       elsif !Bundler.settings["gem.rubocop"].nil?
         Bundler::SharedHelpers.major_deprecation 2,
           "config gem.rubocop is deprecated; we've updated your config to use gem.linter instead",
-          removed_message: "config gem.rubocop has been removed; we've updated your config to use gem.linter instead"
+          removed_message: "config gem.rubocop has been removed; use gem.linter instead"
         Bundler.settings["gem.rubocop"] ? "rubocop" : false
       end
     end
