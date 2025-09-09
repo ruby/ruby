@@ -584,7 +584,7 @@ pub enum Insn {
     /// Ignoring keyword arguments etc for now
     SendWithoutBlock { self_val: InsnId, cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
     Send { self_val: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
-    InvokeSuper { self_val: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
+    InvokeSuper { cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
     InvokeBlock { cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
 
     /// Optimized ISEQ call
@@ -839,8 +839,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            Insn::InvokeSuper { self_val, blockiseq, args, .. } => {
-                write!(f, "InvokeSuper {self_val}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
+            Insn::InvokeSuper { blockiseq, args, .. } => {
+                write!(f, "InvokeSuper {:p}", self.ptr_map.map_ptr(blockiseq))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1350,8 +1350,7 @@ impl Function {
                 args: find_vec!(args),
                 state,
             },
-            &InvokeSuper { self_val, cd, blockiseq, ref args, state } => InvokeSuper {
-                self_val: find!(self_val),
+            &InvokeSuper { cd, blockiseq, ref args, state } => InvokeSuper {
                 cd,
                 blockiseq,
                 args: find_vec!(args),
@@ -2284,13 +2283,13 @@ impl Function {
             }
             &Insn::Send { self_val, ref args, state, .. }
             | &Insn::SendWithoutBlock { self_val, ref args, state, .. }
-            | &Insn::SendWithoutBlockDirect { self_val, ref args, state, .. }
-            | &Insn::InvokeSuper { self_val, ref args, state, .. } => {
+            | &Insn::SendWithoutBlockDirect { self_val, ref args, state, .. } => {
                 worklist.push_back(self_val);
                 worklist.extend(args);
                 worklist.push_back(state);
             }
-            &Insn::InvokeBuiltin { ref args, state, .. }
+            &Insn::InvokeSuper { ref args, state, .. }
+            | &Insn::InvokeBuiltin { ref args, state, .. }
             | &Insn::InvokeBlock { ref args, state, .. } => {
                 worklist.extend(args);
                 worklist.push_back(state)
@@ -3649,10 +3648,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let args = state.stack_pop_n(argc as usize)?;
-                    let recv = state.stack_pop()?;
+                    let _recv = state.stack_pop()?;
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_ptr();
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let result = fun.push_insn(block, Insn::InvokeSuper { self_val: recv, cd, blockiseq, args, state: exit_id });
+                    let result = fun.push_insn(block, Insn::InvokeSuper { cd, blockiseq, args, state: exit_id });
                     state.stack_push(result);
 
                     if !blockiseq.is_null() {
@@ -5176,7 +5175,7 @@ mod tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:BasicObject = InvokeSuper v0, 0x1000
+          v5:BasicObject = InvokeSuper 0x1000
           CheckInterrupts
           Return v5
         ");
@@ -5190,7 +5189,7 @@ mod tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:BasicObject = InvokeSuper v0, 0x1000
+          v5:BasicObject = InvokeSuper 0x1000
           CheckInterrupts
           Return v5
         ");
