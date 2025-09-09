@@ -699,6 +699,8 @@ i2b(int i)
     return b;
 }
 
+#define Bzero_p(b) (!(b)->x[0] && (b)->wds <= 1)
+
 static Bigint *
 mult(Bigint *a, Bigint *b)
 {
@@ -714,6 +716,13 @@ mult(Bigint *a, Bigint *b)
     ULong z2;
 #endif
 #endif
+
+    if (Bzero_p(a) || Bzero_p(b)) {
+        c = Balloc(0);
+        c->wds = 1;
+        c->x[0] = 0;
+        return c;
+    }
 
     if (a->wds < b->wds) {
         c = a;
@@ -861,6 +870,8 @@ lshift(Bigint *b, int k)
     int i, k1, n, n1;
     Bigint *b1;
     ULong *x, *x1, *xe, z;
+
+    if (!k || Bzero_p(b)) return b;
 
 #ifdef Pack_32
     n = k >> 5;
