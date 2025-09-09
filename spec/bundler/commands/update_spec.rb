@@ -816,7 +816,7 @@ RSpec.describe "bundle update" do
     end
 
     it "should fail loudly" do
-      bundle "install --deployment"
+      bundle "config deployment true"
       bundle "update", all: true, raise_on_error: false
 
       expect(last_command).to be_failure
