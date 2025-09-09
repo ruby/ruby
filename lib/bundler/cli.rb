@@ -24,7 +24,7 @@ module Bundler
     }.freeze
 
     def self.start(*)
-      check_deprecated_ext_option(ARGV) if ARGV.include?("--ext")
+      check_invalid_ext_option(ARGV) if ARGV.include?("--ext")
 
       super
     ensure
@@ -657,18 +657,15 @@ module Bundler
       end
     end
 
-    def self.check_deprecated_ext_option(arguments)
-      # when deprecated version of `--ext` is called
-      # print out deprecation warning and pretend `--ext=c` was provided
-      if deprecated_ext_value?(arguments)
-        message = "Extensions can now be generated using C or Rust, so `--ext` with no arguments has been deprecated. Please select a language, e.g. `--ext=rust` to generate a Rust extension. This gem will now be generated as if `--ext=c` was used."
+    def self.check_invalid_ext_option(arguments)
+      # when invalid version of `--ext` is called
+      if invalid_ext_value?(arguments)
         removed_message = "Extensions can now be generated using C or Rust, so `--ext` with no arguments has been removed. Please select a language, e.g. `--ext=rust` to generate a Rust extension."
-        SharedHelpers.major_deprecation 2, message, removed_message: removed_message
-        arguments[arguments.index("--ext")] = "--ext=c"
+        raise InvalidOption, removed_message
       end
     end
 
-    def self.deprecated_ext_value?(arguments)
+    def self.invalid_ext_value?(arguments)
       index = arguments.index("--ext")
       next_argument = arguments[index + 1]
 
@@ -676,15 +673,15 @@ module Bundler
       # for example `bundle gem hello --ext c`
       return false if EXTENSIONS.include?(next_argument)
 
-      # deprecated call when --ext is called with no value in last position
+      # invalid call when --ext is called with no value in last position
       # for example `bundle gem hello_gem --ext`
       return true if next_argument.nil?
 
-      # deprecated call when --ext is followed by other parameter
+      # invalid call when --ext is followed by other parameter
       # for example `bundle gem --ext --no-ci hello_gem`
       return true if next_argument.start_with?("-")
 
-      # deprecated call when --ext is followed by gem name
+      # invalid call when --ext is followed by gem name
       # for example `bundle gem --ext hello_gem`
       return true if next_argument
 
