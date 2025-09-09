@@ -398,6 +398,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GetGlobal { id, state } => gen_getglobal(jit, asm, *id, &function.frame_state(*state)),
         &Insn::GetLocal { ep_offset, level } => gen_getlocal_with_ep(asm, ep_offset, level),
         &Insn::SetLocal { val, ep_offset, level } => no_output!(gen_setlocal_with_ep(asm, opnd!(val), function.type_of(val), ep_offset, level)),
+        &Insn::GetBlockParamProxy { level, state } => gen_get_block_param_proxy(jit, asm, level, &function.frame_state(state)),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, *ic, &function.frame_state(*state)),
         Insn::SetIvar { self_val, id, val, state: _ } => no_output!(gen_setivar(asm, opnd!(self_val), *id, opnd!(val))),
         Insn::SideExit { state, reason } => no_output!(gen_side_exit(jit, asm, reason, &function.frame_state(*state))),
@@ -546,6 +547,29 @@ fn gen_setlocal_with_ep(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep
         let local_index = c_int::try_from(local_ep_offset).ok().and_then(|idx| idx.checked_mul(-1)).unwrap_or_else(|| panic!("Could not turn {local_ep_offset} into a negative c_int"));
         asm_ccall!(asm, rb_vm_env_write, ep, local_index.into(), val);
     }
+}
+
+fn gen_get_block_param_proxy(jit: &JITState, asm: &mut Assembler, level: u32, state: &FrameState) -> lir::Opnd {
+    // Bail out if the `&block` local variable has been modified
+    let ep = gen_get_ep(asm, level);
+    let flags = Opnd::mem(64, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
+    asm.test(flags, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
+    asm.jnz(side_exit(jit, state, SideExitReason::BlockParamProxyModified));
+
+    // This handles two cases which are nearly identical
+    // Block handler is a tagged pointer. Look at the tag.
+    //   VM_BH_ISEQ_BLOCK_P(): block_handler & 0x03 == 0x01
+    //   VM_BH_IFUNC_P():      block_handler & 0x03 == 0x03
+    // So to check for either of those cases we can use: val & 0x1 == 0x1
+    const _: () = assert!(RUBY_SYMBOL_FLAG & 1 == 0, "guard below rejects symbol block handlers");
+
+    // Bail ouf if the block handler is neither ISEQ nor ifunc
+    let block_handler = asm.load(Opnd::mem(64, ep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
+    asm.test(block_handler, 0x1.into());
+    asm.jz(side_exit(jit, state, SideExitReason::BlockParamProxyNotIseqOrIfunc));
+
+    // Return the rb_block_param_proxy instance (GC root, so put as a number to avoid unnecessary GC tracing)
+    unsafe { rb_block_param_proxy }.as_u64().into()
 }
 
 fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_inline_constant_cache, state: &FrameState) -> Opnd {
@@ -1623,12 +1647,12 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
 }
 
 /// Build a Target::SideExit for non-PatchPoint instructions
-fn side_exit(jit: &mut JITState, state: &FrameState, reason: SideExitReason) -> Target {
+fn side_exit(jit: &JITState, state: &FrameState, reason: SideExitReason) -> Target {
     build_side_exit(jit, state, reason, None)
 }
 
 /// Build a Target::SideExit out of a FrameState
-fn build_side_exit(jit: &mut JITState, state: &FrameState, reason: SideExitReason, label: Option<Label>) -> Target {
+fn build_side_exit(jit: &JITState, state: &FrameState, reason: SideExitReason, label: Option<Label>) -> Target {
     let mut stack = Vec::new();
     for &insn_id in state.stack() {
         stack.push(jit.get_opnd(insn_id));

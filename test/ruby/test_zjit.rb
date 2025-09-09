@@ -308,6 +308,15 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_getblockparamproxy
+    assert_compiles '1', %q{
+      def test(&block)
+        0.then(&block)
+      end
+      test { 1 }
+    }, insns: [:getblockparamproxy]
+  end
+
   def test_call_a_forwardable_method
     assert_runs '[]', %q{
       def test_root = forwardable
