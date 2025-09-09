@@ -516,6 +516,7 @@ Balloc(int k)
 
     x = 1 << k;
     rv = (Bigint *)MALLOC(sizeof(Bigint) + (x-1)*sizeof(ULong));
+    if (!rv) return NULL;
     rv->k = k;
     rv->maxwds = x;
     rv->sign = rv->wds = 0;
@@ -572,6 +573,10 @@ multadd(Bigint *b, int m, int a)   /* multiply by m and add a */
     if (carry) {
         if (wds >= b->maxwds) {
             b1 = Balloc(b->k+1);
+            if (!b1) {
+                Bfree(b);
+                return NULL;
+            }
             Bcopy(b1, b);
             Bfree(b);
             b = b1;
@@ -593,10 +598,12 @@ s2b(const char *s, int nd0, int nd, ULong y9)
     for (k = 0, y = 1; x > y; y <<= 1, k++) ;
 #ifdef Pack_32
     b = Balloc(k);
+    if (!b) return NULL;
     b->x[0] = y9;
     b->wds = 1;
 #else
     b = Balloc(k+1);
+    if (!b) return NULL;
     b->x[0] = y9 & 0xffff;
     b->wds = (b->x[1] = y9 >> 16) ? 2 : 1;
 #endif
@@ -606,13 +613,16 @@ s2b(const char *s, int nd0, int nd, ULong y9)
         s += 9;
         do {
             b = multadd(b, 10, *s++ - '0');
+            if (!b) return NULL;
         } while (++i < nd0);
         s++;
     }
     else
         s += 10;
-    for (; i < nd; i++)
+    for (; i < nd; i++) {
         b = multadd(b, 10, *s++ - '0');
+        if (!b) return NULL;
+    }
     return b;
 }
 
@@ -694,6 +704,7 @@ i2b(int i)
     Bigint *b;
 
     b = Balloc(1);
+    if (!b) return NULL;
     b->x[0] = i;
     b->wds = 1;
     return b;
@@ -719,6 +730,7 @@ mult(Bigint *a, Bigint *b)
 
     if (Bzero_p(a) || Bzero_p(b)) {
         c = Balloc(0);
+        if (!c) return NULL;
         c->wds = 1;
         c->x[0] = 0;
         return c;
@@ -736,6 +748,7 @@ mult(Bigint *a, Bigint *b)
     if (wc > a->maxwds)
         k++;
     c = Balloc(k);
+    if (!c) return NULL;
     for (x = c->x, xa = x + wc; x < xa; x++)
         *x = 0;
     xa = a->x;
@@ -818,8 +831,11 @@ pow5mult(Bigint *b, int k)
     int i;
     static const int p05[3] = { 5, 25, 125 };
 
-    if ((i = k & 3) != 0)
+    if ((i = k & 3) != 0) {
         b = multadd(b, p05[i-1], 0);
+        if (!b) return NULL;
+    }
+
 #define b_cache(var, addr, new_expr) \
     if ((var = addr) != 0) {} else { \
         Bigint *tmp = 0; \
@@ -833,6 +849,10 @@ pow5mult(Bigint *b, int k)
             Bfree(var); \
             var = tmp; \
         } \
+        else if (!var) { \
+            Bfree(b); \
+            return NULL; \
+        } \
     }
 
     if (!(k >>= 2))
@@ -844,6 +864,7 @@ pow5mult(Bigint *b, int k)
             b1 = mult(b, p5);
             Bfree(b);
             b = b1;
+            if (!b) return NULL;
         }
         if (!(k >>= 1))
             break;
@@ -872,6 +893,10 @@ lshift(Bigint *b, int k)
     for (i = b->maxwds; n1 > i; i <<= 1)
         k1++;
     b1 = Balloc(k1);
+    if (!b1) {
+        Bfree(b);
+        return NULL;
+    }
     x1 = b1->x;
     for (i = 0; i < n; i++)
         *x1++ = 0;
@@ -957,6 +982,7 @@ diff(Bigint *a, Bigint *b)
     i = cmp(a,b);
     if (!i) {
         c = Balloc(0);
+        if (!c) return NULL;
         c->wds = 1;
         c->x[0] = 0;
         return c;
@@ -970,6 +996,7 @@ diff(Bigint *a, Bigint *b)
     else
         i = 0;
     c = Balloc(a->k);
+    if (!c) return NULL;
     c->sign = i;
     wa = a->wds;
     xa = a->x;
@@ -1155,6 +1182,7 @@ d2b(double d_, int *e, int *bits)
 #else
     b = Balloc(2);
 #endif
+    if (!b) return NULL;
     x = b->x;
 
     z = d0 & Frac_mask;
@@ -1905,12 +1933,16 @@ undfl:
     /* Put digits into bd: true value = bd * 10^e */
 
     bd0 = s2b(s0, nd0, nd, y);
+    if (!bd0) goto ret;
 
     for (;;) {
         bd = Balloc(bd0->k);
+        if (!bd) goto retfree;
         Bcopy(bd, bd0);
         bb = d2b(dval(rv), &bbe, &bbbits);  /* rv = bb * 2^bbe */
+        if (!bb) goto retfree;
         bs = i2b(1);
+        if (!bs) goto retfree;
 
         if (e >= 0) {
             bb2 = bb5 = 0;
@@ -1967,19 +1999,30 @@ undfl:
         }
         if (bb5 > 0) {
             bs = pow5mult(bs, bb5);
+            if (!bs) goto retfree;
             bb1 = mult(bs, bb);
             Bfree(bb);
             bb = bb1;
+            if (!bb) goto retfree;
         }
-        if (bb2 > 0)
+        if (bb2 > 0) {
             bb = lshift(bb, bb2);
-        if (bd5 > 0)
+            if (!bb) goto retfree;
+        }
+        if (bd5 > 0) {
             bd = pow5mult(bd, bd5);
-        if (bd2 > 0)
+            if (!bd) goto retfree;
+        }
+        if (bd2 > 0) {
             bd = lshift(bd, bd2);
-        if (bs2 > 0)
+            if (!bd) goto retfree;
+        }
+        if (bs2 > 0) {
             bs = lshift(bs, bs2);
+            if (!bs) goto retfree;
+        }
         delta = diff(bb, bd);
+        if (!delta) goto retfree;
         dsign = delta->sign;
         delta->sign = 0;
         i = cmp(delta, bs);
@@ -2012,6 +2055,7 @@ undfl:
 #endif
                         {
                             delta = lshift(delta,Log2P);
+                            if (!delta) goto nomem;
                             if (cmp(delta, bs) <= 0)
                                 adj = -0.5;
                         }
@@ -2101,6 +2145,7 @@ apply_adj:
                 break;
             }
             delta = lshift(delta,Log2P);
+            if (!delta) goto retfree;
             if (cmp(delta, bs) > 0)
                 goto drop_down;
             break;
@@ -2503,6 +2548,7 @@ nrv_alloc(const char *s, char **rve, size_t n)
     char *rv, *t;
 
     t = rv = rv_alloc(n);
+    if (!rv) return NULL;
     while ((*t = *s++) != 0) t++;
     if (rve)
         *rve = t;
@@ -2675,6 +2721,7 @@ dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
 #endif
 
     b = d2b(dval(d), &be, &bbits);
+    if (!b) return NULL;
 #ifdef Sudden_Underflow
     i = (int)(word0(d) >> Exp_shift1 & (Exp_mask>>Exp_shift1));
 #else
@@ -2801,6 +2848,10 @@ dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
             i = 1;
     }
     s = s0 = rv_alloc(i+1);
+    if (!s) {
+        Bfree(b);
+        return NULL;
+    }
 
 #ifdef Honor_FLT_ROUNDS
     if (mode > 1 && rounding != 1)
@@ -2981,6 +3032,7 @@ bump_up:
         b2 += i;
         s2 += i;
         mhi = i2b(1);
+        if (!mhi) goto nomem;
     }
     if (m2 > 0 && s2 > 0) {
         i = m2 < s2 ? m2 : s2;
@@ -2992,19 +3044,28 @@ bump_up:
         if (leftright) {
             if (m5 > 0) {
                 mhi = pow5mult(mhi, m5);
+                if (!mhi) goto nomem;
                 b1 = mult(mhi, b);
                 Bfree(b);
                 b = b1;
+                if (!b) goto nomem;
             }
-            if ((j = b5 - m5) != 0)
+            if ((j = b5 - m5) != 0) {
                 b = pow5mult(b, j);
+                if (!b) goto nomem;
+            }
         }
-        else
+        else {
             b = pow5mult(b, b5);
+            if (!b) goto nomem;
+        }
     }
     S = i2b(1);
-    if (s5 > 0)
+    if (!S) goto nomem;
+    if (s5 > 0) {
         S = pow5mult(S, s5);
+        if (!S) goto nomem;
+    }
 
     /* Check for special case that d is a normalized power of 2. */
 
@@ -3052,16 +3113,23 @@ bump_up:
         m2 += i;
         s2 += i;
     }
-    if (b2 > 0)
+    if (b2 > 0) {
         b = lshift(b, b2);
-    if (s2 > 0)
+        if (!b) goto nomem;
+    }
+    if (s2 > 0) {
         S = lshift(S, s2);
+        if (!S) goto nomem;
+    }
     if (k_check) {
         if (cmp(b,S) < 0) {
             k--;
             b = multadd(b, 10, 0);  /* we botched the k estimate */
-            if (leftright)
+            if (!b) goto nomem;
+            if (leftright) {
                 mhi = multadd(mhi, 10, 0);
+                if (!mhi) goto nomem;
+            }
             ilim = ilim1;
         }
     }
@@ -3078,8 +3146,10 @@ one_digit:
         goto ret;
     }
     if (leftright) {
-        if (m2 > 0)
+        if (m2 > 0) {
             mhi = lshift(mhi, m2);
+            if (!mhi) goto nomem;
+        }
 
         /* Compute mlo -- check for special case
          * that d is a normalized power of 2.
@@ -3088,8 +3158,10 @@ one_digit:
         mlo = mhi;
         if (spec_case) {
             mhi = Balloc(mhi->k);
+            if (!mhi) goto nomem;
             Bcopy(mhi, mlo);
             mhi = lshift(mhi, Log2P);
+            if (!mhi) goto nomem;
         }
 
         for (i = 1;;i++) {
@@ -3099,6 +3171,7 @@ one_digit:
              */
             j = cmp(b, mlo);
             delta = diff(S, mhi);
+            if (!delta) goto nomem;
             j1 = delta->sign ? 1 : cmp(b, delta);
             Bfree(delta);
 #ifndef ROUND_BIASED
@@ -3139,6 +3212,7 @@ one_digit:
 #endif /*Honor_FLT_ROUNDS*/
                 if (j1 > 0) {
                     b = lshift(b, 1);
+                    if (!b) goto nomem;
                     j1 = cmp(b, S);
                     if ((j1 > 0 || (j1 == 0 && (dig & 1))) && dig++ == '9')
                         goto round_9_up;
@@ -3167,11 +3241,16 @@ keep_dig:
             if (i == ilim)
                 break;
             b = multadd(b, 10, 0);
-            if (mlo == mhi)
+            if (!b) goto nomem;
+            if (mlo == mhi) {
                 mlo = mhi = multadd(mhi, 10, 0);
+                if (!mlo) goto nomem;
+            }
             else {
                 mlo = multadd(mlo, 10, 0);
+                if (!mlo) goto nomem;
                 mhi = multadd(mhi, 10, 0);
+                if (!mhi) goto nomem;
             }
         }
     }
@@ -3187,6 +3266,7 @@ keep_dig:
             if (i >= ilim)
                 break;
             b = multadd(b, 10, 0);
+            if (!b) goto nomem;
         }
 
     /* Round off last digit */
@@ -3198,6 +3278,7 @@ keep_dig:
     }
 #endif
     b = lshift(b, 1);
+    if (!b) goto nomem;
     j = cmp(b, S);
     if (j > 0 || (j == 0 && (dig & 1))) {
  roundoff:
@@ -3239,6 +3320,16 @@ ret1:
     if (rve)
         *rve = s;
     return s0;
+  nomem:
+    if (S) Bfree(S);
+    if (mhi) {
+        if (mlo && mlo != mhi)
+            Bfree(mlo);
+        Bfree(mhi);
+    }
+    if (b) Bfree(b);
+    FREE(s0);
+    return NULL;
 }
 
 /*-
@@ -3347,6 +3438,7 @@ hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign, char **rv
 	 */
 	bufsize = (ndigits > 0) ? ndigits : SIGFIGS;
 	s0 = rv_alloc(bufsize+1);
+        if (!s0) return NULL;
 
 	/* Round to the desired number of digits. */
 	if (SIGFIGS > ndigits && ndigits > 0) {
