@@ -209,7 +209,7 @@ module Bundler
 
       If the bundle has already been installed, bundler will tell you so and then exit.
     D
-    method_option "binstubs", type: :string, lazy_default: "bin", banner: "Generate bin stubs for bundled gems to ./bin"
+    method_option "binstubs", type: :string, lazy_default: "bin", banner: "Generate bin stubs for bundled gems to ./bin (removed)"
     method_option "clean", type: :boolean, banner: "Run bundle clean automatically after install (removed)"
     method_option "deployment", type: :boolean, banner: "Install using defaults tuned for deployment environments (removed)"
     method_option "frozen", type: :boolean, banner: "Do not allow the Gemfile.lock to be updated after this install (removed)"
@@ -240,9 +240,8 @@ module Bundler
       remembered_flag_deprecation("deployment", negative: true)
 
       if ARGV.include?("--binstubs")
-        message = "The --binstubs option will be removed in favor of `bundle binstubs --all`"
         removed_message = "The --binstubs option has been removed in favor of `bundle binstubs --all`"
-        SharedHelpers.major_deprecation(2, message, removed_message: removed_message)
+        raise InvalidOption, removed_message
       end
 
       require_relative "cli/install"

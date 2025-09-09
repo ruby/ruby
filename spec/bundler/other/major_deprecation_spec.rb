@@ -398,17 +398,15 @@ RSpec.describe "major deprecations" do
 
   describe "bundle install --binstubs" do
     before do
-      install_gemfile <<-G, binstubs: true
+      install_gemfile <<-G, binstubs: true, raise_on_error: false
         source "https://gem.repo1"
         gem "myrack"
       G
     end
 
-    it "should output a deprecation warning" do
-      expect(deprecations).to include("The --binstubs option will be removed in favor of `bundle binstubs --all`")
+    it "fails with a helpful error" do
+      expect(err).to include("The --binstubs option has been removed in favor of `bundle binstubs --all`")
     end
-
-    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle install with both gems.rb and Gemfile present" do

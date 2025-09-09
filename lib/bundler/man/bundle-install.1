@@ -13,11 +13,6 @@ If a \fBGemfile\.lock\fR does exist, and you have not updated your Gemfile(5), B
 If a \fBGemfile\.lock\fR does exist, and you have updated your Gemfile(5), Bundler will use the dependencies in the \fBGemfile\.lock\fR for all gems that you did not update, but will re\-resolve the dependencies of gems that you did update\. You can find more information about this update process below under \fICONSERVATIVE UPDATING\fR\.
 .SH "OPTIONS"
 .TP
-\fB\-\-binstubs[=BINSTUBS]\fR
-Binstubs are scripts that wrap around executables\. Bundler creates a small Ruby file (a binstub) that loads Bundler, runs the command, and puts it in \fBbin/\fR\. This lets you link the binstub inside of an application to the exact gem version the application needs\.
-.IP
-Creates a directory (defaults to \fB~/bin\fR when the option is used without a value, or to the given \fB<BINSTUBS>\fR directory otherwise) and places any executables from the gem there\. These executables run in Bundler's context\. If used, you might add this directory to your environment's \fBPATH\fR variable\. For instance, if the \fBrails\fR gem comes with a \fBrails\fR executable, this flag will create a \fBbin/rails\fR executable that ensures that all referred dependencies will be resolved using the bundled gems\.
-.TP
 \fB\-\-force\fR, \fB\-\-redownload\fR
 Force reinstalling every gem, even if already installed\.
 .TP
