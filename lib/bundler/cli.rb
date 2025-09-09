@@ -288,12 +288,11 @@ module Bundler
       Calling show with [GEM] will list the exact location of that gem on your machine.
     D
     method_option "paths", type: :boolean, banner: "List the paths of all gems that are required by your Gemfile."
-    method_option "outdated", type: :boolean, banner: "Show verbose output including whether gems are outdated."
+    method_option "outdated", type: :boolean, banner: "Show verbose output including whether gems are outdated (removed)."
     def show(gem_name = nil)
       if ARGV.include?("--outdated")
-        message = "the `--outdated` flag to `bundle show` will be removed in favor of `bundle show --verbose`"
         removed_message = "the `--outdated` flag to `bundle show` has been removed in favor of `bundle show --verbose`"
-        SharedHelpers.major_deprecation(2, message, removed_message: removed_message)
+        raise InvalidOption, removed_message
       end
       require_relative "cli/show"
       Show.new(options, gem_name).run

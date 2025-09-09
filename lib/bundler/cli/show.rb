@@ -6,7 +6,7 @@ module Bundler
     def initialize(options, gem_name)
       @options = options
       @gem_name = gem_name
-      @verbose = options[:verbose] || options[:outdated]
+      @verbose = options[:verbose]
       @latest_specs = fetch_latest_specs if @verbose
     end
 
