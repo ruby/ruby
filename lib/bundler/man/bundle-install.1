@@ -1,10 +1,10 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-INSTALL" "1" "August 2025" ""
+.TH "BUNDLE\-INSTALL" "1" "September 2025" ""
 .SH "NAME"
 \fBbundle\-install\fR \- Install the dependencies specified in your Gemfile
 .SH "SYNOPSIS"
-\fBbundle install\fR [\-\-binstubs[=DIRECTORY]] [\-\-clean] [\-\-deployment] [\-\-force] [\-\-frozen] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-jobs=NUMBER] [\-\-local] [\-\-no\-cache] [\-\-no\-prune] [\-\-path PATH] [\-\-prefer\-local] [\-\-quiet] [\-\-retry=NUMBER] [\-\-shebang=SHEBANG] [\-\-standalone[=GROUP[ GROUP\|\.\|\.\|\.]]] [\-\-system] [\-\-trust\-policy=TRUST\-POLICY] [\-\-target\-rbconfig=TARGET\-RBCONFIG] [\-\-with=GROUP[ GROUP\|\.\|\.\|\.]] [\-\-without=GROUP[ GROUP\|\.\|\.\|\.]]
+\fBbundle install\fR [\-\-force] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-jobs=NUMBER] [\-\-local] [\-\-no\-cache] [\-\-prefer\-local] [\-\-quiet] [\-\-retry=NUMBER] [\-\-standalone[=GROUP[ GROUP\|\.\|\.\|\.]]] [\-\-trust\-policy=TRUST\-POLICY] [\-\-target\-rbconfig=TARGET\-RBCONFIG]
 .SH "DESCRIPTION"
 Install the gems specified in your Gemfile(5)\. If this is the first time you run bundle install (and a \fBGemfile\.lock\fR does not exist), Bundler will fetch all remote sources, resolve dependencies and install all needed gems\.
 .P
@@ -12,30 +12,14 @@ If a \fBGemfile\.lock\fR does exist, and you have not updated your Gemfile(5), B
 .P
 If a \fBGemfile\.lock\fR does exist, and you have updated your Gemfile(5), Bundler will use the dependencies in the \fBGemfile\.lock\fR for all gems that you did not update, but will re\-resolve the dependencies of gems that you did update\. You can find more information about this update process below under \fICONSERVATIVE UPDATING\fR\.
 .SH "OPTIONS"
-The \fB\-\-clean\fR, \fB\-\-deployment\fR, \fB\-\-frozen\fR, \fB\-\-no\-prune\fR, \fB\-\-path\fR, \fB\-\-shebang\fR, \fB\-\-system\fR, \fB\-\-without\fR and \fB\-\-with\fR options are deprecated because they only make sense if they are applied to every subsequent \fBbundle install\fR run automatically and that requires \fBbundler\fR to silently remember them\. Since \fBbundler\fR will no longer remember CLI flags in future versions, \fBbundle config\fR (see bundle\-config(1)) should be used to apply them permanently\.
 .TP
 \fB\-\-binstubs[=BINSTUBS]\fR
 Binstubs are scripts that wrap around executables\. Bundler creates a small Ruby file (a binstub) that loads Bundler, runs the command, and puts it in \fBbin/\fR\. This lets you link the binstub inside of an application to the exact gem version the application needs\.
 .IP
 Creates a directory (defaults to \fB~/bin\fR when the option is used without a value, or to the given \fB<BINSTUBS>\fR directory otherwise) and places any executables from the gem there\. These executables run in Bundler's context\. If used, you might add this directory to your environment's \fBPATH\fR variable\. For instance, if the \fBrails\fR gem comes with a \fBrails\fR executable, this flag will create a \fBbin/rails\fR executable that ensures that all referred dependencies will be resolved using the bundled gems\.
 .TP
-\fB\-\-clean\fR
-On finishing the installation Bundler is going to remove any gems not present in the current Gemfile(5)\. Don't worry, gems currently in use will not be removed\.
-.IP
-This option is deprecated in favor of the \fBclean\fR setting\.
-.TP
-\fB\-\-deployment\fR
-In \fIdeployment mode\fR, Bundler will 'roll\-out' the bundle for production or CI use\. Please check carefully if you want to have this option enabled in your development environment\.
-.IP
-This option is deprecated in favor of the \fBdeployment\fR setting\.
-.TP
 \fB\-\-force\fR, \fB\-\-redownload\fR
 Force reinstalling every gem, even if already installed\.
-.TP
-\fB\-\-frozen\fR
-Do not allow the Gemfile\.lock to be updated after this install\. Exits non\-zero if there are going to be changes to the Gemfile\.lock\.
-.IP
-This option is deprecated in favor of the \fBfrozen\fR setting\.
 .TP
 \fB\-\-full\-index\fR
 Bundler will not call Rubygems' API endpoint (default) but download and cache a (currently big) index file of all gems\. Performance can be improved for large bundles that seldom change by enabling this option\.
@@ -55,52 +39,22 @@ Force using locally installed gems, or gems already present in Rubygems' cache o
 \fB\-\-no\-cache\fR
 Do not update the cache in \fBvendor/cache\fR with the newly bundled gems\. This does not remove any gems in the cache but keeps the newly bundled gems from being cached during the install\.
 .TP
-\fB\-\-no\-prune\fR
-Don't remove stale gems from the cache when the installation finishes\.
-.IP
-This option is deprecated in favor of the \fBno_prune\fR setting\.
-.TP
-\fB\-\-path=PATH\fR
-The location to install the specified gems to\. This defaults to Rubygems' setting\. Bundler shares this location with Rubygems, \fBgem install \|\.\|\.\|\.\fR will have gem installed there, too\. Therefore, gems installed without a \fB\-\-path \|\.\|\.\|\.\fR setting will show up by calling \fBgem list\fR\. Accordingly, gems installed to other locations will not get listed\.
-.IP
-This option is deprecated in favor of the \fBpath\fR setting\.
-.TP
 \fB\-\-quiet\fR
 Do not print progress information to the standard output\.
 .TP
 \fB\-\-retry=[<number>]\fR
 Retry failed network or git requests for \fInumber\fR times\.
 .TP
-\fB\-\-shebang=SHEBANG\fR
-Uses the specified ruby executable (usually \fBruby\fR) to execute the scripts created with \fB\-\-binstubs\fR\. In addition, if you use \fB\-\-binstubs\fR together with \fB\-\-shebang jruby\fR these executables will be changed to execute \fBjruby\fR instead\.
-.IP
-This option is deprecated in favor of the \fBshebang\fR setting\.
-.TP
 \fB\-\-standalone[=<list>]\fR
-Makes a bundle that can work without depending on Rubygems or Bundler at runtime\. A space separated list of groups to install can be specified\. Bundler creates a directory named \fBbundle\fR and installs the bundle there\. It also generates a \fBbundle/bundler/setup\.rb\fR file to replace Bundler's own setup in the manner required\. Using this option implicitly sets \fBpath\fR, which is a [remembered option][REMEMBERED OPTIONS]\.
-.TP
-\fB\-\-system\fR
-Installs the gems specified in the bundle to the system's Rubygems location\. This overrides any previous configuration of \fB\-\-path\fR\.
-.IP
-This option is deprecated in favor of the \fBsystem\fR setting\.
+Makes a bundle that can work without depending on Rubygems or Bundler at runtime\. A space separated list of groups to install can be specified\. Bundler creates a directory named \fBbundle\fR and installs the bundle there\. It also generates a \fBbundle/bundler/setup\.rb\fR file to replace Bundler's own setup in the manner required\.
 .TP
 \fB\-\-trust\-policy=TRUST\-POLICY\fR
 Apply the Rubygems security policy \fIpolicy\fR, where policy is one of \fBHighSecurity\fR, \fBMediumSecurity\fR, \fBLowSecurity\fR, \fBAlmostNoSecurity\fR, or \fBNoSecurity\fR\. For more details, please see the Rubygems signing documentation linked below in \fISEE ALSO\fR\.
 .TP
 \fB\-\-target\-rbconfig=TARGET\-RBCONFIG\fR
 Path to rbconfig\.rb for the deployment target platform\.
-.TP
-\fB\-\-with=<list>\fR
-A space\-separated list of groups referencing gems to install\. If an optional group is given it is installed\. If a group is given that is in the remembered list of groups given to \-\-without, it is removed from that list\.
-.IP
-This option is deprecated in favor of the \fBwith\fR setting\.
-.TP
-\fB\-\-without=<list>\fR
-A space\-separated list of groups referencing gems to skip during installation\. If a group is given that is in the remembered list of groups given to \-\-with, it is removed from that list\.
-.IP
-This option is deprecated in favor of the \fBwithout\fR setting\.
 .SH "DEPLOYMENT MODE"
-Bundler's defaults are optimized for development\. To switch to defaults optimized for deployment and for CI, use the \fB\-\-deployment\fR flag\. Do not activate deployment mode on development machines, as it will cause an error when the Gemfile(5) is modified\.
+Bundler's defaults are optimized for development\. To switch to defaults optimized for deployment and for CI, use the \fBdeployment\fR setting\. Do not activate deployment mode on development machines, as it will cause an error when the Gemfile(5) is modified\.
 .IP "1." 4
 A \fBGemfile\.lock\fR is required\.
 .IP
@@ -120,14 +74,14 @@ In development, it's convenient to share the gems used in your application with 
 .IP
 In deployment, isolation is a more important default\. In addition, the user deploying the application may not have permission to install gems to the system, or the web server may not have permission to read them\.
 .IP
-As a result, \fBbundle install \-\-deployment\fR installs gems to the \fBvendor/bundle\fR directory in the application\. This may be overridden using the \fB\-\-path\fR option\.
+As a result, when \fBdeployment\fR is configured, \fBbundle install\fR installs gems to the \fBvendor/bundle\fR directory in the application\. This may be overridden using the \fBpath\fR setting\.
 .IP "" 0
 .SH "INSTALLING GROUPS"
 By default, \fBbundle install\fR will install all gems in all groups in your Gemfile(5), except those declared for a different platform\.
 .P
-However, you can explicitly tell Bundler to skip installing certain groups with the \fB\-\-without\fR option\. This option takes a space\-separated list of groups\.
+However, you can explicitly tell Bundler to skip installing certain groups with the \fBwithout\fR setting\. This setting takes a space\-separated list of groups\.
 .P
-While the \fB\-\-without\fR option will skip \fIinstalling\fR the gems in the specified groups, it will still \fIdownload\fR those gems and use them to resolve the dependencies of every gem in your Gemfile(5)\.
+While the \fBwithout\fR setting will skip \fIinstalling\fR the gems in the specified groups, \fBbundle install\fR will still \fIdownload\fR those gems and use them to resolve the dependencies of every gem in your Gemfile(5)\.
 .P
 This is so that installing a different set of groups on another machine (such as a production server) will not change the gems and versions that you have already developed and tested against\.
 .P
@@ -148,7 +102,7 @@ end
 .P
 In this case, \fBsinatra\fR depends on any version of Rack (\fB>= 1\.0\fR), while \fBrack\-perftools\-profiler\fR depends on 1\.x (\fB~> 1\.0\fR)\.
 .P
-When you run \fBbundle install \-\-without production\fR in development, we look at the dependencies of \fBrack\-perftools\-profiler\fR as well\. That way, you do not spend all your time developing against Rack 2\.0, using new APIs unavailable in Rack 1\.x, only to have Bundler switch to Rack 1\.2 when the \fBproduction\fR group \fIis\fR used\.
+When you configure \fBbundle config without production\fR in development, we look at the dependencies of \fBrack\-perftools\-profiler\fR as well\. That way, you do not spend all your time developing against Rack 2\.0, using new APIs unavailable in Rack 1\.x, only to have Bundler switch to Rack 1\.2 when the \fBproduction\fR group \fIis\fR used\.
 .P
 This should not cause any problems in practice, because we do not attempt to \fBinstall\fR the gems in the excluded groups, and only evaluate as part of the dependency resolution process\.
 .P
