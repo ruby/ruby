@@ -1340,10 +1340,6 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         // for a known VALUE, which with_num_bits() does not support.
         asm.cmp(val.with_num_bits(8), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
         asm.jne(side_exit(jit, state, GuardType(guard_type)));
-    } else if guard_type.is_subtype(types::String) {
-        let tag = asm.and(val, Opnd::UImm(RUBY_T_MASK as u64));
-        asm.cmp(tag, Opnd::UImm(RUBY_T_STRING as u64));
-        asm.jne(side_exit(jit, state, GuardType(guard_type)));
     } else if guard_type.is_subtype(types::NilClass) {
         asm.cmp(val, Qnil.into());
         asm.jne(side_exit(jit, state, GuardType(guard_type)));
@@ -1380,6 +1376,26 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
 
         asm.cmp(klass, Opnd::Value(expected_class));
         asm.jne(side_exit);
+    } else if guard_type.is_subtype(types::String) {
+        let side = side_exit(jit, state, GuardType(guard_type));
+
+        // Check special constant
+        asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+        asm.jnz(side.clone());
+
+        // Check false
+        asm.cmp(val, Qfalse.into());
+        asm.je(side.clone());
+
+        let val = match val {
+            Opnd::Reg(_) | Opnd::VReg { .. } => val,
+            _ => asm.load(val),
+        };
+
+        let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
+        let tag   = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
+        asm.cmp(tag, Opnd::UImm(RUBY_T_STRING as u64));
+        asm.jne(side);
     } else if guard_type.bit_equal(types::HeapObject) {
         let side_exit = side_exit(jit, state, GuardType(guard_type));
         asm.cmp(val, Opnd::Value(Qfalse));
@@ -1394,9 +1410,30 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
 
 fn gen_guard_type_not(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard_type: Type, state: &FrameState) -> lir::Opnd {
     if guard_type.is_subtype(types::String) {
-        let tag = asm.and(val, Opnd::UImm(RUBY_T_MASK as u64));
+        // We only exit if val *is* a String. Otherwise we fall through.
+        let cont = asm.new_label("guard_type_not_string_cont");
+        let side = side_exit(jit, state, GuardTypeNot(guard_type));
+
+        // Continue if special constant (not string)
+        asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+        asm.jnz(cont.clone());
+
+        // Continue if false (not string)
+        asm.cmp(val, Qfalse.into());
+        asm.je(cont.clone());
+
+        let val = match val {
+            Opnd::Reg(_) | Opnd::VReg { .. } => val,
+            _ => asm.load(val),
+        };
+
+        let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
+        let tag   = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
         asm.cmp(tag, Opnd::UImm(RUBY_T_STRING as u64));
-        asm.je(side_exit(jit, state, GuardTypeNot(guard_type)));
+        asm.je(side);
+
+        // Otherwise (non-string heap object), continue.
+        asm.write_label(cont);
     } else {
         unimplemented!("unsupported type: {guard_type}");
     }

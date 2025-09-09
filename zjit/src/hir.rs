@@ -8324,6 +8324,29 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_optimize_objtostring_anytostring_recv_profiled_string_subclass() {
+        eval("
+            class MyString < String; end
+
+            def test(a)
+              \"#{a}\"
+            end
+            foo = MyString.new('foo')
+            test(MyString.new(foo)); test(MyString.new(foo))
+        ");
+
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v17:String = GuardType v1, String
+          v11:StringExact = StringConcat v5, v17
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
     fn test_optimize_objtostring_profiled_nonstring_falls_back_to_send() {
         eval("
             def test(a)

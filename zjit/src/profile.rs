@@ -237,7 +237,17 @@ impl ProfiledType {
     }
 
     pub fn is_string(&self) -> bool {
-        self.class == unsafe { rb_cString }
+        // Fast paths for immediates and exact-class
+        if self.flags.is_immediate() {
+            return false;
+        }
+
+        let string = unsafe { rb_cString };
+        if self.class == string{
+            return true;
+        }
+
+        self.class.is_subclass_of(string) == ClassRelationship::Subclass
     }
 
     pub fn is_flonum(&self) -> bool {

@@ -2097,6 +2097,19 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_objtostring_profiled_string_subclass_fastpath
+    assert_compiles '"foo"', %q{
+      class MyString < String; end
+
+      def test(str)
+        "#{str}"
+      end
+
+      foo = MyString.new("foo")
+      test(foo); test(foo) # still profiles as string
+    }, call_threshold: 2
+  end
+
   def test_objtostring_profiled_string_fastpath_exits_on_nonstring
     assert_compiles '"1"', %q{
       def test(str)
