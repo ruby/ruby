@@ -819,7 +819,7 @@ RSpec.describe "bundle outdated" do
     expect(out).to include("Installing foo 1.0")
   end
 
-  context "after bundle install --deployment" do
+  context "in deployment mode" do
     before do
       build_repo2
 
@@ -830,7 +830,7 @@ RSpec.describe "bundle outdated" do
         gem "foo"
       G
       bundle :lock
-      bundle :install, deployment: true
+      bundle "config deployment true"
     end
 
     it "outputs a helpful message about being in deployment mode" do
