@@ -63,7 +63,11 @@ RSpec.describe "bundle commands" do
       "* #{names.map {|name| "`#{name}#{value}`" }.join(", ")}:"
     end
 
-    expect(man_page_content).to include(help)
+    if option.banner.include?("(removed)")
+      expect(man_page_content).not_to include(help)
+    else
+      expect(man_page_content).to include(help)
+    end
   end
 
   def check_subcommand!(name, man_page)
