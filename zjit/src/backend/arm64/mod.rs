@@ -184,14 +184,13 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
 /// This has the same number of registers for x86_64 and arm64.
 /// SCRATCH0 and SCRATCH1 are excluded.
 pub const ALLOC_REGS: &[Reg] = &[
-    X0_REG,
     X1_REG,
     X2_REG,
     X3_REG,
     X4_REG,
     X5_REG,
     X11_REG,
-    X12_REG,
+    X0_REG,
 ];
 
 impl Assembler
@@ -205,6 +204,7 @@ impl Assembler
     const SCRATCH1_REG: Reg = X17_REG;
     const SCRATCH0: A64Opnd = A64Opnd::Reg(Self::SCRATCH0_REG);
     const SCRATCH1: A64Opnd = A64Opnd::Reg(Self::SCRATCH1_REG);
+    pub const SPILL_BASE_REG: Reg = X12_REG;
 
     /// Get the list of registers from which we will allocate on this platform
     pub fn get_alloc_regs() -> Vec<Reg> {

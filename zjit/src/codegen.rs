@@ -1866,13 +1866,19 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
     for &reg in ALLOC_REGS.iter() {
         asm.cpush(Opnd::Reg(reg));
     }
-    const { assert!(ALLOC_REGS.len() % 2 == 0, "x86_64 would need to push one more if we push an odd number of regs"); }
+    if cfg!(target_arch = "x86_64") {
+        const { assert!(ALLOC_REGS.len() % 2 == 1, "x86_64 would need to stop pushing this if we push an even number of regs"); }
+        asm.cpush(Opnd::Reg(ALLOC_REGS[0]));
+    }
 
     // Compile the stubbed ISEQ
     let jump_addr = asm_ccall!(asm, function_stub_hit, SCRATCH_OPND, CFP, SP);
     asm.mov(SCRATCH_OPND, jump_addr);
 
     asm_comment!(asm, "restore argument registers");
+    if cfg!(target_arch = "x86_64") {
+        asm.cpop_into(Opnd::Reg(ALLOC_REGS[0]));
+    }
     for &reg in ALLOC_REGS.iter().rev() {
         asm.cpop_into(Opnd::Reg(reg));
     }
@@ -1917,30 +1923,32 @@ pub fn gen_exit_trampoline_with_counter(cb: &mut CodeBlock, exit_trampoline: Cod
     })
 }
 
-fn gen_push_opnds(jit: &mut JITState, asm: &mut Assembler, opnds: &[Opnd]) -> lir::Opnd {
+fn gen_push_opnds(_jit: &mut JITState, asm: &mut Assembler, opnds: &[Opnd]) -> lir::Opnd {
     let n = opnds.len();
 
     // Calculate the compile-time NATIVE_STACK_PTR offset from NATIVE_BASE_PTR
     // At this point, frame_setup(&[], jit.c_stack_slots) has been called,
     // which allocated aligned_stack_bytes(jit.c_stack_slots) on the stack
-    let frame_size = aligned_stack_bytes(jit.c_stack_slots);
+    //let frame_size = aligned_stack_bytes(jit.c_stack_slots);
     let allocation_size = aligned_stack_bytes(n);
 
     asm_comment!(asm, "allocate {} bytes on C stack for {} values", allocation_size, n);
     asm.sub_into(NATIVE_STACK_PTR, allocation_size.into());
+    let argv = asm.load(NATIVE_STACK_PTR);
 
     // Calculate the total offset from NATIVE_BASE_PTR to our buffer
-    let total_offset_from_base = (frame_size + allocation_size) as i32;
+    //let total_offset_from_base = (frame_size + allocation_size) as i32;
 
     for (idx, &opnd) in opnds.iter().enumerate() {
-        let slot_offset = -total_offset_from_base + (idx as i32 * SIZEOF_VALUE_I32);
+        //let slot_offset = -total_offset_from_base + (idx as i32 * SIZEOF_VALUE_I32);
         asm.mov(
-            Opnd::mem(VALUE_BITS, NATIVE_BASE_PTR, slot_offset),
+            Opnd::mem(VALUE_BITS, argv, idx as i32 * SIZEOF_VALUE_I32),
             opnd
         );
     }
 
-    asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, -total_offset_from_base))
+    //asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, -total_offset_from_base))
+    argv
 }
 
 fn gen_pop_opnds(asm: &mut Assembler, opnds: &[Opnd]) {
