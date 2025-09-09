@@ -82,6 +82,7 @@ module Bundler
       "BUNDLE_TIMEOUT" => 10,
       "BUNDLE_VERSION" => "lockfile",
       "BUNDLE_LOCKFILE_CHECKSUMS" => true,
+      "BUNDLE_CACHE_ALL" => true,
     }.freeze
 
     def initialize(root = nil)
