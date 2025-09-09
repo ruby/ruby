@@ -220,7 +220,7 @@ RSpec.describe "bundle clean" do
     expect(bundled_app("symlink-path/#{Bundler.ruby_scope}/bundler/gems/foo-#{revision[0..11]}")).to exist
   end
 
-  it "removes old git gems" do
+  it "removes old git gems on bundle update" do
     build_git "foo-bar", path: lib_path("foo-bar")
     revision = revision_for(lib_path("foo-bar"))
 
@@ -383,7 +383,7 @@ RSpec.describe "bundle clean" do
     expect(out).to include("myrack (1.0.0)").and include("thin (1.0)")
   end
 
-  it "automatically cleans when path has not been set", bundler: "5" do
+  it "does not clean on bundle update when path has not been set" do
     build_repo2
 
     install_gemfile <<-G
@@ -398,8 +398,43 @@ RSpec.describe "bundle clean" do
 
     bundle "update", all: true
 
-    files = Pathname.glob(bundled_app(".bundle", Bundler.ruby_scope, "*", "*"))
-    files.map! {|f| f.to_s.sub(bundled_app(".bundle", Bundler.ruby_scope).to_s, "") }
+    files = Pathname.glob(default_bundle_path("*", "*"))
+    files.map! {|f| f.to_s.sub(default_bundle_path.to_s, "") }
+    expected_files = %W[
+      /bin/bundle
+      /bin/bundler
+      /cache/bundler-#{Bundler::VERSION}.gem
+      /cache/foo-1.0.1.gem
+      /cache/foo-1.0.gem
+      /gems/bundler-#{Bundler::VERSION}
+      /gems/foo-1.0
+      /gems/foo-1.0.1
+      /specifications/bundler-#{Bundler::VERSION}.gemspec
+      /specifications/foo-1.0.1.gemspec
+      /specifications/foo-1.0.gemspec
+    ]
+    expected_files += ["/bin/bundle.bat", "/bin/bundler.bat"] if Gem.win_platform?
+
+    expect(files.sort).to eq(expected_files.sort)
+  end
+
+  it "will automatically clean on bundle update when path has not been set", bundler: "5" do
+    build_repo2
+
+    install_gemfile <<-G
+      source "https://gem.repo2"
+
+      gem "foo"
+    G
+
+    update_repo2 do
+      build_gem "foo", "1.0.1"
+    end
+
+    bundle "update", all: true
+
+    files = Pathname.glob(local_gem_path("*", "*"))
+    files.map! {|f| f.to_s.sub(local_gem_path.to_s, "") }
     expect(files.sort).to eq %w[
       /cache/foo-1.0.1.gem
       /gems/foo-1.0.1
