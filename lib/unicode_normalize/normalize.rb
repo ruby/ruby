@@ -82,16 +82,22 @@ module UnicodeNormalize  # :nodoc:
 
   ## Canonical Ordering
   def self.canonical_ordering_one(string)
-    sorting = string.each_char.collect { |c| [c, CLASS_TABLE[c]] }
-    (sorting.length-2).downto(0) do |i| # almost, but not exactly bubble sort
-      (0..i).each do |j|
-        later_class = sorting[j+1].last
-        if 0<later_class and later_class<sorting[j].last
-          sorting[j], sorting[j+1] = sorting[j+1], sorting[j]
-        end
+    result = ''
+    unordered = []
+    chars = string.chars
+    n = chars.size
+    chars.each_with_index do |char, i|
+      ccc = CLASS_TABLE[char]
+      if ccc == 0
+        unordered.sort!.each { result << chars[it % n] }
+        unordered.clear
+        result << char
+      else
+        unordered << ccc * n + i
       end
     end
-    return sorting.collect(&:first).join('')
+    unordered.sort!.each { result << chars[it % n] }
+    result
   end
 
   ## Normalization Forms for Patterns (not whole Strings)
