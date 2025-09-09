@@ -36,6 +36,7 @@ jobs:
             configure: '--enable-zjit=dev'
             run_opts: '--zjit-call-threshold=1'
             specopts: '-T --zjit-call-threshold=1'
+            test_all_opts: '--seed=46450'
 
           - test_task: 'zjit-check' # zjit-test + quick feedback of test_zjit.rb
             configure: '--enable-yjit=dev --enable-zjit'
@@ -117,7 +118,7 @@ jobs:
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           SYNTAX_SUGGEST_TIMEOUT: '5'
           PRECHECK_BUNDLED_GEMS: 'no'
-          TESTS: ${{ matrix.tests }}
+          TESTS: ${{ matrix.test_all_opts }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - uses: ./.github/actions/slack
