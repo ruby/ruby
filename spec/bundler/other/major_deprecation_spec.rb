@@ -107,16 +107,14 @@ RSpec.describe "major deprecations" do
       bundle "check --path vendor/bundle", raise_on_error: false
     end
 
-    it "should print a deprecation warning" do
-      expect(deprecations).to include(
-        "The `--path` flag is deprecated because it relies on being " \
-        "remembered across bundler invocations, which bundler will no " \
-        "longer do in future versions. Instead please use `bundle config set " \
-        "path 'vendor/bundle'`, and stop using this flag"
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--path` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set path 'vendor/bundle'`, " \
+        "and stop using this flag"
       )
     end
-
-    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle check --path=" do
@@ -129,16 +127,14 @@ RSpec.describe "major deprecations" do
       bundle "check --path=vendor/bundle", raise_on_error: false
     end
 
-    it "should print a deprecation warning" do
-      expect(deprecations).to include(
-        "The `--path` flag is deprecated because it relies on being " \
-        "remembered across bundler invocations, which bundler will no " \
-        "longer do in future versions. Instead please use `bundle config set " \
-        "path 'vendor/bundle'`, and stop using this flag"
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--path` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set path 'vendor/bundle'`, " \
+        "and stop using this flag"
       )
     end
-
-    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle binstubs --path=" do
@@ -151,16 +147,14 @@ RSpec.describe "major deprecations" do
       bundle "binstubs myrack --path=binpath", raise_on_error: false
     end
 
-    it "should print a deprecation warning" do
-      expect(deprecations).to include(
-        "The `--path` flag is deprecated because it relies on being " \
-        "remembered across bundler invocations, which bundler will no " \
-        "longer do in future versions. Instead please use `bundle config set " \
-        "bin 'binpath'`, and stop using this flag"
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--path` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set bin 'binpath'`, " \
+        "and stop using this flag"
       )
     end
-
-    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle cache --all" do
@@ -170,19 +164,17 @@ RSpec.describe "major deprecations" do
         gem "myrack"
       G
 
-      bundle "cache --all", raise_on_error: false
+      bundle "cache --all --verbose", raise_on_error: false
     end
 
-    it "should print a deprecation warning" do
-      expect(deprecations).to include(
-        "The `--all` flag is deprecated because it relies on being " \
-        "remembered across bundler invocations, which bundler will no " \
-        "longer do in future versions. Instead please use `bundle config set " \
-        "cache_all true`, and stop using this flag"
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--all` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set cache_all true`, " \
+        "and stop using this flag"
       )
     end
-
-    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle cache --no-all" do
@@ -195,16 +187,14 @@ RSpec.describe "major deprecations" do
       bundle "cache --no-all", raise_on_error: false
     end
 
-    it "should print a deprecation warning" do
-      expect(deprecations).to include(
-        "The `--no-all` flag is deprecated because it relies on being " \
-        "remembered across bundler invocations, which bundler will no " \
-        "longer do in future versions. Instead please use `bundle config set " \
-        "cache_all false`, and stop using this flag"
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--no-all` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set cache_all false`, " \
+        "and stop using this flag"
       )
     end
-
-    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle cache --path" do
@@ -217,16 +207,14 @@ RSpec.describe "major deprecations" do
       bundle "cache --path foo", raise_on_error: false
     end
 
-    it "should print a deprecation warning" do
-      expect(deprecations).to include(
-        "The `--path` flag is deprecated because its semantics are unclear. " \
+    it "should print a removal error" do
+      expect(err).to include(
+        "The `--path` flag has been removed because its semantics were unclear. " \
         "Use `bundle config cache_path` to configure the path of your cache of gems, " \
         "and `bundle config path` to configure the path where your gems are installed, " \
         "and stop using this flag"
       )
     end
-
-    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle cache --path=" do
@@ -240,15 +228,13 @@ RSpec.describe "major deprecations" do
     end
 
     it "should print a deprecation warning" do
-      expect(deprecations).to include(
-        "The `--path` flag is deprecated because its semantics are unclear. " \
+      expect(err).to include(
+        "The `--path` flag has been removed because its semantics were unclear. " \
         "Use `bundle config cache_path` to configure the path of your cache of gems, " \
         "and `bundle config path` to configure the path where your gems are installed, " \
         "and stop using this flag"
       )
     end
-
-    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle cache --frozen" do
@@ -261,16 +247,14 @@ RSpec.describe "major deprecations" do
       bundle "cache --frozen", raise_on_error: false
     end
 
-    it "should print a deprecation warning" do
-      expect(deprecations).to include(
-        "The `--frozen` flag is deprecated because it relies on being " \
-        "remembered across bundler invocations, which bundler will no " \
-        "longer do in future versions. Instead please use `bundle config set " \
-        "frozen true`, and stop using this flag"
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--frozen` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set frozen true`, " \
+        "and stop using this flag"
       )
     end
-
-    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle cache --no-prune" do
@@ -283,16 +267,14 @@ RSpec.describe "major deprecations" do
       bundle "cache --no-prune", raise_on_error: false
     end
 
-    it "should print a deprecation warning" do
-      expect(deprecations).to include(
-        "The `--no-prune` flag is deprecated because it relies on being " \
-        "remembered across bundler invocations, which bundler will no " \
-        "longer do in future versions. Instead please use `bundle config set " \
-        "no_prune true`, and stop using this flag"
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--no-prune` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set no_prune true`, " \
+        "and stop using this flag"
       )
     end
-
-    pending "fails with a helpful error", bundler: "4"
   end
 
   describe "bundle config" do
@@ -479,23 +461,23 @@ RSpec.describe "major deprecations" do
     }.each do |name, expectations|
       option_name, value = *expectations
       flag_name = "--#{name}"
+      args = %w[true false].include?(value) ? flag_name : "#{flag_name} #{value}"
 
       context "with the #{flag_name} flag" do
         before do
           bundle "install" # to create a lockfile, which deployment or frozen need
-          bundle "install #{flag_name} #{value}"
+
+          bundle "install #{args}", raise_on_error: false
         end
 
-        it "should print a deprecation warning" do
-          expect(deprecations).to include(
-            "The `#{flag_name}` flag is deprecated because it relies on " \
-            "being remembered across bundler invocations, which bundler " \
-            "will no longer do in future versions. Instead please use " \
-            "`bundle config set #{option_name} #{value}`, and stop using this flag"
+        it "fails with a helpful error" do
+          expect(err).to include(
+            "The `#{flag_name}` flag has been removed because it relied on " \
+            "being remembered across bundler invocations, which bundler no " \
+            "longer does. Instead please use `bundle config set " \
+            "#{option_name} #{value}`, and stop using this flag"
           )
         end
-
-        pending "fails with a helpful error", bundler: "4"
       end
     end
   end

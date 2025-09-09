@@ -20,7 +20,6 @@ module Bundler
       disable_shared_gems
       disable_version_check
       force_ruby_platform
-      forget_cli_options
       frozen
       gem.changelog
       gem.coc
@@ -41,20 +40,6 @@ module Bundler
       silence_root_warning
       update_requires_all_flag
       verbose
-    ].freeze
-
-    REMEMBERED_KEYS = %w[
-      bin
-      cache_all
-      clean
-      deployment
-      frozen
-      no_prune
-      path
-      shebang
-      path.system
-      without
-      with
     ].freeze
 
     NUMBER_KEYS = %w[
@@ -128,12 +113,8 @@ module Bundler
     end
 
     def set_command_option(key, value)
-      if !is_remembered(key) || Bundler.feature_flag.forget_cli_options?
-        temporary(key => value)
-        value
-      else
-        set_local(key, value)
-      end
+      temporary(key => value)
+      value
     end
 
     def set_command_option_if_given(key, value)
@@ -385,10 +366,6 @@ module Bundler
 
     def is_array(key)
       ARRAY_KEYS.include?(self.class.key_to_s(key))
-    end
-
-    def is_remembered(key)
-      REMEMBERED_KEYS.include?(self.class.key_to_s(key))
     end
 
     def is_credential(key)

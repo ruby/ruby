@@ -136,7 +136,6 @@ RSpec.describe "The library itself" do
 
   it "documents all used settings" do
     exemptions = %w[
-      forget_cli_options
       gem.changelog
       gem.ci
       gem.coc

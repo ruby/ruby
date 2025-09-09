@@ -28,7 +28,7 @@ RSpec.describe "bundle cache" do
     end
   end
 
-  context "with --all" do
+  context "with cache_all configured" do
     context "without a gemspec" do
       it "caches all dependencies except bundler itself" do
         gemfile <<-D
@@ -158,20 +158,6 @@ RSpec.describe "bundle cache" do
     end
   end
 
-  context "with --path" do
-    it "sets root directory for gems" do
-      gemfile <<-D
-        source "https://gem.repo1"
-        gem 'myrack'
-      D
-
-      bundle "cache --path #{bundled_app("test")}"
-
-      expect(the_bundle).to include_gems "myrack 1.0.0"
-      expect(bundled_app("test/vendor/cache/")).to exist
-    end
-  end
-
   context "with --no-install" do
     it "puts the gems in vendor/cache but does not install them" do
       gemfile <<-D
@@ -288,39 +274,6 @@ RSpec.describe "bundle cache" do
       bundle :cache, "all-platforms" => true
       expect(bundled_app("vendor/cache/weakling-0.0.3.gem")).to exist
     end
-  end
-
-  it "enforces frozen mode when --frozen is passed" do
-    gemfile <<-G
-      source "https://gem.repo1"
-      gem "myrack"
-      gem "myrack-obama"
-    G
-
-    lockfile <<-L
-      GEM
-        remote: https://gem.repo1/
-        specs:
-          myrack (1.0.0)
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        myrack
-
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    L
-
-    bundle "cache --frozen", raise_on_error: false
-
-    expect(exitstatus).to eq(16)
-    expect(err).to include("frozen mode")
-    expect(err).to include("You have added to the Gemfile")
-    expect(err).to include("* myrack-obama")
-    bundle "env"
-    expect(out).to include("frozen")
   end
 
   context "with frozen configured" do

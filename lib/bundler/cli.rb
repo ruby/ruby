@@ -173,7 +173,7 @@ module Bundler
     D
     method_option "dry-run", type: :boolean, default: false, banner: "Lock the Gemfile"
     method_option "gemfile", type: :string, banner: "Use the specified gemfile instead of Gemfile"
-    method_option "path", type: :string, banner: "Specify a different path than the system default ($BUNDLE_PATH or $GEM_HOME).#{" Bundler will remember this value for future installs on this machine" unless Bundler.feature_flag.forget_cli_options?}"
+    method_option "path", type: :string, banner: "Specify a different path than the system default, namely, $BUNDLE_PATH or $GEM_HOME (removed)"
     def check
       remembered_flag_deprecation("path")
 
@@ -211,9 +211,9 @@ module Bundler
       If the bundle has already been installed, bundler will tell you so and then exit.
     D
     method_option "binstubs", type: :string, lazy_default: "bin", banner: "Generate bin stubs for bundled gems to ./bin"
-    method_option "clean", type: :boolean, banner: "Run bundle clean automatically after install"
-    method_option "deployment", type: :boolean, banner: "Install using defaults tuned for deployment environments"
-    method_option "frozen", type: :boolean, banner: "Do not allow the Gemfile.lock to be updated after this install"
+    method_option "clean", type: :boolean, banner: "Run bundle clean automatically after install (removed)"
+    method_option "deployment", type: :boolean, banner: "Install using defaults tuned for deployment environments (removed)"
+    method_option "frozen", type: :boolean, banner: "Do not allow the Gemfile.lock to be updated after this install (removed)"
     method_option "full-index", type: :boolean, banner: "Fall back to using the single-file index of all gems"
     method_option "gemfile", type: :string, banner: "Use the specified gemfile instead of Gemfile"
     method_option "jobs", aliases: "-j", type: :numeric, banner: "Specify the number of jobs to run in parallel"
@@ -221,16 +221,16 @@ module Bundler
     method_option "prefer-local", type: :boolean, banner: "Only attempt to fetch gems remotely if not present locally, even if newer versions are available remotely"
     method_option "no-cache", type: :boolean, banner: "Don't update the existing gem cache."
     method_option "force", type: :boolean, aliases: "--redownload", banner: "Force reinstalling every gem, even if already installed"
-    method_option "no-prune", type: :boolean, banner: "Don't remove stale gems from the cache."
-    method_option "path", type: :string, banner: "Specify a different path than the system default ($BUNDLE_PATH or $GEM_HOME).#{" Bundler will remember this value for future installs on this machine" unless Bundler.feature_flag.forget_cli_options?}"
+    method_option "no-prune", type: :boolean, banner: "Don't remove stale gems from the cache (removed)."
+    method_option "path", type: :string, banner: "Specify a different path than the system default, namely, $BUNDLE_PATH or $GEM_HOME (removed)."
     method_option "quiet", type: :boolean, banner: "Only output warnings and errors."
-    method_option "shebang", type: :string, banner: "Specify a different shebang executable name than the default (usually 'ruby')"
+    method_option "shebang", type: :string, banner: "Specify a different shebang executable name than the default, usually 'ruby' (removed)"
     method_option "standalone", type: :array, lazy_default: [], banner: "Make a bundle that can work without the Bundler runtime"
-    method_option "system", type: :boolean, banner: "Install to the system location ($BUNDLE_PATH or $GEM_HOME) even if the bundle was previously installed somewhere else for this application"
+    method_option "system", type: :boolean, banner: "Install to the system location ($BUNDLE_PATH or $GEM_HOME) even if the bundle was previously installed somewhere else for this application (removed)"
     method_option "trust-policy", alias: "P", type: :string, banner: "Gem trust policy (like gem install -P). Must be one of #{Bundler.rubygems.security_policy_keys.join("|")}"
     method_option "target-rbconfig", type: :string, banner: "Path to rbconfig.rb for the deployment target platform"
-    method_option "without", type: :array, banner: "Exclude gems that are part of the specified named group."
-    method_option "with", type: :array, banner: "Include gems that are part of the specified named group."
+    method_option "without", type: :array, banner: "Exclude gems that are part of the specified named group (removed)."
+    method_option "with", type: :array, banner: "Include gems that are part of the specified named group (removed)."
     def install
       %w[clean deployment frozen no-prune path shebang without with].each do |option|
         remembered_flag_deprecation(option)
@@ -323,7 +323,7 @@ module Bundler
       will create binstubs for all given gems.
     D
     method_option "force", type: :boolean, default: false, banner: "Overwrite existing binstubs if they exist"
-    method_option "path", type: :string, lazy_default: "bin", banner: "Binstub destination directory (default bin)"
+    method_option "path", type: :string, lazy_default: "bin", banner: "Binstub destination directory, `bin` by default (removed)"
     method_option "shebang", type: :string, banner: "Specify a different shebang executable name than the default (usually 'ruby')"
     method_option "standalone", type: :boolean, banner: "Make binstubs that can work without the Bundler runtime"
     method_option "all", type: :boolean, banner: "Install binstubs for all gems"
@@ -396,15 +396,15 @@ module Bundler
     end
 
     desc "cache [OPTIONS]", "Locks and then caches all of the gems into vendor/cache"
-    method_option "all", type: :boolean, default: Bundler.feature_flag.cache_all?, banner: "Include all sources (including path and git)."
+    method_option "all", type: :boolean, default: Bundler.settings[:cache_all], banner: "Include all sources (including path and git) (removed)."
     method_option "all-platforms", type: :boolean, banner: "Include gems for all platforms present in the lockfile, not only the current one"
     method_option "cache-path", type: :string, banner: "Specify a different cache path than the default (vendor/cache)."
     method_option "gemfile", type: :string, banner: "Use the specified gemfile instead of Gemfile"
     method_option "no-install", type: :boolean, banner: "Don't install the gems, only update the cache."
-    method_option "no-prune", type: :boolean, banner: "Don't remove stale gems from the cache."
-    method_option "path", type: :string, banner: "Specify a different path than the system default ($BUNDLE_PATH or $GEM_HOME).#{" Bundler will remember this value for future installs on this machine" unless Bundler.feature_flag.forget_cli_options?}"
+    method_option "no-prune", type: :boolean, banner: "Don't remove stale gems from the cache (removed)."
+    method_option "path", type: :string, banner: "Specify a different path than the system default, namely, $BUNDLE_PATH or $GEM_HOME (removed)."
     method_option "quiet", type: :boolean, banner: "Only output warnings and errors."
-    method_option "frozen", type: :boolean, banner: "Do not allow the Gemfile.lock to be updated after this bundle cache operation's install"
+    method_option "frozen", type: :boolean, banner: "Do not allow the Gemfile.lock to be updated after this bundle cache operation's install (removed)"
     long_desc <<-D
       The cache command will copy the .gem files for every gem in the bundle into the
       directory ./vendor/cache. If you then check that directory into your source
@@ -420,17 +420,12 @@ module Bundler
       end
 
       if flag_passed?("--path")
-        message =
-          "The `--path` flag is deprecated because its semantics are unclear. " \
-          "Use `bundle config cache_path` to configure the path of your cache of gems, " \
-          "and `bundle config path` to configure the path where your gems are installed, " \
-          "and stop using this flag"
         removed_message =
           "The `--path` flag has been removed because its semantics were unclear. " \
           "Use `bundle config cache_path` to configure the path of your cache of gems, " \
           "and `bundle config path` to configure the path where your gems are installed, " \
           "and stop using this flag"
-        SharedHelpers.major_deprecation 2, message, removed_message: removed_message
+        raise InvalidOption, removed_message
       end
 
       require_relative "cli/cache"
@@ -750,17 +745,12 @@ module Bundler
     end
 
     def print_remembered_flag_deprecation(flag_name, option_name, option_value)
-      message =
-        "The `#{flag_name}` flag is deprecated because it relies on being " \
-        "remembered across bundler invocations, which bundler will no longer " \
-        "do in future versions. Instead please use `bundle config set #{option_name} " \
-        "#{option_value}`, and stop using this flag"
       removed_message =
         "The `#{flag_name}` flag has been removed because it relied on being " \
         "remembered across bundler invocations, which bundler no longer does. " \
         "Instead please use `bundle config set #{option_name} #{option_value}`, " \
         "and stop using this flag"
-      Bundler::SharedHelpers.major_deprecation 2, message, removed_message: removed_message
+      raise InvalidOption, removed_message
     end
 
     def flag_passed?(name)
