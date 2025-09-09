@@ -21,17 +21,7 @@ module Bundler
       @rubygems_sources       = []
       @metadata_source        = Source::Metadata.new
 
-      @merged_gem_lockfile_sections = false
       @local_mode = true
-    end
-
-    def merged_gem_lockfile_sections?
-      @merged_gem_lockfile_sections
-    end
-
-    def merged_gem_lockfile_sections!(replacement_source)
-      @merged_gem_lockfile_sections = true
-      @global_rubygems_source = replacement_source
     end
 
     def aggregate_global_source?
@@ -90,10 +80,6 @@ module Bundler
       @rubygems_sources
     end
 
-    def rubygems_remotes
-      rubygems_sources.flat_map(&:remotes).uniq
-    end
-
     def all_sources
       path_sources + git_sources + plugin_sources + rubygems_sources + [metadata_source]
     end
@@ -115,11 +101,7 @@ module Bundler
     end
 
     def lock_rubygems_sources
-      if merged_gem_lockfile_sections?
-        [combine_rubygems_sources]
-      else
-        rubygems_sources.sort_by(&:identifier)
-      end
+      rubygems_sources.sort_by(&:identifier)
     end
 
     # Returns true if there are changes
@@ -226,10 +208,6 @@ module Bundler
       when Plugin::API::Source  then plugin_sources
       else raise ArgumentError, "Invalid source: #{source.inspect}"
       end
-    end
-
-    def combine_rubygems_sources
-      Source::Rubygems.new("remotes" => rubygems_remotes)
     end
 
     def warn_on_git_protocol(source)
