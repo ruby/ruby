@@ -735,7 +735,7 @@ RSpec.describe "major deprecations" do
 
       it "prints a deprecation warning" do
         expect(deprecations).to include \
-          "--no-rubocop is deprecated, use --linter"
+          "--no-rubocop is deprecated, use --no-linter"
       end
     end
 

@@ -424,8 +424,8 @@ module Bundler
           "rubocop"
         else
           Bundler::SharedHelpers.major_deprecation 2,
-            "--no-rubocop is deprecated, use --linter",
-            removed_message: "--no-rubocop has been removed, use --linter"
+            "--no-rubocop is deprecated, use --no-linter",
+            removed_message: "--no-rubocop has been removed, use --no-linter"
           false
         end
       elsif !Bundler.settings["gem.rubocop"].nil?
