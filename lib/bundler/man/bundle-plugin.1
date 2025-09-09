@@ -4,7 +4,7 @@
 .SH "NAME"
 \fBbundle\-plugin\fR \- Manage Bundler plugins
 .SH "SYNOPSIS"
-\fBbundle plugin\fR install PLUGINS [\-\-source=SOURCE] [\-\-version=VERSION] [\-\-git=GIT] [\-\-branch=BRANCH|\-\-ref=REF] [\-\-local\-git=LOCAL_GIT] [\-\-path=PATH]
+\fBbundle plugin\fR install PLUGINS [\-\-source=SOURCE] [\-\-version=VERSION] [\-\-git=GIT] [\-\-branch=BRANCH|\-\-ref=REF] [\-\-path=PATH]
 .br
 \fBbundle plugin\fR uninstall PLUGINS [\-\-all]
 .br
@@ -54,13 +54,6 @@ When you specify \fB\-\-git\fR, you can use \fB\-\-ref\fR to specify any tag, or
 Install the plugin gem from a local path\.
 .IP
 Example: \fBbundle plugin install bundler\-graph \-\-path \.\./bundler\-graph\fR
-.TP
-\fB\-\-local\-git=LOCAL_GIT\fR
-Install the plugin gem from a local Git repository\.
-.IP
-Example: \fBbundle plugin install bundler\-graph \-\-local\-git \.\./bundler\-graph\fR\.
-.IP
-This option is deprecated in favor of \fB\-\-git\fR\.
 .SS "uninstall"
 Uninstall the plugin(s) specified in PLUGINS\.
 .P

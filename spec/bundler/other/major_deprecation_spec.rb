@@ -702,14 +702,11 @@ RSpec.describe "major deprecations" do
       end
     end
 
-    it "prints a deprecation warning" do
-      bundle "plugin install foo --local_git #{lib_path("foo-1.0")}"
+    it "fails with a helpful message" do
+      bundle "plugin install foo --local_git #{lib_path("foo-1.0")}", raise_on_error: false
 
-      expect(out).to include("Installed plugin foo")
-      expect(deprecations).to include "--local_git is deprecated, use --git"
+      expect(err).to include "--local_git has been removed, use --git"
     end
-
-    pending "fails with a helpful message", bundler: "4"
   end
 
   describe "removing rubocop" do
