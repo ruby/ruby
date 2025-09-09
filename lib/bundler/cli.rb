@@ -239,6 +239,12 @@ module Bundler
 
       remembered_flag_deprecation("deployment", negative: true)
 
+      if ARGV.include?("--binstubs")
+        message = "The --binstubs option will be removed in favor of `bundle binstubs --all`"
+        removed_message = "The --binstubs option have been removed in favor of `bundle binstubs --all`"
+        SharedHelpers.major_deprecation(2, message, removed_message: removed_message)
+      end
+
       require_relative "cli/install"
       Bundler.settings.temporary(no_install: false) do
         Install.new(options.dup).run
