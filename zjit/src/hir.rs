@@ -583,7 +583,7 @@ pub enum Insn {
     /// Un-optimized fallback implementation (dynamic dispatch) for send-ish instructions
     /// Ignoring keyword arguments etc for now
     SendWithoutBlock { self_val: InsnId, cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
-    Send { self_val: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
+    Send { cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
     InvokeSuper { cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
     InvokeBlock { cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
 
@@ -829,11 +829,11 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            Insn::Send { self_val, cd, args, blockiseq, .. } => {
+            Insn::Send { cd, args, blockiseq, .. } => {
                 // For tests, we want to check HIR snippets textually. Addresses change
                 // between runs, making tests fail. Instead, pick an arbitrary hex value to
                 // use as a "pointer" so we can check the rest of the HIR.
-                write!(f, "Send {self_val}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
+                write!(f, "Send {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1343,8 +1343,7 @@ impl Function {
                 args: find_vec!(args),
                 state,
             },
-            &Send { self_val, cd, blockiseq, ref args, state } => Send {
-                self_val: find!(self_val),
+            &Send { cd, blockiseq, ref args, state } => Send {
                 cd,
                 blockiseq,
                 args: find_vec!(args),
@@ -2281,7 +2280,6 @@ impl Function {
                 worklist.push_back(val);
                 worklist.push_back(state);
             }
-            &Insn::Send { self_val, ref args, state, .. }
             | &Insn::SendWithoutBlock { self_val, ref args, state, .. }
             | &Insn::SendWithoutBlockDirect { self_val, ref args, state, .. } => {
                 worklist.push_back(self_val);
@@ -2289,6 +2287,7 @@ impl Function {
                 worklist.push_back(state);
             }
             &Insn::InvokeSuper { ref args, state, .. }
+            | &Insn::Send { ref args, state, .. }
             | &Insn::InvokeBuiltin { ref args, state, .. }
             | &Insn::InvokeBlock { ref args, state, .. } => {
                 worklist.extend(args);
@@ -3623,9 +3622,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
                     let args = state.stack_pop_n(argc as usize)?;
-                    let recv = state.stack_pop()?;
+                    let _recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::Send { self_val: recv, cd, blockiseq, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::Send { cd, blockiseq, args, state: exit_id });
                     state.stack_push(send);
 
                     // Reload locals that may have been modified by the blockiseq.
@@ -5064,7 +5063,7 @@ mod tests {
         fn test@<compiled>:3:
         bb0(v0:BasicObject, v1:BasicObject):
           v5:BasicObject = GetLocal l0, EP@3
-          v7:BasicObject = Send v5, 0x1000, :each
+          v7:BasicObject = Send 0x1000, :each
           v8:BasicObject = GetLocal l0, EP@3
           CheckInterrupts
           Return v7
@@ -7799,7 +7798,7 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
-          v5:BasicObject = Send v0, 0x1000, :foo
+          v5:BasicObject = Send 0x1000, :foo
           CheckInterrupts
           Return v5
         ");
@@ -7823,7 +7822,7 @@ mod opt_tests {
           v1:NilClass = Const Value(nil)
           v5:Fixnum[1] = Const Value(1)
           SetLocal l0, EP@3, v5
-          v10:BasicObject = Send v0, 0x1000, :foo
+          v10:BasicObject = Send 0x1000, :foo
           v11:BasicObject = GetLocal l0, EP@3
           v14:BasicObject = GetLocal l0, EP@3
           CheckInterrupts
