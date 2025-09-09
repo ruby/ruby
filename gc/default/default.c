@@ -993,7 +993,7 @@ total_final_slots_count(rb_objspace_t *objspace)
 #endif
 
 struct RZombie {
-    struct RBasic basic;
+    VALUE flags;
     VALUE next;
     void (*dfree)(void *);
     void *data;
@@ -2586,7 +2586,7 @@ rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), voi
     rb_objspace_t *objspace = objspace_ptr;
 
     struct RZombie *zombie = RZOMBIE(obj);
-    zombie->basic.flags = T_ZOMBIE | (zombie->basic.flags & ZOMBIE_OBJ_KEPT_FLAGS);
+    zombie->flags = T_ZOMBIE | (zombie->flags & ZOMBIE_OBJ_KEPT_FLAGS);
     zombie->dfree = dfree;
     zombie->data = data;
     VALUE prev, next = heap_pages_deferred_final;
