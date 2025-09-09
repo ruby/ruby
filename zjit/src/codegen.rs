@@ -8,7 +8,7 @@ use std::ffi::{c_int, c_long, c_void};
 use std::slice;
 
 use crate::asm::Label;
-use crate::backend::current::{Reg, ALLOC_REGS};
+use crate::backend::current::ALLOC_REGS;
 use crate::invariants::{
     track_bop_assumption, track_cme_assumption, track_no_ep_escape_assumption, track_no_trace_point_assumption,
     track_single_ractor_assumption, track_stable_constant_names_assumption, track_no_singleton_class_assumption
@@ -945,20 +945,7 @@ fn gen_branch_params(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdg
     }
 
     asm_comment!(asm, "set branch params: {}", branch.args.len());
-    let mut moves: Vec<(Reg, Opnd)> = vec![];
-    for (idx, &arg) in branch.args.iter().enumerate() {
-        match param_opnd(idx) {
-            Opnd::Reg(reg) => {
-                // If a parameter is a register, we need to parallel-move it
-                moves.push((reg, jit.get_opnd(arg)));
-            },
-            param => {
-                // If a parameter is memory, we set it beforehand
-                asm.mov(param, jit.get_opnd(arg));
-            }
-        }
-    }
-    asm.parallel_mov(moves);
+    asm.parallel_mov(branch.args.iter().enumerate().map(|(idx, &arg)| (param_opnd(idx), jit.get_opnd(arg))).collect());
 }
 
 /// Compile a constant
@@ -1556,9 +1543,18 @@ fn gen_guard_type_not(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, g
         let cont = asm.new_label("guard_type_not_string_cont");
         let side = side_exit(jit, state, GuardTypeNot(guard_type));
 
+        // Reserve two registers (asm.load and another temporary split) to avoid
+        // de-allocation in the following branches that might not be taken.
+        asm.reserve_vregs(2);
+
         // Continue if special constant (not string)
         asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
         asm.jnz(cont.clone());
+
+        // The following `cmp` may move the `val` VReg from memory to a register,
+        // but if that happens, future use of the VReg will be invalid when the
+        // previous `test`+`jnz` skips this branch. Use a separate VReg to avoid it.
+        let val = asm.load(val);
 
         // Continue if false (not string)
         asm.cmp(val, Qfalse.into());
@@ -1986,13 +1982,19 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
     for &reg in ALLOC_REGS.iter() {
         asm.cpush(Opnd::Reg(reg));
     }
-    const { assert!(ALLOC_REGS.len() % 2 == 0, "x86_64 would need to push one more if we push an odd number of regs"); }
+    if cfg!(target_arch = "x86_64") {
+        const { assert!(ALLOC_REGS.len() % 2 == 1, "x86_64 would need to stop pushing this if we push an even number of regs"); }
+        asm.cpush(Opnd::Reg(ALLOC_REGS[0]));
+    }
 
     // Compile the stubbed ISEQ
     let jump_addr = asm_ccall!(asm, function_stub_hit, SCRATCH_OPND, CFP, SP);
     asm.mov(SCRATCH_OPND, jump_addr);
 
     asm_comment!(asm, "restore argument registers");
+    if cfg!(target_arch = "x86_64") {
+        asm.cpop_into(Opnd::Reg(ALLOC_REGS[0]));
+    }
     for &reg in ALLOC_REGS.iter().rev() {
         asm.cpop_into(Opnd::Reg(reg));
     }
@@ -2037,13 +2039,13 @@ pub fn gen_exit_trampoline_with_counter(cb: &mut CodeBlock, exit_trampoline: Cod
     })
 }
 
-fn gen_push_opnds(jit: &mut JITState, asm: &mut Assembler, opnds: &[Opnd]) -> lir::Opnd {
+fn gen_push_opnds(_jit: &mut JITState, asm: &mut Assembler, opnds: &[Opnd]) -> lir::Opnd {
     let n = opnds.len();
 
     // Calculate the compile-time NATIVE_STACK_PTR offset from NATIVE_BASE_PTR
     // At this point, frame_setup(&[], jit.c_stack_slots) has been called,
     // which allocated aligned_stack_bytes(jit.c_stack_slots) on the stack
-    let frame_size = aligned_stack_bytes(jit.c_stack_slots);
+    //let frame_size = aligned_stack_bytes(jit.c_stack_slots);
     let allocation_size = aligned_stack_bytes(n);
 
     if n != 0 {
@@ -2052,19 +2054,21 @@ fn gen_push_opnds(jit: &mut JITState, asm: &mut Assembler, opnds: &[Opnd]) -> li
     } else {
         asm_comment!(asm, "no opnds to allocate");
     }
+    let argv = asm.load(NATIVE_STACK_PTR);
 
     // Calculate the total offset from NATIVE_BASE_PTR to our buffer
-    let total_offset_from_base = (frame_size + allocation_size) as i32;
+    //let total_offset_from_base = (frame_size + allocation_size) as i32;
 
     for (idx, &opnd) in opnds.iter().enumerate() {
-        let slot_offset = -total_offset_from_base + (idx as i32 * SIZEOF_VALUE_I32);
+        //let slot_offset = -total_offset_from_base + (idx as i32 * SIZEOF_VALUE_I32);
         asm.mov(
-            Opnd::mem(VALUE_BITS, NATIVE_BASE_PTR, slot_offset),
+            Opnd::mem(VALUE_BITS, argv, idx as i32 * SIZEOF_VALUE_I32),
             opnd
         );
     }
 
-    asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, -total_offset_from_base))
+    //asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, -total_offset_from_base))
+    argv
 }
 
 fn gen_pop_opnds(asm: &mut Assembler, opnds: &[Opnd]) {

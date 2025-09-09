@@ -786,7 +786,7 @@ pub fn imul(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
             write_rm(cb, false, true, opnd1, opnd0, None, &[0x0F, 0xAF]);
         }
 
-        _ => unreachable!()
+        _ => unreachable!("unexpected operands: {opnd0:?}, {opnd1:?}")
     }
 }
 
@@ -921,7 +921,7 @@ pub fn lea(cb: &mut CodeBlock, dst: X86Opnd, src: X86Opnd) {
         assert!(matches!(src, X86Opnd::Mem(_) | X86Opnd::IPRel(_)));
         write_rm(cb, false, true, dst, src, None, &[0x8d]);
     } else {
-        unreachable!();
+        unreachable!("expected dst to be Reg, but got: {dst:?}");
     }
 }
 
@@ -1334,7 +1334,7 @@ pub fn test(cb: &mut CodeBlock, rm_opnd: X86Opnd, test_opnd: X86Opnd) {
                 write_rm(cb, rm_num_bits == 16, rm_num_bits == 64, test_opnd, rm_opnd, None, &[0x85]);
             }
         },
-        _ => unreachable!()
+        _ => unreachable!("expected test_opnd to be Reg, UImm, or Imm, but got: {rm_opnd:?}, {test_opnd:?}")
     };
 }
 

@@ -91,7 +91,6 @@ pub const ALLOC_REGS: &[Reg] = &[
     RCX_REG,
     R8_REG,
     R9_REG,
-    R10_REG,
     RAX_REG,
 ];
 
@@ -103,6 +102,7 @@ impl Assembler
     /// so conflicts are possible.
     pub const SCRATCH_REG: Reg = R11_REG;
     const SCRATCH0: X86Opnd = X86Opnd::Reg(Assembler::SCRATCH_REG);
+    pub const SPILL_BASE_REG: Reg = R10_REG;
 
     /// Get the list of registers from which we can allocate on this platform
     pub fn get_alloc_regs() -> Vec<Reg> {
@@ -130,13 +130,15 @@ impl Assembler
         let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), live_ranges.len());
 
         while let Some((index, mut insn)) = iterator.next() {
+            // If the instruction itself is already a load, no need to split it with a load.
             let is_load = matches!(insn, Insn::Load { .. } | Insn::LoadInto { .. });
-            let mut opnd_iter = insn.opnd_iter_mut();
-
-            while let Some(opnd) = opnd_iter.next() {
-                // Lower Opnd::Value to Opnd::VReg or Opnd::UImm
-                match opnd {
-                    Opnd::Value(value) if !is_load => {
+            // If the instruction is a jump to a side exit, no need to split operands in it.
+            let is_exit = matches!(insn.target(), Some(Target::SideExit { .. }));
+            if !is_load && !is_exit {
+                let mut opnd_iter = insn.opnd_iter_mut();
+                while let Some(opnd) = opnd_iter.next() {
+                    // Lower Opnd::Value to Opnd::VReg or Opnd::UImm
+                    if let Opnd::Value(value) = opnd {
                         // Since mov(mem64, imm32) sign extends, as_i64() makes sure
                         // we split when the extended value is different.
                         *opnd = if !value.special_const_p() || imm_num_bits(value.as_i64()) > 32 {
@@ -145,8 +147,7 @@ impl Assembler
                             Opnd::UImm(value.as_u64())
                         }
                     }
-                    _ => {},
-                };
+                }
             }
 
             // When we split an operand, we can create a new VReg not in `live_ranges`.
@@ -342,9 +343,9 @@ impl Assembler
 
                     // Load each operand into the corresponding argument register.
                     if !opnds.is_empty() {
-                        let mut args: Vec<(Reg, Opnd)> = vec![];
+                        let mut args: Vec<(Opnd, Opnd)> = vec![];
                         for (idx, opnd) in opnds.iter_mut().enumerate() {
-                            args.push((C_ARG_OPNDS[idx].unwrap_reg(), *opnd));
+                            args.push((C_ARG_OPNDS[idx], *opnd));
                         }
                         asm.parallel_mov(args);
                     }
@@ -505,34 +506,67 @@ impl Assembler
                     pop(cb, RBP);
                 }
 
-                Insn::Add { left, right, .. } => {
+                Insn::Add { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     add(cb, left.into(), opnd1);
+                    if left != out {
+                        mov(cb, out.into(), left.into());
+                    }
                 },
 
-                Insn::Sub { left, right, .. } => {
+                Insn::Sub { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     sub(cb, left.into(), opnd1);
+                    if left != out {
+                        mov(cb, out.into(), left.into());
+                    }
                 },
 
-                Insn::Mul { left, right, .. } => {
+                Insn::Mul { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     imul(cb, left.into(), opnd1);
+                    if left != out {
+                        if let (Opnd::Mem(_), Opnd::Reg(_)) = (left, right) {
+                            // imul flips the left and the right for this case
+                            mov(cb, out.into(), right.into());
+                        } else {
+                            mov(cb, out.into(), left.into());
+                        }
+                    }
                 },
 
-                Insn::And { left, right, .. } => {
+                Insn::And { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     and(cb, left.into(), opnd1);
+                    if left != out {
+                        if matches!((out, left), (Opnd::Mem(_), Opnd::Mem(_))) {
+                            mov(cb, SCRATCH_OPND.into(), left.into());
+                            mov(cb, out.into(), SCRATCH_OPND.into());
+                        } else {
+                            mov(cb, out.into(), left.into());
+                        }
+                    }
                 },
 
-                Insn::Or { left, right, .. } => {
+                Insn::Or { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
-                    or(cb, left.into(), opnd1);
+                    if matches!((left, right), (Opnd::Mem(_), Opnd::Mem(_))) {
+                        or(cb, SCRATCH_OPND.into(), opnd1);
+                        or(cb, left.into(), SCRATCH_OPND.into());
+                    } else {
+                        or(cb, left.into(), opnd1);
+                    }
+                    if left != out {
+                        mov(cb, out.into(), left.into());
+                    }
                 },
 
-                Insn::Xor { left, right, .. } => {
+                Insn::Xor { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     xor(cb, left.into(), opnd1);
+                    if left != out {
+                        mov(cb, out.into(), left.into());
+                    }
                 },
 
                 Insn::Not { opnd, .. } => {
@@ -624,10 +658,16 @@ impl Assembler
                     movsx(cb, out.into(), opnd.into());
                 },
 
+                Insn::ReserveRegs(_) |
                 Insn::ParallelMov { .. } => unreachable!("{insn:?} should have been lowered at alloc_regs()"),
 
                 Insn::Mov { dest, src } => {
-                    mov(cb, dest.into(), src.into());
+                    if matches!((dest, src), (Opnd::Mem(_), Opnd::Mem(_))) {
+                        mov(cb, SCRATCH_OPND.into(), src.into());
+                        mov(cb, dest.into(), SCRATCH_OPND.into());
+                    } else {
+                        mov(cb, dest.into(), src.into());
+                    }
                 },
 
                 // Load effective address
