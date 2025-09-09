@@ -268,7 +268,7 @@ module Bundler
       private
 
       def cache_to(custom_path, try_migrate: false)
-        return unless Bundler.feature_flag.cache_all?
+        return unless Bundler.settings[:cache_all]
 
         app_cache_path = app_cache_path(custom_path)
 

@@ -786,7 +786,6 @@ RSpec.describe "the lockfile format" do
       c.no_checksum "foo", "1.0"
     end
 
-    bundle "config set cache_all true"
     bundle :cache
     bundle :install, local: true
 

@@ -336,7 +336,6 @@ RSpec.describe "bundle install with specific platforms" do
          #{Bundler::VERSION}
     L
 
-    bundle "config set --local cache_all true"
     bundle "cache --all-platforms"
 
     expect(err).to be_empty
