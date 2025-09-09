@@ -757,9 +757,9 @@ module Bundler
         "#{option_value}`, and stop using this flag"
       removed_message =
         "The `#{flag_name}` flag has been removed because it relied on being " \
-        "remembered across bundler invocations, which bundler will no longer " \
-        "do. Instead please use `bundle config set #{option_name} " \
-        "#{option_value}`, and stop using this flag"
+        "remembered across bundler invocations, which bundler no longer does. " \
+        "Instead please use `bundle config set #{option_name} #{option_value}`, " \
+        "and stop using this flag"
       Bundler::SharedHelpers.major_deprecation 2, message, removed_message: removed_message
     end
 
