@@ -585,6 +585,7 @@ pub enum Insn {
     SendWithoutBlock { self_val: InsnId, cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
     Send { self_val: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
     InvokeSuper { self_val: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
+    InvokeBlock { cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
 
     /// Optimized ISEQ call
     SendWithoutBlockDirect {
@@ -840,6 +841,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::InvokeSuper { self_val, blockiseq, args, .. } => {
                 write!(f, "InvokeSuper {self_val}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                Ok(())
+            }
+            Insn::InvokeBlock { args, .. } => {
+                write!(f, "InvokeBlock")?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1349,6 +1357,11 @@ impl Function {
                 args: find_vec!(args),
                 state,
             },
+            &InvokeBlock { cd, ref args, state } => InvokeBlock {
+                cd,
+                args: find_vec!(args),
+                state,
+            },
             &InvokeBuiltin { bf, ref args, state, return_type } => InvokeBuiltin { bf, args: find_vec!(args), state, return_type },
             &ArrayDup { val, state } => ArrayDup { val: find!(val), state },
             &HashDup { val, state } => HashDup { val: find!(val), state },
@@ -1463,6 +1476,7 @@ impl Function {
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
             Insn::InvokeSuper { .. } => types::BasicObject,
+            Insn::InvokeBlock { .. } => types::BasicObject,
             Insn::InvokeBuiltin { return_type, .. } => return_type.unwrap_or(types::BasicObject),
             Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::DefinedIvar { .. } => types::BasicObject,
@@ -2276,7 +2290,8 @@ impl Function {
                 worklist.extend(args);
                 worklist.push_back(state);
             }
-            &Insn::InvokeBuiltin { ref args, state, .. } => {
+            &Insn::InvokeBuiltin { ref args, state, .. }
+            | &Insn::InvokeBlock { ref args, state, .. } => {
                 worklist.extend(args);
                 worklist.push_back(state)
             }
@@ -3664,6 +3679,21 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             state.setlocal(ep_offset, val);
                         }
                     }
+                }
+                YARVINSN_invokeblock => {
+                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                    let call_info = unsafe { rb_get_call_data_ci(cd) };
+                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
+                        // Unknown call type; side-exit into the interpreter
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
+                        break;  // End the block
+                    }
+                    let argc = unsafe { vm_ci_argc((*cd).ci) };
+                    let args = state.stack_pop_n(argc as usize)?;
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let result = fun.push_insn(block, Insn::InvokeBlock { cd, args, state: exit_id });
+                    state.stack_push(result);
                 }
                 YARVINSN_getglobal => {
                     let id = ID(get_arg(pc, 0).as_u64());
@@ -5835,11 +5865,14 @@ mod tests {
           v19:CBool = Test v16
           IfFalse v19, bb1(v0, v1, v2, v3, v4, v10)
           PatchPoint NoEPEscape(open)
-          SideExit UnhandledYARVInsn(invokeblock)
-        bb1(v27:BasicObject, v28:BasicObject, v29:BasicObject, v30:BasicObject, v31:BasicObject, v32:BasicObject):
+          v26:BasicObject = InvokeBlock, v10
+          v30:BasicObject = InvokeBuiltin dir_s_close, v0, v10
+          CheckInterrupts
+          Return v26
+        bb1(v36:BasicObject, v37:BasicObject, v38:BasicObject, v39:BasicObject, v40:BasicObject, v41:BasicObject):
           PatchPoint NoEPEscape(open)
           CheckInterrupts
-          Return v32
+          Return v41
         ");
     }
 
@@ -6026,6 +6059,38 @@ mod tests {
         bb0(v0:BasicObject):
           v6:Fixnum[2] = Const Value(2)
           Throw TAG_BREAK, v6
+        ");
+    }
+
+    #[test]
+    fn test_invokeblock() {
+        eval(r#"
+            def test
+              yield
+            end
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v5:BasicObject = InvokeBlock
+          CheckInterrupts
+          Return v5
+        ");
+    }
+
+    #[test]
+    fn test_invokeblock_with_args() {
+        eval(r#"
+            def test(x, y)
+              yield x, y
+            end
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v7:BasicObject = InvokeBlock, v1, v2
+          CheckInterrupts
+          Return v7
         ");
     }
 }
