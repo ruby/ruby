@@ -5,7 +5,6 @@ bundle-plugin(1) -- Manage Bundler plugins
 
 `bundle plugin` install PLUGINS [--source=SOURCE] [--version=VERSION]
                               [--git=GIT] [--branch=BRANCH|--ref=REF]
-                              [--local-git=LOCAL_GIT]
                               [--path=PATH]<br>
 `bundle plugin` uninstall PLUGINS [--all]<br>
 `bundle plugin` list<br>
@@ -58,13 +57,6 @@ global source specified in Gemfile is ignored.
   Install the plugin gem from a local path.
 
   Example: `bundle plugin install bundler-graph --path ../bundler-graph`
-
-* `--local-git=LOCAL_GIT`:
-  Install the plugin gem from a local Git repository.
-
-  Example: `bundle plugin install bundler-graph --local-git ../bundler-graph`.
-
-  This option is deprecated in favor of `--git`.
 
 ### uninstall
 
