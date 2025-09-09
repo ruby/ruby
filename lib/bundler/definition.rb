@@ -136,7 +136,7 @@ module Bundler
         @locked_sources = []
         @originally_locked_specs = @locked_specs
         @originally_locked_sources = @locked_sources
-        @locked_checksums = Bundler.feature_flag.lockfile_checksums?
+        @locked_checksums = Bundler.settings[:lockfile_checksums]
       end
 
       @unlocking_ruby ||= if @ruby_version && locked_ruby_version_object

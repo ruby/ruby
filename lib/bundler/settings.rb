@@ -81,6 +81,7 @@ module Bundler
       "BUNDLE_RETRY" => 3,
       "BUNDLE_TIMEOUT" => 10,
       "BUNDLE_VERSION" => "lockfile",
+      "BUNDLE_LOCKFILE_CHECKSUMS" => true,
     }.freeze
 
     def initialize(root = nil)
