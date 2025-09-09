@@ -14,81 +14,67 @@ RSpec.describe "major deprecations" do
     describe ".clean_env" do
       before do
         source = "Bundler.clean_env"
-        bundle "exec ruby -e #{source.dump}"
+        bundle "exec ruby -e #{source.dump}", raise_on_error: false
       end
 
-      it "is deprecated in favor of .unbundled_env" do
-        expect(deprecations).to include \
-          "`Bundler.clean_env` has been deprecated in favor of `Bundler.unbundled_env`. " \
-          "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env` " \
-          "(called at -e:1)"
+      it "is removed in favor of .unbundled_env and shows a helpful error message about it" do
+        expect(err).to include \
+          "`Bundler.clean_env` has been removed in favor of `Bundler.unbundled_env`. " \
+          "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`" \
       end
-
-      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
 
     describe ".with_clean_env" do
       before do
         source = "Bundler.with_clean_env {}"
-        bundle "exec ruby -e #{source.dump}"
+        bundle "exec ruby -e #{source.dump}", raise_on_error: false
       end
 
-      it "is deprecated in favor of .unbundled_env" do
-        expect(deprecations).to include(
-          "`Bundler.with_clean_env` has been deprecated in favor of `Bundler.with_unbundled_env`. " \
-          "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env` " \
-          "(called at -e:1)"
+      it "is removed in favor of .unbundled_env and shows a helpful error message about it" do
+        expect(err).to include(
+          "`Bundler.with_clean_env` has been removed in favor of `Bundler.with_unbundled_env`. " \
+          "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`"
         )
       end
-
-      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
 
     describe ".clean_system" do
       before do
         source = "Bundler.clean_system('ls')"
-        bundle "exec ruby -e #{source.dump}"
+        bundle "exec ruby -e #{source.dump}", raise_on_error: false
       end
 
-      it "is deprecated in favor of .unbundled_system" do
-        expect(deprecations).to include(
-          "`Bundler.clean_system` has been deprecated in favor of `Bundler.unbundled_system`. " \
-          "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system` " \
-          "(called at -e:1)"
+      it "is removed in favor of .unbundled_system and shows a helpful error message about it" do
+        expect(err).to include(
+          "`Bundler.clean_system` has been removed in favor of `Bundler.unbundled_system`. " \
+          "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`" \
         )
       end
-
-      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
 
     describe ".clean_exec" do
       before do
         source = "Bundler.clean_exec('ls')"
-        bundle "exec ruby -e #{source.dump}"
+        bundle "exec ruby -e #{source.dump}", raise_on_error: false
       end
 
-      it "is deprecated in favor of .unbundled_exec" do
-        expect(deprecations).to include(
-          "`Bundler.clean_exec` has been deprecated in favor of `Bundler.unbundled_exec`. " \
-          "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec` " \
-          "(called at -e:1)"
+      it "is removed in favor of .unbundled_exec and shows a helpful error message about it" do
+        expect(err).to include(
+          "`Bundler.clean_exec` has been removed in favor of `Bundler.unbundled_exec`. " \
+          "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`" \
         )
       end
-
-      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
 
     describe ".environment" do
       before do
         source = "Bundler.environment"
-        bundle "exec ruby -e #{source.dump}"
+        bundle "exec ruby -e #{source.dump}", raise_on_error: false
       end
 
-      it "is deprecated in favor of .load" do
-        expect(deprecations).to include "Bundler.environment has been removed in favor of Bundler.load (called at -e:1)"
+      it "is removed in favor of .load and shows a helpful error message about it" do
+        expect(err).to include "Bundler.environment has been removed in favor of Bundler.load"
       end
-
-      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
   end
 
