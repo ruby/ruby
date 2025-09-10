@@ -210,6 +210,29 @@
 #include <locale.h>
 #endif
 
+#if defined(HAVE_STDCKDINT_H) || !defined(__has_include)
+#elif __has_include(<stdckdint.h>)
+# define HAVE_STDCKDINT_H 1
+#endif
+#ifdef HAVE_STDCKDINT_H
+# include <stdckdint.h>
+#endif
+
+#if !defined(ckd_add)
+static inline int /* bool */
+ckd_add(int *result, int x, int y)
+{
+    if (x < 0) {
+        if (y < INT_MIN - x) return 1;
+    }
+    else if (x > 0) {
+        if (y > INT_MAX - x) return 1;
+    }
+    *result = x + y;
+    return 0;
+}
+#endif
+
 #ifdef MALLOC
 extern void *MALLOC(size_t);
 #else
@@ -2841,7 +2864,10 @@ dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
         leftright = 0;
         /* no break */
       case 5:
-        i = ndigits + k + 1;
+        if (ckd_add(&i, ndigits, k + 1)) { /* k + 1 should be safe */
+            Bfree(b);
+            return NULL;
+        }
         ilim = i;
         ilim1 = i - 1;
         if (i <= 0)
