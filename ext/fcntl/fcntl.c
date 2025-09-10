@@ -65,7 +65,7 @@ pack up your own arguments to pass as args for locking functions, etc.
  *
  */
 
-#define FCNTL_VERSION "1.2.0"
+#define FCNTL_VERSION "1.3.0"
 
 void
 Init_fcntl(void)
