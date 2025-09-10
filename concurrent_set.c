@@ -40,14 +40,26 @@ concurrent_set_size(const void *ptr)
         (set->capacity * sizeof(struct concurrent_set_entry));
 }
 
+/* Hack: Though it would be trivial, we're intentionally avoiding WB-protecting
+ * this object. This prevents the object from aging and ensures it can always be
+ * collected in a minor GC.
+ * Longer term this deserves a better way to reclaim memory promptly.
+ */
+static void
+concurrent_set_mark(void *ptr)
+{
+    (void)ptr;
+}
+
 static const rb_data_type_t concurrent_set_type = {
     .wrap_struct_name = "VM/concurrent_set",
     .function = {
-        .dmark = NULL,
+        .dmark = concurrent_set_mark,
         .dfree = concurrent_set_free,
         .dsize = concurrent_set_size,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    /* Hack: NOT WB_PROTECTED on purpose (see above) */
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 VALUE
