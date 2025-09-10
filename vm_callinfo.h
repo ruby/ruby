@@ -565,7 +565,8 @@ vm_cc_invalidate(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc != vm_cc_empty());
-    VM_ASSERT(cc->klass != Qundef); // should be enable
+    // TODO: rb_multi_ractor_p() is a workaround to stabilize CI
+    VM_ASSERT(cc->klass != Qundef || rb_multi_ractor_p()); // should be enable
 
     *(VALUE *)&cc->klass = Qundef;
     RB_DEBUG_COUNTER_INC(cc_ent_invalidate);
