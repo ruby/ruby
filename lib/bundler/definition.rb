@@ -1051,6 +1051,7 @@ module Bundler
 
         # Replace the locked dependency's source with the equivalent source from the Gemfile
         s.source = replacement_source || default_source
+        next if s.source_changed?
 
         source = s.source
         next if @sources_to_unlock.include?(source.name)
@@ -1138,7 +1139,7 @@ module Bundler
     def additional_base_requirements_to_prevent_downgrades(resolution_base)
       return resolution_base unless @locked_gems && !sources.expired_sources?(@locked_gems.sources)
       @originally_locked_specs.each do |locked_spec|
-        next if locked_spec.source.is_a?(Source::Path)
+        next if locked_spec.source.is_a?(Source::Path) || locked_spec.source_changed?
 
         name = locked_spec.name
         next if @changed_dependencies.include?(name)
