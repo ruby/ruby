@@ -1099,7 +1099,7 @@ impl Context {
                 MapToLocal(local_idx) => {
                     bits.push_op(CtxOp::MapTempLocal);
                     bits.push_u3(stack_idx as u8);
-                    bits.push_u3(local_idx as u8);
+                    bits.push_u3(local_idx);
                 }
 
                 MapToSelf => {
