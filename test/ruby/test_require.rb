@@ -857,7 +857,7 @@ class TestRequire < Test::Unit::TestCase
         def to_path = @path
       end
 
-      def create_ruby_file = Tempfile.create(["test", ".rb"]).path
+      def create_ruby_file = Tempfile.open(["test", ".rb"]).path
 
       require MyString.new(create_ruby_file)
       $LOADED_FEATURES.unshift(create_ruby_file)
