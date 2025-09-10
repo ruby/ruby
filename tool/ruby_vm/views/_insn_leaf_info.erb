@@ -4,7 +4,7 @@ insn_leaf(int insn, const VALUE *opes)
 {
     switch (insn) {
 % RubyVM::Instructions.each do |insn|
-%   next if insn.is_a?(RubyVM::TraceInstructions) || insn.is_a?(RubyVM::ZJITInstructions)
+%   next if insn.is_a?(RubyVM::TraceInstruction) || insn.is_a?(RubyVM::ZJITInstruction)
       case <%= insn.bin %>:
         return attr_leaf_<%= insn.name %>(<%=
           insn.operands.map.with_index do |ope, i|

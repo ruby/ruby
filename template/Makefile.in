@@ -664,14 +664,14 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(tooldir)/ruby_vm/loaders/opt_operand_def.rb \
 	  $(tooldir)/ruby_vm/loaders/vm_opts_h.rb \
 	  $(tooldir)/ruby_vm/models/attribute.rb \
-	  $(tooldir)/ruby_vm/models/bare_instructions.rb \
+	  $(tooldir)/ruby_vm/models/bare_instruction.rb \
 	  $(tooldir)/ruby_vm/models/c_expr.rb \
 	  $(tooldir)/ruby_vm/models/instructions.rb \
-	  $(tooldir)/ruby_vm/models/instructions_unifications.rb \
-	  $(tooldir)/ruby_vm/models/operands_unifications.rb \
-	  $(tooldir)/ruby_vm/models/trace_instructions.rb \
+	  $(tooldir)/ruby_vm/models/instructions_unification.rb \
+	  $(tooldir)/ruby_vm/models/operands_unification.rb \
+	  $(tooldir)/ruby_vm/models/trace_instruction.rb \
 	  $(tooldir)/ruby_vm/models/typemap.rb \
-	  $(tooldir)/ruby_vm/models/zjit_instructions.rb \
+	  $(tooldir)/ruby_vm/models/zjit_instruction.rb \
 	  $(tooldir)/ruby_vm/scripts/converter.rb \
 	  $(tooldir)/ruby_vm/scripts/insns2vm.rb \
 	  $(tooldir)/ruby_vm/views/_attributes.erb \

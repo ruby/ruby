@@ -9,14 +9,14 @@
 # conditions  mentioned in  the file  COPYING are  met.  Consult  the file  for
 # details.
 
-require_relative 'bare_instructions'
-require_relative 'operands_unifications'
-require_relative 'instructions_unifications'
+require_relative 'bare_instruction'
+require_relative 'operands_unification'
+require_relative 'instructions_unification'
 
-RubyVM::Instructions = RubyVM::BareInstructions.to_a + \
-                       RubyVM::OperandsUnifications.to_a + \
-                       RubyVM::InstructionsUnifications.to_a
+RubyVM::Instructions = RubyVM::BareInstruction.all +
+                       RubyVM::OperandsUnification.all +
+                       RubyVM::InstructionsUnification.all
 
-require_relative 'trace_instructions'
-require_relative 'zjit_instructions'
+require_relative 'trace_instruction'
+require_relative 'zjit_instruction'
 RubyVM::Instructions.freeze

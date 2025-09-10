@@ -14,7 +14,7 @@ require_relative 'c_expr'
 require_relative 'typemap'
 require_relative 'attribute'
 
-class RubyVM::BareInstructions
+class RubyVM::BareInstruction
   attr_reader :template, :name, :operands, :pops, :rets, :decls, :expr
 
   def initialize opts = {}
@@ -224,13 +224,13 @@ class RubyVM::BareInstructions
     new h.merge(:template => h)
   }
 
-  def self.fetch name
+  def self.find(name)
     @instances.find do |insn|
       insn.name == name
     end or raise IndexError, "instruction not found: #{name}"
   end
 
-  def self.to_a
+  def self.all
     @instances
   end
 end
