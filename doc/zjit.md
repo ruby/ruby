@@ -110,6 +110,49 @@ You can also run a single test case by matching the method name:
 make test-all TESTS="test/ruby/test_zjit.rb -n TestZJIT#test_putobject"
 ```
 
+## Statistics Collection
+
+ZJIT provides detailed statistics about JIT compilation and execution behavior.
+
+### Basic Stats
+
+Run with basic statistics printed on exit:
+
+```bash
+./miniruby --zjit-stats script.rb
+```
+
+Collect stats without printing (access via `RubyVM::ZJIT.stats` in Ruby):
+
+```bash
+./miniruby --zjit-stats=quiet script.rb
+```
+
+### Accessing Stats in Ruby
+
+```ruby
+# Check if stats are enabled
+if RubyVM::ZJIT.stats_enabled?
+  stats = RubyVM::ZJIT.stats
+  puts "Compiled ISEQs: #{stats[:compiled_iseq_count]}"
+  puts "Failed ISEQs: #{stats[:failed_iseq_count]}"
+
+  # You can also reset stats during execution
+  RubyVM::ZJIT.reset_stats!
+end
+```
+
+### Performance Ratio
+
+The `ratio_in_zjit` stat shows the percentage of Ruby instructions executed in JIT code vs interpreter. This metric only appears when ZJIT is built with `--enable-zjit=stats` (which enables `rb_vm_insn_count` tracking) and represents a key performance indicator for ZJIT effectiveness.
+
+To build with stats support:
+
+```bash
+./configure --enable-zjit=stats
+make -j
+```
+
 ## ZJIT Glossary
 
 This glossary contains terms that are helpful for understanding ZJIT.
