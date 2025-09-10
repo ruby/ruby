@@ -439,6 +439,21 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_forwardable_iseq
+    assert_compiles '1', %q{
+      def test(...) = 1
+      test
+    }
+  end
+
+  def test_sendforward
+    assert_runs '[1, 2]', %q{
+      def callee(a, b) = [a, b]
+      def test(...) = callee(...)
+      test(1, 2)
+    }, insns: [:sendforward]
+  end
+
   def test_iseq_with_optional_arguments
     assert_compiles '[[1, 2], [3, 4]]', %q{
       def test(a, b = 2) = [a, b]

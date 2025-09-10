@@ -130,7 +130,6 @@ make_counters! {
     compile_error_parse_malformed_iseq,
     compile_error_parse_validation,
     compile_error_parse_not_allowed,
-    compile_error_parse_parameter_type_forwardable,
 
     // The number of times YARV instructions are executed on JIT code
     zjit_insn_count,
@@ -196,7 +195,6 @@ pub enum CompileError {
 /// Return a raw pointer to the exit counter for a given CompileError
 pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
     use crate::hir::ParseError::*;
-    use crate::hir::ParameterType::*;
     use crate::stats::CompileError::*;
     use crate::stats::Counter::*;
     match compile_error {
@@ -210,9 +208,6 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
             MalformedIseq(_)  => compile_error_parse_malformed_iseq,
             Validation(_)     => compile_error_parse_validation,
             NotAllowed        => compile_error_parse_not_allowed,
-            UnknownParameterType(parameter_type) => match parameter_type {
-                Forwardable   => compile_error_parse_parameter_type_forwardable,
-            }
         }
     }
 }

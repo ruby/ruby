@@ -2966,16 +2966,8 @@ pub enum CallType {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum ParameterType {
-    /// For example, `foo(...)`. Interaction of JIT
-    /// calling convention and side exits currently unsolved.
-    Forwardable,
-}
-
-#[derive(Clone, Debug, PartialEq)]
 pub enum ParseError {
     StackUnderflow(FrameState),
-    UnknownParameterType(ParameterType),
     MalformedIseq(u32), // insn_idx into iseq_encoded
     Validation(ValidationError),
     NotAllowed,
@@ -3049,17 +3041,11 @@ impl ProfileOracle {
 /// The index of the self parameter in the HIR function
 pub const SELF_PARAM_IDX: usize = 0;
 
-fn filter_unknown_parameter_type(iseq: *const rb_iseq_t) -> Result<(), ParseError> {
-    if unsafe { rb_get_iseq_flags_forwardable(iseq) } { return Err(ParseError::UnknownParameterType(ParameterType::Forwardable)); }
-    Ok(())
-}
-
 /// Compile ISEQ into High-level IR
 pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     if !ZJITState::can_compile_iseq(iseq) {
         return Err(ParseError::NotAllowed);
     }
-    filter_unknown_parameter_type(iseq)?;
     let payload = get_or_create_iseq_payload(iseq);
     let mut profiles = ProfileOracle::new(payload);
     let mut fun = Function::new(iseq);
@@ -5198,13 +5184,23 @@ mod tests {
         eval("
             def test(...) = super(...)
         ");
-        assert_compile_fails("test", ParseError::UnknownParameterType(ParameterType::Forwardable));
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          SideExit UnhandledYARVInsn(invokesuperforward)
+        ");
     }
 
     #[test]
-    fn test_cant_compile_forwardable() {
+    fn test_compile_forwardable() {
         eval("def forwardable(...) = nil");
-        assert_compile_fails("forwardable", ParseError::UnknownParameterType(ParameterType::Forwardable));
+        assert_snapshot!(hir_string("forwardable"), @r"
+        fn forwardable@<compiled>:1:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     // TODO(max): Figure out how to generate a call with OPT_SEND flag
@@ -5249,7 +5245,11 @@ mod tests {
         eval("
             def test(...) = foo(...)
         ");
-        assert_compile_fails("test", ParseError::UnknownParameterType(ParameterType::Forwardable));
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          SideExit UnhandledYARVInsn(sendforward)
+        ");
     }
 
     #[test]
