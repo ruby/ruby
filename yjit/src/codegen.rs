@@ -1094,11 +1094,7 @@ pub fn gen_entry_prologue(
     let code_ptr = cb.get_write_ptr();
 
     let mut asm = Assembler::new(unsafe { get_iseq_body_local_table_size(iseq) });
-    if get_option_ref!(dump_disasm).is_some() {
-        asm_comment!(asm, "YJIT entry point: {}", iseq_get_location(iseq, 0));
-    } else {
-        asm_comment!(asm, "YJIT entry");
-    }
+    asm_comment!(asm, "YJIT entry point: {}", iseq_get_location(iseq, 0));
 
     asm.frame_setup();
 
