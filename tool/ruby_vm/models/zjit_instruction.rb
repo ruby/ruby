@@ -48,11 +48,9 @@ class RubyVM::ZJITInstruction
     return false
   end
 
-  @instances = RubyVM::Instructions.filter(&:zjit_profile?).map {|i| new(i) }
+  @instances = RubyVM::BareInstruction.all.filter(&:zjit_profile?).map {|i| new(i) }
 
   def self.all
     @instances
   end
-
-  RubyVM::Instructions.push(*all)
 end

@@ -58,17 +58,13 @@ class RubyVM::TraceInstruction
     return false
   end
 
-  def zjit_profile?
-    return false
-  end
-
   private
 
-  @instances = RubyVM::Instructions.map {|i| new i }
+  @instances = (RubyVM::BareInstruction.all +
+                RubyVM::OperandsUnification.all +
+                RubyVM::InstructionsUnification.all).map {|i| new(i) }
 
   def self.all
     @instances
   end
-
-  RubyVM::Instructions.push(*all)
 end
