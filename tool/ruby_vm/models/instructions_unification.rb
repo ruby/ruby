@@ -11,9 +11,9 @@
 
 require_relative '../helpers/c_escape'
 require_relative '../loaders/opt_insn_unif_def'
-require_relative 'bare_instructions'
+require_relative 'bare_instruction'
 
-class RubyVM::InstructionsUnifications
+class RubyVM::InstructionsUnification
   include RubyVM::CEscape
 
   attr_reader :name
@@ -22,7 +22,7 @@ class RubyVM::InstructionsUnifications
     @location = opts[:location]
     @name     = namegen opts[:signature]
     @series   = opts[:signature].map do |i|
-      RubyVM::BareInstructions.fetch i # Misshit is fatal
+      RubyVM::BareInstruction.find(i) # Misshit is fatal
     end
   end
 
@@ -36,7 +36,7 @@ class RubyVM::InstructionsUnifications
     new h
   end
 
-  def self.to_a
+  def self.all
     @instances
   end
 end

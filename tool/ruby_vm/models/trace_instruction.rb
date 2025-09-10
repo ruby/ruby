@@ -10,9 +10,9 @@
 # details.
 
 require_relative '../helpers/c_escape'
-require_relative 'bare_instructions'
+require_relative 'bare_instruction'
 
-class RubyVM::TraceInstructions
+class RubyVM::TraceInstruction
   include RubyVM::CEscape
 
   attr_reader :name
@@ -66,9 +66,9 @@ class RubyVM::TraceInstructions
 
   @instances = RubyVM::Instructions.map {|i| new i }
 
-  def self.to_a
+  def self.all
     @instances
   end
 
-  RubyVM::Instructions.push(*to_a)
+  RubyVM::Instructions.push(*all)
 end
