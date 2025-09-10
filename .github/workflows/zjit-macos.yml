@@ -51,6 +51,7 @@ jobs:
       RUN_OPTS: ${{ matrix.run_opts }}
       SPECOPTS: ${{ matrix.specopts }}
       TESTOPTS: ${{ matrix.testopts }}
+      ZJIT_RB_BUG: 1
 
     runs-on: macos-14
 

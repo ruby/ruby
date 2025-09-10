@@ -75,6 +75,7 @@ jobs:
       RUBY_DEBUG: ci
       BUNDLE_JOBS: 8 # for yjit-bench
       RUST_BACKTRACE: 1
+      ZJIT_RB_BUG: 1
 
     runs-on: ubuntu-22.04
 
