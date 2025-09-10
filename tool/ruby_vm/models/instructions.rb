@@ -12,11 +12,12 @@
 require_relative 'bare_instruction'
 require_relative 'operands_unification'
 require_relative 'instructions_unification'
+require_relative 'trace_instruction'
+require_relative 'zjit_instruction'
 
 RubyVM::Instructions = RubyVM::BareInstruction.all +
                        RubyVM::OperandsUnification.all +
-                       RubyVM::InstructionsUnification.all
-
-require_relative 'trace_instruction'
-require_relative 'zjit_instruction'
+                       RubyVM::InstructionsUnification.all +
+                       RubyVM::TraceInstruction.all +
+                       RubyVM::ZJITInstruction.all
 RubyVM::Instructions.freeze
