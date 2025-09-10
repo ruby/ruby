@@ -1832,13 +1832,13 @@ impl Function {
                         };
 
                         if recv_type.is_string() {
-                            let guard = self.push_insn(block, Insn::GuardType { val: val, guard_type: types::String, state: state });
+                            let guard = self.push_insn(block, Insn::GuardType { val, guard_type: types::String, state });
                             // Infer type so AnyToString can fold off this
                             self.insn_types[guard.0] = self.infer_type(guard);
                             self.make_equal_to(insn_id, guard);
                         } else {
-                            self.push_insn(block, Insn::GuardTypeNot { val: val, guard_type: types::String, state: state});
-                            let send_to_s = self.push_insn(block, Insn::SendWithoutBlock { recv: val, cd: cd, args: vec![], state: state});
+                            self.push_insn(block, Insn::GuardTypeNot { val, guard_type: types::String, state});
+                            let send_to_s = self.push_insn(block, Insn::SendWithoutBlock { recv: val, cd, args: vec![], state});
                             self.make_equal_to(insn_id, send_to_s);
                         }
                     }
