@@ -821,11 +821,11 @@ fn gen_stub_exit(ocb: &mut OutlinedCb) -> Option<CodePtr> {
 
 /// Generate an exit to return to the interpreter
 fn gen_exit(exit_pc: *mut VALUE, asm: &mut Assembler) {
-    #[cfg(all(feature = "disasm", not(test)))]
-    {
+    #[cfg(not(test))]
+    asm_comment!(asm, "exit to interpreter on {}", {
         let opcode = unsafe { rb_vm_insn_addr2opcode((*exit_pc).as_ptr()) };
-        asm_comment!(asm, "exit to interpreter on {}", insn_name(opcode as usize));
-    }
+        insn_name(opcode as usize)
+    });
 
     if asm.ctx.is_return_landing() {
         asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
@@ -1292,7 +1292,6 @@ pub fn gen_single_block(
     let mut asm = Assembler::new(jit.num_locals());
     asm.ctx = ctx;
 
-    #[cfg(feature = "disasm")]
     if get_option_ref!(dump_disasm).is_some() {
         let blockid_idx = blockid.idx;
         let chain_depth = if asm.ctx.get_chain_depth() > 0 { format!("(chain_depth: {})", asm.ctx.get_chain_depth()) } else { "".to_string() };
@@ -9031,7 +9030,6 @@ fn gen_send_general(
     let recv_opnd: YARVOpnd = recv.into();
 
     // Log the name of the method we're calling to
-    #[cfg(feature = "disasm")]
     asm_comment!(asm, "call to {}", get_method_name(Some(comptime_recv_klass), mid));
 
     // Gather some statistics about sends
