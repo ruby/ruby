@@ -3332,9 +3332,10 @@ method_inspect(VALUE method)
         for (int i = 0; i < RARRAY_LEN(params); i++) {
             pair = RARRAY_AREF(params, i);
             kind = RARRAY_AREF(pair, 0);
-            name = RARRAY_AREF(pair, 1);
-            // FIXME: in tests it turns out that kind, name = [:req] produces name to be false. Why?..
-            if (NIL_P(name) || name == Qfalse) {
+            if (RARRAY_LEN(pair) > 1) {
+                name = RARRAY_AREF(pair, 1);
+            }
+            else {
                 // FIXME: can it be reduced to switch/case?
                 if (kind == req || kind == opt) {
                     name = rb_str_new2("_");
@@ -3347,6 +3348,9 @@ method_inspect(VALUE method)
                 }
                 else if (kind == nokey) {
                     name = rb_str_new2("nil");
+                }
+                else {
+                    name = Qnil;
                 }
             }
 
