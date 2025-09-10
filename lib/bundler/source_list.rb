@@ -129,16 +129,7 @@ module Bundler
       @rubygems_sources, @path_sources, @git_sources, @plugin_sources = map_sources(replacement_sources)
       @global_rubygems_source = global_replacement_source(replacement_sources)
 
-      different_sources?(lock_sources, replacement_sources)
-    end
-
-    # Returns true if there are changes
-    def expired_sources?(replacement_sources)
-      return false if replacement_sources.empty?
-
-      lock_sources = dup_with_replaced_sources(replacement_sources).lock_sources
-
-      different_sources?(lock_sources, replacement_sources)
+      !equivalent_sources?(lock_sources, replacement_sources)
     end
 
     def prefer_local!
@@ -164,12 +155,6 @@ module Bundler
     end
 
     private
-
-    def dup_with_replaced_sources(replacement_sources)
-      new_source_list = dup
-      new_source_list.replace_sources!(replacement_sources)
-      new_source_list
-    end
 
     def map_sources(replacement_sources)
       rubygems = @rubygems_sources.map do |source|
@@ -222,10 +207,6 @@ module Bundler
           replacement_source
         end
       end
-    end
-
-    def different_sources?(lock_sources, replacement_sources)
-      !equivalent_sources?(lock_sources, replacement_sources)
     end
 
     def rubygems_aggregate_class
