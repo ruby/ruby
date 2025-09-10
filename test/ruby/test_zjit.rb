@@ -2584,6 +2584,46 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_case_dispatch]
   end
 
+  def test_invokeblock
+    assert_compiles '42', %q{
+      def test
+        yield
+      end
+      test { 42 }
+    }, insns: [:invokeblock]
+  end
+
+  def test_invokeblock_with_args
+    assert_compiles '3', %q{
+      def test(x, y)
+        yield x, y
+      end
+      test(1, 2) { |a, b| a + b }
+    }, insns: [:invokeblock]
+  end
+
+  def test_invokeblock_no_block_given
+    assert_compiles ':error', %q{
+      def test
+        yield rescue :error
+      end
+      test
+    }, insns: [:invokeblock]
+  end
+
+  def test_invokeblock_multiple_yields
+    assert_compiles "[1, 2, 3]", %q{
+      results = []
+      def test
+        yield 1
+        yield 2
+        yield 3
+      end
+      test { |x| results << x }
+      results
+    }, insns: [:invokeblock]
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
