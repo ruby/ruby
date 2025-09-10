@@ -367,7 +367,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         // Give up SendWithoutBlockDirect for 6+ args since asm.ccall() doesn't support it.
         Insn::SendWithoutBlockDirect { cd, state, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
             gen_send_without_block(jit, asm, *cd, &function.frame_state(*state)),
-        Insn::SendWithoutBlockDirect { cme, iseq, self_val, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(self_val), opnds!(args), &function.frame_state(*state)),
+        Insn::SendWithoutBlockDirect { cme, iseq, recv, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state)),
         &Insn::InvokeSuper { cd, blockiseq, state, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state)),
         Insn::InvokeBlock { cd, state, .. } => gen_invoke_block(jit, asm, *cd, &function.frame_state(*state)),
         // Ensure we have enough room fit ec, self, and arguments
