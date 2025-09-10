@@ -117,6 +117,19 @@ module Bundler
           @locked_specs   = @originally_locked_specs
           @locked_sources = @originally_locked_sources
         end
+
+        locked_gem_sources = @locked_sources.select {|s| s.is_a?(Source::Rubygems) }
+        @multisource_allowed = locked_gem_sources.size == 1 && locked_gem_sources.first.multiple_remotes? && Bundler.frozen_bundle?
+
+        if @multisource_allowed
+          unless sources.aggregate_global_source?
+            msg = "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
+
+            Bundler::SharedHelpers.major_deprecation 2, msg
+          end
+
+          @sources.merged_gem_lockfile_sections!(locked_gem_sources.first)
+        end
       else
         @locked_gems = nil
         @locked_platforms = []
@@ -128,19 +141,6 @@ module Bundler
         @originally_locked_specs = @locked_specs
         @originally_locked_sources = @locked_sources
         @locked_checksums = Bundler.feature_flag.lockfile_checksums?
-      end
-
-      locked_gem_sources = @locked_sources.select {|s| s.is_a?(Source::Rubygems) }
-      @multisource_allowed = locked_gem_sources.size == 1 && locked_gem_sources.first.multiple_remotes? && Bundler.frozen_bundle?
-
-      if @multisource_allowed
-        unless sources.aggregate_global_source?
-          msg = "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
-
-          Bundler::SharedHelpers.major_deprecation 2, msg
-        end
-
-        @sources.merged_gem_lockfile_sections!(locked_gem_sources.first)
       end
 
       @unlocking_ruby ||= if @ruby_version && locked_ruby_version_object
