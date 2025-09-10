@@ -858,7 +858,7 @@ rb_backtrace_to_location_ary(VALUE self)
 VALUE
 rb_location_ary_to_backtrace(VALUE ary)
 {
-    if (!RB_TYPE_P(ary, T_ARRAY) || !rb_frame_info_p(RARRAY_AREF(ary, 0))) {
+    if (!RB_TYPE_P(ary, T_ARRAY) || RARRAY_LEN(ary) == 0 || !rb_frame_info_p(RARRAY_AREF(ary, 0))) {
         return Qfalse;
     }
 
