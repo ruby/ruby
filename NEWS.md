@@ -161,6 +161,7 @@ The following default gems are updated.
 * bundler 2.8.0.dev
 * erb 5.0.2
 * etc 1.4.6
+* fcntl 1.3.0
 * io-console 0.8.1
 * io-nonblock 0.3.2
 * io-wait 0.3.2
