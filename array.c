@@ -1439,10 +1439,12 @@ rb_ary_pop(VALUE ary)
     {
         ary_resize_capa(ary, n * 2);
     }
-    --n;
-    ARY_SET_LEN(ary, n);
+
+    VALUE obj = RARRAY_AREF(ary, n - 1);
+
+    ARY_SET_LEN(ary, n - 1);
     ary_verify(ary);
-    return RARRAY_AREF(ary, n);
+    return obj;
 }
 
 /*
