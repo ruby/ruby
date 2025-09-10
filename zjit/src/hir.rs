@@ -584,6 +584,7 @@ pub enum Insn {
     /// Ignoring keyword arguments etc for now
     SendWithoutBlock { self_val: InsnId, cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
     Send { cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
+    SendForward { cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
     InvokeSuper { cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
     InvokeBlock { cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
 
@@ -834,6 +835,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 // between runs, making tests fail. Instead, pick an arbitrary hex value to
                 // use as a "pointer" so we can check the rest of the HIR.
                 write!(f, "Send {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                Ok(())
+            }
+            Insn::SendForward { cd, args, blockiseq, .. } => {
+                write!(f, "SendForward {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1349,6 +1357,12 @@ impl Function {
                 args: find_vec!(args),
                 state,
             },
+            &SendForward { cd, blockiseq, ref args, state } => SendForward {
+                cd,
+                blockiseq,
+                args: find_vec!(args),
+                state,
+            },
             &InvokeSuper { cd, blockiseq, ref args, state } => InvokeSuper {
                 cd,
                 blockiseq,
@@ -1473,6 +1487,7 @@ impl Function {
             Insn::SendWithoutBlock { .. } => types::BasicObject,
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
+            Insn::SendForward { .. } => types::BasicObject,
             Insn::InvokeSuper { .. } => types::BasicObject,
             Insn::InvokeBlock { .. } => types::BasicObject,
             Insn::InvokeBuiltin { return_type, .. } => return_type.unwrap_or(types::BasicObject),
@@ -2288,6 +2303,7 @@ impl Function {
             }
             &Insn::InvokeSuper { ref args, state, .. }
             | &Insn::Send { ref args, state, .. }
+            | &Insn::SendForward { ref args, state, .. }
             | &Insn::InvokeBuiltin { ref args, state, .. }
             | &Insn::InvokeBlock { ref args, state, .. } => {
                 worklist.extend(args);
@@ -3630,6 +3646,31 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // Reload locals that may have been modified by the blockiseq.
                     // TODO: Avoid reloading locals that are not referenced by the blockiseq
                     // or not used after this. Max thinks we could eventually DCE them.
+                    for local_idx in 0..state.locals.len() {
+                        let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
+                        let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
+                        state.setlocal(ep_offset, val);
+                    }
+                }
+                YARVINSN_sendforward => {
+                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                    let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
+                    let call_info = unsafe { rb_get_call_data_ci(cd) };
+                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) } & !VM_CALL_FORWARDING) {
+                        // Unknown call type; side-exit into the interpreter
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
+                        break;  // End the block
+                    }
+                    let argc = unsafe { vm_ci_argc((*cd).ci) };
+
+                    let args = state.stack_pop_n(argc as usize)?;
+                    let _recv = state.stack_pop()?;
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let send_forward = fun.push_insn(block, Insn::SendForward { cd, blockiseq, args, state: exit_id });
+                    state.stack_push(send_forward);
+
+                    // Reload locals that may have been modified by the blockiseq.
                     for local_idx in 0..state.locals.len() {
                         let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
                         let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
@@ -5269,14 +5310,17 @@ mod tests {
     }
 
     #[test]
-    fn test_cant_compile_forwarding() {
+    fn test_compile_forwarding() {
         eval("
             def test(...) = foo(...)
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
-          SideExit UnhandledYARVInsn(sendforward)
+          v6:BasicObject = SendForward 0x1000, :foo
+          v7:BasicObject = GetLocal l0, EP@3
+          CheckInterrupts
+          Return v6
         ");
     }
 
