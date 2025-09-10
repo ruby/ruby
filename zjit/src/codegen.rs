@@ -365,6 +365,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::IfTrue { val, target } => no_output!(gen_if_true(jit, asm, opnd!(val), target)),
         Insn::IfFalse { val, target } => no_output!(gen_if_false(jit, asm, opnd!(val), target)),
         &Insn::Send { cd, blockiseq, state, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state)),
+        &Insn::SendForward { cd, blockiseq, state, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state)),
         Insn::SendWithoutBlock { cd, state, def_type, .. } => gen_send_without_block(jit, asm, *cd, *def_type, &function.frame_state(*state)),
         // Give up SendWithoutBlockDirect for 6+ args since asm.ccall() doesn't support it.
         Insn::SendWithoutBlockDirect { cd, state, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
@@ -1037,6 +1038,29 @@ fn gen_send(
     }
     asm.ccall(
         rb_vm_send as *const u8,
+        vec![EC, CFP, (cd as usize).into(), VALUE(blockiseq as usize).into()],
+    )
+}
+
+/// Compile a dynamic dispatch with `...`
+fn gen_send_forward(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    cd: *const rb_call_data,
+    blockiseq: IseqPtr,
+    state: &FrameState,
+) -> lir::Opnd {
+    gen_incr_counter(asm, Counter::dynamic_send_count);
+    gen_incr_counter(asm, Counter::dynamic_send_type_send_forward);
+
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
+    unsafe extern "C" {
+        fn rb_vm_sendforward(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
+    }
+    asm.ccall(
+        rb_vm_sendforward as *const u8,
         vec![EC, CFP, (cd as usize).into(), VALUE(blockiseq as usize).into()],
     )
 }
