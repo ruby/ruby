@@ -630,6 +630,7 @@ rb_feature_p(vm_ns_t *vm_ns, const char *feature, const char *ext, int rb, int e
                 index = rb_darray_get(feature_indexes, i);
             }
 
+            if (index >= RARRAY_LEN(features)) continue;
             v = RARRAY_AREF(features, index);
             f = StringValuePtr(v);
             if ((n = RSTRING_LEN(v)) < len) continue;
