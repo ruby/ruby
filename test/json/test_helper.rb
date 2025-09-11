@@ -1,5 +1,8 @@
 $LOAD_PATH.unshift(File.expand_path('../../../ext', __FILE__), File.expand_path('../../../lib', __FILE__))
 
+require 'coverage'
+Coverage.start
+
 begin
   require 'simplecov'
 rescue LoadError
