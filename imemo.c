@@ -51,11 +51,7 @@ rb_imemo_new(enum imemo_type type, VALUE v0, size_t size)
 static rb_imemo_tmpbuf_t *
 rb_imemo_tmpbuf_new(void)
 {
-    size_t size = sizeof(struct rb_imemo_tmpbuf_struct);
-    VALUE flags = T_IMEMO | (imemo_tmpbuf << FL_USHIFT);
-    NEWOBJ_OF(obj, struct rb_imemo_tmpbuf_struct, 0, flags, size, 0);
-
-    return obj;
+    return IMEMO_NEW(rb_imemo_tmpbuf_t, imemo_tmpbuf, 0);
 }
 
 void *
