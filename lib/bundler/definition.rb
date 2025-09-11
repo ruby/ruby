@@ -1036,6 +1036,8 @@ module Bundler
 
       specs.each do |s|
         name = s.name
+        next if @gems_to_unlock.include?(name)
+
         dep = @dependencies.find {|d| s.satisfies?(d) }
         lockfile_source = s.source
 
@@ -1054,7 +1056,7 @@ module Bundler
         next if @sources_to_unlock.include?(source.name)
 
         # Path sources have special logic
-        if source.instance_of?(Source::Path) || source.instance_of?(Source::Gemspec) || (source.instance_of?(Source::Git) && !@gems_to_unlock.include?(name) && deps.include?(dep))
+        if source.instance_of?(Source::Path) || source.instance_of?(Source::Gemspec) || (source.instance_of?(Source::Git) && deps.include?(dep))
           new_spec = source.specs[s].first
           if new_spec
             s.runtime_dependencies.replace(new_spec.runtime_dependencies)
