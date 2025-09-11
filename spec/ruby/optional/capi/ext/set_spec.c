@@ -11,6 +11,7 @@ int yield_element_and_arg(VALUE element, VALUE arg) {
   return RTEST(rb_yield_values(2, element, arg)) ? ST_CONTINUE : ST_STOP;
 }
 
+#if defined(RUBY_VERSION_IS_3_5)
 VALUE set_spec_rb_set_foreach(VALUE self, VALUE set, VALUE arg) {
   rb_set_foreach(set, yield_element_and_arg, arg);
   return Qnil;
@@ -43,9 +44,16 @@ VALUE set_spec_rb_set_delete(VALUE self, VALUE set, VALUE element) {
 VALUE set_spec_rb_set_size(VALUE self, VALUE set) {
   return SIZET2NUM(rb_set_size(set));
 }
+#endif
 
 void Init_set_spec(void) {
+#ifndef RUBY_VERSION_IS_3_5
+  rb_define_class("CApiSetSpecs", rb_cObject); // to suppress warning `unused variable 'cls'`
+#endif
+
+#if defined(RUBY_VERSION_IS_3_5)
   VALUE cls = rb_define_class("CApiSetSpecs", rb_cObject);
+
   rb_define_method(cls, "rb_set_foreach", set_spec_rb_set_foreach, 2);
   rb_define_method(cls, "rb_set_new", set_spec_rb_set_new, 0);
   rb_define_method(cls, "rb_set_new_capa", set_spec_rb_set_new_capa, 1);
@@ -54,6 +62,7 @@ void Init_set_spec(void) {
   rb_define_method(cls, "rb_set_clear", set_spec_rb_set_clear, 1);
   rb_define_method(cls, "rb_set_delete", set_spec_rb_set_delete, 2);
   rb_define_method(cls, "rb_set_size", set_spec_rb_set_size, 1);
+#endif
 }
 
 #ifdef __cplusplus
