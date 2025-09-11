@@ -1,13 +1,13 @@
 require_relative 'spec_helper'
 
-load_extension("set")
+ruby_version_is "3.5" do
+  load_extension("set")
 
-describe "C-API Set function" do
-  before :each do
-    @s = CApiSetSpecs.new
-  end
+  describe "C-API Set function" do
+    before :each do
+      @s = CApiSetSpecs.new
+    end
 
-  ruby_version_is "3.5" do
     describe "rb_set_foreach" do
       it "calls function with each element and arg" do
         a = []
