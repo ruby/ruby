@@ -4,6 +4,9 @@ inputs:
   builddir:
     required: false
     default: '.'
+  make:
+    required: false
+    default: 'make -s'
 
 outputs:
   key:
@@ -35,10 +38,13 @@ runs:
         path: ${{ inputs.builddir }}/spec/ruby/optional/capi/ext/
         key: ${{ steps.config.outputs.key }}
 
-    - name: Force rubyspec CAPI extension binaries up to date
+    - name: Run test-spec with previous CAPI extension binaries
       shell: bash
       run: |
-        touch ${{ inputs.builddir }}/spec/ruby/optional/capi/ext/*.$DLEXT
+        touch spec/ruby/optional/capi/ext/*.$DLEXT
+        [ ! -f spec/ruby/optional/capi/ext/\*.$DLEXT ]
+        ${{ inputs.make }} SPECOPTS=optional/capi test-spec
       env:
         DLEXT: ${{ steps.config.outputs.DLEXT }}
+      working-directory: ${{ inputs.builddir }}
       if: ${{ steps.cache.outputs.cache-hit }}

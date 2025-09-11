@@ -45,7 +45,7 @@ jobs:
             os: macos-14
           - test_task: check
             os: macos-15
-            capi_check: true
+            capi_check: capi
           - test_task: check
             os: macos-13
       fail-fast: false
@@ -164,11 +164,6 @@ jobs:
         uses: ./.github/actions/capiext
         with:
           builddir: build
-        if: ${{ matrix.capi_check }}
-
-      - name: Check with previous CAPI extensions
-        run: |
-          make -s test-spec
         env:
           RUBY_TESTOPTS: '-v --tty=no'
         if: ${{ matrix.capi_check }}
