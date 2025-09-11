@@ -26,7 +26,10 @@ runs:
       run: |
         eval $(grep -e '^arch *=' -e '^ruby_version *=' -e '^DLEXT *=' Makefile |
             sed 's/ *= */=/')
-        key=capiexts-${arch}-${ruby_version}
+        case "${ruby_version}" in
+        *+*) key=capiexts-${arch}-${ruby_version};;
+        *)   key=;;
+        esac
         echo key=$key >> $GITHUB_OUTPUT
         echo DLEXT=$DLEXT >> $GITHUB_OUTPUT
       working-directory: ${{ inputs.builddir }}
@@ -37,6 +40,7 @@ runs:
       with:
         path: ${{ inputs.builddir }}/spec/ruby/optional/capi/ext/
         key: ${{ steps.config.outputs.key }}
+      if: ${{ steps.config.outputs.key }}
 
     - name: Run test-spec with previous CAPI extension binaries
       shell: bash
