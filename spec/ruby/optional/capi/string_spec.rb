@@ -191,11 +191,19 @@ describe "C-API String function" do
     end
 
     it "returns a new String object filled with \\0 bytes" do
-      s = @s.rb_str_tmp_new(4)
-      s.encoding.should == Encoding::BINARY
-      s.bytesize.should == 4
-      s.size.should == 4
-      s.should == "\x00\x00\x00\x00"
+      lens = [4]
+
+      ruby_version_is "3.5" do
+        lens << 100
+      end
+
+      lens.each do |len|
+        s = @s.rb_str_tmp_new(len)
+        s.encoding.should == Encoding::BINARY
+        s.bytesize.should == len
+        s.size.should == len
+        s.should == "\x00" * len
+      end
     end
   end
 
