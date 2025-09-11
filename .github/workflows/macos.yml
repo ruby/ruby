@@ -45,6 +45,7 @@ jobs:
             os: macos-14
           - test_task: check
             os: macos-15
+            capi_check: true
           - test_task: check
             os: macos-13
       fail-fast: false
@@ -158,6 +159,19 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
+
+      - name: CAPI extensions
+        uses: ./.github/actions/capiext
+        with:
+          builddir: build
+        if: ${{ matrix.capi_check }}
+
+      - name: Check with previous CAPI extensions
+        run: |
+          make -s test-spec
+        env:
+          RUBY_TESTOPTS: '-v --tty=no'
+        if: ${{ matrix.capi_check }}
 
       - uses: ./.github/actions/slack
         with:
