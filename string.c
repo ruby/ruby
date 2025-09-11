@@ -1066,6 +1066,9 @@ str_enc_new(VALUE klass, const char *ptr, long len, rb_encoding *enc)
     if (ptr) {
         memcpy(RSTRING_PTR(str), ptr, len);
     }
+    else {
+        memset(RSTRING_PTR(str), 0, len);
+    }
 
     STR_SET_LEN(str, len);
     TERM_FILL(RSTRING_PTR(str) + len, termlen);
