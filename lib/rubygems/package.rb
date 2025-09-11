@@ -451,8 +451,14 @@ EOM
         end
 
         if entry.file?
-          File.open(destination, "wb") {|out| copy_stream(entry, out) }
-          FileUtils.chmod file_mode(entry.header.mode) & ~File.umask, destination
+          File.open(destination, "wb") do |out|
+            copy_stream(entry, out)
+            # Flush needs to happen before chmod because there could be data
+            # in the IO buffer that needs to be written, and that could be
+            # written after the chmod (on close) which would mess up the perms
+            out.flush
+            out.chmod file_mode(entry.header.mode) & ~File.umask
+          end
         end
 
         verbose destination
