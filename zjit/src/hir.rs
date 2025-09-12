@@ -2968,17 +2968,8 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t) -> BytecodeInfo {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum CallType {
-    Splat,
     BlockArg,
-    Kwarg,
-    KwSplat,
     Tailcall,
-    Super,
-    Zsuper,
-    OptSend,
-    KwSplatMut,
-    SplatMut,
-    Forwarding,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -2996,17 +2987,8 @@ fn num_locals(iseq: *const rb_iseq_t) -> usize {
 
 /// If we can't handle the type of send (yet), bail out.
 fn unknown_call_type(flag: u32) -> Result<(), CallType> {
-    if (flag & VM_CALL_KW_SPLAT_MUT) != 0 { return Err(CallType::KwSplatMut); }
-    if (flag & VM_CALL_ARGS_SPLAT_MUT) != 0 { return Err(CallType::SplatMut); }
-    if (flag & VM_CALL_ARGS_SPLAT) != 0 { return Err(CallType::Splat); }
-    if (flag & VM_CALL_KW_SPLAT) != 0 { return Err(CallType::KwSplat); }
     if (flag & VM_CALL_ARGS_BLOCKARG) != 0 { return Err(CallType::BlockArg); }
-    if (flag & VM_CALL_KWARG) != 0 { return Err(CallType::Kwarg); }
     if (flag & VM_CALL_TAILCALL) != 0 { return Err(CallType::Tailcall); }
-    if (flag & VM_CALL_SUPER) != 0 { return Err(CallType::Super); }
-    if (flag & VM_CALL_ZSUPER) != 0 { return Err(CallType::Zsuper); }
-    if (flag & VM_CALL_OPT_SEND) != 0 { return Err(CallType::OptSend); }
-    if (flag & VM_CALL_FORWARDING) != 0 { return Err(CallType::Forwarding); }
     Ok(())
 }
 
@@ -5126,7 +5108,9 @@ mod tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           v6:ArrayExact = ToArray v1
-          SideExit UnhandledCallType(Splat)
+          v8:BasicObject = SendWithoutBlock v0, :foo, v6
+          CheckInterrupts
+          Return v8
         ");
     }
 
@@ -5151,7 +5135,9 @@ mod tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           v5:Fixnum[1] = Const Value(1)
-          SideExit UnhandledCallType(Kwarg)
+          v7:BasicObject = SendWithoutBlock v0, :foo, v5
+          CheckInterrupts
+          Return v7
         ");
     }
 
@@ -5163,7 +5149,9 @@ mod tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
-          SideExit UnhandledCallType(KwSplat)
+          v6:BasicObject = SendWithoutBlock v0, :foo, v1
+          CheckInterrupts
+          Return v6
         ");
     }
 
@@ -5252,7 +5240,9 @@ mod tests {
           v13:StaticSymbol[:b] = Const Value(VALUE(0x1008))
           v14:Fixnum[1] = Const Value(1)
           v16:BasicObject = SendWithoutBlock v12, :core#hash_merge_ptr, v11, v13, v14
-          SideExit UnhandledCallType(KwSplatMut)
+          v18:BasicObject = SendWithoutBlock v0, :foo, v16
+          CheckInterrupts
+          Return v18
         ");
     }
 
@@ -5267,7 +5257,9 @@ mod tests {
           v6:ArrayExact = ToNewArray v1
           v7:Fixnum[1] = Const Value(1)
           ArrayPush v6, v7
-          SideExit UnhandledCallType(SplatMut)
+          v11:BasicObject = SendWithoutBlock v0, :foo, v6
+          CheckInterrupts
+          Return v11
         ");
     }
 
@@ -7863,7 +7855,9 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
           v4:Fixnum[1] = Const Value(1)
-          SideExit UnhandledCallType(Kwarg)
+          v6:BasicObject = SendWithoutBlock v0, :foo, v4
+          CheckInterrupts
+          Return v6
         ");
     }
 
@@ -7879,7 +7873,9 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
           v4:Fixnum[1] = Const Value(1)
-          SideExit UnhandledCallType(Kwarg)
+          v6:BasicObject = SendWithoutBlock v0, :foo, v4
+          CheckInterrupts
+          Return v6
         ");
     }
 
