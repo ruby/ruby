@@ -5126,11 +5126,11 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
  *  Returns +true+ if <tt>self[offset..].match(regexp)</tt> returns a MatchData object,
  *  +false+ otherwise:
  *
- *    'foo'.match?('f', 1) # => false
- *    'foo'.match?('o', 1) # => true
  *    'foo'.match?(/o/) # => true
  *    'foo'.match?('o') # => true
  *    'foo'.match?(/x/) # => false
+ *    'foo'.match?('f', 1) # => false
+ *    'foo'.match?('o', 1) # => true
  *
  *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
