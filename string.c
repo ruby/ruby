@@ -5123,17 +5123,14 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
  *
  *    regexp = Regexp.new(pattern)
  *
- *  Returns +true+ if <tt>self[offset].match(regexp)</tt> returns a MatchData object,
+ *  Returns +true+ if <tt>self[offset..].match(regexp)</tt> returns a MatchData object,
  *  +false+ otherwise:
- *
- *    'foo'.match?(/o/) # => true
- *    'foo'.match?('o') # => true
- *    'foo'.match?(/x/) # => false
- *
- *  If integer argument +offset+ is given, the search begins at index +offset+:
  *
  *    'foo'.match?('f', 1) # => false
  *    'foo'.match?('o', 1) # => true
+ *    'foo'.match?(/o/) # => true
+ *    'foo'.match?('o') # => true
+ *    'foo'.match?(/x/) # => false
  *
  *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
