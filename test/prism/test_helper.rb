@@ -38,7 +38,7 @@ module Prism
     # are used to define test methods that assert against each fixture in some
     # way.
     class Fixture
-      BASE = File.join(__dir__, "fixtures")
+      BASE = ENV.fetch("FIXTURE_BASE", File.join(__dir__, "fixtures"))
 
       attr_reader :path
 
@@ -55,7 +55,7 @@ module Prism
       end
 
       def snapshot_path
-        File.join(__dir__, "snapshots", path)
+        File.join(File.expand_path("../..", __dir__), "snapshots", path)
       end
 
       def test_name
@@ -63,8 +63,13 @@ module Prism
       end
 
       def self.each(except: [], &block)
-        paths = Dir[ENV.fetch("FOCUS") { File.join("**", "*.txt") }, base: BASE] - except
+        glob_pattern = ENV.fetch("FOCUS") { custom_base_path? ? File.join("**", "*.rb") : File.join("**", "*.txt") }
+        paths = Dir[glob_pattern, base: BASE] - except
         paths.each { |path| yield Fixture.new(path) }
+      end
+
+      def self.custom_base_path?
+        ENV.key?("FIXTURE_BASE")
       end
     end
 
@@ -207,6 +212,11 @@ module Prism
       yield Encoding::EUC_TW, codepoints_euc_tw
     end
 
+    # True if the current platform is Windows.
+    def self.windows?
+      RbConfig::CONFIG["host_os"].match?(/bccwin|cygwin|djgpp|mingw|mswin|wince/i)
+    end
+
     private
 
     if RUBY_ENGINE == "ruby" && RubyVM::InstructionSequence.compile("").to_a[4][:parser] != :prism
@@ -309,15 +319,16 @@ module Prism
       end
     end
 
-    def ignore_warnings
-      previous = $VERBOSE
-      $VERBOSE = nil
+    def capture_warnings
+      $stderr = StringIO.new
+      yield
+      $stderr.string
+    ensure
+      $stderr = STDERR
+    end
 
-      begin
-        yield
-      ensure
-        $VERBOSE = previous
-      end
+    def ignore_warnings
+      capture_warnings { return yield }
     end
   end
 end

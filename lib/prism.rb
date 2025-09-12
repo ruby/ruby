@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 # The Prism Ruby parser.
 #
@@ -59,15 +60,16 @@ module Prism
   end
 
   # :call-seq:
-  #   Prism::load(source, serialized) -> ParseResult
+  #   Prism::load(source, serialized, freeze) -> ParseResult
   #
   # Load the serialized AST using the source as a reference into a tree.
-  def self.load(source, serialized)
-    Serialize.load(source, serialized)
+  def self.load(source, serialized, freeze = false)
+    Serialize.load_parse(source, serialized, freeze)
   end
 end
 
 require_relative "prism/polyfill/byteindex"
+require_relative "prism/polyfill/warn"
 require_relative "prism/node"
 require_relative "prism/node_ext"
 require_relative "prism/parse_result"

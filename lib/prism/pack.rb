@@ -1,6 +1,8 @@
 # frozen_string_literal: true
+# :markup: markdown
 # typed: ignore
 
+#
 module Prism
   # A parser for the pack template language.
   module Pack

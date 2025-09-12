@@ -1,0 +1,3 @@
+case foo; in x if true; nil; end
+
+case foo; in x unless true; nil; end

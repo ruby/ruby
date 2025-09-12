@@ -23,6 +23,9 @@
  * some platforms they aren't included unless this is already defined.
  */
 #define __STDC_FORMAT_MACROS
+// Include sys/types.h before inttypes.h to work around issue with
+// certain versions of GCC and newlib which causes omission of PRIx64
+#include <sys/types.h>
 #include <inttypes.h>
 
 /**
@@ -238,6 +241,20 @@
 
     /** Void because this platform does not support branch prediction hints. */
     #define PRISM_UNLIKELY(x) (x)
+#endif
+
+/**
+ * We use -Wimplicit-fallthrough to guard potentially unintended fall-through between cases of a switch.
+ * Use PRISM_FALLTHROUGH to explicitly annotate cases where the fallthrough is intentional.
+ */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L // C23 or later
+    #define PRISM_FALLTHROUGH [[fallthrough]];
+#elif defined(__GNUC__) || defined(__clang__)
+    #define PRISM_FALLTHROUGH __attribute__((fallthrough));
+#elif defined(_MSC_VER)
+    #define PRISM_FALLTHROUGH __fallthrough;
+#else
+    #define PRISM_FALLTHROUGH
 #endif
 
 #endif

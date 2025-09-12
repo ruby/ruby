@@ -101,6 +101,8 @@ errors:
   - EXPECT_FOR_DELIMITER
   - EXPECT_IDENT_REQ_PARAMETER
   - EXPECT_IN_DELIMITER
+  - EXPECT_LPAREN_AFTER_NOT_LPAREN
+  - EXPECT_LPAREN_AFTER_NOT_OTHER
   - EXPECT_LPAREN_REQ_PARAMETER
   - EXPECT_MESSAGE
   - EXPECT_RBRACKET
@@ -320,13 +322,42 @@ warnings:
   - UNUSED_LOCAL_VARIABLE
   - VOID_STATEMENT
 tokens:
+  # The order of the tokens at the beginning is important, because we use them
+  # for a lookup table.
   - name: EOF
     value: 1
     comment: final token in the file
-  - name: MISSING
-    comment: "a token that was expected but not found"
-  - name: NOT_PROVIDED
-    comment: "a token that was not present but it is okay"
+  - name: BRACE_RIGHT
+    comment: "}"
+  - name: COMMA
+    comment: ","
+  - name: EMBEXPR_END
+    comment: "}"
+  - name: KEYWORD_DO
+    comment: "do"
+  - name: KEYWORD_ELSE
+    comment: "else"
+  - name: KEYWORD_ELSIF
+    comment: "elsif"
+  - name: KEYWORD_END
+    comment: "end"
+  - name: KEYWORD_ENSURE
+    comment: "ensure"
+  - name: KEYWORD_IN
+    comment: "in"
+  - name: KEYWORD_RESCUE
+    comment: "rescue"
+  - name: KEYWORD_THEN
+    comment: "then"
+  - name: KEYWORD_WHEN
+    comment: "when"
+  - name: NEWLINE
+    comment: "a newline character outside of other tokens"
+  - name: PARENTHESIS_RIGHT
+    comment: ")"
+  - name: SEMICOLON
+    comment: ";"
+  # Tokens from here on are not used for lookup, and can be in any order.
   - name: AMPERSAND
     comment: "&"
   - name: AMPERSAND_AMPERSAND
@@ -349,8 +380,6 @@ tokens:
     comment: "!~"
   - name: BRACE_LEFT
     comment: "{"
-  - name: BRACE_RIGHT
-    comment: "}"
   - name: BRACKET_LEFT
     comment: "["
   - name: BRACKET_LEFT_ARRAY
@@ -373,8 +402,6 @@ tokens:
     comment: ":"
   - name: COLON_COLON
     comment: "::"
-  - name: COMMA
-    comment: ","
   - name: COMMENT
     comment: "a comment"
   - name: CONSTANT
@@ -393,8 +420,6 @@ tokens:
     comment: "a line inside of embedded documentation"
   - name: EMBEXPR_BEGIN
     comment: "#{"
-  - name: EMBEXPR_END
-    comment: "}"
   - name: EMBVAR
     comment: "#"
   - name: EQUAL
@@ -461,20 +486,10 @@ tokens:
     comment: "def"
   - name: KEYWORD_DEFINED
     comment: "defined?"
-  - name: KEYWORD_DO
-    comment: "do"
   - name: KEYWORD_DO_LOOP
     comment: "do keyword for a predicate in a while, until, or for loop"
-  - name: KEYWORD_ELSE
-    comment: "else"
-  - name: KEYWORD_ELSIF
-    comment: "elsif"
-  - name: KEYWORD_END
-    comment: "end"
   - name: KEYWORD_END_UPCASE
     comment: "END"
-  - name: KEYWORD_ENSURE
-    comment: "ensure"
   - name: KEYWORD_FALSE
     comment: "false"
   - name: KEYWORD_FOR
@@ -483,8 +498,6 @@ tokens:
     comment: "if"
   - name: KEYWORD_IF_MODIFIER
     comment: "if in the modifier form"
-  - name: KEYWORD_IN
-    comment: "in"
   - name: KEYWORD_MODULE
     comment: "module"
   - name: KEYWORD_NEXT
@@ -497,8 +510,6 @@ tokens:
     comment: "or"
   - name: KEYWORD_REDO
     comment: "redo"
-  - name: KEYWORD_RESCUE
-    comment: "rescue"
   - name: KEYWORD_RESCUE_MODIFIER
     comment: "rescue in the modifier form"
   - name: KEYWORD_RETRY
@@ -509,8 +520,6 @@ tokens:
     comment: "self"
   - name: KEYWORD_SUPER
     comment: "super"
-  - name: KEYWORD_THEN
-    comment: "then"
   - name: KEYWORD_TRUE
     comment: "true"
   - name: KEYWORD_UNDEF
@@ -523,8 +532,6 @@ tokens:
     comment: "until"
   - name: KEYWORD_UNTIL_MODIFIER
     comment: "until in the modifier form"
-  - name: KEYWORD_WHEN
-    comment: "when"
   - name: KEYWORD_WHILE
     comment: "while"
   - name: KEYWORD_WHILE_MODIFIER
@@ -561,16 +568,12 @@ tokens:
     comment: "-="
   - name: MINUS_GREATER
     comment: "->"
-  - name: NEWLINE
-    comment: "a newline character outside of other tokens"
   - name: NUMBERED_REFERENCE
     comment: "a numbered reference to a capture group in the previous regular expression match"
   - name: PARENTHESIS_LEFT
     comment: "("
   - name: PARENTHESIS_LEFT_PARENTHESES
     comment: "( for a parentheses node"
-  - name: PARENTHESIS_RIGHT
-    comment: ")"
   - name: PERCENT
     comment: "%"
   - name: PERCENT_EQUAL
@@ -603,8 +606,6 @@ tokens:
     comment: "the beginning of a regular expression"
   - name: REGEXP_END
     comment: "the end of a regular expression"
-  - name: SEMICOLON
-    comment: ";"
   - name: SLASH
     comment: "/"
   - name: SLASH_EQUAL
@@ -649,6 +650,10 @@ tokens:
     comment: "a separator between words in a list"
   - name: __END__
     comment: "marker for the point in the file at which the parser should stop"
+  - name: MISSING
+    comment: "a token that was expected but not found"
+  - name: NOT_PROVIDED
+    comment: "a token that was not present but it is okay"
 flags:
   - name: ArgumentsNodeFlags
     values:
@@ -719,6 +724,11 @@ flags:
       - name: REPEATED_PARAMETER
         comment: "a parameter name that has been repeated in the method signature"
     comment: Flags for parameter nodes.
+  - name: ParenthesesNodeFlags
+    values:
+      - name: MULTIPLE_STATEMENTS
+        comment: "parentheses that contain multiple potentially void statements"
+    comment: Flags for parentheses nodes.
   - name: RangeFlags
     values:
       - name: EXCLUDE_END
@@ -982,8 +992,19 @@ nodes:
       - name: constant
         type: node?
         kind:
-          - ConstantReadNode
           - ConstantPathNode
+          - ConstantReadNode
+        comment: |
+          Represents the optional constant preceding the Array
+
+              foo in Bar[]
+                     ^^^
+
+              foo in Bar[1, 2, 3]
+                     ^^^
+
+              foo in Bar::Baz[1, 2, 3]
+                     ^^^^^^^^
       - name: requireds
         type: node[]
         kind: pattern expression
@@ -1823,6 +1844,11 @@ nodes:
         type: constant[]
       - name: class_keyword_loc
         type: location
+        comment: |
+          Represents the location of the `class` keyword.
+
+              class Foo end
+              ^^^^^
       - name: constant_path
         type: node
         kind:
@@ -1831,18 +1857,43 @@ nodes:
           - on error: CallNode # class 0.X end
       - name: inheritance_operator_loc
         type: location?
+        comment: |
+          Represents the location of the `<` operator.
+
+              class Foo < Bar
+                        ^
       - name: superclass
         type: node?
         kind: non-void expression
+        comment: |
+          Represents the superclass of the class.
+
+              class Foo < Bar
+                          ^^^
       - name: body
         type: node?
         kind:
           - StatementsNode
           - BeginNode
+        comment: |
+          Represents the body of the class.
+
+              class Foo
+                foo
+                ^^^
       - name: end_keyword_loc
         type: location
+        comment: |
+          Represents the location of the `end` keyword.
+
+              class Foo end
+                        ^^^
       - name: name
         type: constant
+        comment: |
+          The name of the class.
+
+              class Foo end # name `:Foo`
     comment: |
       Represents a class declaration involving the `class` keyword.
 
@@ -2369,23 +2420,68 @@ nodes:
       - name: constant
         type: node?
         kind:
-          - ConstantReadNode
           - ConstantPathNode
+          - ConstantReadNode
+        comment: |
+          Represents the optional constant preceding the pattern
+
+              foo in Foo(*bar, baz, *qux)
+                     ^^^
       - name: left
         type: node
         kind: SplatNode
+        comment: |
+          Represents the first wildcard node in the pattern.
+
+              foo in *bar, baz, *qux
+                     ^^^^
+
+              foo in Foo(*bar, baz, *qux)
+                         ^^^^
       - name: requireds
         type: node[]
         kind: pattern expression
+        comment: |
+          Represents the nodes in between the wildcards.
+
+              foo in *bar, baz, *qux
+                           ^^^
+
+              foo in Foo(*bar, baz, 1, *qux)
+                               ^^^^^^
       - name: right
         type: node
         kind:
           - SplatNode
           - on error: MissingNode
+        comment: |
+          Represents the second wildcard node in the pattern.
+
+              foo in *bar, baz, *qux
+                                ^^^^
+
+              foo in Foo(*bar, baz, *qux)
+                                    ^^^^
       - name: opening_loc
         type: location?
+        comment: |
+          The location of the opening brace.
+
+              foo in [*bar, baz, *qux]
+                     ^
+
+              foo in Foo(*bar, baz, *qux)
+                        ^
       - name: closing_loc
         type: location?
+        comment: |
+          The location of the closing brace.
+
+              foo in [*bar, baz, *qux]
+                                     ^
+
+              foo in Foo(*bar, baz, *qux)
+                                        ^
     comment: |
       Represents a find pattern in pattern matching.
 
@@ -2397,6 +2493,9 @@ nodes:
 
           foo in Foo(*bar, baz, *qux)
                  ^^^^^^^^^^^^^^^^^^^^
+
+          foo => *bar, baz, *qux
+                 ^^^^^^^^^^^^^^^
   - name: FlipFlopNode
     flags: RangeFlags
     fields:
@@ -2674,20 +2773,60 @@ nodes:
       - name: constant
         type: node?
         kind:
-          - ConstantReadNode
           - ConstantPathNode
+          - ConstantReadNode
+        comment: |
+          Represents the optional constant preceding the Hash.
+
+              foo => Bar[a: 1, b: 2]
+                   ^^^
+
+              foo => Bar::Baz[a: 1, b: 2]
+                   ^^^^^^^^
       - name: elements
         type: node[]
         kind: AssocNode
+        comment: |
+          Represents the explicit named hash keys and values.
+
+              foo => { a: 1, b:, ** }
+                       ^^^^^^^^
       - name: rest
         type: node?
         kind:
           - AssocSplatNode
           - NoKeywordsParameterNode
+        comment: |
+          Represents the rest of the Hash keys and values. This can be named, unnamed, or explicitly forbidden via `**nil`, this last one results in a `NoKeywordsParameterNode`.
+
+              foo => { a: 1, b:, **c }
+                                 ^^^
+
+              foo => { a: 1, b:, ** }
+                                 ^^
+
+              foo => { a: 1, b:, **nil }
+                                 ^^^^^
       - name: opening_loc
         type: location?
+        comment: |
+          The location of the opening brace.
+
+              foo => { a: 1 }
+                     ^
+
+              foo => Bar[a: 1]
+                        ^
       - name: closing_loc
         type: location?
+        comment: |
+          The location of the closing brace.
+
+              foo => { a: 1 }
+                            ^
+
+              foo => Bar[a: 1]
+                             ^
     comment: |
       Represents a hash pattern in pattern matching.
 
@@ -2696,6 +2835,12 @@ nodes:
 
           foo => { a: 1, b: 2, **c }
                  ^^^^^^^^^^^^^^^^^^^
+
+          foo => Bar[a: 1, b: 2]
+                 ^^^^^^^^^^^^^^^
+
+          foo in { a: 1, b: 2 }
+                 ^^^^^^^^^^^^^^
   - name: IfNode
     fields:
       - name: if_keyword_loc
@@ -3140,6 +3285,7 @@ nodes:
           - EmbeddedStatementsNode
           - EmbeddedVariableNode
           - InterpolatedStringNode # `"a" "#{b}"`
+          - on error: XStringNode # `<<`FOO` "bar"
       - name: closing_loc
         type: location?
     newline: parts
@@ -3347,6 +3493,9 @@ nodes:
 
           foo, bar = baz
           ^^^  ^^^
+
+          foo => baz
+                 ^^^
   - name: LocalVariableWriteNode
     fields:
       - name: name
@@ -3437,11 +3586,65 @@ nodes:
       - name: value
         type: node
         kind: non-void expression
+        comment: |
+          Represents the left-hand side of the operator.
+
+              foo => bar
+              ^^^
       - name: pattern
         type: node
         kind: pattern expression
+        comment: |
+          Represents the right-hand side of the operator. The type of the node depends on the expression.
+
+          Anything that looks like a local variable name (including `_`) will result in a `LocalVariableTargetNode`.
+
+              foo => a # This is equivalent to writing `a = foo`
+                     ^
+
+          Using an explicit `Array` or combining expressions with `,` will result in a `ArrayPatternNode`. This can be preceded by a constant.
+
+              foo => [a]
+                     ^^^
+
+              foo => a, b
+                     ^^^^
+
+              foo => Bar[a, b]
+                     ^^^^^^^^^
+
+          If the array pattern contains at least two wildcard matches, a `FindPatternNode` is created instead.
+
+              foo => *, 1, *a
+                     ^^^^^
+
+          Using an explicit `Hash` or a constant with square brackets and hash keys in the square brackets will result in a `HashPatternNode`.
+
+              foo => { a: 1, b: }
+
+              foo => Bar[a: 1, b:]
+
+              foo => Bar[**]
+
+          To use any variable that needs run time evaluation, pinning is required. This results in a `PinnedVariableNode`
+
+              foo => ^a
+                     ^^
+
+          Similar, any expression can be used with pinning. This results in a `PinnedExpressionNode`.
+
+              foo => ^(a + 1)
+
+          Anything else will result in the regular node for that expression, for example a `ConstantReadNode`.
+
+              foo => CONST
       - name: operator_loc
         type: location
+        comment: |
+          The location of the operator.
+
+              foo => bar
+                  ^^
     comment: |
       Represents the use of the `=>` operator.
 
@@ -3851,6 +4054,7 @@ nodes:
                 ^^^^^^^
           end
   - name: ParenthesesNode
+    flags: ParenthesesNodeFlags
     fields:
       - name: body
         type: node?
@@ -3870,12 +4074,32 @@ nodes:
       - name: expression
         type: node
         kind: non-void expression
+        comment: |
+          The expression used in the pinned expression
+
+              foo in ^(bar)
+                       ^^^
       - name: operator_loc
         type: location
+        comment: |
+          The location of the `^` operator
+
+              foo in ^(bar)
+                     ^
       - name: lparen_loc
         type: location
+        comment: |
+          The location of the opening parenthesis.
+
+              foo in ^(bar)
+                      ^
       - name: rparen_loc
         type: location
+        comment: |
+          The location of the closing parenthesis.
+
+              foo in ^(bar)
+                          ^
     comment: |
       Represents the use of the `^` operator for pinning an expression in a pattern matching expression.
 
@@ -3894,8 +4118,18 @@ nodes:
           - NumberedReferenceReadNode # foo in ^$1
           - ItLocalVariableReadNode # proc { 1 in ^it }
           - on error: MissingNode # foo in ^Bar
+        comment: |
+          The variable used in the pinned expression
+
+              foo in ^bar
+                      ^^^
       - name: operator_loc
         type: location
+        comment: |
+          The location of the `^` operator
+
+              foo in ^bar
+                     ^
     comment: |
       Represents the use of the `^` operator for pinning a variable in a pattern matching expression.
 
@@ -4084,6 +4318,8 @@ nodes:
           - on error: BackReferenceReadNode # => begin; rescue => $&; end
           - on error: NumberedReferenceReadNode # => begin; rescue => $1; end
           - on error: MissingNode # begin; rescue =>; end
+      - name: then_keyword_loc
+        type: location?
       - name: statements
         type: node?
         kind: StatementsNode

@@ -2,7 +2,9 @@
 
 require_relative "test_helper"
 
-return if RUBY_VERSION < "3.1.0" || Prism::BACKEND == :FFI
+return if Prism::BACKEND == :FFI
+return if RUBY_VERSION < "3.1.0"
+return if RUBY_VERSION >= "3.4.0"
 
 module Prism
   class UnescapeTest < TestCase
@@ -203,6 +205,9 @@ module Prism
 
         # \C-a \C-b \C-c ...
         assert_unescape(context, "C-#{chr}")
+
+        # \C-\a \C-\b \C-\c ...
+        assert_unescape(context, "C-\\#{chr}")
 
         # \ca \cb \cc ...
         assert_unescape(context, "c#{chr}")
