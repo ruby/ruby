@@ -10393,7 +10393,6 @@ rb_str_lstrip_bang(VALUE str)
 /*
  *  call-seq:
  *    lstrip -> new_string
-
  *
  *  Returns a copy of +self+ with leading whitespace removed;
  *  see {Whitespace in Strings}[rdoc-ref:String@Whitespace+in+Strings]:
