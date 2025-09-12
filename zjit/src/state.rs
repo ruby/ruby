@@ -85,7 +85,7 @@ impl ZJITState {
                 page_size,
                 NonNull::new(virt_block).unwrap(),
                 exec_mem_bytes,
-                exec_mem_bytes, // TODO: change this to --zjit-mem-size (Shopify/ruby#686)
+                get_option!(mem_bytes)
             );
             let mem_block = Rc::new(RefCell::new(mem_block));
 

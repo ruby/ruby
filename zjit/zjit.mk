@@ -9,6 +9,7 @@ ZJIT_SRC_FILES = $(wildcard \
 	$(top_srcdir)/zjit/src/*/*.rs \
 	$(top_srcdir)/zjit/src/*/*/*.rs \
 	$(top_srcdir)/zjit/src/*/*/*/*.rs \
+	$(top_srcdir)/jit/src/lib.rs \
 	)
 
 $(RUST_LIB): $(ZJIT_SRC_FILES)

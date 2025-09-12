@@ -6,6 +6,7 @@ YJIT_SRC_FILES = $(wildcard \
 	$(top_srcdir)/yjit/src/*/*.rs \
 	$(top_srcdir)/yjit/src/*/*/*.rs \
 	$(top_srcdir)/yjit/src/*/*/*/*.rs \
+	$(top_srcdir)/jit/src/lib.rs \
 	)
 
 # Because of Cargo cache, if the actual binary is not changed from the

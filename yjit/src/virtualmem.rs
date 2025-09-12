@@ -7,6 +7,9 @@ use std::{cell::RefCell, ptr::NonNull};
 
 use crate::{backend::ir::Target, stats::yjit_alloc_size, utils::IntoUsize};
 
+#[cfg(test)]
+use crate::options::get_option;
+
 #[cfg(not(test))]
 pub type VirtualMem = VirtualMemory<sys::SystemAllocator>;
 
@@ -411,7 +414,7 @@ pub mod tests {
             PAGE_SIZE.try_into().unwrap(),
             NonNull::new(mem_start as *mut u8).unwrap(),
             mem_size,
-            128 * 1024 * 1024,
+            get_option!(mem_size),
         )
     }
 
