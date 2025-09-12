@@ -72,6 +72,10 @@ jobs:
             configure: '--enable-zjit=dev --with-gcc=clang-14'
             libclang_path: '/usr/lib/llvm-14/lib/libclang.so.1'
 
+          - test_task: 'test-bundled-gems'
+            configure: '--enable-zjit=dev'
+            run_opts: '--zjit-call-threshold=1'
+
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.run_opts }}
@@ -173,7 +177,17 @@ jobs:
           ZJIT_BINDGEN_DIFF_OPTS: '--exit-code'
           LIBCLANG_PATH: ${{ matrix.libclang_path }}
           TESTS: ${{ matrix.test_all_opts }}
+        if: ${{ matrix.test_task != 'test-bundled-gems' }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
+
+      - name: make test-bundled-gems
+        run: |
+          set -x
+          make -s test-bundled-gems
+        env:
+          # This env is specifically added to tool/test-bundled-gems.rb as a way to pass options to Rake tasks
+          TEST_BUNDLED_GEMS_RUBYOPT: ${{ matrix.run_opts }}
+        if: ${{ matrix.test_task == 'test-bundled-gems' }}
 
       - name: Dump crash logs
         if: ${{ failure() }}
