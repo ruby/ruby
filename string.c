@@ -1007,6 +1007,7 @@ str_alloc_embed(VALUE klass, size_t capa)
             T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size, 0);
 
     str->len = 0;
+    str->as.embed.ary[0] = 0;
 
     return (VALUE)str;
 }
