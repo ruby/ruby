@@ -103,7 +103,10 @@ ossl_pkey_read(BIO *bio, const char *input_type, int selection, VALUE pass,
     while (1) {
         if (OSSL_DECODER_from_bio(dctx, bio) == 1)
             break;
-        if (ERR_GET_REASON(ERR_peek_error()) != ERR_R_UNSUPPORTED)
+        // Error queue may not be populated in OpenSSL < 3.0.11 and < 3.1.3
+        // https://github.com/openssl/openssl/pull/21603
+        unsigned long err = ERR_peek_error();
+        if (err && ERR_GET_REASON(err) != ERR_R_UNSUPPORTED)
             break;
         if (BIO_eof(bio) == 1) {
             *retryable = 1;
