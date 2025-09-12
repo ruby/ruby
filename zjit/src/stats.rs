@@ -135,6 +135,20 @@ make_counters! {
     dynamic_send_type_send,
     dynamic_send_type_invokeblock,
     dynamic_send_type_invokesuper,
+
+    // Method call def_type related to fallback to dynamic dispatch
+    send_fallback_iseq,
+    send_fallback_cfunc,
+    send_fallback_attrset,
+    send_fallback_ivar,
+    send_fallback_bmethod,
+    send_fallback_zsuper,
+    send_fallback_alias,
+    send_fallback_undef,
+    send_fallback_not_implemented,
+    send_fallback_optimized,
+    send_fallback_missing,
+    send_fallback_refined,
 }
 
 /// Increase a counter by a specified amount
@@ -219,6 +233,26 @@ pub fn exit_counter_ptr(reason: crate::hir::SideExitReason) -> *mut u64 {
         BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
     };
     counter_ptr(counter)
+}
+
+pub fn send_fallback_counter(def_type: crate::hir::MethodType) -> Counter {
+    use crate::hir::MethodType::*;
+    use crate::stats::Counter::*;
+
+    match def_type {
+        Iseq => send_fallback_iseq,
+        Cfunc => send_fallback_cfunc,
+        Attrset => send_fallback_attrset,
+        Ivar => send_fallback_ivar,
+        Bmethod => send_fallback_bmethod,
+        Zsuper => send_fallback_zsuper,
+        Alias => send_fallback_alias,
+        Undefined => send_fallback_undef,
+        NotImplemented => send_fallback_not_implemented,
+        Optimized => send_fallback_optimized,
+        Missing => send_fallback_missing,
+        Refined => send_fallback_refined,
+    }
 }
 
 /// Primitive called in zjit.rb. Zero out all the counters.

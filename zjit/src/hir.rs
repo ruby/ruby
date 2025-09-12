@@ -467,6 +467,42 @@ pub enum SideExitReason {
     StackOverflow,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum MethodType {
+    Iseq,
+    Cfunc,
+    Attrset,
+    Ivar,
+    Bmethod,
+    Zsuper,
+    Alias,
+    Undefined,
+    NotImplemented,
+    Optimized,
+    Missing,
+    Refined,
+}
+
+impl From<u32> for MethodType {
+    fn from(value: u32) -> Self {
+        match value {
+            VM_METHOD_TYPE_ISEQ => MethodType::Iseq,
+            VM_METHOD_TYPE_CFUNC => MethodType::Cfunc,
+            VM_METHOD_TYPE_ATTRSET => MethodType::Attrset,
+            VM_METHOD_TYPE_IVAR => MethodType::Ivar,
+            VM_METHOD_TYPE_BMETHOD => MethodType::Bmethod,
+            VM_METHOD_TYPE_ZSUPER => MethodType::Zsuper,
+            VM_METHOD_TYPE_ALIAS => MethodType::Alias,
+            VM_METHOD_TYPE_UNDEF => MethodType::Undefined,
+            VM_METHOD_TYPE_NOTIMPLEMENTED => MethodType::NotImplemented,
+            VM_METHOD_TYPE_OPTIMIZED => MethodType::Optimized,
+            VM_METHOD_TYPE_MISSING => MethodType::Missing,
+            VM_METHOD_TYPE_REFINED => MethodType::Refined,
+            _ => unreachable!("unknown send_without_block def_type: {}", value),
+        }
+    }
+}
+
 impl std::fmt::Display for SideExitReason {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
@@ -583,7 +619,13 @@ pub enum Insn {
 
     /// Un-optimized fallback implementation (dynamic dispatch) for send-ish instructions
     /// Ignoring keyword arguments etc for now
-    SendWithoutBlock { recv: InsnId, cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
+    SendWithoutBlock {
+        recv: InsnId,
+        cd: *const rb_call_data,
+        args: Vec<InsnId>,
+        def_type: Option<MethodType>, // Assigned in `optimize_direct_sends` if it's not optimized
+        state: InsnId,
+    },
     Send { recv: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
     InvokeSuper { recv: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
     InvokeBlock { cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
@@ -1330,10 +1372,11 @@ impl Function {
                 str: find!(str),
                 state,
             },
-            &SendWithoutBlock { recv, cd, ref args, state } => SendWithoutBlock {
+            &SendWithoutBlock { recv, cd, ref args, def_type, state } => SendWithoutBlock {
                 recv: find!(recv),
                 cd,
                 args: find_vec!(args),
+                def_type,
                 state,
             },
             &SendWithoutBlockDirect { recv, cd, cme, iseq, ref args, state } => SendWithoutBlockDirect {
@@ -1742,7 +1785,7 @@ impl Function {
                         self.try_rewrite_uminus(block, insn_id, recv, state),
                     Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(aref) && args.len() == 1 =>
                         self.try_rewrite_aref(block, insn_id, recv, args[0], state),
-                    Insn::SendWithoutBlock { mut recv, cd, args, state } => {
+                    Insn::SendWithoutBlock { mut recv, cd, args, state, .. } => {
                         let frame_state = self.frame_state(state);
                         let (klass, profiled_type) = if let Some(klass) = self.type_of(recv).runtime_exact_ruby_class() {
                             // If we know the class statically, use it to fold the lookup at compile-time.
@@ -1798,6 +1841,9 @@ impl Function {
                             let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, state });
                             self.make_equal_to(insn_id, getivar);
                         } else {
+                            if let Insn::SendWithoutBlock { def_type: insn_def_type, .. } = &mut self.insns[insn_id.0] {
+                                *insn_def_type = Some(MethodType::from(def_type));
+                            }
                             self.push_insn_id(block, insn_id); continue;
                         }
                     }
@@ -1839,7 +1885,7 @@ impl Function {
                             self.make_equal_to(insn_id, guard);
                         } else {
                             self.push_insn(block, Insn::GuardTypeNot { val, guard_type: types::String, state});
-                            let send_to_s = self.push_insn(block, Insn::SendWithoutBlock { recv: val, cd, args: vec![], state});
+                            let send_to_s = self.push_insn(block, Insn::SendWithoutBlock { recv: val, cd, args: vec![], def_type: None, state});
                             self.make_equal_to(insn_id, send_to_s);
                         }
                     }
@@ -3520,7 +3566,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, def_type: None, state: exit_id });
                     state.stack_push(send);
                 }
                 YARVINSN_opt_hash_freeze |
@@ -3544,7 +3590,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, def_type: None, state: exit_id });
                     state.stack_push(send);
                 }
 
@@ -3601,7 +3647,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, def_type: None, state: exit_id });
                     state.stack_push(send);
                 }
                 YARVINSN_send => {
