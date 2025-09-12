@@ -10744,20 +10744,51 @@ rb_str_hex(VALUE str)
  *  call-seq:
  *    oct -> integer
  *
- *  Interprets the leading substring of +self+ as a string of octal digits
- *  (with an optional sign) and returns the corresponding number;
- *  returns zero if there is no such leading substring:
+ *  Interprets the leading substring of +self+ as octal, binary, or hexadecimal digits, possibly signed;
+ *  returns their value as a decimal (base 10) integer.
  *
- *    '123'.oct             # => 83
- *    '-377'.oct            # => -255
- *    '0377non-numeric'.oct # => 255
- *    'non-numeric'.oct     # => 0
+ *  The interpretation of the substring depends on the beginning character or characters of +self+:
  *
- *  If +self+ starts with <tt>0</tt>, radix indicators are honored;
- *  see Kernel#Integer.
+ *  - Any character in <tt>['1', '2', '3', '4', '5', '6', '7', '8', '9']</tt>:
+ *    interprets the substring as octal digits (base 8):
  *
- *  Related: String#hex.
+ *      '777'.oct    # => 511
+ *      '777foo'.oct # => 511
+ *      '7778'.oct   # => 511  # 8 is not an octal digit.
  *
+ *  - <tt>'0'</tt> followed by any character other than <tt>'b'</tt> or <tt>'x'</tt>:
+ *    interprets the substring as octal digits (base 8):
+ *
+ *      '0777'.oct   # => 511
+ *      '07778'.oct  # => 511
+ *
+ *  - <tt>'0b'</tt>:
+ *    interprets the substring as binary digits (base 2):
+ *
+ *      '0b111'.oct  # => 7
+ *      '0b1112'.oct # => 7
+ *
+ *  - <tt>'0x'</tt>:
+ *    interprets the substring as hexadecimal digits (base 16):
+ *
+ *      '0xfff'.oct  # => 4095
+ *      '0xfffg'.oct # => 4095
+ *
+ *  - Any of the above, prefixed with <tt>'-'</tt>:
+ *    interprets the substring as negative:
+ *
+ *      '-777'.oct   # => -511
+ *      '-0777'.oct  # => -511
+ *      '-0b111'.oct # => -7
+ *      '-0xfff'.oct # => -4095
+ *
+ *  - Anything else:
+ *    returns zero:
+ *
+ *    'foo'.oct      # => 0
+ *    ''.oct         # => 0
+ *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
  */
 
 static VALUE
