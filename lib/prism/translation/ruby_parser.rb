@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 begin
   require "ruby_parser"
@@ -15,7 +16,7 @@ module Prism
       # A prism visitor that builds Sexp objects.
       class Compiler < ::Prism::Compiler
         # This is the name of the file that we are compiling. We set it on every
-        # Sexp object that is generated, and also use it to compile __FILE__
+        # Sexp object that is generated, and also use it to compile `__FILE__`
         # nodes.
         attr_reader :file
 
@@ -34,26 +35,34 @@ module Prism
           @in_pattern = in_pattern
         end
 
+        # ```
         # alias foo bar
         # ^^^^^^^^^^^^^
+        # ```
         def visit_alias_method_node(node)
           s(node, :alias, visit(node.new_name), visit(node.old_name))
         end
 
+        # ```
         # alias $foo $bar
         # ^^^^^^^^^^^^^^^
+        # ```
         def visit_alias_global_variable_node(node)
           s(node, :valias, node.new_name.name, node.old_name.name)
         end
 
+        # ```
         # foo => bar | baz
         #        ^^^^^^^^^
+        # ```
         def visit_alternation_pattern_node(node)
           s(node, :or, visit(node.left), visit(node.right))
         end
 
+        # ```
         # a and b
         # ^^^^^^^
+        # ```
         def visit_and_node(node)
           left = visit(node.left)
 
@@ -70,8 +79,10 @@ module Prism
           end
         end
 
+        # ```
         # []
         # ^^
+        # ```
         def visit_array_node(node)
           if in_pattern
             s(node, :array_pat, nil).concat(visit_all(node.elements))
@@ -80,8 +91,10 @@ module Prism
           end
         end
 
+        # ```
         # foo => [bar]
         #        ^^^^^
+        # ```
         def visit_array_pattern_node(node)
           if node.constant.nil? && node.requireds.empty? && node.rest.nil? && node.posts.empty?
             s(node, :array_pat)
@@ -103,23 +116,29 @@ module Prism
           end
         end
 
+        # ```
         # foo(bar)
         #     ^^^
+        # ```
         def visit_arguments_node(node)
           raise "Cannot visit arguments directly"
         end
 
+        # ```
         # { a: 1 }
         #   ^^^^
+        # ```
         def visit_assoc_node(node)
           [visit(node.key), visit(node.value)]
         end
 
+        # ```
         # def foo(**); bar(**); end
         #                  ^^
         #
         # { **foo }
         #   ^^^^^
+        # ```
         def visit_assoc_splat_node(node)
           if node.value.nil?
             [s(node, :kwsplat)]
@@ -128,14 +147,18 @@ module Prism
           end
         end
 
+        # ```
         # $+
         # ^^
+        # ```
         def visit_back_reference_read_node(node)
           s(node, :back_ref, node.name.name.delete_prefix("$").to_sym)
         end
 
+        # ```
         # begin end
         # ^^^^^^^^^
+        # ```
         def visit_begin_node(node)
           result = node.statements.nil? ? s(node, :nil) : visit(node.statements)
 
@@ -167,16 +190,20 @@ module Prism
           result
         end
 
+        # ```
         # foo(&bar)
         #     ^^^^
+        # ```
         def visit_block_argument_node(node)
           s(node, :block_pass).tap do |result|
             result << visit(node.expression) unless node.expression.nil?
           end
         end
 
+        # ```
         # foo { |; bar| }
         #          ^^^
+        # ```
         def visit_block_local_variable_node(node)
           node.name
         end
@@ -186,8 +213,10 @@ module Prism
           s(node, :block_pass, visit(node.expression))
         end
 
+        # ```
         # def foo(&bar); end
         #         ^^^^
+        # ```
         def visit_block_parameter_node(node)
           :"&#{node.name}"
         end
@@ -228,11 +257,13 @@ module Prism
           result
         end
 
+        # ```
         # break
         # ^^^^^
         #
         # break foo
         # ^^^^^^^^^
+        # ```
         def visit_break_node(node)
           if node.arguments.nil?
             s(node, :break)
@@ -243,6 +274,7 @@ module Prism
           end
         end
 
+        # ```
         # foo
         # ^^^
         #
@@ -251,6 +283,7 @@ module Prism
         #
         # foo.bar() {}
         # ^^^^^^^^^^^^
+        # ```
         def visit_call_node(node)
           case node.name
           when :!~
@@ -289,8 +322,10 @@ module Prism
           visit_block(node, result, block)
         end
 
+        # ```
         # foo.bar += baz
         # ^^^^^^^^^^^^^^^
+        # ```
         def visit_call_operator_write_node(node)
           if op_asgn?(node)
             s(node, op_asgn_type(node, :op_asgn), visit(node.receiver), visit_write_value(node.value), node.read_name, node.binary_operator)
@@ -299,8 +334,10 @@ module Prism
           end
         end
 
+        # ```
         # foo.bar &&= baz
         # ^^^^^^^^^^^^^^^
+        # ```
         def visit_call_and_write_node(node)
           if op_asgn?(node)
             s(node, op_asgn_type(node, :op_asgn), visit(node.receiver), visit_write_value(node.value), node.read_name, :"&&")
@@ -309,8 +346,10 @@ module Prism
           end
         end
 
+        # ```
         # foo.bar ||= baz
         # ^^^^^^^^^^^^^^^
+        # ```
         def visit_call_or_write_node(node)
           if op_asgn?(node)
             s(node, op_asgn_type(node, :op_asgn), visit(node.receiver), visit_write_value(node.value), node.read_name, :"||")
@@ -332,32 +371,42 @@ module Prism
           node.safe_navigation? ? :"safe_#{type}" : type
         end
 
+        # ```
         # foo.bar, = 1
         # ^^^^^^^
+        # ```
         def visit_call_target_node(node)
           s(node, :attrasgn, visit(node.receiver), node.name)
         end
 
+        # ```
         # foo => bar => baz
         #        ^^^^^^^^^^
+        # ```
         def visit_capture_pattern_node(node)
           visit(node.target) << visit(node.value)
         end
 
+        # ```
         # case foo; when bar; end
         # ^^^^^^^^^^^^^^^^^^^^^^^
+        # ```
         def visit_case_node(node)
           s(node, :case, visit(node.predicate)).concat(visit_all(node.conditions)) << visit(node.else_clause)
         end
 
+        # ```
         # case foo; in bar; end
         # ^^^^^^^^^^^^^^^^^^^^^
+        # ```
         def visit_case_match_node(node)
           s(node, :case, visit(node.predicate)).concat(visit_all(node.conditions)) << visit(node.else_clause)
         end
 
+        # ```
         # class Foo; end
         # ^^^^^^^^^^^^^^
+        # ```
         def visit_class_node(node)
           name =
             if node.constant_path.is_a?(ConstantReadNode)
@@ -376,41 +425,53 @@ module Prism
           end
         end
 
+        # ```
         # @@foo
         # ^^^^^
+        # ```
         def visit_class_variable_read_node(node)
           s(node, :cvar, node.name)
         end
 
+        # ```
         # @@foo = 1
         # ^^^^^^^^^
         #
         # @@foo, @@bar = 1
         # ^^^^^  ^^^^^
+        # ```
         def visit_class_variable_write_node(node)
           s(node, class_variable_write_type, node.name, visit_write_value(node.value))
         end
 
+        # ```
         # @@foo += bar
         # ^^^^^^^^^^^^
+        # ```
         def visit_class_variable_operator_write_node(node)
           s(node, class_variable_write_type, node.name, s(node, :call, s(node, :cvar, node.name), node.binary_operator, visit_write_value(node.value)))
         end
 
+        # ```
         # @@foo &&= bar
         # ^^^^^^^^^^^^^
+        # ```
         def visit_class_variable_and_write_node(node)
           s(node, :op_asgn_and, s(node, :cvar, node.name), s(node, class_variable_write_type, node.name, visit_write_value(node.value)))
         end
 
+        # ```
         # @@foo ||= bar
         # ^^^^^^^^^^^^^
+        # ```
         def visit_class_variable_or_write_node(node)
           s(node, :op_asgn_or, s(node, :cvar, node.name), s(node, class_variable_write_type, node.name, visit_write_value(node.value)))
         end
 
+        # ```
         # @@foo, = bar
         # ^^^^^
+        # ```
         def visit_class_variable_target_node(node)
           s(node, class_variable_write_type, node.name)
         end
@@ -421,47 +482,61 @@ module Prism
           in_def ? :cvasgn : :cvdecl
         end
 
+        # ```
         # Foo
         # ^^^
+        # ```
         def visit_constant_read_node(node)
           s(node, :const, node.name)
         end
 
+        # ```
         # Foo = 1
         # ^^^^^^^
         #
         # Foo, Bar = 1
         # ^^^  ^^^
+        # ```
         def visit_constant_write_node(node)
           s(node, :cdecl, node.name, visit_write_value(node.value))
         end
 
+        # ```
         # Foo += bar
         # ^^^^^^^^^^^
+        # ```
         def visit_constant_operator_write_node(node)
           s(node, :cdecl, node.name, s(node, :call, s(node, :const, node.name), node.binary_operator, visit_write_value(node.value)))
         end
 
+        # ```
         # Foo &&= bar
         # ^^^^^^^^^^^^
+        # ```
         def visit_constant_and_write_node(node)
           s(node, :op_asgn_and, s(node, :const, node.name), s(node, :cdecl, node.name, visit(node.value)))
         end
 
+        # ```
         # Foo ||= bar
         # ^^^^^^^^^^^^
+        # ```
         def visit_constant_or_write_node(node)
           s(node, :op_asgn_or, s(node, :const, node.name), s(node, :cdecl, node.name, visit(node.value)))
         end
 
+        # ```
         # Foo, = bar
         # ^^^
+        # ```
         def visit_constant_target_node(node)
           s(node, :cdecl, node.name)
         end
 
+        # ```
         # Foo::Bar
         # ^^^^^^^^
+        # ```
         def visit_constant_path_node(node)
           if node.parent.nil?
             s(node, :colon3, node.name)
@@ -470,35 +545,45 @@ module Prism
           end
         end
 
+        # ```
         # Foo::Bar = 1
         # ^^^^^^^^^^^^
         #
         # Foo::Foo, Bar::Bar = 1
         # ^^^^^^^^  ^^^^^^^^
+        # ```
         def visit_constant_path_write_node(node)
           s(node, :cdecl, visit(node.target), visit_write_value(node.value))
         end
 
+        # ```
         # Foo::Bar += baz
         # ^^^^^^^^^^^^^^^
+        # ```
         def visit_constant_path_operator_write_node(node)
           s(node, :op_asgn, visit(node.target), node.binary_operator, visit_write_value(node.value))
         end
 
+        # ```
         # Foo::Bar &&= baz
         # ^^^^^^^^^^^^^^^^
+        # ```
         def visit_constant_path_and_write_node(node)
           s(node, :op_asgn_and, visit(node.target), visit_write_value(node.value))
         end
 
+        # ```
         # Foo::Bar ||= baz
         # ^^^^^^^^^^^^^^^^
+        # ```
         def visit_constant_path_or_write_node(node)
           s(node, :op_asgn_or, visit(node.target), visit_write_value(node.value))
         end
 
+        # ```
         # Foo::Bar, = baz
         # ^^^^^^^^
+        # ```
         def visit_constant_path_target_node(node)
           inner =
             if node.parent.nil?
@@ -510,11 +595,13 @@ module Prism
           s(node, :const, inner)
         end
 
+        # ```
         # def foo; end
         # ^^^^^^^^^^^^
         #
         # def self.foo; end
         # ^^^^^^^^^^^^^^^^^
+        # ```
         def visit_def_node(node)
           name = node.name_loc.slice.to_sym
           result =
@@ -541,55 +628,71 @@ module Prism
           end
         end
 
+        # ```
         # defined? a
         # ^^^^^^^^^^
         #
         # defined?(a)
         # ^^^^^^^^^^^
+        # ```
         def visit_defined_node(node)
           s(node, :defined, visit(node.value))
         end
 
+        # ```
         # if foo then bar else baz end
         #                 ^^^^^^^^^^^^
+        # ```
         def visit_else_node(node)
           visit(node.statements)
         end
 
+        # ```
         # "foo #{bar}"
         #      ^^^^^^
+        # ```
         def visit_embedded_statements_node(node)
           result = s(node, :evstr)
           result << visit(node.statements) unless node.statements.nil?
           result
         end
 
+        # ```
         # "foo #@bar"
         #      ^^^^^
+        # ```
         def visit_embedded_variable_node(node)
           s(node, :evstr, visit(node.variable))
         end
 
+        # ```
         # begin; foo; ensure; bar; end
         #             ^^^^^^^^^^^^
+        # ```
         def visit_ensure_node(node)
           node.statements.nil? ? s(node, :nil) : visit(node.statements)
         end
 
+        # ```
         # false
         # ^^^^^
+        # ```
         def visit_false_node(node)
           s(node, :false)
         end
 
+        # ```
         # foo => [*, bar, *]
         #        ^^^^^^^^^^^
+        # ```
         def visit_find_pattern_node(node)
           s(node, :find_pat, visit_pattern_constant(node.constant), :"*#{node.left.expression&.name}", *visit_all(node.requireds), :"*#{node.right.expression&.name}")
         end
 
+        # ```
         # if foo .. bar; end
         #    ^^^^^^^^^^
+        # ```
         def visit_flip_flop_node(node)
           if node.left.is_a?(IntegerNode) && node.right.is_a?(IntegerNode)
             s(node, :lit, Range.new(node.left.value, node.right.value, node.exclude_end?))
@@ -598,86 +701,112 @@ module Prism
           end
         end
 
+        # ```
         # 1.0
         # ^^^
+        # ```
         def visit_float_node(node)
           s(node, :lit, node.value)
         end
 
+        # ```
         # for foo in bar do end
         # ^^^^^^^^^^^^^^^^^^^^^
+        # ```
         def visit_for_node(node)
           s(node, :for, visit(node.collection), visit(node.index), visit(node.statements))
         end
 
+        # ```
         # def foo(...); bar(...); end
         #                   ^^^
+        # ```
         def visit_forwarding_arguments_node(node)
           s(node, :forward_args)
         end
 
+        # ```
         # def foo(...); end
         #         ^^^
+        # ```
         def visit_forwarding_parameter_node(node)
           s(node, :forward_args)
         end
 
+        # ```
         # super
         # ^^^^^
         #
         # super {}
         # ^^^^^^^^
+        # ```
         def visit_forwarding_super_node(node)
           visit_block(node, s(node, :zsuper), node.block)
         end
 
+        # ```
         # $foo
         # ^^^^
+        # ```
         def visit_global_variable_read_node(node)
           s(node, :gvar, node.name)
         end
 
+        # ```
         # $foo = 1
         # ^^^^^^^^
         #
         # $foo, $bar = 1
         # ^^^^  ^^^^
+        # ```
         def visit_global_variable_write_node(node)
           s(node, :gasgn, node.name, visit_write_value(node.value))
         end
 
+        # ```
         # $foo += bar
         # ^^^^^^^^^^^
+        # ```
         def visit_global_variable_operator_write_node(node)
           s(node, :gasgn, node.name, s(node, :call, s(node, :gvar, node.name), node.binary_operator, visit(node.value)))
         end
 
+        # ```
         # $foo &&= bar
         # ^^^^^^^^^^^^
+        # ```
         def visit_global_variable_and_write_node(node)
           s(node, :op_asgn_and, s(node, :gvar, node.name), s(node, :gasgn, node.name, visit_write_value(node.value)))
         end
 
+        # ```
         # $foo ||= bar
         # ^^^^^^^^^^^^
+        # ```
         def visit_global_variable_or_write_node(node)
           s(node, :op_asgn_or, s(node, :gvar, node.name), s(node, :gasgn, node.name, visit_write_value(node.value)))
         end
 
+        # ```
         # $foo, = bar
         # ^^^^
+        # ```
         def visit_global_variable_target_node(node)
           s(node, :gasgn, node.name)
         end
 
+        # ```
         # {}
         # ^^
+        # ```
         def visit_hash_node(node)
           s(node, :hash).concat(node.elements.flat_map { |element| visit(element) })
         end
 
+        # ```
         # foo => {}
         #        ^^
+        # ```
         def visit_hash_pattern_node(node)
           result = s(node, :hash_pat, visit_pattern_constant(node.constant)).concat(node.elements.flat_map { |element| visit(element) })
 
@@ -691,6 +820,7 @@ module Prism
           result
         end
 
+        # ```
         # if foo then bar end
         # ^^^^^^^^^^^^^^^^^^^
         #
@@ -699,6 +829,7 @@ module Prism
         #
         # foo ? bar : baz
         # ^^^^^^^^^^^^^^^
+        # ```
         def visit_if_node(node)
           s(node, :if, visit(node.predicate), visit(node.statements), visit(node.subsequent))
         end
@@ -708,18 +839,24 @@ module Prism
           s(node, :lit, node.value)
         end
 
+        # ```
         # { foo: }
         #   ^^^^
+        # ```
         def visit_implicit_node(node)
         end
 
+        # ```
         # foo { |bar,| }
         #           ^
+        # ```
         def visit_implicit_rest_node(node)
         end
 
+        # ```
         # case foo; in bar; end
         # ^^^^^^^^^^^^^^^^^^^^^
+        # ```
         def visit_in_node(node)
           pattern =
             if node.pattern.is_a?(ConstantPathNode)
@@ -731,8 +868,10 @@ module Prism
           s(node, :in, pattern).concat(node.statements.nil? ? [nil] : visit_all(node.statements.body))
         end
 
+        # ```
         # foo[bar] += baz
         # ^^^^^^^^^^^^^^^
+        # ```
         def visit_index_operator_write_node(node)
           arglist = nil
 
@@ -744,8 +883,10 @@ module Prism
           s(node, :op_asgn1, visit(node.receiver), arglist, node.binary_operator, visit_write_value(node.value))
         end
 
+        # ```
         # foo[bar] &&= baz
         # ^^^^^^^^^^^^^^^^
+        # ```
         def visit_index_and_write_node(node)
           arglist = nil
 
@@ -757,8 +898,10 @@ module Prism
           s(node, :op_asgn1, visit(node.receiver), arglist, :"&&", visit_write_value(node.value))
         end
 
+        # ```
         # foo[bar] ||= baz
         # ^^^^^^^^^^^^^^^^
+        # ```
         def visit_index_or_write_node(node)
           arglist = nil
 
@@ -770,8 +913,10 @@ module Prism
           s(node, :op_asgn1, visit(node.receiver), arglist, :"||", visit_write_value(node.value))
         end
 
+        # ```
         # foo[bar], = 1
         # ^^^^^^^^
+        # ```
         def visit_index_target_node(node)
           arguments = visit_all(node.arguments&.arguments || [])
           arguments << visit(node.block) unless node.block.nil?
@@ -779,53 +924,69 @@ module Prism
           s(node, :attrasgn, visit(node.receiver), :[]=).concat(arguments)
         end
 
+        # ```
         # @foo
         # ^^^^
+        # ```
         def visit_instance_variable_read_node(node)
           s(node, :ivar, node.name)
         end
 
+        # ```
         # @foo = 1
         # ^^^^^^^^
         #
         # @foo, @bar = 1
         # ^^^^  ^^^^
+        # ```
         def visit_instance_variable_write_node(node)
           s(node, :iasgn, node.name, visit_write_value(node.value))
         end
 
+        # ```
         # @foo += bar
         # ^^^^^^^^^^^
+        # ```
         def visit_instance_variable_operator_write_node(node)
           s(node, :iasgn, node.name, s(node, :call, s(node, :ivar, node.name), node.binary_operator, visit_write_value(node.value)))
         end
 
+        # ```
         # @foo &&= bar
         # ^^^^^^^^^^^^
+        # ```
         def visit_instance_variable_and_write_node(node)
           s(node, :op_asgn_and, s(node, :ivar, node.name), s(node, :iasgn, node.name, visit(node.value)))
         end
 
+        # ```
         # @foo ||= bar
         # ^^^^^^^^^^^^
+        # ```
         def visit_instance_variable_or_write_node(node)
           s(node, :op_asgn_or, s(node, :ivar, node.name), s(node, :iasgn, node.name, visit(node.value)))
         end
 
+        # ```
         # @foo, = bar
         # ^^^^
+        # ```
         def visit_instance_variable_target_node(node)
           s(node, :iasgn, node.name)
         end
 
+        # ```
         # 1
         # ^
+        # ```
         def visit_integer_node(node)
           s(node, :lit, node.value)
         end
 
+        # ```
         # if /foo #{bar}/ then end
         #    ^^^^^^^^^^^^
+        # ```
         def visit_interpolated_match_last_line_node(node)
           parts = visit_interpolated_parts(node.parts)
           regexp =
@@ -841,8 +1002,10 @@ module Prism
           s(node, :match, regexp)
         end
 
+        # ```
         # /foo #{bar}/
         # ^^^^^^^^^^^^
+        # ```
         def visit_interpolated_regular_expression_node(node)
           parts = visit_interpolated_parts(node.parts)
 
@@ -856,22 +1019,28 @@ module Prism
           end
         end
 
+        # ```
         # "foo #{bar}"
         # ^^^^^^^^^^^^
+        # ```
         def visit_interpolated_string_node(node)
           parts = visit_interpolated_parts(node.parts)
           parts.length == 1 ? s(node, :str, parts.first) : s(node, :dstr).concat(parts)
         end
 
+        # ```
         # :"foo #{bar}"
         # ^^^^^^^^^^^^^
+        # ```
         def visit_interpolated_symbol_node(node)
           parts = visit_interpolated_parts(node.parts)
           parts.length == 1 ? s(node, :lit, parts.first.to_sym) : s(node, :dsym).concat(parts)
         end
 
+        # ```
         # `foo #{bar}`
         # ^^^^^^^^^^^^
+        # ```
         def visit_interpolated_x_string_node(node)
           source = node.heredoc? ? node.parts.first : node
           parts = visit_interpolated_parts(node.parts)
@@ -929,9 +1098,9 @@ module Prism
               if result == :space
                 # continue
               elsif result.is_a?(String)
-                results[0] << result
+                results[0] = "#{results[0]}#{result}"
               elsif result.is_a?(Array) && result[0] == :str
-                results[0] << result[1]
+                results[0] = "#{results[0]}#{result[1]}"
               else
                 results << result
                 state = :interpolated_content
@@ -940,7 +1109,7 @@ module Prism
               if result == :space
                 # continue
               elsif visited[index - 1] != :space && result.is_a?(Array) && result[0] == :str && results[-1][0] == :str && (results[-1].line_max == result.line)
-                results[-1][1] << result[1]
+                results[-1][1] = "#{results[-1][1]}#{result[1]}"
                 results[-1].line_max = result.line_max
               else
                 results << result
@@ -951,23 +1120,29 @@ module Prism
           results
         end
 
+        # ```
         # -> { it }
         #      ^^
+        # ```
         def visit_it_local_variable_read_node(node)
           s(node, :call, nil, :it)
         end
 
+        # ```
         # foo(bar: baz)
         #     ^^^^^^^^
+        # ```
         def visit_keyword_hash_node(node)
           s(node, :hash).concat(node.elements.flat_map { |element| visit(element) })
         end
 
+        # ```
         # def foo(**bar); end
         #         ^^^^^
         #
         # def foo(**); end
         #         ^^
+        # ```
         def visit_keyword_rest_parameter_node(node)
           :"**#{node.name}"
         end
@@ -976,8 +1151,8 @@ module Prism
         def visit_lambda_node(node)
           parameters =
             case node.parameters
-            when nil, NumberedParametersNode
-              s(node, :args)
+            when nil, ItParametersNode, NumberedParametersNode
+              0
             else
               visit(node.parameters)
             end
@@ -989,8 +1164,10 @@ module Prism
           end
         end
 
+        # ```
         # foo
         # ^^^
+        # ```
         def visit_local_variable_read_node(node)
           if node.name.match?(/^_\d$/)
             s(node, :call, nil, node.name)
@@ -999,59 +1176,77 @@ module Prism
           end
         end
 
+        # ```
         # foo = 1
         # ^^^^^^^
         #
         # foo, bar = 1
         # ^^^  ^^^
+        # ```
         def visit_local_variable_write_node(node)
           s(node, :lasgn, node.name, visit_write_value(node.value))
         end
 
+        # ```
         # foo += bar
         # ^^^^^^^^^^
+        # ```
         def visit_local_variable_operator_write_node(node)
           s(node, :lasgn, node.name, s(node, :call, s(node, :lvar, node.name), node.binary_operator, visit_write_value(node.value)))
         end
 
+        # ```
         # foo &&= bar
         # ^^^^^^^^^^^
+        # ```
         def visit_local_variable_and_write_node(node)
           s(node, :op_asgn_and, s(node, :lvar, node.name), s(node, :lasgn, node.name, visit_write_value(node.value)))
         end
 
+        # ```
         # foo ||= bar
         # ^^^^^^^^^^^
+        # ```
         def visit_local_variable_or_write_node(node)
           s(node, :op_asgn_or, s(node, :lvar, node.name), s(node, :lasgn, node.name, visit_write_value(node.value)))
         end
 
+        # ```
         # foo, = bar
         # ^^^
+        # ```
         def visit_local_variable_target_node(node)
           s(node, :lasgn, node.name)
         end
 
+        # ```
         # if /foo/ then end
         #    ^^^^^
+        # ```
         def visit_match_last_line_node(node)
           s(node, :match, s(node, :lit, Regexp.new(node.unescaped, node.options)))
         end
 
+        # ```
         # foo in bar
         # ^^^^^^^^^^
+        # ```
         def visit_match_predicate_node(node)
           s(node, :case, visit(node.value), s(node, :in, node.pattern.accept(copy_compiler(in_pattern: true)), nil), nil)
         end
 
+        # ```
         # foo => bar
         # ^^^^^^^^^^
+        # ```
         def visit_match_required_node(node)
           s(node, :case, visit(node.value), s(node, :in, node.pattern.accept(copy_compiler(in_pattern: true)), nil), nil)
         end
 
+        # ```
         # /(?<foo>foo)/ =~ bar
         # ^^^^^^^^^^^^^^^^^^^^
+        # ```
         def visit_match_write_node(node)
           s(node, :match2, visit(node.call.receiver), visit(node.call.arguments.arguments.first))
         end
@@ -1063,8 +1258,10 @@ module Prism
           raise "Cannot visit missing node directly"
         end
 
+        # ```
         # module Foo; end
         # ^^^^^^^^^^^^^^^
+        # ```
         def visit_module_node(node)
           name =
             if node.constant_path.is_a?(ConstantReadNode)
@@ -1083,8 +1280,10 @@ module Prism
           end
         end
 
+        # ```
         # foo, bar = baz
         # ^^^^^^^^
+        # ```
         def visit_multi_target_node(node)
           targets = [*node.lefts]
           targets << node.rest if !node.rest.nil? && !node.rest.is_a?(ImplicitRestNode)
@@ -1093,8 +1292,10 @@ module Prism
           s(node, :masgn, s(node, :array).concat(visit_all(targets)))
         end
 
+        # ```
         # foo, bar = baz
         # ^^^^^^^^^^^^^^
+        # ```
         def visit_multi_write_node(node)
           targets = [*node.lefts]
           targets << node.rest if !node.rest.nil? && !node.rest.is_a?(ImplicitRestNode)
@@ -1114,11 +1315,13 @@ module Prism
           s(node, :masgn, s(node, :array).concat(visit_all(targets)), value)
         end
 
+        # ```
         # next
         # ^^^^
         #
         # next foo
         # ^^^^^^^^
+        # ```
         def visit_next_node(node)
           if node.arguments.nil?
             s(node, :next)
@@ -1130,44 +1333,58 @@ module Prism
           end
         end
 
+        # ```
         # nil
         # ^^^
+        # ```
         def visit_nil_node(node)
           s(node, :nil)
         end
 
+        # ```
         # def foo(**nil); end
         #         ^^^^^
+        # ```
         def visit_no_keywords_parameter_node(node)
           in_pattern ? s(node, :kwrest, :"**nil") : :"**nil"
         end
 
+        # ```
         # -> { _1 + _2 }
         # ^^^^^^^^^^^^^^
+        # ```
         def visit_numbered_parameters_node(node)
           raise "Cannot visit numbered parameters directly"
         end
 
+        # ```
         # $1
         # ^^
+        # ```
         def visit_numbered_reference_read_node(node)
           s(node, :nth_ref, node.number)
         end
 
+        # ```
         # def foo(bar: baz); end
         #         ^^^^^^^^
+        # ```
         def visit_optional_keyword_parameter_node(node)
           s(node, :kwarg, node.name, visit(node.value))
         end
 
+        # ```
         # def foo(bar = 1); end
         #         ^^^^^^^
+        # ```
         def visit_optional_parameter_node(node)
           s(node, :lasgn, node.name, visit(node.value))
         end
 
+        # ```
         # a or b
         # ^^^^^^
+        # ```
         def visit_or_node(node)
           left = visit(node.left)
 
@@ -1184,8 +1401,10 @@ module Prism
           end
         end
 
+        # ```
         # def foo(bar, *baz); end
         #         ^^^^^^^^^
+        # ```
         def visit_parameters_node(node)
           children =
             node.compact_child_nodes.map do |element|
@@ -1199,8 +1418,10 @@ module Prism
           s(node, :args).concat(children)
         end
 
+        # ```
         # def foo((bar, baz)); end
         #         ^^^^^^^^^^
+        # ```
         private def visit_destructured_parameter(node)
           children =
             [*node.lefts, *node.rest, *node.rights].map do |child|
@@ -1219,11 +1440,13 @@ module Prism
           s(node, :masgn).concat(children)
         end
 
+        # ```
         # ()
         # ^^
         #
         # (1)
         # ^^^
+        # ```
         def visit_parentheses_node(node)
           if node.body.nil?
             s(node, :nil)
@@ -1232,14 +1455,18 @@ module Prism
           end
         end
 
+        # ```
         # foo => ^(bar)
         #        ^^^^^^
+        # ```
         def visit_pinned_expression_node(node)
           node.expression.accept(copy_compiler(in_pattern: false))
         end
 
+        # ```
         # foo = 1 and bar => ^foo
         #                    ^^^^
+        # ```
         def visit_pinned_variable_node(node)
           if node.variable.is_a?(LocalVariableReadNode) && node.variable.name.match?(/^_\d$/)
             s(node, :lvar, node.variable.name)
@@ -1263,8 +1490,10 @@ module Prism
           visit(node.statements)
         end
 
+        # ```
         # 0..5
         # ^^^^
+        # ```
         def visit_range_node(node)
           if !in_pattern && !node.left.nil? && !node.right.nil? && ([node.left.type, node.right.type] - %i[nil_node integer_node]).empty?
             left = node.left.value if node.left.is_a?(IntegerNode)
@@ -1285,44 +1514,58 @@ module Prism
           end
         end
 
+        # ```
         # 1r
         # ^^
+        # ```
         def visit_rational_node(node)
           s(node, :lit, node.value)
         end
 
+        # ```
         # redo
         # ^^^^
+        # ```
         def visit_redo_node(node)
           s(node, :redo)
         end
 
+        # ```
         # /foo/
         # ^^^^^
+        # ```
         def visit_regular_expression_node(node)
           s(node, :lit, Regexp.new(node.unescaped, node.options))
         end
 
+        # ```
         # def foo(bar:); end
         #         ^^^^
+        # ```
         def visit_required_keyword_parameter_node(node)
           s(node, :kwarg, node.name)
         end
 
+        # ```
         # def foo(bar); end
         #         ^^^
+        # ```
         def visit_required_parameter_node(node)
           node.name
         end
 
+        # ```
         # foo rescue bar
         # ^^^^^^^^^^^^^^
+        # ```
         def visit_rescue_modifier_node(node)
           s(node, :rescue, visit(node.expression), s(node.rescue_expression, :resbody, s(node.rescue_expression, :array), visit(node.rescue_expression)))
         end
 
+        # ```
         # begin; rescue; end
         #        ^^^^^^^
+        # ```
         def visit_rescue_node(node)
           exceptions =
             if node.exceptions.length == 1 && node.exceptions.first.is_a?(SplatNode)
@@ -1338,26 +1581,32 @@ module Prism
           s(node, :resbody, exceptions).concat(node.statements.nil? ? [nil] : visit_all(node.statements.body))
         end
 
+        # ```
         # def foo(*bar); end
         #         ^^^^
         #
         # def foo(*); end
         #         ^
+        # ```
         def visit_rest_parameter_node(node)
           :"*#{node.name}"
         end
 
+        # ```
         # retry
         # ^^^^^
+        # ```
         def visit_retry_node(node)
           s(node, :retry)
         end
 
+        # ```
         # return
         # ^^^^^^
         #
         # return 1
         # ^^^^^^^^
+        # ```
         def visit_return_node(node)
           if node.arguments.nil?
             s(node, :return)
@@ -1369,8 +1618,10 @@ module Prism
           end
         end
 
+        # ```
         # self
         # ^^^^
+        # ```
         def visit_self_node(node)
           s(node, :self)
         end
@@ -1380,33 +1631,42 @@ module Prism
           visit(node.write)
         end
 
+        # ```
         # class << self; end
         # ^^^^^^^^^^^^^^^^^^
+        # ```
         def visit_singleton_class_node(node)
           s(node, :sclass, visit(node.expression)).tap do |sexp|
             sexp << node.body.accept(copy_compiler(in_def: false)) unless node.body.nil?
           end
         end
 
+        # ```
         # __ENCODING__
         # ^^^^^^^^^^^^
+        # ```
         def visit_source_encoding_node(node)
           # TODO
           s(node, :colon2, s(node, :const, :Encoding), :UTF_8)
         end
 
+        # ```
         # __FILE__
         # ^^^^^^^^
+        # ```
         def visit_source_file_node(node)
           s(node, :str, node.filepath)
         end
 
+        # ```
         # __LINE__
         # ^^^^^^^^
+        # ```
         def visit_source_line_node(node)
           s(node, :lit, node.location.start_line)
         end
 
+        # ```
         # foo(*bar)
         #     ^^^^
         #
@@ -1415,6 +1675,7 @@ module Prism
         #
         # def foo(*); bar(*); end
         #                 ^
+        # ```
         def visit_splat_node(node)
           if node.expression.nil?
             s(node, :splat)
@@ -1434,20 +1695,25 @@ module Prism
           end
         end
 
+        # ```
         # "foo"
         # ^^^^^
+        # ```
         def visit_string_node(node)
           unescaped = node.unescaped
 
           if node.forced_binary_encoding?
+            unescaped = unescaped.dup
             unescaped.force_encoding(Encoding::BINARY)
           end
 
           s(node, :str, unescaped)
         end
 
+        # ```
         # super(foo)
         # ^^^^^^^^^^
+        # ```
         def visit_super_node(node)
           arguments = node.arguments&.arguments || []
           block = node.block
@@ -1460,60 +1726,76 @@ module Prism
           visit_block(node, s(node, :super).concat(visit_all(arguments)), block)
         end
 
+        # ```
         # :foo
         # ^^^^
+        # ```
         def visit_symbol_node(node)
           node.value == "!@" ? s(node, :lit, :"!@") : s(node, :lit, node.unescaped.to_sym)
         end
 
+        # ```
         # true
         # ^^^^
+        # ```
         def visit_true_node(node)
           s(node, :true)
         end
 
+        # ```
         # undef foo
         # ^^^^^^^^^
+        # ```
         def visit_undef_node(node)
           names = node.names.map { |name| s(node, :undef, visit(name)) }
           names.length == 1 ? names.first : s(node, :block).concat(names)
         end
 
+        # ```
         # unless foo; bar end
         # ^^^^^^^^^^^^^^^^^^^
         #
         # bar unless foo
         # ^^^^^^^^^^^^^^
+        # ```
         def visit_unless_node(node)
           s(node, :if, visit(node.predicate), visit(node.else_clause), visit(node.statements))
         end
 
+        # ```
         # until foo; bar end
         # ^^^^^^^^^^^^^^^^^
         #
         # bar until foo
         # ^^^^^^^^^^^^^
+        # ```
         def visit_until_node(node)
           s(node, :until, visit(node.predicate), visit(node.statements), !node.begin_modifier?)
         end
 
+        # ```
         # case foo; when bar; end
         #           ^^^^^^^^^^^^^
+        # ```
         def visit_when_node(node)
           s(node, :when, s(node, :array).concat(visit_all(node.conditions))).concat(node.statements.nil? ? [nil] : visit_all(node.statements.body))
         end
 
+        # ```
         # while foo; bar end
         # ^^^^^^^^^^^^^^^^^^
         #
         # bar while foo
         # ^^^^^^^^^^^^^
+        # ```
         def visit_while_node(node)
           s(node, :while, visit(node.predicate), visit(node.statements), !node.begin_modifier?)
         end
 
+        # ```
         # `foo`
         # ^^^^^
+        # ```
         def visit_x_string_node(node)
           result = s(node, :xstr, node.unescaped)
 
@@ -1525,11 +1807,13 @@ module Prism
           result
         end
 
+        # ```
         # yield
         # ^^^^^
         #
         # yield 1
         # ^^^^^^^
+        # ```
         def visit_yield_node(node)
           s(node, :yield).concat(visit_all(node.arguments&.arguments || []))
         end
@@ -1558,7 +1842,7 @@ module Prism
           else
             parameters =
               case block.parameters
-              when nil, NumberedParametersNode
+              when nil, ItParametersNode, NumberedParametersNode
                 0
               else
                 visit(block.parameters)

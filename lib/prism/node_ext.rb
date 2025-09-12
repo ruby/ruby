@@ -1,7 +1,10 @@
 # frozen_string_literal: true
+# :markup: markdown
 
+#--
 # Here we are reopening the prism module to provide methods on nodes that aren't
 # templated and are meant as convenience methods.
+#++
 module Prism
   class Node
     def deprecated(*replacements) # :nodoc:
@@ -9,7 +12,7 @@ module Prism
       location = location[0].label if location
       suggest = replacements.map { |replacement| "#{self.class}##{replacement}" }
 
-      warn(<<~MSG, category: :deprecated)
+      warn(<<~MSG, uplevel: 1, category: :deprecated)
         [deprecation]: #{self.class}##{location} is deprecated and will be \
         removed in the next major version. Use #{suggest.join("/")} instead.
         #{(caller(1, 3) || []).join("\n")}

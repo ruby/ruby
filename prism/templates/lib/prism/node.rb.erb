@@ -325,7 +325,7 @@ module Prism
       visitor.visit_<%= node.human %>(self)
     end
 
-    # def child_nodes: () -> Array[nil | Node]
+    # def child_nodes: () -> Array[Node?]
     def child_nodes
       [<%= node.fields.map { |field|
         case field
@@ -375,7 +375,7 @@ module Prism
       <%= node.name %>.new(<%= ["source", "node_id", "location", "flags", *node.fields.map(&:name)].join(", ") %>)
     end
 
-    # def deconstruct: () -> Array[nil | Node]
+    # def deconstruct: () -> Array[Node?]
     alias deconstruct child_nodes
 
     # def deconstruct_keys: (Array[Symbol] keys) -> { <%= (["node_id: Integer", "location: Location"] + node.fields.map { |field| "#{field.name}: #{field.rbs_class}" }).join(", ") %> }

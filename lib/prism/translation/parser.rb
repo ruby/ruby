@@ -1,9 +1,15 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 begin
+  required_version = ">= 3.3.7.2"
+  gem "parser", required_version
   require "parser"
 rescue LoadError
-  warn(%q{Error: Unable to load parser. Add `gem "parser"` to your Gemfile.})
+  warn(<<~MSG)
+    Error: Unable to load parser #{required_version}. \
+    Add `gem "parser"` to your Gemfile or run `bundle update parser`.
+  MSG
   exit(1)
 end
 
@@ -33,6 +39,43 @@ module Prism
 
       Racc_debug_parser = false # :nodoc:
 
+      # The `builder` argument is used to create the parser using our custom builder class by default.
+      #
+      # By using the `:parser` keyword argument, you can translate in a way that is compatible with
+      # the Parser gem using any parser.
+      #
+      # For example, in RuboCop for Ruby LSP, the following approach can be used to improve performance
+      # by reusing a pre-parsed `Prism::ParseLexResult`:
+      #
+      #   class PrismPreparsed
+      #     def initialize(prism_result)
+      #       @prism_result = prism_result
+      #     end
+      #
+      #     def parse_lex(source, **options)
+      #       @prism_result
+      #     end
+      #   end
+      #
+      #   prism_preparsed = PrismPreparsed.new(prism_result)
+      #
+      #   Prism::Translation::Ruby34.new(builder, parser: prism_preparsed)
+      #
+      # In an object passed to the `:parser` keyword argument, the `parse` and `parse_lex` methods
+      # should be implemented as needed.
+      #
+      def initialize(builder = Prism::Translation::Parser::Builder.new, parser: Prism)
+        if !builder.is_a?(Prism::Translation::Parser::Builder)
+          warn(<<~MSG, uplevel: 1, category: :deprecated)
+            [deprecation]: The builder passed to `Prism::Translation::Parser.new` is not a \
+            `Prism::Translation::Parser::Builder` subclass. This will raise in the next major version.
+          MSG
+        end
+        @parser = parser
+
+        super(builder)
+      end
+
       def version # :nodoc:
         34
       end
@@ -51,7 +94,7 @@ module Prism
         source = source_buffer.source
 
         offset_cache = build_offset_cache(source)
-        result = unwrap(Prism.parse(source, filepath: source_buffer.name, version: convert_for_prism(version), partial_script: true, encoding: false), offset_cache)
+        result = unwrap(@parser.parse(source, **prism_options), offset_cache)
 
         build_ast(result.value, offset_cache)
       ensure
@@ -64,7 +107,7 @@ module Prism
         source = source_buffer.source
 
         offset_cache = build_offset_cache(source)
-        result = unwrap(Prism.parse(source, filepath: source_buffer.name, version: convert_for_prism(version), partial_script: true, encoding: false), offset_cache)
+        result = unwrap(@parser.parse(source, **prism_options), offset_cache)
 
         [
           build_ast(result.value, offset_cache),
@@ -83,7 +126,7 @@ module Prism
         offset_cache = build_offset_cache(source)
         result =
           begin
-            unwrap(Prism.parse_lex(source, filepath: source_buffer.name, version: convert_for_prism(version), partial_script: true, encoding: false), offset_cache)
+            unwrap(@parser.parse_lex(source, **prism_options), offset_cache)
           rescue ::Parser::SyntaxError
             raise if !recover
           end
@@ -285,6 +328,20 @@ module Prism
         )
       end
 
+      # Options for how prism should parse/lex the source.
+      def prism_options
+        options = {
+          filepath: @source_buffer.name,
+          version: convert_for_prism(version),
+          partial_script: true,
+        }
+        # The parser gem always encodes to UTF-8, unless it is binary.
+        # https://github.com/whitequark/parser/blob/v3.3.6.0/lib/parser/source/buffer.rb#L80-L107
+        options[:encoding] = false if @source_buffer.source.encoding != Encoding::BINARY
+
+        options
+      end
+
       # Converts the version format handled by Parser to the format handled by Prism.
       def convert_for_prism(version)
         case version
@@ -292,11 +349,14 @@ module Prism
           "3.3.1"
         when 34
           "3.4.0"
+        when 35
+          "3.5.0"
         else
           "latest"
         end
       end
 
+      require_relative "parser/builder"
       require_relative "parser/compiler"
       require_relative "parser/lexer"
 

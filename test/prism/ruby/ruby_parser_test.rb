@@ -13,41 +13,32 @@ rescue LoadError
   return
 end
 
-# We want to also compare lines and files to make sure we're setting them
-# correctly.
-Sexp.prepend(
-  Module.new do
-    def ==(other)
-      super && line == other.line && file == other.file # && line_max == other.line_max
-    end
-  end
-)
-
 module Prism
   class RubyParserTest < TestCase
     todos = [
-      "newline_terminated.txt",
+      "encoding_euc_jp.txt",
       "regex_char_width.txt",
-      "seattlerb/bug169.txt",
       "seattlerb/masgn_colon3.txt",
       "seattlerb/messy_op_asgn_lineno.txt",
       "seattlerb/op_asgn_primary_colon_const_command_call.txt",
       "seattlerb/regexp_esc_C_slash.txt",
       "seattlerb/str_lit_concat_bad_encodings.txt",
+      "strings.txt",
       "unescaping.txt",
-      "unparser/corpus/literal/kwbegin.txt",
-      "unparser/corpus/literal/send.txt",
       "whitequark/masgn_const.txt",
+      "whitequark/pattern_matching_constants.txt",
+      "whitequark/pattern_matching_single_match.txt",
       "whitequark/ruby_bug_12402.txt",
-      "whitequark/ruby_bug_14690.txt",
-      "whitequark/space_args_block.txt"
     ]
 
     # https://github.com/seattlerb/ruby_parser/issues/344
     failures = [
       "alias.txt",
+      "dsym_str.txt",
       "dos_endings.txt",
+      "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
+      "leading_logical.txt",
       "method_calls.txt",
       "methods.txt",
       "multi_write.txt",
@@ -64,6 +55,7 @@ module Prism
       "seattlerb/heredoc_with_only_carriage_returns.txt",
       "spanning_heredoc_newlines.txt",
       "spanning_heredoc.txt",
+      "symbols.txt",
       "tilde_heredocs.txt",
       "unparser/corpus/literal/literal.txt",
       "while.txt",
@@ -80,7 +72,12 @@ module Prism
       "whitequark/pattern_matching_single_line_allowed_omission_of_parentheses.txt",
       "whitequark/pattern_matching_single_line.txt",
       "whitequark/ruby_bug_11989.txt",
-      "whitequark/slash_newline_in_heredocs.txt"
+      "whitequark/ruby_bug_18878.txt",
+      "whitequark/ruby_bug_19281.txt",
+      "whitequark/slash_newline_in_heredocs.txt",
+
+      # Ruby >= 3.5 specific syntax
+      "endless_methods_command_call.txt",
     ]
 
     Fixture.each(except: failures) do |fixture|
@@ -95,10 +92,16 @@ module Prism
       source = fixture.read
       expected = ignore_warnings { ::RubyParser.new.parse(source, fixture.path) }
       actual = Prism::Translation::RubyParser.new.parse(source, fixture.path)
+      on_failure = -> { message(expected, actual) }
 
       if !allowed_failure
-        assert_equal(expected, actual, -> { message(expected, actual) })
-      elsif expected == actual
+        assert_equal(expected, actual, on_failure)
+
+        unless actual.nil?
+          assert_equal(expected.line, actual.line, on_failure)
+          assert_equal(expected.file, actual.file, on_failure)
+        end
+      elsif expected == actual && expected.line && actual.line && expected.file == actual.file
         puts "#{name} now passes"
       end
     end

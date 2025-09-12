@@ -29,7 +29,11 @@ module Prism
     except = [
       # Skip this fixture because it has a different number of locals because
       # CRuby is eliminating dead code.
-      "whitequark/ruby_bug_10653.txt"
+      "whitequark/ruby_bug_10653.txt",
+
+      # Leaving these out until they are supported by parse.y.
+      "leading_logical.txt",
+      "endless_methods_command_call.txt"
     ]
 
     Fixture.each(except: except) do |fixture|
