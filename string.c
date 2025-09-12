@@ -5091,8 +5091,6 @@ static VALUE get_pat(VALUE);
  *  returns the block's return value:
  *
  *    'foo'.match(/o/) {|matchdata| matchdata } # => #<MatchData "o">
- *    'foo'.match(/x/) {|matchdata| matchdata } # => nil
- *    'foo'.match(/f/, 1) {|matchdata| matchdata } # => nil
  *
  *  With a block given and +nil+ +matchdata+, does not call the block:
  *
