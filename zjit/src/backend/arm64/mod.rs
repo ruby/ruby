@@ -99,7 +99,7 @@ fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
     let start = cb.get_write_ptr();
     emit_jmp_ptr(cb, dst_ptr, true);
     let end = cb.get_write_ptr();
-    unsafe { rb_zjit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
+    unsafe { rb_jit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
 }
 
 fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr, padding: bool) {
@@ -1382,7 +1382,7 @@ impl Assembler
             cb.link_labels();
 
             // Invalidate icache for newly written out region so we don't run stale code.
-            unsafe { rb_zjit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
+            unsafe { rb_jit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
 
             Ok((start_ptr, gc_offsets))
         } else {

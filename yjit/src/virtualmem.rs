@@ -319,15 +319,15 @@ mod sys {
 
     impl super::Allocator for SystemAllocator {
         fn mark_writable(&mut self, ptr: *const u8, size: u32) -> bool {
-            unsafe { rb_yjit_mark_writable(ptr as VoidPtr, size) }
+            unsafe { rb_jit_mark_writable(ptr as VoidPtr, size) }
         }
 
         fn mark_executable(&mut self, ptr: *const u8, size: u32) {
-            unsafe { rb_yjit_mark_executable(ptr as VoidPtr, size) }
+            unsafe { rb_jit_mark_executable(ptr as VoidPtr, size) }
         }
 
         fn mark_unused(&mut self, ptr: *const u8, size: u32) -> bool {
-            unsafe { rb_yjit_mark_unused(ptr as VoidPtr, size) }
+            unsafe { rb_jit_mark_unused(ptr as VoidPtr, size) }
         }
     }
 }
