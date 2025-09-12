@@ -1010,6 +1010,18 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v
         RB_VM_LOCK_LEAVE_CR_LEV(cr, &lev);
     }
 
+#if RGENGC_CHECK_MODE
+# ifndef GC_DEBUG_SLOT_FILL_SPECIAL_VALUE
+#  define GC_DEBUG_SLOT_FILL_SPECIAL_VALUE 255
+# endif
+
+    memset(
+        (void *)(obj + RVALUE_SIZE),
+        GC_DEBUG_SLOT_FILL_SPECIAL_VALUE,
+        rb_gc_obj_slot_size(obj) - RVALUE_SIZE
+    );
+#endif
+
     return obj;
 }
 
