@@ -93,7 +93,6 @@ struct vm_ifunc {
 
 struct rb_imemo_tmpbuf_struct {
     VALUE flags;
-    VALUE reserved;
     VALUE *ptr; /* malloc'ed buffer */
     struct rb_imemo_tmpbuf_struct *next; /* next imemo */
     size_t cnt; /* buffer size in VALUE */
