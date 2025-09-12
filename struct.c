@@ -837,6 +837,7 @@ struct_alloc(VALUE klass)
         st->as.heap.ptr = struct_heap_alloc((VALUE)st, n);
         rb_mem_clear((VALUE *)st->as.heap.ptr, n);
         st->as.heap.len = n;
+        st->as.heap.fields_obj = 0;
 
         return (VALUE)st;
     }
