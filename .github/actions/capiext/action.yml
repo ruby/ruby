@@ -30,6 +30,7 @@ runs:
         *+*) key=capiexts-${arch}-${ruby_version};;
         *)   key=;;
         esac
+        echo version=$ruby_version >> $GITHUB_OUTPUT
         echo key=$key >> $GITHUB_OUTPUT
         echo DLEXT=$DLEXT >> $GITHUB_OUTPUT
       working-directory: ${{ inputs.builddir }}
@@ -43,6 +44,7 @@ runs:
       if: ${{ steps.config.outputs.key }}
 
     - name: Run test-spec with previous CAPI extension binaries
+      id: check
       shell: bash
       run: |
         touch spec/ruby/optional/capi/ext/*.$DLEXT
@@ -52,3 +54,10 @@ runs:
         DLEXT: ${{ steps.config.outputs.DLEXT }}
       working-directory: ${{ inputs.builddir }}
       if: ${{ steps.cache.outputs.cache-hit }}
+
+    - shell: bash
+      run: |
+        echo "::error::Change from ${prev} detected; bump up ABI version"
+      env:
+        prev: ${{ steps.config.outputs.version }}
+      if: ${{ always() && steps.check.outcome == 'failure' }}
