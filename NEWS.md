@@ -167,7 +167,7 @@ The following default gems are updated.
 * io-wait 0.3.2
 * json 2.13.2
 * optparse 0.7.0.dev.2
-* prism 1.4.0
+* prism 1.5.0
 * psych 5.2.6
 * resolv 0.6.2
 * stringio 3.1.8.dev
