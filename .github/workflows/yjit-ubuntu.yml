@@ -145,6 +145,12 @@ jobs:
         if: ${{ matrix.rust_version }}
         run: rustup install ${{ matrix.rust_version }} --profile minimal
 
+      - name: Remove cargo
+        # Since this tests a `rustc` build for release, remove `cargo` to ensure
+        # that only `rustc` is used.
+        if: ${{ contains(matrix.configure, 'rustc') }}
+        run: sudo rm $(which -a cargo | uniq)
+
       - name: Run configure
         run: ../src/configure -C --disable-install-doc --prefix=$(pwd)/install ${{ matrix.configure }}
 
