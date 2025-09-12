@@ -734,6 +734,7 @@ fname_without_suffix(const char *fname, char *rvalue, size_t rsize)
             len = pos - fname;
             break;
         }
+        if (fname + len - pos > DLEXT_MAXLEN) break;
     }
     if (len > rsize - 1) len = rsize - 1;
     memcpy(rvalue, fname, len);
