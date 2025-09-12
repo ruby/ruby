@@ -538,16 +538,16 @@ rb_jit_get_page_size(void)
 {
 #if defined(_SC_PAGESIZE)
     long page_size = sysconf(_SC_PAGESIZE);
-    if (page_size <= 0) rb_bug("zjit: failed to get page size");
+    if (page_size <= 0) rb_bug("jit: failed to get page size");
 
     // 1 GiB limit. x86 CPUs with PDPE1GB can do this and anything larger is unexpected.
     // Though our design sort of assume we have fine grained control over memory protection
     // which require small page sizes.
-    if (page_size > 0x40000000l) rb_bug("zjit page size too large");
+    if (page_size > 0x40000000l) rb_bug("jit page size too large");
 
     return (uint32_t)page_size;
 #else
-#error "ZJIT supports POSIX only for now"
+#error "JIT supports POSIX only for now"
 #endif
 }
 
@@ -643,7 +643,7 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
 
     // Check that the memory mapping was successful
     if (mem_block == MAP_FAILED) {
-        perror("ruby: zjit: mmap:");
+        perror("ruby: jit: mmap:");
         if(errno == ENOMEM) {
             // No crash report if it's only insufficient memory
             exit(EXIT_FAILURE);
