@@ -410,8 +410,8 @@ get_loaded_features_index(rb_vm_t *vm)
             features_index_add(vm, as_str, INT2FIX(i));
         }
         /* The user modified $LOADED_FEATURES, so we should restore the changes. */
-        if (!rb_ary_shared_with_p(features, CURRENT_NS_LOADED_FEATURES(vm_ns))) {
-            rb_ary_replace(CURRENT_NS_LOADED_FEATURES(vm_ns), features);
+        if (!rb_ary_shared_with_p(features, vm->loaded_features)) {
+            rb_ary_replace(vm->loaded_features, features);
         }
         reset_loaded_features_snapshot(vm);
 
