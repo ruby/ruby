@@ -364,7 +364,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::IfTrue { val, target } => no_output!(gen_if_true(jit, asm, opnd!(val), target)),
         Insn::IfFalse { val, target } => no_output!(gen_if_false(jit, asm, opnd!(val), target)),
         &Insn::Send { cd, blockiseq, state, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state)),
-        Insn::SendWithoutBlock { cd, state, .. } => gen_send_without_block(jit, asm, *cd, &function.frame_state(*state)),
+        Insn::SendWithoutBlock { cd, state, def_type, .. } => {
+            if let Some(def_type) = def_type { update_send_fallback_counter(asm, *def_type); }
+            gen_send_without_block(jit, asm, *cd, &function.frame_state(*state))
+        }
         // Give up SendWithoutBlockDirect for 6+ args since asm.ccall() doesn't support it.
         Insn::SendWithoutBlockDirect { cd, state, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
             gen_send_without_block(jit, asm, *cd, &function.frame_state(*state)),
@@ -1993,6 +1996,24 @@ fn aligned_stack_bytes(num_slots: usize) -> usize {
     // Since SIZEOF_VALUE is 8 bytes, we need to round up the size to the nearest even number.
     let num_slots = num_slots + (num_slots % 2);
     num_slots * SIZEOF_VALUE
+}
+
+fn update_send_fallback_counter(asm: &mut Assembler, def_type: u32) {
+    match def_type {
+        VM_METHOD_TYPE_ISEQ => { gen_incr_counter(asm, Counter::send_fallback_iseq); }
+        VM_METHOD_TYPE_CFUNC => { gen_incr_counter(asm, Counter::send_fallback_cfunc); }
+        VM_METHOD_TYPE_ATTRSET => { gen_incr_counter(asm, Counter::send_fallback_attrset); }
+        VM_METHOD_TYPE_IVAR => { gen_incr_counter(asm, Counter::send_fallback_ivar); }
+        VM_METHOD_TYPE_BMETHOD => { gen_incr_counter(asm, Counter::send_fallback_bmethod); }
+        VM_METHOD_TYPE_ZSUPER => { gen_incr_counter(asm, Counter::send_fallback_zsuper); }
+        VM_METHOD_TYPE_ALIAS => { gen_incr_counter(asm, Counter::send_fallback_alias); }
+        VM_METHOD_TYPE_UNDEF => { gen_incr_counter(asm, Counter::send_fallback_undef); }
+        VM_METHOD_TYPE_NOTIMPLEMENTED => { gen_incr_counter(asm, Counter::send_fallback_not_implemented); }
+        VM_METHOD_TYPE_OPTIMIZED => { gen_incr_counter(asm, Counter::send_fallback_optimized); }
+        VM_METHOD_TYPE_MISSING => { gen_incr_counter(asm, Counter::send_fallback_missing); }
+        VM_METHOD_TYPE_REFINED => { gen_incr_counter(asm, Counter::send_fallback_refined); }
+        _ => unreachable!("unknown method type: {def_type}"),
+    }
 }
 
 impl Assembler {

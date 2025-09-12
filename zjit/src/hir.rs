@@ -583,7 +583,13 @@ pub enum Insn {
 
     /// Un-optimized fallback implementation (dynamic dispatch) for send-ish instructions
     /// Ignoring keyword arguments etc for now
-    SendWithoutBlock { recv: InsnId, cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
+    SendWithoutBlock {
+        recv: InsnId,
+        cd: *const rb_call_data,
+        args: Vec<InsnId>,
+        def_type: Option<u32>, // Assigned in `optimize_direct_sends` if it's not optimized
+        state: InsnId,
+    },
     Send { recv: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
     InvokeSuper { recv: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
     InvokeBlock { cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
@@ -1330,10 +1336,11 @@ impl Function {
                 str: find!(str),
                 state,
             },
-            &SendWithoutBlock { recv, cd, ref args, state } => SendWithoutBlock {
+            &SendWithoutBlock { recv, cd, ref args, def_type, state } => SendWithoutBlock {
                 recv: find!(recv),
                 cd,
                 args: find_vec!(args),
+                def_type,
                 state,
             },
             &SendWithoutBlockDirect { recv, cd, cme, iseq, ref args, state } => SendWithoutBlockDirect {
@@ -1742,7 +1749,7 @@ impl Function {
                         self.try_rewrite_uminus(block, insn_id, recv, state),
                     Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(aref) && args.len() == 1 =>
                         self.try_rewrite_aref(block, insn_id, recv, args[0], state),
-                    Insn::SendWithoutBlock { mut recv, cd, args, state } => {
+                    Insn::SendWithoutBlock { mut recv, cd, args, state, .. } => {
                         let frame_state = self.frame_state(state);
                         let (klass, profiled_type) = if let Some(klass) = self.type_of(recv).runtime_exact_ruby_class() {
                             // If we know the class statically, use it to fold the lookup at compile-time.
@@ -1798,7 +1805,9 @@ impl Function {
                             let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, state });
                             self.make_equal_to(insn_id, getivar);
                         } else {
-                            self.push_insn_id(block, insn_id); continue;
+                            let send_without_block = self.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state, def_type: Some(def_type) });
+                            self.make_equal_to(insn_id, send_without_block);
+                            continue;
                         }
                     }
                     Insn::GetConstantPath { ic, state, .. } => {
@@ -1839,7 +1848,7 @@ impl Function {
                             self.make_equal_to(insn_id, guard);
                         } else {
                             self.push_insn(block, Insn::GuardTypeNot { val, guard_type: types::String, state});
-                            let send_to_s = self.push_insn(block, Insn::SendWithoutBlock { recv: val, cd, args: vec![], state});
+                            let send_to_s = self.push_insn(block, Insn::SendWithoutBlock { recv: val, cd, args: vec![], def_type: None, state});
                             self.make_equal_to(insn_id, send_to_s);
                         }
                     }
@@ -3512,7 +3521,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, def_type: None, state: exit_id });
                     state.stack_push(send);
                 }
                 YARVINSN_opt_hash_freeze |
@@ -3535,7 +3544,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, def_type: None, state: exit_id });
                     state.stack_push(send);
                 }
 
@@ -3591,7 +3600,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, def_type: None, state: exit_id });
                     state.stack_push(send);
                 }
                 YARVINSN_send => {
@@ -7463,10 +7472,10 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
-          v13:Fixnum = GuardType v1, Fixnum
-          v14:BasicObject = CCall itself@0x1038, v13
+          v14:Fixnum = GuardType v1, Fixnum
+          v15:BasicObject = CCall itself@0x1038, v14
           CheckInterrupts
-          Return v14
+          Return v15
         ");
     }
 
@@ -7480,9 +7489,9 @@ mod opt_tests {
         bb0(v0:BasicObject):
           v5:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
-          v14:BasicObject = CCall itself@0x1038, v5
+          v15:BasicObject = CCall itself@0x1038, v5
           CheckInterrupts
-          Return v14
+          Return v15
         ");
     }
 
@@ -7500,7 +7509,7 @@ mod opt_tests {
           v1:NilClass = Const Value(nil)
           v6:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
-          v20:BasicObject = CCall itself@0x1038, v6
+          v21:BasicObject = CCall itself@0x1038, v6
           PatchPoint NoEPEscape(test)
           v13:Fixnum[1] = Const Value(1)
           CheckInterrupts
@@ -7526,7 +7535,7 @@ mod opt_tests {
           PatchPoint StableConstantNames(0x1000, M)
           v21:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(Module@0x1010, name@0x1018, cme:0x1020)
-          v23:StringExact|NilClass = CCall name@0x1048, v21
+          v24:StringExact|NilClass = CCall name@0x1048, v21
           PatchPoint NoEPEscape(test)
           v13:Fixnum[1] = Const Value(1)
           CheckInterrupts
@@ -7548,7 +7557,7 @@ mod opt_tests {
           v1:NilClass = Const Value(nil)
           v6:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
-          v20:Fixnum = CCall length@0x1038, v6
+          v21:Fixnum = CCall length@0x1038, v6
           v13:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v13
@@ -7654,7 +7663,7 @@ mod opt_tests {
           v1:NilClass = Const Value(nil)
           v6:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
-          v20:Fixnum = CCall size@0x1038, v6
+          v21:Fixnum = CCall size@0x1038, v6
           v13:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v13
@@ -7674,9 +7683,9 @@ mod opt_tests {
         bb0(v0:BasicObject):
           v4:Fixnum[1] = Const Value(1)
           v5:Fixnum[0] = Const Value(0)
-          v7:BasicObject = SendWithoutBlock v4, :itself, v5
+          v13:BasicObject = SendWithoutBlock v4, :itself, v5
           CheckInterrupts
-          Return v7
+          Return v13
         ");
     }
 
@@ -7892,9 +7901,9 @@ mod opt_tests {
           v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v6:StringExact = StringCopy v4
           PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010, cme:0x1018)
-          v15:Fixnum = CCall bytesize@0x1040, v6
+          v16:Fixnum = CCall bytesize@0x1040, v6
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
@@ -7985,9 +7994,9 @@ mod opt_tests {
           v7:CBool = IsMethodCFunc v34, :new
           IfFalse v7, bb1(v0, v6, v34)
           v10:HeapObject = ObjectAlloc v34
-          v12:BasicObject = SendWithoutBlock v10, :initialize
+          v35:BasicObject = SendWithoutBlock v10, :initialize
           CheckInterrupts
-          Jump bb2(v0, v10, v12)
+          Jump bb2(v0, v10, v35)
         bb1(v16:BasicObject, v17:NilClass, v18:Class[VALUE(0x1008)]):
           v21:BasicObject = SendWithoutBlock v18, :new
           Jump bb2(v16, v21, v17)
@@ -8043,9 +8052,9 @@ mod opt_tests {
         bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
           v7:ArrayExact = NewArray v1, v2
           PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
-          v18:Fixnum = CCall length@0x1038, v7
+          v19:Fixnum = CCall length@0x1038, v7
           CheckInterrupts
-          Return v18
+          Return v19
         ");
     }
 
@@ -8059,9 +8068,9 @@ mod opt_tests {
         bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
           v7:ArrayExact = NewArray v1, v2
           PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
-          v18:Fixnum = CCall size@0x1038, v7
+          v19:Fixnum = CCall size@0x1038, v7
           CheckInterrupts
-          Return v18
+          Return v19
         ");
     }
 
@@ -8167,8 +8176,8 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
           v5:HashExact = NewHash
-          v7:BasicObject = SendWithoutBlock v5, :dup
-          v9:BasicObject = SendWithoutBlock v7, :freeze
+          v15:BasicObject = SendWithoutBlock v5, :dup
+          v9:BasicObject = SendWithoutBlock v15, :freeze
           CheckInterrupts
           Return v9
         ");
@@ -8184,9 +8193,9 @@ mod opt_tests {
         bb0(v0:BasicObject):
           v5:HashExact = NewHash
           v6:NilClass = Const Value(nil)
-          v8:BasicObject = SendWithoutBlock v5, :freeze, v6
+          v14:BasicObject = SendWithoutBlock v5, :freeze, v6
           CheckInterrupts
-          Return v8
+          Return v14
         ");
     }
 
@@ -8230,8 +8239,8 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
           v5:ArrayExact = NewArray
-          v7:BasicObject = SendWithoutBlock v5, :dup
-          v9:BasicObject = SendWithoutBlock v7, :freeze
+          v15:BasicObject = SendWithoutBlock v5, :dup
+          v9:BasicObject = SendWithoutBlock v15, :freeze
           CheckInterrupts
           Return v9
         ");
@@ -8247,9 +8256,9 @@ mod opt_tests {
         bb0(v0:BasicObject):
           v5:ArrayExact = NewArray
           v6:NilClass = Const Value(nil)
-          v8:BasicObject = SendWithoutBlock v5, :freeze, v6
+          v14:BasicObject = SendWithoutBlock v5, :freeze, v6
           CheckInterrupts
-          Return v8
+          Return v14
         ");
     }
 
@@ -8294,8 +8303,8 @@ mod opt_tests {
         bb0(v0:BasicObject):
           v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v6:StringExact = StringCopy v4
-          v8:BasicObject = SendWithoutBlock v6, :dup
-          v10:BasicObject = SendWithoutBlock v8, :freeze
+          v16:BasicObject = SendWithoutBlock v6, :dup
+          v10:BasicObject = SendWithoutBlock v16, :freeze
           CheckInterrupts
           Return v10
         ");
@@ -8312,9 +8321,9 @@ mod opt_tests {
           v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v6:StringExact = StringCopy v4
           v7:NilClass = Const Value(nil)
-          v9:BasicObject = SendWithoutBlock v6, :freeze, v7
+          v15:BasicObject = SendWithoutBlock v6, :freeze, v7
           CheckInterrupts
-          Return v9
+          Return v15
         ");
     }
 
@@ -8359,8 +8368,8 @@ mod opt_tests {
         bb0(v0:BasicObject):
           v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v6:StringExact = StringCopy v4
-          v8:BasicObject = SendWithoutBlock v6, :dup
-          v10:BasicObject = SendWithoutBlock v8, :-@
+          v16:BasicObject = SendWithoutBlock v6, :dup
+          v10:BasicObject = SendWithoutBlock v16, :-@
           CheckInterrupts
           Return v10
         ");
@@ -8502,9 +8511,9 @@ mod opt_tests {
           v5:Fixnum[1] = Const Value(1)
           CheckInterrupts
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
-          v25:BasicObject = CCall itself@0x1038, v5
+          v26:BasicObject = CCall itself@0x1038, v5
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -8665,9 +8674,9 @@ mod opt_tests {
         bb0(v0:BasicObject):
           v4:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
-          v15:TrueClass = CCall nil?@0x1038, v4
+          v16:TrueClass = CCall nil?@0x1038, v4
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
@@ -8700,9 +8709,9 @@ mod opt_tests {
         bb0(v0:BasicObject):
           v4:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
-          v15:FalseClass = CCall nil?@0x1038, v4
+          v16:FalseClass = CCall nil?@0x1038, v4
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
@@ -8736,10 +8745,10 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
-          v15:NilClass = GuardType v1, NilClass
-          v16:TrueClass = CCall nil?@0x1038, v15
+          v16:NilClass = GuardType v1, NilClass
+          v17:TrueClass = CCall nil?@0x1038, v16
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -8754,10 +8763,10 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           PatchPoint MethodRedefined(FalseClass@0x1000, nil?@0x1008, cme:0x1010)
-          v15:FalseClass = GuardType v1, FalseClass
-          v16:FalseClass = CCall nil?@0x1038, v15
+          v16:FalseClass = GuardType v1, FalseClass
+          v17:FalseClass = CCall nil?@0x1038, v16
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -8772,10 +8781,10 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           PatchPoint MethodRedefined(TrueClass@0x1000, nil?@0x1008, cme:0x1010)
-          v15:TrueClass = GuardType v1, TrueClass
-          v16:FalseClass = CCall nil?@0x1038, v15
+          v16:TrueClass = GuardType v1, TrueClass
+          v17:FalseClass = CCall nil?@0x1038, v16
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -8790,10 +8799,10 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           PatchPoint MethodRedefined(Symbol@0x1000, nil?@0x1008, cme:0x1010)
-          v15:StaticSymbol = GuardType v1, StaticSymbol
-          v16:FalseClass = CCall nil?@0x1038, v15
+          v16:StaticSymbol = GuardType v1, StaticSymbol
+          v17:FalseClass = CCall nil?@0x1038, v16
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -8808,10 +8817,10 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
-          v15:Fixnum = GuardType v1, Fixnum
-          v16:FalseClass = CCall nil?@0x1038, v15
+          v16:Fixnum = GuardType v1, Fixnum
+          v17:FalseClass = CCall nil?@0x1038, v16
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -8826,10 +8835,10 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           PatchPoint MethodRedefined(Float@0x1000, nil?@0x1008, cme:0x1010)
-          v15:Flonum = GuardType v1, Flonum
-          v16:FalseClass = CCall nil?@0x1038, v15
+          v16:Flonum = GuardType v1, Flonum
+          v17:FalseClass = CCall nil?@0x1038, v16
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -8844,10 +8853,10 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           PatchPoint MethodRedefined(String@0x1000, nil?@0x1008, cme:0x1010)
-          v15:StringExact = GuardType v1, StringExact
-          v16:FalseClass = CCall nil?@0x1038, v15
+          v16:StringExact = GuardType v1, StringExact
+          v17:FalseClass = CCall nil?@0x1038, v16
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -8862,10 +8871,10 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           PatchPoint MethodRedefined(Array@0x1000, !@0x1008, cme:0x1010)
-          v15:ArrayExact = GuardType v1, ArrayExact
-          v16:BoolExact = CCall !@0x1038, v15
+          v16:ArrayExact = GuardType v1, ArrayExact
+          v17:BoolExact = CCall !@0x1038, v16
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -8880,10 +8889,10 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           PatchPoint MethodRedefined(Array@0x1000, empty?@0x1008, cme:0x1010)
-          v15:ArrayExact = GuardType v1, ArrayExact
-          v16:BoolExact = CCall empty?@0x1038, v15
+          v16:ArrayExact = GuardType v1, ArrayExact
+          v17:BoolExact = CCall empty?@0x1038, v16
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -8898,10 +8907,10 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           PatchPoint MethodRedefined(Hash@0x1000, empty?@0x1008, cme:0x1010)
-          v15:HashExact = GuardType v1, HashExact
-          v16:BoolExact = CCall empty?@0x1038, v15
+          v16:HashExact = GuardType v1, HashExact
+          v17:BoolExact = CCall empty?@0x1038, v16
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
