@@ -4019,9 +4019,9 @@ AS_IF([test x"$JIT_CARGO_SUPPORT" != "xno" -o \( x"$YJIT_SUPPORT" != "xno" -a x"
     ])
     CARGO_BUILD_ARGS="--profile ${JIT_CARGO_SUPPORT} --features ${rb_cargo_features}"
     AS_IF([test "${JIT_CARGO_SUPPORT}" = "dev"], [
-        RUST_LIB="target/debug/libjit.a"
+        RUST_LIB="target/debug/libruby.a"
     ], [
-        RUST_LIB="target/${JIT_CARGO_SUPPORT}/libjit.a"
+        RUST_LIB="target/${JIT_CARGO_SUPPORT}/libruby.a"
     ])
 ])
 
