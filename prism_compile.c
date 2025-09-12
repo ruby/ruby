@@ -1,4 +1,5 @@
 #include "prism.h"
+#include "version.h"
 
 /**
  * This compiler defines its own concept of the location of a node. We do this
@@ -11352,6 +11353,8 @@ pm_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines)
     pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
     RB_GC_GUARD(filepath);
 
+    pm_options_version_for_current_ruby_set(&result->options);
+
     pm_parser_init(&result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
     pm_node_t *node = pm_parse(&result->parser);
 
@@ -11409,6 +11412,8 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *
     result->node.filepath_encoding = rb_enc_get(filepath);
     pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
     RB_GC_GUARD(filepath);
+
+    pm_options_version_for_current_ruby_set(&result->options);
 
     pm_parser_init(&result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
     pm_node_t *node = pm_parse(&result->parser);
@@ -11490,6 +11495,13 @@ pm_parse_stdin(pm_parse_result_t *result)
     rb_reset_argf_lineno(0);
 
     return pm_parse_process(result, node, NULL);
+}
+
+#define PM_VERSION_FOR_RELEASE(major, minor) PM_VERSION_FOR_RELEASE_IMPL(major, minor)
+#define PM_VERSION_FOR_RELEASE_IMPL(major, minor) PM_OPTIONS_VERSION_CRUBY_##major##_##minor
+
+void pm_options_version_for_current_ruby_set(pm_options_t *options) {
+    options->version = PM_VERSION_FOR_RELEASE(RUBY_VERSION_MAJOR, RUBY_VERSION_MINOR);
 }
 
 #undef NEW_ISEQ
