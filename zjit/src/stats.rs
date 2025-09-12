@@ -108,17 +108,8 @@ make_counters! {
     }
 
     // unhanded_call_: Unhandled call types
-    unhandled_call_splat,
     unhandled_call_block_arg,
-    unhandled_call_kwarg,
-    unhandled_call_kw_splat,
     unhandled_call_tailcall,
-    unhandled_call_super,
-    unhandled_call_zsuper,
-    unhandled_call_optsend,
-    unhandled_call_kw_splat_mut,
-    unhandled_call_splat_mut,
-    unhandled_call_forwarding,
 
     // compile_error_: Compile error reasons
     compile_error_iseq_stack_too_large,
@@ -166,17 +157,8 @@ pub fn exit_counter_ptr_for_call_type(call_type: crate::hir::CallType) -> *mut u
     use crate::hir::CallType::*;
     use crate::stats::Counter::*;
     let counter = match call_type {
-        Splat      => unhandled_call_splat,
-        BlockArg   => unhandled_call_block_arg,
-        Kwarg      => unhandled_call_kwarg,
-        KwSplat    => unhandled_call_kw_splat,
-        Tailcall   => unhandled_call_tailcall,
-        Super      => unhandled_call_super,
-        Zsuper     => unhandled_call_zsuper,
-        OptSend    => unhandled_call_optsend,
-        KwSplatMut => unhandled_call_kw_splat_mut,
-        SplatMut   => unhandled_call_splat_mut,
-        Forwarding => unhandled_call_forwarding,
+        BlockArg => unhandled_call_block_arg,
+        Tailcall => unhandled_call_tailcall,
     };
     counter_ptr(counter)
 }
