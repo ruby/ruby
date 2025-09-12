@@ -45,6 +45,7 @@ jobs:
             os: macos-14
           - test_task: check
             os: macos-15
+            extra_checks: [capi]
             capi_check: capi
           - test_task: check
             os: macos-13
@@ -166,7 +167,7 @@ jobs:
           builddir: build
         env:
           RUBY_TESTOPTS: '-v --tty=no'
-        if: ${{ matrix.capi_check }}
+        if: ${{ contains(matrix.extra_checks, 'capi') }}
 
       - uses: ./.github/actions/slack
         with:
