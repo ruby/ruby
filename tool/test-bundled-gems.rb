@@ -1,6 +1,7 @@
 require 'rbconfig'
 require 'timeout'
 require 'fileutils'
+require 'shellwords'
 require_relative 'lib/colorize'
 require_relative 'lib/gem_env'
 
@@ -25,6 +26,7 @@ colorize = Colorize.new
 rake = File.realpath("../../.bundle/bin/rake", __FILE__)
 gem_dir = File.realpath('../../gems', __FILE__)
 rubylib = [gem_dir+'/lib', ENV["RUBYLIB"]].compact.join(File::PATH_SEPARATOR)
+run_opts = ENV["RUN_OPTS"]&.shellsplit
 exit_code = 0
 ruby = ENV['RUBY'] || RbConfig.ruby
 failed = []
@@ -33,7 +35,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   next if bundled_gems&.none? {|pat| File.fnmatch?(pat, gem)}
   next unless File.directory?("#{gem_dir}/src/#{gem}/test")
 
-  test_command = [ruby, "-C", "#{gem_dir}/src/#{gem}", rake, "test"]
+  test_command = [ruby, *run_opts, "-C", "#{gem_dir}/src/#{gem}", rake, "test"]
   first_timeout = 600 # 10min
 
   toplib = gem
@@ -71,7 +73,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     load_path = true
 
   when "test-unit"
-    test_command = [ruby, "-C", "#{gem_dir}/src/#{gem}", "test/run.rb"]
+    test_command = [ruby, *run_opts, "-C", "#{gem_dir}/src/#{gem}", "test/run.rb"]
 
   when "csv"
     first_timeout = 30
