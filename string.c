@@ -10404,10 +10404,11 @@ rb_str_lstrip_bang(VALUE str)
  *
  *    whitespace = "\x00\t\n\v\f\r "
  *    s = whitespace + 'abc' + whitespace
- *    s        # => "\u0000\t\n\v\f\r abc\u0000\t\n\v\f\r "
- *    s.lstrip # => "abc\u0000\t\n\v\f\r "
+ *    # => "\u0000\t\n\v\f\r abc\u0000\t\n\v\f\r "
+ *    s.lstrip
+ *    # => "abc\u0000\t\n\v\f\r "
  *
- *  Related: String#rstrip, String#strip.
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
