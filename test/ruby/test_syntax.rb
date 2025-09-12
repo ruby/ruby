@@ -2027,10 +2027,11 @@ eom
     end
     obj4 = obj1.clone
     obj5 = obj1.clone
+    obj6 = obj1.clone
     obj1.instance_eval('def foo(...) bar(...) end', __FILE__, __LINE__)
-    obj1.instance_eval('def foo(...) eval("bar(...)") end', __FILE__, __LINE__)
     obj4.instance_eval("def foo ...\n  bar(...)\n""end", __FILE__, __LINE__)
     obj5.instance_eval("def foo ...; bar(...); end", __FILE__, __LINE__)
+    obj6.instance_eval('def foo(...) eval("bar(...)") end', __FILE__, __LINE__)
 
     klass = Class.new {
       def foo(*args, **kws, &block)
@@ -2059,7 +2060,7 @@ eom
     end
     obj3.instance_eval('def foo(...) bar(...) end', __FILE__, __LINE__)
 
-    [obj1, obj2, obj3, obj4, obj5].each do |obj|
+    [obj1, obj2, obj3, obj4, obj5, obj6].each do |obj|
       assert_warning('') {
         assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5) {|*x| x})
       }
