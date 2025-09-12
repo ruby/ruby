@@ -370,7 +370,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             gen_send_without_block(jit, asm, *cd, &function.frame_state(*state)),
         Insn::SendWithoutBlockDirect { cme, iseq, recv, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state)),
         &Insn::InvokeSuper { cd, blockiseq, state, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state)),
-        Insn::InvokeBlock { cd, state, .. } => gen_invoke_block(jit, asm, *cd, &function.frame_state(*state)),
+        Insn::InvokeBlock { cd, state, .. } => gen_invokeblock(jit, asm, *cd, &function.frame_state(*state)),
         // Ensure we have enough room fit ec, self, and arguments
         // TODO remove this check when we have stack args (we can use Time.new to test it)
         Insn::InvokeBuiltin { bf, state, .. } if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) => return Err(*state),
@@ -981,6 +981,7 @@ fn gen_send(
     state: &FrameState,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::dynamic_send_count);
+    gen_incr_counter(asm, Counter::dynamic_send_type_send);
 
     // Save PC and SP
     gen_prepare_call_with_gc(asm, state);
@@ -1008,6 +1009,7 @@ fn gen_send_without_block(
     state: &FrameState,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::dynamic_send_count);
+    gen_incr_counter(asm, Counter::dynamic_send_type_send_without_block);
 
     // Note that it's incorrect to use this frame state to side exit because
     // the state might not be on the boundary of an interpreter instruction.
@@ -1108,13 +1110,14 @@ fn gen_send_without_block_direct(
 }
 
 /// Compile for invokeblock
-fn gen_invoke_block(
+fn gen_invokeblock(
     jit: &mut JITState,
     asm: &mut Assembler,
     cd: *const rb_call_data,
     state: &FrameState,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::dynamic_send_count);
+    gen_incr_counter(asm, Counter::dynamic_send_type_invokeblock);
 
     // Save PC and SP, spill locals and stack
     gen_prepare_call_with_gc(asm, state);
@@ -1141,6 +1144,7 @@ fn gen_invokesuper(
     state: &FrameState,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::dynamic_send_count);
+    gen_incr_counter(asm, Counter::dynamic_send_type_invokesuper);
 
     // Save PC and SP
     gen_prepare_call_with_gc(asm, state);
