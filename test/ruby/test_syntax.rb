@@ -1794,15 +1794,12 @@ eom
     assert_equal("class ok", k.rescued("ok"))
     assert_equal("instance ok", k.new.rescued("ok"))
 
-    # Current technical limitation: cannot prepend "private" or something for command endless def
-    error = /(syntax error,|\^~*) unexpected string literal/
-    error2 = /(syntax error,|\^~*) unexpected local variable or method/
-    assert_syntax_error('private def foo = puts "Hello"', error)
-    assert_syntax_error('private def foo() = puts "Hello"', error)
-    assert_syntax_error('private def foo(x) = puts x', error2)
-    assert_syntax_error('private def obj.foo = puts "Hello"', error)
-    assert_syntax_error('private def obj.foo() = puts "Hello"', error)
-    assert_syntax_error('private def obj.foo(x) = puts x', error2)
+    assert_valid_syntax('private def foo = puts "Hello"')
+    assert_valid_syntax('private def foo() = puts "Hello"')
+    assert_valid_syntax('private def foo(x) = puts x')
+    assert_valid_syntax('private def obj.foo = puts "Hello"')
+    assert_valid_syntax('private def obj.foo() = puts "Hello"')
+    assert_valid_syntax('private def obj.foo(x) = puts x')
   end
 
   def test_methoddef_in_cond
