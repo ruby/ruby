@@ -35,6 +35,10 @@ pub struct Options {
     /// Note that the command line argument is expressed in MiB and not bytes.
     pub exec_mem_bytes: usize,
 
+    /// Hard limit of ZJIT's total memory usage.
+    /// Note that the command line argument is expressed in MiB and not bytes.
+    pub mem_bytes: usize,
+
     /// Number of times YARV instructions should be profiled.
     pub num_profiles: u8,
 
@@ -79,6 +83,7 @@ impl Default for Options {
     fn default() -> Self {
         Options {
             exec_mem_bytes: 64 * 1024 * 1024,
+            mem_bytes: 128 * 1024 * 1024,
             num_profiles: DEFAULT_NUM_PROFILES,
             stats: false,
             print_stats: false,
@@ -100,9 +105,8 @@ impl Default for Options {
 /// Note that --help allows only 80 chars per line, including indentation, and it also puts the
 /// description in a separate line if the option name is too long.  80-char limit --> | (any character beyond this `|` column fails the test)
 pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
-    // TODO: Hide --zjit-exec-mem-size from ZJIT_OPTIONS once we add --zjit-mem-size (Shopify/ruby#686)
-    ("--zjit-exec-mem-size=num",
-                     "Size of executable memory block in MiB (default: 64)."),
+    ("--zjit-mem-size=num",
+                     "Max amount of memory that ZJIT can use (in MiB)."),
     ("--zjit-call-threshold=num",
                      "Number of calls to trigger JIT (default: 2)."),
     ("--zjit-num-profiles=num",

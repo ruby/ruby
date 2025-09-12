@@ -1,9 +1,8 @@
 //! Everything related to the collection of runtime stats in YJIT
 //! See the --yjit-stats command-line option
 
-use std::alloc::{GlobalAlloc, Layout, System};
 use std::ptr::addr_of_mut;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::Ordering;
 use std::time::Instant;
 use std::collections::HashMap;
 
@@ -11,6 +10,10 @@ use crate::codegen::CodegenGlobals;
 use crate::cruby::*;
 use crate::options::*;
 use crate::yjit::{yjit_enabled_p, YJIT_INIT_TIME};
+
+#[cfg(feature = "stats_allocator")]
+#[path = "../../jit/src/lib.rs"]
+mod jit;
 
 /// Running total of how many ISeqs are in the system.
 #[no_mangle]
@@ -20,43 +23,9 @@ pub static mut rb_yjit_live_iseq_count: u64 = 0;
 #[no_mangle]
 pub static mut rb_yjit_iseq_alloc_count: u64 = 0;
 
-/// A middleware to count Rust-allocated bytes as yjit_alloc_size.
-#[global_allocator]
-static GLOBAL_ALLOCATOR: StatsAlloc = StatsAlloc { alloc_size: AtomicUsize::new(0) };
-
-pub struct StatsAlloc {
-    alloc_size: AtomicUsize,
-}
-
-unsafe impl GlobalAlloc for StatsAlloc {
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        self.alloc_size.fetch_add(layout.size(), Ordering::SeqCst);
-        System.alloc(layout)
-    }
-
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        self.alloc_size.fetch_sub(layout.size(), Ordering::SeqCst);
-        System.dealloc(ptr, layout)
-    }
-
-    unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
-        self.alloc_size.fetch_add(layout.size(), Ordering::SeqCst);
-        System.alloc_zeroed(layout)
-    }
-
-    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
-        if new_size > layout.size() {
-            self.alloc_size.fetch_add(new_size - layout.size(), Ordering::SeqCst);
-        } else if new_size < layout.size() {
-            self.alloc_size.fetch_sub(layout.size() - new_size, Ordering::SeqCst);
-        }
-        System.realloc(ptr, layout, new_size)
-    }
-}
-
 /// The number of bytes YJIT has allocated on the Rust heap.
 pub fn yjit_alloc_size() -> usize {
-    GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
+    jit::GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
 }
 
 /// Mapping of C function / ISEQ name to integer indices

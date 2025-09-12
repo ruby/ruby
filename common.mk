@@ -266,6 +266,7 @@ MAKE_LINK = $(MINIRUBY) -rfileutils -e "include FileUtils::Verbose" \
 YJIT_RUSTC_ARGS = --crate-name=yjit \
 	--crate-type=staticlib \
 	--edition=2021 \
+	--cfg 'feature="stats_allocator"' \
 	-g \
 	-C lto=thin \
 	-C opt-level=3 \
@@ -276,6 +277,7 @@ YJIT_RUSTC_ARGS = --crate-name=yjit \
 ZJIT_RUSTC_ARGS = --crate-name=zjit \
 	--crate-type=staticlib \
 	--edition=2024 \
+	--cfg 'feature="stats_allocator"' \
 	-g \
 	-C lto=thin \
 	-C opt-level=3 \

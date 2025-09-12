@@ -1,6 +1,11 @@
 //! Counters and associated methods for events when ZJIT is run.
 
 use std::time::Instant;
+use std::sync::atomic::Ordering;
+
+#[cfg(feature = "stats_allocator")]
+#[path = "../../jit/src/lib.rs"]
+mod jit;
 
 use crate::{cruby::*, hir::ParseError, options::get_option, state::{zjit_enabled_p, ZJITState}};
 
@@ -353,5 +358,5 @@ pub fn with_time_stat<F, R>(counter: Counter, func: F) -> R where F: FnOnce() ->
 
 /// The number of bytes ZJIT has allocated on the Rust heap.
 pub fn zjit_alloc_size() -> usize {
-    0 // TODO: report the actual memory usage to support --zjit-mem-size (Shopify/ruby#686)
+    jit::GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
 }

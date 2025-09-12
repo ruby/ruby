@@ -20,3 +20,4 @@ insta = "1.43.1"
 # Support --yjit-dump-disasm and RubyVM::YJIT.disasm using libcapstone.
 disasm = ["capstone"]
 runtime_checks = []
+stats_allocator = []
