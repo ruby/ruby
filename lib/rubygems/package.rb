@@ -452,7 +452,7 @@ EOM
 
         if entry.file?
           File.open(destination, "wb") do |out|
-            copy_stream(entry, out, entry.size)
+            copy_stream(tar.io, out, entry.size)
             # Flush needs to happen before chmod because there could be data
             # in the IO buffer that needs to be written, and that could be
             # written after the chmod (on close) which would mess up the perms
