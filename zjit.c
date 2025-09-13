@@ -22,6 +22,7 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
+#include "internal/jit_cont.h"
 
 // For mmapp(), sysconf()
 #ifndef _WIN32
