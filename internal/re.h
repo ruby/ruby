@@ -12,6 +12,7 @@
 #include "ruby/ruby.h"          /* for VALUE */
 
 /* re.c */
+VALUE rb_reg_s_alloc(VALUE klass);
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
 VALUE rb_reg_check_preprocess(VALUE);
 long rb_reg_search0(VALUE, VALUE, long, int, int, VALUE *);

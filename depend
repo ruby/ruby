@@ -8862,6 +8862,7 @@ marshal.$(OBJEXT): $(top_srcdir)/internal/hash.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/object.h
+marshal.$(OBJEXT): $(top_srcdir)/internal/re.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/serial.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/set_table.h

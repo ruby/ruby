@@ -42,6 +42,12 @@ Note: We're only listing outstanding class updates.
     * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned
       and signed LEB128 encoded integers. [[Feature #21785]]
 
+* Regexp
+
+    * All instances of `Regexp` are now frozen, not just literals.
+      Subclasses of `Regexp` are not frozen for compatibility.
+      [[Feature #8948]]
+
 * Set
 
     * A deprecated behavior, `Set#to_set`, `Range#to_set`, and
@@ -132,6 +138,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 ## JIT
 
 [Feature #6012]: https://bugs.ruby-lang.org/issues/6012
+[Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
 [Feature #21785]: https://bugs.ruby-lang.org/issues/21785
