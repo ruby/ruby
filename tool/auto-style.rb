@@ -217,7 +217,7 @@ def adjust_styles(files)
       end
     end
 
-    if File.fnmatch?("*.[ch]", f, File::FNM_PATHNAME) &&
+    if File.fnmatch?("*.[chy]", f, File::FNM_PATHNAME) &&
        !DIFFERENT_STYLE_FILES.any? {|pat| File.fnmatch?(pat, f, File::FNM_PATHNAME)}
       indent0 = true if src.gsub!(/^\w+\([^\n]*?\)\K[ \t]*(?=\{( *\\)?$)/, '\1' "\n")
       indent0 = true if src.gsub!(/^([ \t]*)\}\K[ \t]*(?=else\b.*?( *\\)?$)/, '\2' "\n" '\1')
