@@ -2635,7 +2635,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
         }
         rb_str_buf_cat(argv_str, (char *)&null, sizeof(null)); /* terminator for execve.  */
         eargp->invoke.cmd.argv_str =
-            rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(argv_str);
+            rb_imemo_tmpbuf_new_from_an_RString(argv_str);
     }
     RB_GC_GUARD(execarg_obj);
 }
@@ -2726,7 +2726,7 @@ open_func(void *ptr)
 static void
 rb_execarg_allocate_dup2_tmpbuf(struct rb_execarg *eargp, long len)
 {
-    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
+    VALUE tmpbuf = rb_imemo_tmpbuf_new();
     rb_imemo_tmpbuf_set_ptr(tmpbuf, ruby_xmalloc(run_exec_dup2_tmpbuf_size(len)));
     eargp->dup2_tmpbuf = tmpbuf;
 }
@@ -2830,7 +2830,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
         p = NULL;
         rb_str_buf_cat(envp_str, (char *)&p, sizeof(p));
         eargp->envp_str =
-            rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(envp_str);
+            rb_imemo_tmpbuf_new_from_an_RString(envp_str);
         eargp->envp_buf = envp_buf;
 
         /*
