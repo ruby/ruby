@@ -5897,7 +5897,8 @@ strings		: string
                     {
                         if (!$1) {
                             $$ = NEW_STR(STRING_NEW0(), &@$);
-                        } else {
+                        }
+                        else {
                             $$ = evstr2dstr(p, $1);
                         }
                     /*% ripper: $:1 %*/
@@ -6922,7 +6923,8 @@ parser_dispatch_delayed_token(struct parser_params *p, enum yytokentype t, int l
     if (p->keep_tokens) {
         /* p->delayed.token is freed by rb_parser_tokens_free */
         parser_append_tokens(p, p->delayed.token, t, line);
-    } else {
+    }
+    else {
         rb_parser_string_free(p, p->delayed.token);
     }
 
