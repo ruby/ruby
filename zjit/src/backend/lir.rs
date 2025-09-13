@@ -1171,6 +1171,9 @@ pub struct Assembler {
 
     /// Names of labels
     pub(super) label_names: Vec<String>,
+
+    leaf_ccall: bool,
+    leaf_canary_addr: Option<Opnd>
 }
 
 impl Assembler
@@ -1190,7 +1193,22 @@ impl Assembler
             insns: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
             live_ranges,
             label_names,
+            leaf_ccall: false,
+            leaf_canary_addr: None
         }
+    }
+
+    pub fn expect_leaf_ccall(&mut self) {
+        println!("EXPECTING LEAF CCALL");
+        self.leaf_ccall = true;
+    }
+
+    pub fn set_leaf_canary_addr(&mut self, addr: Opnd) {
+        self.leaf_canary_addr = Some(addr);
+    }
+
+    pub fn take_leaf_canary_addr(&mut self) -> Option<Opnd> {
+        self.leaf_canary_addr.take()
     }
 
     /// Build an Opnd::VReg and initialize its LiveRange
@@ -1516,6 +1534,19 @@ impl Assembler
                     pool.take_reg(&reg, vreg_idx);
                 }
                 saved_regs.clear();
+
+                if asm.leaf_ccall {
+                    if let Some(addr) = asm.take_leaf_canary_addr() {
+                        // *(saved_addr) = 0
+                        asm.store(Opnd::mem(64, addr, 0), 0.into());
+                    } else {
+                        // Fallback (shouldn’t happen): clear at current cfp->sp
+                        let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
+                        let sp_addr_now = asm.load(cfp_sp);
+                        asm.store(Opnd::mem(64, sp_addr_now, 0), 0.into());
+                    }
+                    asm.leaf_ccall = false;
+                }
             }
         }
 
