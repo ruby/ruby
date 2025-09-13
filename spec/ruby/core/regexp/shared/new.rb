@@ -5,22 +5,30 @@ describe :regexp_new, shared: true do
     Regexp.send(@method, '').is_a?(Regexp).should == true
   end
 
-  it "works by default for subclasses with overridden #initialize" do
-    class RegexpSpecsSubclass < Regexp
-      def initialize(*args)
-        super
-        @args = args
+  ruby_version_is "3.5" do
+    it "is frozen" do
+      Regexp.send(@method, '').should.frozen?
+    end
+  end
+
+  ruby_version_is ""..."3.5" do
+    it "works by default for subclasses with overridden #initialize" do
+      class RegexpSpecsSubclass < Regexp
+        def initialize(*args)
+          super
+          @args = args
+        end
+
+        attr_accessor :args
       end
 
-      attr_accessor :args
+      class RegexpSpecsSubclassTwo < Regexp; end
+
+      RegexpSpecsSubclass.send(@method, "hi").should be_kind_of(RegexpSpecsSubclass)
+      RegexpSpecsSubclass.send(@method, "hi").args.first.should == "hi"
+
+      RegexpSpecsSubclassTwo.send(@method, "hi").should be_kind_of(RegexpSpecsSubclassTwo)
     end
-
-    class RegexpSpecsSubclassTwo < Regexp; end
-
-    RegexpSpecsSubclass.send(@method, "hi").should be_kind_of(RegexpSpecsSubclass)
-    RegexpSpecsSubclass.send(@method, "hi").args.first.should == "hi"
-
-    RegexpSpecsSubclassTwo.send(@method, "hi").should be_kind_of(RegexpSpecsSubclassTwo)
   end
 end
 
@@ -376,7 +384,7 @@ describe :regexp_new_string, shared: true do
     end
 
     it "accepts a multiple byte character which need not be escaped" do
-      Regexp.send(@method, "\§").should == /#{"§"}/
+      Regexp.send(@method, "\ï¿½").should == /#{"ï¿½"}/
     end
 
     it "raises a RegexpError if less than four digits are given for \\uHHHH" do

@@ -137,9 +137,27 @@ describe "String#match" do
   end
 
   it "calls match on the regular expression" do
-    regexp = /./.dup
-    regexp.should_receive(:match).and_return(:foo)
-    'hello'.match(regexp).should == :foo
+    # Can't use:
+    # regexp.should_receive(:match).and_return(:foo)
+    # since regexps are frozen
+    ScratchPad.clear
+    class Regexp
+      alias_method :_match, :match
+      def match(*args)
+        ScratchPad.record [:match, *args]
+        _match(*args)
+      end
+    end
+
+    regexp = /./
+    'hello'.match(regexp)
+    ScratchPad.recorded.should == [:match, 'hello']
+
+  ensure
+    class Regexp
+      alias_method :match, :_match
+      remove_method :_match
+    end
   end
 end
 
