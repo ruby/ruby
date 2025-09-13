@@ -6,7 +6,7 @@ use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_
 use crate::hir::SideExitReason;
 use crate::options::{debug, get_option};
 use crate::cruby::VALUE;
-use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_call_type, exit_counter_ptr_for_opcode, CompileError};
+use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
 
@@ -1599,11 +1599,6 @@ impl Assembler
                     if let SideExitReason::UnhandledYARVInsn(opcode) = reason {
                         asm_comment!(self, "increment an unhandled YARV insn counter");
                         self.load_into(SCRATCH_OPND, Opnd::const_ptr(exit_counter_ptr_for_opcode(opcode)));
-                        self.incr_counter_with_reg(Opnd::mem(64, SCRATCH_OPND, 0), 1.into(), C_RET_OPND);
-                    }
-                    if let SideExitReason::UnhandledCallType(call_type) = reason {
-                        asm_comment!(self, "increment an unknown call type counter");
-                        self.load_into(SCRATCH_OPND, Opnd::const_ptr(exit_counter_ptr_for_call_type(call_type)));
                         self.incr_counter_with_reg(Opnd::mem(64, SCRATCH_OPND, 0), 1.into(), C_RET_OPND);
                     }
                 }

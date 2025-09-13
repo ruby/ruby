@@ -92,7 +92,7 @@ make_counters! {
         // exit_: Side exits reasons
         exit_compile_error,
         exit_unknown_newarray_send,
-        exit_unhandled_call_type,
+        exit_unhandled_tailcall,
         exit_unknown_special_variable,
         exit_unhandled_hir_insn,
         exit_unhandled_yarv_insn,
@@ -209,7 +209,7 @@ pub fn exit_counter_ptr(reason: crate::hir::SideExitReason) -> *mut u64 {
     use crate::stats::Counter::*;
     let counter = match reason {
         UnknownNewarraySend(_)        => exit_unknown_newarray_send,
-        UnhandledCallType(_)          => exit_unhandled_call_type,
+        UnhandledTailCall             => exit_unhandled_tailcall,
         UnknownSpecialVariable(_)     => exit_unknown_special_variable,
         UnhandledHIRInsn(_)           => exit_unhandled_hir_insn,
         UnhandledYARVInsn(_)          => exit_unhandled_yarv_insn,
