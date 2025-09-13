@@ -4392,15 +4392,16 @@ static inline void
 gc_mark_check_t_none(rb_objspace_t *objspace, VALUE obj)
 {
     if (RB_UNLIKELY(RB_TYPE_P(obj, T_NONE))) {
-        char obj_info_buf[256];
-        rb_raw_obj_info(obj_info_buf, 256, obj);
+        enum {info_size = 256};
+        char obj_info_buf[info_size];
+        rb_raw_obj_info(obj_info_buf, info_size, obj);
 
-        char parent_obj_info_buf[256];
+        char parent_obj_info_buf[info_size];
         if (objspace->rgengc.parent_object == Qfalse) {
-            strcpy(parent_obj_info_buf, "(none)");
+            strlcpy(parent_obj_info_buf, "(none)", info_size);
         }
         else {
-            rb_raw_obj_info(parent_obj_info_buf, 256, objspace->rgengc.parent_object);
+            rb_raw_obj_info(parent_obj_info_buf, info_size, objspace->rgengc.parent_object);
         }
 
         rb_bug("try to mark T_NONE object (obj: %s, parent: %s)", obj_info_buf, parent_obj_info_buf);
