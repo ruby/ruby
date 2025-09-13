@@ -473,14 +473,16 @@ describe "Marshal.dump" do
       Marshal.dump(//im).should == "\x04\bI/\x00\x05\x06:\x06EF"
     end
 
-    it "dumps a Regexp with instance variables" do
-      o = Regexp.new("")
-      o.instance_variable_set(:@ivar, :ivar)
-      Marshal.dump(o).should == "\x04\bI/\x00\x00\a:\x06EF:\n@ivar:\tivar"
-    end
+    ruby_version_is ""..."4.0" do
+      it "dumps a Regexp with instance variables" do
+        o = Regexp.new("")
+        o.instance_variable_set(:@ivar, :ivar)
+        Marshal.dump(o).should == "\x04\bI/\x00\x00\a:\x06EF:\n@ivar:\tivar"
+      end
 
-    it "dumps an extended Regexp" do
-      Marshal.dump(Regexp.new("").extend(Meths)).should == "\x04\bIe:\nMeths/\x00\x00\x06:\x06EF"
+      it "dumps an extended Regexp" do
+        Marshal.dump(Regexp.new("").extend(Meths)).should == "\x04\bIe:\nMeths/\x00\x00\x06:\x06EF"
+      end
     end
 
     it "dumps a Regexp subclass" do

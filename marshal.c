@@ -1731,7 +1731,10 @@ r_ivar_encoding(VALUE obj, struct load_arg *arg, VALUE sym, VALUE val)
     int idx = sym2encidx(sym, val);
     if (idx >= 0) {
         if (rb_enc_capable(obj)) {
-            rb_enc_associate_index(obj, idx);
+            // Check if needed to avoid rb_check_frozen() check for Regexps
+            if (rb_enc_get_index(obj) != idx) {
+                rb_enc_associate_index(obj, idx);
+            }
         }
         else {
             rb_raise(rb_eArgError, "%"PRIsVALUE" is not enc_capable", obj);

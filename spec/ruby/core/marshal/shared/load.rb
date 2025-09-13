@@ -907,37 +907,59 @@ describe :marshal_load, shared: true do
   end
 
   describe "for a Regexp" do
-    it "loads an extended Regexp" do
-      obj = /[a-z]/.dup.extend(Meths, MethsMore)
-      new_obj = Marshal.send(@method, "\004\be:\nMethse:\016MethsMore/\n[a-z]\000")
+    ruby_version_is "4.0" do
+      it "raises FrozenError for an extended Regexp" do
+        -> {
+          Marshal.send(@method, "\004\be:\nMethse:\016MethsMore/\n[a-z]\000")
+        }.should raise_error(FrozenError)
+      end
 
-      new_obj.should == obj
-      new_obj_metaclass_ancestors = class << new_obj; ancestors; end
-      new_obj_metaclass_ancestors[@num_self_class, 3].should ==
-        [Meths, MethsMore, Regexp]
+      it "raises FrozenError for a Regexp subclass instance variables when it is extended with a module" do
+        -> {
+          Marshal.send(@method, "\004\bIe:\nMethsC:\017UserRegexp/\000\000\006:\v@noise\"\tmuch")
+        }.should raise_error(FrozenError)
+      end
+
+      it "raises FrozenError when regexp has instance variables" do
+        -> {
+          Marshal.send(@method, "\x04\bI/\nhello\x00\a:\x06EF:\x11@regexp_ivar[\x06i/")
+        }.should raise_error(FrozenError)
+      end
     end
 
-    it "loads a Regexp subclass instance variables when it is extended with a module" do
-      obj = UserRegexp.new('').extend(Meths)
-      obj.instance_variable_set(:@noise, 'much')
+    ruby_version_is ""..."4.0" do
+      it "loads an extended Regexp" do
+        obj = /[a-z]/.dup.extend(Meths, MethsMore)
+        new_obj = Marshal.send(@method, "\004\be:\nMethse:\016MethsMore/\n[a-z]\000")
 
-      new_obj = Marshal.send(@method, "\004\bIe:\nMethsC:\017UserRegexp/\000\000\006:\v@noise\"\tmuch")
+        new_obj.should == obj
+        new_obj_metaclass_ancestors = class << new_obj; ancestors; end
+        new_obj_metaclass_ancestors[@num_self_class, 3].should ==
+          [Meths, MethsMore, Regexp]
+      end
 
-      new_obj.should == obj
-      new_obj.instance_variable_get(:@noise).should == 'much'
-      new_obj_metaclass_ancestors = class << new_obj; ancestors; end
-      new_obj_metaclass_ancestors[@num_self_class, 3].should ==
-        [Meths, UserRegexp, Regexp]
-    end
+      it "loads a Regexp subclass instance variables when it is extended with a module" do
+        obj = UserRegexp.new('').extend(Meths)
+        obj.instance_variable_set(:@noise, 'much')
 
-    ruby_bug "#19439", ""..."3.3" do
-      it "restore the regexp instance variables" do
-        obj = Regexp.new("hello")
-        obj.instance_variable_set(:@regexp_ivar, [42])
+        new_obj = Marshal.send(@method, "\004\bIe:\nMethsC:\017UserRegexp/\000\000\006:\v@noise\"\tmuch")
 
-        new_obj = Marshal.send(@method, "\x04\bI/\nhello\x00\a:\x06EF:\x11@regexp_ivar[\x06i/")
-        new_obj.instance_variables.should == [:@regexp_ivar]
-        new_obj.instance_variable_get(:@regexp_ivar).should == [42]
+        new_obj.should == obj
+        new_obj.instance_variable_get(:@noise).should == 'much'
+        new_obj_metaclass_ancestors = class << new_obj; ancestors; end
+        new_obj_metaclass_ancestors[@num_self_class, 3].should ==
+          [Meths, UserRegexp, Regexp]
+      end
+
+      ruby_bug "#19439", ""..."3.3" do
+        it "restore the regexp instance variables" do
+          obj = Regexp.new("hello")
+          obj.instance_variable_set(:@regexp_ivar, [42])
+
+          new_obj = Marshal.send(@method, "\x04\bI/\nhello\x00\a:\x06EF:\x11@regexp_ivar[\x06i/")
+          new_obj.instance_variables.should == [:@regexp_ivar]
+          new_obj.instance_variable_get(:@regexp_ivar).should == [42]
+        end
       end
     end
 

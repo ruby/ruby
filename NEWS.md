@@ -143,6 +143,11 @@ Note: We're only listing outstanding class updates.
       to make shareable Proc or lambda.
       [[Feature #21550]], [[Feature #21557]]
 
+* Regexp
+
+    * All `Regexp` instances are now frozen, not just literals.
+      [[Feature #8948]]
+
 * Range
 
     * `Range#to_set` and `Enumerator#to_set` now perform size checks to prevent
@@ -401,6 +406,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
       to the [ruby/rjit](https://github.com/ruby/rjit) repository.
 
 [Feature #6012]: https://bugs.ruby-lang.org/issues/6012
+[Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #15408]: https://bugs.ruby-lang.org/issues/15408
 [Feature #17473]: https://bugs.ruby-lang.org/issues/17473
 [Feature #18455]: https://bugs.ruby-lang.org/issues/18455
