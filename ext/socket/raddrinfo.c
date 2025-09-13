@@ -387,7 +387,7 @@ allocate_getaddrinfo_arg(const char *hostp, const char *portp, const struct addr
 
     if (hostp) {
         arg->node = buf + hostp_offset;
-        strcpy(arg->node, hostp);
+        memcpy(arg->node, hostp, portp_offset - hostp_offset);
     }
     else {
         arg->node = NULL;
@@ -395,7 +395,7 @@ allocate_getaddrinfo_arg(const char *hostp, const char *portp, const struct addr
 
     if (portp) {
         arg->service = buf + portp_offset;
-        strcpy(arg->service, portp);
+        memcpy(arg->service, portp, bufsize - portp_offset);
     }
     else {
         arg->service = NULL;
@@ -578,6 +578,10 @@ start:
 
 #endif
 
+#define GETNAMEINFO_WONT_BLOCK(host, serv, flags) \
+    ((!(host) || ((flags) & NI_NUMERICHOST)) && \
+     (!(serv) || ((flags) & NI_NUMERICSERV)))
+
 #if GETADDRINFO_IMPL == 0
 
 int
@@ -585,7 +589,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
            char *host, size_t hostlen,
            char *serv, size_t servlen, int flags)
 {
-    return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
+    return getnameinfo(sa, salen, host, (socklen_t)hostlen, serv, (socklen_t)servlen, flags);
 }
 
 #elif GETADDRINFO_IMPL == 1
@@ -615,6 +619,10 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
                char *host, size_t hostlen,
                char *serv, size_t servlen, int flags)
 {
+    if (GETNAMEINFO_WONT_BLOCK(host, serv, flags)) {
+        return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
+    }
+
     struct getnameinfo_arg arg;
     int ret;
     arg.sa = sa;
@@ -742,6 +750,10 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
     int retry;
     struct getnameinfo_arg *arg;
     int err = 0, gni_errno = 0;
+
+    if (GETNAMEINFO_WONT_BLOCK(host, serv, flags)) {
+        return getnameinfo(sa, salen, host, (socklen_t)hostlen, serv, (socklen_t)servlen, flags);
+    }
 
 start:
     retry = 0;

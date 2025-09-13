@@ -119,7 +119,11 @@ enum feature_flag_bits {
     EACH_FEATURES(DEFINE_FEATURE, COMMA),
     DEFINE_FEATURE(frozen_string_literal_set),
     feature_debug_flag_first,
+#if !USE_YJIT && USE_ZJIT
+    DEFINE_FEATURE(jit) = feature_zjit,
+#else
     DEFINE_FEATURE(jit) = feature_yjit,
+#endif
     feature_jit_mask = FEATURE_BIT(yjit) | FEATURE_BIT(zjit),
 
     feature_debug_flag_begin = feature_debug_flag_first - 1,
@@ -301,6 +305,8 @@ ruby_show_usage_line(const char *name, const char *secondary, const char *descri
                     description, help, highlight, width, columns);
 }
 
+RUBY_EXTERN const char ruby_api_version_name[];
+
 static void
 usage(const char *name, int help, int highlight, int columns)
 {
@@ -404,6 +410,9 @@ usage(const char *name, int help, int highlight, int columns)
 #define SHOW(m) show_usage_line(&(m), help, highlight, w, columns)
 
     printf("%sUsage:%s %s [options] [--] [filepath] [arguments]\n", sb, se, name);
+    printf("\n""Details and examples at https://docs.ruby-lang.org/en/%s/ruby/options_md.html\n",
+           ruby_api_version_name);
+
     for (i = 0; i < num; ++i)
         SHOW(usage_msg[i]);
 
@@ -1196,14 +1205,12 @@ setup_yjit_options(const char *s)
 
 #if USE_ZJIT
 static void
-setup_zjit_options(ruby_cmdline_options_t *opt, const char *s)
+setup_zjit_options(const char *s)
 {
     // The option parsing is done in zjit/src/options.rs
-    extern void *rb_zjit_init_options(void);
-    extern bool rb_zjit_parse_option(void *options, const char *s);
+    extern bool rb_zjit_parse_option(const char *s);
 
-    if (!opt->zjit) opt->zjit = rb_zjit_init_options();
-    if (!rb_zjit_parse_option(opt->zjit, s)) {
+    if (!rb_zjit_parse_option(s)) {
         rb_raise(rb_eRuntimeError, "invalid ZJIT option '%s' (--help will show valid zjit options)", s);
     }
 }
@@ -1481,7 +1488,7 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
     else if (is_option_with_optarg("zjit", '-', true, false, false)) {
 #if USE_ZJIT
         FEATURE_SET(opt->features, FEATURE_BIT(zjit));
-        setup_zjit_options(opt, s);
+        setup_zjit_options(s);
 #else
         rb_warn("Ruby was built without ZJIT support."
                 " You may need to install rustc to build Ruby with ZJIT.");
@@ -1821,26 +1828,20 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     if (rb_namespace_available())
         rb_initialize_main_namespace();
+    rb_namespace_init_done();
+    ruby_init_prelude();
 
-    // Initialize JITs after prelude because JITing prelude is typically not optimal.
+    // Initialize JITs after ruby_init_prelude() because JITing prelude is typically not optimal.
 #if USE_YJIT
     rb_yjit_init(opt->yjit);
 #endif
 #if USE_ZJIT
     if (opt->zjit) {
-        extern void rb_zjit_init(void *options);
-        rb_zjit_init(opt->zjit);
+        extern void rb_zjit_init(void);
+        rb_zjit_init();
     }
 #endif
 
-#if USE_YJIT
-    // Call yjit_hook.rb after rb_yjit_init() to use `RubyVM::YJIT.enabled?`
-    void Init_builtin_yjit_hook();
-    Init_builtin_yjit_hook();
-#endif
-
-    rb_namespace_init_done();
-    ruby_init_prelude();
     ruby_set_script_name(opt->script_name);
     require_libraries(&opt->req_list);
 }
@@ -2357,7 +2358,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         if (!FEATURE_USED_P(opt->features, yjit) && env_var_truthy("RUBY_YJIT_ENABLE")) {
             FEATURE_SET(opt->features, FEATURE_BIT(yjit));
         }
-#elif USE_ZJIT
+#endif
+#if USE_ZJIT
         if (!FEATURE_USED_P(opt->features, zjit) && env_var_truthy("RUBY_ZJIT_ENABLE")) {
             FEATURE_SET(opt->features, FEATURE_BIT(zjit));
         }
@@ -2376,8 +2378,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
 #if USE_ZJIT
     if (FEATURE_SET_P(opt->features, zjit) && !opt->zjit) {
-        extern void *rb_zjit_init_options(void);
-        opt->zjit = rb_zjit_init_options();
+        extern void rb_zjit_prepare_options(void);
+        rb_zjit_prepare_options();
+        opt->zjit = true;
     }
 #endif
 

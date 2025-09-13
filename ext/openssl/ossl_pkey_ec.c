@@ -805,11 +805,10 @@ static VALUE ossl_ec_group_get_order(VALUE self)
 {
     VALUE bn_obj;
     BIGNUM *bn;
-    EC_GROUP *group = NULL;
+    EC_GROUP *group;
 
     GetECGroup(self, group);
-
-    bn_obj = ossl_bn_new(NULL);
+    bn_obj = ossl_bn_new(BN_value_one());
     bn = GetBNPtr(bn_obj);
 
     if (EC_GROUP_get_order(group, bn, ossl_bn_ctx) != 1)
@@ -830,11 +829,10 @@ static VALUE ossl_ec_group_get_cofactor(VALUE self)
 {
     VALUE bn_obj;
     BIGNUM *bn;
-    EC_GROUP *group = NULL;
+    EC_GROUP *group;
 
     GetECGroup(self, group);
-
-    bn_obj = ossl_bn_new(NULL);
+    bn_obj = ossl_bn_new(BN_value_one());
     bn = GetBNPtr(bn_obj);
 
     if (EC_GROUP_get_cofactor(group, bn, ossl_bn_ctx) != 1)

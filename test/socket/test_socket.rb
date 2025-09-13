@@ -173,8 +173,11 @@ class TestSocket < Test::Unit::TestCase
 
   def errors_addrinuse
     errs = [Errno::EADDRINUSE]
-    # MinGW fails with "Errno::EACCES: Permission denied - bind(2) for 0.0.0.0:49721"
-    errs << Errno::EACCES if /mingw/ =~ RUBY_PLATFORM
+    # Windows can fail with "Errno::EACCES: Permission denied - bind(2) for 0.0.0.0:49721"
+    # or "Test::Unit::ProxyError: Permission denied - bind(2) for 0.0.0.0:55333"
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      errs += [Errno::EACCES, Test::Unit::ProxyError]
+    end
     errs
   end
 

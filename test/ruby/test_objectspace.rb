@@ -284,6 +284,21 @@ End
     end;
   end
 
+  def test_id2ref_table_build
+    assert_separately([], <<-End)
+      10.times do
+        Object.new.object_id
+      end
+
+      GC.start(immediate_mark: false)
+
+      obj = Object.new
+      EnvUtil.suppress_warning do
+        assert_equal obj, ObjectSpace._id2ref(obj.object_id)
+      end
+    End
+  end
+
   def test_each_object_singleton_class
     assert_separately([], <<-End)
       class C

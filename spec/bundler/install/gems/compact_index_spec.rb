@@ -529,40 +529,6 @@ RSpec.describe "compact index api" do
     expect(out).to include("Fetching gem metadata from #{source_uri}")
   end
 
-  it "installs the binstubs" do
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "myrack"
-    G
-
-    bundle "install --binstubs", artifice: "compact_index"
-
-    gembin "myrackup"
-    expect(out).to eq("1.0.0")
-  end
-
-  it "installs the bins when using --path and uses autoclean" do
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "myrack"
-    G
-
-    bundle "install --path vendor/bundle", artifice: "compact_index"
-
-    expect(vendored_gems("bin/myrackup")).to exist
-  end
-
-  it "installs the bins when using --path and uses bundle clean" do
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "myrack"
-    G
-
-    bundle "install --path vendor/bundle --no-clean", artifice: "compact_index"
-
-    expect(vendored_gems("bin/myrackup")).to exist
-  end
-
   it "prints post_install_messages" do
     gemfile <<-G
       source "#{source_uri}"
@@ -1010,11 +976,7 @@ RSpec.describe "compact index api" do
         gem "myrack"
       G
 
-      gem_path = if Bundler.feature_flag.global_gem_cache?
-        default_cache_path.dirname.join("cache", "gems", "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "myrack-1.0.0.gem")
-      else
-        default_cache_path.dirname.join("myrack-1.0.0.gem")
-      end
+      gem_path = default_cache_path.dirname.join("myrack-1.0.0.gem")
 
       expect(exitstatus).to eq(37)
       expect(err).to eq <<~E.strip

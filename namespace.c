@@ -411,6 +411,12 @@ rb_get_namespace_object(rb_namespace_t *ns)
 
 static void setup_pushing_loading_namespace(rb_namespace_t *ns);
 
+/*
+ *  call-seq:
+ *    Namespace.new -> new_namespace
+ *
+ *  Returns a new Namespace object.
+ */
 static VALUE
 namespace_initialize(VALUE namespace)
 {
@@ -450,12 +456,26 @@ namespace_initialize(VALUE namespace)
     return namespace;
 }
 
+/*
+ *  call-seq:
+ *    Namespace.enabled? -> true or false
+ *
+ *  Returns +true+ if namespace is enabled.
+ */
 static VALUE
 rb_namespace_s_getenabled(VALUE namespace)
 {
     return RBOOL(rb_namespace_available());
 }
 
+/*
+ *  call-seq:
+ *    Namespace.current -> namespace, nil or false
+ *
+ *  Returns the current namespace.
+ *  Returns +nil+ if it is the built-in namespace.
+ *  Returns +false+ if namespace is not enabled.
+ */
 static VALUE
 rb_namespace_current(VALUE klass)
 {
@@ -469,6 +489,12 @@ rb_namespace_current(VALUE klass)
     return Qfalse;
 }
 
+/*
+ *  call-seq:
+ *    Namespace.is_builtin?(klass) -> true or false
+ *
+ *  Returns +true+ if +klass+ is only in a user namespace.
+ */
 static VALUE
 rb_namespace_s_is_builtin_p(VALUE namespace, VALUE klass)
 {
@@ -477,6 +503,12 @@ rb_namespace_s_is_builtin_p(VALUE namespace, VALUE klass)
     return Qfalse;
 }
 
+/*
+ *  call-seq:
+ *    load_path -> array
+ *
+ *  Returns namespace local load path.
+ */
 static VALUE
 rb_namespace_load_path(VALUE namespace)
 {
@@ -596,15 +628,15 @@ static const char *
 copy_ext_file_error(char *message, size_t size, int copy_retvalue, char *src_path, char *dst_path)
 {
     switch (copy_retvalue) {
-    case 1:
+      case 1:
         snprintf(message, size, "can't open the extension path: %s", src_path);
-    case 2:
+      case 2:
         snprintf(message, size, "can't open the file to write: %s", dst_path);
-    case 3:
+      case 3:
         snprintf(message, size, "failed to read the extension path: %s", src_path);
-    case 4:
+      case 4:
         snprintf(message, size, "failed to write the extension path: %s", dst_path);
-    default:
+      default:
         rb_bug("unknown return value of copy_ext_file: %d", copy_retvalue);
     }
     return message;
@@ -693,28 +725,32 @@ copy_ext_file(char *src_path, char *dst_path)
 #define IS_DLEXT(e) (strcmp((e), DLEXT) == 0)
 
 static void
-fname_without_suffix(char *fname, char *rvalue)
+fname_without_suffix(const char *fname, char *rvalue, size_t rsize)
 {
-    char *pos;
-    strcpy(rvalue, fname);
-    for (pos = rvalue + strlen(fname); pos > rvalue; pos--) {
+    size_t len = strlen(fname);
+    const char *pos;
+    for (pos = fname + len; pos > fname; pos--) {
         if (IS_SOEXT(pos) || IS_DLEXT(pos)) {
-            *pos = '\0';
-            return;
+            len = pos - fname;
+            break;
         }
+        if (fname + len - pos > DLEXT_MAXLEN) break;
     }
+    if (len > rsize - 1) len = rsize - 1;
+    memcpy(rvalue, fname, len);
+    rvalue[len] = '\0';
 }
 
 static void
-escaped_basename(char *path, char *fname, char *rvalue)
+escaped_basename(const char *path, const char *fname, char *rvalue, size_t rsize)
 {
-    char *pos, *leaf, *found;
-    leaf = path;
+    char *pos;
+    const char *leaf = path, *found;
     // `leaf + 1` looks uncomfortable (when leaf == path), but fname must not be the top-dir itself
     while ((found = strstr(leaf + 1, fname)) != NULL) {
         leaf = found; // find the last occurrence for the path like /etc/my-crazy-lib-dir/etc.so
     }
-    strcpy(rvalue, leaf);
+    strlcpy(rvalue, leaf, rsize);
     for (pos = rvalue; *pos; pos++) {
         if (isdirsep(*pos)) {
             *pos = '+';
@@ -730,8 +766,8 @@ rb_namespace_local_extension(VALUE namespace, VALUE fname, VALUE path)
     char *src_path = RSTRING_PTR(path), *fname_ptr = RSTRING_PTR(fname);
     rb_namespace_t *ns = rb_get_namespace_t(namespace);
 
-    fname_without_suffix(fname_ptr, fname2);
-    escaped_basename(src_path, fname2, basename);
+    fname_without_suffix(fname_ptr, fname2, sizeof(fname2));
+    escaped_basename(src_path, fname2, basename, sizeof(basename));
 
     wrote = sprint_ext_filename(ext_path, sizeof(ext_path), ns->ns_id, NAMESPACE_TMP_PREFIX, basename);
     if (wrote >= (int)sizeof(ext_path)) {
@@ -1048,6 +1084,13 @@ Init_enable_namespace(void)
     }
 }
 
+/*
+ *  Document-class: Namespace
+ *
+ *  Namespace is designed to provide separated spaces in a Ruby
+ *  process, to isolate applications and libraries.
+ *  See {Namespace}[rdoc-ref:namespace.md].
+ */
 void
 Init_Namespace(void)
 {
@@ -1057,14 +1100,17 @@ Init_Namespace(void)
     rb_cNamespace = rb_define_class("Namespace", rb_cModule);
     rb_define_method(rb_cNamespace, "initialize", namespace_initialize, 0);
 
+    /* :nodoc: */
     rb_cNamespaceEntry = rb_define_class_under(rb_cNamespace, "Entry", rb_cObject);
     rb_define_alloc_func(rb_cNamespaceEntry, rb_namespace_entry_alloc);
 
+    /* :nodoc: */
     rb_mNamespaceRefiner = rb_define_module_under(rb_cNamespace, "Refiner");
     if (rb_namespace_available()) {
         setup_builtin_refinement(rb_mNamespaceRefiner);
     }
 
+    /* :nodoc: */
     rb_mNamespaceLoader = rb_define_module_under(rb_cNamespace, "Loader");
     namespace_define_loader_method("require");
     namespace_define_loader_method("require_relative");

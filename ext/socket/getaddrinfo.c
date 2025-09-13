@@ -171,9 +171,7 @@ static const char *const ai_errlist[] = {
 
 #define GET_CANONNAME(ai, str) \
 if (pai->ai_flags & AI_CANONNAME) {\
-        if (((ai)->ai_canonname = (char *)malloc(strlen(str) + 1)) != NULL) {\
-                strcpy((ai)->ai_canonname, (str));\
-        } else {\
+        if (((ai)->ai_canonname = strdup(str)) == NULL) {\
                 error = EAI_MEMORY;\
                 goto free;\
         }\

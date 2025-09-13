@@ -280,7 +280,8 @@
 # If the argument +capture+ is provided and not <tt>0</tt>,
 # it should be either a capture group index (integer)
 # or a capture group name (String or Symbol);
-# the slice is the specified capture (see Regexp@Groups and Captures):
+# the slice is the specified capture
+# (see {Groups and Captures}[rdoc-ref:Regexp@Groups+and+Captures]):
 #
 #   s = 'hello there'
 #   s[/[aeiou](.)\1/, 1] # => "l"
@@ -334,7 +335,7 @@
 # _Counts_
 #
 # - #length (aliased as #size): Returns the count of characters (not bytes).
-# - #empty?: Returns +true+ if +self.length+ is zero; +false+ otherwise.
+# - #empty?: Returns whether the length of +self+ is zero.
 # - #bytesize: Returns the count of bytes.
 # - #count: Returns the count of substrings matching given strings.
 #

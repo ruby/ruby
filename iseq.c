@@ -325,15 +325,13 @@ cc_is_active(const struct rb_callcache *cc, bool reference_updating)
             cc = (const struct rb_callcache *)rb_gc_location((VALUE)cc);
         }
 
-        if (vm_cc_markable(cc)) {
-            if (cc->klass) { // cc is not invalidated
-                const struct rb_callable_method_entry_struct *cme = vm_cc_cme(cc);
-                if (reference_updating) {
-                    cme = (const struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cme);
-                }
-                if (!METHOD_ENTRY_INVALIDATED(cme)) {
-                    return true;
-                }
+        if (vm_cc_markable(cc) && vm_cc_valid(cc)) {
+            const struct rb_callable_method_entry_struct *cme = vm_cc_cme(cc);
+            if (reference_updating) {
+                cme = (const struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cme);
+            }
+            if (!METHOD_ENTRY_INVALIDATED(cme)) {
+                return true;
             }
         }
     }
@@ -434,7 +432,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
         VM_ASSERT(ISEQ_EXECUTABLE_P(iseq));
 
         if (iseq->aux.exec.local_hooks) {
-            rb_hook_list_mark_and_update(iseq->aux.exec.local_hooks);
+            rb_hook_list_mark_and_move(iseq->aux.exec.local_hooks);
         }
     }
 
@@ -634,6 +632,18 @@ new_arena(void)
     new_arena->size = INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE;
 
     return new_arena;
+}
+
+static int
+prepare_node_id(const NODE *node)
+{
+    if (!node) return -1;
+
+    if (nd_type(node) == NODE_SCOPE && RNODE_SCOPE(node)->nd_parent) {
+        return nd_node_id(RNODE_SCOPE(node)->nd_parent);
+    }
+
+    return nd_node_id(node);
 }
 
 static VALUE
@@ -1033,7 +1043,7 @@ rb_iseq_new_with_opt(VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
         script_lines = ISEQ_BODY(parent)->variable.script_lines;
     }
 
-    prepare_iseq_build(iseq, name, path, realpath, first_lineno, node ? &node->nd_loc : NULL, node ? nd_node_id(node) : -1,
+    prepare_iseq_build(iseq, name, path, realpath, first_lineno, node ? &node->nd_loc : NULL, prepare_node_id(node),
                        parent, isolated_depth, type, script_lines, option);
 
     rb_iseq_compile_node(iseq, node);
@@ -1499,9 +1509,9 @@ rb_iseq_remove_coverage_all(void)
 /* define wrapper class methods (RubyVM::InstructionSequence) */
 
 static void
-iseqw_mark(void *ptr)
+iseqw_mark_and_move(void *ptr)
 {
-    rb_gc_mark_movable(*(VALUE *)ptr);
+    rb_gc_mark_and_move((VALUE *)ptr);
 }
 
 static size_t
@@ -1510,20 +1520,13 @@ iseqw_memsize(const void *ptr)
     return rb_iseq_memsize(*(const rb_iseq_t **)ptr);
 }
 
-static void
-iseqw_ref_update(void *ptr)
-{
-    VALUE *vptr = ptr;
-    *vptr = rb_gc_location(*vptr);
-}
-
 static const rb_data_type_t iseqw_data_type = {
     "T_IMEMO/iseq",
     {
-        iseqw_mark,
+        iseqw_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         iseqw_memsize,
-        iseqw_ref_update,
+        iseqw_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
 };

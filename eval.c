@@ -703,49 +703,142 @@ rb_interrupt(void)
     rb_exc_raise(rb_exc_new(rb_eInterrupt, 0, 0));
 }
 
-enum {raise_opt_cause, raise_max_opt}; /*< \private */
-
 static int
-extract_raise_opts(int argc, VALUE *argv, VALUE *opts)
+extract_raise_options(int argc, VALUE *argv, VALUE *cause)
 {
-    int i;
+    // Keyword arguments:
+    static ID keywords[1] = {0};
+    if (!keywords[0]) {
+        CONST_ID(keywords[0], "cause");
+    }
+
     if (argc > 0) {
-        VALUE opt;
-        argc = rb_scan_args(argc, argv, "*:", NULL, &opt);
-        if (!NIL_P(opt)) {
-            if (!RHASH_EMPTY_P(opt)) {
-                ID keywords[1];
-                CONST_ID(keywords[0], "cause");
-                rb_get_kwargs(opt, keywords, 0, -1-raise_max_opt, opts);
-                if (!RHASH_EMPTY_P(opt)) argv[argc++] = opt;
-                return argc;
+        VALUE options;
+        argc = rb_scan_args(argc, argv, "*:", NULL, &options);
+
+        if (!NIL_P(options)) {
+            if (!RHASH_EMPTY_P(options)) {
+                // Extract optional cause keyword argument, leaving any other options alone:
+                rb_get_kwargs(options, keywords, 0, -2, cause);
+
+                // If there were any other options, add them back to the arguments:
+                if (!RHASH_EMPTY_P(options)) argv[argc++] = options;
             }
         }
     }
-    for (i = 0; i < raise_max_opt; ++i) {
-        opts[i] = Qundef;
-    }
+
     return argc;
+}
+
+/**
+ * Complete exception setup for cross-context raises (Thread#raise, Fiber#raise).
+ * Handles keyword extraction, validation, exception creation, and cause assignment.
+ *
+ * @param[in]     argc        Number of arguments
+ * @param[in]     argv        Argument array (will be modified for keyword extraction)
+ * @return                    Prepared exception object with cause applied
+ */
+VALUE
+rb_exception_setup(int argc, VALUE *argv)
+{
+    rb_execution_context_t *ec = GET_EC();
+
+    // Extract cause keyword argument:
+    VALUE cause = Qundef;
+    argc = extract_raise_options(argc, argv, &cause);
+
+    // Validate cause-only case:
+    if (argc == 0 && !UNDEF_P(cause)) {
+        rb_raise(rb_eArgError, "only cause is given with no arguments");
+    }
+
+    // Create exception:
+    VALUE exception;
+    if (argc == 0) {
+        exception = rb_exc_new(rb_eRuntimeError, 0, 0);
+    }
+    else {
+        exception = rb_make_exception(argc, argv);
+    }
+
+    VALUE resolved_cause = Qnil;
+
+    // Resolve cause with validation:
+    if (UNDEF_P(cause)) {
+        // No explicit cause - use automatic cause chaining from calling context:
+        resolved_cause = rb_ec_get_errinfo(ec);
+
+        // Prevent self-referential cause (e.g. `raise $!`):
+        if (resolved_cause == exception) {
+            resolved_cause = Qnil;
+        }
+    }
+    else if (NIL_P(cause)) {
+        // Explicit nil cause - prevent chaining:
+        resolved_cause = Qnil;
+    }
+    else {
+        // Explicit cause - validate and assign:
+        if (!rb_obj_is_kind_of(cause, rb_eException)) {
+            rb_raise(rb_eTypeError, "exception object expected");
+        }
+
+        if (cause == exception) {
+            // Prevent self-referential cause (e.g. `raise error, cause: error`) - although I'm not sure this is good behaviour, it's inherited from `Kernel#raise`.
+            resolved_cause = Qnil;
+        }
+        else {
+            // Check for circular causes:
+            VALUE current_cause = cause;
+            while (!NIL_P(current_cause)) {
+                // We guarantee that the cause chain is always terminated. Then, creating an exception with an existing cause is not circular as long as exception is not an existing cause of any other exception.
+                if (current_cause == exception) {
+                    rb_raise(rb_eArgError, "circular causes");
+                }
+                if (THROW_DATA_P(current_cause)) {
+                    break;
+                }
+                current_cause = rb_attr_get(current_cause, id_cause);
+            }
+            resolved_cause = cause;
+        }
+    }
+
+    // Apply cause to exception object (duplicate if frozen):
+    if (!UNDEF_P(resolved_cause)) {
+        if (OBJ_FROZEN(exception)) {
+            exception = rb_obj_dup(exception);
+        }
+        rb_ivar_set(exception, id_cause, resolved_cause);
+    }
+
+    return exception;
 }
 
 VALUE
 rb_f_raise(int argc, VALUE *argv)
 {
-    VALUE err;
-    VALUE opts[raise_max_opt], *const cause = &opts[raise_opt_cause];
+    VALUE cause = Qundef;
+    argc = extract_raise_options(argc, argv, &cause);
 
-    argc = extract_raise_opts(argc, argv, opts);
+    VALUE exception;
+
+    // Bare re-raise case:
     if (argc == 0) {
-        if (!UNDEF_P(*cause)) {
+        // Cause was extracted, but no arguments were provided:
+        if (!UNDEF_P(cause)) {
             rb_raise(rb_eArgError, "only cause is given with no arguments");
         }
-        err = get_errinfo();
-        if (!NIL_P(err)) {
+
+        // Otherwise, re-raise the current exception:
+        exception = get_errinfo();
+        if (!NIL_P(exception)) {
             argc = 1;
-            argv = &err;
+            argv = &exception;
         }
     }
-    rb_raise_jump(rb_make_exception(argc, argv), *cause);
+
+    rb_raise_jump(rb_make_exception(argc, argv), cause);
 
     UNREACHABLE_RETURN(Qnil);
 }

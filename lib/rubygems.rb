@@ -12,9 +12,6 @@ module Gem
   VERSION = "3.8.0.dev"
 end
 
-# Must be first since it unloads the prelude from 1.9.2
-require_relative "rubygems/compatibility"
-
 require_relative "rubygems/defaults"
 require_relative "rubygems/deprecate"
 require_relative "rubygems/errors"
@@ -227,7 +224,7 @@ module Gem
     finish_resolve rs
   end
 
-  def self.finish_resolve(request_set=Gem::RequestSet.new)
+  def self.finish_resolve(request_set = Gem::RequestSet.new)
     request_set.import Gem::Specification.unresolved_deps.values
     request_set.import Gem.loaded_specs.values.map {|s| Gem::Dependency.new(s.name, s.version) }
 
@@ -344,7 +341,7 @@ module Gem
   ##
   # The path where gem executables are to be installed.
 
-  def self.bindir(install_dir=Gem.dir)
+  def self.bindir(install_dir = Gem.dir)
     return File.join install_dir, "bin" unless
       install_dir.to_s == Gem.default_dir.to_s
     Gem.default_bindir
@@ -353,7 +350,7 @@ module Gem
   ##
   # The path were rubygems plugins are to be installed.
 
-  def self.plugindir(install_dir=Gem.dir)
+  def self.plugindir(install_dir = Gem.dir)
     File.join install_dir, "plugins"
   end
 
@@ -537,7 +534,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Note that find_files will return all files even if they are from different
   # versions of the same gem.  See also find_latest_files
 
-  def self.find_files(glob, check_load_path=true)
+  def self.find_files(glob, check_load_path = true)
     files = []
 
     files = find_files_from_load_path glob if check_load_path
@@ -574,7 +571,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Unlike find_files, find_latest_files will return only files from the
   # latest version of a gem.
 
-  def self.find_latest_files(glob, check_load_path=true)
+  def self.find_latest_files(glob, check_load_path = true)
     files = []
 
     files = find_files_from_load_path glob if check_load_path

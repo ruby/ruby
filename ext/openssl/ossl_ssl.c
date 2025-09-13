@@ -2642,7 +2642,7 @@ ossl_ssl_tmp_key(VALUE self)
     GetSSL(self, ssl);
     if (!SSL_get_server_tmp_key(ssl, &key))
 	return Qnil;
-    return ossl_pkey_new(key);
+    return ossl_pkey_wrap(key);
 }
 
 #ifdef HAVE_SSL_GET0_PEER_SIGNATURE_NAME

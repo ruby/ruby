@@ -37,6 +37,7 @@
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/error.h"
 #include "ruby/internal/fl_type.h"
+#include "ruby/internal/static_assert.h"
 #include "ruby/internal/stdbool.h"
 #include "ruby/internal/value_type.h"
 
@@ -114,10 +115,8 @@
 #define RUBY_TYPED_PROMOTED1         RUBY_TYPED_PROMOTED1
 /** @endcond */
 
-#define IS_TYPED_DATA ((VALUE)1)
-#define TYPED_DATA_EMBEDDED ((VALUE)2)
-#define TYPED_DATA_PTR_FLAGS ((VALUE)3)
-#define TYPED_DATA_PTR_MASK (~TYPED_DATA_PTR_FLAGS)
+#define TYPED_DATA_EMBEDDED ((VALUE)1)
+#define TYPED_DATA_PTR_MASK (~(TYPED_DATA_EMBEDDED))
 
 /**
  * @private
@@ -180,9 +179,9 @@ rbimpl_typeddata_flags {
     RUBY_TYPED_WB_PROTECTED     = RUBY_FL_WB_PROTECTED, /* THIS FLAG DEPENDS ON Ruby version */
 
     /**
-     * This flag no longer in use
+     * This flag is used to distinguish RTypedData from deprecated RData objects.
      */
-    RUBY_TYPED_UNUSED           = RUBY_FL_UNUSED6,
+    RUBY_TYPED_FL_IS_TYPED_DATA = RUBY_FL_USERPRIV0,
 
     /**
      * This flag determines whether marking and compaction should be carried out
@@ -355,6 +354,9 @@ struct RTypedData {
     /** The part that all ruby objects have in common. */
     struct RBasic basic;
 
+    /** Direct reference to the slots that holds instance variables, if any **/
+    VALUE fields_obj;
+
     /**
      * This is a `const rb_data_type_t *const` value, with the low bits set:
      *
@@ -370,6 +372,10 @@ struct RTypedData {
     /** Pointer to the actual C level struct that you want to wrap. */
     void *data;
 };
+
+#if !defined(__cplusplus) || __cplusplus >= 201103L
+RBIMPL_STATIC_ASSERT(data_in_rtypeddata, offsetof(struct RData, data) == offsetof(struct RTypedData, data));
+#endif
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 RBIMPL_ATTR_NONNULL((3))
@@ -561,7 +567,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 rbimpl_rtypeddata_p(VALUE obj)
 {
-    return RTYPEDDATA(obj)->type & IS_TYPED_DATA;
+    return FL_TEST_RAW(obj, RUBY_TYPED_FL_IS_TYPED_DATA);
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()

@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'objspace'
 require 'json'
+require 'securerandom'
 
 # These test the functionality of object shapes
 class TestShapes < Test::Unit::TestCase
@@ -149,11 +150,14 @@ class TestShapes < Test::Unit::TestCase
   def test_too_many_ivs_on_class
     obj = Class.new
 
-    (MANY_IVS + 1).times do
+    obj.instance_variable_set(:@test_too_many_ivs_on_class, 1)
+    refute_predicate RubyVM::Shape.of(obj), :too_complex?
+
+    MANY_IVS.times do
       obj.instance_variable_set(:"@a#{_1}", 1)
     end
 
-    assert_false RubyVM::Shape.of(obj).too_complex?
+    refute_predicate RubyVM::Shape.of(obj), :too_complex?
   end
 
   def test_removing_when_too_many_ivs_on_class
@@ -657,6 +661,14 @@ class TestShapes < Test::Unit::TestCase
   def test_object_id_transition_too_complex
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
+      obj = Object.new
+      obj.instance_variable_set(:@a, 1)
+      RubyVM::Shape.exhaust_shapes
+      assert_equal obj.object_id, obj.object_id
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
       class Hi; end
       obj = Hi.new
       obj.instance_variable_set(:@a, 1)
@@ -1021,16 +1033,29 @@ class TestShapes < Test::Unit::TestCase
     assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of([]))
   end
 
-  def test_true_has_special_const_shape_id
-    assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of(true).id)
+  def test_raise_on_special_consts
+    assert_raise ArgumentError do
+      RubyVM::Shape.of(true)
+    end
+    assert_raise ArgumentError do
+      RubyVM::Shape.of(false)
+    end
+    assert_raise ArgumentError do
+      RubyVM::Shape.of(nil)
+    end
+    assert_raise ArgumentError do
+      RubyVM::Shape.of(0)
+    end
+    # 32-bit platforms don't have flonums or static symbols as special
+    # constants
+    # TODO(max): Add ArgumentError tests for symbol and flonum, skipping if
+    # RUBY_PLATFORM =~ /i686/
   end
 
-  def test_nil_has_special_const_shape_id
-    assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of(nil).id)
-  end
-
-  def test_root_shape_transition_to_special_const_on_frozen
-    assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of([].freeze).id)
+  def test_root_shape_frozen
+    frozen_root_shape = RubyVM::Shape.of([].freeze)
+    assert_predicate(frozen_root_shape, :frozen?)
+    assert_equal(RubyVM::Shape.root_shape.id, frozen_root_shape.raw_id)
   end
 
   def test_basic_shape_transition
@@ -1157,5 +1182,31 @@ class TestShapes < Test::Unit::TestCase
       tc = TooComplex.new
       tc.send("a#{_1}_m")
     end
+  end
+
+  def assert_too_complex_during_delete(obj)
+    obj.instance_variable_set("@___#{SecureRandom.hex}", 1)
+
+    (RubyVM::Shape::SHAPE_MAX_VARIATIONS * 2).times do |i|
+      obj.instance_variable_set("@ivar#{i}", i)
+    end
+
+    refute_predicate RubyVM::Shape.of(obj), :too_complex?
+    (RubyVM::Shape::SHAPE_MAX_VARIATIONS * 2).times do |i|
+      obj.remove_instance_variable("@ivar#{i}")
+    end
+    assert_predicate RubyVM::Shape.of(obj), :too_complex?
+  end
+
+  def test_object_too_complex_during_delete
+    assert_too_complex_during_delete(Class.new.new)
+  end
+
+  def test_class_too_complex_during_delete
+    assert_too_complex_during_delete(Module.new)
+  end
+
+  def test_generic_too_complex_during_delete
+    assert_too_complex_during_delete(Class.new(Array).new)
   end
 end if defined?(RubyVM::Shape)

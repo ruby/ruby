@@ -51,7 +51,6 @@
 #define STATIC_SYM2ID(sym) RSHIFT((VALUE)(sym), RUBY_SPECIAL_SHIFT)
 
 static ID register_static_symid(ID, const char *, long, rb_encoding *);
-static ID register_static_symid_str(ID, VALUE);
 #define REGISTER_SYMID(id, name) register_static_symid((id), (name), strlen(name), enc)
 #include "id.c"
 
@@ -94,13 +93,15 @@ enum id_entry_type {
 };
 
 typedef struct {
-    rb_id_serial_t last_id;
+    rb_atomic_t next_id;
     VALUE sym_set;
 
     VALUE ids;
 } rb_symbols_t;
 
-rb_symbols_t ruby_global_symbols = {tNEXT_ID-1};
+rb_symbols_t ruby_global_symbols = {
+    .next_id = tNEXT_ID,
+};
 
 struct sym_set_static_sym_entry {
     VALUE sym;
@@ -214,30 +215,11 @@ rb_str_symname_type(VALUE name, unsigned int allowed_attrset)
 }
 
 static ID
-next_id_base_with_lock(rb_symbols_t *symbols)
-{
-    ID id;
-    rb_id_serial_t next_serial = symbols->last_id + 1;
-
-    if (next_serial == 0) {
-        id = (ID)-1;
-    }
-    else {
-        const size_t num = ++symbols->last_id;
-        id = num << ID_SCOPE_SHIFT;
-    }
-
-    return id;
-}
-
-static ID
 next_id_base(void)
 {
-    ID id;
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        id = next_id_base_with_lock(symbols);
-    }
-    return id;
+    rb_atomic_t serial = RUBY_ATOMIC_FETCH_ADD(ruby_global_symbols.next_id, 1);
+
+    return (ID)serial << ID_SCOPE_SHIFT;
 }
 
 static void
@@ -277,7 +259,7 @@ sym_set_create(VALUE sym, void *data)
         RB_OBJ_WRITE((VALUE)obj, &obj->fstr, str);
 
         int id = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
-        if (id < 0) id = ID_JUNK;
+        if (id < 0) id = ID_INTERNAL;
         obj->id = id;
 
         obj->hashval = rb_str_hash(str);
@@ -292,15 +274,9 @@ sym_set_create(VALUE sym, void *data)
         VALUE static_sym = static_sym_entry->sym;
         if (static_sym == 0) {
             ID id = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
-            if (id == (ID)-1) id = ID_JUNK;
+            if (id == (ID)-1) id = ID_INTERNAL;
 
-            ID nid = next_id_base();
-            if (nid == (ID)-1) {
-                str = rb_str_ellipsize(str, 20);
-                rb_raise(rb_eRuntimeError, "symbol table overflow (symbol %"PRIsVALUE")", str);
-            }
-
-            id |= nid;
+            id |= next_id_base();
             id |= ID_STATIC_SYM;
 
             static_sym = STATIC_ID2SYM(id);
@@ -395,21 +371,26 @@ Init_sym(void)
 }
 
 void
-rb_sym_global_symbols_mark(void)
+rb_sym_global_symbols_mark_and_move(void)
 {
     rb_symbols_t *symbols = &ruby_global_symbols;
 
-    rb_gc_mark_movable(symbols->sym_set);
-    rb_gc_mark_movable(symbols->ids);
+    rb_gc_mark_and_move(&symbols->sym_set);
+    rb_gc_mark_and_move(&symbols->ids);
+}
+
+static int
+rb_free_global_symbol_table_i(VALUE *sym_ptr, void *data)
+{
+    sym_set_free(*sym_ptr);
+
+    return ST_DELETE;
 }
 
 void
-rb_sym_global_symbols_update_references(void)
+rb_free_global_symbol_table(void)
 {
-    rb_symbols_t *symbols = &ruby_global_symbols;
-
-    symbols->sym_set = rb_gc_location(symbols->sym_set);
-    symbols->ids = rb_gc_location(symbols->ids);
+    rb_concurrent_set_foreach_with_replace(ruby_global_symbols.sym_set, rb_free_global_symbol_table_i, NULL);
 }
 
 WARN_UNUSED_RESULT(static ID lookup_str_id(VALUE str));
@@ -432,7 +413,7 @@ rb_id_attrset(ID id)
         scope = id_type(id);
         switch (scope) {
           case ID_LOCAL: case ID_INSTANCE: case ID_GLOBAL:
-          case ID_CONST: case ID_CLASS: case ID_JUNK:
+          case ID_CONST: case ID_CLASS: case ID_INTERNAL:
             break;
           case ID_ATTRSET:
             return id;
@@ -452,22 +433,20 @@ rb_id_attrset(ID id)
     }
 
     bool error = false;
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        /* make new symbol and ID */
-        VALUE str = lookup_id_str(id);
-        if (str) {
-            str = rb_str_dup(str);
-            rb_str_cat(str, "=", 1);
-            if (sym_check_asciionly(str, false)) {
-                rb_enc_associate(str, rb_usascii_encoding());
-            }
+    /* make new symbol and ID */
+    VALUE str = lookup_id_str(id);
+    if (str) {
+        str = rb_str_dup(str);
+        rb_str_cat(str, "=", 1);
+        if (sym_check_asciionly(str, false)) {
+            rb_enc_associate(str, rb_usascii_encoding());
+        }
 
-            VALUE sym = sym_find_or_insert_static_symbol(symbols, str);
-            id = rb_sym2id(sym);
-        }
-        else {
-            error = true;
-        }
+        VALUE sym = sym_find_or_insert_static_symbol(&ruby_global_symbols, str);
+        id = rb_sym2id(sym);
+    }
+    else {
+        error = true;
     }
 
     if (error) {
@@ -479,7 +458,7 @@ rb_id_attrset(ID id)
             "attrset",
             "const",
             "class",
-            "junk",
+            "internal",
         };
         rb_name_error(id, "cannot make anonymous %.*s ID %"PRIxVALUE" attrset",
                       (int)sizeof(id_types[0]), id_types[scope], (VALUE)id);
@@ -605,66 +584,66 @@ enc_synmane_type_leading_chars(const char *name, long len, rb_encoding *enc, int
 
       case '<':
         switch (*++m) {
-          default:  return (t) { stophere, ID_JUNK, 1, };
-          case '<': return (t) { stophere, ID_JUNK, 2, };
+          default:  return (t) { stophere, ID_INTERNAL, 1, };
+          case '<': return (t) { stophere, ID_INTERNAL, 2, };
           case '=':
             switch (*++m) {
-              default:  return (t) { stophere, ID_JUNK, 2, };
-              case '>': return (t) { stophere, ID_JUNK, 3, };
+              default:  return (t) { stophere, ID_INTERNAL, 2, };
+              case '>': return (t) { stophere, ID_INTERNAL, 3, };
             }
         }
 
       case '>':
         switch (*++m) {
-          default:            return (t) { stophere, ID_JUNK, 1, };
-          case '>': case '=': return (t) { stophere, ID_JUNK, 2, };
+          default:            return (t) { stophere, ID_INTERNAL, 1, };
+          case '>': case '=': return (t) { stophere, ID_INTERNAL, 2, };
         }
 
       case '=':
         switch (*++m) {
-          default:  return (t) { invalid,  0,       1, };
-          case '~': return (t) { stophere, ID_JUNK, 2, };
+          default:  return (t) { invalid,  0,           1, };
+          case '~': return (t) { stophere, ID_INTERNAL, 2, };
           case '=':
             switch (*++m) {
-              default:  return (t) { stophere, ID_JUNK, 2, };
-              case '=': return (t) { stophere, ID_JUNK, 3, };
+              default:  return (t) { stophere, ID_INTERNAL, 2, };
+              case '=': return (t) { stophere, ID_INTERNAL, 3, };
             }
         }
 
       case '*':
         switch (*++m) {
-          default:  return (t) { stophere, ID_JUNK, 1, };
-          case '*': return (t) { stophere, ID_JUNK, 2, };
+          default:  return (t) { stophere, ID_INTERNAL, 1, };
+          case '*': return (t) { stophere, ID_INTERNAL, 2, };
         }
 
       case '+': case '-':
         switch (*++m) {
-          default:  return (t) { stophere, ID_JUNK, 1, };
-          case '@': return (t) { stophere, ID_JUNK, 2, };
+          default:  return (t) { stophere, ID_INTERNAL, 1, };
+          case '@': return (t) { stophere, ID_INTERNAL, 2, };
         }
 
       case '|': case '^': case '&': case '/': case '%': case '~': case '`':
-        return (t) { stophere, ID_JUNK, 1, };
+        return (t) { stophere, ID_INTERNAL, 1, };
 
       case '[':
         switch (*++m) {
-          default: return (t) { needmore, ID_JUNK, 0, };
+          default: return (t) { needmore, ID_INTERNAL, 0, };
           case ']':
             switch (*++m) {
-              default:  return (t) { stophere, ID_JUNK, 2, };
-              case '=': return (t) { stophere, ID_JUNK, 3, };
+              default:  return (t) { stophere, ID_INTERNAL, 2, };
+              case '=': return (t) { stophere, ID_INTERNAL, 3, };
             }
         }
 
       case '!':
         switch (*++m) {
-          case '=': case '~': return (t) { stophere, ID_JUNK, 2, };
+          case '=': case '~': return (t) { stophere, ID_INTERNAL, 2, };
           default:
-            if (allowed_attrset & (1U << ID_JUNK)) {
-                return (t) { needmore, ID_JUNK, 1, };
+            if (allowed_attrset & (1U << ID_INTERNAL)) {
+                return (t) { needmore, ID_INTERNAL, 1, };
             }
             else {
-                return (t) { stophere, ID_JUNK, 1, };
+                return (t) { stophere, ID_INTERNAL, 1, };
             }
         }
 
@@ -705,7 +684,7 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
         switch (*m) {
           case '!': case '?':
             if (type == ID_GLOBAL || type == ID_CLASS || type == ID_INSTANCE) return -1;
-            type = ID_JUNK;
+            type = ID_INTERNAL;
             ++m;
             if (m + 1 < e || *m != '=') break;
             /* fall through */
@@ -732,7 +711,7 @@ get_id_serial_entry(rb_id_serial_t num, ID id, const enum id_entry_type t)
     VALUE result = 0;
 
     GLOBAL_SYMBOLS_LOCKING(symbols) {
-        if (num && num <= symbols->last_id) {
+        if (num && num < RUBY_ATOMIC_LOAD(symbols->next_id)) {
             size_t idx = num / ID_ENTRY_UNIT;
             VALUE ids = symbols->ids;
             VALUE ary;
@@ -805,21 +784,12 @@ static ID
 register_static_symid(ID id, const char *name, long len, rb_encoding *enc)
 {
     VALUE str = rb_enc_str_new(name, len, enc);
-    return register_static_symid_str(id, str);
-}
-
-static ID
-register_static_symid_str(ID id, VALUE str)
-{
     OBJ_FREEZE(str);
     str = rb_fstring(str);
 
     RUBY_DTRACE_CREATE_HOOK(SYMBOL, RSTRING_PTR(str));
 
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        // TODO: remove this function
-        sym_find_or_insert_static_symbol_id(symbols, str, id);
-    }
+    sym_find_or_insert_static_symbol_id(&ruby_global_symbols, str, id);
 
     return id;
 }
@@ -829,12 +799,10 @@ sym_find(VALUE str)
 {
     VALUE sym;
 
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        struct sym_set_static_sym_entry static_sym = {
-            .str = str
-        };
-        sym = rb_concurrent_set_find(&symbols->sym_set, sym_set_static_sym_tag(&static_sym));
-    }
+    struct sym_set_static_sym_entry static_sym = {
+        .str = str
+    };
+    sym = rb_concurrent_set_find(&ruby_global_symbols.sym_set, sym_set_static_sym_tag(&static_sym));
 
     if (sym) {
         return sym_set_entry_to_sym(sym);
@@ -881,10 +849,7 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
     VALUE str = rb_setup_fake_str(&fake_str, name, len, enc);
     OBJ_FREEZE(str);
 
-    VALUE sym;
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        sym = sym_find_or_insert_static_symbol(symbols, str);
-    }
+    VALUE sym = sym_find_or_insert_static_symbol(&ruby_global_symbols, str);
     return rb_sym2id(sym);
 }
 
@@ -904,10 +869,7 @@ rb_intern(const char *name)
 ID
 rb_intern_str(VALUE str)
 {
-    VALUE sym;
-    GLOBAL_SYMBOLS_LOCKING(symbols) {
-        sym = sym_find_or_insert_static_symbol(symbols, str);
-    }
+    VALUE sym = sym_find_or_insert_static_symbol(&ruby_global_symbols, str);
     return SYM2ID(sym);
 }
 
@@ -957,9 +919,7 @@ rb_gc_free_dsymbol(VALUE sym)
     VALUE str = RSYMBOL(sym)->fstr;
 
     if (str) {
-        GLOBAL_SYMBOLS_LOCKING(symbols) {
-            rb_concurrent_set_delete_by_identity(symbols->sym_set, sym);
-        }
+        rb_concurrent_set_delete_by_identity(ruby_global_symbols.sym_set, sym);
 
         RSYMBOL(sym)->fstr = 0;
     }
@@ -967,22 +927,10 @@ rb_gc_free_dsymbol(VALUE sym)
 
 /*
  *  call-seq:
- *     str.intern   -> symbol
- *     str.to_sym   -> symbol
+ *    intern   -> symbol
  *
- *  Returns the +Symbol+ corresponding to <i>str</i>, creating the
- *  symbol if it did not previously exist. See Symbol#id2name.
+ *  :include: doc/string/intern.rdoc
  *
- *     "Koala".intern         #=> :Koala
- *     s = 'cat'.to_sym       #=> :cat
- *     s == :cat              #=> true
- *     s = '@cat'.to_sym      #=> :@cat
- *     s == :@cat             #=> true
- *
- *  This can also be used to create symbols that cannot be represented using the
- *  <code>:xxx</code> notation.
- *
- *     'cat and dog'.to_sym   #=> :"cat and dog"
  */
 
 VALUE
@@ -1005,7 +953,7 @@ rb_sym2id(VALUE sym)
 
             if (UNLIKELY(!(id & ~ID_SCOPE_MASK))) {
                 VALUE fstr = RSYMBOL(sym)->fstr;
-                ID num = next_id_base_with_lock(symbols);
+                ID num = next_id_base();
 
                 RSYMBOL(sym)->id = id |= num;
                 /* make it permanent object */
@@ -1083,7 +1031,7 @@ rb_make_temporary_id(size_t n)
 {
     const ID max_id = RB_ID_SERIAL_MAX & ~0xffff;
     const ID id = max_id - (ID)n;
-    if (id <= ruby_global_symbols.last_id) {
+    if (id < RUBY_ATOMIC_LOAD(ruby_global_symbols.next_id)) {
         rb_raise(rb_eRuntimeError, "too big to make temporary ID: %" PRIdSIZE, n);
     }
     return (id << ID_SCOPE_SHIFT) | ID_STATIC_SYM | ID_INTERNAL;
@@ -1124,7 +1072,7 @@ rb_sym_all_symbols(void)
 size_t
 rb_sym_immortal_count(void)
 {
-    return (size_t)ruby_global_symbols.last_id;
+    return (size_t)(RUBY_ATOMIC_LOAD(ruby_global_symbols.next_id) - 1);
 }
 
 int
@@ -1166,7 +1114,7 @@ rb_is_local_id(ID id)
 int
 rb_is_junk_id(ID id)
 {
-    return is_junk_id(id);
+    return is_internal_id(id);
 }
 
 int

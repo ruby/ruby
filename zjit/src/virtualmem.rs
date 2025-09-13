@@ -7,6 +7,9 @@ use std::ptr::NonNull;
 
 use crate::stats::zjit_alloc_size;
 
+#[cfg(test)]
+use crate::options::get_option;
+
 #[cfg(not(test))]
 pub type VirtualMem = VirtualMemory<sys::SystemAllocator>;
 
@@ -287,15 +290,15 @@ pub mod sys {
 
     impl super::Allocator for SystemAllocator {
         fn mark_writable(&mut self, ptr: *const u8, size: u32) -> bool {
-            unsafe { rb_zjit_mark_writable(ptr as VoidPtr, size) }
+            unsafe { rb_jit_mark_writable(ptr as VoidPtr, size) }
         }
 
         fn mark_executable(&mut self, ptr: *const u8, size: u32) {
-            unsafe { rb_zjit_mark_executable(ptr as VoidPtr, size) }
+            unsafe { rb_jit_mark_executable(ptr as VoidPtr, size) }
         }
 
         fn mark_unused(&mut self, ptr: *const u8, size: u32) -> bool {
-            unsafe { rb_zjit_mark_unused(ptr as VoidPtr, size) }
+            unsafe { rb_jit_mark_unused(ptr as VoidPtr, size) }
         }
     }
 }
@@ -369,6 +372,12 @@ pub mod tests {
     // Fictional architecture where each page is 4 bytes long
     const PAGE_SIZE: usize = 4;
     fn new_dummy_virt_mem() -> VirtualMemory<TestingAllocator> {
+        unsafe {
+            if crate::options::OPTIONS.is_none() {
+                crate::options::OPTIONS = Some(crate::options::Options::default());
+            }
+        }
+
         let mem_size = PAGE_SIZE * 10;
         let alloc = TestingAllocator::new(mem_size);
         let mem_start: *const u8 = alloc.mem_start();
@@ -378,7 +387,7 @@ pub mod tests {
             PAGE_SIZE.try_into().unwrap(),
             NonNull::new(mem_start as *mut u8).unwrap(),
             mem_size,
-            128 * 1024 * 1024,
+            get_option!(mem_bytes),
         )
     }
 

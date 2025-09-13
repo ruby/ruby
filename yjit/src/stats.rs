@@ -1,9 +1,8 @@
 //! Everything related to the collection of runtime stats in YJIT
 //! See the --yjit-stats command-line option
 
-use std::alloc::{GlobalAlloc, Layout, System};
 use std::ptr::addr_of_mut;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::Ordering;
 use std::time::Instant;
 use std::collections::HashMap;
 
@@ -11,6 +10,10 @@ use crate::codegen::CodegenGlobals;
 use crate::cruby::*;
 use crate::options::*;
 use crate::yjit::{yjit_enabled_p, YJIT_INIT_TIME};
+
+#[cfg(feature = "stats_allocator")]
+#[path = "../../jit/src/lib.rs"]
+mod jit;
 
 /// Running total of how many ISeqs are in the system.
 #[no_mangle]
@@ -20,43 +23,9 @@ pub static mut rb_yjit_live_iseq_count: u64 = 0;
 #[no_mangle]
 pub static mut rb_yjit_iseq_alloc_count: u64 = 0;
 
-/// A middleware to count Rust-allocated bytes as yjit_alloc_size.
-#[global_allocator]
-static GLOBAL_ALLOCATOR: StatsAlloc = StatsAlloc { alloc_size: AtomicUsize::new(0) };
-
-pub struct StatsAlloc {
-    alloc_size: AtomicUsize,
-}
-
-unsafe impl GlobalAlloc for StatsAlloc {
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        self.alloc_size.fetch_add(layout.size(), Ordering::SeqCst);
-        System.alloc(layout)
-    }
-
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        self.alloc_size.fetch_sub(layout.size(), Ordering::SeqCst);
-        System.dealloc(ptr, layout)
-    }
-
-    unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
-        self.alloc_size.fetch_add(layout.size(), Ordering::SeqCst);
-        System.alloc_zeroed(layout)
-    }
-
-    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
-        if new_size > layout.size() {
-            self.alloc_size.fetch_add(new_size - layout.size(), Ordering::SeqCst);
-        } else if new_size < layout.size() {
-            self.alloc_size.fetch_sub(layout.size() - new_size, Ordering::SeqCst);
-        }
-        System.realloc(ptr, layout, new_size)
-    }
-}
-
 /// The number of bytes YJIT has allocated on the Rust heap.
 pub fn yjit_alloc_size() -> usize {
-    GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
+    jit::GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
 }
 
 /// Mapping of C function / ISEQ name to integer indices
@@ -519,9 +488,6 @@ make_counters! {
     opt_aset_not_fixnum,
     opt_aset_not_hash,
 
-    opt_aref_with_qundef,
-    opt_aset_with_qundef,
-
     opt_case_dispatch_megamorphic,
 
     opt_getconstant_path_ic_miss,
@@ -792,8 +758,8 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         set_stat_usize!(hash, "context_cache_bytes", crate::core::CTX_ENCODE_CACHE_BYTES + crate::core::CTX_DECODE_CACHE_BYTES);
 
         // VM instructions count
-        if rb_vm_insns_count > 0 {
-            set_stat_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
+        if rb_vm_insn_count > 0 {
+            set_stat_usize!(hash, "vm_insns_count", rb_vm_insn_count as usize);
         }
 
         set_stat_usize!(hash, "live_iseq_count", rb_yjit_live_iseq_count as usize);
@@ -864,8 +830,8 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         set_stat_double!(hash, "avg_len_in_yjit", avg_len_in_yjit);
 
         // Proportion of instructions that retire in YJIT
-        if rb_vm_insns_count > 0 {
-            let total_insns_count = retired_in_yjit + rb_vm_insns_count;
+        if rb_vm_insn_count > 0 {
+            let total_insns_count = retired_in_yjit + rb_vm_insn_count;
             set_stat_usize!(hash, "total_insns_count", total_insns_count as usize);
 
             let ratio_in_yjit: f64 = 100.0 * retired_in_yjit as f64 / total_insns_count as f64;

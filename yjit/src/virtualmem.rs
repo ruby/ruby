@@ -7,6 +7,9 @@ use std::{cell::RefCell, ptr::NonNull};
 
 use crate::{backend::ir::Target, stats::yjit_alloc_size, utils::IntoUsize};
 
+#[cfg(test)]
+use crate::options::get_option;
+
 #[cfg(not(test))]
 pub type VirtualMem = VirtualMemory<sys::SystemAllocator>;
 
@@ -316,15 +319,15 @@ mod sys {
 
     impl super::Allocator for SystemAllocator {
         fn mark_writable(&mut self, ptr: *const u8, size: u32) -> bool {
-            unsafe { rb_yjit_mark_writable(ptr as VoidPtr, size) }
+            unsafe { rb_jit_mark_writable(ptr as VoidPtr, size) }
         }
 
         fn mark_executable(&mut self, ptr: *const u8, size: u32) {
-            unsafe { rb_yjit_mark_executable(ptr as VoidPtr, size) }
+            unsafe { rb_jit_mark_executable(ptr as VoidPtr, size) }
         }
 
         fn mark_unused(&mut self, ptr: *const u8, size: u32) -> bool {
-            unsafe { rb_yjit_mark_unused(ptr as VoidPtr, size) }
+            unsafe { rb_jit_mark_unused(ptr as VoidPtr, size) }
         }
     }
 }
@@ -411,7 +414,7 @@ pub mod tests {
             PAGE_SIZE.try_into().unwrap(),
             NonNull::new(mem_start as *mut u8).unwrap(),
             mem_size,
-            128 * 1024 * 1024,
+            get_option!(mem_size),
         )
     }
 

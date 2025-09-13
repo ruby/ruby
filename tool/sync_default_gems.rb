@@ -38,7 +38,6 @@ module SyncDefaultGems
     open3: "ruby/open3",
     openssl: "ruby/openssl",
     optparse: "ruby/optparse",
-    pathname: "ruby/pathname",
     pp: "ruby/pp",
     prettyprint: "ruby/prettyprint",
     prism: ["ruby/prism", "main"],
@@ -278,13 +277,6 @@ module SyncDefaultGems
       cp_r("#{upstream}/test/erb", "test")
       cp_r("#{upstream}/erb.gemspec", "lib/erb")
       cp_r("#{upstream}/libexec/erb", "libexec")
-    when "pathname"
-      rm_rf(%w[ext/pathname test/pathname])
-      cp_r("#{upstream}/ext/pathname", "ext")
-      cp_r("#{upstream}/test/pathname", "test")
-      cp_r("#{upstream}/lib", "ext/pathname")
-      cp_r("#{upstream}/pathname.gemspec", "ext/pathname")
-      `git checkout ext/pathname/depend`
     when "digest"
       rm_rf(%w[ext/digest test/digest])
       cp_r("#{upstream}/ext/digest", "ext")
@@ -338,6 +330,7 @@ module SyncDefaultGems
       rm_rf("test/prism/snapshots")
 
       rm("prism/extconf.rb")
+      `git checkout prism/srcs.mk*`
     when "resolv"
       rm_rf(%w[lib/resolv.* ext/win32/resolv test/resolv ext/win32/lib/win32/resolv.rb])
       cp_r("#{upstream}/lib/resolv.rb", "lib")
@@ -461,6 +454,10 @@ module SyncDefaultGems
     puts subject, "\n", log
   end
 
+  def log_format(format, args, &block)
+    IO.popen(%W[git log --no-show-signature --format=#{format}] + args, "rb", &block)
+  end
+
   # Returns commit list as array of [commit_hash, subject].
   def commits_in_ranges(gem, repo, default_branch, ranges)
     # If -a is given, discover all commits since the last picked commit
@@ -468,7 +465,7 @@ module SyncDefaultGems
       # \r? needed in the regex in case the commit has windows-style line endings (because e.g. we're running
       # tests on Windows)
       pattern = "https://github\.com/#{Regexp.quote(repo)}/commit/([0-9a-f]+)\r?$"
-      log = IO.popen(%W"git log -E --grep=#{pattern} -n1 --format=%B", "rb", &:read)
+      log = log_format('%B', %W"-E --grep=#{pattern} -n1", &:read)
       ranges = ["#{log[%r[#{pattern}\n\s*(?i:co-authored-by:.*)*\s*\Z], 1]}..#{gem}/#{default_branch}"]
     end
 
@@ -478,7 +475,7 @@ module SyncDefaultGems
         range = "#{range}~1..#{range}"
       end
 
-      IO.popen(%W"git log --format=%H,%s #{range} --", "rb") do |f|
+      log_format('%H,%s', %W"#{range} --") do |f|
         f.read.split("\n").reverse.map{|commit| commit.split(',', 2)}
       end
     end
@@ -633,7 +630,7 @@ module SyncDefaultGems
     end or return nil
 
     # Amend the commit if RDoc references need to be replaced
-    head = `git log --format=%H -1 HEAD`.chomp
+    head = log_format('%H', %W"-1 HEAD", &:read).chomp
     system(*%w"git reset --quiet HEAD~ --")
     amend = replace_rdoc_ref_all
     system(*%W"git reset --quiet #{head} --")

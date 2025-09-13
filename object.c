@@ -46,10 +46,9 @@
 
 /* Flags of RObject
  *
- * 1:    ROBJECT_EMBED
- *           The object has its instance variables embedded (the array of
- *           instance variables directly follow the object, rather than being
- *           on a separately allocated buffer).
+ * 4:    ROBJECT_HEAP
+ *           The object has its instance variables in a separately allocated buffer.
+ *           This can be either a flat buffer of reference, or an st_table for complex objects.
  */
 
 /*!
@@ -126,7 +125,7 @@ rb_class_allocate_instance(VALUE klass)
     }
 
     NEWOBJ_OF(o, struct RObject, klass,
-              T_OBJECT | ROBJECT_EMBED | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0), size, 0);
+              T_OBJECT | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0), size, 0);
     VALUE obj = (VALUE)o;
 
     RUBY_ASSERT(RSHAPE_TYPE_P(RBASIC_SHAPE_ID(obj), SHAPE_ROOT));
@@ -279,12 +278,32 @@ rb_obj_not_equal(VALUE obj1, VALUE obj2)
     return rb_obj_not(result);
 }
 
+static inline VALUE
+fake_class_p(VALUE klass)
+{
+    RUBY_ASSERT(klass);
+    RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
+    STATIC_ASSERT(t_iclass_overlap_t_class, !(T_CLASS & T_ICLASS));
+    STATIC_ASSERT(t_iclass_overlap_t_module, !(T_MODULE & T_ICLASS));
+
+    return FL_TEST_RAW(klass, T_ICLASS | FL_SINGLETON);
+}
+
+static inline VALUE
+class_real(VALUE cl)
+{
+    RUBY_ASSERT(cl);
+    while (RB_UNLIKELY(fake_class_p(cl))) {
+        cl = RCLASS_SUPER(cl);
+    }
+    return cl;
+}
+
 VALUE
 rb_class_real(VALUE cl)
 {
-    while (cl &&
-        (RCLASS_SINGLETON_P(cl) || BUILTIN_TYPE(cl) == T_ICLASS)) {
-        cl = RCLASS_SUPER(cl);
+    if (cl) {
+        cl = class_real(cl);
     }
     return cl;
 }
@@ -292,7 +311,17 @@ rb_class_real(VALUE cl)
 VALUE
 rb_obj_class(VALUE obj)
 {
-    return rb_class_real(CLASS_OF(obj));
+    VALUE cl = CLASS_OF(obj);
+    if (cl) {
+        cl = class_real(cl);
+    }
+    return cl;
+}
+
+static inline VALUE
+rb_obj_class_must(VALUE obj)
+{
+    return class_real(CLASS_OF(obj));
 }
 
 /*
@@ -337,12 +366,10 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
         return;
     }
 
-    shape_id_t dest_shape_id = src_shape_id;
     shape_id_t initial_shape_id = RBASIC_SHAPE_ID(dest);
-
     RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
 
-    dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
+    shape_id_t dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
     if (UNLIKELY(rb_shape_too_complex_p(dest_shape_id))) {
         st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
         rb_obj_copy_ivs_to_hash_table(obj, table);
@@ -364,7 +391,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     }
 
     rb_shape_copy_fields(dest, dest_buf, dest_shape_id, src_buf, src_shape_id);
-    rb_obj_set_shape_id(dest, dest_shape_id);
+    RBASIC_SET_SHAPE_ID(dest, dest_shape_id);
 }
 
 static void
@@ -377,19 +404,19 @@ init_copy(VALUE dest, VALUE obj)
     // Copies the shape id from obj to dest
     RBASIC(dest)->flags |= RBASIC(obj)->flags & T_MASK;
     switch (BUILTIN_TYPE(obj)) {
-        case T_IMEMO:
-          rb_bug("Unreachable");
-          break;
-        case T_CLASS:
-        case T_MODULE:
-          // noop: handled in class.c: rb_mod_init_copy
-          break;
-        case T_OBJECT:
-          rb_obj_copy_ivar(dest, obj);
-          break;
-        default:
-          rb_copy_generic_ivar(dest, obj);
-          break;
+      case T_IMEMO:
+        rb_bug("Unreachable");
+        break;
+      case T_CLASS:
+      case T_MODULE:
+        rb_mod_init_copy(dest, obj);
+        break;
+      case T_OBJECT:
+        rb_obj_copy_ivar(dest, obj);
+        break;
+      default:
+        rb_copy_generic_ivar(dest, obj);
+        break;
     }
     rb_gc_copy_attributes(dest, obj);
 }
@@ -498,7 +525,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
 
         if (RB_OBJ_FROZEN(obj)) {
             shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
-            rb_obj_set_shape_id(clone, next_shape_id);
+            RBASIC_SET_SHAPE_ID(clone, next_shape_id);
         }
         break;
       case Qtrue: {
@@ -4544,7 +4571,6 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "<=", rb_class_inherited_p, 1);
     rb_define_method(rb_cModule, ">",  rb_mod_gt, 1);
     rb_define_method(rb_cModule, ">=", rb_mod_ge, 1);
-    rb_define_method(rb_cModule, "initialize_copy", rb_mod_init_copy, 1); /* in class.c */
     rb_define_method(rb_cModule, "to_s", rb_mod_to_s, 0);
     rb_define_alias(rb_cModule, "inspect", "to_s");
     rb_define_method(rb_cModule, "included_modules", rb_mod_included_modules, 0); /* in class.c */

@@ -36,6 +36,8 @@
 #include "iseq.h"
 #include "symbol.h" // This includes a macro for a more performant rb_id2sym.
 #include "yjit.h"
+#include "insns.inc"
+#include "zjit.h"
 #include "ruby/st.h"
 #include "ruby/vm.h"
 #include "vm_core.h"
@@ -46,8 +48,6 @@
 #include "ractor_core.h"
 #include "vm_sync.h"
 #include "shape.h"
-#include "insns.inc"
-#include "zjit.h"
 
 #include "builtin.h"
 
@@ -446,7 +446,7 @@ jit_compile(rb_execution_context_t *ec)
 
         // At call-threshold, compile the ISEQ with ZJIT.
         if (body->jit_entry_calls == rb_zjit_call_threshold) {
-            rb_zjit_compile_iseq(iseq, ec, false);
+            rb_zjit_compile_iseq(iseq, false);
         }
     }
 #endif
@@ -494,8 +494,25 @@ jit_compile_exception(rb_execution_context_t *ec)
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
-    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
+#if USE_ZJIT
+    if (body->jit_exception == NULL && rb_zjit_enabled_p) {
+        body->jit_exception_calls++;
+
+        // At profile-threshold, rewrite some of the YARV instructions
+        // to zjit_* instructions to profile these instructions.
+        if (body->jit_exception_calls == rb_zjit_profile_threshold) {
+            rb_zjit_profile_enable(iseq);
+        }
+
+        // At call-threshold, compile the ISEQ with ZJIT.
+        if (body->jit_exception_calls == rb_zjit_call_threshold) {
+            rb_zjit_compile_iseq(iseq, true);
+        }
+    }
+#endif
+
 #if USE_YJIT
+    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
     if (body->jit_exception == NULL && rb_yjit_enabled_p) {
         body->jit_exception_calls++;
         if (body->jit_exception_calls == rb_yjit_call_threshold) {
@@ -578,7 +595,7 @@ rb_current_ec_set(rb_execution_context_t *ec)
 }
 
 
-#if defined(__arm64__) || defined(__aarch64__)
+#if defined(__arm64__) || defined(__aarch64__) || defined(__powerpc64__)
 rb_execution_context_t *
 rb_current_ec(void)
 {
@@ -608,7 +625,7 @@ rb_serial_t ruby_vm_global_cvar_state = 1;
 
 static const struct rb_callcache vm_empty_cc = {
     .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
-    .klass = Qfalse,
+    .klass = Qundef,
     .cme_  = NULL,
     .call_ = vm_call_general,
     .aux_  = {
@@ -618,7 +635,7 @@ static const struct rb_callcache vm_empty_cc = {
 
 static const struct rb_callcache vm_empty_cc_for_super = {
     .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
-    .klass = Qfalse,
+    .klass = Qundef,
     .cme_  = NULL,
     .call_ = vm_call_super_method,
     .aux_  = {
@@ -1045,7 +1062,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     // Invalidate JIT code that assumes cfp->ep == vm_base_ptr(cfp).
     if (env->iseq) {
         rb_yjit_invalidate_ep_is_bp(env->iseq);
-        rb_zjit_invalidate_ep_is_bp(env->iseq);
+        rb_zjit_invalidate_no_ep_escape(env->iseq);
     }
 
     return (VALUE)env;
@@ -1542,6 +1559,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     rb_node_init(RNODE(&tmp_node), NODE_SCOPE);
     tmp_node.nd_tbl = dyns;
     tmp_node.nd_body = 0;
+    tmp_node.nd_parent = NULL;
     tmp_node.nd_args = 0;
 
     VALUE ast_value = rb_ruby_ast_new(RNODE(&tmp_node));
@@ -3147,6 +3165,7 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_free_encoded_insn_data();
             rb_free_global_enc_table();
             rb_free_loaded_builtin_table();
+            rb_free_global_symbol_table();
 
             rb_free_shared_fiber_pool();
             rb_free_transcoder_table();
@@ -3441,6 +3460,9 @@ rb_execution_context_update(rb_execution_context_t *ec)
     }
 
     ec->storage = rb_gc_location(ec->storage);
+
+    ec->gen_fields_cache.obj = rb_gc_location(ec->gen_fields_cache.obj);
+    ec->gen_fields_cache.fields_obj = rb_gc_location(ec->gen_fields_cache.fields_obj);
 }
 
 static enum rb_id_table_iterator_result
@@ -3505,6 +3527,9 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     rb_gc_mark(ec->private_const_reference);
 
     rb_gc_mark_movable(ec->storage);
+
+    rb_gc_mark_weak((VALUE *)&ec->gen_fields_cache.obj);
+    rb_gc_mark_weak((VALUE *)&ec->gen_fields_cache.fields_obj);
 }
 
 void rb_fiber_mark_self(rb_fiber_t *fib);
@@ -4510,13 +4535,20 @@ Init_vm_objects(void)
     vm->cc_refinement_table = rb_set_init_numtable();
 }
 
+#if USE_ZJIT
+extern VALUE rb_zjit_option_enabled_p(rb_execution_context_t *ec, VALUE self);
+#else
+static VALUE rb_zjit_option_enabled_p(rb_execution_context_t *ec, VALUE self) { return Qfalse; }
+#endif
+
+// Whether JIT is enabled or not, we need to load/undef `#with_jit` for other builtins.
+#include "jit_hook.rbinc"
+#include "jit_undef.rbinc"
+
 // Stub for builtin function when not building YJIT units
 #if !USE_YJIT
 void Init_builtin_yjit(void) {}
 #endif
-
-// Whether YJIT is enabled or not, we load yjit_hook.rb to remove Kernel#with_yjit.
-#include "yjit_hook.rbinc"
 
 // Stub for builtin function when not building ZJIT units
 #if !USE_ZJIT

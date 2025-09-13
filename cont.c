@@ -31,6 +31,7 @@ extern int madvise(caddr_t, size_t, int);
 #include "internal/jit_cont.h"
 #include "internal/thread.h"
 #include "internal/error.h"
+#include "internal/eval.h"
 #include "internal/gc.h"
 #include "internal/proc.h"
 #include "internal/sanitizers.h"
@@ -3219,9 +3220,9 @@ fiber_raise(rb_fiber_t *fiber, VALUE exception)
 }
 
 VALUE
-rb_fiber_raise(VALUE fiber, int argc, const VALUE *argv)
+rb_fiber_raise(VALUE fiber, int argc, VALUE *argv)
 {
-    VALUE exception = rb_make_exception(argc, argv);
+    VALUE exception = rb_exception_setup(argc, argv);
 
     return fiber_raise(fiber_ptr(fiber), exception);
 }

@@ -798,7 +798,7 @@ rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t lengt
 }
 
 /*
- *  Document-method: Fiber::Scheduler#io_read
+ *  Document-method: Fiber::Scheduler#io_pread
  *  call-seq: io_pread(io, buffer, from, length, offset) -> read length or -errno
  *
  *  Invoked by IO#pread or IO::Buffer#pread to read +length+ bytes from +io+
@@ -837,7 +837,7 @@ rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, rb_off_t from, VALUE buff
 }
 
 /*
- *  Document-method: Scheduler#io_write
+ *  Document-method: Fiber::Scheduler#io_write
  *  call-seq: io_write(io, buffer, length, offset) -> written length or -errno
  *
  *  Invoked by IO#write or IO::Buffer#write to write +length+ bytes to +io+ from

@@ -20,7 +20,9 @@ class TestBugReporter < Test::Unit::TestCase
 
     no_core = "Process.setrlimit(Process::RLIMIT_CORE, 0); " if defined?(Process.setrlimit) && defined?(Process::RLIMIT_CORE)
     args = ["-r-test-/bug_reporter", "-C", tmpdir]
-    args.push("--yjit") if JITSupport.yjit_enabled? # We want the printed description to match this process's RUBY_DESCRIPTION
+    # We want the printed description to match this process's RUBY_DESCRIPTION
+    args.push("--yjit") if JITSupport.yjit_enabled?
+    args.push("--zjit") if JITSupport.zjit_enabled?
     args.unshift({"RUBY_ON_BUG" => nil})
     stdin = "#{no_core}register_sample_bug_reporter(12345); Process.kill :SEGV, $$"
     assert_in_out_err(args, stdin, [], expected_stderr, encoding: "ASCII-8BIT")

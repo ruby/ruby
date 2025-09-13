@@ -1,6 +1,7 @@
 #include "ruby.h"
 #include "rubyspec.h"
 
+#ifdef RUBY_VERSION_IS_3_5
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -60,3 +61,4 @@ void Init_set_spec(void) {
 }
 #endif
 
+#endif

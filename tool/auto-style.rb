@@ -11,8 +11,10 @@ class Git
 
   def initialize(oldrev, newrev, branch = nil)
     @oldrev = oldrev
-    @newrev = newrev.empty? ? 'HEAD' : newrev
+    @newrev = !newrev || newrev.empty? ? 'HEAD' : newrev
     @branch = branch
+
+    return unless oldrev
 
     # GitHub may not fetch github.event.pull_request.base.sha at checkout
     git('log', '--format=%H', '-1', @oldrev, out: IO::NULL, err: [:child, :out]) or
@@ -59,7 +61,7 @@ class Git
   end
 
   def push
-    git('push', 'origin', @branch)
+    git('push', 'origin', @branch) if @branch
   end
 
   def diff
@@ -181,13 +183,82 @@ DIFFERENT_STYLE_FILES = %w[
   addr2line.c io_buffer.c prism*.c scheduler.c
 ]
 
-oldrev, newrev, pushref = ARGV
-unless dry_run = pushref.empty?
-  branch = IO.popen(['git', 'rev-parse', '--symbolic', '--abbrev-ref', pushref], &:read).strip
-end
-git = Git.new(oldrev, newrev, branch)
+def adjust_styles(files)
+  trailing = eofnewline = expandtab = indent = false
 
-updated_files = git.updated_paths
+  edited_files = files.select do |f|
+    src = File.binread(f) rescue next
+    eofnewline = eofnewline0 = true if src.sub!(/(?<!\A|\n)\z/, "\n")
+
+    trailing0 = false
+    expandtab0 = false
+    indent0 = false
+
+    src.gsub!(/^.*$/).with_index do |line, lineno|
+      trailing = trailing0 = true if line.sub!(/[ \t]+$/, '')
+      line
+    end
+
+    if f.end_with?('.c') || f.end_with?('.h') || f == 'insns.def'
+      # If and only if unedited lines did not have tab indentation, prevent introducing tab indentation to the file.
+      expandtab_allowed = src.each_line.with_index.all? do |line, lineno|
+        !line.start_with?("\t")
+      end
+
+      if expandtab_allowed
+        src.gsub!(/^.*$/).with_index do |line, lineno|
+          if line.start_with?("\t") # last-committed line with hard tabs
+            expandtab = expandtab0 = true
+            line.sub(/\A\t+/) { |tabs| ' ' * (8 * tabs.length) }
+          else
+            line
+          end
+        end
+      end
+    end
+
+    if File.fnmatch?("*.[chy]", f, File::FNM_PATHNAME) &&
+       !DIFFERENT_STYLE_FILES.any? {|pat| File.fnmatch?(pat, f, File::FNM_PATHNAME)}
+      indent0 = true if src.gsub!(/^\w+\([^\n]*?\)\K[ \t]*(?=\{( *\\)?$)/, '\1' "\n")
+      indent0 = true if src.gsub!(/^([ \t]*)\}\K[ \t]*(?=else\b.*?( *\\)?$)/, '\2' "\n" '\1')
+      indent0 = true if src.gsub!(/^[ \t]*\}\n\K\n+(?=[ \t]*else\b)/, '')
+      indent ||= indent0
+    end
+
+    if trailing0 or eofnewline0 or expandtab0 or indent0
+      File.binwrite(f, src)
+      true
+    end
+  end
+  if edited_files.empty?
+    return
+  else
+    msg = [('remove trailing spaces' if trailing),
+           ('append newline at EOF' if eofnewline),
+           ('expand tabs' if expandtab),
+           ('adjust indents' if indent),
+          ].compact
+    message = "* #{msg.join(', ')}. [ci skip]"
+    if expandtab
+      message += "\nPlease consider using misc/expand_tabs.rb as a pre-commit hook."
+    end
+    return message, edited_files
+  end
+end
+
+oldrev, newrev, pushref = ARGV
+if (dry_run = oldrev == '-n') or oldrev == '--'
+  _, *updated_files = ARGV
+  git = Git.new(nil, nil)
+else
+  unless dry_run = pushref.empty?
+    branch = IO.popen(['git', 'rev-parse', '--symbolic', '--abbrev-ref', pushref], &:read).strip
+  end
+  git = Git.new(oldrev, newrev, branch)
+
+  updated_files = git.updated_paths
+end
+
 files = updated_files.select {|l|
   /^\d/ !~ l and /\.bat\z/ !~ l and
   (/\A(?:config|[Mm]akefile|GNUmakefile|README)/ =~ File.basename(l) or
@@ -197,69 +268,12 @@ files.select! {|n| File.file?(n) }
 files.reject! do |f|
   IGNORED_FILES.any? { |re| f.match(re) }
 end
+
 if files.empty?
   puts "No files are an auto-style target:\n#{updated_files.join("\n")}"
-  exit
-end
-
-trailing = eofnewline = expandtab = indent = false
-
-edited_files = files.select do |f|
-  src = File.binread(f) rescue next
-  eofnewline = eofnewline0 = true if src.sub!(/(?<!\A|\n)\z/, "\n")
-
-  trailing0 = false
-  expandtab0 = false
-  indent0 = false
-
-  src.gsub!(/^.*$/).with_index do |line, lineno|
-    trailing = trailing0 = true if line.sub!(/[ \t]+$/, '')
-    line
-  end
-
-  if f.end_with?('.c') || f.end_with?('.h') || f == 'insns.def'
-    # If and only if unedited lines did not have tab indentation, prevent introducing tab indentation to the file.
-    expandtab_allowed = src.each_line.with_index.all? do |line, lineno|
-      !line.start_with?("\t")
-    end
-
-    if expandtab_allowed
-      src.gsub!(/^.*$/).with_index do |line, lineno|
-        if line.start_with?("\t") # last-committed line with hard tabs
-          expandtab = expandtab0 = true
-          line.sub(/\A\t+/) { |tabs| ' ' * (8 * tabs.length) }
-        else
-          line
-        end
-      end
-    end
-  end
-
-  if File.fnmatch?("*.[ch]", f, File::FNM_PATHNAME) &&
-     !DIFFERENT_STYLE_FILES.any? {|pat| File.fnmatch?(pat, f, File::FNM_PATHNAME)}
-    indent0 = true if src.gsub!(/^\w+\([^\n]*?\)\K[ \t]*(?=\{( *\\)?$)/, '\1' "\n")
-    indent0 = true if src.gsub!(/^([ \t]*)\}\K[ \t]*(?=else\b.*?( *\\)?$)/, '\2' "\n" '\1')
-    indent0 = true if src.gsub!(/^[ \t]*\}\n\K\n+(?=[ \t]*else\b)/, '')
-    indent ||= indent0
-  end
-
-  if trailing0 or eofnewline0 or expandtab0 or indent0
-    File.binwrite(f, src)
-    true
-  end
-end
-if edited_files.empty?
+elsif !(message, edited_files = adjust_styles(files))
   puts "All edited lines are formatted well:\n#{files.join("\n")}"
 else
-  msg = [('remove trailing spaces' if trailing),
-         ('append newline at EOF' if eofnewline),
-         ('expand tabs' if expandtab),
-         ('adjust indents' if indent),
-        ].compact
-  message = "* #{msg.join(', ')}. [ci skip]"
-  if expandtab
-    message += "\nPlease consider using misc/expand_tabs.rb as a pre-commit hook."
-  end
   if dry_run
     git.diff
     abort message

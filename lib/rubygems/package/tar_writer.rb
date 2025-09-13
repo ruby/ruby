@@ -99,7 +99,7 @@ class Gem::Package::TarWriter
   # Gem.source_date_epoch if not specified), and yields an IO for
   # writing the file to
 
-  def add_file(name, mode, mtime=nil) # :yields: io
+  def add_file(name, mode, mtime = nil) # :yields: io
     check_closed
 
     name, prefix = split_name name

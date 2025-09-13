@@ -261,10 +261,8 @@ union ic_serial_entry {
 struct iseq_inline_constant_cache_entry {
     VALUE flags;
 
-    VALUE value;              // v0
-    VALUE _unused1;           // v1
-    VALUE _unused2;           // v2
-    const rb_cref_t *ic_cref; // v3
+    VALUE value;
+    const rb_cref_t *ic_cref;
 };
 STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
               (offsetof(struct iseq_inline_constant_cache_entry, ic_cref) +
@@ -1069,6 +1067,11 @@ struct rb_execution_context_struct {
     BITFIELD(enum method_missing_reason, method_missing_reason, 8);
 
     VALUE private_const_reference;
+
+    struct {
+        VALUE obj;
+        VALUE fields_obj;
+    } gen_fields_cache;
 
     /* for GC */
     struct {
@@ -1996,7 +1999,7 @@ static inline rb_execution_context_t *
 rb_current_execution_context(bool expect_ec)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-  #if defined(__arm64__) || defined(__aarch64__)
+  #if defined(__arm64__) || defined(__aarch64__) || defined(__powerpc64__)
     rb_execution_context_t * volatile ec = rb_current_ec();
   #else
     rb_execution_context_t * volatile ec = ruby_current_ec;
@@ -2065,12 +2068,21 @@ void rb_ec_vm_lock_rec_release(const rb_execution_context_t *ec,
                                unsigned int recorded_lock_rec,
                                unsigned int current_lock_rec);
 
+/* This technically is a data race, as it's checked without the lock, however we
+ * check against a value only our own thread will write. */
+NO_SANITIZE("thread", static inline bool
+vm_locked_by_ractor_p(rb_vm_t *vm, rb_ractor_t *cr))
+{
+    VM_ASSERT(cr == GET_RACTOR());
+    return vm->ractor.sync.lock_owner == cr;
+}
+
 static inline unsigned int
 rb_ec_vm_lock_rec(const rb_execution_context_t *ec)
 {
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
 
-    if (vm->ractor.sync.lock_owner != rb_ec_ractor_ptr(ec)) {
+    if (!vm_locked_by_ractor_p(vm, rb_ec_ractor_ptr(ec))) {
         return 0;
     }
     else {
@@ -2176,7 +2188,7 @@ struct rb_trace_arg_struct {
 };
 
 void rb_hook_list_mark(rb_hook_list_t *hooks);
-void rb_hook_list_mark_and_update(rb_hook_list_t *hooks);
+void rb_hook_list_mark_and_move(rb_hook_list_t *hooks);
 void rb_hook_list_free(rb_hook_list_t *hooks);
 void rb_hook_list_connect_tracepoint(VALUE target, rb_hook_list_t *list, VALUE tpval, unsigned int target_line);
 void rb_hook_list_remove_tracepoint(rb_hook_list_t *list, VALUE tpval);

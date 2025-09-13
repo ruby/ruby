@@ -17,8 +17,7 @@
 #endif
 
 /* symbol.c */
-void rb_sym_global_symbols_mark(void);
-void rb_sym_global_symbols_update_references(void);
+void rb_sym_global_symbols_mark_and_move(void);
 VALUE rb_to_symbol_type(VALUE obj);
 VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc);
 VALUE rb_sym_intern_ascii(const char *ptr, long len);
@@ -35,6 +34,7 @@ bool rb_obj_is_symbol_table(VALUE obj);
 void rb_sym_global_symbol_table_foreach_weak_reference(int (*callback)(VALUE *key, void *data), void *data);
 void rb_gc_free_dsymbol(VALUE);
 int rb_static_id_valid_p(ID id);
+void rb_free_global_symbol_table(void);
 
 #if __has_builtin(__builtin_constant_p)
 #define rb_sym_intern_ascii_cstr(ptr) \

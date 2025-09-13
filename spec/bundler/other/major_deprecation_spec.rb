@@ -14,81 +14,67 @@ RSpec.describe "major deprecations" do
     describe ".clean_env" do
       before do
         source = "Bundler.clean_env"
-        bundle "exec ruby -e #{source.dump}"
+        bundle "exec ruby -e #{source.dump}", raise_on_error: false
       end
 
-      it "is deprecated in favor of .unbundled_env" do
-        expect(deprecations).to include \
-          "`Bundler.clean_env` has been deprecated in favor of `Bundler.unbundled_env`. " \
-          "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env` " \
-          "(called at -e:1)"
+      it "is removed in favor of .unbundled_env and shows a helpful error message about it" do
+        expect(err).to include \
+          "`Bundler.clean_env` has been removed in favor of `Bundler.unbundled_env`. " \
+          "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`" \
       end
-
-      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
 
     describe ".with_clean_env" do
       before do
         source = "Bundler.with_clean_env {}"
-        bundle "exec ruby -e #{source.dump}"
+        bundle "exec ruby -e #{source.dump}", raise_on_error: false
       end
 
-      it "is deprecated in favor of .unbundled_env" do
-        expect(deprecations).to include(
-          "`Bundler.with_clean_env` has been deprecated in favor of `Bundler.with_unbundled_env`. " \
-          "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env` " \
-          "(called at -e:1)"
+      it "is removed in favor of .unbundled_env and shows a helpful error message about it" do
+        expect(err).to include(
+          "`Bundler.with_clean_env` has been removed in favor of `Bundler.with_unbundled_env`. " \
+          "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`"
         )
       end
-
-      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
 
     describe ".clean_system" do
       before do
         source = "Bundler.clean_system('ls')"
-        bundle "exec ruby -e #{source.dump}"
+        bundle "exec ruby -e #{source.dump}", raise_on_error: false
       end
 
-      it "is deprecated in favor of .unbundled_system" do
-        expect(deprecations).to include(
-          "`Bundler.clean_system` has been deprecated in favor of `Bundler.unbundled_system`. " \
-          "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system` " \
-          "(called at -e:1)"
+      it "is removed in favor of .unbundled_system and shows a helpful error message about it" do
+        expect(err).to include(
+          "`Bundler.clean_system` has been removed in favor of `Bundler.unbundled_system`. " \
+          "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`" \
         )
       end
-
-      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
 
     describe ".clean_exec" do
       before do
         source = "Bundler.clean_exec('ls')"
-        bundle "exec ruby -e #{source.dump}"
+        bundle "exec ruby -e #{source.dump}", raise_on_error: false
       end
 
-      it "is deprecated in favor of .unbundled_exec" do
-        expect(deprecations).to include(
-          "`Bundler.clean_exec` has been deprecated in favor of `Bundler.unbundled_exec`. " \
-          "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec` " \
-          "(called at -e:1)"
+      it "is removed in favor of .unbundled_exec and shows a helpful error message about it" do
+        expect(err).to include(
+          "`Bundler.clean_exec` has been removed in favor of `Bundler.unbundled_exec`. " \
+          "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`" \
         )
       end
-
-      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
 
     describe ".environment" do
       before do
         source = "Bundler.environment"
-        bundle "exec ruby -e #{source.dump}"
+        bundle "exec ruby -e #{source.dump}", raise_on_error: false
       end
 
-      it "is deprecated in favor of .load" do
-        expect(deprecations).to include "Bundler.environment has been removed in favor of Bundler.load (called at -e:1)"
+      it "is removed in favor of .load and shows a helpful error message about it" do
+        expect(err).to include "Bundler.environment has been removed in favor of Bundler.load"
       end
-
-      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
   end
 
@@ -121,16 +107,14 @@ RSpec.describe "major deprecations" do
       bundle "check --path vendor/bundle", raise_on_error: false
     end
 
-    it "should print a deprecation warning" do
-      expect(deprecations).to include(
-        "The `--path` flag is deprecated because it relies on being " \
-        "remembered across bundler invocations, which bundler will no " \
-        "longer do in future versions. Instead please use `bundle config set " \
-        "path 'vendor/bundle'`, and stop using this flag"
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--path` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set path 'vendor/bundle'`, " \
+        "and stop using this flag"
       )
     end
-
-    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle check --path=" do
@@ -143,16 +127,14 @@ RSpec.describe "major deprecations" do
       bundle "check --path=vendor/bundle", raise_on_error: false
     end
 
-    it "should print a deprecation warning" do
-      expect(deprecations).to include(
-        "The `--path` flag is deprecated because it relies on being " \
-        "remembered across bundler invocations, which bundler will no " \
-        "longer do in future versions. Instead please use `bundle config set " \
-        "path 'vendor/bundle'`, and stop using this flag"
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--path` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set path 'vendor/bundle'`, " \
+        "and stop using this flag"
       )
     end
-
-    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle binstubs --path=" do
@@ -165,16 +147,14 @@ RSpec.describe "major deprecations" do
       bundle "binstubs myrack --path=binpath", raise_on_error: false
     end
 
-    it "should print a deprecation warning" do
-      expect(deprecations).to include(
-        "The `--path` flag is deprecated because it relies on being " \
-        "remembered across bundler invocations, which bundler will no " \
-        "longer do in future versions. Instead please use `bundle config set " \
-        "bin 'binpath'`, and stop using this flag"
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--path` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set bin 'binpath'`, " \
+        "and stop using this flag"
       )
     end
-
-    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle cache --all" do
@@ -184,19 +164,37 @@ RSpec.describe "major deprecations" do
         gem "myrack"
       G
 
-      bundle "cache --all", raise_on_error: false
+      bundle "cache --all --verbose", raise_on_error: false
     end
 
-    it "should print a deprecation warning" do
-      expect(deprecations).to include(
-        "The `--all` flag is deprecated because it relies on being " \
-        "remembered across bundler invocations, which bundler will no " \
-        "longer do in future versions. Instead please use `bundle config set " \
-        "cache_all true`, and stop using this flag"
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--all` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set cache_all true`, " \
+        "and stop using this flag"
       )
     end
+  end
 
-    pending "fails with a helpful error", bundler: "4"
+  context "bundle cache --no-all" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      bundle "cache --no-all", raise_on_error: false
+    end
+
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--no-all` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set cache_all false`, " \
+        "and stop using this flag"
+      )
+    end
   end
 
   context "bundle cache --path" do
@@ -209,16 +207,14 @@ RSpec.describe "major deprecations" do
       bundle "cache --path foo", raise_on_error: false
     end
 
-    it "should print a deprecation warning" do
-      expect(deprecations).to include(
-        "The `--path` flag is deprecated because its semantics are unclear. " \
+    it "should print a removal error" do
+      expect(err).to include(
+        "The `--path` flag has been removed because its semantics were unclear. " \
         "Use `bundle config cache_path` to configure the path of your cache of gems, " \
         "and `bundle config path` to configure the path where your gems are installed, " \
         "and stop using this flag"
       )
     end
-
-    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle cache --path=" do
@@ -232,15 +228,53 @@ RSpec.describe "major deprecations" do
     end
 
     it "should print a deprecation warning" do
-      expect(deprecations).to include(
-        "The `--path` flag is deprecated because its semantics are unclear. " \
+      expect(err).to include(
+        "The `--path` flag has been removed because its semantics were unclear. " \
         "Use `bundle config cache_path` to configure the path of your cache of gems, " \
         "and `bundle config path` to configure the path where your gems are installed, " \
         "and stop using this flag"
       )
     end
+  end
 
-    pending "fails with a helpful error", bundler: "4"
+  context "bundle cache --frozen" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      bundle "cache --frozen", raise_on_error: false
+    end
+
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--frozen` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set frozen true`, " \
+        "and stop using this flag"
+      )
+    end
+  end
+
+  context "bundle cache --no-prune" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      bundle "cache --no-prune", raise_on_error: false
+    end
+
+    it "fails with a helpful error" do
+      expect(err).to include(
+        "The `--no-prune` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler no longer " \
+        "does. Instead please use `bundle config set no_prune true`, " \
+        "and stop using this flag"
+      )
+    end
   end
 
   describe "bundle config" do
@@ -427,23 +461,23 @@ RSpec.describe "major deprecations" do
     }.each do |name, expectations|
       option_name, value = *expectations
       flag_name = "--#{name}"
+      args = %w[true false].include?(value) ? flag_name : "#{flag_name} #{value}"
 
       context "with the #{flag_name} flag" do
         before do
           bundle "install" # to create a lockfile, which deployment or frozen need
-          bundle "install #{flag_name} #{value}"
+
+          bundle "install #{args}", raise_on_error: false
         end
 
-        it "should print a deprecation warning" do
-          expect(deprecations).to include(
-            "The `#{flag_name}` flag is deprecated because it relies on " \
-            "being remembered across bundler invocations, which bundler " \
-            "will no longer do in future versions. Instead please use " \
-            "`bundle config set #{option_name} #{value}`, and stop using this flag"
+        it "fails with a helpful error" do
+          expect(err).to include(
+            "The `#{flag_name}` flag has been removed because it relied on " \
+            "being remembered across bundler invocations, which bundler no " \
+            "longer does. Instead please use `bundle config set " \
+            "#{option_name} #{value}`, and stop using this flag"
           )
         end
-
-        pending "fails with a helpful error", bundler: "4"
       end
     end
   end
@@ -563,19 +597,41 @@ RSpec.describe "major deprecations" do
 
   context "when `bundler/deployment` is required in a ruby script" do
     before do
-      ruby <<-RUBY
+      ruby <<-RUBY, raise_on_error: false
         require 'bundler/deployment'
       RUBY
     end
 
     it "should print a capistrano deprecation warning" do
-      expect(deprecations).to include("Bundler no longer integrates " \
+      expect(err).to include("Bundler no longer integrates " \
                              "with Capistrano, but Capistrano provides " \
                              "its own integration with Bundler via the " \
                              "capistrano-bundler gem. Use it instead.")
     end
+  end
 
-    pending "fails with a helpful error", bundler: "4"
+  context "when `bundler/capistrano` is required in a ruby script" do
+    before do
+      ruby <<-RUBY, raise_on_error: false
+        require 'bundler/capistrano'
+      RUBY
+    end
+
+    it "fails with a helpful error" do
+      expect(err).to include("[REMOVED] The Bundler task for Capistrano. Please use https://github.com/capistrano/bundler")
+    end
+  end
+
+  context "when `bundler/vlad` is required in a ruby script" do
+    before do
+      ruby <<-RUBY, raise_on_error: false
+        require 'bundler/vlad'
+      RUBY
+    end
+
+    it "fails with a helpful error" do
+      expect(err).to include("[REMOVED] The Bundler task for Vlad")
+    end
   end
 
   context "bundle show" do
@@ -592,7 +648,7 @@ RSpec.describe "major deprecations" do
       end
 
       it "prints a deprecation warning informing about its removal" do
-        expect(deprecations).to include("the `--outdated` flag to `bundle show` was undocumented and will be removed without replacement")
+        expect(deprecations).to include("the `--outdated` flag to `bundle show` will be removed in favor of `bundle show --verbose`")
       end
 
       pending "fails with a helpful message", bundler: "4"
@@ -620,15 +676,22 @@ RSpec.describe "major deprecations" do
 
   context "bundle viz" do
     before do
-      create_file "gems.rb", "source 'https://gem.repo1'"
-      bundle "viz"
+      bundle "viz", raise_on_error: false
     end
 
-    it "prints a deprecation warning" do
-      expect(deprecations).to include "The `viz` command has been renamed to `graph` and moved to a plugin. See https://github.com/rubygems/bundler-graph"
+    it "fails with a helpful message" do
+      expect(err).to include "The `viz` command has been renamed to `graph` and moved to a plugin. See https://github.com/rubygems/bundler-graph"
+    end
+  end
+
+  context "bundle inject" do
+    before do
+      bundle "inject", raise_on_error: false
     end
 
-    pending "fails with a helpful message", bundler: "4"
+    it "fails with a helpful message" do
+      expect(err).to include "The `inject` command has been replaced by the `add` command"
+    end
   end
 
   context "bundle plugin install --local_git" do

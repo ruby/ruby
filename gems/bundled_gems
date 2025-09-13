@@ -10,15 +10,15 @@ minitest            5.25.5  https://github.com/minitest/minitest
 power_assert        2.0.5   https://github.com/ruby/power_assert f88e406e7c9e0810cc149869582afbae1fb84c4a
 rake                13.3.0  https://github.com/ruby/rake
 test-unit           3.7.0   https://github.com/test-unit/test-unit
-rexml               3.4.1   https://github.com/ruby/rexml
+rexml               3.4.2   https://github.com/ruby/rexml
 rss                 0.3.1   https://github.com/ruby/rss
 net-ftp             0.3.8   https://github.com/ruby/net-ftp
-net-imap            0.5.9   https://github.com/ruby/net-imap
+net-imap            0.5.10  https://github.com/ruby/net-imap
 net-pop             0.1.2   https://github.com/ruby/net-pop
 net-smtp            0.5.1   https://github.com/ruby/net-smtp
 matrix              0.4.3   https://github.com/ruby/matrix
 prime               0.1.4   https://github.com/ruby/prime
-rbs                 3.9.4   https://github.com/ruby/rbs
+rbs                 3.9.4   https://github.com/ruby/rbs aa22d7ea0c992de7557c3e346c9100b8aa36d945
 typeprof            0.30.1  https://github.com/ruby/typeprof
 debug               1.11.0  https://github.com/ruby/debug
 racc                1.8.1   https://github.com/ruby/racc

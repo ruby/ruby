@@ -4,6 +4,7 @@ use crate::asm::{CodeBlock, Label};
 use crate::asm::arm64::*;
 use crate::cruby::*;
 use crate::backend::lir::*;
+use crate::stats::CompileError;
 use crate::virtualmem::CodePtr;
 use crate::cast::*;
 
@@ -11,12 +12,12 @@ use crate::cast::*;
 pub type Reg = A64Reg;
 
 // Callee-saved registers
-pub const _CFP: Opnd = Opnd::Reg(X19_REG);
-pub const _EC: Opnd = Opnd::Reg(X20_REG);
-pub const _SP: Opnd = Opnd::Reg(X21_REG);
+pub const CFP: Opnd = Opnd::Reg(X19_REG);
+pub const EC: Opnd = Opnd::Reg(X20_REG);
+pub const SP: Opnd = Opnd::Reg(X21_REG);
 
 // C argument registers on this platform
-pub const _C_ARG_OPNDS: [Opnd; 6] = [
+pub const C_ARG_OPNDS: [Opnd; 6] = [
     Opnd::Reg(X0_REG),
     Opnd::Reg(X1_REG),
     Opnd::Reg(X2_REG),
@@ -27,8 +28,9 @@ pub const _C_ARG_OPNDS: [Opnd; 6] = [
 
 // C return value register on this platform
 pub const C_RET_REG: Reg = X0_REG;
-pub const _C_RET_OPND: Opnd = Opnd::Reg(X0_REG);
-pub const _NATIVE_STACK_PTR: Opnd = Opnd::Reg(XZR_REG);
+pub const C_RET_OPND: Opnd = Opnd::Reg(X0_REG);
+pub const NATIVE_STACK_PTR: Opnd = Opnd::Reg(XZR_REG);
+pub const NATIVE_BASE_PTR: Opnd = Opnd::Reg(X29_REG);
 
 // These constants define the way we work with Arm64's stack pointer. The stack
 // pointer always needs to be aligned to a 16-byte boundary.
@@ -97,7 +99,7 @@ fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
     let start = cb.get_write_ptr();
     emit_jmp_ptr(cb, dst_ptr, true);
     let end = cb.get_write_ptr();
-    unsafe { rb_zjit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
+    unsafe { rb_jit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
 }
 
 fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr, padding: bool) {
@@ -138,13 +140,17 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
         // If the value fits into a single movz
         // instruction, then we'll use that.
         movz(cb, rd, A64Opnd::new_uimm(current), 0);
-        return 1;
+        1
+    } else if u16::try_from(!value).is_ok() {
+        // For small negative values, use a single movn
+        movn(cb, rd, A64Opnd::new_uimm(!value), 0);
+        1
     } else if BitmaskImmediate::try_from(current).is_ok() {
         // Otherwise, if the immediate can be encoded
         // with the special bitmask immediate encoding,
         // we'll use that.
         mov(cb, rd, A64Opnd::new_uimm(current));
-        return 1;
+        1
     } else {
         // Finally we'll fall back to encoding the value
         // using movz for the first 16 bits and movk for
@@ -170,14 +176,14 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
             movk(cb, rd, A64Opnd::new_uimm(current & 0xffff), 48);
             num_insns += 1;
         }
-        return num_insns;
+        num_insns
     }
 }
 
 /// List of registers that can be used for register allocation.
 /// This has the same number of registers for x86_64 and arm64.
 /// SCRATCH0 and SCRATCH1 are excluded.
-pub const ALLOC_REGS: &'static [Reg] = &[
+pub const ALLOC_REGS: &[Reg] = &[
     X0_REG,
     X1_REG,
     X2_REG,
@@ -190,11 +196,15 @@ pub const ALLOC_REGS: &'static [Reg] = &[
 
 impl Assembler
 {
-    // Special scratch registers for intermediate processing.
-    // This register is caller-saved (so we don't have to save it before using it)
+    /// Special scratch registers for intermediate processing.
+    /// This register is call-clobbered (so we don't have to save it before using it).
+    /// Avoid using if you can since this is used to lower [Insn] internally and
+    /// so conflicts are possible.
     pub const SCRATCH_REG: Reg = X16_REG;
-    const SCRATCH0: A64Opnd = A64Opnd::Reg(Assembler::SCRATCH_REG);
-    const SCRATCH1: A64Opnd = A64Opnd::Reg(X17_REG);
+    const SCRATCH0_REG: Reg = Self::SCRATCH_REG;
+    const SCRATCH1_REG: Reg = X17_REG;
+    const SCRATCH0: A64Opnd = A64Opnd::Reg(Self::SCRATCH0_REG);
+    const SCRATCH1: A64Opnd = A64Opnd::Reg(Self::SCRATCH1_REG);
 
     /// Get the list of registers from which we will allocate on this platform
     pub fn get_alloc_regs() -> Vec<Reg> {
@@ -218,29 +228,6 @@ impl Assembler
     /// have no memory operands.
     fn arm64_split(mut self) -> Assembler
     {
-        /// When we're attempting to load a memory address into a register, the
-        /// displacement must fit into the maximum number of bits for an Op::Add
-        /// immediate. If it doesn't, we have to load the displacement into a
-        /// register first.
-        fn split_lea_operand(asm: &mut Assembler, opnd: Opnd) -> Opnd {
-            match opnd {
-                Opnd::Mem(Mem { base, disp, num_bits }) => {
-                    if disp >= 0 && ShiftedImmediate::try_from(disp as u64).is_ok() {
-                        asm.lea(opnd)
-                    } else {
-                        let disp = asm.load(Opnd::Imm(disp.into()));
-                        let reg = match base {
-                            MemBase::Reg(reg_no) => Opnd::Reg(Reg { reg_no, num_bits }),
-                            MemBase::VReg(idx) => Opnd::VReg { idx, num_bits }
-                        };
-
-                        asm.add(reg, disp)
-                    }
-                },
-                _ => unreachable!("Op::Lea only accepts Opnd::Mem operands.")
-            }
-        }
-
         /// When you're storing a register into a memory location or loading a
         /// memory location into a register, the displacement from the base
         /// register of the memory location must fit into 9 bits. If it doesn't,
@@ -251,7 +238,7 @@ impl Assembler
                     if mem_disp_fits_bits(mem.disp) {
                         opnd
                     } else {
-                        let base = split_lea_operand(asm, opnd);
+                        let base = asm.lea(opnd);
                         Opnd::mem(64, base, 0)
                     }
                 },
@@ -270,7 +257,7 @@ impl Assembler
                     // Many Arm insns support only 32-bit or 64-bit operands. asm.load with fewer
                     // bits zero-extends the value, so it's safe to recognize it as a 32-bit value.
                     if out_opnd.rm_num_bits() < 32 {
-                        out_opnd.with_num_bits(32).unwrap()
+                        out_opnd.with_num_bits(32)
                     } else {
                         out_opnd
                     }
@@ -296,7 +283,7 @@ impl Assembler
                                 BitmaskImmediate::new_32b_reg(imm as u32).is_ok()) {
                         Opnd::UImm(imm as u64)
                     } else {
-                        asm.load(opnd).with_num_bits(dest_num_bits).unwrap()
+                        asm.load(opnd).with_num_bits(dest_num_bits)
                     }
                 },
                 Opnd::UImm(uimm) => {
@@ -306,7 +293,7 @@ impl Assembler
                             BitmaskImmediate::new_32b_reg(uimm as u32).is_ok()) {
                         opnd
                     } else {
-                        asm.load(opnd).with_num_bits(dest_num_bits).unwrap()
+                        asm.load(opnd).with_num_bits(dest_num_bits)
                     }
                 },
                 Opnd::None | Opnd::Value(_) => unreachable!()
@@ -331,7 +318,7 @@ impl Assembler
                         asm.load(opnd)
                     }
                 },
-                Opnd::None | Opnd::Value(_) /*| Opnd::Stack { .. }*/ => unreachable!()
+                Opnd::None | Opnd::Value(_) => unreachable!()
             }
         }
 
@@ -374,8 +361,8 @@ impl Assembler
             match opnd0 {
                 Opnd::Reg(_) | Opnd::VReg { .. } => {
                     match opnd0.rm_num_bits() {
-                        8 => asm.and(opnd0.with_num_bits(64).unwrap(), Opnd::UImm(0xff)),
-                        16 => asm.and(opnd0.with_num_bits(64).unwrap(), Opnd::UImm(0xffff)),
+                        8 => asm.and(opnd0.with_num_bits(64), Opnd::UImm(0xff)),
+                        16 => asm.and(opnd0.with_num_bits(64), Opnd::UImm(0xffff)),
                         32 | 64 => opnd0,
                         bits => unreachable!("Invalid number of bits. {}", bits)
                     }
@@ -399,15 +386,12 @@ impl Assembler
             let mut opnd_iter = insn.opnd_iter_mut();
 
             while let Some(opnd) = opnd_iter.next() {
-                match opnd {
-                    Opnd::Value(value) => {
-                        if value.special_const_p() {
-                            *opnd = Opnd::UImm(value.as_u64());
-                        } else if !is_load {
-                            *opnd = asm.load(*opnd);
-                        }
-                    },
-                    _ => {}
+                if let Opnd::Value(value) = opnd {
+                    if value.special_const_p() {
+                        *opnd = Opnd::UImm(value.as_u64());
+                    } else if !is_load {
+                        *opnd = asm.load(*opnd);
+                    }
                 };
             }
 
@@ -494,7 +478,7 @@ impl Assembler
                     // which is both the return value and first argument register
                     if !opnds.is_empty() {
                         let mut args: Vec<(Reg, Opnd)> = vec![];
-                        for (idx, opnd) in opnds.into_iter().enumerate().rev() {
+                        for (idx, opnd) in opnds.iter_mut().enumerate().rev() {
                             // If the value that we're sending is 0, then we can use
                             // the zero register, so in this case we'll just send
                             // a UImm of 0 along as the argument to the move.
@@ -519,7 +503,7 @@ impl Assembler
                     let split_right = split_shifted_immediate(asm, *right);
                     let opnd1 = match split_right {
                         Opnd::VReg { .. } if opnd0.num_bits() != split_right.num_bits() => {
-                            split_right.with_num_bits(opnd0.num_bits().unwrap()).unwrap()
+                            split_right.with_num_bits(opnd0.num_bits().unwrap())
                         },
                         _ => split_right
                     };
@@ -574,7 +558,7 @@ impl Assembler
                 },
                 Insn::IncrCounter { mem, value } => {
                     let counter_addr = match mem {
-                        Opnd::Mem(_) => split_lea_operand(asm, *mem),
+                        Opnd::Mem(_) => asm.lea(*mem),
                         _ => *mem
                     };
 
@@ -670,31 +654,6 @@ impl Assembler
                     *opnd = split_load_operand(asm, *opnd);
                     asm.push_insn(insn);
                 },
-                Insn::Store { dest, src } => {
-                    // The value being stored must be in a register, so if it's
-                    // not already one we'll load it first.
-                    let opnd1 = match src {
-                         // If the first operand is zero, then we can just use
-                        // the zero register.
-                        Opnd::UImm(0) | Opnd::Imm(0) => Opnd::Reg(XZR_REG),
-                        // Otherwise we'll check if we need to load it first.
-                        _ => split_load_operand(asm, *src)
-                    };
-
-                    match dest {
-                        Opnd::Reg(_) => {
-                            // Store does not support a register as a dest operand.
-                            asm.mov(*dest, opnd1);
-                        }
-                        _ => {
-                            // The displacement for the STUR instruction can't be more
-                            // than 9 bits long. If it's longer, we need to load the
-                            // memory address into a register first.
-                            let opnd0 = split_memory_address(asm, *dest);
-                            asm.store(opnd0, opnd1);
-                        }
-                    }
-                },
                 Insn::Mul { left, right, .. } => {
                     *left = split_load_operand(asm, *left);
                     *right = split_load_operand(asm, *right);
@@ -747,70 +706,67 @@ impl Assembler
         /// Emit a conditional jump instruction to a specific target. This is
         /// called when lowering any of the conditional jump instructions.
         fn emit_conditional_jump<const CONDITION: u8>(cb: &mut CodeBlock, target: Target) {
+            fn generate_branch<const CONDITION: u8>(cb: &mut CodeBlock, src_addr: i64, dst_addr: i64) {
+                let num_insns = if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
+                    // If the jump offset fits into the conditional jump as
+                    // an immediate value and it's properly aligned, then we
+                    // can use the b.cond instruction directly. We're safe
+                    // to use as i32 here since we already checked that it
+                    // fits.
+                    let bytes = (dst_addr - src_addr) as i32;
+                    bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
+
+                    // Here we're going to return 1 because we've only
+                    // written out 1 instruction.
+                    1
+                } else if b_offset_fits_bits((dst_addr - (src_addr + 4)) / 4) { // + 4 for bcond
+                    // If the jump offset fits into the unconditional jump as
+                    // an immediate value, we can use inverse b.cond + b.
+                    //
+                    // We're going to write out the inverse condition so
+                    // that if it doesn't match it will skip over the
+                    // instruction used for branching.
+                    bcond(cb, Condition::inverse(CONDITION), 2.into());
+                    b(cb, InstructionOffset::from_bytes((dst_addr - (src_addr + 4)) as i32)); // + 4 for bcond
+
+                    // We've only written out 2 instructions.
+                    2
+                } else {
+                    // Otherwise, we need to load the address into a
+                    // register and use the branch register instruction.
+                    let load_insns: i32 = emit_load_size(dst_addr as u64).into();
+
+                    // We're going to write out the inverse condition so
+                    // that if it doesn't match it will skip over the
+                    // instructions used for branching.
+                    bcond(cb, Condition::inverse(CONDITION), (load_insns + 2).into());
+                    emit_load_value(cb, Assembler::SCRATCH0, dst_addr as u64);
+                    br(cb, Assembler::SCRATCH0);
+
+                    // Here we'll return the number of instructions that it
+                    // took to write out the destination address + 1 for the
+                    // b.cond and 1 for the br.
+                    load_insns + 2
+                };
+
+                // We need to make sure we have at least 6 instructions for
+                // every kind of jump for invalidation purposes, so we're
+                // going to write out padding nop instructions here.
+                assert!(num_insns <= cb.conditional_jump_insns());
+                (num_insns..cb.conditional_jump_insns()).for_each(|_| nop(cb));
+            }
+
             match target {
                 Target::CodePtr(dst_ptr) => {
                     let dst_addr = dst_ptr.as_offset();
                     let src_addr = cb.get_write_ptr().as_offset();
-
-                    let num_insns = if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
-                        // If the jump offset fits into the conditional jump as
-                        // an immediate value and it's properly aligned, then we
-                        // can use the b.cond instruction directly. We're safe
-                        // to use as i32 here since we already checked that it
-                        // fits.
-                        let bytes = (dst_addr - src_addr) as i32;
-                        bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
-
-                        // Here we're going to return 1 because we've only
-                        // written out 1 instruction.
-                        1
-                    } else if b_offset_fits_bits((dst_addr - (src_addr + 4)) / 4) { // + 4 for bcond
-                        // If the jump offset fits into the unconditional jump as
-                        // an immediate value, we can use inverse b.cond + b.
-                        //
-                        // We're going to write out the inverse condition so
-                        // that if it doesn't match it will skip over the
-                        // instruction used for branching.
-                        bcond(cb, Condition::inverse(CONDITION), 2.into());
-                        b(cb, InstructionOffset::from_bytes((dst_addr - (src_addr + 4)) as i32)); // + 4 for bcond
-
-                        // We've only written out 2 instructions.
-                        2
-                    } else {
-                        // Otherwise, we need to load the address into a
-                        // register and use the branch register instruction.
-                        let dst_addr = (dst_ptr.raw_ptr(cb) as usize).as_u64();
-                        let load_insns: i32 = emit_load_size(dst_addr).into();
-
-                        // We're going to write out the inverse condition so
-                        // that if it doesn't match it will skip over the
-                        // instructions used for branching.
-                        bcond(cb, Condition::inverse(CONDITION), (load_insns + 2).into());
-                        emit_load_value(cb, Assembler::SCRATCH0, dst_addr);
-                        br(cb, Assembler::SCRATCH0);
-
-                        // Here we'll return the number of instructions that it
-                        // took to write out the destination address + 1 for the
-                        // b.cond and 1 for the br.
-                        load_insns + 2
-                    };
-
-                    if let Target::CodePtr(_) = target {
-                        // We need to make sure we have at least 6 instructions for
-                        // every kind of jump for invalidation purposes, so we're
-                        // going to write out padding nop instructions here.
-                        assert!(num_insns <= cb.conditional_jump_insns());
-                        for _ in num_insns..cb.conditional_jump_insns() { nop(cb); }
-                    }
+                    generate_branch::<CONDITION>(cb, src_addr, dst_addr);
                 },
                 Target::Label(label_idx) => {
-                    // Here we're going to save enough space for ourselves and
-                    // then come back and write the instruction once we know the
-                    // offset. We're going to assume we can fit into a single
-                    // b.cond instruction. It will panic otherwise.
-                    cb.label_ref(label_idx, 4, |cb, src_addr, dst_addr| {
-                        let bytes: i32 = (dst_addr - (src_addr - 4)).try_into().unwrap();
-                        bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
+                    // We save `cb.conditional_jump_insns` number of bytes since we may use up to that amount
+                    // `generate_branch` will pad the emitted branch instructions with `nop`s for each unused byte.
+                    cb.label_ref(label_idx, (cb.conditional_jump_insns() * 4) as usize, |cb, src_addr, dst_addr| {
+                        generate_branch::<CONDITION>(cb, src_addr - (cb.conditional_jump_insns() * 4) as i64, dst_addr);
                     });
                 },
                 Target::SideExit { .. } => {
@@ -859,6 +815,42 @@ impl Assembler
             } else {
                 unreachable!("We should only generate Joz/Jonz with side-exit targets");
             }
+        }
+
+        /// Do the address calculation of `out_reg = base_reg + disp`
+        fn load_effective_address(cb: &mut CodeBlock, out: A64Opnd, base_reg_no: u8, disp: i32) {
+            let base_reg = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: base_reg_no });
+            assert_ne!(31, out.unwrap_reg().reg_no, "Lea sp, [sp, #imm] not always encodable. Use add/sub instead.");
+
+            if ShiftedImmediate::try_from(disp.unsigned_abs() as u64).is_ok() {
+                // Use ADD/SUB if the displacement fits
+                add(cb, out, base_reg, A64Opnd::new_imm(disp.into()));
+            } else {
+                // Use add_extended() to interpret reg_no=31 as sp
+                // since the base register is never the zero register.
+                // Careful! Only the first two operands can refer to sp.
+                emit_load_value(cb, out, disp as u64);
+                add_extended(cb, out, base_reg, out);
+            };
+        }
+
+        /// Load a VALUE to a register and remember it for GC marking and reference updating
+        fn emit_load_gc_value(cb: &mut CodeBlock, gc_offsets: &mut Vec<CodePtr>, dest: A64Opnd, value: VALUE) {
+            // We dont need to check if it's a special const
+            // here because we only allow these operands to hit
+            // this point if they're not a special const.
+            assert!(!value.special_const_p());
+
+            // This assumes only load instructions can contain
+            // references to GC'd Value operands. If the value
+            // being loaded is a heap object, we'll report that
+            // back out to the gc_offsets list.
+            ldr_literal(cb, dest, 2.into());
+            b(cb, InstructionOffset::from_bytes(4 + (SIZEOF_VALUE as i32)));
+            cb.write_bytes(&value.as_u64().to_le_bytes());
+
+            let ptr_offset = cb.get_write_ptr().sub_bytes(SIZEOF_VALUE);
+            gc_offsets.push(ptr_offset);
         }
 
         /// Emit a push instruction for the given operand by adding to the stack
@@ -911,18 +903,54 @@ impl Assembler
                         cb.write_byte(0);
                     }
                 },
-                Insn::FrameSetup => {
+                &Insn::FrameSetup { preserved, mut slot_count } => {
+                    const { assert!(SIZEOF_VALUE == 8, "alignment logic relies on SIZEOF_VALUE == 8"); }
+                    // Preserve X29 and set up frame record
                     stp_pre(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, -16));
-
-                    // X29 (frame_pointer) = SP
                     mov(cb, X29, C_SP_REG);
-                },
-                Insn::FrameTeardown => {
+
+                    for regs in preserved.chunks(2) {
+                        // For the body, store pairs and move SP
+                        if let [reg0, reg1] = regs {
+                            stp_pre(cb, reg1.into(), reg0.into(), A64Opnd::new_mem(128, C_SP_REG, -16));
+                        } else if let [reg] = regs {
+                            // For overhang, store but don't move SP. Combine movement with
+                            // movement for slots below.
+                            stur(cb, reg.into(), A64Opnd::new_mem(64, C_SP_REG, -8));
+                            slot_count += 1;
+                        } else {
+                            unreachable!("chunks(2)");
+                        }
+                    }
+                    // Align slot_count
+                    if slot_count % 2 == 1 {
+                        slot_count += 1
+                    }
+                    if slot_count > 0 {
+                        let slot_offset = (slot_count * SIZEOF_VALUE) as u64;
+                        // Bail when asked to reserve too many slots in one instruction.
+                        ShiftedImmediate::try_from(slot_offset).ok()?;
+                        sub(cb, C_SP_REG, C_SP_REG, A64Opnd::new_uimm(slot_offset));
+                    }
+                }
+                Insn::FrameTeardown { preserved } => {
+                    // Restore preserved registers below frame pointer.
+                    let mut base_offset = 0;
+                    for regs in preserved.chunks(2) {
+                        if let [reg0, reg1] = regs {
+                            base_offset -= 16;
+                            ldp(cb, reg1.into(), reg0.into(), A64Opnd::new_mem(128, X29, base_offset));
+                        } else if let [reg] = regs {
+                            ldur(cb, reg.into(), A64Opnd::new_mem(64, X29, base_offset - 8));
+                        } else {
+                            unreachable!("chunks(2)");
+                        }
+                    }
+
                     // SP = X29 (frame pointer)
                     mov(cb, C_SP_REG, X29);
-
                     ldp_post(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, 16));
-                },
+                }
                 Insn::Add { left, right, out } => {
                     // Usually, we issue ADDS, so you could branch on overflow, but ADDS with
                     // out=31 refers to out=XZR, which discards the sum. So, instead of ADDS
@@ -995,14 +1023,86 @@ impl Assembler
                 Insn::LShift { opnd, shift, out } => {
                     lsl(cb, out.into(), opnd.into(), shift.into());
                 },
-                Insn::Store { dest, src } => {
+                store_insn @ Insn::Store { dest, src } => {
+                    // With minor exceptions, as long as `dest` is a Mem, all forms of `src` are
+                    // accepted. As a rule of thumb, avoid using Assembler::SCRATCH as a memory
+                    // base register to gurantee things will work.
+                    let &Opnd::Mem(Mem { num_bits: dest_num_bits, base: MemBase::Reg(base_reg_no), disp }) = dest else {
+                        panic!("Unexpected Insn::Store destination in arm64_emit: {dest:?}");
+                    };
+
+                    // This kind of tricky clobber can only happen for explicit use of SCRATCH_REG,
+                    // so we panic to get the author to change their code.
+                    #[track_caller]
+                    fn assert_no_clobber(store_insn: &Insn, user_use: u8, backend_use: Reg) {
+                        assert_ne!(
+                            backend_use.reg_no,
+                            user_use,
+                            "Emitting {store_insn:?} would clobber {user_use:?}, in conflict with its semantics"
+                        );
+                    }
+
+                    // Split src into SCRATCH0 if necessary
+                    let src_reg: A64Reg = match src {
+                        Opnd::Reg(reg) => *reg,
+                        // Use zero register when possible
+                        Opnd::UImm(0) | Opnd::Imm(0) => XZR_REG,
+                        // Immediates
+                        &Opnd::Imm(imm) => {
+                            assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH0_REG);
+                            emit_load_value(cb, Self::SCRATCH0, imm as u64);
+                            Self::SCRATCH0_REG
+                        }
+                        &Opnd::UImm(imm) => {
+                            assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH0_REG);
+                            emit_load_value(cb, Self::SCRATCH0, imm);
+                            Self::SCRATCH0_REG
+                        }
+                        &Opnd::Value(value) => {
+                            assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH0_REG);
+                            emit_load_gc_value(cb, &mut gc_offsets, Self::SCRATCH0, value);
+                            Self::SCRATCH0_REG
+                        }
+                        src_mem @ &Opnd::Mem(Mem { num_bits: src_num_bits, base: MemBase::Reg(src_base_reg_no), disp: src_disp }) => {
+                            // For mem-to-mem store, load the source into SCRATCH0
+                            assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH0_REG);
+                            let src_mem = if mem_disp_fits_bits(src_disp) {
+                                src_mem.into()
+                            } else {
+                                // Split the load address into SCRATCH0 first if necessary
+                                assert_no_clobber(store_insn, src_base_reg_no, Self::SCRATCH0_REG);
+                                load_effective_address(cb, Self::SCRATCH0, src_base_reg_no, src_disp);
+                                A64Opnd::new_mem(dest_num_bits, Self::SCRATCH0, 0)
+                            };
+                            match src_num_bits {
+                                64 | 32 => ldur(cb, Self::SCRATCH0, src_mem),
+                                16 => ldurh(cb, Self::SCRATCH0, src_mem),
+                                8 => ldurb(cb, Self::SCRATCH0, src_mem),
+                                num_bits => panic!("unexpected num_bits: {num_bits}")
+                            };
+                            Self::SCRATCH0_REG
+                        }
+                        src @ (Opnd::Mem(_) | Opnd::None | Opnd::VReg { .. }) => panic!("Unexpected source operand during arm64_emit: {src:?}")
+                    };
+                    let src = A64Opnd::Reg(src_reg);
+
+                    // Split dest into SCRATCH1 if necessary.
+                    let dest = if mem_disp_fits_bits(disp) {
+                        dest.into()
+                    } else {
+                        assert_no_clobber(store_insn, src_reg.reg_no, Self::SCRATCH1_REG);
+                        assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH1_REG);
+                        load_effective_address(cb, Self::SCRATCH1, base_reg_no, disp);
+                        A64Opnd::new_mem(dest_num_bits, Self::SCRATCH1, 0)
+                    };
+
                     // This order may be surprising but it is correct. The way
                     // the Arm64 assembler works, the register that is going to
                     // be stored is first and the address is second. However in
                     // our IR we have the address first and the register second.
-                    match dest.rm_num_bits() {
-                        64 | 32 => stur(cb, src.into(), dest.into()),
-                        16 => sturh(cb, src.into(), dest.into()),
+                    match dest_num_bits {
+                        64 | 32 => stur(cb, src, dest),
+                        16 => sturh(cb, src, dest),
                         num_bits => panic!("unexpected dest num_bits: {} (src: {:#?}, dest: {:#?})", num_bits, src, dest),
                     }
                 },
@@ -1027,21 +1127,7 @@ impl Assembler
                             };
                         },
                         Opnd::Value(value) => {
-                            // We dont need to check if it's a special const
-                            // here because we only allow these operands to hit
-                            // this point if they're not a special const.
-                            assert!(!value.special_const_p());
-
-                            // This assumes only load instructions can contain
-                            // references to GC'd Value operands. If the value
-                            // being loaded is a heap object, we'll report that
-                            // back out to the gc_offsets list.
-                            ldr_literal(cb, out.into(), 2.into());
-                            b(cb, InstructionOffset::from_bytes(4 + (SIZEOF_VALUE as i32)));
-                            cb.write_bytes(&value.as_u64().to_le_bytes());
-
-                            let ptr_offset = cb.get_write_ptr().sub_bytes(SIZEOF_VALUE);
-                            gc_offsets.push(ptr_offset);
+                            emit_load_gc_value(cb, &mut gc_offsets, out.into(), value);
                         },
                         Opnd::None => {
                             unreachable!("Attempted to load from None operand");
@@ -1076,22 +1162,11 @@ impl Assembler
                     }
                 },
                 Insn::Lea { opnd, out } => {
-                    let opnd: A64Opnd = opnd.into();
-
-                    match opnd {
-                        A64Opnd::Mem(mem) => {
-                            add(
-                                cb,
-                                out.into(),
-                                A64Opnd::Reg(A64Reg { reg_no: mem.base_reg_no, num_bits: 64 }),
-                                A64Opnd::new_imm(mem.disp.into())
-                            );
-                        },
-                        _ => {
-                            panic!("Op::Lea only accepts Opnd::Mem operands.");
-                        }
+                    let &Opnd::Mem(Mem { num_bits: _, base: MemBase::Reg(base_reg_no), disp }) = opnd else {
+                        panic!("Unexpected Insn::Lea operand in arm64_emit: {opnd:?}");
                     };
-                },
+                    load_effective_address(cb, out.into(), base_reg_no, disp);
+                }
                 Insn::LeaJumpTarget { out, target, .. } => {
                     if let Target::Label(label_idx) = target {
                         // Set output to the raw address of the label
@@ -1225,8 +1300,7 @@ impl Assembler
                     }
                     last_patch_pos = Some(cb.get_write_pos());
                 },
-                Insn::IncrCounter { mem: _, value: _ } => {
-                    /*
+                Insn::IncrCounter { mem, value } => {
                     let label = cb.new_label("incr_counter_loop".to_string());
                     cb.write_label(label);
 
@@ -1242,8 +1316,6 @@ impl Assembler
 
                     cmp(cb, Self::SCRATCH1, A64Opnd::new_uimm(0));
                     emit_conditional_jump::<{Condition::NE}>(cb, Target::Label(label));
-                    */
-                    unimplemented!("labels are not supported yet");
                 },
                 Insn::Breakpoint => {
                     brk(cb, A64Opnd::None);
@@ -1292,10 +1364,10 @@ impl Assembler
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Option<(CodePtr, Vec<CodePtr>)> {
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         let asm = self.arm64_split();
         let mut asm = asm.alloc_regs(regs)?;
-        asm.compile_side_exits()?;
+        asm.compile_side_exits();
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {
@@ -1310,13 +1382,12 @@ impl Assembler
             cb.link_labels();
 
             // Invalidate icache for newly written out region so we don't run stale code.
-            unsafe { rb_zjit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
+            unsafe { rb_jit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
 
-            Some((start_ptr, gc_offsets))
+            Ok((start_ptr, gc_offsets))
         } else {
             cb.clear_labels();
-
-            None
+            Err(CompileError::OutOfMemory)
         }
     }
 }
@@ -1334,7 +1405,7 @@ impl Assembler
 ///
 /// If a, b, and c are all registers.
 fn merge_three_reg_mov(
-    live_ranges: &Vec<LiveRange>,
+    live_ranges: &[LiveRange],
     iterator: &mut std::iter::Peekable<impl Iterator<Item = (usize, Insn)>>,
     left: &Opnd,
     right: &Opnd,
@@ -1444,7 +1515,7 @@ mod tests {
 
         let opnd = asm.add(Opnd::Reg(X0_REG), Opnd::Reg(X1_REG));
         asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
-        asm.compile_with_regs(&mut cb, vec![X3_REG]);
+        asm.compile_with_regs(&mut cb, vec![X3_REG]).unwrap();
 
         // Assert that only 2 instructions were written.
         assert_eq!(8, cb.get_write_pos());
@@ -1482,9 +1553,71 @@ mod tests {
     fn test_emit_frame() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.frame_setup();
-        asm.frame_teardown();
+        asm.frame_setup(&[], 0);
+        asm.frame_teardown(&[]);
         asm.compile_with_num_regs(&mut cb, 0);
+    }
+
+    #[test]
+    fn frame_setup_and_teardown() {
+        const THREE_REGS: &[Opnd] = &[Opnd::Reg(X19_REG), Opnd::Reg(X20_REG), Opnd::Reg(X21_REG)];
+        // Test 3 preserved regs (odd), odd slot_count
+        {
+            let (mut asm, mut cb) = setup_asm();
+            asm.frame_setup(THREE_REGS, 3);
+            asm.frame_teardown(THREE_REGS);
+            asm.compile_with_num_regs(&mut cb, 0);
+            assert_disasm!(cb, "fd7bbfa9fd030091f44fbfa9f5831ff8ff8300d1b44f7fa9b5835ef8bf030091fd7bc1a8", "
+                0x0: stp x29, x30, [sp, #-0x10]!
+                0x4: mov x29, sp
+                0x8: stp x20, x19, [sp, #-0x10]!
+                0xc: stur x21, [sp, #-8]
+                0x10: sub sp, sp, #0x20
+                0x14: ldp x20, x19, [x29, #-0x10]
+                0x18: ldur x21, [x29, #-0x18]
+                0x1c: mov sp, x29
+                0x20: ldp x29, x30, [sp], #0x10
+            ");
+        }
+
+        // Test 3 preserved regs (odd), even slot_count
+        {
+            let (mut asm, mut cb) = setup_asm();
+            asm.frame_setup(THREE_REGS, 4);
+            asm.frame_teardown(THREE_REGS);
+            asm.compile_with_num_regs(&mut cb, 0);
+            assert_disasm!(cb, "fd7bbfa9fd030091f44fbfa9f5831ff8ffc300d1b44f7fa9b5835ef8bf030091fd7bc1a8", "
+                0x0: stp x29, x30, [sp, #-0x10]!
+                0x4: mov x29, sp
+                0x8: stp x20, x19, [sp, #-0x10]!
+                0xc: stur x21, [sp, #-8]
+                0x10: sub sp, sp, #0x30
+                0x14: ldp x20, x19, [x29, #-0x10]
+                0x18: ldur x21, [x29, #-0x18]
+                0x1c: mov sp, x29
+                0x20: ldp x29, x30, [sp], #0x10
+            ");
+        }
+
+        // Test 4 preserved regs (even), odd slot_count
+        {
+            static FOUR_REGS: &[Opnd] = &[Opnd::Reg(X19_REG), Opnd::Reg(X20_REG), Opnd::Reg(X21_REG), Opnd::Reg(X22_REG)];
+            let (mut asm, mut cb) = setup_asm();
+            asm.frame_setup(FOUR_REGS, 3);
+            asm.frame_teardown(FOUR_REGS);
+            asm.compile_with_num_regs(&mut cb, 0);
+            assert_disasm!(cb, "fd7bbfa9fd030091f44fbfa9f657bfa9ff8300d1b44f7fa9b6577ea9bf030091fd7bc1a8", "
+                0x0: stp x29, x30, [sp, #-0x10]!
+                0x4: mov x29, sp
+                0x8: stp x20, x19, [sp, #-0x10]!
+                0xc: stp x22, x21, [sp, #-0x10]!
+                0x10: sub sp, sp, #0x20
+                0x14: ldp x20, x19, [x29, #-0x10]
+                0x18: ldp x22, x21, [x29, #-0x20]
+                0x1c: mov sp, x29
+                0x20: ldp x29, x30, [sp], #0x10
+            ");
+        }
     }
 
     #[test]
@@ -1508,13 +1641,107 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 0);
     }
 
-    /*
+    #[test]
+    fn test_emit_lea() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // Test values that exercise various types of immediates.
+        //  - 9 bit displacement for Load/Store
+        //  - 12 bit ADD/SUB shifted immediate
+        //  - 16 bit MOV family shifted immediates
+        //  - bit mask immediates
+        for displacement in [i32::MAX, 0x10008, 0x1800, 0x208, -0x208, -0x1800, -0x10008, i32::MIN] {
+            let mem = Opnd::mem(64, NATIVE_STACK_PTR, displacement);
+            asm.lea_into(Opnd::Reg(X0_REG), mem);
+        }
+
+        asm.compile_with_num_regs(&mut cb, 0);
+        assert_disasm!(cb, "e07b40b2e063208b000180d22000a0f2e063208b000083d2e063208be0230891e02308d1e0ff8292e063208b00ff9fd2c0ffbff2e0ffdff2e0fffff2e063208be08361b2e063208b", "
+            0x0: orr x0, xzr, #0x7fffffff
+            0x4: add x0, sp, x0
+            0x8: mov x0, #8
+            0xc: movk x0, #1, lsl #16
+            0x10: add x0, sp, x0
+            0x14: mov x0, #0x1800
+            0x18: add x0, sp, x0
+            0x1c: add x0, sp, #0x208
+            0x20: sub x0, sp, #0x208
+            0x24: mov x0, #-0x1800
+            0x28: add x0, sp, x0
+            0x2c: mov x0, #0xfff8
+            0x30: movk x0, #0xfffe, lsl #16
+            0x34: movk x0, #0xffff, lsl #32
+            0x38: movk x0, #0xffff, lsl #48
+            0x3c: add x0, sp, x0
+            0x40: orr x0, xzr, #0xffffffff80000000
+            0x44: add x0, sp, x0
+        ");
+    }
+
+    #[test]
+    fn test_store() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // Large memory offsets in combinations of destination and source
+        let large_mem = Opnd::mem(64, NATIVE_STACK_PTR, -0x305);
+        let small_mem = Opnd::mem(64, C_RET_OPND, 0);
+        asm.store(small_mem, large_mem);
+        asm.store(large_mem, small_mem);
+        asm.store(large_mem, large_mem);
+
+        asm.compile_with_num_regs(&mut cb, 0);
+        assert_disasm!(cb, "f0170cd1100240f8100000f8100040f8f1170cd1300200f8f0170cd1100240f8f1170cd1300200f8", "
+            0x0: sub x16, sp, #0x305
+            0x4: ldur x16, [x16]
+            0x8: stur x16, [x0]
+            0xc: ldur x16, [x0]
+            0x10: sub x17, sp, #0x305
+            0x14: stur x16, [x17]
+            0x18: sub x16, sp, #0x305
+            0x1c: ldur x16, [x16]
+            0x20: sub x17, sp, #0x305
+            0x24: stur x16, [x17]
+        ");
+    }
+
+    #[test]
+    fn test_store_value_without_split() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let imitation_heap_value = VALUE(0x1000);
+        assert!(imitation_heap_value.heap_object_p());
+        asm.store(Opnd::mem(VALUE_BITS, SP, 0), imitation_heap_value.into());
+
+        // Side exit code are compiled without the split pass, so we directly call emit here to
+        // emulate that scenario.
+        let gc_offsets = asm.arm64_emit(&mut cb).unwrap();
+        assert_eq!(1, gc_offsets.len(), "VALUE source operand should be reported as gc offset");
+
+        assert_disasm!(cb, "50000058030000140010000000000000b00200f8", "
+            0x0: ldr x16, #8
+            0x4: b #0x10
+            0x8: .byte 0x00, 0x10, 0x00, 0x00
+            0xc: .byte 0x00, 0x00, 0x00, 0x00
+            0x10: stur x16, [x21]
+        ");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_store_unserviceable() {
+        let (mut asm, mut cb) = setup_asm();
+        // This would put the source into SCRATCH_REG, messing up the destination
+        asm.store(Opnd::mem(64, SCRATCH_OPND, 0), 0x83902.into());
+
+        asm.compile_with_num_regs(&mut cb, 0);
+    }
+
     #[test]
     fn test_emit_lea_label() {
         let (mut asm, mut cb) = setup_asm();
 
         let label = asm.new_label("label");
-        let opnd = asm.lea_jump_target(label);
+        let opnd = asm.lea_jump_target(label.clone());
 
         asm.write_label(label);
         asm.bake_string("Hello, world!");
@@ -1522,7 +1749,6 @@ mod tests {
 
         asm.compile_with_num_regs(&mut cb, 1);
     }
-    */
 
     #[test]
     fn test_emit_load_mem_disp_fits_into_load() {
@@ -1589,7 +1815,7 @@ mod tests {
     #[test]
     fn test_emit_test_32b_reg_not_bitmask_imm() {
         let (mut asm, mut cb) = setup_asm();
-        let w0 = Opnd::Reg(X0_REG).with_num_bits(32).unwrap();
+        let w0 = Opnd::Reg(X0_REG).with_num_bits(32);
         asm.test(w0, Opnd::UImm(u32::MAX.into()));
         // All ones is not encodable with a bitmask immediate,
         // so this needs one register
@@ -1599,7 +1825,7 @@ mod tests {
     #[test]
     fn test_emit_test_32b_reg_bitmask_imm() {
         let (mut asm, mut cb) = setup_asm();
-        let w0 = Opnd::Reg(X0_REG).with_num_bits(32).unwrap();
+        let w0 = Opnd::Reg(X0_REG).with_num_bits(32);
         asm.test(w0, Opnd::UImm(0x80000001));
         asm.compile_with_num_regs(&mut cb, 0);
     }
@@ -1733,48 +1959,6 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 2);
     }
 
-    /*
-    #[test]
-    fn test_bcond_straddling_code_pages() {
-        const LANDING_PAGE: usize = 65;
-        let mut asm = Assembler::new(0);
-        let mut cb = CodeBlock::new_dummy_with_freed_pages(vec![0, LANDING_PAGE]);
-
-        // Skip to near the end of the page. Room for two instructions.
-        cb.set_pos(cb.page_start_pos() + cb.page_end() - 8);
-
-        let end = asm.new_label("end");
-        // Start with a conditional jump...
-        asm.jz(end);
-
-        // A few instructions, enough to cause a page switch.
-        let sum = asm.add(399.into(), 111.into());
-        let xorred = asm.xor(sum, 859.into());
-        asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), xorred);
-        asm.store(Opnd::mem(64, Opnd::Reg(X0_REG), 0), xorred);
-
-        // The branch target. It should be in the landing page.
-        asm.write_label(end);
-        asm.cret(xorred);
-
-        // [Bug #19385]
-        // This used to panic with "The offset must be 19 bits or less."
-        // due to attempting to lower the `asm.jz` above to a `b.e` with an offset that's > 1 MiB.
-        let starting_pos = cb.get_write_pos();
-        asm.compile_with_num_regs(&mut cb, 2);
-        let gap = cb.get_write_pos() - starting_pos;
-        assert!(gap > 0b1111111111111111111);
-
-        let instruction_at_starting_pos: [u8; 4] = unsafe {
-            std::slice::from_raw_parts(cb.get_ptr(starting_pos).raw_ptr(&cb), 4)
-        }.try_into().unwrap();
-        assert_eq!(
-            0b000101 << 26_u32,
-            u32::from_le_bytes(instruction_at_starting_pos) & (0b111111 << 26_u32),
-            "starting instruction should be an unconditional branch to the new page (B)"
-        );
-    }
-
     #[test]
     fn test_emit_xor() {
         let (mut asm, mut cb) = setup_asm();
@@ -1784,9 +1968,9 @@ mod tests {
 
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm!(cb, "0b0001ca4b0000f8", "
-            0x0: eor x11, x0, x1
-            0x4: stur x11, [x2]
+        assert_disasm!(cb, "000001ca400000f8", "
+            0x0: eor x0, x0, x1
+            0x4: stur x0, [x2]
         ");
     }
 
@@ -1848,11 +2032,37 @@ mod tests {
         asm.mov(Opnd::Reg(TEMP_REGS[0]), out);
         asm.compile_with_num_regs(&mut cb, 2);
 
-        assert_disasm!(cb, "8b0280d20c0080d261b18c9a", {"
-            0x0: mov x11, #0x14
-            0x4: mov x12, #0
-            0x8: csel x1, x11, x12, lt
+        assert_disasm!(cb, "800280d2010080d201b0819a", {"
+            0x0: mov x0, #0x14
+            0x4: mov x1, #0
+            0x8: csel x1, x0, x1, lt
         "});
+    }
+
+    #[test]
+    fn test_label_branch_generate_bounds() {
+        // The immediate in a conditional branch is a 19 bit unsigned integer
+        // which has a max value of 2^18 - 1.
+        const IMMEDIATE_MAX_VALUE: usize = 2usize.pow(18) - 1;
+
+        // `IMMEDIATE_MAX_VALUE` number of dummy instructions will be generated
+        // plus a compare, a jump instruction, and a label.
+        const MEMORY_REQUIRED: usize = (IMMEDIATE_MAX_VALUE + 8)*4;
+
+        let mut asm = Assembler::new();
+        let mut cb = CodeBlock::new_dummy_sized(MEMORY_REQUIRED);
+
+        let far_label = asm.new_label("far");
+
+        asm.cmp(Opnd::Reg(X0_REG), Opnd::UImm(1));
+        asm.je(far_label.clone());
+
+        (0..IMMEDIATE_MAX_VALUE).for_each(|_| {
+            asm.mov(Opnd::Reg(TEMP_REGS[0]), Opnd::Reg(TEMP_REGS[2]));
+        });
+
+        asm.write_label(far_label.clone());
+        asm.compile_with_num_regs(&mut cb, 1);
     }
 
     #[test]
@@ -1864,11 +2074,98 @@ mod tests {
         asm.mov(Opnd::Reg(TEMP_REGS[0]), out);
         asm.compile_with_num_regs(&mut cb, 2);
 
-        assert_disasm!(cb, "2b0500b16b0500b1e1030baa", {"
-            0x0: adds x11, x9, #1
-            0x4: adds x11, x11, #1
-            0x8: mov x1, x11
+        assert_disasm!(cb, "200500b1010400b1", {"
+            0x0: adds x0, x9, #1
+            0x4: adds x1, x0, #1
         "});
     }
-    */
+
+    #[test]
+    fn test_reorder_c_args_no_cycle() {
+        crate::options::rb_zjit_prepare_options();
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.ccall(0 as _, vec![
+            C_ARG_OPNDS[0], // mov x0, x0 (optimized away)
+            C_ARG_OPNDS[1], // mov x1, x1 (optimized away)
+        ]);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm!(cb, "100080d200023fd6", {"
+            0x0: mov x16, #0
+            0x4: blr x16
+        "});
+    }
+
+    #[test]
+    fn test_reorder_c_args_single_cycle() {
+        crate::options::rb_zjit_prepare_options();
+        let (mut asm, mut cb) = setup_asm();
+
+        // x0 and x1 form a cycle
+        asm.ccall(0 as _, vec![
+            C_ARG_OPNDS[1], // mov x0, x1
+            C_ARG_OPNDS[0], // mov x1, x0
+            C_ARG_OPNDS[2], // mov x2, x2 (optimized away)
+        ]);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm!(cb, "f00300aae00301aae10310aa100080d200023fd6", {"
+            0x0: mov x16, x0
+            0x4: mov x0, x1
+            0x8: mov x1, x16
+            0xc: mov x16, #0
+            0x10: blr x16
+        "});
+    }
+
+    #[test]
+    fn test_reorder_c_args_two_cycles() {
+        crate::options::rb_zjit_prepare_options();
+        let (mut asm, mut cb) = setup_asm();
+
+        // x0 and x1 form a cycle, and x2 and rcx form another cycle
+        asm.ccall(0 as _, vec![
+            C_ARG_OPNDS[1], // mov x0, x1
+            C_ARG_OPNDS[0], // mov x1, x0
+            C_ARG_OPNDS[3], // mov x2, rcx
+            C_ARG_OPNDS[2], // mov rcx, x2
+        ]);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm!(cb, "f00302aae20303aae30310aaf00300aae00301aae10310aa100080d200023fd6", {"
+            0x0: mov x16, x2
+            0x4: mov x2, x3
+            0x8: mov x3, x16
+            0xc: mov x16, x0
+            0x10: mov x0, x1
+            0x14: mov x1, x16
+            0x18: mov x16, #0
+            0x1c: blr x16
+        "});
+    }
+
+    #[test]
+    fn test_reorder_c_args_large_cycle() {
+        crate::options::rb_zjit_prepare_options();
+        let (mut asm, mut cb) = setup_asm();
+
+        // x0, x1, and x2 form a cycle
+        asm.ccall(0 as _, vec![
+            C_ARG_OPNDS[1], // mov x0, x1
+            C_ARG_OPNDS[2], // mov x1, x2
+            C_ARG_OPNDS[0], // mov x2, x0
+        ]);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm!(cb, "f00300aae00301aae10302aae20310aa100080d200023fd6", {"
+            0x0: mov x16, x0
+            0x4: mov x0, x1
+            0x8: mov x1, x2
+            0xc: mov x2, x16
+            0x10: mov x16, #0
+            0x14: blr x16
+        "});
+    }
+
 }

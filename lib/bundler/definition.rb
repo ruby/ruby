@@ -189,12 +189,14 @@ module Bundler
     def setup_domain!(options = {})
       prefer_local! if options[:"prefer-local"]
 
+      sources.cached!
+
       if options[:add_checksums] || (!options[:local] && install_needed?)
-        remotely!
+        sources.remote!
         true
       else
         Bundler.settings.set_command_option(:jobs, 1) unless install_needed? # to avoid the overhead of Bundler::Worker
-        with_cache!
+        sources.local!
         false
       end
     end
@@ -373,6 +375,44 @@ module Bundler
       write_lock(target_lockfile, preserve_unknown_sections)
     end
 
+    def write_lock(file, preserve_unknown_sections)
+      return if Definition.no_lock || file.nil?
+
+      contents = to_lock
+
+      # Convert to \r\n if the existing lock has them
+      # i.e., Windows with `git config core.autocrlf=true`
+      contents.gsub!(/\n/, "\r\n") if @lockfile_contents.match?("\r\n")
+
+      if @locked_bundler_version
+        locked_major = @locked_bundler_version.segments.first
+        current_major = bundler_version_to_lock.segments.first
+
+        updating_major = locked_major < current_major
+      end
+
+      preserve_unknown_sections ||= !updating_major && (Bundler.frozen_bundle? || !(unlocking? || @unlocking_bundler))
+
+      if File.exist?(file) && lockfiles_equal?(@lockfile_contents, contents, preserve_unknown_sections)
+        return if Bundler.frozen_bundle?
+        SharedHelpers.filesystem_access(file) { FileUtils.touch(file) }
+        return
+      end
+
+      if Bundler.frozen_bundle?
+        Bundler.ui.error "Cannot write a changed lockfile while frozen."
+        return
+      end
+
+      begin
+        SharedHelpers.filesystem_access(file) do |p|
+          File.open(p, "wb") {|f| f.puts(contents) }
+        end
+      rescue ReadOnlyFileSystemError
+        raise ProductionError, lockfile_changes_summary("file system is read-only")
+      end
+    end
+
     def locked_ruby_version
       return unless ruby_version
       if @unlocking_ruby || !@locked_ruby_version
@@ -492,8 +532,6 @@ module Bundler
       @unlocking
     end
 
-    attr_writer :source_requirements
-
     def add_checksums
       @locked_checksums = true
 
@@ -533,7 +571,7 @@ module Bundler
 
       return unless added.any? || deleted.any? || changed.any? || resolve_needed?
 
-      msg = String.new("#{change_reason.capitalize.strip}, but ")
+      msg = String.new("#{change_reason[0].upcase}#{change_reason[1..-1].strip}, but ")
       msg << "the lockfile " unless msg.start_with?("Your lockfile")
       msg << "can't be updated because #{update_refused_reason}"
       msg << "\n\nYou have added to the Gemfile:\n" << added.join("\n") if added.any?
@@ -559,6 +597,7 @@ module Bundler
         @missing_lockfile_dep ||
         @unlocking_bundler ||
         @locked_spec_with_missing_checksums ||
+        @locked_spec_with_empty_checksums ||
         @locked_spec_with_missing_deps ||
         @locked_spec_with_invalid_deps
     end
@@ -575,46 +614,8 @@ module Bundler
       lockfile && File.exist?(lockfile)
     end
 
-    def write_lock(file, preserve_unknown_sections)
-      return if Definition.no_lock || file.nil?
-
-      contents = to_lock
-
-      # Convert to \r\n if the existing lock has them
-      # i.e., Windows with `git config core.autocrlf=true`
-      contents.gsub!(/\n/, "\r\n") if @lockfile_contents.match?("\r\n")
-
-      if @locked_bundler_version
-        locked_major = @locked_bundler_version.segments.first
-        current_major = bundler_version_to_lock.segments.first
-
-        updating_major = locked_major < current_major
-      end
-
-      preserve_unknown_sections ||= !updating_major && (Bundler.frozen_bundle? || !(unlocking? || @unlocking_bundler))
-
-      if File.exist?(file) && lockfiles_equal?(@lockfile_contents, contents, preserve_unknown_sections)
-        return if Bundler.frozen_bundle?
-        SharedHelpers.filesystem_access(file) { FileUtils.touch(file) }
-        return
-      end
-
-      if Bundler.frozen_bundle?
-        Bundler.ui.error "Cannot write a changed lockfile while frozen."
-        return
-      end
-
-      begin
-        SharedHelpers.filesystem_access(file) do |p|
-          File.open(p, "wb") {|f| f.puts(contents) }
-        end
-      rescue ReadOnlyFileSystemError
-        raise ProductionError, lockfile_changes_summary("file system is read-only")
-      end
-    end
-
     def resolver
-      @resolver ||= Resolver.new(resolution_base, gem_version_promoter, @most_specific_locked_platform)
+      @resolver ||= new_resolver(resolution_base)
     end
 
     def expanded_dependencies
@@ -632,8 +633,7 @@ module Bundler
       @resolution_base ||= begin
         last_resolve = converge_locked_specs
         remove_invalid_platforms!
-        new_resolution_platforms = @current_platform_missing ? @new_platforms + [Bundler.local_platform] : @new_platforms
-        base = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @unlocking_all || @gems_to_unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: new_resolution_platforms)
+        base = new_resolution_base(last_resolve: last_resolve, unlock: @unlocking_all || @gems_to_unlock)
         base = additional_base_requirements_to_prevent_downgrades(base)
         base = additional_base_requirements_to_force_updates(base)
         base
@@ -645,20 +645,12 @@ module Bundler
     end
 
     def materialize(dependencies)
-      # Tracks potential endless loops trying to re-resolve.
-      # TODO: Remove as dead code if not reports are received in a while
-      incorrect_spec = nil
-
       specs = begin
         resolve.materialize(dependencies)
       rescue IncorrectLockfileDependencies => e
         raise if Bundler.frozen_bundle?
 
-        spec = e.spec
-        raise "Infinite loop while fixing lockfile dependencies" if incorrect_spec == spec
-
-        incorrect_spec = spec
-        reresolve_without([spec])
+        reresolve_without([e.spec])
         retry
       end
 
@@ -740,7 +732,6 @@ module Bundler
     def start_resolution
       local_platform_needed_for_resolvability = @most_specific_non_local_locked_platform && !@platforms.include?(Bundler.local_platform)
       @platforms << Bundler.local_platform if local_platform_needed_for_resolvability
-      add_platform(Gem::Platform::RUBY) if RUBY_ENGINE == "truffleruby"
 
       result = SpecSet.new(resolver.start)
 
@@ -848,6 +839,7 @@ module Bundler
         [@missing_lockfile_dep, "your lockfile is missing \"#{@missing_lockfile_dep}\""],
         [@unlocking_bundler, "an update to the version of Bundler itself was requested"],
         [@locked_spec_with_missing_checksums, "your lockfile is missing a CHECKSUMS entry for \"#{@locked_spec_with_missing_checksums}\""],
+        [@locked_spec_with_empty_checksums, "your lockfile has an empty CHECKSUMS entry for \"#{@locked_spec_with_empty_checksums}\""],
         [@locked_spec_with_missing_deps, "your lockfile includes \"#{@locked_spec_with_missing_deps}\" but not some of its dependencies"],
         [@locked_spec_with_invalid_deps, "your lockfile does not satisfy dependencies of \"#{@locked_spec_with_invalid_deps}\""],
       ].select(&:first).map(&:last).join(", ")
@@ -907,13 +899,23 @@ module Bundler
       @locked_spec_with_invalid_deps = nil
       @locked_spec_with_missing_deps = nil
       @locked_spec_with_missing_checksums = nil
+      @locked_spec_with_empty_checksums = nil
 
       missing_deps = []
       missing_checksums = []
+      empty_checksums = []
       invalid = []
 
       @locked_specs.each do |s|
-        missing_checksums << s if @locked_checksums && s.source.checksum_store.missing?(s)
+        if @locked_checksums
+          checksum_store = s.source.checksum_store
+
+          if checksum_store.missing?(s)
+            missing_checksums << s
+          elsif checksum_store.empty?(s)
+            empty_checksums << s
+          end
+        end
 
         validation = @locked_specs.validate_deps(s)
 
@@ -922,6 +924,7 @@ module Bundler
       end
 
       @locked_spec_with_missing_checksums = missing_checksums.first.name if missing_checksums.any?
+      @locked_spec_with_empty_checksums = empty_checksums.first.name if empty_checksums.any?
 
       if missing_deps.any?
         @locked_specs.delete(missing_deps)
@@ -1033,6 +1036,8 @@ module Bundler
 
       specs.each do |s|
         name = s.name
+        next if @gems_to_unlock.include?(name)
+
         dep = @dependencies.find {|d| s.satisfies?(d) }
         lockfile_source = s.source
 
@@ -1046,12 +1051,13 @@ module Bundler
 
         # Replace the locked dependency's source with the equivalent source from the Gemfile
         s.source = replacement_source || default_source
+        next if s.source_changed?
 
         source = s.source
         next if @sources_to_unlock.include?(source.name)
 
         # Path sources have special logic
-        if source.instance_of?(Source::Path) || source.instance_of?(Source::Gemspec) || (source.instance_of?(Source::Git) && !@gems_to_unlock.include?(name) && deps.include?(dep))
+        if source.is_a?(Source::Path)
           new_spec = source.specs[s].first
           if new_spec
             s.runtime_dependencies.replace(new_spec.runtime_dependencies)
@@ -1133,7 +1139,7 @@ module Bundler
     def additional_base_requirements_to_prevent_downgrades(resolution_base)
       return resolution_base unless @locked_gems && !sources.expired_sources?(@locked_gems.sources)
       @originally_locked_specs.each do |locked_spec|
-        next if locked_spec.source.is_a?(Source::Path)
+        next if locked_spec.source.is_a?(Source::Path) || locked_spec.source_changed?
 
         name = locked_spec.name
         next if @changed_dependencies.include?(name)
@@ -1145,23 +1151,12 @@ module Bundler
 
     def additional_base_requirements_to_force_updates(resolution_base)
       return resolution_base if @explicit_unlocks.empty?
-      full_update = dup_for_full_unlock.resolve
+      full_update = SpecSet.new(new_resolver_for_full_update.start)
       @explicit_unlocks.each do |name|
         version = full_update.version_for(name)
         resolution_base.base_requirements[name] = Gem::Requirement.new("= #{version}") if version
       end
       resolution_base
-    end
-
-    def dup_for_full_unlock
-      unlocked_definition = self.class.new(@lockfile, @dependencies, @sources, true, @ruby_version, @optional_groups, @gemfiles)
-      unlocked_definition.source_requirements = source_requirements
-      unlocked_definition.gem_version_promoter.tap do |gvp|
-        gvp.level = gem_version_promoter.level
-        gvp.strict = gem_version_promoter.strict
-        gvp.pre = gem_version_promoter.pre
-      end
-      unlocked_definition
     end
 
     def remove_invalid_platforms!
@@ -1181,6 +1176,23 @@ module Bundler
 
     def source_map
       @source_map ||= SourceMap.new(sources, dependencies, @locked_specs)
+    end
+
+    def new_resolver_for_full_update
+      new_resolver(unlocked_resolution_base)
+    end
+
+    def unlocked_resolution_base
+      new_resolution_base(last_resolve: SpecSet.new([]), unlock: true)
+    end
+
+    def new_resolution_base(last_resolve:, unlock:)
+      new_resolution_platforms = @current_platform_missing ? @new_platforms + [Bundler.local_platform] : @new_platforms
+      Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: new_resolution_platforms)
+    end
+
+    def new_resolver(base)
+      Resolver.new(base, gem_version_promoter, @most_specific_locked_platform)
     end
   end
 end

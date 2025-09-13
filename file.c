@@ -5060,8 +5060,11 @@ rb_file_dirname_n(VALUE fname, int n)
             break;
         }
     }
-    if (p == name)
-        return rb_usascii_str_new2(".");
+    if (p == name) {
+        dirname = rb_str_new(".", 1);
+        rb_enc_copy(dirname, fname);
+        return dirname;
+    }
 #ifdef DOSISH_DRIVE_LETTER
     if (has_drive_letter(name) && isdirsep(*(name + 2))) {
         const char *top = skiproot(name + 2, end, enc);
@@ -5196,6 +5199,22 @@ rb_file_s_extname(VALUE klass, VALUE fname)
  *     File.path(File::NULL)           #=> "/dev/null"
  *     File.path(Pathname.new("/tmp")) #=> "/tmp"
  *
+ * If +path+ is not a String:
+ *
+ * 1. If it has the +to_path+ method, that method will be called to
+ *    coerce to a String.
+ *
+ * 2. Otherwise, or if the coerced result is not a String too, the
+ *    standard coersion using +to_str+ method will take place on that
+ *    object. (See also String.try_convert)
+ *
+ * The coerced string must satisfy the following conditions:
+ *
+ * 1. It must be in an ASCII-compatible encoding; otherwise, an
+ *    Encoding::CompatibilityError is raised.
+ *
+ * 2. It must not contain the NUL character (<tt>\0</tt>); otherwise,
+ *    an ArgumentError is raised.
  */
 
 static VALUE

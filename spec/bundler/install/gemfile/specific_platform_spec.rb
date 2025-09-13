@@ -392,7 +392,23 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "installs sorbet-static, which does not provide a pure ruby variant, just fine", :truffleruby do
+  it "installs sorbet-static, which does not provide a pure ruby variant, in absence of a lockfile, just fine", :truffleruby do
+    skip "does not apply to Windows" if Gem.win_platform?
+
+    build_repo2 do
+      build_gem("sorbet-static", "0.5.6403") {|s| s.platform = Bundler.local_platform }
+    end
+
+    gemfile <<~G
+      source "https://gem.repo2"
+
+      gem "sorbet-static", "0.5.6403"
+    G
+
+    bundle "install --verbose"
+  end
+
+  it "installs sorbet-static, which does not provide a pure ruby variant, in presence of a lockfile, just fine", :truffleruby do
     skip "does not apply to Windows" if Gem.win_platform?
 
     build_repo2 do
@@ -1416,7 +1432,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "does not fail when a platform variant is incompatible with the current ruby and another equivalent platform specific variant is part of the resolution", rubygems: ">= 3.3.21" do
+  it "does not fail when a platform variant is incompatible with the current ruby and another equivalent platform specific variant is part of the resolution" do
     build_repo4 do
       build_gem "nokogiri", "1.15.5"
 
@@ -1562,7 +1578,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "adds current musl platform, when there are also gnu variants", rubygems: ">= 3.3.21" do
+  it "adds current musl platform, when there are also gnu variants" do
     build_repo4 do
       build_gem "rcee_precompiled", "0.5.0" do |s|
         s.platform = "x86_64-linux-gnu"

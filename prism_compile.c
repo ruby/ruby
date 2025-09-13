@@ -1,4 +1,5 @@
 #include "prism.h"
+#include "ruby/version.h"
 
 /**
  * This compiler defines its own concept of the location of a node. We do this
@@ -5527,44 +5528,6 @@ pm_opt_str_freeze_p(const rb_iseq_t *iseq, const pm_call_node_t *node)
 }
 
 /**
- * Returns true if the given call node can use the opt_aref_with optimization
- * with the current iseq options.
- */
-static inline bool
-pm_opt_aref_with_p(const rb_iseq_t *iseq, const pm_call_node_t *node)
-{
-    return (
-        !PM_NODE_FLAG_P(node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
-        node->arguments != NULL &&
-        PM_NODE_TYPE_P((const pm_node_t *) node->arguments, PM_ARGUMENTS_NODE) &&
-        ((const pm_arguments_node_t *) node->arguments)->arguments.size == 1 &&
-        PM_NODE_TYPE_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_NODE) &&
-        node->block == NULL &&
-        !PM_NODE_FLAG_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_FLAGS_FROZEN) &&
-        ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction
-    );
-}
-
-/**
- * Returns true if the given call node can use the opt_aset_with optimization
- * with the current iseq options.
- */
-static inline bool
-pm_opt_aset_with_p(const rb_iseq_t *iseq, const pm_call_node_t *node)
-{
-    return (
-        !PM_NODE_FLAG_P(node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
-        node->arguments != NULL &&
-        PM_NODE_TYPE_P((const pm_node_t *) node->arguments, PM_ARGUMENTS_NODE) &&
-        ((const pm_arguments_node_t *) node->arguments)->arguments.size == 2 &&
-        PM_NODE_TYPE_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_NODE) &&
-        node->block == NULL &&
-        !PM_NODE_FLAG_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_FLAGS_FROZEN) &&
-        ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction
-    );
-}
-
-/**
  * Compile the instructions necessary to read a constant, based on the options
  * of the current iseq.
  */
@@ -6777,6 +6740,12 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         body->param.flags.has_lead = true;
     }
 
+    // Fill in the anonymous `it` parameter, if it exists
+    if (scope_node->parameters && PM_NODE_TYPE_P(scope_node->parameters, PM_IT_PARAMETERS_NODE)) {
+        body->param.lead_num = 1;
+        body->param.flags.has_lead = true;
+    }
+
     //********END OF STEP 3**********
 
     //********STEP 4**********
@@ -7393,44 +7362,6 @@ pm_compile_call_node(rb_iseq_t *iseq, const pm_call_node_t *node, LINK_ANCHOR *c
             const struct rb_callinfo *callinfo = new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE);
             PUSH_INSN2(ret, location, opt_str_freeze, value, callinfo);
             if (popped) PUSH_INSN(ret, location, pop);
-            return;
-        }
-        break;
-      }
-      case idAREF: {
-        if (pm_opt_aref_with_p(iseq, node)) {
-            const pm_string_node_t *string = (const pm_string_node_t *) ((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0];
-            VALUE value = parse_static_literal_string(iseq, scope_node, (const pm_node_t *) string, &string->unescaped);
-
-            PM_COMPILE_NOT_POPPED(node->receiver);
-
-            const struct rb_callinfo *callinfo = new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE);
-            PUSH_INSN2(ret, location, opt_aref_with, value, callinfo);
-
-            if (popped) {
-                PUSH_INSN(ret, location, pop);
-            }
-
-            return;
-        }
-        break;
-      }
-      case idASET: {
-        if (pm_opt_aset_with_p(iseq, node)) {
-            const pm_string_node_t *string = (const pm_string_node_t *) ((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0];
-            VALUE value = parse_static_literal_string(iseq, scope_node, (const pm_node_t *) string, &string->unescaped);
-
-            PM_COMPILE_NOT_POPPED(node->receiver);
-            PM_COMPILE_NOT_POPPED(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[1]);
-
-            if (!popped) {
-                PUSH_INSN(ret, location, swap);
-                PUSH_INSN1(ret, location, topn, INT2FIX(1));
-            }
-
-            const struct rb_callinfo *callinfo = new_callinfo(iseq, idASET, 2, 0, NULL, FALSE);
-            PUSH_INSN2(ret, location, opt_aset_with, value, callinfo);
-            PUSH_INSN(ret, location, pop);
             return;
         }
         break;
@@ -10696,7 +10627,26 @@ pm_parse_errors_format_line(const pm_parser_t *parser, const pm_newline_list_t *
     // Here we determine if we should truncate the end of the line.
     bool truncate_end = false;
     if ((column_end != 0) && ((end - (start + column_end)) >= PM_ERROR_TRUNCATE)) {
-        end = start + column_end + PM_ERROR_TRUNCATE;
+        const uint8_t *end_candidate = start + column_end + PM_ERROR_TRUNCATE;
+
+        for (const uint8_t *ptr = start; ptr < end_candidate;) {
+            size_t char_width = parser->encoding->char_width(ptr, parser->end - ptr);
+
+            // If we failed to decode a character, then just bail out and
+            // truncate at the fixed width.
+            if (char_width == 0) break;
+
+            // If this next character would go past the end candidate,
+            // then we need to truncate before it.
+            if (ptr + char_width > end_candidate) {
+                end_candidate = ptr;
+                break;
+            }
+
+            ptr += char_width;
+        }
+
+        end = end_candidate;
         truncate_end = true;
     }
 
@@ -11428,6 +11378,8 @@ pm_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines)
     pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
     RB_GC_GUARD(filepath);
 
+    pm_options_version_for_current_ruby_set(&result->options);
+
     pm_parser_init(&result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
     pm_node_t *node = pm_parse(&result->parser);
 
@@ -11486,10 +11438,24 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *
     pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
     RB_GC_GUARD(filepath);
 
+    pm_options_version_for_current_ruby_set(&result->options);
+
     pm_parser_init(&result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
     pm_node_t *node = pm_parse(&result->parser);
 
     return pm_parse_process(result, node, script_lines);
+}
+
+struct rb_stdin_wrapper {
+    VALUE rb_stdin;
+    int eof_seen;
+};
+
+static int
+pm_parse_stdin_eof(void *stream)
+{
+    struct rb_stdin_wrapper * wrapped_stdin = (struct rb_stdin_wrapper *)stream;
+    return wrapped_stdin->eof_seen;
 }
 
 /**
@@ -11500,7 +11466,9 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
 {
     RUBY_ASSERT(size > 0);
 
-    VALUE line = rb_funcall((VALUE) stream, rb_intern("gets"), 1, INT2FIX(size - 1));
+    struct rb_stdin_wrapper * wrapped_stdin = (struct rb_stdin_wrapper *)stream;
+
+    VALUE line = rb_funcall(wrapped_stdin->rb_stdin, rb_intern("gets"), 1, INT2FIX(size - 1));
     if (NIL_P(line)) {
         return NULL;
     }
@@ -11510,6 +11478,13 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
 
     memcpy(string, cstr, length);
     string[length] = '\0';
+
+    // We're reading strings from stdin via gets.  We'll assume that if the
+    // string is smaller than the requested length, and doesn't end with a
+    // newline, that we hit EOF.
+    if (length < (size - 1) && string[length - 1] != '\n') {
+        wrapped_stdin->eof_seen = 1;
+    }
 
     return string;
 }
@@ -11527,8 +11502,13 @@ pm_parse_stdin(pm_parse_result_t *result)
 {
     pm_options_frozen_string_literal_init(&result->options);
 
+    struct rb_stdin_wrapper wrapped_stdin = {
+        rb_stdin,
+        0
+    };
+
     pm_buffer_t buffer;
-    pm_node_t *node = pm_parse_stream(&result->parser, &buffer, (void *) rb_stdin, pm_parse_stdin_fgets, &result->options);
+    pm_node_t *node = pm_parse_stream(&result->parser, &buffer, (void *) &wrapped_stdin, pm_parse_stdin_fgets, pm_parse_stdin_eof, &result->options);
 
     // Copy the allocated buffer contents into the input string so that it gets
     // freed. At this point we've handed over ownership, so we don't need to
@@ -11540,6 +11520,13 @@ pm_parse_stdin(pm_parse_result_t *result)
     rb_reset_argf_lineno(0);
 
     return pm_parse_process(result, node, NULL);
+}
+
+#define PM_VERSION_FOR_RELEASE(major, minor) PM_VERSION_FOR_RELEASE_IMPL(major, minor)
+#define PM_VERSION_FOR_RELEASE_IMPL(major, minor) PM_OPTIONS_VERSION_CRUBY_##major##_##minor
+
+void pm_options_version_for_current_ruby_set(pm_options_t *options) {
+    options->version = PM_VERSION_FOR_RELEASE(RUBY_API_VERSION_MAJOR, RUBY_API_VERSION_MINOR);
 }
 
 #undef NEW_ISEQ

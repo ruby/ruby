@@ -3,14 +3,18 @@
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
+#![allow(clippy::if_same_then_else)]
+#![allow(clippy::match_like_matches_macro)]
 use crate::{
-    cast::IntoUsize, cruby::*, options::{get_option, DumpHIR}, gc::{get_or_create_iseq_payload, IseqPayload}, state::ZJITState
+    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, gc::{get_or_create_iseq_payload, IseqPayload}, options::{get_option, DumpHIR}, state::ZJITState
 };
 use std::{
     cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_int, c_void, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
 };
 use crate::hir_type::{Type, types};
 use crate::bitset::BitSet;
+use crate::profile::{TypeDistributionSummary, ProfiledType};
+use crate::stats::Counter;
 
 /// An index of an [`Insn`] in a [`Function`]. This is a popular
 /// type since this effectively acts as a pointer to an [`Insn`].
@@ -18,9 +22,9 @@ use crate::bitset::BitSet;
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub struct InsnId(pub usize);
 
-impl Into<usize> for InsnId {
-    fn into(self) -> usize {
-        self.0
+impl From<InsnId> for usize {
+    fn from(val: InsnId) -> Self {
+        val.0
     }
 }
 
@@ -34,9 +38,9 @@ impl std::fmt::Display for InsnId {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct BlockId(pub usize);
 
-impl Into<usize> for BlockId {
-    fn into(self) -> usize {
-        self.0
+impl From<BlockId> for usize {
+    fn from(val: BlockId) -> Self {
+        val.0
     }
 }
 
@@ -66,7 +70,7 @@ impl std::fmt::Display for VALUE {
 }
 
 impl VALUE {
-    pub fn print(self, ptr_map: &PtrPrintMap) -> VALUEPrinter {
+    pub fn print(self, ptr_map: &PtrPrintMap) -> VALUEPrinter<'_> {
         VALUEPrinter { inner: self, ptr_map }
     }
 }
@@ -107,11 +111,6 @@ impl std::fmt::Display for BranchEdge {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct CallInfo {
-    pub method_name: String,
-}
-
 /// Invalidation reasons
 #[derive(Debug, Clone, Copy)]
 pub enum Invariant {
@@ -135,12 +134,16 @@ pub enum Invariant {
     StableConstantNames {
         idlist: *const ID,
     },
+    /// TracePoint is not enabled. If TracePoint is enabled, this is invalidated.
+    NoTracePoint,
+    /// cfp->ep is not escaped to the heap on the ISEQ
+    NoEPEscape(IseqPtr),
     /// There is one ractor running. If a non-root ractor gets spawned, this is invalidated.
     SingleRactorMode,
 }
 
 impl Invariant {
-    pub fn print(self, ptr_map: &PtrPrintMap) -> InvariantPrinter {
+    pub fn print(self, ptr_map: &PtrPrintMap) -> InvariantPrinter<'_> {
         InvariantPrinter { inner: self, ptr_map }
     }
 }
@@ -248,6 +251,8 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                 }
                 write!(f, ")")
             }
+            Invariant::NoTracePoint => write!(f, "NoTracePoint"),
+            Invariant::NoEPEscape(iseq) => write!(f, "NoEPEscape({})", &iseq_name(iseq)),
             Invariant::SingleRactorMode => write!(f, "SingleRactorMode"),
         }
     }
@@ -297,7 +302,7 @@ impl std::fmt::Display for RangeType {
 
 impl std::fmt::Debug for RangeType {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", self)
     }
 }
 
@@ -325,6 +330,29 @@ impl From<RangeType> for u32 {
     }
 }
 
+/// Special regex backref symbol types
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SpecialBackrefSymbol {
+    LastMatch,     // $&
+    PreMatch,      // $`
+    PostMatch,     // $'
+    LastGroup,     // $+
+}
+
+impl TryFrom<u8> for SpecialBackrefSymbol {
+    type Error = String;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value as char {
+            '&' => Ok(SpecialBackrefSymbol::LastMatch),
+            '`' => Ok(SpecialBackrefSymbol::PreMatch),
+            '\'' => Ok(SpecialBackrefSymbol::PostMatch),
+            '+' => Ok(SpecialBackrefSymbol::LastGroup),
+            c => Err(format!("invalid backref symbol: '{}'", c)),
+        }
+    }
+}
+
 /// Print adaptor for [`Const`]. See [`PtrPrintMap`].
 struct ConstPrinter<'a> {
     inner: &'a Const,
@@ -347,7 +375,7 @@ impl<'a> std::fmt::Display for ConstPrinter<'a> {
 ///
 /// Because this is extra state external to any pointer being printed, a
 /// printing adapter struct that wraps the pointer along with this map is
-/// required to make use of this effectly. The [`std::fmt::Display`]
+/// required to make use of this effectively. The [`std::fmt::Display`]
 /// implementation on the adapter struct can then be reused to implement
 /// `Display` on the inner type with a default [`PtrPrintMap`], which
 /// does not perform any mapping.
@@ -404,26 +432,45 @@ impl PtrPrintMap {
     fn map_id(&self, id: u64) -> *const c_void {
         self.map_ptr(id as *const c_void)
     }
+
+    /// Map an index into a Ruby object (e.g. for an ivar) for printing
+    fn map_index(&self, id: u64) -> *const c_void {
+        self.map_ptr(id as *const c_void)
+    }
+
+    /// Map shape ID into a pointer for printing
+    fn map_shape(&self, id: ShapeId) -> *const c_void {
+        self.map_ptr(id.0 as *const c_void)
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum SideExitReason {
     UnknownNewarraySend(vm_opt_newarray_send_type),
-    UnknownCallType,
-    UnknownOpcode(u32),
+    UnhandledCallType(CallType),
+    UnknownSpecialVariable(u64),
+    UnhandledHIRInsn(InsnId),
+    UnhandledYARVInsn(u32),
     FixnumAddOverflow,
     FixnumSubOverflow,
     FixnumMultOverflow,
     GuardType(Type),
+    GuardTypeNot(Type),
+    GuardShape(ShapeId),
     GuardBitEquals(VALUE),
     PatchPoint(Invariant),
     CalleeSideExit,
+    ObjToStringFallback,
+    Interrupt,
+    BlockParamProxyModified,
+    BlockParamProxyNotIseqOrIfunc,
+    StackOverflow,
 }
 
 impl std::fmt::Display for SideExitReason {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            SideExitReason::UnknownOpcode(opcode) => write!(f, "UnknownOpcode({})", insn_name(*opcode as usize)),
+            SideExitReason::UnhandledYARVInsn(opcode) => write!(f, "UnhandledYARVInsn({})", insn_name(*opcode as usize)),
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_MAX) => write!(f, "UnknownNewarraySend(MAX)"),
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_MIN) => write!(f, "UnknownNewarraySend(MIN)"),
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_HASH) => write!(f, "UnknownNewarraySend(HASH)"),
@@ -431,6 +478,7 @@ impl std::fmt::Display for SideExitReason {
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_PACK_BUFFER) => write!(f, "UnknownNewarraySend(PACK_BUFFER)"),
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_INCLUDE_P) => write!(f, "UnknownNewarraySend(INCLUDE_P)"),
             SideExitReason::GuardType(guard_type) => write!(f, "GuardType({guard_type})"),
+            SideExitReason::GuardTypeNot(guard_type) => write!(f, "GuardTypeNot({guard_type})"),
             SideExitReason::GuardBitEquals(value) => write!(f, "GuardBitEquals({})", value.print(&PtrPrintMap::identity())),
             SideExitReason::PatchPoint(invariant) => write!(f, "PatchPoint({invariant})"),
             _ => write!(f, "{self:?}"),
@@ -447,8 +495,12 @@ pub enum Insn {
     /// SSA block parameter. Also used for function parameters in the function's entry block.
     Param { idx: usize },
 
-    StringCopy { val: InsnId, chilled: bool },
-    StringIntern { val: InsnId },
+    StringCopy { val: InsnId, chilled: bool, state: InsnId },
+    StringIntern { val: InsnId, state: InsnId },
+    StringConcat { strings: Vec<InsnId>, state: InsnId },
+
+    /// Combine count stack values into a regexp
+    ToRegexp { opt: usize, values: Vec<InsnId>, state: InsnId },
 
     /// Put special object (VMCORE, CBASE, etc.) based on value_type
     PutSpecialObject { value_type: SpecialObjectType },
@@ -462,7 +514,7 @@ pub enum Insn {
     /// NewHash contains a vec of (key, value) pairs
     NewHash { elements: Vec<(InsnId,InsnId)>, state: InsnId },
     NewRange { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
-    ArraySet { array: InsnId, idx: usize, val: InsnId },
+    NewRangeFixnum { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
     ArrayMax { elements: Vec<InsnId>, state: InsnId },
     /// Extend `left` with the elements from `right`. `left` and `right` must both be `Array`.
@@ -472,12 +524,17 @@ pub enum Insn {
 
     HashDup { val: InsnId, state: InsnId },
 
+    /// Allocate an instance of the `val` class without calling `#initialize` on it.
+    ObjectAlloc { val: InsnId, state: InsnId },
+
     /// Check if the value is truthy and "return" a C boolean. In reality, we will likely fuse this
     /// with IfTrue/IfFalse in the backend to generate jcc.
     Test { val: InsnId },
     /// Return C `true` if `val` is `Qnil`, else `false`.
     IsNil { val: InsnId },
-    Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId },
+    /// Return C `true` if `val`'s method on cd resolves to the cfunc.
+    IsMethodCfunc { val: InsnId, cd: *const rb_call_data, cfunc: *const u8 },
+    Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId, state: InsnId },
     GetConstantPath { ic: *const iseq_inline_constant_cache, state: InsnId },
 
     /// Get a global variable named `id`
@@ -493,10 +550,20 @@ pub enum Insn {
     /// Check whether an instance variable exists on `self_val`
     DefinedIvar { self_val: InsnId, id: ID, pushval: VALUE, state: InsnId },
 
+    /// Read an instance variable at the given index, embedded in the object
+    LoadIvarEmbedded { self_val: InsnId, id: ID, index: u16 },
+    /// Read an instance variable at the given index, from the extended table
+    LoadIvarExtended { self_val: InsnId, id: ID, index: u16 },
+
     /// Get a local variable from a higher scope or the heap
     GetLocal { level: u32, ep_offset: u32 },
     /// Set a local variable in a higher scope or the heap
     SetLocal { level: u32, ep_offset: u32, val: InsnId },
+    /// Get a special singleton instance `rb_block_param_proxy` if the block
+    /// handler for the EP specified by `level` is an ISEQ or an ifunc.
+    GetBlockParamProxy { level: u32, state: InsnId },
+    GetSpecialSymbol { symbol_type: SpecialBackrefSymbol, state: InsnId },
+    GetSpecialNumber { nth: u64, state: InsnId },
 
     /// Own a FrameState so that instructions can look up their dominating FrameState when
     /// generating deopt side-exits and frame reconstruction metadata. Does not directly generate
@@ -514,13 +581,16 @@ pub enum Insn {
     /// `name` is for printing purposes only
     CCall { cfun: *const u8, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
 
-    /// Send without block with dynamic dispatch
+    /// Un-optimized fallback implementation (dynamic dispatch) for send-ish instructions
     /// Ignoring keyword arguments etc for now
-    SendWithoutBlock { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
-    Send { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
+    SendWithoutBlock { recv: InsnId, cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
+    Send { recv: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
+    InvokeSuper { recv: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
+    InvokeBlock { cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
+
+    /// Optimized ISEQ call
     SendWithoutBlockDirect {
-        self_val: InsnId,
-        call_info: CallInfo,
+        recv: InsnId,
         cd: *const rb_call_data,
         cme: *const rb_callable_method_entry_t,
         iseq: IseqPtr,
@@ -529,12 +599,17 @@ pub enum Insn {
     },
 
     // Invoke a builtin function
-    InvokeBuiltin { bf: rb_builtin_function, args: Vec<InsnId>, state: InsnId },
+    InvokeBuiltin {
+        bf: rb_builtin_function,
+        args: Vec<InsnId>,
+        state: InsnId,
+        return_type: Option<Type>,  // None for unannotated builtins
+    },
 
     /// Control flow instructions
     Return { val: InsnId },
     /// Non-local control flow. See the throw YARV instruction
-    Throw { throw_state: u32, val: InsnId },
+    Throw { throw_state: u32, val: InsnId, state: InsnId },
 
     /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=, &, |
     FixnumAdd  { left: InsnId, right: InsnId, state: InsnId },
@@ -552,13 +627,16 @@ pub enum Insn {
     FixnumOr   { left: InsnId, right: InsnId },
 
     // Distinct from `SendWithoutBlock` with `mid:to_s` because does not have a patch point for String to_s being redefined
-    ObjToString { val: InsnId, call_info: CallInfo, cd: *const rb_call_data, state: InsnId },
+    ObjToString { val: InsnId, cd: *const rb_call_data, state: InsnId },
     AnyToString { val: InsnId, str: InsnId, state: InsnId },
 
     /// Side-exit if val doesn't have the expected type.
     GuardType { val: InsnId, guard_type: Type, state: InsnId },
+    GuardTypeNot { val: InsnId, guard_type: Type, state: InsnId },
     /// Side-exit if val is not the expected VALUE.
     GuardBitEquals { val: InsnId, expected: VALUE, state: InsnId },
+    /// Side-exit if val doesn't have the expected shape.
+    GuardShape { val: InsnId, shape: ShapeId, state: InsnId },
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
@@ -566,17 +644,25 @@ pub enum Insn {
 
     /// Side-exit into the interpreter.
     SideExit { state: InsnId, reason: SideExitReason },
+
+    /// Increment a counter in ZJIT stats
+    IncrCounter(Counter),
+
+    /// Equivalent of RUBY_VM_CHECK_INTS. Automatically inserted by the compiler before jumps and
+    /// return instructions.
+    CheckInterrupts { state: InsnId },
 }
 
 impl Insn {
     /// Not every instruction returns a value. Return true if the instruction does and false otherwise.
     pub fn has_output(&self) -> bool {
         match self {
-            Insn::ArraySet { .. } | Insn::Jump(_)
+            Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
-            | Insn::SetLocal { .. } | Insn::Throw { .. } => false,
+            | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_)
+            | Insn::CheckInterrupts { .. } => false,
             _ => true,
         }
     }
@@ -601,8 +687,9 @@ impl Insn {
             Insn::Param { .. } => false,
             Insn::StringCopy { .. } => false,
             Insn::NewArray { .. } => false,
-            Insn::NewHash { .. } => false,
-            Insn::NewRange { .. } => false,
+            // NewHash's operands may be hashed and compared for equality, which could have
+            // side-effects.
+            Insn::NewHash { elements, .. } => !elements.is_empty(),
             Insn::ArrayDup { .. } => false,
             Insn::HashDup { .. } => false,
             Insn::Test { .. } => false,
@@ -623,7 +710,13 @@ impl Insn {
             Insn::FixnumOr   { .. } => false,
             Insn::GetLocal   { .. } => false,
             Insn::IsNil      { .. } => false,
+            Insn::LoadIvarEmbedded { .. } => false,
+            Insn::LoadIvarExtended { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
+            // TODO: NewRange is effects free if we can prove the two ends to be Fixnum,
+            // but we don't have type information here in `impl Insn`. See rb_range_new().
+            Insn::NewRange { .. } => true,
+            Insn::NewRangeFixnum { .. } => false,
             _ => true,
         }
     }
@@ -634,6 +727,14 @@ pub struct InsnPrinter<'a> {
     inner: Insn,
     ptr_map: &'a PtrPrintMap,
 }
+
+static REGEXP_FLAGS: &[(u32, &str)] = &[
+    (ONIG_OPTION_MULTILINE, "MULTILINE"),
+    (ONIG_OPTION_IGNORECASE, "IGNORECASE"),
+    (ONIG_OPTION_EXTEND, "EXTENDED"),
+    (ARG_ENCODING_FIXED, "FIXEDENCODING"),
+    (ARG_ENCODING_NONE, "NOENCODING"),
+];
 
 impl<'a> std::fmt::Display for InsnPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -661,6 +762,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::NewRange { low, high, flag, .. } => {
                 write!(f, "NewRange {low} {flag} {high}")
             }
+            Insn::NewRangeFixnum { low, high, flag, .. } => {
+                write!(f, "NewRangeFixnum {low} {flag} {high}")
+            }
             Insn::ArrayMax { elements, .. } => {
                 write!(f, "ArrayMax")?;
                 let mut prefix = " ";
@@ -670,34 +774,81 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            Insn::ArraySet { array, idx, val } => { write!(f, "ArraySet {array}, {idx}, {val}") }
             Insn::ArrayDup { val, .. } => { write!(f, "ArrayDup {val}") }
             Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
+            Insn::ObjectAlloc { val, .. } => { write!(f, "ObjectAlloc {val}") }
             Insn::StringCopy { val, .. } => { write!(f, "StringCopy {val}") }
+            Insn::StringConcat { strings, .. } => {
+                write!(f, "StringConcat")?;
+                let mut prefix = " ";
+                for string in strings {
+                    write!(f, "{prefix}{string}")?;
+                    prefix = ", ";
+                }
+
+                Ok(())
+            }
+            Insn::ToRegexp { values, opt, .. } => {
+                write!(f, "ToRegexp")?;
+                let mut prefix = " ";
+                for value in values {
+                    write!(f, "{prefix}{value}")?;
+                    prefix = ", ";
+                }
+
+                let opt = *opt as u32;
+                if opt != 0 {
+                    write!(f, ", ")?;
+                    let mut sep = "";
+                    for (flag, name) in REGEXP_FLAGS {
+                        if opt & flag != 0 {
+                            write!(f, "{sep}{name}")?;
+                            sep = "|";
+                        }
+                    }
+                }
+
+                Ok(())
+            }
             Insn::Test { val } => { write!(f, "Test {val}") }
             Insn::IsNil { val } => { write!(f, "IsNil {val}") }
+            Insn::IsMethodCfunc { val, cd, .. } => { write!(f, "IsMethodCFunc {val}, :{}", ruby_call_method_name(*cd)) }
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
             Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}") }
-            Insn::SendWithoutBlock { self_val, call_info, args, .. } => {
-                write!(f, "SendWithoutBlock {self_val}, :{}", call_info.method_name)?;
+            Insn::SendWithoutBlock { recv, cd, args, .. } => {
+                write!(f, "SendWithoutBlock {recv}, :{}", ruby_call_method_name(*cd))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
             }
-            Insn::SendWithoutBlockDirect { self_val, call_info, iseq, args, .. } => {
-                write!(f, "SendWithoutBlockDirect {self_val}, :{} ({:?})", call_info.method_name, self.ptr_map.map_ptr(iseq))?;
+            Insn::SendWithoutBlockDirect { recv, cd, iseq, args, .. } => {
+                write!(f, "SendWithoutBlockDirect {recv}, :{} ({:?})", ruby_call_method_name(*cd), self.ptr_map.map_ptr(iseq))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
             }
-            Insn::Send { self_val, call_info, args, blockiseq, .. } => {
+            Insn::Send { recv, cd, args, blockiseq, .. } => {
                 // For tests, we want to check HIR snippets textually. Addresses change
                 // between runs, making tests fail. Instead, pick an arbitrary hex value to
                 // use as a "pointer" so we can check the rest of the HIR.
-                write!(f, "Send {self_val}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), call_info.method_name)?;
+                write!(f, "Send {recv}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                Ok(())
+            }
+            Insn::InvokeSuper { recv, blockiseq, args, .. } => {
+                write!(f, "InvokeSuper {recv}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                Ok(())
+            }
+            Insn::InvokeBlock { args, .. } => {
+                write!(f, "InvokeBlock")?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -725,7 +876,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumAnd  { left, right, .. } => { write!(f, "FixnumAnd {left}, {right}") },
             Insn::FixnumOr   { left, right, .. } => { write!(f, "FixnumOr {left}, {right}") },
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
+            Insn::GuardTypeNot { val, guard_type, .. } => { write!(f, "GuardTypeNot {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
+            &Insn::GuardShape { val, shape, .. } => { write!(f, "GuardShape {val}, {:p}", self.ptr_map.map_shape(shape)) },
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::CCall { cfun, args, name, return_type: _, elidable: _ } => {
@@ -735,58 +888,65 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             },
-            Insn::Snapshot { state } => write!(f, "Snapshot {}", state),
+            Insn::Snapshot { state } => write!(f, "Snapshot {}", state.print(self.ptr_map)),
             Insn::Defined { op_type, v, .. } => {
                 // op_type (enum defined_type) printing logic from iseq.c.
                 // Not sure why rb_iseq_defined_string() isn't exhaustive.
-                use std::borrow::Cow;
+                write!(f, "Defined ")?;
                 let op_type = *op_type as u32;
-                let op_type = if op_type == DEFINED_FUNC {
-                    Cow::Borrowed("func")
+                if op_type == DEFINED_FUNC {
+                    write!(f, "func")?;
                 } else if op_type == DEFINED_REF {
-                    Cow::Borrowed("ref")
+                    write!(f, "ref")?;
                 } else if op_type == DEFINED_CONST_FROM {
-                    Cow::Borrowed("constant-from")
+                    write!(f, "constant-from")?;
                 } else {
-                    String::from_utf8_lossy(unsafe { rb_iseq_defined_string(op_type).as_rstring_byte_slice().unwrap() })
+                    write!(f, "{}", String::from_utf8_lossy(unsafe { rb_iseq_defined_string(op_type).as_rstring_byte_slice().unwrap() }))?;
                 };
-                write!(f, "Defined {op_type}, {v}")
+                write!(f, ", {v}")
             }
-            Insn::DefinedIvar { self_val, id, .. } => write!(f, "DefinedIvar {self_val}, :{}", id.contents_lossy().into_owned()),
-            Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy().into_owned()),
-            Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy().into_owned()),
-            Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy().into_owned()),
-            Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy().into_owned()),
+            Insn::DefinedIvar { self_val, id, .. } => write!(f, "DefinedIvar {self_val}, :{}", id.contents_lossy()),
+            Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy()),
+            &Insn::LoadIvarEmbedded { self_val, id, index } => write!(f, "LoadIvarEmbedded {self_val}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_index(index as u64)),
+            &Insn::LoadIvarExtended { self_val, id, index } => write!(f, "LoadIvarExtended {self_val}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_index(index as u64)),
+            Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy()),
+            Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy()),
+            Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy()),
             Insn::GetLocal { level, ep_offset } => write!(f, "GetLocal l{level}, EP@{ep_offset}"),
             Insn::SetLocal { val, level, ep_offset } => write!(f, "SetLocal l{level}, EP@{ep_offset}, {val}"),
+            Insn::GetBlockParamProxy { level, .. } => write!(f, "GetBlockParamProxy l{level}"),
+            Insn::GetSpecialSymbol { symbol_type, .. } => write!(f, "GetSpecialSymbol {symbol_type:?}"),
+            Insn::GetSpecialNumber { nth, .. } => write!(f, "GetSpecialNumber {nth}"),
             Insn::ToArray { val, .. } => write!(f, "ToArray {val}"),
             Insn::ToNewArray { val, .. } => write!(f, "ToNewArray {val}"),
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
             Insn::ArrayPush { array, val, .. } => write!(f, "ArrayPush {array}, {val}"),
             Insn::ObjToString { val, .. } => { write!(f, "ObjToString {val}") },
+            Insn::StringIntern { val, .. } => { write!(f, "StringIntern {val}") },
             Insn::AnyToString { val, str, .. } => { write!(f, "AnyToString {val}, str: {str}") },
             Insn::SideExit { reason, .. } => write!(f, "SideExit {reason}"),
             Insn::PutSpecialObject { value_type } => write!(f, "PutSpecialObject {value_type}"),
-            Insn::Throw { throw_state, val } => {
-                let mut state_string = match throw_state & VM_THROW_STATE_MASK {
-                    RUBY_TAG_NONE => "TAG_NONE".to_string(),
-                    RUBY_TAG_RETURN => "TAG_RETURN".to_string(),
-                    RUBY_TAG_BREAK => "TAG_BREAK".to_string(),
-                    RUBY_TAG_NEXT => "TAG_NEXT".to_string(),
-                    RUBY_TAG_RETRY => "TAG_RETRY".to_string(),
-                    RUBY_TAG_REDO => "TAG_REDO".to_string(),
-                    RUBY_TAG_RAISE => "TAG_RAISE".to_string(),
-                    RUBY_TAG_THROW => "TAG_THROW".to_string(),
-                    RUBY_TAG_FATAL => "TAG_FATAL".to_string(),
-                    tag => format!("{tag}")
-                };
+            Insn::Throw { throw_state, val, .. } => {
+                write!(f, "Throw ")?;
+                match throw_state & VM_THROW_STATE_MASK {
+                    RUBY_TAG_NONE   => write!(f, "TAG_NONE"),
+                    RUBY_TAG_RETURN => write!(f, "TAG_RETURN"),
+                    RUBY_TAG_BREAK  => write!(f, "TAG_BREAK"),
+                    RUBY_TAG_NEXT   => write!(f, "TAG_NEXT"),
+                    RUBY_TAG_RETRY  => write!(f, "TAG_RETRY"),
+                    RUBY_TAG_REDO   => write!(f, "TAG_REDO"),
+                    RUBY_TAG_RAISE  => write!(f, "TAG_RAISE"),
+                    RUBY_TAG_THROW  => write!(f, "TAG_THROW"),
+                    RUBY_TAG_FATAL  => write!(f, "TAG_FATAL"),
+                    tag => write!(f, "{tag}")
+                }?;
                 if throw_state & VM_THROW_NO_ESCAPE_FLAG != 0 {
-                    use std::fmt::Write;
-                    write!(state_string, "|NO_ESCAPE")?;
+                    write!(f, "|NO_ESCAPE")?;
                 }
-                write!(f, "Throw {state_string}, {val}")
+                write!(f, ", {val}")
             }
-            insn => { write!(f, "{insn:?}") }
+            Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
+            Insn::CheckInterrupts { .. } => write!(f, "CheckInterrupts"),
         }
     }
 }
@@ -800,18 +960,20 @@ impl std::fmt::Display for Insn {
 /// An extended basic block in a [`Function`].
 #[derive(Default, Debug)]
 pub struct Block {
+    /// The index of the first YARV instruction for the Block in the ISEQ
+    pub insn_idx: u32,
     params: Vec<InsnId>,
     insns: Vec<InsnId>,
 }
 
 impl Block {
     /// Return an iterator over params
-    pub fn params(&self) -> Iter<InsnId> {
+    pub fn params(&self) -> Iter<'_, InsnId> {
         self.params.iter()
     }
 
     /// Return an iterator over insns
-    pub fn insns(&self) -> Iter<InsnId> {
+    pub fn insns(&self) -> Iter<'_, InsnId> {
         self.insns.iter()
     }
 }
@@ -819,7 +981,7 @@ impl Block {
 /// Pretty printer for [`Function`].
 pub struct FunctionPrinter<'a> {
     fun: &'a Function,
-    display_snapshot: bool,
+    display_snapshot_and_tp_patchpoints: bool,
     ptr_map: PtrPrintMap,
 }
 
@@ -829,13 +991,29 @@ impl<'a> FunctionPrinter<'a> {
         if cfg!(test) {
             ptr_map.map_ptrs = true;
         }
-        Self { fun, display_snapshot: false, ptr_map }
+        Self { fun, display_snapshot_and_tp_patchpoints: false, ptr_map }
     }
 
     pub fn with_snapshot(fun: &'a Function) -> FunctionPrinter<'a> {
         let mut printer = Self::without_snapshot(fun);
-        printer.display_snapshot = true;
+        printer.display_snapshot_and_tp_patchpoints = true;
         printer
+    }
+}
+
+/// Pretty printer for [`Function`].
+pub struct FunctionGraphvizPrinter<'a> {
+    fun: &'a Function,
+    ptr_map: PtrPrintMap,
+}
+
+impl<'a> FunctionGraphvizPrinter<'a> {
+    pub fn new(fun: &'a Function) -> Self {
+        let mut ptr_map = PtrPrintMap::identity();
+        if cfg!(test) {
+            ptr_map.map_ptrs = true;
+        }
+        Self { fun, ptr_map }
     }
 }
 
@@ -878,7 +1056,7 @@ impl<T: Copy + Into<usize> + PartialEq> UnionFind<T> {
 
     /// Private. Return the internal representation of the forwarding pointer for a given element.
     fn at(&self, idx: T) -> Option<T> {
-        self.forwarded.get(idx.into()).map(|x| *x).flatten()
+        self.forwarded.get(idx.into()).copied().flatten()
     }
 
     /// Private. Set the internal representation of the forwarding pointer for the given element
@@ -929,7 +1107,7 @@ impl<T: Copy + Into<usize> + PartialEq> UnionFind<T> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ValidationError {
     BlockHasNoTerminator(BlockId),
     // The terminator and its actual position
@@ -949,6 +1127,7 @@ fn can_direct_send(iseq: *const rb_iseq_t) -> bool {
     else if unsafe { rb_get_iseq_flags_has_kw(iseq) } { false }
     else if unsafe { rb_get_iseq_flags_has_kwrest(iseq) } { false }
     else if unsafe { rb_get_iseq_flags_has_block(iseq) } { false }
+    else if unsafe { rb_get_iseq_flags_forwardable(iseq) } { false }
     else { true }
 }
 
@@ -1028,9 +1207,13 @@ impl Function {
         }
     }
 
-    fn new_block(&mut self) -> BlockId {
+    fn new_block(&mut self, insn_idx: u32) -> BlockId {
         let id = BlockId(self.blocks.len());
-        self.blocks.push(Block::default());
+        let block = Block {
+            insn_idx,
+            .. Block::default()
+        };
+        self.blocks.push(block);
         id
     }
 
@@ -1096,84 +1279,98 @@ impl Function {
                     | PutSpecialObject {..}
                     | GetGlobal {..}
                     | GetLocal {..}
-                    | SideExit {..}) => result.clone(),
-            Snapshot { state: FrameState { iseq, insn_idx, pc, stack, locals } } =>
+                    | SideExit {..}
+                    | IncrCounter(_)) => result.clone(),
+            &Snapshot { state: FrameState { iseq, insn_idx, pc, ref stack, ref locals } } =>
                 Snapshot {
                     state: FrameState {
-                        iseq: *iseq,
-                        insn_idx: *insn_idx,
-                        pc: *pc,
+                        iseq,
+                        insn_idx,
+                        pc,
                         stack: find_vec!(stack),
                         locals: find_vec!(locals),
                     }
                 },
-            Return { val } => Return { val: find!(*val) },
-            &Throw { throw_state, val } => Throw { throw_state, val: find!(val) },
-            StringCopy { val, chilled } => StringCopy { val: find!(*val), chilled: *chilled },
-            StringIntern { val } => StringIntern { val: find!(*val) },
-            Test { val } => Test { val: find!(*val) },
+            &Return { val } => Return { val: find!(val) },
+            &Throw { throw_state, val, state } => Throw { throw_state, val: find!(val), state },
+            &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
+            &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
+            &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
+            &ToRegexp { opt, ref values, state } => ToRegexp { opt, values: find_vec!(values), state },
+            &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
+            &IsMethodCfunc { val, cd, cfunc } => IsMethodCfunc { val: find!(val), cd, cfunc },
             Jump(target) => Jump(find_branch_edge!(target)),
-            IfTrue { val, target } => IfTrue { val: find!(*val), target: find_branch_edge!(target) },
-            IfFalse { val, target } => IfFalse { val: find!(*val), target: find_branch_edge!(target) },
-            GuardType { val, guard_type, state } => GuardType { val: find!(*val), guard_type: *guard_type, state: *state },
-            GuardBitEquals { val, expected, state } => GuardBitEquals { val: find!(*val), expected: *expected, state: *state },
-            FixnumAdd { left, right, state } => FixnumAdd { left: find!(*left), right: find!(*right), state: *state },
-            FixnumSub { left, right, state } => FixnumSub { left: find!(*left), right: find!(*right), state: *state },
-            FixnumMult { left, right, state } => FixnumMult { left: find!(*left), right: find!(*right), state: *state },
-            FixnumDiv { left, right, state } => FixnumDiv { left: find!(*left), right: find!(*right), state: *state },
-            FixnumMod { left, right, state } => FixnumMod { left: find!(*left), right: find!(*right), state: *state },
-            FixnumNeq { left, right } => FixnumNeq { left: find!(*left), right: find!(*right) },
-            FixnumEq { left, right } => FixnumEq { left: find!(*left), right: find!(*right) },
-            FixnumGt { left, right } => FixnumGt { left: find!(*left), right: find!(*right) },
-            FixnumGe { left, right } => FixnumGe { left: find!(*left), right: find!(*right) },
-            FixnumLt { left, right } => FixnumLt { left: find!(*left), right: find!(*right) },
-            FixnumLe { left, right } => FixnumLe { left: find!(*left), right: find!(*right) },
-            FixnumAnd { left, right } => FixnumAnd { left: find!(*left), right: find!(*right) },
-            FixnumOr { left, right } => FixnumOr { left: find!(*left), right: find!(*right) },
-            ObjToString { val, call_info, cd, state } => ObjToString {
-                val: find!(*val),
-                call_info: call_info.clone(),
-                cd: *cd,
-                state: *state,
+            &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
+            &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
+            &GuardType { val, guard_type, state } => GuardType { val: find!(val), guard_type, state },
+            &GuardTypeNot { val, guard_type, state } => GuardTypeNot { val: find!(val), guard_type, state },
+            &GuardBitEquals { val, expected, state } => GuardBitEquals { val: find!(val), expected, state },
+            &GuardShape { val, shape, state } => GuardShape { val: find!(val), shape, state },
+            &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
+            &FixnumSub { left, right, state } => FixnumSub { left: find!(left), right: find!(right), state },
+            &FixnumMult { left, right, state } => FixnumMult { left: find!(left), right: find!(right), state },
+            &FixnumDiv { left, right, state } => FixnumDiv { left: find!(left), right: find!(right), state },
+            &FixnumMod { left, right, state } => FixnumMod { left: find!(left), right: find!(right), state },
+            &FixnumNeq { left, right } => FixnumNeq { left: find!(left), right: find!(right) },
+            &FixnumEq { left, right } => FixnumEq { left: find!(left), right: find!(right) },
+            &FixnumGt { left, right } => FixnumGt { left: find!(left), right: find!(right) },
+            &FixnumGe { left, right } => FixnumGe { left: find!(left), right: find!(right) },
+            &FixnumLt { left, right } => FixnumLt { left: find!(left), right: find!(right) },
+            &FixnumLe { left, right } => FixnumLe { left: find!(left), right: find!(right) },
+            &FixnumAnd { left, right } => FixnumAnd { left: find!(left), right: find!(right) },
+            &FixnumOr { left, right } => FixnumOr { left: find!(left), right: find!(right) },
+            &ObjToString { val, cd, state } => ObjToString {
+                val: find!(val),
+                cd,
+                state,
             },
-            AnyToString { val, str, state } => AnyToString {
-                val: find!(*val),
-                str: find!(*str),
-                state: *state,
+            &AnyToString { val, str, state } => AnyToString {
+                val: find!(val),
+                str: find!(str),
+                state,
             },
-            SendWithoutBlock { self_val, call_info, cd, args, state } => SendWithoutBlock {
-                self_val: find!(*self_val),
-                call_info: call_info.clone(),
-                cd: *cd,
+            &SendWithoutBlock { recv, cd, ref args, state } => SendWithoutBlock {
+                recv: find!(recv),
+                cd,
                 args: find_vec!(args),
-                state: *state,
+                state,
             },
-            SendWithoutBlockDirect { self_val, call_info, cd, cme, iseq, args, state } => SendWithoutBlockDirect {
-                self_val: find!(*self_val),
-                call_info: call_info.clone(),
-                cd: *cd,
-                cme: *cme,
-                iseq: *iseq,
+            &SendWithoutBlockDirect { recv, cd, cme, iseq, ref args, state } => SendWithoutBlockDirect {
+                recv: find!(recv),
+                cd,
+                cme,
+                iseq,
                 args: find_vec!(args),
-                state: *state,
+                state,
             },
-            Send { self_val, call_info, cd, blockiseq, args, state } => Send {
-                self_val: find!(*self_val),
-                call_info: call_info.clone(),
-                cd: *cd,
-                blockiseq: *blockiseq,
+            &Send { recv, cd, blockiseq, ref args, state } => Send {
+                recv: find!(recv),
+                cd,
+                blockiseq,
                 args: find_vec!(args),
-                state: *state,
+                state,
             },
-            InvokeBuiltin { bf, args, state } => InvokeBuiltin { bf: *bf, args: find_vec!(*args), state: *state },
-            ArraySet { array, idx, val } => ArraySet { array: find!(*array), idx: *idx, val: find!(*val) },
-            ArrayDup { val , state } => ArrayDup { val: find!(*val), state: *state },
-            &HashDup { val , state } => HashDup { val: find!(val), state },
+            &InvokeSuper { recv, cd, blockiseq, ref args, state } => InvokeSuper {
+                recv: find!(recv),
+                cd,
+                blockiseq,
+                args: find_vec!(args),
+                state,
+            },
+            &InvokeBlock { cd, ref args, state } => InvokeBlock {
+                cd,
+                args: find_vec!(args),
+                state,
+            },
+            &InvokeBuiltin { bf, ref args, state, return_type } => InvokeBuiltin { bf, args: find_vec!(args), state, return_type },
+            &ArrayDup { val, state } => ArrayDup { val: find!(val), state },
+            &HashDup { val, state } => HashDup { val: find!(val), state },
+            &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun, args: find_vec!(args), name, return_type, elidable },
-            &Defined { op_type, obj, pushval, v } => Defined { op_type, obj, pushval, v: find!(v) },
+            &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
-            NewArray { elements, state } => NewArray { elements: find_vec!(*elements), state: find!(*state) },
+            &NewArray { ref elements, state } => NewArray { elements: find_vec!(elements), state: find!(state) },
             &NewHash { ref elements, state } => {
                 let mut found_elements = vec![];
                 for &(key, value) in elements {
@@ -1182,15 +1379,22 @@ impl Function {
                 NewHash { elements: found_elements, state: find!(state) }
             }
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
-            ArrayMax { elements, state } => ArrayMax { elements: find_vec!(*elements), state: find!(*state) },
+            &NewRangeFixnum { low, high, flag, state } => NewRangeFixnum { low: find!(low), high: find!(high), flag, state: find!(state) },
+            &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
+            &GetBlockParamProxy { level, state } => GetBlockParamProxy { level, state: find!(state) },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
+            &LoadIvarEmbedded { self_val, id, index } => LoadIvarEmbedded { self_val: find!(self_val), id, index },
+            &LoadIvarExtended { self_val, id, index } => LoadIvarExtended { self_val: find!(self_val), id, index },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val: find!(val), state },
             &SetLocal { val, ep_offset, level } => SetLocal { val: find!(val), ep_offset, level },
+            &GetSpecialSymbol { symbol_type, state } => GetSpecialSymbol { symbol_type, state },
+            &GetSpecialNumber { nth, state } => GetSpecialNumber { nth, state },
             &ToArray { val, state } => ToArray { val: find!(val), state },
             &ToNewArray { val, state } => ToNewArray { val: find!(val), state },
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
             &ArrayPush { array, val, state } => ArrayPush { array: find!(array), val: find!(val), state },
+            &CheckInterrupts { state } => CheckInterrupts { state },
         }
     }
 
@@ -1200,7 +1404,7 @@ impl Function {
         self.union_find.borrow_mut().make_equal_to(insn, replacement);
     }
 
-    fn type_of(&self, insn: InsnId) -> Type {
+    pub fn type_of(&self, insn: InsnId) -> Type {
         assert!(self.insns[insn.0].has_output());
         self.insn_types[self.union_find.borrow_mut().find(insn).0]
     }
@@ -1214,10 +1418,11 @@ impl Function {
         assert!(self.insns[insn.0].has_output());
         match &self.insns[insn.0] {
             Insn::Param { .. } => unimplemented!("params should not be present in block.insns"),
-            Insn::SetGlobal { .. } | Insn::ArraySet { .. } | Insn::Jump(_)
+            Insn::SetGlobal { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
-            | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } =>
+            | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
+            | Insn::CheckInterrupts { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -1234,19 +1439,26 @@ impl Function {
             Insn::Test { val } if self.type_of(*val).is_known_falsy() => Type::from_cbool(false),
             Insn::Test { val } if self.type_of(*val).is_known_truthy() => Type::from_cbool(true),
             Insn::Test { .. } => types::CBool,
-            Insn::IsNil { val } if self.is_a(*val, types::NilClassExact) => Type::from_cbool(true),
-            Insn::IsNil { val } if !self.type_of(*val).could_be(types::NilClassExact) => Type::from_cbool(false),
+            Insn::IsNil { val } if self.is_a(*val, types::NilClass) => Type::from_cbool(true),
+            Insn::IsNil { val } if !self.type_of(*val).could_be(types::NilClass) => Type::from_cbool(false),
             Insn::IsNil { .. } => types::CBool,
+            Insn::IsMethodCfunc { .. } => types::CBool,
             Insn::StringCopy { .. } => types::StringExact,
-            Insn::StringIntern { .. } => types::StringExact,
+            Insn::StringIntern { .. } => types::Symbol,
+            Insn::StringConcat { .. } => types::StringExact,
+            Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
             Insn::NewHash { .. } => types::HashExact,
             Insn::HashDup { .. } => types::HashExact,
             Insn::NewRange { .. } => types::RangeExact,
+            Insn::NewRangeFixnum { .. } => types::RangeExact,
+            Insn::ObjectAlloc { .. } => types::HeapObject,
             Insn::CCall { return_type, .. } => *return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
+            Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_value(*expected)),
+            Insn::GuardShape { val, .. } => self.type_of(*val),
             Insn::FixnumAdd  { .. } => types::Fixnum,
             Insn::FixnumSub  { .. } => types::Fixnum,
             Insn::FixnumMult { .. } => types::Fixnum,
@@ -1264,18 +1476,25 @@ impl Function {
             Insn::SendWithoutBlock { .. } => types::BasicObject,
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
-            Insn::InvokeBuiltin { .. } => types::BasicObject,
-            Insn::Defined { .. } => types::BasicObject,
+            Insn::InvokeSuper { .. } => types::BasicObject,
+            Insn::InvokeBlock { .. } => types::BasicObject,
+            Insn::InvokeBuiltin { return_type, .. } => return_type.unwrap_or(types::BasicObject),
+            Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::DefinedIvar { .. } => types::BasicObject,
             Insn::GetConstantPath { .. } => types::BasicObject,
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
+            Insn::LoadIvarEmbedded { .. } => types::BasicObject,
+            Insn::LoadIvarExtended { .. } => types::BasicObject,
+            Insn::GetSpecialSymbol { .. } => types::BasicObject,
+            Insn::GetSpecialNumber { .. } => types::BasicObject,
             Insn::ToNewArray { .. } => types::ArrayExact,
             Insn::ToArray { .. } => types::ArrayExact,
             Insn::ObjToString { .. } => types::BasicObject,
             Insn::AnyToString { .. } => types::String,
             Insn::GetLocal { .. } => types::BasicObject,
+            Insn::GetBlockParamProxy { .. } => types::BasicObject,
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
@@ -1353,34 +1572,50 @@ impl Function {
         }
     }
 
+    fn chase_insn(&self, insn: InsnId) -> InsnId {
+        let id = self.union_find.borrow().find_const(insn);
+        match self.insns[id.0] {
+            Insn::GuardType { val, .. }
+            | Insn::GuardTypeNot { val, .. }
+            | Insn::GuardShape { val, .. }
+            | Insn::GuardBitEquals { val, .. } => self.chase_insn(val),
+            _ => id,
+        }
+    }
+
     /// Return the interpreter-profiled type of the HIR instruction at the given ISEQ instruction
     /// index, if it is known. This historical type record is not a guarantee and must be checked
     /// with a GuardType or similar.
-    fn profiled_type_of_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<Type> {
-        let Some(ref profiles) = self.profiles else { return None };
-        let Some(entries) = profiles.types.get(&iseq_insn_idx) else { return None };
-        for &(entry_insn, entry_type) in entries {
-            if self.union_find.borrow().find_const(entry_insn) == self.union_find.borrow().find_const(insn) {
-                return Some(entry_type);
+    fn profiled_type_of_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<ProfiledType> {
+        let profiles = self.profiles.as_ref()?;
+        let entries = profiles.types.get(&iseq_insn_idx)?;
+        let insn = self.chase_insn(insn);
+        for (entry_insn, entry_type_summary) in entries {
+            if self.union_find.borrow().find_const(*entry_insn) == insn {
+                if entry_type_summary.is_monomorphic() || entry_type_summary.is_skewed_polymorphic() {
+                    return Some(entry_type_summary.bucket(0));
+                } else {
+                    return None;
+                }
             }
         }
         None
     }
 
-    fn likely_is_fixnum(&self, val: InsnId, profiled_type: Type) -> bool {
-        return self.is_a(val, types::Fixnum) || profiled_type.is_subtype(types::Fixnum);
+    fn likely_is_fixnum(&self, val: InsnId, profiled_type: ProfiledType) -> bool {
+        self.is_a(val, types::Fixnum) || profiled_type.is_fixnum()
     }
 
     fn coerce_to_fixnum(&mut self, block: BlockId, val: InsnId, state: InsnId) -> InsnId {
         if self.is_a(val, types::Fixnum) { return val; }
-        return self.push_insn(block, Insn::GuardType { val, guard_type: types::Fixnum, state });
+        self.push_insn(block, Insn::GuardType { val, guard_type: types::Fixnum, state })
     }
 
     fn arguments_likely_fixnums(&mut self, left: InsnId, right: InsnId, state: InsnId) -> bool {
         let frame_state = self.frame_state(state);
-        let iseq_insn_idx = frame_state.insn_idx as usize;
-        let left_profiled_type = self.profiled_type_of_at(left, iseq_insn_idx).unwrap_or(types::BasicObject);
-        let right_profiled_type = self.profiled_type_of_at(right, iseq_insn_idx).unwrap_or(types::BasicObject);
+        let iseq_insn_idx = frame_state.insn_idx;
+        let left_profiled_type = self.profiled_type_of_at(left, iseq_insn_idx).unwrap_or_default();
+        let right_profiled_type = self.profiled_type_of_at(right, iseq_insn_idx).unwrap_or_default();
         self.likely_is_fixnum(left, left_profiled_type) && self.likely_is_fixnum(right, right_profiled_type)
     }
 
@@ -1475,49 +1710,50 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "+" && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAdd { left, right, state }, BOP_PLUS, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "-" && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumSub { left, right, state }, BOP_MINUS, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "*" && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMult { left, right, state }, BOP_MULT, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "/" && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumDiv { left, right, state }, BOP_DIV, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "%" && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMod { left, right, state }, BOP_MOD, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "==" && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumEq { left, right }, BOP_EQ, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "!=" && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumNeq { left, right }, BOP_NEQ, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "<" && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLt { left, right }, BOP_LT, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "<=" && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLe { left, right }, BOP_LE, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == ">" && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGt { left, right }, BOP_GT, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == ">=" && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGe { left, right }, BOP_GE, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "&" && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAnd { left, right }, BOP_AND, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "|" && args.len() == 1 =>
-                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumOr { left, right }, BOP_OR, self_val, args[0], state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "freeze" && args.len() == 0 =>
-                        self.try_rewrite_freeze(block, insn_id, self_val, state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "-@" && args.len() == 0 =>
-                        self.try_rewrite_uminus(block, insn_id, self_val, state),
-                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "[]" && args.len() == 1 =>
-                        self.try_rewrite_aref(block, insn_id, self_val, args[0], state),
-                    Insn::SendWithoutBlock { mut self_val, call_info, cd, args, state } => {
+                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(plus) && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAdd { left, right, state }, BOP_PLUS, recv, args[0], state),
+                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minus) && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumSub { left, right, state }, BOP_MINUS, recv, args[0], state),
+                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(mult) && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMult { left, right, state }, BOP_MULT, recv, args[0], state),
+                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(div) && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumDiv { left, right, state }, BOP_DIV, recv, args[0], state),
+                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(modulo) && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMod { left, right, state }, BOP_MOD, recv, args[0], state),
+                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(eq) && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumEq { left, right }, BOP_EQ, recv, args[0], state),
+                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(neq) && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumNeq { left, right }, BOP_NEQ, recv, args[0], state),
+                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(lt) && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLt { left, right }, BOP_LT, recv, args[0], state),
+                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(le) && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLe { left, right }, BOP_LE, recv, args[0], state),
+                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(gt) && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGt { left, right }, BOP_GT, recv, args[0], state),
+                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(ge) && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGe { left, right }, BOP_GE, recv, args[0], state),
+                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(and) && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAnd { left, right }, BOP_AND, recv, args[0], state),
+                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(or) && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumOr { left, right }, BOP_OR, recv, args[0], state),
+                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.is_empty() =>
+                        self.try_rewrite_freeze(block, insn_id, recv, state),
+                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
+                        self.try_rewrite_uminus(block, insn_id, recv, state),
+                    Insn::SendWithoutBlock { recv, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(aref) && args.len() == 1 =>
+                        self.try_rewrite_aref(block, insn_id, recv, args[0], state),
+                    Insn::SendWithoutBlock { mut recv, cd, args, state } => {
                         let frame_state = self.frame_state(state);
-                        let (klass, guard_equal_to) = if let Some(klass) = self.type_of(self_val).runtime_exact_ruby_class() {
+                        let (klass, profiled_type) = if let Some(klass) = self.type_of(recv).runtime_exact_ruby_class() {
                             // If we know the class statically, use it to fold the lookup at compile-time.
                             (klass, None)
                         } else {
-                            // If we know that self is top-self from profile information, guard and use it to fold the lookup at compile-time.
-                            match self.profiled_type_of_at(self_val, frame_state.insn_idx) {
-                                Some(self_type) if self_type.is_top_self() => (self_type.exact_ruby_class().unwrap(), self_type.ruby_object()),
-                                _ => { self.push_insn_id(block, insn_id); continue; }
-                            }
+                            // If we know that self is reasonably monomorphic from profile information, guard and use it to fold the lookup at compile-time.
+                            // TODO(max): Figure out how to handle top self?
+                            let Some(recv_type) = self.profiled_type_of_at(recv, frame_state.insn_idx) else {
+                                self.push_insn_id(block, insn_id); continue;
+                            };
+                            (recv_type.class(), Some(recv_type))
                         };
                         let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
                         let mid = unsafe { vm_ci_mid(ci) };
@@ -1530,22 +1766,40 @@ impl Function {
                         // It allows you to use a faster ISEQ if possible.
                         cme = unsafe { rb_check_overloaded_cme(cme, ci) };
                         let def_type = unsafe { get_cme_def_type(cme) };
-                        if def_type != VM_METHOD_TYPE_ISEQ {
+                        if def_type == VM_METHOD_TYPE_ISEQ {
                             // TODO(max): Allow non-iseq; cache cme
+                            // Only specialize positional-positional calls
+                            // TODO(max): Handle other kinds of parameter passing
+                            let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+                            if !can_direct_send(iseq) {
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            if let Some(profiled_type) = profiled_type {
+                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                            }
+                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args, state });
+                            self.make_equal_to(insn_id, send_direct);
+                        } else if def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            if let Some(profiled_type) = profiled_type {
+                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                            }
+                            let id = unsafe { get_cme_def_body_attr_id(cme) };
+
+                            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
+                            // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
+                            if unsafe { rb_zjit_singleton_class_p(klass) } {
+                                let attached = unsafe { rb_class_attached_object(klass) };
+                                if unsafe { RB_TYPE_P(attached, RUBY_T_CLASS) || RB_TYPE_P(attached, RUBY_T_MODULE) } {
+                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
+                                }
+                            }
+                            let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, state });
+                            self.make_equal_to(insn_id, getivar);
+                        } else {
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        // Only specialize positional-positional calls
-                        // TODO(max): Handle other kinds of parameter passing
-                        let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                        if !can_direct_send(iseq) {
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                        if let Some(expected) = guard_equal_to {
-                            self_val = self.push_insn(block, Insn::GuardBitEquals { val: self_val, expected, state });
-                        }
-                        let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, call_info, cd, cme, iseq, args, state });
-                        self.make_equal_to(insn_id, send_direct);
                     }
                     Insn::GetConstantPath { ic, state, .. } => {
                         let idlist: *const ID = unsafe { (*ic).segments };
@@ -1554,7 +1808,7 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let cref_sensitive = !unsafe { (*ice).ic_cref }.is_null();
-                        let multi_ractor_mode = unsafe { rb_zjit_multi_ractor_p() };
+                        let multi_ractor_mode = unsafe { rb_jit_multi_ractor_p() };
                         if cref_sensitive || multi_ractor_mode {
                             self.push_insn_id(block, insn_id); continue;
                         }
@@ -1567,13 +1821,26 @@ impl Function {
                         self.insn_types[replacement.0] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
-                    Insn::ObjToString { val, call_info, cd, state, .. } => {
+                    Insn::ObjToString { val, cd, state, .. } => {
                         if self.is_a(val, types::String) {
                             // behaves differently from `SendWithoutBlock` with `mid:to_s` because ObjToString should not have a patch point for String to_s being redefined
-                            self.make_equal_to(insn_id, val);
+                            self.make_equal_to(insn_id, val); continue;
+                        }
+
+                        let frame_state = self.frame_state(state);
+                        let Some(recv_type) = self.profiled_type_of_at(val, frame_state.insn_idx) else {
+                            self.push_insn_id(block, insn_id); continue
+                        };
+
+                        if recv_type.is_string() {
+                            let guard = self.push_insn(block, Insn::GuardType { val, guard_type: types::String, state });
+                            // Infer type so AnyToString can fold off this
+                            self.insn_types[guard.0] = self.infer_type(guard);
+                            self.make_equal_to(insn_id, guard);
                         } else {
-                            let replacement = self.push_insn(block, Insn::SendWithoutBlock { self_val: val, call_info, cd, args: vec![], state });
-                            self.make_equal_to(insn_id, replacement)
+                            self.push_insn(block, Insn::GuardTypeNot { val, guard_type: types::String, state});
+                            let send_to_s = self.push_insn(block, Insn::SendWithoutBlock { recv: val, cd, args: vec![], state});
+                            self.make_equal_to(insn_id, send_to_s);
                         }
                     }
                     Insn::AnyToString { str, .. } => {
@@ -1582,6 +1849,54 @@ impl Function {
                         } else {
                             self.push_insn_id(block, insn_id);
                         }
+                    }
+                    _ => { self.push_insn_id(block, insn_id); }
+                }
+            }
+        }
+        self.infer_types();
+    }
+
+    fn optimize_getivar(&mut self) {
+        for block in self.rpo() {
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            assert!(self.blocks[block.0].insns.is_empty());
+            for insn_id in old_insns {
+                match self.find(insn_id) {
+                    Insn::GetIvar { self_val, id, state } => {
+                        let frame_state = self.frame_state(state);
+                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
+                            // No (monomorphic) profile info
+                            self.push_insn_id(block, insn_id); continue;
+                        };
+                        if recv_type.flags().is_immediate() {
+                            // Instance variable lookups on immediate values are always nil
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        assert!(recv_type.shape().is_valid());
+                        if !recv_type.flags().is_t_object() {
+                            // Check if the receiver is a T_OBJECT
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        if recv_type.shape().is_too_complex() {
+                            // too-complex shapes can't use index access
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapObject, state });
+                        let self_val = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
+                        let mut ivar_index: u16 = 0;
+                        let replacement = if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
+                            // If there is no IVAR index, then the ivar was undefined when we
+                            // entered the compiler.  That means we can just return nil for this
+                            // shape + iv name
+                            Insn::Const { val: Const::Value(Qnil) }
+                        } else if recv_type.flags().is_embedded() {
+                            Insn::LoadIvarEmbedded { self_val, id, index: ivar_index }
+                        } else {
+                            Insn::LoadIvarExtended { self_val, id, index: ivar_index }
+                        };
+                        let replacement = self.push_insn(block, replacement);
+                        self.make_equal_to(insn_id, replacement);
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
@@ -1601,7 +1916,7 @@ impl Function {
             send: Insn,
             send_insn_id: InsnId,
         ) -> Result<(), ()> {
-            let Insn::SendWithoutBlock { mut self_val, cd, mut args, state, .. } = send else {
+            let Insn::SendWithoutBlock { mut recv, cd, mut args, state, .. } = send else {
                 return Err(());
             };
 
@@ -1610,17 +1925,12 @@ impl Function {
             let method_id = unsafe { rb_vm_ci_mid(call_info) };
 
             // If we have info about the class of the receiver
-            //
-            // TODO(alan): there was a seemingly a miscomp here if you swap with
-            // `inexact_ruby_class`. Theoretically it can call a method too general
-            // for the receiver. Confirm and add a test.
-            let (recv_class, guard_type) = if let Some(klass) = self_type.runtime_exact_ruby_class() {
-                (klass, None)
+            let (recv_class, profiled_type) = if let Some(class) = self_type.runtime_exact_ruby_class() {
+                (class, None)
             } else {
                 let iseq_insn_idx = fun.frame_state(state).insn_idx;
-                let Some(recv_type) = fun.profiled_type_of_at(self_val, iseq_insn_idx) else { return Err(()) };
-                let Some(recv_class) = recv_type.runtime_exact_ruby_class() else { return Err(()) };
-                (recv_class, Some(recv_type.unspecialized()))
+                let Some(recv_type) = fun.profiled_type_of_at(recv, iseq_insn_idx) else { return Err(()) };
+                (recv_type.class(), Some(recv_type))
             };
 
             // Do method lookup
@@ -1660,12 +1970,12 @@ impl Function {
                     if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
                         // Commit to the replacement. Put PatchPoint.
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme: method }, state });
-                        if let Some(guard_type) = guard_type {
+                        if let Some(profiled_type) = profiled_type {
                             // Guard receiver class
-                            self_val = fun.push_insn(block, Insn::GuardType { val: self_val, guard_type, state });
+                            recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                         }
                         let cfun = unsafe { get_mct_func(cfunc) }.cast();
-                        let mut cfunc_args = vec![self_val];
+                        let mut cfunc_args = vec![recv];
                         cfunc_args.append(&mut args);
                         let ccall = fun.push_insn(block, Insn::CCall { cfun, args: cfunc_args, name: method_id, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
@@ -1690,9 +2000,9 @@ impl Function {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
-                if let send @ Insn::SendWithoutBlock { self_val, .. } = self.find(insn_id) {
-                    let self_type = self.type_of(self_val);
-                    if reduce_to_ccall(self, block, self_type, send, insn_id).is_ok() {
+                if let send @ Insn::SendWithoutBlock { recv, .. } = self.find(insn_id) {
+                    let recv_type = self.type_of(recv);
+                    if reduce_to_ccall(self, block, recv_type, send, insn_id).is_ok() {
                         continue;
                     }
                 }
@@ -1716,6 +2026,52 @@ impl Function {
             .map(|b| if b { Qtrue } else { Qfalse })
             .map(|b| self.new_insn(Insn::Const { val: Const::Value(b) }))
             .unwrap_or(insn_id)
+    }
+
+    fn optimize_ranges(&mut self) {
+        for block in self.rpo() {
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            assert!(self.blocks[block.0].insns.is_empty());
+
+            for insn_id in old_insns {
+                match self.find(insn_id) {
+                    Insn::NewRange { low, high, flag, state } => {
+
+                        // The NewRange rewrite triggers mostly on literals because that is the
+                        // case we can easily prove Fixnum statically and cheaply guard the other
+                        // side.
+                        let low_is_fix  = self.is_a(low,  types::Fixnum);
+                        let high_is_fix = self.is_a(high, types::Fixnum);
+
+                        if low_is_fix && high_is_fix {
+                            // Both statically fixnum => specialize directly
+                            let repl = self.push_insn(block, Insn::NewRangeFixnum { low, high, flag, state });
+                            self.make_equal_to(insn_id, repl);
+                            self.insn_types[repl.0] = self.infer_type(repl);
+                        } else if low_is_fix {
+                            // Only left is fixnum => guard right
+                            let high_fix = self.coerce_to_fixnum(block, high, state);
+                            let repl = self.push_insn(block, Insn::NewRangeFixnum { low, high: high_fix, flag, state });
+                            self.make_equal_to(insn_id, repl);
+                            self.insn_types[repl.0] = self.infer_type(repl);
+                        } else if high_is_fix {
+                            // Only right is fixnum => guard left
+                            let low_fix = self.coerce_to_fixnum(block, low, state);
+                            let repl = self.push_insn(block, Insn::NewRangeFixnum { low: low_fix, high, flag, state });
+                            self.make_equal_to(insn_id, repl);
+                            self.insn_types[repl.0] = self.infer_type(repl);
+                        } else {
+                            // Keep generic op
+                            self.push_insn_id(block, insn_id);
+                        }
+                    }
+                    _ => {
+                        self.push_insn_id(block, insn_id);
+                    }
+                }
+            }
+        }
+        self.infer_types();
     }
 
     /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
@@ -1835,9 +2191,11 @@ impl Function {
             &Insn::Const { .. }
             | &Insn::Param { .. }
             | &Insn::GetLocal { .. }
-            | &Insn::PutSpecialObject { .. } =>
+            | &Insn::PutSpecialObject { .. }
+            | &Insn::IncrCounter(_) =>
                 {}
             &Insn::PatchPoint { state, .. }
+            | &Insn::CheckInterrupts { state }
             | &Insn::GetConstantPath { ic: _, state } => {
                 worklist.push_back(state);
             }
@@ -1853,33 +2211,41 @@ impl Function {
                 }
                 worklist.push_back(state);
             }
-            &Insn::NewRange { low, high, state, .. } => {
+            &Insn::NewRange { low, high, state, .. }
+            | &Insn::NewRangeFixnum { low, high, state, .. } => {
                 worklist.push_back(low);
                 worklist.push_back(high);
                 worklist.push_back(state);
             }
-            &Insn::StringCopy { val, .. }
-            | &Insn::StringIntern { val }
+            &Insn::StringConcat { ref strings, state, .. } => {
+                worklist.extend(strings);
+                worklist.push_back(state);
+            }
+            &Insn::ToRegexp { ref values, state, .. } => {
+                worklist.extend(values);
+                worklist.push_back(state);
+            }
             | &Insn::Return { val }
-            | &Insn::Throw { val, .. }
-            | &Insn::Defined { v: val, .. }
             | &Insn::Test { val }
             | &Insn::SetLocal { val, .. }
-            | &Insn::IsNil { val } =>
+            | &Insn::IsNil { val }
+            | &Insn::IsMethodCfunc { val, .. } =>
                 worklist.push_back(val),
             &Insn::SetGlobal { val, state, .. }
+            | &Insn::Defined { v: val, state, .. }
+            | &Insn::StringIntern { val, state }
+            | &Insn::StringCopy { val, state, .. }
+            | &Insn::ObjectAlloc { val, state }
             | &Insn::GuardType { val, state, .. }
+            | &Insn::GuardTypeNot { val, state, .. }
             | &Insn::GuardBitEquals { val, state, .. }
+            | &Insn::GuardShape { val, state, .. }
             | &Insn::ToArray { val, state }
             | &Insn::ToNewArray { val, state } => {
                 worklist.push_back(val);
                 worklist.push_back(state);
             }
-            &Insn::ArraySet { array, val, .. } => {
-                worklist.push_back(array);
-                worklist.push_back(val);
-            }
-            &Insn::Snapshot { ref state } => {
+            Insn::Snapshot { state } => {
                 worklist.extend(&state.stack);
                 worklist.extend(&state.locals);
             }
@@ -1911,22 +2277,26 @@ impl Function {
                 worklist.push_back(val);
                 worklist.extend(args);
             }
-            &Insn::ArrayDup { val, state } | &Insn::HashDup { val, state } => {
+            &Insn::ArrayDup { val, state }
+            | &Insn::Throw { val, state, .. }
+            | &Insn::HashDup { val, state } => {
                 worklist.push_back(val);
                 worklist.push_back(state);
             }
-            &Insn::Send { self_val, ref args, state, .. }
-            | &Insn::SendWithoutBlock { self_val, ref args, state, .. }
-            | &Insn::SendWithoutBlockDirect { self_val, ref args, state, .. } => {
-                worklist.push_back(self_val);
+            &Insn::Send { recv, ref args, state, .. }
+            | &Insn::SendWithoutBlock { recv, ref args, state, .. }
+            | &Insn::SendWithoutBlockDirect { recv, ref args, state, .. }
+            | &Insn::InvokeSuper { recv, ref args, state, .. } => {
+                worklist.push_back(recv);
                 worklist.extend(args);
                 worklist.push_back(state);
             }
-            &Insn::InvokeBuiltin { ref args, state, .. } => {
+            &Insn::InvokeBuiltin { ref args, state, .. }
+            | &Insn::InvokeBlock { ref args, state, .. } => {
                 worklist.extend(args);
                 worklist.push_back(state)
             }
-            &Insn::CCall { ref args, .. } => worklist.extend(args),
+            Insn::CCall { args, .. } => worklist.extend(args),
             &Insn::GetIvar { self_val, state, .. } | &Insn::DefinedIvar { self_val, state, .. } => {
                 worklist.push_back(self_val);
                 worklist.push_back(state);
@@ -1950,7 +2320,14 @@ impl Function {
                 worklist.push_back(str);
                 worklist.push_back(state);
             }
+            &Insn::LoadIvarEmbedded { self_val, .. }
+            | &Insn::LoadIvarExtended { self_val, .. } => {
+                worklist.push_back(self_val);
+            }
+            &Insn::GetBlockParamProxy { state, .. } |
             &Insn::GetGlobal { state, .. } |
+            &Insn::GetSpecialSymbol { state, .. } |
+            &Insn::GetSpecialNumber { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
         }
     }
@@ -1983,7 +2360,7 @@ impl Function {
         }
     }
 
-    fn absorb_dst_block(&mut self, num_in_edges: &Vec<u32>, block: BlockId) -> bool {
+    fn absorb_dst_block(&mut self, num_in_edges: &[u32], block: BlockId) -> bool {
         let Some(terminator_id) = self.blocks[block.0].insns.last()
             else { return false };
         let Insn::Jump(BranchEdge { target, args }) = self.find(*terminator_id)
@@ -2091,7 +2468,11 @@ impl Function {
         // Function is assumed to have types inferred already
         self.optimize_direct_sends();
         #[cfg(debug_assertions)] self.assert_validates();
+        self.optimize_getivar();
+        #[cfg(debug_assertions)] self.assert_validates();
         self.optimize_c_calls();
+        #[cfg(debug_assertions)] self.assert_validates();
+        self.optimize_ranges();
         #[cfg(debug_assertions)] self.assert_validates();
         self.fold_constants();
         #[cfg(debug_assertions)] self.assert_validates();
@@ -2099,16 +2480,25 @@ impl Function {
         #[cfg(debug_assertions)] self.assert_validates();
         self.eliminate_dead_code();
         #[cfg(debug_assertions)] self.assert_validates();
+    }
 
+    /// Dump HIR passed to codegen if specified by options.
+    pub fn dump_hir(&self) {
         // Dump HIR after optimization
         match get_option!(dump_hir_opt) {
-            Some(DumpHIR::WithoutSnapshot) => println!("Optimized HIR:\n{}", FunctionPrinter::without_snapshot(&self)),
-            Some(DumpHIR::All) => println!("Optimized HIR:\n{}", FunctionPrinter::with_snapshot(&self)),
+            Some(DumpHIR::WithoutSnapshot) => println!("Optimized HIR:\n{}", FunctionPrinter::without_snapshot(self)),
+            Some(DumpHIR::All) => println!("Optimized HIR:\n{}", FunctionPrinter::with_snapshot(self)),
             Some(DumpHIR::Debug) => println!("Optimized HIR:\n{:#?}", &self),
             None => {},
         }
-    }
 
+        if let Some(filename) = &get_option!(dump_hir_graphviz) {
+            use std::fs::OpenOptions;
+            use std::io::Write;
+            let mut file = OpenOptions::new().append(true).open(filename).unwrap();
+            writeln!(file, "{}", FunctionGraphvizPrinter::new(self)).unwrap();
+        }
+    }
 
     /// Validates the following:
     /// 1. Basic block jump args match parameter arity.
@@ -2243,6 +2633,12 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let fun = &self.fun;
         let iseq_name = iseq_get_location(fun.iseq, 0);
+        // In tests, strip the line number for builtin ISEQs to make tests stable across line changes
+        let iseq_name = if cfg!(test) && iseq_name.contains("@<internal:") {
+            iseq_name[..iseq_name.rfind(':').unwrap()].to_string()
+        } else {
+            iseq_name
+        };
         writeln!(f, "fn {iseq_name}:")?;
         for block_id in fun.rpo() {
             write!(f, "{block_id}(")?;
@@ -2260,7 +2656,8 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
             writeln!(f, "):")?;
             for insn_id in &fun.blocks[block_id.0].insns {
                 let insn = fun.find(*insn_id);
-                if !self.display_snapshot && matches!(insn, Insn::Snapshot {..}) {
+                if !self.display_snapshot_and_tp_patchpoints &&
+                    matches!(insn, Insn::Snapshot {..} | Insn::PatchPoint { invariant: Invariant::NoTracePoint, .. }) {
                     continue;
                 }
                 write!(f, "  ")?;
@@ -2279,6 +2676,87 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
     }
 }
 
+struct HtmlEncoder<'a, 'b> {
+    formatter: &'a mut std::fmt::Formatter<'b>,
+}
+
+impl<'a, 'b> std::fmt::Write for HtmlEncoder<'a, 'b> {
+    fn write_str(&mut self, s: &str) -> std::fmt::Result {
+        for ch in s.chars() {
+            match ch {
+                '<' => self.formatter.write_str("&lt;")?,
+                '>' => self.formatter.write_str("&gt;")?,
+                '&' => self.formatter.write_str("&amp;")?,
+                '"' => self.formatter.write_str("&quot;")?,
+                '\'' => self.formatter.write_str("&#39;")?,
+                _ => self.formatter.write_char(ch)?,
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<'a> std::fmt::Display for FunctionGraphvizPrinter<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        macro_rules! write_encoded {
+            ($f:ident, $($arg:tt)*) => {
+                HtmlEncoder { formatter: $f }.write_fmt(format_args!($($arg)*))
+            };
+        }
+        use std::fmt::Write;
+        let fun = &self.fun;
+        let iseq_name = iseq_get_location(fun.iseq, 0);
+        write!(f, "digraph G {{ # ")?;
+        write_encoded!(f, "{iseq_name}")?;
+        writeln!(f)?;
+        writeln!(f, "node [shape=plaintext];")?;
+        writeln!(f, "mode=hier; overlap=false; splines=true;")?;
+        for block_id in fun.rpo() {
+            writeln!(f, r#"  {block_id} [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">"#)?;
+            write!(f, r#"<TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">{block_id}("#)?;
+            if !fun.blocks[block_id.0].params.is_empty() {
+                let mut sep = "";
+                for param in &fun.blocks[block_id.0].params {
+                    write_encoded!(f, "{sep}{param}")?;
+                    let insn_type = fun.type_of(*param);
+                    if !insn_type.is_subtype(types::Empty) {
+                        write_encoded!(f, ":{}", insn_type.print(&self.ptr_map))?;
+                    }
+                    sep = ", ";
+                }
+            }
+            let mut edges = vec![];
+            writeln!(f, ")&nbsp;</TD></TR>")?;
+            for insn_id in &fun.blocks[block_id.0].insns {
+                let insn_id = fun.union_find.borrow().find_const(*insn_id);
+                let insn = fun.find(insn_id);
+                if matches!(insn, Insn::Snapshot {..}) {
+                    continue;
+                }
+                write!(f, r#"<TR><TD ALIGN="left" PORT="{insn_id}">"#)?;
+                if insn.has_output() {
+                    let insn_type = fun.type_of(insn_id);
+                    if insn_type.is_subtype(types::Empty) {
+                        write_encoded!(f, "{insn_id} = ")?;
+                    } else {
+                        write_encoded!(f, "{insn_id}:{} = ", insn_type.print(&self.ptr_map))?;
+                    }
+                }
+                if let Insn::Jump(ref target) | Insn::IfTrue { ref target, .. } | Insn::IfFalse { ref target, .. } = insn {
+                    edges.push((insn_id, target.target));
+                }
+                write_encoded!(f, "{}", insn.print(&self.ptr_map))?;
+                writeln!(f, "&nbsp;</TD></TR>")?;
+            }
+            writeln!(f, "</TABLE>>];")?;
+            for (src, dst) in edges {
+                writeln!(f, "  {block_id}:{src} -> {dst}:params:n;")?;
+            }
+        }
+        writeln!(f, "}}")
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct FrameState {
     iseq: IseqPtr,
@@ -2291,10 +2769,18 @@ pub struct FrameState {
 }
 
 impl FrameState {
-    /// Get the opcode for the current instruction
-    pub fn get_opcode(&self) -> i32 {
-        unsafe { rb_iseq_opcode_at_pc(self.iseq, self.pc) }
+    /// Return itself without locals. Useful for side-exiting without spilling locals.
+    fn without_locals(&self) -> Self {
+        let mut state = self.clone();
+        state.locals.clear();
+        state
     }
+}
+
+/// Print adaptor for [`FrameState`]. See [`PtrPrintMap`].
+pub struct FrameStatePrinter<'a> {
+    inner: &'a FrameState,
+    ptr_map: &'a PtrPrintMap,
 }
 
 /// Compute the index of a local variable from its slot index
@@ -2334,12 +2820,12 @@ impl FrameState {
     }
 
     /// Iterate over all stack slots
-    pub fn stack(&self) -> Iter<InsnId> {
+    pub fn stack(&self) -> Iter<'_, InsnId> {
         self.stack.iter()
     }
 
     /// Iterate over all local variables
-    pub fn locals(&self) -> Iter<InsnId> {
+    pub fn locals(&self) -> Iter<'_, InsnId> {
         self.locals.iter()
     }
 
@@ -2351,6 +2837,16 @@ impl FrameState {
     /// Pop a stack operand
     fn stack_pop(&mut self) -> Result<InsnId, ParseError> {
         self.stack.pop().ok_or_else(|| ParseError::StackUnderflow(self.clone()))
+    }
+
+    fn stack_pop_n(&mut self, count: usize) -> Result<Vec<InsnId>, ParseError> {
+        // Check if we have enough values on the stack
+        let stack_len = self.stack.len();
+        if stack_len < count {
+            return Err(ParseError::StackUnderflow(self.clone()));
+        }
+
+        Ok(self.stack.split_off(stack_len - count))
     }
 
     /// Get a stack-top operand
@@ -2388,17 +2884,27 @@ impl FrameState {
         // TODO: Modify the register allocator to allow reusing an argument
         // of another basic block.
         let mut args = vec![self_param];
-        args.extend(self.locals.iter().chain(self.stack.iter()).map(|op| *op));
+        args.extend(self.locals.iter().chain(self.stack.iter()).copied());
         args
+    }
+
+    /// Get the opcode for the current instruction
+    pub fn get_opcode(&self) -> i32 {
+        unsafe { rb_iseq_opcode_at_pc(self.iseq, self.pc) }
+    }
+
+    pub fn print<'a>(&'a self, ptr_map: &'a PtrPrintMap) -> FrameStatePrinter<'a> {
+        FrameStatePrinter { inner: self, ptr_map }
     }
 }
 
-impl std::fmt::Display for FrameState {
+impl Display for FrameStatePrinter<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "FrameState {{ pc: {:?}, stack: ", self.pc)?;
-        write_vec(f, &self.stack)?;
+        let inner = self.inner;
+        write!(f, "FrameState {{ pc: {:?}, stack: ", self.ptr_map.map_ptr(inner.pc))?;
+        write_vec(f, &inner.stack)?;
         write!(f, ", locals: ")?;
-        write_vec(f, &self.locals)?;
+        write_vec(f, &inner.locals)?;
         write!(f, " }}")
     }
 }
@@ -2413,10 +2919,16 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
     ((idx as isize) + (offset as isize)) as u32
 }
 
-fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
+struct BytecodeInfo {
+    jump_targets: Vec<u32>,
+    has_blockiseq: bool,
+}
+
+fn compute_bytecode_info(iseq: *const rb_iseq_t) -> BytecodeInfo {
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     let mut insn_idx = 0;
     let mut jump_targets = HashSet::new();
+    let mut has_blockiseq = false;
     while insn_idx < iseq_size {
         // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
@@ -2440,40 +2952,32 @@ fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
                     jump_targets.insert(insn_idx);
                 }
             }
+            YARVINSN_send | YARVINSN_invokesuper => {
+                let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
+                if !blockiseq.is_null() {
+                    has_blockiseq = true;
+                }
+            }
             _ => {}
         }
     }
     let mut result = jump_targets.into_iter().collect::<Vec<_>>();
     result.sort();
-    result
+    BytecodeInfo { jump_targets: result, has_blockiseq }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum CallType {
-    Splat,
     BlockArg,
-    Kwarg,
-    KwSplat,
     Tailcall,
-    Super,
-    Zsuper,
-    OptSend,
-    KwSplatMut,
-    SplatMut,
-    Forwarding,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum ParameterType {
-    Optional,
-}
-
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ParseError {
     StackUnderflow(FrameState),
-    UnknownParameterType(ParameterType),
     MalformedIseq(u32), // insn_idx into iseq_encoded
     Validation(ValidationError),
+    NotAllowed,
 }
 
 /// Return the number of locals in the current ISEQ (includes parameters)
@@ -2482,19 +2986,10 @@ fn num_locals(iseq: *const rb_iseq_t) -> usize {
 }
 
 /// If we can't handle the type of send (yet), bail out.
-fn unknown_call_type(flag: u32) -> bool {
-    if (flag & VM_CALL_KW_SPLAT_MUT) != 0 { return true; }
-    if (flag & VM_CALL_ARGS_SPLAT_MUT) != 0 { return true; }
-    if (flag & VM_CALL_ARGS_SPLAT) != 0 { return true; }
-    if (flag & VM_CALL_KW_SPLAT) != 0 { return true; }
-    if (flag & VM_CALL_ARGS_BLOCKARG) != 0 { return true; }
-    if (flag & VM_CALL_KWARG) != 0 { return true; }
-    if (flag & VM_CALL_TAILCALL) != 0 { return true; }
-    if (flag & VM_CALL_SUPER) != 0 { return true; }
-    if (flag & VM_CALL_ZSUPER) != 0 { return true; }
-    if (flag & VM_CALL_OPT_SEND) != 0 { return true; }
-    if (flag & VM_CALL_FORWARDING) != 0 { return true; }
-    false
+fn unknown_call_type(flag: u32) -> Result<(), CallType> {
+    if (flag & VM_CALL_ARGS_BLOCKARG) != 0 { return Err(CallType::BlockArg); }
+    if (flag & VM_CALL_TAILCALL) != 0 { return Err(CallType::Tailcall); }
+    Ok(())
 }
 
 /// We have IseqPayload, which keeps track of HIR Types in the interpreter, but this is not useful
@@ -2507,7 +3002,7 @@ struct ProfileOracle {
     /// instruction index. At a given ISEQ instruction, the interpreter has profiled the stack
     /// operands to a given ISEQ instruction, and this list of pairs of (InsnId, Type) map that
     /// profiling information into HIR instructions.
-    types: HashMap<usize, Vec<(InsnId, Type)>>,
+    types: HashMap<usize, Vec<(InsnId, TypeDistributionSummary)>>,
 }
 
 impl ProfileOracle {
@@ -2519,39 +3014,53 @@ impl ProfileOracle {
     fn profile_stack(&mut self, state: &FrameState) {
         let iseq_insn_idx = state.insn_idx;
         let Some(operand_types) = self.payload.profile.get_operand_types(iseq_insn_idx) else { return };
-        let entry = self.types.entry(iseq_insn_idx).or_insert_with(|| vec![]);
+        let entry = self.types.entry(iseq_insn_idx).or_default();
         // operand_types is always going to be <= stack size (otherwise it would have an underflow
         // at run-time) so use that to drive iteration.
-        for (idx, &insn_type) in operand_types.iter().rev().enumerate() {
+        for (idx, insn_type_distribution) in operand_types.iter().rev().enumerate() {
             let insn = state.stack_topn(idx).expect("Unexpected stack underflow in profiling");
-            entry.push((insn, insn_type))
+            entry.push((insn, TypeDistributionSummary::new(insn_type_distribution)))
         }
+    }
+
+    /// Map the interpreter-recorded types of self onto the HIR self
+    fn profile_self(&mut self, state: &FrameState, self_param: InsnId) {
+        let iseq_insn_idx = state.insn_idx;
+        let Some(operand_types) = self.payload.profile.get_operand_types(iseq_insn_idx) else { return };
+        let entry = self.types.entry(iseq_insn_idx).or_default();
+        if operand_types.is_empty() {
+           return;
+        }
+        let self_type_distribution = &operand_types[0];
+        entry.push((self_param, TypeDistributionSummary::new(self_type_distribution)))
     }
 }
 
 /// The index of the self parameter in the HIR function
 pub const SELF_PARAM_IDX: usize = 0;
 
-fn filter_unknown_parameter_type(iseq: *const rb_iseq_t) -> Result<(), ParseError> {
-    if unsafe { rb_get_iseq_body_param_opt_num(iseq) } != 0 { return Err(ParseError::UnknownParameterType(ParameterType::Optional)); }
-    Ok(())
-}
-
 /// Compile ISEQ into High-level IR
 pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
-    filter_unknown_parameter_type(iseq)?;
+    if !ZJITState::can_compile_iseq(iseq) {
+        return Err(ParseError::NotAllowed);
+    }
     let payload = get_or_create_iseq_payload(iseq);
     let mut profiles = ProfileOracle::new(payload);
     let mut fun = Function::new(iseq);
+
     // Compute a map of PC->Block by finding jump targets
-    let jump_targets = compute_jump_targets(iseq);
+    let BytecodeInfo { jump_targets, has_blockiseq } = compute_bytecode_info(iseq);
     let mut insn_idx_to_block = HashMap::new();
     for insn_idx in jump_targets {
         if insn_idx == 0 {
             todo!("Separate entry block for param/self/...");
         }
-        insn_idx_to_block.insert(insn_idx, fun.new_block());
+        insn_idx_to_block.insert(insn_idx, fun.new_block(insn_idx));
     }
+
+    // Check if the EP is escaped for the ISEQ from the beginning. We give up
+    // optimizing locals in that case because they're shared with other frames.
+    let ep_escaped = iseq_escapes_ep(iseq);
 
     // Iteratively fill out basic blocks using a queue
     // TODO(max): Basic block arguments at edges
@@ -2585,13 +3094,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         }
         fun.param_types.push(param_type);
     }
-    queue.push_back((entry_state, fun.entry_block, /*insn_idx=*/0_u32));
+    queue.push_back((entry_state, fun.entry_block, /*insn_idx=*/0_u32, /*local_inval=*/false));
 
     let mut visited = HashSet::new();
 
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
-    let iseq_type = unsafe { get_iseq_body_type(iseq) };
-    while let Some((incoming_state, block, mut insn_idx)) = queue.pop_front() {
+    while let Some((incoming_state, block, mut insn_idx, mut local_inval)) = queue.pop_front() {
         if visited.contains(&block) { continue; }
         visited.insert(block);
         let (self_param, mut state) = if insn_idx == 0 {
@@ -2620,12 +3128,37 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
             state.pc = pc;
             let exit_state = state.clone();
-            profiles.profile_stack(&exit_state);
 
             // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
             let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
                 .try_into()
                 .unwrap();
+
+            if opcode == YARVINSN_getinstancevariable {
+                profiles.profile_self(&exit_state, self_param);
+            } else {
+                profiles.profile_stack(&exit_state);
+            }
+
+            // Flag a future getlocal/setlocal to add a patch point if this instruction is not leaf.
+            if unsafe { !rb_zjit_insn_leaf(opcode as i32, pc.offset(1)) } {
+                local_inval = true;
+            }
+
+            // We add NoTracePoint patch points before every instruction that could be affected by TracePoint.
+            // This ensures that if TracePoint is enabled, we can exit the generated code as fast as possible.
+            unsafe extern "C" {
+                fn rb_iseq_event_flags(iseq: IseqPtr, pos: usize) -> rb_event_flag_t;
+            }
+            if unsafe { rb_iseq_event_flags(iseq, insn_idx as usize) } != 0 {
+                let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
+                fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoTracePoint, state: exit_id });
+            }
+
+            // Increment zjit_insn_count for each YARV instruction if --zjit-stats is enabled.
+            if get_option!(stats) {
+                fun.push_insn(block, Insn::IncrCounter(Counter::zjit_insn_count));
+            }
             // Move to the next instruction to compile
             insn_idx += insn_len(opcode as usize);
 
@@ -2644,38 +3177,49 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_putstring => {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let insn_id = fun.push_insn(block, Insn::StringCopy { val, chilled: false });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let insn_id = fun.push_insn(block, Insn::StringCopy { val, chilled: false, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_putchilledstring => {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let insn_id = fun.push_insn(block, Insn::StringCopy { val, chilled: true });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let insn_id = fun.push_insn(block, Insn::StringCopy { val, chilled: true, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_putself => { state.stack_push(self_param); }
                 YARVINSN_intern => {
                     let val = state.stack_pop()?;
-                    let insn_id = fun.push_insn(block, Insn::StringIntern { val });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let insn_id = fun.push_insn(block, Insn::StringIntern { val, state: exit_id });
+                    state.stack_push(insn_id);
+                }
+                YARVINSN_concatstrings => {
+                    let count = get_arg(pc, 0).as_u32();
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let strings = state.stack_pop_n(count as usize)?;
+                    let insn_id = fun.push_insn(block, Insn::StringConcat { strings, state: exit_id });
+                    state.stack_push(insn_id);
+                }
+                YARVINSN_toregexp => {
+                    // First arg contains the options (multiline, extended, ignorecase) used to create the regexp
+                    let opt = get_arg(pc, 0).as_usize();
+                    let count = get_arg(pc, 1).as_usize();
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let values = state.stack_pop_n(count)?;
+                    let insn_id = fun.push_insn(block, Insn::ToRegexp { opt, values, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_newarray => {
                     let count = get_arg(pc, 0).as_usize();
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let mut elements = vec![];
-                    for _ in 0..count {
-                        elements.push(state.stack_pop()?);
-                    }
-                    elements.reverse();
+                    let elements = state.stack_pop_n(count)?;
                     state.stack_push(fun.push_insn(block, Insn::NewArray { elements, state: exit_id }));
                 }
                 YARVINSN_opt_newarray_send => {
                     let count = get_arg(pc, 0).as_usize();
                     let method = get_arg(pc, 1).as_u32();
-                    let mut elements = vec![];
-                    for _ in 0..count {
-                        elements.push(state.stack_pop()?);
-                    }
-                    elements.reverse();
+                    let elements = state.stack_pop_n(count)?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let (bop, insn) = match method {
                         VM_OPT_NEWARRAY_SEND_MAX => (BOP_MAX, Insn::ArrayMax { elements, state: exit_id }),
@@ -2740,13 +3284,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_pushtoarray => {
                     let count = get_arg(pc, 0).as_usize();
-                    let mut vals = vec![];
-                    for _ in 0..count {
-                        vals.push(state.stack_pop()?);
-                    }
+                    let vals = state.stack_pop_n(count)?;
                     let array = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    for val in vals.into_iter().rev() {
+                    for val in vals.into_iter() {
                         fun.push_insn(block, Insn::ArrayPush { array, val, state: exit_id });
                     }
                     state.stack_push(array);
@@ -2763,7 +3304,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let obj = get_arg(pc, 1);
                     let pushval = get_arg(pc, 2);
                     let v = state.stack_pop()?;
-                    state.stack_push(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v }));
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    state.stack_push(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v, state: exit_id }));
                 }
                 YARVINSN_definedivar => {
                     // (ID id, IVC ic, VALUE pushval)
@@ -2778,90 +3320,126 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(fun.push_insn(block, Insn::GetConstantPath { ic, state: snapshot }));
                 }
                 YARVINSN_branchunless => {
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     let offset = get_arg(pc, 0).as_i64();
                     let val = state.stack_pop()?;
                     let test_id = fun.push_insn(block, Insn::Test { val });
-                    // TODO(max): Check interrupts
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
                     let _branch_id = fun.push_insn(block, Insn::IfFalse {
                         val: test_id,
                         target: BranchEdge { target, args: state.as_args(self_param) }
                     });
-                    queue.push_back((state.clone(), target, target_idx));
+                    queue.push_back((state.clone(), target, target_idx, local_inval));
                 }
                 YARVINSN_branchif => {
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     let offset = get_arg(pc, 0).as_i64();
                     let val = state.stack_pop()?;
                     let test_id = fun.push_insn(block, Insn::Test { val });
-                    // TODO(max): Check interrupts
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
                     let _branch_id = fun.push_insn(block, Insn::IfTrue {
                         val: test_id,
                         target: BranchEdge { target, args: state.as_args(self_param) }
                     });
-                    queue.push_back((state.clone(), target, target_idx));
+                    queue.push_back((state.clone(), target, target_idx, local_inval));
                 }
                 YARVINSN_branchnil => {
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     let offset = get_arg(pc, 0).as_i64();
                     let val = state.stack_pop()?;
                     let test_id = fun.push_insn(block, Insn::IsNil { val });
-                    // TODO(max): Check interrupts
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
                     let _branch_id = fun.push_insn(block, Insn::IfTrue {
                         val: test_id,
                         target: BranchEdge { target, args: state.as_args(self_param) }
                     });
-                    queue.push_back((state.clone(), target, target_idx));
+                    queue.push_back((state.clone(), target, target_idx, local_inval));
+                }
+                YARVINSN_opt_case_dispatch => {
+                    // TODO: Some keys are visible at compile time, so in the future we can
+                    // compile jump targets for certain cases
+                    // Pop the key from the stack and fallback to the === branches for now
+                    state.stack_pop()?;
                 }
                 YARVINSN_opt_new => {
-                    let offset = get_arg(pc, 1).as_i64();
-                    // TODO(max): Check interrupts
-                    let target_idx = insn_idx_at_offset(insn_idx, offset);
+                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                    let dst = get_arg(pc, 1).as_i64();
+
+                    // Check if #new resolves to rb_class_new_instance_pass_kw.
+                    // TODO: Guard on a profiled class and add a patch point for #new redefinition
+                    let argc = unsafe { vm_ci_argc((*cd).ci) } as usize;
+                    let val = state.stack_topn(argc)?;
+                    let test_id = fun.push_insn(block, Insn::IsMethodCfunc { val, cd, cfunc: rb_class_new_instance_pass_kw as *const u8 });
+
+                    // Jump to the fallback block if it's not the expected function.
+                    // Skip CheckInterrupts since the #new call will do it very soon anyway.
+                    let target_idx = insn_idx_at_offset(insn_idx, dst);
                     let target = insn_idx_to_block[&target_idx];
-                    // Skip the fast-path and go straight to the fallback code. We will let the
-                    // optimizer take care of the converting Class#new->alloc+initialize instead.
-                    fun.push_insn(block, Insn::Jump(BranchEdge { target, args: state.as_args(self_param) }));
-                    queue.push_back((state.clone(), target, target_idx));
-                    break;  // Don't enqueue the next block as a successor
+                    let _branch_id = fun.push_insn(block, Insn::IfFalse {
+                        val: test_id,
+                        target: BranchEdge { target, args: state.as_args(self_param) }
+                    });
+                    queue.push_back((state.clone(), target, target_idx, local_inval));
+
+                    // Move on to the fast path
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let insn_id = fun.push_insn(block, Insn::ObjectAlloc { val, state: exit_id });
+                    state.stack_setn(argc, insn_id);
+                    state.stack_setn(argc + 1, insn_id);
                 }
                 YARVINSN_jump => {
                     let offset = get_arg(pc, 0).as_i64();
-                    // TODO(max): Check interrupts
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
                     let _branch_id = fun.push_insn(block, Insn::Jump(
                         BranchEdge { target, args: state.as_args(self_param) }
                     ));
-                    queue.push_back((state.clone(), target, target_idx));
+                    queue.push_back((state.clone(), target, target_idx, local_inval));
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_getlocal_WC_0 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    if iseq_type == ISEQ_TYPE_EVAL {
-                        // On eval, the locals are always on the heap, so read the local using EP.
-                        state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 }));
+                    if ep_escaped || has_blockiseq { // TODO: figure out how to drop has_blockiseq here
+                        // Read the local using EP
+                        let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
+                        state.setlocal(ep_offset, val); // remember the result to spill on side-exits
+                        state.stack_push(val);
                     } else {
-                        // TODO(alan): This implementation doesn't read from EP, so will miss writes
-                        // from nested ISeqs. This will need to be amended when we add codegen for
-                        // Send.
+                        if local_inval {
+                            // If there has been any non-leaf call since JIT entry or the last patch point,
+                            // add a patch point to make sure locals have not been escaped.
+                            let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() }); // skip spilling locals
+                            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
+                            local_inval = false;
+                        }
+                        // Read the local from FrameState
                         let val = state.getlocal(ep_offset);
                         state.stack_push(val);
                     }
                 }
                 YARVINSN_setlocal_WC_0 => {
-                    // TODO(alan): This implementation doesn't write to EP, where nested scopes
-                    // read, so they'll miss these writes. This will need to be amended when we
-                    // add codegen for Send.
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let val = state.stack_pop()?;
-                    state.setlocal(ep_offset, val);
-                    if iseq_type == ISEQ_TYPE_EVAL {
-                        // On eval, the locals are always on the heap, so write the local using EP.
+                    if ep_escaped || has_blockiseq { // TODO: figure out how to drop has_blockiseq here
+                        // Write the local using EP
                         fun.push_insn(block, Insn::SetLocal { val, ep_offset, level: 0 });
+                    } else if local_inval {
+                        // If there has been any non-leaf call since JIT entry or the last patch point,
+                        // add a patch point to make sure locals have not been escaped.
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() }); // skip spilling locals
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
+                        local_inval = false;
                     }
+                    // Write the local into FrameState
+                    state.setlocal(ep_offset, val);
                 }
                 YARVINSN_getlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -2880,6 +3458,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let level = get_arg(pc, 1).as_u32();
                     fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level });
+                }
+                YARVINSN_getblockparamproxy => {
+                    let level = get_arg(pc, 1).as_u32();
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    state.stack_push(fun.push_insn(block, Insn::GetBlockParamProxy { level, state: exit_id }));
                 }
                 YARVINSN_pop => { state.stack_pop()?; }
                 YARVINSN_dup => { state.stack_push(state.stack_top()?); }
@@ -2914,58 +3497,22 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         n -= 1;
                     }
                 }
-                YARVINSN_opt_aref_with => {
-                    // NB: opt_aref_with has an instruction argument for the call at get_arg(0)
-                    let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
-                    let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
-                        // Unknown call type; side-exit into the interpreter
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownCallType });
-                        break;  // End the block
-                    }
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
-
-                    let method_name = unsafe {
-                        let mid = rb_vm_ci_mid(call_info);
-                        mid.contents_lossy().into_owned()
-                    };
-
-                    assert_eq!(1, argc, "opt_aref_with should only be emitted for argc=1");
-                    let aref_arg = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let args = vec![aref_arg];
-
-                    let recv = state.stack_pop()?;
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id });
-                    state.stack_push(send);
-                }
                 YARVINSN_opt_neq => {
                     // NB: opt_neq has two cd; get_arg(0) is for eq and get_arg(1) is for neq
                     let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
+                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
                         // Unknown call type; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownCallType });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
-
-                    let method_name = unsafe {
-                        let mid = rb_vm_ci_mid(call_info);
-                        mid.contents_lossy().into_owned()
-                    };
-                    let mut args = vec![];
-                    for _ in 0..argc {
-                        args.push(state.stack_pop()?);
-                    }
-                    args.reverse();
-
+                    let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id });
                     state.stack_push(send);
                 }
                 YARVINSN_opt_hash_freeze |
@@ -2975,10 +3522,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // NB: these instructions have the recv for the call at get_arg(0)
                     let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
+                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
                         // Unknown call type; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownCallType });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -2986,23 +3533,21 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     assert_eq!(0, argc, "{name} should not have args");
                     let args = vec![];
 
-                    let method_name = unsafe {
-                        let mid = rb_vm_ci_mid(call_info);
-                        mid.contents_lossy().into_owned()
-                    };
-
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id });
                     state.stack_push(send);
                 }
 
                 YARVINSN_leave => {
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     fun.push_insn(block, Insn::Return { val: state.stack_pop()? });
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_throw => {
-                    fun.push_insn(block, Insn::Throw { throw_state: get_arg(pc, 0).as_u32(), val: state.stack_pop()? });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    fun.push_insn(block, Insn::Throw { throw_state: get_arg(pc, 0).as_u32(), val: state.stack_pop()?, state: exit_id });
                     break;  // Don't enqueue the next block as a successor
                 }
 
@@ -3035,56 +3580,89 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_send_without_block => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
+                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
                         // Unknown call type; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownCallType });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
-
-                    let method_name = unsafe {
-                        let mid = rb_vm_ci_mid(call_info);
-                        mid.contents_lossy().into_owned()
-                    };
-                    let mut args = vec![];
-                    for _ in 0..argc {
-                        args.push(state.stack_pop()?);
-                    }
-                    args.reverse();
-
+                    let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id });
                     state.stack_push(send);
                 }
                 YARVINSN_send => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
+                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
                         // Unknown call type; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownCallType });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
-                    let method_name = unsafe {
-                        let mid = rb_vm_ci_mid(call_info);
-                        mid.contents_lossy().into_owned()
-                    };
-                    let mut args = vec![];
-                    for _ in 0..argc {
-                        args.push(state.stack_pop()?);
-                    }
-                    args.reverse();
-
+                    let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { method_name }, cd, blockiseq, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq, args, state: exit_id });
                     state.stack_push(send);
+
+                    // Reload locals that may have been modified by the blockiseq.
+                    // TODO: Avoid reloading locals that are not referenced by the blockiseq
+                    // or not used after this. Max thinks we could eventually DCE them.
+                    for local_idx in 0..state.locals.len() {
+                        let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
+                        let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
+                        state.setlocal(ep_offset, val);
+                    }
+                }
+                YARVINSN_invokesuper => {
+                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                    let call_info = unsafe { rb_get_call_data_ci(cd) };
+                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) } & !VM_CALL_SUPER & !VM_CALL_ZSUPER) {
+                        // Unknown call type; side-exit into the interpreter
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
+                        break;  // End the block
+                    }
+                    let argc = unsafe { vm_ci_argc((*cd).ci) };
+                    let args = state.stack_pop_n(argc as usize)?;
+                    let recv = state.stack_pop()?;
+                    let blockiseq: IseqPtr = get_arg(pc, 1).as_ptr();
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let result = fun.push_insn(block, Insn::InvokeSuper { recv, cd, blockiseq, args, state: exit_id });
+                    state.stack_push(result);
+
+                    if !blockiseq.is_null() {
+                        // Reload locals that may have been modified by the blockiseq.
+                        // TODO: Avoid reloading locals that are not referenced by the blockiseq
+                        // or not used after this. Max thinks we could eventually DCE them.
+                        for local_idx in 0..state.locals.len() {
+                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
+                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
+                            state.setlocal(ep_offset, val);
+                        }
+                    }
+                }
+                YARVINSN_invokeblock => {
+                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                    let call_info = unsafe { rb_get_call_data_ci(cd) };
+                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
+                        // Unknown call type; side-exit into the interpreter
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
+                        break;  // End the block
+                    }
+                    let argc = unsafe { vm_ci_argc((*cd).ci) };
+                    let args = state.stack_pop_n(argc as usize)?;
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let result = fun.push_insn(block, Insn::InvokeBlock { cd, args, state: exit_id });
+                    state.stack_push(result);
                 }
                 YARVINSN_getglobal => {
                     let id = ID(get_arg(pc, 0).as_u64());
@@ -3102,6 +3680,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let id = ID(get_arg(pc, 0).as_u64());
                     // ic is in arg 1
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    // Assume single-Ractor mode to omit gen_prepare_non_leaf_call on gen_getivar
+                    // TODO: We only really need this if self_val is a class/module
+                    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state: exit_id });
                     let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, state: exit_id });
                     state.stack_push(result);
                 }
@@ -3109,6 +3690,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let id = ID(get_arg(pc, 0).as_u64());
                     // ic is in arg 1
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    // Assume single-Ractor mode to omit gen_prepare_non_leaf_call on gen_setivar
+                    // TODO: We only really need this if self_val is a class/module
+                    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state: exit_id });
                     let val = state.stack_pop()?;
                     fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, val, state: exit_id });
                 }
@@ -3141,7 +3725,18 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     args.reverse();
 
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let insn_id = fun.push_insn(block, Insn::InvokeBuiltin { bf, args, state: exit_id });
+
+                    // Check if this builtin is annotated
+                    let return_type = ZJITState::get_method_annotations()
+                        .get_builtin_properties(&bf)
+                        .map(|props| props.return_type);
+
+                    let insn_id = fun.push_insn(block, Insn::InvokeBuiltin {
+                        bf,
+                        args,
+                        state: exit_id,
+                        return_type,
+                    });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_opt_invokebuiltin_delegate |
@@ -3156,27 +3751,33 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
 
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let insn_id = fun.push_insn(block, Insn::InvokeBuiltin { bf, args, state: exit_id });
+
+                    // Check if this builtin is annotated
+                    let return_type = ZJITState::get_method_annotations()
+                        .get_builtin_properties(&bf)
+                        .map(|props| props.return_type);
+
+                    let insn_id = fun.push_insn(block, Insn::InvokeBuiltin {
+                        bf,
+                        args,
+                        state: exit_id,
+                        return_type,
+                    });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_objtostring => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
 
-                    if unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
-                        assert!(false, "objtostring should not have unknown call type");
+                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
+                        panic!("objtostring should not have unknown call type {call_type:?}");
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     assert_eq!(0, argc, "objtostring should not have args");
 
-                    let method_name: String = unsafe {
-                        let mid = rb_vm_ci_mid(call_info);
-                        mid.contents_lossy().into_owned()
-                    };
-
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let objtostring = fun.push_insn(block, Insn::ObjToString { val: recv, call_info: CallInfo { method_name }, cd, state: exit_id });
+                    let objtostring = fun.push_insn(block, Insn::ObjToString { val: recv, cd, state: exit_id });
                     state.stack_push(objtostring)
                 }
                 YARVINSN_anytostring => {
@@ -3187,10 +3788,33 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let anytostring = fun.push_insn(block, Insn::AnyToString { val, str, state: exit_id });
                     state.stack_push(anytostring);
                 }
-                _ => {
-                    // Unknown opcode; side-exit into the interpreter
+                YARVINSN_getspecial => {
+                    let key = get_arg(pc, 0).as_u64();
+                    let svar = get_arg(pc, 1).as_u64();
+
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownOpcode(opcode) });
+
+                    if svar == 0 {
+                        // TODO: Handle non-backref
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownSpecialVariable(key) });
+                        // End the block
+                        break;
+                    } else if svar & 0x01 != 0 {
+                        // Handle symbol backrefs like $&, $`, $', $+
+                        let shifted_svar: u8 = (svar >> 1).try_into().unwrap();
+                        let symbol_type = SpecialBackrefSymbol::try_from(shifted_svar).expect("invalid backref symbol");
+                        let result = fun.push_insn(block, Insn::GetSpecialSymbol { symbol_type, state: exit_id });
+                        state.stack_push(result);
+                    } else {
+                        // Handle number backrefs like $1, $2, $3
+                        let result = fun.push_insn(block, Insn::GetSpecialNumber { nth: svar, state: exit_id });
+                        state.stack_push(result);
+                    }
+                }
+                _ => {
+                    // Unhandled opcode; side-exit into the interpreter
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledYARVInsn(opcode) });
                     break;  // End the block
                 }
             }
@@ -3198,7 +3822,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             if insn_idx_to_block.contains_key(&insn_idx) {
                 let target = insn_idx_to_block[&insn_idx];
                 fun.push_insn(block, Insn::Jump(BranchEdge { target, args: state.as_args(self_param) }));
-                queue.push_back((state, target, insn_idx));
+                queue.push_back((state, target, insn_idx, local_inval));
                 break;  // End the block
             }
         }
@@ -3274,7 +3898,7 @@ mod rpo_tests {
     fn jump() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let exit = function.new_block();
+        let exit = function.new_block(0);
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::Return { val });
@@ -3285,8 +3909,8 @@ mod rpo_tests {
     fn diamond_iftrue() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let side = function.new_block();
-        let exit = function.new_block();
+        let side = function.new_block(0);
+        let exit = function.new_block(0);
         function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::IfTrue { val, target: BranchEdge { target: side, args: vec![] } });
@@ -3300,8 +3924,8 @@ mod rpo_tests {
     fn diamond_iffalse() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let side = function.new_block();
-        let exit = function.new_block();
+        let side = function.new_block(0);
+        let exit = function.new_block(0);
         function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![] } });
@@ -3330,7 +3954,7 @@ mod validation_tests {
             Err(validation_err) => {
                 assert_eq!(validation_err, expected);
             }
-            Ok(_) => assert!(false, "Expected validation error"),
+            Ok(_) => panic!("Expected validation error"),
         }
     }
 
@@ -3356,7 +3980,7 @@ mod validation_tests {
     fn iftrue_mismatch_args() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let side = function.new_block();
+        let side = function.new_block(0);
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::IfTrue { val, target: BranchEdge { target: side, args: vec![val, val, val] } });
         assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(entry, 0, 3));
@@ -3366,7 +3990,7 @@ mod validation_tests {
     fn iffalse_mismatch_args() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let side = function.new_block();
+        let side = function.new_block(0);
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![val, val, val] } });
         assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(entry, 0, 3));
@@ -3376,7 +4000,7 @@ mod validation_tests {
     fn jump_mismatch_args() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let side = function.new_block();
+        let side = function.new_block(0);
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::Jump ( BranchEdge { target: side, args: vec![val, val, val] } ));
         assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(entry, 0, 3));
@@ -3408,8 +4032,8 @@ mod validation_tests {
         // This tests that one branch is missing a definition which fails.
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let side = function.new_block();
-        let exit = function.new_block();
+        let side = function.new_block(0);
+        let exit = function.new_block(0);
         let v0 = function.push_insn(side, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
         function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         let val1 = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
@@ -3427,8 +4051,8 @@ mod validation_tests {
         // This tests that both branches with a definition succeeds.
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let side = function.new_block();
-        let exit = function.new_block();
+        let side = function.new_block(0);
+        let exit = function.new_block(0);
         let v0 = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
         function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         let val = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
@@ -3468,7 +4092,7 @@ mod validation_tests {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
-        let exit = function.new_block();
+        let exit = function.new_block(0);
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         function.push_insn_id(exit, val);
         function.push_insn(exit, Insn::Return { val });
@@ -3494,7 +4118,7 @@ mod infer_tests {
     fn test_const() {
         let mut function = Function::new(std::ptr::null());
         let val = function.push_insn(function.entry_block, Insn::Const { val: Const::Value(Qnil) });
-        assert_bit_equal(function.infer_type(val), types::NilClassExact);
+        assert_bit_equal(function.infer_type(val), types::NilClass);
     }
 
     #[test]
@@ -3563,8 +4187,8 @@ mod infer_tests {
     fn diamond_iffalse_merge_fixnum() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let side = function.new_block();
-        let exit = function.new_block();
+        let side = function.new_block(0);
+        let exit = function.new_block(0);
         let v0 = function.push_insn(side, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
         function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![v0] }));
         let val = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
@@ -3582,8 +4206,8 @@ mod infer_tests {
     fn diamond_iffalse_merge_bool() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let side = function.new_block();
-        let exit = function.new_block();
+        let side = function.new_block(0);
+        let exit = function.new_block(0);
         let v0 = function.push_insn(side, Insn::Const { val: Const::Value(Qtrue) });
         function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![v0] }));
         let val = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
@@ -3593,7 +4217,7 @@ mod infer_tests {
         let param = function.push_insn(exit, Insn::Param { idx: 0 });
         crate::cruby::with_rubyvm(|| {
             function.infer_types();
-            assert_bit_equal(function.type_of(param), types::TrueClassExact.union(types::FalseClassExact));
+            assert_bit_equal(function.type_of(param), types::TrueClass.union(types::FalseClass));
         });
     }
 }
@@ -3601,49 +4225,7 @@ mod infer_tests {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use expect_test::{expect, Expect};
-
-    #[macro_export]
-    macro_rules! assert_matches {
-        ( $x:expr, $pat:pat ) => {
-            {
-                let val = $x;
-                if (!matches!(val, $pat)) {
-                    eprintln!("{} ({:?}) does not match pattern {}", stringify!($x), val, stringify!($pat));
-                    assert!(false);
-                }
-            }
-        };
-    }
-
-
-    #[track_caller]
-    fn assert_matches_value(insn: Option<&Insn>, val: VALUE) {
-        match insn {
-            Some(Insn::Const { val: Const::Value(spec) }) => {
-                assert_eq!(*spec, val);
-            }
-            _ => assert!(false, "Expected Const {val}, found {insn:?}"),
-        }
-    }
-
-    #[track_caller]
-    fn assert_matches_const(insn: Option<&Insn>, expected: Const) {
-        match insn {
-            Some(Insn::Const { val }) => {
-                assert_eq!(*val, expected, "{val:?} does not match {expected:?}");
-            }
-            _ => assert!(false, "Expected Const {expected:?}, found {insn:?}"),
-        }
-    }
-
-    #[track_caller]
-    fn assert_method_hir(method: &str, hir: Expect) {
-        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
-        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-        let function = iseq_to_hir(iseq).unwrap();
-        assert_function_hir(function, hir);
-    }
+    use insta::assert_snapshot;
 
     fn iseq_contains_opcode(iseq: IseqPtr, expected_opcode: u32) -> bool {
         let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
@@ -3665,25 +4247,32 @@ mod tests {
     }
 
     #[track_caller]
-    fn assert_method_hir_with_opcodes(method: &str, opcodes: &[u32], hir: Expect) {
+    fn assert_contains_opcode(method: &str, opcode: u32) {
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+        assert!(iseq_contains_opcode(iseq, opcode), "iseq {method} does not contain {}", insn_name(opcode as usize));
+    }
+
+    #[track_caller]
+    fn assert_contains_opcodes(method: &str, opcodes: &[u32]) {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         for &opcode in opcodes {
             assert!(iseq_contains_opcode(iseq, opcode), "iseq {method} does not contain {}", insn_name(opcode as usize));
         }
+    }
+
+    #[track_caller]
+    fn hir_string(method: &str) -> String {
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         let function = iseq_to_hir(iseq).unwrap();
-        assert_function_hir(function, hir);
+        hir_string_function(&function)
     }
 
     #[track_caller]
-    fn assert_method_hir_with_opcode(method: &str, opcode: u32, hir: Expect) {
-        assert_method_hir_with_opcodes(method, &[opcode], hir)
-    }
-
-    #[track_caller]
-    pub fn assert_function_hir(function: Function, expected_hir: Expect) {
-        let actual_hir = format!("{}", FunctionPrinter::without_snapshot(&function));
-        expected_hir.assert_eq(&actual_hir);
+    fn hir_string_function(function: &Function) -> String {
+        format!("{}", FunctionPrinter::without_snapshot(function))
     }
 
     #[track_caller]
@@ -3696,216 +4285,259 @@ mod tests {
     }
 
     #[test]
-    fn test_cant_compile_optional() {
+    fn test_compile_optional() {
         eval("def test(x=1) = 123");
-        assert_compile_fails("test", ParseError::UnknownParameterType(ParameterType::Optional));
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v3:Fixnum[1] = Const Value(1)
+          v6:Fixnum[123] = Const Value(123)
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
     fn test_putobject() {
         eval("def test = 123");
-        assert_method_hir_with_opcode("test", YARVINSN_putobject, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject):
-              v2:Fixnum[123] = Const Value(123)
-              Return v2
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_putobject);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject):
+          v4:Fixnum[123] = Const Value(123)
+          CheckInterrupts
+          Return v4
+        ");
     }
 
     #[test]
     fn test_new_array() {
         eval("def test = []");
-        assert_method_hir_with_opcode("test", YARVINSN_newarray, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject):
-              v3:ArrayExact = NewArray
-              Return v3
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_newarray);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject):
+          v5:ArrayExact = NewArray
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
     fn test_new_array_with_element() {
         eval("def test(a) = [a]");
-        assert_method_hir_with_opcode("test", YARVINSN_newarray, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v4:ArrayExact = NewArray v1
-              Return v4
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_newarray);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v6:ArrayExact = NewArray v1
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
     fn test_new_array_with_elements() {
         eval("def test(a, b) = [a, b]");
-        assert_method_hir_with_opcode("test", YARVINSN_newarray, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:ArrayExact = NewArray v1, v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_newarray);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v7:ArrayExact = NewArray v1, v2
+          CheckInterrupts
+          Return v7
+        ");
     }
 
     #[test]
     fn test_new_range_inclusive_with_one_element() {
         eval("def test(a) = (a..10)");
-        assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:Fixnum[10] = Const Value(10)
-              v5:RangeExact = NewRange v1 NewRangeInclusive v3
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_newrange);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:Fixnum[10] = Const Value(10)
+          v7:RangeExact = NewRange v1 NewRangeInclusive v5
+          CheckInterrupts
+          Return v7
+        ");
     }
 
     #[test]
     fn test_new_range_inclusive_with_two_elements() {
         eval("def test(a, b) = (a..b)");
-        assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:RangeExact = NewRange v1 NewRangeInclusive v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_newrange);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v7:RangeExact = NewRange v1 NewRangeInclusive v2
+          CheckInterrupts
+          Return v7
+        ");
     }
 
     #[test]
     fn test_new_range_exclusive_with_one_element() {
         eval("def test(a) = (a...10)");
-        assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:Fixnum[10] = Const Value(10)
-              v5:RangeExact = NewRange v1 NewRangeExclusive v3
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_newrange);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:Fixnum[10] = Const Value(10)
+          v7:RangeExact = NewRange v1 NewRangeExclusive v5
+          CheckInterrupts
+          Return v7
+        ");
     }
 
     #[test]
     fn test_new_range_exclusive_with_two_elements() {
         eval("def test(a, b) = (a...b)");
-        assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:RangeExact = NewRange v1 NewRangeExclusive v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_newrange);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v7:RangeExact = NewRange v1 NewRangeExclusive v2
+          CheckInterrupts
+          Return v7
+        ");
     }
 
     #[test]
     fn test_array_dup() {
         eval("def test = [1, 2, 3]");
-        assert_method_hir_with_opcode("test", YARVINSN_duparray, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject):
-              v2:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v4:ArrayExact = ArrayDup v2
-              Return v4
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_duparray);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject):
+          v4:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v6:ArrayExact = ArrayDup v4
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
     fn test_hash_dup() {
         eval("def test = {a: 1, b: 2}");
-        assert_method_hir_with_opcode("test", YARVINSN_duphash, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject):
-              v2:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v4:HashExact = HashDup v2
-              Return v4
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_duphash);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject):
+          v4:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v6:HashExact = HashDup v4
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
     fn test_new_hash_empty() {
         eval("def test = {}");
-        assert_method_hir_with_opcode("test", YARVINSN_newhash, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject):
-              v3:HashExact = NewHash
-              Return v3
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_newhash);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject):
+          v5:HashExact = NewHash
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
     fn test_new_hash_with_elements() {
         eval("def test(aval, bval) = {a: aval, b: bval}");
-        assert_method_hir_with_opcode("test", YARVINSN_newhash, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v4:StaticSymbol[:a] = Const Value(VALUE(0x1000))
-              v5:StaticSymbol[:b] = Const Value(VALUE(0x1008))
-              v7:HashExact = NewHash v4: v1, v5: v2
-              Return v7
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_newhash);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v6:StaticSymbol[:a] = Const Value(VALUE(0x1000))
+          v7:StaticSymbol[:b] = Const Value(VALUE(0x1008))
+          v9:HashExact = NewHash v6: v1, v7: v2
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
     fn test_string_copy() {
         eval("def test = \"hello\"");
-        assert_method_hir_with_opcode("test", YARVINSN_putchilledstring, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject):
-              v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v3:StringExact = StringCopy v2
-              Return v3
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_putchilledstring);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject):
+          v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v6:StringExact = StringCopy v4
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
     fn test_bignum() {
         eval("def test = 999999999999999999999999999999999999");
-        assert_method_hir_with_opcode("test", YARVINSN_putobject, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject):
-              v2:Bignum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              Return v2
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_putobject);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject):
+          v4:Bignum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          CheckInterrupts
+          Return v4
+        ");
     }
 
     #[test]
     fn test_flonum() {
         eval("def test = 1.5");
-        assert_method_hir_with_opcode("test", YARVINSN_putobject, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject):
-              v2:Flonum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              Return v2
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_putobject);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject):
+          v4:Flonum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          CheckInterrupts
+          Return v4
+        ");
     }
 
     #[test]
     fn test_heap_float() {
         eval("def test = 1.7976931348623157e+308");
-        assert_method_hir_with_opcode("test", YARVINSN_putobject, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject):
-              v2:HeapFloat[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              Return v2
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_putobject);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject):
+          v4:HeapFloat[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          CheckInterrupts
+          Return v4
+        ");
     }
 
     #[test]
     fn test_static_sym() {
         eval("def test = :foo");
-        assert_method_hir_with_opcode("test", YARVINSN_putobject, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject):
-              v2:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
-              Return v2
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_putobject);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject):
+          v4:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
+          CheckInterrupts
+          Return v4
+        ");
     }
 
     #[test]
     fn test_opt_plus() {
         eval("def test = 1+2");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_plus, expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              v3:Fixnum[2] = Const Value(2)
-              v5:BasicObject = SendWithoutBlock v2, :+, v3
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_plus);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          v5:Fixnum[2] = Const Value(2)
+          v9:BasicObject = SendWithoutBlock v4, :+, v5
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -3913,13 +4545,15 @@ mod tests {
         eval("
             def test = {}.freeze
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_hash_freeze, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v4:BasicObject = SendWithoutBlock v3, :freeze
-              Return v4
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_hash_freeze);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v6:BasicObject = SendWithoutBlock v5, :freeze
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
@@ -3927,13 +4561,15 @@ mod tests {
         eval("
             def test = [].freeze
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_ary_freeze, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v4:BasicObject = SendWithoutBlock v3, :freeze
-              Return v4
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_ary_freeze);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v6:BasicObject = SendWithoutBlock v5, :freeze
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
@@ -3941,13 +4577,15 @@ mod tests {
         eval("
             def test = ''.freeze
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_str_freeze, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v4:BasicObject = SendWithoutBlock v3, :freeze
-              Return v4
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_str_freeze);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v6:BasicObject = SendWithoutBlock v5, :freeze
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
@@ -3955,13 +4593,15 @@ mod tests {
         eval("
             def test = -''
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_str_uminus, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v4:BasicObject = SendWithoutBlock v3, :-@
-              Return v4
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_str_uminus);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v6:BasicObject = SendWithoutBlock v5, :-@
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
@@ -3972,13 +4612,15 @@ mod tests {
               a
             end
         ");
-        assert_method_hir_with_opcodes("test", &[YARVINSN_getlocal_WC_0, YARVINSN_setlocal_WC_0], expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v1:NilClassExact = Const Value(nil)
-              v3:Fixnum[1] = Const Value(1)
-              Return v3
-        "#]]);
+        assert_contains_opcodes("test", &[YARVINSN_getlocal_WC_0, YARVINSN_setlocal_WC_0]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v5:Fixnum[1] = Const Value(1)
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
@@ -3999,25 +4641,26 @@ mod tests {
             end
           end
         ");
-        assert_method_hir_with_opcodes(
+        assert_contains_opcodes(
             "test",
             &[YARVINSN_getlocal_WC_1, YARVINSN_setlocal_WC_1,
-              YARVINSN_getlocal, YARVINSN_setlocal],
-            expect![[r#"
-                fn block (3 levels) in <compiled>@<compiled>:10:
-                bb0(v0:BasicObject):
-                  v2:BasicObject = GetLocal l2, EP@4
-                  SetLocal l1, EP@3, v2
-                  v4:BasicObject = GetLocal l1, EP@3
-                  v5:BasicObject = GetLocal l2, EP@4
-                  v7:BasicObject = SendWithoutBlock v4, :+, v5
-                  SetLocal l2, EP@4, v7
-                  v9:BasicObject = GetLocal l2, EP@4
-                  v10:BasicObject = GetLocal l3, EP@5
-                  v12:BasicObject = SendWithoutBlock v9, :+, v10
-                  SetLocal l3, EP@5, v12
-                  Return v12
-            "#]]
+              YARVINSN_getlocal, YARVINSN_setlocal]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn block (3 levels) in <compiled>@<compiled>:10:
+        bb0(v0:BasicObject):
+          v4:BasicObject = GetLocal l2, EP@4
+          SetLocal l1, EP@3, v4
+          v8:BasicObject = GetLocal l1, EP@3
+          v9:BasicObject = GetLocal l2, EP@4
+          v13:BasicObject = SendWithoutBlock v8, :+, v9
+          SetLocal l2, EP@4, v13
+          v17:BasicObject = GetLocal l2, EP@4
+          v18:BasicObject = GetLocal l3, EP@5
+          v22:BasicObject = SendWithoutBlock v17, :+, v18
+          SetLocal l3, EP@5, v22
+          CheckInterrupts
+          Return v22
+        "
         );
     }
 
@@ -4026,12 +4669,14 @@ mod tests {
         eval("
             def test = defined?(@foo)
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_definedivar, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:BasicObject = DefinedIvar v0, :@foo
-              Return v3
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_definedivar);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:BasicObject = DefinedIvar v0, :@foo
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
@@ -4039,17 +4684,19 @@ mod tests {
         eval("
             def test = return defined?(SeaChange), defined?(favourite), defined?($ruby)
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_defined, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v2:NilClassExact = Const Value(nil)
-              v3:BasicObject = Defined constant, v2
-              v4:BasicObject = Defined func, v0
-              v5:NilClassExact = Const Value(nil)
-              v6:BasicObject = Defined global-variable, v5
-              v8:ArrayExact = NewArray v3, v4, v6
-              Return v8
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_defined);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:NilClass = Const Value(nil)
+          v6:StringExact|NilClass = Defined constant, v4
+          v8:StringExact|NilClass = Defined func, v0
+          v9:NilClass = Const Value(nil)
+          v11:StringExact|NilClass = Defined global-variable, v9
+          v13:ArrayExact = NewArray v6, v8, v11
+          CheckInterrupts
+          Return v13
+        ");
     }
 
     #[test]
@@ -4063,17 +4710,21 @@ mod tests {
               end
             end
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_leave, expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:CBool = Test v1
-              IfFalse v3, bb1(v0, v1)
-              v5:Fixnum[3] = Const Value(3)
-              Return v5
-            bb1(v7:BasicObject, v8:BasicObject):
-              v10:Fixnum[4] = Const Value(4)
-              Return v10
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_leave);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject):
+          CheckInterrupts
+          v7:CBool = Test v1
+          IfFalse v7, bb1(v0, v1)
+          v11:Fixnum[3] = Const Value(3)
+          CheckInterrupts
+          Return v11
+        bb1(v17:BasicObject, v18:BasicObject):
+          v22:Fixnum[4] = Const Value(4)
+          CheckInterrupts
+          Return v22
+        ");
     }
 
     #[test]
@@ -4088,20 +4739,26 @@ mod tests {
               result
             end
         ");
-        assert_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v2:NilClassExact = Const Value(nil)
-              v4:CBool = Test v1
-              IfFalse v4, bb1(v0, v1, v2)
-              v6:Fixnum[3] = Const Value(3)
-              Jump bb2(v0, v1, v6)
-            bb1(v8:BasicObject, v9:BasicObject, v10:NilClassExact):
-              v12:Fixnum[4] = Const Value(4)
-              Jump bb2(v8, v9, v12)
-            bb2(v14:BasicObject, v15:BasicObject, v16:Fixnum):
-              Return v16
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v2:NilClass = Const Value(nil)
+          CheckInterrupts
+          v8:CBool = Test v1
+          IfFalse v8, bb1(v0, v1, v2)
+          v12:Fixnum[3] = Const Value(3)
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Jump bb2(v0, v1, v12)
+        bb1(v18:BasicObject, v19:BasicObject, v20:NilClass):
+          v24:Fixnum[4] = Const Value(4)
+          PatchPoint NoEPEscape(test)
+          Jump bb2(v18, v19, v24)
+        bb2(v28:BasicObject, v29:BasicObject, v30:Fixnum):
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v30
+        ");
     }
 
     #[test]
@@ -4110,12 +4767,14 @@ mod tests {
             def test(a, b) = a + b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :+, v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_plus);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v9:BasicObject = SendWithoutBlock v1, :+, v2
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -4124,12 +4783,14 @@ mod tests {
             def test(a, b) = a - b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_minus, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :-, v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_minus);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v9:BasicObject = SendWithoutBlock v1, :-, v2
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -4138,12 +4799,14 @@ mod tests {
             def test(a, b) = a * b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_mult, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :*, v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_mult);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v9:BasicObject = SendWithoutBlock v1, :*, v2
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -4152,12 +4815,14 @@ mod tests {
             def test(a, b) = a / b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_div, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :/, v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_div);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v9:BasicObject = SendWithoutBlock v1, :/, v2
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -4166,12 +4831,14 @@ mod tests {
             def test(a, b) = a % b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_mod, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :%, v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_mod);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v9:BasicObject = SendWithoutBlock v1, :%, v2
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -4180,12 +4847,14 @@ mod tests {
             def test(a, b) = a == b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_eq, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :==, v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_eq);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v9:BasicObject = SendWithoutBlock v1, :==, v2
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -4194,12 +4863,14 @@ mod tests {
             def test(a, b) = a != b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_neq, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :!=, v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_neq);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v9:BasicObject = SendWithoutBlock v1, :!=, v2
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -4208,12 +4879,14 @@ mod tests {
             def test(a, b) = a < b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_lt, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :<, v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_lt);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v9:BasicObject = SendWithoutBlock v1, :<, v2
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -4222,12 +4895,14 @@ mod tests {
             def test(a, b) = a <= b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_le, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :<=, v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_le);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v9:BasicObject = SendWithoutBlock v1, :<=, v2
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -4236,12 +4911,14 @@ mod tests {
             def test(a, b) = a > b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_gt, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :>, v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_gt);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v9:BasicObject = SendWithoutBlock v1, :>, v2
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -4258,28 +4935,34 @@ mod tests {
             end
             test
         ");
-        assert_method_hir("test",  expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v1:NilClassExact = Const Value(nil)
-              v2:NilClassExact = Const Value(nil)
-              v4:Fixnum[0] = Const Value(0)
-              v5:Fixnum[10] = Const Value(10)
-              Jump bb2(v0, v4, v5)
-            bb2(v7:BasicObject, v8:BasicObject, v9:BasicObject):
-              v11:Fixnum[0] = Const Value(0)
-              v13:BasicObject = SendWithoutBlock v9, :>, v11
-              v14:CBool = Test v13
-              IfTrue v14, bb1(v7, v8, v9)
-              v16:NilClassExact = Const Value(nil)
-              Return v8
-            bb1(v18:BasicObject, v19:BasicObject, v20:BasicObject):
-              v22:Fixnum[1] = Const Value(1)
-              v24:BasicObject = SendWithoutBlock v19, :+, v22
-              v25:Fixnum[1] = Const Value(1)
-              v27:BasicObject = SendWithoutBlock v20, :-, v25
-              Jump bb2(v18, v24, v27)
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v2:NilClass = Const Value(nil)
+          v6:Fixnum[0] = Const Value(0)
+          v9:Fixnum[10] = Const Value(10)
+          CheckInterrupts
+          Jump bb2(v0, v6, v9)
+        bb2(v15:BasicObject, v16:BasicObject, v17:BasicObject):
+          PatchPoint NoEPEscape(test)
+          v21:Fixnum[0] = Const Value(0)
+          v25:BasicObject = SendWithoutBlock v17, :>, v21
+          CheckInterrupts
+          v28:CBool = Test v25
+          IfTrue v28, bb1(v15, v16, v17)
+          v30:NilClass = Const Value(nil)
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v16
+        bb1(v40:BasicObject, v41:BasicObject, v42:BasicObject):
+          PatchPoint NoEPEscape(test)
+          v48:Fixnum[1] = Const Value(1)
+          v52:BasicObject = SendWithoutBlock v41, :+, v48
+          v55:Fixnum[1] = Const Value(1)
+          v59:BasicObject = SendWithoutBlock v42, :-, v55
+          Jump bb2(v40, v52, v59)
+        ");
     }
 
     #[test]
@@ -4288,12 +4971,14 @@ mod tests {
             def test(a, b) = a >= b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_ge, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :>=, v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_ge);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v9:BasicObject = SendWithoutBlock v1, :>=, v2
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -4308,19 +4993,22 @@ mod tests {
               end
             end
         ");
-        assert_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v1:NilClassExact = Const Value(nil)
-              v3:TrueClassExact = Const Value(true)
-              v4:CBool[true] = Test v3
-              IfFalse v4, bb1(v0, v3)
-              v6:Fixnum[3] = Const Value(3)
-              Return v6
-            bb1(v8, v9):
-              v11 = Const Value(4)
-              Return v11
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v5:TrueClass = Const Value(true)
+          CheckInterrupts
+          v10:CBool[true] = Test v5
+          IfFalse v10, bb1(v0, v5)
+          v14:Fixnum[3] = Const Value(3)
+          CheckInterrupts
+          Return v14
+        bb1(v20, v21):
+          v25 = Const Value(4)
+          CheckInterrupts
+          Return v25
+        ");
     }
 
     #[test]
@@ -4333,14 +5021,16 @@ mod tests {
               bar(2, 3)
             end
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_send_without_block, expect![[r#"
-            fn test@<compiled>:6:
-            bb0(v0:BasicObject):
-              v2:Fixnum[2] = Const Value(2)
-              v3:Fixnum[3] = Const Value(3)
-              v5:BasicObject = SendWithoutBlock v0, :bar, v2, v3
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_send_without_block);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:6:
+        bb0(v0:BasicObject):
+          v4:Fixnum[2] = Const Value(2)
+          v5:Fixnum[3] = Const Value(3)
+          v7:BasicObject = SendWithoutBlock v0, :bar, v4, v5
+          CheckInterrupts
+          Return v7
+        ");
     }
 
     #[test]
@@ -4353,12 +5043,38 @@ mod tests {
             end
             test([1,2,3])
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_send, expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = Send v1, 0x1000, :each
-              Return v4
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:BasicObject = GetLocal l0, EP@3
+          v7:BasicObject = Send v5, 0x1000, :each
+          v8:BasicObject = GetLocal l0, EP@3
+          CheckInterrupts
+          Return v7
+        ");
+    }
+
+    #[test]
+    fn test_intern_interpolated_symbol() {
+        eval(r#"
+            def test
+              :"foo#{123}"
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_intern);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v5:Fixnum[123] = Const Value(123)
+          v7:BasicObject = ObjToString v5
+          v9:String = AnyToString v5, str: v7
+          v11:StringExact = StringConcat v4, v9
+          v13:Symbol = StringIntern v11
+          CheckInterrupts
+          Return v13
+        ");
     }
 
     #[test]
@@ -4366,20 +5082,21 @@ mod tests {
         eval("def test = unknown_method([0], [1], '2', '2')");
 
         // The 2 string literals have the same address because they're deduped.
-        assert_method_hir("test",  expect![[r#"
-            fn test@<compiled>:1:
-            bb0(v0:BasicObject):
-              v2:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v4:ArrayExact = ArrayDup v2
-              v5:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              v7:ArrayExact = ArrayDup v5
-              v8:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
-              v9:StringExact = StringCopy v8
-              v10:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
-              v11:StringExact = StringCopy v10
-              v13:BasicObject = SendWithoutBlock v0, :unknown_method, v4, v7, v9, v11
-              Return v13
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject):
+          v4:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v6:ArrayExact = ArrayDup v4
+          v7:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v9:ArrayExact = ArrayDup v7
+          v10:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v12:StringExact = StringCopy v10
+          v13:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v15:StringExact = StringCopy v13
+          v17:BasicObject = SendWithoutBlock v0, :unknown_method, v6, v9, v12, v15
+          CheckInterrupts
+          Return v17
+        ");
     }
 
     #[test]
@@ -4387,12 +5104,14 @@ mod tests {
         eval("
             def test(a) = foo(*a)
         ");
-        assert_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v4:ArrayExact = ToArray v1
-              SideExit UnknownCallType
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v6:ArrayExact = ToArray v1
+          v8:BasicObject = SendWithoutBlock v0, :foo, v6
+          CheckInterrupts
+          Return v8
+        ");
     }
 
     #[test]
@@ -4400,11 +5119,11 @@ mod tests {
         eval("
             def test(a) = foo(&a)
         ");
-        assert_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              SideExit UnknownCallType
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          SideExit UnhandledCallType(BlockArg)
+        ");
     }
 
     #[test]
@@ -4412,12 +5131,14 @@ mod tests {
         eval("
             def test(a) = foo(a: 1)
         ");
-        assert_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:Fixnum[1] = Const Value(1)
-              SideExit UnknownCallType
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:Fixnum[1] = Const Value(1)
+          v7:BasicObject = SendWithoutBlock v0, :foo, v5
+          CheckInterrupts
+          Return v7
+        ");
     }
 
     #[test]
@@ -4425,37 +5146,56 @@ mod tests {
         eval("
             def test(a) = foo(**a)
         ");
-        assert_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              SideExit UnknownCallType
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v6:BasicObject = SendWithoutBlock v0, :foo, v1
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     // TODO(max): Figure out how to generate a call with TAILCALL flag
 
     #[test]
-    fn test_cant_compile_super() {
+    fn test_compile_super() {
         eval("
             def test = super()
         ");
-        assert_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              SideExit UnknownOpcode(invokesuper)
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:BasicObject = InvokeSuper v0, 0x1000
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
-    fn test_cant_compile_zsuper() {
+    fn test_compile_zsuper() {
         eval("
             def test = super
         ");
-        assert_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              SideExit UnknownOpcode(invokesuper)
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:BasicObject = InvokeSuper v0, 0x1000
+          CheckInterrupts
+          Return v5
+        ");
+    }
+
+    #[test]
+    fn test_cant_compile_super_nil_blockarg() {
+        eval("
+            def test = super(&nil)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:NilClass = Const Value(nil)
+          SideExit UnhandledCallType(BlockArg)
+        ");
     }
 
     #[test]
@@ -4463,11 +5203,23 @@ mod tests {
         eval("
             def test(...) = super(...)
         ");
-        assert_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              SideExit UnknownOpcode(invokesuperforward)
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          SideExit UnhandledYARVInsn(invokesuperforward)
+        ");
+    }
+
+    #[test]
+    fn test_compile_forwardable() {
+        eval("def forwardable(...) = nil");
+        assert_snapshot!(hir_string("forwardable"), @r"
+        fn forwardable@<compiled>:1:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     // TODO(max): Figure out how to generate a call with OPT_SEND flag
@@ -4477,18 +5229,21 @@ mod tests {
         eval("
             def test(a) = foo **a, b: 1
         ");
-        assert_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
-              v5:HashExact = NewHash
-              v7:BasicObject = SendWithoutBlock v3, :core#hash_merge_kwd, v5, v1
-              v8:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
-              v9:StaticSymbol[:b] = Const Value(VALUE(0x1008))
-              v10:Fixnum[1] = Const Value(1)
-              v12:BasicObject = SendWithoutBlock v8, :core#hash_merge_ptr, v7, v9, v10
-              SideExit UnknownCallType
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
+          v7:HashExact = NewHash
+          PatchPoint NoEPEscape(test)
+          v11:BasicObject = SendWithoutBlock v5, :core#hash_merge_kwd, v7, v1
+          v12:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
+          v13:StaticSymbol[:b] = Const Value(VALUE(0x1008))
+          v14:Fixnum[1] = Const Value(1)
+          v16:BasicObject = SendWithoutBlock v12, :core#hash_merge_ptr, v11, v13, v14
+          v18:BasicObject = SendWithoutBlock v0, :foo, v16
+          CheckInterrupts
+          Return v18
+        ");
     }
 
     #[test]
@@ -4496,14 +5251,16 @@ mod tests {
         eval("
             def test(*) = foo *, 1
         ");
-        assert_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:ArrayExact):
-              v4:ArrayExact = ToNewArray v1
-              v5:Fixnum[1] = Const Value(1)
-              ArrayPush v4, v5
-              SideExit UnknownCallType
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:ArrayExact):
+          v6:ArrayExact = ToNewArray v1
+          v7:Fixnum[1] = Const Value(1)
+          ArrayPush v6, v7
+          v11:BasicObject = SendWithoutBlock v0, :foo, v6
+          CheckInterrupts
+          Return v11
+        ");
     }
 
     #[test]
@@ -4511,11 +5268,11 @@ mod tests {
         eval("
             def test(...) = foo(...)
         ");
-        assert_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              SideExit UnknownOpcode(sendforward)
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          SideExit UnhandledYARVInsn(sendforward)
+        ");
     }
 
     #[test]
@@ -4524,18 +5281,25 @@ mod tests {
             class C; end
             def test = C.new
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_new, expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v3:BasicObject = GetConstantPath 0x1000
-              v4:NilClassExact = Const Value(nil)
-              Jump bb1(v0, v4, v3)
-            bb1(v6:BasicObject, v7:NilClassExact, v8:BasicObject):
-              v11:BasicObject = SendWithoutBlock v8, :new
-              Jump bb2(v6, v11, v7)
-            bb2(v13:BasicObject, v14:BasicObject, v15:NilClassExact):
-              Return v14
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_new);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v5:BasicObject = GetConstantPath 0x1000
+          v6:NilClass = Const Value(nil)
+          v7:CBool = IsMethodCFunc v5, :new
+          IfFalse v7, bb1(v0, v6, v5)
+          v10:HeapObject = ObjectAlloc v5
+          v12:BasicObject = SendWithoutBlock v10, :initialize
+          CheckInterrupts
+          Jump bb2(v0, v10, v12)
+        bb1(v16:BasicObject, v17:NilClass, v18:BasicObject):
+          v21:BasicObject = SendWithoutBlock v18, :new
+          Jump bb2(v16, v21, v17)
+        bb2(v23:BasicObject, v24:BasicObject, v25:BasicObject):
+          CheckInterrupts
+          Return v24
+        ");
     }
 
     #[test]
@@ -4544,13 +5308,15 @@ mod tests {
             def test = [].max
         ");
         // TODO(max): Rewrite to nil
-        assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX)
-              v4:BasicObject = ArrayMax
-              Return v4
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX)
+          v6:BasicObject = ArrayMax
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
@@ -4558,13 +5324,15 @@ mod tests {
         eval("
             def test(a,b) = [a,b].max
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX)
-              v6:BasicObject = ArrayMax v1, v2
-              Return v6
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX)
+          v8:BasicObject = ArrayMax v1, v2
+          CheckInterrupts
+          Return v8
+        ");
     }
 
     #[test]
@@ -4577,14 +5345,15 @@ mod tests {
               result
             end
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v3:NilClassExact = Const Value(nil)
-              v4:NilClassExact = Const Value(nil)
-              v7:BasicObject = SendWithoutBlock v1, :+, v2
-              SideExit UnknownNewarraySend(MIN)
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v3:NilClass = Const Value(nil)
+          v4:NilClass = Const Value(nil)
+          v11:BasicObject = SendWithoutBlock v1, :+, v2
+          SideExit UnknownNewarraySend(MIN)
+        ");
     }
 
     #[test]
@@ -4597,14 +5366,15 @@ mod tests {
               result
             end
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v3:NilClassExact = Const Value(nil)
-              v4:NilClassExact = Const Value(nil)
-              v7:BasicObject = SendWithoutBlock v1, :+, v2
-              SideExit UnknownNewarraySend(HASH)
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v3:NilClass = Const Value(nil)
+          v4:NilClass = Const Value(nil)
+          v11:BasicObject = SendWithoutBlock v1, :+, v2
+          SideExit UnknownNewarraySend(HASH)
+        ");
     }
 
     #[test]
@@ -4617,16 +5387,17 @@ mod tests {
               result
             end
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v3:NilClassExact = Const Value(nil)
-              v4:NilClassExact = Const Value(nil)
-              v7:BasicObject = SendWithoutBlock v1, :+, v2
-              v8:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v9:StringExact = StringCopy v8
-              SideExit UnknownNewarraySend(PACK)
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v3:NilClass = Const Value(nil)
+          v4:NilClass = Const Value(nil)
+          v11:BasicObject = SendWithoutBlock v1, :+, v2
+          v14:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v16:StringExact = StringCopy v14
+          SideExit UnknownNewarraySend(PACK)
+        ");
     }
 
     // TODO(max): Add a test for VM_OPT_NEWARRAY_SEND_PACK_BUFFER
@@ -4641,14 +5412,15 @@ mod tests {
               result
             end
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v3:NilClassExact = Const Value(nil)
-              v4:NilClassExact = Const Value(nil)
-              v7:BasicObject = SendWithoutBlock v1, :+, v2
-              SideExit UnknownNewarraySend(INCLUDE_P)
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v3:NilClass = Const Value(nil)
+          v4:NilClass = Const Value(nil)
+          v11:BasicObject = SendWithoutBlock v1, :+, v2
+          SideExit UnknownNewarraySend(INCLUDE_P)
+        ");
     }
 
     #[test]
@@ -4656,13 +5428,15 @@ mod tests {
         eval("
             def test(a,b) = [a,b].length
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_length, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:ArrayExact = NewArray v1, v2
-              v7:BasicObject = SendWithoutBlock v5, :length
-              Return v7
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_length);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v7:ArrayExact = NewArray v1, v2
+          v11:BasicObject = SendWithoutBlock v7, :length
+          CheckInterrupts
+          Return v11
+        ");
     }
 
     #[test]
@@ -4670,13 +5444,15 @@ mod tests {
         eval("
             def test(a,b) = [a,b].size
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_size, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:ArrayExact = NewArray v1, v2
-              v7:BasicObject = SendWithoutBlock v5, :size
-              Return v7
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_size);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v7:ArrayExact = NewArray v1, v2
+          v11:BasicObject = SendWithoutBlock v7, :size
+          CheckInterrupts
+          Return v11
+        ");
     }
 
     #[test]
@@ -4685,12 +5461,15 @@ mod tests {
             def test = @foo
             test
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_getinstancevariable, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:BasicObject = GetIvar v0, :@foo
-              Return v3
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_getinstancevariable);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          v6:BasicObject = GetIvar v0, :@foo
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
@@ -4699,13 +5478,16 @@ mod tests {
             def test = @foo = 1
             test
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_setinstancevariable, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              SetIvar v0, :@foo, v2
-              Return v2
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_setinstancevariable);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          PatchPoint SingleRactorMode
+          SetIvar v0, :@foo, v4
+          CheckInterrupts
+          Return v4
+        ");
     }
 
     #[test]
@@ -4714,13 +5496,15 @@ mod tests {
             def test = $foo = 1
             test
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_setglobal, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              SetGlobal :$foo, v2
-              Return v2
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_setglobal);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          SetGlobal :$foo, v4
+          CheckInterrupts
+          Return v4
+        ");
     }
 
     #[test]
@@ -4729,12 +5513,14 @@ mod tests {
             def test = $foo
             test
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_getglobal, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:BasicObject = GetGlobal :$foo
-              Return v3
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_getglobal);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:BasicObject = GetGlobal :$foo
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
@@ -4742,12 +5528,14 @@ mod tests {
         eval("
             def test(a) = [*a]
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_splatarray, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v4:ArrayExact = ToNewArray v1
-              Return v4
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_splatarray);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v6:ArrayExact = ToNewArray v1
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
@@ -4755,15 +5543,17 @@ mod tests {
         eval("
             def test(a) = [1, *a]
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_concattoarray, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:Fixnum[1] = Const Value(1)
-              v5:ArrayExact = NewArray v3
-              v7:ArrayExact = ToArray v1
-              ArrayExtend v5, v7
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_concattoarray);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:Fixnum[1] = Const Value(1)
+          v7:ArrayExact = NewArray v5
+          v9:ArrayExact = ToArray v1
+          ArrayExtend v7, v9
+          CheckInterrupts
+          Return v7
+        ");
     }
 
     #[test]
@@ -4771,14 +5561,16 @@ mod tests {
         eval("
             def test(a) = [*a, 1]
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_pushtoarray, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v4:ArrayExact = ToNewArray v1
-              v5:Fixnum[1] = Const Value(1)
-              ArrayPush v4, v5
-              Return v4
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_pushtoarray);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v6:ArrayExact = ToNewArray v1
+          v7:Fixnum[1] = Const Value(1)
+          ArrayPush v6, v7
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
@@ -4786,18 +5578,20 @@ mod tests {
         eval("
             def test(a) = [*a, 1, 2, 3]
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_pushtoarray, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v4:ArrayExact = ToNewArray v1
-              v5:Fixnum[1] = Const Value(1)
-              v6:Fixnum[2] = Const Value(2)
-              v7:Fixnum[3] = Const Value(3)
-              ArrayPush v4, v5
-              ArrayPush v4, v6
-              ArrayPush v4, v7
-              Return v4
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_pushtoarray);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v6:ArrayExact = ToNewArray v1
+          v7:Fixnum[1] = Const Value(1)
+          v8:Fixnum[2] = Const Value(2)
+          v9:Fixnum[3] = Const Value(3)
+          ArrayPush v6, v7
+          ArrayPush v6, v8
+          ArrayPush v6, v9
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
@@ -4805,14 +5599,16 @@ mod tests {
         eval("
             def test(a, b) = a[b] = 1
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_aset, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v4:NilClassExact = Const Value(nil)
-              v5:Fixnum[1] = Const Value(1)
-              v7:BasicObject = SendWithoutBlock v1, :[]=, v2, v5
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_aset);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v6:NilClass = Const Value(nil)
+          v7:Fixnum[1] = Const Value(1)
+          v11:BasicObject = SendWithoutBlock v1, :[]=, v2, v7
+          CheckInterrupts
+          Return v7
+        ");
     }
 
     #[test]
@@ -4820,26 +5616,14 @@ mod tests {
         eval("
             def test(a, b) = a[b]
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_aref, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :[], v2
-              Return v5
-        "#]]);
-    }
-
-    #[test]
-    fn test_aref_with() {
-        eval("
-            def test(a) = a['string lit triggers aref_with']
+        assert_contains_opcode("test", YARVINSN_opt_aref);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v9:BasicObject = SendWithoutBlock v1, :[], v2
+          CheckInterrupts
+          Return v9
         ");
-        assert_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v5:BasicObject = SendWithoutBlock v1, :[], v3
-              Return v5
-        "#]]);
     }
 
     #[test]
@@ -4847,12 +5631,14 @@ mod tests {
         eval("
             def test(x) = x.empty?
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_empty_p, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = SendWithoutBlock v1, :empty?
-              Return v4
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_empty_p);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v8:BasicObject = SendWithoutBlock v1, :empty?
+          CheckInterrupts
+          Return v8
+        ");
     }
 
     #[test]
@@ -4860,12 +5646,14 @@ mod tests {
         eval("
             def test(x) = x.succ
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_succ, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = SendWithoutBlock v1, :succ
-              Return v4
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_succ);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v8:BasicObject = SendWithoutBlock v1, :succ
+          CheckInterrupts
+          Return v8
+        ");
     }
 
     #[test]
@@ -4873,12 +5661,14 @@ mod tests {
         eval("
             def test(x, y) = x & y
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_and, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :&, v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_and);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v9:BasicObject = SendWithoutBlock v1, :&, v2
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -4886,12 +5676,14 @@ mod tests {
         eval("
             def test(x, y) = x | y
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_or, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :|, v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_or);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v9:BasicObject = SendWithoutBlock v1, :|, v2
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -4899,12 +5691,14 @@ mod tests {
         eval("
             def test(x) = !x
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_not, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = SendWithoutBlock v1, :!
-              Return v4
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_not);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v8:BasicObject = SendWithoutBlock v1, :!
+          CheckInterrupts
+          Return v8
+        ");
     }
 
     #[test]
@@ -4912,12 +5706,14 @@ mod tests {
         eval("
             def test(regexp, matchee) = regexp =~ matchee
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_opt_regexpmatch2, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :=~, v2
-              Return v5
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_opt_regexpmatch2);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v9:BasicObject = SendWithoutBlock v1, :=~, v2
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -4929,16 +5725,18 @@ mod tests {
               alias aliased __callee__
             end
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_putspecialobject, expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
-              v3:BasicObject = PutSpecialObject CBase
-              v4:StaticSymbol[:aliased] = Const Value(VALUE(0x1008))
-              v5:StaticSymbol[:__callee__] = Const Value(VALUE(0x1010))
-              v7:BasicObject = SendWithoutBlock v2, :core#set_method_alias, v3, v4, v5
-              Return v7
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_putspecialobject);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
+          v5:BasicObject = PutSpecialObject CBase
+          v6:StaticSymbol[:aliased] = Const Value(VALUE(0x1008))
+          v7:StaticSymbol[:__callee__] = Const Value(VALUE(0x1010))
+          v9:BasicObject = SendWithoutBlock v4, :core#set_method_alias, v5, v6, v7
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -4954,32 +5752,45 @@ mod tests {
               [a, b, c, d]
             end
         ");
-        assert_method_hir_with_opcode("reverse_odd", YARVINSN_opt_reverse, expect![[r#"
-            fn reverse_odd@<compiled>:3:
-            bb0(v0:BasicObject):
-              v1:NilClassExact = Const Value(nil)
-              v2:NilClassExact = Const Value(nil)
-              v3:NilClassExact = Const Value(nil)
-              v6:BasicObject = GetIvar v0, :@a
-              v8:BasicObject = GetIvar v0, :@b
-              v10:BasicObject = GetIvar v0, :@c
-              v12:ArrayExact = NewArray v6, v8, v10
-              Return v12
-        "#]]);
-        assert_method_hir_with_opcode("reverse_even", YARVINSN_opt_reverse, expect![[r#"
-            fn reverse_even@<compiled>:8:
-            bb0(v0:BasicObject):
-              v1:NilClassExact = Const Value(nil)
-              v2:NilClassExact = Const Value(nil)
-              v3:NilClassExact = Const Value(nil)
-              v4:NilClassExact = Const Value(nil)
-              v7:BasicObject = GetIvar v0, :@a
-              v9:BasicObject = GetIvar v0, :@b
-              v11:BasicObject = GetIvar v0, :@c
-              v13:BasicObject = GetIvar v0, :@d
-              v15:ArrayExact = NewArray v7, v9, v11, v13
-              Return v15
-        "#]]);
+        assert_contains_opcode("reverse_odd", YARVINSN_opt_reverse);
+        assert_snapshot!(hir_string("reverse_odd"), @r"
+        fn reverse_odd@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          PatchPoint SingleRactorMode
+          v9:BasicObject = GetIvar v0, :@a
+          PatchPoint SingleRactorMode
+          v12:BasicObject = GetIvar v0, :@b
+          PatchPoint SingleRactorMode
+          v15:BasicObject = GetIvar v0, :@c
+          PatchPoint NoEPEscape(reverse_odd)
+          v21:ArrayExact = NewArray v9, v12, v15
+          CheckInterrupts
+          Return v21
+        ");
+        assert_contains_opcode("reverse_even", YARVINSN_opt_reverse);
+        assert_snapshot!(hir_string("reverse_even"), @r"
+        fn reverse_even@<compiled>:8:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          v4:NilClass = Const Value(nil)
+          PatchPoint SingleRactorMode
+          v10:BasicObject = GetIvar v0, :@a
+          PatchPoint SingleRactorMode
+          v13:BasicObject = GetIvar v0, :@b
+          PatchPoint SingleRactorMode
+          v16:BasicObject = GetIvar v0, :@c
+          PatchPoint SingleRactorMode
+          v19:BasicObject = GetIvar v0, :@d
+          PatchPoint NoEPEscape(reverse_even)
+          v25:ArrayExact = NewArray v10, v13, v16, v19
+          CheckInterrupts
+          Return v25
+        ");
     }
 
     #[test]
@@ -4987,40 +5798,91 @@ mod tests {
         eval("
         def test(x) = x&.itself
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_branchnil, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:CBool = IsNil v1
-              IfTrue v3, bb1(v0, v1, v1)
-              v6:BasicObject = SendWithoutBlock v1, :itself
-              Jump bb1(v0, v1, v6)
-            bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
-              Return v10
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_branchnil);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          CheckInterrupts
+          v7:CBool = IsNil v1
+          IfTrue v7, bb1(v0, v1, v1)
+          v10:BasicObject = SendWithoutBlock v1, :itself
+          Jump bb1(v0, v1, v10)
+        bb1(v12:BasicObject, v13:BasicObject, v14:BasicObject):
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
+    fn test_invokebuiltin_delegate_annotated() {
+        assert_contains_opcode("Float", YARVINSN_opt_invokebuiltin_delegate_leave);
+        assert_snapshot!(hir_string("Float"), @r"
+        fn Float@<internal:kernel>:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject):
+          v8:Float = InvokeBuiltin rb_f_float, v0, v1, v2
+          Jump bb1(v0, v1, v2, v3, v8)
+        bb1(v10:BasicObject, v11:BasicObject, v12:BasicObject, v13:BasicObject, v14:Float):
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
+    fn test_invokebuiltin_cexpr_annotated() {
+        assert_contains_opcode("class", YARVINSN_opt_invokebuiltin_delegate_leave);
+        assert_snapshot!(hir_string("class"), @r"
+        fn class@<internal:kernel>:
+        bb0(v0:BasicObject):
+          v5:Class = InvokeBuiltin _bi20, v0
+          Jump bb1(v0, v5)
+        bb1(v7:BasicObject, v8:Class):
+          CheckInterrupts
+          Return v8
+        ");
     }
 
     #[test]
     fn test_invokebuiltin_delegate_with_args() {
-        assert_method_hir_with_opcode("Float", YARVINSN_opt_invokebuiltin_delegate_leave, expect![[r#"
-            fn Float@<internal:kernel>:197:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject):
-              v6:BasicObject = InvokeBuiltin rb_f_float, v0, v1, v2
-              Jump bb1(v0, v1, v2, v3, v6)
-            bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject, v11:BasicObject, v12:BasicObject):
-              Return v12
-        "#]]);
+        // Using an unannotated builtin to test InvokeBuiltin generation
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("Dir", "open"));
+        assert!(iseq_contains_opcode(iseq, YARVINSN_opt_invokebuiltin_delegate), "iseq Dir.open does not contain invokebuiltin");
+        let function = iseq_to_hir(iseq).unwrap();
+        assert_snapshot!(hir_string_function(&function), @r"
+        fn open@<internal:dir>:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject):
+          v5:NilClass = Const Value(nil)
+          v10:BasicObject = InvokeBuiltin dir_s_open, v0, v1, v2
+          PatchPoint NoEPEscape(open)
+          v16:BasicObject = GetBlockParamProxy l0
+          CheckInterrupts
+          v19:CBool = Test v16
+          IfFalse v19, bb1(v0, v1, v2, v3, v4, v10)
+          PatchPoint NoEPEscape(open)
+          v26:BasicObject = InvokeBlock, v10
+          v30:BasicObject = InvokeBuiltin dir_s_close, v0, v10
+          CheckInterrupts
+          Return v26
+        bb1(v36:BasicObject, v37:BasicObject, v38:BasicObject, v39:BasicObject, v40:BasicObject, v41:BasicObject):
+          PatchPoint NoEPEscape(open)
+          CheckInterrupts
+          Return v41
+        ");
     }
 
     #[test]
     fn test_invokebuiltin_delegate_without_args() {
-        assert_method_hir_with_opcode("class", YARVINSN_opt_invokebuiltin_delegate_leave, expect![[r#"
-            fn class@<internal:kernel>:20:
-            bb0(v0:BasicObject):
-              v3:BasicObject = InvokeBuiltin _bi20, v0
-              Jump bb1(v0, v3)
-            bb1(v5:BasicObject, v6:BasicObject):
-              Return v6
-        "#]]);
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("GC", "enable"));
+        assert!(iseq_contains_opcode(iseq, YARVINSN_opt_invokebuiltin_delegate_leave), "iseq GC.enable does not contain invokebuiltin");
+        let function = iseq_to_hir(iseq).unwrap();
+        assert_snapshot!(hir_string_function(&function), @r"
+        fn enable@<internal:gc>:
+        bb0(v0:BasicObject):
+          v5:BasicObject = InvokeBuiltin gc_enable, v0
+          Jump bb1(v0, v5)
+        bb1(v7:BasicObject, v8:BasicObject):
+          CheckInterrupts
+          Return v8
+        ");
     }
 
     #[test]
@@ -5028,13 +5890,14 @@ mod tests {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("GC", "start"));
         assert!(iseq_contains_opcode(iseq, YARVINSN_invokebuiltin), "iseq GC.start does not contain invokebuiltin");
         let function = iseq_to_hir(iseq).unwrap();
-        assert_function_hir(function, expect![[r#"
-            fn start@<internal:gc>:36:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject):
-              v6:FalseClassExact = Const Value(false)
-              v8:BasicObject = InvokeBuiltin gc_start_internal, v0, v1, v2, v3, v6
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string_function(&function), @r"
+        fn start@<internal:gc>:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject):
+          v8:FalseClass = Const Value(false)
+          v10:BasicObject = InvokeBuiltin gc_start_internal, v0, v1, v2, v3, v8
+          CheckInterrupts
+          Return v10
+        ");
     }
 
     #[test]
@@ -5042,21 +5905,25 @@ mod tests {
         eval("
             def test(x) = (x[0, 1] ||= 2)
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_dupn, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:NilClassExact = Const Value(nil)
-              v4:Fixnum[0] = Const Value(0)
-              v5:Fixnum[1] = Const Value(1)
-              v7:BasicObject = SendWithoutBlock v1, :[], v4, v5
-              v8:CBool = Test v7
-              IfTrue v8, bb1(v0, v1, v3, v1, v4, v5, v7)
-              v10:Fixnum[2] = Const Value(2)
-              v12:BasicObject = SendWithoutBlock v1, :[]=, v4, v5, v10
-              Return v10
-            bb1(v14:BasicObject, v15:BasicObject, v16:NilClassExact, v17:BasicObject, v18:Fixnum[0], v19:Fixnum[1], v20:BasicObject):
-              Return v20
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_dupn);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:NilClass = Const Value(nil)
+          v6:Fixnum[0] = Const Value(0)
+          v7:Fixnum[1] = Const Value(1)
+          v9:BasicObject = SendWithoutBlock v1, :[], v6, v7
+          CheckInterrupts
+          v12:CBool = Test v9
+          IfTrue v12, bb1(v0, v1, v5, v1, v6, v7, v9)
+          v14:Fixnum[2] = Const Value(2)
+          v16:BasicObject = SendWithoutBlock v1, :[]=, v6, v7, v14
+          CheckInterrupts
+          Return v14
+        bb1(v22:BasicObject, v23:BasicObject, v24:NilClass, v25:BasicObject, v26:Fixnum[0], v27:Fixnum[1], v28:BasicObject):
+          CheckInterrupts
+          Return v28
+        ");
     }
 
     #[test]
@@ -5064,15 +5931,106 @@ mod tests {
         eval("
             def test = \"#{1}\"
         ");
-        assert_method_hir_with_opcode("test", YARVINSN_objtostring, expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v3:Fixnum[1] = Const Value(1)
-              v5:BasicObject = ObjToString v3
-              v7:String = AnyToString v3, str: v5
-              SideExit UnknownOpcode(concatstrings)
-        "#]]);
+        assert_contains_opcode("test", YARVINSN_objtostring);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v5:Fixnum[1] = Const Value(1)
+          v7:BasicObject = ObjToString v5
+          v9:String = AnyToString v5, str: v7
+          v11:StringExact = StringConcat v4, v9
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_string_concat() {
+        eval(r##"
+            def test = "#{1}#{2}#{3}"
+        "##);
+        assert_contains_opcode("test", YARVINSN_concatstrings);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          v6:BasicObject = ObjToString v4
+          v8:String = AnyToString v4, str: v6
+          v9:Fixnum[2] = Const Value(2)
+          v11:BasicObject = ObjToString v9
+          v13:String = AnyToString v9, str: v11
+          v14:Fixnum[3] = Const Value(3)
+          v16:BasicObject = ObjToString v14
+          v18:String = AnyToString v14, str: v16
+          v20:StringExact = StringConcat v8, v13, v18
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
+    fn test_string_concat_empty() {
+        eval(r##"
+            def test = "#{}"
+        "##);
+        assert_contains_opcode("test", YARVINSN_concatstrings);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v5:NilClass = Const Value(nil)
+          v7:BasicObject = ObjToString v5
+          v9:String = AnyToString v5, str: v7
+          v11:StringExact = StringConcat v4, v9
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_toregexp() {
+        eval(r##"
+            def test = /#{1}#{2}#{3}/
+        "##);
+        assert_contains_opcode("test", YARVINSN_toregexp);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          v6:BasicObject = ObjToString v4
+          v8:String = AnyToString v4, str: v6
+          v9:Fixnum[2] = Const Value(2)
+          v11:BasicObject = ObjToString v9
+          v13:String = AnyToString v9, str: v11
+          v14:Fixnum[3] = Const Value(3)
+          v16:BasicObject = ObjToString v14
+          v18:String = AnyToString v14, str: v16
+          v20:RegexpExact = ToRegexp v8, v13, v18
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
+    fn test_toregexp_with_options() {
+        eval(r##"
+            def test = /#{1}#{2}/mixn
+        "##);
+        assert_contains_opcode("test", YARVINSN_toregexp);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          v6:BasicObject = ObjToString v4
+          v8:String = AnyToString v4, str: v6
+          v9:Fixnum[2] = Const Value(2)
+          v11:BasicObject = ObjToString v9
+          v13:String = AnyToString v9, str: v11
+          v15:RegexpExact = ToRegexp v8, v13, MULTILINE|IGNORECASE|EXTENDED|NOENCODING
+          CheckInterrupts
+          Return v15
+        ");
     }
 
     #[test]
@@ -5081,35 +6039,154 @@ mod tests {
             define_method(:throw_return) { return 1 }
             define_method(:throw_break) { break 2 }
         ");
-        assert_method_hir_with_opcode("throw_return", YARVINSN_throw, expect![[r#"
-            fn block in <compiled>@<compiled>:2:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              Throw TAG_RETURN, v2
-        "#]]);
-        assert_method_hir_with_opcode("throw_break", YARVINSN_throw, expect![[r#"
-            fn block in <compiled>@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[2] = Const Value(2)
-              Throw TAG_BREAK, v2
-        "#]]);
+        assert_contains_opcode("throw_return", YARVINSN_throw);
+        assert_snapshot!(hir_string("throw_return"), @r"
+        fn block in <compiled>@<compiled>:2:
+        bb0(v0:BasicObject):
+          v6:Fixnum[1] = Const Value(1)
+          Throw TAG_RETURN, v6
+        ");
+        assert_contains_opcode("throw_break", YARVINSN_throw);
+        assert_snapshot!(hir_string("throw_break"), @r"
+        fn block in <compiled>@<compiled>:3:
+        bb0(v0:BasicObject):
+          v6:Fixnum[2] = Const Value(2)
+          Throw TAG_BREAK, v6
+        ");
+    }
+
+    #[test]
+    fn test_invokeblock() {
+        eval(r#"
+            def test
+              yield
+            end
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v5:BasicObject = InvokeBlock
+          CheckInterrupts
+          Return v5
+        ");
+    }
+
+    #[test]
+    fn test_invokeblock_with_args() {
+        eval(r#"
+            def test(x, y)
+              yield x, y
+            end
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v7:BasicObject = InvokeBlock, v1, v2
+          CheckInterrupts
+          Return v7
+        ");
+    }
+}
+
+#[cfg(test)]
+mod graphviz_tests {
+    use super::*;
+    use insta::assert_snapshot;
+
+    #[track_caller]
+    fn hir_string(method: &str) -> String {
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+        let mut function = iseq_to_hir(iseq).unwrap();
+        function.optimize();
+        function.validate().unwrap();
+        format!("{}", FunctionGraphvizPrinter::new(&function))
+    }
+
+    #[test]
+    fn test_guard_fixnum_or_fixnum() {
+        eval(r#"
+            def test(x, y) = x | y
+
+            test(1, 2)
+        "#);
+        assert_snapshot!(hir_string("test"), @r#"
+        digraph G { # test@&lt;compiled&gt;:2
+        node [shape=plaintext];
+        mode=hier; overlap=false; splines=true;
+          bb0 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v5">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v7">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v15">PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 29)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v16">v16:Fixnum = GuardType v1, Fixnum&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v17">v17:Fixnum = GuardType v2, Fixnum&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v18">v18:Fixnum = FixnumOr v16, v17&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v11">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v13">CheckInterrupts&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v14">Return v18&nbsp;</TD></TR>
+        </TABLE>>];
+        }
+        "#);
+    }
+
+    #[test]
+    fn test_multiple_blocks() {
+        eval(r#"
+            def test(c)
+              if c
+                3
+              else
+                4
+              end
+            end
+
+            test(1)
+            test("x")
+        "#);
+        assert_snapshot!(hir_string("test"), @r#"
+        digraph G { # test@&lt;compiled&gt;:3
+        node [shape=plaintext];
+        mode=hier; overlap=false; splines=true;
+          bb0 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0(v0:BasicObject, v1:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v4">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v6">CheckInterrupts&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v7">v7:CBool = Test v1&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v8">IfFalse v7, bb1(v0, v1)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v10">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v11">v11:Fixnum[3] = Const Value(3)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v13">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v15">CheckInterrupts&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v16">Return v11&nbsp;</TD></TR>
+        </TABLE>>];
+          bb0:v8 -> bb1:params:n;
+          bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v17:BasicObject, v18:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v21">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v22">v22:Fixnum[4] = Const Value(4)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v24">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v26">CheckInterrupts&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v27">Return v22&nbsp;</TD></TR>
+        </TABLE>>];
+        }
+        "#);
     }
 }
 
 #[cfg(test)]
 mod opt_tests {
     use super::*;
-    use super::tests::assert_function_hir;
-    use expect_test::{expect, Expect};
+    use insta::assert_snapshot;
 
     #[track_caller]
-    fn assert_optimized_method_hir(method: &str, hir: Expect) {
+    fn hir_string(method: &str) -> String {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         let mut function = iseq_to_hir(iseq).unwrap();
         function.optimize();
         function.validate().unwrap();
-        assert_function_hir(function, hir);
+        format!("{}", FunctionPrinter::without_snapshot(&function))
     }
 
     #[test]
@@ -5124,12 +6201,16 @@ mod opt_tests {
               end
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v6:Fixnum[3] = Const Value(3)
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v5:TrueClass = Const Value(true)
+          CheckInterrupts
+          v14:Fixnum[3] = Const Value(3)
+          CheckInterrupts
+          Return v14
+        ");
     }
 
     #[test]
@@ -5144,12 +6225,16 @@ mod opt_tests {
               end
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v11:Fixnum[4] = Const Value(4)
-              Return v11
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v5:FalseClass = Const Value(false)
+          CheckInterrupts
+          v25:Fixnum[4] = Const Value(4)
+          CheckInterrupts
+          Return v25
+        ");
     }
 
     #[test]
@@ -5159,18 +6244,19 @@ mod opt_tests {
               1 + 2 + 3
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              v3:Fixnum[2] = Const Value(2)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v14:Fixnum[3] = Const Value(3)
-              v6:Fixnum[3] = Const Value(3)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v15:Fixnum[6] = Const Value(6)
-              Return v15
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          v5:Fixnum[2] = Const Value(2)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+          v24:Fixnum[3] = Const Value(3)
+          v10:Fixnum[3] = Const Value(3)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+          v25:Fixnum[6] = Const Value(6)
+          CheckInterrupts
+          Return v25
+        ");
     }
 
     #[test]
@@ -5180,18 +6266,19 @@ mod opt_tests {
               5 - 3 - 1
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[5] = Const Value(5)
-              v3:Fixnum[3] = Const Value(3)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-              v14:Fixnum[2] = Const Value(2)
-              v6:Fixnum[1] = Const Value(1)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-              v15:Fixnum[1] = Const Value(1)
-              Return v15
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[5] = Const Value(5)
+          v5:Fixnum[3] = Const Value(3)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
+          v24:Fixnum[2] = Const Value(2)
+          v10:Fixnum[1] = Const Value(1)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
+          v25:Fixnum[1] = Const Value(1)
+          CheckInterrupts
+          Return v25
+        ");
     }
 
     #[test]
@@ -5201,15 +6288,16 @@ mod opt_tests {
               0 - 1073741825
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[0] = Const Value(0)
-              v3:Fixnum[1073741825] = Const Value(1073741825)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-              v9:Fixnum[-1073741825] = Const Value(-1073741825)
-              Return v9
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[0] = Const Value(0)
+          v5:Fixnum[1073741825] = Const Value(1073741825)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
+          v17:Fixnum[-1073741825] = Const Value(-1073741825)
+          CheckInterrupts
+          Return v17
+        ");
     }
 
     #[test]
@@ -5219,15 +6307,16 @@ mod opt_tests {
               6 * 7
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[6] = Const Value(6)
-              v3:Fixnum[7] = Const Value(7)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-              v9:Fixnum[42] = Const Value(42)
-              Return v9
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[6] = Const Value(6)
+          v5:Fixnum[7] = Const Value(7)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
+          v17:Fixnum[42] = Const Value(42)
+          CheckInterrupts
+          Return v17
+        ");
     }
 
     #[test]
@@ -5238,21 +6327,22 @@ mod opt_tests {
             end
             test 1; test 2
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:Fixnum[0] = Const Value(0)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-              v13:Fixnum = GuardType v1, Fixnum
-              v20:Fixnum[0] = Const Value(0)
-              v6:Fixnum[0] = Const Value(0)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-              v16:Fixnum = GuardType v1, Fixnum
-              v21:Fixnum[0] = Const Value(0)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v22:Fixnum[0] = Const Value(0)
-              Return v22
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:Fixnum[0] = Const Value(0)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
+          v25:Fixnum = GuardType v1, Fixnum
+          v32:Fixnum[0] = Const Value(0)
+          v10:Fixnum[0] = Const Value(0)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
+          v28:Fixnum = GuardType v1, Fixnum
+          v33:Fixnum[0] = Const Value(0)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+          v34:Fixnum[0] = Const Value(0)
+          CheckInterrupts
+          Return v34
+        ");
     }
 
     #[test]
@@ -5266,15 +6356,18 @@ mod opt_tests {
               end
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              v3:Fixnum[2] = Const Value(2)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v8:Fixnum[3] = Const Value(3)
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          v5:Fixnum[2] = Const Value(2)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+          v34:TrueClass = Const Value(true)
+          CheckInterrupts
+          v16:Fixnum[3] = Const Value(3)
+          CheckInterrupts
+          Return v16
+        ");
     }
 
     #[test]
@@ -5288,18 +6381,23 @@ mod opt_tests {
               end
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              v3:Fixnum[2] = Const Value(2)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
-              v8:Fixnum[2] = Const Value(2)
-              v9:Fixnum[2] = Const Value(2)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
-              v14:Fixnum[3] = Const Value(3)
-              Return v14
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          v5:Fixnum[2] = Const Value(2)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
+          v46:TrueClass = Const Value(true)
+          CheckInterrupts
+          v14:Fixnum[2] = Const Value(2)
+          v15:Fixnum[2] = Const Value(2)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
+          v48:TrueClass = Const Value(true)
+          CheckInterrupts
+          v26:Fixnum[3] = Const Value(3)
+          CheckInterrupts
+          Return v26
+        ");
     }
 
     #[test]
@@ -5313,15 +6411,18 @@ mod opt_tests {
               end
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[2] = Const Value(2)
-              v3:Fixnum[1] = Const Value(1)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
-              v8:Fixnum[3] = Const Value(3)
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[2] = Const Value(2)
+          v5:Fixnum[1] = Const Value(1)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
+          v34:TrueClass = Const Value(true)
+          CheckInterrupts
+          v16:Fixnum[3] = Const Value(3)
+          CheckInterrupts
+          Return v16
+        ");
     }
 
     #[test]
@@ -5335,18 +6436,23 @@ mod opt_tests {
               end
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[2] = Const Value(2)
-              v3:Fixnum[1] = Const Value(1)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
-              v8:Fixnum[2] = Const Value(2)
-              v9:Fixnum[2] = Const Value(2)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
-              v14:Fixnum[3] = Const Value(3)
-              Return v14
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[2] = Const Value(2)
+          v5:Fixnum[1] = Const Value(1)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
+          v46:TrueClass = Const Value(true)
+          CheckInterrupts
+          v14:Fixnum[2] = Const Value(2)
+          v15:Fixnum[2] = Const Value(2)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
+          v48:TrueClass = Const Value(true)
+          CheckInterrupts
+          v26:Fixnum[3] = Const Value(3)
+          CheckInterrupts
+          Return v26
+        ");
     }
 
     #[test]
@@ -5360,15 +6466,18 @@ mod opt_tests {
               end
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              v3:Fixnum[2] = Const Value(2)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              v12:Fixnum[4] = Const Value(4)
-              Return v12
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          v5:Fixnum[2] = Const Value(2)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+          v34:FalseClass = Const Value(false)
+          CheckInterrupts
+          v26:Fixnum[4] = Const Value(4)
+          CheckInterrupts
+          Return v26
+        ");
     }
 
     #[test]
@@ -5382,15 +6491,18 @@ mod opt_tests {
               end
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[2] = Const Value(2)
-              v3:Fixnum[2] = Const Value(2)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              v8:Fixnum[3] = Const Value(3)
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[2] = Const Value(2)
+          v5:Fixnum[2] = Const Value(2)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+          v34:TrueClass = Const Value(true)
+          CheckInterrupts
+          v16:Fixnum[3] = Const Value(3)
+          CheckInterrupts
+          Return v16
+        ");
     }
 
     #[test]
@@ -5404,16 +6516,19 @@ mod opt_tests {
               end
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              v3:Fixnum[2] = Const Value(2)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
-              v8:Fixnum[3] = Const Value(3)
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          v5:Fixnum[2] = Const Value(2)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
+          v35:TrueClass = Const Value(true)
+          CheckInterrupts
+          v16:Fixnum[3] = Const Value(3)
+          CheckInterrupts
+          Return v16
+        ");
     }
 
     #[test]
@@ -5427,16 +6542,19 @@ mod opt_tests {
               end
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[2] = Const Value(2)
-              v3:Fixnum[2] = Const Value(2)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
-              v12:Fixnum[4] = Const Value(4)
-              Return v12
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[2] = Const Value(2)
+          v5:Fixnum[2] = Const Value(2)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
+          v35:FalseClass = Const Value(false)
+          CheckInterrupts
+          v26:Fixnum[4] = Const Value(4)
+          CheckInterrupts
+          Return v26
+        ");
     }
 
     #[test]
@@ -5447,15 +6565,16 @@ mod opt_tests {
             end
             test(2); test(3)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:Fixnum[1] = Const Value(1)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v8:Fixnum = GuardType v1, Fixnum
-              v9:Fixnum = FixnumAdd v8, v3
-              Return v9
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:Fixnum[1] = Const Value(1)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+          v16:Fixnum = GuardType v1, Fixnum
+          v17:Fixnum = FixnumAdd v16, v5
+          CheckInterrupts
+          Return v17
+        ");
     }
 
     #[test]
@@ -5466,42 +6585,40 @@ mod opt_tests {
             def kw_rest(**k) = k
             def post(*rest, post) = post
             def block(&b) = nil
-            def forwardable(...) = nil
         ");
 
-        assert_optimized_method_hir("rest", expect![[r#"
-            fn rest@<compiled>:2:
-            bb0(v0:BasicObject, v1:ArrayExact):
-              Return v1
-        "#]]);
+        assert_snapshot!(hir_string("rest"), @r"
+        fn rest@<compiled>:2:
+        bb0(v0:BasicObject, v1:ArrayExact):
+          CheckInterrupts
+          Return v1
+        ");
         // extra hidden param for the set of specified keywords
-        assert_optimized_method_hir("kw", expect![[r#"
-            fn kw@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              Return v1
-        "#]]);
-        assert_optimized_method_hir("kw_rest", expect![[r#"
-            fn kw_rest@<compiled>:4:
-            bb0(v0:BasicObject, v1:BasicObject):
-              Return v1
-        "#]]);
-        assert_optimized_method_hir("block", expect![[r#"
-            fn block@<compiled>:6:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:NilClassExact = Const Value(nil)
-              Return v3
-        "#]]);
-        assert_optimized_method_hir("post", expect![[r#"
-            fn post@<compiled>:5:
-            bb0(v0:BasicObject, v1:ArrayExact, v2:BasicObject):
-              Return v2
-        "#]]);
-        assert_optimized_method_hir("forwardable", expect![[r#"
-            fn forwardable@<compiled>:7:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:NilClassExact = Const Value(nil)
-              Return v3
-        "#]]);
+        assert_snapshot!(hir_string("kw"), @r"
+        fn kw@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          CheckInterrupts
+          Return v1
+        ");
+        assert_snapshot!(hir_string("kw_rest"), @r"
+        fn kw_rest@<compiled>:4:
+        bb0(v0:BasicObject, v1:BasicObject):
+          CheckInterrupts
+          Return v1
+        ");
+        assert_snapshot!(hir_string("block"), @r"
+        fn block@<compiled>:6:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v5
+        ");
+        assert_snapshot!(hir_string("post"), @r"
+        fn post@<compiled>:5:
+        bb0(v0:BasicObject, v1:ArrayExact, v2:BasicObject):
+          CheckInterrupts
+          Return v2
+        ");
     }
 
     #[test]
@@ -5514,14 +6631,15 @@ mod opt_tests {
             end
             test; test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:5:
-            bb0(v0:BasicObject):
-              PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v6:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
-              v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1040)
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0(v0:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v12:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v13:BasicObject = SendWithoutBlockDirect v12, :foo (0x1038)
+          CheckInterrupts
+          Return v13
+        ");
     }
 
     #[test]
@@ -5535,12 +6653,13 @@ mod opt_tests {
             test; test
             undef :foo
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:5:
-            bb0(v0:BasicObject):
-              v3:BasicObject = SendWithoutBlock v0, :foo
-              Return v3
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0(v0:BasicObject):
+          v5:BasicObject = SendWithoutBlock v0, :foo
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
@@ -5554,14 +6673,15 @@ mod opt_tests {
             end
             test; test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:6:
-            bb0(v0:BasicObject):
-              PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v6:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
-              v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1040)
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:6:
+        bb0(v0:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v12:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v13:BasicObject = SendWithoutBlockDirect v12, :foo (0x1038)
+          CheckInterrupts
+          Return v13
+        ");
     }
 
     #[test]
@@ -5572,15 +6692,16 @@ mod opt_tests {
             end
             test; test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[3] = Const Value(3)
-              PatchPoint MethodRedefined(Object@0x1000, Integer@0x1008, cme:0x1010)
-              v7:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
-              v8:BasicObject = SendWithoutBlockDirect v7, :Integer (0x1040), v2
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[3] = Const Value(3)
+          PatchPoint MethodRedefined(Object@0x1000, Integer@0x1008, cme:0x1010)
+          v13:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v14:BasicObject = SendWithoutBlockDirect v13, :Integer (0x1038), v4
+          CheckInterrupts
+          Return v14
+        ");
     }
 
     #[test]
@@ -5593,16 +6714,17 @@ mod opt_tests {
             end
             test; test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:5:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              v3:Fixnum[2] = Const Value(2)
-              PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v8:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
-              v9:BasicObject = SendWithoutBlockDirect v8, :foo (0x1040), v2, v3
-              Return v9
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          v5:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v14:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v15:BasicObject = SendWithoutBlockDirect v14, :foo (0x1038), v4, v5
+          CheckInterrupts
+          Return v15
+        ");
     }
 
     #[test]
@@ -5618,17 +6740,18 @@ mod opt_tests {
             end
             test; test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:7:
-            bb0(v0:BasicObject):
-              PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v8:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
-              v9:BasicObject = SendWithoutBlockDirect v8, :foo (0x1040)
-              PatchPoint MethodRedefined(Object@0x1000, bar@0x1048, cme:0x1050)
-              v11:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
-              v12:BasicObject = SendWithoutBlockDirect v11, :bar (0x1040)
-              Return v12
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:7:
+        bb0(v0:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v16:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v17:BasicObject = SendWithoutBlockDirect v16, :foo (0x1038)
+          PatchPoint MethodRedefined(Object@0x1000, bar@0x1040, cme:0x1048)
+          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v20:BasicObject = SendWithoutBlockDirect v19, :bar (0x1038)
+          CheckInterrupts
+          Return v20
+        ");
     }
 
     #[test]
@@ -5642,12 +6765,13 @@ mod opt_tests {
             def test(a, b) = a + b
             test(1,2); test(3,4)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:7:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :+, v2
-              Return v5
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:7:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v9:BasicObject = SendWithoutBlock v1, :+, v2
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -5656,15 +6780,16 @@ mod opt_tests {
             def test(a, b) = a + b
             test(1,2); test(3,4)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v8:Fixnum = GuardType v1, Fixnum
-              v9:Fixnum = GuardType v2, Fixnum
-              v10:Fixnum = FixnumAdd v8, v9
-              Return v10
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+          v16:Fixnum = GuardType v1, Fixnum
+          v17:Fixnum = GuardType v2, Fixnum
+          v18:Fixnum = FixnumAdd v16, v17
+          CheckInterrupts
+          Return v18
+        ");
     }
 
     #[test]
@@ -5673,15 +6798,16 @@ mod opt_tests {
             def test(a) = a + 1
             test(1); test(3)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:Fixnum[1] = Const Value(1)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v8:Fixnum = GuardType v1, Fixnum
-              v9:Fixnum = FixnumAdd v8, v3
-              Return v9
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:Fixnum[1] = Const Value(1)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+          v16:Fixnum = GuardType v1, Fixnum
+          v17:Fixnum = FixnumAdd v16, v5
+          CheckInterrupts
+          Return v17
+        ");
     }
 
     #[test]
@@ -5690,15 +6816,16 @@ mod opt_tests {
             def test(a) = 1 + a
             test(1); test(3)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:Fixnum[1] = Const Value(1)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v8:Fixnum = GuardType v1, Fixnum
-              v9:Fixnum = FixnumAdd v3, v8
-              Return v9
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:Fixnum[1] = Const Value(1)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+          v16:Fixnum = GuardType v1, Fixnum
+          v17:Fixnum = FixnumAdd v5, v16
+          CheckInterrupts
+          Return v17
+        ");
     }
 
     #[test]
@@ -5707,15 +6834,16 @@ mod opt_tests {
             def test(a, b) = a < b
             test(1,2); test(3,4)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v8:Fixnum = GuardType v1, Fixnum
-              v9:Fixnum = GuardType v2, Fixnum
-              v10:BoolExact = FixnumLt v8, v9
-              Return v10
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+          v16:Fixnum = GuardType v1, Fixnum
+          v17:Fixnum = GuardType v2, Fixnum
+          v18:BoolExact = FixnumLt v16, v17
+          CheckInterrupts
+          Return v18
+        ");
     }
 
     #[test]
@@ -5724,15 +6852,16 @@ mod opt_tests {
             def test(a) = a < 1
             test(1); test(3)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:Fixnum[1] = Const Value(1)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v8:Fixnum = GuardType v1, Fixnum
-              v9:BoolExact = FixnumLt v8, v3
-              Return v9
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:Fixnum[1] = Const Value(1)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+          v16:Fixnum = GuardType v1, Fixnum
+          v17:BoolExact = FixnumLt v16, v5
+          CheckInterrupts
+          Return v17
+        ");
     }
 
     #[test]
@@ -5741,15 +6870,126 @@ mod opt_tests {
             def test(a) = 1 < a
             test(1); test(3)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:Fixnum[1] = Const Value(1)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v8:Fixnum = GuardType v1, Fixnum
-              v9:BoolExact = FixnumLt v3, v8
-              Return v9
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:Fixnum[1] = Const Value(1)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+          v16:Fixnum = GuardType v1, Fixnum
+          v17:BoolExact = FixnumLt v5, v16
+          CheckInterrupts
+          Return v17
+        ");
+    }
+
+    #[test]
+    fn test_optimize_range_fixnum_inclusive_literals() {
+        eval("
+            def test()
+              (1..2)
+            end
+            test; test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:RangeExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          CheckInterrupts
+          Return v4
+        ");
+    }
+
+    #[test]
+    fn test_optimize_range_fixnum_exclusive_literals() {
+        eval("
+            def test()
+              (1...2)
+            end
+            test; test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:RangeExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          CheckInterrupts
+          Return v4
+        ");
+    }
+
+    #[test]
+    fn test_optimize_range_fixnum_inclusive_high_guarded() {
+        eval("
+            def test(a)
+              (1..a)
+            end
+            test(2); test(3)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:Fixnum[1] = Const Value(1)
+          v13:Fixnum = GuardType v1, Fixnum
+          v14:RangeExact = NewRangeFixnum v5 NewRangeInclusive v13
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
+    fn test_optimize_range_fixnum_exclusive_high_guarded() {
+        eval("
+            def test(a)
+              (1...a)
+            end
+            test(2); test(3)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:Fixnum[1] = Const Value(1)
+          v13:Fixnum = GuardType v1, Fixnum
+          v14:RangeExact = NewRangeFixnum v5 NewRangeExclusive v13
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
+    fn test_optimize_range_fixnum_inclusive_low_guarded() {
+        eval("
+            def test(a)
+              (a..10)
+            end
+            test(2); test(3)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:Fixnum[10] = Const Value(10)
+          v13:Fixnum = GuardType v1, Fixnum
+          v14:RangeExact = NewRangeFixnum v13 NewRangeInclusive v5
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
+    fn test_optimize_range_fixnum_exclusive_low_guarded() {
+        eval("
+            def test(a)
+              (a...10)
+            end
+            test(2); test(3)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:Fixnum[10] = Const Value(10)
+          v13:Fixnum = GuardType v1, Fixnum
+          v14:RangeExact = NewRangeFixnum v13 NewRangeExclusive v5
+          CheckInterrupts
+          Return v14
+        ");
     }
 
     #[test]
@@ -5761,12 +7001,15 @@ mod opt_tests {
             end
             test; test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v5:Fixnum[5] = Const Value(5)
-              Return v5
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v6:ArrayExact = NewArray
+          v9:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -5778,12 +7021,40 @@ mod opt_tests {
             end
             test; test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v4:Fixnum[5] = Const Value(5)
-              Return v4
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v5:RangeExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v8:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v8
+        ");
+    }
+
+    #[test]
+    fn test_do_not_eliminate_new_range_non_fixnum() {
+        eval("
+            def test()
+              _ = (-'a'..'b')
+              0
+            end
+            test; test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v6:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
+          v8:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v10:StringExact = StringCopy v8
+          v12:RangeExact = NewRange v6 NewRangeInclusive v10
+          PatchPoint NoEPEscape(test)
+          v17:Fixnum[0] = Const Value(0)
+          CheckInterrupts
+          Return v17
+        ");
     }
 
     #[test]
@@ -5795,12 +7066,15 @@ mod opt_tests {
             end
             test(1); test(2)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v2:NilClass = Const Value(nil)
+          v7:ArrayExact = NewArray v1
+          v10:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v10
+        ");
     }
 
     #[test]
@@ -5811,28 +7085,38 @@ mod opt_tests {
               5
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v5:Fixnum[5] = Const Value(5)
-              Return v5
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v6:HashExact = NewHash
+          PatchPoint NoEPEscape(test)
+          v11:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v11
+        ");
     }
 
     #[test]
-    fn test_eliminate_new_hash_with_elements() {
+    fn test_no_eliminate_new_hash_with_elements() {
         eval("
             def test(aval, bval)
               c = {a: aval, b: bval}
               5
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v9:Fixnum[5] = Const Value(5)
-              Return v9
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v3:NilClass = Const Value(nil)
+          v7:StaticSymbol[:a] = Const Value(VALUE(0x1000))
+          v8:StaticSymbol[:b] = Const Value(VALUE(0x1008))
+          v10:HashExact = NewHash v7: v1, v8: v2
+          PatchPoint NoEPEscape(test)
+          v15:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v15
+        ");
     }
 
     #[test]
@@ -5844,12 +7128,16 @@ mod opt_tests {
             end
             test; test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v7:ArrayExact = ArrayDup v5
+          v10:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v10
+        ");
     }
 
     #[test]
@@ -5860,12 +7148,16 @@ mod opt_tests {
               5
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v5:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v7:HashExact = HashDup v5
+          v10:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v10
+        ");
     }
 
     #[test]
@@ -5877,12 +7169,14 @@ mod opt_tests {
             end
             test; test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v3:Fixnum[5] = Const Value(5)
-              Return v3
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v7:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v7
+        ");
     }
 
     #[test]
@@ -5894,12 +7188,16 @@ mod opt_tests {
             end
             test; test
         "#);
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v5:Fixnum[5] = Const Value(5)
-              Return v5
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v7:StringExact = StringCopy v5
+          v10:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v10
+        ");
     }
 
     #[test]
@@ -5911,15 +7209,16 @@ mod opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+          v19:Fixnum = GuardType v1, Fixnum
+          v20:Fixnum = GuardType v2, Fixnum
+          v12:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v12
+        ");
     }
 
     #[test]
@@ -5931,15 +7230,16 @@ mod opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
+          v19:Fixnum = GuardType v1, Fixnum
+          v20:Fixnum = GuardType v2, Fixnum
+          v12:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v12
+        ");
     }
 
     #[test]
@@ -5951,15 +7251,16 @@ mod opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
+          v19:Fixnum = GuardType v1, Fixnum
+          v20:Fixnum = GuardType v2, Fixnum
+          v12:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v12
+        ");
     }
 
     #[test]
@@ -5971,16 +7272,17 @@ mod opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
-              v11:Fixnum = FixnumDiv v9, v10
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
+          v19:Fixnum = GuardType v1, Fixnum
+          v20:Fixnum = GuardType v2, Fixnum
+          v21:Fixnum = FixnumDiv v19, v20
+          v12:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v12
+        ");
     }
 
     #[test]
@@ -5992,16 +7294,17 @@ mod opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
-              v11:Fixnum = FixnumMod v9, v10
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
+          v19:Fixnum = GuardType v1, Fixnum
+          v20:Fixnum = GuardType v2, Fixnum
+          v21:Fixnum = FixnumMod v19, v20
+          v12:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v12
+        ");
     }
 
     #[test]
@@ -6013,15 +7316,16 @@ mod opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+          v19:Fixnum = GuardType v1, Fixnum
+          v20:Fixnum = GuardType v2, Fixnum
+          v12:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v12
+        ");
     }
 
     #[test]
@@ -6033,15 +7337,16 @@ mod opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
+          v19:Fixnum = GuardType v1, Fixnum
+          v20:Fixnum = GuardType v2, Fixnum
+          v12:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v12
+        ");
     }
 
     #[test]
@@ -6053,15 +7358,16 @@ mod opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
+          v19:Fixnum = GuardType v1, Fixnum
+          v20:Fixnum = GuardType v2, Fixnum
+          v12:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v12
+        ");
     }
 
     #[test]
@@ -6073,15 +7379,16 @@ mod opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
+          v19:Fixnum = GuardType v1, Fixnum
+          v20:Fixnum = GuardType v2, Fixnum
+          v12:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v12
+        ");
     }
 
     #[test]
@@ -6093,15 +7400,16 @@ mod opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+          v19:Fixnum = GuardType v1, Fixnum
+          v20:Fixnum = GuardType v2, Fixnum
+          v12:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v12
+        ");
     }
 
     #[test]
@@ -6113,16 +7421,17 @@ mod opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
-              v10:Fixnum = GuardType v1, Fixnum
-              v11:Fixnum = GuardType v2, Fixnum
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
+          v20:Fixnum = GuardType v1, Fixnum
+          v21:Fixnum = GuardType v2, Fixnum
+          v12:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v12
+        ");
     }
 
     #[test]
@@ -6133,13 +7442,14 @@ mod opt_tests {
               5
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v3:BasicObject = GetConstantPath 0x1000
-              v4:Fixnum[5] = Const Value(5)
-              Return v4
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v5:BasicObject = GetConstantPath 0x1000
+          v8:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v8
+        ");
     }
 
     #[test]
@@ -6149,14 +7459,15 @@ mod opt_tests {
             test(0) # profile
             test(1)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
-              v7:Fixnum = GuardType v1, Fixnum
-              v8:BasicObject = CCall itself@0x1038, v7
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
+          v13:Fixnum = GuardType v1, Fixnum
+          v14:BasicObject = CCall itself@0x1038, v13
+          CheckInterrupts
+          Return v14
+        ");
     }
 
     #[test]
@@ -6164,14 +7475,15 @@ mod opt_tests {
         eval("
             def test = [].itself
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:ArrayExact = NewArray
-              PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
-              v8:BasicObject = CCall itself@0x1038, v3
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:ArrayExact = NewArray
+          PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
+          v14:BasicObject = CCall itself@0x1038, v5
+          CheckInterrupts
+          Return v14
+        ");
     }
 
     #[test]
@@ -6182,15 +7494,18 @@ mod opt_tests {
               1
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v1:NilClassExact = Const Value(nil)
-              v4:ArrayExact = NewArray
-              PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
-              v7:Fixnum[1] = Const Value(1)
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v6:ArrayExact = NewArray
+          PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
+          v20:BasicObject = CCall itself@0x1038, v6
+          PatchPoint NoEPEscape(test)
+          v13:Fixnum[1] = Const Value(1)
+          CheckInterrupts
+          Return v13
+        ");
     }
 
     #[test]
@@ -6203,17 +7518,20 @@ mod opt_tests {
             end
             test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:4:
-            bb0(v0:BasicObject):
-              v1:NilClassExact = Const Value(nil)
-              PatchPoint SingleRactorMode
-              PatchPoint StableConstantNames(0x1000, M)
-              v11:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              PatchPoint MethodRedefined(Module@0x1010, name@0x1018, cme:0x1020)
-              v7:Fixnum[1] = Const Value(1)
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, M)
+          v21:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Module@0x1010, name@0x1018, cme:0x1020)
+          v23:StringExact|NilClass = CCall name@0x1048, v21
+          PatchPoint NoEPEscape(test)
+          v13:Fixnum[1] = Const Value(1)
+          CheckInterrupts
+          Return v13
+        ");
     }
 
     #[test]
@@ -6224,15 +7542,17 @@ mod opt_tests {
               5
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v1:NilClassExact = Const Value(nil)
-              v4:ArrayExact = NewArray
-              PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
-              v7:Fixnum[5] = Const Value(5)
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v6:ArrayExact = NewArray
+          PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
+          v20:Fixnum = CCall length@0x1038, v6
+          v13:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v13
+        ");
     }
 
     #[test]
@@ -6242,14 +7562,15 @@ mod opt_tests {
             def test = C
             test # Warm the constant cache
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              PatchPoint SingleRactorMode
-              PatchPoint StableConstantNames(0x1000, C)
-              v7:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          CheckInterrupts
+          Return v13
+        ");
     }
 
     #[test]
@@ -6258,24 +7579,25 @@ mod opt_tests {
             def test = [String, Class, Module, BasicObject]
             test # Warm the constant cache
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              PatchPoint SingleRactorMode
-              PatchPoint StableConstantNames(0x1000, String)
-              v15:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              PatchPoint SingleRactorMode
-              PatchPoint StableConstantNames(0x1010, Class)
-              v18:Class[VALUE(0x1018)] = Const Value(VALUE(0x1018))
-              PatchPoint SingleRactorMode
-              PatchPoint StableConstantNames(0x1020, Module)
-              v21:Class[VALUE(0x1028)] = Const Value(VALUE(0x1028))
-              PatchPoint SingleRactorMode
-              PatchPoint StableConstantNames(0x1030, BasicObject)
-              v24:Class[VALUE(0x1038)] = Const Value(VALUE(0x1038))
-              v11:ArrayExact = NewArray v15, v18, v21, v24
-              Return v11
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, String)
+          v21:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1010, Class)
+          v24:Class[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1020, Module)
+          v27:Class[VALUE(0x1028)] = Const Value(VALUE(0x1028))
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1030, BasicObject)
+          v30:Class[VALUE(0x1038)] = Const Value(VALUE(0x1038))
+          v13:ArrayExact = NewArray v21, v24, v27, v30
+          CheckInterrupts
+          Return v13
+        ");
     }
 
     #[test]
@@ -6284,18 +7606,19 @@ mod opt_tests {
             def test = [Enumerable, Kernel]
             test # Warm the constant cache
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              PatchPoint SingleRactorMode
-              PatchPoint StableConstantNames(0x1000, Enumerable)
-              v11:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              PatchPoint SingleRactorMode
-              PatchPoint StableConstantNames(0x1010, Kernel)
-              v14:ModuleExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
-              v7:ArrayExact = NewArray v11, v14
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Enumerable)
+          v17:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1010, Kernel)
+          v20:ModuleExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          v9:ArrayExact = NewArray v17, v20
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -6306,14 +7629,15 @@ mod opt_tests {
             def test = MY_MODULE
             test # Warm the constant cache
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:4:
-            bb0(v0:BasicObject):
-              PatchPoint SingleRactorMode
-              PatchPoint StableConstantNames(0x1000, MY_MODULE)
-              v7:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, MY_MODULE)
+          v13:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          CheckInterrupts
+          Return v13
+        ");
     }
 
     #[test]
@@ -6324,15 +7648,17 @@ mod opt_tests {
               5
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v1:NilClassExact = Const Value(nil)
-              v4:ArrayExact = NewArray
-              PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
-              v7:Fixnum[5] = Const Value(5)
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v6:ArrayExact = NewArray
+          PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
+          v20:Fixnum = CCall size@0x1038, v6
+          v13:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v13
+        ");
     }
 
     #[test]
@@ -6343,14 +7669,15 @@ mod opt_tests {
             test rescue 0
         ");
         // Not specialized
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              v3:Fixnum[0] = Const Value(0)
-              v5:BasicObject = SendWithoutBlock v2, :itself, v3
-              Return v5
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          v5:Fixnum[0] = Const Value(0)
+          v7:BasicObject = SendWithoutBlock v4, :itself, v5
+          CheckInterrupts
+          Return v7
+        ");
     }
 
     #[test]
@@ -6358,14 +7685,15 @@ mod opt_tests {
         eval("
             def test(x) = 1.zero?
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v3:Fixnum[1] = Const Value(1)
-              PatchPoint MethodRedefined(Integer@0x1000, zero?@0x1008, cme:0x1010)
-              v8:BasicObject = SendWithoutBlockDirect v3, :zero? (0x1038)
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1000, zero?@0x1008, cme:0x1010)
+          v14:BasicObject = SendWithoutBlockDirect v5, :zero? (0x1038)
+          CheckInterrupts
+          Return v14
+        ");
     }
 
     #[test]
@@ -6376,16 +7704,17 @@ mod opt_tests {
               a.first
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v2:NilClassExact = Const Value(nil)
-              v4:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v6:ArrayExact = ArrayDup v4
-              PatchPoint MethodRedefined(Array@0x1008, first@0x1010, cme:0x1018)
-              v11:BasicObject = SendWithoutBlockDirect v6, :first (0x1040)
-              Return v11
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v2:NilClass = Const Value(nil)
+          v6:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v8:ArrayExact = ArrayDup v6
+          PatchPoint MethodRedefined(Array@0x1008, first@0x1010, cme:0x1018)
+          v19:BasicObject = SendWithoutBlockDirect v8, :first (0x1040)
+          CheckInterrupts
+          Return v19
+        ");
     }
 
     #[test]
@@ -6396,16 +7725,43 @@ mod opt_tests {
             test
             test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              PatchPoint SingleRactorMode
-              PatchPoint StableConstantNames(0x1000, M)
-              v9:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              PatchPoint MethodRedefined(Module@0x1010, class@0x1018, cme:0x1020)
-              v11:BasicObject = SendWithoutBlockDirect v9, :class (0x1048)
-              Return v11
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, M)
+          v15:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Module@0x1010, class@0x1018, cme:0x1020)
+          v17:BasicObject = SendWithoutBlockDirect v15, :class (0x1048)
+          CheckInterrupts
+          Return v17
+        ");
+    }
+
+    #[test]
+    fn test_send_direct_to_instance_method() {
+        eval("
+            class C
+              def foo
+                3
+              end
+            end
+
+            def test(c) = c.foo
+            c = C.new
+            test c
+            test c
+        ");
+
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:8:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          v13:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
+          v14:BasicObject = SendWithoutBlockDirect v13, :foo (0x1038)
+          CheckInterrupts
+          Return v14
+        ");
     }
 
     #[test]
@@ -6416,13 +7772,14 @@ mod opt_tests {
             test
             test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              v4:BasicObject = SendWithoutBlock v0, :foo, v2
-              Return v4
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          v6:BasicObject = SendWithoutBlock v0, :foo, v4
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
@@ -6433,12 +7790,39 @@ mod opt_tests {
             test
             test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v3:BasicObject = Send v0, 0x1000, :foo
-              Return v3
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v5:BasicObject = Send v0, 0x1000, :foo
+          CheckInterrupts
+          Return v5
+        ");
+    }
+
+    #[test]
+    fn reload_local_across_send() {
+        eval("
+            def foo(&block) = 1
+            def test
+              a = 1
+              foo {|| }
+              a
+            end
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v5:Fixnum[1] = Const Value(1)
+          SetLocal l0, EP@3, v5
+          v10:BasicObject = Send v0, 0x1000, :foo
+          v11:BasicObject = GetLocal l0, EP@3
+          v14:BasicObject = GetLocal l0, EP@3
+          CheckInterrupts
+          Return v14
+        ");
     }
 
     #[test]
@@ -6449,13 +7833,14 @@ mod opt_tests {
             test
             test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              v4:BasicObject = SendWithoutBlock v0, :foo, v2
-              Return v4
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          v6:BasicObject = SendWithoutBlock v0, :foo, v4
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
@@ -6466,12 +7851,14 @@ mod opt_tests {
             test
             test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              SideExit UnknownCallType
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          v6:BasicObject = SendWithoutBlock v0, :foo, v4
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
@@ -6482,12 +7869,14 @@ mod opt_tests {
             test
             test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              SideExit UnknownCallType
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          v6:BasicObject = SendWithoutBlock v0, :foo, v4
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
@@ -6497,15 +7886,16 @@ mod opt_tests {
             test
             test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v3:StringExact = StringCopy v2
-              PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010, cme:0x1018)
-              v8:Fixnum = CCall bytesize@0x1040, v3
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v6:StringExact = StringCopy v4
+          PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010, cme:0x1018)
+          v15:Fixnum = CCall bytesize@0x1040, v6
+          CheckInterrupts
+          Return v15
+        ");
     }
 
     #[test]
@@ -6513,12 +7903,13 @@ mod opt_tests {
         eval("
             def test = Kernel
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:BasicObject = GetConstantPath 0x1000
-              Return v3
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:BasicObject = GetConstantPath 0x1000
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
@@ -6528,12 +7919,13 @@ mod opt_tests {
             test
             Kernel = 5
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:BasicObject = GetConstantPath 0x1000
-              Return v3
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:BasicObject = GetConstantPath 0x1000
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
@@ -6542,14 +7934,15 @@ mod opt_tests {
             def test = Kernel
             test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              PatchPoint SingleRactorMode
-              PatchPoint StableConstantNames(0x1000, Kernel)
-              v7:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Kernel)
+          v13:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          CheckInterrupts
+          Return v13
+        ");
     }
 
     #[test]
@@ -6564,14 +7957,15 @@ mod opt_tests {
             def test = Foo::Bar::C
             test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:8:
-            bb0(v0:BasicObject):
-              PatchPoint SingleRactorMode
-              PatchPoint StableConstantNames(0x1000, Foo::Bar::C)
-              v7:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:8:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Foo::Bar::C)
+          v13:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          CheckInterrupts
+          Return v13
+        ");
     }
 
     #[test]
@@ -6581,16 +7975,26 @@ mod opt_tests {
             def test = C.new
             test
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              PatchPoint SingleRactorMode
-              PatchPoint StableConstantNames(0x1000, C)
-              v20:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              v4:NilClassExact = Const Value(nil)
-              v11:BasicObject = SendWithoutBlock v20, :new
-              Return v11
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, C)
+          v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v6:NilClass = Const Value(nil)
+          v7:CBool = IsMethodCFunc v34, :new
+          IfFalse v7, bb1(v0, v6, v34)
+          v10:HeapObject = ObjectAlloc v34
+          v12:BasicObject = SendWithoutBlock v10, :initialize
+          CheckInterrupts
+          Jump bb2(v0, v10, v12)
+        bb1(v16:BasicObject, v17:NilClass, v18:Class[VALUE(0x1008)]):
+          v21:BasicObject = SendWithoutBlock v18, :new
+          Jump bb2(v16, v21, v17)
+        bb2(v23:BasicObject, v24:BasicObject, v25:BasicObject):
+          CheckInterrupts
+          Return v24
+        ");
     }
 
     #[test]
@@ -6604,17 +8008,29 @@ mod opt_tests {
             def test = C.new 1
             test
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:7:
-            bb0(v0:BasicObject):
-              PatchPoint SingleRactorMode
-              PatchPoint StableConstantNames(0x1000, C)
-              v22:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              v4:NilClassExact = Const Value(nil)
-              v5:Fixnum[1] = Const Value(1)
-              v13:BasicObject = SendWithoutBlock v22, :new, v5
-              Return v13
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:7:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, C)
+          v36:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v6:NilClass = Const Value(nil)
+          v7:Fixnum[1] = Const Value(1)
+          v8:CBool = IsMethodCFunc v36, :new
+          IfFalse v8, bb1(v0, v6, v36, v7)
+          v11:HeapObject = ObjectAlloc v36
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1010, cme:0x1018)
+          v38:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
+          v39:BasicObject = SendWithoutBlockDirect v38, :initialize (0x1040), v7
+          CheckInterrupts
+          Jump bb2(v0, v11, v39)
+        bb1(v17:BasicObject, v18:NilClass, v19:Class[VALUE(0x1008)], v20:Fixnum[1]):
+          v23:BasicObject = SendWithoutBlock v19, :new, v20
+          Jump bb2(v17, v23, v18)
+        bb2(v25:BasicObject, v26:BasicObject, v27:BasicObject):
+          CheckInterrupts
+          Return v26
+        ");
     }
 
     #[test]
@@ -6622,14 +8038,15 @@ mod opt_tests {
         eval("
             def test(a,b) = [a,b].length
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:ArrayExact = NewArray v1, v2
-              PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
-              v10:Fixnum = CCall length@0x1038, v5
-              Return v10
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v7:ArrayExact = NewArray v1, v2
+          PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
+          v18:Fixnum = CCall length@0x1038, v7
+          CheckInterrupts
+          Return v18
+        ");
     }
 
     #[test]
@@ -6637,14 +8054,28 @@ mod opt_tests {
         eval("
             def test(a,b) = [a,b].size
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:ArrayExact = NewArray v1, v2
-              PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
-              v10:Fixnum = CCall size@0x1038, v5
-              Return v10
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v7:ArrayExact = NewArray v1, v2
+          PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
+          v18:Fixnum = CCall size@0x1038, v7
+          CheckInterrupts
+          Return v18
+        ");
+    }
+
+    #[test]
+    fn test_getblockparamproxy() {
+        eval("
+            def test(&block) = tap(&block)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v6:BasicObject = GetBlockParamProxy l0
+          SideExit UnhandledCallType(BlockArg)
+        ");
     }
 
     #[test]
@@ -6652,12 +8083,14 @@ mod opt_tests {
         eval("
             def test = @foo
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:BasicObject = GetIvar v0, :@foo
-              Return v3
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          v6:BasicObject = GetIvar v0, :@foo
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
@@ -6665,13 +8098,15 @@ mod opt_tests {
         eval("
             def test = @foo = 1
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              SetIvar v0, :@foo, v2
-              Return v2
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          PatchPoint SingleRactorMode
+          SetIvar v0, :@foo, v4
+          CheckInterrupts
+          Return v4
+        ");
     }
 
     #[test]
@@ -6679,13 +8114,14 @@ mod opt_tests {
         eval("
             def test = {}.freeze
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
-              Return v3
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
@@ -6696,13 +8132,14 @@ mod opt_tests {
             end
             def test = {}.freeze
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:5:
-            bb0(v0:BasicObject):
-              v3:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v4:BasicObject = SendWithoutBlock v3, :freeze
-              Return v4
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0(v0:BasicObject):
+          v5:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v6:BasicObject = SendWithoutBlock v5, :freeze
+          CheckInterrupts
+          Return v6
+        ");
     }
 
     #[test]
@@ -6710,14 +8147,15 @@ mod opt_tests {
         eval("
             def test = {}.freeze.freeze
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
-              PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
-              Return v3
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
+          PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
@@ -6725,14 +8163,15 @@ mod opt_tests {
         eval("
             def test = {}.dup.freeze
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:HashExact = NewHash
-              v5:BasicObject = SendWithoutBlock v3, :dup
-              v7:BasicObject = SendWithoutBlock v5, :freeze
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:HashExact = NewHash
+          v7:BasicObject = SendWithoutBlock v5, :dup
+          v9:BasicObject = SendWithoutBlock v7, :freeze
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -6740,14 +8179,15 @@ mod opt_tests {
         eval("
             def test = {}.freeze(nil)
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:HashExact = NewHash
-              v4:NilClassExact = Const Value(nil)
-              v6:BasicObject = SendWithoutBlock v3, :freeze, v4
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:HashExact = NewHash
+          v6:NilClass = Const Value(nil)
+          v8:BasicObject = SendWithoutBlock v5, :freeze, v6
+          CheckInterrupts
+          Return v8
+        ");
     }
 
     #[test]
@@ -6755,13 +8195,14 @@ mod opt_tests {
         eval("
             def test = [].freeze
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
-              Return v3
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
@@ -6769,14 +8210,15 @@ mod opt_tests {
         eval("
             def test = [].freeze.freeze
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
-              PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
-              Return v3
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
@@ -6784,14 +8226,15 @@ mod opt_tests {
         eval("
             def test = [].dup.freeze
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:ArrayExact = NewArray
-              v5:BasicObject = SendWithoutBlock v3, :dup
-              v7:BasicObject = SendWithoutBlock v5, :freeze
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:ArrayExact = NewArray
+          v7:BasicObject = SendWithoutBlock v5, :dup
+          v9:BasicObject = SendWithoutBlock v7, :freeze
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -6799,14 +8242,15 @@ mod opt_tests {
         eval("
             def test = [].freeze(nil)
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:ArrayExact = NewArray
-              v4:NilClassExact = Const Value(nil)
-              v6:BasicObject = SendWithoutBlock v3, :freeze, v4
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:ArrayExact = NewArray
+          v6:NilClass = Const Value(nil)
+          v8:BasicObject = SendWithoutBlock v5, :freeze, v6
+          CheckInterrupts
+          Return v8
+        ");
     }
 
     #[test]
@@ -6814,13 +8258,14 @@ mod opt_tests {
         eval("
             def test = ''.freeze
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
-              Return v3
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
@@ -6828,14 +8273,15 @@ mod opt_tests {
         eval("
             def test = ''.freeze.freeze
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
-              PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
-              Return v3
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
+          PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
@@ -6843,15 +8289,16 @@ mod opt_tests {
         eval("
             def test = ''.dup.freeze
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v3:StringExact = StringCopy v2
-              v5:BasicObject = SendWithoutBlock v3, :dup
-              v7:BasicObject = SendWithoutBlock v5, :freeze
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v6:StringExact = StringCopy v4
+          v8:BasicObject = SendWithoutBlock v6, :dup
+          v10:BasicObject = SendWithoutBlock v8, :freeze
+          CheckInterrupts
+          Return v10
+        ");
     }
 
     #[test]
@@ -6859,15 +8306,16 @@ mod opt_tests {
         eval("
             def test = ''.freeze(nil)
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v3:StringExact = StringCopy v2
-              v4:NilClassExact = Const Value(nil)
-              v6:BasicObject = SendWithoutBlock v3, :freeze, v4
-              Return v6
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v6:StringExact = StringCopy v4
+          v7:NilClass = Const Value(nil)
+          v9:BasicObject = SendWithoutBlock v6, :freeze, v7
+          CheckInterrupts
+          Return v9
+        ");
     }
 
     #[test]
@@ -6875,13 +8323,14 @@ mod opt_tests {
         eval("
             def test = -''
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
-              Return v3
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
@@ -6889,14 +8338,15 @@ mod opt_tests {
         eval("
             def test = -''.freeze
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
-              PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
-              Return v3
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
+          PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
@@ -6904,15 +8354,16 @@ mod opt_tests {
         eval("
             def test = -''.dup
         ");
-        assert_optimized_method_hir("test",  expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v3:StringExact = StringCopy v2
-              v5:BasicObject = SendWithoutBlock v3, :dup
-              v7:BasicObject = SendWithoutBlock v5, :-@
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v6:StringExact = StringCopy v4
+          v8:BasicObject = SendWithoutBlock v6, :dup
+          v10:BasicObject = SendWithoutBlock v8, :-@
+          CheckInterrupts
+          Return v10
+        ");
     }
 
     #[test]
@@ -6920,14 +8371,16 @@ mod opt_tests {
         eval(r##"
             def test = "#{('foo')}"
         "##);
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v3:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              v4:StringExact = StringCopy v3
-              SideExit UnknownOpcode(concatstrings)
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v7:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v9:StringExact = StringCopy v7
+          v15:StringExact = StringConcat v4, v9
+          CheckInterrupts
+          Return v15
+        ");
     }
 
     #[test]
@@ -6935,15 +8388,82 @@ mod opt_tests {
         eval(r##"
             def test = "#{1}"
         "##);
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v3:Fixnum[1] = Const Value(1)
-              v10:BasicObject = SendWithoutBlock v3, :to_s
-              v7:String = AnyToString v3, str: v10
-              SideExit UnknownOpcode(concatstrings)
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v5:Fixnum[1] = Const Value(1)
+          v7:BasicObject = ObjToString v5
+          v9:String = AnyToString v5, str: v7
+          v11:StringExact = StringConcat v4, v9
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_optimize_objtostring_anytostring_recv_profiled() {
+        eval("
+            def test(a)
+              \"#{a}\"
+            end
+            test('foo'); test('foo')
+        ");
+
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v17:String = GuardType v1, String
+          v11:StringExact = StringConcat v5, v17
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_optimize_objtostring_anytostring_recv_profiled_string_subclass() {
+        eval("
+            class MyString < String; end
+
+            def test(a)
+              \"#{a}\"
+            end
+            foo = MyString.new('foo')
+            test(MyString.new(foo)); test(MyString.new(foo))
+        ");
+
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v17:String = GuardType v1, String
+          v11:StringExact = StringConcat v5, v17
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_optimize_objtostring_profiled_nonstring_falls_back_to_send() {
+        eval("
+            def test(a)
+              \"#{a}\"
+            end
+            test([1,2,3]); test([1,2,3]) # No fast path for array
+        ");
+
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v17:BasicObject = GuardTypeNot v1, String
+          v18:BasicObject = SendWithoutBlock v1, :to_s
+          v9:String = AnyToString v1, str: v18
+          v11:StringExact = StringConcat v5, v9
+          CheckInterrupts
+          Return v11
+        ");
     }
 
     #[test]
@@ -6955,12 +8475,15 @@ mod opt_tests {
             end
         ");
 
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v3:NilClassExact = Const Value(nil)
-              Return v3
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v5:NilClass = Const Value(nil)
+          CheckInterrupts
+          CheckInterrupts
+          Return v5
+        ");
     }
 
     #[test]
@@ -6972,14 +8495,17 @@ mod opt_tests {
             end
         ");
 
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v3:Fixnum[1] = Const Value(1)
-              PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
-              v15:BasicObject = CCall itself@0x1038, v3
-              Return v15
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v1:NilClass = Const Value(nil)
+          v5:Fixnum[1] = Const Value(1)
+          CheckInterrupts
+          PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
+          v25:BasicObject = CCall itself@0x1038, v5
+          CheckInterrupts
+          Return v25
+        ");
     }
 
     #[test]
@@ -6987,16 +8513,17 @@ mod opt_tests {
         eval(r##"
             def test = [4,5,6].freeze[1]
         "##);
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
-              v5:Fixnum[1] = Const Value(1)
-              PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
-              v11:Fixnum[5] = Const Value(5)
-              Return v11
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v7:Fixnum[1] = Const Value(1)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
+          v19:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v19
+        ");
     }
 
     #[test]
@@ -7004,16 +8531,17 @@ mod opt_tests {
         eval(r##"
             def test = [4,5,6].freeze[-3]
         "##);
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
-              v5:Fixnum[-3] = Const Value(-3)
-              PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
-              v11:Fixnum[4] = Const Value(4)
-              Return v11
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v7:Fixnum[-3] = Const Value(-3)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
+          v19:Fixnum[4] = Const Value(4)
+          CheckInterrupts
+          Return v19
+        ");
     }
 
     #[test]
@@ -7021,16 +8549,17 @@ mod opt_tests {
         eval(r##"
             def test = [4,5,6].freeze[-10]
         "##);
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
-              v5:Fixnum[-10] = Const Value(-10)
-              PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
-              v11:NilClassExact = Const Value(nil)
-              Return v11
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v7:Fixnum[-10] = Const Value(-10)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
+          v19:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v19
+        ");
     }
 
     #[test]
@@ -7038,16 +8567,17 @@ mod opt_tests {
         eval(r##"
             def test = [4,5,6].freeze[10]
         "##);
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
-              v5:Fixnum[10] = Const Value(10)
-              PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
-              v11:NilClassExact = Const Value(nil)
-              Return v11
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v7:Fixnum[10] = Const Value(10)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
+          v19:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v19
+        ");
     }
 
     #[test]
@@ -7058,15 +8588,16 @@ mod opt_tests {
             end
             def test = [4,5,6].freeze[10]
         "##);
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:5:
-            bb0(v0:BasicObject):
-              v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
-              v5:Fixnum[10] = Const Value(10)
-              v7:BasicObject = SendWithoutBlock v3, :[], v5
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0(v0:BasicObject):
+          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v7:Fixnum[10] = Const Value(10)
+          v11:BasicObject = SendWithoutBlock v5, :[], v7
+          CheckInterrupts
+          Return v11
+        ");
     }
 
     #[test]
@@ -7077,15 +8608,16 @@ mod opt_tests {
             end
             def test = [4,5,6].max
         "##);
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:5:
-            bb0(v0:BasicObject):
-              v2:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v4:ArrayExact = ArrayDup v2
-              PatchPoint MethodRedefined(Array@0x1008, max@0x1010, cme:0x1018)
-              v9:BasicObject = SendWithoutBlockDirect v4, :max (0x1040)
-              Return v9
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0(v0:BasicObject):
+          v4:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v6:ArrayExact = ArrayDup v4
+          PatchPoint MethodRedefined(Array@0x1008, max@0x1010, cme:0x1018)
+          v15:BasicObject = SendWithoutBlockDirect v6, :max (0x1040)
+          CheckInterrupts
+          Return v15
+        ");
     }
 
     #[test]
@@ -7098,14 +8630,15 @@ mod opt_tests {
             test
             test
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:4:
-            bb0(v0:BasicObject):
-              PatchPoint SingleRactorMode
-              PatchPoint StableConstantNames(0x1000, MY_SET)
-              v7:SetExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, MY_SET)
+          v13:SetExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          CheckInterrupts
+          Return v13
+        ");
     }
 
     #[test]
@@ -7113,12 +8646,13 @@ mod opt_tests {
         eval("
             def test = /a/
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v2:RegexpExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              Return v2
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:RegexpExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          CheckInterrupts
+          Return v4
+        ");
     }
 
     #[test]
@@ -7126,14 +8660,15 @@ mod opt_tests {
         eval("
             def test = nil.nil?
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v2:NilClassExact = Const Value(nil)
-              PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
-              v7:TrueClassExact = CCall nil?@0x1038, v2
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
+          v15:TrueClass = CCall nil?@0x1038, v4
+          CheckInterrupts
+          Return v15
+        ");
     }
 
     #[test]
@@ -7144,14 +8679,15 @@ mod opt_tests {
               1
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:NilClassExact = Const Value(nil)
-              PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
-              v5:Fixnum[1] = Const Value(1)
-              Return v5
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
+          v11:Fixnum[1] = Const Value(1)
+          CheckInterrupts
+          Return v11
+        ");
     }
 
     #[test]
@@ -7159,14 +8695,15 @@ mod opt_tests {
         eval("
             def test = 1.nil?
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
-              v7:FalseClassExact = CCall nil?@0x1038, v2
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
+          v15:FalseClass = CCall nil?@0x1038, v4
+          CheckInterrupts
+          Return v15
+        ");
     }
 
     #[test]
@@ -7177,14 +8714,15 @@ mod opt_tests {
               2
             end
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              v2:Fixnum[1] = Const Value(1)
-              PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
-              v5:Fixnum[2] = Const Value(2)
-              Return v5
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
+          v11:Fixnum[2] = Const Value(2)
+          CheckInterrupts
+          Return v11
+        ");
     }
 
     #[test]
@@ -7194,14 +8732,15 @@ mod opt_tests {
 
             test(nil)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
-              v7:NilClassExact = GuardType v1, NilClassExact
-              v8:TrueClassExact = CCall nil?@0x1038, v7
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
+          v15:NilClass = GuardType v1, NilClass
+          v16:TrueClass = CCall nil?@0x1038, v15
+          CheckInterrupts
+          Return v16
+        ");
     }
 
     #[test]
@@ -7211,14 +8750,15 @@ mod opt_tests {
 
             test(false)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint MethodRedefined(FalseClass@0x1000, nil?@0x1008, cme:0x1010)
-              v7:FalseClassExact = GuardType v1, FalseClassExact
-              v8:FalseClassExact = CCall nil?@0x1038, v7
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(FalseClass@0x1000, nil?@0x1008, cme:0x1010)
+          v15:FalseClass = GuardType v1, FalseClass
+          v16:FalseClass = CCall nil?@0x1038, v15
+          CheckInterrupts
+          Return v16
+        ");
     }
 
     #[test]
@@ -7228,14 +8768,15 @@ mod opt_tests {
 
             test(true)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint MethodRedefined(TrueClass@0x1000, nil?@0x1008, cme:0x1010)
-              v7:TrueClassExact = GuardType v1, TrueClassExact
-              v8:FalseClassExact = CCall nil?@0x1038, v7
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(TrueClass@0x1000, nil?@0x1008, cme:0x1010)
+          v15:TrueClass = GuardType v1, TrueClass
+          v16:FalseClass = CCall nil?@0x1038, v15
+          CheckInterrupts
+          Return v16
+        ");
     }
 
     #[test]
@@ -7245,14 +8786,15 @@ mod opt_tests {
 
             test(:foo)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint MethodRedefined(Symbol@0x1000, nil?@0x1008, cme:0x1010)
-              v7:StaticSymbol = GuardType v1, StaticSymbol
-              v8:FalseClassExact = CCall nil?@0x1038, v7
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(Symbol@0x1000, nil?@0x1008, cme:0x1010)
+          v15:StaticSymbol = GuardType v1, StaticSymbol
+          v16:FalseClass = CCall nil?@0x1038, v15
+          CheckInterrupts
+          Return v16
+        ");
     }
 
     #[test]
@@ -7262,14 +8804,15 @@ mod opt_tests {
 
             test(1)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
-              v7:Fixnum = GuardType v1, Fixnum
-              v8:FalseClassExact = CCall nil?@0x1038, v7
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
+          v15:Fixnum = GuardType v1, Fixnum
+          v16:FalseClass = CCall nil?@0x1038, v15
+          CheckInterrupts
+          Return v16
+        ");
     }
 
     #[test]
@@ -7279,14 +8822,15 @@ mod opt_tests {
 
             test(1.0)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint MethodRedefined(Float@0x1000, nil?@0x1008, cme:0x1010)
-              v7:Flonum = GuardType v1, Flonum
-              v8:FalseClassExact = CCall nil?@0x1038, v7
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(Float@0x1000, nil?@0x1008, cme:0x1010)
+          v15:Flonum = GuardType v1, Flonum
+          v16:FalseClass = CCall nil?@0x1038, v15
+          CheckInterrupts
+          Return v16
+        ");
     }
 
     #[test]
@@ -7296,14 +8840,88 @@ mod opt_tests {
 
             test('foo')
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint MethodRedefined(String@0x1000, nil?@0x1008, cme:0x1010)
-              v7:StringExact = GuardType v1, StringExact
-              v8:FalseClassExact = CCall nil?@0x1038, v7
-              Return v8
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, nil?@0x1008, cme:0x1010)
+          v15:StringExact = GuardType v1, StringExact
+          v16:FalseClass = CCall nil?@0x1038, v15
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
+    fn test_specialize_basicobject_not_to_ccall() {
+        eval("
+            def test(a) = !a
+
+            test([])
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1000, !@0x1008, cme:0x1010)
+          v15:ArrayExact = GuardType v1, ArrayExact
+          v16:BoolExact = CCall !@0x1038, v15
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
+    fn test_specialize_array_empty_p_to_ccall() {
+        eval("
+            def test(a) = a.empty?
+
+            test([])
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1000, empty?@0x1008, cme:0x1010)
+          v15:ArrayExact = GuardType v1, ArrayExact
+          v16:BoolExact = CCall empty?@0x1038, v15
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
+    fn test_specialize_hash_empty_p_to_ccall() {
+        eval("
+            def test(a) = a.empty?
+
+            test({})
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(Hash@0x1000, empty?@0x1008, cme:0x1010)
+          v15:HashExact = GuardType v1, HashExact
+          v16:BoolExact = CCall empty?@0x1038, v15
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
+    fn test_specialize_basic_object_eq_to_ccall() {
+        eval("
+            class C; end
+            def test(a, b) = a == b
+
+            test(C.new, C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, ==@0x1008, cme:0x1010)
+          v16:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
+          v17:BoolExact = CCall ==@0x1038, v16, v2
+          CheckInterrupts
+          Return v17
+        ");
     }
 
     #[test]
@@ -7313,15 +8931,16 @@ mod opt_tests {
 
             test(1, 2)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 28)
-              v8:Fixnum = GuardType v1, Fixnum
-              v9:Fixnum = GuardType v2, Fixnum
-              v10:Fixnum = FixnumAnd v8, v9
-              Return v10
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 28)
+          v16:Fixnum = GuardType v1, Fixnum
+          v17:Fixnum = GuardType v2, Fixnum
+          v18:Fixnum = FixnumAnd v16, v17
+          CheckInterrupts
+          Return v18
+        ");
     }
 
     #[test]
@@ -7331,15 +8950,16 @@ mod opt_tests {
 
             test(1, 2)
         ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:2:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 29)
-              v8:Fixnum = GuardType v1, Fixnum
-              v9:Fixnum = GuardType v2, Fixnum
-              v10:Fixnum = FixnumOr v8, v9
-              Return v10
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 29)
+          v16:Fixnum = GuardType v1, Fixnum
+          v17:Fixnum = GuardType v2, Fixnum
+          v18:Fixnum = FixnumOr v16, v17
+          CheckInterrupts
+          Return v18
+        ");
     }
 
     #[test]
@@ -7351,13 +8971,204 @@ mod opt_tests {
             test; test
         ");
 
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test@<compiled>:3:
-            bb0(v0:BasicObject):
-              PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v6:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
-              v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1040)
-              Return v7
-        "#]]);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v12:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v13:BasicObject = SendWithoutBlockDirect v12, :foo (0x1038)
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_embedded() {
+        eval("
+            class C
+              attr_reader :foo
+              def initialize
+                @foo = 42
+              end
+            end
+
+            O = C.new
+            def test(o) = o.foo
+            test O
+            test O
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:10:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          v13:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
+          v16:HeapObject[class_exact:C] = GuardShape v13, 0x1038
+          v17:BasicObject = LoadIvarEmbedded v16, :@foo@0x1039
+          CheckInterrupts
+          Return v17
+        ");
+    }
+
+    #[test]
+    fn test_optimize_getivar_extended() {
+        eval("
+            class C
+              attr_reader :foo
+              def initialize
+                @foo = 42
+              end
+            end
+
+            O = C.new
+            def test(o) = o.foo
+            test O
+            test O
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:10:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          v13:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
+          v16:HeapObject[class_exact:C] = GuardShape v13, 0x1038
+          v17:BasicObject = LoadIvarEmbedded v16, :@foo@0x1039
+          CheckInterrupts
+          Return v17
+        ");
+    }
+
+    #[test]
+    fn test_dont_optimize_getivar_polymorphic() {
+        crate::options::rb_zjit_prepare_options();
+        crate::options::internal_set_num_profiles(3);
+        eval("
+            class C
+              attr_reader :foo, :bar
+
+              def foo_then_bar
+                @foo = 1
+                @bar = 2
+              end
+
+              def bar_then_foo
+                @bar = 3
+                @foo = 4
+              end
+            end
+
+            O1 = C.new
+            O1.foo_then_bar
+            O2 = C.new
+            O2.bar_then_foo
+            def test(o) = o.foo
+            test O1
+            test O2
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:20:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v6:BasicObject = SendWithoutBlock v1, :foo
+          CheckInterrupts
+          Return v6
+        ");
+    }
+
+    #[test]
+    fn test_inline_attr_reader_constant() {
+        eval("
+            class C
+              attr_reader :foo
+            end
+
+            O = C.new
+            def test = O.foo
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:7:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, O)
+          v15:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1018, cme:0x1020)
+          v18:HeapObject[VALUE(0x1008)] = GuardType v15, HeapObject
+          v19:HeapObject[VALUE(0x1008)] = GuardShape v18, 0x1048
+          v20:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
+    fn test_inline_attr_accessor_constant() {
+        eval("
+            class C
+              attr_accessor :foo
+            end
+
+            O = C.new
+            def test = O.foo
+            test
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:7:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, O)
+          v15:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(C@0x1010, foo@0x1018, cme:0x1020)
+          v18:HeapObject[VALUE(0x1008)] = GuardType v15, HeapObject
+          v19:HeapObject[VALUE(0x1008)] = GuardShape v18, 0x1048
+          v20:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
+    fn test_inline_attr_reader() {
+        eval("
+            class C
+              attr_reader :foo
+            end
+
+            def test(o) = o.foo
+            test C.new
+            test C.new
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:6:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          v13:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
+          v16:HeapObject[class_exact:C] = GuardShape v13, 0x1038
+          v17:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v17
+        ");
+    }
+
+    #[test]
+    fn test_inline_attr_accessor() {
+        eval("
+            class C
+              attr_accessor :foo
+            end
+
+            def test(o) = o.foo
+            test C.new
+            test C.new
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:6:
+        bb0(v0:BasicObject, v1:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
+          v13:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
+          v16:HeapObject[class_exact:C] = GuardShape v13, 0x1038
+          v17:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v17
+        ");
     }
 }

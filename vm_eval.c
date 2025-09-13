@@ -57,7 +57,7 @@ static inline VALUE vm_call0_cc(rb_execution_context_t *ec, VALUE recv, ID id, i
 VALUE
 rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *cme, int kw_splat)
 {
-    const struct rb_callcache cc = VM_CC_ON_STACK(Qfalse, vm_call_general, {{ 0 }}, cme);
+    const struct rb_callcache cc = VM_CC_ON_STACK(Qundef, vm_call_general, {{ 0 }}, cme);
     return vm_call0_cc(ec, recv, id, argc, argv, &cc, kw_splat);
 }
 
@@ -104,7 +104,7 @@ vm_call0_cc(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
 static VALUE
 vm_call0_cme(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv, const rb_callable_method_entry_t *cme)
 {
-    calling->cc = &VM_CC_ON_STACK(Qfalse, vm_call_general, {{ 0 }}, cme);
+    calling->cc = &VM_CC_ON_STACK(Qundef, vm_call_general, {{ 0 }}, cme);
     return vm_call0_body(ec, calling, argv);
 }
 
@@ -1984,6 +1984,10 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
     block.as.captured.self = self;
     block.as.captured.code.iseq = cfp->iseq;
     block.type = block_type_iseq;
+
+    // EP is not escaped to the heap here, but captured and reused by another frame.
+    // ZJIT's locals are incompatible with it unlike YJIT's, so invalidate the ISEQ for ZJIT.
+    rb_zjit_invalidate_no_ep_escape(cfp->iseq);
 
     iseq = eval_make_iseq(src, file, line, &block);
     if (!iseq) {

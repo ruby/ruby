@@ -716,12 +716,15 @@ rb_func_proc_dup(VALUE src_obj)
     VALUE proc_obj = TypedData_Make_Struct(rb_obj_class(src_obj), cfunc_proc_t, &proc_data_type, proc);
 
     memcpy(&proc->basic, src_proc, sizeof(rb_proc_t));
+    RB_OBJ_WRITTEN(proc_obj, Qundef, proc->basic.block.as.captured.self);
+    RB_OBJ_WRITTEN(proc_obj, Qundef, proc->basic.block.as.captured.code.val);
 
+    const VALUE *src_ep = src_proc->block.as.captured.ep;
     VALUE *ep = *(VALUE **)&proc->basic.block.as.captured.ep = proc->env + VM_ENV_DATA_SIZE - 1;
-    ep[VM_ENV_DATA_INDEX_FLAGS]   = src_proc->block.as.captured.ep[VM_ENV_DATA_INDEX_FLAGS];
-    ep[VM_ENV_DATA_INDEX_ME_CREF] = src_proc->block.as.captured.ep[VM_ENV_DATA_INDEX_ME_CREF];
-    ep[VM_ENV_DATA_INDEX_SPECVAL] = src_proc->block.as.captured.ep[VM_ENV_DATA_INDEX_SPECVAL];
-    ep[VM_ENV_DATA_INDEX_ENV]     = src_proc->block.as.captured.ep[VM_ENV_DATA_INDEX_ENV];
+    ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS];
+    ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
+    ep[VM_ENV_DATA_INDEX_SPECVAL] = src_ep[VM_ENV_DATA_INDEX_SPECVAL];
+    RB_OBJ_WRITE(proc_obj, &ep[VM_ENV_DATA_INDEX_ENV], src_ep[VM_ENV_DATA_INDEX_ENV]);
 
     return proc_obj;
 }
@@ -2026,6 +2029,12 @@ method_owner(VALUE obj)
     return data->owner;
 }
 
+/*
+ *  call-see:
+ *    meth.namespace   -> namespace or nil
+ *
+ *  Returns the namespace where +meth+ is defined in.
+ */
 static VALUE
 method_namespace(VALUE obj)
 {
@@ -3323,9 +3332,10 @@ method_inspect(VALUE method)
         for (int i = 0; i < RARRAY_LEN(params); i++) {
             pair = RARRAY_AREF(params, i);
             kind = RARRAY_AREF(pair, 0);
-            name = RARRAY_AREF(pair, 1);
-            // FIXME: in tests it turns out that kind, name = [:req] produces name to be false. Why?..
-            if (NIL_P(name) || name == Qfalse) {
+            if (RARRAY_LEN(pair) > 1) {
+                name = RARRAY_AREF(pair, 1);
+            }
+            else {
                 // FIXME: can it be reduced to switch/case?
                 if (kind == req || kind == opt) {
                     name = rb_str_new2("_");
@@ -3338,6 +3348,9 @@ method_inspect(VALUE method)
                 }
                 else if (kind == nokey) {
                     name = rb_str_new2("nil");
+                }
+                else {
+                    name = Qnil;
                 }
             }
 
@@ -4003,12 +4016,13 @@ proc_ruby2_keywords(VALUE procval)
     switch (proc->block.type) {
       case block_type_iseq:
         if (ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_rest &&
+                !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_post &&
                 !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_kw &&
                 !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_kwrest) {
             ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.ruby2_keywords = 1;
         }
         else {
-            rb_warn("Skipping set of ruby2_keywords flag for proc (proc accepts keywords or proc does not accept argument splat)");
+            rb_warn("Skipping set of ruby2_keywords flag for proc (proc accepts keywords or post arguments or proc does not accept argument splat)");
         }
         break;
       default:

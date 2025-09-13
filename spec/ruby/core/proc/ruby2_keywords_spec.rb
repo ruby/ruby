@@ -39,7 +39,7 @@ describe "Proc#ruby2_keywords" do
   end
 
   it "prints warning when a proc accepts keywords" do
-    f = -> a:, b: { }
+    f = -> *a, b: { }
 
     -> {
       f.ruby2_keywords
@@ -47,10 +47,20 @@ describe "Proc#ruby2_keywords" do
   end
 
   it "prints warning when a proc accepts keyword splat" do
-    f = -> **a { }
+    f = -> *a, **b { }
 
     -> {
       f.ruby2_keywords
     }.should complain(/Skipping set of ruby2_keywords flag for/)
+  end
+
+  ruby_version_is "3.5" do
+    it "prints warning when a proc accepts post arguments" do
+      f = -> *a, b { }
+
+      -> {
+        f.ruby2_keywords
+      }.should complain(/Skipping set of ruby2_keywords flag for/)
+    end
   end
 end

@@ -1,3 +1,5 @@
+//! A multi-platform assembler generation backend.
+
 #[cfg(target_arch = "x86_64")]
 pub mod x86_64;
 

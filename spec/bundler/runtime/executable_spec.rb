@@ -19,8 +19,9 @@ RSpec.describe "Running bin/* commands" do
     expect(out).to eq("1.0.0")
   end
 
-  it "allows the location of the gem stubs to be specified" do
-    bundle "binstubs myrack", path: "gbin"
+  it "allows the location of the gem stubs to be configured" do
+    bundle "config bin gbin"
+    bundle "binstubs myrack"
 
     expect(bundled_app("bin")).not_to exist
     expect(bundled_app("gbin/myrackup")).to exist
@@ -30,7 +31,8 @@ RSpec.describe "Running bin/* commands" do
   end
 
   it "allows absolute paths as a specification of where to install bin stubs" do
-    bundle "binstubs myrack", path: tmp("bin")
+    bundle "config bin #{tmp("bin")}"
+    bundle "binstubs myrack"
 
     gembin tmp("bin/myrackup")
     expect(out).to eq("1.0.0")
@@ -94,38 +96,6 @@ RSpec.describe "Running bin/* commands" do
     bundle "install"
 
     expect(bundled_app("bin/myrackup")).not_to exist
-  end
-
-  it "allows you to stop installing binstubs" do
-    skip "delete permission error" if Gem.win_platform?
-
-    bundle "install --binstubs bin/"
-    bundled_app("bin/myrackup").rmtree
-    bundle "install --binstubs \"\""
-
-    expect(bundled_app("bin/myrackup")).not_to exist
-
-    bundle "config bin"
-    expect(out).to include("You have not configured a value for `bin`")
-  end
-
-  it "remembers that the option was specified" do
-    gemfile <<-G
-      source "https://gem.repo1"
-      gem "activesupport"
-    G
-
-    bundle :install, binstubs: "bin"
-
-    gemfile <<-G
-      source "https://gem.repo1"
-      gem "activesupport"
-      gem "myrack"
-    G
-
-    bundle "install"
-
-    expect(bundled_app("bin/myrackup")).to exist
   end
 
   it "rewrites bins on binstubs with --force option" do

@@ -1,0 +1,39 @@
+Returns a printable version of +self+, enclosed in double-quotes.
+
+Most printable characters are rendered simply as themselves:
+
+  'abc'.inspect        # => "\"abc\""
+  '012'.inspect        # => "\"012\""
+  ''.inspect           # => "\"\""
+  "\u000012".inspect   # => "\"\\u000012\""
+  'тест'.inspect       # => "\"тест\""
+  'こんにちは'.inspect  # => "\"こんにちは\""
+
+But printable characters double-quote (<tt>'"'</tt>) and backslash and (<tt>'\\'</tt>) are escaped:
+
+  '"'.inspect  # => "\"\\\"\""
+  '\\'.inspect # => "\"\\\\\""
+
+Unprintable characters are the {ASCII characters}[https://en.wikipedia.org/wiki/ASCII]
+whose values are in range <tt>0..31</tt>,
+along with the character whose value is +127+.
+
+Most of these characters are rendered thus:
+
+  0.chr.inspect # => "\"\\x00\""
+  1.chr.inspect # => "\"\\x01\""
+  2.chr.inspect # => "\"\\x02\""
+  # ...
+
+A few, however, have special renderings:
+
+  7.chr.inspect  # => "\"\\a\""  # BEL
+  8.chr.inspect  # => "\"\\b\""  # BS
+  9.chr.inspect  # => "\"\\t\""  # TAB
+  10.chr.inspect # => "\"\\n\""  # LF
+  11.chr.inspect # => "\"\\v\""  # VT
+  12.chr.inspect # => "\"\\f\""  # FF
+  13.chr.inspect # => "\"\\r\""  # CR
+  27.chr.inspect # => "\"\\e\""  # ESC
+
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].

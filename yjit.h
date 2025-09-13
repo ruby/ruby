@@ -9,10 +9,9 @@
 #include "vm_core.h"
 #include "method.h"
 
-// YJIT_STATS controls whether to support runtime counters in generated code
-// and in the interpreter.
+// YJIT_STATS controls whether to support runtime counters in the interpreter
 #ifndef YJIT_STATS
-# define YJIT_STATS RUBY_DEBUG
+# define YJIT_STATS (USE_YJIT && RUBY_DEBUG)
 #endif
 
 #if USE_YJIT

@@ -467,6 +467,24 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_each_codepoint_with_ungetc
+    bug21562 = '[ruby-core:123176] [Bug #21562]'
+    with_read_pipe("") {|p|
+      p.binmode
+      p.ungetc("aa")
+      a = ""
+      p.each_codepoint { |c| a << c }
+      assert_equal("aa", a, bug21562)
+    }
+    with_read_pipe("") {|p|
+      p.set_encoding("ascii-8bit", universal_newline: true)
+      p.ungetc("aa")
+      a = ""
+      p.each_codepoint { |c| a << c }
+      assert_equal("aa", a, bug21562)
+    }
+  end
+
   def test_rubydev33072
     t = make_tempfile
     path = t.path

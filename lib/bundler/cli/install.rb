@@ -20,38 +20,18 @@ module Bundler
 
       Bundler::SharedHelpers.set_env "RB_USER_INSTALL", "1" if Gem.freebsd_platform?
 
-      # Disable color in deployment mode
-      Bundler.ui.shell = Thor::Shell::Basic.new if options[:deployment]
-
       if target_rbconfig_path = options[:"target-rbconfig"]
         Bundler.rubygems.set_target_rbconfig(target_rbconfig_path)
       end
 
-      check_for_options_conflicts
-
       check_trust_policy
 
-      if options[:deployment] || options[:frozen] || Bundler.frozen_bundle?
-        unless Bundler.default_lockfile.exist?
-          flag = "--deployment flag" if options[:deployment]
-          flag ||= "--frozen flag" if options[:frozen]
-          flag ||= "deployment setting" if Bundler.settings[:deployment]
-          flag ||= "frozen setting" if Bundler.settings[:frozen]
-          raise ProductionError, "The #{flag} requires a lockfile. Please make " \
-                                 "sure you have checked your #{SharedHelpers.relative_lockfile_path} into version control " \
-                                 "before deploying."
-        end
-
-        options[:local] = true if Bundler.app_cache.exist?
-
-        Bundler.settings.set_command_option :deployment, true if options[:deployment]
-        Bundler.settings.set_command_option :frozen, true if options[:frozen]
-      end
-
-      # When install is called with --no-deployment, disable deployment mode
-      if options[:deployment] == false
-        Bundler.settings.set_command_option :frozen, nil
-        options[:system] = true
+      if Bundler.frozen_bundle? && !Bundler.default_lockfile.exist?
+        flag = "deployment setting" if Bundler.settings[:deployment]
+        flag = "frozen setting" if Bundler.settings[:frozen]
+        raise ProductionError, "The #{flag} requires a lockfile. Please make " \
+                               "sure you have checked your #{SharedHelpers.relative_lockfile_path} into version control " \
+                               "before deploying."
       end
 
       normalize_settings
@@ -120,22 +100,6 @@ module Bundler
       "#{count} #{count == 1 ? "gem" : "gems"} now installed"
     end
 
-    def check_for_group_conflicts_in_cli_options
-      conflicting_groups = Array(options[:without]) & Array(options[:with])
-      return if conflicting_groups.empty?
-      raise InvalidOption, "You can't list a group in both with and without." \
-        " The offending groups are: #{conflicting_groups.join(", ")}."
-    end
-
-    def check_for_options_conflicts
-      if (options[:path] || options[:deployment]) && options[:system]
-        error_message = String.new
-        error_message << "You have specified both --path as well as --system. Please choose only one option.\n" if options[:path]
-        error_message << "You have specified both --deployment as well as --system. Please choose only one option.\n" if options[:deployment]
-        raise InvalidOption.new(error_message)
-      end
-    end
-
     def check_trust_policy
       trust_policy = options["trust-policy"]
       unless Bundler.rubygems.security_policies.keys.unshift(nil).include?(trust_policy)
@@ -145,27 +109,10 @@ module Bundler
       Bundler.settings.set_command_option_if_given :"trust-policy", trust_policy
     end
 
-    def normalize_groups
-      check_for_group_conflicts_in_cli_options
-
-      # need to nil them out first to get around validation for backwards compatibility
-      Bundler.settings.set_command_option :without, nil
-      Bundler.settings.set_command_option :with,    nil
-      Bundler.settings.set_command_option :without, options[:without]
-      Bundler.settings.set_command_option :with,    options[:with]
-    end
-
     def normalize_settings
-      Bundler.settings.set_command_option :path, nil if options[:system]
-      Bundler.settings.set_command_option_if_given :path, options[:path]
-
       if options["standalone"] && Bundler.settings[:path].nil? && !options["local"]
         Bundler.settings.set_command_option :path, "bundle"
       end
-
-      bin_option = options["binstubs"]
-      bin_option = nil if bin_option&.empty?
-      Bundler.settings.set_command_option :bin, bin_option if options["binstubs"]
 
       Bundler.settings.set_command_option_if_given :shebang, options["shebang"]
 
@@ -176,8 +123,6 @@ module Bundler
       Bundler.settings.set_command_option_if_given :no_install, options["no-install"]
 
       Bundler.settings.set_command_option_if_given :clean, options["clean"]
-
-      normalize_groups if options[:without] || options[:with]
 
       options[:force] = options[:redownload] if options[:redownload]
     end
