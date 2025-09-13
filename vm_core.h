@@ -1999,7 +1999,7 @@ static inline rb_execution_context_t *
 rb_current_execution_context(bool expect_ec)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-  #if defined(__arm64__) || defined(__aarch64__) || defined(__powerpc64__)
+  #ifdef RB_THREAD_CURRENT_EC_NOINLINE
     rb_execution_context_t * volatile ec = rb_current_ec();
   #else
     rb_execution_context_t * volatile ec = ruby_current_ec;
