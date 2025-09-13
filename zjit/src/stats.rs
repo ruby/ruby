@@ -137,6 +137,20 @@ make_counters! {
     dynamic_send_type_send,
     dynamic_send_type_invokeblock,
     dynamic_send_type_invokesuper,
+
+    // Method call def_type related to fallback to dynamic dispatch
+    send_fallback_iseq,
+    send_fallback_cfunc,
+    send_fallback_attrset,
+    send_fallback_ivar,
+    send_fallback_bmethod,
+    send_fallback_zsuper,
+    send_fallback_alias,
+    send_fallback_undef,
+    send_fallback_not_implemented,
+    send_fallback_optimized,
+    send_fallback_missing,
+    send_fallback_refined,
 }
 
 /// Increase a counter by a specified amount
