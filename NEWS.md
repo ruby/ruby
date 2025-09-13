@@ -98,9 +98,9 @@ Note: We're only listing outstanding class updates.
 
     * `Ractor#close_incoming` and `Ractor#close_outgoing` were removed.
 
-* Set
+* `Set`
 
-    * Set is now a core class, instead of an autoloaded stdlib class.
+    * `Set` is now a core class, instead of an autoloaded stdlib class.
       [[Feature #21216]]
 
 * String
