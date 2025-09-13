@@ -3368,6 +3368,7 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
                           options & ARG_REG_OPTION_MASK, err,
                           sourcefile, sourceline);
     if (!re->ptr) return -1;
+    OBJ_FREEZE(obj);
     RB_GC_GUARD(unescaped);
     return 0;
 }
@@ -3460,9 +3461,7 @@ rb_reg_init_str_enc(VALUE re, VALUE s, rb_encoding *enc, int options)
 VALUE
 rb_reg_new_ary(VALUE ary, int opt)
 {
-    VALUE re = rb_reg_new_str(rb_reg_preprocess_dregexp(ary, opt), opt);
-    rb_obj_freeze(re);
-    return re;
+    return rb_reg_new_str(rb_reg_preprocess_dregexp(ary, opt), opt);
 }
 
 VALUE
@@ -3496,7 +3495,6 @@ rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline)
         rb_set_errinfo(rb_reg_error_desc(str, options, err));
         return Qnil;
     }
-    rb_obj_freeze(re);
     return re;
 }
 
@@ -4033,6 +4031,7 @@ reg_copy(VALUE copy, VALUE orig)
     RREGEXP_PTR(copy)->timelimit = RREGEXP_PTR(orig)->timelimit;
     rb_enc_copy(copy, orig);
     FL_SET_RAW(copy, FL_TEST_RAW(orig, KCODE_FIXED|REG_ENCODING_NONE));
+    OBJ_FREEZE(copy);
 
     return copy;
 }
@@ -4100,7 +4099,6 @@ static VALUE reg_init_args(VALUE self, VALUE str, rb_encoding *enc, int flags);
  *      r3.timeout                                   # => 3.14
  *
  */
-
 static VALUE
 rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 {
@@ -4115,6 +4113,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     }
 
     set_timeout(&RREGEXP_PTR(self)->timelimit, args.timeout);
+    OBJ_FREEZE(self);
 
     return self;
 }
