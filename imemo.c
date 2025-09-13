@@ -48,23 +48,14 @@ rb_imemo_new(enum imemo_type type, VALUE v0, size_t size)
     return (VALUE)obj;
 }
 
-static rb_imemo_tmpbuf_t *
-rb_imemo_tmpbuf_new(void)
-{
-    return IMEMO_NEW(rb_imemo_tmpbuf_t, imemo_tmpbuf, 0);
-}
-
 void *
 rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
 {
-    void *ptr;
-    rb_imemo_tmpbuf_t *tmpbuf;
-
     /* Keep the order; allocate an empty imemo first then xmalloc, to
      * get rid of potential memory leak */
-    tmpbuf = rb_imemo_tmpbuf_new();
+    rb_imemo_tmpbuf_t *tmpbuf = (rb_imemo_tmpbuf_t *)rb_imemo_tmpbuf_new();
     *store = (VALUE)tmpbuf;
-    ptr = ruby_xmalloc(size);
+    void *ptr = ruby_xmalloc(size);
     tmpbuf->ptr = ptr;
     tmpbuf->cnt = cnt;
 
@@ -97,7 +88,7 @@ rb_free_tmp_buffer(volatile VALUE *store)
 rb_imemo_tmpbuf_t *
 rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt)
 {
-    rb_imemo_tmpbuf_t *tmpbuf = rb_imemo_tmpbuf_new();
+    rb_imemo_tmpbuf_t *tmpbuf = (rb_imemo_tmpbuf_t *)rb_imemo_tmpbuf_new();
     tmpbuf->ptr = buf;
     tmpbuf->next = old_heap;
     tmpbuf->cnt = cnt;
