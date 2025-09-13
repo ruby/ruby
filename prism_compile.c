@@ -10627,7 +10627,26 @@ pm_parse_errors_format_line(const pm_parser_t *parser, const pm_newline_list_t *
     // Here we determine if we should truncate the end of the line.
     bool truncate_end = false;
     if ((column_end != 0) && ((end - (start + column_end)) >= PM_ERROR_TRUNCATE)) {
-        end = start + column_end + PM_ERROR_TRUNCATE;
+        const uint8_t *end_candidate = start + column_end + PM_ERROR_TRUNCATE;
+
+        for (const uint8_t *ptr = start; ptr < end_candidate;) {
+            size_t char_width = parser->encoding->char_width(ptr, parser->end - ptr);
+
+            // If we failed to decode a character, then just bail out and
+            // truncate at the fixed width.
+            if (char_width == 0) break;
+
+            // If this next character would go past the end candidate,
+            // then we need to truncate before it.
+            if (ptr + char_width > end_candidate) {
+                end_candidate = ptr;
+                break;
+            }
+
+            ptr += char_width;
+        }
+
+        end = end_candidate;
         truncate_end = true;
     }
 
