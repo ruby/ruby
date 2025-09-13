@@ -6740,6 +6740,12 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         body->param.flags.has_lead = true;
     }
 
+    // Fill in the anonymous `it` parameter, if it exists
+    if (scope_node->parameters && PM_NODE_TYPE_P(scope_node->parameters, PM_IT_PARAMETERS_NODE)) {
+        body->param.lead_num = 1;
+        body->param.flags.has_lead = true;
+    }
+
     //********END OF STEP 3**********
 
     //********STEP 4**********
