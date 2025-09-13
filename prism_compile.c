@@ -1,5 +1,5 @@
 #include "prism.h"
-#include "version.h"
+#include "ruby/version.h"
 
 /**
  * This compiler defines its own concept of the location of a node. We do this
@@ -11501,7 +11501,7 @@ pm_parse_stdin(pm_parse_result_t *result)
 #define PM_VERSION_FOR_RELEASE_IMPL(major, minor) PM_OPTIONS_VERSION_CRUBY_##major##_##minor
 
 void pm_options_version_for_current_ruby_set(pm_options_t *options) {
-    options->version = PM_VERSION_FOR_RELEASE(RUBY_VERSION_MAJOR, RUBY_VERSION_MINOR);
+    options->version = PM_VERSION_FOR_RELEASE(RUBY_API_VERSION_MAJOR, RUBY_API_VERSION_MINOR);
 }
 
 #undef NEW_ISEQ
