@@ -649,7 +649,8 @@ config.status: nul
 
 guard = INCLUDE_RUBY_CONFIG_H
 
-$(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
+$(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub \
+	$(ABI_VERSION_HDR)
 	@echo Creating config.h
 !if !exist("$(arch_hdrdir)")
 	@md $(arch_hdrdir:/=\)
