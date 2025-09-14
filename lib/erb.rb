@@ -259,10 +259,9 @@ require 'erb/util'
 # # => "\n* 0,0\n\n* 0,1\n\n* 0,2\n\n* 1,0\n\n* 1,1\n\n* 1,2\n\n* 2,0\n\n* 2,1\n\n* 2,2\n\n"
 # ```
 #
-# You can use keyword argument `trim_mode` to make certain adjustments to the processing;
-# see ERB.new.
+# #### Shorthand Format for Execution Tags
 #
-# In particular, you can give `trim_mode: '%'` to enable a shorthand format for execution tags;
+# You can give `trim_mode: '%'` to enable a shorthand format for execution tags;
 # this example uses the shorthand format `% _code_` instead of `<% _code_ %>`:
 #
 # ```
@@ -527,69 +526,62 @@ class ERB
     VERSION
   end
 
+  # :markup: markdown
   #
-  # Constructs a new ERB object with the template specified in _str_.
+  # :call-seq:
+  #   ERB.new(string, trim_mode: nil, eoutvar: '_erbout')
   #
-  # An ERB object works by building a chunk of Ruby code that will output
-  # the completed template when run.
+  # Returns a new \ERB object containing the given +string+.
   #
-  # If _trim_mode_ is passed a String containing one or more of the following
-  # modifiers, ERB will adjust its code generation as listed:
+  # For details about `string`, its embedded tags, and generated results, see ERB.
   #
-  #     %  enables Ruby code processing for lines beginning with %
-  #     <> omit newline for lines starting with <% and ending in %>
-  #     >  omit newline for lines ending in %>
-  #     -  omit blank lines ending in -%>
+  # **Keyword Argument `trim_mode`**
   #
-  # _eoutvar_ can be used to set the name of the variable ERB will build up
-  # its output in.  This is useful when you need to run multiple ERB
-  # templates through the same binding and/or when you want to control where
-  # output ends up.  Pass the name of the variable to be used inside a String.
+  # When keyword argument `trim_mode` has a string value,
+  # that value may be one of:
   #
-  # ### Example
+  # - `'%'`: Enable [shorthand format][shorthand format] for execution tags.
+  # - `'-'`: Omit each blank line ending with `'%>'`.
+  # - `'>'`: Omit newline for each line ending with `'%>'`.
+  # - `'<>'`: Omit newline for each line starting with `'<%'` and ending with `'%>'`.
   #
-  #  require "erb"
+  # The value may also be certain combinations of the above.
   #
-  #  # build data class
-  #  class Listings
-  #    PRODUCT = { :name => "Chicken Fried Steak",
-  #                :desc => "A well messaged pattie, breaded and fried.",
-  #                :cost => 9.95 }
+  # - `'%-'`: Enable shorthand and omit each blank line ending with `'%>'`.
+  # - `'%>'`: Enable shorthand and omit newline for each line ending with `'%>'`.
+  # - `'%<>'`: Enable shorthand and omit newline for each line starting with `'<%'` and ending with `'%>'`.
   #
-  #    attr_reader :product, :price
+  # **Keyword Argument `eoutvar`**
   #
-  #    def initialize( product = "", price = "" )
-  #      @product = product
-  #      @price = price
-  #    end
+  # The string value of keyword argument `eoutvar` specifies the name of the variable
+  # that method #result uses to construct its result string.
+  # This is useful when you need to run multiple \ERB templates through the same binding
+  # and/or when you want to control where output ends up.
   #
-  #    def build
-  #      b = binding
-  #      # create and run templates, filling member data variables
-  #      ERB.new(<<~'END_PRODUCT', trim_mode: "", eoutvar: "@product").result b
-  #        <%= PRODUCT[:name] %>
-  #        <%= PRODUCT[:desc] %>
-  #      END_PRODUCT
-  #      ERB.new(<<~'END_PRICE', trim_mode: "", eoutvar: "@price").result b
-  #        <%= PRODUCT[:name] %> -- <%= PRODUCT[:cost] %>
-  #        <%= PRODUCT[:desc] %>
-  #      END_PRICE
-  #    end
-  #  end
+  # It's good practice to choose a variable name that begins with an underscore: `'_'`.
   #
-  #  # setup template data
-  #  listings = Listings.new
-  #  listings.build
+  # <b>Backward Compatibility</b>
   #
-  #  puts listings.product + "\n" + listings.price
+  # The calling sequence given above -- which is the one you should use --
+  # is a simplified version of the complete formal calling sequence,
+  # which is:
   #
-  # _Generates_
+  # ```
+  # ERB.new(string,
+  # safe_level=NOT_GIVEN, legacy_trim_mode=NOT_GIVEN, legacy_eoutvar=NOT_GIVEN,
+  # trim_mode: nil, eoutvar: '_erbout')
+  # ```
   #
-  #  Chicken Fried Steak
-  #  A well massaged pattie, breaded and fried.
+  # The second, third, and fourth positional arguments (those in the second line above) are deprecated;
+  # this method issues warnings if they are given.
   #
-  #  Chicken Fried Steak -- 9.95
-  #  A well massaged pattie, breaded and fried.
+  # However, their values, if given, are handled thus:
+  #
+  # - `safe_level`: ignored.
+  # - `legacy_trim_mode: overrides keyword argument `trim_mode`.
+  # - `legacy_eoutvar: overrides keyword argument `eoutvar`.
+  #
+  # [shorthand format]: rdoc-ref:ERB@Shorthand+Format+for+Execution+Tags
   #
   def initialize(str, safe_level=NOT_GIVEN, legacy_trim_mode=NOT_GIVEN, legacy_eoutvar=NOT_GIVEN, trim_mode: nil, eoutvar: '_erbout')
     # Complex initializer for $SAFE deprecation at [Feature #14256]. Use keyword arguments to pass trim_mode or eoutvar.
