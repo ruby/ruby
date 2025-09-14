@@ -1199,7 +1199,6 @@ impl Assembler
     }
 
     pub fn expect_leaf_ccall(&mut self) {
-        println!("EXPECTING LEAF CCALL");
         self.leaf_ccall = true;
     }
 
@@ -1534,19 +1533,6 @@ impl Assembler
                     pool.take_reg(&reg, vreg_idx);
                 }
                 saved_regs.clear();
-
-                if asm.leaf_ccall {
-                    if let Some(addr) = asm.take_leaf_canary_addr() {
-                        // *(saved_addr) = 0
-                        asm.store(Opnd::mem(64, addr, 0), 0.into());
-                    } else {
-                        // Fallback (shouldn’t happen): clear at current cfp->sp
-                        let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
-                        let sp_addr_now = asm.load(cfp_sp);
-                        asm.store(Opnd::mem(64, sp_addr_now, 0), 0.into());
-                    }
-                    asm.leaf_ccall = false;
-                }
             }
         }
 
@@ -1695,6 +1681,13 @@ impl Assembler {
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
         let out = self.new_vreg(Opnd::match_num_bits(&opnds));
         self.push_insn(Insn::CCall { fptr, opnds, start_marker: None, end_marker: None, out });
+
+        if self.leaf_ccall {
+            if let Some(addr) = self.take_leaf_canary_addr() {
+                self.store(Opnd::mem(64, addr, 0), 0.into());
+            };
+            self.leaf_ccall = false;
+        };
         out
     }
 

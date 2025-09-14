@@ -1001,7 +1001,6 @@ fn gen_send_without_block(
     cd: *const rb_call_data,
     state: &FrameState,
 ) -> lir::Opnd {
-    println!("GEN SEND WITHOUT BLOCK");
     gen_incr_counter(asm, Counter::dynamic_send_type_send_without_block);
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
@@ -1038,10 +1037,12 @@ fn gen_send_without_block_direct(
     asm.cmp(CFP, stack_limit);
     asm.jbe(side_exit(jit, state, StackOverflow));
 
-    println!("GEN SEND WITHOUT BLOCK DIRECT");
-
     // Save cfp->pc and cfp->sp for the caller frame
-    gen_prepare_non_leaf_call(jit, asm, state);
+    gen_save_pc(asm, state);
+    // Special SP match. Can't use gen_prepare_non_leaf_call
+    gen_save_sp(asm, state.stack().len() - args.len() - 1); // -1 for receiver
+    gen_spill_locals(jit, asm, state);
+    gen_spill_stack(jit, asm, state);
 
     // Set up the new frame
     // TODO: Lazily materialize caller frames on side exits or when needed
@@ -1226,12 +1227,11 @@ fn gen_new_range_fixnum(
     state: &FrameState,
 ) -> lir::Opnd {
     gen_prepare_call_with_gc(asm, state);
-    asm_ccall!(asm, rb_range_new, low, high, (flag as i64).into())
+    let val = asm_ccall!(asm, rb_range_new, low, high, (flag as i64).into());
+    val
 }
 
 fn gen_object_alloc(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
-    println!("GEN OBJECT ALLOC");
-    // gen_prepare_call_with_gc(asm, state);
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_ccall!(asm, rb_obj_alloc, val)
 }
@@ -1507,14 +1507,15 @@ fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState) {
     gen_save_pc(asm, state);
     // Debug-only: set VM stack canary at *(cfp->sp)
     if cfg!(feature = "runtime_checks") {
+        unsafe extern "C" { fn vm_stack_canary() -> VALUE; }
+        let canary_val = asm_ccall!(asm, rb_vm_stack_canary,);
+
         let stack_size = state.stack_size(); // number of live VM stack slots
         asm_comment!(asm, "save SP to CFP for canary");
         let sp_addr = asm.lea(Opnd::mem(64, SP, (stack_size as i32) * SIZEOF_VALUE_I32));
         asm.set_leaf_canary_addr(sp_addr);
         asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), sp_addr);
 
-        unsafe extern "C" { fn vm_stack_canary() -> VALUE; }
-        let canary_val = asm_ccall!(asm, rb_vm_stack_canary,);
         asm.store(Opnd::mem(64, sp_addr, 0), canary_val);
         asm.expect_leaf_ccall();
     }
