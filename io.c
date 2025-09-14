@@ -595,6 +595,8 @@ rb_sys_fail_on_write(rb_io_t *fptr)
  * conversion IO process and universal newline decorator by default.
  */
 #define NEED_READCONV(fptr) ((fptr)->encs.enc2 != NULL || (fptr)->encs.ecflags & ~ECONV_CRLF_NEWLINE_DECORATOR)
+#define USE_UNIVERSAL_NEWLINE_FASTPATH_ON_READ(fptr) ((fptr)->encs.enc2 == NULL && \
+    ((fptr)->encs.ecflags & (ECONV_NEWLINE_DECORATOR_READ_MASK | ECONV_CRLF_NEWLINE_DECORATOR)) == ECONV_UNIVERSAL_NEWLINE_DECORATOR)
 #define WRITECONV_MASK ( \
     (ECONV_DECORATOR_MASK & ~ECONV_CRLF_NEWLINE_DECORATOR)|\
     ECONV_STATEFUL_DECORATOR_MASK|\
@@ -730,6 +732,8 @@ set_binary_mode_with_seek_cur(rb_io_t *fptr)
 /* Unix */
 # define DEFAULT_TEXTMODE 0
 #define NEED_READCONV(fptr) ((fptr)->encs.enc2 != NULL || NEED_NEWLINE_DECORATOR_ON_READ(fptr))
+#define USE_UNIVERSAL_NEWLINE_FASTPATH_ON_READ(fptr) ((fptr)->encs.enc2 == NULL && \
+    ((fptr)->encs.ecflags & ECONV_NEWLINE_DECORATOR_READ_MASK) == ECONV_UNIVERSAL_NEWLINE_DECORATOR)
 #define NEED_WRITECONV(fptr) ( \
   ((fptr)->encs.enc != NULL && (fptr)->encs.enc != rb_ascii8bit_encoding()) || \
   NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) ||                        \
@@ -2565,6 +2569,10 @@ rb_io_set_pos(VALUE io, VALUE offset)
 
 static void clear_readconv(rb_io_t *fptr);
 
+#define READCONV_UNIVERSAL_NEWLINE_ONLY (rb_econv_t *)Qnil
+#define READCONV_IS_REAL_ECONV(econv) ((econv) != NULL &&\
+            (econv) != READCONV_UNIVERSAL_NEWLINE_ONLY)
+
 /*
  *  call-seq:
  *    rewind -> 0
@@ -3167,16 +3175,21 @@ make_readconv(rb_io_t *fptr, int size)
         const char *sname, *dname;
         ecflags = fptr->encs.ecflags & ~ECONV_NEWLINE_DECORATOR_WRITE_MASK;
         ecopts = fptr->encs.ecopts;
-        if (fptr->encs.enc2) {
-            sname = rb_enc_name(fptr->encs.enc2);
-            dname = rb_enc_name(io_read_encoding(fptr));
+        if (!USE_UNIVERSAL_NEWLINE_FASTPATH_ON_READ(fptr)) {
+            if (fptr->encs.enc2) {
+                sname = rb_enc_name(fptr->encs.enc2);
+                dname = rb_enc_name(io_read_encoding(fptr));
+            }
+            else {
+                sname = dname = "";
+            }
+            fptr->readconv = rb_econv_open_opts(sname, dname, ecflags, ecopts);
+            if (!fptr->readconv)
+                rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
         }
         else {
-            sname = dname = "";
+            fptr->readconv = READCONV_UNIVERSAL_NEWLINE_ONLY;
         }
-        fptr->readconv = rb_econv_open_opts(sname, dname, ecflags, ecopts);
-        if (!fptr->readconv)
-            rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
         fptr->cbuf.off = 0;
         fptr->cbuf.len = 0;
         if (size < IO_CBUF_CAPA_MIN) size = IO_CBUF_CAPA_MIN;
@@ -3187,6 +3200,85 @@ make_readconv(rb_io_t *fptr, int size)
 
 #define MORE_CHAR_SUSPENDED Qtrue
 #define MORE_CHAR_FINISHED Qnil
+
+static inline VALUE
+fill_cbuf_with_universal_newline(rb_io_t *fptr, int ec_flags)
+{
+    const unsigned char *ss, *sp, *se;
+    unsigned char *ds, *dp, *de;
+    int pending = -1;
+
+    ds = dp = (unsigned char *)fptr->cbuf.ptr + fptr->cbuf.off + fptr->cbuf.len;
+    de = (unsigned char *)fptr->cbuf.ptr + fptr->cbuf.capa;
+
+  reread:
+    if (fptr->rbuf.len == 1) {
+        pending = (unsigned char)(fptr->rbuf.ptr[fptr->rbuf.off]);
+        fptr->rbuf.off++;
+        fptr->rbuf.len--;
+    }
+    if (fptr->rbuf.len == 0) {
+        READ_CHECK(fptr);
+        if (io_fillbuf(fptr) < 0) {
+            if (pending >= 0) {
+                if (pending == '\r')
+                    *dp = '\n';
+                else
+                    *dp = (unsigned char)pending;
+                fptr->cbuf.len++;
+                return MORE_CHAR_SUSPENDED;
+            }
+            return MORE_CHAR_FINISHED;
+        }
+    }
+    ss = sp = (const unsigned char *)fptr->rbuf.ptr + fptr->rbuf.off;
+    se = sp + fptr->rbuf.len;
+    if (pending >= 0) {
+        if (pending == '\r') {
+            *dp++ = '\n';
+            if (*sp == '\n')
+                sp++;
+        }
+        else {
+            *dp++ = (unsigned char)pending;
+        }
+    }
+    else {
+        if (*sp == '\r') {
+            if (fptr->rbuf.len == 1) goto reread;
+            *dp++ = '\n';
+            sp++;
+            if (*sp == '\n')
+                sp++;
+        }
+        else {
+            *dp++ = *sp++;
+        }
+    }
+    if (ec_flags & ECONV_AFTER_OUTPUT) goto end;
+
+    while (sp + 1 < se && dp < de) {
+        if (*sp == '\r') {
+            *dp++ = '\n';
+            sp++;
+            if (*sp == '\n')
+                sp++;
+        }
+        else {
+            *dp++ = *sp++;
+        }
+    }
+    if (sp < se && dp < de && *sp != '\r') {
+        *dp++ = *sp++;
+    }
+
+  end:
+    fptr->rbuf.off += (int)(sp - ss);
+    fptr->rbuf.len -= (int)(sp - ss);
+    fptr->cbuf.len += (int)(dp - ds);
+    return MORE_CHAR_SUSPENDED;
+}
+
 static VALUE
 fill_cbuf(rb_io_t *fptr, int ec_flags)
 {
@@ -3207,6 +3299,9 @@ fill_cbuf(rb_io_t *fptr, int ec_flags)
         memmove(fptr->cbuf.ptr, fptr->cbuf.ptr+fptr->cbuf.off, fptr->cbuf.len);
         fptr->cbuf.off = 0;
     }
+
+    if (fptr->readconv == READCONV_UNIVERSAL_NEWLINE_ONLY)
+        return fill_cbuf_with_universal_newline(fptr, ec_flags);
 
     cbuf_len0 = fptr->cbuf.len;
 
@@ -5642,7 +5737,8 @@ static void
 clear_readconv(rb_io_t *fptr)
 {
     if (fptr->readconv) {
-        rb_econv_close(fptr->readconv);
+        if (READCONV_IS_REAL_ECONV(fptr->readconv))
+            rb_econv_close(fptr->readconv);
         fptr->readconv = NULL;
     }
     free_io_buffer(&fptr->cbuf);
@@ -5694,7 +5790,7 @@ rb_io_memsize(const rb_io_t *io)
     size += io->rbuf.capa;
     size += io->wbuf.capa;
     size += io->cbuf.capa;
-    if (io->readconv) size += rb_econv_memsize(io->readconv);
+    if (READCONV_IS_REAL_ECONV(io->readconv)) size += rb_econv_memsize(io->readconv);
     if (io->writeconv) size += rb_econv_memsize(io->writeconv);
 
     struct rb_io_blocking_operation *blocking_operation = 0;
@@ -6341,7 +6437,7 @@ rb_io_binmode(VALUE io)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
-    if (fptr->readconv)
+    if (READCONV_IS_REAL_ECONV(fptr->readconv))
         rb_econv_binmode(fptr->readconv);
     if (fptr->writeconv)
         rb_econv_binmode(fptr->writeconv);
@@ -6363,7 +6459,8 @@ static void
 io_ascii8bit_binmode(rb_io_t *fptr)
 {
     if (fptr->readconv) {
-        rb_econv_close(fptr->readconv);
+        if (READCONV_IS_REAL_ECONV(fptr->readconv))
+            rb_econv_close(fptr->readconv);
         fptr->readconv = NULL;
     }
     if (fptr->writeconv) {
