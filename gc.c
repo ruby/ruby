@@ -4965,12 +4965,6 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 #undef APPEND_F
 #undef BUFF_ARGS
 
-#if RGENGC_OBJ_INFO
-#define OBJ_INFO_BUFFERS_NUM  10
-#define OBJ_INFO_BUFFERS_SIZE 0x100
-static rb_atomic_t obj_info_buffers_index = 0;
-static char obj_info_buffers[OBJ_INFO_BUFFERS_NUM][OBJ_INFO_BUFFERS_SIZE];
-
 /* Increments *var atomically and resets *var to 0 when maxval is
  * reached. Returns the wraparound old *var value (0...maxval). */
 static rb_atomic_t
@@ -4988,17 +4982,18 @@ atomic_inc_wraparound(rb_atomic_t *var, const rb_atomic_t maxval)
 static const char *
 obj_info(VALUE obj)
 {
-    rb_atomic_t index = atomic_inc_wraparound(&obj_info_buffers_index, OBJ_INFO_BUFFERS_NUM);
-    char *const buff = obj_info_buffers[index];
-    return rb_raw_obj_info(buff, OBJ_INFO_BUFFERS_SIZE, obj);
-}
-#else
-static const char *
-obj_info(VALUE obj)
-{
+    if (RGENGC_OBJ_INFO) {
+        static struct {
+            rb_atomic_t index;
+            char buffers[10][0x100];
+        } info = {0};
+
+        rb_atomic_t index = atomic_inc_wraparound(&info.index, numberof(info.buffers));
+        char *const buff = info.buffers[index];
+        return rb_raw_obj_info(buff, sizeof(info.buffers[0]), obj);
+    }
     return obj_type_name(obj);
 }
-#endif
 
 /*
   ------------------------ Extended allocator ------------------------
