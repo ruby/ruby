@@ -10745,7 +10745,7 @@ rb_str_hex(VALUE str)
  *    oct -> integer
  *
  *  Interprets the leading substring of +self+ as octal, binary, decimal, or hexadecimal, possibly signed;
- *  returns their value as a decimal (base 10) integer.
+ *  returns their value as an integer.
  *
  *  In brief:
  *
