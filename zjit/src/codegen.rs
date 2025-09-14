@@ -1039,7 +1039,7 @@ fn gen_send_without_block_direct(
 
     // Save cfp->pc and cfp->sp for the caller frame
     gen_save_pc(asm, state);
-    // Special SP match. Can't use gen_prepare_non_leaf_call
+    // Special SP math. Can't use gen_prepare_non_leaf_call
     gen_save_sp(asm, state.stack().len() - args.len() - 1); // -1 for receiver
     gen_spill_locals(jit, asm, state);
     gen_spill_stack(jit, asm, state);
@@ -1505,20 +1505,25 @@ fn gen_incr_counter(asm: &mut Assembler, counter: Counter) {
 /// because the backend spills all live registers onto the C stack on CCall.
 fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState) {
     gen_save_pc(asm, state);
-    // Debug-only: set VM stack canary at *(cfp->sp)
     if cfg!(feature = "runtime_checks") {
-        unsafe extern "C" { fn vm_stack_canary() -> VALUE; }
-        let canary_val = asm_ccall!(asm, rb_vm_stack_canary,);
-
-        let stack_size = state.stack_size(); // number of live VM stack slots
-        asm_comment!(asm, "save SP to CFP for canary");
-        let sp_addr = asm.lea(Opnd::mem(64, SP, (stack_size as i32) * SIZEOF_VALUE_I32));
-        asm.set_leaf_canary_addr(sp_addr);
-        asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), sp_addr);
-
-        asm.store(Opnd::mem(64, sp_addr, 0), canary_val);
-        asm.expect_leaf_ccall();
+        gen_set_vm_stack_canary(asm, state);
     }
+}
+
+fn gen_set_vm_stack_canary(asm: &mut Assembler, state: &FrameState) {
+    // compute address of *(cfp->sp) after current virtual stack
+    let stack_size = state.stack_size();
+    let sp_addr = asm.lea(Opnd::mem(64, SP, (stack_size as i32) * SIZEOF_VALUE_I32));
+
+    // save cfp->sp for the interpreter
+    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), sp_addr);
+
+    // write canary
+    let canary_val = asm_ccall!(asm, rb_vm_stack_canary, );
+    asm.store(Opnd::mem(64, sp_addr, 0), canary_val);
+
+    // arm the tripwire so the next ccall clears it
+    asm.arm_leaf_canary(sp_addr);
 }
 
 fn gen_save_pc(asm: &mut Assembler, state: &FrameState) {

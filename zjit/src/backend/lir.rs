@@ -1172,7 +1172,6 @@ pub struct Assembler {
     /// Names of labels
     pub(super) label_names: Vec<String>,
 
-    leaf_ccall: bool,
     leaf_canary_addr: Option<Opnd>
 }
 
@@ -1193,21 +1192,18 @@ impl Assembler
             insns: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
             live_ranges,
             label_names,
-            leaf_ccall: false,
             leaf_canary_addr: None
         }
     }
 
-    pub fn expect_leaf_ccall(&mut self) {
-        self.leaf_ccall = true;
+    pub fn arm_leaf_canary(&mut self, sp_addr: Opnd) {
+        self.leaf_canary_addr = Some(sp_addr);
     }
 
-    pub fn set_leaf_canary_addr(&mut self, addr: Opnd) {
-        self.leaf_canary_addr = Some(addr);
-    }
-
-    pub fn take_leaf_canary_addr(&mut self) -> Option<Opnd> {
-        self.leaf_canary_addr.take()
+    fn disarm_leaf_canary(&mut self){
+        if let Some(addr) = self.leaf_canary_addr.take() {
+            self.store(Opnd::mem(64, addr, 0), 0.into());
+        };
     }
 
     /// Build an Opnd::VReg and initialize its LiveRange
@@ -1681,13 +1677,7 @@ impl Assembler {
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
         let out = self.new_vreg(Opnd::match_num_bits(&opnds));
         self.push_insn(Insn::CCall { fptr, opnds, start_marker: None, end_marker: None, out });
-
-        if self.leaf_ccall {
-            if let Some(addr) = self.take_leaf_canary_addr() {
-                self.store(Opnd::mem(64, addr, 0), 0.into());
-            };
-            self.leaf_ccall = false;
-        };
+        self.disarm_leaf_canary(); // no-op already if disarmed
         out
     }
 
