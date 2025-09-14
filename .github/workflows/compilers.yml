@@ -281,7 +281,6 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'GC_PROFILE_MORE_DETAIL',         with: { cppflags: '-DGC_PROFILE_MORE_DETAIL' } }
       - { uses: './.github/actions/compilers', name: 'MALLOC_ALLOCATED_SIZE_CHECK',    with: { cppflags: '-DMALLOC_ALLOCATED_SIZE_CHECK' } }
       - { uses: './.github/actions/compilers', name: 'RGENGC_ESTIMATE_OLDMALLOC',      with: { cppflags: '-DRGENGC_ESTIMATE_OLDMALLOC' } }
-      - { uses: './.github/actions/compilers', name: 'RGENGC_OBJ_INFO',                with: { cppflags: '-DRGENGC_OBJ_INFO' } }
       - { uses: './.github/actions/compilers', name: 'RGENGC_PROFILE',                 with: { cppflags: '-DRGENGC_PROFILE' } }
 
   compileC:
