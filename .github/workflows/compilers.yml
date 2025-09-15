@@ -62,8 +62,6 @@ jobs:
           with_gcc: 'clang-18 -flto=auto'
           optflags: '-O2'
           enable_shared: false
-      - { uses: './.github/actions/compilers', name: '-O0', with: { optflags: '-O0 -march=x86-64 -mtune=generic' } }
-      # - { uses: './.github/actions/compilers', name: '-O3', with: { optflags: '-O3 -march=x86-64 -mtune=generic', check: true } }
 
   compile2:
     name: 'omnibus compilations, #2'
@@ -83,7 +81,6 @@ jobs:
           with_gcc: 'gcc-15 -flto=auto -ffat-lto-objects -Werror=lto-type-mismatch'
           optflags: '-O2'
           enable_shared: false
-      - { uses: './.github/actions/compilers', name: 'ext/Setup', with: { static_exts: 'etc json/* */escape' } }
       - { uses: './.github/actions/compilers', name: 'GCC 15', with: { tag: 'gcc-15' } }
       - { uses: './.github/actions/compilers', name: 'GCC 14', with: { tag: 'gcc-14' } }
       - { uses: './.github/actions/compilers', name: 'GCC 13', with: { tag: 'gcc-13' } }
@@ -113,7 +110,6 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'clang 17', with: { tag: 'clang-17' } }
       - { uses: './.github/actions/compilers', name: 'clang 16', with: { tag: 'clang-16' } }
       - { uses: './.github/actions/compilers', name: 'clang 15', with: { tag: 'clang-15' } }
-      - { uses: './.github/actions/compilers', name: 'clang 14', with: { tag: 'clang-14' } }
 
   compile4:
     name: 'omnibus compilations, #4'
@@ -126,6 +122,7 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
+      - { uses: './.github/actions/compilers', name: 'clang 14', with: { tag: 'clang-14' } }
       - { uses: './.github/actions/compilers', name: 'clang 13', with: { tag: 'clang-13' } }
       - { uses: './.github/actions/compilers', name: 'clang 12', with: { tag: 'clang-12' } }
       - { uses: './.github/actions/compilers', name: 'clang 11', with: { tag: 'clang-11' } }
@@ -153,7 +150,7 @@ jobs:
       # warning generates a lot of noise from use of ANYARGS in
       # rb_define_method() and friends.
       # See: https://github.com/llvm/llvm-project/commit/11da1b53d8cd3507959022cd790d5a7ad4573d94
-      - { uses: './.github/actions/compilers', name: 'C99',      with: { CFLAGS: '-std=c99 -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+      - { uses: './.github/actions/compilers', name: 'C99',   with: { CFLAGS:   '-std=c99   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
       - { uses: './.github/actions/compilers', name: 'C11',   with: { CFLAGS:   '-std=c11   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
       - { uses: './.github/actions/compilers', name: 'C17',   with: { CFLAGS:   '-std=c17   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
       - { uses: './.github/actions/compilers', name: 'C23',   with: { CFLAGS:   '-std=c2x   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
@@ -161,6 +158,7 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'C++11', with: { CXXFLAGS: '-std=c++11 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
       - { uses: './.github/actions/compilers', name: 'C++14', with: { CXXFLAGS: '-std=c++14 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
       - { uses: './.github/actions/compilers', name: 'C++17', with: { CXXFLAGS: '-std=c++17 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
+      - { uses: './.github/actions/compilers', name: 'C++20', with: { CXXFLAGS: '-std=c++20 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
 
   compile6:
     name: 'omnibus compilations, #6'
@@ -173,7 +171,6 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
-      - { uses: './.github/actions/compilers', name: 'C++20', with: { CXXFLAGS: '-std=c++20 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
       - { uses: './.github/actions/compilers', name: 'C++23', with: { CXXFLAGS: '-std=c++23 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
       - { uses: './.github/actions/compilers', name: 'C++26', with: { CXXFLAGS: '-std=c++26 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
       - { uses: './.github/actions/compilers', name: 'gmp',                 with: { append_configure: '--with-gmp', check: 'ruby/test_bignum.rb', mspecopt: "/github/workspace/src/spec/ruby/core/integer" } }
@@ -200,9 +197,7 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'enable-mkmf-verbose', with: { append_configure: '--enable-mkmf-verbose' } }
       - { uses: './.github/actions/compilers', name: 'disable-rubygems',    with: { append_configure: '--disable-rubygems' } }
       - { uses: './.github/actions/compilers', name: 'RUBY_DEVEL',          with: { append_configure: '--enable-devel' } }
-      - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=0',            with: { cppflags: '-DOPT_THREADED_CODE=0' } }
-      - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=1',            with: { cppflags: '-DOPT_THREADED_CODE=1' } }
-      - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=2',            with: { cppflags: '-DOPT_THREADED_CODE=2' } }
+      - { uses: './.github/actions/compilers', name: 'ext/Setup', with: { static_exts: 'etc json/* */escape' } }
 
   compile8:
     name: 'omnibus compilations, #8'
@@ -282,6 +277,9 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'MALLOC_ALLOCATED_SIZE_CHECK',    with: { cppflags: '-DMALLOC_ALLOCATED_SIZE_CHECK' } }
       - { uses: './.github/actions/compilers', name: 'RGENGC_ESTIMATE_OLDMALLOC',      with: { cppflags: '-DRGENGC_ESTIMATE_OLDMALLOC' } }
       - { uses: './.github/actions/compilers', name: 'RGENGC_PROFILE',                 with: { cppflags: '-DRGENGC_PROFILE' } }
+      - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=0',            with: { cppflags: '-DOPT_THREADED_CODE=0' } }
+      - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=1',            with: { cppflags: '-DOPT_THREADED_CODE=1' } }
+      - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=2',            with: { cppflags: '-DOPT_THREADED_CODE=2' } }
 
   compileC:
     name: 'omnibus compilations, #12'
@@ -298,6 +296,7 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'VM_DEBUG_VERIFY_METHOD_CACHE',   with: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' } }
       - { uses: './.github/actions/compilers', name: 'YJIT_FORCE_ENABLE',              with: { cppflags: '-DYJIT_FORCE_ENABLE' } }
       - { uses: './.github/actions/compilers', name: 'UNIVERSAL_PARSER',               with: { cppflags: '-DUNIVERSAL_PARSER' } }
+      - { uses: './.github/actions/compilers', name: '-O0', with: { optflags: '-O0 -march=x86-64 -mtune=generic' } }
 
   compilemax:
     name: 'omnibus compilations, result'
