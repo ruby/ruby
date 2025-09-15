@@ -147,6 +147,10 @@ jobs:
         run: ./miniruby --zjit -v | grep "+ZJIT"
         if: ${{ matrix.configure != '--disable-zjit' }}
 
+      - name: Set ENV for ZJIT
+        run: |
+          echo "RUBY_CRASH_REPORT=$(pwd)/rb_crash_%p.txt" >> $GITHUB_ENV
+
       - name: make ${{ matrix.test_task }}
         run: >-
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
@@ -163,6 +167,11 @@ jobs:
           LIBCLANG_PATH: ${{ matrix.libclang_path }}
           TESTS: ${{ matrix.test_all_opts }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
+
+      - name: Dump crash logs
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: tail --verbose --lines=+1 rb_crash_*.txt
 
       - uses: ./.github/actions/slack
         with:

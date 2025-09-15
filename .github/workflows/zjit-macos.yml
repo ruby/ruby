@@ -107,6 +107,10 @@ jobs:
           ruby -ne 'raise "Disassembly seems broken in dev build (output has too few lines)" unless $_.to_i > 10'
         if: ${{ contains(matrix.configure, 'jit=dev') }}
 
+      - name: Set ENV for ZJIT
+        run: |
+          echo "RUBY_CRASH_REPORT=$(pwd)/rb_crash_%p.txt" >> $GITHUB_ENV
+
       - name: make ${{ matrix.test_task }}
         run: >-
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
@@ -121,6 +125,11 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
           TESTS: ${{ matrix.test_all_opts }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
+
+      - name: Dump crash logs
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: tail --verbose --lines=+1 rb_crash_*.txt
 
       - uses: ./.github/actions/slack
         with:
