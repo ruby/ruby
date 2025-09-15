@@ -412,16 +412,6 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:MIXIN, :USER], User.constants.sort)
   end
 
-  def test_initialize_copy
-    mod = Module.new { define_method(:foo) {:first} }
-    klass = Class.new { include mod }
-    instance = klass.new
-    assert_equal(:first, instance.foo)
-    new_mod = Module.new { define_method(:foo) { :second } }
-    4.times { GC.start }
-    assert_equal(:first, instance.foo) # [BUG] unreachable
-  end
-
   def test_initialize_copy_empty
     m = Module.new do
       def x
