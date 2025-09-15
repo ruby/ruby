@@ -10747,21 +10747,12 @@ rb_str_scan(VALUE str, VALUE pat)
  *    'xxx'.hex     # => 0
  *    ''.hex        # => 0
  *
- *  Note that, unlike #oct, this method does not interpret
- *  a substring starting with<tt>'0b'</tt> or <tt>'0B'</tt> as binary,
- *  nor a substring starting with <tt>'0d'</tt> or <tt>'0D'</tt> as decimal;
- *  this because characters <tt>'b'</tt>, <tt>'B'</tt>, <tt>'d'</tt>, and <tt>'D'</tt>
- *  represent hexadecimal digits:
+ *  Note that, unlike #oct, this method interprets only hexadecimal,
+ *  and not binary, octal, or decimal notations:
  *
  *    '0b111'.hex   # => 45329
- *    '0d999'.hex   # => 55705
- *
- *  Also unlike #oct, this method does not interpret
- *  a substring starting with <tt>'0o'</tt> or <tt>'0O'</tt> as octal;
- *  instead it interprets <tt>'o'</tt> or <tt>'O'</tt> as simply "not hexadecimal":
- *
  *    '0o777'.hex   # => 0
- *    '0O777'.hex   # => 0
+ *    '0d999'.hex   # => 55705
  *
  *  Related: See {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
  */
