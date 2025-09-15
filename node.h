@@ -41,6 +41,31 @@ struct node_buffer_struct {
     rb_parser_ary_t *tokens;
 };
 
+
+typedef struct rb_node_buffer_elem_struct {
+    struct rb_node_buffer_elem_struct *next;
+    long len; /* Length of nodes */
+    size_t allocated; /* Total memory size of allocated buf */
+    size_t used; /* Current usage of buf */
+    rb_node_t **nodes; /* Array of node pointers */
+    rb_node_t *buf[FLEX_ARY_LEN];
+} rb_node_buffer_elem_t;
+
+typedef struct {
+    rb_node_buffer_elem_t *head;
+    rb_node_buffer_elem_t *last;
+} rb_node_buffer_list_t;
+
+struct rb_node_buffer_struct {
+    rb_node_buffer_list_t buffer_list;
+    struct rb_ast_local_table_link *local_tables;
+    // - id (sequence number)
+    // - token_type
+    // - text of token
+    // - location info
+    // Array, whose entry is array
+    rb_parser_ary_t *tokens;
+};
 RUBY_SYMBOL_EXPORT_BEGIN
 
 #ifdef UNIVERSAL_PARSER
@@ -52,10 +77,12 @@ size_t rb_ast_memsize(const rb_ast_t*);
 void rb_ast_dispose(rb_ast_t*);
 const char *ruby_node_name(int node);
 void rb_node_init(NODE *n, enum node_type type);
+void rb_rb_node_init(rb_node_t *n, enum rb_node_type type);
 
 void rb_ast_update_references(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
 NODE *rb_ast_newnode(rb_ast_t*, enum node_type type, size_t size, size_t alignment);
+rb_node_t *rb_ast_rb_newnode(rb_ast_t*, enum rb_node_type type, size_t size, size_t alignment);
 void rb_ast_delete_node(rb_ast_t*, NODE *n);
 rb_ast_id_table_t *rb_ast_new_local_table(rb_ast_t*, int);
 rb_ast_id_table_t *rb_ast_resize_latest_local_table(rb_ast_t*, int);
@@ -89,6 +116,24 @@ nd_set_line(NODE *n, SIGNED_VALUE l)
     n->flags |= ((VALUE)(l & NODE_LMASK) << NODE_LSHIFT);
 }
 
+/*
+ * rb_node_t version of `nd_line`
+ */
+static inline int
+rb_nd_line(const rb_node_t *n)
+{
+    if (!n) return -1;
+    return n->line;
+}
+/*
+ * rb_node_t version of `nd_set_line`
+ */
+static inline void
+rb_nd_set_line(rb_node_t *n, int l)
+{
+	n->line = l;
+}
+
 #define NODE_SPECIAL_REQUIRED_KEYWORD ((NODE *)-1)
 #define NODE_REQUIRED_KEYWORD_P(node) ((node) == NODE_SPECIAL_REQUIRED_KEYWORD)
 #define NODE_SPECIAL_NO_NAME_REST     ((NODE *)-1)
@@ -112,6 +157,16 @@ nd_set_line(NODE *n, SIGNED_VALUE l)
 #define nd_set_last_loc(n, v) (nd_last_loc(n) = (v))
 #define nd_node_id(n) (RNODE(n)->node_id)
 #define nd_set_node_id(n,id) (RNODE(n)->node_id = (id))
+
+#define rb_nd_code_loc(n) (n->location)
+#define rb_nd_first_loc(n) (n->location.beg_pos)
+#define rb_nd_last_loc(n) (n->location.end_pos)
+#define rb_nd_first_column(n) ((int)(n->location.beg_pos.column))
+#define rb_nd_first_lineno(n) ((int)(n->location.beg_pos.lineno))
+#define rb_nd_last_column(n) ((int)(n->location.end_pos.column))
+#define rb_nd_last_lineno(n) ((int)(n->location.end_pos.lineno))
+#define rb_nd_set_node_id(n,id) (n->node_id = (id))
+#define rb_nd_node_id(n) (n->node_id)
 
 static inline bool
 nd_type_p(const NODE *n, enum node_type t)

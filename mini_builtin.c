@@ -61,7 +61,8 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
         .debug_level = 0,
     };
 
-    if (rb_ruby_prism_p()) {
+    // if (rb_ruby_prism_p()) {
+    if (true) {
         pm_parse_result_t result;
         pm_prelude_load(&result, name_str, code, start_line);
 

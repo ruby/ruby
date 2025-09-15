@@ -25,6 +25,7 @@
 
 #include "ruby/internal/config.h"
 #include "internal/thread.h"
+#include "parser_node_list.h"
 
 #include <errno.h>
 
@@ -59,6 +60,7 @@
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "node.h"
+#include "parser_ast.h"
 #include "parser_node.h"
 #include "probes.h"
 #include "regenc.h"
@@ -576,8 +578,8 @@ struct parser_params {
 
     struct lex_context ctxt;
 
-    NODE *eval_tree_begin;
-    NODE *eval_tree;
+    rb_node_t *eval_tree_begin;
+    rb_node_t *eval_tree;
     const struct rb_iseq_struct *parent_iseq;
 
 #ifdef UNIVERSAL_PARSER
@@ -1303,6 +1305,16 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_ENCODING(loc) (NODE *)rb_node_encoding_new(p,loc)
 #define NEW_ERROR(loc) (NODE *)rb_node_error_new(p,loc)
 
+/* prism node */
+static rb_program_node_t *rb_new_node_program_new(struct parser_params *p, pm_constant_id_list_t *locals, rb_statements_node_t *statements, const YYLTYPE *loc);
+static rb_statements_node_t *rb_new_node_statements_new(struct parser_params *p, const YYLTYPE *loc);
+static rb_nil_node_t *rb_new_node_nil_new(struct parser_params *p, const YYLTYPE *loc);
+
+#define NEW_RB_PROGRAM(l,s,loc) (rb_node_t *)rb_new_node_program_new(p,l,s,loc)
+#define NEW_RB_STATEMENTS(loc) rb_new_node_statements_new(p,loc)
+#define NEW_RB_NIL(loc) rb_new_node_nil_new(p,loc)
+
+
 enum internal_node_type {
     NODE_INTERNAL_ONLY = NODE_LAST,
     NODE_DEF_TEMP,
@@ -1357,7 +1369,17 @@ static rb_node_def_temp_t *def_head_save(struct parser_params *p, rb_node_def_te
 static NODE* node_new_internal(struct parser_params *p, enum node_type type, size_t size, size_t alignment);
 #define NODE_NEW_INTERNAL(ndtype, type) (type *)node_new_internal(p, (enum node_type)(ndtype), sizeof(type), RUBY_ALIGNOF(type))
 
+static rb_node_t *
+rb_node_new_internal(struct parser_params *p, enum rb_node_type type, size_t size, size_t alignment)
+{
+    rb_node_t *n = rb_ast_rb_newnode(p->ast, type, size, alignment);
+
+    rb_rb_node_init(n, type);
+    return n;
+}
+
 static NODE *nd_set_loc(NODE *nd, const YYLTYPE *loc);
+static rb_node_t *rb_nd_set_loc(rb_node_t *nd, const YYLTYPE *loc);
 
 static int
 parser_get_node_id(struct parser_params *p)
@@ -1430,6 +1452,9 @@ static NODE *remove_begin(NODE*);
 static NODE *void_stmts(struct parser_params*,NODE*);
 static void reduce_nodes(struct parser_params*,NODE**);
 static void block_dup_check(struct parser_params*,NODE*,NODE*);
+
+static void statements_node_body_append(struct parser_params *p, rb_statements_node_t *node, rb_node_t *statement, bool newline);
+static rb_node_t *rb_new_node_newline_node(rb_node_t *node);
 
 static NODE *block_append(struct parser_params*,NODE*,NODE*);
 static NODE *list_append(struct parser_params*,NODE*,NODE*);
@@ -3204,7 +3229,8 @@ program		:  {
                             node = remove_begin(node);
                             void_expr(p, node);
                         }
-                        p->eval_tree = NEW_SCOPE(0, block_append(p, p->eval_tree, $2), NULL, &@$);
+                        // p->eval_tree = NEW_SCOPE(0, block_append(p, p->eval_tree, $2), NULL, &@$);
+                        p->eval_tree = NEW_RB_PROGRAM(NULL, $2, &@$);
                     /*% ripper[final]: program!($:2) %*/
                         local_pop(p);
                     }
@@ -3212,17 +3238,23 @@ program		:  {
 
 top_stmts	: none
                     {
-                        $$ = NEW_BEGIN(0, &@$);
+                        // $$ = NEW_BEGIN(0, &@$);
+                        $$ = NEW_RB_STATEMENTS(&@$);
                     /*% ripper: stmts_add!(stmts_new!, void_stmt!) %*/
                     }
                 | top_stmt
                     {
-                        $$ = newline_node($1);
+                        // $$ = newline_node($1);
+                        rb_new_node_newline_node($1);
+                        $$ = NEW_RB_STATEMENTS(&@$);
+                        statements_node_body_append(p, $$, $1, true);
                     /*% ripper: stmts_add!(stmts_new!, $:1) %*/
                     }
                 | top_stmts terms top_stmt
                     {
-                        $$ = block_append(p, $1, newline_node($3));
+                        // $$ = block_append(p, $1, newline_node($3));
+                        rb_new_node_newline_node($3);
+                        statements_node_body_append(p, $1, $3, false);
                     /*% ripper: stmts_add!($:1, $:3) %*/
                     }
                 ;
@@ -7429,7 +7461,7 @@ static VALUE
 yycompile0(VALUE arg)
 {
     int n;
-    NODE *tree;
+    rb_node_t *tree;
     struct parser_params *p = (struct parser_params *)arg;
     int cov = FALSE;
 
@@ -7484,6 +7516,7 @@ yycompile0(VALUE arg)
     }
     p->ast->body.root = tree;
     p->ast->body.line_count = p->line_count;
+    p->ast->body.encoding= p->enc;
     return TRUE;
 }
 
@@ -12495,6 +12528,64 @@ def_head_save(struct parser_params *p, rb_node_def_temp_t *n)
     return n;
 }
 
+// prism node
+
+/*
+ * rb_node_t version of `nd_set_loc`
+ */
+static rb_node_t *
+rb_nd_set_loc(rb_node_t *nd, const YYLTYPE *loc)
+{
+    nd->location = *loc;
+    rb_nd_set_line(nd, loc->beg_pos.lineno);
+    return nd;
+}
+
+/*
+ * rb_node_t version of `node_newnode`
+ */
+static rb_node_t*
+rb_node_newnode(struct parser_params *p, enum rb_node_type type, size_t size, size_t alignment, const rb_code_location_t *loc)
+{
+    rb_node_t *n = rb_node_new_internal(p, type, size, alignment);
+
+    rb_nd_set_loc(n, loc);
+    rb_nd_set_node_id(n, parser_get_node_id(p));
+    return n;
+}
+
+#define RB_NEW_NODE_NEWNODE(rb_node_type, type, loc) (type *)(rb_node_newnode(p, rb_node_type, sizeof(type), RUBY_ALIGNOF(type), loc))
+
+// static pm_program_node_t *
+// pm_program_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, pm_statements_node_t *statements)
+static rb_program_node_t *
+rb_new_node_program_new(struct parser_params *p, pm_constant_id_list_t *locals, rb_statements_node_t *statements, const YYLTYPE *loc)
+{
+    rb_program_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_PROGRAM_NODE, rb_program_node_t, loc);
+    pm_constant_id_list_init(&n->locals);
+    n->statements = statements;
+    return n;
+}
+
+// static pm_statements_node_t *
+// pm_statements_node_create(pm_parser_t *parser)
+static rb_statements_node_t *
+rb_new_node_statements_new(struct parser_params *p, const YYLTYPE *loc)
+{
+    rb_statements_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_STATEMENTS_NODE, rb_statements_node_t, loc);
+    rb_node_list_init(&n->body);
+    return n;
+}
+
+// static pm_nil_node_t *
+// pm_nil_node_create(pm_parser_t *parser, const pm_token_t *token)
+static rb_nil_node_t *
+rb_new_node_nil_new(struct parser_params *p, const YYLTYPE *loc)
+{
+    rb_nil_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_NIL_NODE, rb_nil_node_t, loc);
+    return n;
+}
+
 #ifndef RIPPER
 static enum node_type
 nodetype(NODE *node)			/* for debug */
@@ -12525,6 +12616,61 @@ fixpos(NODE *node, NODE *orig)
     if (!node) return;
     if (!orig) return;
     nd_set_line(node, nd_line(orig));
+}
+
+static inline void
+rb_new_node_flag_set(rb_node_t *node, rb_node_flags_t flag)
+{
+    node->flags |= flag;
+}
+
+/*
+ * rb_node_t version of `newline_node`
+ */
+static rb_node_t *
+rb_new_node_newline_node(rb_node_t *node)
+{
+    rb_new_node_flag_set(node, RB_NODE_FLAG_NEWLINE);
+    return node;
+}
+
+/*
+ * Update the beg_pos of statements node if statement is the first
+ * element.
+ * Update the end_pos of statements node, always.
+ */
+static void
+statements_node_body_update(rb_statements_node_t *node, rb_node_t *statement)
+{
+    if (node->body.size == 0) {
+        node->base.location.beg_pos = statement->location.beg_pos;
+    }
+    node->base.location.end_pos = statement->location.end_pos;
+}
+
+static void
+statements_node_body_append(struct parser_params *p, rb_statements_node_t *node, rb_node_t *statement, bool newline)
+{
+    statements_node_body_update(node, statement);
+
+    if (node->body.size > 0) {
+        const rb_node_t *previous = node->body.nodes[node->body.size - 1];
+
+        switch (RB_NODE_TYPE(previous)) {
+            case RB_BREAK_NODE:
+            case RB_NEXT_NODE:
+            case RB_REDO_NODE:
+            case RB_RETRY_NODE:
+            case RB_RETURN_NODE:
+                rb_warning0L(rb_nd_line(previous), "statement not reached");
+                break;
+            default:
+                break;
+        }
+    }
+
+    rb_node_list_append(&node->body, statement);
+    if (newline) rb_new_node_newline_node(statement);
 }
 
 static NODE*
@@ -13032,7 +13178,8 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
       case keyword_self:
         return NEW_SELF(loc);
       case keyword_nil:
-        return NEW_NIL(loc);
+        // return NEW_NIL(loc);
+        return NEW_RB_NIL(loc);
       case keyword_true:
         return NEW_TRUE(loc);
       case keyword_false:
