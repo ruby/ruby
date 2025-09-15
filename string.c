@@ -10744,20 +10744,79 @@ rb_str_hex(VALUE str)
  *  call-seq:
  *    oct -> integer
  *
- *  Interprets the leading substring of +self+ as a string of octal digits
- *  (with an optional sign) and returns the corresponding number;
- *  returns zero if there is no such leading substring:
+ *  Interprets the leading substring of +self+ as octal, binary, decimal, or hexadecimal, possibly signed;
+ *  returns their value as an integer.
  *
- *    '123'.oct             # => 83
- *    '-377'.oct            # => -255
- *    '0377non-numeric'.oct # => 255
- *    'non-numeric'.oct     # => 0
+ *  In brief:
  *
- *  If +self+ starts with <tt>0</tt>, radix indicators are honored;
- *  see Kernel#Integer.
+ *    # Interpreted as octal.
+ *    '777'.oct   # => 511
+ *    '777x'.oct  # => 511
+ *    '0777'.oct  # => 511
+ *    '0o777'.oct # => 511
+ *    '-777'.oct  # => -511
+ *    # Not interpreted as octal.
+ *    '0b111'.oct # => 7     # Interpreted as binary.
+ *    '0d999'.oct # => 999   # Interpreted as decimal.
+ *    '0xfff'.oct # => 4095  # Interpreted as hexadecimal.
  *
- *  Related: String#hex.
+ *  The leading substring is interpreted as octal when it begins with:
  *
+ *  - One or more character  representing octal digits
+ *    (each in the range <tt>'0'..'7'</tt>);
+ *    the string to be interpreted ends at the first character that does not represent an octal digit:
+ *
+ *      '7'.oct      @ => 7
+ *      '11'.oct     # => 9
+ *      '777'.oct    # => 511
+ *      '0777'.oct   # => 511
+ *      '7778'.oct   # => 511
+ *      '777x'.oct   # => 511
+ *
+ *  - <tt>'0o'</tt>, followed by one or more octal digits:
+ *
+ *      '0o777'.oct  # => 511
+ *      '0o7778'.oct # => 511
+ *
+ *  The leading substring is _not_ interpreted as octal when it begins with:
+ *
+ *  - <tt>'0b'</tt>, followed by one or more characters representing binary digits
+ *    (each in the range <tt>'0'..'1'</tt>);
+ *    the string to be interpreted ends at the first character that does not represent a binary digit.
+ *    the string is interpreted as binary digits (base 2):
+ *
+ *      '0b111'.oct  # => 7
+ *      '0b1112'.oct # => 7
+ *
+ *  - <tt>'0d'</tt>, followed by one or more characters representing decimal digits
+ *    (each in the range <tt>'0'..'9'</tt>);
+ *    the string to be interpreted ends at the first character that does not represent a decimal digit.
+ *    the string is interpreted as decimal digits (base 10):
+ *
+ *      '0d999'.oct  # => 999
+ *      '0d999x'.oct # => 999
+ *
+ *  - <tt>'0x'</tt>, followed by one or more characters representing hexadecimal digits
+ *    (each in one of the ranges <tt>'0'..'9'</tt>, <tt>'a'..'f'</tt>, or <tt>'A'..'F'</tt>);
+ *    the string to be interpreted ends at the first character that does not represent a hexadecimal digit.
+ *    the string is interpreted as hexadecimal digits (base 16):
+ *
+ *      '0xfff'.oct  # => 4095
+ *      '0xfffg'.oct # => 4095
+ *
+ *  Any of the above may prefixed with <tt>'-'</tt>, which negates the interpreted value:
+ *
+ *    '-777'.oct   # => -511
+ *    '-0777'.oct  # => -511
+ *    '-0b111'.oct # => -7
+ *    '-0xfff'.oct # => -4095
+ *
+ *  For any substring not described above, returns zero:
+ *
+ *    'foo'.oct      # => 0
+ *    ''.oct         # => 0
+ *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
  */
 
 static VALUE
