@@ -94,17 +94,6 @@ rb_free_tmp_buffer(volatile VALUE *store)
     }
 }
 
-rb_imemo_tmpbuf_t *
-rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt)
-{
-    rb_imemo_tmpbuf_t *tmpbuf = (rb_imemo_tmpbuf_t *)rb_imemo_tmpbuf_new();
-    tmpbuf->ptr = buf;
-    tmpbuf->next = old_heap;
-    tmpbuf->cnt = cnt;
-
-    return tmpbuf;
-}
-
 static VALUE
 imemo_fields_new(VALUE owner, size_t capa)
 {
@@ -478,9 +467,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
         const rb_imemo_tmpbuf_t *m = (const rb_imemo_tmpbuf_t *)obj;
 
         if (!reference_updating) {
-            do {
-                rb_gc_mark_locations(m->ptr, m->ptr + m->cnt);
-            } while ((m = m->next) != NULL);
+            rb_gc_mark_locations(m->ptr, m->ptr + m->cnt);
         }
 
         break;
