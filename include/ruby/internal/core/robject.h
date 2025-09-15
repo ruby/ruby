@@ -55,7 +55,7 @@
  */
 enum ruby_robject_flags {
     /**
-     * This flag has marks that the object's instance variables are stored in an
+     * This flag marks that the object's instance variables are stored in an
      * external heap buffer.
      * Normally, instance variable references are stored inside the object slot,
      * but if it overflow, Ruby may have to allocate a separate buffer and spills

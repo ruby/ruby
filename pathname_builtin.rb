@@ -321,7 +321,7 @@ class Pathname
   end
 
   if File.dirname('A:') == 'A:.' # DOSish drive letter
-    # Regexp that matches an absoltute path.
+    # Regexp that matches an absolute path.
     ABSOLUTE_PATH = /\A(?:[A-Za-z]:|#{SEPARATOR_PAT})/
   else
     ABSOLUTE_PATH = /\A#{SEPARATOR_PAT}/
