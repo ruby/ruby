@@ -189,7 +189,17 @@ require 'erb/util'
 #
 # When you call method #result,
 # the method executes the code and removes the entire execution tag
-# (generating no text in the result).
+# (generating no text in the result):
+#
+# ```
+# ERB.new('foo <% Dir.chdir("C:/") %> bar').result # => "foo  bar"
+# ```
+#
+# Whitespace before and after the embedded code is optional:
+#
+# ```
+# ERB.new('foo <%Dir.chdir("C:/")%> bar').result   # => "foo  bar"
+# ```
 #
 # You can interleave text with execution tags to form a control structure
 # such as a conditional, a loop, or a `case` statements.
@@ -261,7 +271,7 @@ require 'erb/util'
 #
 # #### Shorthand Format for Execution Tags
 #
-# You can give `trim_mode: '%'` to enable a shorthand format for execution tags;
+# You can use keyword argument `trim_mode: '%'` to enable a shorthand format for execution tags;
 # this example uses the shorthand format `% _code_` instead of `<% _code_ %>`:
 #
 # ```
@@ -282,6 +292,90 @@ require 'erb/util'
 #
 # Note that in the shorthand format, the character `'%'` must be the first character in the code line
 # (no leading whitespace).
+#
+# #### Suppressing Unwanted Blank Lines
+#
+# With keyword argument `trim_mode` not given,
+# all blank lines go into the result:
+#
+# ```
+# s = <<EOT
+# <% if true %>
+# <%= RUBY_VERSION %>
+# <% end %>
+# EOT
+# ERB.new(s).result.lines.each {|line| puts line.inspect }
+# "\n"
+# "3.4.5\n"
+# "\n"
+# ```
+#
+# You can give `trim_mode: '-'`, you can suppress each blank line
+# whose source line ends with `-%>` (instead of `%>`):
+#
+# ```
+# s = <<EOT
+# <% if true -%>
+# <%= RUBY_VERSION %>
+# <% end -%>
+# EOT
+# ERB.new(s, trim_mode: '-').result.lines.each {|line| puts line.inspect }
+# "3.4.5\n"
+# ```
+#
+# It is an error to use the trailing `'-%>'` notation without `trim_mode: '-'`:
+#
+# ```
+# ERB.new(s).result.lines.each {|line| puts line.inspect } # Raises SyntaxError.
+# ```
+#
+# #### Suppressing Unwanted Newlines
+#
+# Consider this input string:
+#
+# ```
+# s = <<EOT
+# <% RUBY_VERSION %>
+# <%= RUBY_VERSION %>
+# foo <% RUBY_VERSION %>
+# foo <%= RUBY_VERSION %>
+# EOT
+# ```
+#
+# With keyword argument `trim_mode` not given, all newlines go into the result:
+#
+# ```
+# ERB.new(s).result.lines.each {|line| puts line.inspect }
+# "\n"
+# "3.4.5\n"
+# "foo \n"
+# "foo 3.4.5\n"
+# ```
+#
+# You can give `trim_mode: '>'` to suppress the trailing newline
+# for each line that ends with `'%<'` (regardless of its beginning):
+#
+# ```
+# ERB.new(s, trim_mode: '>').result.lines.each {|line| puts line.inspect }
+# "3.4.5foo foo 3.4.5"
+# ```
+#
+# You can give `trim_mode: '<>'` to suppress the trailing newline
+# for each line that both begins with `'<%'` and ends with `'%<'`:
+#
+# ```
+# ERB.new(s, trim_mode: '<>').result.lines.each {|line| puts line.inspect }
+# "3.4.5foo \n"
+# "foo 3.4.5\n"
+# ```
+#
+# #### Combining Trim Modes
+#
+# You can combine certain trim modes:
+#
+# - `'%-'`: Enable shorthand and omit each blank line ending with `'%>'`.
+# - `'%>'`: Enable shorthand and omit newline for each line ending with `'%>'`.
+# - `'%<>'`: Enable shorthand and omit newline for each line starting with `'<%'` and ending with `'%>'`.
 #
 # ### Comment Tags
 #
@@ -537,19 +631,19 @@ class ERB
   #
   # **Keyword Argument `trim_mode`**
   #
-  # When keyword argument `trim_mode` has a string value,
-  # that value may be one of:
+  # You can use keyword argument `trim_mode: '%'`
+  # to enable the [shorthand format][shorthand format] for execution tags.
   #
-  # - `'%'`: Enable [shorthand format][shorthand format] for execution tags.
+  # This value allows [blank line control][blank line control]:
+  #
   # - `'-'`: Omit each blank line ending with `'%>'`.
+  #
+  # Other values allow [newline control][newline control]:
+  #
   # - `'>'`: Omit newline for each line ending with `'%>'`.
   # - `'<>'`: Omit newline for each line starting with `'<%'` and ending with `'%>'`.
   #
-  # The value may also be certain combinations of the above.
-  #
-  # - `'%-'`: Enable shorthand and omit each blank line ending with `'%>'`.
-  # - `'%>'`: Enable shorthand and omit newline for each line ending with `'%>'`.
-  # - `'%<>'`: Enable shorthand and omit newline for each line starting with `'<%'` and ending with `'%>'`.
+  # You can also [combine trim modes][combine trim modes].
   #
   # **Keyword Argument `eoutvar`**
   #
@@ -578,9 +672,12 @@ class ERB
   # However, their values, if given, are handled thus:
   #
   # - `safe_level`: ignored.
-  # - `legacy_trim_mode: overrides keyword argument `trim_mode`.
-  # - `legacy_eoutvar: overrides keyword argument `eoutvar`.
+  # - `legacy_trim_mode`: overrides keyword argument `trim_mode`.
+  # - `legacy_eoutvar`: overrides keyword argument `eoutvar`.
   #
+  # [blank line control]: rdoc-ref:ERB@Suppressing+Unwanted+Blank+Lines
+  # [combine trim modes]: rdoc-ref:ERB@Combining+Trim+Modes
+  # [newline control]: rdoc-ref:ERB@Suppressing+Unwanted+Newlines
   # [shorthand format]: rdoc-ref:ERB@Shorthand+Format+for+Execution+Tags
   #
   def initialize(str, safe_level=NOT_GIVEN, legacy_trim_mode=NOT_GIVEN, legacy_eoutvar=NOT_GIVEN, trim_mode: nil, eoutvar: '_erbout')
