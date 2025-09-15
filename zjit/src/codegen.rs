@@ -1001,6 +1001,7 @@ fn gen_send_without_block(
     cd: *const rb_call_data,
     state: &FrameState,
 ) -> lir::Opnd {
+    gen_incr_counter(asm, Counter::dynamic_send_count);
     gen_incr_counter(asm, Counter::dynamic_send_type_send_without_block);
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
