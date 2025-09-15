@@ -15510,4 +15510,5 @@ rb_iseq_ibf_load_extra_data(VALUE str)
     return extra_str;
 }
 
+// #include "rb_node_compile.c"
 #include "prism_compile.c"

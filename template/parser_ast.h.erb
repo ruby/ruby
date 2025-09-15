@@ -1,0 +1,193 @@
+/**
+ * @file parser_ast.h
+ *
+ * The abstract syntax tree.
+ *
+ * --
+ */
+#ifndef PARSER_AST_H
+#define PARSER_AST_H
+
+typedef struct rb_node rb_node_t;
+
+#include "rubyparser.h"
+
+#include "prism/defines.h"
+#include "prism/util/pm_constant_pool.h"
+#include "prism/util/pm_integer.h"
+#include "prism/util/pm_string.h"
+
+#include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#define NULL_LOC_P(loc) (loc->beg_pos.lineno == 0 && loc->beg_pos.column == -1 && loc->end_pos.lineno == 0 && loc->end_pos.column == -1)
+
+/**
+ * A list of nodes in the source, most often used for lists of children.
+ * TODO: rb_node_list_t is already used, once current nodes are omitted, rename this to rb_node_list_t
+ */
+typedef struct rb_node_list2 {
+    /** The number of nodes in the list. */
+    size_t size;
+
+    /** The capacity of the list that has been allocated. */
+    size_t capacity;
+
+    /** The nodes in the list. */
+    struct rb_node **nodes;
+} rb_node_list2_t;
+
+/**
+ * This enum represents every type of node in the Ruby syntax tree.
+ */
+enum rb_node_type {
+<%- nodes.each_with_index do |node, index| -%>
+    /** <%= node.name %> */
+    <%= node.type %> = <%= index + 1 %>,
+
+<%- end -%>
+    /** A special kind of node used for compilation. */
+    RB_SCOPE_NODE
+};
+
+/**
+ * This is the type of node embedded in the node struct. We explicitly control
+ * the size of it here to avoid having the variable-width enum.
+ */
+typedef uint16_t rb_node_type_t;
+
+/**
+ * These are the flags embedded in the node struct. We explicitly control the
+ * size of it here to avoid having the variable-width enum.
+ */
+typedef uint16_t rb_node_flags_t;
+
+/**
+ * We store the flags enum in every node in the tree. Some flags are common to
+ * all nodes (the ones listed below). Others are specific to certain node types.
+ */
+static const rb_node_flags_t RB_NODE_FLAG_NEWLINE = 0x1;
+static const rb_node_flags_t RB_NODE_FLAG_STATIC_LITERAL = 0x2;
+
+/**
+ * Cast the type to an enum to allow the compiler to provide exhaustiveness
+ * checking.
+ */
+#define RB_NODE_TYPE(node) ((enum rb_node_type) (node)->type)
+
+/**
+ * Return true if the type of the given node matches the given type.
+ */
+#define RB_NODE_TYPE_P(node, type) (RB_NODE_TYPE(node) == (type))
+
+/**
+ * Return true if the given flag is set on the given node.
+ */
+#define RB_NODE_FLAG_P(node, flag) ((((rb_node_t *)(node))->flags & (flag)) != 0)
+
+/**
+ * This is the base structure that represents a node in the syntax tree. It is
+ * embedded into every node type.
+ */
+typedef struct rb_node {
+    /**
+     * This represents the type of the node. It somewhat maps to the nodes that
+     * existed in the original grammar and ripper, but it's not a 1:1 mapping.
+     */
+    rb_node_type_t type;
+
+    /**
+     * This represents any flags on the node. Some are common to all nodes, and
+     * some are specific to the type of node.
+     */
+    rb_node_flags_t flags;
+
+    /**
+     * The unique identifier for this node, which is deterministic based on the
+     * source. It is used to identify unique nodes across parses.
+     */
+    int32_t node_id;
+
+    int line;
+
+    /**
+     * This is the location of the node in the source. It's a range of bytes
+     * containing a start and an end.
+     */
+    rb_code_location_t location;
+} rb_node_t;
+<%- nodes.each do |node| -%>
+
+/**
+ * <%= node.name %>
+ *
+<%- node.each_comment_line do |line| -%>
+ *<%= line %>
+<%- end -%>
+ *
+ * Type: ::<%= node.type %>
+<% if (node_flags = node.flags) %>
+ * Flags (#pm_<%= node_flags.human %>):
+<%- node_flags.values.each do |value| -%>
+ * * ::RB_<%= node_flags.human.upcase %>_<%= value.name %>
+<%- end -%>
+<%- end -%>
+ *
+ * @extends rb_node_t
+ */
+typedef struct rb_<%= node.human %> {
+    /** The embedded base node. */
+    rb_node_t base;
+
+<%- node.fields.each do |field| -%>
+
+    /**
+     * <%= node.name %>#<%= field.name %>
+    <%- if field.comment -%>
+     *
+    <%- field.each_comment_line do |line| -%>
+     *<%= line %>
+    <%- end -%>
+    <%- end -%>
+     */
+    <%= case field
+    when Prism::Template::NodeField, Prism::Template::OptionalNodeField then "struct #{field.c_type} *#{field.name}"
+    when Prism::Template::NodeListField then "struct rb_node_list2 #{field.name}"
+    when Prism::Template::ConstantField, Prism::Template::OptionalConstantField then "ID #{field.name}"
+    when Prism::Template::ConstantListField then "pm_constant_id_list_t #{field.name}"
+    when Prism::Template::StringField then "rb_parser_string_t *#{field.name}"
+    when Prism::Template::LocationField, Prism::Template::OptionalLocationField then "rb_code_location_t #{field.name}"
+    when Prism::Template::UInt8Field then "uint8_t #{field.name}"
+    when Prism::Template::UInt32Field then "uint32_t #{field.name}"
+    when Prism::Template::IntegerField then "pm_integer_t #{field.name}"
+    when Prism::Template::DoubleField then "double #{field.name}"
+    else raise field.class.name
+    end
+    %>;
+<%- end -%>
+} rb_<%= node.human %>_t;
+<%- end -%>
+<%- flags.each do |flag| -%>
+
+/**
+ * <%= flag.comment %>
+ */
+typedef enum rb_<%= flag.human %> {
+    <%- flag.values.each_with_index do |value, index| -%>
+<%= "\n" if index > 0 -%>
+    /** <%= value.comment %> */
+    RB_<%= flag.human.upcase %>_<%= value.name %> = <%= 1 << (index + Prism::Template::COMMON_FLAGS_COUNT) %>,
+    <%- end -%>
+} rb_<%= flag.human %>_t;
+<%- end -%>
+
+/**
+ * When we're serializing to Java, we want to skip serializing the location
+ * fields as they won't be used by JRuby or TruffleRuby. This boolean allows us
+ * to specify that through the environment. It will never be true except for in
+ * those build systems.
+ */
+#define PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS <%= Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS ? 1 : 0 %>
+
+#endif
