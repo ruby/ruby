@@ -855,6 +855,7 @@ class TestRubyOptions < Test::Unit::TestCase
     args.unshift("--yjit") if JITSupport.yjit_enabled?
     args.unshift("--zjit") if JITSupport.zjit_enabled?
     env.update({'RUBY_ON_BUG' => nil})
+    env['RUBY_CRASH_REPORT'] ||= nil # default to not passing down parent setting
     # ASAN registers a segv handler which prints out "AddressSanitizer: DEADLYSIGNAL" when
     # catching sigsegv; we don't expect that output, so suppress it.
     env.update({'ASAN_OPTIONS' => 'handle_segv=0'})

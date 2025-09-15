@@ -151,9 +151,9 @@ module TestParallel
   end
 
   class TestParallel < Test::Unit::TestCase
-    def spawn_runner(*opt_args, jobs: "t1")
+    def spawn_runner(*opt_args, jobs: "t1", env: {})
       @test_out, o = IO.pipe
-      @test_pid = spawn(*@__runner_options__[:ruby], TESTS+"/runner.rb",
+      @test_pid = spawn(env, *@__runner_options__[:ruby], TESTS+"/runner.rb",
                         "--ruby", @__runner_options__[:ruby].join(" "),
                         "-j", jobs, *opt_args, out: o, err: o)
       o.close
@@ -214,7 +214,7 @@ module TestParallel
     end
 
     def test_hungup
-      spawn_runner "--worker-timeout=1", "--retry", "test4test_hungup.rb"
+      spawn_runner("--worker-timeout=1", "--retry", "test4test_hungup.rb", env: {"RUBY_CRASH_REPORT"=>nil})
       buf = ::TestParallel.timeout(TIMEOUT) {@test_out.read}
       assert_match(/^Retrying hung up testcases\.+$/, buf)
       assert_match(/^2 tests,.* 0 failures,/, buf)
