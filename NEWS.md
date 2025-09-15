@@ -63,7 +63,7 @@ Note: We're only listing outstanding class updates.
 
 * IO
 
-    * `IO.select` accepts +Float::INFINITY+ as a timeout argument.
+    * `IO.select` accepts `Float::INFINITY` as a timeout argument.
       [[Feature #20610]]
 
 * Math
