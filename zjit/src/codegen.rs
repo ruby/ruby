@@ -350,7 +350,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::NewRange { low, high, flag, state } => gen_new_range(jit, asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
-        Insn::ObjectAlloc { val, state } => gen_object_alloc(asm, opnd!(val), &function.frame_state(*state)),
+        Insn::ObjectAlloc { val, state } => gen_object_alloc(jit, asm, opnd!(val), &function.frame_state(*state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
         // concatstrings shouldn't have 0 strings
         // If it happens we abort the compilation for now
@@ -1227,12 +1227,11 @@ fn gen_new_range_fixnum(
     state: &FrameState,
 ) -> lir::Opnd {
     gen_prepare_call_with_gc(asm, state);
-    let val = asm_ccall!(asm, rb_range_new, low, high, (flag as i64).into());
-    val
+    asm_ccall!(asm, rb_range_new, low, high, (flag as i64).into())
 }
 
-fn gen_object_alloc(asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
-    gen_prepare_call_with_gc(asm, state);
+fn gen_object_alloc(jit: &JITState, asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
     asm_ccall!(asm, rb_obj_alloc, val)
 }
 
