@@ -6455,7 +6455,7 @@ Init_Numeric(void)
      *
      *	If the platform supports denormalized numbers,
      *	there are numbers between zero and Float::MIN.
-     *	0.0.next_float returns the smallest positive floating point number
+     *	+0.0.next_float+ returns the smallest positive floating point number
      *	including denormalized numbers.
      */
     rb_define_const(rb_cFloat, "MIN", DBL2NUM(DBL_MIN));
