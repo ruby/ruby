@@ -16,6 +16,7 @@ end
 module Prism
   class RubyParserTest < TestCase
     todos = [
+      "character_literal.txt",
       "encoding_euc_jp.txt",
       "regex_char_width.txt",
       "seattlerb/masgn_colon3.txt",

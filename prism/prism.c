@@ -18491,19 +18491,27 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             return (pm_node_t *) node;
         }
         case PM_TOKEN_CHARACTER_LITERAL: {
-            parser_lex(parser);
-
-            pm_token_t opening = parser->previous;
-            opening.type = PM_TOKEN_STRING_BEGIN;
-            opening.end = opening.start + 1;
-
-            pm_token_t content = parser->previous;
-            content.type = PM_TOKEN_STRING_CONTENT;
-            content.start = content.start + 1;
-
             pm_token_t closing = not_provided(parser);
-            pm_node_t *node = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &content, &closing);
+            pm_node_t *node = (pm_node_t *) pm_string_node_create_current_string(
+                parser,
+                &(pm_token_t) {
+                    .type = PM_TOKEN_STRING_BEGIN,
+                    .start = parser->current.start,
+                    .end = parser->current.start + 1
+                },
+                &(pm_token_t) {
+                    .type = PM_TOKEN_STRING_CONTENT,
+                    .start = parser->current.start + 1,
+                    .end = parser->current.end
+                },
+                &closing
+            );
+
             pm_node_flag_set(node, parse_unescaped_encoding(parser));
+
+            // Skip past the character literal here, since now we have handled
+            // parser->explicit_encoding correctly.
+            parser_lex(parser);
 
             // Characters can be followed by strings in which case they are
             // automatically concatenated.
