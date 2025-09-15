@@ -48,6 +48,12 @@ rb_imemo_new(enum imemo_type type, VALUE v0, size_t size)
     return (VALUE)obj;
 }
 
+VALUE
+rb_imemo_tmpbuf_new(void)
+{
+    return rb_imemo_new(imemo_tmpbuf, 0, sizeof(rb_imemo_tmpbuf_t));
+}
+
 void *
 rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
 {
