@@ -831,6 +831,55 @@ RSpec.describe "bundle install with explicit source paths" do
     end
   end
 
+  context "when platform specific version locked, and having less dependencies that the generic version that's actually installed" do
+    before do
+      build_repo4 do
+        build_gem "racc", "1.8.1"
+        build_gem "mini_portile2", "2.8.2"
+      end
+
+      build_lib "nokogiri", "1.18.9", path: lib_path("nokogiri") do |s|
+        s.add_dependency "mini_portile2", "~> 2.8.2"
+        s.add_dependency "racc", "~> 1.4"
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "nokogiri", path: "#{lib_path("nokogiri")}"
+      G
+
+      lockfile <<~L
+        PATH
+          remote: #{lib_path("nokogiri")}
+          specs:
+            nokogiri (1.18.9)
+              mini_portile2 (~> 2.8.2)
+              racc (~> 1.4)
+            nokogiri (1.18.9-arm64-darwin)
+              racc (~> 1.4)
+
+        GEM
+          remote: https://rubygems.org/
+          specs:
+            racc (1.8.1)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          nokogiri!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "works" do
+      bundle "install"
+    end
+  end
+
   describe "switching sources" do
     it "doesn't switch pinned git sources to rubygems when pinning the parent gem to a path source" do
       build_gem "foo", "1.0", to_system: true do |s|
