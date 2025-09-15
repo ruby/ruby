@@ -1099,7 +1099,6 @@ fn gen_invokeblock(
     gen_incr_counter(asm, Counter::dynamic_send_count);
     gen_incr_counter(asm, Counter::dynamic_send_type_invokeblock);
 
-    // Save PC and SP, spill locals and stack
     gen_prepare_non_leaf_call(jit, asm, state);
 
     asm_comment!(asm, "call invokeblock");
