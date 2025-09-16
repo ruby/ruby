@@ -113,9 +113,11 @@ AC_ARG_WITH(git,
 {
     test x"$HAVE_GIT" = xyes &&
     command -v "$GIT" > /dev/null &&
-    # git 1.8.4 fails with `-C` as unknown option, but git 1.8.5
-    # succeeds and exits by `--version`.
-    $GIT -C . --version > /dev/null 2>&1
+    # `git -C`: 1.8.5
+    # `git log --no-show-signature`: 2.10.0
+    AS_CASE([`$GIT -C . --version 2> /dev/null | sed 's/.* //'`],
+    [0.*|1.*|2.@<:@0-9@:>@.*], [false],
+    [true])
 } || HAVE_GIT=no GIT=never-use
 AC_SUBST(GIT)
 AC_SUBST(HAVE_GIT)

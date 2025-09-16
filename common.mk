@@ -45,7 +45,7 @@ RUBYOPT       = -
 RUN_OPTS      = --disable-gems
 
 GIT_IN_SRC    = $(GIT) -C $(srcdir)
-GIT_LOG       = $(GIT_IN_SRC) log
+GIT_LOG       = $(GIT_IN_SRC) log --no-show-signature
 GIT_LOG_FORMAT = $(GIT_LOG) --pretty=format:
 
 # GITPULLOPTIONS = --no-tags
