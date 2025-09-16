@@ -439,6 +439,37 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_send_nil_block_arg
+    assert_compiles 'false', %q{
+      def test = block_given?
+      def entry = test(&nil)
+      test
+    }
+  end
+
+  def test_send_symbol_block_arg
+    assert_compiles '["1", "2"]', %q{
+      def test = [1, 2].map(&:to_s)
+      test
+    }
+  end
+
+  def test_send_splat
+    assert_runs '[1, 2]', %q{
+      def test(a, b) = [a, b]
+      def entry(arr) = test(*arr)
+      entry([1, 2])
+    }
+  end
+
+  def test_send_kwarg
+    assert_runs '[1, 2]', %q{
+      def test(a:, b:) = [a, b]
+      def entry = test(a: 1, b: 2)
+      entry
+    }
+  end
+
   def test_forwardable_iseq
     assert_compiles '1', %q{
       def test(...) = 1

@@ -447,10 +447,10 @@ impl PtrPrintMap {
 #[derive(Debug, Clone, Copy)]
 pub enum SideExitReason {
     UnknownNewarraySend(vm_opt_newarray_send_type),
-    UnhandledCallType(CallType),
     UnknownSpecialVariable(u64),
     UnhandledHIRInsn(InsnId),
     UnhandledYARVInsn(u32),
+    UnhandledCallType(CallType),
     FixnumAddOverflow,
     FixnumSubOverflow,
     FixnumMultOverflow,
@@ -2968,7 +2968,8 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t) -> BytecodeInfo {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum CallType {
-    BlockArg,
+    Splat,
+    Kwarg,
     Tailcall,
 }
 
@@ -2986,9 +2987,10 @@ fn num_locals(iseq: *const rb_iseq_t) -> usize {
 }
 
 /// If we can't handle the type of send (yet), bail out.
-fn unknown_call_type(flag: u32) -> Result<(), CallType> {
-    if (flag & VM_CALL_ARGS_BLOCKARG) != 0 { return Err(CallType::BlockArg); }
-    if (flag & VM_CALL_TAILCALL) != 0 { return Err(CallType::Tailcall); }
+fn unhandled_call_type(flags: u32) -> Result<(), CallType> {
+    if (flags & VM_CALL_ARGS_SPLAT) != 0 { return Err(CallType::Splat); }
+    if (flags & VM_CALL_KWARG) != 0 { return Err(CallType::Kwarg); }
+    if (flags & VM_CALL_TAILCALL) != 0 { return Err(CallType::Tailcall); }
     Ok(())
 }
 
@@ -3501,8 +3503,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // NB: opt_neq has two cd; get_arg(0) is for eq and get_arg(1) is for neq
                     let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
-                        // Unknown call type; side-exit into the interpreter
+                    let flags = unsafe { rb_vm_ci_flag(call_info) };
+                    if let Err(call_type) = unhandled_call_type(flags) {
+                        // Can't handle the call type; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
@@ -3522,8 +3525,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // NB: these instructions have the recv for the call at get_arg(0)
                     let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
-                        // Unknown call type; side-exit into the interpreter
+                    let flags = unsafe { rb_vm_ci_flag(call_info) };
+                    if let Err(call_type) = unhandled_call_type(flags) {
+                        // Can't handle the call type; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
@@ -3580,8 +3584,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_send_without_block => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
-                        // Unknown call type; side-exit into the interpreter
+                    let flags = unsafe { rb_vm_ci_flag(call_info) };
+                    if let Err(call_type) = unhandled_call_type(flags) {
+                        // Can't handle tailcall; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
@@ -3598,15 +3603,17 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
-                        // Unknown call type; side-exit into the interpreter
+                    let flags = unsafe { rb_vm_ci_flag(call_info) };
+                    if let Err(call_type) = unhandled_call_type(flags) {
+                        // Can't handle tailcall; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
+                    let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
 
-                    let args = state.stack_pop_n(argc as usize)?;
+                    let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq, args, state: exit_id });
@@ -3624,14 +3631,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_invokesuper => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) } & !VM_CALL_SUPER & !VM_CALL_ZSUPER) {
-                        // Unknown call type; side-exit into the interpreter
+                    let flags = unsafe { rb_vm_ci_flag(call_info) };
+                    if let Err(call_type) = unhandled_call_type(flags) {
+                        // Can't handle tailcall; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
-                    let args = state.stack_pop_n(argc as usize)?;
+                    let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
+                    let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
                     let recv = state.stack_pop()?;
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_ptr();
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
@@ -3652,14 +3661,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_invokeblock => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
-                        // Unknown call type; side-exit into the interpreter
+                    let flags = unsafe { rb_vm_ci_flag(call_info) };
+                    if let Err(call_type) = unhandled_call_type(flags) {
+                        // Can't handle tailcall; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
-                    let args = state.stack_pop_n(argc as usize)?;
+                    let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
+                    let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let result = fun.push_insn(block, Insn::InvokeBlock { cd, args, state: exit_id });
                     state.stack_push(result);
@@ -3767,11 +3778,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_objtostring => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                    let call_info = unsafe { rb_get_call_data_ci(cd) };
-
-                    if let Err(call_type) = unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
-                        panic!("objtostring should not have unknown call type {call_type:?}");
-                    }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     assert_eq!(0, argc, "objtostring should not have args");
 
@@ -5108,21 +5114,22 @@ mod tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           v6:ArrayExact = ToArray v1
-          v8:BasicObject = SendWithoutBlock v0, :foo, v6
-          CheckInterrupts
-          Return v8
+          SideExit UnhandledCallType(Splat)
         ");
     }
 
     #[test]
-    fn test_cant_compile_block_arg() {
+    fn test_compile_block_arg() {
         eval("
             def test(a) = foo(&a)
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
-          SideExit UnhandledCallType(BlockArg)
+          v6:BasicObject = Send v0, 0x1000, :foo, v1
+          v7:BasicObject = GetLocal l0, EP@3
+          CheckInterrupts
+          Return v6
         ");
     }
 
@@ -5135,9 +5142,7 @@ mod tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           v5:Fixnum[1] = Const Value(1)
-          v7:BasicObject = SendWithoutBlock v0, :foo, v5
-          CheckInterrupts
-          Return v7
+          SideExit UnhandledCallType(Kwarg)
         ");
     }
 
@@ -5194,7 +5199,9 @@ mod tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
           v4:NilClass = Const Value(nil)
-          SideExit UnhandledCallType(BlockArg)
+          v6:BasicObject = InvokeSuper v0, 0x1000, v4
+          CheckInterrupts
+          Return v6
         ");
     }
 
@@ -5257,9 +5264,7 @@ mod tests {
           v6:ArrayExact = ToNewArray v1
           v7:Fixnum[1] = Const Value(1)
           ArrayPush v6, v7
-          v11:BasicObject = SendWithoutBlock v0, :foo, v6
-          CheckInterrupts
-          Return v11
+          SideExit UnhandledCallType(Splat)
         ");
     }
 
@@ -7855,9 +7860,7 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
           v4:Fixnum[1] = Const Value(1)
-          v6:BasicObject = SendWithoutBlock v0, :foo, v4
-          CheckInterrupts
-          Return v6
+          SideExit UnhandledCallType(Kwarg)
         ");
     }
 
@@ -7873,9 +7876,7 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
           v4:Fixnum[1] = Const Value(1)
-          v6:BasicObject = SendWithoutBlock v0, :foo, v4
-          CheckInterrupts
-          Return v6
+          SideExit UnhandledCallType(Kwarg)
         ");
     }
 
@@ -8074,7 +8075,10 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           v6:BasicObject = GetBlockParamProxy l0
-          SideExit UnhandledCallType(BlockArg)
+          v8:BasicObject = Send v0, 0x1000, :tap, v6
+          v9:BasicObject = GetLocal l0, EP@3
+          CheckInterrupts
+          Return v8
         ");
     }
 

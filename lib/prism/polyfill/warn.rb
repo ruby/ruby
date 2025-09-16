@@ -7,17 +7,14 @@ if (method = Kernel.instance_method(:warn)).respond_to?(:parameters) ? method.pa
   Kernel.prepend(
     Module.new {
       def warn(*msgs, uplevel: nil, category: nil) # :nodoc:
-        uplevel =
-          case uplevel
-          when nil
-            1
-          when Integer
-            uplevel + 1
-          else
-            uplevel.to_int + 1
-          end
-
-        super(*msgs, uplevel: uplevel)
+        case uplevel
+        when nil
+          super(*msgs)
+        when Integer
+          super(*msgs, uplevel: uplevel + 1)
+        else
+          super(*msgs, uplevel: uplevel.to_int + 1)
+        end
       end
     }
   )
@@ -25,17 +22,14 @@ if (method = Kernel.instance_method(:warn)).respond_to?(:parameters) ? method.pa
   Object.prepend(
     Module.new {
       def warn(*msgs, uplevel: nil, category: nil) # :nodoc:
-        uplevel =
-          case uplevel
-          when nil
-            1
-          when Integer
-            uplevel + 1
-          else
-            uplevel.to_int + 1
-          end
-
-        super(*msgs, uplevel: uplevel)
+        case uplevel
+        when nil
+          super(*msgs)
+        when Integer
+          super(*msgs, uplevel: uplevel + 1)
+        else
+          super(*msgs, uplevel: uplevel.to_int + 1)
+        end
       end
     }
   )

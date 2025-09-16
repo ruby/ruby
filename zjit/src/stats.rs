@@ -92,7 +92,9 @@ make_counters! {
         // exit_: Side exits reasons
         exit_compile_error,
         exit_unknown_newarray_send,
-        exit_unhandled_call_type,
+        exit_unhandled_tailcall,
+        exit_unhandled_splat,
+        exit_unhandled_kwarg,
         exit_unknown_special_variable,
         exit_unhandled_hir_insn,
         exit_unhandled_yarv_insn,
@@ -162,17 +164,6 @@ pub fn exit_counter_ptr_for_opcode(opcode: u32) -> *mut u64 {
     unsafe { exit_counters.get_unchecked_mut(opcode as usize) }
 }
 
-/// Return a raw pointer to the exit counter for a given call type
-pub fn exit_counter_ptr_for_call_type(call_type: crate::hir::CallType) -> *mut u64 {
-    use crate::hir::CallType::*;
-    use crate::stats::Counter::*;
-    let counter = match call_type {
-        BlockArg => unhandled_call_block_arg,
-        Tailcall => unhandled_call_tailcall,
-    };
-    counter_ptr(counter)
-}
-
 /// Reason why ZJIT failed to produce any JIT code
 #[derive(Clone, Debug, PartialEq)]
 pub enum CompileError {
@@ -206,10 +197,13 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
 
 pub fn exit_counter_ptr(reason: crate::hir::SideExitReason) -> *mut u64 {
     use crate::hir::SideExitReason::*;
+    use crate::hir::CallType::*;
     use crate::stats::Counter::*;
     let counter = match reason {
         UnknownNewarraySend(_)        => exit_unknown_newarray_send,
-        UnhandledCallType(_)          => exit_unhandled_call_type,
+        UnhandledCallType(Tailcall)   => exit_unhandled_tailcall,
+        UnhandledCallType(Splat)      => exit_unhandled_splat,
+        UnhandledCallType(Kwarg)      => exit_unhandled_kwarg,
         UnknownSpecialVariable(_)     => exit_unknown_special_variable,
         UnhandledHIRInsn(_)           => exit_unhandled_hir_insn,
         UnhandledYARVInsn(_)          => exit_unhandled_yarv_insn,
