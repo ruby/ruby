@@ -748,5 +748,4 @@ yes-test-syntax-suggest: $(PREPARE_SYNTAX_SUGGEST)
 no-test-syntax-suggest:
 
 yesterday:
-	$(GIT) -C $(srcdir) reset --hard \
-	    `$(GIT) -C $(srcdir) log -1 --before=00:00+0900 --format=%H`
+	$(GIT_IN_SRC) reset --hard `$(GIT_LOG_FORMAT):%H -1 --before=00:00+0900`
