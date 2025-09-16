@@ -1231,6 +1231,8 @@ fn gen_new_range_fixnum(
 }
 
 fn gen_object_alloc(jit: &JITState, asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
+    // TODO: this is leaf in the vast majority of cases,
+    // Should specialize to avoid `gen_prepare_non_leaf_call` (Shopify#747)
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_ccall!(asm, rb_obj_alloc, val)
 }
