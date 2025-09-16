@@ -128,6 +128,7 @@ protect.o: $(hdrdir)/ruby/internal/intern/re.h
 protect.o: $(hdrdir)/ruby/internal/intern/ruby.h
 protect.o: $(hdrdir)/ruby/internal/intern/select.h
 protect.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+protect.o: $(hdrdir)/ruby/internal/intern/set.h
 protect.o: $(hdrdir)/ruby/internal/intern/signal.h
 protect.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 protect.o: $(hdrdir)/ruby/internal/intern/string.h

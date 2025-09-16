@@ -91,14 +91,21 @@ ractor_port_init(VALUE rpv, rb_ractor_t *r)
     return rpv;
 }
 
+/*
+ *  call-seq:
+ *    Ractor::Port.new  -> new_port
+ *
+ *  Returns a new Ractor::Port object.
+ */
 static VALUE
-ractor_port_initialzie(VALUE self)
+ractor_port_initialize(VALUE self)
 {
     return ractor_port_init(self, GET_RACTOR());
 }
 
+/* :nodoc: */
 static VALUE
-ractor_port_initialzie_copy(VALUE self, VALUE orig)
+ractor_port_initialize_copy(VALUE self, VALUE orig)
 {
     struct ractor_port *dst = RACTOR_PORT_PTR(self);
     struct ractor_port *src = RACTOR_PORT_PTR(orig);
@@ -388,7 +395,6 @@ ractor_add_port(rb_ractor_t *r, st_data_t id)
 
     RACTOR_LOCK(r);
     {
-        // memo: can cause GC, but GC doesn't use ractor locking.
         st_insert(r->sync.ports, id, (st_data_t)rq);
     }
     RACTOR_UNLOCK(r);
@@ -729,19 +735,9 @@ static rb_ractor_t *
 ractor_set_successor_once(rb_ractor_t *r, rb_ractor_t *cr)
 {
     if (r->sync.successor == NULL) {
-        RACTOR_LOCK(r);
-        {
-            if (r->sync.successor != NULL) {
-                // already `value`ed
-            }
-            else {
-                r->sync.successor = cr;
-            }
-        }
-        RACTOR_UNLOCK(r);
+        rb_ractor_t *successor = ATOMIC_PTR_CAS(r->sync.successor, NULL, cr);
+        return successor == NULL ? cr : successor;
     }
-
-    VM_ASSERT(r->sync.successor != NULL);
 
     return r->sync.successor;
 }
@@ -1231,7 +1227,6 @@ ractor_try_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE 
 // Ractor::Selector
 
 struct ractor_selector {
-    rb_ractor_t *r;
     struct st_table *ports; // rpv -> rp
 
 };
@@ -1277,7 +1272,7 @@ static const rb_data_type_t ractor_selector_data_type = {
         ractor_selector_memsize,
         NULL, // update
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static struct ractor_selector *
@@ -1322,6 +1317,8 @@ ractor_selector_add(VALUE selv, VALUE rpv)
     }
 
     st_insert(s->ports, (st_data_t)rpv, (st_data_t)rp);
+    RB_OBJ_WRITTEN(selv, Qundef, rpv);
+
     return selv;
 }
 
@@ -1500,8 +1497,8 @@ Init_RactorPort(void)
 {
     rb_cRactorPort = rb_define_class_under(rb_cRactor, "Port", rb_cObject);
     rb_define_alloc_func(rb_cRactorPort, ractor_port_alloc);
-    rb_define_method(rb_cRactorPort, "initialize", ractor_port_initialzie, 0);
-    rb_define_method(rb_cRactorPort, "initialize_copy", ractor_port_initialzie_copy, 1);
+    rb_define_method(rb_cRactorPort, "initialize", ractor_port_initialize, 0);
+    rb_define_method(rb_cRactorPort, "initialize_copy", ractor_port_initialize_copy, 1);
 
 #if USE_RACTOR_SELECTOR
     rb_init_ractor_selector();

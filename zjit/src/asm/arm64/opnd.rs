@@ -79,10 +79,7 @@ impl A64Opnd {
 
     /// Convenience function to check if this operand is a register.
     pub fn is_reg(&self) -> bool {
-        match self {
-            A64Opnd::Reg(_) => true,
-            _ => false
-        }
+        matches!(self, A64Opnd::Reg(_))
     }
 
     /// Unwrap a register from an operand.
@@ -118,6 +115,9 @@ pub const X19_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 19 };
 pub const X20_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 20 };
 pub const X21_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 21 };
 pub const X22_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 22 };
+
+// frame pointer (base pointer)
+pub const X29_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 29 };
 
 // link register
 pub const X30_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 30 };

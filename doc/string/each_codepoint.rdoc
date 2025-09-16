@@ -1,18 +1,23 @@
-Calls the given block with each successive codepoint from +self+;
-each codepoint is the integer value for a character;
+With a block given, calls the block with each successive codepoint from +self+;
+each {codepoint}[https://en.wikipedia.org/wiki/Code_point] is the integer value for a character;
 returns +self+:
 
-  'hello'.each_codepoint {|codepoint| print codepoint, ' ' }
-  print "\n"
-  'тест'.each_codepoint {|codepoint| print codepoint, ' ' }
-  print "\n"
-  'こんにちは'.each_codepoint {|codepoint| print codepoint, ' ' }
-  print "\n"
+  a = []
+  'hello'.each_codepoint do |codepoint|
+    a.push(codepoint)
+  end
+  a # => [104, 101, 108, 108, 111]
+  a = []
+  'тест'.each_codepoint do |codepoint|
+    a.push(codepoint)
+  end
+  a # => [1090, 1077, 1089, 1090]
+  a = []
+  'こんにちは'.each_codepoint do |codepoint|
+    a.push(codepoint)
+  end
+  a # => [12371, 12435, 12395, 12385, 12399]
 
-Output:
+With no block given, returns an enumerator.
 
-  104 101 108 108 111
-  1090 1077 1089 1090
-  12371 12435 12395 12385 12399
-
-Returns an enumerator if no block is given.
+Related: see {Iterating}[rdoc-ref:String@Iterating].

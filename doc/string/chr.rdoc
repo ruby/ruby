@@ -1,0 +1,8 @@
+Returns a string containing the first character of +self+:
+
+  'hello'.chr     # => "h"
+  'тест'.chr      # => "т"
+  'こんにちは'.chr # => "こ"
+  ''.chr          # => ""
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

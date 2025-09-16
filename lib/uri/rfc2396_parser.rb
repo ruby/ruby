@@ -67,7 +67,7 @@ module URI
     #
     # == Synopsis
     #
-    #   URI::Parser.new([opts])
+    #   URI::RFC2396_Parser.new([opts])
     #
     # == Args
     #
@@ -86,7 +86,7 @@ module URI
     #
     # == Examples
     #
-    #   p = URI::Parser.new(:ESCAPED => "(?:%[a-fA-F0-9]{2}|%u[a-fA-F0-9]{4})")
+    #   p = URI::RFC2396_Parser.new(:ESCAPED => "(?:%[a-fA-F0-9]{2}|%u[a-fA-F0-9]{4})")
     #   u = p.parse("http://example.jp/%uABCD") #=> #<URI::HTTP http://example.jp/%uABCD>
     #   URI.parse(u.to_s) #=> raises URI::InvalidURIError
     #
@@ -108,12 +108,12 @@ module URI
 
     # The Hash of patterns.
     #
-    # See also URI::Parser.initialize_pattern.
+    # See also #initialize_pattern.
     attr_reader :pattern
 
     # The Hash of Regexp.
     #
-    # See also URI::Parser.initialize_regexp.
+    # See also #initialize_regexp.
     attr_reader :regexp
 
     # Returns a split URI against +regexp[:ABS_URI]+.
@@ -202,8 +202,7 @@ module URI
     #
     # == Usage
     #
-    #   p = URI::Parser.new
-    #   p.parse("ldap://ldap.example.com/dc=example?user=john")
+    #   URI::RFC2396_PARSER.parse("ldap://ldap.example.com/dc=example?user=john")
     #   #=> #<URI::LDAP ldap://ldap.example.com/dc=example?user=john>
     #
     def parse(uri)
@@ -244,7 +243,7 @@ module URI
     # If no +block+ given, then returns the result,
     # else it calls +block+ for each element in result.
     #
-    # See also URI::Parser.make_regexp.
+    # See also #make_regexp.
     #
     def extract(str, schemes = nil)
       if block_given?
@@ -263,7 +262,7 @@ module URI
       unless schemes
         @regexp[:ABS_URI_REF]
       else
-        /(?=#{Regexp.union(*schemes)}:)#{@pattern[:X_ABS_URI]}/x
+        /(?=(?i:#{Regexp.union(*schemes).source}):)#{@pattern[:X_ABS_URI]}/x
       end
     end
 
@@ -524,6 +523,8 @@ module URI
       ret
     end
 
+    # Returns +uri+ as-is if it is URI, or convert it to URI if it is
+    # a String.
     def convert_to_uri(uri)
       if uri.is_a?(URI::Generic)
         uri

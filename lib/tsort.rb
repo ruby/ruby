@@ -123,8 +123,10 @@
 
 module TSort
 
+  # The version string.
   VERSION = "0.2.0"
 
+  # Exception class to be raised when a cycle is found.
   class Cyclic < StandardError
   end
 

@@ -277,9 +277,9 @@ module Spec
       @_build_path = "#{path}/gems"
       @_build_repo = File.basename(path)
       yield
-      with_gem_path_as base_system_gem_path do
-        Dir[base_system_gem_path.join("gems/rubygems-generate_index*/lib")].first ||
-          raise("Could not find rubygems-generate_index lib directory in #{base_system_gem_path}")
+      with_gem_path_as scoped_base_system_gem_path do
+        Dir[scoped_base_system_gem_path.join("gems/rubygems-generate_index*/lib")].first ||
+          raise("Could not find rubygems-generate_index lib directory in #{scoped_base_system_gem_path}")
 
         command = "generate_index"
         command += " --no-compact" if !build_compact_index && gem_command(command + " --help").include?("--[no-]compact")
@@ -434,7 +434,7 @@ module Spec
 
       def _build(options = {})
         full_name = "bundler-#{@version}"
-        build_path = @context.tmp + full_name
+        build_path = (options[:build_path] || @context.tmp) + full_name
         bundler_path = build_path + "#{full_name}.gem"
 
         require "fileutils"
@@ -450,9 +450,10 @@ module Spec
         end
 
         @context.replace_version_file(@version, dir: build_path)
+        @context.replace_changelog(@version, dir: build_path) if options[:released]
         @context.replace_required_ruby_version(@required_ruby_version, dir: build_path) if @required_ruby_version
 
-        Spec::BuildMetadata.write_build_metadata(dir: build_path)
+        Spec::BuildMetadata.write_build_metadata(dir: build_path, version: @version)
 
         @context.gem_command "build #{@context.relative_gemspec}", dir: build_path
 

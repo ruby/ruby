@@ -159,9 +159,11 @@ module URI
     Schemes.list
   end
 
+  # :stopdoc:
   INITIAL_SCHEMES = scheme_list
   private_constant :INITIAL_SCHEMES
   Ractor.make_shareable(INITIAL_SCHEMES) if defined?(Ractor)
+  # :startdoc:
 
   # Returns a new object constructed from the given +scheme+, +arguments+,
   # and +default+:
@@ -437,6 +439,8 @@ module URI
     _decode_uri_component(/%\h\h/, str, enc)
   end
 
+  # Returns a string derived from the given string +str+ with
+  # URI-encoded characters matching +regexp+ according to +table+.
   def self._encode_uri_component(regexp, table, str, enc)
     str = str.to_s.dup
     if str.encoding != Encoding::ASCII_8BIT
@@ -451,6 +455,8 @@ module URI
   end
   private_class_method :_encode_uri_component
 
+  # Returns a string decoding characters matching +regexp+ from the
+  # given \URL-encoded string +str+.
   def self._decode_uri_component(regexp, str, enc)
     raise ArgumentError, "invalid %-encoding (#{str})" if /%(?!\h\h)/.match?(str)
     str.b.gsub(regexp, TBLDECWWWCOMP_).force_encoding(enc)

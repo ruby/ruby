@@ -214,9 +214,6 @@ module Bundler
           e.requirement = dep.requirement
           raise e
         end
-
-        # backwards compatibility shim, see https://github.com/rubygems/bundler/issues/5102
-        kernel_class.send(:public, :gem) if Bundler.feature_flag.setup_makes_kernel_gem_public?
       end
     end
 

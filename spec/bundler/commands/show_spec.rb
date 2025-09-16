@@ -3,8 +3,10 @@
 RSpec.describe "bundle show" do
   context "with a standard Gemfile" do
     before :each do
+      build_repo2
+
       install_gemfile <<-G
-        source "https://gem.repo1"
+        source "https://gem.repo2"
         gem "rails"
       G
     end
@@ -85,6 +87,24 @@ RSpec.describe "bundle show" do
         \tHomepage: https://bundler.io
         \tStatus:   Up to date
       MSG
+    end
+
+    it "includes up to date status in summary of gems" do
+      update_repo2 do
+        build_gem "rails", "3.0.0"
+      end
+
+      bundle "show --verbose"
+
+      expect(out).to include <<~MSG
+        * rails (2.3.2)
+        \tSummary:  This is just a fake gem for testing
+        \tHomepage: http://example.com
+        \tStatus:   Outdated - 2.3.2 < 3.0.0
+      MSG
+
+      # check lockfile is not accidentally updated
+      expect(lockfile).to include("actionmailer (2.3.2)")
     end
   end
 
@@ -219,6 +239,6 @@ RSpec.describe "bundle show" do
   end
 end
 
-RSpec.describe "bundle show", bundler: "4" do
+RSpec.describe "bundle show", bundler: "5" do
   pending "shows a friendly error about the command removal"
 end

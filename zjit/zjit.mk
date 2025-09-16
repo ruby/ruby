@@ -1,9 +1,7 @@
 # -*- mode: makefile-gmake; indent-tabs-mode: t -*-
 
-# Show Cargo progress when doing `make V=1`
-CARGO_VERBOSE_0 = -q
-CARGO_VERBOSE_1 =
-CARGO_VERBOSE = $(CARGO_VERBOSE_$(V))
+# Put no definitions when ZJIT isn't configured
+ifneq ($(ZJIT_SUPPORT),no)
 
 ZJIT_SRC_FILES = $(wildcard \
 	$(top_srcdir)/zjit/Cargo.* \
@@ -11,7 +9,10 @@ ZJIT_SRC_FILES = $(wildcard \
 	$(top_srcdir)/zjit/src/*/*.rs \
 	$(top_srcdir)/zjit/src/*/*/*.rs \
 	$(top_srcdir)/zjit/src/*/*/*/*.rs \
+	$(top_srcdir)/jit/src/lib.rs \
 	)
+
+$(RUST_LIB): $(ZJIT_SRC_FILES)
 
 # Because of Cargo cache, if the actual binary is not changed from the
 # previous build, the mtime is preserved as the cached file.
@@ -31,10 +32,6 @@ $(BUILD_ZJIT_LIBS): $(ZJIT_SRC_FILES)
 	$(ZJIT_LIB_TOUCH)
 endif
 
-ifneq ($(ZJIT_SUPPORT),no)
-$(RUST_LIB): $(ZJIT_SRC_FILES)
-endif
-
 # By using ZJIT_BENCH_OPTS instead of RUN_OPTS, you can skip passing the options to `make install`
 ZJIT_BENCH_OPTS = $(RUN_OPTS) --enable-gems
 ZJIT_BENCH = benchmarks/railsbench/benchmark.rb
@@ -49,8 +46,8 @@ update-zjit-bench:
 		https://github.com/Shopify/zjit-bench zjit-bench $(GIT_OPTS)
 
 # Gives quick feedback about ZJIT. Not a replacement for a full test run.
-.PHONY: zjit-test-all
-zjit-test-all:
+.PHONY: zjit-check
+zjit-check:
 	$(MAKE) zjit-test
 	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_zjit.rb'
 
@@ -59,10 +56,16 @@ ZJIT_BINDGEN_DIFF_OPTS =
 # Generate Rust bindings. See source for details.
 # Needs `./configure --enable-zjit=dev` and Clang.
 ifneq ($(strip $(CARGO)),) # if configure found Cargo
-.PHONY: zjit-bindgen zjit-bindgen-show-unused zjit-test zjit-test-lldb
+.PHONY: zjit-bindgen zjit-bindgen-show-unused zjit-test zjit-test-lldb zjit-test-update
 zjit-bindgen: zjit.$(OBJEXT)
 	ZJIT_SRC_ROOT_PATH='$(top_srcdir)' BINDGEN_JIT_NAME=zjit $(CARGO) run --manifest-path '$(top_srcdir)/zjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
 	$(Q) if [ 'x$(HAVE_GIT)' = xyes ]; then $(GIT) -C "$(top_srcdir)" diff $(ZJIT_BINDGEN_DIFF_OPTS) zjit/src/cruby_bindings.inc.rs; fi
+
+# Build env should roughly match what's used for miniruby to help with caching.
+ZJIT_NEXTEST_ENV := RUBY_BUILD_DIR='$(TOP_BUILD_DIR)' \
+    RUBY_LD_FLAGS='$(LDFLAGS) $(XLDFLAGS) $(MAINLIBS)' \
+    MACOSX_DEPLOYMENT_TARGET=11.0 \
+    CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)'
 
 # We need `cargo nextest` for its one-process-per execution execution model
 # since we can only boot the VM once per process. Normal `cargo test`
@@ -71,10 +74,24 @@ zjit-bindgen: zjit.$(OBJEXT)
 # On darwin, it's available through `brew install cargo-nextest`. See
 # https://nexte.st/docs/installation/pre-built-binaries/ otherwise.
 zjit-test: libminiruby.a
-	RUBY_BUILD_DIR='$(TOP_BUILD_DIR)' \
-	    RUBY_LD_FLAGS='$(LDFLAGS) $(XLDFLAGS) $(MAINLIBS)' \
-	    CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
-	    $(CARGO) nextest run --manifest-path '$(top_srcdir)/zjit/Cargo.toml' $(ZJIT_TESTS)
+	@set +e; \
+	$(ZJIT_NEXTEST_ENV) $(CARGO) nextest run \
+		--manifest-path '$(top_srcdir)/zjit/Cargo.toml' \
+		--no-fail-fast \
+		'--features=$(ZJIT_TEST_FEATURES)' \
+		$(ZJIT_TESTS); \
+	exit_code=$$?; \
+	if [ -f '$(top_srcdir)/zjit/src/.hir.rs.pending-snap' ]; then \
+		echo ""; \
+		echo "Pending snapshots found. Accept with: make zjit-test-update"; \
+	fi; \
+	exit $$exit_code
+
+# Accept all pending snapshots (requires cargo-insta)
+# Install with: cargo install cargo-insta
+zjit-test-update:
+	@$(CARGO) insta --version >/dev/null 2>&1 || { echo "Error: cargo-insta is not installed. Install with: cargo install cargo-insta"; exit 1; }
+	@$(CARGO) insta accept --manifest-path '$(top_srcdir)/zjit/Cargo.toml'
 
 # Run a ZJIT test written with Rust #[test] under LLDB
 zjit-test-lldb: libminiruby.a
@@ -84,9 +101,7 @@ zjit-test-lldb: libminiruby.a
 		echo "Many tests only work when it's the only test in the process."; \
 		exit 1; \
 	    fi; \
-	    exe_path=`RUBY_BUILD_DIR='$(TOP_BUILD_DIR)' \
-	    RUBY_LD_FLAGS='$(LDFLAGS) $(XLDFLAGS) $(MAINLIBS)' \
-	    CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
+	    exe_path=`$(ZJIT_NEXTEST_ENV) \
 	    $(CARGO) nextest list --manifest-path '$(top_srcdir)/zjit/Cargo.toml' --message-format json --list-type=binaries-only | \
 	    $(BASERUBY) -rjson -e 'puts JSON.load(STDIN.read).dig("rust-binaries", "zjit", "binary-path")'`; \
 	    exec lldb $$exe_path -- --test-threads=1 $(ZJIT_TESTS)
@@ -102,4 +117,6 @@ libminiruby.a: miniruby$(EXEEXT)
 	$(Q) $(AR) $(ARFLAGS) $@ $(MINIOBJS) $(COMMONOBJS)
 
 libminiruby: libminiruby.a
-endif
+
+endif # ifneq ($(strip $(CARGO)),
+endif # ifneq ($(ZJIT_SUPPORT),no)

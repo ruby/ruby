@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.shared_examples "bundle install --standalone" do
+RSpec.describe "bundle install --standalone" do
   shared_examples "common functionality" do
     it "still makes the gems available to normal bundler" do
       args = expected_gems.map {|k, v| "#{k} #{v}" }
@@ -42,7 +42,7 @@ RSpec.shared_examples "bundle install --standalone" do
         testrb << "\nrequire \"#{k}\""
         testrb << "\nputs #{k.upcase}"
       end
-      sys_exec %(#{Gem.ruby} --disable-gems -w -e #{testrb.shellescape})
+      in_bundled_app %(#{Gem.ruby} --disable-gems -w -e #{testrb.shellescape})
 
       expect(out).to eq(expected_gems.values.join("\n"))
     end
@@ -113,7 +113,7 @@ RSpec.shared_examples "bundle install --standalone" do
         testrb << "\nrequire \"#{k}\""
         testrb << "\nputs #{k.upcase}"
       end
-      sys_exec %(#{Gem.ruby} -w -e #{testrb.shellescape})
+      in_bundled_app %(#{Gem.ruby} -w -e #{testrb.shellescape})
 
       expect(out).to eq(expected_gems.values.join("\n"))
     end
@@ -140,14 +140,8 @@ RSpec.shared_examples "bundle install --standalone" do
   end
 
   describe "with default gems and a lockfile", :ruby_repo do
-    before do
-      necessary_system_gems = ["tsort --version 0.1.0"]
-      realworld_system_gems(*necessary_system_gems)
-    end
-
     it "works and points to the vendored copies, not to the default copies" do
-      necessary_gems_in_bundle_path = ["optparse --version 0.1.1", "psych --version 3.3.2", "logger --version 1.4.3", "etc --version 1.4.3", "stringio --version 3.1.0"]
-      realworld_system_gems(*necessary_gems_in_bundle_path, path: scoped_gem_path(bundled_app("bundle")))
+      base_system_gems "stringio", "psych", "etc", path: scoped_gem_path(bundled_app("bundle"))
 
       build_gem "foo", "1.0.0", to_system: true, default: true do |s|
         s.add_dependency "bar"
@@ -184,8 +178,7 @@ RSpec.shared_examples "bundle install --standalone" do
 
     it "works for gems with extensions and points to the vendored copies, not to the default copies" do
       simulate_platform "arm64-darwin-23" do
-        necessary_gems_in_bundle_path = ["optparse --version 0.1.1", "psych --version 3.3.2", "logger --version 1.4.3", "etc --version 1.4.3", "stringio --version 3.1.0", "shellwords --version 0.2.0", "open3 --version 0.2.1"]
-        realworld_system_gems(*necessary_gems_in_bundle_path, path: scoped_gem_path(bundled_app("bundle")))
+        base_system_gems "stringio", "psych", "etc", "shellwords", "open3", path: scoped_gem_path(bundled_app("bundle"))
 
         build_gem "baz", "1.0.0", to_system: true, default: true, &:add_c_extension
 
@@ -243,6 +236,8 @@ RSpec.shared_examples "bundle install --standalone" do
       expect(err).to be_empty
     end
   end
+
+  let(:cwd) { bundled_app }
 
   describe "with Gemfiles using relative path sources and app moved to a different root" do
     before do
@@ -469,65 +464,35 @@ RSpec.shared_examples "bundle install --standalone" do
       include_examples "common functionality"
     end
   end
-
-  describe "with --binstubs" do
-    before do
-      gemfile <<-G
-        source "https://gem.repo1"
-        gem "rails"
-      G
-      bundle "config set --local path #{bundled_app("bundle")}"
-      bundle :install, standalone: true, binstubs: true, dir: cwd
-    end
-
-    let(:expected_gems) do
-      {
-        "actionpack" => "2.3.2",
-        "rails" => "2.3.2",
-      }
-    end
-
-    include_examples "common functionality"
-
-    it "creates stubs that use the standalone load path" do
-      expect(sys_exec("bin/rails -v").chomp).to eql "2.3.2"
-    end
-
-    it "creates stubs that can be executed from anywhere" do
-      require "tmpdir"
-      sys_exec(%(#{bundled_app("bin/rails")} -v), dir: Dir.tmpdir)
-      expect(out).to eq("2.3.2")
-    end
-
-    it "creates stubs that can be symlinked" do
-      skip "symlinks unsupported" if Gem.win_platform?
-
-      symlink_dir = tmp("symlink")
-      FileUtils.mkdir_p(symlink_dir)
-      symlink = File.join(symlink_dir, "rails")
-
-      File.symlink(bundled_app("bin/rails"), symlink)
-      sys_exec("#{symlink} -v")
-      expect(out).to eq("2.3.2")
-    end
-
-    it "creates stubs with the correct load path" do
-      extension_line = File.read(bundled_app("bin/rails")).each_line.find {|line| line.include? "$:.unshift" }.strip
-      expect(extension_line).to eq %($:.unshift File.expand_path "../bundle", __dir__)
-    end
-  end
-end
-
-RSpec.describe "bundle install --standalone" do
-  let(:cwd) { bundled_app }
-
-  include_examples("bundle install --standalone")
 end
 
 RSpec.describe "bundle install --standalone run in a subdirectory" do
   let(:cwd) { bundled_app("bob").tap(&:mkpath) }
 
-  include_examples("bundle install --standalone")
+  before do
+    gemfile <<-G
+      source "https://gem.repo1"
+      gem "rails"
+    G
+  end
+
+  it "generates the script in the proper place" do
+    bundle :install, standalone: true, dir: cwd
+
+    expect(bundled_app("bundle/bundler/setup.rb")).to exist
+  end
+
+  context "when path set to a relative path" do
+    before do
+      bundle "config set --local path bundle"
+    end
+
+    it "generates the script in the proper place" do
+      bundle :install, standalone: true, dir: cwd
+
+      expect(bundled_app("bundle/bundler/setup.rb")).to exist
+    end
+  end
 end
 
 RSpec.describe "bundle install --standalone --local" do

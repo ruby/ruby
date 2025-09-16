@@ -2,7 +2,7 @@
 require 'mkmf'
 if RUBY_ENGINE == 'ruby'
   $INCFLAGS << " -I$(top_srcdir)" if $extmk
-  have_func("onig_region_memsize")
+  have_func("onig_region_memsize(NULL)")
   have_func("rb_reg_onig_match", "ruby/re.h")
   create_makefile 'strscan'
 else

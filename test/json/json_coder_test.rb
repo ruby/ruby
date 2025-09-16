@@ -18,6 +18,18 @@ class JSONCoderTest < Test::Unit::TestCase
     assert_raise(JSON::GeneratorError) { coder.dump([Object.new]) }
   end
 
+  def test_json_coder_hash_key
+    obj = Object.new
+    coder = JSON::Coder.new(&:to_s)
+    assert_equal %({#{obj.to_s.inspect}:1}), coder.dump({ obj => 1 })
+
+    coder = JSON::Coder.new { 42 }
+    error = assert_raise JSON::GeneratorError do
+      coder.dump({ obj => 1 })
+    end
+    assert_equal "Integer not allowed as object key in JSON", error.message
+  end
+
   def test_json_coder_options
     coder = JSON::Coder.new(array_nl: "\n") do |object|
       42

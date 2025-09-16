@@ -45,6 +45,7 @@ jobs:
             os: macos-14
           - test_task: check
             os: macos-15
+            extra_checks: [capi]
           - test_task: check
             os: macos-13
       fail-fast: false
@@ -57,15 +58,13 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Document')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -143,7 +142,7 @@ jobs:
 
           ulimit -c unlimited
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
-        timeout-minutes: 60
+        timeout-minutes: 90
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
@@ -160,6 +159,14 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
+
+      - name: CAPI extensions
+        uses: ./.github/actions/capiext
+        with:
+          builddir: build
+        env:
+          RUBY_TESTOPTS: '-v --tty=no'
+        if: ${{ contains(matrix.extra_checks, 'capi') }}
 
       - uses: ./.github/actions/slack
         with:

@@ -46,14 +46,15 @@ void rb_gvar_namespace_ready(const char *name);
  */
 VALUE rb_mod_set_temporary_name(VALUE, VALUE);
 
-int rb_gen_fields_tbl_get(VALUE obj, ID id, VALUE *fields_obj);
 void rb_obj_copy_ivs_to_hash_table(VALUE obj, st_table *table);
 void rb_obj_init_too_complex(VALUE obj, st_table *table);
 void rb_evict_ivars_to_hash(VALUE obj);
-shape_id_t rb_evict_fields_to_hash(VALUE obj);
 VALUE rb_obj_field_get(VALUE obj, shape_id_t target_shape_id);
 void rb_ivar_set_internal(VALUE obj, ID id, VALUE val);
-void rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val);
+attr_index_t rb_ivar_set_index(VALUE obj, ID id, VALUE val);
+attr_index_t rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val);
+VALUE rb_ivar_get_at(VALUE obj, attr_index_t index, ID id);
+VALUE rb_ivar_get_at_no_ractor_check(VALUE obj, attr_index_t index);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* variable.c (export) */
@@ -69,6 +70,5 @@ VALUE rb_gvar_set(ID, VALUE);
 VALUE rb_gvar_defined(ID);
 void rb_const_warn_if_deprecated(const rb_const_entry_t *, VALUE, ID);
 void rb_ensure_iv_list_size(VALUE obj, uint32_t current_len, uint32_t newsize);
-attr_index_t rb_obj_ivar_set(VALUE obj, ID id, VALUE val);
 
 #endif /* INTERNAL_VARIABLE_H */

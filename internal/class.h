@@ -83,7 +83,7 @@ struct rb_classext_struct {
     struct rb_id_table *m_tbl;
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
-    struct rb_id_table *cc_tbl; /* ID -> [[ci1, cc1], [ci2, cc2] ...] */
+    VALUE cc_tbl; /* { ID => { cme, [cc1, cc2, ...] }, ... } */
     struct rb_id_table *cvc_tbl;
     VALUE *superclasses;
     /**
@@ -259,13 +259,10 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 
 static inline void RCLASS_SET_SUPER(VALUE klass, VALUE super);
 static inline void RCLASS_WRITE_SUPER(VALUE klass, VALUE super);
-// TODO: rename RCLASS_SET_M_TBL_WORKAROUND (and _WRITE_) to RCLASS_SET_M_TBL with write barrier
-static inline void RCLASS_SET_M_TBL_WORKAROUND(VALUE klass, struct rb_id_table *table, bool check_promoted);
-static inline void RCLASS_WRITE_M_TBL_WORKAROUND(VALUE klass, struct rb_id_table *table, bool check_promoted);
 static inline void RCLASS_SET_CONST_TBL(VALUE klass, struct rb_id_table *table, bool shared);
 static inline void RCLASS_WRITE_CONST_TBL(VALUE klass, struct rb_id_table *table, bool shared);
 static inline void RCLASS_WRITE_CALLABLE_M_TBL(VALUE klass, struct rb_id_table *table);
-static inline void RCLASS_WRITE_CC_TBL(VALUE klass, struct rb_id_table *table);
+static inline void RCLASS_WRITE_CC_TBL(VALUE klass, VALUE table);
 static inline void RCLASS_SET_CVC_TBL(VALUE klass, struct rb_id_table *table);
 static inline void RCLASS_WRITE_CVC_TBL(VALUE klass, struct rb_id_table *table);
 
@@ -549,7 +546,7 @@ RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(VALUE obj)
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
     rb_classext_t *ext = RCLASS_EXT_WRITABLE(obj);
     if (!ext->fields_obj) {
-        RB_OBJ_WRITE(obj, &ext->fields_obj, rb_imemo_fields_new(rb_singleton_class(obj), 1));
+        RB_OBJ_WRITE(obj, &ext->fields_obj, rb_imemo_fields_new(obj, 1));
     }
     return ext->fields_obj;
 }
@@ -566,9 +563,7 @@ RCLASSEXT_SET_FIELDS_OBJ(VALUE obj, rb_classext_t *ext, VALUE fields_obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
 
-    VALUE old_fields_obj = ext->fields_obj;
-    RUBY_ATOMIC_VALUE_SET(ext->fields_obj, fields_obj);
-    RB_OBJ_WRITTEN(obj, old_fields_obj, fields_obj);
+    RB_OBJ_ATOMIC_WRITE(obj, &ext->fields_obj, fields_obj);
 }
 
 static inline void
@@ -596,25 +591,15 @@ RCLASS_FIELDS_COUNT(VALUE obj)
     return 0;
 }
 
-#define RCLASS_SET_M_TBL_EVEN_WHEN_PROMOTED(klass, table) RCLASS_SET_M_TBL_WORKAROUND(klass, table, false)
-#define RCLASS_SET_M_TBL(klass, table) RCLASS_SET_M_TBL_WORKAROUND(klass, table, true)
-
 static inline void
-RCLASS_SET_M_TBL_WORKAROUND(VALUE klass, struct rb_id_table *table, bool check_promoted)
+RCLASS_SET_M_TBL(VALUE klass, struct rb_id_table *table)
 {
-    RUBY_ASSERT(!check_promoted || !RB_OBJ_PROMOTED(klass));
     RCLASSEXT_M_TBL(RCLASS_EXT_PRIME(klass)) = table;
 }
 
-#define RCLASS_WRITE_M_TBL_EVEN_WHEN_PROMOTED(klass, table) RCLASS_WRITE_M_TBL_WORKAROUND(klass, table, false)
-#define RCLASS_WRITE_M_TBL(klass, table) RCLASS_WRITE_M_TBL_WORKAROUND(klass, table, true)
-
 static inline void
-RCLASS_WRITE_M_TBL_WORKAROUND(VALUE klass, struct rb_id_table *table, bool check_promoted)
+RCLASS_WRITE_M_TBL(VALUE klass, struct rb_id_table *table)
 {
-    RUBY_ASSERT(!check_promoted || !RB_OBJ_PROMOTED(klass));
-    // TODO: add write barrier here to guard assigning m_tbl
-    //       see commit 28a6e4ea9d9379a654a8f7c4b37fa33aa3ccd0b7
     RCLASSEXT_M_TBL(RCLASS_EXT_WRITABLE(klass)) = table;
 }
 
@@ -643,9 +628,9 @@ RCLASS_WRITE_CALLABLE_M_TBL(VALUE klass, struct rb_id_table *table)
 }
 
 static inline void
-RCLASS_WRITE_CC_TBL(VALUE klass, struct rb_id_table *table)
+RCLASS_WRITE_CC_TBL(VALUE klass, VALUE table)
 {
-    RCLASSEXT_CC_TBL(RCLASS_EXT_WRITABLE(klass)) = table;
+    RB_OBJ_ATOMIC_WRITE(klass, &RCLASSEXT_CC_TBL(RCLASS_EXT_WRITABLE(klass)), table);
 }
 
 static inline void

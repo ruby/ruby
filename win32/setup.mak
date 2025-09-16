@@ -46,7 +46,7 @@ prefix = $(prefix:\=/)
 <<
 	@type $(config_make) >>$(MAKEFILE)
 	@del $(config_make) > nul
-!if defined(BASERUBY)
+!if "$(HAVE_BASERUBY)" != "no" && "$(BASERUBY)" != ""
 	$(BASERUBY:/=\) "$(srcdir)/tool/missing-baseruby.bat"
 !endif
 !if "$(WITH_GMP)" != "no"

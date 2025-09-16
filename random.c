@@ -142,18 +142,21 @@ static const rb_random_interface_t random_mt_if = {
 };
 
 static rb_random_mt_t *
-rand_mt_start(rb_random_mt_t *r)
+rand_mt_start(rb_random_mt_t *r, VALUE obj)
 {
     if (!genrand_initialized(&r->mt)) {
         r->base.seed = rand_init(&random_mt_if, &r->base, random_seed(Qundef));
+        if (obj) {
+            RB_OBJ_WRITTEN(obj, Qundef, r->base.seed);
+        }
     }
     return r;
 }
 
 static rb_random_t *
-rand_start(rb_random_mt_t *r)
+rand_start(rb_random_mt_t *r, VALUE obj)
 {
-    return &rand_mt_start(r)->base;
+    return &rand_mt_start(r, obj)->base;
 }
 
 static rb_ractor_local_key_t default_rand_key;
@@ -192,7 +195,13 @@ default_rand(void)
 static rb_random_mt_t *
 default_mt(void)
 {
-    return rand_mt_start(default_rand());
+    return rand_mt_start(default_rand(), Qfalse);
+}
+
+static rb_random_t *
+default_rand_start(void)
+{
+    return &default_mt()->base;
 }
 
 unsigned int
@@ -263,7 +272,7 @@ const rb_data_type_t rb_random_data_type = {
         random_free,
         random_memsize,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 #define random_mt_mark rb_random_mark
@@ -284,7 +293,7 @@ static const rb_data_type_t random_mt_type = {
     },
     &rb_random_data_type,
     (void *)&random_mt_if,
-    RUBY_TYPED_FREE_IMMEDIATELY
+    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static rb_random_t *
@@ -293,7 +302,7 @@ get_rnd(VALUE obj)
     rb_random_t *ptr;
     TypedData_Get_Struct(obj, rb_random_t, &rb_random_data_type, ptr);
     if (RTYPEDDATA_TYPE(obj) == &random_mt_type)
-        return rand_start((rb_random_mt_t *)ptr);
+        return rand_start((rb_random_mt_t *)ptr, obj);
     return ptr;
 }
 
@@ -309,11 +318,11 @@ static rb_random_t *
 try_get_rnd(VALUE obj)
 {
     if (obj == rb_cRandom) {
-        return rand_start(default_rand());
+        return default_rand_start();
     }
     if (!rb_typeddata_is_kind_of(obj, &rb_random_data_type)) return NULL;
     if (RTYPEDDATA_TYPE(obj) == &random_mt_type)
-        return rand_start(DATA_PTR(obj));
+        return rand_start(DATA_PTR(obj), obj);
     rb_random_t *rnd = DATA_PTR(obj);
     if (!rnd) {
         rb_raise(rb_eArgError, "uninitialized random: %s",
@@ -422,10 +431,10 @@ random_init(int argc, VALUE *argv, VALUE obj)
     argc = rb_check_arity(argc, 0, 1);
     rb_check_frozen(obj);
     if (argc == 0) {
-        rnd->seed = rand_init_default(rng, rnd);
+        RB_OBJ_WRITE(obj, &rnd->seed, rand_init_default(rng, rnd));
     }
     else {
-        rnd->seed = rand_init(rng, rnd, rb_to_int(argv[0]));
+        RB_OBJ_WRITE(obj, &rnd->seed, rand_init(rng, rnd, rb_to_int(argv[0])));
     }
     return obj;
 }
@@ -829,6 +838,7 @@ rand_mt_copy(VALUE obj, VALUE orig)
     mt = &rnd1->mt;
 
     *rnd1 = *rnd2;
+    RB_OBJ_WRITTEN(obj, Qundef, rnd1->base.seed);
     mt->next = mt->state + numberof(mt->state) - mt->left + 1;
     return obj;
 }
@@ -916,7 +926,7 @@ rand_mt_load(VALUE obj, VALUE dump)
     }
     mt->left = (unsigned int)x;
     mt->next = mt->state + numberof(mt->state) - x + 1;
-    rnd->base.seed = rb_to_int(seed);
+    RB_OBJ_WRITE(obj, &rnd->base.seed, rb_to_int(seed));
 
     return obj;
 }
@@ -975,7 +985,7 @@ static VALUE
 rb_f_srand(int argc, VALUE *argv, VALUE obj)
 {
     VALUE seed, old;
-    rb_random_mt_t *r = rand_mt_start(default_rand());
+    rb_random_mt_t *r = default_mt();
 
     if (rb_check_arity(argc, 0, 1) == 0) {
         seed = random_seed(obj);
@@ -1337,7 +1347,7 @@ rb_random_bytes(VALUE obj, long n)
 static VALUE
 random_s_bytes(VALUE obj, VALUE len)
 {
-    rb_random_t *rnd = rand_start(default_rand());
+    rb_random_t *rnd = default_rand_start();
     return rand_bytes(&random_mt_if, rnd, NUM2LONG(rb_to_int(len)));
 }
 
@@ -1359,7 +1369,7 @@ random_s_bytes(VALUE obj, VALUE len)
 static VALUE
 random_s_seed(VALUE obj)
 {
-    rb_random_mt_t *rnd = rand_mt_start(default_rand());
+    rb_random_mt_t *rnd = default_mt();
     return rnd->base.seed;
 }
 
@@ -1542,9 +1552,11 @@ static VALUE rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd);
  *   prng.rand(100)       # => 42
  *
  * When +max+ is a Float, +rand+ returns a random floating point number
- * between 0.0 and +max+, including 0.0 and excluding +max+.
+ * between 0.0 and +max+, including 0.0 and excluding +max+. Note that it
+ * behaves differently from Kernel.rand.
  *
- *   prng.rand(1.5)       # => 1.4600282860034115
+ *   prng.rand(1.5)  # => 1.4600282860034115
+ *   rand(1.5)       # => 0
  *
  * When +range+ is a Range, +rand+ returns a random number where
  * <code>range.member?(number) == true</code>.
@@ -1682,14 +1694,16 @@ rand_mt_equal(VALUE self, VALUE other)
  * Kernel.srand may be used to ensure that sequences of random numbers are
  * reproducible between different runs of a program.
  *
- * See also Random.rand.
+ * Related: Random.rand.
+ *   rand(100.0)        # => 64 (Integer because max.to_i is 100)
+ *   Random.rand(100.0) # => 30.315320967824523
  */
 
 static VALUE
 rb_f_rand(int argc, VALUE *argv, VALUE obj)
 {
     VALUE vmax;
-    rb_random_t *rnd = rand_start(default_rand());
+    rb_random_t *rnd = default_rand_start();
 
     if (rb_check_arity(argc, 0, 1) && !NIL_P(vmax = argv[0])) {
         VALUE v = rand_range(obj, rnd, vmax);
@@ -1716,7 +1730,7 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
 static VALUE
 random_s_rand(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE v = rand_random(argc, argv, Qnil, rand_start(default_rand()));
+    VALUE v = rand_random(argc, argv, Qnil, default_rand_start());
     check_random_number(v, argv);
     return v;
 }

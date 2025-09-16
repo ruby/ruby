@@ -128,6 +128,7 @@ data.o: $(hdrdir)/ruby/internal/intern/re.h
 data.o: $(hdrdir)/ruby/internal/intern/ruby.h
 data.o: $(hdrdir)/ruby/internal/intern/select.h
 data.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+data.o: $(hdrdir)/ruby/internal/intern/set.h
 data.o: $(hdrdir)/ruby/internal/intern/signal.h
 data.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 data.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -288,6 +289,7 @@ duplicate.o: $(hdrdir)/ruby/internal/intern/re.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/ruby.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/select.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+duplicate.o: $(hdrdir)/ruby/internal/intern/set.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/signal.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -448,6 +450,7 @@ init.o: $(hdrdir)/ruby/internal/intern/re.h
 init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 init.o: $(hdrdir)/ruby/internal/intern/select.h
 init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+init.o: $(hdrdir)/ruby/internal/intern/set.h
 init.o: $(hdrdir)/ruby/internal/intern/signal.h
 init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 init.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -608,6 +611,7 @@ len.o: $(hdrdir)/ruby/internal/intern/re.h
 len.o: $(hdrdir)/ruby/internal/intern/ruby.h
 len.o: $(hdrdir)/ruby/internal/intern/select.h
 len.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+len.o: $(hdrdir)/ruby/internal/intern/set.h
 len.o: $(hdrdir)/ruby/internal/intern/signal.h
 len.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 len.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -768,6 +772,7 @@ member.o: $(hdrdir)/ruby/internal/intern/re.h
 member.o: $(hdrdir)/ruby/internal/intern/ruby.h
 member.o: $(hdrdir)/ruby/internal/intern/select.h
 member.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+member.o: $(hdrdir)/ruby/internal/intern/set.h
 member.o: $(hdrdir)/ruby/internal/intern/signal.h
 member.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 member.o: $(hdrdir)/ruby/internal/intern/string.h

@@ -127,6 +127,7 @@ continuation.o: $(hdrdir)/ruby/internal/intern/re.h
 continuation.o: $(hdrdir)/ruby/internal/intern/ruby.h
 continuation.o: $(hdrdir)/ruby/internal/intern/select.h
 continuation.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+continuation.o: $(hdrdir)/ruby/internal/intern/set.h
 continuation.o: $(hdrdir)/ruby/internal/intern/signal.h
 continuation.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 continuation.o: $(hdrdir)/ruby/internal/intern/string.h

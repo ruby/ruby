@@ -52,7 +52,11 @@ module URI
     HEADER_REGEXP  = /\A(?<hfield>(?:%\h\h|[!$'-.0-;@-Z_a-z~])*=(?:%\h\h|[!$'-.0-;@-Z_a-z~])*)(?:&\g<hfield>)*\z/
     # practical regexp for email address
     # https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
-    EMAIL_REGEXP = /\A[a-zA-Z0-9.!\#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\z/
+    EMAIL_REGEXP = %r[\A#{
+      atext = %q[(?:[a-zA-Z0-9!\#$%&'*+\/=?^_`{|}~-]+)]
+    }(?:\.#{atext})*@#{
+      label = %q[(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)]
+    }(?:\.#{label})*\z]
     # :startdoc:
 
     #

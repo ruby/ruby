@@ -15,13 +15,16 @@ struct set_table {
     const struct st_hash_type *type;
     /* Number of entries currently in the table.  */
     st_index_t num_entries;
-    /* Array of bins used for access by keys.  */
-    st_index_t *bins;
+
     /* Start and bound index of entries in array entries.
        entries_starts and entries_bound are in interval
        [0,allocated_entries].  */
     st_index_t entries_start, entries_bound;
-    /* Array of size 2^entry_power.  */
+
+    /**
+     * Array of size 2^entry_power.
+     * Followed by st_index_t *bins, Array of bins used for access by keys.
+     */
     set_table_entry *entries;
 };
 
@@ -39,24 +42,24 @@ set_table *rb_set_init_table_with_size(set_table *tab, const struct st_hash_type
 set_table *rb_set_init_numtable(void);
 #define set_init_numtable_with_size rb_set_init_numtable_with_size
 set_table *rb_set_init_numtable_with_size(st_index_t size);
-#define set_delete rb_set_delete
-int rb_set_delete(set_table *, st_data_t *); /* returns 0:notfound 1:deleted */
+#define set_table_delete rb_set_table_delete
+int rb_set_table_delete(set_table *, st_data_t *); /* returns 0:notfound 1:deleted */
 #define set_insert rb_set_insert
 int rb_set_insert(set_table *, st_data_t);
-#define set_lookup rb_set_lookup
-int rb_set_lookup(set_table *, st_data_t);
+#define set_table_lookup rb_set_table_lookup
+int rb_set_table_lookup(set_table *, st_data_t);
 #define set_foreach_with_replace rb_set_foreach_with_replace
 int rb_set_foreach_with_replace(set_table *tab, set_foreach_check_callback_func *func, set_update_callback_func *replace, st_data_t arg);
-#define set_foreach rb_set_foreach
-int rb_set_foreach(set_table *, set_foreach_callback_func *, st_data_t);
+#define set_table_foreach rb_set_table_foreach
+int rb_set_table_foreach(set_table *, set_foreach_callback_func *, st_data_t);
 #define set_foreach_check rb_set_foreach_check
 int rb_set_foreach_check(set_table *, set_foreach_check_callback_func *, st_data_t, st_data_t);
 #define set_keys rb_set_keys
 st_index_t rb_set_keys(set_table *table, st_data_t *keys, st_index_t size);
 #define set_free_table rb_set_free_table
 void rb_set_free_table(set_table *);
-#define set_clear rb_set_clear
-void rb_set_clear(set_table *);
+#define set_table_clear rb_set_table_clear
+void rb_set_table_clear(set_table *);
 #define set_copy rb_set_copy
 set_table *rb_set_copy(set_table *new_table, set_table *old_table);
 #define set_memsize rb_set_memsize

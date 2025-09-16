@@ -127,6 +127,7 @@ lock_native_thread.o: $(hdrdir)/ruby/internal/intern/re.h
 lock_native_thread.o: $(hdrdir)/ruby/internal/intern/ruby.h
 lock_native_thread.o: $(hdrdir)/ruby/internal/intern/select.h
 lock_native_thread.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+lock_native_thread.o: $(hdrdir)/ruby/internal/intern/set.h
 lock_native_thread.o: $(hdrdir)/ruby/internal/intern/signal.h
 lock_native_thread.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 lock_native_thread.o: $(hdrdir)/ruby/internal/intern/string.h

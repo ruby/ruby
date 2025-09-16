@@ -72,24 +72,29 @@ module Bundler
       end
     end
 
-    HTTP_ERRORS = [
-      Gem::Timeout::Error,
-      EOFError,
-      SocketError,
-      Errno::EADDRNOTAVAIL,
-      Errno::ENETDOWN,
-      Errno::ENETUNREACH,
-      Errno::EINVAL,
-      Errno::ECONNRESET,
-      Errno::ETIMEDOUT,
-      Errno::EAGAIN,
-      Gem::Net::HTTPBadResponse,
-      Gem::Net::HTTPHeaderSyntaxError,
-      Gem::Net::ProtocolError,
-      Gem::Net::HTTP::Persistent::Error,
-      Zlib::BufError,
-      Errno::EHOSTUNREACH,
+    HTTP_ERRORS = (Downloader::HTTP_RETRYABLE_ERRORS + Downloader::HTTP_NON_RETRYABLE_ERRORS).freeze
+    deprecate_constant :HTTP_ERRORS
+
+    NET_ERRORS = [
+      :HTTPBadGateway,
+      :HTTPBadRequest,
+      :HTTPFailedDependency,
+      :HTTPForbidden,
+      :HTTPInsufficientStorage,
+      :HTTPMethodNotAllowed,
+      :HTTPMovedPermanently,
+      :HTTPNoContent,
+      :HTTPNotFound,
+      :HTTPNotImplemented,
+      :HTTPPreconditionFailed,
+      :HTTPRequestEntityTooLarge,
+      :HTTPRequestURITooLong,
+      :HTTPUnauthorized,
+      :HTTPUnprocessableEntity,
+      :HTTPUnsupportedMediaType,
+      :HTTPVersionNotSupported,
     ].freeze
+    deprecate_constant :NET_ERRORS
 
     # Exceptions classes that should bypass retry attempts. If your password didn't work the
     # first time, it's not going to the third time.

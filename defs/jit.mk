@@ -7,11 +7,17 @@
 RUST_LIB_TOUCH = touch $@
 
 ifneq ($(JIT_CARGO_SUPPORT),no)
+
+# Show Cargo progress when doing `make V=1`
+CARGO_VERBOSE_0 = -q
+CARGO_VERBOSE_1 =
+CARGO_VERBOSE = $(CARGO_VERBOSE_$(V))
+
 # NOTE: MACOSX_DEPLOYMENT_TARGET to match `rustc --print deployment-target` to avoid the warning below.
 #    ld: warning: object file (target/debug/libjit.a(<libcapstone object>)) was built for
 #    newer macOS version (15.2) than being linked (15.0)
 # This limits us to an older set of macOS API in the rust code, but we don't use any.
-$(RUST_LIB): $(srcdir)/jit.rs
+$(RUST_LIB): $(srcdir)/ruby.rs
 	$(Q)if [ '$(ZJIT_SUPPORT)' != no -a '$(YJIT_SUPPORT)' != no ]; then \
 	    echo 'building YJIT and ZJIT ($(JIT_CARGO_SUPPORT:yes=release) mode)'; \
 	elif [ '$(ZJIT_SUPPORT)' != no ]; then \

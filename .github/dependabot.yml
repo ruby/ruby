@@ -16,3 +16,7 @@ updates:
     directory: '/yjit'
     schedule:
       interval: 'daily'
+  - package-ecosystem: 'vcpkg'
+    directory: '/'
+    schedule:
+      interval: 'daily'

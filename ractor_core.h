@@ -98,6 +98,7 @@ struct rb_ractor_struct {
     VALUE verbose;
     VALUE debug;
 
+    bool malloc_gc_disabled;
     void *newobj_cache;
 }; // rb_ractor_t is defined in vm_core.h
 
@@ -134,7 +135,7 @@ void rb_ractor_terminate_all(void);
 bool rb_ractor_main_p_(void);
 void rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th);
 void rb_ractor_terminate_atfork(rb_vm_t *vm, rb_ractor_t *th);
-VALUE rb_ractor_require(VALUE feature);
+VALUE rb_ractor_require(VALUE feature, bool silent);
 VALUE rb_ractor_autoload_load(VALUE space, ID id);
 
 VALUE rb_ractor_ensure_shareable(VALUE obj, VALUE name);

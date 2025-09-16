@@ -1182,25 +1182,29 @@ ossl_sslctx_set_tmp_dh(VALUE self, VALUE arg)
 }
 #endif
 
-#if !defined(OPENSSL_NO_EC)
 /*
  * call-seq:
- *    ctx.ecdh_curves = curve_list -> curve_list
+ *    ctx.groups = groups_list
+ *    ctx.ecdh_curves = groups_list
  *
- * Sets the list of "supported elliptic curves" for this context.
+ * Sets the list of supported groups for key agreement for this context.
  *
- * For a TLS client, the list is directly used in the Supported Elliptic Curves
- * Extension. For a server, the list is used by OpenSSL to determine the set of
- * shared curves. OpenSSL will pick the most appropriate one from it.
+ * For a TLS client, the list is directly used in the "supported_groups"
+ * extension. For a server, the list is used by OpenSSL to determine the set of
+ * shared supported groups. OpenSSL will pick the most appropriate one from it.
+ *
+ * #ecdh_curves= is a deprecated alias for #groups=.
+ *
+ * See also the man page SSL_CTX_set1_groups_list(3).
  *
  * === Example
  *   ctx1 = OpenSSL::SSL::SSLContext.new
- *   ctx1.ecdh_curves = "X25519:P-256:P-224"
+ *   ctx1.groups = "X25519:P-256:P-224"
  *   svr = OpenSSL::SSL::SSLServer.new(tcp_svr, ctx1)
  *   Thread.new { svr.accept }
  *
  *   ctx2 = OpenSSL::SSL::SSLContext.new
- *   ctx2.ecdh_curves = "P-256"
+ *   ctx2.groups = "P-256"
  *   cli = OpenSSL::SSL::SSLSocket.new(tcp_sock, ctx2)
  *   cli.connect
  *
@@ -1208,7 +1212,7 @@ ossl_sslctx_set_tmp_dh(VALUE self, VALUE arg)
  *   # => "prime256v1" (is an alias for NIST P-256)
  */
 static VALUE
-ossl_sslctx_set_ecdh_curves(VALUE self, VALUE arg)
+ossl_sslctx_set_groups(VALUE self, VALUE arg)
 {
     SSL_CTX *ctx;
 
@@ -1216,13 +1220,10 @@ ossl_sslctx_set_ecdh_curves(VALUE self, VALUE arg)
     GetSSLCTX(self, ctx);
     StringValueCStr(arg);
 
-    if (!SSL_CTX_set1_curves_list(ctx, RSTRING_PTR(arg)))
-	ossl_raise(eSSLError, NULL);
+    if (!SSL_CTX_set1_groups_list(ctx, RSTRING_PTR(arg)))
+        ossl_raise(eSSLError, "SSL_CTX_set1_groups_list");
     return arg;
 }
-#else
-#define ossl_sslctx_set_ecdh_curves rb_f_notimplement
-#endif
 
 /*
  * call-seq:
@@ -2641,8 +2642,70 @@ ossl_ssl_tmp_key(VALUE self)
     GetSSL(self, ssl);
     if (!SSL_get_server_tmp_key(ssl, &key))
 	return Qnil;
-    return ossl_pkey_new(key);
+    return ossl_pkey_wrap(key);
 }
+
+#ifdef HAVE_SSL_GET0_PEER_SIGNATURE_NAME
+/*
+ * call-seq:
+ *    ssl.sigalg => String or nil
+ *
+ * Returns the signature algorithm name, the IANA name of the signature scheme
+ * used by the local to sign the TLS handshake.
+ */
+static VALUE
+ossl_ssl_get_sigalg(VALUE self)
+{
+    SSL *ssl;
+    const char *name;
+
+    GetSSL(self, ssl);
+    if (!SSL_get0_signature_name(ssl, &name))
+        return Qnil;
+    return rb_str_new_cstr(name);
+}
+
+/*
+ * call-seq:
+ *    ssl.peer_sigalg => String or nil
+ *
+ * Returns the signature algorithm name, the IANA name of the signature scheme
+ * used by the peer to sign the TLS handshake.
+ */
+static VALUE
+ossl_ssl_get_peer_sigalg(VALUE self)
+{
+    SSL *ssl;
+    const char *name;
+
+    GetSSL(self, ssl);
+    if (!SSL_get0_peer_signature_name(ssl, &name))
+        return Qnil;
+    return rb_str_new_cstr(name);
+}
+#endif
+
+#ifdef HAVE_SSL_GET0_GROUP_NAME
+/*
+ * call-seq:
+ *    ssl.group => String or nil
+ *
+ * Returns the name of the group that was used for the key agreement of the
+ * current TLS session establishment.
+ */
+static VALUE
+ossl_ssl_get_group(VALUE self)
+{
+    SSL *ssl;
+    const char *name;
+
+    GetSSL(self, ssl);
+    if (!(name = SSL_get0_group_name(ssl)))
+        return Qnil;
+    return rb_str_new_cstr(name);
+}
+#endif
+
 #endif /* !defined(OPENSSL_NO_SOCK) */
 
 void
@@ -2958,7 +3021,8 @@ Init_ossl_ssl(void)
 #ifndef OPENSSL_NO_DH
     rb_define_method(cSSLContext, "tmp_dh=", ossl_sslctx_set_tmp_dh, 1);
 #endif
-    rb_define_method(cSSLContext, "ecdh_curves=", ossl_sslctx_set_ecdh_curves, 1);
+    rb_define_method(cSSLContext, "groups=", ossl_sslctx_set_groups, 1);
+    rb_define_alias(cSSLContext, "ecdh_curves=", "groups=");
     rb_define_method(cSSLContext, "security_level", ossl_sslctx_get_security_level, 0);
     rb_define_method(cSSLContext, "security_level=", ossl_sslctx_set_security_level, 1);
 #ifdef SSL_MODE_SEND_FALLBACK_SCSV
@@ -3065,6 +3129,13 @@ Init_ossl_ssl(void)
 # ifdef OSSL_USE_NEXTPROTONEG
     rb_define_method(cSSLSocket, "npn_protocol", ossl_ssl_npn_protocol, 0);
 # endif
+#ifdef HAVE_SSL_GET0_PEER_SIGNATURE_NAME
+    rb_define_method(cSSLSocket, "sigalg", ossl_ssl_get_sigalg, 0);
+    rb_define_method(cSSLSocket, "peer_sigalg", ossl_ssl_get_peer_sigalg, 0);
+#endif
+#ifdef HAVE_SSL_GET0_GROUP_NAME
+    rb_define_method(cSSLSocket, "group", ossl_ssl_get_group, 0);
+#endif
 
     rb_define_const(mSSL, "VERIFY_NONE", INT2NUM(SSL_VERIFY_NONE));
     rb_define_const(mSSL, "VERIFY_PEER", INT2NUM(SSL_VERIFY_PEER));

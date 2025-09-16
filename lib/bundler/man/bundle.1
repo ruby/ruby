@@ -1,6 +1,6 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE" "1" "June 2025" ""
+.TH "BUNDLE" "1" "September 2025" ""
 .SH "NAME"
 \fBbundle\fR \- Ruby Dependency Management
 .SH "SYNOPSIS"
@@ -66,9 +66,6 @@ Open an installed gem in the editor
 \fBbundle lock(1)\fR \fIbundle\-lock\.1\.html\fR
 Generate a lockfile for your dependencies
 .TP
-\fBbundle viz(1)\fR \fIbundle\-viz\.1\.html\fR (deprecated)
-Generate a visual representation of your dependencies
-.TP
 \fBbundle init(1)\fR \fIbundle\-init\.1\.html\fR
 Generate a simple \fBGemfile\fR, placed in the current directory
 .TP
@@ -94,9 +91,3 @@ Manage Bundler plugins
 Prints Bundler version information
 .SH "PLUGINS"
 When running a command that isn't listed in PRIMARY COMMANDS or UTILITIES, Bundler will try to find an executable on your path named \fBbundler\-<command>\fR and execute it, passing down any extra arguments to it\.
-.SH "OBSOLETE"
-These commands are obsolete and should no longer be used:
-.IP "\(bu" 4
-\fBbundle inject(1)\fR
-.IP "" 0
-

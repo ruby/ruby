@@ -101,9 +101,8 @@ RSpec.describe "bundle lock" do
 
   let(:gemfile_with_rails_weakling_and_foo_from_repo4) do
     build_repo4 do
-      FileUtils.cp rake_path, "#{gem_repo4}/gems/"
-
       build_gem "rake", "10.0.1"
+      build_gem "rake", rake_version
 
       %w[2.3.1 2.3.2].each do |version|
         build_gem "rails", version do |s|
@@ -310,6 +309,44 @@ RSpec.describe "bundle lock" do
     expect(out).to match(/Writing lockfile to.+lock/)
     expect(read_lockfile("lock")).to eq(expected_lockfile)
     expect { read_lockfile }.to raise_error(Errno::ENOENT)
+  end
+
+  it "updates a specific gem and write to a custom location" do
+    build_repo4 do
+      build_gem "uri", %w[1.0.2 1.0.3]
+      build_gem "warning", %w[1.4.0 1.5.0]
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+
+      gem "uri"
+      gem "warning"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: https://gem.repo4
+        specs:
+          uri (1.0.2)
+          warning (1.4.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        uri
+        warning
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "lock --update uri --lockfile=lock"
+
+    lockfile_content = read_lockfile("lock")
+    expect(lockfile_content).to include("uri (1.0.3)")
+    expect(lockfile_content).to include("warning (1.4.0)")
   end
 
   it "writes to custom location using --lockfile when a default lockfile is present" do
@@ -2238,7 +2275,6 @@ RSpec.describe "bundle lock" do
               nokogiri (1.14.2-x86_64-linux)
 
           PLATFORMS
-            ruby
             x86_64-linux
 
           DEPENDENCIES

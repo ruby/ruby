@@ -4,6 +4,7 @@ require 'socket'
 require 'timeout'
 require 'io/wait'
 require 'securerandom'
+require 'rbconfig'
 
 # Resolv is a thread-aware DNS resolver library written in Ruby.  Resolv can
 # handle multiple DNS requests concurrently without blocking the entire Ruby
@@ -33,7 +34,7 @@ require 'securerandom'
 
 class Resolv
 
-  VERSION = "0.6.1"
+  VERSION = "0.6.2"
 
   ##
   # Looks up the first IP address for +name+.
@@ -1679,6 +1680,7 @@ class Resolv
           prev_index = @index
           save_index = nil
           d = []
+          size = -1
           while true
             raise DecodeError.new("limit exceeded") if @limit <= @index
             case @data.getbyte(@index)
@@ -1699,7 +1701,10 @@ class Resolv
               end
               @index = idx
             else
-              d << self.get_label
+              l = self.get_label
+              d << l
+              size += 1 + l.string.bytesize
+              raise DecodeError.new("name label data exceed 255 octets") if size > 255
             end
           end
         end

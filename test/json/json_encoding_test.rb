@@ -145,19 +145,11 @@ class JSONEncodingTest < Test::Unit::TestCase
   end
 
   def test_invalid_utf8_sequences
-    # Create strings with invalid UTF-8 sequences
     invalid_utf8 = "\xFF\xFF"
-
-    # Test that generating JSON with invalid UTF-8 raises an error
-    # Different JSON implementations may handle this differently,
-    # so we'll check if any exception is raised
-    begin
+    error = assert_raise(JSON::GeneratorError) do
       generate(invalid_utf8)
-      raise "Expected an exception when generating JSON with invalid UTF8"
-    rescue StandardError => e
-      assert true
-      assert_match(%r{source sequence is illegal/malformed utf-8}, e.message)
     end
+    assert_match(%r{source sequence is illegal/malformed utf-8}, error.message)
   end
 
   def test_surrogate_pair_handling

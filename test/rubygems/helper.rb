@@ -400,8 +400,9 @@ class Gem::TestCase < Test::Unit::TestCase
     Gem::RemoteFetcher.fetcher = Gem::FakeFetcher.new
 
     @gem_repo = "http://gems.example.com/"
+    Gem.instance_variable_set :@default_sources, [@gem_repo]
+    Gem.instance_variable_set :@sources, nil
     @uri = Gem::URI.parse @gem_repo
-    Gem.sources.replace [@gem_repo]
 
     Gem.searcher = nil
     Gem::SpecFetcher.fetcher = nil
@@ -724,7 +725,7 @@ class Gem::TestCase < Test::Unit::TestCase
   #
   # Use this with #write_file to build an installed gem.
 
-  def quick_gem(name, version="2")
+  def quick_gem(name, version = "2")
     require "rubygems/specification"
 
     spec = Gem::Specification.new do |s|
@@ -1033,7 +1034,7 @@ Also, a list:
   # Add +spec+ to +@fetcher+ serving the data in the file +path+.
   # +repo+ indicates which repo to make +spec+ appear to be in.
 
-  def add_to_fetcher(spec, path=nil, repo=@gem_repo)
+  def add_to_fetcher(spec, path = nil, repo = @gem_repo)
     path ||= spec.cache_file
     @fetcher.data["#{@gem_repo}gems/#{spec.file_name}"] = read_binary(path)
   end
@@ -1206,7 +1207,7 @@ Also, a list:
   ##
   # Allows the proper version of +rake+ to be used for the test.
 
-  def build_rake_in(good=true)
+  def build_rake_in(good = true)
     gem_ruby = Gem.ruby
     Gem.ruby = self.class.rubybin
     env_rake = ENV["rake"]
@@ -1578,3 +1579,9 @@ class Object
 end
 
 require_relative "utilities"
+
+# mise installed rubygems_plugin.rb to system wide `site_ruby` directory.
+# This empty module avoid to call `mise` command.
+module ReshimInstaller
+  def self.reshim; end
+end

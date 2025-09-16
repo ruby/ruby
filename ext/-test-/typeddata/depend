@@ -128,6 +128,7 @@ typeddata.o: $(hdrdir)/ruby/internal/intern/re.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/ruby.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/select.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+typeddata.o: $(hdrdir)/ruby/internal/intern/set.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/signal.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/string.h

@@ -11,3 +11,7 @@ gem "builder", "~> 3.2"
 gem "rb_sys"
 gem "fiddle"
 gem "rubygems-generate_index", "~> 1.1"
+gem "psych"
+gem "etc", platforms: [:ruby, :windows]
+gem "open3"
+gem "shellwords"

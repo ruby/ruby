@@ -69,6 +69,7 @@ rb_call_inits(void)
     CALL(Rational);
     CALL(Complex);
     CALL(MemoryView);
+    CALL(pathname);
     CALL(version);
     CALL(vm_trace);
     CALL(vm_stack_canary);
@@ -87,9 +88,10 @@ void
 rb_call_builtin_inits(void)
 {
 #define BUILTIN(n) CALL(builtin_##n)
-    BUILTIN(kernel);
+    BUILTIN(jit_hook);
     BUILTIN(yjit);
-    // BUILTIN(yjit_hook) is called after rb_yjit_init()
+    BUILTIN(zjit);
+    BUILTIN(kernel);
     BUILTIN(gc);
     BUILTIN(ractor);
     BUILTIN(numeric);
@@ -98,6 +100,7 @@ rb_call_builtin_inits(void)
     BUILTIN(ast);
     BUILTIN(trace_point);
     BUILTIN(pack);
+    BUILTIN(pathname_builtin);
     BUILTIN(warning);
     BUILTIN(array);
     BUILTIN(hash);
@@ -106,7 +109,7 @@ rb_call_builtin_inits(void)
     BUILTIN(thread_sync);
     BUILTIN(nilclass);
     BUILTIN(marshal);
-    BUILTIN(zjit);
+    BUILTIN(jit_undef);
     Init_builtin_prelude();
 }
 #undef CALL

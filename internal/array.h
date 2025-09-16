@@ -140,6 +140,8 @@ RARRAY_AREF(VALUE ary, long i)
     VALUE val;
     RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
 
+    RUBY_ASSERT(i < RARRAY_LEN(ary));
+
     RBIMPL_WARNING_PUSH();
 #if defined(__GNUC__) && !defined(__clang__) && __GNUC__ == 13
     RBIMPL_WARNING_IGNORED(-Warray-bounds);

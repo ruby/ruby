@@ -1,6 +1,6 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-CACHE" "1" "June 2025" ""
+.TH "BUNDLE\-CACHE" "1" "September 2025" ""
 .SH "NAME"
 \fBbundle\-cache\fR \- Package your needed \fB\.gem\fR files into your application
 .SH "SYNOPSIS"
@@ -10,9 +10,6 @@ alias: \fBpackage\fR, \fBpack\fR
 .SH "DESCRIPTION"
 Copy all of the \fB\.gem\fR files needed to run the application into the \fBvendor/cache\fR directory\. In the future, when running \fBbundle install(1)\fR \fIbundle\-install\.1\.html\fR, use the gems in the cache in preference to the ones on \fBrubygems\.org\fR\.
 .SH "OPTIONS"
-.TP
-\fB\-\-all\fR
-Include all sources (including path and git)\.
 .TP
 \fB\-\-all\-platforms\fR
 Include gems for all platforms present in the lockfile, not only the current one\.
@@ -26,19 +23,10 @@ Use the specified gemfile instead of Gemfile\.
 \fB\-\-no\-install\fR
 Don't install the gems, only update the cache\.
 .TP
-\fB\-\-no\-prune\fR
-Don't remove stale gems from the cache\.
-.TP
-\fB\-\-path=PATH\fR
-Specify a different path than the system default ($BUNDLE_PATH or $GEM_HOME)\.
-.TP
 \fB\-\-quiet\fR
 Only output warnings and errors\.
-.TP
-\fB\-\-frozen\fR
-Do not allow the Gemfile\.lock to be updated after this bundle cache operation's install\.
 .SH "GIT AND PATH GEMS"
-The \fBbundle cache\fR command can also package \fB:git\fR and \fB:path\fR dependencies besides \.gem files\. This needs to be explicitly enabled via the \fB\-\-all\fR option\. Once used, the \fB\-\-all\fR option will be remembered\.
+The \fBbundle cache\fR command can also package \fB:git\fR and \fB:path\fR dependencies besides \.gem files\. This can be disabled setting \fBcache_all\fR to false\.
 .SH "SUPPORT FOR MULTIPLE PLATFORMS"
 When using gems that have different packages for different platforms, Bundler supports caching of gems for other platforms where the Gemfile has been resolved (i\.e\. present in the lockfile) in \fBvendor/cache\fR\. This needs to be enabled via the \fB\-\-all\-platforms\fR option\. This setting will be remembered in your local bundler configuration\.
 .SH "REMOTE FETCHING"

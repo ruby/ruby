@@ -44,44 +44,32 @@ RSpec.describe "bundle install" do
       expect(out).to include("gems are installed into `./vendor/bundle`")
     end
 
-    it "disallows --path vendor/bundle --system" do
-      bundle "install --path vendor/bundle --system", raise_on_error: false
-      expect(err).to include("Please choose only one option.")
-      expect(exitstatus).to eq(15)
-    end
-
-    it "remembers to disable system gems after the first time with bundle --path vendor/bundle" do
-      bundle "install --path vendor/bundle"
-      FileUtils.rm_r bundled_app("vendor")
-      bundle "install"
-
-      expect(vendored_gems("gems/myrack-1.0.0")).to be_directory
+    it "installs the bundle relatively to repository root, when Bundler run from the same directory" do
+      bundle "config path vendor/bundle", dir: bundled_app.parent
+      bundle "install --gemfile='#{bundled_app}/Gemfile'", dir: bundled_app.parent
+      expect(out).to include("installed into `./bundled_app/vendor/bundle`")
+      expect(bundled_app("vendor/bundle")).to be_directory
       expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
-    context "with path_relative_to_cwd set to true" do
-      before { bundle "config set path_relative_to_cwd true" }
+    it "installs the bundle relatively to repository root, when Bundler run from a different directory" do
+      bundle "config path vendor/bundle", dir: bundled_app
+      bundle "install --gemfile='#{bundled_app}/Gemfile'", dir: bundled_app.parent
+      expect(out).to include("installed into `./bundled_app/vendor/bundle`")
+      expect(bundled_app("vendor/bundle")).to be_directory
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
 
-      it "installs the bundle relatively to current working directory" do
-        bundle "install --gemfile='#{bundled_app}/Gemfile' --path vendor/bundle", dir: bundled_app.parent
-        expect(out).to include("installed into `./vendor/bundle`")
-        expect(bundled_app("../vendor/bundle")).to be_directory
-        expect(the_bundle).to include_gems "myrack 1.0.0"
-      end
+    it "installs the standalone bundle relative to the cwd" do
+      bundle :install, gemfile: bundled_app_gemfile, standalone: true, dir: bundled_app.parent
+      expect(out).to include("installed into `./bundled_app/bundle`")
+      expect(bundled_app("bundle")).to be_directory
+      expect(bundled_app("bundle/ruby")).to be_directory
 
-      it "installs the standalone bundle relative to the cwd" do
-        bundle :install, gemfile: bundled_app_gemfile, standalone: true, dir: bundled_app.parent
-        expect(out).to include("installed into `./bundled_app/bundle`")
-        expect(bundled_app("bundle")).to be_directory
-        expect(bundled_app("bundle/ruby")).to be_directory
-
-        bundle "config unset path"
-
-        bundle :install, gemfile: bundled_app_gemfile, standalone: true, dir: bundled_app("subdir").tap(&:mkpath)
-        expect(out).to include("installed into `../bundle`")
-        expect(bundled_app("bundle")).to be_directory
-        expect(bundled_app("bundle/ruby")).to be_directory
-      end
+      bundle :install, gemfile: bundled_app_gemfile, standalone: true, dir: bundled_app("subdir").tap(&:mkpath)
+      expect(out).to include("installed into `../bundle`")
+      expect(bundled_app("bundle")).to be_directory
+      expect(bundled_app("bundle/ruby")).to be_directory
     end
   end
 

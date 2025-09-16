@@ -4947,7 +4947,7 @@ rb_io_each_codepoint(VALUE io)
             fptr->cbuf.off += n;
             fptr->cbuf.len -= n;
             rb_yield(UINT2NUM(c));
-            rb_io_check_byte_readable(fptr);
+            rb_io_check_char_readable(fptr);
         }
     }
     NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
@@ -9929,7 +9929,7 @@ io_event_from_value(VALUE value)
 /*
  * call-seq:
  *   io.wait(events, timeout) -> event mask, false or nil
- *   io.wait(timeout = nil, mode = :read) -> self, true, or false
+ *   io.wait(*event_symbols[, timeout]) -> self, true, or false
  *
  * Waits until the IO becomes ready for the specified events and returns the
  * subset of events that become ready, or a falsy value when times out.
@@ -9937,10 +9937,14 @@ io_event_from_value(VALUE value)
  * The events can be a bit mask of +IO::READABLE+, +IO::WRITABLE+ or
  * +IO::PRIORITY+.
  *
- * Returns an event mask (truthy value) immediately when buffered data is available.
+ * Returns an event mask (truthy value) immediately when buffered data is
+ * available.
  *
- * Optional parameter +mode+ is one of +:read+, +:write+, or
- * +:read_write+.
+ * The second form: if one or more event symbols (+:read+, +:write+, or
+ * +:read_write+) are passed, the event mask is the bit OR of the bitmask
+ * corresponding to those symbols.  In this form, +timeout+ is optional, the
+ * order of the arguments is arbitrary, and returns +io+ if any of the
+ * events is ready.
  */
 
 static VALUE
@@ -9950,10 +9954,6 @@ io_wait(int argc, VALUE *argv, VALUE io)
     enum rb_io_event events = 0;
     int return_io = 0;
 
-    // The documented signature for this method is actually incorrect.
-    // A single timeout is allowed in any position, and multiple symbols can be given.
-    // Whether this is intentional or not, I don't know, and as such I consider this to
-    // be a legacy/slow path.
     if (argc != 2 || (RB_SYMBOL_P(argv[0]) || RB_SYMBOL_P(argv[1]))) {
         // We'd prefer to return the actual mask, but this form would return the io itself:
         return_io = 1;
@@ -9999,14 +9999,14 @@ io_wait(int argc, VALUE *argv, VALUE io)
 }
 
 static void
-argf_mark(void *ptr)
+argf_mark_and_move(void *ptr)
 {
     struct argf *p = ptr;
-    rb_gc_mark(p->filename);
-    rb_gc_mark(p->current_file);
-    rb_gc_mark(p->argv);
-    rb_gc_mark(p->inplace);
-    rb_gc_mark(p->encs.ecopts);
+    rb_gc_mark_and_move(&p->filename);
+    rb_gc_mark_and_move(&p->current_file);
+    rb_gc_mark_and_move(&p->argv);
+    rb_gc_mark_and_move(&p->inplace);
+    rb_gc_mark_and_move(&p->encs.ecopts);
 }
 
 static size_t
@@ -10017,20 +10017,9 @@ argf_memsize(const void *ptr)
     return size;
 }
 
-static void
-argf_compact(void *ptr)
-{
-    struct argf *p = ptr;
-    p->filename = rb_gc_location(p->filename);
-    p->current_file = rb_gc_location(p->current_file);
-    p->argv = rb_gc_location(p->argv);
-    p->inplace = rb_gc_location(p->inplace);
-    p->encs.ecopts = rb_gc_location(p->encs.ecopts);
-}
-
 static const rb_data_type_t argf_type = {
     "ARGF",
-    {argf_mark, RUBY_TYPED_DEFAULT_FREE, argf_memsize, argf_compact},
+    {argf_mark_and_move, RUBY_TYPED_DEFAULT_FREE, argf_memsize, argf_mark_and_move},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -14918,7 +14907,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * - \File +t.rb+:
  *
  *     p "ARGV: #{ARGV}"
- *     p "Line: #{ARGF.read}" # Read everything from all specified streams.
+ *     p "Read: #{ARGF.read}" # Read everything from all specified streams.
  *
  * - Command and output:
  *

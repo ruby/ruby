@@ -139,6 +139,7 @@ capacity.o: $(hdrdir)/ruby/internal/intern/re.h
 capacity.o: $(hdrdir)/ruby/internal/intern/ruby.h
 capacity.o: $(hdrdir)/ruby/internal/intern/select.h
 capacity.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+capacity.o: $(hdrdir)/ruby/internal/intern/set.h
 capacity.o: $(hdrdir)/ruby/internal/intern/signal.h
 capacity.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 capacity.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -472,6 +473,7 @@ coderange.o: $(hdrdir)/ruby/internal/intern/re.h
 coderange.o: $(hdrdir)/ruby/internal/intern/ruby.h
 coderange.o: $(hdrdir)/ruby/internal/intern/select.h
 coderange.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+coderange.o: $(hdrdir)/ruby/internal/intern/set.h
 coderange.o: $(hdrdir)/ruby/internal/intern/signal.h
 coderange.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 coderange.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -644,6 +646,7 @@ cstr.o: $(hdrdir)/ruby/internal/intern/re.h
 cstr.o: $(hdrdir)/ruby/internal/intern/ruby.h
 cstr.o: $(hdrdir)/ruby/internal/intern/select.h
 cstr.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+cstr.o: $(hdrdir)/ruby/internal/intern/set.h
 cstr.o: $(hdrdir)/ruby/internal/intern/signal.h
 cstr.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 cstr.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -809,6 +812,7 @@ ellipsize.o: $(hdrdir)/ruby/internal/intern/re.h
 ellipsize.o: $(hdrdir)/ruby/internal/intern/ruby.h
 ellipsize.o: $(hdrdir)/ruby/internal/intern/select.h
 ellipsize.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+ellipsize.o: $(hdrdir)/ruby/internal/intern/set.h
 ellipsize.o: $(hdrdir)/ruby/internal/intern/signal.h
 ellipsize.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 ellipsize.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -979,6 +983,7 @@ enc_associate.o: $(hdrdir)/ruby/internal/intern/re.h
 enc_associate.o: $(hdrdir)/ruby/internal/intern/ruby.h
 enc_associate.o: $(hdrdir)/ruby/internal/intern/select.h
 enc_associate.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+enc_associate.o: $(hdrdir)/ruby/internal/intern/set.h
 enc_associate.o: $(hdrdir)/ruby/internal/intern/signal.h
 enc_associate.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 enc_associate.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -1151,6 +1156,7 @@ enc_dummy.o: $(hdrdir)/ruby/internal/intern/re.h
 enc_dummy.o: $(hdrdir)/ruby/internal/intern/ruby.h
 enc_dummy.o: $(hdrdir)/ruby/internal/intern/select.h
 enc_dummy.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+enc_dummy.o: $(hdrdir)/ruby/internal/intern/set.h
 enc_dummy.o: $(hdrdir)/ruby/internal/intern/signal.h
 enc_dummy.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 enc_dummy.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -1322,6 +1328,7 @@ enc_str_buf_cat.o: $(hdrdir)/ruby/internal/intern/re.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/intern/ruby.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/intern/select.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+enc_str_buf_cat.o: $(hdrdir)/ruby/internal/intern/set.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/intern/signal.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -1495,6 +1502,7 @@ fstring.o: $(hdrdir)/ruby/internal/intern/re.h
 fstring.o: $(hdrdir)/ruby/internal/intern/ruby.h
 fstring.o: $(hdrdir)/ruby/internal/intern/select.h
 fstring.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+fstring.o: $(hdrdir)/ruby/internal/intern/set.h
 fstring.o: $(hdrdir)/ruby/internal/intern/signal.h
 fstring.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 fstring.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -1659,6 +1667,7 @@ init.o: $(hdrdir)/ruby/internal/intern/re.h
 init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 init.o: $(hdrdir)/ruby/internal/intern/select.h
 init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+init.o: $(hdrdir)/ruby/internal/intern/set.h
 init.o: $(hdrdir)/ruby/internal/intern/signal.h
 init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 init.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -1819,6 +1828,7 @@ modify.o: $(hdrdir)/ruby/internal/intern/re.h
 modify.o: $(hdrdir)/ruby/internal/intern/ruby.h
 modify.o: $(hdrdir)/ruby/internal/intern/select.h
 modify.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+modify.o: $(hdrdir)/ruby/internal/intern/set.h
 modify.o: $(hdrdir)/ruby/internal/intern/signal.h
 modify.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 modify.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -1989,6 +1999,7 @@ new.o: $(hdrdir)/ruby/internal/intern/re.h
 new.o: $(hdrdir)/ruby/internal/intern/ruby.h
 new.o: $(hdrdir)/ruby/internal/intern/select.h
 new.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+new.o: $(hdrdir)/ruby/internal/intern/set.h
 new.o: $(hdrdir)/ruby/internal/intern/signal.h
 new.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 new.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -2151,6 +2162,7 @@ nofree.o: $(hdrdir)/ruby/internal/intern/re.h
 nofree.o: $(hdrdir)/ruby/internal/intern/ruby.h
 nofree.o: $(hdrdir)/ruby/internal/intern/select.h
 nofree.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+nofree.o: $(hdrdir)/ruby/internal/intern/set.h
 nofree.o: $(hdrdir)/ruby/internal/intern/signal.h
 nofree.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 nofree.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -2320,6 +2332,7 @@ normalize.o: $(hdrdir)/ruby/internal/intern/re.h
 normalize.o: $(hdrdir)/ruby/internal/intern/ruby.h
 normalize.o: $(hdrdir)/ruby/internal/intern/select.h
 normalize.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+normalize.o: $(hdrdir)/ruby/internal/intern/set.h
 normalize.o: $(hdrdir)/ruby/internal/intern/signal.h
 normalize.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 normalize.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -2493,6 +2506,7 @@ qsort.o: $(hdrdir)/ruby/internal/intern/re.h
 qsort.o: $(hdrdir)/ruby/internal/intern/ruby.h
 qsort.o: $(hdrdir)/ruby/internal/intern/select.h
 qsort.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+qsort.o: $(hdrdir)/ruby/internal/intern/set.h
 qsort.o: $(hdrdir)/ruby/internal/intern/signal.h
 qsort.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 qsort.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -2656,6 +2670,7 @@ rb_interned_str.o: $(hdrdir)/ruby/internal/intern/re.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/intern/ruby.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/intern/select.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+rb_interned_str.o: $(hdrdir)/ruby/internal/intern/set.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/intern/signal.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -2816,6 +2831,7 @@ rb_str_dup.o: $(hdrdir)/ruby/internal/intern/re.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/intern/ruby.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/intern/select.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+rb_str_dup.o: $(hdrdir)/ruby/internal/intern/set.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/intern/signal.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -2976,6 +2992,7 @@ set_len.o: $(hdrdir)/ruby/internal/intern/re.h
 set_len.o: $(hdrdir)/ruby/internal/intern/ruby.h
 set_len.o: $(hdrdir)/ruby/internal/intern/select.h
 set_len.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+set_len.o: $(hdrdir)/ruby/internal/intern/set.h
 set_len.o: $(hdrdir)/ruby/internal/intern/signal.h
 set_len.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 set_len.o: $(hdrdir)/ruby/internal/intern/string.h

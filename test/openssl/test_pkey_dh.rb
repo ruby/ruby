@@ -16,7 +16,7 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     # This test is slow
     dh = OpenSSL::PKey::DH.new(NEW_KEYLEN)
     assert_key(dh)
-  end if ENV["OSSL_TEST_ALL"]
+  end if ENV["OSSL_TEST_ALL"] == "1"
 
   def test_new_break
     unless openssl? && OpenSSL.fips_mode
@@ -103,6 +103,8 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end if !openssl?(3, 0, 0)
 
   def test_params_ok?
+    omit_on_fips
+
     # Skip the tests in old OpenSSL version 1.1.1c or early versions before
     # applying the following commits in OpenSSL 1.1.1d to make `DH_check`
     # function pass the RFC 7919 FFDHE group texts.

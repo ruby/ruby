@@ -13,7 +13,6 @@
 #include "ruby/backward/2/inttypes.h"
 #include "probes.h"
 
-#define LIKELY(x) RB_LIKELY(x)
 #define UNLIKELY(x) RB_UNLIKELY(x)
 #ifndef TRUE
 # define TRUE    1

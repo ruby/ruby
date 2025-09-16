@@ -75,12 +75,9 @@ class TestGc < Test::Unit::TestCase
     GC.start
   end
 
-  def test_gc_config_setting_returns_nil_for_missing_keys
-    missing_value = GC.config(no_such_key: true)[:no_such_key]
-    assert_nil(missing_value)
-  ensure
-    GC.config(full_mark: true)
-    GC.start
+  def test_gc_config_setting_returns_config_hash
+    hash = GC.config(no_such_key: true)
+    assert_equal(GC.config, hash)
   end
 
   def test_gc_config_disable_major
@@ -296,7 +293,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_measure_total_time
-    assert_separately([], __FILE__, __LINE__, <<~RUBY)
+    assert_separately([], __FILE__, __LINE__, <<~RUBY, timeout: 60)
       GC.measure_total_time = false
 
       time_before = GC.stat(:time)
@@ -450,7 +447,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_singleton_method_added
-    assert_in_out_err([], <<-EOS, [], [], "[ruby-dev:44436]")
+    assert_in_out_err([], <<-EOS, [], [], "[ruby-dev:44436]", timeout: 30)
       class BasicObject
         undef singleton_method_added
         def singleton_method_added(mid)
@@ -745,6 +742,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_interrupt_in_finalizer
+    omit 'randomly hangs on many platforms' if ENV.key?('GITHUB_ACTIONS')
     bug10595 = '[ruby-core:66825] [Bug #10595]'
     src = <<-'end;'
       Signal.trap(:INT, 'DEFAULT')

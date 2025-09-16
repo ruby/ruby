@@ -46,13 +46,6 @@ module Bundler
       true
     end
 
-    def search_all(name, &blk)
-      return enum_for(:search_all, name) unless blk
-      specs_by_name(name).each(&blk)
-      @duplicates[name]&.each(&blk)
-      @sources.each {|source| source.search_all(name, &blk) }
-    end
-
     # Search this index's specs, and any source indexes that this index knows
     # about, returning all of the results.
     def search(query)

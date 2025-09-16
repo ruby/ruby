@@ -40,11 +40,35 @@ RSpec.describe "bundle console", readline: true do
     end
   end
 
-  context "when the library has an unrelated error" do
+  context "when the library requires a non-existent file" do
     before do
       build_lib "loadfuuu", "1.0.0" do |s|
         s.write "lib/loadfuuu.rb", "require_relative 'loadfuuu/bar'"
         s.write "lib/loadfuuu/bar.rb", "require 'not-in-bundle'"
+      end
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "irb"
+        path "#{lib_path}" do
+          gem "loadfuuu", require: true
+        end
+      G
+    end
+
+    it "does not show the bug report template" do
+      bundle("console", raise_on_error: false) do |input, _, _|
+        input.puts("exit")
+      end
+
+      expect(err).not_to include("ERROR REPORT TEMPLATE")
+    end
+  end
+
+  context "when the library references a non-existent constant" do
+    before do
+      build_lib "loadfuuu", "1.0.0" do |s|
+        s.write "lib/loadfuuu.rb", "Some::NonExistent::Constant"
       end
 
       install_gemfile <<-G

@@ -234,6 +234,24 @@ class JSONGeneratorTest < Test::Unit::TestCase
       :space                 => "",
       :space_before          => "",
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
+
+    state = JSON::State.new(allow_duplicate_key: true)
+    assert_equal({
+      :allow_duplicate_key   => true,
+      :allow_nan             => false,
+      :array_nl              => "",
+      :as_json               => false,
+      :ascii_only            => false,
+      :buffer_initial_length => 1024,
+      :depth                 => 0,
+      :script_safe           => false,
+      :strict                => false,
+      :indent                => "",
+      :max_nesting           => 100,
+      :object_nl             => "",
+      :space                 => "",
+      :space_before          => "",
+    }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
   def test_allow_nan
@@ -404,6 +422,18 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_raise JSON::GeneratorError do
       generate(Object.new, strict: true)
     end
+
+    assert_raise JSON::GeneratorError do
+      generate([Object.new], strict: true)
+    end
+
+    assert_raise JSON::GeneratorError do
+      generate({ "key" => Object.new }, strict: true)
+    end
+
+    assert_raise JSON::GeneratorError do
+      generate({ Object.new => "value" }, strict: true)
+    end
   end
 
   def test_nesting
@@ -472,6 +502,18 @@ class JSONGeneratorTest < Test::Unit::TestCase
     #
     data = ['"""""""""""""""""""""""""']
     json = '["\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""]'
+    assert_equal json, generate(data)
+    #
+    data = '"""""'
+    json = '"\"\"\"\"\""'
+    assert_equal json, generate(data)
+    #
+    data = "abc\n"
+    json = '"abc\\n"'
+    assert_equal json, generate(data)
+    #
+    data = "\nabc"
+    json = '"\\nabc"'
     assert_equal json, generate(data)
     #
     data = ["'"]
@@ -815,5 +857,25 @@ class JSONGeneratorTest < Test::Unit::TestCase
     numbers.each do |number|
       assert_equal "[#{number}]", JSON.generate([number])
     end
+  end
+
+  def test_generate_duplicate_keys_allowed
+    hash = { foo: 1, "foo" => 2 }
+    assert_equal %({"foo":1,"foo":2}), JSON.generate(hash, allow_duplicate_key: true)
+  end
+
+  def test_generate_duplicate_keys_deprecated
+    hash = { foo: 1, "foo" => 2 }
+    assert_deprecated_warning(/allow_duplicate_key/) do
+      assert_equal %({"foo":1,"foo":2}), JSON.generate(hash)
+    end
+  end
+
+  def test_generate_duplicate_keys_disallowed
+    hash = { foo: 1, "foo" => 2 }
+    error = assert_raise JSON::GeneratorError do
+      JSON.generate(hash, allow_duplicate_key: false)
+    end
+    assert_equal %(detected duplicate key "foo" in #{hash.inspect}), error.message
   end
 end

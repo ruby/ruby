@@ -127,6 +127,7 @@ at_exit.o: $(hdrdir)/ruby/internal/intern/re.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/ruby.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/select.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+at_exit.o: $(hdrdir)/ruby/internal/intern/set.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/signal.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/string.h

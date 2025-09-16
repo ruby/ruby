@@ -1764,33 +1764,28 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       end
     end
 
-    if !aws_lc? # AWS-LC does not support DHE ciphersuites.
-      # DHE
-      # TODO: SSL_CTX_set1_groups() is required for testing this with TLS 1.3
-      ctx_proc2 = proc { |ctx|
-        ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-        ctx.ciphers = "EDH"
-        ctx.tmp_dh = Fixtures.pkey("dh-1")
-      }
-      start_server(ctx_proc: ctx_proc2) do |port|
+    # DHE
+    # OpenSSL 3.0 added support for named FFDHE groups in TLS 1.3
+    # LibreSSL does not support named FFDHE groups currently
+    # AWS-LC does not support DHE ciphersuites
+    if openssl?(3, 0, 0)
+      start_server do |port|
         ctx = OpenSSL::SSL::SSLContext.new
-        ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-        ctx.ciphers = "EDH"
+        ctx.groups = "ffdhe3072"
         server_connect(port, ctx) { |ssl|
           assert_instance_of OpenSSL::PKey::DH, ssl.tmp_key
+          assert_equal 3072, ssl.tmp_key.p.num_bits
+          ssl.puts "abc"; assert_equal "abc\n", ssl.gets
         }
       end
     end
 
     # ECDHE
     ctx_proc3 = proc { |ctx|
-      ctx.ciphers = "DEFAULT:!kRSA:!kEDH"
-      ctx.ecdh_curves = "P-256"
+      ctx.groups = "P-256"
     }
     start_server(ctx_proc: ctx_proc3) do |port|
-      ctx = OpenSSL::SSL::SSLContext.new
-      ctx.ciphers = "DEFAULT:!kRSA:!kEDH"
-      server_connect(port, ctx) { |ssl|
+      server_connect(port) { |ssl|
         assert_instance_of OpenSSL::PKey::EC, ssl.tmp_key
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
@@ -2046,6 +2041,78 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_get_sigalg
+    # SSL_get0_signature_name() not supported
+    # SSL_get0_peer_signature_name() not supported
+    return unless openssl?(3, 5, 0)
+
+    server_proc = -> (ctx, ssl) {
+      assert_equal('rsa_pss_rsae_sha256', ssl.sigalg)
+      assert_nil(ssl.peer_sigalg)
+
+      readwrite_loop(ctx, ssl)
+    }
+    start_server(server_proc: server_proc) do |port|
+      cli_ctx = OpenSSL::SSL::SSLContext.new
+      server_connect(port, cli_ctx) do |ssl|
+        assert_nil(ssl.sigalg)
+        assert_equal('rsa_pss_rsae_sha256', ssl.peer_sigalg)
+        ssl.puts "abc"; ssl.gets
+      end
+    end
+  end
+
+  def test_pqc_sigalg
+    # PQC algorithm ML-DSA (FIPS 204) is supported on OpenSSL 3.5 or later.
+    return unless openssl?(3, 5, 0)
+
+    mldsa = Fixtures.pkey("mldsa65-1")
+    mldsa_ca_key  = Fixtures.pkey("mldsa65-2")
+    mldsa_ca_cert = issue_cert(@ca, mldsa_ca_key, 1, @ca_exts, nil, nil,
+                               digest: nil)
+    mldsa_cert = issue_cert(@svr, mldsa, 60, [], mldsa_ca_cert, mldsa_ca_key,
+                            digest: nil)
+    rsa = Fixtures.pkey("rsa2048")
+    rsa_cert = issue_cert(@svr, rsa, 61, [], @ca_cert, @ca_key)
+    ctx_proc = -> ctx {
+      # Unset values set by start_server
+      ctx.cert = ctx.key = ctx.extra_chain_cert = nil
+      ctx.add_certificate(mldsa_cert, mldsa)
+      ctx.add_certificate(rsa_cert, rsa)
+    }
+
+    server_proc = -> (ctx, ssl) {
+      assert_equal('mldsa65', ssl.sigalg)
+
+      readwrite_loop(ctx, ssl)
+    }
+    start_server(ctx_proc: ctx_proc, server_proc: server_proc) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      # Set signature algorithm because while OpenSSL may use ML-DSA by
+      # default, the system OpenSSL configuration affects the used signature
+      # algorithm.
+      ctx.sigalgs = 'mldsa65'
+      server_connect(port, ctx) { |ssl|
+        assert_equal('mldsa65', ssl.peer_sigalg)
+        ssl.puts "abc"; ssl.gets
+      }
+    end
+
+    server_proc = -> (ctx, ssl) {
+      assert_equal('rsa_pss_rsae_sha256', ssl.sigalg)
+
+      readwrite_loop(ctx, ssl)
+    }
+    start_server(ctx_proc: ctx_proc, server_proc: server_proc) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.sigalgs = 'rsa_pss_rsae_sha256'
+      server_connect(port, ctx) { |ssl|
+        assert_equal('rsa_pss_rsae_sha256', ssl.peer_sigalg)
+        ssl.puts "abc"; ssl.gets
+      }
+    end
+  end
+
   def test_connect_works_when_setting_dh_callback_to_nil
     omit "AWS-LC does not support DHE ciphersuites" if aws_lc?
 
@@ -2079,55 +2146,89 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
-  def test_ecdh_curves_tls12
+  def test_set_groups_tls12
     ctx_proc = -> ctx {
       # Enable both ECDHE (~ TLS 1.2) cipher suites and TLS 1.3
       ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
       ctx.ciphers = "kEECDH"
-      ctx.ecdh_curves = "P-384:P-521"
+      ctx.groups = "P-384:P-521"
     }
     start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
       # Test 1: Client=P-256:P-384, Server=P-384:P-521 --> P-384
       ctx = OpenSSL::SSL::SSLContext.new
-      ctx.ecdh_curves = "P-256:P-384"
+      ctx.groups = "P-256:P-384"
       server_connect(port, ctx) { |ssl|
         cs = ssl.cipher[0]
         assert_match (/\AECDH/), cs
+        # SSL_get0_group_name() is supported on OpenSSL 3.2 or later.
+        assert_equal "secp384r1", ssl.group if openssl?(3, 2, 0)
         assert_equal "secp384r1", ssl.tmp_key.group.curve_name
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
 
       # Test 2: Client=P-256, Server=P-521:P-384 --> Fail
       ctx = OpenSSL::SSL::SSLContext.new
-      ctx.ecdh_curves = "P-256"
+      ctx.groups = "P-256"
       assert_raise(OpenSSL::SSL::SSLError) {
         server_connect(port, ctx) { }
       }
 
       # Test 3: Client=P-521:P-384, Server=P-521:P-384 --> P-521
       ctx = OpenSSL::SSL::SSLContext.new
-      ctx.ecdh_curves = "P-521:P-384"
+      ctx.groups = "P-521:P-384"
       server_connect(port, ctx) { |ssl|
         assert_equal "secp521r1", ssl.tmp_key.group.curve_name
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      }
+
+      # Test 4: #ecdh_curves= alias
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ecdh_curves = "P-256:P-384"
+      server_connect(port, ctx) { |ssl|
+        assert_equal "secp384r1", ssl.tmp_key.group.curve_name
+      }
+    end
+  end
+
+  def test_set_groups_tls13
+    ctx_proc = -> ctx {
+      # Assume TLS 1.3 is enabled and chosen by default
+      ctx.groups = "P-384:P-521"
+    }
+    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.groups = "P-256:P-384" # disable P-521
+
+      server_connect(port, ctx) { |ssl|
+        assert_equal "TLSv1.3", ssl.ssl_version
+        # SSL_get0_group_name() is supported on OpenSSL 3.2 or later.
+        assert_equal "secp384r1", ssl.group if openssl?(3, 2, 0)
+        assert_equal "secp384r1", ssl.tmp_key.group.curve_name
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
     end
   end
 
-  def test_ecdh_curves_tls13
-    ctx_proc = -> ctx {
-      # Assume TLS 1.3 is enabled and chosen by default
-      ctx.ecdh_curves = "P-384:P-521"
-    }
-    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
-      ctx = OpenSSL::SSL::SSLContext.new
-      ctx.ecdh_curves = "P-256:P-384" # disable P-521
+  def test_pqc_group
+    # PQC algorithm ML-KEM (FIPS 203) is supported on OpenSSL 3.5 or later.
+    return unless openssl?(3, 5, 0)
 
-      server_connect(port, ctx) { |ssl|
-        assert_equal "TLSv1.3", ssl.ssl_version
-        assert_equal "secp384r1", ssl.tmp_key.group.curve_name
-        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+    [
+      'X25519MLKEM768',
+      'SecP256r1MLKEM768',
+      'SecP384r1MLKEM1024'
+    ].each do |group|
+      ctx_proc = -> ctx {
+        ctx.groups = group
       }
+      start_server(ctx_proc: ctx_proc) do |port|
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.groups = group
+        server_connect(port, ctx) { |ssl|
+          assert_equal(group, ssl.group)
+          ssl.puts "abc"; ssl.gets
+        }
+      end
     end
   end
 

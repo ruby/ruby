@@ -3,10 +3,10 @@
 # TODO(alan) notes about rust version requirements. Undecided yet.
 
 [workspace]
-members = ["zjit", "yjit"]
+members = ["zjit", "yjit", "jit"]
 
 [package]
-name = "jit"
+name = "ruby"
 version = "0.0.0"
 edition = "2024"
 rust-version = "1.85.0"
@@ -18,11 +18,11 @@ zjit = { path = "zjit", optional = true }
 
 [lib]
 crate-type = ["staticlib"]
-path = "jit.rs"
+path = "ruby.rs"
 
 [features]
 disasm = ["yjit?/disasm", "zjit?/disasm"]
-runtime_checks = []
+runtime_checks = ["yjit?/runtime_checks", "zjit?/runtime_checks"]
 yjit = [ "dep:yjit" ]
 zjit = [ "dep:zjit" ]
 

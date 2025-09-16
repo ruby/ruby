@@ -112,20 +112,34 @@ RSpec.describe "bundle executable" do
   end
 
   context "with --verbose" do
-    it "prints the running command" do
+    before do
       gemfile "source 'https://gem.repo1'"
+    end
+
+    it "prints the running command" do
       bundle "info bundler", verbose: true
       expect(out).to start_with("Running `bundle info bundler --verbose` with bundler #{Bundler::VERSION}")
-    end
 
-    it "doesn't print defaults" do
-      install_gemfile "source 'https://gem.repo1'", verbose: true
+      bundle "install", verbose: true
       expect(out).to start_with("Running `bundle install --verbose` with bundler #{Bundler::VERSION}")
     end
 
-    it "doesn't print defaults" do
-      install_gemfile "source 'https://gem.repo1'", verbose: true
-      expect(out).to start_with("Running `bundle install --verbose` with bundler #{Bundler::VERSION}")
+    it "prints the simulated version too when setting is enabled" do
+      bundle "config simulate_version 4", verbose: true
+      bundle "info bundler", verbose: true
+      expect(out).to start_with("Running `bundle info bundler --verbose` with bundler #{Bundler::VERSION} (simulating Bundler 4)")
+    end
+  end
+
+  context "with verbose configuration" do
+    before do
+      bundle "config verbose true"
+    end
+
+    it "prints the running command" do
+      gemfile "source 'https://gem.repo1'"
+      bundle "info bundler"
+      expect(out).to start_with("Running `bundle info bundler` with bundler #{Bundler::VERSION}")
     end
   end
 
@@ -253,10 +267,9 @@ RSpec.describe "bundler executable" do
   it "shows the bundler version just as the `bundle` executable does" do
     bundler "--version"
     expect(out).to eq("Bundler version #{Bundler::VERSION}")
-  end
 
-  it "shows the bundler version just as the `bundle` executable does", bundler: "4" do
+    bundle "config simulate_version 4"
     bundler "--version"
-    expect(out).to eq(Bundler::VERSION)
+    expect(out).to eq("#{Bundler::VERSION} (simulating Bundler 4)")
   end
 end

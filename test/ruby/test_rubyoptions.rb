@@ -8,8 +8,6 @@ require_relative '../lib/jit_support'
 require_relative '../lib/parser_support'
 
 class TestRubyOptions < Test::Unit::TestCase
-  def self.yjit_enabled? = defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
-
   # Here we're defining our own RUBY_DESCRIPTION without "+PRISM". We do this
   # here so that the various tests that reference RUBY_DESCRIPTION don't have to
   # worry about it. The flag itself is tested in its own test.
@@ -22,8 +20,10 @@ class TestRubyOptions < Test::Unit::TestCase
 
   NO_JIT_DESCRIPTION =
     case
-    when yjit_enabled?
-      RUBY_DESCRIPTION.sub(/\+YJIT( (dev|dev_nodebug|stats))? /, '')
+    when JITSupport.yjit_enabled?
+      RUBY_DESCRIPTION.sub(/\+YJIT( \w+)? /, '')
+    when JITSupport.zjit_enabled?
+      RUBY_DESCRIPTION.sub(/\+ZJIT( \w+)? /, '')
     else
       RUBY_DESCRIPTION
     end
@@ -47,10 +47,15 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([], "", [], [])
   end
 
+  version = RUBY_PATCHLEVEL == -1 ? "master" : "#{RUBY_VERSION_MAJOR}.#{RUBY_VERSION_MINOR}"
+  OPTIONS_LINK = "https://docs.ruby-lang.org/en/#{version}/ruby/options_md.html"
+
   def test_usage
     assert_in_out_err(%w(-h)) do |r, e|
-      assert_operator(r.size, :<=, 25)
-      longer = r[1..-1].select {|x| x.size >= 80}
+      _, _, link, *r = r
+      assert_include(link, OPTIONS_LINK)
+      assert_operator(r.size, :<=, 24)
+      longer = r.select {|x| x.size >= 80}
       assert_equal([], longer)
       assert_equal([], e)
     end
@@ -58,7 +63,9 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_usage_long
     assert_in_out_err(%w(--help)) do |r, e|
-      longer = r[1..-1].select {|x| x.size > 80}
+      _, _, link, *r = r
+      assert_include(link, OPTIONS_LINK)
+      longer = r.select {|x| x.size > 80}
       assert_equal([], longer)
       assert_equal([], e)
     end
@@ -174,7 +181,7 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_verbose
     assert_in_out_err([{'RUBY_YJIT_ENABLE' => nil}, "-vve", ""]) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      if self.class.yjit_enabled? && !JITSupport.yjit_force_enabled?
+      if (JITSupport.yjit_enabled? && !JITSupport.yjit_force_enabled?) || JITSupport.zjit_enabled?
         assert_equal(NO_JIT_DESCRIPTION, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
@@ -240,7 +247,7 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_match(VERSION_PATTERN, r[0])
       if ENV['RUBY_YJIT_ENABLE'] == '1'
         assert_equal(NO_JIT_DESCRIPTION, r[0])
-      elsif self.class.yjit_enabled? # checking -DYJIT_FORCE_ENABLE
+      elsif JITSupport.yjit_enabled? || JITSupport.zjit_enabled? # checking -DYJIT_FORCE_ENABLE
         assert_equal(EnvUtil.invoke_ruby(['-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
@@ -845,7 +852,8 @@ class TestRubyOptions < Test::Unit::TestCase
     # We want YJIT to be enabled in the subprocess if it's enabled for us
     # so that the Ruby description matches.
     env = Hash === args.first ? args.shift : {}
-    args.unshift("--yjit") if self.class.yjit_enabled?
+    args.unshift("--yjit") if JITSupport.yjit_enabled?
+    args.unshift("--zjit") if JITSupport.zjit_enabled?
     env.update({'RUBY_ON_BUG' => nil})
     # ASAN registers a segv handler which prints out "AddressSanitizer: DEADLYSIGNAL" when
     # catching sigsegv; we don't expect that output, so suppress it.
@@ -875,7 +883,7 @@ class TestRubyOptions < Test::Unit::TestCase
                  '-e', '$".clear',
                  '-e', '$".unshift Bogus.new',
                  '-e', '(p $"; abort) unless $".size == 1',
-                ], success: false)
+                ], bug7402, success: false)
   end
 
   def test_segv_setproctitle
@@ -987,7 +995,7 @@ class TestRubyOptions < Test::Unit::TestCase
           pid = spawn(EnvUtil.rubybin, :in => s, :out => w)
           w.close
           assert_nothing_raised('[ruby-dev:37798]') do
-            result = EnvUtil.timeout(3) {r.read}
+            result = EnvUtil.timeout(10) {r.read}
           end
           Process.wait pid
         }

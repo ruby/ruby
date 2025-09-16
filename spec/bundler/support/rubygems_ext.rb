@@ -52,13 +52,13 @@ module Spec
     def setup_test_paths
       ENV["BUNDLE_PATH"] = nil
       ENV["PATH"] = [Path.system_gem_path("bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
-      ENV["PATH"] = [Path.bindir, ENV["PATH"]].join(File::PATH_SEPARATOR) if Path.ruby_core?
+      ENV["PATH"] = [Path.exedir, ENV["PATH"]].join(File::PATH_SEPARATOR) if Path.ruby_core?
     end
 
     def install_test_deps
-      dev_bundle("install", gemfile: test_gemfile, path: Path.base_system_gems.to_s)
-      dev_bundle("install", gemfile: rubocop_gemfile, path: Path.rubocop_gems.to_s)
-      dev_bundle("install", gemfile: standard_gemfile, path: Path.standard_gems.to_s)
+      dev_bundle("install", gemfile: test_gemfile, path: Path.base_system_gem_path.to_s)
+      dev_bundle("install", gemfile: rubocop_gemfile, path: Path.rubocop_gem_path.to_s)
+      dev_bundle("install", gemfile: standard_gemfile, path: Path.standard_gem_path.to_s)
 
       require_relative "helpers"
       Helpers.install_dev_bundler
@@ -100,7 +100,7 @@ module Spec
 
       require "shellwords"
       # We don't use `Open3` here because it does not work on JRuby + Windows
-      output = `ruby #{File.expand_path("support/bundle.rb", Path.spec_dir)} #{args.shelljoin}`
+      output = `ruby #{Path.dev_binstub} #{args.shelljoin}`
       raise output unless $?.success?
       output
     ensure

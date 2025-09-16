@@ -58,7 +58,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 // files in Ruby.
 size_t rb_size_mul_or_raise(size_t x, size_t y, VALUE exc);
 void rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data);
-void rb_obj_info_dump(VALUE obj);
+const char *rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj);
 const char *rb_obj_info(VALUE obj);
 size_t rb_obj_memsize_of(VALUE obj);
 bool ruby_free_at_exit_p(void);
@@ -94,6 +94,8 @@ MODULAR_GC_FN uint32_t rb_gc_rebuild_shape(VALUE obj, size_t heap_id);
 MODULAR_GC_FN void rb_gc_prepare_heap_process_object(VALUE obj);
 MODULAR_GC_FN bool rb_memerror_reentered(void);
 MODULAR_GC_FN bool rb_obj_id_p(VALUE);
+MODULAR_GC_FN void rb_gc_before_updating_jit_code(void);
+MODULAR_GC_FN void rb_gc_after_updating_jit_code(void);
 
 #if USE_MODULAR_GC
 MODULAR_GC_FN bool rb_gc_event_hook_required_p(rb_event_flag_t event);

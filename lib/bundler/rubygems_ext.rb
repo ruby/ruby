@@ -417,7 +417,7 @@ module Gem
     unless Gem::NameTuple.new("a", Gem::Version.new("1"), Gem::Platform.new("x86_64-linux")).platform.is_a?(String)
       alias_method :initialize_with_platform, :initialize
 
-      def initialize(name, version, platform=Gem::Platform::RUBY)
+      def initialize(name, version, platform = Gem::Platform::RUBY)
         if Gem::Platform === platform
           initialize_with_platform(name, version, platform.to_s)
         else

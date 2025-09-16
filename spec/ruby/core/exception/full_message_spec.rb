@@ -211,4 +211,16 @@ describe "Exception#full_message" do
     e.full_message(highlight: false).lines.first.should =~ /RuntimeError/
     e.full_message(highlight: true).lines.first.should =~ /#{Regexp.escape("\e[1;4mRuntimeError\e[m")}/
   end
+
+  it "allows cause with empty backtrace" do
+    begin
+      raise RuntimeError.new("Some runtime error"), cause: RuntimeError.new("Some other runtime error")
+    rescue => e
+    end
+
+    full_message = e.full_message
+    full_message.should include "RuntimeError"
+    full_message.should include "Some runtime error"
+    full_message.should include "Some other runtime error"
+  end
 end

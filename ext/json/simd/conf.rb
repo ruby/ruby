@@ -1,25 +1,24 @@
-if RbConfig::CONFIG['host_cpu'] =~ /^(arm.*|aarch64.*)/
+case RbConfig::CONFIG['host_cpu']
+when /^(arm|aarch64)/
   # Try to compile a small program using NEON instructions
-  if have_header('arm_neon.h')
-    have_type('uint8x16_t', headers=['arm_neon.h']) && try_compile(<<~'SRC')
-      #include <arm_neon.h>
-      int main() {
-          uint8x16_t test = vdupq_n_u8(32);
-          return 0;
+  header, type, init, extra = 'arm_neon.h', 'uint8x16_t', 'vdupq_n_u8(32)', nil
+when /^(x86_64|x64)/
+  header, type, init, extra = 'x86intrin.h', '__m128i', '_mm_set1_epi8(32)', 'if (__builtin_cpu_supports("sse2")) { printf("OK"); }'
+end
+if header
+  if have_header(header) && try_compile(<<~SRC, '-Werror=implicit-function-declaration')
+      #{cpp_include(header)}
+      int main(int argc, char **argv) {
+        #{type} test = #{init};
+        #{extra}
+        if (argc > 100000) printf("%p", &test);
+        return 0;
       }
     SRC
-      $defs.push("-DJSON_ENABLE_SIMD")
-  end
-end
-
-if have_header('x86intrin.h') && have_type('__m128i', headers=['x86intrin.h']) && try_compile(<<~'SRC')
-  #include <x86intrin.h>
-  int main() {
-      __m128i test = _mm_set1_epi8(32);
-      return 0;
-  }
-  SRC
     $defs.push("-DJSON_ENABLE_SIMD")
+  else
+    puts "Disable SIMD"
+  end
 end
 
 have_header('cpuid.h')

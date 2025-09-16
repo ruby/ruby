@@ -143,6 +143,7 @@ etc.o: $(hdrdir)/ruby/internal/intern/re.h
 etc.o: $(hdrdir)/ruby/internal/intern/ruby.h
 etc.o: $(hdrdir)/ruby/internal/intern/select.h
 etc.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+etc.o: $(hdrdir)/ruby/internal/intern/set.h
 etc.o: $(hdrdir)/ruby/internal/intern/signal.h
 etc.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 etc.o: $(hdrdir)/ruby/internal/intern/string.h

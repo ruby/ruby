@@ -1,5 +1,12 @@
 prelude: |
   C = Struct.new(:x) do
+    def initialize(...)
+      super
+      @ivar = 42
+    end
+
+    attr_accessor :ivar
+
     class_eval <<-END
       def r
         #{'x;'*256}
@@ -15,11 +22,16 @@ prelude: |
         m = method(:x=)
         #{'m.call(nil);'*256}
       end
+      def r_ivar
+        #{'ivar;'*256}
+      end
     END
   end
+  C.new(nil) # ensure common shape is known
   obj = C.new(nil)
 benchmark:
   member_reader: "obj.r"
   member_writer: "obj.w"
   member_reader_method: "obj.rm"
   member_writer_method: "obj.wm"
+  ivar_reader: "obj.r_ivar"

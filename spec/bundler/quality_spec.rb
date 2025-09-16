@@ -115,10 +115,8 @@ RSpec.describe "The library itself" do
   end
 
   it "maintains language quality of the documentation" do
-    included = /ronn/
     error_messages = []
     man_tracked_files.each do |filename|
-      next unless filename&.match?(included)
       error_messages << check_for_expendable_words(filename)
       error_messages << check_for_specific_pronouns(filename)
     end
@@ -138,7 +136,6 @@ RSpec.describe "The library itself" do
 
   it "documents all used settings" do
     exemptions = %w[
-      forget_cli_options
       gem.changelog
       gem.ci
       gem.coc

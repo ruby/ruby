@@ -38,7 +38,7 @@ Logging::message "=== OpenSSL for Ruby configurator ===\n"
 
 $defs.push("-D""OPENSSL_SUPPRESS_DEPRECATED")
 
-have_func("rb_io_descriptor")
+have_func("rb_io_descriptor", "ruby/io.h")
 have_func("rb_io_maybe_wait(0, Qnil, Qnil, Qnil)", "ruby/io.h") # Ruby 3.1
 have_func("rb_io_timeout", "ruby/io.h")
 
@@ -156,8 +156,14 @@ have_func("EVP_MD_CTX_get_pkey_ctx(NULL)", evp_h)
 have_func("EVP_PKEY_eq(NULL, NULL)", evp_h)
 have_func("EVP_PKEY_dup(NULL)", evp_h)
 
+# added in 3.2.0
+have_func("SSL_get0_group_name(NULL)", ssl_h)
+
 # added in 3.4.0
 have_func("TS_VERIFY_CTX_set0_certs(NULL, NULL)", ts_h)
+
+# added in 3.5.0
+have_func("SSL_get0_peer_signature_name(NULL, NULL)", ssl_h)
 
 Logging::message "=== Checking done. ===\n"
 

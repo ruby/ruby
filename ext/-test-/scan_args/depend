@@ -128,6 +128,7 @@ scan_args.o: $(hdrdir)/ruby/internal/intern/re.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/ruby.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/select.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+scan_args.o: $(hdrdir)/ruby/internal/intern/set.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/signal.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/string.h

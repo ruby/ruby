@@ -3,10 +3,10 @@ bundle-config(1) -- Set bundler configuration options
 
 ## SYNOPSIS
 
-`bundle config` list<br>
-`bundle config` [get] NAME<br>
-`bundle config` [set] NAME VALUE<br>
-`bundle config` unset NAME
+`bundle config` [list]<br>
+`bundle config` [get [--local|--global]] NAME<br>
+`bundle config` [set [--local|--global]] NAME VALUE<br>
+`bundle config` unset [--local|--global] NAME
 
 ## DESCRIPTION
 
@@ -19,38 +19,67 @@ Bundler loads configuration settings in this order:
 3. Global config (`~/.bundle/config`)
 4. Bundler default config
 
+Executing `bundle` with the `BUNDLE_IGNORE_CONFIG` environment variable set will
+cause it to ignore all configuration.
+
+## SUB-COMMANDS
+
+### list (default command)
+
 Executing `bundle config list` will print a list of all bundler
 configuration for the current bundle, and where that configuration
 was set.
 
+### get
+
 Executing `bundle config get <name>` will print the value of that configuration
-setting, and where it was set.
+setting, and all locations where it was set.
+
+**OPTIONS**
+
+* `--local`:
+  Get configuration from configuration file for the local application, namely,
+  `<project_root>/.bundle/config`, or `$BUNDLE_APP_CONFIG/config` if
+  `BUNDLE_APP_CONFIG` is set.
+
+* `--global`:
+  Get configuration from configuration file global to all bundles executed as
+  the current user, namely, from `~/.bundle/config`.
+
+### set
 
 Executing `bundle config set <name> <value>` defaults to setting `local`
 configuration if executing from within a local application, otherwise it will
-set `global` configuration. See `--local` and `--global` options below.
+set `global` configuration.
 
-Executing `bundle config set --local <name> <value>` will set that configuration
-in the directory for the local application. The configuration will be stored in
-`<project_root>/.bundle/config`. If `BUNDLE_APP_CONFIG` is set, the configuration
-will be stored in `$BUNDLE_APP_CONFIG/config`.
+**OPTIONS**
 
-Executing `bundle config set --global <name> <value>` will set that
-configuration to the value specified for all bundles executed as the current
-user. The configuration will be stored in `~/.bundle/config`. If <name> already
-is set, <name> will be overridden and user will be warned.
+* `--local`:
+  Executing `bundle config set --local <name> <value>` will set that configuration
+  in the directory for the local application. The configuration will be stored in
+  `<project_root>/.bundle/config`. If `BUNDLE_APP_CONFIG` is set, the configuration
+  will be stored in `$BUNDLE_APP_CONFIG/config`.
+
+* `--global`:
+  Executing `bundle config set --global <name> <value>` will set that
+  configuration to the value specified for all bundles executed as the current
+  user. The configuration will be stored in `~/.bundle/config`. If <name> already
+  is set, <name> will be overridden and user will be warned.
+
+### unset
 
 Executing `bundle config unset <name>` will delete the configuration in both
 local and global sources.
 
-Executing `bundle config unset --global <name>` will delete the configuration
-only from the user configuration.
+**OPTIONS**
 
-Executing `bundle config unset --local <name>` will delete the configuration
-only from the local application.
+* `--local`:
+  Executing `bundle config unset --local <name>` will delete the configuration
+  only from the local application.
 
-Executing bundle with the `BUNDLE_IGNORE_CONFIG` environment variable set will
-cause it to ignore all configuration.
+* `--global`:
+  Executing `bundle config unset --global <name>` will delete the configuration
+  only from the user configuration.
 
 ## CONFIGURATION KEYS
 
@@ -77,16 +106,17 @@ the environment variable `BUNDLE_LOCAL__RACK`.
 The following is a list of all configuration keys and their purpose. You can
 learn more about their operation in [bundle install(1)](bundle-install.1.html).
 
-* `allow_offline_install` (`BUNDLE_ALLOW_OFFLINE_INSTALL`):
-   Allow Bundler to use cached data when installing without network access.
-* `auto_clean_without_path` (`BUNDLE_AUTO_CLEAN_WITHOUT_PATH`):
-   Automatically run `bundle clean` after installing when an explicit `path`
-   has not been set and Bundler is not installing into the system gems.
 * `auto_install` (`BUNDLE_AUTO_INSTALL`):
    Automatically run `bundle install` when gems are missing.
 * `bin` (`BUNDLE_BIN`):
-   Install executables from gems in the bundle to the specified directory.
-   Defaults to `false`.
+   If configured, `bundle binstubs` will install executables from gems in the
+   bundle to the specified directory. Otherwise it will create them in a `bin`
+   directory relative to the Gemfile directory. These executables run in
+   Bundler's context. If used, you might add this directory to your
+   environment's `PATH` variable. For instance, if the `rails` gem comes with a
+   `rails` executable, `bundle binstubs` will create a `bin/rails` executable
+   that ensures that all referred dependencies will be resolved using the
+   bundled gems.
 * `cache_all` (`BUNDLE_CACHE_ALL`):
    Cache all gems, including path and git gems. This needs to be explicitly
    before bundler 4, but will be the default on bundler 4.
@@ -98,12 +128,14 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Defaults to `vendor/cache`.
 * `clean` (`BUNDLE_CLEAN`):
    Whether Bundler should run `bundle clean` automatically after
-   `bundle install`.
+   `bundle install`. Defaults to `true` in Bundler 4, as long as `path` is not
+   explicitly configured.
 * `console` (`BUNDLE_CONSOLE`):
    The console that `bundle console` starts. Defaults to `irb`.
-* `default_install_uses_path` (`BUNDLE_DEFAULT_INSTALL_USES_PATH`):
-   Whether a `bundle install` without an explicit `--path` argument defaults
-   to installing gems in `.bundle`.
+* `default_cli_command` (`BUNDLE_DEFAULT_CLI_COMMAND`):
+   The command that running `bundle` without arguments should run. Defaults to
+   `cli_help` since Bundler 4, but can also be `install` which was the previous
+   default.
 * `deployment` (`BUNDLE_DEPLOYMENT`):
    Equivalent to setting `frozen` to `true` and `path` to `vendor/bundle`.
 * `disable_checksum_validation` (`BUNDLE_DISABLE_CHECKSUM_VALIDATION`):
@@ -132,8 +164,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Usually this will happen when changing the `Gemfile` manually and forgetting
    to update the lockfile through `bundle lock` or `bundle install`.
 * `gem.github_username` (`BUNDLE_GEM__GITHUB_USERNAME`):
-   Sets a GitHub username or organization to be used in `README` file when you
-   create a new gem via `bundle gem` command. It can be overridden by passing an
+   Sets a GitHub username or organization to be used in the `README` and `.gemspec` files
+   when you create a new gem via `bundle gem` command. It can be overridden by passing an
    explicit `--github-username` flag to `bundle gem`.
 * `gem.push_key` (`BUNDLE_GEM__PUSH_KEY`):
    Sets the `--key` parameter for `gem push` when using the `rake release`
@@ -145,8 +177,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    will search up from the current working directory until it finds a
    `Gemfile`.
 * `global_gem_cache` (`BUNDLE_GLOBAL_GEM_CACHE`):
-   Whether Bundler should cache all gems globally, rather than locally to the
-   installing Ruby installation.
+   Whether Bundler should cache all gems and compiled extensions globally,
+   rather than locally to the configured installation path.
 * `ignore_funding_requests` (`BUNDLE_IGNORE_FUNDING_REQUESTS`):
    When set, no funding requests will be printed.
 * `ignore_messages` (`BUNDLE_IGNORE_MESSAGES`):
@@ -165,27 +197,29 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Whether Bundler should leave outdated gems unpruned when caching.
 * `only` (`BUNDLE_ONLY`):
    A space-separated list of groups to install only gems of the specified groups.
+   Please check carefully if you want to install also gems without a group, because
+   they get put inside `default` group. For example `only test:default` will install
+   all gems specified in test group and without one.
 * `path` (`BUNDLE_PATH`):
    The location on disk where all gems in your bundle will be located regardless
    of `$GEM_HOME` or `$GEM_PATH` values. Bundle gems not found in this location
-   will be installed by `bundle install`. Defaults to `Gem.dir`.
+   will be installed by `bundle install`. When not set, Bundler install by
+   default to a `.bundle` directory relative to repository root in Bundler 4,
+   and to the default system path (`Gem.dir`) before Bundler 4. That means that
+   before Bundler 4, Bundler shares this location with Rubygems, and `gem
+   install ...` will have gems installed in the same location and therefore,
+   gems installed without `path` set will show up by calling `gem list`. This
+   will not be the case in Bundler 4.
 * `path.system` (`BUNDLE_PATH__SYSTEM`):
    Whether Bundler will install gems into the default system path (`Gem.dir`).
-* `path_relative_to_cwd` (`BUNDLE_PATH_RELATIVE_TO_CWD`):
-   Makes `--path` relative to the CWD instead of the `Gemfile`.
 * `plugins` (`BUNDLE_PLUGINS`):
    Enable Bundler's experimental plugin system.
 * `prefer_patch` (BUNDLE_PREFER_PATCH):
    Prefer updating only to next patch version during updates. Makes `bundle update` calls equivalent to `bundler update --patch`.
-* `print_only_version_number` (`BUNDLE_PRINT_ONLY_VERSION_NUMBER`):
-   Print only version number from `bundler --version`.
 * `redirect` (`BUNDLE_REDIRECT`):
    The number of redirects allowed for network requests. Defaults to `5`.
 * `retry` (`BUNDLE_RETRY`):
    The number of times to retry failed network requests. Defaults to `3`.
-* `setup_makes_kernel_gem_public` (`BUNDLE_SETUP_MAKES_KERNEL_GEM_PUBLIC`):
-   Have `Bundler.setup` make the `Kernel#gem` method public, even though
-   RubyGems declares it as private.
 * `shebang` (`BUNDLE_SHEBANG`):
    The program name that should be invoked for generated binstubs. Defaults to
    the ruby install name used to generate the binstub.
@@ -194,6 +228,10 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    be changed in the next major version.
 * `silence_root_warning` (`BUNDLE_SILENCE_ROOT_WARNING`):
    Silence the warning Bundler prints when installing gems as root.
+* `simulate_version` (`BUNDLE_SIMULATE_VERSION`):
+   The virtual version Bundler should use for activating feature flags. Can be
+   used to simulate all the new functionality that will be enabled in a future
+   major version.
 * `ssl_ca_cert` (`BUNDLE_SSL_CA_CERT`):
    Path to a designated CA certificate file or folder containing multiple
    certificates for trusted CAs in PEM format.
@@ -212,6 +250,9 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    and disallow passing no options to `bundle update`.
 * `user_agent` (`BUNDLE_USER_AGENT`):
    The custom user agent fragment Bundler includes in API requests.
+* `verbose` (`BUNDLE_VERBOSE`):
+   Whether Bundler should print verbose output. Defaults to `false`, unless the
+   `--verbose` CLI flag is used.
 * `version` (`BUNDLE_VERSION`):
    The version of Bundler to use when running under Bundler environment.
    Defaults to `lockfile`. You can also specify `system` or `x.y.z`.
@@ -222,52 +263,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    A space-separated or `:`-separated list of groups whose gems bundler should install.
 * `without` (`BUNDLE_WITHOUT`):
    A space-separated or `:`-separated list of groups whose gems bundler should not install.
-
-## REMEMBERING OPTIONS
-
-Flags passed to `bundle install` or the Bundler runtime, such as `--path foo` or
-`--without production`, are remembered between commands and saved to your local
-application's configuration (normally, `./.bundle/config`).
-
-However, this will be changed in bundler 4, so it's better not to rely on this
-behavior. If these options must be remembered, it's better to set them using
-`bundle config` (e.g., `bundle config set --local path foo`).
-
-The flags that can be configured are:
-
-* `--bin`:
-   Creates a directory (defaults to `~/bin`) and place any executables from the
-   gem there. These executables run in Bundler's context. If used, you might add
-   this directory to your environment's `PATH` variable. For instance, if the
-   `rails` gem comes with a `rails` executable, this flag will create a
-   `bin/rails` executable that ensures that all referred dependencies will be
-   resolved using the bundled gems.
-
-* `--deployment`:
-   In deployment mode, Bundler will 'roll-out' the bundle for
-   `production` use. Please check carefully if you want to have this option
-   enabled in `development` or `test` environments.
-
-* `--only`:
-   A space-separated list of groups to install only gems of the specified groups.
-   Please check carefully if you want to install also gems without a group, cause
-   they get put inside `default` group. For example `only test:default` will install
-   all gems specified in test group and without one.
-
-* `--path`:
-   The location to install the specified gems to. This defaults to Rubygems'
-   setting. Bundler shares this location with Rubygems, `gem install ...` will
-   have gem installed there, too. Therefore, gems installed without a
-   `--path ...` setting will show up by calling `gem list`. Accordingly, gems
-   installed to other locations will not get listed.
-
-* `--without`:
-   A space-separated or `:`-separated list of groups referencing gems to skip during
-   installation.
-
-* `--with`:
-   A space-separated or `:`-separated list of **optional** groups referencing gems to
-   include during installation.
 
 ## BUILD OPTIONS
 
