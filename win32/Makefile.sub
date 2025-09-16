@@ -506,22 +506,29 @@ VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/missing;$(win_src
 !ifndef GIT
 GIT = git
 !endif
-GIT_TO_CHECK_C_OPTION = -C . --version >nul 2>&1
 !if "$(HAVE_GIT)" == "yes" || "$(HAVE_GIT)" == "no"
 !else if "$(GIT)" == ""
 HAVE_GIT = no
 !else if [for %I in ($(GIT)) do @if not "%~xI" == "" exit 1]
-! if [%I $(GIT_TO_CHECK_C_OPTION)] == 0
+! if [for %I in ($(GIT)) do @if not "%~$$PATH:I" == "" exit 1]
 HAVE_GIT = yes
 ! else
 HAVE_GIT = no
 ! endif
 !else
-! if [for %x in (%PATHEXT:;= %) do @($(GIT)%x $(GIT_TO_CHECK_C_OPTION) && exit 0)] == 0
+! if [for %x in (%PATHEXT:;= %) do @for %I in ($(GIT)%x) do @if not "%~$$PATH:I" == "" exit 1]
 HAVE_GIT = yes
 ! else
 HAVE_GIT = no
 ! endif
+!endif
+!if "$(HAVE_GIT)" == "no"
+!else if [for /f "tokens=3" %I in ('git --version') do @(\
+	for /f "delims=. tokens=1-2" %I in ("%I") do @(\
+	  if %I lss 2 (exit 1) else if %J lss 10 (exit 1) else (exit 0)\
+	)\
+      )]
+HAVE_GIT = no
 !endif
 
 !if defined(VCS)
