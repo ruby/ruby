@@ -454,6 +454,22 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_send_splat
+    assert_runs '[1, 2]', %q{
+      def test(a, b) = [a, b]
+      def entry(arr) = test(*arr)
+      entry([1, 2])
+    }
+  end
+
+  def test_send_kwarg
+    assert_runs '[1, 2]', %q{
+      def test(a:, b:) = [a, b]
+      def entry = test(a: 1, b: 2)
+      entry
+    }
+  end
+
   def test_forwardable_iseq
     assert_compiles '1', %q{
       def test(...) = 1
