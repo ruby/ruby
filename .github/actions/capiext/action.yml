@@ -63,7 +63,6 @@ runs:
         key: ${{ steps.config.outputs.key }}
       if: >-
         ${{true
-        && steps.cache.outcome == 'success'
         && ! steps.cache.outputs.cache-hit
         && github.ref_name == 'master'
         }}
