@@ -450,7 +450,7 @@ pub enum SideExitReason {
     UnknownSpecialVariable(u64),
     UnhandledHIRInsn(InsnId),
     UnhandledYARVInsn(u32),
-    UnhandledTailCall,
+    UnhandledCallType(CallType),
     FixnumAddOverflow,
     FixnumSubOverflow,
     FixnumMultOverflow,
@@ -2968,7 +2968,8 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t) -> BytecodeInfo {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum CallType {
-    BlockArg,
+    Splat,
+    Kwarg,
     Tailcall,
 }
 
@@ -2986,8 +2987,11 @@ fn num_locals(iseq: *const rb_iseq_t) -> usize {
 }
 
 /// If we can't handle the type of send (yet), bail out.
-fn is_tailcall(flags: u32) -> bool {
-    (flags & VM_CALL_TAILCALL) != 0
+fn unhandled_call_type(flags: u32) -> Result<(), CallType> {
+    if (flags & VM_CALL_ARGS_SPLAT) != 0 { return Err(CallType::Splat); }
+    if (flags & VM_CALL_KWARG) != 0 { return Err(CallType::Kwarg); }
+    if (flags & VM_CALL_TAILCALL) != 0 { return Err(CallType::Tailcall); }
+    Ok(())
 }
 
 /// We have IseqPayload, which keeps track of HIR Types in the interpreter, but this is not useful
@@ -3500,10 +3504,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
                     let flags = unsafe { rb_vm_ci_flag(call_info) };
-                    if is_tailcall(flags) {
-                        // Can't handle tailcall; side-exit into the interpreter
+                    if let Err(call_type) = unhandled_call_type(flags) {
+                        // Can't handle the call type; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledTailCall });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -3522,10 +3526,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
                     let flags = unsafe { rb_vm_ci_flag(call_info) };
-                    if is_tailcall(flags) {
-                        // Can't handle tailcall; side-exit into the interpreter
+                    if let Err(call_type) = unhandled_call_type(flags) {
+                        // Can't handle the call type; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledTailCall });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -3581,10 +3585,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
                     let flags = unsafe { rb_vm_ci_flag(call_info) };
-                    if is_tailcall(flags) {
+                    if let Err(call_type) = unhandled_call_type(flags) {
                         // Can't handle tailcall; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledTailCall });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -3600,10 +3604,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
                     let flags = unsafe { rb_vm_ci_flag(call_info) };
-                    if is_tailcall(flags) {
+                    if let Err(call_type) = unhandled_call_type(flags) {
                         // Can't handle tailcall; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledTailCall });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -3628,10 +3632,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
                     let flags = unsafe { rb_vm_ci_flag(call_info) };
-                    if is_tailcall(flags) {
+                    if let Err(call_type) = unhandled_call_type(flags) {
                         // Can't handle tailcall; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledTailCall });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -3658,10 +3662,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
                     let flags = unsafe { rb_vm_ci_flag(call_info) };
-                    if is_tailcall(flags) {
+                    if let Err(call_type) = unhandled_call_type(flags) {
                         // Can't handle tailcall; side-exit into the interpreter
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledTailCall });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
                         break;  // End the block
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -5110,9 +5114,7 @@ mod tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           v6:ArrayExact = ToArray v1
-          v8:BasicObject = SendWithoutBlock v0, :foo, v6
-          CheckInterrupts
-          Return v8
+          SideExit UnhandledCallType(Splat)
         ");
     }
 
@@ -5140,9 +5142,7 @@ mod tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           v5:Fixnum[1] = Const Value(1)
-          v7:BasicObject = SendWithoutBlock v0, :foo, v5
-          CheckInterrupts
-          Return v7
+          SideExit UnhandledCallType(Kwarg)
         ");
     }
 
@@ -5264,9 +5264,7 @@ mod tests {
           v6:ArrayExact = ToNewArray v1
           v7:Fixnum[1] = Const Value(1)
           ArrayPush v6, v7
-          v11:BasicObject = SendWithoutBlock v0, :foo, v6
-          CheckInterrupts
-          Return v11
+          SideExit UnhandledCallType(Splat)
         ");
     }
 
@@ -7862,9 +7860,7 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
           v4:Fixnum[1] = Const Value(1)
-          v6:BasicObject = SendWithoutBlock v0, :foo, v4
-          CheckInterrupts
-          Return v6
+          SideExit UnhandledCallType(Kwarg)
         ");
     }
 
@@ -7880,9 +7876,7 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
           v4:Fixnum[1] = Const Value(1)
-          v6:BasicObject = SendWithoutBlock v0, :foo, v4
-          CheckInterrupts
-          Return v6
+          SideExit UnhandledCallType(Kwarg)
         ");
     }
 
