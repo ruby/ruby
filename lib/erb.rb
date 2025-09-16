@@ -615,7 +615,17 @@ class ERB
   Revision = '$Date::                           $' # :nodoc: #'
   deprecate_constant :Revision
 
-  # Returns revision information for the erb.rb module.
+  # :markup: markdown
+  #
+  # :call-seq:
+  #   self.version -> string
+  #
+  # Returns the string revision for \ERB:
+  #
+  # ```
+  # ERB.version # => "4.0.4"
+  # ```
+  #
   def self.version
     VERSION
   end
