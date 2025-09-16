@@ -782,12 +782,30 @@ class ERB
     print self.result(b)
   end
 
+  # :markup: markdown
   #
-  # Executes the generated ERB code to produce a completed template, returning
-  # the results of that code.
+  # :call-seq:
+  #   result(binding = top_level) -> string
   #
-  # _b_ accepts a Binding object which is used to set the context of
-  # code evaluation.
+  # Formats the string stored in template `self`;
+  # returns the string result:
+  #
+  # - Each [expression tag][expression tags] is replaced by the value of the embedded expression.
+  # - Each [execution tag][execution tags] is removed, and its embedded code is executed.
+  # - Each [comment tag][comment tags] is removed.
+  #
+  # See examples at the links.
+  #
+  # Argument `binding` is a [binding object],
+  # which should contain the bindings needed for all expression tags;
+  # the default is #top_level.
+  # See [Bindings][bindings].
+  #
+  # [binding object]: https://docs.ruby-lang.org/en/master/Binding.html
+  # [bindings]: rdoc-ref:ERB@Bindings
+  # [comment tags]: rdoc-ref:ERB@Comment+Tags
+  # [execution tags]: rdoc-ref:ERB@Execution+Tags
+  # [expression tags]: rdoc-ref:ERB@Expression+Tags
   #
   def result(b=new_toplevel)
     unless @_init.equal?(self.class.singleton_class)
