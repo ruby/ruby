@@ -2903,9 +2903,14 @@ impl Display for FrameStatePrinter<'_> {
         let inner = self.inner;
         write!(f, "FrameState {{ pc: {:?}, stack: ", self.ptr_map.map_ptr(inner.pc))?;
         write_vec(f, &inner.stack)?;
-        write!(f, ", locals: ")?;
-        write_vec(f, &inner.locals)?;
-        write!(f, " }}")
+        write!(f, ", locals: [")?;
+        for (idx, local) in inner.locals.iter().enumerate() {
+            let name: ID = unsafe { rb_zjit_local_id(inner.iseq, idx.try_into().unwrap()) };
+            let name = name.contents_lossy();
+            if idx > 0 { write!(f, ", ")?; }
+            write!(f, "{name}={local}")?;
+        }
+        write!(f, "] }}")
     }
 }
 
@@ -4225,6 +4230,39 @@ mod infer_tests {
             function.infer_types();
             assert_bit_equal(function.type_of(param), types::TrueClass.union(types::FalseClass));
         });
+    }
+}
+
+#[cfg(test)]
+mod snapshot_tests {
+    use super::*;
+    use insta::assert_snapshot;
+
+    #[track_caller]
+    fn hir_string(method: &str) -> String {
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+        let function = iseq_to_hir(iseq).unwrap();
+        format!("{}", FunctionPrinter::with_snapshot(&function))
+    }
+
+    #[test]
+    fn test_new_array_with_elements() {
+        eval("def test(a, b) = [a, b]");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:1:
+        bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+          v3:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [a=v1, b=v2] }
+          v4:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [a=v1, b=v2] }
+          PatchPoint NoTracePoint
+          v6:Any = Snapshot FrameState { pc: 0x1010, stack: [v1, v2], locals: [a=v1, b=v2] }
+          v7:ArrayExact = NewArray v1, v2
+          v8:Any = Snapshot FrameState { pc: 0x1018, stack: [v7], locals: [a=v1, b=v2] }
+          PatchPoint NoTracePoint
+          v10:Any = Snapshot FrameState { pc: 0x1018, stack: [v7], locals: [a=v1, b=v2] }
+          CheckInterrupts
+          Return v7
+        ");
     }
 }
 
