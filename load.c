@@ -395,7 +395,11 @@ get_loaded_features_index(rb_vm_t *vm)
         VALUE previous_realpath_map = rb_hash_dup(realpath_map);
         rb_hash_clear(realpaths);
         rb_hash_clear(realpath_map);
-        features = vm->loaded_features;
+
+        /* We have to make a copy of features here because the StringValue call
+         * below could call a Ruby method, which could modify $LOADED_FEATURES
+         * and cause it to be corrupt. */
+        features = rb_ary_resurrect(vm->loaded_features);
         for (i = 0; i < RARRAY_LEN(features); i++) {
             VALUE entry, as_str;
             as_str = entry = rb_ary_entry(features, i);
@@ -404,6 +408,10 @@ get_loaded_features_index(rb_vm_t *vm)
             if (as_str != entry)
                 rb_ary_store(features, i, as_str);
             features_index_add(vm, as_str, INT2FIX(i));
+        }
+        /* The user modified $LOADED_FEATURES, so we should restore the changes. */
+        if (!rb_ary_shared_with_p(features, vm->loaded_features)) {
+            rb_ary_replace(vm->loaded_features, features);
         }
         reset_loaded_features_snapshot(vm);
 

@@ -286,6 +286,10 @@ WARNFLAGS = -W2 -wd4100 -wd4127 -wd4210 -wd4214 -wd4255 -wd4574 \
 !else
 WARNFLAGS = -W2
 !endif
+!if $(MSC_VER) >= 1944
+# https://developercommunity.visualstudio.com/t/warning-C5287:-operands-are-different-e/10877942
+WARNFLAGS = $(WARNFLAGS) -wd5287
+!endif
 !endif
 WERRORFLAG = -WX
 !if !defined(CFLAGS_NO_ARCH)

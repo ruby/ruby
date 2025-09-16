@@ -1159,13 +1159,19 @@ fast_fallback_inetsock_cleanup(VALUE v)
         getaddrinfo_shared->notify = -1;
 
         int shared_need_free = 0;
-        int need_free[2] = { 0, 0 };
+        struct addrinfo *ais[arg->family_size];
+        for (int i = 0; i < arg->family_size; i++) ais[i] = NULL;
 
         rb_nativethread_lock_lock(&getaddrinfo_shared->lock);
         {
             for (int i = 0; i < arg->family_size; i++) {
-                if (arg->getaddrinfo_entries[i] && --(arg->getaddrinfo_entries[i]->refcount) == 0) {
-                    need_free[i] = 1;
+                struct fast_fallback_getaddrinfo_entry *getaddrinfo_entry = arg->getaddrinfo_entries[i];
+
+                if (!getaddrinfo_entry) continue;
+
+                if (--(getaddrinfo_entry->refcount) == 0) {
+                    ais[i] = getaddrinfo_entry->ai;
+                    getaddrinfo_entry->ai = NULL;
                 }
             }
             if (--(getaddrinfo_shared->refcount) == 0) {
@@ -1175,9 +1181,11 @@ fast_fallback_inetsock_cleanup(VALUE v)
         rb_nativethread_lock_unlock(&getaddrinfo_shared->lock);
 
         for (int i = 0; i < arg->family_size; i++) {
-            if (need_free[i]) free_fast_fallback_getaddrinfo_entry(&arg->getaddrinfo_entries[i]);
+            if (ais[i]) freeaddrinfo(ais[i]);
         }
-        if (shared_need_free) free_fast_fallback_getaddrinfo_shared(&getaddrinfo_shared);
+        if (getaddrinfo_shared && shared_need_free) {
+            free_fast_fallback_getaddrinfo_shared(&getaddrinfo_shared);
+        }
     }
 
     int connection_attempt_fd;

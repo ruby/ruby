@@ -15,7 +15,11 @@ module Prism
       # the heredoc are combined into a single token. See
       # https://bugs.ruby-lang.org/issues/19838.
       "spanning_heredoc.txt",
-      "spanning_heredoc_newlines.txt"
+      "spanning_heredoc_newlines.txt",
+      # Prism emits a single :on_tstring_content in <<- style heredocs when there
+      # is a line continuation preceded by escaped backslashes. It should emit two, same
+      # as if the backslashes are not present.
+      "heredocs_with_fake_newlines.txt",
     ]
 
     if RUBY_VERSION < "3.3.0"
@@ -28,7 +32,21 @@ module Prism
       # Example: <<~'   EOF' or <<-'  EOF'
       # https://bugs.ruby-lang.org/issues/19539
       except << "heredocs_leading_whitespace.txt"
+      except << "whitequark/ruby_bug_19539.txt"
+
+      # https://bugs.ruby-lang.org/issues/19025
+      except << "whitequark/numparam_ruby_bug_19025.txt"
+      # https://bugs.ruby-lang.org/issues/18878
+      except << "whitequark/ruby_bug_18878.txt"
+      # https://bugs.ruby-lang.org/issues/19281
+      except << "whitequark/ruby_bug_19281.txt"
     end
+
+    # https://bugs.ruby-lang.org/issues/20925
+    except << "leading_logical.txt"
+
+    # https://bugs.ruby-lang.org/issues/17398#note-12
+    except << "endless_methods_command_call.txt"
 
     Fixture.each(except: except) do |fixture|
       define_method(fixture.test_name) { assert_lex(fixture) }

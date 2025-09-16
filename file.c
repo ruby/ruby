@@ -4947,8 +4947,11 @@ rb_file_dirname_n(VALUE fname, int n)
             break;
         }
     }
-    if (p == name)
-        return rb_usascii_str_new2(".");
+    if (p == name) {
+        dirname = rb_str_new(".", 1);
+        rb_enc_copy(dirname, fname);
+        return dirname;
+    }
 #ifdef DOSISH_DRIVE_LETTER
     if (has_drive_letter(name) && isdirsep(*(name + 2))) {
         const char *top = skiproot(name + 2, end, enc);

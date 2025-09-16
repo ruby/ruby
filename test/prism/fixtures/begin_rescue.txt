@@ -2,6 +2,12 @@ begin; a; rescue; b; else; c; end
 
 begin; a; rescue; b; else; c; ensure; d; end
 
+begin; rescue ; end
+
+begin; rescue ; ensure ; end
+
+begin; rescue ; else ; end
+
 begin
 a
 end

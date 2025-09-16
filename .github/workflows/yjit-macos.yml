@@ -1,4 +1,4 @@
-name: YJIT macOS Arm64
+name: YJIT macOS
 on:
   push:
     paths-ignore:

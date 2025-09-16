@@ -7,6 +7,11 @@ rescue LoadError
 end
 
 class TestIO_Console < Test::Unit::TestCase
+  HOST_OS = RbConfig::CONFIG['host_os']
+  private def host_os?(os)
+    HOST_OS =~ os
+  end
+
   begin
     PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|\.rb|/\w+\.rb)\z") {$`}
   rescue Encoding::CompatibilityError
@@ -20,17 +25,13 @@ class TestIO_Console < Test::Unit::TestCase
   # FreeBSD seems to hang on TTOU when running parallel tests
   # tested on FreeBSD 11.x.
   #
-  # Solaris gets stuck too, even in non-parallel mode.
-  # It occurs only in chkbuild.  It does not occur when running
-  # `make test-all` in SSH terminal.
-  #
   # I suspect that it occurs only when having no TTY.
   # (Parallel mode runs tests in child processes, so I guess
   # they has no TTY.)
   # But it does not occur in `make test-all > /dev/null`, so
   # there should be an additional factor, I guess.
   def set_winsize_setup
-    @old_ttou = trap(:TTOU, 'IGNORE') if RUBY_PLATFORM =~ /freebsd|solaris/i
+    @old_ttou = trap(:TTOU, 'IGNORE') if host_os?(/freebsd/)
   end
 
   def set_winsize_teardown
@@ -371,6 +372,15 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
     w.print cc
     w.flush
     result = EnvUtil.timeout(3) {r.gets}
+    if result
+      case cc.chr
+      when "\C-A".."\C-_"
+        cc = "^" + (cc.ord | 0x40).chr
+      when "\C-?"
+        cc = "^?"
+      end
+      result.sub!(cc, "")
+    end
     assert_equal(expect, result.chomp)
   end
 
@@ -382,7 +392,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
     # TestIO_Console#test_intr [/usr/home/chkbuild/chkbuild/tmp/build/20220304T163001Z/ruby/test/io/console/test_io_console.rb:387]:
     # <"25"> expected but was
     # <"-e:12:in `p': \e[1mexecution expired (\e[1;4mTimeout::Error\e[m\e[1m)\e[m">.
-    omit if /freebsd/ =~ RUBY_PLATFORM
+    omit if host_os?(/freebsd/)
 
     run_pty("#{<<~"begin;"}\n#{<<~'end;'}") do |r, w, _|
       begin;
@@ -408,7 +418,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       if cc = ctrl["intr"]
         assert_ctrl("#{cc.ord}", cc, r, w)
         assert_ctrl("#{cc.ord}", cc, r, w)
-        assert_ctrl("Interrupt", cc, r, w) unless /linux|solaris/ =~ RUBY_PLATFORM
+        assert_ctrl("Interrupt", cc, r, w) unless host_os?(/linux/)
       end
       if cc = ctrl["dsusp"]
         assert_ctrl("#{cc.ord}", cc, r, w)
@@ -444,7 +454,9 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
 
     def test_ttyname
       return unless IO.method_defined?(:ttyname)
-      assert_equal(["true"], run_pty("p STDIN.ttyname == STDOUT.ttyname"))
+      # [Bug #20682]
+      # `sleep 0.1` is added to stabilize flaky failures on macOS.
+      assert_equal(["true"], run_pty("p STDIN.ttyname == STDOUT.ttyname; sleep 0.1"))
     end
   end
 
@@ -544,9 +556,7 @@ defined?(IO.console) and TestIO_Console.class_eval do
       File.open(ttyname) {|f| assert_predicate(f, :tty?)}
     end
   end
-end
 
-defined?(IO.console) and TestIO_Console.class_eval do
   case
   when Process.respond_to?(:daemon)
     noctty = [EnvUtil.rubybin, "-e", "Process.daemon(true)"]

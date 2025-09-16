@@ -84,7 +84,12 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
         }
 
         if (strncmp(version, "3.4", 3) == 0) {
-            options->version = PM_OPTIONS_VERSION_LATEST;
+            options->version = PM_OPTIONS_VERSION_CRUBY_3_4;
+            return true;
+        }
+
+        if (strncmp(version, "3.5", 3) == 0) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_3_5;
             return true;
         }
 
@@ -98,7 +103,12 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
         }
 
         if (strncmp(version, "3.4.", 4) == 0 && is_number(version + 4, length - 4)) {
-            options->version = PM_OPTIONS_VERSION_LATEST;
+            options->version = PM_OPTIONS_VERSION_CRUBY_3_4;
+            return true;
+        }
+
+        if (strncmp(version, "3.5.", 4) == 0 && is_number(version + 4, length - 4)) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_3_5;
             return true;
         }
     }
@@ -127,6 +137,14 @@ pm_options_main_script_set(pm_options_t *options, bool main_script) {
 PRISM_EXPORTED_FUNCTION void
 pm_options_partial_script_set(pm_options_t *options, bool partial_script) {
     options->partial_script = partial_script;
+}
+
+/**
+ * Set the freeze option on the given options struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_freeze_set(pm_options_t *options, bool freeze) {
+    options->freeze = freeze;
 }
 
 // For some reason, GCC analyzer thinks we're leaking allocated scopes and
@@ -273,6 +291,7 @@ pm_options_read(pm_options_t *options, const char *data) {
     options->encoding_locked = ((uint8_t) *data++) > 0;
     options->main_script = ((uint8_t) *data++) > 0;
     options->partial_script = ((uint8_t) *data++) > 0;
+    options->freeze = ((uint8_t) *data++) > 0;
 
     uint32_t scopes_count = pm_options_read_u32(data);
     data += 4;

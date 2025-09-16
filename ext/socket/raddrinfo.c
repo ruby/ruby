@@ -3038,22 +3038,13 @@ free_fast_fallback_getaddrinfo_shared(struct fast_fallback_getaddrinfo_shared **
     *shared = NULL;
 }
 
-void
-free_fast_fallback_getaddrinfo_entry(struct fast_fallback_getaddrinfo_entry **entry)
-{
-    if ((*entry)->ai) {
-        freeaddrinfo((*entry)->ai);
-        (*entry)->ai = NULL;
-    }
-    *entry = NULL;
-}
-
 static void *
 do_fast_fallback_getaddrinfo(void *ptr)
 {
     struct fast_fallback_getaddrinfo_entry *entry = (struct fast_fallback_getaddrinfo_entry *)ptr;
     struct fast_fallback_getaddrinfo_shared *shared = entry->shared;
-    int err = 0, need_free = 0, shared_need_free = 0;
+    int err = 0, shared_need_free = 0;
+    struct addrinfo *ai = NULL;
 
     sigset_t set;
     sigemptyset(&set);
@@ -3102,14 +3093,15 @@ do_fast_fallback_getaddrinfo(void *ptr)
             entry->err = errno;
             entry->has_syserr = true;
         }
-        if (--(entry->refcount) == 0) need_free = 1;
+        if (--(entry->refcount) == 0) {
+            ai = entry->ai;
+            entry->ai = NULL;
+        }
         if (--(shared->refcount) == 0) shared_need_free = 1;
     }
     rb_nativethread_lock_unlock(&shared->lock);
 
-    if (need_free && entry) {
-        free_fast_fallback_getaddrinfo_entry(&entry);
-    }
+    if (ai) freeaddrinfo(ai);
     if (shared_need_free && shared) {
         free_fast_fallback_getaddrinfo_shared(&shared);
     }

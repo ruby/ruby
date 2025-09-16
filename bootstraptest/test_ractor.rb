@@ -1939,3 +1939,15 @@ assert_equal 'LoadError', %q{
   end
   r.take
 }
+
+# Using Symbol#to_proc inside ractors
+# [Bug #21354]
+assert_equal 'ok', %q{
+  :inspect.to_proc
+  Ractor.new do
+    # It should not use this cached proc, it should create a new one. If it used
+    # the cached proc, we would get a ractor_confirm_belonging error here.
+    :inspect.to_proc
+  end.take
+  'ok'
+}

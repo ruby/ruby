@@ -49,10 +49,15 @@ PRISM_EXPORTED_FUNCTION const char * pm_version(void);
 /**
  * Initialize a parser with the given start and end pointers.
  *
+ * The resulting parser must eventually be freed with `pm_parser_free()`.
+ *
  * @param parser The parser to initialize.
  * @param source The source to parse.
  * @param size The size of the source.
- * @param options The optional options to use when parsing.
+ * @param options The optional options to use when parsing. These options must
+ *   live for the whole lifetime of this parser.
+ *
+ * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION void pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm_options_t *options);
 
@@ -62,13 +67,20 @@ PRISM_EXPORTED_FUNCTION void pm_parser_init(pm_parser_t *parser, const uint8_t *
  *
  * @param parser The parser to register the callback with.
  * @param callback The callback to register.
+ *
+ * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION void pm_parser_register_encoding_changed_callback(pm_parser_t *parser, pm_encoding_changed_callback_t callback);
 
 /**
  * Free any memory associated with the given parser.
  *
+ * This does not free the `pm_options_t` object that was used to initialize the
+ * parser.
+ *
  * @param parser The parser to free.
+ *
+ * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION void pm_parser_free(pm_parser_t *parser);
 
@@ -77,15 +89,24 @@ PRISM_EXPORTED_FUNCTION void pm_parser_free(pm_parser_t *parser);
  *
  * @param parser The parser to use.
  * @return The AST representing the source.
+ *
+ * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse(pm_parser_t *parser);
 
 /**
- * This function is used in pm_parse_stream to retrieve a line of input from a
+ * This function is used in pm_parse_stream() to retrieve a line of input from a
  * stream. It closely mirrors that of fgets so that fgets can be used as the
  * default implementation.
  */
 typedef char * (pm_parse_stream_fgets_t)(char *string, int size, void *stream);
+
+/**
+ * This function is used in pm_parse_stream to check whether a stream is EOF.
+ * It closely mirrors that of feof so that feof can be used as the
+ * default implementation.
+ */
+typedef int (pm_parse_stream_feof_t)(void *stream);
 
 /**
  * Parse a stream of Ruby source and return the tree.
@@ -93,11 +114,14 @@ typedef char * (pm_parse_stream_fgets_t)(char *string, int size, void *stream);
  * @param parser The parser to use.
  * @param buffer The buffer to use.
  * @param stream The stream to parse.
- * @param fgets The function to use to read from the stream.
+ * @param stream_fgets The function to use to read from the stream.
+ * @param stream_feof The function to use to determine if the stream has hit eof.
  * @param options The optional options to use when parsing.
  * @return The AST representing the source.
+ *
+ * \public \memberof pm_parser
  */
-PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *fgets, const pm_options_t *options);
+PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options);
 
 // We optionally support serializing to a binary string. For systems that don't
 // want or need this functionality, it can be turned off with the
@@ -110,10 +134,11 @@ PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t *parser, pm_buff
  *
  * @param buffer The buffer to serialize to.
  * @param stream The stream to parse.
- * @param fgets The function to use to read from the stream.
+ * @param stream_fgets The function to use to read from the stream.
+ * @param stream_feof The function to use to tell if the stream has hit eof.
  * @param data The optional data to pass to the parser.
  */
-PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *fgets, const char *data);
+PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const char *data);
 
 /**
  * Serialize the given list of comments to the given buffer.
@@ -307,10 +332,10 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  * to want to use and be aware of are:
  *
  * * `pm_parser_t` - the main parser structure
- * * `pm_parser_init` - initialize a parser
- * * `pm_parse` - parse and return the root node
- * * `pm_node_destroy` - deallocate the root node returned by `pm_parse`
- * * `pm_parser_free` - free the internal memory of the parser
+ * * `pm_parser_init()` - initialize a parser
+ * * `pm_parse()` - parse and return the root node
+ * * `pm_node_destroy()` - deallocate the root node returned by `pm_parse()`
+ * * `pm_parser_free()` - free the internal memory of the parser
  *
  * Putting all of this together would look something like:
  *
@@ -327,8 +352,8 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  * }
  * ```
  *
- * All of the nodes "inherit" from `pm_node_t` by embedding those structures as
- * their first member. This means you can downcast and upcast any node in the
+ * All of the nodes "inherit" from `pm_node_t` by embedding those structures
+ * as their first member. This means you can downcast and upcast any node in the
  * tree to a `pm_node_t`.
  *
  * @section serializing Serializing
@@ -340,9 +365,9 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  * use and be aware of are:
  *
  * * `pm_buffer_t` - a small buffer object that will hold the serialized AST
- * * `pm_buffer_free` - free the memory associated with the buffer
- * * `pm_serialize` - serialize the AST into a buffer
- * * `pm_serialize_parse` - parse and serialize the AST into a buffer
+ * * `pm_buffer_free()` - free the memory associated with the buffer
+ * * `pm_serialize()` - serialize the AST into a buffer
+ * * `pm_serialize_parse()` - parse and serialize the AST into a buffer
  *
  * Putting all of this together would look something like:
  *
@@ -360,7 +385,7 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  * @section inspecting Inspecting
  *
  * Prism provides the ability to inspect the AST by pretty-printing nodes. You
- * can do this with the `pm_prettyprint` function, which you would use like:
+ * can do this with the `pm_prettyprint()` function, which you would use like:
  *
  * ```c
  * void prettyprint(const uint8_t *source, size_t length) {

@@ -1428,6 +1428,11 @@ ensure_origin(VALUE klass)
         RCLASS_SET_SUPER(origin, RCLASS_SUPER(klass));
         RCLASS_SET_SUPER(klass, origin);
         RCLASS_SET_ORIGIN(klass, origin);
+
+        // RCLASS_SET_ORIGIN marks origin as an origin, so this is the first
+        // point that it sees M_TBL and may mark it
+        rb_gc_writebarrier_remember(origin);
+
         RCLASS_M_TBL_INIT(klass);
         rb_id_table_foreach(RCLASS_M_TBL(origin), cache_clear_refined_method, (void *)klass);
         rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)klass);

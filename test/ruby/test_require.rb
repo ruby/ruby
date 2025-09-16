@@ -840,6 +840,30 @@ class TestRequire < Test::Unit::TestCase
         p :ok
       end;
     }
+
+    # [Bug #21567]
+    assert_separately(%w[-rtempfile], "#{<<~"begin;"}\n#{<<~"end;"}")
+    begin;
+      class MyString
+        def initialize(path)
+          @path = path
+        end
+
+        def to_str
+          $LOADED_FEATURES.clear
+          @path
+        end
+
+        def to_path = @path
+      end
+
+      def create_ruby_file = Tempfile.create(["test", ".rb"]).path
+
+      require MyString.new(create_ruby_file)
+      $LOADED_FEATURES.unshift(create_ruby_file)
+      $LOADED_FEATURES << MyString.new(create_ruby_file)
+      require create_ruby_file
+    end;
   end
 
   def test_loading_fifo_threading_raise

@@ -1,0 +1,11 @@
+case foo; in A() then true; end
+
+case foo; in A(1, 2) then true; end
+
+case foo; in A(x:) then true; end
+
+case foo; in A[1, 2] then true; end
+
+case foo; in A[] then true; end
+
+case foo; in A[x:] then true; end

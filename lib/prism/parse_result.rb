@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 module Prism
   # This represents a source of Ruby code that has been parsed. It is used in
@@ -46,6 +47,16 @@ module Prism
       @source = source
       @start_line = start_line # set after parsing is done
       @offsets = offsets # set after parsing is done
+    end
+
+    # Replace the value of start_line with the given value.
+    def replace_start_line(start_line)
+      @start_line = start_line
+    end
+
+    # Replace the value of offsets with the given value.
+    def replace_offsets(offsets)
+      @offsets.replace(offsets)
     end
 
     # Returns the encoding of the source code, which is set by parameters to the
@@ -130,6 +141,13 @@ module Prism
     # given byte offset.
     def code_units_column(byte_offset, encoding)
       code_units_offset(byte_offset, encoding) - code_units_offset(line_start(byte_offset), encoding)
+    end
+
+    # Freeze this object and the objects it contains.
+    def deep_freeze
+      source.freeze
+      offsets.freeze
+      freeze
     end
 
     private
@@ -854,5 +872,40 @@ module Prism
       location
       super
     end
+
+    # Freeze this object and the objects it contains.
+    def deep_freeze
+      value.freeze
+      location.freeze
+      freeze
+    end
+  end
+
+  # This object is passed to the various Prism.* methods that accept the
+  # `scopes` option as an element of the list. It defines both the local
+  # variables visible at that scope as well as the forwarding parameters
+  # available at that scope.
+  class Scope
+    # The list of local variables that are defined in this scope. This should be
+    # defined as an array of symbols.
+    attr_reader :locals
+
+    # The list of local variables that are forwarded to the next scope. This
+    # should by defined as an array of symbols containing the specific values of
+    # :*, :**, :&, or :"...".
+    attr_reader :forwarding
+
+    # Create a new scope object with the given locals and forwarding.
+    def initialize(locals, forwarding)
+      @locals = locals
+      @forwarding = forwarding
+    end
+  end
+
+  # Create a new scope with the given locals and forwarding options that is
+  # suitable for passing into one of the Prism.* methods that accepts the
+  # `scopes` option.
+  def self.scope(locals: [], forwarding: [])
+    Scope.new(locals, forwarding)
   end
 end

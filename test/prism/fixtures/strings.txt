@@ -40,6 +40,15 @@
 #
 "bar"
 
+"
+foo\
+b\nar
+"
+
+"foo
+\nbar\n\n
+a\nb\n\nc\n"
+
 %q{abc}
 
 %s[abc]
@@ -64,6 +73,62 @@
 
 %w[foo\ bar baz]
 
+%w[foo\ bar\\ baz\\\
+ bat]
+
+%W[#{foo}\
+bar
+baz #{bat}
+]
+
+%w(foo\n)
+
+%w(foo\
+)
+
+%w(foo \n)
+
+%W(foo\
+bar)
+
+%w[foo     bar]
+
+%w[
+  a   
+  b   c  
+ d   
+]
+
+%w[
+  foo\nbar baz\n\n\
+  bat\n\\\n\foo
+]
+
+%W[
+  foo\nbar baz\n\n\
+  bat\n\\\n\foo
+]
+
+%w[foo\
+  bar
+  baz\\
+  bat
+  1\n
+  2
+  3\\n
+]
+
+%W[foo\
+  bar
+  baz\\
+  bat
+  1\n
+  2
+  3\\n
+]
+
+%W[f\u{006f 006f}]
+
 %W[a b#{c}d e]
 
 %W[a b c]
@@ -78,6 +143,11 @@
 
 '\\ foo \\ bar'
 
+'foo\
+bar\\
+baz
+'
+
 "#$foo"
 
 "#@foo"
@@ -85,6 +155,10 @@
 "\x7 \x23 \x61"
 
 "\7 \43 \141"
+
+"ち\xE3\x81\xFF"
+
+"\777"
 
 %[abc]
 
@@ -99,6 +173,10 @@
 ?a "a"
 
 %Q{abc}
+
+%Q(\«)
+
+%q(\«)
 
 %^#$^#
 

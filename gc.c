@@ -249,8 +249,19 @@ void
 rb_gc_ractor_newobj_cache_foreach(void (*func)(void *cache, void *data), void *data)
 {
     rb_ractor_t *r = NULL;
-    ccan_list_for_each(&GET_VM()->ractor.set, r, vmlr_node) {
-        func(r->newobj_cache, data);
+    if (RB_LIKELY(ruby_single_main_ractor)) {
+        GC_ASSERT(
+            ccan_list_empty(&GET_VM()->ractor.set) ||
+                (ccan_list_top(&GET_VM()->ractor.set, rb_ractor_t, vmlr_node) == ruby_single_main_ractor &&
+                    ccan_list_tail(&GET_VM()->ractor.set, rb_ractor_t, vmlr_node) == ruby_single_main_ractor)
+        );
+
+        func(ruby_single_main_ractor->newobj_cache, data);
+    }
+    else {
+        ccan_list_for_each(&GET_VM()->ractor.set, r, vmlr_node) {
+            func(r->newobj_cache, data);
+        }
     }
 }
 

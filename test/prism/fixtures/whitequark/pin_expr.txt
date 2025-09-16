@@ -1,0 +1,14 @@
+case foo; in ^$TestPatternMatching; end
+
+case foo; in ^(0+0) then nil; end
+
+case foo; in ^(1
+); end
+
+case foo; in ^(42) then nil; end
+
+case foo; in ^@@TestPatternMatching; end
+
+case foo; in ^@a; end
+
+case foo; in { foo: ^(42) } then nil; end

@@ -6,6 +6,7 @@ begin
   verbose, $VERBOSE = $VERBOSE, nil
   require "parser/ruby33"
   require "prism/translation/parser33"
+  require "prism/translation/parser34"
 rescue LoadError
   # In CRuby's CI, we're not going to test against the parser gem because we
   # don't want to have to install it. So in this case we'll just skip this test.
@@ -16,6 +17,19 @@ end
 
 # First, opt in to every AST feature.
 Parser::Builders::Default.modernize
+Prism::Translation::Parser::Builder.modernize
+
+# The parser gem rejects some strings that would most likely lead to errors
+# in consumers due to encoding problems. RuboCop however monkey-patches this
+# method out in order to accept such code.
+# https://github.com/whitequark/parser/blob/v3.3.6.0/lib/parser/builders/default.rb#L2289-L2295
+Parser::Builders::Default.prepend(
+  Module.new {
+    def string_value(token)
+      value(token)
+    end
+  }
+)
 
 # Modify the source map == check so that it doesn't check against the node
 # itself so we don't get into a recursive loop.
@@ -42,6 +56,22 @@ Parser::AST::Node.prepend(
 
 module Prism
   class ParserTest < TestCase
+    # These files contain code with valid syntax that can't be parsed.
+    skip_syntax_error = [
+      # alias/undef with %s(abc) symbol literal
+      "alias.txt",
+      "seattlerb/bug_215.txt",
+
+      # 1.. && 2
+      "ranges.txt",
+
+      # Cannot yet handling leading logical operators.
+      "leading_logical.txt",
+
+      # Ruby >= 3.5 specific syntax
+      "endless_methods_command_call.txt",
+    ]
+
     # These files contain code that is being parsed incorrectly by the parser
     # gem, and therefore we don't want to compare against our translation.
     skip_incorrect = [
@@ -53,132 +83,126 @@ module Prism
       "seattlerb/heredoc_nested.txt",
 
       # https://github.com/whitequark/parser/issues/1016
-      "whitequark/unary_num_pow_precedence.txt"
-    ]
+      "whitequark/unary_num_pow_precedence.txt",
 
-    # These files are either failing to parse or failing to translate, so we'll
-    # skip them for now.
-    skip_all = skip_incorrect | [
-      "regex.txt",
-      "unescaping.txt",
-      "seattlerb/bug190.txt",
+      # https://github.com/whitequark/parser/issues/950
+      "whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt",
+
+      # Contains an escaped multibyte character. This is supposed to drop to backslash
+      "seattlerb/regexp_escape_extended.txt",
+
+      # https://github.com/whitequark/parser/issues/1020
+      # These contain consecutive \r characters, followed by \n. Prism only receives
+      # the already modified source buffer which dropped one \r but must know the
+      # original code to parse it correctly.
       "seattlerb/heredoc_with_extra_carriage_returns_windows.txt",
       "seattlerb/heredoc_with_only_carriage_returns_windows.txt",
       "seattlerb/heredoc_with_only_carriage_returns.txt",
-      "seattlerb/parse_line_heredoc_hardnewline.txt",
-      "seattlerb/pctW_lineno.txt",
-      "seattlerb/regexp_esc_C_slash.txt",
-      "unparser/corpus/literal/literal.txt",
-      "unparser/corpus/semantic/dstr.txt",
-      "whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt",
-      "whitequark/parser_slash_slash_n_escaping_in_literals.txt",
-      "whitequark/ruby_bug_11989.txt"
-    ]
 
-    # Not sure why these files are failing on JRuby, but skipping them for now.
-    if RUBY_ENGINE == "jruby"
-      skip_all.push("emoji_method_calls.txt", "symbols.txt")
-    end
+      # https://github.com/whitequark/parser/issues/1026
+      # Regex with \c escape
+      "unescaping.txt",
+      "seattlerb/regexp_esc_C_slash.txt",
+    ]
 
     # These files are failing to translate their lexer output into the lexer
     # output expected by the parser gem, so we'll skip them for now.
     skip_tokens = [
-      "comments.txt",
       "dash_heredocs.txt",
-      "dos_endings.txt",
       "embdoc_no_newline_at_end.txt",
-      "heredoc_with_comment.txt",
-      "heredocs_with_ignored_newlines.txt",
-      "indented_file_end.txt",
       "methods.txt",
-      "strings.txt",
-      "tilde_heredocs.txt",
-      "xstring_with_backslash.txt",
-      "seattlerb/backticks_interpolation_line.txt",
       "seattlerb/bug169.txt",
       "seattlerb/case_in.txt",
-      "seattlerb/class_comments.txt",
       "seattlerb/difficult4__leading_dots2.txt",
       "seattlerb/difficult6__7.txt",
       "seattlerb/difficult6__8.txt",
-      "seattlerb/dsym_esc_to_sym.txt",
-      "seattlerb/heredoc__backslash_dos_format.txt",
-      "seattlerb/heredoc_backslash_nl.txt",
-      "seattlerb/heredoc_comma_arg.txt",
-      "seattlerb/heredoc_squiggly_blank_line_plus_interpolation.txt",
-      "seattlerb/heredoc_squiggly_blank_lines.txt",
-      "seattlerb/heredoc_squiggly_interp.txt",
-      "seattlerb/heredoc_squiggly_tabs_extra.txt",
-      "seattlerb/heredoc_squiggly_tabs.txt",
-      "seattlerb/heredoc_squiggly_visually_blank_lines.txt",
-      "seattlerb/heredoc_squiggly.txt",
       "seattlerb/heredoc_unicode.txt",
-      "seattlerb/heredoc_with_carriage_return_escapes_windows.txt",
-      "seattlerb/heredoc_with_carriage_return_escapes.txt",
-      "seattlerb/heredoc_with_interpolation_and_carriage_return_escapes_windows.txt",
-      "seattlerb/heredoc_with_interpolation_and_carriage_return_escapes.txt",
-      "seattlerb/interpolated_symbol_array_line_breaks.txt",
-      "seattlerb/interpolated_word_array_line_breaks.txt",
-      "seattlerb/label_vs_string.txt",
-      "seattlerb/module_comments.txt",
-      "seattlerb/non_interpolated_symbol_array_line_breaks.txt",
-      "seattlerb/non_interpolated_word_array_line_breaks.txt",
-      "seattlerb/parse_line_block_inline_comment_leading_newlines.txt",
-      "seattlerb/parse_line_block_inline_comment.txt",
-      "seattlerb/parse_line_block_inline_multiline_comment.txt",
-      "seattlerb/parse_line_dstr_escaped_newline.txt",
       "seattlerb/parse_line_heredoc.txt",
-      "seattlerb/parse_line_multiline_str_literal_n.txt",
-      "seattlerb/parse_line_str_with_newline_escape.txt",
       "seattlerb/pct_w_heredoc_interp_nested.txt",
-      "seattlerb/qsymbols_empty_space.txt",
-      "seattlerb/qw_escape_term.txt",
-      "seattlerb/qWords_space.txt",
-      "seattlerb/read_escape_unicode_curlies.txt",
-      "seattlerb/read_escape_unicode_h4.txt",
       "seattlerb/required_kwarg_no_value.txt",
-      "seattlerb/slashy_newlines_within_string.txt",
-      "seattlerb/str_double_escaped_newline.txt",
-      "seattlerb/str_double_newline.txt",
-      "seattlerb/str_evstr_escape.txt",
-      "seattlerb/str_newline_hash_line_number.txt",
-      "seattlerb/str_single_newline.txt",
-      "seattlerb/symbols_empty_space.txt",
       "seattlerb/TestRubyParserShared.txt",
       "unparser/corpus/literal/assignment.txt",
-      "unparser/corpus/literal/dstr.txt",
-      "unparser/corpus/semantic/opasgn.txt",
+      "unparser/corpus/literal/literal.txt",
       "whitequark/args.txt",
       "whitequark/beginless_erange_after_newline.txt",
       "whitequark/beginless_irange_after_newline.txt",
-      "whitequark/bug_ascii_8bit_in_literal.txt",
-      "whitequark/bug_def_no_paren_eql_begin.txt",
-      "whitequark/dedenting_heredoc.txt",
-      "whitequark/dedenting_non_interpolating_heredoc_line_continuation.txt",
       "whitequark/forward_arg_with_open_args.txt",
-      "whitequark/interp_digit_var.txt",
+      "whitequark/kwarg_no_paren.txt",
       "whitequark/lbrace_arg_after_command_args.txt",
       "whitequark/multiple_pattern_matches.txt",
       "whitequark/newline_in_hash_argument.txt",
-      "whitequark/parser_bug_640.txt",
-      "whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt",
-      "whitequark/ruby_bug_11990.txt",
+      "whitequark/pattern_matching_expr_in_paren.txt",
+      "whitequark/pattern_matching_hash.txt",
       "whitequark/ruby_bug_14690.txt",
       "whitequark/ruby_bug_9669.txt",
-      "whitequark/slash_newline_in_heredocs.txt",
       "whitequark/space_args_arg_block.txt",
       "whitequark/space_args_block.txt"
     ]
 
-    Fixture.each do |fixture|
+    Fixture.each(except: skip_syntax_error) do |fixture|
       define_method(fixture.test_name) do
         assert_equal_parses(
           fixture,
-          compare_asts: !skip_all.include?(fixture.path),
+          compare_asts: !skip_incorrect.include?(fixture.path),
           compare_tokens: !skip_tokens.include?(fixture.path),
           compare_comments: fixture.path != "embdoc_no_newline_at_end.txt"
         )
       end
+    end
+
+    def test_non_prism_builder_class_deprecated
+      warnings = capture_warnings { Prism::Translation::Parser33.new(Parser::Builders::Default.new) }
+
+      assert_include(warnings, "#{__FILE__}:#{__LINE__ - 2}")
+      assert_include(warnings, "is not a `Prism::Translation::Parser::Builder` subclass")
+
+      warnings = capture_warnings { Prism::Translation::Parser33.new }
+      assert_empty(warnings)
+    end
+
+    if RUBY_VERSION >= "3.3"
+      def test_current_parser_for_current_ruby
+        major, minor, _patch = Gem::Version.new(RUBY_VERSION).segments
+        # Let's just hope there never is a Ruby 3.10 or similar
+        expected = major * 10 + minor
+        assert_equal(expected, Translation::ParserCurrent.new.version)
+      end
+    end
+
+    def test_invalid_syntax
+      code = <<~RUBY
+        foo do
+          case bar
+          when
+          end
+        end
+      RUBY
+      buffer = Parser::Source::Buffer.new("(string)")
+      buffer.source = code
+
+      parser = Prism::Translation::Parser33.new
+      parser.diagnostics.all_errors_are_fatal = true
+      assert_raise(Parser::SyntaxError) { parser.tokenize(buffer) }
+    end
+
+    def test_it_block_parameter_syntax
+      it_fixture_path = Pathname(__dir__).join("../../../test/prism/fixtures/it.txt")
+
+      buffer = Parser::Source::Buffer.new(it_fixture_path)
+      buffer.source = it_fixture_path.read
+      actual_ast = Prism::Translation::Parser34.new.tokenize(buffer)[0]
+
+      it_block_parameter_sexp = parse_sexp {
+        s(:begin,
+        s(:itblock,
+          s(:send, nil, :x), :it,
+          s(:lvar, :it)),
+        s(:itblock,
+          s(:lambda), :it,
+          s(:lvar, :it)))
+      }
+
+      assert_equal(it_block_parameter_sexp, actual_ast.to_sexp)
     end
 
     private
@@ -192,17 +216,13 @@ module Prism
       parser.diagnostics.all_errors_are_fatal = true
 
       expected_ast, expected_comments, expected_tokens =
-        begin
-          ignore_warnings { parser.tokenize(buffer) }
-        rescue ArgumentError, Parser::SyntaxError
-          return
-        end
+        ignore_warnings { parser.tokenize(buffer) }
 
       actual_ast, actual_comments, actual_tokens =
         ignore_warnings { Prism::Translation::Parser33.new.tokenize(buffer) }
 
       if expected_ast == actual_ast
-        if !compare_asts
+        if !compare_asts && !Fixture.custom_base_path?
           puts "#{fixture.path} is now passing"
         end
 
@@ -213,7 +233,7 @@ module Prism
         rescue Test::Unit::AssertionFailedError
           raise if compare_tokens
         else
-          puts "#{fixture.path} is now passing" if !compare_tokens
+          puts "#{fixture.path} is now passing" if !compare_tokens && !Fixture.custom_base_path?
         end
 
         assert_equal_comments(expected_comments, actual_comments) if compare_comments
@@ -248,22 +268,14 @@ module Prism
 
     def assert_equal_tokens(expected_tokens, actual_tokens)
       if expected_tokens != actual_tokens
-        expected_index = 0
-        actual_index = 0
+        index = 0
+        max_index = [expected_tokens, actual_tokens].map(&:size).max
 
-        while expected_index < expected_tokens.length
-          expected_token = expected_tokens[expected_index]
-          actual_token = actual_tokens.fetch(actual_index, [])
+        while index <= max_index
+          expected_token = expected_tokens.fetch(index, [])
+          actual_token = actual_tokens.fetch(index, [])
 
-          expected_index += 1
-          actual_index += 1
-
-          # The parser gem always has a space before a string end in list
-          # literals, but we don't. So we'll skip over the space.
-          if expected_token[0] == :tSPACE && actual_token[0] == :tSTRING_END
-            expected_index += 1
-            next
-          end
+          index += 1
 
           # There are a lot of tokens that have very specific meaning according
           # to the context of the parser. We don't expose that information in
@@ -286,6 +298,10 @@ module Prism
         "expected: #{expected_comments.inspect}\n" \
         "actual: #{actual_comments.inspect}"
       }
+    end
+
+    def parse_sexp(&block)
+      Class.new { extend AST::Sexp }.instance_eval(&block).to_sexp
     end
   end
 end

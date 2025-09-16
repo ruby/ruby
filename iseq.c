@@ -594,11 +594,11 @@ set_relation(rb_iseq_t *iseq, const rb_iseq_t *piseq)
         body->local_iseq = iseq;
     }
     else if (piseq) {
-        body->local_iseq = ISEQ_BODY(piseq)->local_iseq;
+        RB_OBJ_WRITE(iseq, &body->local_iseq, ISEQ_BODY(piseq)->local_iseq);
     }
 
     if (piseq) {
-        body->parent_iseq = piseq;
+        RB_OBJ_WRITE(iseq, &body->parent_iseq, piseq);
     }
 
     if (type == ISEQ_TYPE_MAIN) {
@@ -1319,6 +1319,15 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     ln = NUM2INT(line);
     StringValueCStr(file);
 
+    bool parse_file = false;
+    if (RB_TYPE_P(src, T_FILE)) {
+        parse_file = true;
+        src = rb_io_path(src);
+    }
+    else {
+        src = StringValue(src);
+    }
+
     pm_parse_result_t result = { 0 };
     pm_options_line_set(&result.options, NUM2INT(line));
     pm_options_scopes_init(&result.options, 1);
@@ -1341,15 +1350,14 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     VALUE script_lines;
     VALUE error;
 
-    if (RB_TYPE_P(src, T_FILE)) {
-        VALUE filepath = rb_io_path(src);
-        error = pm_load_parse_file(&result, filepath, ruby_vm_keep_script_lines ? &script_lines : NULL);
-        RB_GC_GUARD(filepath);
+    if (parse_file) {
+        error = pm_load_parse_file(&result, src, ruby_vm_keep_script_lines ? &script_lines : NULL);
     }
     else {
-        src = StringValue(src);
         error = pm_parse_string(&result, src, file, ruby_vm_keep_script_lines ? &script_lines : NULL);
     }
+
+    RB_GC_GUARD(src);
 
     if (error == Qnil) {
         int error_state;
@@ -3757,7 +3765,7 @@ rb_vm_encoded_insn_data_table_init(void)
     const void * const *table = rb_vm_get_insns_address_table();
 #define INSN_CODE(insn) ((VALUE)table[insn])
 #else
-#define INSN_CODE(insn) (insn)
+#define INSN_CODE(insn) ((VALUE)(insn))
 #endif
     st_data_t insn;
     encoded_insn_data = st_init_numtable_with_size(VM_INSTRUCTION_SIZE / 2);

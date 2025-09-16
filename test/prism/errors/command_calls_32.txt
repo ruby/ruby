@@ -1,0 +1,19 @@
+foo && return bar
+              ^~~ unexpected local variable or method, expecting end-of-input
+
+tap { foo && break bar }
+                   ^~~ unexpected local variable or method, expecting end-of-input
+
+tap { foo && next bar }
+                  ^~~ unexpected local variable or method, expecting end-of-input
+
+foo && return()
+             ^ unexpected '(', expecting end-of-input
+
+foo && return(bar)
+             ^ unexpected '(', expecting end-of-input
+
+foo && return(bar, baz)
+             ^~~~~~~~~~ unexpected write target
+             ^ unexpected '(', expecting end-of-input
+

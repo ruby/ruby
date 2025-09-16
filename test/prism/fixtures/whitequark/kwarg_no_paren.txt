@@ -1,0 +1,5 @@
+def f foo:
+; end
+
+def f foo: -1
+; end

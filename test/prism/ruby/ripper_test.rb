@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-return if RUBY_VERSION < "3.3"
+return if RUBY_VERSION < "3.3" || RUBY_ENGINE != "ruby"
 
 require_relative "../test_helper"
 
@@ -8,6 +8,9 @@ module Prism
   class RipperTest < TestCase
     # Skip these tests that Ripper is reporting the wrong results for.
     incorrect = [
+      # Not yet supported.
+      "leading_logical.txt",
+
       # Ripper incorrectly attributes the block to the keyword.
       "seattlerb/block_break.txt",
       "seattlerb/block_next.txt",
@@ -26,12 +29,16 @@ module Prism
       "whitequark/lvar_injecting_match.txt",
 
       # Ripper fails to understand some structures that span across heredocs.
-      "spanning_heredoc.txt"
+      "spanning_heredoc.txt",
+
+      # https://bugs.ruby-lang.org/issues/17398#note-12
+      "endless_methods_command_call.txt",
     ]
 
     # Skip these tests that we haven't implemented yet.
     omitted = [
       "dos_endings.txt",
+      "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
       "seattlerb/block_call_dot_op2_brace_block.txt",
       "seattlerb/block_command_operation_colon.txt",
@@ -45,6 +52,7 @@ module Prism
       "whitequark/dedenting_heredoc.txt",
       "whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt",
       "whitequark/parser_slash_slash_n_escaping_in_literals.txt",
+      "whitequark/ruby_bug_18878.txt",
       "whitequark/send_block_chain_cmd.txt",
       "whitequark/slash_newline_in_heredocs.txt"
     ]
