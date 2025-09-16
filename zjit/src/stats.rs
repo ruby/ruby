@@ -115,10 +115,6 @@ make_counters! {
         exit_block_param_proxy_not_iseq_or_ifunc,
     }
 
-    // unhanded_call_: Unhandled call types
-    unhandled_call_block_arg,
-    unhandled_call_tailcall,
-
     // compile_error_: Compile error reasons
     compile_error_iseq_stack_too_large,
     compile_error_exception_handler,
