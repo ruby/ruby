@@ -1197,13 +1197,13 @@ impl Assembler
         }
     }
 
-    pub fn expect_leaf_ccall(&mut self, stack_size: usize){
+    pub fn expect_leaf_ccall(&mut self, stack_size: usize) {
         self.leaf_ccall_stack_size = Some(stack_size);
     }
 
-    fn set_stack_canary(&mut self) -> Option<Opnd>{
+    fn set_stack_canary(&mut self) -> Option<Opnd> {
         if cfg!(feature = "runtime_checks") {
-            if let Some(stack_size) = self.leaf_ccall_stack_size.take(){
+            if let Some(stack_size) = self.leaf_ccall_stack_size.take() {
                 let canary_addr = self.lea(Opnd::mem(64, SP, (stack_size as i32) * SIZEOF_VALUE_I32));
                 let canary_opnd = Opnd::mem(64, canary_addr, 0);
                 self.mov(canary_opnd, vm_stack_canary().into());
