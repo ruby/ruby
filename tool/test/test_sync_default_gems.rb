@@ -99,7 +99,8 @@ module Test_SyncDefaultGems
       # Generate a new unprotected key with default parameters that
       # expires after 30 seconds.
       if @gpgsign = system(*%w"gpg --quiet --batch --passphrase", "",
-                           "--quick-generate-key", email, *%W"default default seconds=#{expire}")
+                           "--quick-generate-key", email, *%W"default default seconds=#{expire}",
+                           err: IO::NULL)
         # Fetch the generated public key.
         signingkey = IO.popen(%W"gpg --quiet --list-public-key #{email}", &:read)[/^pub .*\n +\K\h+/]
       end

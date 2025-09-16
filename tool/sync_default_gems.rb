@@ -455,17 +455,16 @@ module SyncDefaultGems
   end
 
   def log_format(format, args, &block)
-    IO.popen(%W[git log --no-show-signature --format=#{format}] + args, "rb", &block)
+    IO.popen(%W[git -c core.autocrlf=false -c core.eol=lf
+      log --no-show-signature --format=#{format}] + args, "rb", &block)
   end
 
   # Returns commit list as array of [commit_hash, subject].
   def commits_in_ranges(gem, repo, default_branch, ranges)
     # If -a is given, discover all commits since the last picked commit
     if ranges == true
-      # \r? needed in the regex in case the commit has windows-style line endings (because e.g. we're running
-      # tests on Windows)
-      pattern = "https://github\.com/#{Regexp.quote(repo)}/commit/([0-9a-f]+)\r?$"
-      log = log_format('%B', %W"-E --grep=#{pattern} -n1", &:read)
+      pattern = "https://github\.com/#{Regexp.quote(repo)}/commit/([0-9a-f]+)$"
+      log = log_format('%B', %W"-E --grep=#{pattern} -n1 --", &:read)
       ranges = ["#{log[%r[#{pattern}\n\s*(?i:co-authored-by:.*)*\s*\Z], 1]}..#{gem}/#{default_branch}"]
     end
 
