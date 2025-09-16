@@ -1042,6 +1042,7 @@ fn gen_send_without_block_direct(
     gen_save_pc(asm, state);
     // Special SP math. Can't use gen_prepare_non_leaf_call
     gen_save_sp(asm, state.stack().len() - args.len() - 1); // -1 for receiver
+
     gen_spill_locals(jit, asm, state);
     gen_spill_stack(jit, asm, state);
 
@@ -1158,7 +1159,6 @@ fn gen_new_array(
     elements: Vec<Opnd>,
     state: &FrameState,
 ) -> lir::Opnd {
-
     gen_prepare_call_with_gc(asm, state);
 
     let length: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
