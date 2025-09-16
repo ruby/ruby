@@ -25,13 +25,6 @@ require 'erb/util'
 # Like method [sprintf][sprintf], \ERB can format run-time data into a string.
 # \ERB, however,s is *much more powerful*.
 #
-# In simplest terms:
-#
-# - You can create an \ERB object to store a text *template* that includes specially formatted *tags*;
-#   each tag specifies data that at run-time is to replace the tag in the produced result.
-# - You can call instance method ERB#result to get the result,
-#   which is the string formed by replacing each tag with run-time data.
-#
 # \ERB is commonly used to produce:
 #
 # - Customized or personalized email messages.
@@ -49,24 +42,41 @@ require 'erb/util'
 #
 # ## In Brief
 #
-# ```
-# # Expression tag: begins with '<%', ends with '%>'.
-# # This expression does not need the local binding.
-# ERB.new('Today is <%= Date::DAYNAMES[Date.today.wday] %>.').result # => "Today is Monday."
-# # This expression tag does need the local binding.
-# magic_word = 'xyzzy'
-# template.result(binding) # => "The magic word is xyzzy."
+# Here's how \ERB works:
 #
-# Execution tag: begins with '<%=', ends with '%>'.
-# s = '<% File.write("t.txt", "Some stuff.") %>'
-# ERB.new(s).result
-# File.read('t.txt') # => "Some stuff."
+# - You can create an \ERB object (a *template*) to store text that includes specially formatted *tags*.
+# - You can call instance method ERB#result to get the *result*.
 #
-# # Comment tag: begins with '<%#', ends with '%>'.
-# s = 'Some stuff;<%# Note to self: figure out what the stuff is. %> more stuff.'
-# ERB.new(s).result # => "Some stuff; more stuff."
-# ```
+# \ERB supports tags of three kinds:
 #
+# - [Expression tags][expression tags]:
+#   each begins with `'<%'`, ends with `'%>'`; contains a Ruby expression;
+#   in the result, the value of the expression replaces the entire tag:
+#
+#         magic_word = 'xyzzy'
+#         template.result(binding) # => "The magic word is xyzzy."
+#
+#         ERB.new('Today is <%= Date::DAYNAMES[Date.today.wday] %>.').result # => "Today is Monday."
+#
+#     The first call to #result passes argument `binding`,
+#     which contains the binding of variable `magic_word` to its string value `'xyzzy'`.
+#
+#     The second call need not pass a binding,
+#     because its expression `Date::DAYNAMES` is globally defined.
+#
+# - [Execution tags][execution tags]:
+#   each begins with `'<%='`, ends with `'%>'`; contains Ruby code to be executed:
+#
+#          s = '<% File.write("t.txt", "Some stuff.") %>'
+#          ERB.new(s).result
+#          File.read('t.txt') # => "Some stuff."
+#
+# - [Comment tags][comment tags]:
+#   each begins with `'<%#'`, ends with `'%>'`; contains comment text;
+#   in the result, the entire tag is omitted.
+#
+#          s = 'Some stuff;<%# Note to self: figure out what the stuff is. %> more stuff.'
+#          ERB.new(s).result # => "Some stuff; more stuff."
 #
 # ## Some Simple Examples
 #
