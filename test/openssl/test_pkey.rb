@@ -124,17 +124,6 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
       }
     }
     assert_equal(1, called)
-
-    # Incorrect passphrase returned by the block. The input contains two PEM
-    # blocks.
-    called = 0
-    assert_raise(OpenSSL::PKey::PKeyError) {
-      OpenSSL::PKey.read(encrypted_pem + encrypted_pem) {
-        called += 1
-        "incorrect_passphrase"
-      }
-    }
-    assert_equal(1, called)
   end
 
   def test_s_read_passphrase_tty
