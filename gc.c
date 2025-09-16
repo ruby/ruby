@@ -1016,9 +1016,9 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, bool wb_protected, size_t s
 # endif
 
     memset(
-        (void *)(obj + RVALUE_SIZE),
+        (void *)(obj + sizeof(struct RBasic)),
         GC_DEBUG_SLOT_FILL_SPECIAL_VALUE,
-        rb_gc_obj_slot_size(obj) - RVALUE_SIZE
+        rb_gc_obj_slot_size(obj) - sizeof(struct RBasic)
     );
 #endif
 
