@@ -598,7 +598,7 @@ rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
 // Object allocation
 
 VALUE
-rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size)
+rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
 {
 #define MMTK_ALLOCATION_SEMANTICS_DEFAULT 0
     struct objspace *objspace = objspace_ptr;
@@ -622,9 +622,6 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     alloc_obj[-1] = alloc_size;
     alloc_obj[0] = flags;
     alloc_obj[1] = klass;
-    if (alloc_size > 16) alloc_obj[2] = v1;
-    if (alloc_size > 24) alloc_obj[3] = v2;
-    if (alloc_size > 32) alloc_obj[4] = v3;
 
     mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, alloc_size + 8, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
 
