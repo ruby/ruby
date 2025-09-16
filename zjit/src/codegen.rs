@@ -660,7 +660,7 @@ fn gen_getglobal(jit: &mut JITState, asm: &mut Assembler, id: ID, state: &FrameS
 
 /// Intern a string
 fn gen_intern(asm: &mut Assembler, val: Opnd, state: &FrameState) -> Opnd {
-    gen_prepare_call_with_gc(asm, state);
+    gen_prepare_leaf_call_with_gc(asm, state);
 
     asm_ccall!(asm, rb_str_intern, val)
 }
@@ -713,7 +713,7 @@ fn gen_getspecial_number(asm: &mut Assembler, nth: u64, state: &FrameState) -> O
 
     let backref = asm_ccall!(asm, rb_backref_get,);
 
-    gen_prepare_call_with_gc(asm, state);
+    gen_prepare_leaf_call_with_gc(asm, state);
 
     asm_ccall!(asm, rb_reg_nth_match, Opnd::Imm((nth >> 1).try_into().unwrap()), backref)
 }
@@ -730,12 +730,12 @@ fn gen_check_interrupts(jit: &mut JITState, asm: &mut Assembler, state: &FrameSt
 }
 
 fn gen_hash_dup(asm: &mut Assembler, val: Opnd, state: &FrameState) -> lir::Opnd {
-    gen_prepare_call_with_gc(asm, state);
+    gen_prepare_leaf_call_with_gc(asm, state);
     asm_ccall!(asm, rb_hash_resurrect, val)
 }
 
 fn gen_array_push(asm: &mut Assembler, array: Opnd, val: Opnd, state: &FrameState) {
-    gen_prepare_call_with_gc(asm, state);
+    gen_prepare_leaf_call_with_gc(asm, state);
     asm_ccall!(asm, rb_ary_push, array, val);
 }
 
@@ -1039,7 +1039,7 @@ fn gen_send_without_block_direct(
     asm.jbe(side_exit(jit, state, StackOverflow));
 
     // Save cfp->pc and cfp->sp for the caller frame
-    gen_save_pc(asm, state);
+    gen_prepare_call_with_gc(asm, state, false);
     // Special SP math. Can't use gen_prepare_non_leaf_call
     gen_save_sp(asm, state.stack().len() - args.len() - 1); // -1 for receiver
 
@@ -1137,7 +1137,7 @@ fn gen_invokesuper(
 /// Compile a string resurrection
 fn gen_string_copy(asm: &mut Assembler, recv: Opnd, chilled: bool, state: &FrameState) -> Opnd {
     // TODO: split rb_ec_str_resurrect into separate functions
-    gen_prepare_call_with_gc(asm, state);
+    gen_prepare_leaf_call_with_gc(asm, state);
     let chilled = if chilled { Opnd::Imm(1) } else { Opnd::Imm(0) };
     asm_ccall!(asm, rb_ec_str_resurrect, EC, recv, chilled)
 }
@@ -1148,7 +1148,7 @@ fn gen_array_dup(
     val: lir::Opnd,
     state: &FrameState,
 ) -> lir::Opnd {
-    gen_prepare_call_with_gc(asm, state);
+    gen_prepare_leaf_call_with_gc(asm, state);
 
     asm_ccall!(asm, rb_ary_resurrect, val)
 }
@@ -1159,7 +1159,7 @@ fn gen_new_array(
     elements: Vec<Opnd>,
     state: &FrameState,
 ) -> lir::Opnd {
-    gen_prepare_call_with_gc(asm, state);
+    gen_prepare_leaf_call_with_gc(asm, state);
 
     let length: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
@@ -1226,7 +1226,7 @@ fn gen_new_range_fixnum(
     flag: RangeType,
     state: &FrameState,
 ) -> lir::Opnd {
-    gen_prepare_call_with_gc(asm, state);
+    gen_prepare_leaf_call_with_gc(asm, state);
     asm_ccall!(asm, rb_range_new, low, high, (flag as i64).into())
 }
 
@@ -1347,7 +1347,7 @@ fn gen_is_method_cfunc(jit: &JITState, asm: &mut Assembler, val: lir::Opnd, cd: 
 }
 
 fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, str: lir::Opnd, state: &FrameState) -> lir::Opnd {
-    gen_prepare_call_with_gc(asm, state);
+    gen_prepare_leaf_call_with_gc(asm, state);
 
     asm_ccall!(asm, rb_obj_as_string_result, str, val)
 }
@@ -1504,17 +1504,20 @@ fn gen_incr_counter(asm: &mut Assembler, counter: Counter) {
 ///
 /// Unlike YJIT, we don't need to save the stack slots to protect them from GC
 /// because the backend spills all live registers onto the C stack on CCall.
-fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState) {
-    gen_save_pc(asm, state);
-    asm.expect_leaf_ccall(state.stack_size());
-}
-
-fn gen_save_pc(asm: &mut Assembler, state: &FrameState) {
+fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState, leaf: bool) {
     let opcode: usize = state.get_opcode().try_into().unwrap();
     let next_pc: *const VALUE = unsafe { state.pc.offset(insn_len(opcode) as isize) };
 
     asm_comment!(asm, "save PC to CFP");
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(next_pc));
+
+    if leaf {
+        asm.expect_leaf_ccall(state.stack_size());
+    }
+}
+
+fn gen_prepare_leaf_call_with_gc(asm: &mut Assembler, state: &FrameState) {
+    gen_prepare_call_with_gc(asm, state, true);
 }
 
 /// Save the current SP on the CFP
@@ -1549,11 +1552,11 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
 }
 
 /// Prepare for calling a C function that may call an arbitrary method.
-/// Use gen_prepare_call_with_gc() if the method is leaf but allocates objects.
+/// Use gen_prepare_leaf_call_with_gc() if the method is leaf but allocates objects.
 fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
     // TODO: Lazily materialize caller frames when needed
     // Save PC for backtraces and allocation tracing
-    gen_save_pc(asm, state);
+    gen_prepare_call_with_gc(asm, state, false);
 
     // Save SP and spill the virtual stack in case it raises an exception
     // and the interpreter uses the stack for handling the exception
