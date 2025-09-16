@@ -397,6 +397,9 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardBlockParamProxy { level, state } => no_output!(gen_guard_block_param_proxy(jit, asm, level, &function.frame_state(state))),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfun, opnds!(args)),
+        Insn::CCallVariadic { cfun, recv, args, name: _, cme, state } => {
+            gen_ccall_variadic(jit, asm, *cfun, opnd!(recv), opnds!(args), *cme, &function.frame_state(*state))
+        }
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
         Insn::GetGlobal { id, state } => gen_getglobal(jit, asm, *id, &function.frame_state(*state)),
@@ -636,6 +639,79 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invarian
 /// anything about the callee, so handling for e.g. GC safety is dealt with elsewhere.
 fn gen_ccall(asm: &mut Assembler, cfun: *const u8, args: Vec<Opnd>) -> lir::Opnd {
     asm.ccall(cfun, args)
+}
+
+/// Push a C frame for cfunc calls
+fn gen_push_cfunc_frame(asm: &mut Assembler, recv: Opnd, cme: *const rb_callable_method_entry_t, sp_offset: i32) {
+    asm_comment!(asm, "push C frame");
+
+    let new_sp = asm.lea(Opnd::mem(64, SP, sp_offset * SIZEOF_VALUE_I32));
+    // sp[-3]: cme
+    asm.store(Opnd::mem(64, SP, (sp_offset - 3) * SIZEOF_VALUE_I32), VALUE::from(cme).into());
+    // sp[-2]: block_handler (specval)
+    asm.store(Opnd::mem(64, SP, (sp_offset - 2) * SIZEOF_VALUE_I32), VM_BLOCK_HANDLER_NONE.into());
+    // sp[-1]: frame type (must be a valid FIXNUM)
+    let frame_type = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
+    asm.store(Opnd::mem(64, SP, (sp_offset - 1) * SIZEOF_VALUE_I32), frame_type.into());
+
+    fn cfp_opnd(offset: i32) -> Opnd {
+        Opnd::mem(64, CFP, offset - (RUBY_SIZEOF_CONTROL_FRAME as i32))
+    }
+
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), 0.into()); // C frames don't have a PC
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), new_sp);   // SP for new frame
+
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), 0.into()); // C frames don't have an iseq
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), recv);
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
+
+    let ep = asm.sub(new_sp, SIZEOF_VALUE.into());
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_EP), ep);
+}
+
+/// Pop a C frame after cfunc call
+fn gen_pop_cfunc_frame(asm: &mut Assembler) {
+    asm_comment!(asm, "pop C frame");
+    let new_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+}
+
+/// Generate code for a variadic C function call
+/// func(int argc, VALUE *argv, VALUE recv)
+fn gen_ccall_variadic(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    cfun: *const u8,
+    recv: Opnd,
+    args: Vec<Opnd>,
+    cme: *const rb_callable_method_entry_t,
+    state: &FrameState,
+) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    asm_comment!(asm, "pushing C frame for cme=0x{:x}", cme as usize);
+    // Following YJIT: allocate 3 slots for frame metadata (cme, block_handler, frame_type)
+    // The new frame's SP will be at current_stack_size + 3
+    let sp_offset = state.stack().len() as i32 + 3;
+    gen_push_cfunc_frame(asm, recv, cme, sp_offset);
+
+    // Move to the new frame
+    let new_cfp = asm.lea(Opnd::mem(64, CFP, -(RUBY_SIZEOF_CONTROL_FRAME as i32)));
+    asm.mov(CFP, new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), new_cfp);
+
+    let argc = args.len();
+
+    asm_comment!(asm, "call variadic cfunc: argc={}", argc);
+
+    let argv_ptr = gen_push_opnds(jit, asm, &args);
+    let result = asm.ccall(cfun, vec![argc.into(), argv_ptr, recv]);
+    gen_pop_opnds(asm, &args);
+
+    gen_pop_cfunc_frame(asm);
+
+    result
 }
 
 /// Emit an uncached instance variable lookup

@@ -2710,6 +2710,44 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:invokeblock]
   end
 
+  def test_ccall_variadic_with_multiple_args
+    assert_compiles "[1, 2, 3]", %q{
+      def test
+        a = []
+        a.push(1, 2, 3)
+        a
+      end
+
+      test
+      test
+    }, insns: [:opt_send_without_block]
+  end
+
+  def test_ccall_variadic_with_no_args
+    assert_compiles "[1]", %q{
+      def test
+        a = [1]
+        a.push
+      end
+
+      test
+      test
+    }, insns: [:opt_send_without_block]
+  end
+
+  def test_ccall_variadic_with_no_args_causing_argument_error
+    assert_compiles ":error", %q{
+      def test
+        format
+      rescue ArgumentError
+        :error
+      end
+
+      test
+      test
+    }, insns: [:opt_send_without_block]
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
