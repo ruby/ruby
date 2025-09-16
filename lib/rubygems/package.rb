@@ -436,8 +436,6 @@ EOM
           symlinks << [full_name, link_target, destination, real_destination]
         end
 
-        FileUtils.rm_rf destination
-
         mkdir =
           if entry.directory?
             destination
