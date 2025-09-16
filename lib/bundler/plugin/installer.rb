@@ -43,10 +43,6 @@ module Bundler
       private
 
       def check_sources_consistency!(options)
-        if options.key?(:local_git)
-          raise InvalidOption, "--local_git has been removed, use --git"
-        end
-
         if (options.keys & [:source, :git, :path]).length > 1
           raise InvalidOption, "Only one of --source, --git, or --path may be specified"
         end
