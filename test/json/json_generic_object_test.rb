@@ -1,8 +1,14 @@
 # frozen_string_literal: true
 require_relative 'test_helper'
 
-class JSONGenericObjectTest < Test::Unit::TestCase
+# ostruct is required to test JSON::GenericObject
+begin
+  require "ostruct"
+rescue LoadError
+  return
+end
 
+class JSONGenericObjectTest < Test::Unit::TestCase
   def setup
     if defined?(JSON::GenericObject)
       @go = JSON::GenericObject[ :a => 1, :b => 2 ]

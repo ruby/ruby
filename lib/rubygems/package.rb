@@ -267,7 +267,7 @@ class Gem::Package
 
       tar.add_file_simple file, stat.mode, stat.size do |dst_io|
         File.open file, "rb" do |src_io|
-          copy_stream(src_io, dst_io)
+          copy_stream(src_io, dst_io, stat.size)
         end
       end
     end
@@ -451,8 +451,14 @@ EOM
         end
 
         if entry.file?
-          File.open(destination, "wb") {|out| copy_stream(entry, out) }
-          FileUtils.chmod file_mode(entry.header.mode) & ~File.umask, destination
+          File.open(destination, "wb") do |out|
+            copy_stream(tar.io, out, entry.size)
+            # Flush needs to happen before chmod because there could be data
+            # in the IO buffer that needs to be written, and that could be
+            # written after the chmod (on close) which would mess up the perms
+            out.flush
+            out.chmod file_mode(entry.header.mode) & ~File.umask
+          end
         end
 
         verbose destination
@@ -715,12 +721,12 @@ EOM
   end
 
   if RUBY_ENGINE == "truffleruby"
-    def copy_stream(src, dst) # :nodoc:
-      dst.write src.read
+    def copy_stream(src, dst, size) # :nodoc:
+      dst.write src.read(size)
     end
   else
-    def copy_stream(src, dst) # :nodoc:
-      IO.copy_stream(src, dst)
+    def copy_stream(src, dst, size) # :nodoc:
+      IO.copy_stream(src, dst, size)
     end
   end
 

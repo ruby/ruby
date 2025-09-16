@@ -525,7 +525,7 @@ module Bundler
     method_option :ext, type: :string, banner: "Generate the boilerplate for C extension code.", enum: EXTENSIONS
     method_option :git, type: :boolean, default: true, banner: "Initialize a git repo inside your library."
     method_option :mit, type: :boolean, banner: "Generate an MIT license file. Set a default with `bundle config set --global gem.mit true`."
-    method_option :rubocop, type: :boolean, banner: "Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set --global gem.rubocop true`."
+    method_option :rubocop, type: :boolean, banner: "Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set --global gem.rubocop true` (removed)."
     method_option :changelog, type: :boolean, banner: "Generate changelog file. Set a default with `bundle config set --global gem.changelog true`."
     method_option :test, type: :string, lazy_default: Bundler.settings["gem.test"] || "", aliases: "-t", banner: "Use the specified test framework for your library", enum: %w[rspec minitest test-unit], desc: "Generate a test directory for your library, either rspec, minitest or test-unit. Set a default with `bundle config set --global gem.test (rspec|minitest|test-unit)`."
     method_option :ci, type: :string, lazy_default: Bundler.settings["gem.ci"] || "", enum: %w[github gitlab circle], banner: "Generate CI configuration, either GitHub Actions, GitLab CI or CircleCI. Set a default with `bundle config set --global gem.ci (github|gitlab|circle)`"
@@ -535,6 +535,10 @@ module Bundler
 
     def gem(name)
       require_relative "cli/gem"
+
+      raise InvalidOption, "--rubocop has been removed, use --linter=rubocop" if ARGV.include?("--rubocop")
+      raise InvalidOption, "--no-rubocop has been removed, use --no-linter" if ARGV.include?("--no-rubocop")
+
       cmd_args = args + [self]
       cmd_args.unshift(options)
 
