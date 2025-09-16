@@ -361,7 +361,7 @@ require 'erb/util'
 # ```
 #
 # You can give `trim_mode: '<>'` to suppress the trailing newline
-# for each line that both begins with `'<%'` and ends with `'%<'`:
+# for each line that both begins with `'<%'` and ends with `'%>'`:
 #
 # ```
 # ERB.new(s, trim_mode: '<>').result.lines.each {|line| puts line.inspect }
@@ -373,7 +373,7 @@ require 'erb/util'
 #
 # You can combine certain trim modes:
 #
-# - `'%-'`: Enable shorthand and omit each blank line ending with `'%>'`.
+# - `'%-'`: Enable shorthand and omit each blank line ending with `'-%>'`.
 # - `'%>'`: Enable shorthand and omit newline for each line ending with `'%>'`.
 # - `'%<>'`: Enable shorthand and omit newline for each line starting with `'<%'` and ending with `'%>'`.
 #
