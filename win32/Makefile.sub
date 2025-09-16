@@ -506,17 +506,18 @@ VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/missing;$(win_src
 !ifndef GIT
 GIT = git
 !endif
+GIT_TO_CHECK_C_OPTION = -C . --version >nul 2>&1
 !if "$(HAVE_GIT)" == "yes" || "$(HAVE_GIT)" == "no"
 !else if "$(GIT)" == ""
 HAVE_GIT = no
 !else if [for %I in ($(GIT)) do @if not "%~xI" == "" exit 1]
-! if [for %I in ($(GIT)) do @if not "%~$$PATH:I" == "" exit 1]
+! if [%I $(GIT_TO_CHECK_C_OPTION)] == 0
 HAVE_GIT = yes
 ! else
 HAVE_GIT = no
 ! endif
 !else
-! if [for %x in (%PATHEXT:;= %) do @for %I in ($(GIT)%x) do @if not "%~$$PATH:I" == "" exit 1]
+! if [for %x in (%PATHEXT:;= %) do @($(GIT)%x $(GIT_TO_CHECK_C_OPTION) && exit 0)] == 0
 HAVE_GIT = yes
 ! else
 HAVE_GIT = no
