@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::mem::take;
 use crate::codegen::local_size_and_idx_to_ep_offset;
-use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32};
+use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::SideExitReason;
 use crate::options::{debug, get_option};
 use crate::cruby::VALUE;
@@ -1172,7 +1172,8 @@ pub struct Assembler {
     /// Names of labels
     pub(super) label_names: Vec<String>,
 
-    leaf_canary_addr: Option<Opnd>
+    /// If Some, the next ccall should verify its leafness
+    leaf_ccall_stack_size: Option<usize>
 }
 
 impl Assembler
@@ -1192,17 +1193,27 @@ impl Assembler
             insns: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
             live_ranges,
             label_names,
-            leaf_canary_addr: None
+            leaf_ccall_stack_size: None,
         }
     }
 
-    pub fn arm_leaf_canary(&mut self, sp_addr: Opnd) {
-        self.leaf_canary_addr = Some(sp_addr);
+    pub fn expect_leaf_ccall(&mut self, stack_size: usize){
+        self.leaf_ccall_stack_size = Some(stack_size);
     }
 
-    fn disarm_leaf_canary(&mut self){
-        if let Some(addr) = self.leaf_canary_addr.take() {
-            self.store(Opnd::mem(64, addr, 0), 0.into());
+    fn set_stack_canary(&mut self) -> Option<Opnd>{
+        if cfg!(feature = "runtime_checks") && let Some(stack_size) = self.leaf_ccall_stack_size.take(){
+            let canary_addr = self.lea(Opnd::mem(64, SP, (stack_size as i32) * SIZEOF_VALUE_I32));
+            let canary_opnd = Opnd::mem(64, canary_addr, 0);
+            self.mov(canary_opnd, vm_stack_canary().into());
+            return Some(canary_opnd)
+        }
+        None
+    }
+
+    fn clear_stack_canary(&mut self, canary_opnd: Option<Opnd>){
+        if let Some(canary_opnd) = canary_opnd {
+            self.store(canary_opnd, 0.into());
         };
     }
 
@@ -1675,9 +1686,10 @@ impl Assembler {
 
     /// Call a C function without PosMarkers
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
+        let canary_opnd = self.set_stack_canary();
         let out = self.new_vreg(Opnd::match_num_bits(&opnds));
         self.push_insn(Insn::CCall { fptr, opnds, start_marker: None, end_marker: None, out });
-        self.disarm_leaf_canary(); // no-op already if disarmed
+        self.clear_stack_canary(canary_opnd);
         out
     }
 

@@ -1504,25 +1504,7 @@ fn gen_incr_counter(asm: &mut Assembler, counter: Counter) {
 /// because the backend spills all live registers onto the C stack on CCall.
 fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState) {
     gen_save_pc(asm, state);
-    if cfg!(feature = "runtime_checks") {
-        gen_set_vm_stack_canary(asm, state);
-    }
-}
-
-fn gen_set_vm_stack_canary(asm: &mut Assembler, state: &FrameState) {
-    // compute address of *(cfp->sp) after current virtual stack
-    let stack_size = state.stack_size();
-    let sp_addr = asm.lea(Opnd::mem(64, SP, (stack_size as i32) * SIZEOF_VALUE_I32));
-
-    // save cfp->sp for the interpreter
-    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), sp_addr);
-
-    // write canary
-    let canary_val = asm_ccall!(asm, rb_vm_stack_canary, );
-    asm.store(Opnd::mem(64, sp_addr, 0), canary_val);
-
-    // arm the tripwire so the next ccall clears it
-    asm.arm_leaf_canary(sp_addr);
+    asm.expect_leaf_ccall(state.stack_size());
 }
 
 fn gen_save_pc(asm: &mut Assembler, state: &FrameState) {
