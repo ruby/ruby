@@ -309,8 +309,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: case x; in 1; foo; in 2; bar; else baz; end");
         F_NODE(nd_head, RNODE_IN, "in pattern");
         F_NODE(nd_body, RNODE_IN, "in body");
-        LAST_NODE;
         F_NODE(nd_next, RNODE_IN, "next in clause");
+        F_LOC(in_keyword_loc, RNODE_IN);
+        F_LOC(then_keyword_loc, RNODE_IN);
+        LAST_NODE;
+        F_LOC(operator_loc, RNODE_IN);
         return;
 
       case NODE_WHILE:
@@ -1009,8 +1012,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: module [nd_cpath]; [nd_body]; end");
         ANN("example: module M; ..; end");
         F_NODE(nd_cpath, RNODE_MODULE, "module path");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_MODULE, "module definition");
+        F_LOC(module_keyword_loc, RNODE_MODULE);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_MODULE);
         return;
 
       case NODE_SCLASS:
@@ -1018,8 +1023,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: class << [nd_recv]; [nd_body]; end");
         ANN("example: class << obj; ..; end");
         F_NODE(nd_recv, RNODE_SCLASS, "receiver");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_SCLASS, "singleton class definition");
+        F_LOC(class_keyword_loc, RNODE_SCLASS);
+        F_LOC(operator_loc, RNODE_SCLASS);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_SCLASS);
         return;
 
       case NODE_COLON2:
@@ -1105,8 +1113,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("defined? expression");
         ANN("format: defined?([nd_head])");
         ANN("example: defined?(foo)");
-        LAST_NODE;
         F_NODE(nd_head, RNODE_DEFINED, "expr");
+        LAST_NODE;
+        F_LOC(keyword_loc, RNODE_DEFINED);
         return;
 
       case NODE_POSTEXE:

@@ -3,7 +3,7 @@ bundle-binstubs(1) -- Install the binstubs of the listed gems
 
 ## SYNOPSIS
 
-`bundle binstubs` <GEM_NAME> [--force] [--path PATH] [--standalone] [--all-platforms]
+`bundle binstubs` <GEM_NAME> [--force] [--standalone] [--all-platforms]
 
 ## DESCRIPTION
 
@@ -19,16 +19,14 @@ the file `bin/rspec`. That file will contain enough code to load Bundler,
 tell it to load the bundled gems, and then run rspec.
 
 This command generates binstubs for executables in `GEM_NAME`.
-Binstubs are put into `bin`, or the `--path` directory if one has been set.
-Calling binstubs with [GEM [GEM]] will create binstubs for all given gems.
+Binstubs are put into `bin`, or the directory specified by `bin` setting if it
+has been configured. Calling binstubs with [GEM [GEM]] will create binstubs for
+all given gems.
 
 ## OPTIONS
 
 * `--force`:
   Overwrite existing binstubs if they exist.
-
-* `--path[=PATH]`:
-  The location to install the specified binstubs to. This defaults to `bin`.
 
 * `--standalone`:
   Makes binstubs that can work without depending on Rubygems or Bundler at

@@ -11,6 +11,9 @@ require_relative "../user_interaction"
 class Gem::Ext::Builder
   include Gem::UserInteraction
 
+  class NoMakefileError < Gem::InstallError
+  end
+
   attr_accessor :build_args # :nodoc:
 
   def self.class_name
@@ -21,7 +24,8 @@ class Gem::Ext::Builder
   def self.make(dest_path, results, make_dir = Dir.pwd, sitedir = nil, targets = ["clean", "", "install"],
     target_rbconfig: Gem.target_rbconfig)
     unless File.exist? File.join(make_dir, "Makefile")
-      raise Gem::InstallError, "Makefile not found"
+      # No makefile exists, nothing to do.
+      raise NoMakefileError, "No Makefile found in #{make_dir}"
     end
 
     # try to find make program from Ruby configure arguments first

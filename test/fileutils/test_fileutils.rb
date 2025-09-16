@@ -1031,7 +1031,8 @@ class TestFileUtils < Test::Unit::TestCase
     assert_all_assertions_foreach(nil, *TARGETS) do |fname|
       lnfname = 'tmp/lnsdest'
       ln_sr fname, lnfname
-      assert FileTest.symlink?(lnfname), 'not symlink'
+      assert_file.symlink?(lnfname)
+      assert_file.identical?(lnfname, fname)
       assert_equal "../#{fname}", File.readlink(lnfname)
     ensure
       rm_f lnfname
@@ -1048,12 +1049,19 @@ class TestFileUtils < Test::Unit::TestCase
       end
     end
 
+    File.symlink 'data', 'link'
+    mkdir 'link/d1'
+    mkdir 'link/d2'
+    ln_sr 'link/d1/z', 'link/d2'
+    assert_equal '../d1/z', File.readlink('data/d2/z')
+
     mkdir 'data/src'
     File.write('data/src/xxx', 'ok')
     File.symlink '../data/src', 'tmp/src'
     ln_sr 'tmp/src/xxx', 'data'
-    assert File.symlink?('data/xxx')
+    assert_file.symlink?('data/xxx')
     assert_equal 'ok', File.read('data/xxx')
+    assert_equal 'src/xxx', File.readlink('data/xxx')
   end
 
   def test_ln_sr_not_target_directory
@@ -1072,7 +1080,11 @@ class TestFileUtils < Test::Unit::TestCase
       assert_raise(Errno::EEXIST, Errno::EACCES) {
         ln_sr fname, 'tmp', target_directory: false
       }
-      assert_file.not_exist? File.join('tmp/', File.basename(fname))
+      dest = File.join('tmp/', File.basename(fname))
+      assert_file.not_exist? dest
+      ln_sr fname, dest, target_directory: false
+      assert_file.symlink?(dest)
+      assert_equal("../#{fname}", File.readlink(dest))
     end
   end if have_symlink?
 
@@ -1803,6 +1815,14 @@ class TestFileUtils < Test::Unit::TestCase
     remove_dir 'data/tmpdir'
     assert_file_not_exist 'data/tmpdir'
   end if have_file_perm?
+
+  def test_remove_dir_with_file
+    File.write('data/tmpfile', 'dummy')
+    assert_raise(Errno::ENOTDIR) { remove_dir 'data/tmpfile' }
+    assert_file_exist 'data/tmpfile'
+  ensure
+    File.unlink('data/tmpfile') if File.exist?('data/tmpfile')
+  end
 
   def test_compare_file
     check_singleton :compare_file

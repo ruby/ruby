@@ -42,7 +42,7 @@ RSpec.describe "bundle install --standalone" do
         testrb << "\nrequire \"#{k}\""
         testrb << "\nputs #{k.upcase}"
       end
-      sys_exec %(#{Gem.ruby} --disable-gems -w -e #{testrb.shellescape})
+      in_bundled_app %(#{Gem.ruby} --disable-gems -w -e #{testrb.shellescape})
 
       expect(out).to eq(expected_gems.values.join("\n"))
     end
@@ -113,7 +113,7 @@ RSpec.describe "bundle install --standalone" do
         testrb << "\nrequire \"#{k}\""
         testrb << "\nputs #{k.upcase}"
       end
-      sys_exec %(#{Gem.ruby} -w -e #{testrb.shellescape})
+      in_bundled_app %(#{Gem.ruby} -w -e #{testrb.shellescape})
 
       expect(out).to eq(expected_gems.values.join("\n"))
     end
@@ -462,53 +462,6 @@ RSpec.describe "bundle install --standalone" do
       end
 
       include_examples "common functionality"
-    end
-  end
-
-  describe "with --binstubs" do
-    before do
-      gemfile <<-G
-        source "https://gem.repo1"
-        gem "rails"
-      G
-      bundle "config set --local path #{bundled_app("bundle")}"
-      bundle :install, standalone: true, binstubs: true, dir: cwd
-    end
-
-    let(:expected_gems) do
-      {
-        "actionpack" => "2.3.2",
-        "rails" => "2.3.2",
-      }
-    end
-
-    include_examples "common functionality"
-
-    it "creates stubs that use the standalone load path" do
-      expect(sys_exec("bin/rails -v").chomp).to eql "2.3.2"
-    end
-
-    it "creates stubs that can be executed from anywhere" do
-      require "tmpdir"
-      sys_exec(%(#{bundled_app("bin/rails")} -v), dir: Dir.tmpdir)
-      expect(out).to eq("2.3.2")
-    end
-
-    it "creates stubs that can be symlinked" do
-      skip "symlinks unsupported" if Gem.win_platform?
-
-      symlink_dir = tmp("symlink")
-      FileUtils.mkdir_p(symlink_dir)
-      symlink = File.join(symlink_dir, "rails")
-
-      File.symlink(bundled_app("bin/rails"), symlink)
-      sys_exec("#{symlink} -v")
-      expect(out).to eq("2.3.2")
-    end
-
-    it "creates stubs with the correct load path" do
-      extension_line = File.read(bundled_app("bin/rails")).each_line.find {|line| line.include? "$:.unshift" }.strip
-      expect(extension_line).to eq %($:.unshift File.expand_path "../bundle", __dir__)
     end
   end
 end

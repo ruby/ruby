@@ -6,6 +6,7 @@ YJIT_SRC_FILES = $(wildcard \
 	$(top_srcdir)/yjit/src/*/*.rs \
 	$(top_srcdir)/yjit/src/*/*/*.rs \
 	$(top_srcdir)/yjit/src/*/*/*/*.rs \
+	$(top_srcdir)/jit/src/lib.rs \
 	)
 
 # Because of Cargo cache, if the actual binary is not changed from the
@@ -31,24 +32,11 @@ ifneq ($(YJIT_SUPPORT),no)
 $(RUST_LIB): $(YJIT_SRC_FILES)
 endif
 
-# By using YJIT_BENCH_OPTS instead of RUN_OPTS, you can skip passing the options to `make install`
-YJIT_BENCH_OPTS = $(RUN_OPTS) --enable-gems
-YJIT_BENCH = benchmarks/railsbench/benchmark.rb
-
-# Run yjit-bench's ./run_once.sh for CI
-yjit-bench: install update-yjit-bench PHONY
-	$(Q) cd $(srcdir)/yjit-bench && PATH=$(prefix)/bin:$$PATH \
-		./run_once.sh $(YJIT_BENCH_OPTS) $(YJIT_BENCH)
-
-update-yjit-bench:
-	$(Q) $(tooldir)/git-refresh -C $(srcdir) --branch main \
-		https://github.com/Shopify/yjit-bench yjit-bench $(GIT_OPTS)
-
 RUST_VERSION = +1.58.0
 
 # Gives quick feedback about YJIT. Not a replacement for a full test run.
-.PHONY: yjit-smoke-test
-yjit-smoke-test:
+.PHONY: yjit-check
+yjit-check:
 ifneq ($(strip $(CARGO)),)
 	$(CARGO) test --all-features -q --manifest-path='$(top_srcdir)/yjit/Cargo.toml'
 endif

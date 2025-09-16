@@ -27,10 +27,8 @@ module Bundler
 
     (1..10).each {|v| define_method("bundler_#{v}_mode?") { @major_version >= v } }
 
-    settings_flag(:allow_offline_install) { bundler_4_mode? }
     settings_flag(:cache_all) { bundler_4_mode? }
-    settings_flag(:forget_cli_options) { bundler_4_mode? }
-    settings_flag(:global_gem_cache) { bundler_4_mode? }
+    settings_flag(:global_gem_cache) { bundler_5_mode? }
     settings_flag(:lockfile_checksums) { bundler_4_mode? }
     settings_flag(:plugins) { @bundler_version >= Gem::Version.new("1.14") }
     settings_flag(:update_requires_all_flag) { bundler_5_mode? }

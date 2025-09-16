@@ -36,7 +36,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       # For now we can't run cargo test --offline because it complains about the
       # capstone dependency, even though the dependency is optional
@@ -68,7 +68,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       # Check that we don't have linting errors in release mode, too
       - run: cargo clippy --all-targets --all-features
@@ -101,18 +101,12 @@ jobs:
           - test_task: 'test-bundled-gems'
             configure: '--enable-yjit=dev'
 
-          - test_task: 'yjit-bench'
-            configure: '--enable-yjit=dev'
-            yjit_bench_opts: '--yjit-stats'
-            continue-on-test_task: true
-
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.yjit_opts }}
       YJIT_BENCH_OPTS: ${{ matrix.yjit_bench_opts }}
       SPECOPTS: ${{ matrix.specopts }}
       RUBY_DEBUG: ci
-      BUNDLE_JOBS: 8 # for yjit-bench
       RUST_BACKTRACE: 1
 
     runs-on: ubuntu-22.04
@@ -120,22 +114,20 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Document')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
 
       - uses: ./.github/actions/setup/ubuntu
 
-      - uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.245.0
+      - uses: ruby/setup-ruby@a9bfc2ecf3dd40734a9418f89a7e9d484c32b990 # v1.248.0
         with:
           ruby-version: '3.1'
           bundler: none
@@ -152,6 +144,12 @@ jobs:
       - name: Install Rust
         if: ${{ matrix.rust_version }}
         run: rustup install ${{ matrix.rust_version }} --profile minimal
+
+      - name: Remove cargo
+        # Since this tests a `rustc` build for release, remove `cargo` to ensure
+        # that only `rustc` is used.
+        if: ${{ contains(matrix.configure, 'rustc') }}
+        run: sudo rm $(which -a cargo | uniq)
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc --prefix=$(pwd)/install ${{ matrix.configure }}
@@ -209,13 +207,6 @@ jobs:
           LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
           LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
-
-      - name: Show ${{ github.event.pull_request.base.ref }} GitHub URL for yjit-bench comparison
-        run: echo "https://github.com/${BASE_REPO}/commit/${BASE_SHA}"
-        env:
-          BASE_REPO: ${{ github.event.pull_request.base.repo.full_name }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        if: ${{ matrix.test_task == 'yjit-bench' && startsWith(github.event_name, 'pull') }}
 
       - uses: ./.github/actions/slack
         with:

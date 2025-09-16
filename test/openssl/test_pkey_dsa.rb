@@ -47,11 +47,11 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     assert_equal 1024, key1024.p.num_bits
     assert_equal 160, key1024.q.num_bits
 
-    key2048 = OpenSSL::PKey::DSA.generate(2048)
-    assert_equal 2048, key2048.p.num_bits
-    assert_equal 256, key2048.q.num_bits
-
     if ENV["OSSL_TEST_ALL"] == "1" # slow
+      key2048 = OpenSSL::PKey::DSA.generate(2048)
+      assert_equal 2048, key2048.p.num_bits
+      assert_equal 256, key2048.q.num_bits
+
       key3072 = OpenSSL::PKey::DSA.generate(3072)
       assert_equal 3072, key3072.p.num_bits
       assert_equal 256, key3072.q.num_bits

@@ -1045,9 +1045,17 @@ vm_to_proc(VALUE proc)
         }
 
         if (NIL_P(b) || !rb_obj_is_proc(b)) {
-            rb_raise(rb_eTypeError,
-                     "wrong argument type %s (expected Proc)",
-                     rb_obj_classname(proc));
+            if (me) {
+                VALUE cname = rb_obj_class(proc);
+                rb_raise(rb_eTypeError,
+                         "can't convert %"PRIsVALUE" to Proc (%"PRIsVALUE"#to_proc gives %"PRIsVALUE")",
+                         cname, cname, rb_obj_class(b));
+            }
+            else {
+                rb_raise(rb_eTypeError,
+                         "no implicit conversion of %s into Proc",
+                         rb_obj_classname(proc));
+            }
         }
         return b;
     }

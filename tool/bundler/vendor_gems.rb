@@ -12,6 +12,6 @@ gem "pub_grub", github: "jhawthorn/pub_grub", ref: "df6add45d1b4d122daff2f959c9b
 gem "resolv", "0.6.2"
 gem "securerandom", "0.4.1"
 gem "timeout", "0.4.3"
-gem "thor", "1.3.2"
+gem "thor", "1.4.0"
 gem "tsort", "0.2.0"
 gem "uri", "1.0.3"

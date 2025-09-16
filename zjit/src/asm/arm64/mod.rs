@@ -1,4 +1,8 @@
 #![allow(dead_code)] // For instructions and operands we're not currently using.
+#![allow(clippy::upper_case_acronyms)]
+#![allow(clippy::identity_op)]
+#![allow(clippy::self_named_constructors)]
+#![allow(clippy::unusual_byte_groupings)]
 
 use crate::asm::CodeBlock;
 
@@ -12,6 +16,21 @@ use inst::*;
 // backend (so they don't have to have knowledge about the submodule).
 pub use arg::*;
 pub use opnd::*;
+
+/// The extend type for register operands in extended register instructions.
+/// It's the reuslt size is determined by the the destination register and
+/// the source size interpreted using the last letter.
+#[derive(Clone, Copy)]
+pub enum ExtendType {
+    UXTB = 0b000, // unsigned extend byte
+    UXTH = 0b001, // unsigned extend halfword
+    UXTW = 0b010, // unsigned extend word
+    UXTX = 0b011, // unsigned extend doubleword
+    SXTB = 0b100, // signed extend byte
+    SXTH = 0b101, // signed extend halfword
+    SXTW = 0b110, // signed extend word
+    SXTX = 0b111, // signed extend doubleword
+}
 
 /// Checks that a signed value fits within the specified number of bits.
 pub const fn imm_fits_bits(imm: i64, num_bits: u8) -> bool {
@@ -54,6 +73,42 @@ pub fn add(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
             }
         },
         _ => panic!("Invalid operand combination to add instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// Encode ADD (extended register)
+///
+/// <https://developer.arm.com/documentation/ddi0602/2023-09/Base-Instructions/ADD--extended-register---Add--extended-register-->
+///
+///   31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12  11 10 09 08 07 06 05 04 03 02 01 00
+///             0  1  0  1  1  0  0  1  │           │ │      │  │      │  │           │  │           │
+///   sf op  S                          └────rm─────┘ └option┘  └─imm3─┘  └────rn─────┘  └────rd─────┘
+fn encode_add_extend(rd: u8, rn: u8, rm: u8, extend_type: ExtendType, shift: u8, num_bits: u8) -> [u8; 4] {
+    assert!(shift <= 4, "shift must be 0-4");
+
+    ((Sf::from(num_bits) as u32) << 31 |
+     0b0 << 30 |        // op = 0 for add
+     0b0 << 29 |        // S = 0 for non-flag-setting
+     0b01011001 << 21 |
+     (rm as u32) << 16 |
+     (extend_type as u32) << 13 |
+     (shift as u32) << 10 |
+     (rn as u32) << 5 |
+     rd as u32).to_le_bytes()
+}
+
+/// ADD (extended register) - add rn and rm with UXTX extension (no extension for 64-bit registers)
+/// This is equivalent to a regular ADD for 64-bit registers since UXTX with shift 0 means no modification.
+/// For reg_no=31, rd and rn mean SP while with rm means the zero register.
+pub fn add_extended(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn, rm) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
+            encode_add_extend(rd.reg_no, rn.reg_no, rm.reg_no, ExtendType::UXTX, 0, rd.num_bits)
+        },
+        _ => panic!("Invalid operand combination to add_extend instruction."),
     };
 
     cb.write_bytes(&bytes);
@@ -217,6 +272,7 @@ pub const fn bcond_offset_fits_bits(offset: i64) -> bool {
 
 /// B.cond - branch to target if condition is true
 pub fn bcond(cb: &mut CodeBlock, cond: u8, offset: InstructionOffset) {
+    _ = Condition;
     assert!(bcond_offset_fits_bits(offset.into()), "The offset must be 19 bits or less.");
     let bytes: [u8; 4] = BranchCond::bcond(cond, offset).into();
 
@@ -659,6 +715,21 @@ pub fn movk(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
             Mov::movk(rd.reg_no, imm16 as u16, shift, rd.num_bits).into()
         },
         _ => panic!("Invalid operand combination to movk instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// MOVN - load a register with the complement of a shifted then zero extended 16-bit immediate
+/// <https://developer.arm.com/documentation/ddi0602/2025-06/Base-Instructions/MOVN--Move-wide-with-NOT->
+pub fn movn(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
+    let bytes: [u8; 4] = match (rd, imm16) {
+        (A64Opnd::Reg(rd), A64Opnd::UImm(imm16)) => {
+            assert!(uimm_fits_bits(imm16, 16), "The immediate operand must be 16 bits or less.");
+
+            Mov::movn(rd.reg_no, imm16 as u16, shift, rd.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to movn instruction.")
     };
 
     cb.write_bytes(&bytes);
@@ -1138,14 +1209,14 @@ fn cbz_cbnz(num_bits: u8, op: bool, offset: InstructionOffset, rt: u8) -> [u8; 4
           rt as u32).to_le_bytes()
 }
 
-/*
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::assertions::assert_disasm;
 
     /// Check that the bytes for an instruction sequence match a hex string
     fn check_bytes<R>(bytes: &str, run: R) where R: FnOnce(&mut super::CodeBlock) {
-        let mut cb = super::CodeBlock::new_dummy(128);
+        let mut cb = super::CodeBlock::new_dummy();
         run(&mut cb);
         assert_eq!(format!("{:x}", cb), bytes);
     }
@@ -1492,6 +1563,11 @@ mod tests {
     }
 
     #[test]
+    fn test_movn() {
+        check_bytes("600fa092", |cb| movn(cb, X0, A64Opnd::new_uimm(123), 16));
+    }
+
+    #[test]
     fn test_movz() {
         check_bytes("600fa0d2", |cb| movz(cb, X0, A64Opnd::new_uimm(123), 16));
     }
@@ -1518,7 +1594,7 @@ mod tests {
 
     #[test]
     fn test_nop() {
-        check_bytes("1f2003d5", |cb| nop(cb));
+        check_bytes("1f2003d5", nop);
     }
 
     #[test]
@@ -1675,5 +1751,19 @@ mod tests {
     fn test_tst_32b_immediate() {
         check_bytes("1f3c0072", |cb| tst(cb, W0, A64Opnd::new_uimm(0xffff)));
     }
+
+    #[test]
+    fn test_add_extend_various_regs() {
+        let mut cb = CodeBlock::new_dummy();
+
+        add_extended(&mut cb, X10, X11, X9);
+        add_extended(&mut cb, X30, X30, X30);
+        add_extended(&mut cb, X31, X31, X31);
+
+        assert_disasm!(cb, "6a61298bde633e8bff633f8b", "
+            0x0: add x10, x11, x9, uxtx
+            0x4: add x30, x30, x30, uxtx
+            0x8: add sp, sp, xzr
+        ");
+    }
 }
-*/

@@ -81,6 +81,20 @@ class TC_Set < Test::Unit::TestCase
 
     s = Set.new(ary) { |o| o * 2 }
     assert_equal([2,4,6], s.sort)
+
+    assert_raise(ArgumentError) {
+      Set.new((1..))
+    }
+    assert_raise(ArgumentError) {
+      Set.new((1..), &:succ)
+    }
+    assert_raise(ArgumentError) {
+      Set.new(1.upto(Float::INFINITY))
+    }
+
+    assert_raise(ArgumentError) {
+      Set.new(Object.new)
+    }
   end
 
   def test_clone
@@ -909,6 +923,18 @@ class TC_Set < Test::Unit::TestCase
     rescue NotImplementedError
     end
     end;
+  end
+
+  def test_larger_sets
+    set = Set.new
+    10_000.times do |i|
+      set << i
+    end
+    set = set.dup
+
+    10_000.times do |i|
+      assert_includes set, i
+    end
   end
 end
 

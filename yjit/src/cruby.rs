@@ -450,7 +450,7 @@ impl VALUE {
 
     pub fn embedded_p(self) -> bool {
         unsafe {
-            FL_TEST_RAW(self, VALUE(ROBJECT_EMBED as usize)) != VALUE(0)
+            FL_TEST_RAW(self, VALUE(ROBJECT_HEAP as usize)) == VALUE(0)
         }
     }
 
@@ -601,9 +601,15 @@ pub fn rust_str_to_ruby(str: &str) -> VALUE {
 
 /// Produce a Ruby symbol from a Rust string slice
 pub fn rust_str_to_sym(str: &str) -> VALUE {
+    let id = rust_str_to_id(str);
+    unsafe { rb_id2sym(id) }
+}
+
+/// Produce an ID from a Rust string slice
+pub fn rust_str_to_id(str: &str) -> ID {
     let c_str = CString::new(str).unwrap();
     let c_ptr: *const c_char = c_str.as_ptr();
-    unsafe { rb_id2sym(rb_intern(c_ptr)) }
+    unsafe { rb_intern(c_ptr) }
 }
 
 /// Produce an owned Rust String from a C char pointer
@@ -671,7 +677,7 @@ where
     let line = loc.line;
     let mut recursive_lock_level: c_uint = 0;
 
-    unsafe { rb_yjit_vm_lock_then_barrier(&mut recursive_lock_level, file, line) };
+    unsafe { rb_jit_vm_lock_then_barrier(&mut recursive_lock_level, file, line) };
 
     let ret = match catch_unwind(func) {
         Ok(result) => result,
@@ -691,7 +697,7 @@ where
         }
     };
 
-    unsafe { rb_yjit_vm_unlock(&mut recursive_lock_level, file, line) };
+    unsafe { rb_jit_vm_unlock(&mut recursive_lock_level, file, line) };
 
     ret
 }

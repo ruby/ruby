@@ -993,7 +993,7 @@ total_final_slots_count(rb_objspace_t *objspace)
 #endif
 
 struct RZombie {
-    struct RBasic basic;
+    VALUE flags;
     VALUE next;
     void (*dfree)(void *);
     void *data;
@@ -1853,7 +1853,10 @@ static struct heap_page *
 heap_page_resurrect(rb_objspace_t *objspace)
 {
     struct heap_page *page = NULL;
-    if (objspace->empty_pages != NULL) {
+    if (objspace->empty_pages == NULL) {
+        GC_ASSERT(objspace->empty_pages_count == 0);
+    }
+    else {
         GC_ASSERT(objspace->empty_pages_count > 0);
         objspace->empty_pages_count--;
         page = objspace->empty_pages;
@@ -1973,6 +1976,8 @@ heap_page_allocate_and_initialize(rb_objspace_t *objspace, rb_heap_t *heap)
     if (page == NULL && objspace->heap_pages.allocatable_slots > 0) {
         page = heap_page_allocate(objspace);
         allocated = true;
+
+        GC_ASSERT(page != NULL);
     }
 
     if (page != NULL) {
@@ -2047,6 +2052,9 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
     /* If we still don't have a free page and not allowed to create a new page,
      * we should start a new GC cycle. */
     if (heap->free_pages == NULL) {
+        GC_ASSERT(objspace->empty_pages_count == 0);
+        GC_ASSERT(objspace->heap_pages.allocatable_slots == 0);
+
         if (gc_start(objspace, GPR_FLAG_NEWOBJ) == FALSE) {
             rb_memerror();
         }
@@ -2578,7 +2586,7 @@ rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), voi
     rb_objspace_t *objspace = objspace_ptr;
 
     struct RZombie *zombie = RZOMBIE(obj);
-    zombie->basic.flags = T_ZOMBIE | (zombie->basic.flags & ZOMBIE_OBJ_KEPT_FLAGS);
+    zombie->flags = T_ZOMBIE | (zombie->flags & ZOMBIE_OBJ_KEPT_FLAGS);
     zombie->dfree = dfree;
     zombie->data = data;
     VALUE prev, next = heap_pages_deferred_final;
@@ -3922,10 +3930,29 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *sweep_heap)
 
     for (int i = 0; i < HEAP_COUNT; i++) {
         rb_heap_t *heap = &heaps[i];
-        if (!gc_sweep_step(objspace, heap)) {
-            if (heap == sweep_heap && objspace->empty_pages_count == 0 && objspace->heap_pages.allocatable_slots == 0) {
+        if (gc_sweep_step(objspace, heap)) {
+            GC_ASSERT(heap->free_pages != NULL);
+        }
+        else if (heap == sweep_heap) {
+            if (objspace->empty_pages_count > 0 || objspace->heap_pages.allocatable_slots > 0) {
+                /* [Bug #21548]
+                 *
+                 * If this heap is the heap we want to sweep, but we weren't able
+                 * to free any slots, but we also either have empty pages or could
+                 * allocate new pages, then we want to preemptively claim a page
+                 * because it's possible that sweeping another heap will call
+                 * gc_sweep_finish_heap, which may use up all of the
+                 * empty/allocatable pages. If other heaps are not finished sweeping
+                 * then we do not finish this GC and we will end up triggering a new
+                 * GC cycle during this GC phase. */
+                heap_page_allocate_and_initialize(objspace, heap);
+
+                GC_ASSERT(heap->free_pages != NULL);
+            }
+            else {
                 /* Not allowed to create a new page so finish sweeping. */
                 gc_sweep_rest(objspace);
+                GC_ASSERT(gc_mode(objspace) == gc_mode_none);
                 break;
             }
         }
@@ -4361,6 +4388,26 @@ gc_grey(rb_objspace_t *objspace, VALUE obj)
     push_mark_stack(&objspace->mark_stack, obj);
 }
 
+static inline void
+gc_mark_check_t_none(rb_objspace_t *objspace, VALUE obj)
+{
+    if (RB_UNLIKELY(RB_TYPE_P(obj, T_NONE))) {
+        enum {info_size = 256};
+        char obj_info_buf[info_size];
+        rb_raw_obj_info(obj_info_buf, info_size, obj);
+
+        char parent_obj_info_buf[info_size];
+        if (objspace->rgengc.parent_object == Qfalse) {
+            strlcpy(parent_obj_info_buf, "(none)", info_size);
+        }
+        else {
+            rb_raw_obj_info(parent_obj_info_buf, info_size, objspace->rgengc.parent_object);
+        }
+
+        rb_bug("try to mark T_NONE object (obj: %s, parent: %s)", obj_info_buf, parent_obj_info_buf);
+    }
+}
+
 static void
 gc_mark(rb_objspace_t *objspace, VALUE obj)
 {
@@ -4380,10 +4427,7 @@ gc_mark(rb_objspace_t *objspace, VALUE obj)
         }
     }
 
-    if (RB_UNLIKELY(RB_TYPE_P(obj, T_NONE))) {
-        rb_obj_info_dump(obj);
-        rb_bug("try to mark T_NONE object"); /* check here will help debugging */
-    }
+    gc_mark_check_t_none(objspace, obj);
 
     gc_aging(objspace, obj);
     gc_grey(objspace, obj);
@@ -4420,7 +4464,10 @@ rb_gc_impl_mark_and_move(void *objspace_ptr, VALUE *ptr)
         GC_ASSERT(objspace->flags.during_compacting);
         GC_ASSERT(during_gc);
 
-        *ptr = rb_gc_impl_location(objspace, *ptr);
+        VALUE destination = rb_gc_impl_location(objspace, *ptr);
+        if (destination != *ptr) {
+            *ptr = destination;
+        }
     }
     else {
         gc_mark(objspace, *ptr);
@@ -4454,10 +4501,10 @@ rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
         asan_unpoisoning_object(obj) {
             /* Garbage can live on the stack, so do not mark or pin */
             switch (BUILTIN_TYPE(obj)) {
-            case T_ZOMBIE:
-            case T_NONE:
+              case T_ZOMBIE:
+              case T_NONE:
                 break;
-            default:
+              default:
                 gc_mark_and_pin(objspace, obj);
                 break;
             }
@@ -4474,10 +4521,7 @@ rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
 
     VALUE obj = *ptr;
 
-    if (RB_UNLIKELY(RB_TYPE_P(obj, T_NONE))) {
-        rb_obj_info_dump(obj);
-        rb_bug("try to mark T_NONE object");
-    }
+    gc_mark_check_t_none(objspace, obj);
 
     /* If we are in a minor GC and the other object is old, then obj should
      * already be marked and cannot be reclaimed in this GC cycle so we don't
@@ -6107,15 +6151,19 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 
     gc_report(1, objspace, "rb_gc_writebarrier_remember: %s\n", rb_obj_info(obj));
 
-    if (is_incremental_marking(objspace)) {
-        if (RVALUE_BLACK_P(objspace, obj)) {
-            gc_grey(objspace, obj);
+    if (is_incremental_marking(objspace) || RVALUE_OLD_P(objspace, obj)) {
+        int lev = RB_GC_VM_LOCK_NO_BARRIER();
+        {
+            if (is_incremental_marking(objspace)) {
+                if (RVALUE_BLACK_P(objspace, obj)) {
+                    gc_grey(objspace, obj);
+                }
+            }
+            else if (RVALUE_OLD_P(objspace, obj)) {
+                rgengc_remember(objspace, obj);
+            }
         }
-    }
-    else {
-        if (RVALUE_OLD_P(objspace, obj)) {
-            rgengc_remember(objspace, obj);
-        }
+        RB_GC_VM_UNLOCK_NO_BARRIER(lev);
     }
 }
 
@@ -6316,9 +6364,6 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
 {
     unsigned int do_full_mark = !!(reason & GPR_FLAG_FULL_MARK);
 
-    /* reason may be clobbered, later, so keep set immediate_sweep here */
-    objspace->flags.immediate_sweep = !!(reason & GPR_FLAG_IMMEDIATE_SWEEP);
-
     if (!rb_darray_size(objspace->heap_pages.sorted)) return TRUE; /* heap is not ready */
     if (!(reason & GPR_FLAG_METHOD) && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
 
@@ -6328,6 +6373,9 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
 
     unsigned int lock_lev;
     gc_enter(objspace, gc_enter_event_start, &lock_lev);
+
+    /* reason may be clobbered, later, so keep set immediate_sweep here */
+    objspace->flags.immediate_sweep = !!(reason & GPR_FLAG_IMMEDIATE_SWEEP);
 
 #if RGENGC_CHECK_MODE >= 2
     gc_verify_internal_consistency(objspace);
@@ -7936,7 +7984,7 @@ objspace_malloc_gc_stress(rb_objspace_t *objspace)
 }
 
 static inline bool
-objspace_malloc_increase_report(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type)
+objspace_malloc_increase_report(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type, bool gc_allowed)
 {
     if (0) fprintf(stderr, "increase - ptr: %p, type: %s, new_size: %"PRIdSIZE", old_size: %"PRIdSIZE"\n",
                    mem,
@@ -7948,7 +7996,7 @@ objspace_malloc_increase_report(rb_objspace_t *objspace, void *mem, size_t new_s
 }
 
 static bool
-objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type)
+objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type, bool gc_allowed)
 {
     if (new_size > old_size) {
         RUBY_ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
@@ -7963,7 +8011,7 @@ objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_siz
 #endif
     }
 
-    if (type == MEMOP_TYPE_MALLOC) {
+    if (type == MEMOP_TYPE_MALLOC && gc_allowed) {
       retry:
         if (malloc_increase > malloc_limit && ruby_native_thread_p() && !dont_gc_val()) {
             if (ruby_thread_has_gvl_p() && is_lazy_sweeping(objspace)) {
@@ -8045,10 +8093,10 @@ malloc_during_gc_p(rb_objspace_t *objspace)
 }
 
 static inline void *
-objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
+objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size, bool gc_allowed)
 {
     size = objspace_malloc_size(objspace, mem, size);
-    objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC) {}
+    objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC, gc_allowed) {}
 
 #if CALC_EXACT_MALLOC_SIZE
     {
@@ -8080,10 +8128,10 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
             GPR_FLAG_MALLOC;                                 \
         objspace_malloc_gc_stress(objspace);                 \
                                                              \
-        if (RB_LIKELY((expr))) {                                \
+        if (RB_LIKELY((expr))) {                             \
             /* Success on 1st try */                         \
         }                                                    \
-        else if (!garbage_collect_with_gvl(objspace, gpr)) { \
+        else if (gc_allowed && !garbage_collect_with_gvl(objspace, gpr)) { \
             /* @shyouhei thinks this doesn't happen */       \
             GC_MEMERROR("TRY_WITH_GC: could not GC");        \
         }                                                    \
@@ -8126,7 +8174,7 @@ rb_gc_impl_free(void *objspace_ptr, void *ptr, size_t old_size)
 #endif
     old_size = objspace_malloc_size(objspace, ptr, old_size);
 
-    objspace_malloc_increase(objspace, ptr, 0, old_size, MEMOP_TYPE_FREE) {
+    objspace_malloc_increase(objspace, ptr, 0, old_size, MEMOP_TYPE_FREE, true) {
         free(ptr);
         ptr = NULL;
         RB_DEBUG_COUNTER_INC(heap_xfree);
@@ -8134,7 +8182,7 @@ rb_gc_impl_free(void *objspace_ptr, void *ptr, size_t old_size)
 }
 
 void *
-rb_gc_impl_malloc(void *objspace_ptr, size_t size)
+rb_gc_impl_malloc(void *objspace_ptr, size_t size, bool gc_allowed)
 {
     rb_objspace_t *objspace = objspace_ptr;
     check_malloc_not_in_gc(objspace, "malloc");
@@ -8145,11 +8193,11 @@ rb_gc_impl_malloc(void *objspace_ptr, size_t size)
     TRY_WITH_GC(size, mem = malloc(size));
     RB_DEBUG_COUNTER_INC(heap_xmalloc);
     if (!mem) return mem;
-    return objspace_malloc_fixup(objspace, mem, size);
+    return objspace_malloc_fixup(objspace, mem, size, gc_allowed);
 }
 
 void *
-rb_gc_impl_calloc(void *objspace_ptr, size_t size)
+rb_gc_impl_calloc(void *objspace_ptr, size_t size, bool gc_allowed)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
@@ -8165,11 +8213,11 @@ rb_gc_impl_calloc(void *objspace_ptr, size_t size)
     size = objspace_malloc_prepare(objspace, size);
     TRY_WITH_GC(size, mem = calloc1(size));
     if (!mem) return mem;
-    return objspace_malloc_fixup(objspace, mem, size);
+    return objspace_malloc_fixup(objspace, mem, size, gc_allowed);
 }
 
 void *
-rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size)
+rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size, bool gc_allowed)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
@@ -8177,7 +8225,7 @@ rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_si
 
     void *mem;
 
-    if (!ptr) return rb_gc_impl_malloc(objspace, new_size);
+    if (!ptr) return rb_gc_impl_malloc(objspace, new_size, gc_allowed);
 
     /*
      * The behavior of realloc(ptr, 0) is implementation defined.
@@ -8185,7 +8233,7 @@ rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_si
      * see http://www.open-std.org/jtc1/sc22/wg14/www/docs/dr_400.htm
      */
     if (new_size == 0) {
-        if ((mem = rb_gc_impl_malloc(objspace, 0)) != NULL) {
+        if ((mem = rb_gc_impl_malloc(objspace, 0, gc_allowed)) != NULL) {
             /*
              * - OpenBSD's malloc(3) man page says that when 0 is passed, it
              *   returns a non-NULL pointer to an access-protected memory page.
@@ -8244,7 +8292,7 @@ rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_si
     }
 #endif
 
-    objspace_malloc_increase(objspace, mem, new_size, old_size, MEMOP_TYPE_REALLOC);
+    objspace_malloc_increase(objspace, mem, new_size, old_size, MEMOP_TYPE_REALLOC, gc_allowed);
 
     RB_DEBUG_COUNTER_INC(heap_xrealloc);
     return mem;
@@ -8256,10 +8304,10 @@ rb_gc_impl_adjust_memory_usage(void *objspace_ptr, ssize_t diff)
     rb_objspace_t *objspace = objspace_ptr;
 
     if (diff > 0) {
-        objspace_malloc_increase(objspace, 0, diff, 0, MEMOP_TYPE_REALLOC);
+        objspace_malloc_increase(objspace, 0, diff, 0, MEMOP_TYPE_REALLOC, true);
     }
     else if (diff < 0) {
-        objspace_malloc_increase(objspace, 0, 0, -diff, MEMOP_TYPE_REALLOC);
+        objspace_malloc_increase(objspace, 0, 0, -diff, MEMOP_TYPE_REALLOC, true);
     }
 }
 

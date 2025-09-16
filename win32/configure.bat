@@ -51,7 +51,7 @@ if "%1" == "--disable-rubygems" goto :disable-rubygems
 if "%1" == "--extout" goto :extout
 if "%1" == "--path" goto :path
 if "%1" == "--with-baseruby" goto :baseruby
-if "%1" == "--without-baseruby" goto :baseruby
+if "%1" == "--without-baseruby" goto :nobaseruby
 if "%1" == "--with-ntver" goto :ntver
 if "%1" == "--with-libdir" goto :libdir
 if "%1" == "--with-git" goto :git
@@ -208,6 +208,7 @@ goto :loop ;
   shift
 goto :loop ;
 :baseruby
+  echo>> %config_make% HAVE_BASERUBY =
   echo>> %config_make% BASERUBY = %~2
   echo>>%confargs%  %1=%2 \
   shift
@@ -215,7 +216,8 @@ goto :loop ;
 goto :loop ;
 :nobaseruby
   echo>> %config_make% HAVE_BASERUBY = no
-  echo>>%confargs%  %1=%2 \
+  echo>> %config_make% BASERUBY =
+  echo>>%confargs%  %1 \
   shift
 goto :loop ;
 :libdir
@@ -238,8 +240,7 @@ goto :loop ;
 goto :loop ;
 :gmp
   echo>> %config_make% WITH_GMP = yes
-  echo>>%confargs%  %1=1 \
-  shift
+  echo>>%confargs%  %1 \
   shift
 goto :loop ;
 :gmp-dir

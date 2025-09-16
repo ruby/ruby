@@ -1,0 +1,86 @@
+name: rubyspec C-API extensions
+
+inputs:
+  builddir:
+    required: false
+    default: '.'
+  make:
+    required: false
+    default: 'make -s'
+
+outputs:
+  key:
+    value: >-
+      ${{
+      !steps.restore.outputs.cache-hit &&
+      github.ref == 'refs/heads/master' &&
+      steps.config.outputs.key
+      }}
+
+runs:
+  using: composite
+
+  steps:
+    - id: config
+      shell: bash
+      run: |
+        eval $(grep -e '^arch *=' -e '^ruby_version *=' -e '^DLEXT *=' Makefile |
+            sed 's/ *= */=/')
+        case "${ruby_version}" in
+        *+*) key=capiexts-${arch}-${ruby_version};;
+        *)   key=;;
+        esac
+        echo version=$ruby_version >> $GITHUB_OUTPUT
+        echo key=$key >> $GITHUB_OUTPUT
+        echo DLEXT=$DLEXT >> $GITHUB_OUTPUT
+      working-directory: ${{ inputs.builddir }}
+
+    - name: Restore previous CAPI extensions
+      uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+      id: cache
+      with:
+        path: ${{ inputs.builddir }}/spec/ruby/optional/capi/ext/
+        key: ${{ steps.config.outputs.key }}
+      if: ${{ steps.config.outputs.key }}
+
+    - name: Run test-spec with previous CAPI extension binaries
+      id: check
+      shell: bash
+      run: |
+        touch spec/ruby/optional/capi/ext/*.$DLEXT
+        [ ! -f spec/ruby/optional/capi/ext/\*.$DLEXT ]
+        ${{ inputs.make }} SPECOPTS=optional/capi test-spec
+      env:
+        DLEXT: ${{ steps.config.outputs.DLEXT }}
+      working-directory: ${{ inputs.builddir }}
+      if: ${{ steps.cache.outputs.cache-hit }}
+
+    - name: Strip CAPI extensions
+      id: strip
+      shell: bash
+      run: |
+        rm -f spec/ruby/optional/capi/ext/*.c
+        [ "$DLEXT" = bundle ] || # separated to .dSYM directories
+        strip spec/ruby/optional/capi/ext/*.$DLEXT
+      env:
+        DLEXT: ${{ steps.config.outputs.DLEXT }}
+      working-directory: ${{ inputs.builddir }}
+      if: >-
+        ${{true
+        && ! steps.cache.outputs.cache-hit
+        && github.ref_name == 'master'
+        }}
+
+    - name: Save CAPI extensions
+      uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+      with:
+        path: ${{ inputs.builddir }}/spec/ruby/optional/capi/ext/
+        key: ${{ steps.config.outputs.key }}
+      if: ${{ steps.strip.outcome == 'success' }}
+
+    - shell: bash
+      run: |
+        echo "::error::Change from ${prev} detected; bump up ABI version"
+      env:
+        prev: ${{ steps.config.outputs.version }}
+      if: ${{ always() && steps.check.outcome == 'failure' }}

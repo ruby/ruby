@@ -68,6 +68,8 @@ typedef struct {
  *
  * @param list The list to check.
  * @return True if the given list is empty, otherwise false.
+ *
+ * \public \memberof pm_list_t
  */
 PRISM_EXPORTED_FUNCTION bool pm_list_empty_p(pm_list_t *list);
 
@@ -76,6 +78,8 @@ PRISM_EXPORTED_FUNCTION bool pm_list_empty_p(pm_list_t *list);
  *
  * @param list The list to check.
  * @return The size of the list.
+ *
+ * \public \memberof pm_list_t
  */
 PRISM_EXPORTED_FUNCTION size_t pm_list_size(pm_list_t *list);
 
@@ -91,6 +95,8 @@ void pm_list_append(pm_list_t *list, pm_list_node_t *node);
  * Deallocate the internal state of the given list.
  *
  * @param list The list to free.
+ *
+ * \public \memberof pm_list_t
  */
 PRISM_EXPORTED_FUNCTION void pm_list_free(pm_list_t *list);
 

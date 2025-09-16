@@ -100,6 +100,15 @@ module Prism
       end
     end
 
+    def test_private_endless_method
+      source = <<~RUBY
+        private def foo = puts "Hello"
+      RUBY
+
+      assert_predicate Prism.parse(source, version: "3.4"), :failure?
+      assert_predicate Prism.parse(source), :success?
+    end
+
     private
 
     def assert_errors(filepath)

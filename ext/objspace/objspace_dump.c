@@ -451,13 +451,16 @@ dump_object(VALUE obj, struct dump_config *dc)
             break;
 
           case imemo_callcache:
-            mid = vm_cc_cme((const struct rb_callcache *)obj)->called_id;
-            if (mid != 0) {
-                dump_append(dc, ", \"called_id\":");
-                dump_append_id(dc, mid);
-
+            {
                 VALUE klass = ((const struct rb_callcache *)obj)->klass;
-                if (klass != 0) {
+                if (klass != Qundef) {
+                    mid = vm_cc_cme((const struct rb_callcache *)obj)->called_id;
+                    if (mid != 0) {
+                        dump_append(dc, ", \"called_id\":");
+                        dump_append_id(dc, mid);
+
+                    }
+
                     dump_append(dc, ", \"receiver_class\":");
                     dump_append_ref(dc, klass);
                 }
@@ -584,7 +587,7 @@ dump_object(VALUE obj, struct dump_config *dc)
         break;
 
       case T_OBJECT:
-        if (FL_TEST(obj, ROBJECT_EMBED)) {
+        if (!FL_TEST_RAW(obj, ROBJECT_HEAP)) {
             dump_append(dc, ", \"embedded\":true");
         }
 
@@ -801,7 +804,7 @@ shape_id_i(shape_id_t shape_id, void *data)
 
     if (RSHAPE_TYPE(shape_id) != SHAPE_ROOT) {
         dump_append(dc, ", \"parent_id\":");
-        dump_append_lu(dc, RSHAPE_PARENT(shape_id));
+        dump_append_lu(dc, RSHAPE_PARENT_RAW_ID(shape_id));
     }
 
     dump_append(dc, ", \"depth\":");

@@ -2041,6 +2041,78 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_get_sigalg
+    # SSL_get0_signature_name() not supported
+    # SSL_get0_peer_signature_name() not supported
+    return unless openssl?(3, 5, 0)
+
+    server_proc = -> (ctx, ssl) {
+      assert_equal('rsa_pss_rsae_sha256', ssl.sigalg)
+      assert_nil(ssl.peer_sigalg)
+
+      readwrite_loop(ctx, ssl)
+    }
+    start_server(server_proc: server_proc) do |port|
+      cli_ctx = OpenSSL::SSL::SSLContext.new
+      server_connect(port, cli_ctx) do |ssl|
+        assert_nil(ssl.sigalg)
+        assert_equal('rsa_pss_rsae_sha256', ssl.peer_sigalg)
+        ssl.puts "abc"; ssl.gets
+      end
+    end
+  end
+
+  def test_pqc_sigalg
+    # PQC algorithm ML-DSA (FIPS 204) is supported on OpenSSL 3.5 or later.
+    return unless openssl?(3, 5, 0)
+
+    mldsa = Fixtures.pkey("mldsa65-1")
+    mldsa_ca_key  = Fixtures.pkey("mldsa65-2")
+    mldsa_ca_cert = issue_cert(@ca, mldsa_ca_key, 1, @ca_exts, nil, nil,
+                               digest: nil)
+    mldsa_cert = issue_cert(@svr, mldsa, 60, [], mldsa_ca_cert, mldsa_ca_key,
+                            digest: nil)
+    rsa = Fixtures.pkey("rsa2048")
+    rsa_cert = issue_cert(@svr, rsa, 61, [], @ca_cert, @ca_key)
+    ctx_proc = -> ctx {
+      # Unset values set by start_server
+      ctx.cert = ctx.key = ctx.extra_chain_cert = nil
+      ctx.add_certificate(mldsa_cert, mldsa)
+      ctx.add_certificate(rsa_cert, rsa)
+    }
+
+    server_proc = -> (ctx, ssl) {
+      assert_equal('mldsa65', ssl.sigalg)
+
+      readwrite_loop(ctx, ssl)
+    }
+    start_server(ctx_proc: ctx_proc, server_proc: server_proc) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      # Set signature algorithm because while OpenSSL may use ML-DSA by
+      # default, the system OpenSSL configuration affects the used signature
+      # algorithm.
+      ctx.sigalgs = 'mldsa65'
+      server_connect(port, ctx) { |ssl|
+        assert_equal('mldsa65', ssl.peer_sigalg)
+        ssl.puts "abc"; ssl.gets
+      }
+    end
+
+    server_proc = -> (ctx, ssl) {
+      assert_equal('rsa_pss_rsae_sha256', ssl.sigalg)
+
+      readwrite_loop(ctx, ssl)
+    }
+    start_server(ctx_proc: ctx_proc, server_proc: server_proc) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.sigalgs = 'rsa_pss_rsae_sha256'
+      server_connect(port, ctx) { |ssl|
+        assert_equal('rsa_pss_rsae_sha256', ssl.peer_sigalg)
+        ssl.puts "abc"; ssl.gets
+      }
+    end
+  end
+
   def test_connect_works_when_setting_dh_callback_to_nil
     omit "AWS-LC does not support DHE ciphersuites" if aws_lc?
 
@@ -2088,6 +2160,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       server_connect(port, ctx) { |ssl|
         cs = ssl.cipher[0]
         assert_match (/\AECDH/), cs
+        # SSL_get0_group_name() is supported on OpenSSL 3.2 or later.
+        assert_equal "secp384r1", ssl.group if openssl?(3, 2, 0)
         assert_equal "secp384r1", ssl.tmp_key.group.curve_name
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
@@ -2127,9 +2201,34 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
       server_connect(port, ctx) { |ssl|
         assert_equal "TLSv1.3", ssl.ssl_version
+        # SSL_get0_group_name() is supported on OpenSSL 3.2 or later.
+        assert_equal "secp384r1", ssl.group if openssl?(3, 2, 0)
         assert_equal "secp384r1", ssl.tmp_key.group.curve_name
         ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
+    end
+  end
+
+  def test_pqc_group
+    # PQC algorithm ML-KEM (FIPS 203) is supported on OpenSSL 3.5 or later.
+    return unless openssl?(3, 5, 0)
+
+    [
+      'X25519MLKEM768',
+      'SecP256r1MLKEM768',
+      'SecP384r1MLKEM1024'
+    ].each do |group|
+      ctx_proc = -> ctx {
+        ctx.groups = group
+      }
+      start_server(ctx_proc: ctx_proc) do |port|
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.groups = group
+        server_connect(port, ctx) { |ssl|
+          assert_equal(group, ssl.group)
+          ssl.puts "abc"; ssl.gets
+        }
+      end
     end
   end
 

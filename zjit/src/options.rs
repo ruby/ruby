@@ -1,32 +1,67 @@
+//! Configurable options for ZJIT.
+
 use std::{ffi::{CStr, CString}, ptr::null};
 use std::os::raw::{c_char, c_int, c_uint};
+use crate::cruby::*;
+use std::collections::HashSet;
+
+/// Default --zjit-num-profiles
+const DEFAULT_NUM_PROFILES: u8 = 5;
+
+/// Default --zjit-call-threshold. This should be large enough to avoid compiling
+/// warmup code, but small enough to perform well on micro-benchmarks.
+pub const DEFAULT_CALL_THRESHOLD: u64 = 30;
 
 /// Number of calls to start profiling YARV instructions.
 /// They are profiled `rb_zjit_call_threshold - rb_zjit_profile_threshold` times,
 /// which is equal to --zjit-num-profiles.
 #[unsafe(no_mangle)]
 #[allow(non_upper_case_globals)]
-pub static mut rb_zjit_profile_threshold: u64 = 1;
+pub static mut rb_zjit_profile_threshold: u64 = DEFAULT_CALL_THRESHOLD - DEFAULT_NUM_PROFILES as u64;
 
 /// Number of calls to compile ISEQ with ZJIT at jit_compile() in vm.c.
 /// --zjit-call-threshold=1 compiles on first execution without profiling information.
 #[unsafe(no_mangle)]
 #[allow(non_upper_case_globals)]
-pub static mut rb_zjit_call_threshold: u64 = 2;
+pub static mut rb_zjit_call_threshold: u64 = DEFAULT_CALL_THRESHOLD;
 
-#[derive(Clone, Copy, Debug)]
+/// ZJIT command-line options. This is set before rb_zjit_init() sets
+/// ZJITState so that we can query some options while loading builtins.
+pub static mut OPTIONS: Option<Options> = None;
+
+#[derive(Clone, Debug)]
 pub struct Options {
+    /// Hard limit of the executable memory block to allocate in bytes.
+    /// Note that the command line argument is expressed in MiB and not bytes.
+    pub exec_mem_bytes: usize,
+
+    /// Hard limit of ZJIT's total memory usage.
+    /// Note that the command line argument is expressed in MiB and not bytes.
+    pub mem_bytes: usize,
+
     /// Number of times YARV instructions should be profiled.
     pub num_profiles: u8,
 
+    /// Enable YJIT statsitics
+    pub stats: bool,
+
+    /// Print stats on exit (when stats is also true)
+    pub print_stats: bool,
+
     /// Enable debug logging
     pub debug: bool,
+
+    /// Turn off the HIR optimizer
+    pub disable_hir_opt: bool,
 
     /// Dump initial High-level IR before optimization
     pub dump_hir_init: Option<DumpHIR>,
 
     /// Dump High-level IR after optimization, right before codegen.
     pub dump_hir_opt: Option<DumpHIR>,
+
+    /// Dump High-level IR to the given file in Graphviz format after optimization
+    pub dump_hir_graphviz: Option<std::path::PathBuf>,
 
     /// Dump low-level IR
     pub dump_lir: bool,
@@ -36,26 +71,50 @@ pub struct Options {
 
     /// Dump code map to /tmp for performance profilers.
     pub perf: bool,
+
+    /// List of ISEQs that can be compiled, identified by their iseq_get_location()
+    pub allowed_iseqs: Option<HashSet<String>>,
+
+    /// Path to a file where compiled ISEQs will be saved.
+    pub log_compiled_iseqs: Option<std::path::PathBuf>,
 }
 
-/// Return an Options with default values
-pub fn init_options() -> Options {
-    Options {
-        num_profiles: 1,
-        debug: false,
-        dump_hir_init: None,
-        dump_hir_opt: None,
-        dump_lir: false,
-        dump_disasm: false,
-        perf: false,
+impl Default for Options {
+    fn default() -> Self {
+        Options {
+            exec_mem_bytes: 64 * 1024 * 1024,
+            mem_bytes: 128 * 1024 * 1024,
+            num_profiles: DEFAULT_NUM_PROFILES,
+            stats: false,
+            print_stats: false,
+            debug: false,
+            disable_hir_opt: false,
+            dump_hir_init: None,
+            dump_hir_opt: None,
+            dump_hir_graphviz: None,
+            dump_lir: false,
+            dump_disasm: false,
+            perf: false,
+            allowed_iseqs: None,
+            log_compiled_iseqs: None,
+        }
     }
 }
 
 /// `ruby --help` descriptions for user-facing options. Do not add options for ZJIT developers.
-/// Note that --help allows only 80 chars per line, including indentation.    80-char limit --> |
-pub const ZJIT_OPTIONS: &'static [(&str, &str)] = &[
-    ("--zjit-call-threshold=num", "Number of calls to trigger JIT (default: 2)."),
-    ("--zjit-num-profiles=num",   "Number of profiled calls before JIT (default: 1, max: 255)."),
+/// Note that --help allows only 80 chars per line, including indentation, and it also puts the
+/// description in a separate line if the option name is too long.  80-char limit --> | (any character beyond this `|` column fails the test)
+pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
+    ("--zjit-mem-size=num",
+                     "Max amount of memory that ZJIT can use (in MiB)."),
+    ("--zjit-call-threshold=num",
+                     "Number of calls to trigger JIT (default: 2)."),
+    ("--zjit-num-profiles=num",
+                     "Number of profiled calls before JIT (default: 1, max: 255)."),
+    ("--zjit-stats[=quiet]", "Enable collecting ZJIT statistics (=quiet to suppress output)."),
+    ("--zjit-perf",  "Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf."),
+    ("--zjit-log-compiled-iseqs=path",
+                     "Log compiled ISEQs to the file. The file will be truncated."),
 ];
 
 #[derive(Clone, Copy, Debug)]
@@ -73,34 +132,55 @@ macro_rules! get_option {
     // Unsafe is ok here because options are initialized
     // once before any Ruby code executes
     ($option_name:ident) => {
-        {
-            use crate::state::ZJITState;
-            ZJITState::get_options().$option_name
-        }
+        unsafe { crate::options::OPTIONS.as_ref() }.unwrap().$option_name
     };
 }
 pub(crate) use get_option;
 
-/// Allocate Options on the heap, initialize it, and return the address of it.
-/// The return value will be modified by rb_zjit_parse_option() and then
-/// passed to rb_zjit_init() for initialization.
+/// Set default values to ZJIT options. Setting Some to OPTIONS will make `#with_jit`
+/// enable the JIT hook while not enabling compilation yet.
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_init_options() -> *const u8 {
-    let options = init_options();
-    Box::into_raw(Box::new(options)) as *const u8
+pub extern "C" fn rb_zjit_prepare_options() {
+    // rb_zjit_prepare_options() could be called for feature flags or $RUBY_ZJIT_ENABLE
+    // after rb_zjit_parse_option() is called, so we need to handle the already-initialized case.
+    if unsafe { OPTIONS.is_none() } {
+        unsafe { OPTIONS = Some(Options::default()); }
+    }
 }
 
 /// Parse a --zjit* command-line flag
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_parse_option(options: *const u8, str_ptr: *const c_char) -> bool {
-    let options = unsafe { &mut *(options as *mut Options) };
-    parse_option(options, str_ptr).is_some()
+pub extern "C" fn rb_zjit_parse_option(str_ptr: *const c_char) -> bool {
+    parse_option(str_ptr).is_some()
+}
+
+fn parse_jit_list(path_like: &str) -> HashSet<String> {
+    // Read lines from the file
+    let mut result = HashSet::new();
+    if let Ok(lines) = std::fs::read_to_string(path_like) {
+        for line in lines.lines() {
+            let trimmed = line.trim();
+            if !trimmed.is_empty() {
+                result.insert(trimmed.to_string());
+            }
+        }
+    } else {
+        eprintln!("Failed to read JIT list from '{}'", path_like);
+    }
+    eprintln!("JIT list:");
+    for item in &result {
+        eprintln!("  {}", item);
+    }
+    result
 }
 
 /// Expected to receive what comes after the third dash in "--zjit-*".
 /// Empty string means user passed only "--zjit". C code rejects when
 /// they pass exact "--zjit-".
-fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> Option<()> {
+fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
+    rb_zjit_prepare_options();
+    let options = unsafe { OPTIONS.as_mut().unwrap() };
+
     let c_str: &CStr = unsafe { CStr::from_ptr(str_ptr) };
     let opt_str: &str = c_str.to_str().ok()?;
 
@@ -116,10 +196,24 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
     match (opt_name, opt_val) {
         ("", "") => {}, // Simply --zjit
 
+        ("mem-size", _) => match opt_val.parse::<usize>() {
+            Ok(n) => {
+                // Reject 0 or too large values that could overflow.
+                // The upper bound is 1 TiB but we could make it smaller.
+                if n == 0 || n > 1024 * 1024 {
+                    return None
+                }
+
+                // Convert from MiB to bytes internally for convenience
+                options.exec_mem_bytes = n * 1024 * 1024;
+            }
+            Err(_) => return None,
+        },
+
         ("call-threshold", _) => match opt_val.parse() {
             Ok(n) => {
                 unsafe { rb_zjit_call_threshold = n; }
-                update_profile_threshold(options);
+                update_profile_threshold();
             },
             Err(_) => return None,
         },
@@ -127,12 +221,23 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
         ("num-profiles", _) => match opt_val.parse() {
             Ok(n) => {
                 options.num_profiles = n;
-                update_profile_threshold(options);
+                update_profile_threshold();
             },
             Err(_) => return None,
         },
 
+        ("stats", "") => {
+            options.stats = true;
+            options.print_stats = true;
+        }
+        ("stats", "quiet") => {
+            options.stats = true;
+            options.print_stats = false;
+        }
+
         ("debug", "") => options.debug = true,
+
+        ("disable-hir-opt", "") => options.disable_hir_opt = true,
 
         // --zjit-dump-hir dumps the actual input to the codegen, which is currently the same as --zjit-dump-hir-opt.
         ("dump-hir" | "dump-hir-opt", "") => options.dump_hir_opt = Some(DumpHIR::WithoutSnapshot),
@@ -143,11 +248,39 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
         ("dump-hir-init", "all") => options.dump_hir_init = Some(DumpHIR::All),
         ("dump-hir-init", "debug") => options.dump_hir_init = Some(DumpHIR::Debug),
 
+        ("dump-hir-graphviz", "") => options.dump_hir_graphviz = Some("/dev/stderr".into()),
+        ("dump-hir-graphviz", _) => {
+            // Truncate the file if it exists
+            std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(opt_val)
+                .map_err(|e| eprintln!("Failed to open file '{}': {}", opt_val, e))
+                .ok();
+            let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
+            options.dump_hir_graphviz = Some(opt_val);
+        }
+
         ("dump-lir", "") => options.dump_lir = true,
 
         ("dump-disasm", "") => options.dump_disasm = true,
 
         ("perf", "") => options.perf = true,
+
+        ("allowed-iseqs", _) if !opt_val.is_empty() => options.allowed_iseqs = Some(parse_jit_list(opt_val)),
+        ("log-compiled-iseqs", _) if !opt_val.is_empty() => {
+            // Truncate the file if it exists
+            std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(opt_val)
+                .map_err(|e| eprintln!("Failed to open file '{}': {}", opt_val, e))
+                .ok();
+            let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
+            options.log_compiled_iseqs = Some(opt_val);
+        }
 
         _ => return None, // Option name not recognized
     }
@@ -157,16 +290,24 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
 }
 
 /// Update rb_zjit_profile_threshold based on rb_zjit_call_threshold and options.num_profiles
-fn update_profile_threshold(options: &Options) {
-    unsafe {
-        if rb_zjit_call_threshold == 1 {
-            // If --zjit-call-threshold=1, never rewrite ISEQs to profile instructions.
-            rb_zjit_profile_threshold = 0;
-        } else {
-            // Otherwise, profile instructions at least once.
-            rb_zjit_profile_threshold = rb_zjit_call_threshold.saturating_sub(options.num_profiles as u64).max(1);
-        }
+fn update_profile_threshold() {
+    if unsafe { rb_zjit_call_threshold == 1 } {
+        // If --zjit-call-threshold=1, never rewrite ISEQs to profile instructions.
+        unsafe { rb_zjit_profile_threshold = 0; }
+    } else {
+        // Otherwise, profile instructions at least once.
+        let num_profiles = get_option!(num_profiles) as u64;
+        unsafe { rb_zjit_profile_threshold = rb_zjit_call_threshold.saturating_sub(num_profiles).max(1) };
     }
+}
+
+#[cfg(test)]
+pub fn internal_set_num_profiles(n: u8) {
+    let options = unsafe { OPTIONS.as_mut().unwrap() };
+    options.num_profiles = n;
+    let call_threshold = n.saturating_add(1);
+    unsafe { rb_zjit_call_threshold = call_threshold as u64; }
+    update_profile_threshold();
 }
 
 /// Print YJIT options for `ruby --help`. `width` is width of option parts, and
@@ -193,3 +334,37 @@ macro_rules! debug {
     };
 }
 pub(crate) use debug;
+
+/// Return Qtrue if --zjit* has been specified. For the `#with_jit` hook,
+/// this becomes Qtrue before ZJIT is actually initialized and enabled.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_option_enabled_p(_ec: EcPtr, _self: VALUE) -> VALUE {
+    // If any --zjit* option is specified, OPTIONS becomes Some.
+    if unsafe { OPTIONS.is_some() } {
+        Qtrue
+    } else {
+        Qfalse
+    }
+}
+
+/// Return Qtrue if --zjit-stats has been specified.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_stats_enabled_p(_ec: EcPtr, _self: VALUE) -> VALUE {
+    // Builtin zjit.rb calls this even if ZJIT is disabled, so OPTIONS may not be set.
+    if unsafe { OPTIONS.as_ref() }.is_some_and(|opts| opts.stats) {
+        Qtrue
+    } else {
+        Qfalse
+    }
+}
+
+/// Return Qtrue if stats should be printed at exit.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_print_stats_p(_ec: EcPtr, _self: VALUE) -> VALUE {
+    // Builtin zjit.rb calls this even if ZJIT is disabled, so OPTIONS may not be set.
+    if unsafe { OPTIONS.as_ref() }.is_some_and(|opts| opts.stats && opts.print_stats) {
+        Qtrue
+    } else {
+        Qfalse
+    }
+}

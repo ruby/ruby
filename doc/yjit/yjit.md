@@ -388,7 +388,7 @@ There are multiple test suites:
 - `make test-all`
 - `make test-spec`
 - `make check` runs all of the above
-- `make yjit-smoke-test` runs quick checks to see that YJIT is working correctly
+- `make yjit-check` runs quick checks to see that YJIT is working correctly
 
 The tests can be run in parallel like this:
 

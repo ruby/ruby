@@ -71,10 +71,6 @@
 #define HASH_DEBUG 0
 #endif
 
-#if HASH_DEBUG
-#include "internal/gc.h"
-#endif
-
 #define SET_DEFAULT(hash, ifnone) ( \
     FL_UNSET_RAW(hash, RHASH_PROC_DEFAULT), \
     RHASH_SET_IFNONE(hash, ifnone))
@@ -184,7 +180,7 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
             hnum = rb_hash_start(hnum);
         }
         else {
-            hnum = RSYMBOL(a)->hashval;
+            hnum = RSHIFT(RSYMBOL(a)->hashval, 1);
         }
         break;
       case T_FIXNUM:
@@ -325,40 +321,35 @@ objid_hash(VALUE obj)
 #endif
 }
 
-/**
+/*
  * call-seq:
- *    obj.hash    -> integer
+ *   hash -> integer
  *
- * Generates an Integer hash value for this object.  This function must have the
- * property that <code>a.eql?(b)</code> implies <code>a.hash == b.hash</code>.
+ * Returns the integer hash value for +self+;
+ * has the property that if <tt>foo.eql?(bar)</tt>
+ * then <tt>foo.hash == bar.hash</tt>.
  *
- * The hash value is used along with #eql? by the Hash class to determine if
- * two objects reference the same hash key.  Any hash value that exceeds the
- * capacity of an Integer will be truncated before being used.
+ * \Class Hash uses both #hash and #eql? to determine whether two objects
+ * used as hash keys are to be treated as the same key.
+ * A hash value that exceeds the capacity of an Integer is truncated before being used.
  *
- * The hash value for an object may not be identical across invocations or
- * implementations of Ruby.  If you need a stable identifier across Ruby
- * invocations and implementations you will need to generate one with a custom
- * method.
+ * Many core classes override method Object#hash;
+ * other core classes (e.g., Integer) calculate the hash internally,
+ * and do not call the #hash method when used as a hash key.
  *
- * Certain core classes such as Integer use built-in hash calculations and
- * do not call the #hash method when used as a hash key.
- *
- * When implementing your own #hash based on multiple values, the best
- * practice is to combine the class and any values using the hash code of an
- * array:
- *
- * For example:
+ * When implementing #hash for a user-defined class,
+ * best practice is to use Array#hash with the class name and the values
+ * that are important in the instance;
+ * this takes advantage of that method's logic for safely and efficiently
+ * generating a hash value:
  *
  *   def hash
  *     [self.class, a, b, c].hash
  *   end
  *
- * The reason for this is that the Array#hash method already has logic for
- * safely and efficiently combining multiple hash values.
- *--
- * \private
- *++
+ * The hash value may differ among invocations or implementations of Ruby.
+ * If you need stable hash-like identifiers across Ruby invocations and implementations,
+ * use a custom method to generate them.
  */
 VALUE
 rb_obj_hash(VALUE obj)
@@ -2991,6 +2982,14 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.replace({bat: 3, bam: 4}) # => {bat: 3, bam: 4}
  *
+ *  Also replaces the default value or proc of +self+ with the default value
+ *  or proc of +other_hash+.
+ *
+ *    h = {}
+ *    other = Hash.new(:ok)
+ *    h.replace(other)
+ *    h.default # => :ok
+ *
  *  Related: see {Methods for Assigning}[rdoc-ref:Hash@Methods+for+Assigning].
  */
 
@@ -3608,24 +3607,24 @@ symbol_key_needs_quote(VALUE str)
     if (first == '@' || first == '$' || first == '!') return true;
     if (!at_char_boundary(s, s + len - 1, RSTRING_END(str), rb_enc_get(str))) return false;
     switch (s[len - 1]) {
-        case '+':
-        case '-':
-        case '*':
-        case '/':
-        case '`':
-        case '%':
-        case '^':
-        case '&':
-        case '|':
-        case ']':
-        case '<':
-        case '=':
-        case '>':
-        case '~':
-        case '@':
-            return true;
-        default:
-            return false;
+      case '+':
+      case '-':
+      case '*':
+      case '/':
+      case '`':
+      case '%':
+      case '^':
+      case '&':
+      case '|':
+      case ']':
+      case '<':
+      case '=':
+      case '>':
+      case '~':
+      case '@':
+        return true;
+      default:
+        return false;
     }
 }
 
@@ -5188,25 +5187,26 @@ env_enc_str_new(const char *ptr, long len, rb_encoding *enc)
 }
 
 static VALUE
-env_str_new(const char *ptr, long len)
+env_str_new(const char *ptr, long len, rb_encoding *enc)
 {
-    return env_enc_str_new(ptr, len, env_encoding());
+    return env_enc_str_new(ptr, len, enc);
 }
 
 static VALUE
-env_str_new2(const char *ptr)
+env_str_new2(const char *ptr, rb_encoding *enc)
 {
     if (!ptr) return Qnil;
-    return env_str_new(ptr, strlen(ptr));
+    return env_str_new(ptr, strlen(ptr), enc);
 }
 
 static VALUE
 getenv_with_lock(const char *name)
 {
     VALUE ret;
+    rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         const char *val = getenv(name);
-        ret = env_str_new2(val);
+        ret = env_str_new2(val, enc);
     }
     return ret;
 }
@@ -5769,13 +5769,14 @@ env_values(void)
 {
     VALUE ary = rb_ary_new();
 
+    rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
 
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
-                rb_ary_push(ary, env_str_new2(s+1));
+                rb_ary_push(ary, env_str_new2(s+1, enc));
             }
             env++;
         }
@@ -5861,14 +5862,15 @@ env_each_pair(VALUE ehash)
 
     VALUE ary = rb_ary_new();
 
+    rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
 
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
-                rb_ary_push(ary, env_str_new(*env, s-*env));
-                rb_ary_push(ary, env_str_new2(s+1));
+                rb_ary_push(ary, env_str_new(*env, s-*env, enc));
+                rb_ary_push(ary, env_str_new2(s+1, enc));
             }
             env++;
         }
@@ -6251,13 +6253,14 @@ env_to_a(VALUE _)
 {
     VALUE ary = rb_ary_new();
 
+    rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
-                rb_ary_push(ary, rb_assoc_new(env_str_new(*env, s-*env),
-                                              env_str_new2(s+1)));
+                rb_ary_push(ary, rb_assoc_new(env_str_new(*env, s-*env, enc),
+                                              env_str_new2(s+1, enc)));
             }
             env++;
         }
@@ -6505,6 +6508,7 @@ env_key(VALUE dmy, VALUE value)
     StringValue(value);
     VALUE str = Qnil;
 
+    rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         while (*env) {
@@ -6512,7 +6516,7 @@ env_key(VALUE dmy, VALUE value)
             if (s++) {
                 long len = strlen(s);
                 if (RSTRING_LEN(value) == len && strncmp(s, RSTRING_PTR(value), len) == 0) {
-                    str = env_str_new(*env, s-*env-1);
+                    str = env_str_new(*env, s-*env-1, enc);
                     break;
                 }
             }
@@ -6529,13 +6533,14 @@ env_to_hash(void)
 {
     VALUE hash = rb_hash_new();
 
+    rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         while (*env) {
             char *s = strchr(*env, '=');
             if (s) {
-                rb_hash_aset(hash, env_str_new(*env, s-*env),
-                             env_str_new2(s+1));
+                rb_hash_aset(hash, env_str_new(*env, s-*env, enc),
+                             env_str_new2(s+1, enc));
             }
             env++;
         }
@@ -6680,14 +6685,15 @@ env_shift(VALUE _)
     VALUE result = Qnil;
     VALUE key = Qnil;
 
+    rb_encoding *enc = env_encoding();
     ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         if (*env) {
             const char *p = *env;
             char *s = strchr(p, '=');
             if (s) {
-                key = env_str_new(p, s-p);
-                VALUE val = env_str_new2(getenv(RSTRING_PTR(key)));
+                key = env_str_new(p, s-p, enc);
+                VALUE val = env_str_new2(getenv(RSTRING_PTR(key)), enc);
                 result = rb_assoc_new(key, val);
             }
         }
@@ -7604,7 +7610,7 @@ Init_Hash(void)
      *
      * - ::assoc: Returns a 2-element array containing the name and value
      *   of the named environment variable if it exists:
-     * - ::clone: Returns +ENV+ (and issues a warning).
+     * - ::clone: Raises an exception.
      * - ::except: Returns a hash of all name/value pairs except those given.
      * - ::fetch: Returns the value for the given name.
      * - ::inspect: Returns the contents of +ENV+ as a string.

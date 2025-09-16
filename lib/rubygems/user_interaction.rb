@@ -193,7 +193,7 @@ class Gem::StreamUI
   # then special operations (like asking for passwords) will use the TTY
   # commands to disable character echo.
 
-  def initialize(in_stream, out_stream, err_stream=$stderr, usetty=true)
+  def initialize(in_stream, out_stream, err_stream = $stderr, usetty = true)
     @ins = in_stream
     @outs = out_stream
     @errs = err_stream
@@ -246,7 +246,7 @@ class Gem::StreamUI
   # to a tty, raises an exception if default is nil, otherwise returns
   # default.
 
-  def ask_yes_no(question, default=nil)
+  def ask_yes_no(question, default = nil)
     unless tty?
       if default.nil?
         raise Gem::OperationNotSupportedError,
@@ -325,14 +325,14 @@ class Gem::StreamUI
   ##
   # Display a statement.
 
-  def say(statement="")
+  def say(statement = "")
     @outs.puts statement
   end
 
   ##
   # Display an informational alert.  Will ask +question+ if it is not nil.
 
-  def alert(statement, question=nil)
+  def alert(statement, question = nil)
     @outs.puts "INFO:  #{statement}"
     ask(question) if question
   end
@@ -340,7 +340,7 @@ class Gem::StreamUI
   ##
   # Display a warning on stderr.  Will ask +question+ if it is not nil.
 
-  def alert_warning(statement, question=nil)
+  def alert_warning(statement, question = nil)
     @errs.puts "WARNING:  #{statement}"
     ask(question) if question
   end
@@ -349,7 +349,7 @@ class Gem::StreamUI
   # Display an error message in a location expected to get error messages.
   # Will ask +question+ if it is not nil.
 
-  def alert_error(statement, question=nil)
+  def alert_error(statement, question = nil)
     @errs.puts "ERROR:  #{statement}"
     ask(question) if question
   end

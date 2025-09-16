@@ -21,6 +21,7 @@ module Bundler
         @locked_version = locked_specs.version_for(name)
         @unlock = unlock
         @dependency = dependency || Dependency.new(name, @locked_version)
+        @platforms |= [Gem::Platform::RUBY] if @dependency.default_force_ruby_platform
         @top_level = !dependency.nil?
         @prerelease = @dependency.prerelease? || @locked_version&.prerelease? || prerelease ? :consider_first : :ignore
         @prefer_local = prefer_local

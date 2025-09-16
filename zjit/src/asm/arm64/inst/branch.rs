@@ -89,7 +89,7 @@ mod tests {
     #[test]
     fn test_ret() {
         let result: u32 = Branch::ret(30).into();
-        assert_eq!(0xd65f03C0, result);
+        assert_eq!(0xd65f03c0, result);
     }
 
     #[test]

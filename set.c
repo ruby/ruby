@@ -139,7 +139,6 @@ set_mark(void *ptr)
 static void
 set_free_embedded(struct set_object *sobj)
 {
-    free((&sobj->table)->bins);
     free((&sobj->table)->entries);
 }
 
@@ -172,9 +171,7 @@ set_foreach_replace(st_data_t key, st_data_t argp, int error)
 static int
 set_replace_ref(st_data_t *key, st_data_t argp, int existing)
 {
-    if (rb_gc_location((VALUE)*key) != (VALUE)*key) {
-        *key = rb_gc_location((VALUE)*key);
-    }
+    rb_gc_mark_and_move((VALUE *)key);
 
     return ST_CONTINUE;
 }
@@ -406,6 +403,13 @@ set_s_alloc(VALUE klass)
     return set_alloc_with_size(klass, 0);
 }
 
+/*
+ *  call-seq:
+ *    Set[*objects] -> new_set
+ *
+ *  Returns a new Set object populated with the given objects,
+ *  See Set::new.
+ */
 static VALUE
 set_s_create(int argc, VALUE *argv, VALUE klass)
 {
@@ -505,6 +509,14 @@ set_i_initialize(int argc, VALUE *argv, VALUE set)
             }
         }
         else {
+            ID id_size = rb_intern("size");
+            if (rb_obj_is_kind_of(other, rb_mEnumerable) && rb_respond_to(other, id_size)) {
+                VALUE size = rb_funcall(other, id_size, 0);
+                if (RB_TYPE_P(size, T_FLOAT) && RFLOAT_VALUE(size) == INFINITY) {
+                    rb_raise(rb_eArgError, "cannot initialize Set from an object with infinite size");
+                }
+            }
+
             rb_block_call(other, enum_method_id(other), 0, 0,
                 rb_block_given_p() ? set_initialize_with_block : set_initialize_without_block,
                 set);
@@ -514,6 +526,7 @@ set_i_initialize(int argc, VALUE *argv, VALUE set)
     return set;
 }
 
+/* :nodoc: */
 static VALUE
 set_i_initialize_copy(VALUE set, VALUE other)
 {
@@ -2031,8 +2044,8 @@ rb_set_size(VALUE set)
  * Here, class \Set provides methods that are useful for:
  *
  * - {Creating an Array}[rdoc-ref:Array@Methods+for+Creating+an+Array]
- * - {Creating a Set}[rdoc-ref:Array@Methods+for+Creating+a+Set]
- * - {Set Operations}[rdoc-ref:Array@Methods+for+Set+Operations]
+ * - {Creating a Set}[rdoc-ref:Set@Methods+for+Creating+a+Set]
+ * - {Set Operations}[rdoc-ref:Set@Methods+for+Set+Operations]
  * - {Comparing}[rdoc-ref:Array@Methods+for+Comparing]
  * - {Querying}[rdoc-ref:Array@Methods+for+Querying]
  * - {Assigning}[rdoc-ref:Array@Methods+for+Assigning]

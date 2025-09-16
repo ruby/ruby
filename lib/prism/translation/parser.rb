@@ -19,6 +19,13 @@ module Prism
     # whitequark/parser gem's syntax tree. It inherits from the base parser for
     # the parser gem, and overrides the parse* methods to parse with prism and
     # then translate.
+    #
+    # Note that this version of the parser always parses using the latest
+    # version of Ruby syntax supported by Prism. If you want specific version
+    # support, use one of the version-specific subclasses, such as
+    # `Prism::Translation::Parser34`. If you want to parse using the same
+    # version of Ruby syntax as the currently running version of Ruby, use
+    # `Prism::Translation::ParserCurrent`.
     class Parser < ::Parser::Base
       Diagnostic = ::Parser::Diagnostic # :nodoc:
       private_constant :Diagnostic
@@ -77,7 +84,7 @@ module Prism
       end
 
       def version # :nodoc:
-        34
+        35
       end
 
       # The default encoding for Ruby files is UTF-8.

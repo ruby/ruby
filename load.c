@@ -447,6 +447,11 @@ get_loaded_features_index(vm_ns_t *vm_ns)
         VALUE previous_realpath_map = rb_hash_dup(realpath_map);
         rb_hash_clear(realpaths);
         rb_hash_clear(realpath_map);
+
+        /* We have to make a copy of features here because the StringValue call
+         * below could call a Ruby method, which could modify $LOADED_FEATURES
+         * and cause it to be corrupt. */
+        features = rb_ary_resurrect(features);
         for (i = 0; i < RARRAY_LEN(features); i++) {
             VALUE entry, as_str;
             as_str = entry = rb_ary_entry(features, i);
@@ -455,6 +460,10 @@ get_loaded_features_index(vm_ns_t *vm_ns)
             if (as_str != entry)
                 rb_ary_store(features, i, as_str);
             features_index_add(vm_ns, as_str, INT2FIX(i));
+        }
+        /* The user modified $LOADED_FEATURES, so we should restore the changes. */
+        if (!rb_ary_shared_with_p(features, CURRENT_NS_LOADED_FEATURES(vm_ns))) {
+            rb_ary_replace(CURRENT_NS_LOADED_FEATURES(vm_ns), features);
         }
         reset_loaded_features_snapshot(vm_ns);
 
@@ -621,6 +630,7 @@ rb_feature_p(vm_ns_t *vm_ns, const char *feature, const char *ext, int rb, int e
                 index = rb_darray_get(feature_indexes, i);
             }
 
+            if (index >= RARRAY_LEN(features)) continue;
             v = RARRAY_AREF(features, index);
             f = StringValuePtr(v);
             if ((n = RSTRING_LEN(v)) < len) continue;
@@ -1318,7 +1328,7 @@ no_feature_p(vm_ns_t *vm_ns, const char *feature, const char *ext, int rb, int e
     return 0;
 }
 
-// Documented in doc/globals.rdoc
+// Documented in doc/globals.md
 VALUE
 rb_resolve_feature_path(VALUE klass, VALUE fname)
 {
@@ -1346,14 +1356,14 @@ rb_resolve_feature_path(VALUE klass, VALUE fname)
 }
 
 static void
-ext_config_push(rb_thread_t *th, struct rb_ext_config *prev)
+ext_config_push(rb_thread_t *th, volatile struct rb_ext_config *prev)
 {
     *prev = th->ext_config;
     th->ext_config = (struct rb_ext_config){0};
 }
 
 static void
-ext_config_pop(rb_thread_t *th, struct rb_ext_config *prev)
+ext_config_pop(rb_thread_t *th, volatile struct rb_ext_config *prev)
 {
     th->ext_config = *prev;
 }
@@ -1407,7 +1417,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     VALUE realpaths = get_loaded_features_realpaths(vm_ns);
     VALUE realpath_map = get_loaded_features_realpath_map(vm_ns);
     volatile bool reset_ext_config = false;
-    struct rb_ext_config prev_ext_config;
+    volatile struct rb_ext_config prev_ext_config;
 
     path = rb_str_encode_ospath(fname);
     RUBY_DTRACE_HOOK(REQUIRE_ENTRY, RSTRING_PTR(fname));

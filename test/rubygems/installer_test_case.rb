@@ -215,7 +215,7 @@ class Gem::InstallerTestCase < Gem::TestCase
   ##
   # Creates an installer for +spec+ that will install into +gem_home+.
 
-  def util_installer(spec, gem_home, force=true)
+  def util_installer(spec, gem_home, force = true)
     Gem::Installer.at(spec.cache_file,
                        install_dir: gem_home,
                        force: force)

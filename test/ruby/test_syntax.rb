@@ -1259,6 +1259,56 @@ eom
     assert_valid_syntax("a #\n#\n&.foo\n")
   end
 
+  def test_fluent_and
+    omit if /\+PRISM\b/ =~ RUBY_DESCRIPTION
+
+    assert_valid_syntax("a\n" "&& foo")
+    assert_valid_syntax("a\n" "and foo")
+
+    assert_equal(:ok, eval("#{<<~"begin;"}\n#{<<~'end;'}"))
+    begin;
+      a = true
+      if a
+      && (a = :ok; true)
+        a
+      end
+    end;
+
+    assert_equal(:ok, eval("#{<<~"begin;"}\n#{<<~'end;'}"))
+    begin;
+      a = true
+      if a
+      and (a = :ok; true)
+        a
+      end
+    end;
+  end
+
+  def test_fluent_or
+    omit if /\+PRISM\b/ =~ RUBY_DESCRIPTION
+
+    assert_valid_syntax("a\n" "|| foo")
+    assert_valid_syntax("a\n" "or foo")
+
+    assert_equal(:ok, eval("#{<<~"begin;"}\n#{<<~'end;'}"))
+    begin;
+      a = false
+      if a
+      || (a = :ok; true)
+        a
+      end
+    end;
+
+    assert_equal(:ok, eval("#{<<~"begin;"}\n#{<<~'end;'}"))
+    begin;
+      a = false
+      if a
+      or (a = :ok; true)
+        a
+      end
+    end;
+  end
+
   def test_safe_call_in_massign_lhs
     assert_syntax_error("*a&.x=0", /multiple assignment destination/)
     assert_syntax_error("a&.x,=0", /multiple assignment destination/)
@@ -1794,15 +1844,12 @@ eom
     assert_equal("class ok", k.rescued("ok"))
     assert_equal("instance ok", k.new.rescued("ok"))
 
-    # Current technical limitation: cannot prepend "private" or something for command endless def
-    error = /(syntax error,|\^~*) unexpected string literal/
-    error2 = /(syntax error,|\^~*) unexpected local variable or method/
-    assert_syntax_error('private def foo = puts "Hello"', error)
-    assert_syntax_error('private def foo() = puts "Hello"', error)
-    assert_syntax_error('private def foo(x) = puts x', error2)
-    assert_syntax_error('private def obj.foo = puts "Hello"', error)
-    assert_syntax_error('private def obj.foo() = puts "Hello"', error)
-    assert_syntax_error('private def obj.foo(x) = puts x', error2)
+    assert_valid_syntax('private def foo = puts "Hello"')
+    assert_valid_syntax('private def foo() = puts "Hello"')
+    assert_valid_syntax('private def foo(x) = puts x')
+    assert_valid_syntax('private def obj.foo = puts "Hello"')
+    assert_valid_syntax('private def obj.foo() = puts "Hello"')
+    assert_valid_syntax('private def obj.foo(x) = puts x')
   end
 
   def test_methoddef_in_cond
@@ -1957,6 +2004,19 @@ eom
     assert_equal(/9/, eval('9.then { /#{it}/o }'))
   end
 
+  def test_it_with_splat_super_method
+    bug21256 = '[ruby-core:121592] [Bug #21256]'
+
+    a = Class.new do
+      define_method(:foo) { it }
+    end
+    b = Class.new(a) do
+      def foo(*args) = super
+    end
+
+    assert_equal(1, b.new.foo(1), bug21256)
+  end
+
   def test_value_expr_in_condition
     mesg = /void value expression/
     assert_syntax_error("tap {a = (true ? next : break)}", mesg)
@@ -2027,10 +2087,11 @@ eom
     end
     obj4 = obj1.clone
     obj5 = obj1.clone
+    obj6 = obj1.clone
     obj1.instance_eval('def foo(...) bar(...) end', __FILE__, __LINE__)
-    obj1.instance_eval('def foo(...) eval("bar(...)") end', __FILE__, __LINE__)
     obj4.instance_eval("def foo ...\n  bar(...)\n""end", __FILE__, __LINE__)
     obj5.instance_eval("def foo ...; bar(...); end", __FILE__, __LINE__)
+    obj6.instance_eval('def foo(...) eval("bar(...)") end', __FILE__, __LINE__)
 
     klass = Class.new {
       def foo(*args, **kws, &block)
@@ -2059,7 +2120,7 @@ eom
     end
     obj3.instance_eval('def foo(...) bar(...) end', __FILE__, __LINE__)
 
-    [obj1, obj2, obj3, obj4, obj5].each do |obj|
+    [obj1, obj2, obj3, obj4, obj5, obj6].each do |obj|
       assert_warning('') {
         assert_equal([[1, 2, 3], {k1: 4, k2: 5}], obj.foo(1, 2, 3, k1: 4, k2: 5) {|*x| x})
       }

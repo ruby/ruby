@@ -54,7 +54,7 @@ RSpec.describe "Self management" do
         RUBY
         file.chmod(0o777)
         cmd = Gem.win_platform? ? "#{Gem.ruby} bin/bundle_version.rb" : "bin/bundle_version.rb"
-        sys_exec cmd, artifice: nil
+        in_bundled_app cmd
         expect(out).to eq(previous_minor)
       end
 
@@ -95,7 +95,7 @@ RSpec.describe "Self management" do
         RUBY
         file.chmod(0o777)
         cmd = Gem.win_platform? ? "#{Gem.ruby} bin/bundle_version.rb" : "bin/bundle_version.rb"
-        sys_exec cmd, artifice: nil
+        in_bundled_app cmd
         expect(out).to eq(previous_minor)
       end
 
@@ -212,7 +212,7 @@ RSpec.describe "Self management" do
 
       lockfile_bundled_with("9.9.9")
 
-      sys_exec "#{Gem.ruby} #{test}", artifice: nil, raise_on_error: false
+      in_bundled_app "#{Gem.ruby} #{test}", raise_on_error: false
       expect(err).to include("Could not find myrack-1.0.0")
       expect(err).not_to include("this is the program name")
     end
@@ -234,7 +234,7 @@ RSpec.describe "Self management" do
 
       lockfile_bundled_with("9.9.9")
 
-      sys_exec "#{Gem.ruby} #{runner} #{script}", artifice: nil, raise_on_error: false
+      in_bundled_app "#{Gem.ruby} #{runner} #{script}", raise_on_error: false
       expect(err).to include("Could not find myrack-1.0.0")
     end
 

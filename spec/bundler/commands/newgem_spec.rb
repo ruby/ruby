@@ -175,75 +175,6 @@ RSpec.describe "bundle gem" do
     end
   end
 
-  shared_examples_for "--rubocop flag" do
-    context "is deprecated" do
-      before do
-        global_config "BUNDLE_GEM__LINTER" => nil
-        bundle "gem #{gem_name} --rubocop"
-      end
-
-      it "generates a gem skeleton with rubocop" do
-        gem_skeleton_assertions
-        expect(bundled_app("#{gem_name}/Rakefile")).to read_as(
-          include("# frozen_string_literal: true").
-          and(include('require "rubocop/rake_task"').
-          and(include("RuboCop::RakeTask.new").
-          and(match(/default:.+:rubocop/))))
-        )
-      end
-
-      it "includes rubocop in generated Gemfile" do
-        allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-        builder = Bundler::Dsl.new
-        builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
-        builder.dependencies
-        rubocop_dep = builder.dependencies.find {|d| d.name == "rubocop" }
-        expect(rubocop_dep).not_to be_nil
-      end
-
-      it "generates a default .rubocop.yml" do
-        expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
-      end
-
-      it "includes .rubocop.yml into ignore list" do
-        expect(ignore_paths).to include(".rubocop.yml")
-      end
-    end
-  end
-
-  shared_examples_for "--no-rubocop flag" do
-    context "is deprecated" do
-      define_negated_matcher :exclude, :include
-
-      before do
-        bundle "gem #{gem_name} --no-rubocop"
-      end
-
-      it "generates a gem skeleton without rubocop" do
-        gem_skeleton_assertions
-        expect(bundled_app("#{gem_name}/Rakefile")).to read_as(exclude("rubocop"))
-        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec")).to read_as(exclude("rubocop"))
-      end
-
-      it "does not include rubocop in generated Gemfile" do
-        allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-        builder = Bundler::Dsl.new
-        builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
-        builder.dependencies
-        rubocop_dep = builder.dependencies.find {|d| d.name == "rubocop" }
-        expect(rubocop_dep).to be_nil
-      end
-
-      it "doesn't generate a default .rubocop.yml" do
-        expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
-      end
-
-      it "does not add .rubocop.yml into ignore list" do
-        expect(ignore_paths).not_to include(".rubocop.yml")
-      end
-    end
-  end
-
   shared_examples_for "--linter=rubocop flag" do
     before do
       bundle "gem #{gem_name} --linter=rubocop"
@@ -503,10 +434,7 @@ RSpec.describe "bundle gem" do
   context "when git is not available" do
     # This spec cannot have `git` available in the test env
     before do
-      load_paths = [lib_dir, spec_dir]
-      load_path_str = "-I#{load_paths.join(File::PATH_SEPARATOR)}"
-
-      sys_exec "#{Gem.ruby} #{load_path_str} #{bindir.join("bundle")} gem #{gem_name}", env: { "PATH" => "" }
+      bundle "gem #{gem_name}", env: { "PATH" => "" }
     end
 
     it "creates the gem without the need for git" do
@@ -746,7 +674,7 @@ RSpec.describe "bundle gem" do
       file.puts rakefile
     end
 
-    sys_exec(rake, dir: bundled_app(gem_name))
+    sys_exec("rake", dir: bundled_app(gem_name))
     expect(out).to include("SUCCESS")
   end
 
@@ -1338,32 +1266,6 @@ RSpec.describe "bundle gem" do
     end
   end
 
-  context "gem.rubocop setting set to true" do
-    before do
-      global_config "BUNDLE_GEM__LINTER" => nil
-      bundle "config set gem.rubocop true"
-      bundle "gem #{gem_name}"
-    end
-
-    it "generates rubocop config" do
-      expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
-    end
-
-    it "includes .rubocop.yml into ignore list" do
-      expect(ignore_paths).to include(".rubocop.yml")
-    end
-
-    it "unsets gem.rubocop" do
-      bundle "config gem.rubocop"
-      expect(out).to include("You have not configured a value for `gem.rubocop`")
-    end
-
-    it "sets gem.linter=rubocop instead" do
-      bundle "config gem.linter"
-      expect(out).to match(/Set for the current user .*: "rubocop"/)
-    end
-  end
-
   context "gem.linter set to rubocop and --linter with no arguments" do
     before do
       bundle "config set gem.linter rubocop"
@@ -1561,8 +1463,6 @@ RSpec.describe "bundle gem" do
     it_behaves_like "--linter=rubocop flag"
     it_behaves_like "--linter=standard flag"
     it_behaves_like "--no-linter flag"
-    it_behaves_like "--rubocop flag"
-    it_behaves_like "--no-rubocop flag"
   end
 
   context "with rubocop option in bundle config settings set to false" do
@@ -1572,8 +1472,6 @@ RSpec.describe "bundle gem" do
     it_behaves_like "--linter=rubocop flag"
     it_behaves_like "--linter=standard flag"
     it_behaves_like "--no-linter flag"
-    it_behaves_like "--rubocop flag"
-    it_behaves_like "--no-rubocop flag"
   end
 
   context "with linter option in bundle config settings set to rubocop" do

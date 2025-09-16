@@ -28,7 +28,7 @@ RSpec.describe "bundle cache" do
     end
   end
 
-  context "with --all" do
+  context "with cache_all configured" do
     context "without a gemspec" do
       it "caches all dependencies except bundler itself" do
         gemfile <<-D
@@ -158,20 +158,6 @@ RSpec.describe "bundle cache" do
     end
   end
 
-  context "with --path" do
-    it "sets root directory for gems" do
-      gemfile <<-D
-        source "https://gem.repo1"
-        gem 'myrack'
-      D
-
-      bundle "cache --path #{bundled_app("test")}"
-
-      expect(the_bundle).to include_gems "myrack 1.0.0"
-      expect(bundled_app("test/vendor/cache/")).to exist
-    end
-  end
-
   context "with --no-install" do
     it "puts the gems in vendor/cache but does not install them" do
       gemfile <<-D
@@ -291,33 +277,107 @@ RSpec.describe "bundle cache" do
   end
 
   context "with frozen configured" do
+    let(:app_cache) { bundled_app("vendor/cache") }
+
     before do
-      gemfile <<-G
-        source "https://gem.repo1"
-        gem "myrack"
-      G
-      bundle "install"
-    end
-
-    subject do
       bundle "config set --local frozen true"
-      bundle :cache, raise_on_error: false
     end
 
-    it "tries to install with frozen" do
-      bundle "config set deployment true"
+    it "tries to install but fails when the lockfile is out of sync" do
       gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
-        gem "myrack-obama"
       G
-      subject
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo1/
+          specs:
+            myrack (1.0.0)
+            myrack-obama (1.0)
+              myrack
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          myrack
+          myrack-obama
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+      bundle :cache, raise_on_error: false
       expect(exitstatus).to eq(16)
       expect(err).to include("frozen mode")
-      expect(err).to include("You have added to the Gemfile")
+      expect(err).to include("You have deleted from the Gemfile")
       expect(err).to include("* myrack-obama")
       bundle "env"
-      expect(out).to include("frozen").or include("deployment")
+      expect(out).to include("frozen")
+    end
+
+    it "caches gems without installing when lockfile is in sync, and --no-install is passed, even if vendor/cache directory is initially empty" do
+      gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo1/
+          specs:
+            myrack (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          myrack
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+      FileUtils.mkdir_p app_cache
+
+      bundle "cache --no-install"
+      expect(out).not_to include("Installing myrack 1.0.0")
+      expect(out).to include("Fetching myrack 1.0.0")
+      expect(app_cache.join("myrack-1.0.0.gem")).to exist
+    end
+
+    it "completes a partial cache when lockfile is in sync, even if the already cached gem is no longer available remotely" do
+      build_repo4 do
+        build_gem "foo", "1.0.0"
+      end
+
+      build_gem "bar", "1.0.0", path: bundled_app("vendor/cache")
+
+      gemfile <<-G
+        source "https://gem.repo4"
+        gem "foo"
+        gem "bar"
+      G
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            foo (1.0.0)
+            bar (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          foo
+          bar
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "cache --no-install"
+      expect(out).to include("Fetching foo 1.0.0")
+      expect(out).not_to include("Fetching bar 1.0.0")
+      expect(app_cache.join("foo-1.0.0.gem")).to exist
+      expect(app_cache.join("bar-1.0.0.gem")).to exist
     end
   end
 
@@ -356,7 +416,7 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       bundle :cache
-      pristine_system_gems :bundler
+      pristine_system_gems
       FileUtils.rm_r gem_repo2
 
       bundle "install --local"
@@ -371,10 +431,26 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       bundle :cache
-      pristine_system_gems :bundler
+      pristine_system_gems
       FileUtils.rm_r gem_repo2
 
       bundle "config set --local deployment true"
+      bundle "config set --local path vendor/bundle"
+      bundle :install
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
+
+    it "does not hit the remote at all in non frozen mode either" do
+      build_repo2
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "myrack"
+      G
+
+      bundle :cache
+      pristine_system_gems
+      FileUtils.rm_r gem_repo2
+
       bundle "config set --local path vendor/bundle"
       bundle :install
       expect(the_bundle).to include_gems "myrack 1.0.0"
@@ -388,7 +464,7 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       bundle :cache
-      pristine_system_gems :bundler
+      pristine_system_gems
       FileUtils.rm_r gem_repo2
 
       bundle "config set --local cache_all_platforms true"
@@ -482,7 +558,7 @@ RSpec.describe "bundle install with gem sources" do
         bundle :cache
       end
 
-      pristine_system_gems :bundler
+      pristine_system_gems
 
       bundle "config set --local force_ruby_platform true"
 

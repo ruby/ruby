@@ -290,11 +290,6 @@ rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
 
 #define KCODE_FIXED FL_USER4
 
-#define ARG_REG_OPTION_MASK \
-    (ONIG_OPTION_IGNORECASE|ONIG_OPTION_MULTILINE|ONIG_OPTION_EXTEND)
-#define ARG_ENCODING_FIXED    16
-#define ARG_ENCODING_NONE     32
-
 static int
 char_to_option(int c)
 {
@@ -4855,6 +4850,7 @@ Init_Regexp(void)
     rb_define_method(rb_cRegexp, "named_captures", rb_reg_named_captures, 0);
     rb_define_method(rb_cRegexp, "timeout", rb_reg_timeout_get, 0);
 
+    /* Raised when regexp matching timed out. */
     rb_eRegexpTimeoutError = rb_define_class_under(rb_cRegexp, "TimeoutError", rb_eRegexpError);
     rb_define_singleton_method(rb_cRegexp, "timeout", rb_reg_s_timeout_get, 0);
     rb_define_singleton_method(rb_cRegexp, "timeout=", rb_reg_s_timeout_set, 1);

@@ -54,7 +54,7 @@ inetsock_cleanup(VALUE v)
 }
 
 static VALUE
-current_clocktime()
+current_clocktime(void)
 {
     VALUE clock_monotnic_const = rb_const_get(rb_mProcess, rb_intern("CLOCK_MONOTONIC"));
     return rb_funcall(rb_mProcess, rb_intern("clock_gettime"), 1, clock_monotnic_const);
@@ -208,8 +208,8 @@ rsock_init_inetsock(
     VALUE self, VALUE remote_host, VALUE remote_serv,
     VALUE local_host, VALUE local_serv, int type,
     VALUE resolv_timeout, VALUE connect_timeout, VALUE open_timeout,
-    VALUE _fast_fallback, VALUE _test_mode_settings
-) {
+    VALUE _fast_fallback, VALUE _test_mode_settings)
+{
     if (!NIL_P(open_timeout) && (!NIL_P(resolv_timeout) || !NIL_P(connect_timeout))) {
         rb_raise(rb_eArgError, "Cannot specify open_timeout along with connect_timeout or resolv_timeout");
     }
@@ -423,8 +423,8 @@ select_expires_at(
     struct timeval *connection_attempt_delay,
     struct timeval *user_specified_resolv_timeout_at,
     struct timeval *user_specified_connect_timeout_at,
-    struct timeval *user_specified_open_timeout_at
-) {
+    struct timeval *user_specified_open_timeout_at)
+{
     if (any_addrinfos(resolution_store)) {
         struct timeval *delay;
         delay = resolution_delay ? resolution_delay : connection_attempt_delay;
@@ -526,7 +526,8 @@ in_progress_fds(int fds_size)
 }
 
 static void
-remove_connection_attempt_fd(int *fds, int *fds_size, int removing_fd) {
+remove_connection_attempt_fd(int *fds, int *fds_size, int removing_fd)
+{
     int i, j;
 
     for (i = 0; i < *fds_size; i++) {
@@ -1283,8 +1284,8 @@ rsock_init_inetsock(
     VALUE self, VALUE remote_host, VALUE remote_serv,
     VALUE local_host, VALUE local_serv, int type,
     VALUE resolv_timeout, VALUE connect_timeout, VALUE open_timeout,
-    VALUE fast_fallback, VALUE test_mode_settings
-) {
+    VALUE fast_fallback, VALUE test_mode_settings)
+{
     if (!NIL_P(open_timeout) && (!NIL_P(resolv_timeout) || !NIL_P(connect_timeout))) {
         rb_raise(rb_eArgError, "Cannot specify open_timeout along with connect_timeout or resolv_timeout");
     }
@@ -1315,7 +1316,7 @@ rsock_init_inetsock(
                 );
 
                 struct addrinfo *tmp_p = local_res->ai;
-                for (tmp_p; tmp_p != NULL; tmp_p = tmp_p->ai_next) {
+                for (; tmp_p != NULL; tmp_p = tmp_p->ai_next) {
                     if (target_families[0] == 0 && tmp_p->ai_family == AF_INET6) {
                         target_families[0] = AF_INET6;
                         resolving_family_size++;

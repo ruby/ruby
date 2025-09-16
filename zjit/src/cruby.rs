@@ -81,6 +81,7 @@
 #![allow(non_camel_case_types)]
 // A lot of imported CRuby globals aren't all-caps
 #![allow(non_upper_case_globals)]
+#![allow(clippy::upper_case_acronyms)]
 
 // Some of this code may not be used yet
 #![allow(dead_code)]
@@ -88,7 +89,7 @@
 #![allow(unused_imports)]
 
 use std::convert::From;
-use std::ffi::{CString, CStr};
+use std::ffi::{c_void, CString, CStr};
 use std::fmt::{Debug, Formatter};
 use std::os::raw::{c_char, c_int, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
@@ -159,6 +160,7 @@ unsafe extern "C" {
     pub fn rb_vm_stack_canary() -> VALUE;
     pub fn rb_vm_push_cfunc_frame(cme: *const rb_callable_method_entry_t, recv_idx: c_int);
     pub fn rb_obj_class(klass: VALUE) -> VALUE;
+    pub fn rb_vm_objtostring(iseq: IseqPtr, recv: VALUE, cd: *const rb_call_data) -> VALUE;
 }
 
 // Renames
@@ -259,11 +261,26 @@ pub struct VALUE(pub usize);
 /// An interned string. See [ids] and methods this type.
 /// `0` is a sentinal value for IDs.
 #[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct ID(pub ::std::os::raw::c_ulong);
 
 /// Pointer to an ISEQ
 pub type IseqPtr = *const rb_iseq_t;
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct ShapeId(pub u32);
+
+pub const INVALID_SHAPE_ID: ShapeId = ShapeId(RB_INVALID_SHAPE_ID);
+
+impl ShapeId {
+    pub fn is_valid(self) -> bool {
+        self != INVALID_SHAPE_ID
+    }
+
+    pub fn is_too_complex(self) -> bool {
+        unsafe { rb_jit_shape_too_complex_p(self.0) }
+    }
+}
 
 // Given an ISEQ pointer, convert PC to insn_idx
 pub fn iseq_pc_to_insn_idx(iseq: IseqPtr, pc: *mut VALUE) -> Option<u16> {
@@ -275,6 +292,28 @@ pub fn iseq_pc_to_insn_idx(iseq: IseqPtr, pc: *mut VALUE) -> Option<u16> {
 pub fn iseq_opcode_at_idx(iseq: IseqPtr, insn_idx: u32) -> u32 {
     let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
     unsafe { rb_iseq_opcode_at_pc(iseq, pc) as u32 }
+}
+
+/// Return true if the ISEQ always uses a frame with escaped EP.
+pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
+    match unsafe { get_iseq_body_type(iseq) } {
+        // The EP of the <main> frame points to TOPLEVEL_BINDING
+        ISEQ_TYPE_MAIN |
+        // eval frames point to the EP of another frame or scope
+        ISEQ_TYPE_EVAL => true,
+        _ => false,
+    }
+}
+
+/// Iterate over all existing ISEQs
+pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
+    unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
+        // SAFETY: points to the local below
+        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = unsafe { std::mem::transmute(&mut *data) };
+        callback(iseq);
+    }
+    let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
+    unsafe { rb_jit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
 }
 
 /// Return a poison value to be set above the stack top to verify leafness.
@@ -483,17 +522,13 @@ impl VALUE {
         unsafe { rb_obj_frozen_p(self) != VALUE(0) }
     }
 
-    pub fn shape_too_complex(self) -> bool {
-        unsafe { rb_zjit_shape_obj_too_complex_p(self) }
-    }
-
-    pub fn shape_id_of(self) -> u32 {
-        unsafe { rb_obj_shape_id(self) }
+    pub fn shape_id_of(self) -> ShapeId {
+        ShapeId(unsafe { rb_obj_shape_id(self) })
     }
 
     pub fn embedded_p(self) -> bool {
         unsafe {
-            FL_TEST_RAW(self, VALUE(ROBJECT_EMBED as usize)) != VALUE(0)
+            FL_TEST_RAW(self, VALUE(ROBJECT_HEAP as usize)) == VALUE(0)
         }
     }
 
@@ -690,7 +725,7 @@ pub fn rust_str_to_sym(str: &str) -> VALUE {
 
 /// Produce an owned Rust String from a C char pointer
 pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
-    assert!(c_char_ptr != std::ptr::null());
+    assert!(!c_char_ptr.is_null());
 
     let c_str: &CStr = unsafe { CStr::from_ptr(c_char_ptr) };
 
@@ -715,18 +750,18 @@ pub fn iseq_name(iseq: IseqPtr) -> String {
 // Location is the file defining the method, colon, method name.
 // Filenames are sometimes internal strings supplied to eval,
 // so be careful with them.
-pub fn iseq_get_location(iseq: IseqPtr, pos: u16) -> String {
+pub fn iseq_get_location(iseq: IseqPtr, pos: u32) -> String {
     let iseq_path = unsafe { rb_iseq_path(iseq) };
     let iseq_lineno = unsafe { rb_iseq_line_no(iseq, pos as usize) };
 
     let mut s = iseq_name(iseq);
-    s.push_str("@");
+    s.push('@');
     if iseq_path == Qnil {
         s.push_str("None");
     } else {
         s.push_str(&ruby_str_to_rust_string(iseq_path));
     }
-    s.push_str(":");
+    s.push(':');
     s.push_str(&iseq_lineno.to_string());
     s
 }
@@ -739,15 +774,22 @@ fn ruby_str_to_rust_string(v: VALUE) -> String {
     let str_ptr = unsafe { rb_RSTRING_PTR(v) } as *mut u8;
     let str_len: usize = unsafe { rb_RSTRING_LEN(v) }.try_into().unwrap();
     let str_slice: &[u8] = unsafe { std::slice::from_raw_parts(str_ptr, str_len) };
-    match String::from_utf8(str_slice.to_vec()) {
-        Ok(utf8) => utf8,
-        Err(_) => String::new(),
-    }
+    String::from_utf8(str_slice.to_vec()).unwrap_or_default()
 }
 
 pub fn ruby_sym_to_rust_string(v: VALUE) -> String {
     let ruby_str = unsafe { rb_sym2str(v) };
     ruby_str_to_rust_string(ruby_str)
+}
+
+pub fn ruby_call_method_id(cd: *const rb_call_data) -> ID {
+    let call_info = unsafe { rb_get_call_data_ci(cd) };
+    unsafe { rb_vm_ci_mid(call_info) }
+}
+
+pub fn ruby_call_method_name(cd: *const rb_call_data) -> String {
+    let mid = ruby_call_method_id(cd);
+    mid.contents_lossy().to_string()
 }
 
 /// A location in Rust code for integrating with debugging facilities defined in C.
@@ -803,7 +845,7 @@ where
     let line = loc.line;
     let mut recursive_lock_level: c_uint = 0;
 
-    unsafe { rb_zjit_vm_lock_then_barrier(&mut recursive_lock_level, file, line) };
+    unsafe { rb_jit_vm_lock_then_barrier(&mut recursive_lock_level, file, line) };
 
     let ret = match catch_unwind(func) {
         Ok(result) => result,
@@ -823,7 +865,7 @@ where
         }
     };
 
-    unsafe { rb_zjit_vm_unlock(&mut recursive_lock_level, file, line) };
+    unsafe { rb_jit_vm_unlock(&mut recursive_lock_level, file, line) };
 
     ret
 }
@@ -957,7 +999,7 @@ pub use manual_defs::*;
 pub mod test_utils {
     use std::{ptr::null, sync::Once};
 
-    use crate::{options::init_options, state::rb_zjit_enabled_p, state::ZJITState};
+    use crate::{options::{internal_set_num_profiles, rb_zjit_call_threshold, rb_zjit_prepare_options, DEFAULT_CALL_THRESHOLD}, state::{rb_zjit_enabled_p, ZJITState}};
 
     use super::*;
 
@@ -979,7 +1021,13 @@ pub mod test_utils {
             // <https://github.com/Shopify/zjit/pull/37>, though
             let mut var: VALUE = Qnil;
             ruby_init_stack(&mut var as *mut VALUE as *mut _);
+            rb_zjit_prepare_options(); // enable `#with_jit` on builtins
             ruby_init();
+
+            // The default rb_zjit_profile_threshold is too high, so lower it for HIR tests.
+            if rb_zjit_call_threshold == DEFAULT_CALL_THRESHOLD {
+                internal_set_num_profiles(1);
+            }
 
             // Pass command line options so the VM loads core library methods defined in
             // ruby such as from `kernel.rb`.
@@ -994,7 +1042,7 @@ pub mod test_utils {
         }
 
         // Set up globals for convenience
-        ZJITState::init(init_options());
+        ZJITState::init();
 
         // Enable zjit_* instructions
         unsafe { rb_zjit_enabled_p = true; }
@@ -1002,7 +1050,7 @@ pub mod test_utils {
 
     /// Make sure the Ruby VM is set up and run a given callback with rb_protect()
     pub fn with_rubyvm<T>(mut func: impl FnMut() -> T) -> T {
-        RUBY_VM_INIT.call_once(|| boot_rubyvm());
+        RUBY_VM_INIT.call_once(boot_rubyvm);
 
         // Set up a callback wrapper to store a return value
         let mut result: Option<T> = None;
@@ -1082,7 +1130,7 @@ pub mod test_utils {
             if line.len() > spaces {
                 unindented.extend_from_slice(&line.as_bytes()[spaces..]);
             } else {
-                unindented.extend_from_slice(&line.as_bytes());
+                unindented.extend_from_slice(line.as_bytes());
             }
         }
         String::from_utf8(unindented).unwrap()
@@ -1210,6 +1258,21 @@ pub(crate) mod ids {
         name: to_s
         name: compile
         name: eval
+        name: plus               content: b"+"
+        name: minus              content: b"-"
+        name: mult               content: b"*"
+        name: div                content: b"/"
+        name: modulo             content: b"%"
+        name: neq                content: b"!="
+        name: lt                 content: b"<"
+        name: le                 content: b"<="
+        name: gt                 content: b">"
+        name: ge                 content: b">="
+        name: and                content: b"&"
+        name: or                 content: b"|"
+        name: freeze
+        name: minusat            content: b"-@"
+        name: aref               content: b"[]"
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.

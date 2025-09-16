@@ -415,7 +415,7 @@ assert_equal '{ok: 3}', %q{
   end
 
   3.times.map{Ractor.receive}.tally
-} unless yjit_enabled? || zjit_enabled? # YJIT: `[BUG] Bus Error at 0x000000010b7002d0` in jit_exec(), ZJIT hangs
+} unless yjit_enabled? # YJIT: `[BUG] Bus Error at 0x000000010b7002d0` in jit_exec()
 
 # unshareable object are copied
 assert_equal 'false', %q{
@@ -588,8 +588,8 @@ assert_equal 'true', %q{
   r.value[:frozen]
 }
 
-# Access to global-variables are prohibited
-assert_equal 'can not access global variables $gv from non-main Ractors', %q{
+# Access to global-variables are prohibited (read)
+assert_equal 'can not access global variable $gv from non-main Ractor', %q{
   $gv = 1
   r = Ractor.new do
     $gv
@@ -602,8 +602,8 @@ assert_equal 'can not access global variables $gv from non-main Ractors', %q{
   end
 }
 
-# Access to global-variables are prohibited
-assert_equal 'can not access global variables $gv from non-main Ractors', %q{
+# Access to global-variables are prohibited (write)
+assert_equal 'can not access global variable $gv from non-main Ractor', %q{
   r = Ractor.new do
     $gv = 1
   end
@@ -1573,6 +1573,33 @@ assert_equal 'true', %q{
   rs.map{|r| r.value} == Array.new(RN){n}
 }
 
+# check method cache invalidation
+assert_equal 'true', %q{
+  class Foo
+    def hello = nil
+  end
+
+  r1 = Ractor.new do
+    1000.times do
+      class Foo
+        def hello = nil
+      end
+    end
+  end
+
+  r2 = Ractor.new do
+    1000.times do
+      o = Foo.new
+      o.hello
+    end
+  end
+
+  r1.value
+  r2.value
+
+  true
+}
+
 # check experimental warning
 assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor is experimental/, %q{
   Warning[:experimental] = $VERBOSE = true
@@ -2300,18 +2327,55 @@ assert_equal '[["Only the successor ractor can take a value", 9], ["ok", 2]]', %
   }.tally.sort
 }
 
-# Ractor#take will warn for compatibility.
-# This method will be removed after 2025/09/01
-assert_equal "2", %q{
-  raise "remove Ractor#take and this test" if Time.now > Time.new(2025, 9, 2)
-  $VERBOSE = true
-  r = Ractor.new{42}
-  $msg = []
-  def Warning.warn(msg)
-    $msg << msg
+# Cause lots of inline CC misses.
+assert_equal 'ok', <<~'RUBY'
+  class A; def test; 1 + 1; end; end
+  class B; def test; 1 + 1; end; end
+  class C; def test; 1 + 1; end; end
+  class D; def test; 1 + 1; end; end
+  class E; def test; 1 + 1; end; end
+  class F; def test; 1 + 1; end; end
+  class G; def test; 1 + 1; end; end
+
+  objs = [A.new, B.new, C.new, D.new, E.new, F.new, G.new].freeze
+
+  def call_test(obj)
+    obj.test
   end
-  r.take
-  r.take
-  raise unless $msg.all?{/Ractor#take/ =~ it}
-  $msg.size
-}
+
+  ractors = 7.times.map do
+    Ractor.new(objs) do |objs|
+      objs = objs.shuffle
+      100_000.times do
+        objs.each do |o|
+          call_test(o)
+        end
+      end
+    end
+  end
+  ractors.each(&:join)
+  :ok
+RUBY
+
+# This test checks that we do not trigger a GC when we have malloc with Ractor
+# locks. We cannot trigger a GC with Ractor locks because GC requires VM lock
+# and Ractor barrier. If another Ractor is waiting on this Ractor lock, then it
+# will deadlock because the other Ractor will never join the barrier.
+#
+# Creating Ractor::Port requires locking the Ractor and inserting into an
+# st_table, which can call malloc.
+assert_equal 'ok', <<~'RUBY'
+  r = Ractor.new do
+    loop do
+      Ractor::Port.new
+    end
+  end
+
+  10.times do
+    10_000.times do
+      r.send(nil)
+    end
+    sleep(0.01)
+  end
+  :ok
+RUBY
