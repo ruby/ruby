@@ -15,6 +15,10 @@ module Bundler
     method_option "ref", type: :string, default: nil, banner: "The git revision to check out"
     method_option "path", type: :string, default: nil, banner: "Path of a local gem to directly use"
     def install(*plugins)
+      if options.key?(:local_git)
+        raise InvalidOption, "--local_git has been removed, use --git"
+      end
+
       Bundler::Plugin.install(plugins, options)
     end
 
