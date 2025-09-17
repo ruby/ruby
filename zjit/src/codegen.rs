@@ -393,6 +393,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
         Insn::GuardTypeNot { val, guard_type, state } => gen_guard_type_not(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
         Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(jit, asm, opnd!(val), *expected, &function.frame_state(*state)),
+        &Insn::GuardBlockParamProxy { level, state } => no_output!(gen_guard_block_param_proxy(jit, asm, level, &function.frame_state(state))),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfun, opnds!(args)),
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
@@ -400,7 +401,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GetGlobal { id, state } => gen_getglobal(jit, asm, *id, &function.frame_state(*state)),
         &Insn::GetLocal { ep_offset, level } => gen_getlocal_with_ep(asm, ep_offset, level),
         &Insn::SetLocal { val, ep_offset, level } => no_output!(gen_setlocal_with_ep(asm, opnd!(val), function.type_of(val), ep_offset, level)),
-        &Insn::GetBlockParamProxy { level, state } => gen_get_block_param_proxy(jit, asm, level, &function.frame_state(state)),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, *ic, &function.frame_state(*state)),
         Insn::SetIvar { self_val, id, val, state: _ } => no_output!(gen_setivar(asm, opnd!(self_val), *id, opnd!(val))),
         Insn::SideExit { state, reason } => no_output!(gen_side_exit(jit, asm, reason, &function.frame_state(*state))),
@@ -551,7 +551,7 @@ fn gen_setlocal_with_ep(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep
     }
 }
 
-fn gen_get_block_param_proxy(jit: &JITState, asm: &mut Assembler, level: u32, state: &FrameState) -> lir::Opnd {
+fn gen_guard_block_param_proxy(jit: &JITState, asm: &mut Assembler, level: u32, state: &FrameState) {
     // Bail out if the `&block` local variable has been modified
     let ep = gen_get_ep(asm, level);
     let flags = Opnd::mem(64, ep, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
@@ -569,9 +569,6 @@ fn gen_get_block_param_proxy(jit: &JITState, asm: &mut Assembler, level: u32, st
     let block_handler = asm.load(Opnd::mem(64, ep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
     asm.test(block_handler, 0x1.into());
     asm.jz(side_exit(jit, state, SideExitReason::BlockParamProxyNotIseqOrIfunc));
-
-    // Return the rb_block_param_proxy instance (GC root, so put as a number to avoid unnecessary GC tracing)
-    unsafe { rb_block_param_proxy }.as_u64().into()
 }
 
 fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_inline_constant_cache, state: &FrameState) -> Opnd {
