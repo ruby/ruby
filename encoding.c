@@ -357,6 +357,12 @@ enc_register_at(struct enc_table *enc_table, int index, const char *name, rb_enc
     struct rb_encoding_entry *ent = &enc_table->list[index];
     rb_raw_encoding *encoding;
 
+    if (ent->loaded) {
+        RUBY_ASSERT(ent->base == base_encoding);
+        RUBY_ASSERT(!strcmp(name, ent->name));
+        return index;
+    }
+
     if (!valid_encoding_name_p(name)) return -1;
     if (!ent->name) {
         ent->name = name = strdup(name);
@@ -408,7 +414,9 @@ enc_from_index(struct enc_table *enc_table, int index)
     if (UNLIKELY(index < 0 || enc_table->count <= (index &= ENC_INDEX_MASK))) {
         return 0;
     }
-    return enc_table->list[index].enc;
+    rb_encoding *enc = enc_table->list[index].enc;
+    RUBY_ASSERT(ENC_TO_ENCINDEX(enc) == index);
+    return enc;
 }
 
 rb_encoding *
@@ -827,7 +835,7 @@ enc_autoload_body(rb_encoding *enc)
                 GLOBAL_ENC_TABLE_LOCKING(enc_table) {
                     i = enc->ruby_encoding_index;
                     enc_register_at(enc_table, i & ENC_INDEX_MASK, rb_enc_name(enc), base);
-                    ((rb_raw_encoding *)enc)->ruby_encoding_index = i;
+                    RUBY_ASSERT(((rb_raw_encoding *)enc)->ruby_encoding_index == i);
                 }
             }
 
