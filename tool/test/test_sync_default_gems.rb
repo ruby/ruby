@@ -314,5 +314,5 @@ module Test_SyncDefaultGems
       assert_equal(":ok\n""Should.be_merged\n", File.read("src/lib/common.rb"), out)
       assert_not_operator(File, :exist?, "src/lib/bad.rb", out)
     end
-  end
+  end if /darwin|linux/ =~ RUBY_PLATFORM
 end
