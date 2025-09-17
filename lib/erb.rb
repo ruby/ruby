@@ -531,6 +531,49 @@ require 'erb/util'
 # # => #<Encoding:Big5>
 # ```
 #
+# ## Error Reporting
+#
+# Consider this template (containing an error):
+#
+# ```
+# s = '<%= nosuch %>'
+# template = ERB.new(s)
+# ```
+#
+# When \ERB reports an error,
+# it includes a file name (if available) and a line number;
+# the file name comes from method #filename, the line number from method #lineno.
+#
+# Initially, those values are `nil` and `0`, respectively;
+# these initial values are reported as `'(erb)'` and `1`, respectively:
+#
+# ```
+# template.filename # => nil
+# template.lineno   # => 0
+# template.result
+# (erb):1:in '<main>': undefined local variable or method 'nosuch' for main (NameError)
+# ```
+#
+# You can use methods #filename= and #lineno= to assign values
+# that are more meaningful in your context:
+#
+# ```
+# template.filename = 't.txt'
+# # => "t.txt"
+# template.lineno = 555
+# # => 555
+# template.result
+# t.txt:556:in '<main>': undefined local variable or method 'nosuch' for main (NameError)
+# ```
+#
+# You can use method #location= to set both values:
+#
+# ```
+# template.location = ['u.txt', 999]
+# template.result
+# u.txt:1000:in '<main>': undefined local variable or method 'nosuch' for main (NameError)
+# ```
+#
 # ## Plain Text Example
 #
 # Here's a plain-text string;
@@ -833,29 +876,32 @@ class ERB
   # The encoding to eval
   attr_reader :encoding
 
-  # The optional _filename_ argument passed to Kernel#eval when the ERB code
-  # is run
+  # :markup: markdown
+  #
+  # Sets or returns the file name to be used in reporting errors;
+  # see [Error Reporting][error reporting].
+  #
+  # [error reporting]: rdoc-ref:ERB@Error+Reporting
   attr_accessor :filename
 
-  # The optional _lineno_ argument passed to Kernel#eval when the ERB code
-  # is run
+  # :markup: markdown
+  #
+  # Sets or returns the line number to be used in reporting errors;
+  # see [Error Reporting][error reporting].
+  #
+  # [error reporting]: rdoc-ref:ERB@Error+Reporting
   attr_accessor :lineno
 
+  # :markup: markdown
   #
-  # Sets optional filename and line number that will be used in ERB code
-  # evaluation and error reporting. See also #filename= and #lineno=
+  # :call-seq:
+  #   location = [filename, lineno] => [filename, lineno]
+  #   location = filename -> filename
   #
-  #   erb = ERB.new('<%= some_x %>')
-  #   erb.render
-  #   # undefined local variable or method `some_x'
-  #   #   from (erb):1
+  # Sets the values of #filename and, if given, #lineno;
+  # see [Error Reporting][error reporting].
   #
-  #   erb.location = ['file.erb', 3]
-  #   # All subsequent error reporting would use new location
-  #   erb.render
-  #   # undefined local variable or method `some_x'
-  #   #   from file.erb:4
-  #
+  # [error reporting]: rdoc-ref:ERB@Error+Reporting
   def location=((filename, lineno))
     @filename = filename
     @lineno = lineno if lineno
