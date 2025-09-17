@@ -641,42 +641,6 @@ fn gen_ccall(asm: &mut Assembler, cfun: *const u8, args: Vec<Opnd>) -> lir::Opnd
     asm.ccall(cfun, args)
 }
 
-/// Push a C frame for cfunc calls
-fn gen_push_cfunc_frame(asm: &mut Assembler, recv: Opnd, cme: *const rb_callable_method_entry_t, sp_offset: i32) {
-    asm_comment!(asm, "push C frame");
-
-    let new_sp = asm.lea(Opnd::mem(64, SP, sp_offset * SIZEOF_VALUE_I32));
-    // sp[-3]: cme
-    asm.store(Opnd::mem(64, SP, (sp_offset - 3) * SIZEOF_VALUE_I32), VALUE::from(cme).into());
-    // sp[-2]: block_handler (specval)
-    asm.store(Opnd::mem(64, SP, (sp_offset - 2) * SIZEOF_VALUE_I32), VM_BLOCK_HANDLER_NONE.into());
-    // sp[-1]: frame type (must be a valid FIXNUM)
-    let frame_type = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
-    asm.store(Opnd::mem(64, SP, (sp_offset - 1) * SIZEOF_VALUE_I32), frame_type.into());
-
-    fn cfp_opnd(offset: i32) -> Opnd {
-        Opnd::mem(64, CFP, offset - (RUBY_SIZEOF_CONTROL_FRAME as i32))
-    }
-
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), 0.into()); // C frames don't have a PC
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), new_sp);   // SP for new frame
-
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), 0.into()); // C frames don't have an iseq
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), recv);
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
-
-    let ep = asm.sub(new_sp, SIZEOF_VALUE.into());
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_EP), ep);
-}
-
-/// Pop a C frame after cfunc call
-fn gen_pop_cfunc_frame(asm: &mut Assembler) {
-    asm_comment!(asm, "pop C frame");
-    let new_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
-    asm.mov(CFP, new_cfp);
-    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
-}
-
 /// Generate code for a variadic C function call
 /// func(int argc, VALUE *argv, VALUE recv)
 fn gen_ccall_variadic(
@@ -690,26 +654,35 @@ fn gen_ccall_variadic(
 ) -> lir::Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
 
-    asm_comment!(asm, "pushing C frame for cme=0x{:x}", cme as usize);
-    // Following YJIT: allocate 3 slots for frame metadata (cme, block_handler, frame_type)
-    // The new frame's SP will be at current_stack_size + 3
-    let sp_offset = state.stack().len() as i32 + 3;
-    gen_push_cfunc_frame(asm, recv, cme, sp_offset);
+    gen_push_frame(asm, args.len(), state, ControlFrame {
+        recv,
+        iseq: None,
+        cme,
+        frame_type: VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL,
+    });
 
-    // Move to the new frame
-    let new_cfp = asm.lea(Opnd::mem(64, CFP, -(RUBY_SIZEOF_CONTROL_FRAME as i32)));
+    asm_comment!(asm, "switch to new SP register");
+    let sp_offset = (state.stack().len() - args.len() + VM_ENV_DATA_SIZE.as_usize()) * SIZEOF_VALUE;
+    let new_sp = asm.add(SP, sp_offset.into());
+    asm.mov(SP, new_sp);
+
+    asm_comment!(asm, "switch to new CFP");
+    let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, new_cfp);
-    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), new_cfp);
-
-    let argc = args.len();
-
-    asm_comment!(asm, "call variadic cfunc: argc={}", argc);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
     let argv_ptr = gen_push_opnds(jit, asm, &args);
-    let result = asm.ccall(cfun, vec![argc.into(), argv_ptr, recv]);
+    let result = asm.ccall(cfun, vec![args.len().into(), argv_ptr, recv]);
     gen_pop_opnds(asm, &args);
 
-    gen_pop_cfunc_frame(asm);
+    asm_comment!(asm, "pop C frame");
+    let new_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+
+    asm_comment!(asm, "restore SP register for the caller");
+    let new_sp = asm.sub(SP, sp_offset.into());
+    asm.mov(SP, new_sp);
 
     result
 }
@@ -1130,7 +1103,7 @@ fn gen_send_without_block_direct(
     // TODO: Lazily materialize caller frames on side exits or when needed
     gen_push_frame(asm, args.len(), state, ControlFrame {
         recv,
-        iseq,
+        iseq: Some(iseq),
         cme,
         frame_type: VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL,
     });
@@ -1658,7 +1631,7 @@ fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, state: &FrameS
 /// Frame metadata written by gen_push_frame()
 struct ControlFrame {
     recv: Opnd,
-    iseq: IseqPtr,
+    iseq: Option<IseqPtr>,
     cme: *const rb_callable_method_entry_t,
     frame_type: u32,
 }
@@ -1670,7 +1643,11 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
     // See vm_push_frame() for details
     asm_comment!(asm, "push cme, specval, frame type");
     // ep[-2]: cref of cme
-    let local_size = unsafe { get_iseq_body_local_table_size(frame.iseq) } as i32;
+    let local_size = if let Some(iseq) = frame.iseq {
+        (unsafe { get_iseq_body_local_table_size(iseq) }) as i32
+    } else {
+        0
+    };
     let ep_offset = state.stack().len() as i32 + local_size - argc as i32 + VM_ENV_DATA_SIZE as i32 - 1;
     asm.store(Opnd::mem(64, SP, (ep_offset - 2) * SIZEOF_VALUE_I32), VALUE::from(frame.cme).into());
     // ep[-1]: block_handler or prev EP
@@ -1685,9 +1662,19 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
     }
 
     asm_comment!(asm, "push callee control frame");
-    // cfp_opnd(RUBY_OFFSET_CFP_PC): written by the callee frame on side-exits or non-leaf calls
-    // cfp_opnd(RUBY_OFFSET_CFP_SP): written by the callee frame on side-exits or non-leaf calls
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), VALUE::from(frame.iseq).into());
+
+    if let Some(iseq) = frame.iseq {
+        // cfp_opnd(RUBY_OFFSET_CFP_PC): written by the callee frame on side-exits or non-leaf calls
+        // cfp_opnd(RUBY_OFFSET_CFP_SP): written by the callee frame on side-exits or non-leaf calls
+        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), VALUE::from(iseq).into());
+    } else {
+        // C frames don't have a PC and ISEQ
+        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), 0.into());
+        let new_sp = asm.lea(Opnd::mem(64, SP, (ep_offset + 1) * SIZEOF_VALUE_I32));
+        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), new_sp);
+        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), 0.into());
+    }
+
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), frame.recv);
     let ep = asm.lea(Opnd::mem(64, SP, ep_offset * SIZEOF_VALUE_I32));
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_EP), ep);
