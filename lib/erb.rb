@@ -988,10 +988,21 @@ class ERB
     result(b)
   end
 
-  ##
-  # Returns a new binding each time *near* TOPLEVEL_BINDING for runs that do
-  # not specify a binding.
-
+  # :markup: markdown
+  #
+  # :call-seq:
+  #   new_toplevel(symbols) -> new_binding
+  #
+  # Returns a new binding based on `TOPLEVEL_BINDING`;
+  # used to create a default binding for a call to #result.
+  #
+  # See [Default Binding][default binding].
+  #
+  # Argument `symbols` is an array of symbols;
+  # each symbol `symbol` is used to define (unless already defined) a variable in the binding
+  # whose name is `symbol` and whose value is `nil`.
+  #
+  # [default binding]: rdoc-ref:ERB@Default+Binding
   def new_toplevel(vars = nil)
     b = TOPLEVEL_BINDING
     if vars
