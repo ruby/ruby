@@ -7,6 +7,7 @@
 
 # rubocop:enable Style/AsciiComments
 
+require_relative "win_platform"
 require_relative "security"
 require_relative "user_interaction"
 
@@ -518,10 +519,12 @@ EOM
     destination
   end
 
-  def normalize_path(pathname)
-    if Gem.win_platform?
+  if Gem.win_platform?
+    def normalize_path(pathname) # :nodoc:
       pathname.downcase
-    else
+    end
+  else
+    def normalize_path(pathname) # :nodoc:
       pathname
     end
   end

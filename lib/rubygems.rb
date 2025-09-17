@@ -16,6 +16,7 @@ require_relative "rubygems/defaults"
 require_relative "rubygems/deprecate"
 require_relative "rubygems/errors"
 require_relative "rubygems/target_rbconfig"
+require_relative "rubygems/win_platform"
 
 ##
 # RubyGems is the Ruby standard for publishing and managing third party
@@ -113,18 +114,6 @@ require_relative "rubygems/target_rbconfig"
 module Gem
   RUBYGEMS_DIR = __dir__
 
-  ##
-  # An Array of Regexps that match windows Ruby platforms.
-
-  WIN_PATTERNS = [
-    /bccwin/i,
-    /cygwin/i,
-    /djgpp/i,
-    /mingw/i,
-    /mswin/i,
-    /wince/i,
-  ].freeze
-
   GEM_DEP_FILES = %w[
     gem.deps.rb
     gems.rb
@@ -159,8 +148,6 @@ module Gem
   # This particular timestamp is for 1980-01-02 00:00:00 GMT.
 
   DEFAULT_SOURCE_DATE_EPOCH = 315_619_200
-
-  @@win_platform = nil
 
   @configuration = nil
   @gemdeps = nil
@@ -1089,18 +1076,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     hash = { "GEM_HOME" => home, "GEM_PATH" => paths.empty? ? home : paths.join(File::PATH_SEPARATOR) }
     hash.delete_if {|_, v| v.nil? }
     self.paths = hash
-  end
-
-  ##
-  # Is this a windows platform?
-
-  def self.win_platform?
-    if @@win_platform.nil?
-      ruby_platform = RbConfig::CONFIG["host_os"]
-      @@win_platform = !WIN_PATTERNS.find {|r| ruby_platform =~ r }.nil?
-    end
-
-    @@win_platform
   end
 
   ##
