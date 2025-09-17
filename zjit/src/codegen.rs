@@ -1244,8 +1244,9 @@ fn gen_object_alloc_class(asm: &mut Assembler, class: VALUE, state: &FrameState)
     // Allocating an object for a known class with default allocator is leaf; see doc for
     // `ObjectAllocClass`.
     gen_prepare_leaf_call_with_gc(asm, state);
-    // TODO(max): directly call `class_call_alloc_func`
-    asm_ccall!(asm, rb_obj_alloc, class.into())
+    assert!(unsafe { rb_zjit_class_has_default_allocator(class) }, "class must have default allocator");
+    // TODO(max): inline code to allocate an instance
+    asm_ccall!(asm, rb_class_allocate_instance, class.into())
 }
 
 /// Compile code that exits from JIT code with a return value
