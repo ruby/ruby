@@ -73,6 +73,19 @@ def run_bisect(command, items)
 end
 
 def run_ruby *cmd
+  if RUBY == "make"
+    # Automatically detect that we're running a make command instead of a Ruby
+    # one. Pass the bisection options via RUN_OPTS instead.
+    zjit_opts = cmd.select { |arg| arg.start_with?("--zjit") }
+    run_opts_index = cmd.find_index { |arg| arg.start_with?("RUN_OPTS=") }
+    if !run_opts_index
+      raise "Expected RUN_OPTS to be present in make command"
+    end
+    run_opts = Shellwords.split(cmd[run_opts_index].sub("RUN_OPTS=", ""))
+    run_opts.concat(zjit_opts)
+    cmd[run_opts_index] = "RUN_OPTS=#{run_opts.shelljoin}"
+    cmd = cmd - zjit_opts
+  end
   pid = Process.spawn(*cmd, {
     in: :close,
     out: [File::NULL, File::RDWR],
