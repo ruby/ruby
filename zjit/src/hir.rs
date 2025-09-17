@@ -5898,7 +5898,7 @@ mod tests {
           v10:BasicObject = InvokeBuiltin dir_s_open, v0, v1, v2
           PatchPoint NoEPEscape(open)
           GuardBlockParamProxy l0
-          v17:BasicObject[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v17:BasicObject[BlockParamProxy] = Const Value(VALUE(0x1000))
           CheckInterrupts
           v20:CBool = Test v17
           IfFalse v20, bb1(v0, v1, v2, v3, v4, v10)
@@ -8115,7 +8115,7 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           GuardBlockParamProxy l0
-          v7:BasicObject[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v7:BasicObject[BlockParamProxy] = Const Value(VALUE(0x1000))
           v9:BasicObject = Send v0, 0x1008, :tap, v7
           v10:BasicObject = GetLocal l0, EP@3
           CheckInterrupts
