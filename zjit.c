@@ -170,6 +170,11 @@ rb_zjit_local_id(const rb_iseq_t *iseq, unsigned idx)
     return ISEQ_BODY(iseq)->local_table[idx];
 }
 
+bool rb_zjit_cme_is_cfunc(const rb_callable_method_entry_t *me, const void *func);
+
+const struct rb_callable_method_entry_struct *
+rb_zjit_vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv);
+
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self, VALUE target_key);

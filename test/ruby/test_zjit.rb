@@ -851,6 +851,18 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_new]
   end
 
+  def test_opt_new_invalidate_new
+    assert_compiles '["Foo", "foo"]', %q{
+      class Foo; end
+      def test = Foo.new
+      test; test
+      result = [test.class.name]
+      def Foo.new = "foo"
+      result << test
+      result
+    }, insns: [:opt_new], call_threshold: 2
+  end
+
   def test_new_hash_empty
     assert_compiles '{}', %q{
       def test = {}

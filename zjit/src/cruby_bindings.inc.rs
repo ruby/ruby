@@ -937,6 +937,15 @@ unsafe extern "C" {
     pub fn rb_zjit_defined_ivar(obj: VALUE, id: ID, pushval: VALUE) -> VALUE;
     pub fn rb_zjit_insn_leaf(insn: ::std::os::raw::c_int, opes: *const VALUE) -> bool;
     pub fn rb_zjit_local_id(iseq: *const rb_iseq_t, idx: ::std::os::raw::c_uint) -> ID;
+    pub fn rb_zjit_cme_is_cfunc(
+        me: *const rb_callable_method_entry_t,
+        func: *const ::std::os::raw::c_void,
+    ) -> bool;
+    pub fn rb_zjit_vm_search_method(
+        cd_owner: VALUE,
+        cd: *mut rb_call_data,
+        recv: VALUE,
+    ) -> *const rb_callable_method_entry_struct;
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_pc_at_idx(iseq: *const rb_iseq_t, insn_idx: u32) -> *mut VALUE;
     pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;
