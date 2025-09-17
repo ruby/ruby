@@ -595,9 +595,6 @@ pub enum Insn {
     GetLocal { level: u32, ep_offset: u32 },
     /// Set a local variable in a higher scope or the heap
     SetLocal { level: u32, ep_offset: u32, val: InsnId },
-    /// Get a special singleton instance `rb_block_param_proxy` if the block
-    /// handler for the EP specified by `level` is an ISEQ or an ifunc.
-    GetBlockParamProxy { level: u32, state: InsnId },
     GetSpecialSymbol { symbol_type: SpecialBackrefSymbol, state: InsnId },
     GetSpecialNumber { nth: u64, state: InsnId },
 
@@ -679,6 +676,9 @@ pub enum Insn {
     GuardBitEquals { val: InsnId, expected: VALUE, state: InsnId },
     /// Side-exit if val doesn't have the expected shape.
     GuardShape { val: InsnId, shape: ShapeId, state: InsnId },
+    /// Side-exit if the block param has been modified or the block handler for the frame
+    /// is neither ISEQ nor ifunc, which makes it incompatible with rb_block_param_proxy.
+    GuardBlockParamProxy { level: u32, state: InsnId },
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
@@ -704,7 +704,7 @@ impl Insn {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_)
-            | Insn::CheckInterrupts { .. } => false,
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } => false,
             _ => true,
         }
     }
@@ -921,6 +921,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardTypeNot { val, guard_type, .. } => { write!(f, "GuardTypeNot {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
             &Insn::GuardShape { val, shape, .. } => { write!(f, "GuardShape {val}, {:p}", self.ptr_map.map_shape(shape)) },
+            Insn::GuardBlockParamProxy { level, .. } => write!(f, "GuardBlockParamProxy l{level}"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::CCall { cfun, args, name, return_type: _, elidable: _ } => {
@@ -956,7 +957,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy()),
             Insn::GetLocal { level, ep_offset } => write!(f, "GetLocal l{level}, EP@{ep_offset}"),
             Insn::SetLocal { val, level, ep_offset } => write!(f, "SetLocal l{level}, EP@{ep_offset}, {val}"),
-            Insn::GetBlockParamProxy { level, .. } => write!(f, "GetBlockParamProxy l{level}"),
             Insn::GetSpecialSymbol { symbol_type, .. } => write!(f, "GetSpecialSymbol {symbol_type:?}"),
             Insn::GetSpecialNumber { nth, .. } => write!(f, "GetSpecialNumber {nth}"),
             Insn::ToArray { val, .. } => write!(f, "ToArray {val}"),
@@ -1349,6 +1349,7 @@ impl Function {
             &GuardTypeNot { val, guard_type, state } => GuardTypeNot { val: find!(val), guard_type, state },
             &GuardBitEquals { val, expected, state } => GuardBitEquals { val: find!(val), expected, state },
             &GuardShape { val, shape, state } => GuardShape { val: find!(val), shape, state },
+            &GuardBlockParamProxy { level, state } => GuardBlockParamProxy { level, state: find!(state) },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
             &FixnumSub { left, right, state } => FixnumSub { left: find!(left), right: find!(right), state },
             &FixnumMult { left, right, state } => FixnumMult { left: find!(left), right: find!(right), state },
@@ -1424,7 +1425,6 @@ impl Function {
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
             &NewRangeFixnum { low, high, flag, state } => NewRangeFixnum { low: find!(low), high: find!(high), flag, state: find!(state) },
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
-            &GetBlockParamProxy { level, state } => GetBlockParamProxy { level, state: find!(state) },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
             &LoadIvarEmbedded { self_val, id, index } => LoadIvarEmbedded { self_val: find!(self_val), id, index },
@@ -1465,7 +1465,7 @@ impl Function {
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
-            | Insn::CheckInterrupts { .. } =>
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -1537,7 +1537,6 @@ impl Function {
             Insn::ObjToString { .. } => types::BasicObject,
             Insn::AnyToString { .. } => types::String,
             Insn::GetLocal { .. } => types::BasicObject,
-            Insn::GetBlockParamProxy { .. } => types::BasicObject,
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
@@ -2370,7 +2369,7 @@ impl Function {
             | &Insn::LoadIvarExtended { self_val, .. } => {
                 worklist.push_back(self_val);
             }
-            &Insn::GetBlockParamProxy { state, .. } |
+            &Insn::GuardBlockParamProxy { state, .. } |
             &Insn::GetGlobal { state, .. } |
             &Insn::GetSpecialSymbol { state, .. } |
             &Insn::GetSpecialNumber { state, .. } |
@@ -3515,7 +3514,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_getblockparamproxy => {
                     let level = get_arg(pc, 1).as_u32();
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    state.stack_push(fun.push_insn(block, Insn::GetBlockParamProxy { level, state: exit_id }));
+                    fun.push_insn(block, Insn::GuardBlockParamProxy { level, state: exit_id });
+                    // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
+                    state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) }));
                 }
                 YARVINSN_pop => { state.stack_pop()?; }
                 YARVINSN_dup => { state.stack_push(state.stack_top()?); }
@@ -5942,19 +5943,20 @@ mod tests {
           v5:NilClass = Const Value(nil)
           v10:BasicObject = InvokeBuiltin dir_s_open, v0, v1, v2
           PatchPoint NoEPEscape(open)
-          v16:BasicObject = GetBlockParamProxy l0
+          GuardBlockParamProxy l0
+          v17:BasicObject[BlockParamProxy] = Const Value(VALUE(0x1000))
           CheckInterrupts
-          v19:CBool = Test v16
-          IfFalse v19, bb1(v0, v1, v2, v3, v4, v10)
+          v20:CBool = Test v17
+          IfFalse v20, bb1(v0, v1, v2, v3, v4, v10)
           PatchPoint NoEPEscape(open)
-          v26:BasicObject = InvokeBlock, v10
-          v30:BasicObject = InvokeBuiltin dir_s_close, v0, v10
+          v27:BasicObject = InvokeBlock, v10
+          v31:BasicObject = InvokeBuiltin dir_s_close, v0, v10
           CheckInterrupts
-          Return v26
-        bb1(v36:BasicObject, v37:BasicObject, v38:BasicObject, v39:BasicObject, v40:BasicObject, v41:BasicObject):
+          Return v27
+        bb1(v37:BasicObject, v38:BasicObject, v39:BasicObject, v40:BasicObject, v41:BasicObject, v42:BasicObject):
           PatchPoint NoEPEscape(open)
           CheckInterrupts
-          Return v41
+          Return v42
         ");
     }
 
@@ -8158,11 +8160,12 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
-          v6:BasicObject = GetBlockParamProxy l0
-          v8:BasicObject = Send v0, 0x1000, :tap, v6
-          v9:BasicObject = GetLocal l0, EP@3
+          GuardBlockParamProxy l0
+          v7:BasicObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          v9:BasicObject = Send v0, 0x1008, :tap, v7
+          v10:BasicObject = GetLocal l0, EP@3
           CheckInterrupts
-          Return v8
+          Return v9
         ");
     }
 
