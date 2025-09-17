@@ -150,7 +150,8 @@ impl Flags {
 /// opt_send_without_block/opt_plus/... should store:
 /// * the class of the receiver, so we can do method lookup
 /// * the shape of the receiver, so we can optimize ivar lookup
-///   with those two, pieces of information, we can also determine when an object is an immediate:
+///
+/// with those two, pieces of information, we can also determine when an object is an immediate:
 /// * Integer + IS_IMMEDIATE == Fixnum
 /// * Float + IS_IMMEDIATE == Flonum
 /// * Symbol + IS_IMMEDIATE == StaticSymbol
