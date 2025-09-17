@@ -119,6 +119,9 @@ struct rb_io_internal_buffer {
 
     /** Designed capacity of the buffer. */
     int capa;
+
+    /** Boundary of read and unget'ed data, for cbuf. Otherwise, not used. */
+    int off_unget;
 } RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END();
 
 /** @alias{rb_io_buffer_t} */
@@ -352,8 +355,8 @@ struct rb_io {
     rb_econv_t *readconv;
 
     /**
-     * rb_io_ungetc()  destination.   This  buffer   is  read  before  checking
-     * ::rb_io_t::rbuf
+     * (Character)  read  buffer.  Only used when encoding converter is active.
+     * This buffer is read before checking ::rb_io_t::rbuf
      */
     RBIMPL_ATTR_DEPRECATED(("with no replacement"))
     rb_io_buffer_t cbuf;
