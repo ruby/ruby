@@ -107,6 +107,7 @@ module Bundler
         @locked_ruby_version = @locked_gems.ruby_version
         @locked_deps = @locked_gems.dependencies
         @originally_locked_specs = SpecSet.new(@locked_gems.specs)
+        @originally_locked_sources = @locked_gems.sources
         @locked_checksums = @locked_gems.checksums
 
         if @unlocking_all
@@ -114,7 +115,16 @@ module Bundler
           @locked_sources = []
         else
           @locked_specs   = @originally_locked_specs
-          @locked_sources = @locked_gems.sources
+          @locked_sources = @originally_locked_sources
+        end
+
+        locked_gem_sources = @originally_locked_sources.select {|s| s.is_a?(Source::Rubygems) }
+        multisource_lockfile = locked_gem_sources.size == 1 && locked_gem_sources.first.multiple_remotes?
+
+        if multisource_lockfile
+          msg = "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
+
+          Bundler::SharedHelpers.feature_removed! msg
         end
       else
         @locked_gems = nil
@@ -123,22 +133,10 @@ module Bundler
         @platforms      = []
         @locked_deps    = {}
         @locked_specs   = SpecSet.new([])
-        @originally_locked_specs = @locked_specs
         @locked_sources = []
+        @originally_locked_specs = @locked_specs
+        @originally_locked_sources = @locked_sources
         @locked_checksums = Bundler.feature_flag.lockfile_checksums?
-      end
-
-      locked_gem_sources = @locked_sources.select {|s| s.is_a?(Source::Rubygems) }
-      @multisource_allowed = locked_gem_sources.size == 1 && locked_gem_sources.first.multiple_remotes? && Bundler.frozen_bundle?
-
-      if @multisource_allowed
-        unless sources.aggregate_global_source?
-          msg = "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
-
-          Bundler::SharedHelpers.major_deprecation 2, msg
-        end
-
-        @sources.merged_gem_lockfile_sections!(locked_gem_sources.first)
       end
 
       @unlocking_ruby ||= if @ruby_version && locked_ruby_version_object
@@ -763,7 +761,7 @@ module Bundler
     end
 
     def precompute_source_requirements_for_indirect_dependencies?
-      sources.non_global_rubygems_sources.all?(&:dependency_api_available?) && !sources.aggregate_global_source?
+      sources.non_global_rubygems_sources.all?(&:dependency_api_available?)
     end
 
     def current_platform_locked?
@@ -954,7 +952,7 @@ module Bundler
       sources.all_sources.each do |source|
         # has to be done separately, because we want to keep the locked checksum
         # store for a source, even when doing a full update
-        if @locked_checksums && @locked_gems && locked_source = @locked_gems.sources.find {|s| s == source && !s.equal?(source) }
+        if @locked_checksums && @locked_gems && locked_source = @originally_locked_sources.find {|s| s == source && !s.equal?(source) }
           source.checksum_store.merge!(locked_source.checksum_store)
         end
         # If the source is unlockable and the current command allows an unlock of
@@ -1137,7 +1135,7 @@ module Bundler
     end
 
     def additional_base_requirements_to_prevent_downgrades(resolution_base)
-      return resolution_base unless @locked_gems && !sources.expired_sources?(@locked_gems.sources)
+      return resolution_base unless @locked_gems
       @originally_locked_specs.each do |locked_spec|
         next if locked_spec.source.is_a?(Source::Path) || locked_spec.source_changed?
 

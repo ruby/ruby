@@ -271,6 +271,7 @@ fn main() {
         .allowlist_function("rb_zjit_iseq_builtin_attrs")
         .allowlist_function("rb_zjit_iseq_inspect")
         .allowlist_function("rb_zjit_iseq_insn_set")
+        .allowlist_function("rb_zjit_local_id")
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_c_method_tracing_currently_enabled")
         .allowlist_function("rb_full_cfunc_return")

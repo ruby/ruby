@@ -94,7 +94,6 @@ struct vm_ifunc {
 struct rb_imemo_tmpbuf_struct {
     VALUE flags;
     VALUE *ptr; /* malloc'ed buffer */
-    struct rb_imemo_tmpbuf_struct *next; /* next imemo */
     size_t cnt; /* buffer size in VALUE */
 };
 
@@ -132,8 +131,8 @@ struct MEMO {
 #ifndef RUBY_RUBYPARSER_H
 typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
 #endif
+VALUE rb_imemo_new(enum imemo_type type, VALUE v0, size_t size);
 VALUE rb_imemo_tmpbuf_new(void);
-rb_imemo_tmpbuf_t *rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt);
 struct vm_ifunc *rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc);
 static inline enum imemo_type imemo_type(VALUE imemo);
 static inline int imemo_type_p(VALUE imemo, enum imemo_type imemo_type);
@@ -149,7 +148,6 @@ void rb_imemo_mark_and_move(VALUE obj, bool reference_updating);
 void rb_imemo_free(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
-VALUE rb_imemo_new(enum imemo_type type, VALUE v0, size_t size);
 const char *rb_imemo_name(enum imemo_type type);
 RUBY_SYMBOL_EXPORT_END
 

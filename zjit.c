@@ -164,6 +164,12 @@ rb_zjit_insn_leaf(int insn, const VALUE *opes)
     return insn_leaf(insn, opes);
 }
 
+ID
+rb_zjit_local_id(const rb_iseq_t *iseq, unsigned idx)
+{
+    return ISEQ_BODY(iseq)->local_table[idx];
+}
+
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self, VALUE target_key);

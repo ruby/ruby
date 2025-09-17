@@ -50,23 +50,33 @@ runs:
         touch spec/ruby/optional/capi/ext/*.$DLEXT
         [ ! -f spec/ruby/optional/capi/ext/\*.$DLEXT ]
         ${{ inputs.make }} SPECOPTS=optional/capi test-spec
-        rm -f spec/ruby/optional/capi/ext/*.c
       env:
         DLEXT: ${{ steps.config.outputs.DLEXT }}
       working-directory: ${{ inputs.builddir }}
       if: ${{ steps.cache.outputs.cache-hit }}
+
+    - name: Strip CAPI extensions
+      id: strip
+      shell: bash
+      run: |
+        rm -f spec/ruby/optional/capi/ext/*.c
+        [ "$DLEXT" = bundle ] || # separated to .dSYM directories
+        strip spec/ruby/optional/capi/ext/*.$DLEXT
+      env:
+        DLEXT: ${{ steps.config.outputs.DLEXT }}
+      working-directory: ${{ inputs.builddir }}
+      if: >-
+        ${{true
+        && ! steps.cache.outputs.cache-hit
+        && github.ref_name == 'master'
+        }}
 
     - name: Save CAPI extensions
       uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
       with:
         path: ${{ inputs.builddir }}/spec/ruby/optional/capi/ext/
         key: ${{ steps.config.outputs.key }}
-      if: >-
-        ${{true
-        && steps.cache.outcome == 'success'
-        && ! steps.cache.outputs.cache-hit
-        && github.ref_name == 'master'
-        }}
+      if: ${{ steps.strip.outcome == 'success' }}
 
     - shell: bash
       run: |

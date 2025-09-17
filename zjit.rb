@@ -40,7 +40,6 @@ class << RubyVM::ZJIT
     stats = self.stats
 
     # Show exit reasons, ordered by the typical amount of exits for the prefix at the time
-    print_counters_with_prefix(prefix: 'unhandled_call_', prompt: 'unhandled call types', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'unhandled_yarv_insn_', prompt: 'unhandled YARV insns', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'compile_error_', prompt: 'compile error reasons', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'exit_', prompt: 'side exit reasons', buf:, stats:, limit: 20)

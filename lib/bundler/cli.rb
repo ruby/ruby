@@ -187,12 +187,11 @@ module Bundler
     long_desc <<-D
       Removes the given gems from the Gemfile while ensuring that the resulting Gemfile is still valid. If the gem is not found, Bundler prints a error message and if gem could not be removed due to any reason Bundler will display a warning.
     D
-    method_option "install", type: :boolean, banner: "Runs 'bundle install' after removing the gems from the Gemfile"
+    method_option "install", type: :boolean, banner: "Runs 'bundle install' after removing the gems from the Gemfile (removed)"
     def remove(*gems)
       if ARGV.include?("--install")
-        message = "The `--install` flag has been deprecated. `bundle install` is triggered by default."
         removed_message = "The `--install` flag has been removed. `bundle install` is triggered by default."
-        SharedHelpers.major_deprecation(2, message, removed_message: removed_message)
+        raise InvalidOption, removed_message
       end
 
       require_relative "cli/remove"
@@ -210,7 +209,7 @@ module Bundler
 
       If the bundle has already been installed, bundler will tell you so and then exit.
     D
-    method_option "binstubs", type: :string, lazy_default: "bin", banner: "Generate bin stubs for bundled gems to ./bin"
+    method_option "binstubs", type: :string, lazy_default: "bin", banner: "Generate bin stubs for bundled gems to ./bin (removed)"
     method_option "clean", type: :boolean, banner: "Run bundle clean automatically after install (removed)"
     method_option "deployment", type: :boolean, banner: "Install using defaults tuned for deployment environments (removed)"
     method_option "frozen", type: :boolean, banner: "Do not allow the Gemfile.lock to be updated after this install (removed)"
@@ -239,6 +238,11 @@ module Bundler
       print_remembered_flag_deprecation("--system", "path.system", "true") if ARGV.include?("--system")
 
       remembered_flag_deprecation("deployment", negative: true)
+
+      if ARGV.include?("--binstubs")
+        removed_message = "The --binstubs option has been removed in favor of `bundle binstubs --all`"
+        raise InvalidOption, removed_message
+      end
 
       require_relative "cli/install"
       Bundler.settings.temporary(no_install: false) do
@@ -525,7 +529,7 @@ module Bundler
     method_option :ext, type: :string, banner: "Generate the boilerplate for C extension code.", enum: EXTENSIONS
     method_option :git, type: :boolean, default: true, banner: "Initialize a git repo inside your library."
     method_option :mit, type: :boolean, banner: "Generate an MIT license file. Set a default with `bundle config set --global gem.mit true`."
-    method_option :rubocop, type: :boolean, banner: "Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set --global gem.rubocop true`."
+    method_option :rubocop, type: :boolean, banner: "Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set --global gem.rubocop true` (removed)."
     method_option :changelog, type: :boolean, banner: "Generate changelog file. Set a default with `bundle config set --global gem.changelog true`."
     method_option :test, type: :string, lazy_default: Bundler.settings["gem.test"] || "", aliases: "-t", banner: "Use the specified test framework for your library", enum: %w[rspec minitest test-unit], desc: "Generate a test directory for your library, either rspec, minitest or test-unit. Set a default with `bundle config set --global gem.test (rspec|minitest|test-unit)`."
     method_option :ci, type: :string, lazy_default: Bundler.settings["gem.ci"] || "", enum: %w[github gitlab circle], banner: "Generate CI configuration, either GitHub Actions, GitLab CI or CircleCI. Set a default with `bundle config set --global gem.ci (github|gitlab|circle)`"
@@ -535,6 +539,10 @@ module Bundler
 
     def gem(name)
       require_relative "cli/gem"
+
+      raise InvalidOption, "--rubocop has been removed, use --linter=rubocop" if ARGV.include?("--rubocop")
+      raise InvalidOption, "--no-rubocop has been removed, use --no-linter" if ARGV.include?("--no-rubocop")
+
       cmd_args = args + [self]
       cmd_args.unshift(options)
 

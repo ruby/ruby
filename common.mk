@@ -44,6 +44,10 @@ RUBYLIB       = $(PATH_SEPARATOR)
 RUBYOPT       = -
 RUN_OPTS      = --disable-gems
 
+GIT_IN_SRC    = $(GIT) -C $(srcdir)
+GIT_LOG       = $(GIT_IN_SRC) log --no-show-signature
+GIT_LOG_FORMAT = $(GIT_LOG) --pretty=format:
+
 # GITPULLOPTIONS = --no-tags
 
 PRISM_SRCDIR = $(srcdir)/prism
@@ -1514,8 +1518,8 @@ update-bundled_gems: PHONY
 	     $(tooldir)/update-bundled_gems.rb \
 	     "$(srcdir)/gems/bundled_gems" | \
 	$(IFCHANGE) "$(srcdir)/gems/bundled_gems" -
-	$(GIT) -C "$(srcdir)" diff --no-ext-diff --ignore-submodules --exit-code || \
-	$(GIT) -C "$(srcdir)" commit -m "Update bundled_gems" gems/bundled_gems
+	$(GIT_IN_SRC) diff --no-ext-diff --ignore-submodules --exit-code || \
+	$(GIT_IN_SRC) commit -m "Update bundled_gems" gems/bundled_gems
 
 PRECHECK_BUNDLED_GEMS = yes
 test-bundled-gems-precheck: $(TEST_RUNNABLE)-test-bundled-gems-precheck
@@ -1899,8 +1903,8 @@ nightly: yesterday $(DOT_WAIT) install
 yesterday: rewindable
 
 rewindable:
-	$(GIT) -C $(srcdir) status --porcelain
-	$(GIT) -C $(srcdir) diff --quiet
+	$(GIT_IN_SRC) status --porcelain
+	$(GIT_IN_SRC) diff --quiet
 
 HELP_EXTRA_TASKS = ""
 

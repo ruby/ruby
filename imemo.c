@@ -54,6 +54,9 @@ rb_imemo_tmpbuf_new(void)
     VALUE flags = T_IMEMO | (imemo_tmpbuf << FL_USHIFT);
     NEWOBJ_OF(obj, rb_imemo_tmpbuf_t, 0, flags, sizeof(rb_imemo_tmpbuf_t), NULL);
 
+    obj->ptr = NULL;
+    obj->cnt = 0;
+
     return (VALUE)obj;
 }
 
@@ -92,17 +95,6 @@ rb_free_tmp_buffer(volatile VALUE *store)
         s->cnt = 0;
         ruby_xfree(ptr);
     }
-}
-
-rb_imemo_tmpbuf_t *
-rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt)
-{
-    rb_imemo_tmpbuf_t *tmpbuf = (rb_imemo_tmpbuf_t *)rb_imemo_tmpbuf_new();
-    tmpbuf->ptr = buf;
-    tmpbuf->next = old_heap;
-    tmpbuf->cnt = cnt;
-
-    return tmpbuf;
 }
 
 static VALUE
@@ -478,9 +470,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
         const rb_imemo_tmpbuf_t *m = (const rb_imemo_tmpbuf_t *)obj;
 
         if (!reference_updating) {
-            do {
-                rb_gc_mark_locations(m->ptr, m->ptr + m->cnt);
-            } while ((m = m->next) != NULL);
+            rb_gc_mark_locations(m->ptr, m->ptr + m->cnt);
         }
 
         break;

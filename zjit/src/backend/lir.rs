@@ -2,11 +2,11 @@ use std::collections::HashMap;
 use std::fmt;
 use std::mem::take;
 use crate::codegen::local_size_and_idx_to_ep_offset;
-use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32};
+use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::SideExitReason;
 use crate::options::{debug, get_option};
 use crate::cruby::VALUE;
-use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_call_type, exit_counter_ptr_for_opcode, CompileError};
+use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
 
@@ -1171,6 +1171,9 @@ pub struct Assembler {
 
     /// Names of labels
     pub(super) label_names: Vec<String>,
+
+    /// If Some, the next ccall should verify its leafness
+    leaf_ccall_stack_size: Option<usize>
 }
 
 impl Assembler
@@ -1190,7 +1193,30 @@ impl Assembler
             insns: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
             live_ranges,
             label_names,
+            leaf_ccall_stack_size: None,
         }
+    }
+
+    pub fn expect_leaf_ccall(&mut self, stack_size: usize) {
+        self.leaf_ccall_stack_size = Some(stack_size);
+    }
+
+    fn set_stack_canary(&mut self) -> Option<Opnd> {
+        if cfg!(feature = "runtime_checks") {
+            if let Some(stack_size) = self.leaf_ccall_stack_size.take() {
+                let canary_addr = self.lea(Opnd::mem(64, SP, (stack_size as i32) * SIZEOF_VALUE_I32));
+                let canary_opnd = Opnd::mem(64, canary_addr, 0);
+                self.mov(canary_opnd, vm_stack_canary().into());
+                return Some(canary_opnd)
+            }
+        }
+        None
+    }
+
+    fn clear_stack_canary(&mut self, canary_opnd: Option<Opnd>){
+        if let Some(canary_opnd) = canary_opnd {
+            self.store(canary_opnd, 0.into());
+        };
     }
 
     /// Build an Opnd::VReg and initialize its LiveRange
@@ -1601,11 +1627,6 @@ impl Assembler
                         self.load_into(SCRATCH_OPND, Opnd::const_ptr(exit_counter_ptr_for_opcode(opcode)));
                         self.incr_counter_with_reg(Opnd::mem(64, SCRATCH_OPND, 0), 1.into(), C_RET_OPND);
                     }
-                    if let SideExitReason::UnhandledCallType(call_type) = reason {
-                        asm_comment!(self, "increment an unknown call type counter");
-                        self.load_into(SCRATCH_OPND, Opnd::const_ptr(exit_counter_ptr_for_call_type(call_type)));
-                        self.incr_counter_with_reg(Opnd::mem(64, SCRATCH_OPND, 0), 1.into(), C_RET_OPND);
-                    }
                 }
 
                 asm_comment!(self, "exit to the interpreter");
@@ -1662,8 +1683,10 @@ impl Assembler {
 
     /// Call a C function without PosMarkers
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
+        let canary_opnd = self.set_stack_canary();
         let out = self.new_vreg(Opnd::match_num_bits(&opnds));
         self.push_insn(Insn::CCall { fptr, opnds, start_marker: None, end_marker: None, out });
+        self.clear_stack_canary(canary_opnd);
         out
     }
 

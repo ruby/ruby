@@ -2,6 +2,10 @@ require "test/unit"
 
 class TestObjSpaceRactor < Test::Unit::TestCase
   def test_tracing_does_not_crash
+    # https://ci.rvm.jp/results/trunk-random1@ruby-sp2-noble-docker/5954509
+    # https://ci.rvm.jp/results/trunk-random0@ruby-sp2-noble-docker/5954501
+    omit "crashes frequently on CI but not able to reproduce locally"
+
     assert_ractor(<<~RUBY, require: 'objspace')
       ObjectSpace.trace_object_allocations do
         r = Ractor.new do

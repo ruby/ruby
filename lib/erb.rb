@@ -25,13 +25,6 @@ require 'erb/util'
 # Like method [sprintf][sprintf], \ERB can format run-time data into a string.
 # \ERB, however,s is *much more powerful*.
 #
-# In simplest terms:
-#
-# - You can create an \ERB object to store a text *template* that includes specially formatted *tags*;
-#   each tag specifies data that at run-time is to replace the tag in the produced result.
-# - You can call instance method ERB#result to get the result,
-#   which is the string formed by replacing each tag with run-time data.
-#
 # \ERB is commonly used to produce:
 #
 # - Customized or personalized email messages.
@@ -49,24 +42,41 @@ require 'erb/util'
 #
 # ## In Brief
 #
-# ```
-# # Expression tag: begins with '<%', ends with '%>'.
-# # This expression does not need the local binding.
-# ERB.new('Today is <%= Date::DAYNAMES[Date.today.wday] %>.').result # => "Today is Monday."
-# # This expression tag does need the local binding.
-# magic_word = 'xyzzy'
-# template.result(binding) # => "The magic word is xyzzy."
+# Here's how \ERB works:
 #
-# Execution tag: begins with '<%=', ends with '%>'.
-# s = '<% File.write("t.txt", "Some stuff.") %>'
-# ERB.new(s).result
-# File.read('t.txt') # => "Some stuff."
+# - You can create an \ERB object (a *template*) to store text that includes specially formatted *tags*.
+# - You can call instance method ERB#result to get the *result*.
 #
-# # Comment tag: begins with '<%#', ends with '%>'.
-# s = 'Some stuff;<%# Note to self: figure out what the stuff is. %> more stuff.'
-# ERB.new(s).result # => "Some stuff; more stuff."
-# ```
+# \ERB supports tags of three kinds:
 #
+# - [Expression tags][expression tags]:
+#   each begins with `'<%'`, ends with `'%>'`; contains a Ruby expression;
+#   in the result, the value of the expression replaces the entire tag:
+#
+#         magic_word = 'xyzzy'
+#         template.result(binding) # => "The magic word is xyzzy."
+#
+#         ERB.new('Today is <%= Date::DAYNAMES[Date.today.wday] %>.').result # => "Today is Monday."
+#
+#     The first call to #result passes argument `binding`,
+#     which contains the binding of variable `magic_word` to its string value `'xyzzy'`.
+#
+#     The second call need not pass a binding,
+#     because its expression `Date::DAYNAMES` is globally defined.
+#
+# - [Execution tags][execution tags]:
+#   each begins with `'<%='`, ends with `'%>'`; contains Ruby code to be executed:
+#
+#          s = '<% File.write("t.txt", "Some stuff.") %>'
+#          ERB.new(s).result
+#          File.read('t.txt') # => "Some stuff."
+#
+# - [Comment tags][comment tags]:
+#   each begins with `'<%#'`, ends with `'%>'`; contains comment text;
+#   in the result, the entire tag is omitted.
+#
+#          s = 'Some stuff;<%# Note to self: figure out what the stuff is. %> more stuff.'
+#          ERB.new(s).result # => "Some stuff; more stuff."
 #
 # ## Some Simple Examples
 #
@@ -125,18 +135,111 @@ require 'erb/util'
 #
 # ## Bindings
 #
-# The first example above passed no argument to method `result`;
-# the second example passed argument `binding`.
+# A call to method #result, which produces the formatted result string,
+# requires a [Binding object][binding object] as its argument.
 #
-# Here's why:
+# The binding object provides the bindings for expressions in [expression tags][expression tags].
 #
-# - The first example has tag `<%= Time.now %>`,
-#   which cites *globally-defined* constant `Time`;
-#   the default `binding` (details not needed here) includes the binding of global constant `Time` to its value.
-# - The second example has tag `<%= magic_word %>`,
-#   which cites *locally-defined* variable `magic_word`;
-#   the passed argument `binding` (which is simply a call to method [Kernel#binding][kernel#binding])
-#   includes the binding of local variable `magic_word` to its value.
+# There are three ways to provide the required binding:
+#
+# - [Default binding][default binding].
+# - [Local binding][local binding].
+# - [Augmented binding][augmented binding]
+#
+# ### Default Binding
+#
+# When you pass no `binding` argument to method #result,
+# the method uses its default binding: the one returned by method #new_toplevel.
+# This binding has the bindings defined by Ruby itself,
+# which are those for Ruby's constants and variables.
+#
+# That binding is sufficient for an expression tag that refers only to Ruby's constants and variables;
+# these expression tags refer only to Ruby's global constant `RUBY_COPYRIGHT` and global variable `$0`:
+#
+# ```
+# s = <<EOT
+# The Ruby copyright is <%= RUBY_COPYRIGHT.inspect %>.
+# The current process is <%= $0 %>.
+# EOT
+# puts ERB.new(s).result
+# The Ruby copyright is "ruby - Copyright (C) 1993-2025 Yukihiro Matsumoto".
+# The current process is irb.
+# ```
+#
+# (The current process is `irb` because that's where we're doing these examples!)
+#
+#
+# ### Local Binding
+#
+# The default binding is *not* sufficient for an expression
+# that refers to a a constant or variable that is not defined there:
+#
+# ```
+# Foo = 1 # Defines local constant Foo.
+# foo = 2 # Defines local variable foo.
+# s = <<EOT
+# The current value of constant Foo is <%= Foo %>.
+# The current value of variable foo is <%= foo %>.
+# The Ruby copyright is <%= RUBY_COPYRIGHT.inspect %>.
+# The current process is <%= $0 %>.
+# EOT
+# ```
+#
+# This call raises `NameError` because although `Foo` and `foo` are defined locally,
+# they are not defined in the default binding:
+#
+# ```
+# ERB.new(s).result # Raises NameError.
+# ```
+#
+# To make the locally-defined constants and variables available,
+# you can call #result with the local binding:
+#
+# ```
+# puts ERB.new(s).result(binding)
+# The current value of constant Foo is 1.
+# The current value of variable foo is 2.
+# The Ruby copyright is "ruby - Copyright (C) 1993-2025 Yukihiro Matsumoto".
+# The current process is irb.
+# ```
+#
+# ### Augmented Binding
+#
+# Another way to make variable bindings (but not constant bindings) available
+# is to use method #result_with_hash(hash);
+# the passed hash has name/value pairs that are to be used to define and assign variables
+# in a copy of the default binding:
+#
+# ```
+# s = <<EOT
+# The current value of variable bar is <%= bar %>.
+# The current value of variable baz is <%= baz %>.
+# The Ruby copyright is <%= RUBY_COPYRIGHT.inspect %>.
+# The current process is <%= $0 %>.
+# ```
+#
+# Both of these calls raise `NameError`, because `bar` and `baz`
+# are not defined in either the default binding or the local binding.
+#
+# ```
+# puts ERB.new(s).result          # Raises NameError.
+# puts ERB.new(s).result(binding) # Raises NameError.
+# ```
+#
+# This call passes a hash that causes `bar` and `baz` to be defined
+# in a new binding (derived from #new_toplevel):
+#
+# ```
+# hash = {bar: 3, baz: 4}
+# # => {bar: 3, baz: 4}
+# ERB.new(s).result_with_hash(hash)
+# puts ERB.new(s).result_with_hash(variables)
+# The current value of variable bar is 3.
+# The current value of variable baz is 4.
+# The Ruby copyright is "ruby - Copyright (C) 1993-2025 Yukihiro Matsumoto".
+# The current process is irb.
+# EOT
+# ```
 #
 # ## Tags
 #
@@ -189,7 +292,17 @@ require 'erb/util'
 #
 # When you call method #result,
 # the method executes the code and removes the entire execution tag
-# (generating no text in the result).
+# (generating no text in the result):
+#
+# ```
+# ERB.new('foo <% Dir.chdir("C:/") %> bar').result # => "foo  bar"
+# ```
+#
+# Whitespace before and after the embedded code is optional:
+#
+# ```
+# ERB.new('foo <%Dir.chdir("C:/")%> bar').result   # => "foo  bar"
+# ```
 #
 # You can interleave text with execution tags to form a control structure
 # such as a conditional, a loop, or a `case` statements.
@@ -261,7 +374,7 @@ require 'erb/util'
 #
 # #### Shorthand Format for Execution Tags
 #
-# You can give `trim_mode: '%'` to enable a shorthand format for execution tags;
+# You can use keyword argument `trim_mode: '%'` to enable a shorthand format for execution tags;
 # this example uses the shorthand format `% _code_` instead of `<% _code_ %>`:
 #
 # ```
@@ -282,6 +395,90 @@ require 'erb/util'
 #
 # Note that in the shorthand format, the character `'%'` must be the first character in the code line
 # (no leading whitespace).
+#
+# #### Suppressing Unwanted Blank Lines
+#
+# With keyword argument `trim_mode` not given,
+# all blank lines go into the result:
+#
+# ```
+# s = <<EOT
+# <% if true %>
+# <%= RUBY_VERSION %>
+# <% end %>
+# EOT
+# ERB.new(s).result.lines.each {|line| puts line.inspect }
+# "\n"
+# "3.4.5\n"
+# "\n"
+# ```
+#
+# You can give `trim_mode: '-'`, you can suppress each blank line
+# whose source line ends with `-%>` (instead of `%>`):
+#
+# ```
+# s = <<EOT
+# <% if true -%>
+# <%= RUBY_VERSION %>
+# <% end -%>
+# EOT
+# ERB.new(s, trim_mode: '-').result.lines.each {|line| puts line.inspect }
+# "3.4.5\n"
+# ```
+#
+# It is an error to use the trailing `'-%>'` notation without `trim_mode: '-'`:
+#
+# ```
+# ERB.new(s).result.lines.each {|line| puts line.inspect } # Raises SyntaxError.
+# ```
+#
+# #### Suppressing Unwanted Newlines
+#
+# Consider this input string:
+#
+# ```
+# s = <<EOT
+# <% RUBY_VERSION %>
+# <%= RUBY_VERSION %>
+# foo <% RUBY_VERSION %>
+# foo <%= RUBY_VERSION %>
+# EOT
+# ```
+#
+# With keyword argument `trim_mode` not given, all newlines go into the result:
+#
+# ```
+# ERB.new(s).result.lines.each {|line| puts line.inspect }
+# "\n"
+# "3.4.5\n"
+# "foo \n"
+# "foo 3.4.5\n"
+# ```
+#
+# You can give `trim_mode: '>'` to suppress the trailing newline
+# for each line that ends with `'%<'` (regardless of its beginning):
+#
+# ```
+# ERB.new(s, trim_mode: '>').result.lines.each {|line| puts line.inspect }
+# "3.4.5foo foo 3.4.5"
+# ```
+#
+# You can give `trim_mode: '<>'` to suppress the trailing newline
+# for each line that both begins with `'<%'` and ends with `'%>'`:
+#
+# ```
+# ERB.new(s, trim_mode: '<>').result.lines.each {|line| puts line.inspect }
+# "3.4.5foo \n"
+# "foo 3.4.5\n"
+# ```
+#
+# #### Combining Trim Modes
+#
+# You can combine certain trim modes:
+#
+# - `'%-'`: Enable shorthand and omit each blank line ending with `'-%>'`.
+# - `'%>'`: Enable shorthand and omit newline for each line ending with `'%>'`.
+# - `'%<>'`: Enable shorthand and omit newline for each line starting with `'<%'` and ending with `'%>'`.
 #
 # ### Comment Tags
 #
@@ -504,13 +701,16 @@ require 'erb/util'
 # Other popular template processors may found in the [Template Engines][template engines] page
 # of the Ruby Toolbox.
 #
+# [%q literals]: https://docs.ruby-lang.org/en/master/syntax/literals_rdoc.html#label-25q-3A+Non-Interpolable+String+Literals
+# [augmented binding]: rdoc-ref:ERB@Augmented+Binding
 # [binding object]: https://docs.ruby-lang.org/en/master/Binding.html
 # [comment tags]: rdoc-ref:ERB@Comment+Tags
+# [default binding]: rdoc-ref:ERB@Default+Binding
 # [encoding]: https://docs.ruby-lang.org/en/master/Encoding.html
 # [execution tags]: rdoc-ref:ERB@Execution+Tags
 # [expression tags]: rdoc-ref:ERB@Expression+Tags
 # [kernel#binding]: https://docs.ruby-lang.org/en/master/Kernel.html#method-i-binding
-# [%q literals]: https://docs.ruby-lang.org/en/master/syntax/literals_rdoc.html#label-25q-3A+Non-Interpolable+String+Literals
+# [local binding]: rdoc-ref:ERB@Local+Binding
 # [magic comments]: https://docs.ruby-lang.org/en/master/syntax/comments_rdoc.html#label-Magic+Comments
 # [rdoc]: https://ruby.github.io/rdoc
 # [sprintf]: https://docs.ruby-lang.org/en/master/Kernel.html#method-i-sprintf
@@ -521,7 +721,17 @@ class ERB
   Revision = '$Date::                           $' # :nodoc: #'
   deprecate_constant :Revision
 
-  # Returns revision information for the erb.rb module.
+  # :markup: markdown
+  #
+  # :call-seq:
+  #   self.version -> string
+  #
+  # Returns the string revision for \ERB:
+  #
+  # ```
+  # ERB.version # => "4.0.4"
+  # ```
+  #
   def self.version
     VERSION
   end
@@ -537,19 +747,19 @@ class ERB
   #
   # **Keyword Argument `trim_mode`**
   #
-  # When keyword argument `trim_mode` has a string value,
-  # that value may be one of:
+  # You can use keyword argument `trim_mode: '%'`
+  # to enable the [shorthand format][shorthand format] for execution tags.
   #
-  # - `'%'`: Enable [shorthand format][shorthand format] for execution tags.
+  # This value allows [blank line control][blank line control]:
+  #
   # - `'-'`: Omit each blank line ending with `'%>'`.
+  #
+  # Other values allow [newline control][newline control]:
+  #
   # - `'>'`: Omit newline for each line ending with `'%>'`.
   # - `'<>'`: Omit newline for each line starting with `'<%'` and ending with `'%>'`.
   #
-  # The value may also be certain combinations of the above.
-  #
-  # - `'%-'`: Enable shorthand and omit each blank line ending with `'%>'`.
-  # - `'%>'`: Enable shorthand and omit newline for each line ending with `'%>'`.
-  # - `'%<>'`: Enable shorthand and omit newline for each line starting with `'<%'` and ending with `'%>'`.
+  # You can also [combine trim modes][combine trim modes].
   #
   # **Keyword Argument `eoutvar`**
   #
@@ -578,9 +788,12 @@ class ERB
   # However, their values, if given, are handled thus:
   #
   # - `safe_level`: ignored.
-  # - `legacy_trim_mode: overrides keyword argument `trim_mode`.
-  # - `legacy_eoutvar: overrides keyword argument `eoutvar`.
+  # - `legacy_trim_mode`: overrides keyword argument `trim_mode`.
+  # - `legacy_eoutvar`: overrides keyword argument `eoutvar`.
   #
+  # [blank line control]: rdoc-ref:ERB@Suppressing+Unwanted+Blank+Lines
+  # [combine trim modes]: rdoc-ref:ERB@Combining+Trim+Modes
+  # [newline control]: rdoc-ref:ERB@Suppressing+Unwanted+Newlines
   # [shorthand format]: rdoc-ref:ERB@Shorthand+Format+for+Execution+Tags
   #
   def initialize(str, safe_level=NOT_GIVEN, legacy_trim_mode=NOT_GIVEN, legacy_eoutvar=NOT_GIVEN, trim_mode: nil, eoutvar: '_erbout')
@@ -665,12 +878,23 @@ class ERB
     print self.result(b)
   end
 
+  # :markup: markdown
   #
-  # Executes the generated ERB code to produce a completed template, returning
-  # the results of that code.
+  # :call-seq:
+  #   result(binding = new_toplevel) -> new_string
   #
-  # _b_ accepts a Binding object which is used to set the context of
-  # code evaluation.
+  # Returns the new string formed by processing \ERB tags found in the stored string in `self`.
+  #
+  # With no argument given, uses the default binding;
+  # see [Default Binding][default binding].
+  #
+  # With argument `binding` given, uses the local binding;
+  # see [Local Binding][local binding].
+  #
+  # See also #result_with_hash.
+  #
+  # [default binding]: rdoc-ref:ERB@Default+Binding
+  # [local binding]: rdoc-ref:ERB@Local+Binding
   #
   def result(b=new_toplevel)
     unless @_init.equal?(self.class.singleton_class)
@@ -679,8 +903,18 @@ class ERB
     eval(@src, b, (@filename || '(erb)'), @lineno)
   end
 
-  # Render a template on a new toplevel binding with local variables specified
-  # by a Hash object.
+  # :markup: markdown
+  #
+  # :call-seq:
+  #   result_with_hash(hash) -> string
+  #
+  # Returns the new string formed by processing \ERB tags found in the stored string in `self`;
+  # see [Augmented Binding][augmented binding].
+  #
+  # See also #result.
+  #
+  # [augmented binding]: rdoc-ref:ERB@Augmented+Binding
+  #
   def result_with_hash(hash)
     b = new_toplevel(hash.keys)
     hash.each_pair do |key, value|

@@ -38,12 +38,6 @@ module Bundler
 
       Bundler::Fetcher.disable_endpoint = options["full-index"]
 
-      if options["binstubs"]
-        Bundler::SharedHelpers.major_deprecation 2,
-          "The --binstubs option will be removed in favor of `bundle binstubs --all`",
-          removed_message: "The --binstubs option have been removed in favor of `bundle binstubs --all`"
-      end
-
       Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.feature_flag.plugins?
 
       # For install we want to enable strict validation
@@ -68,8 +62,6 @@ module Bundler
       end
 
       Bundler::CLI::Common.output_post_install_messages installer.post_install_messages
-
-      warn_ambiguous_gems
 
       if CLI::Common.clean_after_install?
         require_relative "clean"
@@ -125,20 +117,6 @@ module Bundler
       Bundler.settings.set_command_option_if_given :clean, options["clean"]
 
       options[:force] = options[:redownload] if options[:redownload]
-    end
-
-    def warn_ambiguous_gems
-      # TODO: remove this when we drop Bundler 1.x support
-      Installer.ambiguous_gems.to_a.each do |name, installed_from_uri, *also_found_in_uris|
-        Bundler.ui.warn "Warning: the gem '#{name}' was found in multiple sources."
-        Bundler.ui.warn "Installed from: #{installed_from_uri}"
-        Bundler.ui.warn "Also found in:"
-        also_found_in_uris.each {|uri| Bundler.ui.warn "  * #{uri}" }
-        Bundler.ui.warn "You should add a source requirement to restrict this gem to your preferred source."
-        Bundler.ui.warn "For example:"
-        Bundler.ui.warn "    gem '#{name}', :source => '#{installed_from_uri}'"
-        Bundler.ui.warn "Then uninstall the gem '#{name}' (or delete all bundled gems) and then install again."
-      end
     end
   end
 end

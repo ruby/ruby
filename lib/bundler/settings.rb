@@ -7,7 +7,6 @@ module Bundler
     autoload :Validator, File.expand_path("settings/validator", __dir__)
 
     BOOL_KEYS = %w[
-      allow_offline_install
       auto_install
       cache_all
       cache_all_platforms

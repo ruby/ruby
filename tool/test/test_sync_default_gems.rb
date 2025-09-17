@@ -99,7 +99,8 @@ module Test_SyncDefaultGems
       # Generate a new unprotected key with default parameters that
       # expires after 30 seconds.
       if @gpgsign = system(*%w"gpg --quiet --batch --passphrase", "",
-                           "--quick-generate-key", email, *%W"default default seconds=#{expire}")
+                           "--quick-generate-key", email, *%W"default default seconds=#{expire}",
+                           err: IO::NULL)
         # Fetch the generated public key.
         signingkey = IO.popen(%W"gpg --quiet --list-public-key #{email}", &:read)[/^pub .*\n +\K\h+/]
       end
@@ -313,5 +314,5 @@ module Test_SyncDefaultGems
       assert_equal(":ok\n""Should.be_merged\n", File.read("src/lib/common.rb"), out)
       assert_not_operator(File, :exist?, "src/lib/bad.rb", out)
     end
-  end
+  end if /darwin|linux/ =~ RUBY_PLATFORM
 end

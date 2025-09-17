@@ -51,23 +51,9 @@ module DebugPOpen
 end
 using DebugPOpen
 module DebugSystem
-  def system(*args)
+  def system(*args, exception: true, **opts)
     VCS.dump(args, "args: ") if $DEBUG
-    exception = false
-    opts = Hash.try_convert(args[-1])
-    if RUBY_VERSION >= "2.6"
-      unless opts
-        opts = {}
-        args << opts
-      end
-      exception = opts.fetch(:exception) {opts[:exception] = true}
-    elsif opts
-      exception = opts.delete(:exception) {true}
-      args.pop if opts.empty?
-    end
-    ret = super(*args)
-    raise "Command failed with status (#$?): #{args[0]}" if exception and !ret
-    ret
+    super(*args, exception: exception, **opts)
   end
 end
 

@@ -35,20 +35,6 @@ update process below under [CONSERVATIVE UPDATING][].
 
 ## OPTIONS
 
-* `--binstubs[=BINSTUBS]`:
-  Binstubs are scripts that wrap around executables. Bundler creates a small Ruby
-  file (a binstub) that loads Bundler, runs the command, and puts it in `bin/`.
-  This lets you link the binstub inside of an application to the exact gem
-  version the application needs.
-
-  Creates a directory (defaults to `~/bin` when the option is used without a
-  value, or to the given `<BINSTUBS>` directory otherwise) and places any
-  executables from the gem there. These executables run in Bundler's context. If
-  used, you might add this directory to your environment's `PATH` variable. For
-  instance, if the `rails` gem comes with a `rails` executable, this flag will
-  create a `bin/rails` executable that ensures that all referred dependencies
-  will be resolved using the bundled gems.
-
 * `--force`, `--redownload`:
   Force reinstalling every gem, even if already installed.
 

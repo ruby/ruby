@@ -324,24 +324,6 @@ RSpec.describe "compact index api" do
       FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
-    gemfile <<-G
-      source "#{source_uri}"
-      source "#{source_uri}/extra"
-      gem "back_deps"
-    G
-
-    bundle :install, artifice: "compact_index_extra"
-    expect(the_bundle).to include_gems "back_deps 1.0", "foo 1.0"
-  end
-
-  it "fetches again when more dependencies are found in subsequent sources with source blocks" do
-    build_repo2 do
-      build_gem "back_deps" do |s|
-        s.add_dependency "foo"
-      end
-      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
-    end
-
     install_gemfile <<-G, artifice: "compact_index_extra", verbose: true
       source "#{source_uri}"
       source "#{source_uri}/extra" do
@@ -375,11 +357,13 @@ RSpec.describe "compact index api" do
     expect(the_bundle).to include_gems "myrack 1.2"
   end
 
-  it "considers all possible versions of dependencies from all api gem sources" do
-    # In this scenario, the gem "somegem" only exists in repo4.  It depends on specific version of activesupport that
-    # exists only in repo1.  There happens also be a version of activesupport in repo4, but not the one that version 1.0.0
-    # of somegem wants. This test makes sure that bundler actually finds version 1.2.3 of active support in the other
-    # repo and installs it.
+  it "resolves indirect dependencies to the most scoped source that includes them" do
+    # In this scenario, the gem "somegem" only exists in repo4.  It depends on
+    # specific version of activesupport that exists only in repo1.  There
+    # happens also be a version of activesupport in repo4, but not the one that
+    # version 1.0.0 of somegem wants. This test makes sure that bundler tries to
+    # use the version in the most scoped source, even if not compatible, and
+    # gives a resolution error
     build_repo4 do
       build_gem "activesupport", "1.2.0"
       build_gem "somegem", "1.0.0" do |s|
@@ -389,14 +373,14 @@ RSpec.describe "compact index api" do
 
     gemfile <<-G
       source "#{source_uri}"
-      source "#{source_uri}/extra"
-      gem 'somegem', '1.0.0'
+      source "#{source_uri}/extra" do
+        gem 'somegem', '1.0.0'
+      end
     G
 
-    bundle :install, artifice: "compact_index_extra_api"
+    bundle :install, artifice: "compact_index_extra_api", raise_on_error: false
 
-    expect(the_bundle).to include_gems "somegem 1.0.0"
-    expect(the_bundle).to include_gems "activesupport 1.2.3"
+    expect(err).to include("Could not find compatible versions")
   end
 
   it "prints API output properly with back deps" do
@@ -472,26 +456,6 @@ RSpec.describe "compact index api" do
   end
 
   it "fetches again when more dependencies are found in subsequent sources using deployment mode" do
-    build_repo2 do
-      build_gem "back_deps" do |s|
-        s.add_dependency "foo"
-      end
-      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
-    end
-
-    gemfile <<-G
-      source "#{source_uri}"
-      source "#{source_uri}/extra"
-      gem "back_deps"
-    G
-
-    bundle :install, artifice: "compact_index_extra"
-    bundle "config --set local deployment true"
-    bundle :install, artifice: "compact_index_extra"
-    expect(the_bundle).to include_gems "back_deps 1.0"
-  end
-
-  it "fetches again when more dependencies are found in subsequent sources using deployment mode with blocks" do
     build_repo2 do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
@@ -580,19 +544,6 @@ RSpec.describe "compact index api" do
 
       bundle :install, verbose: true, artifice: "compact_index_basic_authentication"
       expect(out).not_to include("#{user}:#{password}")
-      expect(the_bundle).to include_gems "myrack 1.0.0"
-    end
-
-    it "strips http basic auth creds when warning about ambiguous sources" do
-      gemfile <<-G
-        source "#{basic_auth_source_uri}"
-        source "#{file_uri_for(gem_repo1)}"
-        gem "myrack"
-      G
-
-      bundle :install, artifice: "compact_index_basic_authentication"
-      expect(err).to include("Warning: the gem 'myrack' was found in multiple sources.")
-      expect(err).not_to include("#{user}:#{password}")
       expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 

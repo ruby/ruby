@@ -522,6 +522,15 @@ HAVE_GIT = yes
 HAVE_GIT = no
 ! endif
 !endif
+!if "$(HAVE_GIT)" == "no"
+!else if [for /f "tokens=3" %I in ('git --version') do @(\
+	for /f "delims=. tokens=1-2" %I in ("%I") do @(\
+	  if %I lss 2 (exit 1) else if %I gtr 2 (exit 0) \
+	  else if %J lss 10 (exit 1) else (exit 0)\
+	)\
+      )]
+HAVE_GIT = no
+!endif
 
 !if defined(VCS)
 !else if exist($(srcdir)/.git)
@@ -1336,7 +1345,7 @@ $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 
 update-benchmark-driver:
 	$(GIT) clone https://github.com/benchmark-driver/benchmark-driver $(srcdir)/benchmark/benchmark-driver || \
-	  $(GIT) -C $(srcdir)/benchmark/benchmark-driver pull origin master
+	  $(GIT_IN_SRC)/benchmark/benchmark-driver pull origin master
 
 $(ruby_pc): $(RBCONFIG)
 	@$(BOOTSTRAPRUBY) $(tooldir)/expand-config.rb \
@@ -1507,5 +1516,5 @@ exts: rubyspec-capiext
 
 yesterday:
 	for /f "usebackq" %H in \
-	    (`$(GIT) -C $(srcdir) log -1 "--before=00:00+0900" "--format=%H"`) do \
-	    $(GIT) -C $(srcdir) reset --hard %%H
+	    (`$(GIT_LOG_FORMAT):%H -1 "--before=00:00+0900"`) do \
+	    $(GIT_IN_SRC) reset --hard %%H

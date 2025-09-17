@@ -40,9 +40,9 @@ jobs:
           - test_task: check
             os: ubuntu-24.04
             extra_checks: [capi]
-          # ubuntu-24.04-arm jobs don't start on ruby/ruby as of 2025-09-04
-          #- test_task: check
-          #  os: ubuntu-24.04-arm
+          - test_task: check
+            os: ubuntu-24.04-arm
+            extra_checks: [capi]
       fail-fast: false
 
     env:
