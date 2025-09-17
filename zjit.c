@@ -175,6 +175,25 @@ bool rb_zjit_cme_is_cfunc(const rb_callable_method_entry_t *me, const void *func
 const struct rb_callable_method_entry_struct *
 rb_zjit_vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv);
 
+bool
+rb_zjit_class_initialized_p(VALUE klass)
+{
+    return RCLASS_INITIALIZED_P(klass);
+}
+
+rb_alloc_func_t rb_zjit_class_get_alloc_func(VALUE klass);
+
+VALUE rb_class_allocate_instance(VALUE klass);
+
+bool
+rb_zjit_class_has_default_allocator(VALUE klass)
+{
+    assert(RCLASS_INITIALIZED_P(klass));
+    assert(!RCLASS_SINGLETON_P(klass));
+    rb_alloc_func_t alloc = rb_zjit_class_get_alloc_func(klass);
+    return alloc == rb_class_allocate_instance;
+}
+
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self, VALUE target_key);

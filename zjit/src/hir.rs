@@ -1918,14 +1918,30 @@ impl Function {
                     }
                     Insn::ObjectAlloc { val, state } => {
                         let val_type = self.type_of(val);
-                        if val_type.is_subtype(types::Class) && val_type.ruby_object_known() {
-                            let class = val_type.ruby_object().unwrap();
-                            let replacement = self.push_insn(block, Insn::ObjectAllocClass { class, state });
-                            self.insn_types[replacement.0] = self.infer_type(replacement);
-                            self.make_equal_to(insn_id, replacement);
-                        } else {
-                            self.push_insn_id(block, insn_id);
+                        if !val_type.is_subtype(types::Class) {
+                            self.push_insn_id(block, insn_id); continue;
                         }
+                        let Some(class) = val_type.ruby_object() else {
+                            self.push_insn_id(block, insn_id); continue;
+                        };
+                        // See class_get_alloc_func in object.c; if the class isn't initialized, is
+                        // a singleton class, or has a custom allocator, ObjectAlloc might raise an
+                        // exception or run arbitrary code.
+                        //
+                        // We also need to check if the class is initialized or a singleton before trying to read the allocator, otherwise it might raise.
+                        if !unsafe { rb_zjit_class_initialized_p(class) } {
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        if unsafe { rb_zjit_singleton_class_p(class) } {
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        if !unsafe { rb_zjit_class_has_default_allocator(class) } {
+                            // Custom or NULL allocator; could run arbitrary code.
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        let replacement = self.push_insn(block, Insn::ObjectAllocClass { class, state });
+                        self.insn_types[replacement.0] = self.infer_type(replacement);
+                        self.make_equal_to(insn_id, replacement);
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }

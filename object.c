@@ -2192,6 +2192,15 @@ class_get_alloc_func(VALUE klass)
     return allocator;
 }
 
+// Might return NULL.
+rb_alloc_func_t
+rb_zjit_class_get_alloc_func(VALUE klass)
+{
+    assert(RCLASS_INITIALIZED_P(klass));
+    assert(!RCLASS_SINGLETON_P(klass));
+    return rb_get_alloc_func(klass);
+}
+
 static VALUE
 class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass)
 {
