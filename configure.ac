@@ -113,9 +113,10 @@ AC_ARG_WITH(git,
 {
     test x"$HAVE_GIT" = xyes &&
     command -v "$GIT" > /dev/null &&
-    # see Dependencies in doc/contributing/building_ruby.md
+    # `git -C`: 1.8.5
+    # `git log --no-show-signature`: 2.10.0
     AS_CASE([`$GIT -C . --version 2> /dev/null | sed 's/.* //'`],
-    [0.*|1.*|2.@<:@0-9@:>@.*|2.@<:@12@:>@@<:@0-9@:>@.*|2.3@<:@01@:>@.*], [false],
+    [0.*|1.*|2.@<:@0-9@:>@.*], [false],
     [true])
 } || HAVE_GIT=no GIT=never-use
 AC_SUBST(GIT)

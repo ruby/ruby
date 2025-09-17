@@ -526,7 +526,7 @@ HAVE_GIT = no
 !else if [for /f "tokens=3" %I in ('git --version') do @(\
 	for /f "delims=. tokens=1-2" %I in ("%I") do @(\
 	  if %I lss 2 (exit 1) else if %I gtr 2 (exit 0) \
-	  else if %J lss 32 (exit 1) else (exit 0)\
+	  else if %J lss 10 (exit 1) else (exit 0)\
 	)\
       )]
 HAVE_GIT = no
