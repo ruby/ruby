@@ -1,0 +1,24 @@
+foo(bar 1 do end, 2)
+                ^ invalid comma
+                  ^ unexpected integer; expected a `)` to close the arguments
+                  ^ unexpected integer, expecting end-of-input
+                   ^ unexpected ')', expecting end-of-input
+                   ^ unexpected ')', ignoring it
+
+foo(bar 1 do end,)
+                ^ invalid comma
+
+foo(1, bar 2 do end)
+           ^ unexpected integer; expected a `)` to close the arguments
+           ^ unexpected integer, expecting end-of-input
+             ^~ unexpected 'do', expecting end-of-input
+             ^~ unexpected 'do', ignoring it
+                ^~~ unexpected 'end', ignoring it
+                   ^ unexpected ')', ignoring it
+
+foo(1, bar 2)
+           ^ unexpected integer; expected a `)` to close the arguments
+           ^ unexpected integer, expecting end-of-input
+            ^ unexpected ')', expecting end-of-input
+            ^ unexpected ')', ignoring it
+
