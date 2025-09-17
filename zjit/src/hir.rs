@@ -1757,7 +1757,8 @@ impl Function {
 
     /// Rewrite SendWithoutBlock opcodes into SendWithoutBlockDirect opcodes if we know the target
     /// ISEQ statically. This removes run-time method lookups and opens the door for inlining.
-    fn optimize_direct_sends(&mut self) {
+    /// Also try and inline constant caches, specialize object allocations, and more.
+    fn type_specialize(&mut self) {
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
@@ -2560,7 +2561,7 @@ impl Function {
     /// Run all the optimization passes we have.
     pub fn optimize(&mut self) {
         // Function is assumed to have types inferred already
-        self.optimize_direct_sends();
+        self.type_specialize();
         #[cfg(debug_assertions)] self.assert_validates();
         self.optimize_getivar();
         #[cfg(debug_assertions)] self.assert_validates();
