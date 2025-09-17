@@ -13,10 +13,10 @@ use crate::invariants::{track_bop_assumption, track_cme_assumption, track_no_ep_
 use crate::gc::{append_gc_offsets, get_or_create_iseq_payload, get_or_create_iseq_payload_ptr, IseqPayload, IseqStatus};
 use crate::state::ZJITState;
 use crate::stats::{exit_counter_for_compile_error, incr_counter, incr_counter_by, CompileError};
-use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_ns, exit_compile_error}};
+use crate::stats::{counter_ptr, with_time_stat, Counter, send_fallback_counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SCRATCH_OPND, SP};
-use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SpecialBackrefSymbol, SELF_PARAM_IDX};
+use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, RangeType, SideExitReason, SideExitReason::*, MethodType, SpecialObjectType, SpecialBackrefSymbol, SELF_PARAM_IDX};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types, Type};
 use crate::options::get_option;
@@ -364,10 +364,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::IfTrue { val, target } => no_output!(gen_if_true(jit, asm, opnd!(val), target)),
         Insn::IfFalse { val, target } => no_output!(gen_if_false(jit, asm, opnd!(val), target)),
         &Insn::Send { cd, blockiseq, state, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state)),
-        Insn::SendWithoutBlock { cd, state, .. } => gen_send_without_block(jit, asm, *cd, &function.frame_state(*state)),
+        Insn::SendWithoutBlock { cd, state, def_type, .. } => gen_send_without_block(jit, asm, *cd, *def_type, &function.frame_state(*state)),
         // Give up SendWithoutBlockDirect for 6+ args since asm.ccall() doesn't support it.
         Insn::SendWithoutBlockDirect { cd, state, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
-            gen_send_without_block(jit, asm, *cd, &function.frame_state(*state)),
+            gen_send_without_block(jit, asm, *cd, None, &function.frame_state(*state)),
         Insn::SendWithoutBlockDirect { cme, iseq, recv, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state)),
         &Insn::InvokeSuper { cd, blockiseq, state, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state)),
         Insn::InvokeBlock { cd, state, .. } => gen_invokeblock(jit, asm, *cd, &function.frame_state(*state)),
@@ -999,10 +999,16 @@ fn gen_send_without_block(
     jit: &mut JITState,
     asm: &mut Assembler,
     cd: *const rb_call_data,
+    def_type: Option<MethodType>,
     state: &FrameState,
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::dynamic_send_count);
     gen_incr_counter(asm, Counter::dynamic_send_type_send_without_block);
+
+    if let Some(def_type) = def_type {
+        gen_incr_counter(asm, send_fallback_counter(def_type));
+    }
+
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
     unsafe extern "C" {
