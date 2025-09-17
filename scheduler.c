@@ -629,6 +629,38 @@ rb_fiber_scheduler_block(VALUE scheduler, VALUE blocker, VALUE timeout)
     return rb_funcall(scheduler, id_block, 2, blocker, timeout);
 }
 
+struct rb_fiber_scheduler_unblock_argument {
+    rb_execution_context_t *ec;
+    VALUE scheduler;
+    VALUE blocker;
+    VALUE fiber;
+
+    int saved_errno;
+    int saved_interrupt_mask;
+};
+
+static VALUE
+rb_fiber_scheduler_unblock_begin(VALUE _argument)
+{
+    struct rb_fiber_scheduler_unblock_argument *argument = (struct rb_fiber_scheduler_unblock_argument *)_argument;
+
+    return rb_funcall(argument->scheduler, id_unblock, 2, argument->blocker, argument->fiber);
+}
+
+static VALUE
+rb_fiber_scheduler_unblock_ensure(VALUE _argument)
+{
+    struct rb_fiber_scheduler_unblock_argument *argument = (struct rb_fiber_scheduler_unblock_argument *)_argument;
+
+    // Restore interrupt mask:
+    argument->ec->interrupt_mask = argument->saved_interrupt_mask;
+
+    // Restore errno:
+    errno = argument->saved_errno;
+
+    return Qnil;
+}
+
 /*
  *  Document-method: Fiber::Scheduler#unblock
  *  call-seq: unblock(blocker, fiber)
@@ -647,22 +679,29 @@ rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber)
 {
     RUBY_ASSERT(rb_obj_is_fiber(fiber));
 
-    // `rb_fiber_scheduler_unblock` can be called from points where `errno` is expected to be preserved. Therefore, we should save and restore it. For example `io_binwrite` calls `rb_fiber_scheduler_unblock` and if `errno` is reset to 0 by user code, it will break the error handling in `io_write`.
-    // If we explicitly preserve `errno` in `io_binwrite` and other similar functions (e.g. by returning it), this code is no longer needed. I hope in the future we will be able to remove it.
-    int saved_errno = errno;
-
-#ifdef RUBY_DEBUG
     rb_execution_context_t *ec = GET_EC();
-    if (RUBY_VM_INTERRUPTED(ec)) {
-        rb_bug("rb_fiber_scheduler_unblock called with pending interrupt");
-    }
-#endif
 
-    VALUE result = rb_funcall(scheduler, id_unblock, 2, blocker, fiber);
+    // We must prevent interrupts while invoking the unblock method, because otherwise fibers can be left permanently blocked if an interrupt occurs during the unblock call. This `rb_bug` demonstrates the faulty behavior, but it can also be triggered by signal handlers or other interrupt sources during the unblock call itself. In order to prevent this issue, we mask interrupts while invoking the unblock method.
+    // if (RUBY_VM_INTERRUPTED(ec)) {
+    //     rb_bug("rb_fiber_scheduler_unblock called with pending interrupt");
+    // }
 
-    errno = saved_errno;
+    struct rb_fiber_scheduler_unblock_argument argument = {
+        .ec = ec,
+        .scheduler = scheduler,
+        .blocker = blocker,
+        .fiber = fiber,
 
-    return result;
+        // `rb_fiber_scheduler_unblock` can be called from points where `errno` is expected to be preserved. Therefore, we should save and restore it. For example `io_binwrite` calls `rb_fiber_scheduler_unblock` and if `errno` is reset to 0 by user code, it will break the error handling in `io_write`.
+        // If we explicitly preserve `errno` in `io_binwrite` and other similar functions (e.g. by returning it), this code is no longer needed. I hope in the future we will be able to remove it.
+        .saved_errno = errno,
+        .saved_interrupt_mask = ec->interrupt_mask,
+    };
+
+    // Prevent interrupts while calling user code:
+    ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
+
+    return rb_ensure(rb_fiber_scheduler_unblock_begin, (VALUE)&argument, rb_fiber_scheduler_unblock_ensure, (VALUE)&argument);
 }
 
 /*
