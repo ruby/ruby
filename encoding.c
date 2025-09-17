@@ -375,14 +375,20 @@ enc_register_at(struct enc_table *enc_table, int index, const char *name, rb_enc
         encoding = xmalloc(sizeof(rb_encoding));
     }
 
+    rb_raw_encoding tmp_encoding;
     if (base_encoding) {
-        *encoding = *base_encoding;
+        tmp_encoding = *base_encoding;
     }
     else {
-        memset(encoding, 0, sizeof(*ent->enc));
+        memset(&tmp_encoding, 0, sizeof(*ent->enc));
     }
-    encoding->name = name;
-    encoding->ruby_encoding_index = index;
+    tmp_encoding.name = name;
+    tmp_encoding.ruby_encoding_index = index;
+
+    // FIXME: If encoding already existed, it may be concurrently accessed
+    // It's technically invalid to write to this memory as it's read, but as all
+    // values are set up it _probably_ works.
+    *encoding = tmp_encoding;
     ent->enc = encoding;
     st_insert(enc_table->names, (st_data_t)name, (st_data_t)index);
 
