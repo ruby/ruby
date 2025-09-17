@@ -135,18 +135,111 @@ require 'erb/util'
 #
 # ## Bindings
 #
-# The first example above passed no argument to method `result`;
-# the second example passed argument `binding`.
+# A call to method #result, which produces the formatted result string,
+# requires a [Binding object][binding object] as its argument.
 #
-# Here's why:
+# The binding object provides the bindings for expressions in [expression tags][expression tags].
 #
-# - The first example has tag `<%= Time.now %>`,
-#   which cites *globally-defined* constant `Time`;
-#   the default `binding` (details not needed here) includes the binding of global constant `Time` to its value.
-# - The second example has tag `<%= magic_word %>`,
-#   which cites *locally-defined* variable `magic_word`;
-#   the passed argument `binding` (which is simply a call to method [Kernel#binding][kernel#binding])
-#   includes the binding of local variable `magic_word` to its value.
+# There are three ways to provide the required binding:
+#
+# - [Default binding][default binding].
+# - [Local binding][local binding].
+# - [Augmented binding][augmented binding]
+#
+# ### Default Binding
+#
+# When you pass no `binding` argument to method #result,
+# the method uses its default binding: the one returned by method #new_toplevel.
+# This binding has the bindings defined by Ruby itself,
+# which are those for Ruby's constants and variables.
+#
+# That binding is sufficient for an expression tag that refers only to Ruby's constants and variables;
+# these expression tags refer only to Ruby's global constant `RUBY_COPYRIGHT` and global variable `$0`:
+#
+# ```
+# s = <<EOT
+# The Ruby copyright is <%= RUBY_COPYRIGHT.inspect %>.
+# The current process is <%= $0 %>.
+# EOT
+# puts ERB.new(s).result
+# The Ruby copyright is "ruby - Copyright (C) 1993-2025 Yukihiro Matsumoto".
+# The current process is irb.
+# ```
+#
+# (The current process is `irb` because that's where we're doing these examples!)
+#
+#
+# ### Local Binding
+#
+# The default binding is *not* sufficient for an expression
+# that refers to a a constant or variable that is not defined there:
+#
+# ```
+# Foo = 1 # Defines local constant Foo.
+# foo = 2 # Defines local variable foo.
+# s = <<EOT
+# The current value of constant Foo is <%= Foo %>.
+# The current value of variable foo is <%= foo %>.
+# The Ruby copyright is <%= RUBY_COPYRIGHT.inspect %>.
+# The current process is <%= $0 %>.
+# EOT
+# ```
+#
+# This call raises `NameError` because although `Foo` and `foo` are defined locally,
+# they are not defined in the default binding:
+#
+# ```
+# ERB.new(s).result # Raises NameError.
+# ```
+#
+# To make the locally-defined constants and variables available,
+# you can call #result with the local binding:
+#
+# ```
+# puts ERB.new(s).result(binding)
+# The current value of constant Foo is 1.
+# The current value of variable foo is 2.
+# The Ruby copyright is "ruby - Copyright (C) 1993-2025 Yukihiro Matsumoto".
+# The current process is irb.
+# ```
+#
+# ### Augmented Binding
+#
+# Another way to make variable bindings (but not constant bindings) available
+# is to use method #result_with_hash(hash);
+# the passed hash has name/value pairs that are to be used to define and assign variables
+# in a copy of the default binding:
+#
+# ```
+# s = <<EOT
+# The current value of variable bar is <%= bar %>.
+# The current value of variable baz is <%= baz %>.
+# The Ruby copyright is <%= RUBY_COPYRIGHT.inspect %>.
+# The current process is <%= $0 %>.
+# ```
+#
+# Both of these calls raise `NameError`, because `bar` and `baz`
+# are not defined in either the default binding or the local binding.
+#
+# ```
+# puts ERB.new(s).result          # Raises NameError.
+# puts ERB.new(s).result(binding) # Raises NameError.
+# ```
+#
+# This call passes a hash that causes `bar` and `baz` to be defined
+# in a new binding (derived from #new_toplevel):
+#
+# ```
+# hash = {bar: 3, baz: 4}
+# # => {bar: 3, baz: 4}
+# ERB.new(s).result_with_hash(hash)
+# puts ERB.new(s).result_with_hash(variables)
+# The current value of variable bar is 3.
+# The current value of variable baz is 4.
+# The Ruby copyright is "ruby - Copyright (C) 1993-2025 Yukihiro Matsumoto".
+# The current process is irb.
+# EOT
+# ```
 #
 # ## Tags
 #
@@ -608,13 +701,16 @@ require 'erb/util'
 # Other popular template processors may found in the [Template Engines][template engines] page
 # of the Ruby Toolbox.
 #
+# [%q literals]: https://docs.ruby-lang.org/en/master/syntax/literals_rdoc.html#label-25q-3A+Non-Interpolable+String+Literals
+# [augmented binding]: rdoc-ref:ERB@Augmented+Binding
 # [binding object]: https://docs.ruby-lang.org/en/master/Binding.html
 # [comment tags]: rdoc-ref:ERB@Comment+Tags
+# [default binding]: rdoc-ref:ERB@Default+Binding
 # [encoding]: https://docs.ruby-lang.org/en/master/Encoding.html
 # [execution tags]: rdoc-ref:ERB@Execution+Tags
 # [expression tags]: rdoc-ref:ERB@Expression+Tags
 # [kernel#binding]: https://docs.ruby-lang.org/en/master/Kernel.html#method-i-binding
-# [%q literals]: https://docs.ruby-lang.org/en/master/syntax/literals_rdoc.html#label-25q-3A+Non-Interpolable+String+Literals
+# [local binding]: rdoc-ref:ERB@Local+Binding
 # [magic comments]: https://docs.ruby-lang.org/en/master/syntax/comments_rdoc.html#label-Magic+Comments
 # [rdoc]: https://ruby.github.io/rdoc
 # [sprintf]: https://docs.ruby-lang.org/en/master/Kernel.html#method-i-sprintf
@@ -785,27 +881,20 @@ class ERB
   # :markup: markdown
   #
   # :call-seq:
-  #   result(binding = top_level) -> string
+  #   result(binding = new_toplevel) -> new_string
   #
-  # Formats the string stored in template `self`;
-  # returns the string result:
+  # Returns the new string formed by processing \ERB tags found in the stored string in `self`.
   #
-  # - Each [expression tag][expression tags] is replaced by the value of the embedded expression.
-  # - Each [execution tag][execution tags] is removed, and its embedded code is executed.
-  # - Each [comment tag][comment tags] is removed.
+  # With no argument given, uses the default binding;
+  # see [Default Binding][default binding].
   #
-  # See examples at the links.
+  # With argument `binding` given, uses the local binding;
+  # see [Local Binding][local binding].
   #
-  # Argument `binding` is a [binding object],
-  # which should contain the bindings needed for all expression tags;
-  # the default is #top_level.
-  # See [Bindings][bindings].
+  # See also #result_with_hash.
   #
-  # [binding object]: https://docs.ruby-lang.org/en/master/Binding.html
-  # [bindings]: rdoc-ref:ERB@Bindings
-  # [comment tags]: rdoc-ref:ERB@Comment+Tags
-  # [execution tags]: rdoc-ref:ERB@Execution+Tags
-  # [expression tags]: rdoc-ref:ERB@Expression+Tags
+  # [default binding]: rdoc-ref:ERB@Default+Binding
+  # [local binding]: rdoc-ref:ERB@Local+Binding
   #
   def result(b=new_toplevel)
     unless @_init.equal?(self.class.singleton_class)
@@ -814,8 +903,18 @@ class ERB
     eval(@src, b, (@filename || '(erb)'), @lineno)
   end
 
-  # Render a template on a new toplevel binding with local variables specified
-  # by a Hash object.
+  # :markup: markdown
+  #
+  # :call-seq:
+  #   result_with_hash(hash) -> string
+  #
+  # Returns the new string formed by processing \ERB tags found in the stored string in `self`;
+  # see [Augmented Binding][augmented binding].
+  #
+  # See also #result.
+  #
+  # [augmented binding]: rdoc-ref:ERB@Augmented+Binding
+  #
   def result_with_hash(hash)
     b = new_toplevel(hash.keys)
     hash.each_pair do |key, value|
