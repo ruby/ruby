@@ -81,7 +81,7 @@ VALUE rb_gccct_clear_table(VALUE);
 
 #if USE_YJIT || USE_ZJIT
 /* vm_exec.c */
-extern uint64_t rb_vm_insns_count;
+extern uint64_t rb_vm_insn_count;
 #endif
 
 extern bool rb_free_at_exit;

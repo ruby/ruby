@@ -504,6 +504,18 @@ class JSONGeneratorTest < Test::Unit::TestCase
     json = '["\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""]'
     assert_equal json, generate(data)
     #
+    data = '"""""'
+    json = '"\"\"\"\"\""'
+    assert_equal json, generate(data)
+    #
+    data = "abc\n"
+    json = '"abc\\n"'
+    assert_equal json, generate(data)
+    #
+    data = "\nabc"
+    json = '"\\nabc"'
+    assert_equal json, generate(data)
+    #
     data = ["'"]
     json = '["\\\'"]'
     assert_equal '["\'"]', generate(data)

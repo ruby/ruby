@@ -90,12 +90,30 @@ module Test_SyncDefaultGems
       @target = nil
       pend "No git" unless system("git --version", out: IO::NULL)
       @testdir = Dir.mktmpdir("sync")
-      @git_config = %W"HOME GIT_CONFIG_GLOBAL".each_with_object({}) {|k, c| c[k] = ENV[k]}
+      user, email = "Ruby", "test@ruby-lang.org"
+      @git_config = %W"HOME USER GIT_CONFIG_GLOBAL GNUPGHOME".each_with_object({}) {|k, c| c[k] = ENV[k]}
       ENV["HOME"] = @testdir
+      ENV["USER"] = user
+      ENV["GNUPGHOME"] = @testdir + '/.gnupg'
+      expire = EnvUtil.apply_timeout_scale(30).to_i
+      # Generate a new unprotected key with default parameters that
+      # expires after 30 seconds.
+      if @gpgsign = system(*%w"gpg --quiet --batch --passphrase", "",
+                           "--quick-generate-key", email, *%W"default default seconds=#{expire}",
+                           err: IO::NULL)
+        # Fetch the generated public key.
+        signingkey = IO.popen(%W"gpg --quiet --list-public-key #{email}", &:read)[/^pub .*\n +\K\h+/]
+      end
       ENV["GIT_CONFIG_GLOBAL"] = @testdir + "/gitconfig"
-      git(*%W"config --global user.email test@ruby-lang.org")
-      git(*%W"config --global user.name", "Ruby")
+      git(*%W"config --global user.email", email)
+      git(*%W"config --global user.name", user)
       git(*%W"config --global init.defaultBranch default")
+      if signingkey
+        git(*%W"config --global user.signingkey", signingkey)
+        git(*%W"config --global commit.gpgsign true")
+        git(*%W"config --global gpg.program gpg")
+        git(*%W"config --global log.showSignature true")
+      end
       @target = "sync-test"
       SyncDefaultGems::REPOSITORIES[@target] = ["ruby/#{@target}", "default"]
       @sha = {}
@@ -129,6 +147,9 @@ module Test_SyncDefaultGems
 
     def teardown
       if @target
+        if @gpgsign
+          system(*%W"gpgconf --kill all")
+        end
         Dir.chdir(@origdir)
         SyncDefaultGems::REPOSITORIES.delete(@target)
         ENV.update(@git_config)
@@ -168,7 +189,7 @@ module Test_SyncDefaultGems
     end
 
     def top_commit(dir, format: "%H")
-      IO.popen(%W[git log --format=#{format} -1], chdir: dir, &:read)&.chomp
+      IO.popen(%W[git log --no-show-signature --format=#{format} -1], chdir: dir, &:read)&.chomp
     end
 
     def assert_sync(commits = true, success: true, editor: nil)
@@ -293,5 +314,5 @@ module Test_SyncDefaultGems
       assert_equal(":ok\n""Should.be_merged\n", File.read("src/lib/common.rb"), out)
       assert_not_operator(File, :exist?, "src/lib/bad.rb", out)
     end
-  end
+  end if /darwin|linux/ =~ RUBY_PLATFORM
 end

@@ -2,6 +2,7 @@ use std::mem::take;
 
 use crate::asm::*;
 use crate::asm::x86_64::*;
+use crate::stats::CompileError;
 use crate::virtualmem::CodePtr;
 use crate::cruby::*;
 use crate::backend::lir::*;
@@ -83,7 +84,7 @@ impl From<&Opnd> for X86Opnd {
 /// List of registers that can be used for register allocation.
 /// This has the same number of registers for x86_64 and arm64.
 /// SCRATCH_REG is excluded.
-pub const ALLOC_REGS: &'static [Reg] = &[
+pub const ALLOC_REGS: &[Reg] = &[
     RDI_REG,
     RSI_REG,
     RDX_REG,
@@ -154,7 +155,7 @@ impl Assembler
             let vreg_outlives_insn = |vreg_idx| {
                 live_ranges
                     .get(vreg_idx)
-                    .map_or(false, |live_range: &LiveRange| live_range.end() > index)
+                    .is_some_and(|live_range: &LiveRange| live_range.end() > index)
             };
 
             // We are replacing instructions here so we know they are already
@@ -342,7 +343,7 @@ impl Assembler
                     // Load each operand into the corresponding argument register.
                     if !opnds.is_empty() {
                         let mut args: Vec<(Reg, Opnd)> = vec![];
-                        for (idx, opnd) in opnds.into_iter().enumerate() {
+                        for (idx, opnd) in opnds.iter_mut().enumerate() {
                             args.push((C_ARG_OPNDS[idx].unwrap_reg(), *opnd));
                         }
                         asm.parallel_mov(args);
@@ -876,23 +877,23 @@ impl Assembler
 
         // Error if we couldn't write out everything
         if cb.has_dropped_bytes() {
-            return None
+            None
         } else {
             // No bytes dropped, so the pos markers point to valid code
             for (insn_idx, pos) in pos_markers {
                 if let Insn::PosMarker(callback) = self.insns.get(insn_idx).unwrap() {
-                    callback(pos, &cb);
+                    callback(pos, cb);
                 } else {
                     panic!("non-PosMarker in pos_markers insn_idx={insn_idx} {self:?}");
                 }
             }
 
-            return Some(gc_offsets)
+            Some(gc_offsets)
         }
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Option<(CodePtr, Vec<CodePtr>)> {
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         let asm = self.x86_split();
         let mut asm = asm.alloc_regs(regs)?;
         asm.compile_side_exits();
@@ -908,12 +909,10 @@ impl Assembler
 
         if let (Some(gc_offsets), false) = (gc_offsets, cb.has_dropped_bytes()) {
             cb.link_labels();
-
-            Some((start_ptr, gc_offsets))
+            Ok((start_ptr, gc_offsets))
         } else {
             cb.clear_labels();
-
-            None
+            Err(CompileError::OutOfMemory)
         }
     }
 }

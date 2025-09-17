@@ -44,6 +44,10 @@ RUBYLIB       = $(PATH_SEPARATOR)
 RUBYOPT       = -
 RUN_OPTS      = --disable-gems
 
+GIT_IN_SRC    = $(GIT) -C $(srcdir)
+GIT_LOG       = $(GIT_IN_SRC) log --no-show-signature
+GIT_LOG_FORMAT = $(GIT_LOG) --pretty=format:
+
 # GITPULLOPTIONS = --no-tags
 
 PRISM_SRCDIR = $(srcdir)/prism
@@ -266,6 +270,7 @@ MAKE_LINK = $(MINIRUBY) -rfileutils -e "include FileUtils::Verbose" \
 YJIT_RUSTC_ARGS = --crate-name=yjit \
 	--crate-type=staticlib \
 	--edition=2021 \
+	--cfg 'feature="stats_allocator"' \
 	-g \
 	-C lto=thin \
 	-C opt-level=3 \
@@ -276,6 +281,7 @@ YJIT_RUSTC_ARGS = --crate-name=yjit \
 ZJIT_RUSTC_ARGS = --crate-name=zjit \
 	--crate-type=staticlib \
 	--edition=2024 \
+	--cfg 'feature="stats_allocator"' \
 	-g \
 	-C lto=thin \
 	-C opt-level=3 \
@@ -1133,7 +1139,7 @@ $(srcs_vpath)insns_info.inc: $(tooldir)/ruby_vm/views/insns_info.inc.erb $(inc_c
   $(tooldir)/ruby_vm/views/_insn_type_chars.erb $(tooldir)/ruby_vm/views/_insn_name_info.erb \
   $(tooldir)/ruby_vm/views/_insn_len_info.erb $(tooldir)/ruby_vm/views/_insn_operand_info.erb \
   $(tooldir)/ruby_vm/views/_attributes.erb $(tooldir)/ruby_vm/views/_comptime_insn_stack_increase.erb \
-  $(tooldir)/ruby_vm/views/_zjit_helpers.erb
+  $(tooldir)/ruby_vm/views/_zjit_helpers.erb $(tooldir)/ruby_vm/views/_insn_leaf_info.erb
 $(srcs_vpath)vmtc.inc: $(tooldir)/ruby_vm/views/vmtc.inc.erb $(inc_common_headers)
 $(srcs_vpath)vm.inc: $(tooldir)/ruby_vm/views/vm.inc.erb $(inc_common_headers) \
   $(tooldir)/ruby_vm/views/_insn_entry.erb $(tooldir)/ruby_vm/views/_trace_instruction.erb \
@@ -1512,8 +1518,8 @@ update-bundled_gems: PHONY
 	     $(tooldir)/update-bundled_gems.rb \
 	     "$(srcdir)/gems/bundled_gems" | \
 	$(IFCHANGE) "$(srcdir)/gems/bundled_gems" -
-	$(GIT) -C "$(srcdir)" diff --no-ext-diff --ignore-submodules --exit-code || \
-	$(GIT) -C "$(srcdir)" commit -m "Update bundled_gems" gems/bundled_gems
+	$(GIT_IN_SRC) diff --no-ext-diff --ignore-submodules --exit-code || \
+	$(GIT_IN_SRC) commit -m "Update bundled_gems" gems/bundled_gems
 
 PRECHECK_BUNDLED_GEMS = yes
 test-bundled-gems-precheck: $(TEST_RUNNABLE)-test-bundled-gems-precheck
@@ -1897,8 +1903,8 @@ nightly: yesterday $(DOT_WAIT) install
 yesterday: rewindable
 
 rewindable:
-	$(GIT) -C $(srcdir) status --porcelain
-	$(GIT) -C $(srcdir) diff --quiet
+	$(GIT_IN_SRC) status --porcelain
+	$(GIT_IN_SRC) diff --quiet
 
 HELP_EXTRA_TASKS = ""
 

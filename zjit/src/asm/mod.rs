@@ -1,3 +1,5 @@
+//! Model for creating generating textual assembler code.
+
 use std::collections::BTreeMap;
 use std::fmt;
 use std::ops::Range;
@@ -82,6 +84,11 @@ impl CodeBlock {
             asm_comments: BTreeMap::new(),
             dropped_bytes: false,
         }
+    }
+
+    /// Size of the region in bytes that we have allocated physical memory for.
+    pub fn mapped_region_size(&self) -> usize {
+        self.mem_block.borrow().mapped_region_size()
     }
 
     /// Add an assembly comment if the feature is on.
@@ -292,11 +299,15 @@ impl fmt::LowerHex for CodeBlock {
 impl CodeBlock {
     /// Stubbed CodeBlock for testing. Can't execute generated code.
     pub fn new_dummy() -> Self {
+        const DEFAULT_MEM_SIZE: usize = 1024;
+        CodeBlock::new_dummy_sized(DEFAULT_MEM_SIZE)
+    }
+
+    pub fn new_dummy_sized(mem_size: usize) -> Self {
         use std::ptr::NonNull;
         use crate::virtualmem::*;
         use crate::virtualmem::tests::TestingAllocator;
 
-        let mem_size = 1024;
         let alloc = TestingAllocator::new(mem_size);
         let mem_start: *const u8 = alloc.mem_start();
         let virt_mem = VirtualMem::new(alloc, 1, NonNull::new(mem_start as *mut u8).unwrap(), mem_size, 128 * 1024 * 1024);
@@ -325,7 +336,7 @@ pub fn imm_num_bits(imm: i64) -> u8
         return 32;
     }
 
-    return 64;
+    64
 }
 
 /// Compute the number of bits needed to encode an unsigned value
@@ -342,7 +353,7 @@ pub fn uimm_num_bits(uimm: u64) -> u8
         return 32;
     }
 
-    return 64;
+    64
 }
 
 #[cfg(test)]
@@ -381,4 +392,3 @@ mod tests
         assert_eq!(uimm_num_bits(u64::MAX), 64);
     }
 }
-

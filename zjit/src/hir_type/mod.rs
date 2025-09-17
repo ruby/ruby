@@ -1,3 +1,5 @@
+//! High-level intermediate representation types.
+
 #![allow(non_upper_case_globals)]
 use crate::cruby::{Qfalse, Qnil, Qtrue, VALUE, RUBY_T_ARRAY, RUBY_T_STRING, RUBY_T_HASH, RUBY_T_CLASS, RUBY_T_MODULE};
 use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass, rb_cRange, rb_cSet, rb_cRegexp, rb_cClass, rb_cModule, rb_zjit_singleton_class_p};
@@ -246,6 +248,8 @@ impl Type {
         else if val.is_true() { types::TrueClass }
         else if val.is_false() { types::FalseClass }
         else if val.class() == unsafe { rb_cString } { types::StringExact }
+        else if val.class() == unsafe { rb_cArray } { types::ArrayExact }
+        else if val.class() == unsafe { rb_cHash } { types::HashExact }
         else {
             // TODO(max): Add more cases for inferring type bits from built-in types
             Type { bits: bits::HeapObject, spec: Specialization::TypeExact(val.class()) }
@@ -638,7 +642,7 @@ mod tests {
 
     #[test]
     fn integer_has_exact_ruby_class() {
-        assert_eq!(Type::fixnum(3).exact_ruby_class(), Some(unsafe { rb_cInteger }.into()));
+        assert_eq!(Type::fixnum(3).exact_ruby_class(), Some(unsafe { rb_cInteger }));
         assert_eq!(types::Fixnum.exact_ruby_class(), None);
         assert_eq!(types::Integer.exact_ruby_class(), None);
     }
@@ -665,7 +669,7 @@ mod tests {
 
     #[test]
     fn integer_has_ruby_class() {
-        assert_eq!(Type::fixnum(3).inexact_ruby_class(), Some(unsafe { rb_cInteger }.into()));
+        assert_eq!(Type::fixnum(3).inexact_ruby_class(), Some(unsafe { rb_cInteger }));
         assert_eq!(types::Fixnum.inexact_ruby_class(), None);
         assert_eq!(types::Integer.inexact_ruby_class(), None);
     }

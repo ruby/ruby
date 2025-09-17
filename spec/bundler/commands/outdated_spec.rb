@@ -151,72 +151,6 @@ RSpec.describe "bundle outdated" do
     end
   end
 
-  describe "with multiple, duplicated sources, with lockfile in old format" do
-    before do
-      build_repo2 do
-        build_gem "dotenv", "2.7.6"
-
-        build_gem "oj", "3.11.3"
-        build_gem "oj", "3.11.5"
-
-        build_gem "vcr", "6.0.0"
-      end
-
-      build_repo3 do
-        build_gem "pkg-gem-flowbyte-with-dep", "1.0.0" do |s|
-          s.add_dependency "oj"
-        end
-      end
-
-      gemfile <<~G
-        source "https://gem.repo2"
-
-        gem "dotenv"
-
-        source "https://gem.repo3" do
-          gem 'pkg-gem-flowbyte-with-dep'
-        end
-
-        gem "vcr",source: "https://gem.repo2"
-      G
-
-      lockfile <<~L
-        GEM
-          remote: https://gem.repo2/
-          remote: https://gem.repo3/
-          specs:
-            dotenv (2.7.6)
-            oj (3.11.3)
-            pkg-gem-flowbyte-with-dep (1.0.0)
-              oj
-            vcr (6.0.0)
-
-        PLATFORMS
-          #{local_platform}
-
-        DEPENDENCIES
-          dotenv
-          pkg-gem-flowbyte-with-dep!
-          vcr!
-
-        BUNDLED WITH
-           #{Bundler::VERSION}
-      L
-    end
-
-    it "works" do
-      bundle :install, artifice: "compact_index"
-      bundle :outdated, artifice: "compact_index", raise_on_error: false
-
-      expected_output = <<~TABLE
-        Gem  Current  Latest  Requested  Groups
-        oj   3.11.3   3.11.5
-      TABLE
-
-      expect(out).to include(expected_output.strip)
-    end
-  end
-
   describe "with --group option" do
     before do
       build_repo2 do
@@ -819,7 +753,7 @@ RSpec.describe "bundle outdated" do
     expect(out).to include("Installing foo 1.0")
   end
 
-  context "after bundle install --deployment" do
+  context "in deployment mode" do
     before do
       build_repo2
 
@@ -830,7 +764,7 @@ RSpec.describe "bundle outdated" do
         gem "foo"
       G
       bundle :lock
-      bundle :install, deployment: true
+      bundle "config deployment true"
     end
 
     it "outputs a helpful message about being in deployment mode" do

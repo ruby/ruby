@@ -340,38 +340,6 @@ RSpec.describe "bundle install with gem sources" do
         bundle "install"
         expect(the_bundle).to include_gems "myrack 1.0"
       end
-
-      it "allows running bundle install --system without deleting foo" do
-        bundle "install --path vendor"
-        bundle "install --system"
-        FileUtils.rm_r(bundled_app("vendor"))
-        expect(the_bundle).to include_gems "myrack 1.0"
-      end
-
-      it "allows running bundle install --system after deleting foo" do
-        bundle "install --path vendor"
-        FileUtils.rm_r(bundled_app("vendor"))
-        bundle "install --system"
-        expect(the_bundle).to include_gems "myrack 1.0"
-      end
-    end
-
-    it "finds gems in multiple sources" do
-      build_repo2 do
-        build_gem "myrack", "1.2" do |s|
-          s.executables = "myrackup"
-        end
-      end
-
-      install_gemfile <<-G, artifice: "compact_index_extra"
-        source "https://gemserver.test"
-        source "https://gemserver.test/extra"
-
-        gem "activesupport", "1.2.3"
-        gem "myrack", "1.2"
-      G
-
-      expect(the_bundle).to include_gems "myrack 1.2", "activesupport 1.2.3"
     end
 
     it "gives useful errors if no global sources are set, and gems not installed locally, with and without a lockfile" do
@@ -613,6 +581,30 @@ RSpec.describe "bundle install with gem sources" do
       bundle :install, raise_on_error: false
 
       expect(err).to include("Two gemspec development dependencies have conflicting requirements on the same gem: rubocop (~> 1.36.0) and rubocop (~> 2.0). Bundler cannot continue.")
+    end
+
+    it "errors out if a gem is specified in a gemspec and in the Gemfile" do
+      gem = tmp("my-gem-1")
+
+      build_lib "rubocop", path: gem do |s|
+        s.add_development_dependency "rubocop", "~> 1.0"
+      end
+
+      build_repo4 do
+        build_gem "rubocop"
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "rubocop", :path => "#{gem}"
+        gemspec path: "#{gem}"
+      G
+
+      bundle :install, raise_on_error: false
+
+      expect(err).to include("There was an error parsing `Gemfile`: You cannot specify the same gem twice coming from different sources.")
+      expect(err).to include("You specified that rubocop (>= 0) should come from source at `#{gem}` and gemspec at `#{gem}`")
     end
 
     it "does not warn if a gem is added once in Gemfile and also inside a gemspec as a development dependency, with same requirements, and different sources" do

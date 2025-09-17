@@ -73,7 +73,7 @@ module JSON
             if opts[:create_additions] != false
               if class_name = object[JSON.create_id]
                 klass = JSON.deep_const_get(class_name)
-                if (klass.respond_to?(:json_creatable?) && klass.json_creatable?) || klass.respond_to?(:json_create)
+                if klass.respond_to?(:json_creatable?) ? klass.json_creatable? : klass.respond_to?(:json_create)
                   create_additions_warning if create_additions.nil?
                   object = klass.json_create(object)
                 end
@@ -97,7 +97,7 @@ module JSON
 
   class << self
     def deprecation_warning(message, uplevel = 3) # :nodoc:
-      gem_root = File.expand_path("../../../", __FILE__) + "/"
+      gem_root = File.expand_path("..", __dir__) + "/"
       caller_locations(uplevel, 10).each do |frame|
         if frame.path.nil? || frame.path.start_with?(gem_root) || frame.path.end_with?("/truffle/cext_ruby.rb", ".c")
           uplevel += 1
@@ -662,6 +662,7 @@ module JSON
   #     when Array
   #       obj.map! {|v| deserialize_obj v }
   #     end
+  #     obj
   #   })
   #   pp ruby
   # Output:
@@ -703,9 +704,13 @@ module JSON
     if opts[:allow_blank] && (source.nil? || source.empty?)
       source = 'null'
     end
-    result = parse(source, opts)
-    recurse_proc(result, &proc) if proc
-    result
+
+    if proc
+      opts = opts.dup
+      opts[:on_load] = proc.to_proc
+    end
+
+    parse(source, opts)
   end
 
   # :call-seq:
@@ -822,6 +827,7 @@ module JSON
   #     when Array
   #       obj.map! {|v| deserialize_obj v }
   #     end
+  #     obj
   #   })
   #   pp ruby
   # Output:

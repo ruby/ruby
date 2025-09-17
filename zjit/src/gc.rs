@@ -1,9 +1,10 @@
-// This module is responsible for marking/moving objects on GC.
+//! This module is responsible for marking/moving objects on GC.
 
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::{ffi::c_void, ops::Range};
 use crate::codegen::IseqCall;
+use crate::stats::CompileError;
 use crate::{cruby::*, profile::IseqProfile, state::ZJITState, stats::with_time_stat, virtualmem::CodePtr};
 use crate::stats::Counter::gc_time_ns;
 
@@ -38,7 +39,7 @@ impl IseqPayload {
 pub enum IseqStatus {
     /// CodePtr has the JIT code address of the first block
     Compiled(CodePtr),
-    CantCompile,
+    CantCompile(CompileError),
     NotCompiled,
 }
 
@@ -218,7 +219,7 @@ pub fn remove_gc_offsets(payload_ptr: *mut IseqPayload, removed_range: &Range<Co
     });
 }
 
-/// Return true if given Range<CodePtr> ranges overlap with each other
+/// Return true if given `Range<CodePtr>` ranges overlap with each other
 fn ranges_overlap<T>(left: &Range<T>, right: &Range<T>) -> bool where T: PartialOrd {
     left.start < right.end && right.start < left.end
 }

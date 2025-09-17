@@ -3974,7 +3974,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 	rb_gc_register_mark_object(tab);
     }
 
-    k = Qnil;
+    k = a = Qnil;
 
     {
 	long i, eno = 0;

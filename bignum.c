@@ -3055,7 +3055,9 @@ bignew_1(VALUE klass, size_t len, int sign)
 VALUE
 rb_big_new(size_t len, int sign)
 {
-    return bignew(len, sign != 0);
+    VALUE obj = bignew(len, sign != 0);
+    memset(BIGNUM_DIGITS(obj), 0, len * sizeof(BDIGIT));
+    return obj;
 }
 
 VALUE

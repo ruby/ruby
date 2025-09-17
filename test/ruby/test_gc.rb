@@ -742,6 +742,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_interrupt_in_finalizer
+    omit 'randomly hangs on many platforms' if ENV.key?('GITHUB_ACTIONS')
     bug10595 = '[ruby-core:66825] [Bug #10595]'
     src = <<-'end;'
       Signal.trap(:INT, 'DEFAULT')

@@ -1,3 +1,5 @@
+//! Profiler for runtime information.
+
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
@@ -37,6 +39,10 @@ impl Profiler {
             *(sp.offset(-1 - n))
         }
     }
+
+    fn peek_at_self(&self) -> VALUE {
+        unsafe { rb_get_cfp_self(self.cfp) }
+    }
 }
 
 /// API called from zjit_* instruction. opcode is the bare (non-zjit_*) instruction.
@@ -66,6 +72,10 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
         YARVINSN_opt_ge    => profile_operands(profiler, profile, 2),
         YARVINSN_opt_and   => profile_operands(profiler, profile, 2),
         YARVINSN_opt_or    => profile_operands(profiler, profile, 2),
+        YARVINSN_opt_empty_p => profile_operands(profiler, profile, 1),
+        YARVINSN_opt_not   => profile_operands(profiler, profile, 1),
+        YARVINSN_getinstancevariable => profile_self(profiler, profile),
+        YARVINSN_objtostring   => profile_operands(profiler, profile, 1),
         YARVINSN_opt_send_without_block => {
             let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
             let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -94,33 +104,53 @@ fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize
     if types.is_empty() {
         types.resize(n, TypeDistribution::new());
     }
-    for i in 0..n {
+
+    for (i, profile_type) in types.iter_mut().enumerate() {
         let obj = profiler.peek_at_stack((n - i - 1) as isize);
         // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
         // drop them or something
         let ty = ProfiledType::new(obj);
         unsafe { rb_gc_writebarrier(profiler.iseq.into(), ty.class()) };
-        types[i].observe(ty);
+        profile_type.observe(ty);
     }
 }
 
+fn profile_self(profiler: &mut Profiler, profile: &mut IseqProfile) {
+    let types = &mut profile.opnd_types[profiler.insn_idx];
+    if types.is_empty() {
+        types.resize(1, TypeDistribution::new());
+    }
+    let obj = profiler.peek_at_self();
+    // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
+    // drop them or something
+    let ty = ProfiledType::new(obj);
+    unsafe { rb_gc_writebarrier(profiler.iseq.into(), ty.class()) };
+    types[0].observe(ty);
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Flags(u32);
+pub struct Flags(u32);
 
 impl Flags {
     const NONE: u32 = 0;
     const IS_IMMEDIATE: u32 = 1 << 0;
+    /// Object is embedded and the ivar index lands within the object
+    const IS_EMBEDDED: u32 = 1 << 1;
+    /// Object is a T_OBJECT
+    const IS_T_OBJECT: u32 = 1 << 2;
 
     pub fn none() -> Self { Self(Self::NONE) }
 
     pub fn immediate() -> Self { Self(Self::IS_IMMEDIATE) }
     pub fn is_immediate(self) -> bool { (self.0 & Self::IS_IMMEDIATE) != 0 }
+    pub fn is_embedded(self) -> bool { (self.0 & Self::IS_EMBEDDED) != 0 }
+    pub fn is_t_object(self) -> bool { (self.0 & Self::IS_T_OBJECT) != 0 }
 }
 
 /// opt_send_without_block/opt_plus/... should store:
 /// * the class of the receiver, so we can do method lookup
 /// * the shape of the receiver, so we can optimize ivar lookup
-/// with those two, pieces of information, we can also determine when an object is an immediate:
+///   with those two, pieces of information, we can also determine when an object is an immediate:
 /// * Integer + IS_IMMEDIATE == Fixnum
 /// * Float + IS_IMMEDIATE == Flonum
 /// * Symbol + IS_IMMEDIATE == StaticSymbol
@@ -172,7 +202,14 @@ impl ProfiledType {
                           shape: INVALID_SHAPE_ID,
                           flags: Flags::immediate() };
         }
-        Self { class: obj.class_of(), shape: obj.shape_id_of(), flags: Flags::none() }
+        let mut flags = Flags::none();
+        if obj.embedded_p() {
+            flags.0 |= Flags::IS_EMBEDDED;
+        }
+        if unsafe { RB_TYPE_P(obj, RUBY_T_OBJECT) } {
+            flags.0 |= Flags::IS_T_OBJECT;
+        }
+        Self { class: obj.class_of(), shape: obj.shape_id_of(), flags }
     }
 
     pub fn empty() -> Self {
@@ -191,8 +228,26 @@ impl ProfiledType {
         self.shape
     }
 
+    pub fn flags(&self) -> Flags {
+        self.flags
+    }
+
     pub fn is_fixnum(&self) -> bool {
         self.class == unsafe { rb_cInteger } && self.flags.is_immediate()
+    }
+
+    pub fn is_string(&self) -> bool {
+        // Fast paths for immediates and exact-class
+        if self.flags.is_immediate() {
+            return false;
+        }
+
+        let string = unsafe { rb_cString };
+        if self.class == string{
+            return true;
+        }
+
+        self.class.is_subclass_of(string) == ClassRelationship::Subclass
     }
 
     pub fn is_flonum(&self) -> bool {

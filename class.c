@@ -62,8 +62,8 @@
  * 0:    RCLASS_IS_ROOT
  *           The class has been added to the VM roots. Will always be marked and pinned.
  *           This is done for classes defined from C to allow storing them in global variables.
- * 1:    RMODULE_IS_REFINEMENT
- *           Module is used for refinements.
+ * 1:    <reserved>
+ *          Ensures that RUBY_FL_SINGLETON is never set on a T_MODULE. See `rb_class_real`.
  * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
  *           This module's prime classext is the only classext and writable from any namespaces.
  *           If unset, the prime classext is writable only from the root namespace.
@@ -71,6 +71,8 @@
  *           Module has been initialized.
  * 4:    RCLASS_NAMESPACEABLE
  *           Is a builtin class that may be namespaced. It larger than a normal class.
+ * 5:    RMODULE_IS_REFINEMENT
+ *           Module is used for refinements.
  */
 
 #define METACLASS_OF(k) RBASIC(k)->klass
@@ -679,6 +681,8 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool namespaceable)
     if (namespaceable) flags |= RCLASS_NAMESPACEABLE;
 
     NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
+
+    obj->object_id = 0;
 
     memset(RCLASS_EXT_PRIME(obj), 0, sizeof(rb_classext_t));
 

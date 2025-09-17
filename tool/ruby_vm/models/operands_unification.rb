@@ -11,16 +11,16 @@
 
 require_relative '../helpers/c_escape'
 require_relative '../loaders/opt_operand_def'
-require_relative 'bare_instructions'
+require_relative 'bare_instruction'
 
-class RubyVM::OperandsUnifications < RubyVM::BareInstructions
+class RubyVM::OperandsUnification < RubyVM::BareInstruction
   include RubyVM::CEscape
 
   attr_reader :preamble, :original, :spec
 
   def initialize opts = {}
     name             = opts[:signature][0]
-    @original        = RubyVM::BareInstructions.fetch name
+    @original        = RubyVM::BareInstruction.find(name)
     template         = @original.template
     parts            = compose opts[:location], opts[:signature], template[:signature]
     json             = template.dup
@@ -129,12 +129,12 @@ class RubyVM::OperandsUnifications < RubyVM::BareInstructions
     new h
   end
 
-  def self.to_a
+  def self.all
     @instances
   end
 
   def self.each_group
-    to_a.group_by(&:original).each_pair do |k, v|
+    all.group_by(&:original).each_pair do |k, v|
       yield k, v
     end
   end

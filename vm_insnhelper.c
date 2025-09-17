@@ -1401,22 +1401,20 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 #if OPT_IC_FOR_IVAR
     RB_DEBUG_COUNTER_INC(ivar_set_ic_miss);
 
-    if (BUILTIN_TYPE(obj) == T_OBJECT) {
-        rb_check_frozen(obj);
+    rb_check_frozen(obj);
 
-        attr_index_t index = rb_obj_ivar_set(obj, id, val);
+    attr_index_t index = rb_ivar_set_index(obj, id, val);
+    shape_id_t next_shape_id = RBASIC_SHAPE_ID(obj);
 
-        shape_id_t next_shape_id = RBASIC_SHAPE_ID(obj);
-
-        if (!rb_shape_too_complex_p(next_shape_id)) {
-            populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
-        }
-
-        RB_DEBUG_COUNTER_INC(ivar_set_obj_miss);
-        return val;
+    if (!rb_shape_too_complex_p(next_shape_id)) {
+        populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
     }
-#endif
+
+    RB_DEBUG_COUNTER_INC(ivar_set_obj_miss);
+    return val;
+#else
     return rb_ivar_set(obj, id, val);
+#endif
 }
 
 static VALUE
@@ -1429,6 +1427,49 @@ static VALUE
 vm_setivar_slowpath_attr(VALUE obj, ID id, VALUE val, const struct rb_callcache *cc)
 {
     return vm_setivar_slowpath(obj, id, val, NULL, NULL, cc, true);
+}
+
+NOINLINE(static VALUE vm_setivar_class(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t index));
+static VALUE
+vm_setivar_class(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t index)
+{
+    if (UNLIKELY(!rb_ractor_main_p())) {
+        return Qundef;
+    }
+
+    VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+    if (UNLIKELY(!fields_obj)) {
+        return Qundef;
+    }
+
+    shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
+
+    // Cache hit case
+    if (shape_id == dest_shape_id) {
+        RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
+    }
+    else if (dest_shape_id != INVALID_SHAPE_ID) {
+        if (RSHAPE_DIRECT_CHILD_P(shape_id, dest_shape_id) && RSHAPE_EDGE_NAME(dest_shape_id) == id && RSHAPE_CAPACITY(shape_id) == RSHAPE_CAPACITY(dest_shape_id)) {
+            RUBY_ASSERT(index < RSHAPE_CAPACITY(dest_shape_id));
+        }
+        else {
+            return Qundef;
+        }
+    }
+    else {
+        return Qundef;
+    }
+
+    RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[index], val);
+
+    if (shape_id != dest_shape_id) {
+        RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
+        RBASIC_SET_SHAPE_ID(fields_obj, dest_shape_id);
+    }
+
+    RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
+
+    return val;
 }
 
 NOINLINE(static VALUE vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t index));
@@ -1627,8 +1668,12 @@ vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC i
     if (UNLIKELY(UNDEF_P(vm_setivar(obj, id, val, dest_shape_id, index)))) {
         switch (BUILTIN_TYPE(obj)) {
           case T_OBJECT:
+            break;
           case T_CLASS:
           case T_MODULE:
+            if (!UNDEF_P(vm_setivar_class(obj, id, val, dest_shape_id, index))) {
+                return;
+            }
             break;
           default:
             if (!UNDEF_P(vm_setivar_default(obj, id, val, dest_shape_id, index))) {
@@ -2370,6 +2415,12 @@ vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type f
     VM_ASSERT(iseq != NULL);
     const struct rb_callable_method_entry_struct *cme = vm_search_method((VALUE)iseq, cd, recv);
     return check_cfunc(cme, func);
+}
+
+int
+rb_vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type func)
+{
+    return vm_method_cfunc_is(iseq, cd, recv, func);
 }
 
 #define check_cfunc(me, func) check_cfunc(me, make_cfunc_type(func))
@@ -4001,8 +4052,15 @@ vm_call_attrset_direct(rb_execution_context_t *ec, rb_control_frame_t *cfp, cons
     if (UNDEF_P(res)) {
         switch (BUILTIN_TYPE(obj)) {
           case T_OBJECT:
+            break;
           case T_CLASS:
           case T_MODULE:
+            {
+                res = vm_setivar_class(obj, id, val, dest_shape_id, index);
+                if (!UNDEF_P(res)) {
+                    return res;
+                }
+            }
             break;
           default:
             {
@@ -4214,7 +4272,7 @@ static enum method_missing_reason
 ci_missing_reason(const struct rb_callinfo *ci)
 {
     enum method_missing_reason stat = MISSING_NOENTRY;
-    if (vm_ci_flag(ci) & VM_CALL_VCALL) stat |= MISSING_VCALL;
+    if (vm_ci_flag(ci) & VM_CALL_VCALL && !(vm_ci_flag(ci) & VM_CALL_FORWARDING)) stat |= MISSING_VCALL;
     if (vm_ci_flag(ci) & VM_CALL_FCALL) stat |= MISSING_FCALL;
     if (vm_ci_flag(ci) & VM_CALL_SUPER) stat |= MISSING_SUPER;
     return stat;
@@ -6043,25 +6101,26 @@ VALUE
 rb_vm_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd, ISEQ blockiseq)
 {
     stack_check(ec);
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
+    VALUE val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
+    VM_EXEC(ec, val);
+    return val;
+}
+
+VALUE
+rb_vm_sendforward(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd, ISEQ blockiseq)
+{
+    stack_check(ec);
 
     struct rb_forwarding_call_data adjusted_cd;
     struct rb_callinfo adjusted_ci;
 
-    VALUE bh;
-    VALUE val;
+    VALUE bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), cd, blockiseq, false, &adjusted_cd, &adjusted_ci);
 
-    if (vm_ci_flag(cd->ci) & VM_CALL_FORWARDING) {
-        bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), cd, blockiseq, false, &adjusted_cd, &adjusted_ci);
+    VALUE val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_method);
 
-        val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_method);
-
-        if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
-            RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
-        }
-    }
-    else {
-        bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
-        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
+    if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
+        RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
     }
 
     VM_EXEC(ec, val);
@@ -6082,24 +6141,27 @@ VALUE
 rb_vm_invokesuper(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd, ISEQ blockiseq)
 {
     stack_check(ec);
+
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
+    VALUE val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
+
+    VM_EXEC(ec, val);
+    return val;
+}
+
+VALUE
+rb_vm_invokesuperforward(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd, ISEQ blockiseq)
+{
+    stack_check(ec);
     struct rb_forwarding_call_data adjusted_cd;
     struct rb_callinfo adjusted_ci;
 
-    VALUE bh;
-    VALUE val;
+    VALUE bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), cd, blockiseq, true, &adjusted_cd, &adjusted_ci);
 
-    if (vm_ci_flag(cd->ci) & VM_CALL_FORWARDING) {
-        bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), cd, blockiseq, true, &adjusted_cd, &adjusted_ci);
+    VALUE val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_super);
 
-        val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_super);
-
-        if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
-            RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
-        }
-    }
-    else {
-        bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
-        val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
+    if (cd->cc != adjusted_cd.cd.cc && vm_cc_markable(adjusted_cd.cd.cc)) {
+        RB_OBJ_WRITE(GET_ISEQ(), &cd->cc, adjusted_cd.cd.cc);
     }
 
     VM_EXEC(ec, val);

@@ -27,6 +27,30 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_stats_quiet
+    # Test that --zjit-stats=quiet collects stats but doesn't print them
+    script = <<~RUBY
+      def test = 42
+      test
+      test
+      puts RubyVM::ZJIT.stats_enabled?
+    RUBY
+
+    stats_header = "***ZJIT: Printing ZJIT statistics on exit***"
+
+    # With --zjit-stats, stats should be printed to stderr
+    out, err, status = eval_with_jit(script, stats: true)
+    assert_success(out, err, status)
+    assert_includes(err, stats_header)
+    assert_equal("true\n", out)
+
+    # With --zjit-stats=quiet, stats should NOT be printed but still enabled
+    out, err, status = eval_with_jit(script, stats: :quiet)
+    assert_success(out, err, status)
+    refute_includes(err, stats_header)
+    assert_equal("true\n", out)
+  end
+
   def test_enable_through_env
     child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => '1'}
     assert_in_out_err([child_env, '-v'], '') do |stdout, stderr|
@@ -78,6 +102,27 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_getglobal_with_warning
+    assert_compiles('"rescued"', %q{
+      Warning[:deprecated] = true
+
+      module Warning
+        def warn(message)
+          raise
+        end
+      end
+
+      def test
+        $=
+      rescue
+        "rescued"
+      end
+
+      $VERBOSE = true
+      test
+    }, insns: [:getglobal])
+  end
+
   def test_setglobal
     assert_compiles '1', %q{
       def test
@@ -99,6 +144,69 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:intern]
   end
 
+  def test_duphash
+    assert_compiles '{a: 1}', %q{
+      def test
+        {a: 1}
+      end
+
+      test
+    }, insns: [:duphash]
+  end
+
+  def test_pushtoarray
+    assert_compiles '[1, 2, 3]', %q{
+      def test
+        [*[], 1, 2, 3]
+      end
+      test
+    }, insns: [:pushtoarray]
+  end
+
+  def test_splatarray_new_array
+    assert_compiles '[1, 2, 3]', %q{
+      def test a
+        [*a, 3]
+      end
+      test [1, 2]
+    }, insns: [:splatarray]
+  end
+
+  def test_splatarray_existing_array
+    assert_compiles '[1, 2, 3]', %q{
+      def foo v
+        [1, 2, v]
+      end
+      def test a
+        foo(*a)
+      end
+      test [3]
+    }, insns: [:splatarray]
+  end
+
+  def test_concattoarray
+    assert_compiles '[1, 2, 3]', %q{
+      def test(*a)
+        [1, 2, *a]
+      end
+      test 3
+    }, insns: [:concattoarray]
+  end
+
+  def test_definedivar
+    assert_compiles '[nil, "instance-variable", nil]', %q{
+      def test
+        v0 = defined?(@a)
+        @a = nil
+        v1 = defined?(@a)
+        remove_instance_variable :@a
+        v2 = defined?(@a)
+        [v0, v1, v2]
+      end
+      test
+    }, insns: [:definedivar]
+  end
+
   def test_setglobal_with_trace_var_exception
     assert_compiles '"rescued"', %q{
       def test
@@ -110,6 +218,76 @@ class TestZJIT < Test::Unit::TestCase
       trace_var(:$a) { raise }
       test
     }, insns: [:setglobal]
+  end
+
+  def test_toplevel_binding
+    # Not using assert_compiles, which doesn't use the toplevel frame for `test_script`.
+    out, err, status = eval_with_jit(%q{
+      a = 1
+      b = 2
+      TOPLEVEL_BINDING.local_variable_set(:b, 3)
+      c = 4
+      print [a, b, c]
+    })
+    assert_success(out, err, status)
+    assert_equal "[1, 3, 4]", out
+  end
+
+  def test_toplevel_local_after_eval
+    # Not using assert_compiles, which doesn't use the toplevel frame for `test_script`.
+    out, err, status = eval_with_jit(%q{
+      a = 1
+      b = 2
+      eval('b = 3')
+      c = 4
+      print [a, b, c]
+    })
+    assert_success(out, err, status)
+    assert_equal "[1, 3, 4]", out
+  end
+
+  def test_getlocal_after_eval
+    assert_compiles '2', %q{
+      def test
+        a = 1
+        eval('a = 2')
+        a
+      end
+      test
+    }
+  end
+
+  def test_getlocal_after_instance_eval
+    assert_compiles '2', %q{
+      def test
+        a = 1
+        instance_eval('a = 2')
+        a
+      end
+      test
+    }
+  end
+
+  def test_getlocal_after_module_eval
+    assert_compiles '2', %q{
+      def test
+        a = 1
+        Kernel.module_eval('a = 2')
+        a
+      end
+      test
+    }
+  end
+
+  def test_getlocal_after_class_eval
+    assert_compiles '2', %q{
+      def test
+        a = 1
+        Kernel.class_eval('a = 2')
+        a
+      end
+      test
+    }
   end
 
   def test_setlocal
@@ -128,6 +306,15 @@ class TestZJIT < Test::Unit::TestCase
       eval('a = 1', @b)
       eval('a', @b)
     }
+  end
+
+  def test_getblockparamproxy
+    assert_compiles '1', %q{
+      def test(&block)
+        0.then(&block)
+      end
+      test { 1 }
+    }, insns: [:getblockparamproxy]
   end
 
   def test_call_a_forwardable_method
@@ -166,9 +353,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 3, insns: [:getlocal, :setlocal, :getlocal_WC_0, :setlocal_WC_1]
   end
 
-  def test_read_local_written_by_children_iseqs
-    omit "This test fails right now because Send doesn't compile."
-
+  def test_send_with_local_written_by_blockiseq
     assert_compiles '[1, 2]', %q{
       def test
         l1 = nil
@@ -245,8 +430,109 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, allowed_iseqs: 'entry@-e:2'
   end
 
+  def test_send_optional_arguments
+    assert_compiles '[[1, 2], [3, 4]]', %q{
+      def test(a, b = 2) = [a, b]
+      def entry = [test(1), test(3, 4)]
+      entry
+      entry
+    }, call_threshold: 2
+  end
+
+  def test_send_nil_block_arg
+    assert_compiles 'false', %q{
+      def test = block_given?
+      def entry = test(&nil)
+      test
+    }
+  end
+
+  def test_send_symbol_block_arg
+    assert_compiles '["1", "2"]', %q{
+      def test = [1, 2].map(&:to_s)
+      test
+    }
+  end
+
+  def test_send_splat
+    assert_runs '[1, 2]', %q{
+      def test(a, b) = [a, b]
+      def entry(arr) = test(*arr)
+      entry([1, 2])
+    }
+  end
+
+  def test_send_kwarg
+    assert_runs '[1, 2]', %q{
+      def test(a:, b:) = [a, b]
+      def entry = test(a: 1, b: 2)
+      entry
+    }
+  end
+
+  def test_forwardable_iseq
+    assert_compiles '1', %q{
+      def test(...) = 1
+      test
+    }
+  end
+
+  def test_sendforward
+    assert_runs '[1, 2]', %q{
+      def callee(a, b) = [a, b]
+      def test(...) = callee(...)
+      test(1, 2)
+    }, insns: [:sendforward]
+  end
+
+  def test_iseq_with_optional_arguments
+    assert_compiles '[[1, 2], [3, 4]]', %q{
+      def test(a, b = 2) = [a, b]
+      [test(1), test(3, 4)]
+    }
+  end
+
+  def test_invokesuper
+    assert_compiles '[6, 60]', %q{
+      class Foo
+        def foo(a) = a + 1
+        def bar(a) = a + 10
+      end
+
+      class Bar < Foo
+        def foo(a) = super(a) + 2
+        def bar(a) = super + 20
+      end
+
+      bar = Bar.new
+      [bar.foo(3), bar.bar(30)]
+    }
+  end
+
+  def test_invokesuper_with_local_written_by_blockiseq
+    # Using `assert_runs` because we don't compile invokeblock yet
+    assert_runs '3', %q{
+      class Foo
+        def test
+          yield
+        end
+      end
+
+      class Bar < Foo
+        def test
+          a = 1
+          super do
+            a += 2
+          end
+          a
+        end
+      end
+
+      Bar.new.test
+    }
+  end
+
   def test_invokebuiltin
-    omit 'Test fails at the moment due to not handling optional parameters'
     assert_compiles '["."]', %q{
       def test = Dir.glob(".")
       test
@@ -534,6 +820,37 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_ge], call_threshold: 2
   end
 
+  def test_opt_new_does_not_push_frame
+    assert_compiles 'nil', %q{
+      class Foo
+        attr_reader :backtrace
+
+        def initialize
+          @backtrace = caller
+        end
+      end
+      def test = Foo.new
+
+      foo = test
+      foo.backtrace.find do |frame|
+        frame.include?('Class#new')
+      end
+    }, insns: [:opt_new]
+  end
+
+  def test_opt_new_with_redefinition
+    assert_compiles '"foo"', %q{
+      class Foo
+        def self.new = "foo"
+
+        def initialize = raise("unreachable")
+      end
+      def test = Foo.new
+
+      test
+    }, insns: [:opt_new]
+  end
+
   def test_new_hash_empty
     assert_compiles '{}', %q{
       def test = {}
@@ -723,6 +1040,60 @@ class TestZJIT < Test::Unit::TestCase
       def test(n) = n..10
       test(3)
     }
+  end
+
+  def test_new_range_fixnum_both_literals_inclusive
+    assert_compiles '1..2', %q{
+      def test()
+        (1..2)
+      end
+      test; test
+    }, call_threshold: 2
+  end
+
+  def test_new_range_fixnum_both_literals_exclusive
+    assert_compiles '1...2', %q{
+      def test()
+        (1...2)
+      end
+      test; test
+    }, call_threshold: 2
+  end
+
+  def test_new_range_fixnum_low_literal_inclusive
+    assert_compiles '1..3', %q{
+      def test(a)
+        (1..a)
+      end
+      test(2); test(3)
+    }, call_threshold: 2
+  end
+
+  def test_new_range_fixnum_low_literal_exclusive
+    assert_compiles '1...3', %q{
+      def test(a)
+        (1...a)
+      end
+      test(2); test(3)
+    }, call_threshold: 2
+  end
+
+  def test_new_range_fixnum_high_literal_inclusive
+    assert_compiles '3..10', %q{
+      def test(a)
+        (a..10)
+      end
+      test(2); test(3)
+    }, call_threshold: 2
+  end
+
+  def test_new_range_fixnum_high_literal_exclusive
+    assert_compiles '3...10', %q{
+      def test(a)
+        (a...10)
+      end
+      test(2); test(3)
+    }, call_threshold: 2
   end
 
   def test_if
@@ -1080,6 +1451,36 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_getinstancevariable_miss
+    assert_compiles '[1, 1, 4]', %q{
+      class C
+        def foo
+          @foo
+        end
+
+        def foo_then_bar
+          @foo = 1
+          @bar = 2
+        end
+
+        def bar_then_foo
+          @bar = 3
+          @foo = 4
+        end
+      end
+
+      o1 = C.new
+      o1.foo_then_bar
+      result = []
+      result << o1.foo
+      result << o1.foo
+      o2 = C.new
+      o2.bar_then_foo
+      result << o2.foo
+      result
+    }
+  end
+
   def test_setinstancevariable
     assert_compiles '1', %q{
       def test() = @foo = 1
@@ -1231,8 +1632,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_bop_invalidation
-    omit 'Invalidation on BOP redefinition is not implemented yet'
-    assert_compiles '', %q{
+    assert_compiles '100', %q{
       def test
         eval(<<~RUBY)
           class Integer
@@ -1273,6 +1673,29 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:defined]
   end
 
+  def test_defined_method_raise
+    assert_compiles '[nil, nil, nil]', %q{
+      class C
+        def assert_equal expected, actual
+          if expected != actual
+            raise "NO"
+          end
+        end
+
+        def test_defined_method
+          assert_equal(nil, defined?("x".reverse(1).reverse))
+        end
+      end
+
+      c = C.new
+      result = []
+      result << c.test_defined_method
+      result << c.test_defined_method
+      result << c.test_defined_method
+      result
+    }
+  end
+
   def test_defined_yield
     assert_compiles "nil", "defined?(yield)"
     assert_compiles '[nil, nil, "yield"]', %q{
@@ -1285,15 +1708,13 @@ class TestZJIT < Test::Unit::TestCase
     # This will do some EP hopping to find the local EP,
     # so it's slightly different than doing it outside of a block.
 
-    omit 'Test fails at the moment due to missing Send codegen'
-
     assert_compiles '[nil, nil, "yield"]', %q{
       def test
         yield_self { yield_self { defined?(yield) } }
       end
 
       [test, test, test{}]
-    }, call_threshold: 2, insns: [:defined]
+    }, call_threshold: 2
   end
 
   def test_invokeblock_without_block_after_jit_call
@@ -1485,14 +1906,51 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_stats
+  def test_stats_availability
     assert_runs '[true, true]', %q{
       def test = 1
       test
       [
-        RubyVM::ZJIT.stats[:zjit_insns_count] > 0,
-        RubyVM::ZJIT.stats(:zjit_insns_count) > 0,
+        RubyVM::ZJIT.stats[:zjit_insn_count] > 0,
+        RubyVM::ZJIT.stats(:zjit_insn_count) > 0,
       ]
+    }, stats: true
+  end
+
+  def test_stats_consistency
+    assert_runs '[]', %q{
+      def test = 1
+      test # increment some counters
+
+      RubyVM::ZJIT.stats.to_a.filter_map do |key, value|
+        # The value may be incremented, but the class should stay the same
+        other_value = RubyVM::ZJIT.stats(key)
+        if value.class != other_value.class
+          [key, value, other_value]
+        end
+      end
+    }, stats: true
+  end
+
+  def test_reset_stats
+    assert_runs 'true', %q{
+      def test = 1
+      100.times { test }
+
+      # Get initial stats and verify they're non-zero
+      initial_stats = RubyVM::ZJIT.stats
+
+      # Reset the stats
+      RubyVM::ZJIT.reset_stats!
+
+      # Get stats after reset
+      reset_stats = RubyVM::ZJIT.stats
+
+      [
+        # After reset, counters should be zero or at least much smaller
+        # (some instructions might execute between reset and reading stats)
+        :zjit_insn_count.then { |s| initial_stats[s] > 0 && reset_stats[s] < initial_stats[s] },
+      ].all?
     }, stats: true
   end
 
@@ -1564,6 +2022,23 @@ class TestZJIT < Test::Unit::TestCase
         "redefined"
       end
 
+      result2 = test
+
+      [result1, result2]
+    }, call_threshold: 2
+  end
+
+  def test_method_redefinition_with_module
+    assert_runs '["original", "redefined"]', %q{
+      module Foo
+        def self.foo = "original"
+      end
+
+      def test = Foo.foo
+      test
+      result1 = test
+
+      def Foo.foo = "redefined"
       result2 = test
 
       [result1, result2]
@@ -1665,6 +2140,61 @@ class TestZJIT < Test::Unit::TestCase
 
       results
     }
+  end
+
+  def test_objtostring_profiled_string_fastpath
+    assert_compiles '"foo"', %q{
+      def test(str)
+        "#{str}"
+      end
+      test('foo'); test('foo') # profile as string
+    }, call_threshold: 2
+  end
+
+  def test_objtostring_profiled_string_subclass_fastpath
+    assert_compiles '"foo"', %q{
+      class MyString < String; end
+
+      def test(str)
+        "#{str}"
+      end
+
+      foo = MyString.new("foo")
+      test(foo); test(foo) # still profiles as string
+    }, call_threshold: 2
+  end
+
+  def test_objtostring_profiled_string_fastpath_exits_on_nonstring
+    assert_compiles '"1"', %q{
+      def test(str)
+        "#{str}"
+      end
+
+      test('foo') # profile as string
+      test(1)
+    }, call_threshold: 2
+  end
+
+  def test_objtostring_profiled_nonstring_calls_to_s
+    assert_compiles '"[1, 2, 3]"', %q{
+      def test(str)
+        "#{str}"
+      end
+
+      test([1,2,3]); # profile as nonstring
+      test([1,2,3]);
+    }, call_threshold: 2
+  end
+
+  def test_objtostring_profiled_nonstring_guard_exits_when_string
+    assert_compiles '"foo"', %q{
+      def test(str)
+        "#{str}"
+      end
+
+      test([1,2,3]); # profiles as nonstring
+      test('foo');
+    }, call_threshold: 2
   end
 
   def test_string_bytesize_with_guard
@@ -1904,6 +2434,247 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_ivar_attr_reader_optimization_with_multi_ractor_mode
+    assert_compiles '42', %q{
+      class Foo
+        class << self
+          attr_accessor :bar
+
+          def get_bar
+            bar
+          rescue Ractor::IsolationError
+            42
+          end
+        end
+      end
+
+      Foo.bar = [] # needs to be a ractor unshareable object
+
+      def test
+        Foo.get_bar
+      end
+
+      test
+      test
+
+      Ractor.new { test }.value
+    }, call_threshold: 2
+  end
+
+  def test_ivar_get_with_multi_ractor_mode
+    assert_compiles '42', %q{
+      class Foo
+        def self.set_bar
+          @bar = [] # needs to be a ractor unshareable object
+        end
+
+        def self.bar
+          @bar
+        rescue Ractor::IsolationError
+          42
+        end
+      end
+
+      Foo.set_bar
+
+      def test
+        Foo.bar
+      end
+
+      test
+      test
+
+      Ractor.new { test }.value
+    }
+  end
+
+  def test_ivar_set_with_multi_ractor_mode
+    assert_compiles '42', %q{
+      class Foo
+        def self.bar
+          _foo = 1
+          _bar = 2
+          begin
+            @bar = _foo + _bar
+          rescue Ractor::IsolationError
+            42
+          end
+        end
+      end
+
+      def test
+        Foo.bar
+      end
+
+      test
+      test
+
+      Ractor.new { test }.value
+    }
+  end
+
+  def test_global_tracepoint
+    assert_compiles 'true', %q{
+      def foo = 1
+
+      foo
+      foo
+
+      called = false
+
+      tp = TracePoint.new(:return) { |event|
+        if event.method_id == :foo
+          called = true
+        end
+      }
+      tp.enable do
+        foo
+      end
+      called
+    }
+  end
+
+  def test_local_tracepoint
+    assert_compiles 'true', %q{
+      def foo = 1
+
+      foo
+      foo
+
+      called = false
+
+      tp = TracePoint.new(:return) { |_| called = true }
+      tp.enable(target: method(:foo)) do
+        foo
+      end
+      called
+    }
+  end
+
+  def test_line_tracepoint_on_c_method
+    assert_compiles '"[[:line, true]]"', %q{
+      events = []
+      events.instance_variable_set(
+        :@tp,
+        TracePoint.new(:line) { |tp| events << [tp.event, tp.lineno] if tp.path == __FILE__ }
+      )
+      def events.to_str
+        @tp.enable; ''
+      end
+
+      # Stay in generated code while enabling tracing
+      def events.compiled(obj)
+        String(obj)
+        @tp.disable; __LINE__
+      end
+
+      line = events.compiled(events)
+      events[0][-1] = (events[0][-1] == line)
+
+      events.to_s # can't dump events as it's a singleton object AND it has a TracePoint instance variable, which also can't be dumped
+    }
+  end
+
+  def test_targeted_line_tracepoint_in_c_method_call
+    assert_compiles '"[true]"', %q{
+      events = []
+      events.instance_variable_set(:@tp, TracePoint.new(:line) { |tp| events << tp.lineno })
+      def events.to_str
+        @tp.enable(target: method(:compiled))
+        ''
+      end
+
+      # Stay in generated code while enabling tracing
+      def events.compiled(obj)
+        String(obj)
+        __LINE__
+      end
+
+      line = events.compiled(events)
+      events[0] = (events[0] == line)
+
+      events.to_s # can't dump events as it's a singleton object AND it has a TracePoint instance variable, which also can't be dumped
+    }
+  end
+
+  def test_opt_case_dispatch
+    assert_compiles '[true, false]', %q{
+      def test(x)
+        case x
+        when :foo
+          true
+        else
+          false
+        end
+      end
+
+      results = []
+      results << test(:foo)
+      results << test(1)
+      results
+    }, insns: [:opt_case_dispatch]
+  end
+
+  def test_stack_overflow
+    assert_compiles 'nil', %q{
+      def recurse(n)
+        return if n == 0
+        recurse(n-1)
+        nil # no tail call
+      end
+
+      recurse(2)
+      recurse(2)
+      begin
+        recurse(20_000)
+      rescue SystemStackError
+        # Not asserting an exception is raised here since main
+        # thread stack size is environment-sensitive. Only
+        # that we don't crash or infinite loop.
+      end
+    }, call_threshold: 2
+  end
+
+  def test_invokeblock
+    assert_compiles '42', %q{
+      def test
+        yield
+      end
+      test { 42 }
+    }, insns: [:invokeblock]
+  end
+
+  def test_invokeblock_with_args
+    assert_compiles '3', %q{
+      def test(x, y)
+        yield x, y
+      end
+      test(1, 2) { |a, b| a + b }
+    }, insns: [:invokeblock]
+  end
+
+  def test_invokeblock_no_block_given
+    assert_compiles ':error', %q{
+      def test
+        yield rescue :error
+      end
+      test
+    }, insns: [:invokeblock]
+  end
+
+  def test_invokeblock_multiple_yields
+    assert_compiles "[1, 2, 3]", %q{
+      results = []
+      def test
+        yield 1
+        yield 2
+        yield 3
+      end
+      test { |x| results << x }
+      results
+    }, insns: [:invokeblock]
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
@@ -1929,12 +2700,8 @@ class TestZJIT < Test::Unit::TestCase
       IO.open(#{pipe_fd}).write(Marshal.dump(result))
     RUBY
 
-    status, out, err, result = eval_with_jit(script, pipe_fd:, **opts)
-
-    message = "exited with status #{status.to_i}"
-    message << "\nstdout:\n```\n#{out}```\n" unless out.empty?
-    message << "\nstderr:\n```\n#{err}```\n" unless err.empty?
-    assert status.success?, message
+    out, err, status, result = eval_with_jit(script, pipe_fd:, **opts)
+    assert_success(out, err, status)
 
     result = Marshal.load(result)
     assert_equal(expected, result.fetch(:ret_val).inspect)
@@ -1963,13 +2730,13 @@ class TestZJIT < Test::Unit::TestCase
     debug: true,
     allowed_iseqs: nil,
     timeout: 1000,
-    pipe_fd:
+    pipe_fd: nil
   )
     args = ["--disable-gems"]
     if zjit
       args << "--zjit-call-threshold=#{call_threshold}"
       args << "--zjit-num-profiles=#{num_profiles}"
-      args << "--zjit-stats" if stats
+      args << "--zjit-stats#{"=#{stats}" unless stats == true}" if stats
       args << "--zjit-debug" if debug
       if allowed_iseqs
         jitlist = Tempfile.new("jitlist")
@@ -1979,24 +2746,38 @@ class TestZJIT < Test::Unit::TestCase
       end
     end
     args << "-e" << script_shell_encode(script)
-    pipe_r, pipe_w = IO.pipe
-    # Separate thread so we don't deadlock when
-    # the child ruby blocks writing the output to pipe_fd
-    pipe_out = nil
-    pipe_reader = Thread.new do
-      pipe_out = pipe_r.read
-      pipe_r.close
+    ios = {}
+    if pipe_fd
+      pipe_r, pipe_w = IO.pipe
+      # Separate thread so we don't deadlock when
+      # the child ruby blocks writing the output to pipe_fd
+      pipe_out = nil
+      pipe_reader = Thread.new do
+        pipe_out = pipe_r.read
+        pipe_r.close
+      end
+      ios[pipe_fd] = pipe_w
     end
-    out, err, status = EnvUtil.invoke_ruby(args, '', true, true, rubybin: RbConfig.ruby, timeout: timeout, ios: { pipe_fd => pipe_w })
-    pipe_w.close
-    pipe_reader.join(timeout)
-    [status, out, err, pipe_out]
+    result = EnvUtil.invoke_ruby(args, '', true, true, rubybin: RbConfig.ruby, timeout: timeout, ios:)
+    if pipe_fd
+      pipe_w.close
+      pipe_reader.join(timeout)
+      result << pipe_out
+    end
+    result
   ensure
     pipe_reader&.kill
     pipe_reader&.join(timeout)
     pipe_r&.close
     pipe_w&.close
     jitlist&.unlink
+  end
+
+  def assert_success(out, err, status)
+    message = "exited with status #{status.to_i}"
+    message << "\nstdout:\n```\n#{out}```\n" unless out.empty?
+    message << "\nstderr:\n```\n#{err}```\n" unless err.empty?
+    assert status.success?, message
   end
 
   def script_shell_encode(s)

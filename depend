@@ -19732,6 +19732,7 @@ vm_trace.$(OBJEXT): {$(VPATH)}vm_opts.h
 vm_trace.$(OBJEXT): {$(VPATH)}vm_sync.h
 vm_trace.$(OBJEXT): {$(VPATH)}vm_trace.c
 vm_trace.$(OBJEXT): {$(VPATH)}yjit.h
+vm_trace.$(OBJEXT): {$(VPATH)}zjit.h
 weakmap.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 weakmap.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 weakmap.$(OBJEXT): $(CCAN_DIR)/list/list.h

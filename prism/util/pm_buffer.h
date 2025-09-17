@@ -51,6 +51,8 @@ bool pm_buffer_init_capacity(pm_buffer_t *buffer, size_t capacity);
  *
  * @param buffer The buffer to initialize.
  * @returns True if the buffer was initialized successfully, false otherwise.
+ *
+ * \public \memberof pm_buffer_t
  */
 PRISM_EXPORTED_FUNCTION bool pm_buffer_init(pm_buffer_t *buffer);
 
@@ -59,6 +61,8 @@ PRISM_EXPORTED_FUNCTION bool pm_buffer_init(pm_buffer_t *buffer);
  *
  * @param buffer The buffer to get the value of.
  * @returns The value of the buffer.
+ *
+ * \public \memberof pm_buffer_t
  */
 PRISM_EXPORTED_FUNCTION char * pm_buffer_value(const pm_buffer_t *buffer);
 
@@ -67,6 +71,8 @@ PRISM_EXPORTED_FUNCTION char * pm_buffer_value(const pm_buffer_t *buffer);
  *
  * @param buffer The buffer to get the length of.
  * @returns The length of the buffer.
+ *
+ * \public \memberof pm_buffer_t
  */
 PRISM_EXPORTED_FUNCTION size_t pm_buffer_length(const pm_buffer_t *buffer);
 
@@ -222,6 +228,8 @@ void pm_buffer_insert(pm_buffer_t *buffer, size_t index, const char *value, size
  * Free the memory associated with the buffer.
  *
  * @param buffer The buffer to free.
+ *
+ * \public \memberof pm_buffer_t
  */
 PRISM_EXPORTED_FUNCTION void pm_buffer_free(pm_buffer_t *buffer);
 

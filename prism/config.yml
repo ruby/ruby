@@ -992,8 +992,19 @@ nodes:
       - name: constant
         type: node?
         kind:
-          - ConstantReadNode
           - ConstantPathNode
+          - ConstantReadNode
+        comment: |
+          Represents the optional constant preceding the Array
+
+              foo in Bar[]
+                     ^^^
+
+              foo in Bar[1, 2, 3]
+                     ^^^
+
+              foo in Bar::Baz[1, 2, 3]
+                     ^^^^^^^^
       - name: requireds
         type: node[]
         kind: pattern expression
@@ -2409,23 +2420,68 @@ nodes:
       - name: constant
         type: node?
         kind:
-          - ConstantReadNode
           - ConstantPathNode
+          - ConstantReadNode
+        comment: |
+          Represents the optional constant preceding the pattern
+
+              foo in Foo(*bar, baz, *qux)
+                     ^^^
       - name: left
         type: node
         kind: SplatNode
+        comment: |
+          Represents the first wildcard node in the pattern.
+
+              foo in *bar, baz, *qux
+                     ^^^^
+
+              foo in Foo(*bar, baz, *qux)
+                         ^^^^
       - name: requireds
         type: node[]
         kind: pattern expression
+        comment: |
+          Represents the nodes in between the wildcards.
+
+              foo in *bar, baz, *qux
+                           ^^^
+
+              foo in Foo(*bar, baz, 1, *qux)
+                               ^^^^^^
       - name: right
         type: node
         kind:
           - SplatNode
           - on error: MissingNode
+        comment: |
+          Represents the second wildcard node in the pattern.
+
+              foo in *bar, baz, *qux
+                                ^^^^
+
+              foo in Foo(*bar, baz, *qux)
+                                    ^^^^
       - name: opening_loc
         type: location?
+        comment: |
+          The location of the opening brace.
+
+              foo in [*bar, baz, *qux]
+                     ^
+
+              foo in Foo(*bar, baz, *qux)
+                        ^
       - name: closing_loc
         type: location?
+        comment: |
+          The location of the closing brace.
+
+              foo in [*bar, baz, *qux]
+                                     ^
+
+              foo in Foo(*bar, baz, *qux)
+                                        ^
     comment: |
       Represents a find pattern in pattern matching.
 
@@ -2437,6 +2493,9 @@ nodes:
 
           foo in Foo(*bar, baz, *qux)
                  ^^^^^^^^^^^^^^^^^^^^
+
+          foo => *bar, baz, *qux
+                 ^^^^^^^^^^^^^^^
   - name: FlipFlopNode
     flags: RangeFlags
     fields:
@@ -2714,20 +2773,60 @@ nodes:
       - name: constant
         type: node?
         kind:
-          - ConstantReadNode
           - ConstantPathNode
+          - ConstantReadNode
+        comment: |
+          Represents the optional constant preceding the Hash.
+
+              foo => Bar[a: 1, b: 2]
+                   ^^^
+
+              foo => Bar::Baz[a: 1, b: 2]
+                   ^^^^^^^^
       - name: elements
         type: node[]
         kind: AssocNode
+        comment: |
+          Represents the explicit named hash keys and values.
+
+              foo => { a: 1, b:, ** }
+                       ^^^^^^^^
       - name: rest
         type: node?
         kind:
           - AssocSplatNode
           - NoKeywordsParameterNode
+        comment: |
+          Represents the rest of the Hash keys and values. This can be named, unnamed, or explicitly forbidden via `**nil`, this last one results in a `NoKeywordsParameterNode`.
+
+              foo => { a: 1, b:, **c }
+                                 ^^^
+
+              foo => { a: 1, b:, ** }
+                                 ^^
+
+              foo => { a: 1, b:, **nil }
+                                 ^^^^^
       - name: opening_loc
         type: location?
+        comment: |
+          The location of the opening brace.
+
+              foo => { a: 1 }
+                     ^
+
+              foo => Bar[a: 1]
+                        ^
       - name: closing_loc
         type: location?
+        comment: |
+          The location of the closing brace.
+
+              foo => { a: 1 }
+                            ^
+
+              foo => Bar[a: 1]
+                             ^
     comment: |
       Represents a hash pattern in pattern matching.
 
@@ -2736,6 +2835,12 @@ nodes:
 
           foo => { a: 1, b: 2, **c }
                  ^^^^^^^^^^^^^^^^^^^
+
+          foo => Bar[a: 1, b: 2]
+                 ^^^^^^^^^^^^^^^
+
+          foo in { a: 1, b: 2 }
+                 ^^^^^^^^^^^^^^
   - name: IfNode
     fields:
       - name: if_keyword_loc
@@ -3388,6 +3493,9 @@ nodes:
 
           foo, bar = baz
           ^^^  ^^^
+
+          foo => baz
+                 ^^^
   - name: LocalVariableWriteNode
     fields:
       - name: name
@@ -3478,11 +3586,65 @@ nodes:
       - name: value
         type: node
         kind: non-void expression
+        comment: |
+          Represents the left-hand side of the operator.
+
+              foo => bar
+              ^^^
       - name: pattern
         type: node
         kind: pattern expression
+        comment: |
+          Represents the right-hand side of the operator. The type of the node depends on the expression.
+
+          Anything that looks like a local variable name (including `_`) will result in a `LocalVariableTargetNode`.
+
+              foo => a # This is equivalent to writing `a = foo`
+                     ^
+
+          Using an explicit `Array` or combining expressions with `,` will result in a `ArrayPatternNode`. This can be preceded by a constant.
+
+              foo => [a]
+                     ^^^
+
+              foo => a, b
+                     ^^^^
+
+              foo => Bar[a, b]
+                     ^^^^^^^^^
+
+          If the array pattern contains at least two wildcard matches, a `FindPatternNode` is created instead.
+
+              foo => *, 1, *a
+                     ^^^^^
+
+          Using an explicit `Hash` or a constant with square brackets and hash keys in the square brackets will result in a `HashPatternNode`.
+
+              foo => { a: 1, b: }
+
+              foo => Bar[a: 1, b:]
+
+              foo => Bar[**]
+
+          To use any variable that needs run time evaluation, pinning is required. This results in a `PinnedVariableNode`
+
+              foo => ^a
+                     ^^
+
+          Similar, any expression can be used with pinning. This results in a `PinnedExpressionNode`.
+
+              foo => ^(a + 1)
+
+          Anything else will result in the regular node for that expression, for example a `ConstantReadNode`.
+
+              foo => CONST
       - name: operator_loc
         type: location
+        comment: |
+          The location of the operator.
+
+              foo => bar
+                  ^^
     comment: |
       Represents the use of the `=>` operator.
 
@@ -3912,12 +4074,32 @@ nodes:
       - name: expression
         type: node
         kind: non-void expression
+        comment: |
+          The expression used in the pinned expression
+
+              foo in ^(bar)
+                       ^^^
       - name: operator_loc
         type: location
+        comment: |
+          The location of the `^` operator
+
+              foo in ^(bar)
+                     ^
       - name: lparen_loc
         type: location
+        comment: |
+          The location of the opening parenthesis.
+
+              foo in ^(bar)
+                      ^
       - name: rparen_loc
         type: location
+        comment: |
+          The location of the closing parenthesis.
+
+              foo in ^(bar)
+                          ^
     comment: |
       Represents the use of the `^` operator for pinning an expression in a pattern matching expression.
 
@@ -3936,8 +4118,18 @@ nodes:
           - NumberedReferenceReadNode # foo in ^$1
           - ItLocalVariableReadNode # proc { 1 in ^it }
           - on error: MissingNode # foo in ^Bar
+        comment: |
+          The variable used in the pinned expression
+
+              foo in ^bar
+                      ^^^
       - name: operator_loc
         type: location
+        comment: |
+          The location of the `^` operator
+
+              foo in ^bar
+                     ^
     comment: |
       Represents the use of the `^` operator for pinning a variable in a pattern matching expression.
 

@@ -2,10 +2,11 @@ use std::collections::HashMap;
 use std::fmt;
 use std::mem::take;
 use crate::codegen::local_size_and_idx_to_ep_offset;
-use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32};
+use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::SideExitReason;
 use crate::options::{debug, get_option};
 use crate::cruby::VALUE;
+use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
 
@@ -17,7 +18,7 @@ pub use crate::backend::current::{
 };
 pub const SCRATCH_OPND: Opnd = Opnd::Reg(Assembler::SCRATCH_REG);
 
-pub static JIT_PRESERVED_REGS: &'static [Opnd] = &[CFP, SP, EC];
+pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
 
 // Memory operand base
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -98,8 +99,8 @@ impl Opnd
                 assert!(base_reg.num_bits == 64);
                 Opnd::Mem(Mem {
                     base: MemBase::Reg(base_reg.reg_no),
-                    disp: disp,
-                    num_bits: num_bits,
+                    disp,
+                    num_bits,
                 })
             },
 
@@ -107,8 +108,8 @@ impl Opnd
                 assert!(num_bits <= out_num_bits);
                 Opnd::Mem(Mem {
                     base: MemBase::VReg(idx),
-                    disp: disp,
-                    num_bits: num_bits,
+                    disp,
+                    num_bits,
                 })
             },
 
@@ -1170,6 +1171,9 @@ pub struct Assembler {
 
     /// Names of labels
     pub(super) label_names: Vec<String>,
+
+    /// If Some, the next ccall should verify its leafness
+    leaf_ccall_stack_size: Option<usize>
 }
 
 impl Assembler
@@ -1189,7 +1193,30 @@ impl Assembler
             insns: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
             live_ranges,
             label_names,
+            leaf_ccall_stack_size: None,
         }
+    }
+
+    pub fn expect_leaf_ccall(&mut self, stack_size: usize) {
+        self.leaf_ccall_stack_size = Some(stack_size);
+    }
+
+    fn set_stack_canary(&mut self) -> Option<Opnd> {
+        if cfg!(feature = "runtime_checks") {
+            if let Some(stack_size) = self.leaf_ccall_stack_size.take() {
+                let canary_addr = self.lea(Opnd::mem(64, SP, (stack_size as i32) * SIZEOF_VALUE_I32));
+                let canary_opnd = Opnd::mem(64, canary_addr, 0);
+                self.mov(canary_opnd, vm_stack_canary().into());
+                return Some(canary_opnd)
+            }
+        }
+        None
+    }
+
+    fn clear_stack_canary(&mut self, canary_opnd: Option<Opnd>){
+        if let Some(canary_opnd) = canary_opnd {
+            self.store(canary_opnd, 0.into());
+        };
     }
 
     /// Build an Opnd::VReg and initialize its LiveRange
@@ -1214,8 +1241,8 @@ impl Assembler
         }
 
         // If we find any VReg from previous instructions, extend the live range to insn_idx
-        let mut opnd_iter = insn.opnd_iter();
-        while let Some(opnd) = opnd_iter.next() {
+        let opnd_iter = insn.opnd_iter();
+        for opnd in opnd_iter {
             match *opnd {
                 Opnd::VReg { idx, .. } |
                 Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
@@ -1242,16 +1269,16 @@ impl Assembler
 
     // Shuffle register moves, sometimes adding extra moves using SCRATCH_REG,
     // so that they will not rewrite each other before they are used.
-    pub fn resolve_parallel_moves(old_moves: &Vec<(Reg, Opnd)>) -> Vec<(Reg, Opnd)> {
+    pub fn resolve_parallel_moves(old_moves: &[(Reg, Opnd)]) -> Vec<(Reg, Opnd)> {
         // Return the index of a move whose destination is not used as a source if any.
-        fn find_safe_move(moves: &Vec<(Reg, Opnd)>) -> Option<usize> {
+        fn find_safe_move(moves: &[(Reg, Opnd)]) -> Option<usize> {
             moves.iter().enumerate().find(|&(_, &(dest_reg, _))| {
                 moves.iter().all(|&(_, src_opnd)| src_opnd != Opnd::Reg(dest_reg))
             }).map(|(index, _)| index)
         }
 
         // Remove moves whose source and destination are the same
-        let mut old_moves: Vec<(Reg, Opnd)> = old_moves.clone().into_iter()
+        let mut old_moves: Vec<(Reg, Opnd)> = old_moves.iter().copied()
             .filter(|&(reg, opnd)| Opnd::Reg(reg) != opnd).collect();
 
         let mut new_moves = vec![];
@@ -1265,12 +1292,12 @@ impl Assembler
             // then load SCRATCH_REG into the destination when it's safe.
             if !old_moves.is_empty() {
                 // Make sure it's safe to use SCRATCH_REG
-                assert!(old_moves.iter().all(|&(_, opnd)| opnd != Opnd::Reg(Assembler::SCRATCH_REG)));
+                assert!(old_moves.iter().all(|&(_, opnd)| opnd != SCRATCH_OPND));
 
                 // Move SCRATCH <- opnd, and delay reg <- SCRATCH
                 let (reg, opnd) = old_moves.remove(0);
                 new_moves.push((Assembler::SCRATCH_REG, opnd));
-                old_moves.push((reg, Opnd::Reg(Assembler::SCRATCH_REG)));
+                old_moves.push((reg, SCRATCH_OPND));
             }
         }
         new_moves
@@ -1279,7 +1306,7 @@ impl Assembler
     /// Sets the out field on the various instructions that require allocated
     /// registers because their output is used as the operand on a subsequent
     /// instruction. This is our implementation of the linear scan algorithm.
-    pub(super) fn alloc_regs(mut self, regs: Vec<Reg>) -> Option<Assembler> {
+    pub(super) fn alloc_regs(mut self, regs: Vec<Reg>) -> Result<Assembler, CompileError> {
         // Dump live registers for register spill debugging.
         fn dump_live_regs(insns: Vec<Insn>, live_ranges: Vec<LiveRange>, num_regs: usize, spill_index: usize) {
             // Convert live_ranges to live_regs: the number of live registers at each index
@@ -1330,7 +1357,7 @@ impl Assembler
                             new_reg
                         } else {
                             debug!("spilling VReg is not implemented yet, can't evacuate C_RET_REG on CCall");
-                            return None;
+                            return Err(CompileError::RegisterSpillOnCCall);
                         };
                         asm.mov(Opnd::Reg(new_reg), C_RET_OPND);
                         pool.dealloc_reg(&C_RET_REG);
@@ -1385,19 +1412,19 @@ impl Assembler
                 Some(Opnd::VReg { idx, .. }) => Some(*idx),
                 _ => None,
             };
-            if vreg_idx.is_some() {
-                if live_ranges[vreg_idx.unwrap()].end() == index {
-                    debug!("Allocating a register for VReg({}) at instruction index {} even though it does not live past this index", vreg_idx.unwrap(), index);
+            if let Some(vreg_idx) = vreg_idx {
+                if live_ranges[vreg_idx].end() == index {
+                    debug!("Allocating a register for VReg({}) at instruction index {} even though it does not live past this index", vreg_idx, index);
                 }
                 // This is going to be the output operand that we will set on the
                 // instruction. CCall and LiveReg need to use a specific register.
                 let mut out_reg = match insn {
                     Insn::CCall { .. } => {
-                        Some(pool.take_reg(&C_RET_REG, vreg_idx.unwrap()))
+                        Some(pool.take_reg(&C_RET_REG, vreg_idx))
                     }
                     Insn::LiveReg { opnd, .. } => {
                         let reg = opnd.unwrap_reg();
-                        Some(pool.take_reg(&reg, vreg_idx.unwrap()))
+                        Some(pool.take_reg(&reg, vreg_idx))
                     }
                     _ => None
                 };
@@ -1413,7 +1440,7 @@ impl Assembler
                     if let Some(Opnd::VReg{ idx, .. }) = opnd_iter.next() {
                         if live_ranges[*idx].end() == index {
                             if let Some(reg) = reg_mapping[*idx] {
-                                out_reg = Some(pool.take_reg(&reg, vreg_idx.unwrap()));
+                                out_reg = Some(pool.take_reg(&reg, vreg_idx));
                             }
                         }
                     }
@@ -1422,21 +1449,19 @@ impl Assembler
                 // Allocate a new register for this instruction if one is not
                 // already allocated.
                 if out_reg.is_none() {
-                    out_reg = match &insn {
-                        _ => match pool.alloc_reg(vreg_idx.unwrap()) {
-                            Some(reg) => Some(reg),
-                            None => {
-                                if get_option!(debug) {
-                                    let mut insns = asm.insns;
+                    out_reg = match pool.alloc_reg(vreg_idx) {
+                        Some(reg) => Some(reg),
+                        None => {
+                            if get_option!(debug) {
+                                let mut insns = asm.insns;
+                                insns.push(insn);
+                                for (_, insn) in iterator.by_ref() {
                                     insns.push(insn);
-                                    while let Some((_, insn)) = iterator.next() {
-                                        insns.push(insn);
-                                    }
-                                    dump_live_regs(insns, live_ranges, regs.len(), index);
                                 }
-                                debug!("Register spill not supported");
-                                return None;
+                                dump_live_regs(insns, live_ranges, regs.len(), index);
                             }
+                            debug!("Register spill not supported");
+                            return Err(CompileError::RegisterSpillOnAlloc);
                         }
                     };
                 }
@@ -1509,7 +1534,7 @@ impl Assembler
             if is_ccall {
                 // On x86_64, maintain 16-byte stack alignment
                 if cfg!(target_arch = "x86_64") && saved_regs.len() % 2 == 1 {
-                    asm.cpop_into(Opnd::Reg(saved_regs.last().unwrap().0.clone()));
+                    asm.cpop_into(Opnd::Reg(saved_regs.last().unwrap().0));
                 }
                 // Restore saved registers
                 for &(reg, vreg_idx) in saved_regs.iter().rev() {
@@ -1521,13 +1546,12 @@ impl Assembler
         }
 
         assert!(pool.is_empty(), "Expected all registers to be returned to the pool");
-        Some(asm)
+        Ok(asm)
     }
 
     /// Compile the instructions down to machine code.
     /// Can fail due to lack of code memory and inopportune code placement, among other reasons.
-    #[must_use]
-    pub fn compile(self, cb: &mut CodeBlock) -> Option<(CodePtr, Vec<CodePtr>)> {
+    pub fn compile(self, cb: &mut CodeBlock) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         #[cfg(feature = "disasm")]
         let start_addr = cb.get_write_ptr();
         let alloc_regs = Self::get_alloc_regs();
@@ -1567,7 +1591,7 @@ impl Assembler
                 let side_exit_label = if let Some(label) = label {
                     Target::Label(label)
                 } else {
-                    self.new_label("side_exit".into())
+                    self.new_label("side_exit")
                 };
                 self.write_label(side_exit_label.clone());
 
@@ -1584,13 +1608,26 @@ impl Assembler
                 }
 
                 asm_comment!(self, "save cfp->pc");
-                self.load_into(Opnd::Reg(Assembler::SCRATCH_REG), Opnd::const_ptr(pc));
-                self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::Reg(Assembler::SCRATCH_REG));
+                self.load_into(SCRATCH_OPND, Opnd::const_ptr(pc));
+                self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), SCRATCH_OPND);
 
                 asm_comment!(self, "save cfp->sp");
-                self.lea_into(Opnd::Reg(Assembler::SCRATCH_REG), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
+                self.lea_into(SCRATCH_OPND, Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
                 let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
-                self.store(cfp_sp, Opnd::Reg(Assembler::SCRATCH_REG));
+                self.store(cfp_sp, SCRATCH_OPND);
+
+                // Using C_RET_OPND as an additional scratch register, which is no longer used
+                if get_option!(stats) {
+                    asm_comment!(self, "increment a side exit counter");
+                    self.load_into(SCRATCH_OPND, Opnd::const_ptr(exit_counter_ptr(reason)));
+                    self.incr_counter_with_reg(Opnd::mem(64, SCRATCH_OPND, 0), 1.into(), C_RET_OPND);
+
+                    if let SideExitReason::UnhandledYARVInsn(opcode) = reason {
+                        asm_comment!(self, "increment an unhandled YARV insn counter");
+                        self.load_into(SCRATCH_OPND, Opnd::const_ptr(exit_counter_ptr_for_opcode(opcode)));
+                        self.incr_counter_with_reg(Opnd::mem(64, SCRATCH_OPND, 0), 1.into(), C_RET_OPND);
+                    }
+                }
 
                 asm_comment!(self, "exit to the interpreter");
                 self.frame_teardown(&[]); // matching the setup in :bb0-prologue:
@@ -1646,8 +1683,10 @@ impl Assembler {
 
     /// Call a C function without PosMarkers
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
+        let canary_opnd = self.set_stack_canary();
         let out = self.new_vreg(Opnd::match_num_bits(&opnds));
         self.push_insn(Insn::CCall { fptr, opnds, start_marker: None, end_marker: None, out });
+        self.clear_stack_canary(canary_opnd);
         out
     }
 
@@ -1771,6 +1810,19 @@ impl Assembler {
 
     pub fn incr_counter(&mut self, mem: Opnd, value: Opnd) {
         self.push_insn(Insn::IncrCounter { mem, value });
+    }
+
+    /// incr_counter() but uses a specific register to split Insn::Lea
+    pub fn incr_counter_with_reg(&mut self, mem: Opnd, value: Opnd, reg: Opnd) {
+        assert!(matches!(reg, Opnd::Reg(_)), "incr_counter_with_reg should take a register, got: {reg:?}");
+        let counter_opnd = if cfg!(target_arch = "aarch64") { // See arm64_split()
+            assert_ne!(reg, SCRATCH_OPND, "SCRATCH_REG should be reserved for IncrCounter");
+            self.lea_into(reg, mem);
+            reg
+        } else { // x86_emit() expects Opnd::Mem
+            mem
+        };
+        self.incr_counter(counter_opnd, value);
     }
 
     pub fn jbe(&mut self, target: Target) {
@@ -2006,7 +2058,7 @@ mod tests {
         assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
         assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
 
-        assert!(matches!(opnd_iter.next(), None));
+        assert!(opnd_iter.next().is_none());
     }
 
     #[test]
@@ -2017,7 +2069,7 @@ mod tests {
         assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
         assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
 
-        assert!(matches!(opnd_iter.next(), None));
+        assert!(opnd_iter.next().is_none());
     }
 
     #[test]

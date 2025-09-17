@@ -4,6 +4,7 @@ use crate::asm::{CodeBlock, Label};
 use crate::asm::arm64::*;
 use crate::cruby::*;
 use crate::backend::lir::*;
+use crate::stats::CompileError;
 use crate::virtualmem::CodePtr;
 use crate::cast::*;
 
@@ -98,7 +99,7 @@ fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
     let start = cb.get_write_ptr();
     emit_jmp_ptr(cb, dst_ptr, true);
     let end = cb.get_write_ptr();
-    unsafe { rb_zjit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
+    unsafe { rb_jit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
 }
 
 fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr, padding: bool) {
@@ -139,17 +140,17 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
         // If the value fits into a single movz
         // instruction, then we'll use that.
         movz(cb, rd, A64Opnd::new_uimm(current), 0);
-        return 1;
+        1
     } else if u16::try_from(!value).is_ok() {
         // For small negative values, use a single movn
         movn(cb, rd, A64Opnd::new_uimm(!value), 0);
-        return 1;
+        1
     } else if BitmaskImmediate::try_from(current).is_ok() {
         // Otherwise, if the immediate can be encoded
         // with the special bitmask immediate encoding,
         // we'll use that.
         mov(cb, rd, A64Opnd::new_uimm(current));
-        return 1;
+        1
     } else {
         // Finally we'll fall back to encoding the value
         // using movz for the first 16 bits and movk for
@@ -175,14 +176,14 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
             movk(cb, rd, A64Opnd::new_uimm(current & 0xffff), 48);
             num_insns += 1;
         }
-        return num_insns;
+        num_insns
     }
 }
 
 /// List of registers that can be used for register allocation.
 /// This has the same number of registers for x86_64 and arm64.
 /// SCRATCH0 and SCRATCH1 are excluded.
-pub const ALLOC_REGS: &'static [Reg] = &[
+pub const ALLOC_REGS: &[Reg] = &[
     X0_REG,
     X1_REG,
     X2_REG,
@@ -385,15 +386,12 @@ impl Assembler
             let mut opnd_iter = insn.opnd_iter_mut();
 
             while let Some(opnd) = opnd_iter.next() {
-                match opnd {
-                    Opnd::Value(value) => {
-                        if value.special_const_p() {
-                            *opnd = Opnd::UImm(value.as_u64());
-                        } else if !is_load {
-                            *opnd = asm.load(*opnd);
-                        }
-                    },
-                    _ => {}
+                if let Opnd::Value(value) = opnd {
+                    if value.special_const_p() {
+                        *opnd = Opnd::UImm(value.as_u64());
+                    } else if !is_load {
+                        *opnd = asm.load(*opnd);
+                    }
                 };
             }
 
@@ -480,7 +478,7 @@ impl Assembler
                     // which is both the return value and first argument register
                     if !opnds.is_empty() {
                         let mut args: Vec<(Reg, Opnd)> = vec![];
-                        for (idx, opnd) in opnds.into_iter().enumerate().rev() {
+                        for (idx, opnd) in opnds.iter_mut().enumerate().rev() {
                             // If the value that we're sending is 0, then we can use
                             // the zero register, so in this case we'll just send
                             // a UImm of 0 along as the argument to the move.
@@ -708,70 +706,67 @@ impl Assembler
         /// Emit a conditional jump instruction to a specific target. This is
         /// called when lowering any of the conditional jump instructions.
         fn emit_conditional_jump<const CONDITION: u8>(cb: &mut CodeBlock, target: Target) {
+            fn generate_branch<const CONDITION: u8>(cb: &mut CodeBlock, src_addr: i64, dst_addr: i64) {
+                let num_insns = if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
+                    // If the jump offset fits into the conditional jump as
+                    // an immediate value and it's properly aligned, then we
+                    // can use the b.cond instruction directly. We're safe
+                    // to use as i32 here since we already checked that it
+                    // fits.
+                    let bytes = (dst_addr - src_addr) as i32;
+                    bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
+
+                    // Here we're going to return 1 because we've only
+                    // written out 1 instruction.
+                    1
+                } else if b_offset_fits_bits((dst_addr - (src_addr + 4)) / 4) { // + 4 for bcond
+                    // If the jump offset fits into the unconditional jump as
+                    // an immediate value, we can use inverse b.cond + b.
+                    //
+                    // We're going to write out the inverse condition so
+                    // that if it doesn't match it will skip over the
+                    // instruction used for branching.
+                    bcond(cb, Condition::inverse(CONDITION), 2.into());
+                    b(cb, InstructionOffset::from_bytes((dst_addr - (src_addr + 4)) as i32)); // + 4 for bcond
+
+                    // We've only written out 2 instructions.
+                    2
+                } else {
+                    // Otherwise, we need to load the address into a
+                    // register and use the branch register instruction.
+                    let load_insns: i32 = emit_load_size(dst_addr as u64).into();
+
+                    // We're going to write out the inverse condition so
+                    // that if it doesn't match it will skip over the
+                    // instructions used for branching.
+                    bcond(cb, Condition::inverse(CONDITION), (load_insns + 2).into());
+                    emit_load_value(cb, Assembler::SCRATCH0, dst_addr as u64);
+                    br(cb, Assembler::SCRATCH0);
+
+                    // Here we'll return the number of instructions that it
+                    // took to write out the destination address + 1 for the
+                    // b.cond and 1 for the br.
+                    load_insns + 2
+                };
+
+                // We need to make sure we have at least 6 instructions for
+                // every kind of jump for invalidation purposes, so we're
+                // going to write out padding nop instructions here.
+                assert!(num_insns <= cb.conditional_jump_insns());
+                (num_insns..cb.conditional_jump_insns()).for_each(|_| nop(cb));
+            }
+
             match target {
                 Target::CodePtr(dst_ptr) => {
                     let dst_addr = dst_ptr.as_offset();
                     let src_addr = cb.get_write_ptr().as_offset();
-
-                    let num_insns = if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
-                        // If the jump offset fits into the conditional jump as
-                        // an immediate value and it's properly aligned, then we
-                        // can use the b.cond instruction directly. We're safe
-                        // to use as i32 here since we already checked that it
-                        // fits.
-                        let bytes = (dst_addr - src_addr) as i32;
-                        bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
-
-                        // Here we're going to return 1 because we've only
-                        // written out 1 instruction.
-                        1
-                    } else if b_offset_fits_bits((dst_addr - (src_addr + 4)) / 4) { // + 4 for bcond
-                        // If the jump offset fits into the unconditional jump as
-                        // an immediate value, we can use inverse b.cond + b.
-                        //
-                        // We're going to write out the inverse condition so
-                        // that if it doesn't match it will skip over the
-                        // instruction used for branching.
-                        bcond(cb, Condition::inverse(CONDITION), 2.into());
-                        b(cb, InstructionOffset::from_bytes((dst_addr - (src_addr + 4)) as i32)); // + 4 for bcond
-
-                        // We've only written out 2 instructions.
-                        2
-                    } else {
-                        // Otherwise, we need to load the address into a
-                        // register and use the branch register instruction.
-                        let dst_addr = (dst_ptr.raw_ptr(cb) as usize).as_u64();
-                        let load_insns: i32 = emit_load_size(dst_addr).into();
-
-                        // We're going to write out the inverse condition so
-                        // that if it doesn't match it will skip over the
-                        // instructions used for branching.
-                        bcond(cb, Condition::inverse(CONDITION), (load_insns + 2).into());
-                        emit_load_value(cb, Assembler::SCRATCH0, dst_addr);
-                        br(cb, Assembler::SCRATCH0);
-
-                        // Here we'll return the number of instructions that it
-                        // took to write out the destination address + 1 for the
-                        // b.cond and 1 for the br.
-                        load_insns + 2
-                    };
-
-                    if let Target::CodePtr(_) = target {
-                        // We need to make sure we have at least 6 instructions for
-                        // every kind of jump for invalidation purposes, so we're
-                        // going to write out padding nop instructions here.
-                        assert!(num_insns <= cb.conditional_jump_insns());
-                        for _ in num_insns..cb.conditional_jump_insns() { nop(cb); }
-                    }
+                    generate_branch::<CONDITION>(cb, src_addr, dst_addr);
                 },
                 Target::Label(label_idx) => {
-                    // Here we're going to save enough space for ourselves and
-                    // then come back and write the instruction once we know the
-                    // offset. We're going to assume we can fit into a single
-                    // b.cond instruction. It will panic otherwise.
-                    cb.label_ref(label_idx, 4, |cb, src_addr, dst_addr| {
-                        let bytes: i32 = (dst_addr - (src_addr - 4)).try_into().unwrap();
-                        bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
+                    // We save `cb.conditional_jump_insns` number of bytes since we may use up to that amount
+                    // `generate_branch` will pad the emitted branch instructions with `nop`s for each unused byte.
+                    cb.label_ref(label_idx, (cb.conditional_jump_insns() * 4) as usize, |cb, src_addr, dst_addr| {
+                        generate_branch::<CONDITION>(cb, src_addr - (cb.conditional_jump_insns() * 4) as i64, dst_addr);
                     });
                 },
                 Target::SideExit { .. } => {
@@ -1106,8 +1101,8 @@ impl Assembler
                     // be stored is first and the address is second. However in
                     // our IR we have the address first and the register second.
                     match dest_num_bits {
-                        64 | 32 => stur(cb, src.into(), dest.into()),
-                        16 => sturh(cb, src.into(), dest.into()),
+                        64 | 32 => stur(cb, src, dest),
+                        16 => sturh(cb, src, dest),
                         num_bits => panic!("unexpected dest num_bits: {} (src: {:#?}, dest: {:#?})", num_bits, src, dest),
                     }
                 },
@@ -1369,7 +1364,7 @@ impl Assembler
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Option<(CodePtr, Vec<CodePtr>)> {
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         let asm = self.arm64_split();
         let mut asm = asm.alloc_regs(regs)?;
         asm.compile_side_exits();
@@ -1387,13 +1382,12 @@ impl Assembler
             cb.link_labels();
 
             // Invalidate icache for newly written out region so we don't run stale code.
-            unsafe { rb_zjit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
+            unsafe { rb_jit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
 
-            Some((start_ptr, gc_offsets))
+            Ok((start_ptr, gc_offsets))
         } else {
             cb.clear_labels();
-
-            None
+            Err(CompileError::OutOfMemory)
         }
     }
 }
@@ -1411,7 +1405,7 @@ impl Assembler
 ///
 /// If a, b, and c are all registers.
 fn merge_three_reg_mov(
-    live_ranges: &Vec<LiveRange>,
+    live_ranges: &[LiveRange],
     iterator: &mut std::iter::Peekable<impl Iterator<Item = (usize, Insn)>>,
     left: &Opnd,
     right: &Opnd,
@@ -1521,7 +1515,7 @@ mod tests {
 
         let opnd = asm.add(Opnd::Reg(X0_REG), Opnd::Reg(X1_REG));
         asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
-        asm.compile_with_regs(&mut cb, vec![X3_REG]);
+        asm.compile_with_regs(&mut cb, vec![X3_REG]).unwrap();
 
         // Assert that only 2 instructions were written.
         assert_eq!(8, cb.get_write_pos());
@@ -1566,7 +1560,7 @@ mod tests {
 
     #[test]
     fn frame_setup_and_teardown() {
-        const THREE_REGS: &'static [Opnd] = &[Opnd::Reg(X19_REG), Opnd::Reg(X20_REG), Opnd::Reg(X21_REG)];
+        const THREE_REGS: &[Opnd] = &[Opnd::Reg(X19_REG), Opnd::Reg(X20_REG), Opnd::Reg(X21_REG)];
         // Test 3 preserved regs (odd), odd slot_count
         {
             let (mut asm, mut cb) = setup_asm();
@@ -1607,7 +1601,7 @@ mod tests {
 
         // Test 4 preserved regs (even), odd slot_count
         {
-            static FOUR_REGS: &'static [Opnd] = &[Opnd::Reg(X19_REG), Opnd::Reg(X20_REG), Opnd::Reg(X21_REG), Opnd::Reg(X22_REG)];
+            static FOUR_REGS: &[Opnd] = &[Opnd::Reg(X19_REG), Opnd::Reg(X20_REG), Opnd::Reg(X21_REG), Opnd::Reg(X22_REG)];
             let (mut asm, mut cb) = setup_asm();
             asm.frame_setup(FOUR_REGS, 3);
             asm.frame_teardown(FOUR_REGS);
@@ -1737,7 +1731,7 @@ mod tests {
     fn test_store_unserviceable() {
         let (mut asm, mut cb) = setup_asm();
         // This would put the source into SCRATCH_REG, messing up the destination
-        asm.store(Opnd::mem(64, Opnd::Reg(Assembler::SCRATCH_REG), 0), 0x83902.into());
+        asm.store(Opnd::mem(64, SCRATCH_OPND, 0), 0x83902.into());
 
         asm.compile_with_num_regs(&mut cb, 0);
     }
@@ -2043,6 +2037,32 @@ mod tests {
             0x4: mov x1, #0
             0x8: csel x1, x0, x1, lt
         "});
+    }
+
+    #[test]
+    fn test_label_branch_generate_bounds() {
+        // The immediate in a conditional branch is a 19 bit unsigned integer
+        // which has a max value of 2^18 - 1.
+        const IMMEDIATE_MAX_VALUE: usize = 2usize.pow(18) - 1;
+
+        // `IMMEDIATE_MAX_VALUE` number of dummy instructions will be generated
+        // plus a compare, a jump instruction, and a label.
+        const MEMORY_REQUIRED: usize = (IMMEDIATE_MAX_VALUE + 8)*4;
+
+        let mut asm = Assembler::new();
+        let mut cb = CodeBlock::new_dummy_sized(MEMORY_REQUIRED);
+
+        let far_label = asm.new_label("far");
+
+        asm.cmp(Opnd::Reg(X0_REG), Opnd::UImm(1));
+        asm.je(far_label.clone());
+
+        (0..IMMEDIATE_MAX_VALUE).for_each(|_| {
+            asm.mov(Opnd::Reg(TEMP_REGS[0]), Opnd::Reg(TEMP_REGS[2]));
+        });
+
+        asm.write_label(far_label.clone());
+        asm.compile_with_num_regs(&mut cb, 1);
     }
 
     #[test]

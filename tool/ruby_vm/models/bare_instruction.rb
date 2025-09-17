@@ -14,7 +14,7 @@ require_relative 'c_expr'
 require_relative 'typemap'
 require_relative 'attribute'
 
-class RubyVM::BareInstructions
+class RubyVM::BareInstruction
   attr_reader :template, :name, :operands, :pops, :rets, :decls, :expr
 
   def initialize opts = {}
@@ -105,14 +105,6 @@ class RubyVM::BareInstructions
 
   def handles_sp?
     /\b(false|0)\b/ !~ @attrs.fetch('handles_sp').expr.expr
-  end
-
-  def always_leaf?
-    @attrs.fetch('leaf').expr.expr == 'true;'
-  end
-
-  def leaf_without_check_ints?
-    @attrs.fetch('leaf').expr.expr == 'leafness_of_check_ints;'
   end
 
   def handle_canary stmt
@@ -232,13 +224,13 @@ class RubyVM::BareInstructions
     new h.merge(:template => h)
   }
 
-  def self.fetch name
+  def self.find(name)
     @instances.find do |insn|
       insn.name == name
     end or raise IndexError, "instruction not found: #{name}"
   end
 
-  def self.to_a
+  def self.all
     @instances
   end
 end

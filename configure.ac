@@ -107,10 +107,18 @@ HAVE_GIT=yes
 AC_ARG_WITH(git,
 	AS_HELP_STRING([--without-git], [never use git]),
 	[AS_CASE([$withval],
-	    [no],  [GIT=never-use HAVE_GIT=no],
+	    [no],  [HAVE_GIT=no],
 	    [yes], [],
 	    [GIT=$withval])])
-AS_IF([test x"$HAVE_GIT" = xyes], [command -v "$GIT" > /dev/null || HAVE_GIT=no])
+{
+    test x"$HAVE_GIT" = xyes &&
+    command -v "$GIT" > /dev/null &&
+    # `git -C`: 1.8.5
+    # `git log --no-show-signature`: 2.10.0
+    AS_CASE([`$GIT -C . --version 2> /dev/null | sed 's/.* //'`],
+    [0.*|1.*|2.@<:@0-9@:>@.*], [false],
+    [true])
+} || HAVE_GIT=no GIT=never-use
 AC_SUBST(GIT)
 AC_SUBST(HAVE_GIT)
 
@@ -1803,10 +1811,6 @@ RUBY_DECL_ATTRIBUTE([__nonnull__(n)], [RUBY_FUNC_NONNULL(n,x)], [rb_cv_func_nonn
 ])
 
 RUBY_APPEND_OPTION(XCFLAGS, -DRUBY_EXPORT)
-
-AC_ARG_ENABLE(mathn,
-    AS_HELP_STRING([--enable-mathn], [enable canonicalization for mathn]),
-    [AC_MSG_ERROR([mathn support has been dropped])])
 
 AC_CACHE_CHECK(for function name string predefined identifier,
     rb_cv_function_name_string,
@@ -3970,7 +3974,7 @@ AS_CASE(["${ZJIT_SUPPORT}"],
     [yes], [
     ],
     [dev], [
-        rb_cargo_features="$rb_cargo_features,disasm"
+        rb_cargo_features="$rb_cargo_features,disasm,runtime_checks"
         JIT_CARGO_SUPPORT=dev
         AC_DEFINE(RUBY_DEBUG, 1)
     ],
@@ -4023,9 +4027,9 @@ AS_IF([test x"$JIT_CARGO_SUPPORT" != "xno" -o \( x"$YJIT_SUPPORT" != "xno" -a x"
     ])
     CARGO_BUILD_ARGS="--profile ${JIT_CARGO_SUPPORT} --features ${rb_cargo_features}"
     AS_IF([test "${JIT_CARGO_SUPPORT}" = "dev"], [
-        RUST_LIB="target/debug/libjit.a"
+        RUST_LIB="target/debug/libruby.a"
     ], [
-        RUST_LIB="target/${JIT_CARGO_SUPPORT}/libjit.a"
+        RUST_LIB="target/${JIT_CARGO_SUPPORT}/libruby.a"
     ])
 ])
 
@@ -4699,21 +4703,7 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 
 	echo; echo '$(srcdir)/$(CONFIGURE):RUBY_M4_INCLUDED \
 	$(empty)'
-    } > $tmpmk && AS_IF([! grep '^ruby:' $tmpmk > /dev/null], [
-	AS_IF([test "${gnumake}" = yes], [
-	    tmpgmk=confgmk$$.tmp
-	    {
-		echo "include $tmpmk"
-		echo "-include uncommon.mk"
-	    } > $tmpgmk
-	], [
-	    tmpgmk=$tmpmk
-	]) &&
-	test -z "`${MAKE-make} -f $tmpgmk info-program | grep '^PROGRAM=ruby$'`" &&
-	echo 'ruby: $(PROGRAM);' >> $tmpmk
-	rm -f uncommon.mk # remove stale uncommon.mk, it should be updated by GNUmakefile
-	test "$tmpmk" = "$tmpgmk" || rm -f "$tmpgmk"
-    ]) && mv -f $tmpmk Makefile],
+    } > $tmpmk && mv -f $tmpmk Makefile],
 [EXEEXT='$EXEEXT' MAKE='${MAKE-make}' gnumake='$gnumake' GIT='$GIT' YJIT_SUPPORT='$YJIT_SUPPORT'])
 
 AC_ARG_WITH([ruby-pc],

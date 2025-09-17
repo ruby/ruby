@@ -98,7 +98,7 @@ fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
     #[cfg(not(test))]
     {
         let end = cb.get_write_ptr();
-        unsafe { rb_yjit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
+        unsafe { rb_jit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
     }
 }
 
@@ -1361,7 +1361,7 @@ impl Assembler
             #[cfg(not(test))]
             cb.without_page_end_reserve(|cb| {
                 for (start, end) in cb.writable_addrs(start_ptr, cb.get_write_ptr()) {
-                    unsafe { rb_yjit_icache_invalidate(start as _, end as _) };
+                    unsafe { rb_jit_icache_invalidate(start as _, end as _) };
                 }
             });
 

@@ -48,27 +48,26 @@ rb_imemo_new(enum imemo_type type, VALUE v0, size_t size)
     return (VALUE)obj;
 }
 
-static rb_imemo_tmpbuf_t *
+VALUE
 rb_imemo_tmpbuf_new(void)
 {
-    size_t size = sizeof(struct rb_imemo_tmpbuf_struct);
     VALUE flags = T_IMEMO | (imemo_tmpbuf << FL_USHIFT);
-    NEWOBJ_OF(obj, struct rb_imemo_tmpbuf_struct, 0, flags, size, 0);
+    NEWOBJ_OF(obj, rb_imemo_tmpbuf_t, 0, flags, sizeof(rb_imemo_tmpbuf_t), NULL);
 
-    return obj;
+    obj->ptr = NULL;
+    obj->cnt = 0;
+
+    return (VALUE)obj;
 }
 
 void *
 rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
 {
-    void *ptr;
-    rb_imemo_tmpbuf_t *tmpbuf;
-
     /* Keep the order; allocate an empty imemo first then xmalloc, to
      * get rid of potential memory leak */
-    tmpbuf = rb_imemo_tmpbuf_new();
+    rb_imemo_tmpbuf_t *tmpbuf = (rb_imemo_tmpbuf_t *)rb_imemo_tmpbuf_new();
     *store = (VALUE)tmpbuf;
-    ptr = ruby_xmalloc(size);
+    void *ptr = ruby_xmalloc(size);
     tmpbuf->ptr = ptr;
     tmpbuf->cnt = cnt;
 
@@ -98,17 +97,6 @@ rb_free_tmp_buffer(volatile VALUE *store)
     }
 }
 
-rb_imemo_tmpbuf_t *
-rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt)
-{
-    rb_imemo_tmpbuf_t *tmpbuf = rb_imemo_tmpbuf_new();
-    tmpbuf->ptr = buf;
-    tmpbuf->next = old_heap;
-    tmpbuf->cnt = cnt;
-
-    return tmpbuf;
-}
-
 static VALUE
 imemo_fields_new(VALUE owner, size_t capa)
 {
@@ -116,12 +104,12 @@ imemo_fields_new(VALUE owner, size_t capa)
     if (rb_gc_size_allocatable_p(embedded_size)) {
         VALUE fields = rb_imemo_new(imemo_fields, owner, embedded_size);
         RUBY_ASSERT(IMEMO_TYPE_P(fields, imemo_fields));
-        FL_SET_RAW(fields, OBJ_FIELD_EMBED);
         return fields;
     }
     else {
         VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields));
         IMEMO_OBJ_FIELDS(fields)->as.external.ptr = ALLOC_N(VALUE, capa);
+        FL_SET_RAW(fields, OBJ_FIELD_HEAP);
         return fields;
     }
 }
@@ -137,7 +125,7 @@ imemo_fields_new_complex(VALUE owner, size_t capa)
 {
     VALUE fields = imemo_fields_new(owner, 1);
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = st_init_numtable_with_size(capa);
-    FL_UNSET_RAW(fields, OBJ_FIELD_EMBED);
+    FL_SET_RAW(fields, OBJ_FIELD_HEAP);
     return fields;
 }
 
@@ -166,8 +154,8 @@ VALUE
 rb_imemo_fields_new_complex_tbl(VALUE owner, st_table *tbl)
 {
     VALUE fields = imemo_fields_new(owner, sizeof(struct rb_fields));
-    FL_UNSET_RAW(fields, OBJ_FIELD_EMBED);
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = tbl;
+    FL_SET_RAW(fields, OBJ_FIELD_HEAP);
     st_foreach(tbl, imemo_fields_trigger_wb_i, (st_data_t)fields);
     return fields;
 }
@@ -257,11 +245,13 @@ rb_imemo_memsize(VALUE obj)
 
         break;
       case imemo_fields:
-        if (rb_shape_obj_too_complex_p(obj)) {
-            size += st_memsize(IMEMO_OBJ_FIELDS(obj)->as.complex.table);
-        }
-        else if (!FL_TEST_RAW(obj, OBJ_FIELD_EMBED)) {
-            size += RSHAPE_CAPACITY(RBASIC_SHAPE_ID(obj)) * sizeof(VALUE);
+        if (FL_TEST_RAW(obj, OBJ_FIELD_HEAP)) {
+            if (rb_shape_obj_too_complex_p(obj)) {
+                size += st_memsize(IMEMO_OBJ_FIELDS(obj)->as.complex.table);
+            }
+            else {
+                size += RSHAPE_CAPACITY(RBASIC_SHAPE_ID(obj)) * sizeof(VALUE);
+            }
         }
         break;
       default:
@@ -311,8 +301,8 @@ mark_and_move_method_entry(rb_method_entry_t *ment, bool reference_updating)
             break;
           case VM_METHOD_TYPE_BMETHOD:
             rb_gc_mark_and_move(&def->body.bmethod.proc);
-            if (!reference_updating) {
-                if (def->body.bmethod.hooks) rb_hook_list_mark(def->body.bmethod.hooks);
+            if (def->body.bmethod.hooks) {
+                rb_hook_list_mark_and_move(def->body.bmethod.hooks);
             }
             break;
           case VM_METHOD_TYPE_ALIAS:
@@ -480,9 +470,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
         const rb_imemo_tmpbuf_t *m = (const rb_imemo_tmpbuf_t *)obj;
 
         if (!reference_updating) {
-            do {
-                rb_gc_mark_locations(m->ptr, m->ptr + m->cnt);
-            } while ((m = m->next) != NULL);
+            rb_gc_mark_locations(m->ptr, m->ptr + m->cnt);
         }
 
         break;
@@ -535,11 +523,13 @@ rb_free_const_table(struct rb_id_table *tbl)
 static inline void
 imemo_fields_free(struct rb_fields *fields)
 {
-    if (rb_shape_obj_too_complex_p((VALUE)fields)) {
-        st_free_table(fields->as.complex.table);
-    }
-    else if (!FL_TEST_RAW((VALUE)fields, OBJ_FIELD_EMBED)) {
-        xfree(fields->as.external.ptr);
+    if (FL_TEST_RAW((VALUE)fields, OBJ_FIELD_HEAP)) {
+        if (rb_shape_obj_too_complex_p((VALUE)fields)) {
+            st_free_table(fields->as.complex.table);
+        }
+        else {
+            xfree(fields->as.external.ptr);
+        }
     }
 }
 

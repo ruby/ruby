@@ -8,6 +8,9 @@ module Prism
   class RipperTest < TestCase
     # Skip these tests that Ripper is reporting the wrong results for.
     incorrect = [
+      # Not yet supported.
+      "leading_logical.txt",
+
       # Ripper incorrectly attributes the block to the keyword.
       "seattlerb/block_break.txt",
       "seattlerb/block_next.txt",
@@ -26,7 +29,10 @@ module Prism
       "whitequark/lvar_injecting_match.txt",
 
       # Ripper fails to understand some structures that span across heredocs.
-      "spanning_heredoc.txt"
+      "spanning_heredoc.txt",
+
+      # https://bugs.ruby-lang.org/issues/17398#note-12
+      "endless_methods_command_call.txt",
     ]
 
     # Skip these tests that we haven't implemented yet.

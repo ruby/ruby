@@ -145,14 +145,14 @@ mod tests {
     fn test_movk_shifted_16() {
         let inst = Mov::movk(0, 123, 16, 64);
         let result: u32 = inst.into();
-        assert_eq!(0xf2A00f60, result);
+        assert_eq!(0xf2a00f60, result);
     }
 
     #[test]
     fn test_movk_shifted_32() {
         let inst = Mov::movk(0, 123, 32, 64);
         let result: u32 = inst.into();
-        assert_eq!(0xf2C00f60, result);
+        assert_eq!(0xf2c00f60, result);
     }
 
     #[test]

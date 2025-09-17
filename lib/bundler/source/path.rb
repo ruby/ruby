@@ -53,6 +53,8 @@ module Bundler
         "source at `#{@path}`"
       end
 
+      alias_method :identifier, :to_s
+
       alias_method :to_gemfile, :path
 
       def hash

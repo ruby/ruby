@@ -106,13 +106,17 @@ the environment variable `BUNDLE_LOCAL__RACK`.
 The following is a list of all configuration keys and their purpose. You can
 learn more about their operation in [bundle install(1)](bundle-install.1.html).
 
-* `allow_offline_install` (`BUNDLE_ALLOW_OFFLINE_INSTALL`):
-   Allow Bundler to use cached data when installing without network access.
 * `auto_install` (`BUNDLE_AUTO_INSTALL`):
    Automatically run `bundle install` when gems are missing.
 * `bin` (`BUNDLE_BIN`):
-   Install executables from gems in the bundle to the specified directory.
-   Defaults to `false`.
+   If configured, `bundle binstubs` will install executables from gems in the
+   bundle to the specified directory. Otherwise it will create them in a `bin`
+   directory relative to the Gemfile directory. These executables run in
+   Bundler's context. If used, you might add this directory to your
+   environment's `PATH` variable. For instance, if the `rails` gem comes with a
+   `rails` executable, `bundle binstubs` will create a `bin/rails` executable
+   that ensures that all referred dependencies will be resolved using the
+   bundled gems.
 * `cache_all` (`BUNDLE_CACHE_ALL`):
    Cache all gems, including path and git gems. This needs to be explicitly
    before bundler 4, but will be the default on bundler 4.
@@ -193,12 +197,19 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Whether Bundler should leave outdated gems unpruned when caching.
 * `only` (`BUNDLE_ONLY`):
    A space-separated list of groups to install only gems of the specified groups.
+   Please check carefully if you want to install also gems without a group, because
+   they get put inside `default` group. For example `only test:default` will install
+   all gems specified in test group and without one.
 * `path` (`BUNDLE_PATH`):
    The location on disk where all gems in your bundle will be located regardless
    of `$GEM_HOME` or `$GEM_PATH` values. Bundle gems not found in this location
-   will be installed by `bundle install`. Defaults to `.bundle` relative to
-   repository root in Bundler 4, and to the default system path (`Gem.dir`)
-   before Bundler 4.
+   will be installed by `bundle install`. When not set, Bundler install by
+   default to a `.bundle` directory relative to repository root in Bundler 4,
+   and to the default system path (`Gem.dir`) before Bundler 4. That means that
+   before Bundler 4, Bundler shares this location with Rubygems, and `gem
+   install ...` will have gems installed in the same location and therefore,
+   gems installed without `path` set will show up by calling `gem list`. This
+   will not be the case in Bundler 4.
 * `path.system` (`BUNDLE_PATH__SYSTEM`):
    Whether Bundler will install gems into the default system path (`Gem.dir`).
 * `plugins` (`BUNDLE_PLUGINS`):
@@ -252,52 +263,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    A space-separated or `:`-separated list of groups whose gems bundler should install.
 * `without` (`BUNDLE_WITHOUT`):
    A space-separated or `:`-separated list of groups whose gems bundler should not install.
-
-## REMEMBERING OPTIONS
-
-Flags passed to `bundle install` or the Bundler runtime, such as `--path foo` or
-`--without production`, are remembered between commands and saved to your local
-application's configuration (normally, `./.bundle/config`).
-
-However, this will be changed in bundler 4, so it's better not to rely on this
-behavior. If these options must be remembered, it's better to set them using
-`bundle config` (e.g., `bundle config set --local path foo`).
-
-The flags that can be configured are:
-
-* `--bin`:
-   Creates a directory (defaults to `~/bin`) and place any executables from the
-   gem there. These executables run in Bundler's context. If used, you might add
-   this directory to your environment's `PATH` variable. For instance, if the
-   `rails` gem comes with a `rails` executable, this flag will create a
-   `bin/rails` executable that ensures that all referred dependencies will be
-   resolved using the bundled gems.
-
-* `--deployment`:
-   In deployment mode, Bundler will 'roll-out' the bundle for
-   `production` use. Please check carefully if you want to have this option
-   enabled in `development` or `test` environments.
-
-* `--only`:
-   A space-separated list of groups to install only gems of the specified groups.
-   Please check carefully if you want to install also gems without a group, cause
-   they get put inside `default` group. For example `only test:default` will install
-   all gems specified in test group and without one.
-
-* `--path`:
-   The location to install the specified gems to. This defaults to Rubygems'
-   setting. Bundler shares this location with Rubygems, `gem install ...` will
-   have gem installed there, too. Therefore, gems installed without a
-   `--path ...` setting will show up by calling `gem list`. Accordingly, gems
-   installed to other locations will not get listed.
-
-* `--without`:
-   A space-separated or `:`-separated list of groups referencing gems to skip during
-   installation.
-
-* `--with`:
-   A space-separated or `:`-separated list of **optional** groups referencing gems to
-   include during installation.
 
 ## BUILD OPTIONS
 

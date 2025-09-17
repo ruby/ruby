@@ -4,7 +4,9 @@ PRISM_CONFIG = $(PRISM_SRCDIR)/config.yml
 
 srcs uncommon.mk: prism/.srcs.mk.time
 
-prism/.srcs.mk.time:
+prism/.srcs.mk.time: $(order_only) $(PRISM_BUILD_DIR)/.time
+prism/$(HAVE_BASERUBY:no=.srcs.mk.time):
+	touch $@
 prism/$(HAVE_BASERUBY:yes=.srcs.mk.time): \
 		$(PRISM_SRCDIR)/templates/template.rb \
 		$(PRISM_SRCDIR)/srcs.mk.in

@@ -1,10 +1,12 @@
-use crate::codegen::{gen_exit_trampoline, gen_function_stub_hit_trampoline};
-use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insns_count, EcPtr, Qnil, VALUE};
+//! Runtime state of ZJIT.
+
+use crate::codegen::{gen_exit_trampoline, gen_exit_trampoline_with_counter, gen_function_stub_hit_trampoline};
+use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, EcPtr, Qnil, VALUE, VM_INSTRUCTION_SIZE};
 use crate::cruby_methods;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
 use crate::options::get_option;
-use crate::stats::Counters;
+use crate::stats::{Counters, ExitCounters};
 use crate::virtualmem::CodePtr;
 
 #[allow(non_upper_case_globals)]
@@ -24,6 +26,9 @@ pub struct ZJITState {
     /// ZJIT statistics
     counters: Counters,
 
+    /// Side-exit counters
+    exit_counters: ExitCounters,
+
     /// Assumptions that require invalidation
     invariants: Invariants,
 
@@ -35,6 +40,9 @@ pub struct ZJITState {
 
     /// Trampoline to side-exit without restoring PC or the stack
     exit_trampoline: CodePtr,
+
+    /// Trampoline to side-exit and increment exit_compilation_failure
+    exit_trampoline_with_counter: CodePtr,
 
     /// Trampoline to call function_stub_hit
     function_stub_hit_trampoline: CodePtr,
@@ -52,7 +60,7 @@ impl ZJITState {
             use crate::options::*;
 
             let exec_mem_bytes: usize = get_option!(exec_mem_bytes);
-            let virt_block: *mut u8 = unsafe { rb_zjit_reserve_addr_space(64 * 1024 * 1024) };
+            let virt_block: *mut u8 = unsafe { rb_jit_reserve_addr_space(64 * 1024 * 1024) };
 
             // Memory protection syscalls need page-aligned addresses, so check it here. Assuming
             // `virt_block` is page-aligned, `second_half` should be page-aligned as long as the
@@ -61,7 +69,7 @@ impl ZJITState {
             //
             // Basically, we don't support x86-64 2MiB and 1GiB pages. ARMv8 can do up to 64KiB
             // (2¹⁶ bytes) pages, which should be fine. 4KiB pages seem to be the most popular though.
-            let page_size = unsafe { rb_zjit_get_page_size() };
+            let page_size = unsafe { rb_jit_get_page_size() };
             assert_eq!(
                 virt_block as usize % page_size as usize, 0,
                 "Start of virtual address block should be page-aligned",
@@ -77,7 +85,7 @@ impl ZJITState {
                 page_size,
                 NonNull::new(virt_block).unwrap(),
                 exec_mem_bytes,
-                exec_mem_bytes, // TODO: change this to --zjit-mem-size (Shopify/ruby#686)
+                get_option!(mem_bytes)
             );
             let mem_block = Rc::new(RefCell::new(mem_block));
 
@@ -93,13 +101,24 @@ impl ZJITState {
         let zjit_state = ZJITState {
             code_block: cb,
             counters: Counters::default(),
+            exit_counters: [0; VM_INSTRUCTION_SIZE as usize],
             invariants: Invariants::default(),
             assert_compiles: false,
             method_annotations: cruby_methods::init(),
             exit_trampoline,
             function_stub_hit_trampoline,
+            exit_trampoline_with_counter: exit_trampoline,
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
+
+        // With --zjit-stats, use a different trampoline on function stub exits
+        // to count exit_compilation_failure. Note that the trampoline code depends
+        // on the counter, so ZJIT_STATE needs to be initialized first.
+        if get_option!(stats) {
+            let cb = ZJITState::get_code_block();
+            let code_ptr = gen_exit_trampoline_with_counter(cb, exit_trampoline).unwrap();
+            ZJITState::get_instance().exit_trampoline_with_counter = code_ptr;
+        }
     }
 
     /// Return true if zjit_state has been initialized
@@ -142,6 +161,11 @@ impl ZJITState {
         &mut ZJITState::get_instance().counters
     }
 
+    /// Get a mutable reference to side-exit counters
+    pub fn get_exit_counters() -> &'static mut ExitCounters {
+        &mut ZJITState::get_instance().exit_counters
+    }
+
     /// Was --zjit-save-compiled-iseqs specified?
     pub fn should_log_compiled_iseqs() -> bool {
         get_option!(log_compiled_iseqs).is_some()
@@ -179,6 +203,11 @@ impl ZJITState {
         ZJITState::get_instance().exit_trampoline
     }
 
+    /// Return a code pointer to the exit trampoline for function stubs
+    pub fn get_exit_trampoline_with_counter() -> CodePtr {
+        ZJITState::get_instance().exit_trampoline_with_counter
+    }
+
     /// Return a code pointer to the function stub hit trampoline
     pub fn get_function_stub_hit_trampoline() -> CodePtr {
         ZJITState::get_instance().function_stub_hit_trampoline
@@ -199,7 +228,7 @@ pub extern "C" fn rb_zjit_init() {
         rb_bug_panic_hook();
 
         // Discard the instruction count for boot which we never compile
-        unsafe { rb_vm_insns_count = 0; }
+        unsafe { rb_vm_insn_count = 0; }
 
         // ZJIT enabled and initialized successfully
         assert!(unsafe{ !rb_zjit_enabled_p });

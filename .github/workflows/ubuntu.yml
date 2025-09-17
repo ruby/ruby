@@ -39,8 +39,10 @@ jobs:
           - test_task: test-bundled-gems
           - test_task: check
             os: ubuntu-24.04
+            extra_checks: [capi]
           - test_task: check
             os: ubuntu-24.04-arm
+            extra_checks: [capi]
       fail-fast: false
 
     env:
@@ -58,7 +60,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -150,6 +152,15 @@ jobs:
         run: |
           DESTDIR=${RUNNER_TEMP-${TMPDIR-/tmp}}/installed
           $SETARCH make test-pc "DESTDIR=$DESTDIR"
+
+      - name: CAPI extensions
+        uses: ./.github/actions/capiext
+        with:
+          builddir: build
+          make: '$SETARCH make'
+        env:
+          RUBY_TESTOPTS: '-v --tty=no'
+        if: ${{ contains(matrix.extra_checks, 'capi') }}
 
       - uses: ./.github/actions/slack
         with:

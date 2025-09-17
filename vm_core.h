@@ -261,10 +261,8 @@ union ic_serial_entry {
 struct iseq_inline_constant_cache_entry {
     VALUE flags;
 
-    VALUE value;              // v0
-    VALUE _unused1;           // v1
-    VALUE _unused2;           // v2
-    const rb_cref_t *ic_cref; // v3
+    VALUE value;
+    const rb_cref_t *ic_cref;
 };
 STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
               (offsetof(struct iseq_inline_constant_cache_entry, ic_cref) +
@@ -2001,7 +1999,7 @@ static inline rb_execution_context_t *
 rb_current_execution_context(bool expect_ec)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-  #if defined(__arm64__) || defined(__aarch64__)
+  #ifdef RB_THREAD_CURRENT_EC_NOINLINE
     rb_execution_context_t * volatile ec = rb_current_ec();
   #else
     rb_execution_context_t * volatile ec = ruby_current_ec;
@@ -2190,7 +2188,7 @@ struct rb_trace_arg_struct {
 };
 
 void rb_hook_list_mark(rb_hook_list_t *hooks);
-void rb_hook_list_mark_and_update(rb_hook_list_t *hooks);
+void rb_hook_list_mark_and_move(rb_hook_list_t *hooks);
 void rb_hook_list_free(rb_hook_list_t *hooks);
 void rb_hook_list_connect_tracepoint(VALUE target, rb_hook_list_t *list, VALUE tpval, unsigned int target_line);
 void rb_hook_list_remove_tracepoint(rb_hook_list_t *list, VALUE tpval);

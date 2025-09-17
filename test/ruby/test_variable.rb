@@ -388,6 +388,61 @@ class TestVariable < Test::Unit::TestCase
     end
   end
 
+  class RemoveIvar
+    class << self
+      attr_reader :ivar
+
+      def add_ivar
+        @ivar = 1
+      end
+    end
+
+    attr_reader :ivar
+
+    def add_ivar
+      @ivar = 1
+    end
+  end
+
+  def add_and_remove_ivar(obj)
+    assert_nil obj.ivar
+    assert_equal 1, obj.add_ivar
+    assert_equal 1, obj.instance_variable_get(:@ivar)
+    assert_equal 1, obj.ivar
+
+    obj.remove_instance_variable(:@ivar)
+    assert_nil obj.ivar
+
+    assert_raise NameError do
+      obj.remove_instance_variable(:@ivar)
+    end
+  end
+
+  def test_remove_instance_variables_object
+    obj = RemoveIvar.new
+    add_and_remove_ivar(obj)
+    add_and_remove_ivar(obj)
+  end
+
+  def test_remove_instance_variables_class
+    add_and_remove_ivar(RemoveIvar)
+    add_and_remove_ivar(RemoveIvar)
+  end
+
+  class RemoveIvarGeneric < Array
+    attr_reader :ivar
+
+    def add_ivar
+      @ivar = 1
+    end
+  end
+
+  def test_remove_instance_variables_generic
+    obj = RemoveIvarGeneric.new
+    add_and_remove_ivar(obj)
+    add_and_remove_ivar(obj)
+  end
+
   class ExIvar < Hash
     def initialize
       @a = 1
@@ -457,7 +512,7 @@ class TestVariable < Test::Unit::TestCase
       instance.instance_variable_set(:@a3, 3)
       instance.instance_variable_set(:@a4, 4)
     end.resume
-    assert_equal 4, instance.instance_variable_get(:@a4)
+    assert_equal 4, instance.instance_variable_get(:@a4), bug21547
   end
 
   private

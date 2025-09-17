@@ -24,9 +24,15 @@ To run code snippets with ZJIT:
 You can also try https://www.rubyexplorer.xyz/ to view Ruby YARV disasm output with syntax highlighting
 in a way that can be easily shared with other team members.
 
+## Documentation
+
+You can generate and open the source level documentation in your browser using `cargo doc --open --document-private-items`.
+
 ## Testing
 
-Make sure you have a `--enable-zjit=dev` build, and run `brew install cargo-nextest` first.
+Make sure you have a `--enable-zjit=dev` build, and install the following tools:
+- `brew install cargo-nextest` - Required for running tests
+- `cargo install cargo-insta` - Required for updating snapshots
 
 ### make zjit-check
 
@@ -38,7 +44,7 @@ make zjit-check
 
 ### make zjit-test
 
-This command runs Rust unit tests.
+This command runs Rust unit tests using `insta` for snapshot testing.
 
 ```
 make zjit-test
@@ -50,12 +56,24 @@ You can also run a single test case by specifying the function name:
 make zjit-test ZJIT_TESTS=test_putobject
 ```
 
-If you expect that your changes cause tests to fail and they do, you can have
-`expect-test` fix the expected value for you by putting `UPDATE_EXPECT=1`
-before your test command, like so:
+#### Snapshot Testing
+
+ZJIT uses [insta](https://insta.rs/) for snapshot testing. When tests fail due to snapshot mismatches, pending snapshots are created. The test command will notify you if there are pending snapshots:
 
 ```
-UPDATE_EXPECT=1 make zjit-test ZJIT_TESTS=test_putobject
+Pending snapshots found. Accept with: make zjit-test-update
+```
+
+To update/accept all the snapshot changes:
+
+```
+make zjit-test-update
+```
+
+You can also review snapshot changes interactively one by one:
+
+```
+cd zjit && cargo insta review
 ```
 
 Test changes will be reviewed alongside code changes.
@@ -78,16 +96,6 @@ use `make`.
 
 </details>
 
-### make zjit-test-all
-
-```
-make zjit-test-all
-```
-
-This command runs all Ruby tests under `/test/ruby/` with ZJIT enabled.
-
-Certain tests are excluded under `/test/.excludes-zjit`.
-
 ### test/ruby/test\_zjit.rb
 
 This command runs Ruby execution tests.
@@ -100,6 +108,49 @@ You can also run a single test case by matching the method name:
 
 ```
 make test-all TESTS="test/ruby/test_zjit.rb -n TestZJIT#test_putobject"
+```
+
+## Statistics Collection
+
+ZJIT provides detailed statistics about JIT compilation and execution behavior.
+
+### Basic Stats
+
+Run with basic statistics printed on exit:
+
+```bash
+./miniruby --zjit-stats script.rb
+```
+
+Collect stats without printing (access via `RubyVM::ZJIT.stats` in Ruby):
+
+```bash
+./miniruby --zjit-stats=quiet script.rb
+```
+
+### Accessing Stats in Ruby
+
+```ruby
+# Check if stats are enabled
+if RubyVM::ZJIT.stats_enabled?
+  stats = RubyVM::ZJIT.stats
+  puts "Compiled ISEQs: #{stats[:compiled_iseq_count]}"
+  puts "Failed ISEQs: #{stats[:failed_iseq_count]}"
+
+  # You can also reset stats during execution
+  RubyVM::ZJIT.reset_stats!
+end
+```
+
+### Performance Ratio
+
+The `ratio_in_zjit` stat shows the percentage of Ruby instructions executed in JIT code vs interpreter. This metric only appears when ZJIT is built with `--enable-zjit=stats` (which enables `rb_vm_insn_count` tracking) and represents a key performance indicator for ZJIT effectiveness.
+
+To build with stats support:
+
+```bash
+./configure --enable-zjit=stats
+make -j
 ```
 
 ## ZJIT Glossary

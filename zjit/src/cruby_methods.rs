@@ -113,7 +113,7 @@ fn annotate_builtin_method(props_map: &mut HashMap<*mut c_void, FnProperties>, c
                opcode == YARVINSN_opt_invokebuiltin_delegate_leave as i32 {
                 // The first operand is the builtin function pointer
                 let bf_value = *pc.add(1);
-                let bf_ptr = bf_value.as_ptr() as *const rb_builtin_function;
+                let bf_ptr: *const rb_builtin_function = bf_value.as_ptr();
 
                 if func_ptr.is_null() {
                     func_ptr = (*bf_ptr).func_ptr as *mut c_void;
@@ -171,8 +171,12 @@ pub fn init() -> Annotations {
     annotate!(rb_cModule, "===", types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cArray, "size", types::Fixnum, no_gc, leaf, elidable);
+    annotate!(rb_cArray, "empty?", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cNilClass, "nil?", types::TrueClass, no_gc, leaf, elidable);
     annotate!(rb_mKernel, "nil?", types::FalseClass, no_gc, leaf, elidable);
+    annotate!(rb_cBasicObject, "==", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cBasicObject, "!", types::BoolExact, no_gc, leaf, elidable);
 
     annotate_builtin!(rb_mKernel, "Float", types::Float);
     annotate_builtin!(rb_mKernel, "Integer", types::Integer);

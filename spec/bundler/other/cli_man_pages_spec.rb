@@ -13,9 +13,11 @@ RSpec.describe "bundle commands" do
 
   def check_commands!(command_class)
     command_class.commands.each do |command_name, command|
-      next if command.is_a?(Bundler::Thor::HiddenCommand)
-
-      if command_class == Bundler::CLI
+      if command.is_a?(Bundler::Thor::HiddenCommand)
+        man_page = man_page(command_name)
+        expect(man_page).not_to exist
+        expect(main_man_page.read).not_to include("bundle #{command_name}")
+      elsif command_class == Bundler::CLI
         man_page = man_page(command_name)
         expect(man_page).to exist
 
@@ -61,7 +63,11 @@ RSpec.describe "bundle commands" do
       "* #{names.map {|name| "`#{name}#{value}`" }.join(", ")}:"
     end
 
-    expect(man_page_content).to include(help)
+    if option.banner.include?("(removed)")
+      expect(man_page_content).not_to include(help)
+    else
+      expect(man_page_content).to include(help)
+    end
   end
 
   def check_subcommand!(name, man_page)
@@ -86,5 +92,9 @@ RSpec.describe "bundle commands" do
 
   def man_page(command_name)
     source_root.join("lib/bundler/man/bundle-#{command_name}.1.ronn")
+  end
+
+  def main_man_page
+    source_root.join("lib/bundler/man/bundle.1.ronn")
   end
 end

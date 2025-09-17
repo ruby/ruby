@@ -182,7 +182,7 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 
     if (size == 0) {
         close(fd);
-        const uint8_t source[] = "";
+        static const uint8_t source[] = "";
         *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
         return PM_STRING_INIT_SUCCESS;
     }
@@ -278,7 +278,7 @@ pm_string_file_init(pm_string_t *string, const char *filepath) {
     size_t size = (size_t) sb.st_size;
     if (size == 0) {
         close(fd);
-        const uint8_t source[] = "";
+        static const uint8_t source[] = "";
         *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
         return PM_STRING_INIT_SUCCESS;
     }

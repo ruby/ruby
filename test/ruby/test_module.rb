@@ -418,9 +418,6 @@ class TestModule < Test::Unit::TestCase
     instance = klass.new
     assert_equal(:first, instance.foo)
     new_mod = Module.new { define_method(:foo) { :second } }
-    assert_raise(TypeError) do
-      mod.send(:initialize_copy, new_mod)
-    end
     4.times { GC.start }
     assert_equal(:first, instance.foo) # [BUG] unreachable
   end
@@ -435,11 +432,6 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:x], m.instance_methods)
     assert_equal([:@x], m.instance_variables)
     assert_equal([:X], m.constants)
-    assert_raise(TypeError) do
-      m.module_eval do
-        initialize_copy(Module.new)
-      end
-    end
 
     m = Class.new(Module) do
       def initialize_copy(other)
@@ -1452,6 +1444,7 @@ class TestModule < Test::Unit::TestCase
       c.instance_eval { attr_reader :"." }
     end
 
+    c = Class.new
     assert_equal([:a], c.class_eval { attr :a })
     assert_equal([:b, :c], c.class_eval { attr :b, :c })
     assert_equal([:d], c.class_eval { attr_reader :d })
@@ -1460,6 +1453,16 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:h=, :i=], c.class_eval { attr_writer :h, :i })
     assert_equal([:j, :j=], c.class_eval { attr_accessor :j })
     assert_equal([:k, :k=, :l, :l=], c.class_eval { attr_accessor :k, :l })
+
+    c = Class.new
+    assert_equal([:a], c.class_eval { attr "a" })
+    assert_equal([:b, :c], c.class_eval { attr "b", "c" })
+    assert_equal([:d], c.class_eval { attr_reader "d" })
+    assert_equal([:e, :f], c.class_eval { attr_reader "e", "f" })
+    assert_equal([:g=], c.class_eval { attr_writer "g" })
+    assert_equal([:h=, :i=], c.class_eval { attr_writer "h", "i" })
+    assert_equal([:j, :j=], c.class_eval { attr_accessor "j" })
+    assert_equal([:k, :k=, :l, :l=], c.class_eval { attr_accessor "k", "l" })
   end
 
   def test_alias_method

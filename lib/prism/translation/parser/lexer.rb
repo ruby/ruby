@@ -203,7 +203,7 @@ module Prism
         # The following token types are listed as those classified as `tLPAREN`.
         LPAREN_CONVERSION_TOKEN_TYPES = Set.new([
           :kBREAK, :tCARET, :kCASE, :tDIVIDE, :kFOR, :kIF, :kNEXT, :kRETURN, :kUNTIL, :kWHILE, :tAMPER, :tANDOP, :tBANG, :tCOMMA, :tDOT2, :tDOT3,
-          :tEQL, :tLPAREN, :tLPAREN2, :tLPAREN_ARG, :tLSHFT, :tNL, :tOP_ASGN, :tOROP, :tPIPE, :tSEMI, :tSTRING_DBEG, :tUMINUS, :tUPLUS
+          :tEQL, :tLPAREN, :tLPAREN2, :tLPAREN_ARG, :tLSHFT, :tNL, :tOP_ASGN, :tOROP, :tPIPE, :tSEMI, :tSTRING_DBEG, :tUMINUS, :tUPLUS, :tLCURLY
         ])
 
         # Types of tokens that are allowed to continue a method call with comments in-between.

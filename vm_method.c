@@ -355,6 +355,7 @@ invalidate_method_cache_in_cc_table(VALUE tbl, ID mid)
     if (tbl && rb_managed_id_table_lookup(tbl, mid, &ccs_data)) {
         struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_data;
         rb_yjit_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
+        rb_zjit_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
         if (NIL_P(ccs->cme->owner)) invalidate_negative_cache(mid);
         rb_vm_ccs_invalidate_and_free(ccs);
         rb_managed_id_table_delete(tbl, mid);
@@ -367,9 +368,8 @@ invalidate_callable_method_entry_in_callable_m_table(struct rb_id_table *tbl, ID
 {
     VALUE cme;
     if (tbl && rb_id_table_lookup(tbl, mid, &cme)) {
-        if (rb_yjit_enabled_p) {
-            rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
-        }
+        rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
+        rb_zjit_cme_invalidate((rb_callable_method_entry_t *)cme);
         rb_id_table_delete(tbl, mid);
         RB_DEBUG_COUNTER_INC(cc_invalidate_leaf_callable);
     }
@@ -413,9 +413,8 @@ invalidate_complemented_method_entry_in_callable_m_table(struct rb_id_table *tbl
 {
     VALUE cme;
     if (tbl && rb_id_table_lookup(tbl, mid, &cme)) {
-        if (rb_yjit_enabled_p) {
-            rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
-        }
+        rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
+        rb_zjit_cme_invalidate((rb_callable_method_entry_t *)cme);
         rb_id_table_delete(tbl, mid);
         RB_DEBUG_COUNTER_INC(cc_invalidate_tree_callable);
     }

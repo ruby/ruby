@@ -94,7 +94,8 @@ ossl_pkey_read(BIO *bio, const char *input_type, int selection, VALUE pass)
                                          selection, NULL, NULL);
     if (!dctx)
         goto out;
-    if (OSSL_DECODER_CTX_set_pem_password_cb(dctx, ossl_pem_passwd_cb,
+    if (selection == EVP_PKEY_KEYPAIR &&
+        OSSL_DECODER_CTX_set_pem_password_cb(dctx, ossl_pem_passwd_cb,
                                              ppass) != 1)
         goto out;
     while (1) {

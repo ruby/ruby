@@ -16,6 +16,7 @@ end
 module Prism
   class RubyParserTest < TestCase
     todos = [
+      "character_literal.txt",
       "encoding_euc_jp.txt",
       "regex_char_width.txt",
       "seattlerb/masgn_colon3.txt",
@@ -38,6 +39,7 @@ module Prism
       "dos_endings.txt",
       "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
+      "leading_logical.txt",
       "method_calls.txt",
       "methods.txt",
       "multi_write.txt",
@@ -73,7 +75,10 @@ module Prism
       "whitequark/ruby_bug_11989.txt",
       "whitequark/ruby_bug_18878.txt",
       "whitequark/ruby_bug_19281.txt",
-      "whitequark/slash_newline_in_heredocs.txt"
+      "whitequark/slash_newline_in_heredocs.txt",
+
+      # Ruby >= 3.5 specific syntax
+      "endless_methods_command_call.txt",
     ]
 
     Fixture.each(except: failures) do |fixture|

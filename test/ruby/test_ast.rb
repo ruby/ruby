@@ -48,7 +48,7 @@ class TestAst < Test::Unit::TestCase
       @path = path
       @errors = []
       @debug = false
-      @ast = RubyVM::AbstractSyntaxTree.parse(src) if src
+      @ast = EnvUtil.suppress_warning { RubyVM::AbstractSyntaxTree.parse(src) } if src
     end
 
     def validate_range
@@ -67,7 +67,7 @@ class TestAst < Test::Unit::TestCase
 
     def ast
       return @ast if defined?(@ast)
-      @ast = RubyVM::AbstractSyntaxTree.parse_file(@path)
+      @ast = EnvUtil.suppress_warning { RubyVM::AbstractSyntaxTree.parse_file(@path) }
     end
 
     private
@@ -135,7 +135,7 @@ class TestAst < Test::Unit::TestCase
 
   Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
     define_method("test_all_tokens:#{path}") do
-      node = RubyVM::AbstractSyntaxTree.parse_file("#{SRCDIR}/#{path}", keep_tokens: true)
+      node = EnvUtil.suppress_warning { RubyVM::AbstractSyntaxTree.parse_file("#{SRCDIR}/#{path}", keep_tokens: true) }
       tokens = node.all_tokens.sort_by { [_1.last[0], _1.last[1]] }
       tokens_bytes = tokens.map { _1[2]}.join.bytes
       source_bytes = File.read("#{SRCDIR}/#{path}").bytes
@@ -363,6 +363,50 @@ class TestAst < Test::Unit::TestCase
     node = RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
 
     assert_equal node.node_id, node_id
+  end
+
+  def add(x, y)
+  end
+
+  def test_node_id_for_backtrace_location_of_method_definition
+    omit if ParserSupport.prism_enabled?
+
+    begin
+      add(1)
+    rescue ArgumentError => exc
+      loc = exc.backtrace_locations.first
+      node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(loc)
+      node = RubyVM::AbstractSyntaxTree.of(method(:add))
+      assert_equal node.node_id, node_id
+    end
+  end
+
+  def test_node_id_for_backtrace_location_of_lambda
+    omit if ParserSupport.prism_enabled?
+
+    v = -> {}
+    begin
+      v.call(1)
+    rescue ArgumentError => exc
+      loc = exc.backtrace_locations.first
+      node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(loc)
+      node = RubyVM::AbstractSyntaxTree.of(v)
+      assert_equal node.node_id, node_id
+    end
+  end
+
+  def test_node_id_for_backtrace_location_of_lambda_method
+    omit if ParserSupport.prism_enabled?
+
+    v = lambda {}
+    begin
+      v.call(1)
+    rescue ArgumentError => exc
+      loc = exc.backtrace_locations.first
+      node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(loc)
+      node = RubyVM::AbstractSyntaxTree.of(v)
+      assert_equal node.node_id, node_id
+    end
   end
 
   def test_node_id_for_backtrace_location_raises_argument_error
@@ -801,7 +845,7 @@ dummy
     node_proc = RubyVM::AbstractSyntaxTree.of(proc, keep_script_lines: true)
     node_method = RubyVM::AbstractSyntaxTree.of(method, keep_script_lines: true)
 
-    assert_equal("{ 1 + 2 }", node_proc.source)
+    assert_equal("Proc.new { 1 + 2 }", node_proc.source)
     assert_equal("def test_keep_script_lines_for_of\n", node_method.source.lines.first)
   end
 
@@ -878,7 +922,7 @@ dummy
     omit if ParserSupport.prism_enabled? || ParserSupport.prism_enabled_in_subprocess?
 
     assert_in_out_err(["-e", "def foo; end; pp RubyVM::AbstractSyntaxTree.of(method(:foo)).type"],
-                      "", [":SCOPE"], [])
+                      "", [":DEFN"], [])
   end
 
   def test_error_tolerant
@@ -1590,6 +1634,14 @@ dummy
 
       node = ast_parse("return")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 0, 1, 6]])
+    end
+
+    def test_sclass_locations
+      node = ast_parse("class << self; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 18], [1, 0, 1, 5], [1, 6, 1, 8], [1, 15, 1, 18]])
+
+      node = ast_parse("class << obj; foo; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 22], [1, 0, 1, 5], [1, 6, 1, 8], [1, 19, 1, 22]])
     end
 
     def test_splat_locations

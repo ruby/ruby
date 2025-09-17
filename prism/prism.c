@@ -5279,10 +5279,6 @@ pm_interpolated_string_node_append(pm_interpolated_string_node_t *node, pm_node_
 
     switch (PM_NODE_TYPE(part)) {
         case PM_STRING_NODE:
-            // If inner string is not frozen, clear flags for this string
-            if (!PM_NODE_FLAG_P(part, PM_STRING_FLAGS_FROZEN)) {
-                CLEAR_FLAGS(node);
-            }
             part->flags = (pm_node_flags_t) ((part->flags | PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN) & ~PM_STRING_FLAGS_MUTABLE);
             break;
         case PM_INTERPOLATED_STRING_NODE:
@@ -10834,14 +10830,37 @@ parser_lex(pm_parser_t *parser) {
                                 following = next_newline(following, parser->end - following);
                             }
 
-                            // If the lex state was ignored, or we hit a '.' or a '&.',
-                            // we will lex the ignored newline
+                            // If the lex state was ignored, we will lex the
+                            // ignored newline.
+                            if (lex_state_ignored_p(parser)) {
+                                if (!lexed_comment) parser_lex_ignored_newline(parser);
+                                lexed_comment = false;
+                                goto lex_next_token;
+                            }
+
+                            // If we hit a '.' or a '&.' we will lex the ignored
+                            // newline.
+                            if (following && (
+                                (peek_at(parser, following) == '.') ||
+                                (peek_at(parser, following) == '&' && peek_at(parser, following + 1) == '.')
+                            )) {
+                                if (!lexed_comment) parser_lex_ignored_newline(parser);
+                                lexed_comment = false;
+                                goto lex_next_token;
+                            }
+
+
+                            // If we are parsing as CRuby 3.5 or later and we
+                            // hit a '&&' or a '||' then we will lex the ignored
+                            // newline.
                             if (
-                                lex_state_ignored_p(parser) ||
-                                (following && (
-                                    (peek_at(parser, following) == '.') ||
-                                    (peek_at(parser, following) == '&' && peek_at(parser, following + 1) == '.')
-                                ))
+                                (parser->version >= PM_OPTIONS_VERSION_CRUBY_3_5) &&
+                                following && (
+                                    (peek_at(parser, following) == '&' && peek_at(parser, following + 1) == '&') ||
+                                    (peek_at(parser, following) == '|' && peek_at(parser, following + 1) == '|') ||
+                                    (peek_at(parser, following) == 'a' && peek_at(parser, following + 1) == 'n' && peek_at(parser, following + 2) == 'd' && !char_is_identifier(parser, following + 3, parser->end - (following + 3))) ||
+                                    (peek_at(parser, following) == 'o' && peek_at(parser, following + 1) == 'r' && !char_is_identifier(parser, following + 2, parser->end - (following + 2)))
+                                )
                             ) {
                                 if (!lexed_comment) parser_lex_ignored_newline(parser);
                                 lexed_comment = false;
@@ -10880,6 +10899,63 @@ parser_lex(pm_parser_t *parser) {
                             parser->current.end = next_content + 2;
                             parser->next_start = NULL;
                             LEX(PM_TOKEN_AMPERSAND_DOT);
+                        }
+
+                        if (parser->version >= PM_OPTIONS_VERSION_CRUBY_3_5) {
+                            // If we hit an && then we are in a logical chain
+                            // and we need to return the logical operator.
+                            if (peek_at(parser, next_content) == '&' && peek_at(parser, next_content + 1) == '&') {
+                                if (!lexed_comment) parser_lex_ignored_newline(parser);
+                                lex_state_set(parser, PM_LEX_STATE_BEG);
+                                parser->current.start = next_content;
+                                parser->current.end = next_content + 2;
+                                parser->next_start = NULL;
+                                LEX(PM_TOKEN_AMPERSAND_AMPERSAND);
+                            }
+
+                            // If we hit a || then we are in a logical chain and
+                            // we need to return the logical operator.
+                            if (peek_at(parser, next_content) == '|' && peek_at(parser, next_content + 1) == '|') {
+                                if (!lexed_comment) parser_lex_ignored_newline(parser);
+                                lex_state_set(parser, PM_LEX_STATE_BEG);
+                                parser->current.start = next_content;
+                                parser->current.end = next_content + 2;
+                                parser->next_start = NULL;
+                                LEX(PM_TOKEN_PIPE_PIPE);
+                            }
+
+                            // If we hit an 'and' then we are in a logical chain
+                            // and we need to return the logical operator.
+                            if (
+                                peek_at(parser, next_content) == 'a' &&
+                                peek_at(parser, next_content + 1) == 'n' &&
+                                peek_at(parser, next_content + 2) == 'd' &&
+                                !char_is_identifier(parser, next_content + 3, parser->end - (next_content + 3))
+                            ) {
+                                if (!lexed_comment) parser_lex_ignored_newline(parser);
+                                lex_state_set(parser, PM_LEX_STATE_BEG);
+                                parser->current.start = next_content;
+                                parser->current.end = next_content + 3;
+                                parser->next_start = NULL;
+                                parser->command_start = true;
+                                LEX(PM_TOKEN_KEYWORD_AND);
+                            }
+
+                            // If we hit a 'or' then we are in a logical chain
+                            // and we need to return the logical operator.
+                            if (
+                                peek_at(parser, next_content) == 'o' &&
+                                peek_at(parser, next_content + 1) == 'r' &&
+                                !char_is_identifier(parser, next_content + 2, parser->end - (next_content + 2))
+                            ) {
+                                if (!lexed_comment) parser_lex_ignored_newline(parser);
+                                lex_state_set(parser, PM_LEX_STATE_BEG);
+                                parser->current.start = next_content;
+                                parser->current.end = next_content + 2;
+                                parser->next_start = NULL;
+                                parser->command_start = true;
+                                LEX(PM_TOKEN_KEYWORD_OR);
+                            }
                         }
                     }
 
@@ -18415,19 +18491,27 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             return (pm_node_t *) node;
         }
         case PM_TOKEN_CHARACTER_LITERAL: {
-            parser_lex(parser);
-
-            pm_token_t opening = parser->previous;
-            opening.type = PM_TOKEN_STRING_BEGIN;
-            opening.end = opening.start + 1;
-
-            pm_token_t content = parser->previous;
-            content.type = PM_TOKEN_STRING_CONTENT;
-            content.start = content.start + 1;
-
             pm_token_t closing = not_provided(parser);
-            pm_node_t *node = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &content, &closing);
+            pm_node_t *node = (pm_node_t *) pm_string_node_create_current_string(
+                parser,
+                &(pm_token_t) {
+                    .type = PM_TOKEN_STRING_BEGIN,
+                    .start = parser->current.start,
+                    .end = parser->current.start + 1
+                },
+                &(pm_token_t) {
+                    .type = PM_TOKEN_STRING_CONTENT,
+                    .start = parser->current.start + 1,
+                    .end = parser->current.end
+                },
+                &closing
+            );
+
             pm_node_flag_set(node, parse_unescaped_encoding(parser));
+
+            // Skip past the character literal here, since now we have handled
+            // parser->explicit_encoding correctly.
+            parser_lex(parser);
 
             // Characters can be followed by strings in which case they are
             // automatically concatenated.
@@ -18570,17 +18654,11 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     call->closing_loc = arguments.closing_loc;
                     call->block = arguments.block;
 
-                    if (arguments.block != NULL) {
-                        call->base.location.end = arguments.block->location.end;
-                    } else if (arguments.closing_loc.start == NULL) {
-                        if (arguments.arguments != NULL) {
-                            call->base.location.end = arguments.arguments->base.location.end;
-                        } else {
-                            call->base.location.end = call->message_loc.end;
-                        }
-                    } else {
-                        call->base.location.end = arguments.closing_loc.end;
+                    const uint8_t *end = pm_arguments_end(&arguments);
+                    if (!end) {
+                        end = call->message_loc.end;
                     }
+                    call->base.location.end = end;
                 }
             } else {
                 // Otherwise, we know the identifier is in the local table. This
@@ -19108,7 +19186,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_binding_power_t binding_power = pm_binding_powers[parser->current.type].left;
 
                 if (binding_power == PM_BINDING_POWER_UNSET || binding_power >= PM_BINDING_POWER_RANGE) {
+                    pm_token_t next = parser->current;
                     parse_arguments(parser, &arguments, false, PM_TOKEN_EOF, (uint16_t) (depth + 1));
+
+                    // Reject `foo && return bar`.
+                    if (!accepts_command_call && arguments.arguments != NULL) {
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, next, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(next.type));
+                    }
                 }
             }
 
@@ -19505,13 +19589,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_do_loop_stack_push(parser, false);
                 statements = (pm_node_t *) pm_statements_node_create(parser);
 
-                // In endless method bodies, we need to handle command calls carefully.
-                // We want to allow command calls in assignment context but maintain
-                // the same binding power to avoid changing how operators are parsed.
-                // Note that we're intentionally NOT allowing code like `private def foo = puts "Hello"`
-                // because the original parser, parse.y, can't handle it and we want to maintain the same behavior
-                bool allow_command_call = (binding_power == PM_BINDING_POWER_ASSIGNMENT) ||
-                                         (binding_power < PM_BINDING_POWER_COMPOSITION);
+                bool allow_command_call;
+                if (parser->version >= PM_OPTIONS_VERSION_CRUBY_3_5) {
+                    allow_command_call = accepts_command_call;
+                } else {
+                    // Allow `def foo = puts "Hello"` but not `private def foo = puts "Hello"`
+                    allow_command_call = binding_power == PM_BINDING_POWER_ASSIGNMENT || binding_power < PM_BINDING_POWER_COMPOSITION;
+                }
 
                 pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_DEFINED + 1, allow_command_call, false, PM_ERR_DEF_ENDLESS, (uint16_t) (depth + 1));
 

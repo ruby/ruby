@@ -119,7 +119,11 @@ enum feature_flag_bits {
     EACH_FEATURES(DEFINE_FEATURE, COMMA),
     DEFINE_FEATURE(frozen_string_literal_set),
     feature_debug_flag_first,
+#if !USE_YJIT && USE_ZJIT
+    DEFINE_FEATURE(jit) = feature_zjit,
+#else
     DEFINE_FEATURE(jit) = feature_yjit,
+#endif
     feature_jit_mask = FEATURE_BIT(yjit) | FEATURE_BIT(zjit),
 
     feature_debug_flag_begin = feature_debug_flag_first - 1,

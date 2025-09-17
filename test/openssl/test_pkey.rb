@@ -60,6 +60,111 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_not_equal nil, pkey.private_key
   end
 
+  def test_s_read_pem_unknown_block
+    # A PEM-encoded certificate and a PEM-encoded private key are combined.
+    # Check that OSSL_STORE doesn't stop after the first PEM block.
+    orig = Fixtures.pkey("rsa-1")
+    subject = OpenSSL::X509::Name.new([["CN", "test"]])
+    cert = issue_cert(subject, orig, 1, [], nil, nil)
+
+    input = cert.to_text + cert.to_pem + orig.to_text + orig.private_to_pem
+    pkey = OpenSSL::PKey.read(input)
+    assert_equal(orig.private_to_der, pkey.private_to_der)
+  end
+
+  def test_s_read_der_then_pem
+    # If the input is valid as both DER and PEM (which allows garbage data
+    # before and after the block), it is read as DER
+    #
+    # TODO: Garbage data after DER should not be allowed, but it is currently
+    # ignored
+    orig1 = Fixtures.pkey("rsa-1")
+    orig2 = Fixtures.pkey("rsa-2")
+    pkey = OpenSSL::PKey.read(orig1.public_to_der + orig2.private_to_pem)
+    assert_equal(orig1.public_to_der, pkey.public_to_der)
+    assert_not_predicate(pkey, :private?)
+  end
+
+  def test_s_read_passphrase
+    orig = Fixtures.pkey("rsa-1")
+    encrypted_pem = orig.private_to_pem("AES-256-CBC", "correct_passphrase")
+    assert_match(/\A-----BEGIN ENCRYPTED PRIVATE KEY-----/, encrypted_pem)
+
+    # Correct passphrase passed as the second argument
+    pkey1 = OpenSSL::PKey.read(encrypted_pem, "correct_passphrase")
+    assert_equal(orig.private_to_der, pkey1.private_to_der)
+
+    # Correct passphrase returned by the block. The block gets false
+    called = 0
+    flag = nil
+    pkey2 = OpenSSL::PKey.read(encrypted_pem) { |f|
+      called += 1
+      flag = f
+      "correct_passphrase"
+    }
+    assert_equal(orig.private_to_der, pkey2.private_to_der)
+    assert_equal(1, called)
+    assert_false(flag)
+
+    # Incorrect passphrase passed. The block is not called
+    called = 0
+    assert_raise(OpenSSL::PKey::PKeyError) {
+      OpenSSL::PKey.read(encrypted_pem, "incorrect_passphrase") {
+        called += 1
+      }
+    }
+    assert_equal(0, called)
+
+    # Incorrect passphrase returned by the block. The block is called only once
+    called = 0
+    assert_raise(OpenSSL::PKey::PKeyError) {
+      OpenSSL::PKey.read(encrypted_pem) {
+        called += 1
+        "incorrect_passphrase"
+      }
+    }
+    assert_equal(1, called)
+  end
+
+  def test_s_read_passphrase_tty
+    omit "https://github.com/aws/aws-lc/pull/2555" if aws_lc?
+
+    orig = Fixtures.pkey("rsa-1")
+    encrypted_pem = orig.private_to_pem("AES-256-CBC", "correct_passphrase")
+
+    # Correct passphrase passed to OpenSSL's prompt
+    script = <<~"end;"
+      require "openssl"
+      Process.setsid
+      OpenSSL::PKey.read(#{encrypted_pem.dump})
+      puts "ok"
+    end;
+    assert_in_out_err([*$:.map { |l| "-I#{l}" }, "-e#{script}"],
+                      "correct_passphrase\n") { |stdout, stderr|
+      assert_equal(["Enter PEM pass phrase:"], stderr)
+      assert_equal(["ok"], stdout)
+    }
+
+    # Incorrect passphrase passed to OpenSSL's prompt
+    script = <<~"end;"
+      require "openssl"
+      Process.setsid
+      begin
+        OpenSSL::PKey.read(#{encrypted_pem.dump})
+      rescue OpenSSL::PKey::PKeyError
+        puts "ok"
+      else
+        puts "expected OpenSSL::PKey::PKeyError"
+      end
+    end;
+    stdin = "incorrect_passphrase\n" * 5
+    assert_in_out_err([*$:.map { |l| "-I#{l}" }, "-e#{script}"],
+                      stdin) { |stdout, stderr|
+      assert_equal(1, stderr.count("Enter PEM pass phrase:"))
+      assert_equal(["ok"], stdout)
+    }
+  end if ENV["OSSL_TEST_ALL"] == "1" && Process.respond_to?(:setsid)
+
   def test_hmac_sign_verify
     pkey = OpenSSL::PKey.generate_key("HMAC", { "key" => "abcd" })
 

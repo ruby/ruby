@@ -450,7 +450,7 @@ impl VALUE {
 
     pub fn embedded_p(self) -> bool {
         unsafe {
-            FL_TEST_RAW(self, VALUE(ROBJECT_EMBED as usize)) != VALUE(0)
+            FL_TEST_RAW(self, VALUE(ROBJECT_HEAP as usize)) == VALUE(0)
         }
     }
 
@@ -677,7 +677,7 @@ where
     let line = loc.line;
     let mut recursive_lock_level: c_uint = 0;
 
-    unsafe { rb_yjit_vm_lock_then_barrier(&mut recursive_lock_level, file, line) };
+    unsafe { rb_jit_vm_lock_then_barrier(&mut recursive_lock_level, file, line) };
 
     let ret = match catch_unwind(func) {
         Ok(result) => result,
@@ -697,7 +697,7 @@ where
         }
     };
 
-    unsafe { rb_yjit_vm_unlock(&mut recursive_lock_level, file, line) };
+    unsafe { rb_jit_vm_unlock(&mut recursive_lock_level, file, line) };
 
     ret
 }

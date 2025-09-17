@@ -161,6 +161,10 @@ endif
 
 config.status: $(wildcard config.cache)
 
+ifneq (ruby,$(PROGRAM))
+ruby: $(PROGRAM);
+endif
+
 STUBPROGRAM = rubystub$(EXEEXT)
 IGNOREDPATTERNS = %~ .% %.orig %.rej \#%\#
 SCRIPTBINDIR := $(if $(EXEEXT),,exec/)
@@ -216,8 +220,8 @@ post-commit: $(if $(DOT_WAIT),,do-commit)
 GITHUB_RUBY_URL = https://github.com/ruby/ruby
 PR =
 
-COMMIT_GPG_SIGN = $(shell $(GIT) -C "$(srcdir)" config commit.gpgsign)
-REMOTE_GITHUB_URL = $(shell $(GIT) -C "$(srcdir)" config remote.github.url)
+COMMIT_GPG_SIGN = $(shell $(GIT_IN_SRC) config commit.gpgsign)
+REMOTE_GITHUB_URL = $(shell $(GIT_IN_SRC) config remote.github.url)
 COMMITS_NOTES = commits
 
 .PHONY: fetch-github
@@ -232,19 +236,19 @@ define fetch-github
 	$(eval REMOTE_GITHUB_URL := $(REMOTE_GITHUB_URL))
 	$(if $(REMOTE_GITHUB_URL),,
 	  echo adding $(GITHUB_RUBY_URL) as remote github
-	  $(GIT) -C "$(srcdir)" remote add github $(GITHUB_RUBY_URL)
-	  $(GIT) -C "$(srcdir)" config --add remote.github.fetch +refs/notes/$(COMMITS_NOTES):refs/notes/$(COMMITS_NOTES)
+	  $(GIT_IN_SRC) remote add github $(GITHUB_RUBY_URL)
+	  $(GIT_IN_SRC) config --add remote.github.fetch +refs/notes/$(COMMITS_NOTES):refs/notes/$(COMMITS_NOTES)
 	  $(eval REMOTE_GITHUB_URL := $(GITHUB_RUBY_URL))
 	)
-	$(if $(shell $(GIT) -C "$(srcdir)" rev-parse "github/pull/$(1)/head" -- 2> /dev/null),
-	    $(GIT) -C "$(srcdir)" branch -f "gh-$(1)" "github/pull/$(1)/head",
-	    $(GIT) -C "$(srcdir)" fetch -f github "pull/$(1)/head:gh-$(1)"
+	$(if $(shell $(GIT_IN_SRC) rev-parse "github/pull/$(1)/head" -- 2> /dev/null),
+	    $(GIT_IN_SRC) branch -f "gh-$(1)" "github/pull/$(1)/head",
+	    $(GIT_IN_SRC) fetch -f github "pull/$(1)/head:gh-$(1)"
 	)
 endef
 
 .PHONY: checkout-github
 checkout-github: fetch-github
-	$(GIT) -C "$(srcdir)" checkout "gh-$(PR)"
+	$(GIT_IN_SRC) checkout "gh-$(PR)"
 
 .PHONY: update-github
 update-github: fetch-github
@@ -257,25 +261,25 @@ update-github: fetch-github
 	$(eval PR_BRANCH := $(word 2,$(PULL_REQUEST_FORK_BRANCH)))
 
 	$(eval GITHUB_UPDATE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(PR)-XXXXXX"))
-	$(GIT) -C "$(srcdir)" worktree add $(notdir $(GITHUB_UPDATE_WORKTREE)) "gh-$(PR)"
+	$(GIT_IN_SRC) worktree add $(notdir $(GITHUB_UPDATE_WORKTREE)) "gh-$(PR)"
 	$(GIT) -C "$(GITHUB_UPDATE_WORKTREE)" merge master --no-edit
 	@$(BASERUBY) -e 'print "Are you sure to push this to PR=$(PR)? [Y/n]: "; exit(gets.chomp != "n")'
-	$(GIT) -C "$(srcdir)" remote add fork-$(PR) git@github.com:$(FORK_REPO).git
+	$(GIT_IN_SRC) remote add fork-$(PR) git@github.com:$(FORK_REPO).git
 	$(GIT) -C "$(GITHUB_UPDATE_WORKTREE)" push fork-$(PR) gh-$(PR):$(PR_BRANCH)
-	$(GIT) -C "$(srcdir)" remote rm fork-$(PR)
-	$(GIT) -C "$(srcdir)" worktree remove $(notdir $(GITHUB_UPDATE_WORKTREE))
-	$(GIT) -C "$(srcdir)" branch -D gh-$(PR)
+	$(GIT_IN_SRC) remote rm fork-$(PR)
+	$(GIT_IN_SRC) worktree remove $(notdir $(GITHUB_UPDATE_WORKTREE))
+	$(GIT_IN_SRC) branch -D gh-$(PR)
 
 .PHONY: pull-github
 pull-github: fetch-github
 	$(call pull-github,$(PR))
 
 define pull-github
-	$(eval GITHUB_MERGE_BASE := $(shell $(GIT) -C "$(srcdir)" log -1 --format=format:%H))
-	$(eval GITHUB_MERGE_BRANCH := $(shell $(GIT) -C "$(srcdir)" symbolic-ref --short HEAD))
+	$(eval GITHUB_MERGE_BASE := $(shell $(GIT_LOG_FORMAT):%H -1)
+	$(eval GITHUB_MERGE_BRANCH := $(shell $(GIT_IN_SRC) symbolic-ref --short HEAD))
 	$(eval GITHUB_MERGE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(1)-XXXXXX"))
-	$(GIT) -C "$(srcdir)" worktree prune
-	$(GIT) -C "$(srcdir)" worktree add $(notdir $(GITHUB_MERGE_WORKTREE)) "gh-$(1)"
+	$(GIT_IN_SRC) worktree prune
+	$(GIT_IN_SRC) worktree add $(notdir $(GITHUB_MERGE_WORKTREE)) "gh-$(1)"
 	$(GIT) -C "$(GITHUB_MERGE_WORKTREE)" rebase $(GITHUB_MERGE_BRANCH)
 	$(eval COMMIT_GPG_SIGN := $(COMMIT_GPG_SIGN))
 	$(if $(filter true,$(COMMIT_GPG_SIGN)), \
@@ -290,7 +294,7 @@ fetch-github-%:
 
 .PHONY: checkout-github-%
 checkout-github-%: fetch-github-%
-	$(GIT) -C "$(srcdir)" checkout "gh-$*"
+	$(GIT_IN_SRC) checkout "gh-$*"
 
 .PHONY: pr-% pull-github-%
 pr-% pull-github-%: fetch-github-%
@@ -429,7 +433,7 @@ ifneq ($(DOT_WAIT),)
 endif
 
 ifeq ($(HAVE_GIT),yes)
-REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && $(GIT) log -1 --format=%H 2>/dev/null)
+REVISION_LATEST := $(shell $(GIT_LOG_FORMAT)%H -1 2>/dev/null)
 else
 REVISION_LATEST := update
 endif
@@ -491,7 +495,7 @@ endif
 update-deps:
 	$(eval update_deps := $(shell date +update-deps-%Y%m%d))
 	$(eval deps_dir := $(shell mktemp -d)/$(update_deps))
-	$(eval GIT_DIR := $(shell $(GIT) -C $(srcdir) rev-parse --absolute-git-dir))
+	$(eval GIT_DIR := $(shell $(GIT_IN_SRC) rev-parse --absolute-git-dir))
 	$(GIT) --git-dir=$(GIT_DIR) worktree add $(deps_dir)
 	cp $(tooldir)/config.guess $(tooldir)/config.sub $(deps_dir)/tool
 	[ -f config.status ] && cp config.status $(deps_dir)
@@ -539,13 +543,13 @@ matz: up
 	$(eval NEW := $(MAJOR).$(MINOR).0)
 	$(eval message := Development of $(NEW) started.)
 	$(eval files := include/ruby/version.h include/ruby/internal/abi.h)
-	$(GIT) -C $(srcdir) mv -f NEWS.md doc/NEWS/NEWS-$(OLD).md
-	$(GIT) -C $(srcdir) commit -m "[DOC] Flush NEWS.md"
+	$(GIT_IN_SRC) mv -f NEWS.md doc/NEWS/NEWS-$(OLD).md
+	$(GIT_IN_SRC) commit -m "[DOC] Flush NEWS.md"
 	sed -i~ \
 	-e "s/^\(#define RUBY_API_VERSION_MINOR\) .*/\1 $(MINOR)/" \
 	-e "s/^\(#define RUBY_ABI_VERSION\) .*/\1 0/" \
 	 $(files:%=$(srcdir)/%)
-	$(GIT) -C $(srcdir) add $(files)
+	$(GIT_IN_SRC) add $(files)
 	$(BASERUBY) -C $(srcdir) -p -00 \
 	-e 'BEGIN {old, new = ARGV.shift(2); STDOUT.reopen("NEWS.md")}' \
 	-e 'case $$.' \
@@ -555,8 +559,8 @@ matz: up
 	-e 'next if /^[\[ *]/ =~ $$_' \
 	-e '$$_.sub!(/\n{2,}\z/, "\n\n")' \
 	$(OLD) $(NEW) doc/NEWS/NEWS-$(OLD).md
-	$(GIT) -C $(srcdir) add NEWS.md
-	$(GIT) -C $(srcdir) commit -m "$(message)"
+	$(GIT_IN_SRC) add NEWS.md
+	$(GIT_IN_SRC) commit -m "$(message)"
 
 tags:
 	$(MAKE) GIT="$(GIT)" -C "$(srcdir)" -f defs/tags.mk

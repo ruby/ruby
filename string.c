@@ -1006,6 +1006,9 @@ str_alloc_embed(VALUE klass, size_t capa)
     NEWOBJ_OF(str, struct RString, klass,
             T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size, 0);
 
+    str->len = 0;
+    str->as.embed.ary[0] = 0;
+
     return (VALUE)str;
 }
 
@@ -1014,6 +1017,10 @@ str_alloc_heap(VALUE klass)
 {
     NEWOBJ_OF(str, struct RString, klass,
             T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), sizeof(struct RString), 0);
+
+    str->len = 0;
+    str->as.heap.aux.capa = 0;
+    str->as.heap.ptr = NULL;
 
     return (VALUE)str;
 }
@@ -1065,6 +1072,9 @@ str_enc_new(VALUE klass, const char *ptr, long len, rb_encoding *enc)
 
     if (ptr) {
         memcpy(RSTRING_PTR(str), ptr, len);
+    }
+    else {
+        memset(RSTRING_PTR(str), 0, len);
     }
 
     STR_SET_LEN(str, len);
@@ -1863,6 +1873,8 @@ ec_str_alloc_embed(struct rb_execution_context_struct *ec, VALUE klass, size_t c
     NEWOBJ_OF(str, struct RString, klass,
             T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size, ec);
 
+    str->len = 0;
+
     return (VALUE)str;
 }
 
@@ -1871,6 +1883,9 @@ ec_str_alloc_heap(struct rb_execution_context_struct *ec, VALUE klass)
 {
     NEWOBJ_OF(str, struct RString, klass,
             T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), sizeof(struct RString), ec);
+
+    str->as.heap.aux.capa = 0;
+    str->as.heap.ptr = NULL;
 
     return (VALUE)str;
 }
@@ -5067,34 +5082,36 @@ static VALUE get_pat(VALUE);
  *    match(pattern, offset = 0) -> matchdata or nil
  *    match(pattern, offset = 0) {|matchdata| ... } -> object
  *
- *  Returns a MatchData object (or +nil+) based on +self+ and the given +pattern+.
- *
- *  Note: also updates Regexp@Global+Variables.
+ *  Creates a MatchData object based on +self+ and the given arguments;
+ *  updates {Regexp Global Variables}[rdoc-ref:Regexp@Global+Variables].
  *
  *  - Computes +regexp+ by converting +pattern+ (if not already a Regexp).
+ *
  *      regexp = Regexp.new(pattern)
+ *
  *  - Computes +matchdata+, which will be either a MatchData object or +nil+
  *    (see Regexp#match):
- *      matchdata = regexp.match(self)
  *
- *  With no block given, returns the computed +matchdata+:
+ *      matchdata = regexp.match(self[offset..])
  *
- *    'foo'.match('f') # => #<MatchData "f">
- *    'foo'.match('o') # => #<MatchData "o">
- *    'foo'.match('x') # => nil
+ *  With no block given, returns the computed +matchdata+ or +nil+:
  *
- *  If Integer argument +offset+ is given, the search begins at index +offset+:
- *
+ *    'foo'.match('f')    # => #<MatchData "f">
+ *    'foo'.match('o')    # => #<MatchData "o">
+ *    'foo'.match('x')    # => nil
  *    'foo'.match('f', 1) # => nil
  *    'foo'.match('o', 1) # => #<MatchData "o">
  *
- *  With a block given, calls the block with the computed +matchdata+
- *  and returns the block's return value:
+ *  With a block given and computed +matchdata+ non-nil, calls the block with +matchdata+;
+ *  returns the block's return value:
  *
  *    'foo'.match(/o/) {|matchdata| matchdata } # => #<MatchData "o">
- *    'foo'.match(/x/) {|matchdata| matchdata } # => nil
- *    'foo'.match(/f/, 1) {|matchdata| matchdata } # => nil
  *
+ *  With a block given and +nil+ +matchdata+, does not call the block:
+ *
+ *    'foo'.match(/x/) {|matchdata| fail 'Cannot happen' } # => nil
+ *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 
 static VALUE
@@ -5116,24 +5133,23 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    match?(pattern, offset = 0) -> true or false
  *
- *  Returns +true+ or +false+ based on whether a match is found for +self+ and +pattern+.
+ *  Returns whether a match is found for +self+ and the given arguments;
+ *  does not update {Regexp Global Variables}[rdoc-ref:Regexp@Global+Variables].
  *
- *  Note: does not update Regexp@Global+Variables.
+ *  Computes +regexp+ by converting +pattern+ (if not already a Regexp):
  *
- *  Computes +regexp+ by converting +pattern+ (if not already a Regexp).
  *    regexp = Regexp.new(pattern)
  *
- *  Returns +true+ if <tt>self+.match(regexp)</tt> returns a MatchData object,
+ *  Returns +true+ if <tt>self[offset..].match(regexp)</tt> returns a MatchData object,
  *  +false+ otherwise:
  *
  *    'foo'.match?(/o/) # => true
  *    'foo'.match?('o') # => true
  *    'foo'.match?(/x/) # => false
- *
- *  If Integer argument +offset+ is given, the search begins at index +offset+:
  *    'foo'.match?('f', 1) # => false
  *    'foo'.match?('o', 1) # => true
  *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 
 static VALUE
@@ -10361,10 +10377,12 @@ lstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
  *  call-seq:
  *    lstrip! -> self or nil
  *
- *  Like String#lstrip, except that any modifications are made in +self+;
- *  returns +self+ if any modification are made, +nil+ otherwise.
+ *  Like String#lstrip, except that:
  *
- *  Related: String#rstrip!, String#strip!.
+ *  - Performs stripping in +self+ (not in a copy of +self+).
+ *  - Returns +self+ if any characters are stripped, +nil+ otherwise.
+ *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
@@ -10399,10 +10417,11 @@ rb_str_lstrip_bang(VALUE str)
  *
  *    whitespace = "\x00\t\n\v\f\r "
  *    s = whitespace + 'abc' + whitespace
- *    s        # => "\u0000\t\n\v\f\r abc\u0000\t\n\v\f\r "
- *    s.lstrip # => "abc\u0000\t\n\v\f\r "
+ *    # => "\u0000\t\n\v\f\r abc\u0000\t\n\v\f\r "
+ *    s.lstrip
+ *    # => "abc\u0000\t\n\v\f\r "
  *
- *  Related: String#rstrip, String#strip.
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
@@ -10737,20 +10756,79 @@ rb_str_hex(VALUE str)
  *  call-seq:
  *    oct -> integer
  *
- *  Interprets the leading substring of +self+ as a string of octal digits
- *  (with an optional sign) and returns the corresponding number;
- *  returns zero if there is no such leading substring:
+ *  Interprets the leading substring of +self+ as octal, binary, decimal, or hexadecimal, possibly signed;
+ *  returns their value as an integer.
  *
- *    '123'.oct             # => 83
- *    '-377'.oct            # => -255
- *    '0377non-numeric'.oct # => 255
- *    'non-numeric'.oct     # => 0
+ *  In brief:
  *
- *  If +self+ starts with <tt>0</tt>, radix indicators are honored;
- *  see Kernel#Integer.
+ *    # Interpreted as octal.
+ *    '777'.oct   # => 511
+ *    '777x'.oct  # => 511
+ *    '0777'.oct  # => 511
+ *    '0o777'.oct # => 511
+ *    '-777'.oct  # => -511
+ *    # Not interpreted as octal.
+ *    '0b111'.oct # => 7     # Interpreted as binary.
+ *    '0d999'.oct # => 999   # Interpreted as decimal.
+ *    '0xfff'.oct # => 4095  # Interpreted as hexadecimal.
  *
- *  Related: String#hex.
+ *  The leading substring is interpreted as octal when it begins with:
  *
+ *  - One or more character  representing octal digits
+ *    (each in the range <tt>'0'..'7'</tt>);
+ *    the string to be interpreted ends at the first character that does not represent an octal digit:
+ *
+ *      '7'.oct      @ => 7
+ *      '11'.oct     # => 9
+ *      '777'.oct    # => 511
+ *      '0777'.oct   # => 511
+ *      '7778'.oct   # => 511
+ *      '777x'.oct   # => 511
+ *
+ *  - <tt>'0o'</tt>, followed by one or more octal digits:
+ *
+ *      '0o777'.oct  # => 511
+ *      '0o7778'.oct # => 511
+ *
+ *  The leading substring is _not_ interpreted as octal when it begins with:
+ *
+ *  - <tt>'0b'</tt>, followed by one or more characters representing binary digits
+ *    (each in the range <tt>'0'..'1'</tt>);
+ *    the string to be interpreted ends at the first character that does not represent a binary digit.
+ *    the string is interpreted as binary digits (base 2):
+ *
+ *      '0b111'.oct  # => 7
+ *      '0b1112'.oct # => 7
+ *
+ *  - <tt>'0d'</tt>, followed by one or more characters representing decimal digits
+ *    (each in the range <tt>'0'..'9'</tt>);
+ *    the string to be interpreted ends at the first character that does not represent a decimal digit.
+ *    the string is interpreted as decimal digits (base 10):
+ *
+ *      '0d999'.oct  # => 999
+ *      '0d999x'.oct # => 999
+ *
+ *  - <tt>'0x'</tt>, followed by one or more characters representing hexadecimal digits
+ *    (each in one of the ranges <tt>'0'..'9'</tt>, <tt>'a'..'f'</tt>, or <tt>'A'..'F'</tt>);
+ *    the string to be interpreted ends at the first character that does not represent a hexadecimal digit.
+ *    the string is interpreted as hexadecimal digits (base 16):
+ *
+ *      '0xfff'.oct  # => 4095
+ *      '0xfffg'.oct # => 4095
+ *
+ *  Any of the above may prefixed with <tt>'-'</tt>, which negates the interpreted value:
+ *
+ *    '-777'.oct   # => -511
+ *    '-0777'.oct  # => -511
+ *    '-0b111'.oct # => -7
+ *    '-0xfff'.oct # => -4095
+ *
+ *  For any substring not described above, returns zero:
+ *
+ *    'foo'.oct      # => 0
+ *    ''.oct         # => 0
+ *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
  */
 
 static VALUE

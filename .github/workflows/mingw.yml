@@ -63,7 +63,7 @@ jobs:
       )}}
 
     steps:
-      - uses: msys2/setup-msys2@40677d36a502eb2cf0fb808cc9dec31bf6152638 # v2.28.0
+      - uses: msys2/setup-msys2@fb197b72ce45fb24f17bf3f807a388985654d1f2 # v2.29.0
         id: msys2
         with:
           msystem: UCRT64
@@ -146,7 +146,7 @@ jobs:
           [ ${#failed[@]} -eq 0 ]
         shell: sh
 
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github

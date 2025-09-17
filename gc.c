@@ -620,7 +620,7 @@ typedef struct gc_function_map {
     void (*stress_set)(void *objspace_ptr, VALUE flag);
     VALUE (*stress_get)(void *objspace_ptr);
     // Object allocation
-    VALUE (*new_obj)(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size);
+    VALUE (*new_obj)(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size);
     size_t (*obj_slot_size)(VALUE obj);
     size_t (*heap_id_for_size)(void *objspace_ptr, size_t size);
     bool (*size_allocatable_p)(size_t size);
@@ -984,9 +984,9 @@ gc_validate_pc(void)
 }
 
 static inline VALUE
-newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t size)
+newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, bool wb_protected, size_t size)
 {
-    VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, v1, v2, v3, wb_protected, size);
+    VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, wb_protected, size);
 
     gc_validate_pc();
 
@@ -1010,6 +1010,18 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v
         RB_VM_LOCK_LEAVE_CR_LEV(cr, &lev);
     }
 
+#if RGENGC_CHECK_MODE
+# ifndef GC_DEBUG_SLOT_FILL_SPECIAL_VALUE
+#  define GC_DEBUG_SLOT_FILL_SPECIAL_VALUE 255
+# endif
+
+    memset(
+        (void *)(obj + sizeof(struct RBasic)),
+        GC_DEBUG_SLOT_FILL_SPECIAL_VALUE,
+        rb_gc_obj_slot_size(obj) - sizeof(struct RBasic)
+    );
+#endif
+
     return obj;
 }
 
@@ -1017,14 +1029,14 @@ VALUE
 rb_wb_unprotected_newobj_of(VALUE klass, VALUE flags, size_t size)
 {
     GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
-    return newobj_of(GET_RACTOR(), klass, flags, 0, 0, 0, FALSE, size);
+    return newobj_of(GET_RACTOR(), klass, flags, FALSE, size);
 }
 
 VALUE
 rb_wb_protected_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, size_t size)
 {
     GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
-    return newobj_of(rb_ec_ractor_ptr(ec), klass, flags, 0, 0, 0, TRUE, size);
+    return newobj_of(rb_ec_ractor_ptr(ec), klass, flags, TRUE, size);
 }
 
 #define UNEXPECTED_NODE(func) \
@@ -1045,7 +1057,14 @@ rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
 {
     RUBY_ASSERT_ALWAYS(dfree != (RUBY_DATA_FUNC)1);
     if (klass) rb_data_object_check(klass);
-    return newobj_of(GET_RACTOR(), klass, T_DATA, (VALUE)dmark, (VALUE)dfree, (VALUE)datap, !dmark, sizeof(struct RTypedData));
+    VALUE obj = newobj_of(GET_RACTOR(), klass, T_DATA, !dmark, sizeof(struct RTypedData));
+
+    struct RData *data = (struct RData *)obj;
+    data->dmark = dmark;
+    data->dfree = dfree;
+    data->data = datap;
+
+    return obj;
 }
 
 VALUE
@@ -1062,7 +1081,14 @@ typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_
     RBIMPL_NONNULL_ARG(type);
     if (klass) rb_data_object_check(klass);
     bool wb_protected = (type->flags & RUBY_FL_WB_PROTECTED) || !type->function.dmark;
-    return newobj_of(GET_RACTOR(), klass, T_DATA, 0, ((VALUE)type) | IS_TYPED_DATA | typed_flag, (VALUE)datap, wb_protected, size);
+    VALUE obj = newobj_of(GET_RACTOR(), klass, T_DATA | RUBY_TYPED_FL_IS_TYPED_DATA, wb_protected, size);
+
+    struct RTypedData *data = (struct RTypedData *)obj;
+    data->fields_obj = 0;
+    *(VALUE *)&data->type = ((VALUE)type) | typed_flag;
+    data->data = datap;
+
+    return obj;
 }
 
 VALUE
@@ -1264,16 +1290,18 @@ rb_gc_obj_free(void *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (rb_shape_obj_too_complex_p(obj)) {
-            RB_DEBUG_COUNTER_INC(obj_obj_too_complex);
-            st_free_table(ROBJECT_FIELDS_HASH(obj));
-        }
-        else if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-            RB_DEBUG_COUNTER_INC(obj_obj_embed);
+        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+            if (rb_shape_obj_too_complex_p(obj)) {
+                RB_DEBUG_COUNTER_INC(obj_obj_too_complex);
+                st_free_table(ROBJECT_FIELDS_HASH(obj));
+            }
+            else {
+                xfree(ROBJECT(obj)->as.heap.fields);
+                RB_DEBUG_COUNTER_INC(obj_obj_ptr);
+            }
         }
         else {
-            xfree(ROBJECT(obj)->as.heap.fields);
-            RB_DEBUG_COUNTER_INC(obj_obj_ptr);
+            RB_DEBUG_COUNTER_INC(obj_obj_embed);
         }
         break;
       case T_MODULE:
@@ -2313,11 +2341,13 @@ rb_obj_memsize_of(VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (rb_shape_obj_too_complex_p(obj)) {
-            size += rb_st_memsize(ROBJECT_FIELDS_HASH(obj));
-        }
-        else if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
-            size += ROBJECT_FIELDS_CAPACITY(obj) * sizeof(VALUE);
+        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+            if (rb_shape_obj_too_complex_p(obj)) {
+                size += rb_st_memsize(ROBJECT_FIELDS_HASH(obj));
+            }
+            else {
+                size += ROBJECT_FIELDS_CAPACITY(obj) * sizeof(VALUE);
+            }
         }
         break;
       case T_MODULE:
@@ -3543,19 +3573,21 @@ gc_ref_update_object(void *objspace, VALUE v)
 {
     VALUE *ptr = ROBJECT_FIELDS(v);
 
-    if (rb_shape_obj_too_complex_p(v)) {
-        gc_ref_update_table_values_only(ROBJECT_FIELDS_HASH(v));
-        return;
-    }
+    if (FL_TEST_RAW(v, ROBJECT_HEAP)) {
+        if (rb_shape_obj_too_complex_p(v)) {
+            gc_ref_update_table_values_only(ROBJECT_FIELDS_HASH(v));
+            return;
+        }
 
-    size_t slot_size = rb_gc_obj_slot_size(v);
-    size_t embed_size = rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(v));
-    if (slot_size >= embed_size && !RB_FL_TEST_RAW(v, ROBJECT_EMBED)) {
-        // Object can be re-embedded
-        memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
-        RB_FL_SET_RAW(v, ROBJECT_EMBED);
-        xfree(ptr);
-        ptr = ROBJECT(v)->as.ary;
+        size_t slot_size = rb_gc_obj_slot_size(v);
+        size_t embed_size = rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(v));
+        if (slot_size >= embed_size) {
+            // Object can be re-embedded
+            memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
+            FL_UNSET_RAW(v, ROBJECT_HEAP);
+            xfree(ptr);
+            ptr = ROBJECT(v)->as.ary;
+        }
     }
 
     for (uint32_t i = 0; i < ROBJECT_FIELDS_COUNT(v); i++) {
@@ -4773,20 +4805,17 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             }
           case T_OBJECT:
             {
-                if (rb_shape_obj_too_complex_p(obj)) {
-                    size_t hash_len = rb_st_table_size(ROBJECT_FIELDS_HASH(obj));
-                    APPEND_F("(too_complex) len:%zu", hash_len);
-                }
-                else {
-                    uint32_t len = ROBJECT_FIELDS_CAPACITY(obj);
-
-                    if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-                        APPEND_F("(embed) len:%d", len);
+                if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+                    if (rb_shape_obj_too_complex_p(obj)) {
+                        size_t hash_len = rb_st_table_size(ROBJECT_FIELDS_HASH(obj));
+                        APPEND_F("(too_complex) len:%zu", hash_len);
                     }
                     else {
-                        VALUE *ptr = ROBJECT_FIELDS(obj);
-                        APPEND_F("len:%d ptr:%p", len, (void *)ptr);
+                        APPEND_F("(embed) len:%d", ROBJECT_FIELDS_CAPACITY(obj));
                     }
+                }
+                else {
+                    APPEND_F("len:%d ptr:%p", ROBJECT_FIELDS_CAPACITY(obj), (void *)ROBJECT_FIELDS(obj));
                 }
             }
             break;
@@ -4950,12 +4979,6 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 #undef APPEND_F
 #undef BUFF_ARGS
 
-#if RGENGC_OBJ_INFO
-#define OBJ_INFO_BUFFERS_NUM  10
-#define OBJ_INFO_BUFFERS_SIZE 0x100
-static rb_atomic_t obj_info_buffers_index = 0;
-static char obj_info_buffers[OBJ_INFO_BUFFERS_NUM][OBJ_INFO_BUFFERS_SIZE];
-
 /* Increments *var atomically and resets *var to 0 when maxval is
  * reached. Returns the wraparound old *var value (0...maxval). */
 static rb_atomic_t
@@ -4973,17 +4996,18 @@ atomic_inc_wraparound(rb_atomic_t *var, const rb_atomic_t maxval)
 static const char *
 obj_info(VALUE obj)
 {
-    rb_atomic_t index = atomic_inc_wraparound(&obj_info_buffers_index, OBJ_INFO_BUFFERS_NUM);
-    char *const buff = obj_info_buffers[index];
-    return rb_raw_obj_info(buff, OBJ_INFO_BUFFERS_SIZE, obj);
-}
-#else
-static const char *
-obj_info(VALUE obj)
-{
+    if (RGENGC_OBJ_INFO) {
+        static struct {
+            rb_atomic_t index;
+            char buffers[10][0x100];
+        } info = {0};
+
+        rb_atomic_t index = atomic_inc_wraparound(&info.index, numberof(info.buffers));
+        char *const buff = info.buffers[index];
+        return rb_raw_obj_info(buff, sizeof(info.buffers[0]), obj);
+    }
     return obj_type_name(obj);
 }
-#endif
 
 /*
   ------------------------ Extended allocator ------------------------

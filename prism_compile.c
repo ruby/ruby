@@ -1,4 +1,5 @@
 #include "prism.h"
+#include "ruby/version.h"
 
 /**
  * This compiler defines its own concept of the location of a node. We do this
@@ -6739,6 +6740,12 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         body->param.flags.has_lead = true;
     }
 
+    // Fill in the anonymous `it` parameter, if it exists
+    if (scope_node->parameters && PM_NODE_TYPE_P(scope_node->parameters, PM_IT_PARAMETERS_NODE)) {
+        body->param.lead_num = 1;
+        body->param.flags.has_lead = true;
+    }
+
     //********END OF STEP 3**********
 
     //********STEP 4**********
@@ -10620,7 +10627,26 @@ pm_parse_errors_format_line(const pm_parser_t *parser, const pm_newline_list_t *
     // Here we determine if we should truncate the end of the line.
     bool truncate_end = false;
     if ((column_end != 0) && ((end - (start + column_end)) >= PM_ERROR_TRUNCATE)) {
-        end = start + column_end + PM_ERROR_TRUNCATE;
+        const uint8_t *end_candidate = start + column_end + PM_ERROR_TRUNCATE;
+
+        for (const uint8_t *ptr = start; ptr < end_candidate;) {
+            size_t char_width = parser->encoding->char_width(ptr, parser->end - ptr);
+
+            // If we failed to decode a character, then just bail out and
+            // truncate at the fixed width.
+            if (char_width == 0) break;
+
+            // If this next character would go past the end candidate,
+            // then we need to truncate before it.
+            if (ptr + char_width > end_candidate) {
+                end_candidate = ptr;
+                break;
+            }
+
+            ptr += char_width;
+        }
+
+        end = end_candidate;
         truncate_end = true;
     }
 
@@ -11352,6 +11378,8 @@ pm_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines)
     pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
     RB_GC_GUARD(filepath);
 
+    pm_options_version_for_current_ruby_set(&result->options);
+
     pm_parser_init(&result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
     pm_node_t *node = pm_parse(&result->parser);
 
@@ -11409,6 +11437,8 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *
     result->node.filepath_encoding = rb_enc_get(filepath);
     pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
     RB_GC_GUARD(filepath);
+
+    pm_options_version_for_current_ruby_set(&result->options);
 
     pm_parser_init(&result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
     pm_node_t *node = pm_parse(&result->parser);
@@ -11490,6 +11520,13 @@ pm_parse_stdin(pm_parse_result_t *result)
     rb_reset_argf_lineno(0);
 
     return pm_parse_process(result, node, NULL);
+}
+
+#define PM_VERSION_FOR_RELEASE(major, minor) PM_VERSION_FOR_RELEASE_IMPL(major, minor)
+#define PM_VERSION_FOR_RELEASE_IMPL(major, minor) PM_OPTIONS_VERSION_CRUBY_##major##_##minor
+
+void pm_options_version_for_current_ruby_set(pm_options_t *options) {
+    options->version = PM_VERSION_FOR_RELEASE(RUBY_API_VERSION_MAJOR, RUBY_API_VERSION_MINOR);
 }
 
 #undef NEW_ISEQ

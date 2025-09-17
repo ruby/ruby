@@ -21,7 +21,6 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
-#include "vm_sync.h"
 #include "yjit.h"
 #include "zjit.h"
 #include "vm_insnhelper.h"
@@ -38,12 +37,6 @@
 #endif
 
 #include <errno.h>
-
-// Field offsets for the RObject struct
-enum robject_offsets {
-    ROBJECT_OFFSET_AS_HEAP_FIELDS = offsetof(struct RObject, as.heap.fields),
-    ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary),
-};
 
 // Field offsets for the RString struct
 enum rstring_offsets {
@@ -76,58 +69,10 @@ STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 // The "_yjit_" part is for trying to be informative. We might want different
 // suffixes for symbols meant for Rust and symbols meant for broader CRuby.
 
-bool
-rb_yjit_mark_writable(void *mem_block, uint32_t mem_size)
-{
-    return mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE) == 0;
-}
-
-void
-rb_yjit_mark_executable(void *mem_block, uint32_t mem_size)
-{
-    // Do not call mprotect when mem_size is zero. Some platforms may return
-    // an error for it. https://github.com/Shopify/ruby/issues/450
-    if (mem_size == 0) {
-        return;
-    }
-    if (mprotect(mem_block, mem_size, PROT_READ | PROT_EXEC)) {
-        rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s",
-            mem_block, (unsigned long)mem_size, strerror(errno));
-    }
-}
-
-// Free the specified memory block.
-bool
-rb_yjit_mark_unused(void *mem_block, uint32_t mem_size)
-{
-    // On Linux, you need to use madvise MADV_DONTNEED to free memory.
-    // We might not need to call this on macOS, but it's not really documented.
-    // We generally prefer to do the same thing on both to ease testing too.
-    madvise(mem_block, mem_size, MADV_DONTNEED);
-
-    // On macOS, mprotect PROT_NONE seems to reduce RSS.
-    // We also call this on Linux to avoid executing unused pages.
-    return mprotect(mem_block, mem_size, PROT_NONE) == 0;
-}
-
 long
 rb_yjit_array_len(VALUE a)
 {
     return rb_array_len(a);
-}
-
-// `start` is inclusive and `end` is exclusive.
-void
-rb_yjit_icache_invalidate(void *start, void *end)
-{
-    // Clear/invalidate the instruction cache. Compiles to nothing on x86_64
-    // but required on ARM before running freshly written code.
-    // On Darwin it's the same as calling sys_icache_invalidate().
-#ifdef __GNUC__
-    __builtin___clear_cache(start, end);
-#elif defined(__aarch64__)
-#error No instruction cache clear available with this compiler on Aarch64!
-#endif
 }
 
 # define PTR2NUM(x)   (rb_int2inum((intptr_t)(void *)(x)))
@@ -224,131 +169,6 @@ rb_yjit_exit_locations_dict(VALUE *yjit_raw_samples, int *yjit_line_samples, int
     return result;
 }
 
-uint32_t
-rb_yjit_get_page_size(void)
-{
-#if defined(_SC_PAGESIZE)
-    long page_size = sysconf(_SC_PAGESIZE);
-    if (page_size <= 0) rb_bug("yjit: failed to get page size");
-
-    // 1 GiB limit. x86 CPUs with PDPE1GB can do this and anything larger is unexpected.
-    // Though our design sort of assume we have fine grained control over memory protection
-    // which require small page sizes.
-    if (page_size > 0x40000000l) rb_bug("yjit page size too large");
-
-    return (uint32_t)page_size;
-#else
-#error "YJIT supports POSIX only for now"
-#endif
-}
-
-#if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
-// Align the current write position to a multiple of bytes
-static uint8_t *
-align_ptr(uint8_t *ptr, uint32_t multiple)
-{
-    // Compute the pointer modulo the given alignment boundary
-    uint32_t rem = ((uint32_t)(uintptr_t)ptr) % multiple;
-
-    // If the pointer is already aligned, stop
-    if (rem == 0)
-        return ptr;
-
-    // Pad the pointer by the necessary amount to align it
-    uint32_t pad = multiple - rem;
-
-    return ptr + pad;
-}
-#endif
-
-// Address space reservation. Memory pages are mapped on an as needed basis.
-// See the Rust mm module for details.
-uint8_t *
-rb_yjit_reserve_addr_space(uint32_t mem_size)
-{
-#ifndef _WIN32
-    uint8_t *mem_block;
-
-    // On Linux
-    #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
-        uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
-        uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rb_yjit_reserve_addr_space;
-        uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
-        // Align the requested address to page size
-        uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
-
-        // Probe for addresses close to this function using MAP_FIXED_NOREPLACE
-        // to improve odds of being in range for 32-bit relative call instructions.
-        do {
-            mem_block = mmap(
-                req_addr,
-                mem_size,
-                PROT_NONE,
-                MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE,
-                -1,
-                0
-            );
-
-            // If we succeeded, stop
-            if (mem_block != MAP_FAILED) {
-                ruby_annotate_mmap(mem_block, mem_size, "Ruby:rb_yjit_reserve_addr_space");
-                break;
-            }
-
-            // -4MiB. Downwards to probe away from the heap. (On x86/A64 Linux
-            // main_code_addr < heap_addr, and in case we are in a shared
-            // library mapped higher than the heap, downwards is still better
-            // since it's towards the end of the heap rather than the stack.)
-            req_addr -= 4 * 1024 * 1024;
-        } while (req_addr < probe_region_end);
-
-    // On MacOS and other platforms
-    #else
-        // Try to map a chunk of memory as executable
-        mem_block = mmap(
-            (void *)rb_yjit_reserve_addr_space,
-            mem_size,
-            PROT_NONE,
-            MAP_PRIVATE | MAP_ANONYMOUS,
-            -1,
-            0
-        );
-    #endif
-
-    // Fallback
-    if (mem_block == MAP_FAILED) {
-        // Try again without the address hint (e.g., valgrind)
-        mem_block = mmap(
-            NULL,
-            mem_size,
-            PROT_NONE,
-            MAP_PRIVATE | MAP_ANONYMOUS,
-            -1,
-            0
-        );
-
-        if (mem_block != MAP_FAILED) {
-            ruby_annotate_mmap(mem_block, mem_size, "Ruby:rb_yjit_reserve_addr_space:fallback");
-        }
-    }
-
-    // Check that the memory mapping was successful
-    if (mem_block == MAP_FAILED) {
-        perror("ruby: yjit: mmap:");
-        if(errno == ENOMEM) {
-            // No crash report if it's only insufficient memory
-            exit(EXIT_FAILURE);
-        }
-        rb_bug("mmap failed");
-    }
-
-    return mem_block;
-#else
-    // Windows not supported for now
-    return NULL;
-#endif
-}
-
 // Is anyone listening for :c_call and :c_return event currently?
 bool
 rb_c_method_tracing_currently_enabled(const rb_execution_context_t *ec)
@@ -418,18 +238,6 @@ rb_iseq_set_yjit_payload(const rb_iseq_t *iseq, void *payload)
     RUBY_ASSERT_ALWAYS(iseq->body);
     RUBY_ASSERT_ALWAYS(NULL == iseq->body->yjit_payload);
     iseq->body->yjit_payload = payload;
-}
-
-void
-rb_iseq_reset_jit_func(const rb_iseq_t *iseq)
-{
-    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    iseq->body->jit_entry = NULL;
-    iseq->body->jit_exception = NULL;
-    // Enable re-compiling this ISEQ. Event when it's invalidated for TracePoint,
-    // we'd like to re-compile ISEQs that haven't been converted to trace_* insns.
-    iseq->body->jit_entry_calls = 0;
-    iseq->body->jit_exception_calls = 0;
 }
 
 rb_proc_t *
@@ -645,50 +453,9 @@ rb_ENCODING_GET(VALUE obj)
 }
 
 bool
-rb_yjit_multi_ractor_p(void)
-{
-    return rb_multi_ractor_p();
-}
-
-bool
 rb_yjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
 {
     return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
-}
-
-// Used for passing a callback and other data over rb_objspace_each_objects
-struct iseq_callback_data {
-    rb_iseq_callback callback;
-    void *data;
-};
-
-// Heap-walking callback for rb_yjit_for_each_iseq().
-static int
-for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
-{
-    const struct iseq_callback_data *callback_data = (struct iseq_callback_data *)data;
-    VALUE v = (VALUE)vstart;
-    for (; v != (VALUE)vend; v += stride) {
-        void *ptr = rb_asan_poisoned_object_p(v);
-        rb_asan_unpoison_object(v, false);
-
-        if (rb_obj_is_iseq(v)) {
-            rb_iseq_t *iseq = (rb_iseq_t *)v;
-            callback_data->callback(iseq, callback_data->data);
-        }
-
-        asan_poison_object_if(ptr, v);
-    }
-    return 0;
-}
-
-// Iterate through the whole GC heap and invoke a callback for each iseq.
-// Used for global code invalidation.
-void
-rb_yjit_for_each_iseq(rb_iseq_callback callback, void *data)
-{
-    struct iseq_callback_data callback_data = { .callback = callback, .data = data };
-    rb_objspace_each_objects(for_each_iseq_i, (void *)&callback_data);
 }
 
 // For running write barriers from Rust. Required when we add a new edge in the
@@ -697,25 +464,6 @@ void
 rb_yjit_obj_written(VALUE old, VALUE young, const char *file, int line)
 {
     rb_obj_written(old, Qundef, young, file, line);
-}
-
-// Acquire the VM lock and then signal all other Ruby threads (ractors) to
-// contend for the VM lock, putting them to sleep. YJIT uses this to evict
-// threads running inside generated code so among other things, it can
-// safely change memory protection of regions housing generated code.
-void
-rb_yjit_vm_lock_then_barrier(unsigned int *recursive_lock_level, const char *file, int line)
-{
-    rb_vm_lock_enter(recursive_lock_level, file, line);
-    rb_vm_barrier();
-}
-
-// Release the VM lock. The lock level must point to the same integer used to
-// acquire the lock.
-void
-rb_yjit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line)
-{
-    rb_vm_lock_leave(recursive_lock_level, file, line);
 }
 
 void
@@ -734,7 +482,7 @@ rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
         else {
             iseq->body->jit_entry = (rb_jit_func_t)code_ptr;
         }
-}
+    }
 }
 
 // GC root for interacting with the GC
@@ -756,12 +504,6 @@ rb_object_shape_count(void)
 {
     // next_shape_id starts from 0, so it's the same as the count
     return ULONG2NUM((unsigned long)rb_shapes_count());
-}
-
-bool
-rb_yjit_shape_too_complex_p(shape_id_t shape_id)
-{
-    return rb_shape_too_complex_p(shape_id);
 }
 
 bool

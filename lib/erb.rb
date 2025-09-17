@@ -17,319 +17,784 @@ require 'erb/compiler'
 require 'erb/def_method'
 require 'erb/util'
 
+# :markup: markdown
 #
-# = ERB -- Ruby Templating
+# Class **ERB** (the name stands for **Embedded Ruby**)
+# is an easy-to-use, but also very powerful, [template processor][template processor].
 #
-# == Introduction
+# Like method [sprintf][sprintf], \ERB can format run-time data into a string.
+# \ERB, however,s is *much more powerful*.
 #
-# ERB provides an easy to use but powerful templating system for Ruby.  Using
-# ERB, actual Ruby code can be added to any plain text document for the
-# purposes of generating document information details and/or flow control.
+# \ERB is commonly used to produce:
 #
-# A very simple example is this:
+# - Customized or personalized email messages.
+# - Customized or personalized web pages.
+# - Software code (in code-generating applications).
 #
-#   require 'erb'
+# ## Usage
 #
-#   x = 42
-#   template = ERB.new <<-EOF
-#     The value of x is: <%= x %>
-#   EOF
-#   puts template.result(binding)
+# Before you can use \ERB, you must first require it
+# (examples on this page assume that this has been done):
 #
-# <em>Prints:</em> The value of x is: 42
+# ```
+# require 'erb'
+# ```
 #
-# More complex examples are given below.
+# ## In Brief
+#
+# Here's how \ERB works:
+#
+# - You can create an \ERB object (a *template*) to store text that includes specially formatted *tags*.
+# - You can call instance method ERB#result to get the *result*.
+#
+# \ERB supports tags of three kinds:
+#
+# - [Expression tags][expression tags]:
+#   each begins with `'<%'`, ends with `'%>'`; contains a Ruby expression;
+#   in the result, the value of the expression replaces the entire tag:
+#
+#         magic_word = 'xyzzy'
+#         template.result(binding) # => "The magic word is xyzzy."
+#
+#         ERB.new('Today is <%= Date::DAYNAMES[Date.today.wday] %>.').result # => "Today is Monday."
+#
+#     The first call to #result passes argument `binding`,
+#     which contains the binding of variable `magic_word` to its string value `'xyzzy'`.
+#
+#     The second call need not pass a binding,
+#     because its expression `Date::DAYNAMES` is globally defined.
+#
+# - [Execution tags][execution tags]:
+#   each begins with `'<%='`, ends with `'%>'`; contains Ruby code to be executed:
+#
+#          s = '<% File.write("t.txt", "Some stuff.") %>'
+#          ERB.new(s).result
+#          File.read('t.txt') # => "Some stuff."
+#
+# - [Comment tags][comment tags]:
+#   each begins with `'<%#'`, ends with `'%>'`; contains comment text;
+#   in the result, the entire tag is omitted.
+#
+#          s = 'Some stuff;<%# Note to self: figure out what the stuff is. %> more stuff.'
+#          ERB.new(s).result # => "Some stuff; more stuff."
+#
+# ## Some Simple Examples
+#
+# Here's a simple example of \ERB in action:
+#
+# ```
+# s = 'The time is <%= Time.now %>.'
+# template = ERB.new(s)
+# template.result
+# # => "The time is 2025-09-09 10:49:26 -0500."
+# ```
+#
+# Details:
+#
+# 1. A plain-text string is assigned to variable `s`.
+#    Its embedded [expression tag][expression tags] `'<%= Time.now %>'` includes a Ruby expression, `Time.now`.
+# 2. The string is put into a new \ERB object, and stored in variable `template`.
+# 4. Method call `template.result` generates a string that contains the run-time value of `Time.now`,
+#    as computed at the time of the call.
+#
+# The template may be re-used:
+#
+# ```
+# template.result
+# # => "The time is 2025-09-09 10:49:33 -0500."
+# ```
+#
+# Another example:
+#
+# ```
+# s = 'The magic word is <%= magic_word %>.'
+# template = ERB.new(s)
+# magic_word = 'abracadabra'
+# # => "abracadabra"
+# template.result(binding)
+# # => "The magic word is abracadabra."
+# ```
+#
+# Details:
+#
+# 1. As before, a plain-text string is assigned to variable `s`.
+#    Its embedded [expression tag][expression tags] `'<%= magic_word %>'` has a variable *name*, `magic_word`.
+# 2. The string is put into a new \ERB object, and stored in variable `template`;
+#    note that `magic_word` need not be defined before the \ERB object is created.
+# 3. `magic_word = 'abracadabra'` assigns a value to variable `magic_word`.
+# 4. Method call `template.result(binding)` generates a string
+#    that contains the *value* of `magic_word`.
+#
+# As before, the template may be re-used:
+#
+# ```
+# magic_word = 'xyzzy'
+# template.result(binding)
+# # => "The magic word is xyzzy."
+# ```
+#
+# ## Bindings
+#
+# A call to method #result, which produces the formatted result string,
+# requires a [Binding object][binding object] as its argument.
+#
+# The binding object provides the bindings for expressions in [expression tags][expression tags].
+#
+# There are three ways to provide the required binding:
+#
+# - [Default binding][default binding].
+# - [Local binding][local binding].
+# - [Augmented binding][augmented binding]
+#
+# ### Default Binding
+#
+# When you pass no `binding` argument to method #result,
+# the method uses its default binding: the one returned by method #new_toplevel.
+# This binding has the bindings defined by Ruby itself,
+# which are those for Ruby's constants and variables.
+#
+# That binding is sufficient for an expression tag that refers only to Ruby's constants and variables;
+# these expression tags refer only to Ruby's global constant `RUBY_COPYRIGHT` and global variable `$0`:
+#
+# ```
+# s = <<EOT
+# The Ruby copyright is <%= RUBY_COPYRIGHT.inspect %>.
+# The current process is <%= $0 %>.
+# EOT
+# puts ERB.new(s).result
+# The Ruby copyright is "ruby - Copyright (C) 1993-2025 Yukihiro Matsumoto".
+# The current process is irb.
+# ```
+#
+# (The current process is `irb` because that's where we're doing these examples!)
 #
 #
-# == Recognized Tags
+# ### Local Binding
 #
-# ERB recognizes certain tags in the provided template and converts them based
-# on the rules below:
+# The default binding is *not* sufficient for an expression
+# that refers to a a constant or variable that is not defined there:
 #
-#   <% Ruby code -- inline with output %>
-#   <%= Ruby expression -- replace with result %>
-#   <%# comment -- ignored -- useful in testing %> (`<% #` doesn't work. Don't use Ruby comments.)
-#   % a line of Ruby code -- treated as <% line %> (optional -- see ERB.new)
-#   %% replaced with % if first thing on a line and % processing is used
-#   <%% or %%> -- replace with <% or %> respectively
+# ```
+# Foo = 1 # Defines local constant Foo.
+# foo = 2 # Defines local variable foo.
+# s = <<EOT
+# The current value of constant Foo is <%= Foo %>.
+# The current value of variable foo is <%= foo %>.
+# The Ruby copyright is <%= RUBY_COPYRIGHT.inspect %>.
+# The current process is <%= $0 %>.
+# EOT
+# ```
 #
-# All other text is passed through ERB filtering unchanged.
+# This call raises `NameError` because although `Foo` and `foo` are defined locally,
+# they are not defined in the default binding:
 #
+# ```
+# ERB.new(s).result # Raises NameError.
+# ```
 #
-# == Options
+# To make the locally-defined constants and variables available,
+# you can call #result with the local binding:
 #
-# There are several settings you can change when you use ERB:
-# * the nature of the tags that are recognized;
-# * the binding used to resolve local variables in the template.
+# ```
+# puts ERB.new(s).result(binding)
+# The current value of constant Foo is 1.
+# The current value of variable foo is 2.
+# The Ruby copyright is "ruby - Copyright (C) 1993-2025 Yukihiro Matsumoto".
+# The current process is irb.
+# ```
 #
-# See the ERB.new and ERB#result methods for more detail.
+# ### Augmented Binding
 #
-# == Character encodings
+# Another way to make variable bindings (but not constant bindings) available
+# is to use method #result_with_hash(hash);
+# the passed hash has name/value pairs that are to be used to define and assign variables
+# in a copy of the default binding:
 #
-# ERB (or Ruby code generated by ERB) returns a string in the same
-# character encoding as the input string.  When the input string has
-# a magic comment, however, it returns a string in the encoding specified
-# by the magic comment.
+# ```
+# s = <<EOT
+# The current value of variable bar is <%= bar %>.
+# The current value of variable baz is <%= baz %>.
+# The Ruby copyright is <%= RUBY_COPYRIGHT.inspect %>.
+# The current process is <%= $0 %>.
+# ```
 #
-#   # -*- coding: utf-8 -*-
-#   require 'erb'
+# Both of these calls raise `NameError`, because `bar` and `baz`
+# are not defined in either the default binding or the local binding.
 #
-#   template = ERB.new <<EOF
-#   <%#-*- coding: Big5 -*-%>
-#     \_\_ENCODING\_\_ is <%= \_\_ENCODING\_\_ %>.
-#   EOF
-#   puts template.result
+# ```
+# puts ERB.new(s).result          # Raises NameError.
+# puts ERB.new(s).result(binding) # Raises NameError.
+# ```
 #
-# <em>Prints:</em> \_\_ENCODING\_\_ is Big5.
+# This call passes a hash that causes `bar` and `baz` to be defined
+# in a new binding (derived from #new_toplevel):
 #
+# ```
+# hash = {bar: 3, baz: 4}
+# # => {bar: 3, baz: 4}
+# ERB.new(s).result_with_hash(hash)
+# puts ERB.new(s).result_with_hash(variables)
+# The current value of variable bar is 3.
+# The current value of variable baz is 4.
+# The Ruby copyright is "ruby - Copyright (C) 1993-2025 Yukihiro Matsumoto".
+# The current process is irb.
+# EOT
+# ```
 #
-# == Examples
+# ## Tags
 #
-# === Plain Text
+# The examples above use expression tags.
+# These are the tags available in \ERB:
 #
-# ERB is useful for any generic templating situation.  Note that in this example, we use the
-# convenient "% at start of line" tag, and we quote the template literally with
-# <tt>%q{...}</tt> to avoid trouble with the backslash.
+# - [Expression tag][expression tags]: the tag contains a Ruby exprssion;
+#   in the result, the entire tag is to be replaced with the run-time value of the expression.
+# - [Execution tag][execution tags]: the tag contains Ruby code;
+#   in the result, the entire tag is to be replaced with the run-time value of the code.
+# - [Comment tag][comment tags]: the tag contains comment code;
+#   in the result, the entire tag is to be omitted.
 #
-#   require "erb"
+# ### Expression Tags
 #
-#   # Create template.
-#   template = %q{
-#     From:  James Edward Gray II <james@grayproductions.net>
-#     To:  <%= to %>
-#     Subject:  Addressing Needs
+# You can embed a Ruby expression in a template using an *expression tag*.
 #
-#     <%= to[/\w+/] %>:
+# Its syntax is `<%= _expression_ %>`,
+# where *expression* is any valid Ruby expression.
 #
-#     Just wanted to send a quick note assuring that your needs are being
-#     addressed.
+# When you call method #result,
+# the method evaluates the expression and replaces the entire expression tag with the expression's value:
 #
-#     I want you to know that my team will keep working on the issues,
-#     especially:
+# ```
+# ERB.new('Today is <%= Date::DAYNAMES[Date.today.wday] %>.').result
+# # => "Today is Monday."
+# ERB.new('Tomorrow will be <%= Date::DAYNAMES[Date.today.wday + 1] %>.').result
+# # => "Tomorrow will be Tuesday."
+# ERB.new('Yesterday was <%= Date::DAYNAMES[Date.today.wday - 1] %>.').result
+# # => "Yesterday was Sunday."
+# ```
 #
-#     <%# ignore numerous minor requests -- focus on priorities %>
-#     % priorities.each do |priority|
-#       * <%= priority %>
-#     % end
+# Note that whitespace before and after the expression
+# is allowed but not required,
+# and that such whitespace is stripped from the result.
 #
-#     Thanks for your patience.
+# ```
+# ERB.new('My appointment is on <%=Date::DAYNAMES[Date.today.wday + 2]%>.').result
+# # => "My appointment is on Wednesday."
+# ERB.new('My appointment is on <%=     Date::DAYNAMES[Date.today.wday + 2]    %>.').result
+# # => "My appointment is on Wednesday."
+# ```
 #
-#     James Edward Gray II
-#   }.gsub(/^  /, '')
+# ### Execution Tags
 #
-#   message = ERB.new(template, trim_mode: "%<>")
+# You can embed Ruby executable code in template using an *execution tag*.
 #
-#   # Set up template data.
-#   to = "Community Spokesman <spokesman@ruby_community.org>"
-#   priorities = [ "Run Ruby Quiz",
-#                  "Document Modules",
-#                  "Answer Questions on Ruby Talk" ]
+# Its syntax is `<% _code_ %>`,
+# where *code* is any valid Ruby code.
 #
-#   # Produce result.
-#   email = message.result
-#   puts email
+# When you call method #result,
+# the method executes the code and removes the entire execution tag
+# (generating no text in the result):
 #
-# <i>Generates:</i>
+# ```
+# ERB.new('foo <% Dir.chdir("C:/") %> bar').result # => "foo  bar"
+# ```
 #
-#   From:  James Edward Gray II <james@grayproductions.net>
-#   To:  Community Spokesman <spokesman@ruby_community.org>
-#   Subject:  Addressing Needs
+# Whitespace before and after the embedded code is optional:
 #
-#   Community:
+# ```
+# ERB.new('foo <%Dir.chdir("C:/")%> bar').result   # => "foo  bar"
+# ```
 #
-#   Just wanted to send a quick note assuring that your needs are being addressed.
+# You can interleave text with execution tags to form a control structure
+# such as a conditional, a loop, or a `case` statements.
 #
-#   I want you to know that my team will keep working on the issues, especially:
+# Conditional:
 #
-#       * Run Ruby Quiz
-#       * Document Modules
-#       * Answer Questions on Ruby Talk
+# ```
+# s = <<EOT
+# <% if verbosity %>
+# An error has occurred.
+# <% else %>
+# Oops!
+# <% end %>
+# EOT
+# template = ERB.new(s)
+# verbosity = true
+# template.result(binding)
+# # => "\nAn error has occurred.\n\n"
+# verbosity = false
+# template.result(binding)
+# # => "\nOops!\n\n"
+# ```
 #
-#   Thanks for your patience.
+# Note that the interleaved text may itself contain expression tags:
 #
-#   James Edward Gray II
+# Loop:
 #
-# === Ruby in HTML
+# ```
+# s = <<EOT
+# <% Date::ABBR_DAYNAMES.each do |dayname| %>
+# <%= dayname %>
+# <% end %>
+# EOT
+# ERB.new(s).result
+# # => "\nSun\n\nMon\n\nTue\n\nWed\n\nThu\n\nFri\n\nSat\n\n"
+# ```
 #
-# ERB is often used in <tt>.rhtml</tt> files (HTML with embedded Ruby).  Notice the need in
-# this example to provide a special binding when the template is run, so that the instance
-# variables in the Product object can be resolved.
+# Other, non-control, lines of Ruby code may be interleaved with the text,
+# and the Ruby code may itself contain regular Ruby comments:
 #
-#   require "erb"
+# ```
+# s = <<EOT
+# <% 3.times do %>
+# <%= Time.now %>
+# <% sleep(1) # Let's make the times different. %>
+# <% end %>
+# EOT
+# ERB.new(s).result
+# # => "\n2025-09-09 11:36:02 -0500\n\n\n2025-09-09 11:36:03 -0500\n\n\n2025-09-09 11:36:04 -0500\n\n\n"
+# ```
 #
-#   # Build template data class.
-#   class Product
-#     def initialize( code, name, desc, cost )
-#       @code = code
-#       @name = name
-#       @desc = desc
-#       @cost = cost
+# The execution tag may also contain multiple lines of code:
 #
-#       @features = [ ]
+# ```
+# s = <<EOT
+# <%
+#   (0..2).each do |i|
+#     (0..2).each do |j|
+# %>
+# * <%=i%>,<%=j%>
+# <%
 #     end
+#   end
+# %>
+# EOT
+# ERB.new(s).result
+# # => "\n* 0,0\n\n* 0,1\n\n* 0,2\n\n* 1,0\n\n* 1,1\n\n* 1,2\n\n* 2,0\n\n* 2,1\n\n* 2,2\n\n"
+# ```
 #
-#     def add_feature( feature )
-#       @features << feature
-#     end
+# #### Shorthand Format for Execution Tags
 #
-#     # Support templating of member data.
-#     def get_binding
-#       binding
-#     end
+# You can use keyword argument `trim_mode: '%'` to enable a shorthand format for execution tags;
+# this example uses the shorthand format `% _code_` instead of `<% _code_ %>`:
 #
-#     # ...
+# ```
+# s = <<EOT
+# % priorities.each do |priority|
+#   * <%= priority %>
+# % end
+# EOT
+# template = ERB.new(s, trim_mode: '%')
+# priorities = [ 'Run Ruby Quiz',
+#                'Document Modules',
+#                'Answer Questions on Ruby Talk' ]
+# puts template.result(binding)
+#   * Run Ruby Quiz
+#   * Document Modules
+#   * Answer Questions on Ruby Talk
+# ```
+#
+# Note that in the shorthand format, the character `'%'` must be the first character in the code line
+# (no leading whitespace).
+#
+# #### Suppressing Unwanted Blank Lines
+#
+# With keyword argument `trim_mode` not given,
+# all blank lines go into the result:
+#
+# ```
+# s = <<EOT
+# <% if true %>
+# <%= RUBY_VERSION %>
+# <% end %>
+# EOT
+# ERB.new(s).result.lines.each {|line| puts line.inspect }
+# "\n"
+# "3.4.5\n"
+# "\n"
+# ```
+#
+# You can give `trim_mode: '-'`, you can suppress each blank line
+# whose source line ends with `-%>` (instead of `%>`):
+#
+# ```
+# s = <<EOT
+# <% if true -%>
+# <%= RUBY_VERSION %>
+# <% end -%>
+# EOT
+# ERB.new(s, trim_mode: '-').result.lines.each {|line| puts line.inspect }
+# "3.4.5\n"
+# ```
+#
+# It is an error to use the trailing `'-%>'` notation without `trim_mode: '-'`:
+#
+# ```
+# ERB.new(s).result.lines.each {|line| puts line.inspect } # Raises SyntaxError.
+# ```
+#
+# #### Suppressing Unwanted Newlines
+#
+# Consider this input string:
+#
+# ```
+# s = <<EOT
+# <% RUBY_VERSION %>
+# <%= RUBY_VERSION %>
+# foo <% RUBY_VERSION %>
+# foo <%= RUBY_VERSION %>
+# EOT
+# ```
+#
+# With keyword argument `trim_mode` not given, all newlines go into the result:
+#
+# ```
+# ERB.new(s).result.lines.each {|line| puts line.inspect }
+# "\n"
+# "3.4.5\n"
+# "foo \n"
+# "foo 3.4.5\n"
+# ```
+#
+# You can give `trim_mode: '>'` to suppress the trailing newline
+# for each line that ends with `'%<'` (regardless of its beginning):
+#
+# ```
+# ERB.new(s, trim_mode: '>').result.lines.each {|line| puts line.inspect }
+# "3.4.5foo foo 3.4.5"
+# ```
+#
+# You can give `trim_mode: '<>'` to suppress the trailing newline
+# for each line that both begins with `'<%'` and ends with `'%>'`:
+#
+# ```
+# ERB.new(s, trim_mode: '<>').result.lines.each {|line| puts line.inspect }
+# "3.4.5foo \n"
+# "foo 3.4.5\n"
+# ```
+#
+# #### Combining Trim Modes
+#
+# You can combine certain trim modes:
+#
+# - `'%-'`: Enable shorthand and omit each blank line ending with `'-%>'`.
+# - `'%>'`: Enable shorthand and omit newline for each line ending with `'%>'`.
+# - `'%<>'`: Enable shorthand and omit newline for each line starting with `'<%'` and ending with `'%>'`.
+#
+# ### Comment Tags
+#
+# You can embed a comment in a template using a *comment tag*;
+# its syntax is `<%# _text_ %>`,
+# where *text* is the text of the comment.
+#
+# When you call method #result,
+# it removes the entire comment tag
+# (generating no text in the result).
+#
+# Example:
+#
+# ```
+# s = 'Some stuff;<%# Note to self: figure out what the stuff is. %> more stuff.'
+# ERB.new(s).result # => "Some stuff; more stuff."
+# ```
+#
+# A comment tag may appear anywhere in the template text.
+#
+# Note that the beginning of the tag must be `'<%#'`, not `'<% #'`.
+#
+# In this example, the tag begins with `'<% #'`, and so is an execution tag, not a comment tag;
+# the cited code consists entirely of a Ruby-style comment (which is of course ignored):
+#
+# ```
+# ERB.new('Some stuff;<% # Note to self: figure out what the stuff is. %> more stuff.').result
+# # => "Some stuff;"
+# ```
+#
+# ## Encodings
+#
+# In general, an \ERB result string (or Ruby code generated by \ERB)
+# has the same encoding as the string originally passed to ERB.new;
+# see [Encoding][encoding].
+#
+# You can specify the output encoding by adding a [magic comment][magic comments]
+# at the top of the given string:
+#
+# ```
+# s = <<EOF
+# <%#-*- coding: Big5 -*-%>
+#
+# Some text.
+# EOF
+# # => "<%#-*- coding: Big5 -*-%>\n\nSome text.\n"
+# s.encoding
+# # => #<Encoding:UTF-8>
+# ERB.new(s).result.encoding
+# # => #<Encoding:Big5>
+# ```
+#
+# ## Plain Text Example
+#
+# Here's a plain-text string;
+# it uses the literal notation `'%q{ ... }'` to define the string
+# (see [%q literals][%q literals]);
+# this avoids problems with backslashes.
+#
+# ```
+# s = %q{
+# From:  James Edward Gray II <james@grayproductions.net>
+# To:  <%= to %>
+# Subject:  Addressing Needs
+#
+# <%= to[/\w+/] %>:
+#
+# Just wanted to send a quick note assuring that your needs are being
+# addressed.
+#
+# I want you to know that my team will keep working on the issues,
+# especially:
+#
+# <%# ignore numerous minor requests -- focus on priorities %>
+# % priorities.each do |priority|
+#   * <%= priority %>
+# % end
+#
+# Thanks for your patience.
+#
+# James Edward Gray II
+# }
+# ```
+#
+# The template will need these:
+#
+# ```
+# to = 'Community Spokesman <spokesman@ruby_community.org>'
+# priorities = [ 'Run Ruby Quiz',
+#                'Document Modules',
+#                'Answer Questions on Ruby Talk' ]
+# ```
+#
+# Finally, make the template and get the result
+#
+# ```
+# template = ERB.new(s, trim_mode: '%<>')
+# puts template.result(binding)
+#
+# From:  James Edward Gray II <james@grayproductions.net>
+# To:  Community Spokesman <spokesman@ruby_community.org>
+# Subject:  Addressing Needs
+#
+# Community:
+#
+# Just wanted to send a quick note assuring that your needs are being
+# addressed.
+#
+# I want you to know that my team will keep working on the issues,
+# especially:
+#
+# * Run Ruby Quiz
+# * Document Modules
+# * Answer Questions on Ruby Talk
+#
+# Thanks for your patience.
+#
+# James Edward Gray II
+# ```
+#
+# ## HTML Example
+#
+# This example shows an HTML template.
+#
+# First, here's a custom class, `Product`:
+#
+# ```
+# class Product
+#   def initialize(code, name, desc, cost)
+#     @code = code
+#     @name = name
+#     @desc = desc
+#     @cost = cost
+#     @features = []
 #   end
 #
-#   # Create template.
-#   template = %{
-#     <html>
-#       <head><title>Ruby Toys -- <%= @name %></title></head>
-#       <body>
+#   def add_feature(feature)
+#     @features << feature
+#   end
 #
-#         <h1><%= @name %> (<%= @code %>)</h1>
-#         <p><%= @desc %></p>
+#   # Support templating of member data.
+#   def get_binding
+#     binding
+#   end
 #
-#         <ul>
-#           <% @features.each do |f| %>
-#             <li><b><%= f %></b></li>
-#           <% end %>
-#         </ul>
+# end
+# ```
 #
-#         <p>
-#           <% if @cost < 10 %>
-#             <b>Only <%= @cost %>!!!</b>
-#           <% else %>
-#              Call for a price, today!
-#           <% end %>
-#         </p>
+# The template below will need these values:
 #
-#       </body>
-#     </html>
-#   }.gsub(/^  /, '')
+# ```
+# toy = Product.new('TZ-1002',
+#                   'Rubysapien',
+#                   "Geek's Best Friend!  Responds to Ruby commands...",
+#                   999.95
+#                   )
+# toy.add_feature('Listens for verbal commands in the Ruby language!')
+# toy.add_feature('Ignores Perl, Java, and all C variants.')
+# toy.add_feature('Karate-Chop Action!!!')
+# toy.add_feature('Matz signature on left leg.')
+# toy.add_feature('Gem studded eyes... Rubies, of course!')
+# ```
 #
-#   rhtml = ERB.new(template)
+# Here's the HTML:
 #
-#   # Set up template data.
-#   toy = Product.new( "TZ-1002",
-#                      "Rubysapien",
-#                      "Geek's Best Friend!  Responds to Ruby commands...",
-#                      999.95 )
-#   toy.add_feature("Listens for verbal commands in the Ruby language!")
-#   toy.add_feature("Ignores Perl, Java, and all C variants.")
-#   toy.add_feature("Karate-Chop Action!!!")
-#   toy.add_feature("Matz signature on left leg.")
-#   toy.add_feature("Gem studded eyes... Rubies, of course!")
+# ```
+# s = <<EOT
+# <html>
+#   <head><title>Ruby Toys -- <%= @name %></title></head>
+#   <body>
+#     <h1><%= @name %> (<%= @code %>)</h1>
+#     <p><%= @desc %></p>
+#     <ul>
+#       <% @features.each do |f| %>
+#         <li><b><%= f %></b></li>
+#       <% end %>
+#     </ul>
+#     <p>
+#       <% if @cost < 10 %>
+#         <b>Only <%= @cost %>!!!</b>
+#       <% else %>
+#          Call for a price, today!
+#       <% end %>
+#     </p>
+#   </body>
+# </html>
+# EOT
+# ```
 #
-#   # Produce result.
-#   rhtml.run(toy.get_binding)
+# Finally, build the template and get the result (omitting some blank lines):
 #
-# <i>Generates (some blank lines removed):</i>
-#
-#    <html>
-#      <head><title>Ruby Toys -- Rubysapien</title></head>
-#      <body>
-#
-#        <h1>Rubysapien (TZ-1002)</h1>
-#        <p>Geek's Best Friend!  Responds to Ruby commands...</p>
-#
-#        <ul>
-#            <li><b>Listens for verbal commands in the Ruby language!</b></li>
-#            <li><b>Ignores Perl, Java, and all C variants.</b></li>
-#            <li><b>Karate-Chop Action!!!</b></li>
-#            <li><b>Matz signature on left leg.</b></li>
-#            <li><b>Gem studded eyes... Rubies, of course!</b></li>
-#        </ul>
-#
-#        <p>
-#             Call for a price, today!
-#        </p>
-#
-#      </body>
-#    </html>
+# ```
+# template = ERB.new(s)
+# puts template.result(toy.get_binding)
+# <html>
+#   <head><title>Ruby Toys -- Rubysapien</title></head>
+#   <body>
+#     <h1>Rubysapien (TZ-1002)</h1>
+#     <p>Geek's Best Friend!  Responds to Ruby commands...</p>
+#     <ul>
+#         <li><b>Listens for verbal commands in the Ruby language!</b></li>
+#         <li><b>Ignores Perl, Java, and all C variants.</b></li>
+#         <li><b>Karate-Chop Action!!!</b></li>
+#         <li><b>Matz signature on left leg.</b></li>
+#         <li><b>Gem studded eyes... Rubies, of course!</b></li>
+#     </ul>
+#     <p>
+#          Call for a price, today!
+#     </p>
+#   </body>
+# </html>
+# ```
 #
 #
-# == Notes
+# ## Other Template Processors
 #
-# There are a variety of templating solutions available in various Ruby projects.
-# For example, RDoc, distributed with Ruby, uses its own template engine, which
-# can be reused elsewhere.
+# Various Ruby projects have their own template processors.
+# The Ruby Processing System [RDoc][rdoc], for example, has one that can be used elsewhere.
 #
-# Other popular engines could be found in the corresponding
-# {Category}[https://www.ruby-toolbox.com/categories/template_engines] of
-# The Ruby Toolbox.
+# Other popular template processors may found in the [Template Engines][template engines] page
+# of the Ruby Toolbox.
+#
+# [%q literals]: https://docs.ruby-lang.org/en/master/syntax/literals_rdoc.html#label-25q-3A+Non-Interpolable+String+Literals
+# [augmented binding]: rdoc-ref:ERB@Augmented+Binding
+# [binding object]: https://docs.ruby-lang.org/en/master/Binding.html
+# [comment tags]: rdoc-ref:ERB@Comment+Tags
+# [default binding]: rdoc-ref:ERB@Default+Binding
+# [encoding]: https://docs.ruby-lang.org/en/master/Encoding.html
+# [execution tags]: rdoc-ref:ERB@Execution+Tags
+# [expression tags]: rdoc-ref:ERB@Expression+Tags
+# [kernel#binding]: https://docs.ruby-lang.org/en/master/Kernel.html#method-i-binding
+# [local binding]: rdoc-ref:ERB@Local+Binding
+# [magic comments]: https://docs.ruby-lang.org/en/master/syntax/comments_rdoc.html#label-Magic+Comments
+# [rdoc]: https://ruby.github.io/rdoc
+# [sprintf]: https://docs.ruby-lang.org/en/master/Kernel.html#method-i-sprintf
+# [template engines]: https://www.ruby-toolbox.com/categories/template_engines
+# [template processor]: https://en.wikipedia.org/wiki/Template_processor
 #
 class ERB
   Revision = '$Date::                           $' # :nodoc: #'
   deprecate_constant :Revision
 
-  # Returns revision information for the erb.rb module.
+  # :markup: markdown
+  #
+  # :call-seq:
+  #   self.version -> string
+  #
+  # Returns the string revision for \ERB:
+  #
+  # ```
+  # ERB.version # => "4.0.4"
+  # ```
+  #
   def self.version
     VERSION
   end
 
+  # :markup: markdown
   #
-  # Constructs a new ERB object with the template specified in _str_.
+  # :call-seq:
+  #   ERB.new(string, trim_mode: nil, eoutvar: '_erbout')
   #
-  # An ERB object works by building a chunk of Ruby code that will output
-  # the completed template when run.
+  # Returns a new \ERB object containing the given +string+.
   #
-  # If _trim_mode_ is passed a String containing one or more of the following
-  # modifiers, ERB will adjust its code generation as listed:
+  # For details about `string`, its embedded tags, and generated results, see ERB.
   #
-  #     %  enables Ruby code processing for lines beginning with %
-  #     <> omit newline for lines starting with <% and ending in %>
-  #     >  omit newline for lines ending in %>
-  #     -  omit blank lines ending in -%>
+  # **Keyword Argument `trim_mode`**
   #
-  # _eoutvar_ can be used to set the name of the variable ERB will build up
-  # its output in.  This is useful when you need to run multiple ERB
-  # templates through the same binding and/or when you want to control where
-  # output ends up.  Pass the name of the variable to be used inside a String.
+  # You can use keyword argument `trim_mode: '%'`
+  # to enable the [shorthand format][shorthand format] for execution tags.
   #
-  # === Example
+  # This value allows [blank line control][blank line control]:
   #
-  #  require "erb"
+  # - `'-'`: Omit each blank line ending with `'%>'`.
   #
-  #  # build data class
-  #  class Listings
-  #    PRODUCT = { :name => "Chicken Fried Steak",
-  #                :desc => "A well messaged pattie, breaded and fried.",
-  #                :cost => 9.95 }
+  # Other values allow [newline control][newline control]:
   #
-  #    attr_reader :product, :price
+  # - `'>'`: Omit newline for each line ending with `'%>'`.
+  # - `'<>'`: Omit newline for each line starting with `'<%'` and ending with `'%>'`.
   #
-  #    def initialize( product = "", price = "" )
-  #      @product = product
-  #      @price = price
-  #    end
+  # You can also [combine trim modes][combine trim modes].
   #
-  #    def build
-  #      b = binding
-  #      # create and run templates, filling member data variables
-  #      ERB.new(<<~'END_PRODUCT', trim_mode: "", eoutvar: "@product").result b
-  #        <%= PRODUCT[:name] %>
-  #        <%= PRODUCT[:desc] %>
-  #      END_PRODUCT
-  #      ERB.new(<<~'END_PRICE', trim_mode: "", eoutvar: "@price").result b
-  #        <%= PRODUCT[:name] %> -- <%= PRODUCT[:cost] %>
-  #        <%= PRODUCT[:desc] %>
-  #      END_PRICE
-  #    end
-  #  end
+  # **Keyword Argument `eoutvar`**
   #
-  #  # setup template data
-  #  listings = Listings.new
-  #  listings.build
+  # The string value of keyword argument `eoutvar` specifies the name of the variable
+  # that method #result uses to construct its result string.
+  # This is useful when you need to run multiple \ERB templates through the same binding
+  # and/or when you want to control where output ends up.
   #
-  #  puts listings.product + "\n" + listings.price
+  # It's good practice to choose a variable name that begins with an underscore: `'_'`.
   #
-  # _Generates_
+  # <b>Backward Compatibility</b>
   #
-  #  Chicken Fried Steak
-  #  A well massaged pattie, breaded and fried.
+  # The calling sequence given above -- which is the one you should use --
+  # is a simplified version of the complete formal calling sequence,
+  # which is:
   #
-  #  Chicken Fried Steak -- 9.95
-  #  A well massaged pattie, breaded and fried.
+  # ```
+  # ERB.new(string,
+  # safe_level=NOT_GIVEN, legacy_trim_mode=NOT_GIVEN, legacy_eoutvar=NOT_GIVEN,
+  # trim_mode: nil, eoutvar: '_erbout')
+  # ```
+  #
+  # The second, third, and fourth positional arguments (those in the second line above) are deprecated;
+  # this method issues warnings if they are given.
+  #
+  # However, their values, if given, are handled thus:
+  #
+  # - `safe_level`: ignored.
+  # - `legacy_trim_mode`: overrides keyword argument `trim_mode`.
+  # - `legacy_eoutvar`: overrides keyword argument `eoutvar`.
+  #
+  # [blank line control]: rdoc-ref:ERB@Suppressing+Unwanted+Blank+Lines
+  # [combine trim modes]: rdoc-ref:ERB@Combining+Trim+Modes
+  # [newline control]: rdoc-ref:ERB@Suppressing+Unwanted+Newlines
+  # [shorthand format]: rdoc-ref:ERB@Shorthand+Format+for+Execution+Tags
   #
   def initialize(str, safe_level=NOT_GIVEN, legacy_trim_mode=NOT_GIVEN, legacy_eoutvar=NOT_GIVEN, trim_mode: nil, eoutvar: '_erbout')
     # Complex initializer for $SAFE deprecation at [Feature #14256]. Use keyword arguments to pass trim_mode or eoutvar.
@@ -413,12 +878,23 @@ class ERB
     print self.result(b)
   end
 
+  # :markup: markdown
   #
-  # Executes the generated ERB code to produce a completed template, returning
-  # the results of that code.
+  # :call-seq:
+  #   result(binding = new_toplevel) -> new_string
   #
-  # _b_ accepts a Binding object which is used to set the context of
-  # code evaluation.
+  # Returns the new string formed by processing \ERB tags found in the stored string in `self`.
+  #
+  # With no argument given, uses the default binding;
+  # see [Default Binding][default binding].
+  #
+  # With argument `binding` given, uses the local binding;
+  # see [Local Binding][local binding].
+  #
+  # See also #result_with_hash.
+  #
+  # [default binding]: rdoc-ref:ERB@Default+Binding
+  # [local binding]: rdoc-ref:ERB@Local+Binding
   #
   def result(b=new_toplevel)
     unless @_init.equal?(self.class.singleton_class)
@@ -427,8 +903,18 @@ class ERB
     eval(@src, b, (@filename || '(erb)'), @lineno)
   end
 
-  # Render a template on a new toplevel binding with local variables specified
-  # by a Hash object.
+  # :markup: markdown
+  #
+  # :call-seq:
+  #   result_with_hash(hash) -> string
+  #
+  # Returns the new string formed by processing \ERB tags found in the stored string in `self`;
+  # see [Augmented Binding][augmented binding].
+  #
+  # See also #result.
+  #
+  # [augmented binding]: rdoc-ref:ERB@Augmented+Binding
+  #
   def result_with_hash(hash)
     b = new_toplevel(hash.keys)
     hash.each_pair do |key, value|

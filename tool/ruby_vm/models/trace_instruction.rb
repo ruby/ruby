@@ -10,9 +10,9 @@
 # details.
 
 require_relative '../helpers/c_escape'
-require_relative 'bare_instructions'
+require_relative 'bare_instruction'
 
-class RubyVM::TraceInstructions
+class RubyVM::TraceInstruction
   include RubyVM::CEscape
 
   attr_reader :name
@@ -58,17 +58,13 @@ class RubyVM::TraceInstructions
     return false
   end
 
-  def zjit_profile?
-    return false
-  end
-
   private
 
-  @instances = RubyVM::Instructions.map {|i| new i }
+  @instances = (RubyVM::BareInstruction.all +
+                RubyVM::OperandsUnification.all +
+                RubyVM::InstructionsUnification.all).map {|i| new(i) }
 
-  def self.to_a
+  def self.all
     @instances
   end
-
-  RubyVM::Instructions.push(*to_a)
 end

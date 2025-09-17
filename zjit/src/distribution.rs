@@ -1,10 +1,12 @@
+//! Type frequency distribution tracker.
+
 /// This implementation was inspired by the type feedback module from Google's S6, which was
 /// written in C++ for use with Python. This is a new implementation in Rust created for use with
 /// Ruby instead of Python.
 #[derive(Debug, Clone)]
 pub struct Distribution<T: Copy + PartialEq + Default, const N: usize> {
     /// buckets and counts have the same length
-    /// buckets[0] is always the most common item
+    /// `buckets[0]` is always the most common item
     buckets: [T; N],
     counts: [usize; N],
     /// if there is no more room, increment the fallback
@@ -105,7 +107,7 @@ impl<T: Copy + PartialEq + Default + std::fmt::Debug, const N: usize> Distributi
                 DistributionKind::Megamorphic
             }
         };
-        Self { kind, buckets: dist.buckets.clone() }
+        Self { kind, buckets: dist.buckets }
     }
 
     pub fn is_monomorphic(&self) -> bool {

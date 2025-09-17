@@ -993,7 +993,7 @@ total_final_slots_count(rb_objspace_t *objspace)
 #endif
 
 struct RZombie {
-    struct RBasic basic;
+    VALUE flags;
     VALUE next;
     void (*dfree)(void *);
     void *data;
@@ -2096,16 +2096,6 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
     GC_ASSERT(heap->free_pages != NULL);
 }
 
-static inline VALUE
-newobj_fill(VALUE obj, VALUE v1, VALUE v2, VALUE v3)
-{
-    VALUE *p = (VALUE *)(obj + sizeof(struct RBasic));
-    p[0] = v1;
-    p[1] = v2;
-    p[2] = v3;
-    return obj;
-}
-
 #if GC_DEBUG
 static inline const char*
 rb_gc_impl_source_location_cstr(int *ptr)
@@ -2146,8 +2136,6 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 #endif
 
 #if RGENGC_CHECK_MODE
-    newobj_fill(obj, 0, 0, 0);
-
     int lev = RB_GC_VM_LOCK_NO_BARRIER();
     {
         check_rvalue_consistency(objspace, obj);
@@ -2469,7 +2457,7 @@ newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace
 }
 
 VALUE
-rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size)
+rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
 {
     VALUE obj;
     rb_objspace_t *objspace = objspace_ptr;
@@ -2500,7 +2488,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
           newobj_slowpath_wb_unprotected(klass, flags, objspace, cache, heap_idx);
     }
 
-    return newobj_fill(obj, v1, v2, v3);
+    return obj;
 }
 
 static int
@@ -2586,7 +2574,7 @@ rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), voi
     rb_objspace_t *objspace = objspace_ptr;
 
     struct RZombie *zombie = RZOMBIE(obj);
-    zombie->basic.flags = T_ZOMBIE | (zombie->basic.flags & ZOMBIE_OBJ_KEPT_FLAGS);
+    zombie->flags = T_ZOMBIE | (zombie->flags & ZOMBIE_OBJ_KEPT_FLAGS);
     zombie->dfree = dfree;
     zombie->data = data;
     VALUE prev, next = heap_pages_deferred_final;
@@ -4388,6 +4376,26 @@ gc_grey(rb_objspace_t *objspace, VALUE obj)
     push_mark_stack(&objspace->mark_stack, obj);
 }
 
+static inline void
+gc_mark_check_t_none(rb_objspace_t *objspace, VALUE obj)
+{
+    if (RB_UNLIKELY(RB_TYPE_P(obj, T_NONE))) {
+        enum {info_size = 256};
+        char obj_info_buf[info_size];
+        rb_raw_obj_info(obj_info_buf, info_size, obj);
+
+        char parent_obj_info_buf[info_size];
+        if (objspace->rgengc.parent_object == Qfalse) {
+            strlcpy(parent_obj_info_buf, "(none)", info_size);
+        }
+        else {
+            rb_raw_obj_info(parent_obj_info_buf, info_size, objspace->rgengc.parent_object);
+        }
+
+        rb_bug("try to mark T_NONE object (obj: %s, parent: %s)", obj_info_buf, parent_obj_info_buf);
+    }
+}
+
 static void
 gc_mark(rb_objspace_t *objspace, VALUE obj)
 {
@@ -4407,10 +4415,7 @@ gc_mark(rb_objspace_t *objspace, VALUE obj)
         }
     }
 
-    if (RB_UNLIKELY(RB_TYPE_P(obj, T_NONE))) {
-        rb_obj_info_dump(obj);
-        rb_bug("try to mark T_NONE object"); /* check here will help debugging */
-    }
+    gc_mark_check_t_none(objspace, obj);
 
     gc_aging(objspace, obj);
     gc_grey(objspace, obj);
@@ -4504,10 +4509,7 @@ rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
 
     VALUE obj = *ptr;
 
-    if (RB_UNLIKELY(RB_TYPE_P(obj, T_NONE))) {
-        rb_obj_info_dump(obj);
-        rb_bug("try to mark T_NONE object");
-    }
+    gc_mark_check_t_none(objspace, obj);
 
     /* If we are in a minor GC and the other object is old, then obj should
      * already be marked and cannot be reclaimed in this GC cycle so we don't

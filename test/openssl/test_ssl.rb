@@ -685,6 +685,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_post_connect_check_with_anon_ciphers
+    # DH missing the q value on unknown named parameters is not FIPS-approved.
+    omit_on_fips
     omit "AWS-LC does not support DHE ciphersuites" if aws_lc?
 
     ctx_proc = -> ctx {
@@ -1747,6 +1749,9 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_get_ephemeral_key
+    # kRSA is not FIPS-approved.
+    omit_on_fips
+
     # kRSA
     ctx_proc1 = proc { |ctx|
       ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
@@ -1863,6 +1868,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_tmp_dh_callback
+    # DH missing the q value on unknown named parameters is not FIPS-approved.
+    omit_on_fips
     omit "AWS-LC does not support DHE ciphersuites" if aws_lc?
 
     dh = Fixtures.pkey("dh-1")
@@ -2131,6 +2138,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_tmp_dh
+    # DH missing the q value on unknown named parameters is not FIPS-approved.
+    omit_on_fips
     omit "AWS-LC does not support DHE ciphersuites" if aws_lc?
 
     dh = Fixtures.pkey("dh-1")

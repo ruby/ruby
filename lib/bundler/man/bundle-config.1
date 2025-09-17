@@ -1,6 +1,6 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-CONFIG" "1" "August 2025" ""
+.TH "BUNDLE\-CONFIG" "1" "September 2025" ""
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
 .SH "SYNOPSIS"
@@ -70,14 +70,11 @@ Any periods in the configuration keys must be replaced with two underscores when
 .SH "LIST OF AVAILABLE KEYS"
 The following is a list of all configuration keys and their purpose\. You can learn more about their operation in bundle install(1) \fIbundle\-install\.1\.html\fR\.
 .TP
-\fBallow_offline_install\fR (\fBBUNDLE_ALLOW_OFFLINE_INSTALL\fR)
-Allow Bundler to use cached data when installing without network access\.
-.TP
 \fBauto_install\fR (\fBBUNDLE_AUTO_INSTALL\fR)
 Automatically run \fBbundle install\fR when gems are missing\.
 .TP
 \fBbin\fR (\fBBUNDLE_BIN\fR)
-Install executables from gems in the bundle to the specified directory\. Defaults to \fBfalse\fR\.
+If configured, \fBbundle binstubs\fR will install executables from gems in the bundle to the specified directory\. Otherwise it will create them in a \fBbin\fR directory relative to the Gemfile directory\. These executables run in Bundler's context\. If used, you might add this directory to your environment's \fBPATH\fR variable\. For instance, if the \fBrails\fR gem comes with a \fBrails\fR executable, \fBbundle binstubs\fR will create a \fBbin/rails\fR executable that ensures that all referred dependencies will be resolved using the bundled gems\.
 .TP
 \fBcache_all\fR (\fBBUNDLE_CACHE_ALL\fR)
 Cache all gems, including path and git gems\. This needs to be explicitly before bundler 4, but will be the default on bundler 4\.
@@ -158,10 +155,10 @@ Whether \fBbundle package\fR should skip installing gems\.
 Whether Bundler should leave outdated gems unpruned when caching\.
 .TP
 \fBonly\fR (\fBBUNDLE_ONLY\fR)
-A space\-separated list of groups to install only gems of the specified groups\.
+A space\-separated list of groups to install only gems of the specified groups\. Please check carefully if you want to install also gems without a group, because they get put inside \fBdefault\fR group\. For example \fBonly test:default\fR will install all gems specified in test group and without one\.
 .TP
 \fBpath\fR (\fBBUNDLE_PATH\fR)
-The location on disk where all gems in your bundle will be located regardless of \fB$GEM_HOME\fR or \fB$GEM_PATH\fR values\. Bundle gems not found in this location will be installed by \fBbundle install\fR\. Defaults to \fB\.bundle\fR relative to repository root in Bundler 4, and to the default system path (\fBGem\.dir\fR) before Bundler 4\.
+The location on disk where all gems in your bundle will be located regardless of \fB$GEM_HOME\fR or \fB$GEM_PATH\fR values\. Bundle gems not found in this location will be installed by \fBbundle install\fR\. When not set, Bundler install by default to a \fB\.bundle\fR directory relative to repository root in Bundler 4, and to the default system path (\fBGem\.dir\fR) before Bundler 4\. That means that before Bundler 4, Bundler shares this location with Rubygems, and \fBgem install \|\.\|\.\|\.\fR will have gems installed in the same location and therefore, gems installed without \fBpath\fR set will show up by calling \fBgem list\fR\. This will not be the case in Bundler 4\.
 .TP
 \fBpath\.system\fR (\fBBUNDLE_PATH__SYSTEM\fR)
 Whether Bundler will install gems into the default system path (\fBGem\.dir\fR)\.
@@ -222,30 +219,6 @@ A space\-separated or \fB:\fR\-separated list of groups whose gems bundler shoul
 .TP
 \fBwithout\fR (\fBBUNDLE_WITHOUT\fR)
 A space\-separated or \fB:\fR\-separated list of groups whose gems bundler should not install\.
-.SH "REMEMBERING OPTIONS"
-Flags passed to \fBbundle install\fR or the Bundler runtime, such as \fB\-\-path foo\fR or \fB\-\-without production\fR, are remembered between commands and saved to your local application's configuration (normally, \fB\./\.bundle/config\fR)\.
-.P
-However, this will be changed in bundler 4, so it's better not to rely on this behavior\. If these options must be remembered, it's better to set them using \fBbundle config\fR (e\.g\., \fBbundle config set \-\-local path foo\fR)\.
-.P
-The flags that can be configured are:
-.TP
-\fB\-\-bin\fR
-Creates a directory (defaults to \fB~/bin\fR) and place any executables from the gem there\. These executables run in Bundler's context\. If used, you might add this directory to your environment's \fBPATH\fR variable\. For instance, if the \fBrails\fR gem comes with a \fBrails\fR executable, this flag will create a \fBbin/rails\fR executable that ensures that all referred dependencies will be resolved using the bundled gems\.
-.TP
-\fB\-\-deployment\fR
-In deployment mode, Bundler will 'roll\-out' the bundle for \fBproduction\fR use\. Please check carefully if you want to have this option enabled in \fBdevelopment\fR or \fBtest\fR environments\.
-.TP
-\fB\-\-only\fR
-A space\-separated list of groups to install only gems of the specified groups\. Please check carefully if you want to install also gems without a group, cause they get put inside \fBdefault\fR group\. For example \fBonly test:default\fR will install all gems specified in test group and without one\.
-.TP
-\fB\-\-path\fR
-The location to install the specified gems to\. This defaults to Rubygems' setting\. Bundler shares this location with Rubygems, \fBgem install \|\.\|\.\|\.\fR will have gem installed there, too\. Therefore, gems installed without a \fB\-\-path \|\.\|\.\|\.\fR setting will show up by calling \fBgem list\fR\. Accordingly, gems installed to other locations will not get listed\.
-.TP
-\fB\-\-without\fR
-A space\-separated or \fB:\fR\-separated list of groups referencing gems to skip during installation\.
-.TP
-\fB\-\-with\fR
-A space\-separated or \fB:\fR\-separated list of \fBoptional\fR groups referencing gems to include during installation\.
 .SH "BUILD OPTIONS"
 You can use \fBbundle config\fR to give Bundler the flags to pass to the gem installer every time bundler tries to install a particular gem\.
 .P

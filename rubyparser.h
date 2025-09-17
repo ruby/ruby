@@ -248,6 +248,7 @@ typedef struct RNode_SCOPE {
 
     rb_ast_id_table_t *nd_tbl;
     struct RNode *nd_body;
+    struct RNode *nd_parent;
     struct RNode_ARGS *nd_args;
 } rb_node_scope_t;
 
@@ -913,6 +914,9 @@ typedef struct RNode_SCLASS {
 
     struct RNode *nd_recv;
     struct RNode *nd_body;
+    rb_code_location_t class_keyword_loc;
+    rb_code_location_t operator_loc;
+    rb_code_location_t end_keyword_loc;
 } rb_node_sclass_t;
 
 typedef struct RNode_COLON2 {
