@@ -351,6 +351,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::ObjectAlloc { val, state } => gen_object_alloc(jit, asm, opnd!(val), &function.frame_state(*state)),
+        &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(asm, class, &function.frame_state(state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
         // concatstrings shouldn't have 0 strings
         // If it happens we abort the compilation for now
@@ -1234,10 +1235,17 @@ fn gen_new_range_fixnum(
 }
 
 fn gen_object_alloc(jit: &JITState, asm: &mut Assembler, val: lir::Opnd, state: &FrameState) -> lir::Opnd {
-    // TODO: this is leaf in the vast majority of cases,
-    // Should specialize to avoid `gen_prepare_non_leaf_call` (Shopify#747)
+    // Allocating an object from an unknown class is non-leaf; see doc for `ObjectAlloc`.
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_ccall!(asm, rb_obj_alloc, val)
+}
+
+fn gen_object_alloc_class(asm: &mut Assembler, class: VALUE, state: &FrameState) -> lir::Opnd {
+    // Allocating an object for a known class with default allocator is leaf; see doc for
+    // `ObjectAllocClass`.
+    gen_prepare_leaf_call_with_gc(asm, state);
+    // TODO(max): directly call `class_call_alloc_func`
+    asm_ccall!(asm, rb_obj_alloc, class.into())
 }
 
 /// Compile code that exits from JIT code with a return value

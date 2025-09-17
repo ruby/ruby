@@ -257,6 +257,20 @@ impl Type {
         }
     }
 
+    pub fn from_class(class: VALUE) -> Type {
+        if class == unsafe { rb_cArray } { types::ArrayExact }
+        else if class == unsafe { rb_cFalseClass } { types::FalseClass }
+        else if class == unsafe { rb_cHash } { types::HashExact }
+        else if class == unsafe { rb_cInteger } { types::Integer}
+        else if class == unsafe { rb_cNilClass } { types::NilClass }
+        else if class == unsafe { rb_cString } { types::StringExact }
+        else if class == unsafe { rb_cTrueClass } { types::TrueClass }
+        else {
+            // TODO(max): Add more cases for inferring type bits from built-in types
+            Type { bits: bits::HeapObject, spec: Specialization::TypeExact(class) }
+        }
+    }
+
     /// Private. Only for creating type globals.
     const fn from_bits(bits: u64) -> Type {
         Type {
@@ -669,10 +683,27 @@ mod tests {
     }
 
     #[test]
+    fn from_class() {
+        crate::cruby::with_rubyvm(|| {
+            assert_bit_equal(Type::from_class(unsafe { rb_cInteger }), types::Integer);
+            assert_bit_equal(Type::from_class(unsafe { rb_cString }), types::StringExact);
+            assert_bit_equal(Type::from_class(unsafe { rb_cArray }), types::ArrayExact);
+            assert_bit_equal(Type::from_class(unsafe { rb_cHash }), types::HashExact);
+            assert_bit_equal(Type::from_class(unsafe { rb_cNilClass }), types::NilClass);
+            assert_bit_equal(Type::from_class(unsafe { rb_cTrueClass }), types::TrueClass);
+            assert_bit_equal(Type::from_class(unsafe { rb_cFalseClass }), types::FalseClass);
+            let c_class = define_class("C", unsafe { rb_cObject });
+            assert_bit_equal(Type::from_class(c_class), Type { bits: bits::HeapObject, spec: Specialization::TypeExact(c_class) });
+        });
+    }
+
+    #[test]
     fn integer_has_ruby_class() {
-        assert_eq!(Type::fixnum(3).inexact_ruby_class(), Some(unsafe { rb_cInteger }));
-        assert_eq!(types::Fixnum.inexact_ruby_class(), None);
-        assert_eq!(types::Integer.inexact_ruby_class(), None);
+        crate::cruby::with_rubyvm(|| {
+            assert_eq!(Type::fixnum(3).inexact_ruby_class(), Some(unsafe { rb_cInteger }));
+            assert_eq!(types::Fixnum.inexact_ruby_class(), None);
+            assert_eq!(types::Integer.inexact_ruby_class(), None);
+        });
     }
 
     #[test]
