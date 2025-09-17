@@ -3469,7 +3469,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let level = get_arg(pc, 1).as_u32();
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     fun.push_insn(block, Insn::GuardBlockParamProxy { level, state: exit_id });
-                    // TODO: GC root, so we should be able to avoid unnecessary GC tracing
+                    // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
                     state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) }));
                 }
                 YARVINSN_pop => { state.stack_pop()?; }
