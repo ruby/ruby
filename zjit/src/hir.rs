@@ -560,8 +560,15 @@ pub enum Insn {
 
     HashDup { val: InsnId, state: InsnId },
 
-    /// Allocate an instance of the `val` class without calling `#initialize` on it.
+    /// Allocate an instance of the `val` object without calling `#initialize` on it.
+    /// This can:
+    /// * raise an exception if `val` is not a class
+    /// * run arbitrary code if `val` is a class with a custom allocator
     ObjectAlloc { val: InsnId, state: InsnId },
+    /// Allocate an instance of the `val` class without calling `#initialize` on it.
+    /// This requires that `class` has the default allocator (for example via `IsMethodCfunc`).
+    /// This won't raise or run arbitrary code because `class` has the default allocator.
+    ObjectAllocClass { class: VALUE, state: InsnId },
 
     /// Check if the value is truthy and "return" a C boolean. In reality, we will likely fuse this
     /// with IfTrue/IfFalse in the backend to generate jcc.
@@ -755,6 +762,7 @@ impl Insn {
             Insn::LoadIvarEmbedded { .. } => false,
             Insn::LoadIvarExtended { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
+            Insn::ObjectAllocClass { .. } => false,
             // TODO: NewRange is effects free if we can prove the two ends to be Fixnum,
             // but we don't have type information here in `impl Insn`. See rb_range_new().
             Insn::NewRange { .. } => true,
@@ -819,6 +827,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayDup { val, .. } => { write!(f, "ArrayDup {val}") }
             Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
             Insn::ObjectAlloc { val, .. } => { write!(f, "ObjectAlloc {val}") }
+            Insn::ObjectAllocClass { class, .. } => { write!(f, "ObjectAllocClass {}", class.print(self.ptr_map)) }
             Insn::StringCopy { val, .. } => { write!(f, "StringCopy {val}") }
             Insn::StringConcat { strings, .. } => {
                 write!(f, "StringConcat")?;
@@ -1411,6 +1420,7 @@ impl Function {
             &ArrayDup { val, state } => ArrayDup { val: find!(val), state },
             &HashDup { val, state } => HashDup { val: find!(val), state },
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
+            &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
             &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun, args: find_vec!(args), name, return_type, elidable },
             &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
@@ -1497,6 +1507,7 @@ impl Function {
             Insn::NewRange { .. } => types::RangeExact,
             Insn::NewRangeFixnum { .. } => types::RangeExact,
             Insn::ObjectAlloc { .. } => types::HeapObject,
+            Insn::ObjectAllocClass { class, .. } => Type::from_class(*class),
             Insn::CCall { return_type, .. } => *return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::GuardTypeNot { .. } => types::BasicObject,
@@ -1891,6 +1902,17 @@ impl Function {
                     Insn::AnyToString { str, .. } => {
                         if self.is_a(str, types::String) {
                             self.make_equal_to(insn_id, str);
+                        } else {
+                            self.push_insn_id(block, insn_id);
+                        }
+                    }
+                    Insn::ObjectAlloc { val, state } => {
+                        let val_type = self.type_of(val);
+                        if val_type.is_subtype(types::Class) && val_type.ruby_object_known() {
+                            let class = val_type.ruby_object().unwrap();
+                            let replacement = self.push_insn(block, Insn::ObjectAllocClass { class, state });
+                            self.insn_types[replacement.0] = self.infer_type(replacement);
+                            self.make_equal_to(insn_id, replacement);
                         } else {
                             self.push_insn_id(block, insn_id);
                         }
@@ -2373,6 +2395,7 @@ impl Function {
             &Insn::GetGlobal { state, .. } |
             &Insn::GetSpecialSymbol { state, .. } |
             &Insn::GetSpecialNumber { state, .. } |
+            &Insn::ObjectAllocClass { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
         }
     }
@@ -8071,10 +8094,10 @@ mod opt_tests {
           v6:NilClass = Const Value(nil)
           v7:CBool = IsMethodCFunc v34, :new
           IfFalse v7, bb1(v0, v6, v34)
-          v10:HeapObject = ObjectAlloc v34
-          v12:BasicObject = SendWithoutBlock v10, :initialize
+          v35:HeapObject[class_exact:C] = ObjectAllocClass VALUE(0x1008)
+          v12:BasicObject = SendWithoutBlock v35, :initialize
           CheckInterrupts
-          Jump bb2(v0, v10, v12)
+          Jump bb2(v0, v35, v12)
         bb1(v16:BasicObject, v17:NilClass, v18:Class[VALUE(0x1008)]):
           v21:BasicObject = SendWithoutBlock v18, :new
           Jump bb2(v16, v21, v17)
@@ -8105,12 +8128,11 @@ mod opt_tests {
           v7:Fixnum[1] = Const Value(1)
           v8:CBool = IsMethodCFunc v36, :new
           IfFalse v8, bb1(v0, v6, v36, v7)
-          v11:HeapObject = ObjectAlloc v36
+          v37:HeapObject[class_exact:C] = ObjectAllocClass VALUE(0x1008)
           PatchPoint MethodRedefined(C@0x1008, initialize@0x1010, cme:0x1018)
-          v38:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
-          v39:BasicObject = SendWithoutBlockDirect v38, :initialize (0x1040), v7
+          v39:BasicObject = SendWithoutBlockDirect v37, :initialize (0x1040), v7
           CheckInterrupts
-          Jump bb2(v0, v11, v39)
+          Jump bb2(v0, v37, v39)
         bb1(v17:BasicObject, v18:NilClass, v19:Class[VALUE(0x1008)], v20:Fixnum[1]):
           v23:BasicObject = SendWithoutBlock v19, :new, v20
           Jump bb2(v17, v23, v18)
