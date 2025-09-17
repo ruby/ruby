@@ -15,8 +15,6 @@ class JSONGenericObjectTest < Test::Unit::TestCase
     else
       omit("JSON::GenericObject is not available")
     end
-  rescue NameError
-    omit("JSON::GenericObject is not available")
   end
 
   def test_attributes
