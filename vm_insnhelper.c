@@ -2353,6 +2353,12 @@ vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
     return vm_cc_cme(cc);
 }
 
+const struct rb_callable_method_entry_struct *
+rb_zjit_vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
+{
+    return vm_search_method(cd_owner, cd, recv);
+}
+
 #if __has_attribute(transparent_union)
 typedef union {
     VALUE (*anyargs)(ANYARGS);
@@ -2415,6 +2421,12 @@ vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type f
     VM_ASSERT(iseq != NULL);
     const struct rb_callable_method_entry_struct *cme = vm_search_method((VALUE)iseq, cd, recv);
     return check_cfunc(cme, func);
+}
+
+bool
+rb_zjit_cme_is_cfunc(const rb_callable_method_entry_t *me, const cfunc_type func)
+{
+    return check_cfunc(me, func);
 }
 
 int

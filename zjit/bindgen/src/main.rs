@@ -342,6 +342,8 @@ fn main() {
         .allowlist_function("rb_get_cfp_ep_level")
         .allowlist_function("rb_get_cme_def_type")
         .allowlist_function("rb_zjit_constcache_shareable")
+        .allowlist_function("rb_zjit_vm_search_method")
+        .allowlist_function("rb_zjit_cme_is_cfunc")
         .allowlist_function("rb_get_cme_def_body_attr_id")
         .allowlist_function("rb_get_symbol_id")
         .allowlist_function("rb_get_cme_def_body_optimized_type")
