@@ -919,7 +919,13 @@ class ERB
     compiler.post_cmd = [eoutvar]
   end
 
-  # Generate results and print them. (see ERB#result)
+  # :markup: markdown
+  #
+  # :call-seq:
+  #   run(binding = new_toplevel) -> nil
+  #
+  # Like #result, but prints the result string (instead of returning it);
+  # returns `nil`.
   def run(b=new_toplevel)
     print self.result(b)
   end
