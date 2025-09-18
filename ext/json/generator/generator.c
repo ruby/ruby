@@ -29,6 +29,7 @@ typedef struct JSON_Generator_StateStruct {
 
     enum duplicate_key_action on_duplicate_key;
 
+    bool as_json_single_arg;
     bool allow_nan;
     bool ascii_only;
     bool script_safe;
@@ -1033,6 +1034,13 @@ json_inspect_hash_with_mixed_keys(struct hash_foreach_arg *arg)
     }
 }
 
+static VALUE
+json_call_as_json(JSON_Generator_State *state, VALUE object, VALUE is_key)
+{
+    VALUE proc_args[2] = {object, is_key};
+    return rb_proc_call_with_block(state->as_json, 2, proc_args, Qnil);
+}
+
 static int
 json_object_i(VALUE key, VALUE val, VALUE _arg)
 {
@@ -1086,7 +1094,7 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
         default:
             if (data->state->strict) {
                 if (RTEST(data->state->as_json) && !as_json_called) {
-                    key = rb_proc_call_with_block(data->state->as_json, 1, &key, Qnil);
+                    key = json_call_as_json(data->state, key, Qtrue);
                     key_type = rb_type(key);
                     as_json_called = true;
                     goto start;
@@ -1328,7 +1336,7 @@ static void generate_json_float(FBuffer *buffer, struct generate_json_data *data
         /* for NaN and Infinity values we either raise an error or rely on Float#to_s. */
         if (!allow_nan) {
             if (data->state->strict && data->state->as_json) {
-                VALUE casted_obj = rb_proc_call_with_block(data->state->as_json, 1, &obj, Qnil);
+                VALUE casted_obj = json_call_as_json(data->state, obj, Qfalse);
                 if (casted_obj != obj) {
                     increase_depth(data);
                     generate_json(buffer, data, casted_obj);
@@ -1416,7 +1424,7 @@ start:
             general:
                 if (data->state->strict) {
                     if (RTEST(data->state->as_json) && !as_json_called) {
-                        obj = rb_proc_call_with_block(data->state->as_json, 1, &obj, Qnil);
+                        obj = json_call_as_json(data->state, obj, Qfalse);
                         as_json_called = true;
                         goto start;
                     } else {
@@ -1942,6 +1950,7 @@ static int configure_state_i(VALUE key, VALUE val, VALUE _arg)
     else if (key == sym_allow_duplicate_key)   { state->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
     else if (key == sym_as_json)               {
         VALUE proc = RTEST(val) ? rb_convert_type(val, T_DATA, "Proc", "to_proc") : Qfalse;
+        state->as_json_single_arg = proc && rb_proc_arity(proc) == 1;
         state_write_value(data, &state->as_json, proc);
     }
     return ST_CONTINUE;
