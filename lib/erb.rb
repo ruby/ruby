@@ -999,8 +999,9 @@ class ERB
   # See [Default Binding][default binding].
   #
   # Argument `symbols` is an array of symbols;
-  # each symbol `symbol` is used to define (unless already defined) a variable in the binding
-  # whose name is `symbol` and whose value is `nil`.
+  # each symbol `symbol` is defined as a new variable to hide and
+  # prevent it from overwriting a variable of the same name already
+  # defined within the binding.
   #
   # [default binding]: rdoc-ref:ERB@Default+Binding
   def new_toplevel(vars = nil)
