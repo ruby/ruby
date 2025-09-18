@@ -777,12 +777,7 @@ class ERB
   # :call-seq:
   #   self.version -> string
   #
-  # Returns the string revision for \ERB:
-  #
-  # ```
-  # ERB.version # => "4.0.4"
-  # ```
-  #
+  # Returns the string \ERB version.
   def self.version
     VERSION
   end
@@ -817,7 +812,7 @@ class ERB
   # The string value of keyword argument `eoutvar` specifies the name of the variable
   # that method #result uses to construct its result string;
   # see #src.
-  # 
+  #
   # This is useful when you need to run multiple \ERB templates through the same binding
   # and/or when you want to control where output ends up.
   #
