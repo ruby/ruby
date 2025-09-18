@@ -9,6 +9,7 @@
 **********************************************************************/
 
 #include "vm_core.h"
+#include "eval_intern.h"
 #include "ruby/fiber/scheduler.h"
 #include "ruby/io.h"
 #include "ruby/io/buffer.h"
@@ -647,18 +648,32 @@ rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber)
 {
     RUBY_ASSERT(rb_obj_is_fiber(fiber));
 
+    VALUE result;
+    enum ruby_tag_type state;
+
     // `rb_fiber_scheduler_unblock` can be called from points where `errno` is expected to be preserved. Therefore, we should save and restore it. For example `io_binwrite` calls `rb_fiber_scheduler_unblock` and if `errno` is reset to 0 by user code, it will break the error handling in `io_write`.
+    //
     // If we explicitly preserve `errno` in `io_binwrite` and other similar functions (e.g. by returning it), this code is no longer needed. I hope in the future we will be able to remove it.
     int saved_errno = errno;
 
-#ifdef RUBY_DEBUG
+    // We must prevent interrupts while invoking the unblock method, because otherwise fibers can be left permanently blocked if an interrupt occurs during the execution of user code. See also `rb_fiber_scheduler_fiber_interrupt`.
     rb_execution_context_t *ec = GET_EC();
-    if (RUBY_VM_INTERRUPTED(ec)) {
-        rb_bug("rb_fiber_scheduler_unblock called with pending interrupt");
-    }
-#endif
+    int saved_interrupt_mask = ec->interrupt_mask;
+    ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
 
-    VALUE result = rb_funcall(scheduler, id_unblock, 2, blocker, fiber);
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        result = rb_funcall(scheduler, id_unblock, 2, blocker, fiber);
+    }
+    EC_POP_TAG();
+
+    ec->interrupt_mask = saved_interrupt_mask;
+
+    if (state) {
+        EC_JUMP_TAG(ec, state);
+    }
+
+    RUBY_VM_CHECK_INTS(ec);
 
     errno = saved_errno;
 
@@ -1080,14 +1095,29 @@ VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exc
         fiber, exception
     };
 
-#ifdef RUBY_DEBUG
-    rb_execution_context_t *ec = GET_EC();
-    if (RUBY_VM_INTERRUPTED(ec)) {
-        rb_bug("rb_fiber_scheduler_fiber_interrupt called with pending interrupt");
-    }
-#endif
+    VALUE result;
+    enum ruby_tag_type state;
 
-    return rb_check_funcall(scheduler, id_fiber_interrupt, 2, arguments);
+    // We must prevent interrupts while invoking the fiber_interrupt method, because otherwise fibers can be left permanently blocked if an interrupt occurs during the execution of user code. See also `rb_fiber_scheduler_unblock`.
+    rb_execution_context_t *ec = GET_EC();
+    int saved_interrupt_mask = ec->interrupt_mask;
+    ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
+
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        result = rb_check_funcall(scheduler, id_fiber_interrupt, 2, arguments);
+    }
+    EC_POP_TAG();
+
+    ec->interrupt_mask = saved_interrupt_mask;
+
+    if (state) {
+        EC_JUMP_TAG(ec, state);
+    }
+
+    RUBY_VM_CHECK_INTS(ec);
+
+    return result;
 }
 
 /*
