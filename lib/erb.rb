@@ -974,10 +974,35 @@ class ERB
     @lineno = lineno if lineno
   end
 
+  # :markup: markdown
   #
-  # Can be used to set _eoutvar_ as described in ERB::new.  It's probably
-  # easier to just use the constructor though, since calling this method
-  # requires the setup of an ERB _compiler_ object.
+  # :call-seq:
+  #   set_eoutvar(compiler, eoutvar = '_erbout') -> [eoutvar]
+  #
+  # Sets the `eoutvar` value in the ERB::Compiler object `compiler`;
+  # returns a 1-element array containing the value of `eoutvar`:
+  #
+  # ```
+  # template = ERB.new('')
+  # compiler = template.make_compiler(nil)
+  # pp compiler
+  # #<ERB::Compiler:0x000001cff8a9aa00
+  #  @insert_cmd="print",
+  #  @percent=false,
+  #  @post_cmd=[],
+  #  @pre_cmd=[],
+  #  @put_cmd="print",
+  #  @trim_mode=nil>
+  # template.set_eoutvar(compiler, '_foo') # => ["_foo"]
+  # pp compiler
+  # #<ERB::Compiler:0x000001cff8a9aa00
+  #  @insert_cmd="_foo.<<",
+  #  @percent=false,
+  #  @post_cmd=["_foo"],
+  #  @pre_cmd=["_foo = +''"],
+  #  @put_cmd="_foo.<<",
+  #  @trim_mode=nil>
+  # ```
   #
   def set_eoutvar(compiler, eoutvar = '_erbout')
     compiler.put_cmd = "#{eoutvar}.<<"
