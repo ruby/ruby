@@ -881,7 +881,7 @@ class ERB
   # for `trim_mode` values, see ERB.new:
   #
   # ```
-  # template = ERB.new('').make_compiler(nil)
+  # ERB.new('').make_compiler(nil)
   # # => #<ERB::Compiler:0x000001cff9467678 @insert_cmd="print", @percent=false, @post_cmd=[], @pre_cmd=[], @put_cmd="print", @trim_mode=nil>
   # ```
   #
