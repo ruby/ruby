@@ -825,26 +825,41 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal object.object_id.to_json, JSON.generate(object, strict: true, as_json: :object_id)
   end
 
+  def assert_float_roundtrip(expected, actual)
+    assert_equal(expected, JSON.generate(actual))
+    assert_equal(actual, JSON.parse(JSON.generate(actual)), "JSON: #{JSON.generate(actual)}")
+  end
+
   def test_json_generate_float
-      values = [-1.0, 1.0, 0.0, 12.2, 7.5 / 3.2, 12.0, 100.0, 1000.0]
-      expecteds = ["-1.0", "1.0", "0.0", "12.2", "2.34375", "12.0", "100.0", "1000.0"]
+    assert_float_roundtrip "-1.0", -1.0
+    assert_float_roundtrip "1.0", 1.0
+    assert_float_roundtrip "0.0", 0.0
+    assert_float_roundtrip "12.2", 12.2
+    assert_float_roundtrip "2.34375", 7.5 / 3.2
+    assert_float_roundtrip "12.0", 12.0
+    assert_float_roundtrip "100.0", 100.0
+    assert_float_roundtrip "1000.0", 1000.0
 
-      if RUBY_ENGINE == "jruby"
-        values << 1746861937.7842371
-        expecteds << "1.7468619377842371E9"
-      else
-        values << 1746861937.7842371
-        expecteds << "1746861937.7842371"
-      end
+    if RUBY_ENGINE == "jruby"
+      assert_float_roundtrip "1.7468619377842371E9", 1746861937.7842371
+    else
+      assert_float_roundtrip "1746861937.7842371", 1746861937.7842371
+    end
 
-      if RUBY_ENGINE == "ruby"
-        values << -2.2471348024634545e-08 << -2.2471348024634545e-09 << -2.2471348024634545e-10
-        expecteds << "-0.000000022471348024634545" << "-0.0000000022471348024634545" << "-2.2471348024634546e-10"
-      end
+    if RUBY_ENGINE == "ruby"
+      assert_float_roundtrip "100000000000000.0", 100000000000000.0
+      assert_float_roundtrip "1e+15", 1e+15
+      assert_float_roundtrip "-100000000000000.0", -100000000000000.0
+      assert_float_roundtrip "-1e+15", -1e+15
+      assert_float_roundtrip "1111111111111111.1", 1111111111111111.1
+      assert_float_roundtrip "1.1111111111111112e+16", 11111111111111111.1
+      assert_float_roundtrip "-1111111111111111.1", -1111111111111111.1
+      assert_float_roundtrip "-1.1111111111111112e+16", -11111111111111111.1
 
-      values.zip(expecteds).each do |value, expected|
-        assert_equal expected, value.to_json
-      end
+      assert_float_roundtrip "-0.000000022471348024634545", -2.2471348024634545e-08
+      assert_float_roundtrip "-0.0000000022471348024634545", -2.2471348024634545e-09
+      assert_float_roundtrip "-2.2471348024634546e-10", -2.2471348024634545e-10
+    end
   end
 
   def test_numbers_of_various_sizes
