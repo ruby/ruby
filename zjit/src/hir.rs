@@ -8160,6 +8160,96 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_opt_new_basic_object() {
+        eval("
+            def test = BasicObject.new
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, BasicObject)
+          v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v6:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(BasicObject@0x1008, new@0x1010, cme:0x1018)
+          v37:HeapObject[class_exact:BasicObject] = ObjectAllocClass VALUE(0x1008)
+          PatchPoint MethodRedefined(BasicObject@0x1008, initialize@0x1040, cme:0x1048)
+          v39:NilClass = CCall initialize@0x1070, v37
+          CheckInterrupts
+          CheckInterrupts
+          Return v37
+        ");
+    }
+
+    #[test]
+    fn test_opt_new_object() {
+        eval("
+            def test = Object.new
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Object)
+          v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v6:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(Object@0x1008, new@0x1010, cme:0x1018)
+          v37:HeapObject[class_exact:Object] = ObjectAllocClass VALUE(0x1008)
+          PatchPoint MethodRedefined(Object@0x1008, initialize@0x1040, cme:0x1048)
+          v39:NilClass = CCall initialize@0x1070, v37
+          CheckInterrupts
+          CheckInterrupts
+          Return v37
+        ");
+    }
+
+    #[test]
+    fn test_opt_new_exception() {
+        eval("
+            def test = Exception.new
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Exception)
+          v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v6:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(Exception@0x1008, new@0x1010, cme:0x1018)
+          v37:HeapObject[class_exact:Exception] = ObjectAllocClass VALUE(0x1008)
+          v12:BasicObject = SendWithoutBlock v37, :initialize
+          CheckInterrupts
+          CheckInterrupts
+          Return v37
+        ");
+    }
+
+    #[test]
+    fn test_opt_new_standard_error() {
+        eval("
+            def test = StandardError.new
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, StandardError)
+          v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v6:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(StandardError@0x1008, new@0x1010, cme:0x1018)
+          v37:HeapObject[class_exact:StandardError] = ObjectAllocClass VALUE(0x1008)
+          v12:BasicObject = SendWithoutBlock v37, :initialize
+          CheckInterrupts
+          CheckInterrupts
+          Return v37
+        ");
+    }
+
+    #[test]
     fn test_opt_length() {
         eval("
             def test(a,b) = [a,b].length
