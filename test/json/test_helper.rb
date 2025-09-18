@@ -1,19 +1,17 @@
 $LOAD_PATH.unshift(File.expand_path('../../../ext', __FILE__), File.expand_path('../../../lib', __FILE__))
 
-require 'coverage'
+if ENV["JSON_COVERAGE"]
+  # This test helper is loaded inside Ruby's own test suite, so we try to not mess it up.
+  require 'coverage'
 
-branches_supported = Coverage.respond_to?(:supported?) && Coverage.supported?(:branches)
+  branches_supported = Coverage.respond_to?(:supported?) && Coverage.supported?(:branches)
 
-# Coverage module must be started before SimpleCov to work around the cyclic require order.
-# Track both branches and lines, or else SimpleCov misleadingly reports 0/0 = 100% for non-branching files.
-Coverage.start(lines:    true,
-               branches: branches_supported)
+  # Coverage module must be started before SimpleCov to work around the cyclic require order.
+  # Track both branches and lines, or else SimpleCov misleadingly reports 0/0 = 100% for non-branching files.
+  Coverage.start(lines:    true,
+                 branches: branches_supported)
 
-begin
   require 'simplecov'
-rescue LoadError
-  # Don't fail Ruby's test suite
-else
   SimpleCov.start do
     # Enabling both coverage types to let SimpleCov know to output them together in reports
     enable_coverage :line
