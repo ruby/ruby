@@ -123,7 +123,7 @@ rb_imemo_fields_new(VALUE owner, size_t capa)
 static VALUE
 imemo_fields_new_complex(VALUE owner, size_t capa)
 {
-    VALUE fields = imemo_fields_new(owner, 1);
+    VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields));
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = st_init_numtable_with_size(capa);
     FL_SET_RAW(fields, OBJ_FIELD_HEAP);
     return fields;
