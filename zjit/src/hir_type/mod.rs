@@ -177,10 +177,40 @@ impl Type {
         }
     }
 
+    fn bits_from_exact_class(class: VALUE) -> Option<u64> {
+        types::ExactBitsAndClass.find(|&(bits, class_object)| class_object == class).map(|&(bits, _)| bits)
+    }
+
+    fn from_heap_object(val: VALUE) -> Type {
+        assert!(!val.special_const_p(), "val should be a heap object");
+        let bits =
+            // GC-hidden types
+            if is_array_exact(val) { bits::ArrayExact }
+            else if is_hash_exact(val) { bits::HashExact }
+            else if is_string_exact(val) { bits::StringExact }
+            // Singleton classes
+            else if is_module_exact(val) { bits::ModuleExact }
+            else if val.builtin_type() == RUBY_T_CLASS { bits::Class }
+            // Classes that have an immediate/heap split
+            else if val.class_of() == unsafe { rb_cInteger } { bits::Bignum }
+            else if val.class_of() == unsafe { rb_cFloat } { bits::HeapFloat }
+            else if val.class_of() == unsafe { rb_cSymbol } { bits::DynamicSymbol }
+            else {
+                Self::bits_from_exact_class(val.class_of()).unwrap_or({
+                    // We don't have a specific built-in bit pattern for this class, so generalize
+                    // as HeapObject with object specialization.
+                    bits::HeapObject
+                })
+            };
+        let spec = Specialization::Object(val);
+        Type { bits, spec }
+    }
+
     /// Create a `Type` from a Ruby `VALUE`. The type is not guaranteed to have object
     /// specialization in its `specialization` field (for example, `Qnil` will just be
     /// `types::NilClass`), but will be available via `ruby_object()`.
     pub fn from_value(val: VALUE) -> Type {
+        // Immediates
         if val.fixnum_p() {
             Type { bits: bits::Fixnum, spec: Specialization::Object(val) }
         }
@@ -199,45 +229,8 @@ impl Type {
             // valid on imemo.
             Type { bits: bits::CallableMethodEntry, spec: Specialization::Object(val) }
         }
-        else if val.class_of() == unsafe { rb_cInteger } {
-            Type { bits: bits::Bignum, spec: Specialization::Object(val) }
-        }
-        else if val.class_of() == unsafe { rb_cFloat } {
-            Type { bits: bits::HeapFloat, spec: Specialization::Object(val) }
-        }
-        else if val.class_of() == unsafe { rb_cSymbol } {
-            Type { bits: bits::DynamicSymbol, spec: Specialization::Object(val) }
-        }
-        else if is_array_exact(val) {
-            Type { bits: bits::ArrayExact, spec: Specialization::Object(val) }
-        }
-        else if is_hash_exact(val) {
-            Type { bits: bits::HashExact, spec: Specialization::Object(val) }
-        }
-        else if is_range_exact(val) {
-            Type { bits: bits::RangeExact, spec: Specialization::Object(val) }
-        }
-        else if is_string_exact(val) {
-            Type { bits: bits::StringExact, spec: Specialization::Object(val) }
-        }
-        else if is_module_exact(val) {
-            Type { bits: bits::ModuleExact, spec: Specialization::Object(val) }
-        }
-        else if val.builtin_type() == RUBY_T_CLASS {
-            Type { bits: bits::Class, spec: Specialization::Object(val) }
-        }
-        else if val.class_of() == unsafe { rb_cRegexp } {
-            Type { bits: bits::RegexpExact, spec: Specialization::Object(val) }
-        }
-        else if val.class_of() == unsafe { rb_cSet } {
-            Type { bits: bits::SetExact, spec: Specialization::Object(val) }
-        }
-        else if val.class_of() == unsafe { rb_cObject } {
-            Type { bits: bits::ObjectExact, spec: Specialization::Object(val) }
-        }
         else {
-            // TODO(max): Add more cases for inferring type bits from built-in types
-            Type { bits: bits::BasicObject, spec: Specialization::Object(val) }
+            Self::from_heap_object(val)
         }
     }
 
@@ -248,26 +241,17 @@ impl Type {
         else if val.is_nil() { types::NilClass }
         else if val.is_true() { types::TrueClass }
         else if val.is_false() { types::FalseClass }
-        else if val.class() == unsafe { rb_cString } { types::StringExact }
-        else if val.class() == unsafe { rb_cArray } { types::ArrayExact }
-        else if val.class() == unsafe { rb_cHash } { types::HashExact }
-        else {
-            // TODO(max): Add more cases for inferring type bits from built-in types
-            Type { bits: bits::HeapObject, spec: Specialization::TypeExact(val.class()) }
-        }
+        else { Self::from_class(val.class()) }
     }
 
     pub fn from_class(class: VALUE) -> Type {
-        if class == unsafe { rb_cArray } { types::ArrayExact }
-        else if class == unsafe { rb_cFalseClass } { types::FalseClass }
-        else if class == unsafe { rb_cHash } { types::HashExact }
-        else if class == unsafe { rb_cInteger } { types::Integer}
-        else if class == unsafe { rb_cNilClass } { types::NilClass }
-        else if class == unsafe { rb_cString } { types::StringExact }
-        else if class == unsafe { rb_cTrueClass } { types::TrueClass }
-        else {
-            // TODO(max): Add more cases for inferring type bits from built-in types
-            Type { bits: bits::HeapObject, spec: Specialization::TypeExact(class) }
+        match Self::bits_from_exact_class(class) {
+            Some(bits) => Type::from_bits(bits),
+            None => {
+                // We don't have a specific built-in bit pattern for this class, so generalize
+                // as HeapObject with object specialization.
+                Type { bits: bits::HeapObject, spec: Specialization::TypeExact(class) }
+            }
         }
     }
 
@@ -361,21 +345,7 @@ impl Type {
     }
 
     fn is_builtin(class: VALUE) -> bool {
-        if class == unsafe { rb_cArray } { return true; }
-        if class == unsafe { rb_cClass } { return true; }
-        if class == unsafe { rb_cFalseClass } { return true; }
-        if class == unsafe { rb_cFloat } { return true; }
-        if class == unsafe { rb_cHash } { return true; }
-        if class == unsafe { rb_cInteger } { return true; }
-        if class == unsafe { rb_cModule } { return true; }
-        if class == unsafe { rb_cNilClass } { return true; }
-        if class == unsafe { rb_cObject } { return true; }
-        if class == unsafe { rb_cRange } { return true; }
-        if class == unsafe { rb_cRegexp } { return true; }
-        if class == unsafe { rb_cString } { return true; }
-        if class == unsafe { rb_cSymbol } { return true; }
-        if class == unsafe { rb_cTrueClass } { return true; }
-        false
+        types::ExactBitsAndClass.find(|&(_, class_object)| class_object == class).is_some()
     }
 
     /// Union both types together, preserving specialization if possible.
@@ -471,22 +441,9 @@ impl Type {
         if let Some(val) = self.exact_ruby_class() {
             return Some(val);
         }
-        if self.is_subtype(types::ArrayExact) { return Some(unsafe { rb_cArray }); }
-        if self.is_subtype(types::Class) { return Some(unsafe { rb_cClass }); }
-        if self.is_subtype(types::FalseClass) { return Some(unsafe { rb_cFalseClass }); }
-        if self.is_subtype(types::Float) { return Some(unsafe { rb_cFloat }); }
-        if self.is_subtype(types::HashExact) { return Some(unsafe { rb_cHash }); }
-        if self.is_subtype(types::Integer) { return Some(unsafe { rb_cInteger }); }
-        if self.is_subtype(types::ModuleExact) { return Some(unsafe { rb_cModule }); }
-        if self.is_subtype(types::NilClass) { return Some(unsafe { rb_cNilClass }); }
-        if self.is_subtype(types::ObjectExact) { return Some(unsafe { rb_cObject }); }
-        if self.is_subtype(types::RangeExact) { return Some(unsafe { rb_cRange }); }
-        if self.is_subtype(types::RegexpExact) { return Some(unsafe { rb_cRegexp }); }
-        if self.is_subtype(types::SetExact) { return Some(unsafe { rb_cSet }); }
-        if self.is_subtype(types::StringExact) { return Some(unsafe { rb_cString }); }
-        if self.is_subtype(types::Symbol) { return Some(unsafe { rb_cSymbol }); }
-        if self.is_subtype(types::TrueClass) { return Some(unsafe { rb_cTrueClass }); }
-        None
+        types::ExactBitsAndClass
+            .find(|&(bits, class_object)| self.is_subtype(Type::from_bits(bits)))
+            .map(|&(_, class_object)| class_object)
     }
 
     /// Check bit equality of two `Type`s. Do not use! You are probably looking for [`Type::is_subtype`].
@@ -589,6 +546,17 @@ mod tests {
     fn float() {
         assert_subtype(types::Flonum, types::Float);
         assert_subtype(types::HeapFloat, types::Float);
+    }
+
+    #[test]
+    fn numeric() {
+        assert_subtype(types::Integer, types::Numeric);
+        assert_subtype(types::Float, types::Numeric);
+        assert_subtype(types::Float.union(types::Integer), types::Numeric);
+        assert_bit_equal(types::Float
+            .union(types::Integer)
+            .union(types::NumericExact)
+            .union(types::NumericSubclass), types::Numeric);
     }
 
     #[test]
