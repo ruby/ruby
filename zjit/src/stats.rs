@@ -133,6 +133,7 @@ make_counters! {
     dynamic_send_count,
     dynamic_send_type_send_without_block,
     dynamic_send_type_send,
+    dynamic_send_type_send_forward,
     dynamic_send_type_invokeblock,
     dynamic_send_type_invokesuper,
 

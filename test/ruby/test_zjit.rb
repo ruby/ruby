@@ -478,7 +478,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_sendforward
-    assert_runs '[1, 2]', %q{
+    assert_compiles '[1, 2]', %q{
       def callee(a, b) = [a, b]
       def test(...) = callee(...)
       test(1, 2)
