@@ -8121,7 +8121,8 @@ mod opt_tests {
           v6:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(C@0x1008, new@0x1010, cme:0x1018)
           v37:HeapObject[class_exact:C] = ObjectAllocClass VALUE(0x1008)
-          v12:BasicObject = SendWithoutBlock v37, :initialize
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1040, cme:0x1048)
+          v39:NilClass = CCall initialize@0x1070, v37
           CheckInterrupts
           CheckInterrupts
           Return v37
