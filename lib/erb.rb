@@ -929,9 +929,10 @@ class ERB
   # :markup: markdown
   #
   # Returns the encoding of `self`;
-  # see [encoding][encoding].
+  # see [Encodings][encodings]:
   #
-  # [encoding]: https://docs.ruby-lang.org/en/master/Encoding.html
+  # [encodings]: rdoc-ref:ERB@Encodings
+  #
   attr_reader :encoding
 
   # :markup: markdown
