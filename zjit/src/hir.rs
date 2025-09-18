@@ -1978,8 +1978,8 @@ impl Function {
                         if unsafe { rb_zjit_singleton_class_p(class) } {
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        if !unsafe { rb_zjit_class_has_default_allocator(class) } {
-                            // Custom or NULL allocator; could run arbitrary code.
+                        if !class_has_leaf_allocator(class) {
+                            // Custom, known unsafe, or NULL allocator; could run arbitrary code.
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let replacement = self.push_insn(block, Insn::ObjectAllocClass { class, state });
@@ -8293,6 +8293,165 @@ mod opt_tests {
           CheckInterrupts
           CheckInterrupts
           Return v39
+        ");
+    }
+
+    #[test]
+    fn test_opt_new_object() {
+        eval("
+            def test = Object.new
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Object)
+          v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v6:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(Object@0x1008, new@0x1010, cme:0x1018)
+          v37:HeapObject[class_exact:Object] = ObjectAllocClass VALUE(0x1008)
+          PatchPoint MethodRedefined(Object@0x1008, initialize@0x1040, cme:0x1048)
+          v39:NilClass = CCall initialize@0x1070, v37
+          CheckInterrupts
+          CheckInterrupts
+          Return v37
+        ");
+    }
+
+    #[test]
+    fn test_opt_new_basic_object() {
+        eval("
+            def test = BasicObject.new
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, BasicObject)
+          v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v6:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(BasicObject@0x1008, new@0x1010, cme:0x1018)
+          v37:HeapObject[class_exact:BasicObject] = ObjectAllocClass VALUE(0x1008)
+          PatchPoint MethodRedefined(BasicObject@0x1008, initialize@0x1040, cme:0x1048)
+          v39:NilClass = CCall initialize@0x1070, v37
+          CheckInterrupts
+          CheckInterrupts
+          Return v37
+        ");
+    }
+
+    #[test]
+    fn test_opt_new_hash() {
+        eval("
+            def test = Hash.new
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Hash)
+          v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v6:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(Hash@0x1008, new@0x1010, cme:0x1018)
+          v37:HashExact = ObjectAllocClass VALUE(0x1008)
+          v12:BasicObject = SendWithoutBlock v37, :initialize
+          CheckInterrupts
+          CheckInterrupts
+          Return v37
+        ");
+    }
+
+    #[test]
+    fn test_opt_new_array() {
+        eval("
+            def test = Array.new 1
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Array)
+          v36:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v6:NilClass = Const Value(nil)
+          v7:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Array@0x1008, new@0x1010, cme:0x1018)
+          PatchPoint MethodRedefined(Class@0x1040, new@0x1010, cme:0x1018)
+          v45:BasicObject = CCallVariadic new@0x1048, v36, v7
+          CheckInterrupts
+          Return v45
+        ");
+    }
+
+    #[test]
+    fn test_opt_new_set() {
+        eval("
+            def test = Set.new
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Set)
+          v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v6:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(Set@0x1008, new@0x1010, cme:0x1018)
+          v10:HeapObject = ObjectAlloc v34
+          PatchPoint MethodRedefined(Set@0x1008, initialize@0x1040, cme:0x1048)
+          v39:BasicObject = CCallVariadic initialize@0x1070, v10
+          CheckInterrupts
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
+    fn test_opt_new_string() {
+        eval("
+            def test = String.new
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, String)
+          v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v6:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(String@0x1008, new@0x1010, cme:0x1018)
+          PatchPoint MethodRedefined(Class@0x1040, new@0x1010, cme:0x1018)
+          v43:BasicObject = CCallVariadic new@0x1048, v34
+          CheckInterrupts
+          Return v43
+        ");
+    }
+
+    #[test]
+    fn test_opt_new_regexp() {
+        eval("
+            def test = Regexp.new ''
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Regexp)
+          v38:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v6:NilClass = Const Value(nil)
+          v7:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v9:StringExact = StringCopy v7
+          PatchPoint MethodRedefined(Regexp@0x1008, new@0x1018, cme:0x1020)
+          v41:HeapObject[class_exact:Regexp] = ObjectAllocClass VALUE(0x1008)
+          PatchPoint MethodRedefined(Regexp@0x1008, initialize@0x1048, cme:0x1050)
+          v44:BasicObject = CCallVariadic initialize@0x1078, v41, v9
+          CheckInterrupts
+          CheckInterrupts
+          Return v41
         ");
     }
 

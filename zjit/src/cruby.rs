@@ -1218,6 +1218,19 @@ pub fn get_class_name(class: VALUE) -> String {
     }).unwrap_or_else(|| "Unknown".to_string())
 }
 
+pub fn class_has_leaf_allocator(class: VALUE) -> bool {
+    // empty_hash_alloc
+    if class == unsafe { rb_cHash } { return true; }
+    // empty_ary_alloc
+    if class == unsafe { rb_cArray } { return true; }
+    // empty_str_alloc
+    if class == unsafe { rb_cString } { return true; }
+    // rb_reg_s_alloc
+    if class == unsafe { rb_cRegexp } { return true; }
+    // rb_class_allocate_instance
+    unsafe { rb_zjit_class_has_default_allocator(class) }
+}
+
 /// Interned ID values for Ruby symbols and method names.
 /// See [type@crate::cruby::ID] and usages outside of ZJIT.
 pub(crate) mod ids {
