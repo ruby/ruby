@@ -16575,6 +16575,7 @@ scheduler.$(OBJEXT): {$(VPATH)}config.h
 scheduler.$(OBJEXT): {$(VPATH)}constant.h
 scheduler.$(OBJEXT): {$(VPATH)}defines.h
 scheduler.$(OBJEXT): {$(VPATH)}encoding.h
+scheduler.$(OBJEXT): {$(VPATH)}eval_intern.h
 scheduler.$(OBJEXT): {$(VPATH)}fiber/scheduler.h
 scheduler.$(OBJEXT): {$(VPATH)}id.h
 scheduler.$(OBJEXT): {$(VPATH)}id_table.h
