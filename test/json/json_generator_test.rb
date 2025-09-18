@@ -822,7 +822,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
 
   def test_json_generate_as_json_convert_to_proc
     object = Object.new
-    assert_equal object.object_id.to_json, JSON.generate(object, strict: true, as_json: :object_id)
+    assert_equal object.object_id.to_json, JSON.generate(object, strict: true, as_json: -> (o, is_key) { o.object_id })
   end
 
   def assert_float_roundtrip(expected, actual)
