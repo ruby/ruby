@@ -872,8 +872,19 @@ class ERB
   NOT_GIVEN = defined?(Ractor) ? Ractor.make_shareable(Object.new) : Object.new
   private_constant :NOT_GIVEN
 
-  ##
-  # Creates a new compiler for ERB.  See ERB::Compiler.new for details
+  # :markup: markdown
+  #
+  # :call-seq:
+  #   make_compiler -> erb_compiler
+  #
+  # Returns a new ERB::Compiler with the given `trim_mode`;
+  # for `trim_mode` values, see ERB.new:
+  #
+  # ```
+  # template = ERB.new('').make_compiler(nil)
+  # # => #<ERB::Compiler:0x000001cff9467678 @insert_cmd="print", @percent=false, @post_cmd=[], @pre_cmd=[], @put_cmd="print", @trim_mode=nil>
+  # ```
+  #
 
   def make_compiler(trim_mode)
     ERB::Compiler.new(trim_mode)
