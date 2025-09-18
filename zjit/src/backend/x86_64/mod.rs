@@ -525,7 +525,12 @@ impl Assembler
                     let opnd1 = emit_64bit_immediate(cb, right);
                     imul(cb, left.into(), opnd1);
                     if left != out {
-                        mov(cb, out.into(), left.into());
+                        if let (Opnd::Mem(_), Opnd::Reg(_)) = (left, right) {
+                            // imul flips the left and the right for this case
+                            mov(cb, out.into(), right.into());
+                        } else {
+                            mov(cb, out.into(), left.into());
+                        }
                     }
                 },
 
