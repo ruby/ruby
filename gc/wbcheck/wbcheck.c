@@ -5,6 +5,8 @@
 #include "ruby/internal/core/rbasic.h"
 #include "ruby/st.h"
 #include "internal/object.h"
+#include "internal/array.h"
+#include "internal.h"
 
 #include "gc/gc.h"
 #include "gc/gc_impl.h"
@@ -279,6 +281,7 @@ static void
 wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_list_t *current_refs, wbcheck_object_list_t *gc_mark_snapshot, wbcheck_object_list_t *writebarrier_children)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    (void)objspace;
 
     size_t snapshot_count = gc_mark_snapshot ? gc_mark_snapshot->count : 0;
     size_t wb_count = writebarrier_children ? writebarrier_children->count : 0;
@@ -941,7 +944,7 @@ lock_and_maybe_gc(void *objspace_ptr)
 }
 
 VALUE
-rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size)
+rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
 {
     unsigned int lev = RB_GC_VM_LOCK();
     rb_gc_vm_barrier();
@@ -960,12 +963,6 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     VALUE obj = (VALUE)mem;
     RBASIC(obj)->flags = flags;
     *((VALUE *)&RBASIC(obj)->klass) = klass;
-
-    // Fill in provided values
-    VALUE *ptr = (VALUE *)((char *)obj + sizeof(struct RBasic));
-    ptr[0] = v1;
-    ptr[1] = v2;
-    ptr[2] = v3;
 
     // Register the new object in our tracking table
     wbcheck_register_object(objspace_ptr, obj, alloc_size, wb_protected);
@@ -1009,23 +1006,29 @@ rb_gc_impl_size_allocatable_p(size_t size)
 
 // Malloc
 void *
-rb_gc_impl_malloc(void *objspace_ptr, size_t size)
+rb_gc_impl_malloc(void *objspace_ptr, size_t size, bool gc_allowed)
 {
-    lock_and_maybe_gc(objspace_ptr);
+    if (gc_allowed) {
+        lock_and_maybe_gc(objspace_ptr);
+    }
     return malloc(size);
 }
 
 void *
-rb_gc_impl_calloc(void *objspace_ptr, size_t size)
+rb_gc_impl_calloc(void *objspace_ptr, size_t size, bool gc_allowed)
 {
-    lock_and_maybe_gc(objspace_ptr);
+    if (gc_allowed) {
+        lock_and_maybe_gc(objspace_ptr);
+    }
     return calloc(1, size);
 }
 
 void *
-rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size)
+rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size, bool gc_allowed)
 {
-    lock_and_maybe_gc(objspace_ptr);
+    if (gc_allowed) {
+        lock_and_maybe_gc(objspace_ptr);
+    }
     return realloc(ptr, new_size);
 }
 
@@ -1356,7 +1359,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
 
     if (!table) {
         /* First finalizer for this object */
-        table = rb_ary_new3(1, block);
+        table = rb_ary_new_from_values(1, &block);
         rb_obj_hide(table);
         info->finalizers = table;
     } else {
