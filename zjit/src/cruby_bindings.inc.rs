@@ -935,6 +935,7 @@ unsafe extern "C" {
     pub fn rb_zjit_print_exception();
     pub fn rb_zjit_singleton_class_p(klass: VALUE) -> bool;
     pub fn rb_zjit_defined_ivar(obj: VALUE, id: ID, pushval: VALUE) -> VALUE;
+    pub fn rb_zjit_method_tracing_currently_enabled() -> bool;
     pub fn rb_zjit_insn_leaf(insn: ::std::os::raw::c_int, opes: *const VALUE) -> bool;
     pub fn rb_zjit_local_id(iseq: *const rb_iseq_t, idx: ::std::os::raw::c_uint) -> ID;
     pub fn rb_zjit_cme_is_cfunc(

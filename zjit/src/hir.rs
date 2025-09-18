@@ -621,6 +621,17 @@ pub enum Insn {
     /// `name` is for printing purposes only
     CCall { cfun: *const u8, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
 
+    /// Call a variadic C function with signature: func(int argc, VALUE *argv, VALUE recv)
+    /// This handles frame setup, argv creation, and frame teardown all in one
+    CCallVariadic {
+        cfun: *const u8,
+        recv: InsnId,
+        args: Vec<InsnId>,
+        cme: *const rb_callable_method_entry_t,
+        name: ID,
+        state: InsnId,
+    },
+
     /// Un-optimized fallback implementation (dynamic dispatch) for send-ish instructions
     /// Ignoring keyword arguments etc for now
     SendWithoutBlock {
@@ -935,6 +946,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::CCall { cfun, args, name, return_type: _, elidable: _ } => {
                 write!(f, "CCall {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                Ok(())
+            },
+            Insn::CCallVariadic { cfun,  recv, args, name, .. } => {
+                write!(f, "CCallVariadic {}@{:p}, {recv}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1422,6 +1440,9 @@ impl Function {
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
             &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun, args: find_vec!(args), name, return_type, elidable },
+            &CCallVariadic { cfun, recv, ref args, cme, name, state } => CCallVariadic {
+                cfun, recv: find!(recv), args: find_vec!(args), cme, name, state
+            },
             &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
             &NewArray { ref elements, state } => NewArray { elements: find_vec!(elements), state: find!(state) },
@@ -1509,6 +1530,7 @@ impl Function {
             Insn::ObjectAlloc { .. } => types::HeapObject,
             Insn::ObjectAllocClass { class, .. } => Type::from_class(*class),
             Insn::CCall { return_type, .. } => *return_type,
+            Insn::CCallVariadic { .. } => types::BasicObject,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_value(*expected)),
@@ -2076,9 +2098,39 @@ impl Function {
                         return Ok(());
                     }
                 }
+                // Variadic method
                 -1 => {
-                    // (argc, argv, self) parameter form
-                    // Falling through for now
+                    if unsafe { rb_zjit_method_tracing_currently_enabled() } {
+                        return Err(());
+                    }
+                    // The method gets a pointer to the first argument
+                    // func(int argc, VALUE *argv, VALUE recv)
+                    let ci_flags = unsafe { vm_ci_flag(call_info) };
+                    if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoTracePoint, state });
+                        fun.push_insn(block, Insn::PatchPoint {
+                            invariant: Invariant::MethodRedefined {
+                                klass: recv_class,
+                                method: method_id,
+                                cme: method
+                            },
+                            state
+                        });
+
+                        let cfun = unsafe { get_mct_func(cfunc) }.cast();
+                        let ccall = fun.push_insn(block, Insn::CCallVariadic {
+                            cfun,
+                            recv,
+                            args,
+                            cme: method,
+                            name: method_id,
+                            state,
+                        });
+
+                        fun.make_equal_to(send_insn_id, ccall);
+                        return Ok(());
+                    }
+                    // Fall through for complex cases (splat, kwargs, etc.)
                 }
                 -2 => {
                     // (self, args_ruby_array) parameter form
@@ -2379,6 +2431,7 @@ impl Function {
             }
             &Insn::Send { recv, ref args, state, .. }
             | &Insn::SendWithoutBlock { recv, ref args, state, .. }
+            | &Insn::CCallVariadic { recv, ref args, state, .. }
             | &Insn::SendWithoutBlockDirect { recv, ref args, state, .. }
             | &Insn::InvokeSuper { recv, ref args, state, .. } => {
                 worklist.push_back(recv);
@@ -6892,6 +6945,26 @@ mod opt_tests {
           v20:BasicObject = SendWithoutBlockDirect v19, :bar (0x1038)
           CheckInterrupts
           Return v20
+        ");
+    }
+
+    #[test]
+    fn test_optimize_variadic_ccall() {
+        eval("
+            def test
+              puts 'Hello'
+            end
+            test; test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v6:StringExact = StringCopy v4
+          PatchPoint MethodRedefined(Object@0x1008, puts@0x1010, cme:0x1018)
+          v16:BasicObject = CCallVariadic puts@0x1040, v0, v6
+          CheckInterrupts
+          Return v16
         ");
     }
 

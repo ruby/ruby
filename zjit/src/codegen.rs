@@ -397,6 +397,9 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardBlockParamProxy { level, state } => no_output!(gen_guard_block_param_proxy(jit, asm, level, &function.frame_state(state))),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfun, opnds!(args)),
+        Insn::CCallVariadic { cfun, recv, args, name: _, cme, state } => {
+            gen_ccall_variadic(jit, asm, *cfun, opnd!(recv), opnds!(args), *cme, &function.frame_state(*state))
+        }
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
         Insn::GetGlobal { id, state } => gen_getglobal(jit, asm, *id, &function.frame_state(*state)),
@@ -636,6 +639,52 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invarian
 /// anything about the callee, so handling for e.g. GC safety is dealt with elsewhere.
 fn gen_ccall(asm: &mut Assembler, cfun: *const u8, args: Vec<Opnd>) -> lir::Opnd {
     asm.ccall(cfun, args)
+}
+
+/// Generate code for a variadic C function call
+/// func(int argc, VALUE *argv, VALUE recv)
+fn gen_ccall_variadic(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    cfun: *const u8,
+    recv: Opnd,
+    args: Vec<Opnd>,
+    cme: *const rb_callable_method_entry_t,
+    state: &FrameState,
+) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    gen_push_frame(asm, args.len(), state, ControlFrame {
+        recv,
+        iseq: None,
+        cme,
+        frame_type: VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL,
+    });
+
+    asm_comment!(asm, "switch to new SP register");
+    let sp_offset = (state.stack().len() - args.len() + VM_ENV_DATA_SIZE.as_usize()) * SIZEOF_VALUE;
+    let new_sp = asm.add(SP, sp_offset.into());
+    asm.mov(SP, new_sp);
+
+    asm_comment!(asm, "switch to new CFP");
+    let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+
+    let argv_ptr = gen_push_opnds(jit, asm, &args);
+    let result = asm.ccall(cfun, vec![args.len().into(), argv_ptr, recv]);
+    gen_pop_opnds(asm, &args);
+
+    asm_comment!(asm, "pop C frame");
+    let new_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+
+    asm_comment!(asm, "restore SP register for the caller");
+    let new_sp = asm.sub(SP, sp_offset.into());
+    asm.mov(SP, new_sp);
+
+    result
 }
 
 /// Emit an uncached instance variable lookup
@@ -1054,7 +1103,7 @@ fn gen_send_without_block_direct(
     // TODO: Lazily materialize caller frames on side exits or when needed
     gen_push_frame(asm, args.len(), state, ControlFrame {
         recv,
-        iseq,
+        iseq: Some(iseq),
         cme,
         frame_type: VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL,
     });
@@ -1582,7 +1631,7 @@ fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, state: &FrameS
 /// Frame metadata written by gen_push_frame()
 struct ControlFrame {
     recv: Opnd,
-    iseq: IseqPtr,
+    iseq: Option<IseqPtr>,
     cme: *const rb_callable_method_entry_t,
     frame_type: u32,
 }
@@ -1594,7 +1643,11 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
     // See vm_push_frame() for details
     asm_comment!(asm, "push cme, specval, frame type");
     // ep[-2]: cref of cme
-    let local_size = unsafe { get_iseq_body_local_table_size(frame.iseq) } as i32;
+    let local_size = if let Some(iseq) = frame.iseq {
+        (unsafe { get_iseq_body_local_table_size(iseq) }) as i32
+    } else {
+        0
+    };
     let ep_offset = state.stack().len() as i32 + local_size - argc as i32 + VM_ENV_DATA_SIZE as i32 - 1;
     asm.store(Opnd::mem(64, SP, (ep_offset - 2) * SIZEOF_VALUE_I32), VALUE::from(frame.cme).into());
     // ep[-1]: block_handler or prev EP
@@ -1609,9 +1662,19 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
     }
 
     asm_comment!(asm, "push callee control frame");
-    // cfp_opnd(RUBY_OFFSET_CFP_PC): written by the callee frame on side-exits or non-leaf calls
-    // cfp_opnd(RUBY_OFFSET_CFP_SP): written by the callee frame on side-exits or non-leaf calls
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), VALUE::from(frame.iseq).into());
+
+    if let Some(iseq) = frame.iseq {
+        // cfp_opnd(RUBY_OFFSET_CFP_PC): written by the callee frame on side-exits or non-leaf calls
+        // cfp_opnd(RUBY_OFFSET_CFP_SP): written by the callee frame on side-exits or non-leaf calls
+        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), VALUE::from(iseq).into());
+    } else {
+        // C frames don't have a PC and ISEQ
+        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), 0.into());
+        let new_sp = asm.lea(Opnd::mem(64, SP, (ep_offset + 1) * SIZEOF_VALUE_I32));
+        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), new_sp);
+        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), 0.into());
+    }
+
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), frame.recv);
     let ep = asm.lea(Opnd::mem(64, SP, ep_offset * SIZEOF_VALUE_I32));
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_EP), ep);
