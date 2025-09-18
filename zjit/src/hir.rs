@@ -1970,7 +1970,8 @@ impl Function {
                         // a singleton class, or has a custom allocator, ObjectAlloc might raise an
                         // exception or run arbitrary code.
                         //
-                        // We also need to check if the class is initialized or a singleton before trying to read the allocator, otherwise it might raise.
+                        // We also need to check if the class is initialized or a singleton before
+                        // trying to read the allocator, otherwise it might raise.
                         if !unsafe { rb_zjit_class_initialized_p(class) } {
                             self.push_insn_id(block, insn_id); continue;
                         }
