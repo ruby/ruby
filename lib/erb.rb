@@ -815,7 +815,9 @@ class ERB
   # **Keyword Argument `eoutvar`**
   #
   # The string value of keyword argument `eoutvar` specifies the name of the variable
-  # that method #result uses to construct its result string.
+  # that method #result uses to construct its result string;
+  # see #src.
+  # 
   # This is useful when you need to run multiple \ERB templates through the same binding
   # and/or when you want to control where output ends up.
   #
