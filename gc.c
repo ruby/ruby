@@ -991,8 +991,7 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, bool wb_protected, size_t s
     gc_validate_pc();
 
     if (UNLIKELY(rb_gc_event_hook_required_p(RUBY_INTERNAL_EVENT_NEWOBJ))) {
-        unsigned int lev;
-        RB_VM_LOCK_ENTER_CR_LEV(cr, &lev);
+        int lev = RB_GC_VM_LOCK_NO_BARRIER();
         {
             memset((char *)obj + RVALUE_SIZE, 0, rb_gc_obj_slot_size(obj) - RVALUE_SIZE);
 
@@ -1007,7 +1006,7 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, bool wb_protected, size_t s
             }
             if (!gc_disabled) rb_gc_enable();
         }
-        RB_VM_LOCK_LEAVE_CR_LEV(cr, &lev);
+        RB_GC_VM_UNLOCK_NO_BARRIER(lev);
     }
 
 #if RGENGC_CHECK_MODE
