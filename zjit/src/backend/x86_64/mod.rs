@@ -505,34 +505,52 @@ impl Assembler
                     pop(cb, RBP);
                 }
 
-                Insn::Add { left, right, .. } => {
+                Insn::Add { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     add(cb, left.into(), opnd1);
+                    if left != out {
+                        mov(cb, out.into(), left.into());
+                    }
                 },
 
-                Insn::Sub { left, right, .. } => {
+                Insn::Sub { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     sub(cb, left.into(), opnd1);
+                    if left != out {
+                        mov(cb, out.into(), left.into());
+                    }
                 },
 
-                Insn::Mul { left, right, .. } => {
+                Insn::Mul { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     imul(cb, left.into(), opnd1);
+                    if left != out {
+                        mov(cb, out.into(), left.into());
+                    }
                 },
 
-                Insn::And { left, right, .. } => {
+                Insn::And { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     and(cb, left.into(), opnd1);
+                    if left != out {
+                        mov(cb, out.into(), left.into());
+                    }
                 },
 
-                Insn::Or { left, right, .. } => {
+                Insn::Or { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     or(cb, left.into(), opnd1);
+                    if left != out {
+                        mov(cb, out.into(), left.into());
+                    }
                 },
 
-                Insn::Xor { left, right, .. } => {
+                Insn::Xor { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     xor(cb, left.into(), opnd1);
+                    if left != out {
+                        mov(cb, out.into(), left.into());
+                    }
                 },
 
                 Insn::Not { opnd, .. } => {

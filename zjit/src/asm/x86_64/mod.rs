@@ -786,7 +786,7 @@ pub fn imul(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) {
             write_rm(cb, false, true, opnd1, opnd0, None, &[0x0F, 0xAF]);
         }
 
-        _ => unreachable!()
+        _ => unreachable!("unexpected operands: {opnd0:?}, {opnd1:?}")
     }
 }
 
