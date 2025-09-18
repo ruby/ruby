@@ -3791,13 +3791,15 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq, args, state: exit_id });
                     state.stack_push(send);
 
-                    // Reload locals that may have been modified by the blockiseq.
-                    // TODO: Avoid reloading locals that are not referenced by the blockiseq
-                    // or not used after this. Max thinks we could eventually DCE them.
-                    for local_idx in 0..state.locals.len() {
-                        let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
-                        let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
-                        state.setlocal(ep_offset, val);
+                    if !blockiseq.is_null() {
+                        // Reload locals that may have been modified by the blockiseq.
+                        // TODO: Avoid reloading locals that are not referenced by the blockiseq
+                        // or not used after this. Max thinks we could eventually DCE them.
+                        for local_idx in 0..state.locals.len() {
+                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
+                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
+                            state.setlocal(ep_offset, val);
+                        }
                     }
                 }
                 YARVINSN_sendforward => {
@@ -3820,11 +3822,13 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let send_forward = fun.push_insn(block, Insn::SendForward { recv, cd, blockiseq, args, state: exit_id });
                     state.stack_push(send_forward);
 
-                    // Reload locals that may have been modified by the blockiseq.
-                    for local_idx in 0..state.locals.len() {
-                        let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
-                        let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
-                        state.setlocal(ep_offset, val);
+                    if !blockiseq.is_null() {
+                        // Reload locals that may have been modified by the blockiseq.
+                        for local_idx in 0..state.locals.len() {
+                            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
+                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
+                            state.setlocal(ep_offset, val);
+                        }
                     }
                 }
                 YARVINSN_invokesuper => {
@@ -5359,7 +5363,6 @@ mod tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           v6:BasicObject = Send v0, 0x1000, :foo, v1
-          v7:BasicObject = GetLocal l0, EP@3
           CheckInterrupts
           Return v6
         ");
@@ -5509,7 +5512,6 @@ mod tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           v6:BasicObject = SendForward 0x1000, :foo, v1
-          v7:BasicObject = GetLocal l0, EP@3
           CheckInterrupts
           Return v6
         ");
@@ -8321,7 +8323,6 @@ mod opt_tests {
           GuardBlockParamProxy l0
           v7:BasicObject[BlockParamProxy] = Const Value(VALUE(0x1000))
           v9:BasicObject = Send v0, 0x1008, :tap, v7
-          v10:BasicObject = GetLocal l0, EP@3
           CheckInterrupts
           Return v9
         ");
