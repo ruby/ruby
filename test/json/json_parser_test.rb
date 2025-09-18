@@ -319,6 +319,12 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { parse('"\u111___"') }
   end
 
+  def test_invalid_surogates
+    assert_raise(JSON::ParserError) { parse('"\\uD800"') }
+    assert_raise(JSON::ParserError) { parse('"\\uD800_________________"') }
+    assert_raise(JSON::ParserError) { parse('"\\uD800\\u0041"') }
+  end
+
   def test_parse_big_integers
     json1 = JSON(orig = (1 << 31) - 1)
     assert_equal orig, parse(json1)

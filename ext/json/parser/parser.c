@@ -713,11 +713,16 @@ static VALUE json_string_unescape(JSON_ParserState *state, const char *string, c
                         }
                         if (pe[0] == '\\' && pe[1] == 'u') {
                             uint32_t sur = unescape_unicode(state, (unsigned char *) pe + 2);
+
+                            if ((sur & 0xFC00) != 0xDC00) {
+                                raise_parse_error_at("invalid surrogate pair at %s", state, p);
+                            }
+
                             ch = (((ch & 0x3F) << 10) | ((((ch >> 6) & 0xF) + 1) << 16)
                                     | (sur & 0x3FF));
                             pe += 5;
                         } else {
-                            unescape = (char *) "?";
+                            raise_parse_error_at("incomplete surrogate pair at %s", state, p);
                             break;
                         }
                     }
