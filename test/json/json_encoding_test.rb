@@ -31,6 +31,12 @@ class JSONEncodingTest < Test::Unit::TestCase
     assert_equal @generated, JSON.generate(@utf_16_data, ascii_only: true)
   end
 
+  def test_generate_shared_string
+    # Ref: https://github.com/ruby/json/issues/859
+    s = "01234567890"
+    assert_equal '"234567890"', JSON.dump(s[2..-1])
+  end
+
   def test_unicode
     assert_equal '""', ''.to_json
     assert_equal '"\\b"', "\b".to_json
