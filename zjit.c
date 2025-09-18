@@ -159,6 +159,23 @@ rb_zjit_defined_ivar(VALUE obj, ID id, VALUE pushval)
 }
 
 bool
+rb_zjit_method_tracing_currently_enabled(void)
+{
+    rb_event_flag_t tracing_events;
+    if (rb_multi_ractor_p()) {
+        tracing_events = ruby_vm_event_enabled_global_flags;
+    }
+    else {
+        // At the time of writing, events are never removed from
+        // ruby_vm_event_enabled_global_flags so always checking using it would
+        // mean we don't compile even after tracing is disabled.
+        tracing_events = rb_ec_ractor_hooks(GET_EC())->events;
+    }
+
+    return tracing_events & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN);
+}
+
+bool
 rb_zjit_insn_leaf(int insn, const VALUE *opes)
 {
     return insn_leaf(insn, opes);

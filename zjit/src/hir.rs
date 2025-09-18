@@ -2100,10 +2100,14 @@ impl Function {
                 }
                 // Variadic method
                 -1 => {
+                    if unsafe { rb_zjit_method_tracing_currently_enabled() } {
+                        return Err(());
+                    }
                     // The method gets a pointer to the first argument
                     // func(int argc, VALUE *argv, VALUE recv)
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
                     if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoTracePoint, state });
                         fun.push_insn(block, Insn::PatchPoint {
                             invariant: Invariant::MethodRedefined {
                                 klass: recv_class,
@@ -6958,9 +6962,9 @@ mod opt_tests {
           v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v6:StringExact = StringCopy v4
           PatchPoint MethodRedefined(Object@0x1008, puts@0x1010, cme:0x1018)
-          v15:BasicObject = CCallVariadic puts@0x1040, v0, v6
+          v16:BasicObject = CCallVariadic puts@0x1040, v0, v6
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
