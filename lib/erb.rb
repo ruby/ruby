@@ -868,6 +868,10 @@ class ERB
     @lineno = 0
     @_init = self.class.singleton_class
   end
+
+  # :markup: markdown
+  #
+  # Placeholder constant; used as default value for certain method arguments.
   NOT_GIVEN = defined?(Ractor) ? Ractor.make_shareable(Object.new) : Object.new
   private_constant :NOT_GIVEN
 
