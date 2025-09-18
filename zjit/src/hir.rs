@@ -5518,6 +5518,23 @@ mod tests {
     }
 
     #[test]
+    fn test_compile_triple_dots_with_positional_args() {
+        eval("
+            def test(a, ...) = foo(a, ...)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v0:BasicObject, v1:BasicObject, v2:ArrayExact, v3:BasicObject, v4:BasicObject):
+          v5:NilClass = Const Value(nil)
+          v10:ArrayExact = ToArray v2
+          PatchPoint NoEPEscape(test)
+          GuardBlockParamProxy l0
+          v15:BasicObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          SideExit UnhandledYARVInsn(splatkw)
+        ");
+    }
+
+    #[test]
     fn test_opt_new() {
         eval("
             class C; end
