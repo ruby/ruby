@@ -3577,12 +3577,6 @@ syserr_eqq(VALUE self, VALUE exc)
  */
 
 static VALUE
-exception_alloc(VALUE klass)
-{
-    return rb_class_allocate_instance(klass);
-}
-
-static VALUE
 exception_dumper(VALUE exc)
 {
     // TODO: Currently, the instance variables "bt" and "bt_locations"
@@ -3628,7 +3622,6 @@ void
 Init_Exception(void)
 {
     rb_eException   = rb_define_class("Exception", rb_cObject);
-    rb_define_alloc_func(rb_eException, exception_alloc);
     rb_marshal_define_compat(rb_eException, rb_eException, exception_dumper, exception_loader);
     rb_define_singleton_method(rb_eException, "exception", rb_class_new_instance, -1);
     rb_define_singleton_method(rb_eException, "to_tty?", exc_s_to_tty_p, 0);
