@@ -177,6 +177,7 @@ pub fn init() -> Annotations {
     annotate!(rb_mKernel, "nil?", types::FalseClass, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "==", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cBasicObject, "initialize", types::NilClass, no_gc, leaf, elidable);
 
     annotate_builtin!(rb_mKernel, "Float", types::Float);
     annotate_builtin!(rb_mKernel, "Integer", types::Integer);
