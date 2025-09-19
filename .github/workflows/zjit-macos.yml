@@ -112,11 +112,12 @@ jobs:
           echo "RUBY_CRASH_REPORT=$(pwd)/rb_crash_%p.txt" >> $GITHUB_ENV
 
       - name: make ${{ matrix.test_task }}
-        run: >-
-          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
-          RUN_OPTS="$RUN_OPTS"
-          SPECOPTS="$SPECOPTS"
-          TESTOPTS="$TESTOPTS"
+        run: |
+          set -x
+          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"} \
+            RUN_OPTS="$RUN_OPTS" \
+            SPECOPTS="$SPECOPTS" \
+            TESTOPTS="$TESTOPTS"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
