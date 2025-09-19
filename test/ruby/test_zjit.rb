@@ -997,31 +997,87 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_opt_hash_freeze
-    assert_compiles '{}', <<~RUBY, insns: [:opt_hash_freeze]
+    assert_compiles "[{}, 5]", %q{
+      def test = {}.freeze
+      result = [test]
+      class Hash
+        def freeze = 5
+      end
+      result << test
+    }, insns: [:opt_hash_freeze], call_threshold: 1
+  end
+
+  def test_opt_hash_freeze_rewritten
+    assert_compiles "5", %q{
+      class Hash
+        def freeze = 5
+      end
       def test = {}.freeze
       test
-    RUBY
+    }, insns: [:opt_hash_freeze], call_threshold: 1
   end
 
   def test_opt_ary_freeze
-    assert_compiles '[]', <<~RUBY, insns: [:opt_ary_freeze]
+    assert_compiles "[[], 5]", %q{
+      def test = [].freeze
+      result = [test]
+      class Array
+        def freeze = 5
+      end
+      result << test
+    }, insns: [:opt_ary_freeze], call_threshold: 1
+  end
+
+  def test_opt_ary_freeze_rewritten
+    assert_compiles "5", %q{
+      class Array
+        def freeze = 5
+      end
       def test = [].freeze
       test
-    RUBY
+    }, insns: [:opt_ary_freeze], call_threshold: 1
   end
 
   def test_opt_str_freeze
-    assert_compiles '""', <<~RUBY, insns: [:opt_str_freeze]
-      def test = "".freeze
+    assert_compiles "[\"\", 5]", %q{
+      def test = ''.freeze
+      result = [test]
+      class String
+        def freeze = 5
+      end
+      result << test
+    }, insns: [:opt_str_freeze], call_threshold: 1
+  end
+
+  def test_opt_str_freeze_rewritten
+    assert_compiles "5", %q{
+      class String
+        def freeze = 5
+      end
+      def test = ''.freeze
       test
-    RUBY
+    }, insns: [:opt_str_freeze], call_threshold: 1
   end
 
   def test_opt_str_uminus
-    assert_compiles '""', <<~RUBY, insns: [:opt_str_uminus]
-      def test = -""
+    assert_compiles "[\"\", 5]", %q{
+      def test = -''
+      result = [test]
+      class String
+        def -@ = 5
+      end
+      result << test
+    }, insns: [:opt_str_uminus], call_threshold: 1
+  end
+
+  def test_opt_str_uminus_rewritten
+    assert_compiles "5", %q{
+      class String
+        def -@ = 5
+      end
+      def test = -''
       test
-    RUBY
+    }, insns: [:opt_str_uminus], call_threshold: 1
   end
 
   def test_new_array_empty

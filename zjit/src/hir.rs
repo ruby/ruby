@@ -3689,31 +3689,58 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, def_type: None, state: exit_id });
                     state.stack_push(send);
                 }
-                YARVINSN_opt_hash_freeze |
-                YARVINSN_opt_ary_freeze |
-                YARVINSN_opt_str_freeze |
-                YARVINSN_opt_str_uminus => {
-                    // NB: these instructions have the recv for the call at get_arg(0)
-                    let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
-                    let call_info = unsafe { rb_get_call_data_ci(cd) };
-                    let flags = unsafe { rb_vm_ci_flag(call_info) };
-                    if let Err(call_type) = unhandled_call_type(flags) {
-                        // Can't handle the call type; side-exit into the interpreter
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
+                YARVINSN_opt_hash_freeze => {
+                    let klass = HASH_REDEFINED_OP_FLAG;
+                    let bop = BOP_FREEZE;
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    if unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state: exit_id });
+                        let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                        state.stack_push(recv);
+                    } else {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }) });
                         break;  // End the block
                     }
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
-                    let name = insn_name(opcode as usize);
-                    assert_eq!(0, argc, "{name} should not have args");
-                    let args = vec![];
-
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, def_type: None, state: exit_id });
-                    state.stack_push(send);
                 }
-
+                YARVINSN_opt_ary_freeze => {
+                    let klass = ARRAY_REDEFINED_OP_FLAG;
+                    let bop = BOP_FREEZE;
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    if unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state: exit_id });
+                        let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                        state.stack_push(recv);
+                    } else {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }) });
+                        break;  // End the block
+                    }
+                }
+                YARVINSN_opt_str_freeze => {
+                    let klass = STRING_REDEFINED_OP_FLAG;
+                    let bop = BOP_FREEZE;
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    if unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state: exit_id });
+                        let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                        state.stack_push(recv);
+                    } else {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }) });
+                        break;  // End the block
+                    }
+                }
+                YARVINSN_opt_str_uminus => {
+                    let klass = STRING_REDEFINED_OP_FLAG;
+                    let bop = BOP_UMINUS;
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    if unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state: exit_id });
+                        let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                        state.stack_push(recv);
+                    } else {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }) });
+                        break;  // End the block
+                    }
+                }
                 YARVINSN_leave => {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
@@ -4790,10 +4817,26 @@ mod tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v6:BasicObject = SendWithoutBlock v5, :freeze
+          PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v6:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           CheckInterrupts
           Return v6
+        ");
+    }
+
+    #[test]
+    fn test_opt_hash_freeze_rewritten() {
+        eval("
+            class Hash
+              def freeze; 5; end
+            end
+            def test = {}.freeze
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_hash_freeze);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0(v0:BasicObject):
+          SideExit PatchPoint(BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE))
         ");
     }
 
@@ -4806,10 +4849,26 @@ mod tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v6:BasicObject = SendWithoutBlock v5, :freeze
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v6:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           CheckInterrupts
           Return v6
+        ");
+    }
+
+    #[test]
+    fn test_opt_ary_freeze_rewritten() {
+        eval("
+            class Array
+              def freeze; 5; end
+            end
+            def test = [].freeze
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_ary_freeze);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0(v0:BasicObject):
+          SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE))
         ");
     }
 
@@ -4822,10 +4881,26 @@ mod tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v6:BasicObject = SendWithoutBlock v5, :freeze
+          PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v6:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           CheckInterrupts
           Return v6
+        ");
+    }
+
+    #[test]
+    fn test_opt_str_freeze_rewritten() {
+        eval("
+            class String
+              def freeze; 5; end
+            end
+            def test = ''.freeze
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_str_freeze);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0(v0:BasicObject):
+          SideExit PatchPoint(BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE))
         ");
     }
 
@@ -4838,10 +4913,26 @@ mod tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v6:BasicObject = SendWithoutBlock v5, :-@
+          PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
+          v6:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           CheckInterrupts
           Return v6
+        ");
+    }
+
+    #[test]
+    fn test_opt_str_uminus_rewritten() {
+        eval("
+            class String
+              def -@; 5; end
+            end
+            def test = -''
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_str_uminus);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0(v0:BasicObject):
+          SideExit PatchPoint(BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS))
         ");
     }
 
@@ -7324,11 +7415,11 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
           v1:NilClass = Const Value(nil)
-          v6:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
+          v7:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v8:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v10:StringExact = StringCopy v8
-          v12:RangeExact = NewRange v6 NewRangeInclusive v10
+          v12:RangeExact = NewRange v7 NewRangeInclusive v10
           PatchPoint NoEPEscape(test)
           v17:Fixnum[0] = Const Value(0)
           CheckInterrupts
@@ -8542,10 +8633,10 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v6:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           CheckInterrupts
-          Return v5
+          Return v6
         ");
     }
 
@@ -8560,10 +8651,7 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:5:
         bb0(v0:BasicObject):
-          v5:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v6:BasicObject = SendWithoutBlock v5, :freeze
-          CheckInterrupts
-          Return v6
+          SideExit PatchPoint(BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE))
         ");
     }
 
@@ -8575,11 +8663,11 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v6:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
           CheckInterrupts
-          Return v5
+          Return v6
         ");
     }
 
@@ -8623,10 +8711,10 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v6:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           CheckInterrupts
-          Return v5
+          Return v6
         ");
     }
 
@@ -8638,11 +8726,11 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v6:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
           CheckInterrupts
-          Return v5
+          Return v6
         ");
     }
 
@@ -8686,10 +8774,10 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v6:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           CheckInterrupts
-          Return v5
+          Return v6
         ");
     }
 
@@ -8701,11 +8789,11 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v6:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
           CheckInterrupts
-          Return v5
+          Return v6
         ");
     }
 
@@ -8751,10 +8839,10 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
+          v6:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           CheckInterrupts
-          Return v5
+          Return v6
         ");
     }
 
@@ -8766,11 +8854,11 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v6:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
           CheckInterrupts
-          Return v5
+          Return v6
         ");
     }
 
@@ -8941,13 +9029,13 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v6:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v7:Fixnum[1] = Const Value(1)
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
-          v19:Fixnum[5] = Const Value(5)
+          v18:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v19
+          Return v18
         ");
     }
 
@@ -8959,13 +9047,13 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v6:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v7:Fixnum[-3] = Const Value(-3)
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
-          v19:Fixnum[4] = Const Value(4)
+          v18:Fixnum[4] = Const Value(4)
           CheckInterrupts
-          Return v19
+          Return v18
         ");
     }
 
@@ -8977,13 +9065,13 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v6:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v7:Fixnum[-10] = Const Value(-10)
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
-          v19:NilClass = Const Value(nil)
+          v18:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v19
+          Return v18
         ");
     }
 
@@ -8995,13 +9083,13 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v6:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v7:Fixnum[10] = Const Value(10)
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
-          v19:NilClass = Const Value(nil)
+          v18:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v19
+          Return v18
         ");
     }
 
@@ -9016,10 +9104,10 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:5:
         bb0(v0:BasicObject):
-          v5:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
+          v6:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v7:Fixnum[10] = Const Value(10)
-          v11:BasicObject = SendWithoutBlock v5, :[], v7
+          v11:BasicObject = SendWithoutBlock v6, :[], v7
           CheckInterrupts
           Return v11
         ");
