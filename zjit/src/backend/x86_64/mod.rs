@@ -605,7 +605,6 @@ impl Assembler
                             scratch
                         }
                         src @ (Opnd::None | Opnd::VReg { .. }) => panic!("Unexpected source operand during x86_emit: {src:?}")
-
                     };
                     mov(cb, dest.into(), src);
                 }

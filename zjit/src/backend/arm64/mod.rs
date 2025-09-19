@@ -78,7 +78,6 @@ impl From<Opnd> for A64Opnd {
             Opnd::None => panic!(
                 "Attempted to lower an Opnd::None. This often happens when an out operand was not allocated for an instruction because the output of the instruction was not used. Please ensure you are using the output."
             ),
-
         }
     }
 }
@@ -809,7 +808,6 @@ impl Assembler
                     }
                     emit_load_value(cb, Assembler::SCRATCH0, dst_addr);
                     br(cb, Assembler::SCRATCH0);
-
                 }
                 */
             } else {
