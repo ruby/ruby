@@ -282,22 +282,21 @@ impl CodeBlock {
         self.mem_block.borrow_mut().mark_all_executable();
     }
 
-    /// Return the disasm of generated code for testing
+    /// Call a func with the disasm of generated code for testing
+    #[allow(unused_variables)]
     #[cfg(test)]
-    pub fn disasm(&self) -> String {
+    pub fn with_disasm<T>(&self, func: T) where T: Fn(String) {
         #[cfg(feature = "disasm")]
         {
             let start_addr = self.get_ptr(0).raw_addr(self);
             let end_addr = self.get_write_ptr().raw_addr(self);
-            crate::disasm::disasm_addr_range(self, start_addr, end_addr)
+            func(crate::disasm::disasm_addr_range(self, start_addr, end_addr));
         }
-        #[cfg(not(feature = "disasm"))]
-        unreachable!("zjit-test should enable disasm feature")
     }
 
     /// Return the hex dump of generated code for testing
     #[cfg(test)]
-    pub fn string(&self) -> String {
+    pub fn hexdump(&self) -> String {
         format!("{:x}", self)
     }
 }
