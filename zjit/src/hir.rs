@@ -1690,6 +1690,28 @@ impl Function {
         None
     }
 
+    /// Return whether a given HIR instruction as profiled by the interpreter is polymorphic or
+    /// whether it lacks a profile entirely.
+    ///
+    /// * `Some(true)` if polymorphic
+    /// * `Some(false)` if monomorphic
+    /// * `None` if no profiled information so far
+    fn is_polymorphic_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<bool> {
+        let profiles = self.profiles.as_ref()?;
+        let entries = profiles.types.get(&iseq_insn_idx)?;
+        let insn = self.chase_insn(insn);
+        for (entry_insn, entry_type_summary) in entries {
+            if self.union_find.borrow().find_const(*entry_insn) == insn {
+                if !entry_type_summary.is_monomorphic() && !entry_type_summary.is_skewed_polymorphic() {
+                    return Some(true);
+                } else {
+                    return Some(false);
+                }
+            }
+        }
+        None
+    }
+
     fn likely_is_fixnum(&self, val: InsnId, profiled_type: ProfiledType) -> bool {
         self.is_a(val, types::Fixnum) || profiled_type.is_fixnum()
     }
@@ -1840,6 +1862,19 @@ impl Function {
                             // If we know that self is reasonably monomorphic from profile information, guard and use it to fold the lookup at compile-time.
                             // TODO(max): Figure out how to handle top self?
                             let Some(recv_type) = self.profiled_type_of_at(recv, frame_state.insn_idx) else {
+                                if get_option!(stats) {
+                                    match self.is_polymorphic_at(recv, frame_state.insn_idx) {
+                                        Some(true) => {
+                                            self.push_insn(block, Insn::IncrCounter(Counter::dynamic_send_polymorphic));
+                                        },
+                                        Some(false) => {
+                                            panic!("Should not have monomorphic profile at this point in this branch");
+                                        },
+                                        None => {
+                                            self.push_insn(block, Insn::IncrCounter(Counter::dynamic_send_no_profiles));
+                                        }
+                                    }
+                                }
                                 self.push_insn_id(block, insn_id); continue;
                             };
                             (recv_type.class(), Some(recv_type))

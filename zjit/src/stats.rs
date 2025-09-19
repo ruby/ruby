@@ -136,6 +136,8 @@ make_counters! {
     dynamic_send_type_send_forward,
     dynamic_send_type_invokeblock,
     dynamic_send_type_invokesuper,
+    dynamic_send_polymorphic,
+    dynamic_send_no_profiles,
 
     // Method call def_type related to fallback to dynamic dispatch
     send_fallback_iseq,
