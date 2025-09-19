@@ -39,12 +39,14 @@ class << RubyVM::ZJIT
     buf = +"***ZJIT: Printing ZJIT statistics on exit***\n"
     stats = self.stats
 
-    # Show exit reasons, ordered by the typical amount of exits for the prefix at the time
+    # Show non-exit counters
+    print_counters_with_prefix(prefix: 'dynamic_send_type_', prompt: 'dynamic send types', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'send_fallback_', prompt: 'send fallback def_types', buf:, stats:, limit: 20)
+
+    # Show exit counters, ordered by the typical amount of exits for the prefix at the time
     print_counters_with_prefix(prefix: 'unhandled_yarv_insn_', prompt: 'unhandled YARV insns', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'compile_error_', prompt: 'compile error reasons', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'exit_', prompt: 'side exit reasons', buf:, stats:, limit: 20)
-    print_counters_with_prefix(prefix: 'dynamic_send_type_', prompt: 'dynamic send types', buf:, stats:, limit: 20)
-    print_counters_with_prefix(prefix: 'send_fallback_', prompt: 'send fallback def_types', buf:, stats:, limit: 20)
 
     # Show the most important stats ratio_in_zjit at the end
     print_counters([
