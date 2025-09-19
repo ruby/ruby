@@ -53,22 +53,22 @@ fn test_add() {
     cb15.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add ecx, 8"));
     cb16.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add ecx, 0xff"));
 
-    assert_snapshot!(cb01.string(), @"80c103");
-    assert_snapshot!(cb02.string(), @"00d9");
-    assert_snapshot!(cb03.string(), @"4000e1");
-    assert_snapshot!(cb04.string(), @"6601d9");
-    assert_snapshot!(cb05.string(), @"4801d8");
-    assert_snapshot!(cb06.string(), @"01d1");
-    assert_snapshot!(cb07.string(), @"4c01f2");
-    assert_snapshot!(cb08.string(), @"480110");
-    assert_snapshot!(cb09.string(), @"480310");
-    assert_snapshot!(cb10.string(), @"48035008");
-    assert_snapshot!(cb11.string(), @"480390ff000000");
-    assert_snapshot!(cb12.string(), @"4881407fff000000");
-    assert_snapshot!(cb13.string(), @"0110");
-    assert_snapshot!(cb14.string(), @"4883c408");
-    assert_snapshot!(cb15.string(), @"83c108");
-    assert_snapshot!(cb16.string(), @"81c1ff000000");
+    assert_snapshot!(cb01.hexdump(), @"80c103");
+    assert_snapshot!(cb02.hexdump(), @"00d9");
+    assert_snapshot!(cb03.hexdump(), @"4000e1");
+    assert_snapshot!(cb04.hexdump(), @"6601d9");
+    assert_snapshot!(cb05.hexdump(), @"4801d8");
+    assert_snapshot!(cb06.hexdump(), @"01d1");
+    assert_snapshot!(cb07.hexdump(), @"4c01f2");
+    assert_snapshot!(cb08.hexdump(), @"480110");
+    assert_snapshot!(cb09.hexdump(), @"480310");
+    assert_snapshot!(cb10.hexdump(), @"48035008");
+    assert_snapshot!(cb11.hexdump(), @"480390ff000000");
+    assert_snapshot!(cb12.hexdump(), @"4881407fff000000");
+    assert_snapshot!(cb13.hexdump(), @"0110");
+    assert_snapshot!(cb14.hexdump(), @"4883c408");
+    assert_snapshot!(cb15.hexdump(), @"83c108");
+    assert_snapshot!(cb16.hexdump(), @"81c1ff000000");
 }
 
 #[test]
@@ -95,14 +95,14 @@ fn test_add_unsigned() {
     cb7.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add r8, 1"));
     cb8.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add r8, 0x7fffffff"));
 
-    assert_snapshot!(cb1.string(), @"4180c001");
-    assert_snapshot!(cb2.string(), @"4180c07f");
-    assert_snapshot!(cb3.string(), @"664183c001");
-    assert_snapshot!(cb4.string(), @"664181c0ff7f");
-    assert_snapshot!(cb5.string(), @"4183c001");
-    assert_snapshot!(cb6.string(), @"4181c0ffffff7f");
-    assert_snapshot!(cb7.string(), @"4983c001");
-    assert_snapshot!(cb8.string(), @"4981c0ffffff7f");
+    assert_snapshot!(cb1.hexdump(), @"4180c001");
+    assert_snapshot!(cb2.hexdump(), @"4180c07f");
+    assert_snapshot!(cb3.hexdump(), @"664183c001");
+    assert_snapshot!(cb4.hexdump(), @"664181c0ff7f");
+    assert_snapshot!(cb5.hexdump(), @"4183c001");
+    assert_snapshot!(cb6.hexdump(), @"4181c0ffffff7f");
+    assert_snapshot!(cb7.hexdump(), @"4983c001");
+    assert_snapshot!(cb8.hexdump(), @"4981c0ffffff7f");
 }
 
 #[test]
@@ -113,8 +113,8 @@ fn test_and() {
     cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: and ebp, r12d"));
     cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: and qword ptr [rax], 8"));
 
-    assert_snapshot!(cb1.string(), @"4421e5");
-    assert_snapshot!(cb2.string(), @"48832008");
+    assert_snapshot!(cb1.hexdump(), @"4421e5");
+    assert_snapshot!(cb2.hexdump(), @"48832008");
 }
 
 #[test]
@@ -125,7 +125,7 @@ fn test_call_label() {
         cb.link_labels();
     });
     cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: call 0"));
-    assert_snapshot!(cb.string(), @"e8fbffffff");
+    assert_snapshot!(cb.hexdump(), @"e8fbffffff");
 }
 
 #[test]
@@ -136,21 +136,21 @@ fn test_call_ptr() {
         call_ptr(cb, RAX, ptr.raw_ptr(cb));
     });
     cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: call 0"));
-    assert_snapshot!(cb.string(), @"e8fbffffff");
+    assert_snapshot!(cb.hexdump(), @"e8fbffffff");
 }
 
 #[test]
 fn test_call_reg() {
     let cb = compile(|cb| call(cb, RAX));
     cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: call rax"));
-    assert_snapshot!(cb.string(), @"ffd0");
+    assert_snapshot!(cb.hexdump(), @"ffd0");
 }
 
 #[test]
 fn test_call_mem() {
     let cb = compile(|cb| call(cb, mem_opnd(64, RSP, 8)));
     cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: call qword ptr [rsp + 8]"));
-    assert_snapshot!(cb.string(), @"ff542408");
+    assert_snapshot!(cb.hexdump(), @"ff542408");
 }
 
 #[test]
@@ -167,11 +167,11 @@ fn test_cmovcc() {
     cb4.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmovl rbx, rbp"));
     cb5.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmovle esi, dword ptr [rsp + 4]"));
 
-    assert_snapshot!(cb1.string(), @"0f4ff7");
-    assert_snapshot!(cb2.string(), @"0f4f750c");
-    assert_snapshot!(cb3.string(), @"0f4cc1");
-    assert_snapshot!(cb4.string(), @"480f4cdd");
-    assert_snapshot!(cb5.string(), @"0f4e742404");
+    assert_snapshot!(cb1.hexdump(), @"0f4ff7");
+    assert_snapshot!(cb2.hexdump(), @"0f4f750c");
+    assert_snapshot!(cb3.hexdump(), @"0f4cc1");
+    assert_snapshot!(cb4.hexdump(), @"480f4cdd");
+    assert_snapshot!(cb5.hexdump(), @"0f4e742404");
 }
 
 #[test]
@@ -188,18 +188,18 @@ fn test_cmp() {
     cb4.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmp rax, 2"));
     cb5.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmp ecx, 0x80000000"));
 
-    assert_snapshot!(cb1.string(), @"38d1");
-    assert_snapshot!(cb2.string(), @"39f9");
-    assert_snapshot!(cb3.string(), @"493b1424");
-    assert_snapshot!(cb4.string(), @"4883f802");
-    assert_snapshot!(cb5.string(), @"81f900000080");
+    assert_snapshot!(cb1.hexdump(), @"38d1");
+    assert_snapshot!(cb2.hexdump(), @"39f9");
+    assert_snapshot!(cb3.hexdump(), @"493b1424");
+    assert_snapshot!(cb4.hexdump(), @"4883f802");
+    assert_snapshot!(cb5.hexdump(), @"81f900000080");
 }
 
 #[test]
 fn test_cqo() {
     let cb = compile(cqo);
     cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cqo"));
-    assert_snapshot!(cb.string(), @"4899");
+    assert_snapshot!(cb.hexdump(), @"4899");
 }
 
 #[test]
@@ -213,9 +213,9 @@ fn test_imul() {
     cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: imul rdx, qword ptr [rax]"));
     cb3.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: imul rdx, qword ptr [rax]"));
 
-    assert_snapshot!(cb1.string(), @"480fafc3");
-    assert_snapshot!(cb2.string(), @"480faf10");
-    assert_snapshot!(cb3.string(), @"480faf10");
+    assert_snapshot!(cb1.hexdump(), @"480fafc3");
+    assert_snapshot!(cb2.hexdump(), @"480faf10");
+    assert_snapshot!(cb3.hexdump(), @"480faf10");
 }
 
 #[test]
@@ -226,7 +226,7 @@ fn test_jge_label() {
         cb.link_labels();
     });
     cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: jge 0"));
-    assert_snapshot!(cb.string(), @"0f8dfaffffff");
+    assert_snapshot!(cb.hexdump(), @"0f8dfaffffff");
 }
 
 #[test]
@@ -249,15 +249,15 @@ fn test_jmp_label() {
     cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: jmp 5"));
     cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: jmp 0"));
 
-    assert_snapshot!(cb1.string(), @"e900000000");
-    assert_snapshot!(cb2.string(), @"e9fbffffff");
+    assert_snapshot!(cb1.hexdump(), @"e900000000");
+    assert_snapshot!(cb2.hexdump(), @"e9fbffffff");
 }
 
 #[test]
 fn test_jmp_rm() {
     let cb = compile(|cb| jmp_rm(cb, R12));
     cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: jmp r12"));
-    assert_snapshot!(cb.string(), @"41ffe4");
+    assert_snapshot!(cb.hexdump(), @"41ffe4");
 }
 
 #[test]
@@ -268,7 +268,7 @@ fn test_jo_label() {
         cb.link_labels();
     });
     cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: jo 0"));
-    assert_snapshot!(cb.string(), @"0f80faffffff");
+    assert_snapshot!(cb.hexdump(), @"0f80faffffff");
 }
 
 #[test]
@@ -283,10 +283,10 @@ fn test_lea() {
     cb3.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: lea rax, [rip + 5]"));
     cb4.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: lea rdi, [rip + 5]"));
 
-    assert_snapshot!(cb1.string(), @"488d5108");
-    assert_snapshot!(cb2.string(), @"488d0500000000");
-    assert_snapshot!(cb3.string(), @"488d0505000000");
-    assert_snapshot!(cb4.string(), @"488d3d05000000");
+    assert_snapshot!(cb1.hexdump(), @"488d5108");
+    assert_snapshot!(cb2.hexdump(), @"488d0500000000");
+    assert_snapshot!(cb3.hexdump(), @"488d0505000000");
+    assert_snapshot!(cb4.hexdump(), @"488d3d05000000");
 }
 
 #[test]
@@ -347,32 +347,32 @@ fn test_mov() {
     cb25.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov qword ptr [r11], r10"));
     cb26.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov qword ptr [rdx - 8], 0xfffffffffffffff4"));
 
-    assert_snapshot!(cb01.string(), @"b807000000");
-    assert_snapshot!(cb02.string(), @"b8fdffffff");
-    assert_snapshot!(cb03.string(), @"41bf03000000");
-    assert_snapshot!(cb04.string(), @"89d8");
-    assert_snapshot!(cb05.string(), @"89c8");
-    assert_snapshot!(cb06.string(), @"8b9380000000");
-    assert_snapshot!(cb07.string(), @"488b442404");
-    assert_snapshot!(cb08.string(), @"41b834000000");
-    assert_snapshot!(cb09.string(), @"49b80000008000000000");
-    assert_snapshot!(cb10.string(), @"49b8ffffffffffffffff");
-    assert_snapshot!(cb11.string(), @"b834000000");
-    assert_snapshot!(cb12.string(), @"48b8020000000000c0ff");
-    assert_snapshot!(cb13.string(), @"48b80000008000000000");
-    assert_snapshot!(cb14.string(), @"48b8ccffffffffffffff");
-    assert_snapshot!(cb15.string(), @"48b8ffffffffffffffff");
-    assert_snapshot!(cb16.string(), @"4488c9");
-    assert_snapshot!(cb17.string(), @"4889c3");
-    assert_snapshot!(cb18.string(), @"4889df");
-    assert_snapshot!(cb19.string(), @"40b60b");
-    assert_snapshot!(cb20.string(), @"c60424fd");
-    assert_snapshot!(cb21.string(), @"48c7470801000000");
-    assert_snapshot!(cb22.string(), @"c7400411000000");
-    assert_snapshot!(cb23.string(), @"c7400401000080");
-    assert_snapshot!(cb24.string(), @"41895814");
-    assert_snapshot!(cb25.string(), @"4d8913");
-    assert_snapshot!(cb26.string(), @"48c742f8f4ffffff");
+    assert_snapshot!(cb01.hexdump(), @"b807000000");
+    assert_snapshot!(cb02.hexdump(), @"b8fdffffff");
+    assert_snapshot!(cb03.hexdump(), @"41bf03000000");
+    assert_snapshot!(cb04.hexdump(), @"89d8");
+    assert_snapshot!(cb05.hexdump(), @"89c8");
+    assert_snapshot!(cb06.hexdump(), @"8b9380000000");
+    assert_snapshot!(cb07.hexdump(), @"488b442404");
+    assert_snapshot!(cb08.hexdump(), @"41b834000000");
+    assert_snapshot!(cb09.hexdump(), @"49b80000008000000000");
+    assert_snapshot!(cb10.hexdump(), @"49b8ffffffffffffffff");
+    assert_snapshot!(cb11.hexdump(), @"b834000000");
+    assert_snapshot!(cb12.hexdump(), @"48b8020000000000c0ff");
+    assert_snapshot!(cb13.hexdump(), @"48b80000008000000000");
+    assert_snapshot!(cb14.hexdump(), @"48b8ccffffffffffffff");
+    assert_snapshot!(cb15.hexdump(), @"48b8ffffffffffffffff");
+    assert_snapshot!(cb16.hexdump(), @"4488c9");
+    assert_snapshot!(cb17.hexdump(), @"4889c3");
+    assert_snapshot!(cb18.hexdump(), @"4889df");
+    assert_snapshot!(cb19.hexdump(), @"40b60b");
+    assert_snapshot!(cb20.hexdump(), @"c60424fd");
+    assert_snapshot!(cb21.hexdump(), @"48c7470801000000");
+    assert_snapshot!(cb22.hexdump(), @"c7400411000000");
+    assert_snapshot!(cb23.hexdump(), @"c7400401000080");
+    assert_snapshot!(cb24.hexdump(), @"41895814");
+    assert_snapshot!(cb25.hexdump(), @"4d8913");
+    assert_snapshot!(cb26.hexdump(), @"48c742f8f4ffffff");
 }
 
 #[test]
@@ -383,8 +383,8 @@ fn test_movabs() {
     cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movabs r8, 0x34"));
     cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movabs r8, 0x80000000"));
 
-    assert_snapshot!(cb1.string(), @"49b83400000000000000");
-    assert_snapshot!(cb2.string(), @"49b80000008000000000");
+    assert_snapshot!(cb1.hexdump(), @"49b83400000000000000");
+    assert_snapshot!(cb2.hexdump(), @"49b80000008000000000");
 }
 
 #[test]
@@ -443,27 +443,27 @@ fn test_mov_unsigned() {
     cb20.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov r8d, 1"));
     cb21.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movabs r8, 0xffffffffffffffff"));
 
-    assert_snapshot!(cb01.string(), @"b001");
-    assert_snapshot!(cb02.string(), @"b0ff");
-    assert_snapshot!(cb03.string(), @"66b80100");
-    assert_snapshot!(cb04.string(), @"66b8ffff");
-    assert_snapshot!(cb05.string(), @"b801000000");
-    assert_snapshot!(cb06.string(), @"b8ffffffff");
-    assert_snapshot!(cb07.string(), @"41b800000000");
-    assert_snapshot!(cb08.string(), @"41b8ffffffff");
-    assert_snapshot!(cb09.string(), @"b801000000");
-    assert_snapshot!(cb10.string(), @"b8ffffffff");
-    assert_snapshot!(cb11.string(), @"48b80000000001000000");
-    assert_snapshot!(cb12.string(), @"48b8ffffffffffffffff");
-    assert_snapshot!(cb13.string(), @"49b8ffffffffffffffff");
-    assert_snapshot!(cb14.string(), @"41b001");
-    assert_snapshot!(cb15.string(), @"41b0ff");
-    assert_snapshot!(cb16.string(), @"6641b80100");
-    assert_snapshot!(cb17.string(), @"6641b8ffff");
-    assert_snapshot!(cb18.string(), @"41b801000000");
-    assert_snapshot!(cb19.string(), @"41b8ffffffff");
-    assert_snapshot!(cb20.string(), @"41b801000000");
-    assert_snapshot!(cb21.string(), @"49b8ffffffffffffffff");
+    assert_snapshot!(cb01.hexdump(), @"b001");
+    assert_snapshot!(cb02.hexdump(), @"b0ff");
+    assert_snapshot!(cb03.hexdump(), @"66b80100");
+    assert_snapshot!(cb04.hexdump(), @"66b8ffff");
+    assert_snapshot!(cb05.hexdump(), @"b801000000");
+    assert_snapshot!(cb06.hexdump(), @"b8ffffffff");
+    assert_snapshot!(cb07.hexdump(), @"41b800000000");
+    assert_snapshot!(cb08.hexdump(), @"41b8ffffffff");
+    assert_snapshot!(cb09.hexdump(), @"b801000000");
+    assert_snapshot!(cb10.hexdump(), @"b8ffffffff");
+    assert_snapshot!(cb11.hexdump(), @"48b80000000001000000");
+    assert_snapshot!(cb12.hexdump(), @"48b8ffffffffffffffff");
+    assert_snapshot!(cb13.hexdump(), @"49b8ffffffffffffffff");
+    assert_snapshot!(cb14.hexdump(), @"41b001");
+    assert_snapshot!(cb15.hexdump(), @"41b0ff");
+    assert_snapshot!(cb16.hexdump(), @"6641b80100");
+    assert_snapshot!(cb17.hexdump(), @"6641b8ffff");
+    assert_snapshot!(cb18.hexdump(), @"41b801000000");
+    assert_snapshot!(cb19.hexdump(), @"41b8ffffffff");
+    assert_snapshot!(cb20.hexdump(), @"41b801000000");
+    assert_snapshot!(cb21.hexdump(), @"49b8ffffffffffffffff");
 }
 
 #[test]
@@ -480,11 +480,11 @@ fn test_mov_iprel() {
     cb4.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov rax, qword ptr [rip + 5]"));
     cb5.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov rdi, qword ptr [rip + 5]"));
 
-    assert_snapshot!(cb1.string(), @"8b0500000000");
-    assert_snapshot!(cb2.string(), @"8b0505000000");
-    assert_snapshot!(cb3.string(), @"488b0500000000");
-    assert_snapshot!(cb4.string(), @"488b0505000000");
-    assert_snapshot!(cb5.string(), @"488b3d05000000");
+    assert_snapshot!(cb1.hexdump(), @"8b0500000000");
+    assert_snapshot!(cb2.hexdump(), @"8b0505000000");
+    assert_snapshot!(cb3.hexdump(), @"488b0500000000");
+    assert_snapshot!(cb4.hexdump(), @"488b0505000000");
+    assert_snapshot!(cb5.hexdump(), @"488b3d05000000");
 }
 
 #[test]
@@ -507,14 +507,14 @@ fn test_movsx() {
     cb7.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movsx rax, byte ptr [rsp]"));
     cb8.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movsx rdx, word ptr [r13 + 4]"));
 
-    assert_snapshot!(cb1.string(), @"660fbec0");
-    assert_snapshot!(cb2.string(), @"0fbed0");
-    assert_snapshot!(cb3.string(), @"480fbec3");
-    assert_snapshot!(cb4.string(), @"0fbfc8");
-    assert_snapshot!(cb5.string(), @"4c0fbed9");
-    assert_snapshot!(cb6.string(), @"4c6354240c");
-    assert_snapshot!(cb7.string(), @"480fbe0424");
-    assert_snapshot!(cb8.string(), @"490fbf5504");
+    assert_snapshot!(cb1.hexdump(), @"660fbec0");
+    assert_snapshot!(cb2.hexdump(), @"0fbed0");
+    assert_snapshot!(cb3.hexdump(), @"480fbec3");
+    assert_snapshot!(cb4.hexdump(), @"0fbfc8");
+    assert_snapshot!(cb5.hexdump(), @"4c0fbed9");
+    assert_snapshot!(cb6.hexdump(), @"4c6354240c");
+    assert_snapshot!(cb7.hexdump(), @"480fbe0424");
+    assert_snapshot!(cb8.hexdump(), @"490fbf5504");
 }
 
 #[test]
@@ -554,18 +554,18 @@ fn test_nop() {
     0x9: nop dword ptr [rax]
     "));
 
-    assert_snapshot!(cb01.string(), @"90");
-    assert_snapshot!(cb02.string(), @"6690");
-    assert_snapshot!(cb03.string(), @"0f1f00");
-    assert_snapshot!(cb04.string(), @"0f1f4000");
-    assert_snapshot!(cb05.string(), @"0f1f440000");
-    assert_snapshot!(cb06.string(), @"660f1f440000");
-    assert_snapshot!(cb07.string(), @"0f1f8000000000");
-    assert_snapshot!(cb08.string(), @"0f1f840000000000");
-    assert_snapshot!(cb09.string(), @"660f1f840000000000");
-    assert_snapshot!(cb10.string(), @"660f1f84000000000090");
-    assert_snapshot!(cb11.string(), @"660f1f8400000000006690");
-    assert_snapshot!(cb12.string(), @"660f1f8400000000000f1f00");
+    assert_snapshot!(cb01.hexdump(), @"90");
+    assert_snapshot!(cb02.hexdump(), @"6690");
+    assert_snapshot!(cb03.hexdump(), @"0f1f00");
+    assert_snapshot!(cb04.hexdump(), @"0f1f4000");
+    assert_snapshot!(cb05.hexdump(), @"0f1f440000");
+    assert_snapshot!(cb06.hexdump(), @"660f1f440000");
+    assert_snapshot!(cb07.hexdump(), @"0f1f8000000000");
+    assert_snapshot!(cb08.hexdump(), @"0f1f840000000000");
+    assert_snapshot!(cb09.hexdump(), @"660f1f840000000000");
+    assert_snapshot!(cb10.hexdump(), @"660f1f84000000000090");
+    assert_snapshot!(cb11.hexdump(), @"660f1f8400000000006690");
+    assert_snapshot!(cb12.hexdump(), @"660f1f8400000000000f1f00");
 }
 
 #[test]
@@ -606,30 +606,30 @@ fn test_not() {
     cb16.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not dword ptr [rdx - 0x37]"));
     cb17.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not dword ptr [rdx - 0x22b]"));
 
-    assert_snapshot!(cb01.string(), @"66f7d0");
-    assert_snapshot!(cb02.string(), @"f7d0");
-    assert_snapshot!(cb03.string(), @"49f71424");
-    assert_snapshot!(cb04.string(), @"f794242d010000");
-    assert_snapshot!(cb05.string(), @"f71424");
-    assert_snapshot!(cb06.string(), @"f7542403");
-    assert_snapshot!(cb07.string(), @"f75500");
-    assert_snapshot!(cb08.string(), @"f7550d");
-    assert_snapshot!(cb09.string(), @"48f7d0");
-    assert_snapshot!(cb10.string(), @"49f7d3");
-    assert_snapshot!(cb11.string(), @"f710");
-    assert_snapshot!(cb12.string(), @"f716");
-    assert_snapshot!(cb13.string(), @"f717");
-    assert_snapshot!(cb14.string(), @"f75237");
-    assert_snapshot!(cb15.string(), @"f79239050000");
-    assert_snapshot!(cb16.string(), @"f752c9");
-    assert_snapshot!(cb17.string(), @"f792d5fdffff");
+    assert_snapshot!(cb01.hexdump(), @"66f7d0");
+    assert_snapshot!(cb02.hexdump(), @"f7d0");
+    assert_snapshot!(cb03.hexdump(), @"49f71424");
+    assert_snapshot!(cb04.hexdump(), @"f794242d010000");
+    assert_snapshot!(cb05.hexdump(), @"f71424");
+    assert_snapshot!(cb06.hexdump(), @"f7542403");
+    assert_snapshot!(cb07.hexdump(), @"f75500");
+    assert_snapshot!(cb08.hexdump(), @"f7550d");
+    assert_snapshot!(cb09.hexdump(), @"48f7d0");
+    assert_snapshot!(cb10.hexdump(), @"49f7d3");
+    assert_snapshot!(cb11.hexdump(), @"f710");
+    assert_snapshot!(cb12.hexdump(), @"f716");
+    assert_snapshot!(cb13.hexdump(), @"f717");
+    assert_snapshot!(cb14.hexdump(), @"f75237");
+    assert_snapshot!(cb15.hexdump(), @"f79239050000");
+    assert_snapshot!(cb16.hexdump(), @"f752c9");
+    assert_snapshot!(cb17.hexdump(), @"f792d5fdffff");
 }
 
 #[test]
 fn test_or() {
     let cb = compile(|cb| or(cb, EDX, ESI));
     cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: or edx, esi"));
-    assert_snapshot!(cb.string(), @"09f2");
+    assert_snapshot!(cb.hexdump(), @"09f2");
 }
 
 #[test]
@@ -656,16 +656,16 @@ fn test_pop() {
     cb09.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: pop qword ptr [rax + rcx*8 + 3]"));
     cb10.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: pop qword ptr [r8 + rcx*8 + 3]"));
 
-    assert_snapshot!(cb01.string(), @"58");
-    assert_snapshot!(cb02.string(), @"5b");
-    assert_snapshot!(cb03.string(), @"5c");
-    assert_snapshot!(cb04.string(), @"5d");
-    assert_snapshot!(cb05.string(), @"415c");
-    assert_snapshot!(cb06.string(), @"8f00");
-    assert_snapshot!(cb07.string(), @"418f00");
-    assert_snapshot!(cb08.string(), @"418f4003");
-    assert_snapshot!(cb09.string(), @"8f44c803");
-    assert_snapshot!(cb10.string(), @"418f44c803");
+    assert_snapshot!(cb01.hexdump(), @"58");
+    assert_snapshot!(cb02.hexdump(), @"5b");
+    assert_snapshot!(cb03.hexdump(), @"5c");
+    assert_snapshot!(cb04.hexdump(), @"5d");
+    assert_snapshot!(cb05.hexdump(), @"415c");
+    assert_snapshot!(cb06.hexdump(), @"8f00");
+    assert_snapshot!(cb07.hexdump(), @"418f00");
+    assert_snapshot!(cb08.hexdump(), @"418f4003");
+    assert_snapshot!(cb09.hexdump(), @"8f44c803");
+    assert_snapshot!(cb10.hexdump(), @"418f44c803");
 }
 
 #[test]
@@ -688,21 +688,21 @@ fn test_push() {
     cb7.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: push qword ptr [rax + rcx*8 + 3]"));
     cb8.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: push qword ptr [r8 + rcx*8 + 3]"));
 
-    assert_snapshot!(cb1.string(), @"50");
-    assert_snapshot!(cb2.string(), @"53");
-    assert_snapshot!(cb3.string(), @"4154");
-    assert_snapshot!(cb4.string(), @"ff30");
-    assert_snapshot!(cb5.string(), @"41ff30");
-    assert_snapshot!(cb6.string(), @"41ff7003");
-    assert_snapshot!(cb7.string(), @"ff74c803");
-    assert_snapshot!(cb8.string(), @"41ff74c803");
+    assert_snapshot!(cb1.hexdump(), @"50");
+    assert_snapshot!(cb2.hexdump(), @"53");
+    assert_snapshot!(cb3.hexdump(), @"4154");
+    assert_snapshot!(cb4.hexdump(), @"ff30");
+    assert_snapshot!(cb5.hexdump(), @"41ff30");
+    assert_snapshot!(cb6.hexdump(), @"41ff7003");
+    assert_snapshot!(cb7.hexdump(), @"ff74c803");
+    assert_snapshot!(cb8.hexdump(), @"41ff74c803");
 }
 
 #[test]
 fn test_ret() {
     let cb = compile(ret);
     cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: ret"));
-    assert_snapshot!(cb.string(), @"c3");
+    assert_snapshot!(cb.hexdump(), @"c3");
 }
 
 #[test]
@@ -719,25 +719,25 @@ fn test_sal() {
     cb4.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: shl dword ptr [rsp + 0x44], 1"));
     cb5.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: shl rcx, cl"));
 
-    assert_snapshot!(cb1.string(), @"66d1e1");
-    assert_snapshot!(cb2.string(), @"d1e1");
-    assert_snapshot!(cb3.string(), @"c1e505");
-    assert_snapshot!(cb4.string(), @"d1642444");
-    assert_snapshot!(cb5.string(), @"48d3e1");
+    assert_snapshot!(cb1.hexdump(), @"66d1e1");
+    assert_snapshot!(cb2.hexdump(), @"d1e1");
+    assert_snapshot!(cb3.hexdump(), @"c1e505");
+    assert_snapshot!(cb4.hexdump(), @"d1642444");
+    assert_snapshot!(cb5.hexdump(), @"48d3e1");
 }
 
 #[test]
 fn test_sar() {
     let cb = compile(|cb| sar(cb, EDX, uimm_opnd(1)));
     cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: sar edx, 1"));
-    assert_snapshot!(cb.string(), @"d1fa");
+    assert_snapshot!(cb.hexdump(), @"d1fa");
 }
 
 #[test]
 fn test_shr() {
     let cb = compile(|cb| shr(cb, R14, uimm_opnd(7)));
     cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: shr r14, 7"));
-    assert_snapshot!(cb.string(), @"49c1ee07");
+    assert_snapshot!(cb.hexdump(), @"49c1ee07");
 }
 
 #[test]
@@ -748,8 +748,8 @@ fn test_sub() {
     cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: sub eax, 1"));
     cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: sub rax, 2"));
 
-    assert_snapshot!(cb1.string(), @"83e801");
-    assert_snapshot!(cb2.string(), @"4883e802");
+    assert_snapshot!(cb1.hexdump(), @"83e801");
+    assert_snapshot!(cb2.hexdump(), @"4883e802");
 }
 
 #[test]
@@ -802,25 +802,25 @@ fn test_test() {
     cb18.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test qword ptr [rsi + 0x40], 8"));
     cb19.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test rcx, 8"));
 
-    assert_snapshot!(cb01.string(), @"84c0");
-    assert_snapshot!(cb02.string(), @"6685c0");
-    assert_snapshot!(cb03.string(), @"f6c108");
-    assert_snapshot!(cb04.string(), @"f6c207");
-    assert_snapshot!(cb05.string(), @"f6c108");
-    assert_snapshot!(cb06.string(), @"f6420808");
-    assert_snapshot!(cb07.string(), @"f64208ff");
-    assert_snapshot!(cb08.string(), @"66f7c2ffff");
-    assert_snapshot!(cb09.string(), @"66f74208ffff");
-    assert_snapshot!(cb10.string(), @"f60601");
-    assert_snapshot!(cb11.string(), @"f6461001");
-    assert_snapshot!(cb12.string(), @"f646f001");
-    assert_snapshot!(cb13.string(), @"854640");
-    assert_snapshot!(cb14.string(), @"4885472a");
-    assert_snapshot!(cb15.string(), @"4885c0");
-    assert_snapshot!(cb16.string(), @"4885f0");
-    assert_snapshot!(cb17.string(), @"48f74640f7ffffff");
-    assert_snapshot!(cb18.string(), @"48f7464008000000");
-    assert_snapshot!(cb19.string(), @"48f7c108000000");
+    assert_snapshot!(cb01.hexdump(), @"84c0");
+    assert_snapshot!(cb02.hexdump(), @"6685c0");
+    assert_snapshot!(cb03.hexdump(), @"f6c108");
+    assert_snapshot!(cb04.hexdump(), @"f6c207");
+    assert_snapshot!(cb05.hexdump(), @"f6c108");
+    assert_snapshot!(cb06.hexdump(), @"f6420808");
+    assert_snapshot!(cb07.hexdump(), @"f64208ff");
+    assert_snapshot!(cb08.hexdump(), @"66f7c2ffff");
+    assert_snapshot!(cb09.hexdump(), @"66f74208ffff");
+    assert_snapshot!(cb10.hexdump(), @"f60601");
+    assert_snapshot!(cb11.hexdump(), @"f6461001");
+    assert_snapshot!(cb12.hexdump(), @"f646f001");
+    assert_snapshot!(cb13.hexdump(), @"854640");
+    assert_snapshot!(cb14.hexdump(), @"4885472a");
+    assert_snapshot!(cb15.hexdump(), @"4885c0");
+    assert_snapshot!(cb16.hexdump(), @"4885f0");
+    assert_snapshot!(cb17.hexdump(), @"48f74640f7ffffff");
+    assert_snapshot!(cb18.hexdump(), @"48f7464008000000");
+    assert_snapshot!(cb19.hexdump(), @"48f7c108000000");
 }
 
 #[test]
@@ -835,17 +835,17 @@ fn test_xchg() {
     cb3.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: xchg rcx, rbx"));
     cb4.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: xchg r9, r15"));
 
-    assert_snapshot!(cb1.string(), @"4891");
-    assert_snapshot!(cb2.string(), @"4995");
-    assert_snapshot!(cb3.string(), @"4887d9");
-    assert_snapshot!(cb4.string(), @"4d87f9");
+    assert_snapshot!(cb1.hexdump(), @"4891");
+    assert_snapshot!(cb2.hexdump(), @"4995");
+    assert_snapshot!(cb3.hexdump(), @"4887d9");
+    assert_snapshot!(cb4.hexdump(), @"4d87f9");
 }
 
 #[test]
 fn test_xor() {
     let cb = compile(|cb| xor(cb, EAX, EAX));
     cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: xor eax, eax"));
-    assert_snapshot!(cb.string(), @"31c0");
+    assert_snapshot!(cb.hexdump(), @"31c0");
 }
 
 #[test]

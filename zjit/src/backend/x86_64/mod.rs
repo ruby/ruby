@@ -938,7 +938,7 @@ mod tests {
         0x0: mov rax, rax
         0x3: add rax, 0xff
         "));
-        assert_snapshot!(cb.string(), @"4889c04881c0ff000000");
+        assert_snapshot!(cb.hexdump(), @"4889c04881c0ff000000");
     }
 
     #[test]
@@ -954,7 +954,7 @@ mod tests {
         0x3: movabs r11, 0xffffffffffff
         0xd: add rax, r11
         "));
-        assert_snapshot!(cb.string(), @"4889c049bbffffffffffff00004c01d8");
+        assert_snapshot!(cb.hexdump(), @"4889c049bbffffffffffff00004c01d8");
     }
 
     #[test]
@@ -969,7 +969,7 @@ mod tests {
         0x0: mov rax, rax
         0x3: and rax, 0xff
         "));
-        assert_snapshot!(cb.string(), @"4889c04881e0ff000000");
+        assert_snapshot!(cb.hexdump(), @"4889c04881e0ff000000");
     }
 
     #[test]
@@ -985,7 +985,7 @@ mod tests {
         0x3: movabs r11, 0xffffffffffff
         0xd: and rax, r11
         "));
-        assert_snapshot!(cb.string(), @"4889c049bbffffffffffff00004c21d8");
+        assert_snapshot!(cb.hexdump(), @"4889c049bbffffffffffff00004c21d8");
     }
 
     #[test]
@@ -996,7 +996,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 0);
 
         cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmp rax, 0xff"));
-        assert_snapshot!(cb.string(), @"4881f8ff000000");
+        assert_snapshot!(cb.hexdump(), @"4881f8ff000000");
     }
 
     #[test]
@@ -1010,7 +1010,7 @@ mod tests {
         0x0: movabs r11, 0xffffffffffff
         0xa: cmp rax, r11
         "));
-        assert_snapshot!(cb.string(), @"49bbffffffffffff00004c39d8");
+        assert_snapshot!(cb.hexdump(), @"49bbffffffffffff00004c39d8");
     }
 
     #[test]
@@ -1021,7 +1021,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 0);
 
         cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmp rax, -1"));
-        assert_snapshot!(cb.string(), @"4883f8ff");
+        assert_snapshot!(cb.hexdump(), @"4883f8ff");
     }
 
     #[test]
@@ -1034,7 +1034,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 0);
 
         cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmp word ptr [rax + 6], 0xf000"));
-        assert_snapshot!(cb.string(), @"6681780600f0");
+        assert_snapshot!(cb.hexdump(), @"6681780600f0");
     }
 
     #[test]
@@ -1047,7 +1047,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 0);
 
         cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmp dword ptr [rax + 4], 0xf0000000"));
-        assert_snapshot!(cb.string(), @"817804000000f0");
+        assert_snapshot!(cb.hexdump(), @"817804000000f0");
     }
 
     #[test]
@@ -1062,7 +1062,7 @@ mod tests {
         0x0: mov rax, rax
         0x3: or rax, 0xff
         "));
-        assert_snapshot!(cb.string(), @"4889c04881c8ff000000");
+        assert_snapshot!(cb.hexdump(), @"4889c04881c8ff000000");
     }
 
     #[test]
@@ -1078,7 +1078,7 @@ mod tests {
         0x3: movabs r11, 0xffffffffffff
         0xd: or rax, r11
         "));
-        assert_snapshot!(cb.string(), @"4889c049bbffffffffffff00004c09d8");
+        assert_snapshot!(cb.hexdump(), @"4889c049bbffffffffffff00004c09d8");
     }
 
     #[test]
@@ -1093,7 +1093,7 @@ mod tests {
         0x0: mov rax, rax
         0x3: sub rax, 0xff
         "));
-        assert_snapshot!(cb.string(), @"4889c04881e8ff000000");
+        assert_snapshot!(cb.hexdump(), @"4889c04881e8ff000000");
     }
 
     #[test]
@@ -1109,7 +1109,7 @@ mod tests {
         0x3: movabs r11, 0xffffffffffff
         0xd: sub rax, r11
         "));
-        assert_snapshot!(cb.string(), @"4889c049bbffffffffffff00004c29d8");
+        assert_snapshot!(cb.hexdump(), @"4889c049bbffffffffffff00004c29d8");
     }
 
     #[test]
@@ -1120,7 +1120,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 0);
 
         cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test rax, 0xff"));
-        assert_snapshot!(cb.string(), @"48f7c0ff000000");
+        assert_snapshot!(cb.hexdump(), @"48f7c0ff000000");
     }
 
     #[test]
@@ -1134,7 +1134,7 @@ mod tests {
         0x0: movabs r11, 0xffffffffffff
         0xa: test rax, r11
         "));
-        assert_snapshot!(cb.string(), @"49bbffffffffffff00004c85d8");
+        assert_snapshot!(cb.hexdump(), @"49bbffffffffffff00004c85d8");
     }
 
     #[test]
@@ -1149,7 +1149,7 @@ mod tests {
         0x0: mov rax, rax
         0x3: xor rax, 0xff
         "));
-        assert_snapshot!(cb.string(), @"4889c04881f0ff000000");
+        assert_snapshot!(cb.hexdump(), @"4889c04881f0ff000000");
     }
 
     #[test]
@@ -1165,7 +1165,7 @@ mod tests {
         0x3: movabs r11, 0xffffffffffff
         0xd: xor rax, r11
         "));
-        assert_snapshot!(cb.string(), @"4889c049bbffffffffffff00004c31d8");
+        assert_snapshot!(cb.hexdump(), @"4889c049bbffffffffffff00004c31d8");
     }
 
     #[test]
@@ -1177,7 +1177,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: lea rbx, [rbx + 8]"));
-        assert_snapshot!(cb.string(), @"488d5b08");
+        assert_snapshot!(cb.hexdump(), @"488d5b08");
     }
 
     #[test]
@@ -1193,7 +1193,7 @@ mod tests {
         0x0: movabs r11, 0xffffffffffff
         0xa: cmp rax, r11
         "));
-        assert_snapshot!(cb.string(), @"49bbffffffffffff00004c39d8");
+        assert_snapshot!(cb.hexdump(), @"49bbffffffffffff00004c39d8");
     }
 
     #[test]
@@ -1215,7 +1215,7 @@ mod tests {
         0x11: cmovne rax, rcx
         0x15: mov rax, rax
         "));
-        assert_snapshot!(cb.string(), @"488b43084885c0b814000000b900000000480f45c14889c0");
+        assert_snapshot!(cb.hexdump(), @"488b43084885c0b814000000b900000000480f45c14889c0");
     }
 
     #[test]
@@ -1227,7 +1227,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add r13, 0x40"));
-        assert_snapshot!(cb.string(), @"4983c540");
+        assert_snapshot!(cb.hexdump(), @"4983c540");
     }
 
     #[test]
@@ -1238,7 +1238,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add r13, 0x40"));
-        assert_snapshot!(cb.string(), @"4983c540");
+        assert_snapshot!(cb.hexdump(), @"4983c540");
     }
 
     #[test]
@@ -1250,7 +1250,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: sub r13, 0x40"));
-        assert_snapshot!(cb.string(), @"4983ed40");
+        assert_snapshot!(cb.hexdump(), @"4983ed40");
     }
 
     #[test]
@@ -1261,7 +1261,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: sub r13, 0x40"));
-        assert_snapshot!(cb.string(), @"4983ed40");
+        assert_snapshot!(cb.hexdump(), @"4983ed40");
     }
 
     #[test]
@@ -1273,7 +1273,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: and r13, 0x40"));
-        assert_snapshot!(cb.string(), @"4983e540");
+        assert_snapshot!(cb.hexdump(), @"4983e540");
     }
 
     #[test]
@@ -1285,7 +1285,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: or r13, 0x40"));
-        assert_snapshot!(cb.string(), @"4983cd40");
+        assert_snapshot!(cb.hexdump(), @"4983cd40");
     }
 
     #[test]
@@ -1297,7 +1297,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: xor r13, 0x40"));
-        assert_snapshot!(cb.string(), @"4983f540");
+        assert_snapshot!(cb.hexdump(), @"4983f540");
     }
 
     #[test]
@@ -1315,7 +1315,7 @@ mod tests {
         0x0: mov eax, 0
         0x5: call rax
         "));
-        assert_snapshot!(cb.string(), @"b800000000ffd0");
+        assert_snapshot!(cb.hexdump(), @"b800000000ffd0");
     }
 
     #[test]
@@ -1338,7 +1338,7 @@ mod tests {
             0x9: mov eax, 0
             0xe: call rax
         "));
-        assert_snapshot!(cb.string(), @"4989f34889fe4c89dfb800000000ffd0");
+        assert_snapshot!(cb.hexdump(), @"4989f34889fe4c89dfb800000000ffd0");
     }
 
     #[test]
@@ -1365,7 +1365,7 @@ mod tests {
             0x12: mov eax, 0
             0x17: call rax
         "));
-        assert_snapshot!(cb.string(), @"4989f34889fe4c89df4989cb4889d14c89dab800000000ffd0");
+        assert_snapshot!(cb.hexdump(), @"4989f34889fe4c89df4989cb4889d14c89dab800000000ffd0");
     }
 
     #[test]
@@ -1389,7 +1389,7 @@ mod tests {
             0xc: mov eax, 0
             0x11: call rax
         "));
-        assert_snapshot!(cb.string(), @"4989f34889d64889fa4c89dfb800000000ffd0");
+        assert_snapshot!(cb.hexdump(), @"4989f34889d64889fa4c89dfb800000000ffd0");
     }
 
     #[test]
@@ -1421,7 +1421,7 @@ mod tests {
             0x1e: mov eax, 0
             0x23: call rax
         "));
-        assert_snapshot!(cb.string(), @"b801000000b902000000ba030000004889c74889ce4989cb4889d14c89dab800000000ffd0");
+        assert_snapshot!(cb.hexdump(), @"b801000000b902000000ba030000004889c74889ce4989cb4889d14c89dab800000000ffd0");
     }
 
     #[test]
@@ -1444,7 +1444,7 @@ mod tests {
             0xa: cmovg rdi, qword ptr [rbx]
             0xe: mov qword ptr [rbx], rdi
         "));
-        assert_snapshot!(cb.string(), @"48837b1001bf04000000480f4f3b48893b");
+        assert_snapshot!(cb.hexdump(), @"48837b1001bf04000000480f4f3b48893b");
     }
 
     #[test]
@@ -1465,7 +1465,7 @@ mod tests {
             0xf: cmove rax, rcx
             0x13: mov qword ptr [rbx], rax
         "));
-        assert_snapshot!(cb.string(), @"48b830198dc8227f0000b904000000480f44c1488903");
+        assert_snapshot!(cb.hexdump(), @"48b830198dc8227f0000b904000000480f44c1488903");
     }
 
     #[test]
@@ -1482,7 +1482,7 @@ mod tests {
             0x0: mov dword ptr [rax], 0x80000001
             0x6: mov dword ptr [rax], 0x80000001
         "));
-        assert_snapshot!(cb.string(), @"c70001000080c70001000080");
+        assert_snapshot!(cb.hexdump(), @"c70001000080c70001000080");
     }
 
     #[test]
@@ -1516,7 +1516,7 @@ mod tests {
             0x26: mov rsp, rbp
             0x29: pop rbp
         "));
-        assert_snapshot!(cb.string(), @"554889e541555341544883ec084c8b6df8488b5df04c8b65e84889ec5dc3554889e54883ec304889ec5d");
+        assert_snapshot!(cb.hexdump(), @"554889e541555341544883ec084c8b6df8488b5df04c8b65e84889ec5dc3554889e54883ec304889ec5d");
     }
 
     #[test]
@@ -1534,6 +1534,6 @@ mod tests {
             0x0: movabs r11, 0x1000
             0xa: mov qword ptr [rbx], r11
         "));
-        assert_snapshot!(cb.string(), @"49bb00100000000000004c891b");
+        assert_snapshot!(cb.hexdump(), @"49bb00100000000000004c891b");
     }
 }

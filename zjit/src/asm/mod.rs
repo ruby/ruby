@@ -296,7 +296,7 @@ impl CodeBlock {
 
     /// Return the hex dump of generated code for testing
     #[cfg(test)]
-    pub fn string(&self) -> String {
+    pub fn hexdump(&self) -> String {
         format!("{:x}", self)
     }
 }

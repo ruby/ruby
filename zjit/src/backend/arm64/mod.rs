@@ -1446,7 +1446,7 @@ mod tests {
             0x4: mul x0, x9, x0
             0x8: mov x1, x0
         "));
-        assert_snapshot!(cb.string(), @"600080d2207d009be10300aa");
+        assert_snapshot!(cb.hexdump(), @"600080d2207d009be10300aa");
     }
 
     #[test]
@@ -1464,7 +1464,7 @@ mod tests {
             0x0: add sp, sp, #0x20
             0x4: sub sp, sp, #0x20
         "));
-        assert_snapshot!(cb.string(), @"ff830091ff8300d1");
+        assert_snapshot!(cb.hexdump(), @"ff830091ff8300d1");
     }
 
     #[test]
@@ -1480,7 +1480,7 @@ mod tests {
             0x0: add sp, sp, #8
             0x4: adds x20, x20, #0x20
         "));
-        assert_snapshot!(cb.string(), @"ff230091948200b1");
+        assert_snapshot!(cb.hexdump(), @"ff230091948200b1");
     }
 
     #[test]
@@ -1496,7 +1496,7 @@ mod tests {
             0x4: subs x0, x0, x5
             0x8: mov x1, x0
         "));
-        assert_snapshot!(cb.string(), @"000180d2000005ebe10300aa");
+        assert_snapshot!(cb.hexdump(), @"000180d2000005ebe10300aa");
     }
 
     #[test]
@@ -1511,7 +1511,7 @@ mod tests {
             0x0: ldur x0, [x0]
             0x4: ret
         "));
-        assert_snapshot!(cb.string(), @"000040f8c0035fd6");
+        assert_snapshot!(cb.hexdump(), @"000040f8c0035fd6");
     }
 
     #[test]
@@ -1583,7 +1583,7 @@ mod tests {
                 0x1c: mov sp, x29
                 0x20: ldp x29, x30, [sp], #0x10
             "));
-            assert_snapshot!(cb.string(), @"fd7bbfa9fd030091f44fbfa9f5831ff8ff8300d1b44f7fa9b5835ef8bf030091fd7bc1a8");
+            assert_snapshot!(cb.hexdump(), @"fd7bbfa9fd030091f44fbfa9f5831ff8ff8300d1b44f7fa9b5835ef8bf030091fd7bc1a8");
         }
 
         // Test 3 preserved regs (odd), even slot_count
@@ -1603,7 +1603,7 @@ mod tests {
                 0x1c: mov sp, x29
                 0x20: ldp x29, x30, [sp], #0x10
             "));
-            assert_snapshot!(cb.string(), @"fd7bbfa9fd030091f44fbfa9f5831ff8ffc300d1b44f7fa9b5835ef8bf030091fd7bc1a8");
+            assert_snapshot!(cb.hexdump(), @"fd7bbfa9fd030091f44fbfa9f5831ff8ffc300d1b44f7fa9b5835ef8bf030091fd7bc1a8");
         }
 
         // Test 4 preserved regs (even), odd slot_count
@@ -1624,7 +1624,7 @@ mod tests {
                 0x1c: mov sp, x29
                 0x20: ldp x29, x30, [sp], #0x10
             "));
-            assert_snapshot!(cb.string(), @"fd7bbfa9fd030091f44fbfa9f657bfa9ff8300d1b44f7fa9b6577ea9bf030091fd7bc1a8");
+            assert_snapshot!(cb.hexdump(), @"fd7bbfa9fd030091f44fbfa9f657bfa9ff8300d1b44f7fa9b6577ea9bf030091fd7bc1a8");
         }
     }
 
@@ -1684,7 +1684,7 @@ mod tests {
             0x40: orr x0, xzr, #0xffffffff80000000
             0x44: add x0, sp, x0
         "));
-        assert_snapshot!(cb.string(), @"e07b40b2e063208b000180d22000a0f2e063208b000083d2e063208be0230891e02308d1e0ff8292e063208b00ff9fd2c0ffbff2e0ffdff2e0fffff2e063208be08361b2e063208b");
+        assert_snapshot!(cb.hexdump(), @"e07b40b2e063208b000180d22000a0f2e063208b000083d2e063208be0230891e02308d1e0ff8292e063208b00ff9fd2c0ffbff2e0ffdff2e0fffff2e063208be08361b2e063208b");
     }
 
     #[test]
@@ -1711,7 +1711,7 @@ mod tests {
             0x20: sub x17, sp, #0x305
             0x24: stur x16, [x17]
         "));
-        assert_snapshot!(cb.string(), @"f0170cd1100240f8100000f8100040f8f1170cd1300200f8f0170cd1100240f8f1170cd1300200f8");
+        assert_snapshot!(cb.hexdump(), @"f0170cd1100240f8100000f8100040f8f1170cd1300200f8f0170cd1100240f8f1170cd1300200f8");
     }
 
     #[test]
@@ -1734,7 +1734,7 @@ mod tests {
             0xc: .byte 0x00, 0x00, 0x00, 0x00
             0x10: stur x16, [x21]
         "));
-        assert_snapshot!(cb.string(), @"50000058030000140010000000000000b00200f8");
+        assert_snapshot!(cb.hexdump(), @"50000058030000140010000000000000b00200f8");
     }
 
     #[test]
@@ -1983,7 +1983,7 @@ mod tests {
             0x0: eor x0, x0, x1
             0x4: stur x0, [x2]
         "));
-        assert_snapshot!(cb.string(), @"000001ca400000f8");
+        assert_snapshot!(cb.hexdump(), @"000001ca400000f8");
     }
 
     #[test]
@@ -2018,7 +2018,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: ldur x1, [x19, #8]"));
-        assert_snapshot!(cb.string(), @"618240f8");
+        assert_snapshot!(cb.hexdump(), @"618240f8");
     }
 
     #[test]
@@ -2033,7 +2033,7 @@ mod tests {
             0x0: mov x1, #0xffff
             0x4: orr x1, xzr, #0x10000
         "));
-        assert_snapshot!(cb.string(), @"e1ff9fd2e10370b2");
+        assert_snapshot!(cb.hexdump(), @"e1ff9fd2e10370b2");
     }
 
     #[test]
@@ -2049,7 +2049,7 @@ mod tests {
             0x4: mov x1, #0
             0x8: csel x1, x0, x1, lt
         "));
-        assert_snapshot!(cb.string(), @"800280d2010080d201b0819a");
+        assert_snapshot!(cb.hexdump(), @"800280d2010080d201b0819a");
     }
 
     #[test]
@@ -2091,7 +2091,7 @@ mod tests {
             0x0: adds x0, x9, #1
             0x4: adds x1, x0, #1
         "));
-        assert_snapshot!(cb.string(), @"200500b1010400b1");
+        assert_snapshot!(cb.hexdump(), @"200500b1010400b1");
     }
 
     #[test]
@@ -2109,7 +2109,7 @@ mod tests {
             0x0: mov x16, #0
             0x4: blr x16
         "));
-        assert_snapshot!(cb.string(), @"100080d200023fd6");
+        assert_snapshot!(cb.hexdump(), @"100080d200023fd6");
     }
 
     #[test]
@@ -2132,7 +2132,7 @@ mod tests {
             0xc: mov x16, #0
             0x10: blr x16
         "));
-        assert_snapshot!(cb.string(), @"f00300aae00301aae10310aa100080d200023fd6");
+        assert_snapshot!(cb.hexdump(), @"f00300aae00301aae10310aa100080d200023fd6");
     }
 
     #[test]
@@ -2159,7 +2159,7 @@ mod tests {
             0x18: mov x16, #0
             0x1c: blr x16
         "));
-        assert_snapshot!(cb.string(), @"f00302aae20303aae30310aaf00300aae00301aae10310aa100080d200023fd6");
+        assert_snapshot!(cb.hexdump(), @"f00302aae20303aae30310aaf00300aae00301aae10310aa100080d200023fd6");
     }
 
     #[test]
@@ -2183,6 +2183,6 @@ mod tests {
             0x10: mov x16, #0
             0x14: blr x16
         "));
-        assert_snapshot!(cb.string(), @"f00300aae00301aae10302aae20310aa100080d200023fd6");
+        assert_snapshot!(cb.hexdump(), @"f00300aae00301aae10302aae20310aa100080d200023fd6");
     }
 }
