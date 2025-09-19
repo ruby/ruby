@@ -7253,41 +7253,50 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_optimize_range_fixnum_inclusive_literals() {
+    fn test_optimize_new_range_fixnum_inclusive_literals() {
         eval("
             def test()
-              (1..2)
+              a = 2
+              (1..a)
             end
             test; test
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
-          v4:RangeExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v1:NilClass = Const Value(nil)
+          v5:Fixnum[2] = Const Value(2)
+          v8:Fixnum[1] = Const Value(1)
+          v16:RangeExact = NewRangeFixnum v8 NewRangeInclusive v5
           CheckInterrupts
-          Return v4
+          Return v16
         ");
     }
 
+
     #[test]
-    fn test_optimize_range_fixnum_exclusive_literals() {
+    fn test_optimize_new_range_fixnum_exclusive_literals() {
         eval("
             def test()
-              (1...2)
+              a = 2
+              (1...a)
             end
             test; test
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
-          v4:RangeExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v1:NilClass = Const Value(nil)
+          v5:Fixnum[2] = Const Value(2)
+          v8:Fixnum[1] = Const Value(1)
+          v16:RangeExact = NewRangeFixnum v8 NewRangeExclusive v5
           CheckInterrupts
-          Return v4
+          Return v16
         ");
     }
 
     #[test]
-    fn test_optimize_range_fixnum_inclusive_high_guarded() {
+    fn test_optimize_new_range_fixnum_inclusive_high_guarded() {
         eval("
             def test(a)
               (1..a)
@@ -7306,7 +7315,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_optimize_range_fixnum_exclusive_high_guarded() {
+    fn test_optimize_new_range_fixnum_exclusive_high_guarded() {
         eval("
             def test(a)
               (1...a)
@@ -7325,7 +7334,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_optimize_range_fixnum_inclusive_low_guarded() {
+    fn test_optimize_new_range_fixnum_inclusive_low_guarded() {
         eval("
             def test(a)
               (a..10)
@@ -7344,7 +7353,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_optimize_range_fixnum_exclusive_low_guarded() {
+    fn test_optimize_new_range_fixnum_exclusive_low_guarded() {
         eval("
             def test(a)
               (a...10)

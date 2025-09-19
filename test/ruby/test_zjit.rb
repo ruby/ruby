@@ -1136,7 +1136,8 @@ class TestZJIT < Test::Unit::TestCase
   def test_new_range_fixnum_both_literals_inclusive
     assert_compiles '1..2', %q{
       def test()
-        (1..2)
+        a = 2
+        (1..a)
       end
       test; test
     }, call_threshold: 2
@@ -1145,7 +1146,8 @@ class TestZJIT < Test::Unit::TestCase
   def test_new_range_fixnum_both_literals_exclusive
     assert_compiles '1...2', %q{
       def test()
-        (1...2)
+        a = 2
+        (1...a)
       end
       test; test
     }, call_threshold: 2
