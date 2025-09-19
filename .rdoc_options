@@ -10,6 +10,13 @@ rdoc_include:
 
 exclude:
 - \.gemspec\z
+- \.java\z
+- \.rbs\z
+- \.re\z
+- \.yaml\z
+- /depend\z
+- /bin/console\z
+- /bin/setup\z
 
 autolink_excluded_words:
 - Class
