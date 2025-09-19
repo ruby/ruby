@@ -150,6 +150,12 @@ make_counters! {
     send_fallback_optimized,
     send_fallback_missing,
     send_fallback_refined,
+
+    // Writes to the VM frame
+    vm_write_pc_count,
+    vm_write_sp_count,
+    vm_write_locals_count,
+    vm_write_stack_count,
 }
 
 /// Increase a counter by a specified amount
