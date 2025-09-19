@@ -1864,6 +1864,9 @@ impl Function {
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                             if !can_direct_send(iseq) {
+                                if let Insn::SendWithoutBlock { def_type: insn_def_type, .. } = &mut self.insns[insn_id.0] {
+                                    *insn_def_type = Some(MethodType::from(def_type));
+                                }
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
