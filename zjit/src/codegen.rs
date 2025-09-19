@@ -346,7 +346,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
         Insn::Const { .. } => panic!("Unexpected Const in gen_insn: {insn}"),
         Insn::NewArray { elements, state } => gen_new_array(asm, opnds!(elements), &function.frame_state(*state)),
-        Insn::NewHash { elements, state } => gen_new_hash(jit, asm, elements, &function.frame_state(*state)),
+        Insn::NewHash { elements, state } => gen_new_hash(jit, asm, opnds!(elements), &function.frame_state(*state)),
         Insn::NewRange { low, high, flag, state } => gen_new_range(jit, asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
@@ -1259,7 +1259,7 @@ fn gen_new_array(
 fn gen_new_hash(
     jit: &mut JITState,
     asm: &mut Assembler,
-    elements: &[(InsnId, InsnId)],
+    elements: Vec<Opnd>,
     state: &FrameState,
 ) -> lir::Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
@@ -1268,19 +1268,10 @@ fn gen_new_hash(
     let new_hash = asm_ccall!(asm, rb_hash_new_with_size, lir::Opnd::Imm(cap));
 
     if !elements.is_empty() {
-        let mut pairs = Vec::new();
-        for (key_id, val_id) in elements.iter() {
-            let key = jit.get_opnd(*key_id);
-            let val = jit.get_opnd(*val_id);
-            pairs.push(key);
-            pairs.push(val);
-        }
+        let argv = gen_push_opnds(jit, asm, &elements);
+        asm_ccall!(asm, rb_hash_bulk_insert, elements.len().into(), argv, new_hash);
 
-        let argv = gen_push_opnds(jit, asm, &pairs);
-        let argc = (elements.len() * 2) as ::std::os::raw::c_long;
-        asm_ccall!(asm, rb_hash_bulk_insert, lir::Opnd::Imm(argc), argv, new_hash);
-
-        gen_pop_opnds(asm, &pairs);
+        gen_pop_opnds(asm, &elements);
     }
 
     new_hash
