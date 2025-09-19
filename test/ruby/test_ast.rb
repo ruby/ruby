@@ -1535,6 +1535,64 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 20], [1, 0, 1, 2], [1, 10, 1, 12], [1, 17, 1, 20]])
     end
 
+    def test_lasgn_locations
+      node = ast_parse("v = 117")
+      lasgn_node = node.children[-1]
+      assert_equal(:LASGN, lasgn_node.type)
+      assert_locations(lasgn_node.locations, [[1, 0, 1, 7], [1, 0, 1, 1], [1, 2, 1, 3]])
+
+      node = ast_parse("v += 117")
+      lasgn_node = node.children[-1]
+      assert_equal(:LASGN, lasgn_node.type)
+      assert_locations(lasgn_node.locations, [[1, 0, 1, 8], [1, 0, 1, 1], [1, 2, 1, 4]])
+
+      node = ast_parse("def foo(x = 10); end")
+      lasgn_node = node.children[-1].children[1].children[1].children[2].children[0]
+      assert_equal(:LASGN, lasgn_node.type)
+      assert_locations(lasgn_node.locations, [[1, 8, 1, 14], [1, 8, 1, 9], [1, 9, 1, 11]])
+
+      node = ast_parse("def bar(name: 'default'); end")
+      lasgn_node = node.children[-1].children[1].children[1].children[7].children[0]
+      assert_equal(:LASGN, lasgn_node.type)
+      assert_locations(lasgn_node.locations, [[1, 8, 1, 23], [1, 8, 1, 13], nil])
+
+      node = ast_parse("case [1,2,3]; in [a, *rest]; end")
+      lasgn_node = node.children[2].children[1].children[0].children[2]
+      assert_equal(:LASGN, lasgn_node.type)
+      assert_locations(lasgn_node.locations, [[1, 21, 1, 26], [1, 22, 1, 26], [1, 21, 1, 22]])
+
+      node = ast_parse("case {a: 1}; in {**rest}; end")
+      lasgn_node = node.children[2].children[1].children[0].children[2]
+      assert_equal(:LASGN, lasgn_node.type)
+      assert_locations(lasgn_node.locations, [[1, 17, 1, 23], [1, 19, 1, 23], [1, 17, 1, 19]])
+
+      node = ast_parse("case {a: 1}; in {a: v}; end")
+      lasgn_node = node.children[2].children[1].children[0].children[1].children[0].children[1]
+      assert_equal(:LASGN, lasgn_node.type)
+      assert_locations(lasgn_node.locations, [[1, 20, 1, 21], [1, 20, 1, 21], nil])
+
+      node = ast_parse("case {a: 1}; in {a:}; end")
+      lasgn_node = node.children[2].children[1].children[0].children[1].children[0].children[1]
+      assert_equal(:LASGN, lasgn_node.type)
+      assert_locations(lasgn_node.locations, [[1, 17, 1, 19], [1, 17, 1, 18], nil])
+
+      node = ast_parse("a, b = [1, 2]")
+      lasgn_node1 = node.children[2].children[1].children[0]
+      lasgn_node2 = node.children[2].children[1].children[1]
+      assert_equal(:LASGN, lasgn_node1.type)
+      assert_equal(:LASGN, lasgn_node2.type)
+      assert_locations(lasgn_node1.locations, [[1, 0, 1, 1], [1, 0, 1, 1], nil])
+      assert_locations(lasgn_node2.locations, [[1, 3, 1, 4], [1, 3, 1, 4], nil])
+
+      node = ast_parse("def foo((a, b)); end")
+      lasgn_node1 = node.children[2].children[1].children[1].children[1].children[1].children[0]
+      lasgn_node2 = node.children[2].children[1].children[1].children[1].children[1].children[1]
+      assert_equal(:LASGN, lasgn_node1.type)
+      assert_equal(:LASGN, lasgn_node2.type)
+      assert_locations(lasgn_node1.locations, [[1, 9, 1, 10], [1, 9, 1, 10], nil])
+      assert_locations(lasgn_node2.locations, [[1, 12, 1, 13], [1, 12, 1, 13], nil])
+    end
+
     def test_module_locations
       node = ast_parse('module A end')
       assert_locations(node.children[-1].locations, [[1, 0, 1, 12], [1, 0, 1, 6], [1, 9, 1, 12]])
@@ -1733,6 +1791,7 @@ dummy
       node = ast_parse("def foo; yield(1, 2) end")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 20], [1, 9, 1, 14], [1, 14, 1, 15], [1, 19, 1, 20]])
     end
+
 
     private
     def ast_parse(src, **options)
