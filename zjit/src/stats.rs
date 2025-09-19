@@ -150,6 +150,7 @@ make_counters! {
     send_fallback_optimized,
     send_fallback_missing,
     send_fallback_refined,
+    send_fallback_null,
 
     // Writes to the VM frame
     vm_write_pc_count,
@@ -263,6 +264,7 @@ pub fn send_fallback_counter(def_type: crate::hir::MethodType) -> Counter {
         Optimized => send_fallback_optimized,
         Missing => send_fallback_missing,
         Refined => send_fallback_refined,
+        Null => send_fallback_null,
     }
 }
 
