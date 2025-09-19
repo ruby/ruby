@@ -153,7 +153,7 @@ imemo_fields_complex_wb_i(st_data_t key, st_data_t value, st_data_t arg)
 VALUE
 rb_imemo_fields_new_complex_tbl(VALUE owner, st_table *tbl)
 {
-    VALUE fields = imemo_fields_new(owner, sizeof(struct rb_fields));
+    VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields));
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = tbl;
     FL_SET_RAW(fields, OBJ_FIELD_HEAP);
     st_foreach(tbl, imemo_fields_trigger_wb_i, (st_data_t)fields);
