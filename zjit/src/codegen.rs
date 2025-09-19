@@ -1593,6 +1593,7 @@ fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState, leaf: bool)
     let opcode: usize = state.get_opcode().try_into().unwrap();
     let next_pc: *const VALUE = unsafe { state.pc.offset(insn_len(opcode) as isize) };
 
+    gen_incr_counter(asm, Counter::vm_write_pc_count);
     asm_comment!(asm, "save PC to CFP");
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(next_pc));
 
@@ -1611,6 +1612,7 @@ fn gen_save_sp(asm: &mut Assembler, stack_size: usize) {
     // code, and ZJIT's codegen currently assumes the SP register doesn't move, e.g. gen_param().
     // So we don't update the SP register here. We could update the SP register to avoid using
     // an extra register for asm.lea(), but you'll need to manage the SP offset like YJIT does.
+    gen_incr_counter(asm, Counter::vm_write_sp_count);
     asm_comment!(asm, "save SP to CFP: {}", stack_size);
     let sp_addr = asm.lea(Opnd::mem(64, SP, stack_size as i32 * SIZEOF_VALUE_I32));
     let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
@@ -1620,6 +1622,7 @@ fn gen_save_sp(asm: &mut Assembler, stack_size: usize) {
 /// Spill locals onto the stack.
 fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
     // TODO: Avoid spilling locals that have been spilled before and not changed.
+    gen_incr_counter(asm, Counter::vm_write_locals_count);
     asm_comment!(asm, "spill locals");
     for (idx, &insn_id) in state.locals().enumerate() {
         asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
@@ -1630,6 +1633,7 @@ fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
 fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
     // This function does not call gen_save_sp() at the moment because
     // gen_send_without_block_direct() spills stack slots above SP for arguments.
+    gen_incr_counter(asm, Counter::vm_write_stack_count);
     asm_comment!(asm, "spill stack");
     for (idx, &insn_id) in state.stack().enumerate() {
         asm.mov(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
