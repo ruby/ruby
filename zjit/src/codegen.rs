@@ -2006,8 +2006,12 @@ fn gen_push_opnds(jit: &mut JITState, asm: &mut Assembler, opnds: &[Opnd]) -> li
     let frame_size = aligned_stack_bytes(jit.c_stack_slots);
     let allocation_size = aligned_stack_bytes(n);
 
-    asm_comment!(asm, "allocate {} bytes on C stack for {} values", allocation_size, n);
-    asm.sub_into(NATIVE_STACK_PTR, allocation_size.into());
+    if n != 0 {
+        asm_comment!(asm, "allocate {} bytes on C stack for {} values", allocation_size, n);
+        asm.sub_into(NATIVE_STACK_PTR, allocation_size.into());
+    } else {
+        asm_comment!(asm, "no opnds to allocate");
+    }
 
     // Calculate the total offset from NATIVE_BASE_PTR to our buffer
     let total_offset_from_base = (frame_size + allocation_size) as i32;
@@ -2024,6 +2028,11 @@ fn gen_push_opnds(jit: &mut JITState, asm: &mut Assembler, opnds: &[Opnd]) -> li
 }
 
 fn gen_pop_opnds(asm: &mut Assembler, opnds: &[Opnd]) {
+    if opnds.is_empty() {
+        asm_comment!(asm, "no opnds to restore");
+        return
+    }
+
     asm_comment!(asm, "restore C stack pointer");
     let allocation_size = aligned_stack_bytes(opnds.len());
     asm.add_into(NATIVE_STACK_PTR, allocation_size.into());
