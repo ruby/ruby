@@ -38,6 +38,12 @@ jobs:
             specopts: '-T --zjit-call-threshold=1'
             test_all_opts: '--seed=46450'
 
+          - test_task: 'check'
+            configure: '--enable-zjit=dev'
+            run_opts: '--zjit-call-threshold=1 --zjit-disable-hir-opt'
+            specopts: '-T --zjit-call-threshold=1 -T --zjit-disable-hir-opt'
+            test_all_opts: '--seed=46450'
+
           - test_task: 'zjit-check' # zjit-test + quick feedback of test_zjit.rb
             configure: '--enable-yjit=dev --enable-zjit'
             rust_version: "1.85.0"
