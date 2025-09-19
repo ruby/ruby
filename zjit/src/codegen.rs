@@ -2024,6 +2024,11 @@ fn gen_push_opnds(jit: &mut JITState, asm: &mut Assembler, opnds: &[Opnd]) -> li
 }
 
 fn gen_pop_opnds(asm: &mut Assembler, opnds: &[Opnd]) {
+    if opnds.is_empty() {
+        asm_comment!(asm, "no opnds to restore");
+        return
+    }
+
     asm_comment!(asm, "restore C stack pointer");
     let allocation_size = aligned_stack_bytes(opnds.len());
     asm.add_into(NATIVE_STACK_PTR, allocation_size.into());
