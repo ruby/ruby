@@ -27,6 +27,7 @@ module ThreadSpecs
       thread.join
     ensure
       thread.kill if thread.alive?
+      Thread.pass while thread.alive? # Thread#kill may not terminate a thread immediately so it may be detected as a leaked one
     end
   end
 
