@@ -837,38 +837,27 @@ enc_autoload_body(rb_encoding *enc)
 
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         base = enc_table->list[ENC_TO_ENCINDEX(enc)].base;
-        if (base) {
-            do {
-                if (i >= enc_table->count) {
-                    i = -1;
-                    break;
-                }
-            } while (enc_table->list[i].enc != base && (++i, 1));
-        }
     }
 
-
-    if (i != -1) {
-        if (base) {
-            bool do_register = true;
-            if (rb_enc_autoload_p(base)) {
-                if (rb_enc_autoload(base) < 0) {
-                    do_register = false;
-                    i = -1;
-                }
-            }
-
-            if (do_register) {
-                GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-                    i = ENC_TO_ENCINDEX(enc);
-                    enc_load_from_base(enc_table, i, base);
-                    RUBY_ASSERT(((rb_raw_encoding *)enc)->ruby_encoding_index == i);
-                }
+    if (base) {
+        bool do_register = true;
+        if (rb_enc_autoload_p(base)) {
+            if (rb_enc_autoload(base) < 0) {
+                do_register = false;
+                i = -1;
             }
         }
-        else {
-            i = -2;
+
+        if (do_register) {
+            GLOBAL_ENC_TABLE_LOCKING(enc_table) {
+                i = ENC_TO_ENCINDEX(enc);
+                enc_load_from_base(enc_table, i, base);
+                RUBY_ASSERT(((rb_raw_encoding *)enc)->ruby_encoding_index == i);
+            }
         }
+    }
+    else {
+        i = -2;
     }
 
     return i;
