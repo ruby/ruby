@@ -2712,6 +2712,18 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  # [Bug #21265]
+  def test_symbol_proc_from_using_scope
+    assert_separately([], <<~RUBY)
+      class RefinedScope
+        using(Module.new { refine(Kernel) { def itself = 0 } })
+        ITSELF = :itself.to_proc
+      end
+
+      assert_equal(1, RefinedScope::ITSELF[1])
+    RUBY
+  end
+
   private
 
   def eval_using(mod, s)
