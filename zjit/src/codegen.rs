@@ -532,6 +532,9 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, 
 /// We generate this instruction with level=0 only when the local variable is on the heap, so we
 /// can't optimize the level=0 case using the SP register.
 fn gen_getlocal_with_ep(asm: &mut Assembler, local_ep_offset: u32, level: u32) -> lir::Opnd {
+    if level > 0 {
+        gen_incr_counter(asm, Counter::vm_read_from_parent_iseq_local_count);
+    }
     let ep = gen_get_ep(asm, level);
     let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).unwrap_or_else(|_| panic!("Could not convert local_ep_offset {local_ep_offset} to i32")));
     asm.load(Opnd::mem(64, ep, offset))
@@ -541,6 +544,9 @@ fn gen_getlocal_with_ep(asm: &mut Assembler, local_ep_offset: u32, level: u32) -
 /// We generate this instruction with level=0 only when the local variable is on the heap, so we
 /// can't optimize the level=0 case using the SP register.
 fn gen_setlocal_with_ep(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset: u32, level: u32) {
+    if level > 0 {
+        gen_incr_counter(asm, Counter::vm_write_to_parent_iseq_local_count);
+    }
     let ep = gen_get_ep(asm, level);
 
     // When we've proved that we're writing an immediate,
