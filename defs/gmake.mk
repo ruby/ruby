@@ -412,6 +412,11 @@ ifneq ($(DOT_WAIT),)
 up:: $(DOT_WAIT) after-update
 endif
 
+ifneq ($(CC),false)
+after-update:: common-srcs
+after-update:: prereq
+endif
+
 ifneq ($(filter update-bundled_gems refresh-gems,$(MAKECMDGOALS)),)
 update-gems: update-bundled_gems
 endif
