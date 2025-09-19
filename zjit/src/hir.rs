@@ -549,7 +549,7 @@ pub enum Insn {
     ToNewArray { val: InsnId, state: InsnId },
     NewArray { elements: Vec<InsnId>, state: InsnId },
     /// NewHash contains a vec of (key, value) pairs
-    NewHash { elements: Vec<(InsnId,InsnId)>, state: InsnId },
+    NewHash { elements: Vec<InsnId>, state: InsnId },
     NewRange { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     NewRangeFixnum { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
@@ -816,9 +816,11 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::NewHash { elements, .. } => {
                 write!(f, "NewHash")?;
                 let mut prefix = " ";
-                for (key, value) in elements {
-                    write!(f, "{prefix}{key}: {value}")?;
-                    prefix = ", ";
+                for chunk in elements.chunks(2) {
+                    if let [key, value] = chunk {
+                        write!(f, "{prefix}{key}: {value}")?;
+                        prefix = ", ";
+                    }
                 }
                 Ok(())
             }
@@ -1462,13 +1464,7 @@ impl Function {
             &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
             &NewArray { ref elements, state } => NewArray { elements: find_vec!(elements), state: find!(state) },
-            &NewHash { ref elements, state } => {
-                let mut found_elements = vec![];
-                for &(key, value) in elements {
-                    found_elements.push((find!(key), find!(value)));
-                }
-                NewHash { elements: found_elements, state: find!(state) }
-            }
+            &NewHash { ref elements, state } => NewHash { elements: find_vec!(elements), state: find!(state) },
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
             &NewRangeFixnum { low, high, flag, state } => NewRangeFixnum { low: find!(low), high: find!(high), flag, state: find!(state) },
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
@@ -2369,15 +2365,9 @@ impl Function {
                 worklist.push_back(state);
             }
             &Insn::ArrayMax { ref elements, state }
+            | &Insn::NewHash { ref elements, state }
             | &Insn::NewArray { ref elements, state } => {
                 worklist.extend(elements);
-                worklist.push_back(state);
-            }
-            &Insn::NewHash { ref elements, state } => {
-                for &(key, value) in elements {
-                    worklist.push_back(key);
-                    worklist.push_back(value);
-                }
                 worklist.push_back(state);
             }
             &Insn::NewRange { low, high, state, .. }
@@ -3430,7 +3420,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     for _ in 0..(count/2) {
                         let value = state.stack_pop()?;
                         let key = state.stack_pop()?;
-                        elements.push((key, value));
+                        elements.push(value);
+                        elements.push(key);
                     }
                     elements.reverse();
                     state.stack_push(fun.push_insn(block, Insn::NewHash { elements, state: exit_id }));
