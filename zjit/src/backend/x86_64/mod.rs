@@ -91,7 +91,6 @@ pub const ALLOC_REGS: &[Reg] = &[
     RCX_REG,
     R8_REG,
     R9_REG,
-    R10_REG,
     RAX_REG,
 ];
 
@@ -103,6 +102,7 @@ impl Assembler
     /// so conflicts are possible.
     pub const SCRATCH_REG: Reg = R11_REG;
     const SCRATCH0: X86Opnd = X86Opnd::Reg(Assembler::SCRATCH_REG);
+    pub const SPILL_BASE_REG: Reg = R10_REG;
 
     /// Get the list of registers from which we can allocate on this platform
     pub fn get_alloc_regs() -> Vec<Reg> {
@@ -342,9 +342,9 @@ impl Assembler
 
                     // Load each operand into the corresponding argument register.
                     if !opnds.is_empty() {
-                        let mut args: Vec<(Reg, Opnd)> = vec![];
+                        let mut args: Vec<(Opnd, Opnd)> = vec![];
                         for (idx, opnd) in opnds.iter_mut().enumerate() {
-                            args.push((C_ARG_OPNDS[idx].unwrap_reg(), *opnd));
+                            args.push((C_ARG_OPNDS[idx], *opnd));
                         }
                         asm.parallel_mov(args);
                     }
@@ -505,34 +505,57 @@ impl Assembler
                     pop(cb, RBP);
                 }
 
-                Insn::Add { left, right, .. } => {
+                Insn::Add { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     add(cb, left.into(), opnd1);
+                    if left != out {
+                        mov(cb, out.into(), left.into());
+                    }
                 },
 
-                Insn::Sub { left, right, .. } => {
+                Insn::Sub { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     sub(cb, left.into(), opnd1);
+                    if left != out {
+                        mov(cb, out.into(), left.into());
+                    }
                 },
 
-                Insn::Mul { left, right, .. } => {
+                Insn::Mul { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     imul(cb, left.into(), opnd1);
+                    if left != out {
+                        if let (Opnd::Mem(_), Opnd::Reg(_)) = (left, right) {
+                            // imul flips the left and the right for this case
+                            mov(cb, out.into(), right.into());
+                        } else {
+                            mov(cb, out.into(), left.into());
+                        }
+                    }
                 },
 
-                Insn::And { left, right, .. } => {
+                Insn::And { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     and(cb, left.into(), opnd1);
+                    if left != out {
+                        mov(cb, out.into(), left.into());
+                    }
                 },
 
-                Insn::Or { left, right, .. } => {
+                Insn::Or { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     or(cb, left.into(), opnd1);
+                    if left != out {
+                        mov(cb, out.into(), left.into());
+                    }
                 },
 
-                Insn::Xor { left, right, .. } => {
+                Insn::Xor { left, right, out } => {
                     let opnd1 = emit_64bit_immediate(cb, right);
                     xor(cb, left.into(), opnd1);
+                    if left != out {
+                        mov(cb, out.into(), left.into());
+                    }
                 },
 
                 Insn::Not { opnd, .. } => {
