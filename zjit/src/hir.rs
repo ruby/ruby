@@ -1986,6 +1986,20 @@ impl Function {
                         self.insn_types[replacement.0] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
+                    Insn::NewRange { low, high, flag, state } => {
+                        let low_is_fix  = self.is_a(low,  types::Fixnum);
+                        let high_is_fix = self.is_a(high, types::Fixnum);
+
+                        if low_is_fix || high_is_fix {
+                            let low_fix = self.coerce_to_fixnum(block, low, state);
+                            let high_fix = self.coerce_to_fixnum(block, high, state);
+                            let repl = self.push_insn(block, Insn::NewRangeFixnum{ low: low_fix, high: high_fix, flag, state });
+                            self.make_equal_to(insn_id, repl);
+                            self.insn_types[repl.0] = self.infer_type(repl);
+                        } else {
+                            self.push_insn_id(block, insn_id);
+                        };
+                    }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
             }
@@ -2192,52 +2206,6 @@ impl Function {
             .map(|b| if b { Qtrue } else { Qfalse })
             .map(|b| self.new_insn(Insn::Const { val: Const::Value(b) }))
             .unwrap_or(insn_id)
-    }
-
-    fn optimize_ranges(&mut self) {
-        for block in self.rpo() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
-
-            for insn_id in old_insns {
-                match self.find(insn_id) {
-                    Insn::NewRange { low, high, flag, state } => {
-
-                        // The NewRange rewrite triggers mostly on literals because that is the
-                        // case we can easily prove Fixnum statically and cheaply guard the other
-                        // side.
-                        let low_is_fix  = self.is_a(low,  types::Fixnum);
-                        let high_is_fix = self.is_a(high, types::Fixnum);
-
-                        if low_is_fix && high_is_fix {
-                            // Both statically fixnum => specialize directly
-                            let repl = self.push_insn(block, Insn::NewRangeFixnum { low, high, flag, state });
-                            self.make_equal_to(insn_id, repl);
-                            self.insn_types[repl.0] = self.infer_type(repl);
-                        } else if low_is_fix {
-                            // Only left is fixnum => guard right
-                            let high_fix = self.coerce_to_fixnum(block, high, state);
-                            let repl = self.push_insn(block, Insn::NewRangeFixnum { low, high: high_fix, flag, state });
-                            self.make_equal_to(insn_id, repl);
-                            self.insn_types[repl.0] = self.infer_type(repl);
-                        } else if high_is_fix {
-                            // Only right is fixnum => guard left
-                            let low_fix = self.coerce_to_fixnum(block, low, state);
-                            let repl = self.push_insn(block, Insn::NewRangeFixnum { low: low_fix, high, flag, state });
-                            self.make_equal_to(insn_id, repl);
-                            self.insn_types[repl.0] = self.infer_type(repl);
-                        } else {
-                            // Keep generic op
-                            self.push_insn_id(block, insn_id);
-                        }
-                    }
-                    _ => {
-                        self.push_insn_id(block, insn_id);
-                    }
-                }
-            }
-        }
-        self.infer_types();
     }
 
     /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
@@ -2634,8 +2602,6 @@ impl Function {
         self.optimize_getivar();
         #[cfg(debug_assertions)] self.assert_validates();
         self.optimize_c_calls();
-        #[cfg(debug_assertions)] self.assert_validates();
-        self.optimize_ranges();
         #[cfg(debug_assertions)] self.assert_validates();
         self.fold_constants();
         #[cfg(debug_assertions)] self.assert_validates();
