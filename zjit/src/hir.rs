@@ -3091,14 +3091,12 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
 
 struct BytecodeInfo {
     jump_targets: Vec<u32>,
-    has_blockiseq: bool,
 }
 
 fn compute_bytecode_info(iseq: *const rb_iseq_t) -> BytecodeInfo {
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     let mut insn_idx = 0;
     let mut jump_targets = HashSet::new();
-    let mut has_blockiseq = false;
     while insn_idx < iseq_size {
         // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
@@ -3122,18 +3120,12 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t) -> BytecodeInfo {
                     jump_targets.insert(insn_idx);
                 }
             }
-            YARVINSN_send | YARVINSN_invokesuper => {
-                let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
-                if !blockiseq.is_null() {
-                    has_blockiseq = true;
-                }
-            }
             _ => {}
         }
     }
     let mut result = jump_targets.into_iter().collect::<Vec<_>>();
     result.sort();
-    BytecodeInfo { jump_targets: result, has_blockiseq }
+    BytecodeInfo { jump_targets: result }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -3221,7 +3213,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut fun = Function::new(iseq);
 
     // Compute a map of PC->Block by finding jump targets
-    let BytecodeInfo { jump_targets, has_blockiseq } = compute_bytecode_info(iseq);
+    let BytecodeInfo { jump_targets } = compute_bytecode_info(iseq);
     let mut insn_idx_to_block = HashMap::new();
     for insn_idx in jump_targets {
         if insn_idx == 0 {
@@ -3579,7 +3571,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_getlocal_WC_0 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    if ep_escaped || has_blockiseq { // TODO: figure out how to drop has_blockiseq here
+                    if ep_escaped {
                         // Read the local using EP
                         let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
                         state.setlocal(ep_offset, val); // remember the result to spill on side-exits
@@ -3600,7 +3592,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_setlocal_WC_0 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let val = state.stack_pop()?;
-                    if ep_escaped || has_blockiseq { // TODO: figure out how to drop has_blockiseq here
+                    if ep_escaped {
                         // Write the local using EP
                         fun.push_insn(block, Insn::SetLocal { val, ep_offset, level: 0 });
                     } else if local_inval {
@@ -5289,11 +5281,10 @@ mod tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0(v0:BasicObject, v1:BasicObject):
-          v5:BasicObject = GetLocal l0, EP@3
-          v7:BasicObject = Send v5, 0x1000, :each
-          v8:BasicObject = GetLocal l0, EP@3
+          v6:BasicObject = Send v1, 0x1000, :each
+          v7:BasicObject = GetLocal l0, EP@3
           CheckInterrupts
-          Return v7
+          Return v6
         ");
     }
 
@@ -8096,12 +8087,11 @@ mod opt_tests {
         bb0(v0:BasicObject):
           v1:NilClass = Const Value(nil)
           v5:Fixnum[1] = Const Value(1)
-          SetLocal l0, EP@3, v5
-          v10:BasicObject = Send v0, 0x1000, :foo
-          v11:BasicObject = GetLocal l0, EP@3
-          v14:BasicObject = GetLocal l0, EP@3
+          v9:BasicObject = Send v0, 0x1000, :foo
+          v10:BasicObject = GetLocal l0, EP@3
+          PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v14
+          Return v10
         ");
     }
 
