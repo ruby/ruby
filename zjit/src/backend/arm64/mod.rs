@@ -1425,7 +1425,7 @@ fn merge_three_reg_mov(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::assertions::assert_disasm;
+    use insta::assert_snapshot;
 
     static TEMP_REGS: [Reg; 5] = [X1_REG, X9_REG, X10_REG, X14_REG, X15_REG];
 
@@ -1441,11 +1441,12 @@ mod tests {
         asm.mov(Opnd::Reg(TEMP_REGS[0]), out);
         asm.compile_with_num_regs(&mut cb, 2);
 
-        assert_disasm!(cb, "600080d2207d009be10300aa", {"
+        assert_snapshot!(cb.disasm(), @"
             0x0: mov x0, #3
             0x4: mul x0, x9, x0
             0x8: mov x1, x0
-        "});
+        ");
+        assert_snapshot!(cb.string(), @"600080d2207d009be10300aa");
     }
 
     #[test]
@@ -1459,10 +1460,11 @@ mod tests {
         asm.mov(sp, new_sp);
 
         asm.compile_with_num_regs(&mut cb, 2);
-        assert_disasm!(cb, "ff830091ff8300d1", "
+        assert_snapshot!(cb.disasm(), @"
             0x0: add sp, sp, #0x20
             0x4: sub sp, sp, #0x20
         ");
+        assert_snapshot!(cb.string(), @"ff830091ff8300d1");
     }
 
     #[test]
@@ -1474,10 +1476,11 @@ mod tests {
         asm.add_into(Opnd::Reg(X20_REG), 0x20.into());
 
         asm.compile_with_num_regs(&mut cb, 0);
-        assert_disasm!(cb, "ff230091948200b1", "
+        assert_snapshot!(cb.disasm(), @"
             0x0: add sp, sp, #8
             0x4: adds x20, x20, #0x20
         ");
+        assert_snapshot!(cb.string(), @"ff230091948200b1");
     }
 
     #[test]
@@ -1488,11 +1491,12 @@ mod tests {
         asm.load_into(Opnd::Reg(X1_REG), difference);
 
         asm.compile_with_num_regs(&mut cb, 1);
-        assert_disasm!(cb, "000180d2000005ebe10300aa", "
+        assert_snapshot!(cb.disasm(), @"
             0x0: mov x0, #8
             0x4: subs x0, x0, x5
             0x8: mov x1, x0
         ");
+        assert_snapshot!(cb.string(), @"000180d2000005ebe10300aa");
     }
 
     #[test]
@@ -1503,10 +1507,11 @@ mod tests {
         asm.cret(ret_val);
 
         asm.compile_with_num_regs(&mut cb, 1);
-        assert_disasm!(cb, "000040f8c0035fd6", "
+        assert_snapshot!(cb.disasm(), @"
             0x0: ldur x0, [x0]
             0x4: ret
         ");
+        assert_snapshot!(cb.string(), @"000040f8c0035fd6");
     }
 
     #[test]
@@ -1567,7 +1572,7 @@ mod tests {
             asm.frame_setup(THREE_REGS, 3);
             asm.frame_teardown(THREE_REGS);
             asm.compile_with_num_regs(&mut cb, 0);
-            assert_disasm!(cb, "fd7bbfa9fd030091f44fbfa9f5831ff8ff8300d1b44f7fa9b5835ef8bf030091fd7bc1a8", "
+            assert_snapshot!(cb.disasm(), @"
                 0x0: stp x29, x30, [sp, #-0x10]!
                 0x4: mov x29, sp
                 0x8: stp x20, x19, [sp, #-0x10]!
@@ -1578,6 +1583,7 @@ mod tests {
                 0x1c: mov sp, x29
                 0x20: ldp x29, x30, [sp], #0x10
             ");
+            assert_snapshot!(cb.string(), @"fd7bbfa9fd030091f44fbfa9f5831ff8ff8300d1b44f7fa9b5835ef8bf030091fd7bc1a8");
         }
 
         // Test 3 preserved regs (odd), even slot_count
@@ -1586,7 +1592,7 @@ mod tests {
             asm.frame_setup(THREE_REGS, 4);
             asm.frame_teardown(THREE_REGS);
             asm.compile_with_num_regs(&mut cb, 0);
-            assert_disasm!(cb, "fd7bbfa9fd030091f44fbfa9f5831ff8ffc300d1b44f7fa9b5835ef8bf030091fd7bc1a8", "
+            assert_snapshot!(cb.disasm(), @"
                 0x0: stp x29, x30, [sp, #-0x10]!
                 0x4: mov x29, sp
                 0x8: stp x20, x19, [sp, #-0x10]!
@@ -1597,6 +1603,7 @@ mod tests {
                 0x1c: mov sp, x29
                 0x20: ldp x29, x30, [sp], #0x10
             ");
+            assert_snapshot!(cb.string(), @"fd7bbfa9fd030091f44fbfa9f5831ff8ffc300d1b44f7fa9b5835ef8bf030091fd7bc1a8");
         }
 
         // Test 4 preserved regs (even), odd slot_count
@@ -1606,7 +1613,7 @@ mod tests {
             asm.frame_setup(FOUR_REGS, 3);
             asm.frame_teardown(FOUR_REGS);
             asm.compile_with_num_regs(&mut cb, 0);
-            assert_disasm!(cb, "fd7bbfa9fd030091f44fbfa9f657bfa9ff8300d1b44f7fa9b6577ea9bf030091fd7bc1a8", "
+            assert_snapshot!(cb.disasm(), @"
                 0x0: stp x29, x30, [sp, #-0x10]!
                 0x4: mov x29, sp
                 0x8: stp x20, x19, [sp, #-0x10]!
@@ -1617,6 +1624,7 @@ mod tests {
                 0x1c: mov sp, x29
                 0x20: ldp x29, x30, [sp], #0x10
             ");
+            assert_snapshot!(cb.string(), @"fd7bbfa9fd030091f44fbfa9f657bfa9ff8300d1b44f7fa9b6577ea9bf030091fd7bc1a8");
         }
     }
 
@@ -1656,7 +1664,7 @@ mod tests {
         }
 
         asm.compile_with_num_regs(&mut cb, 0);
-        assert_disasm!(cb, "e07b40b2e063208b000180d22000a0f2e063208b000083d2e063208be0230891e02308d1e0ff8292e063208b00ff9fd2c0ffbff2e0ffdff2e0fffff2e063208be08361b2e063208b", "
+        assert_snapshot!(cb.disasm(), @r"
             0x0: orr x0, xzr, #0x7fffffff
             0x4: add x0, sp, x0
             0x8: mov x0, #8
@@ -1676,6 +1684,7 @@ mod tests {
             0x40: orr x0, xzr, #0xffffffff80000000
             0x44: add x0, sp, x0
         ");
+        assert_snapshot!(cb.string(), @"e07b40b2e063208b000180d22000a0f2e063208b000083d2e063208be0230891e02308d1e0ff8292e063208b00ff9fd2c0ffbff2e0ffdff2e0fffff2e063208be08361b2e063208b");
     }
 
     #[test]
@@ -1690,7 +1699,7 @@ mod tests {
         asm.store(large_mem, large_mem);
 
         asm.compile_with_num_regs(&mut cb, 0);
-        assert_disasm!(cb, "f0170cd1100240f8100000f8100040f8f1170cd1300200f8f0170cd1100240f8f1170cd1300200f8", "
+        assert_snapshot!(cb.disasm(), @"
             0x0: sub x16, sp, #0x305
             0x4: ldur x16, [x16]
             0x8: stur x16, [x0]
@@ -1702,6 +1711,7 @@ mod tests {
             0x20: sub x17, sp, #0x305
             0x24: stur x16, [x17]
         ");
+        assert_snapshot!(cb.string(), @"f0170cd1100240f8100000f8100040f8f1170cd1300200f8f0170cd1100240f8f1170cd1300200f8");
     }
 
     #[test]
@@ -1717,13 +1727,14 @@ mod tests {
         let gc_offsets = asm.arm64_emit(&mut cb).unwrap();
         assert_eq!(1, gc_offsets.len(), "VALUE source operand should be reported as gc offset");
 
-        assert_disasm!(cb, "50000058030000140010000000000000b00200f8", "
+        assert_snapshot!(cb.disasm(), @"
             0x0: ldr x16, #8
             0x4: b #0x10
             0x8: .byte 0x00, 0x10, 0x00, 0x00
             0xc: .byte 0x00, 0x00, 0x00, 0x00
             0x10: stur x16, [x21]
         ");
+        assert_snapshot!(cb.string(), @"50000058030000140010000000000000b00200f8");
     }
 
     #[test]
@@ -1968,10 +1979,11 @@ mod tests {
 
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm!(cb, "000001ca400000f8", "
+        assert_snapshot!(cb.disasm(), @"
             0x0: eor x0, x0, x1
             0x4: stur x0, [x2]
         ");
+        assert_snapshot!(cb.string(), @"000001ca400000f8");
     }
 
     #[test]
@@ -2005,9 +2017,8 @@ mod tests {
         asm.mov(Opnd::Reg(TEMP_REGS[0]), Opnd::mem(64, CFP, 8));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm!(cb, "618240f8", {"
-            0x0: ldur x1, [x19, #8]
-        "});
+        assert_snapshot!(cb.disasm(), @"  0x0: ldur x1, [x19, #8]");
+        assert_snapshot!(cb.string(), @"618240f8");
     }
 
     #[test]
@@ -2018,10 +2029,11 @@ mod tests {
         asm.mov(Opnd::Reg(TEMP_REGS[0]), Opnd::UImm(0x10000));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm!(cb, "e1ff9fd2e10370b2", {"
+        assert_snapshot!(cb.disasm(), @"
             0x0: mov x1, #0xffff
             0x4: orr x1, xzr, #0x10000
-        "});
+        ");
+        assert_snapshot!(cb.string(), @"e1ff9fd2e10370b2");
     }
 
     #[test]
@@ -2032,11 +2044,12 @@ mod tests {
         asm.mov(Opnd::Reg(TEMP_REGS[0]), out);
         asm.compile_with_num_regs(&mut cb, 2);
 
-        assert_disasm!(cb, "800280d2010080d201b0819a", {"
+        assert_snapshot!(cb.disasm(), @"
             0x0: mov x0, #0x14
             0x4: mov x1, #0
             0x8: csel x1, x0, x1, lt
-        "});
+        ");
+        assert_snapshot!(cb.string(), @"800280d2010080d201b0819a");
     }
 
     #[test]
@@ -2074,10 +2087,11 @@ mod tests {
         asm.mov(Opnd::Reg(TEMP_REGS[0]), out);
         asm.compile_with_num_regs(&mut cb, 2);
 
-        assert_disasm!(cb, "200500b1010400b1", {"
+        assert_snapshot!(cb.disasm(), @"
             0x0: adds x0, x9, #1
             0x4: adds x1, x0, #1
-        "});
+        ");
+        assert_snapshot!(cb.string(), @"200500b1010400b1");
     }
 
     #[test]
@@ -2091,10 +2105,11 @@ mod tests {
         ]);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
-        assert_disasm!(cb, "100080d200023fd6", {"
+        assert_snapshot!(cb.disasm(), @"
             0x0: mov x16, #0
             0x4: blr x16
-        "});
+        ");
+        assert_snapshot!(cb.string(), @"100080d200023fd6");
     }
 
     #[test]
@@ -2110,13 +2125,14 @@ mod tests {
         ]);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
-        assert_disasm!(cb, "f00300aae00301aae10310aa100080d200023fd6", {"
+        assert_snapshot!(cb.disasm(), @"
             0x0: mov x16, x0
             0x4: mov x0, x1
             0x8: mov x1, x16
             0xc: mov x16, #0
             0x10: blr x16
-        "});
+        ");
+        assert_snapshot!(cb.string(), @"f00300aae00301aae10310aa100080d200023fd6");
     }
 
     #[test]
@@ -2133,7 +2149,7 @@ mod tests {
         ]);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
-        assert_disasm!(cb, "f00302aae20303aae30310aaf00300aae00301aae10310aa100080d200023fd6", {"
+        assert_snapshot!(cb.disasm(), @"
             0x0: mov x16, x2
             0x4: mov x2, x3
             0x8: mov x3, x16
@@ -2142,7 +2158,8 @@ mod tests {
             0x14: mov x1, x16
             0x18: mov x16, #0
             0x1c: blr x16
-        "});
+        ");
+        assert_snapshot!(cb.string(), @"f00302aae20303aae30310aaf00300aae00301aae10310aa100080d200023fd6");
     }
 
     #[test]
@@ -2158,14 +2175,14 @@ mod tests {
         ]);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
-        assert_disasm!(cb, "f00300aae00301aae10302aae20310aa100080d200023fd6", {"
+        assert_snapshot!(cb.disasm(), @"
             0x0: mov x16, x0
             0x4: mov x0, x1
             0x8: mov x1, x2
             0xc: mov x2, x16
             0x10: mov x16, #0
             0x14: blr x16
-        "});
+        ");
+        assert_snapshot!(cb.string(), @"f00300aae00301aae10302aae20310aa100080d200023fd6");
     }
-
 }

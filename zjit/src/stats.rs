@@ -150,12 +150,17 @@ make_counters! {
     send_fallback_optimized,
     send_fallback_missing,
     send_fallback_refined,
+    send_fallback_null,
 
     // Writes to the VM frame
     vm_write_pc_count,
     vm_write_sp_count,
     vm_write_locals_count,
     vm_write_stack_count,
+    vm_write_to_parent_iseq_local_count,
+    vm_read_from_parent_iseq_local_count,
+    // TODO(max): Implement
+    // vm_reify_stack_count,
 }
 
 /// Increase a counter by a specified amount
@@ -259,6 +264,7 @@ pub fn send_fallback_counter(def_type: crate::hir::MethodType) -> Counter {
         Optimized => send_fallback_optimized,
         Missing => send_fallback_missing,
         Refined => send_fallback_refined,
+        Null => send_fallback_null,
     }
 }
 

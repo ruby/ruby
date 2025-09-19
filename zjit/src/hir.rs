@@ -481,6 +481,7 @@ pub enum MethodType {
     Optimized,
     Missing,
     Refined,
+    Null,
 }
 
 impl From<u32> for MethodType {
@@ -1852,6 +1853,9 @@ impl Function {
                         // Do method lookup
                         let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
                         if cme.is_null() {
+                            if let Insn::SendWithoutBlock { def_type: insn_def_type, .. } = &mut self.insns[insn_id.0] {
+                                *insn_def_type = Some(MethodType::Null);
+                            }
                             self.push_insn_id(block, insn_id); continue;
                         }
                         // Load an overloaded cme if applicable. See vm_search_cc().
@@ -1864,6 +1868,9 @@ impl Function {
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                             if !can_direct_send(iseq) {
+                                if let Insn::SendWithoutBlock { def_type: insn_def_type, .. } = &mut self.insns[insn_id.0] {
+                                    *insn_def_type = Some(MethodType::from(def_type));
+                                }
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });

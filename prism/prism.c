@@ -14443,6 +14443,17 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
             if (accepted_newline) {
                 pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
             }
+
+            // If this is a command call and an argument takes a block,
+            // there can be no further arguments. For example,
+            // `foo(bar 1 do end, 2)` should be rejected.
+            if (PM_NODE_TYPE_P(argument, PM_CALL_NODE)) {
+                pm_call_node_t *call = (pm_call_node_t *) argument;
+                if (call->opening_loc.start == NULL && call->arguments != NULL && call->block != NULL) {
+                    pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
+                    break;
+                }
+            }
         } else {
             // If there is no comma at the end of the argument list then we're
             // done parsing arguments and can break out of this loop.

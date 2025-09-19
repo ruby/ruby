@@ -70,6 +70,9 @@ module Prism
 
       # Ruby >= 3.5 specific syntax
       "endless_methods_command_call.txt",
+
+      # https://bugs.ruby-lang.org/issues/21168#note-5
+      "command_method_call_2.txt",
     ]
 
     # These files contain code that is being parsed incorrectly by the parser
