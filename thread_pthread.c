@@ -93,6 +93,7 @@ static const void *const condattr_monotonic = NULL;
 // native thread wrappers
 
 #define NATIVE_MUTEX_LOCK_DEBUG 0
+#define NATIVE_MUTEX_ERRORCHECK (VM_CHECK_MODE > 0)
 
 static void
 mutex_debug(const char *msg, void *lock)
@@ -146,7 +147,16 @@ rb_native_mutex_trylock(pthread_mutex_t *lock)
 void
 rb_native_mutex_initialize(pthread_mutex_t *lock)
 {
-    int r = pthread_mutex_init(lock, 0);
+    int r;
+#if NATIVE_MUTEX_ERRORCHECK
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+    r = pthread_mutex_init(lock, &attr);
+    pthread_mutexattr_destroy(&attr);
+#else
+    r = pthread_mutex_init(lock, 0);
+#endif
     mutex_debug("init", lock);
     if (r != 0) {
         rb_bug_errno("pthread_mutex_init", r);
