@@ -67,6 +67,9 @@ class << RubyVM::ZJIT
       :vm_write_to_parent_iseq_local_count,
       :vm_read_from_parent_iseq_local_count,
 
+      :dynamic_send_polymorphic,
+      :dynamic_send_no_profiles,
+
       :code_region_bytes,
       :side_exit_count,
       :total_insn_count,
