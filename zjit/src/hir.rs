@@ -534,10 +534,10 @@ pub enum Insn {
 
     StringCopy { val: InsnId, chilled: bool, state: InsnId },
     StringIntern { val: InsnId, state: InsnId },
-    StringConcat { strings: Vec<InsnId>, state: InsnId },
+    StringConcat { strings_ptr: InsnId, strings_count: usize, state: InsnId },
 
     /// Combine count stack values into a regexp
-    ToRegexp { opt: usize, values: Vec<InsnId>, state: InsnId },
+    ToRegexp { values_ptr: InsnId, values_count: usize, opt: usize, state: InsnId },
 
     /// Put special object (VMCORE, CBASE, etc.) based on value_type
     PutSpecialObject { value_type: SpecialObjectType },
@@ -549,7 +549,7 @@ pub enum Insn {
     ToNewArray { val: InsnId, state: InsnId },
     NewArray { elements: Vec<InsnId>, state: InsnId },
     /// NewHash contains a vec of (key, value) pairs
-    NewHash { elements: Vec<InsnId>, state: InsnId },
+    NewHash { elements_ptr: InsnId, elements_count: usize, state: InsnId },
     NewRange { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     NewRangeFixnum { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
@@ -606,6 +606,9 @@ pub enum Insn {
     GetSpecialSymbol { symbol_type: SpecialBackrefSymbol, state: InsnId },
     GetSpecialNumber { nth: u64, state: InsnId },
 
+    PushOpnds { opnds: Vec<InsnId> },
+    PopOpnds { count: usize },
+
     /// Own a FrameState so that instructions can look up their dominating FrameState when
     /// generating deopt side-exits and frame reconstruction metadata. Does not directly generate
     /// any code.
@@ -627,7 +630,8 @@ pub enum Insn {
     CCallVariadic {
         cfun: *const u8,
         recv: InsnId,
-        args: Vec<InsnId>,
+        args_ptr: InsnId,
+        args_count: usize,
         cme: *const rb_callable_method_entry_t,
         name: ID,
         state: InsnId,
@@ -724,7 +728,7 @@ impl Insn {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_)
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } => false,
+            | Insn::CheckInterrupts { .. } | Insn::PopOpnds { .. } | Insn::GuardBlockParamProxy { .. } => false,
             _ => true,
         }
     }
@@ -751,7 +755,7 @@ impl Insn {
             Insn::NewArray { .. } => false,
             // NewHash's operands may be hashed and compared for equality, which could have
             // side-effects.
-            Insn::NewHash { elements, .. } => !elements.is_empty(),
+            Insn::NewHash { elements_count, .. } => *elements_count > 0,
             Insn::ArrayDup { .. } => false,
             Insn::HashDup { .. } => false,
             Insn::Test { .. } => false,
@@ -813,16 +817,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            Insn::NewHash { elements, .. } => {
-                write!(f, "NewHash")?;
-                let mut prefix = " ";
-                for chunk in elements.chunks(2) {
-                    if let [key, value] = chunk {
-                        write!(f, "{prefix}{key}: {value}")?;
-                        prefix = ", ";
-                    }
-                }
-                Ok(())
+            Insn::NewHash { elements_ptr, .. } => {
+                write!(f, "NewHash {elements_ptr}")
             }
             Insn::NewRange { low, high, flag, .. } => {
                 write!(f, "NewRange {low} {flag} {high}")
@@ -844,23 +840,12 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ObjectAlloc { val, .. } => { write!(f, "ObjectAlloc {val}") }
             Insn::ObjectAllocClass { class, .. } => { write!(f, "ObjectAllocClass {}", class.print(self.ptr_map)) }
             Insn::StringCopy { val, .. } => { write!(f, "StringCopy {val}") }
-            Insn::StringConcat { strings, .. } => {
-                write!(f, "StringConcat")?;
-                let mut prefix = " ";
-                for string in strings {
-                    write!(f, "{prefix}{string}")?;
-                    prefix = ", ";
-                }
+            Insn::StringConcat { strings_ptr, .. } => {
+                write!(f, "StringConcat {strings_ptr}")
 
-                Ok(())
             }
-            Insn::ToRegexp { values, opt, .. } => {
-                write!(f, "ToRegexp")?;
-                let mut prefix = " ";
-                for value in values {
-                    write!(f, "{prefix}{value}")?;
-                    prefix = ", ";
-                }
+            Insn::ToRegexp { values_ptr, opt, .. } => {
+                write!(f, "ToRegexp {values_ptr}")?;
 
                 let opt = *opt as u32;
                 if opt != 0 {
@@ -962,12 +947,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             },
-            Insn::CCallVariadic { cfun,  recv, args, name, .. } => {
-                write!(f, "CCallVariadic {}@{:p}, {recv}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
-                Ok(())
+            Insn::CCallVariadic { cfun,  recv, args_ptr, name, .. } => {
+                write!(f, "CCallVariadic {}@{:p}, {recv}, {args_ptr}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))
             },
             Insn::Snapshot { state } => write!(f, "Snapshot {}", state.print(self.ptr_map)),
             Insn::Defined { op_type, v, .. } => {
@@ -1027,6 +1008,16 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
             Insn::CheckInterrupts { .. } => write!(f, "CheckInterrupts"),
+            Insn::PushOpnds { opnds } => {
+                let mut prefix = " ";
+                write!(f, "PushOpnds")?;
+                for opnd in opnds {
+                    write!(f, "{prefix}{opnd}")?;
+                    prefix = ", ";
+                }
+                Ok(())
+            }
+            Insn::PopOpnds { count } => { write!(f, "PopOpnds count: {count}") }
         }
     }
 }
@@ -1375,8 +1366,8 @@ impl Function {
             &Throw { throw_state, val, state } => Throw { throw_state, val: find!(val), state },
             &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
             &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
-            &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
-            &ToRegexp { opt, ref values, state } => ToRegexp { opt, values: find_vec!(values), state },
+            &StringConcat { strings_ptr, strings_count: count, state } => StringConcat { strings_ptr: find!(strings_ptr), strings_count: count, state: find!(state) },
+            &ToRegexp { opt, values_ptr, values_count, state } => ToRegexp { opt, values_ptr: find!(values_ptr), values_count, state: find!(state) },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
             &IsMethodCfunc { val, cd, cfunc, state } => IsMethodCfunc { val: find!(val), cd, cfunc, state },
@@ -1458,13 +1449,13 @@ impl Function {
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
             &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun, args: find_vec!(args), name, return_type, elidable },
-            &CCallVariadic { cfun, recv, ref args, cme, name, state } => CCallVariadic {
-                cfun, recv: find!(recv), args: find_vec!(args), cme, name, state
+            &CCallVariadic { cfun, recv, args_ptr, args_count, cme, name, state } => CCallVariadic {
+                cfun, recv: find!(recv), args_ptr: find!(args_ptr), args_count, cme, name, state
             },
             &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
             &NewArray { ref elements, state } => NewArray { elements: find_vec!(elements), state: find!(state) },
-            &NewHash { ref elements, state } => NewHash { elements: find_vec!(elements), state: find!(state) },
+            &NewHash { elements_ptr, elements_count, state } => NewHash { elements_ptr: find!(elements_ptr), elements_count, state: find!(state) },
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
             &NewRangeFixnum { low, high, flag, state } => NewRangeFixnum { low: find!(low), high: find!(high), flag, state: find!(state) },
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
@@ -1481,6 +1472,8 @@ impl Function {
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
             &ArrayPush { array, val, state } => ArrayPush { array: find!(array), val: find!(val), state },
             &CheckInterrupts { state } => CheckInterrupts { state },
+            &PushOpnds { ref opnds } => PushOpnds { opnds: find_vec!(opnds) },
+            &PopOpnds { count } => PopOpnds { count },
         }
     }
 
@@ -1508,7 +1501,7 @@ impl Function {
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } =>
+            | Insn::CheckInterrupts { .. } | Insn::PopOpnds { .. } | Insn::GuardBlockParamProxy { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -1583,6 +1576,7 @@ impl Function {
             Insn::ObjToString { .. } => types::BasicObject,
             Insn::AnyToString { .. } => types::String,
             Insn::GetLocal { .. } => types::BasicObject,
+            Insn::PushOpnds { .. } => types::CPtr,
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
@@ -2137,16 +2131,20 @@ impl Function {
                         });
 
                         let cfun = unsafe { get_mct_func(cfunc) }.cast();
+                        let args_count = args.len();
+                        let args_ptr = fun.push_insn(block, Insn::PushOpnds { opnds: args });
                         let ccall = fun.push_insn(block, Insn::CCallVariadic {
                             cfun,
                             recv,
-                            args,
+                            args_ptr,
+                            args_count,
                             cme: method,
                             name: method_id,
                             state,
                         });
 
                         fun.make_equal_to(send_insn_id, ccall);
+                        fun.push_insn(block, Insn::PopOpnds { count: args_count });
                         return Ok(());
                     }
                     // Fall through for complex cases (splat, kwargs, etc.)
@@ -2357,6 +2355,7 @@ impl Function {
             | &Insn::Param { .. }
             | &Insn::GetLocal { .. }
             | &Insn::PutSpecialObject { .. }
+            | &Insn::PopOpnds { .. }
             | &Insn::IncrCounter(_) =>
                 {}
             &Insn::PatchPoint { state, .. }
@@ -2365,9 +2364,12 @@ impl Function {
                 worklist.push_back(state);
             }
             &Insn::ArrayMax { ref elements, state }
-            | &Insn::NewHash { ref elements, state }
             | &Insn::NewArray { ref elements, state } => {
                 worklist.extend(elements);
+                worklist.push_back(state);
+            }
+            &Insn::NewHash { elements_ptr, state, .. } => {
+                worklist.push_back(elements_ptr);
                 worklist.push_back(state);
             }
             &Insn::NewRange { low, high, state, .. }
@@ -2376,12 +2378,12 @@ impl Function {
                 worklist.push_back(high);
                 worklist.push_back(state);
             }
-            &Insn::StringConcat { ref strings, state, .. } => {
-                worklist.extend(strings);
+            &Insn::StringConcat { strings_ptr, state, .. } => {
+                worklist.push_back(strings_ptr);
                 worklist.push_back(state);
             }
-            &Insn::ToRegexp { ref values, state, .. } => {
-                worklist.extend(values);
+            &Insn::ToRegexp { values_ptr,  state, .. } => {
+                worklist.push_back(values_ptr);
                 worklist.push_back(state);
             }
             | &Insn::Return { val }
@@ -2442,16 +2444,20 @@ impl Function {
                 worklist.push_back(val);
                 worklist.push_back(state);
             }
+            &Insn::CCallVariadic { args_ptr, state, .. } => {
+                worklist.push_back(args_ptr);
+                worklist.push_back(state);
+            }
             &Insn::Send { recv, ref args, state, .. }
             | &Insn::SendForward { recv, ref args, state, .. }
             | &Insn::SendWithoutBlock { recv, ref args, state, .. }
-            | &Insn::CCallVariadic { recv, ref args, state, .. }
             | &Insn::SendWithoutBlockDirect { recv, ref args, state, .. }
             | &Insn::InvokeSuper { recv, ref args, state, .. } => {
                 worklist.push_back(recv);
                 worklist.extend(args);
                 worklist.push_back(state);
             }
+            Insn::PushOpnds { opnds } => worklist.extend(opnds),
             &Insn::InvokeBuiltin { ref args, state, .. }
             | &Insn::InvokeBlock { ref args, state, .. } => {
                 worklist.extend(args);
@@ -3367,7 +3373,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let count = get_arg(pc, 0).as_u32();
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let strings = state.stack_pop_n(count as usize)?;
-                    let insn_id = fun.push_insn(block, Insn::StringConcat { strings, state: exit_id });
+                    let strings_count = strings.len();
+                    let strings_ptr = fun.push_insn(block, Insn::PushOpnds { opnds: strings });
+                    let insn_id: InsnId = fun.push_insn(block, Insn::StringConcat { strings_ptr, strings_count, state: exit_id });
+                    fun.push_insn(block, Insn::PopOpnds { count: strings_count });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_toregexp => {
@@ -3376,7 +3385,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let count = get_arg(pc, 1).as_usize();
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let values = state.stack_pop_n(count)?;
-                    let insn_id = fun.push_insn(block, Insn::ToRegexp { opt, values, state: exit_id });
+                    let values_ptr = fun.push_insn(block, Insn::PushOpnds { opnds: values });
+                    let insn_id = fun.push_insn(block, Insn::ToRegexp { opt, values_ptr, values_count: count, state: exit_id });
+                    fun.push_insn(block, Insn::PopOpnds { count });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_newarray => {
@@ -3424,7 +3435,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         elements.push(key);
                     }
                     elements.reverse();
-                    state.stack_push(fun.push_insn(block, Insn::NewHash { elements, state: exit_id }));
+                    let elements_ptr = fun.push_insn(block, Insn::PushOpnds { opnds: elements });
+                    state.stack_push(fun.push_insn(block, Insn::NewHash { elements_ptr, elements_count: count, state: exit_id }));
                 }
                 YARVINSN_duphash => {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
@@ -4678,9 +4690,10 @@ mod tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
         bb0(v0:BasicObject):
-          v5:HashExact = NewHash
+          v5:CPtr = PushOpnds
+          v6:HashExact = NewHash v5
           CheckInterrupts
-          Return v5
+          Return v6
         ");
     }
 
@@ -4693,9 +4706,10 @@ mod tests {
         bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
           v6:StaticSymbol[:a] = Const Value(VALUE(0x1000))
           v7:StaticSymbol[:b] = Const Value(VALUE(0x1008))
-          v9:HashExact = NewHash v6: v1, v7: v2
+          v9:CPtr = PushOpnds v6, v1, v7, v2
+          v10:HashExact = NewHash v9
           CheckInterrupts
-          Return v9
+          Return v10
         ");
     }
 
@@ -5310,10 +5324,12 @@ mod tests {
           v5:Fixnum[123] = Const Value(123)
           v7:BasicObject = ObjToString v5
           v9:String = AnyToString v5, str: v7
-          v11:StringExact = StringConcat v4, v9
-          v13:Symbol = StringIntern v11
+          v11:CPtr = PushOpnds v4, v9
+          v12:StringExact = StringConcat v11
+          PopOpnds count: 2
+          v15:Symbol = StringIntern v12
           CheckInterrupts
-          Return v13
+          Return v15
         ");
     }
 
@@ -5473,16 +5489,17 @@ mod tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           v5:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
-          v7:HashExact = NewHash
+          v7:CPtr = PushOpnds
+          v8:HashExact = NewHash v7
           PatchPoint NoEPEscape(test)
-          v11:BasicObject = SendWithoutBlock v5, :core#hash_merge_kwd, v7, v1
-          v12:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
-          v13:StaticSymbol[:b] = Const Value(VALUE(0x1008))
-          v14:Fixnum[1] = Const Value(1)
-          v16:BasicObject = SendWithoutBlock v12, :core#hash_merge_ptr, v11, v13, v14
-          v18:BasicObject = SendWithoutBlock v0, :foo, v16
+          v12:BasicObject = SendWithoutBlock v5, :core#hash_merge_kwd, v8, v1
+          v13:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
+          v14:StaticSymbol[:b] = Const Value(VALUE(0x1008))
+          v15:Fixnum[1] = Const Value(1)
+          v17:BasicObject = SendWithoutBlock v13, :core#hash_merge_ptr, v12, v14, v15
+          v19:BasicObject = SendWithoutBlock v0, :foo, v17
           CheckInterrupts
-          Return v18
+          Return v19
         ");
     }
 
@@ -6197,9 +6214,11 @@ mod tests {
           v5:Fixnum[1] = Const Value(1)
           v7:BasicObject = ObjToString v5
           v9:String = AnyToString v5, str: v7
-          v11:StringExact = StringConcat v4, v9
+          v11:CPtr = PushOpnds v4, v9
+          v12:StringExact = StringConcat v11
+          PopOpnds count: 2
           CheckInterrupts
-          Return v11
+          Return v12
         ");
     }
 
@@ -6221,9 +6240,11 @@ mod tests {
           v14:Fixnum[3] = Const Value(3)
           v16:BasicObject = ObjToString v14
           v18:String = AnyToString v14, str: v16
-          v20:StringExact = StringConcat v8, v13, v18
+          v20:CPtr = PushOpnds v8, v13, v18
+          v21:StringExact = StringConcat v20
+          PopOpnds count: 3
           CheckInterrupts
-          Return v20
+          Return v21
         ");
     }
 
@@ -6240,9 +6261,11 @@ mod tests {
           v5:NilClass = Const Value(nil)
           v7:BasicObject = ObjToString v5
           v9:String = AnyToString v5, str: v7
-          v11:StringExact = StringConcat v4, v9
+          v11:CPtr = PushOpnds v4, v9
+          v12:StringExact = StringConcat v11
+          PopOpnds count: 2
           CheckInterrupts
-          Return v11
+          Return v12
         ");
     }
 
@@ -6264,9 +6287,11 @@ mod tests {
           v14:Fixnum[3] = Const Value(3)
           v16:BasicObject = ObjToString v14
           v18:String = AnyToString v14, str: v16
-          v20:RegexpExact = ToRegexp v8, v13, v18
+          v20:CPtr = PushOpnds v8, v13, v18
+          v21:RegexpExact = ToRegexp v20
+          PopOpnds count: 3
           CheckInterrupts
-          Return v20
+          Return v21
         ");
     }
 
@@ -6285,9 +6310,11 @@ mod tests {
           v9:Fixnum[2] = Const Value(2)
           v11:BasicObject = ObjToString v9
           v13:String = AnyToString v9, str: v11
-          v15:RegexpExact = ToRegexp v8, v13, MULTILINE|IGNORECASE|EXTENDED|NOENCODING
+          v15:CPtr = PushOpnds v8, v13
+          v16:RegexpExact = ToRegexp v15, MULTILINE|IGNORECASE|EXTENDED|NOENCODING
+          PopOpnds count: 2
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
@@ -7026,9 +7053,11 @@ mod opt_tests {
           v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v6:StringExact = StringCopy v4
           PatchPoint MethodRedefined(Object@0x1008, puts@0x1010, cme:0x1018)
-          v16:BasicObject = CCallVariadic puts@0x1040, v0, v6
+          v16:CPtr = PushOpnds v6
+          v17:BasicObject = CCallVariadic puts@0x1040, v0, v16
+          PopOpnds count: 1
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -7367,11 +7396,12 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
           v1:NilClass = Const Value(nil)
-          v6:HashExact = NewHash
+          v6:CPtr = PushOpnds
+          v7:HashExact = NewHash v6
           PatchPoint NoEPEscape(test)
-          v11:Fixnum[5] = Const Value(5)
+          v12:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v11
+          Return v12
         ");
     }
 
@@ -7389,11 +7419,12 @@ mod opt_tests {
           v3:NilClass = Const Value(nil)
           v7:StaticSymbol[:a] = Const Value(VALUE(0x1000))
           v8:StaticSymbol[:b] = Const Value(VALUE(0x1008))
-          v10:HashExact = NewHash v7: v1, v8: v2
+          v10:CPtr = PushOpnds v7, v1, v8, v2
+          v11:HashExact = NewHash v10
           PatchPoint NoEPEscape(test)
-          v15:Fixnum[5] = Const Value(5)
+          v16:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
@@ -8431,11 +8462,12 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:HashExact = NewHash
-          v7:BasicObject = SendWithoutBlock v5, :dup
-          v9:BasicObject = SendWithoutBlock v7, :freeze
+          v5:CPtr = PushOpnds
+          v6:HashExact = NewHash v5
+          v8:BasicObject = SendWithoutBlock v6, :dup
+          v10:BasicObject = SendWithoutBlock v8, :freeze
           CheckInterrupts
-          Return v9
+          Return v10
         ");
     }
 
@@ -8447,11 +8479,12 @@ mod opt_tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:HashExact = NewHash
-          v6:NilClass = Const Value(nil)
-          v8:BasicObject = SendWithoutBlock v5, :freeze, v6
+          v5:CPtr = PushOpnds
+          v6:HashExact = NewHash v5
+          v7:NilClass = Const Value(nil)
+          v9:BasicObject = SendWithoutBlock v6, :freeze, v7
           CheckInterrupts
-          Return v8
+          Return v9
         ");
     }
 
@@ -8642,9 +8675,11 @@ mod opt_tests {
           v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v7:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v9:StringExact = StringCopy v7
-          v15:StringExact = StringConcat v4, v9
+          v15:CPtr = PushOpnds v4, v9
+          v16:StringExact = StringConcat v15
+          PopOpnds count: 2
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
@@ -8660,9 +8695,11 @@ mod opt_tests {
           v5:Fixnum[1] = Const Value(1)
           v7:BasicObject = ObjToString v5
           v9:String = AnyToString v5, str: v7
-          v11:StringExact = StringConcat v4, v9
+          v11:CPtr = PushOpnds v4, v9
+          v12:StringExact = StringConcat v11
+          PopOpnds count: 2
           CheckInterrupts
-          Return v11
+          Return v12
         ");
     }
 
@@ -8679,10 +8716,12 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v0:BasicObject, v1:BasicObject):
           v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v17:String = GuardType v1, String
-          v11:StringExact = StringConcat v5, v17
+          v19:String = GuardType v1, String
+          v11:CPtr = PushOpnds v5, v19
+          v12:StringExact = StringConcat v11
+          PopOpnds count: 2
           CheckInterrupts
-          Return v11
+          Return v12
         ");
     }
 
@@ -8702,10 +8741,12 @@ mod opt_tests {
         fn test@<compiled>:5:
         bb0(v0:BasicObject, v1:BasicObject):
           v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v17:String = GuardType v1, String
-          v11:StringExact = StringConcat v5, v17
+          v19:String = GuardType v1, String
+          v11:CPtr = PushOpnds v5, v19
+          v12:StringExact = StringConcat v11
+          PopOpnds count: 2
           CheckInterrupts
-          Return v11
+          Return v12
         ");
     }
 
@@ -8722,12 +8763,14 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v0:BasicObject, v1:BasicObject):
           v5:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v17:BasicObject = GuardTypeNot v1, String
-          v18:BasicObject = SendWithoutBlock v1, :to_s
-          v9:String = AnyToString v1, str: v18
-          v11:StringExact = StringConcat v5, v9
+          v19:BasicObject = GuardTypeNot v1, String
+          v20:BasicObject = SendWithoutBlock v1, :to_s
+          v9:String = AnyToString v1, str: v20
+          v11:CPtr = PushOpnds v5, v9
+          v12:StringExact = StringConcat v11
+          PopOpnds count: 2
           CheckInterrupts
-          Return v11
+          Return v12
         ");
     }
 

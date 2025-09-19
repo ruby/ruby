@@ -346,7 +346,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
         Insn::Const { .. } => panic!("Unexpected Const in gen_insn: {insn}"),
         Insn::NewArray { elements, state } => gen_new_array(asm, opnds!(elements), &function.frame_state(*state)),
-        Insn::NewHash { elements, state } => gen_new_hash(jit, asm, opnds!(elements), &function.frame_state(*state)),
+        Insn::NewHash { elements_ptr, elements_count, state } => gen_new_hash(jit, asm, opnd!(elements_ptr), *elements_count, &function.frame_state(*state)),
         Insn::NewRange { low, high, flag, state } => gen_new_range(jit, asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
@@ -355,10 +355,9 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
         // concatstrings shouldn't have 0 strings
         // If it happens we abort the compilation for now
-        Insn::StringConcat { strings, state, .. } if strings.is_empty() => return Err(*state),
-        Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, opnds!(strings), &function.frame_state(*state)),
+        Insn::StringConcat { strings_ptr, strings_count: count, state } => gen_string_concat(jit, asm, opnd!(strings_ptr), *count, &function.frame_state(*state)),
         Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state)),
-        Insn::ToRegexp { opt, values, state } => gen_toregexp(jit, asm, *opt, opnds!(values), &function.frame_state(*state)),
+        Insn::ToRegexp { opt, values_ptr, values_count, state } => gen_toregexp(jit, asm, *opt, opnd!(values_ptr), *values_count, &function.frame_state(*state)),
         Insn::Param { idx } => unreachable!("block.insns should not have Insn::Param({idx})"),
         Insn::Snapshot { .. } => return Ok(()), // we don't need to do anything for this instruction at the moment
         Insn::Jump(branch) => no_output!(gen_jump(jit, asm, branch)),
@@ -398,8 +397,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardBlockParamProxy { level, state } => no_output!(gen_guard_block_param_proxy(jit, asm, level, &function.frame_state(state))),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfun, opnds!(args)),
-        Insn::CCallVariadic { cfun, recv, args, name: _, cme, state } => {
-            gen_ccall_variadic(jit, asm, *cfun, opnd!(recv), opnds!(args), *cme, &function.frame_state(*state))
+        Insn::CCallVariadic { cfun, recv, args_ptr, args_count, name: _, cme, state } => {
+            gen_ccall_variadic(jit, asm, *cfun, opnd!(recv), opnd!(args_ptr), *args_count, *cme, &function.frame_state(*state))
         }
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
@@ -426,6 +425,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardShape { val, shape, state } => gen_guard_shape(jit, asm, opnd!(val), shape, &function.frame_state(state)),
         &Insn::LoadIvarEmbedded { self_val, id, index } => gen_load_ivar_embedded(asm, opnd!(self_val), id, index),
         &Insn::LoadIvarExtended { self_val, id, index } => gen_load_ivar_extended(asm, opnd!(self_val), id, index),
+        Insn::PushOpnds { opnds } => gen_push_opnds(jit, asm, &opnds!(opnds)),
+        &Insn::PopOpnds { count } => no_output!(gen_pop_opnds(asm, count)),
         &Insn::ArrayMax { state, .. }
         | &Insn::FixnumDiv { state, .. }
         | &Insn::FixnumMod { state, .. }
@@ -655,13 +656,14 @@ fn gen_ccall_variadic(
     asm: &mut Assembler,
     cfun: *const u8,
     recv: Opnd,
-    args: Vec<Opnd>,
+    args_ptr: Opnd,
+    args_count: usize,
     cme: *const rb_callable_method_entry_t,
     state: &FrameState,
 ) -> lir::Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
 
-    gen_push_frame(asm, args.len(), state, ControlFrame {
+    gen_push_frame(asm, args_count, state, ControlFrame {
         recv,
         iseq: None,
         cme,
@@ -669,7 +671,7 @@ fn gen_ccall_variadic(
     });
 
     asm_comment!(asm, "switch to new SP register");
-    let sp_offset = (state.stack().len() - args.len() + VM_ENV_DATA_SIZE.as_usize()) * SIZEOF_VALUE;
+    let sp_offset = (state.stack().len() - args_count + VM_ENV_DATA_SIZE.as_usize()) * SIZEOF_VALUE;
     let new_sp = asm.add(SP, sp_offset.into());
     asm.mov(SP, new_sp);
 
@@ -678,9 +680,7 @@ fn gen_ccall_variadic(
     asm.mov(CFP, new_cfp);
     asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
-    let argv_ptr = gen_push_opnds(jit, asm, &args);
-    let result = asm.ccall(cfun, vec![args.len().into(), argv_ptr, recv]);
-    gen_pop_opnds(asm, &args);
+    let result = asm.ccall(cfun, vec![args_count.into(), args_ptr, recv]);
 
     asm_comment!(asm, "pop C frame");
     let new_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
@@ -1259,19 +1259,17 @@ fn gen_new_array(
 fn gen_new_hash(
     jit: &mut JITState,
     asm: &mut Assembler,
-    elements: Vec<Opnd>,
+    elements_ptr: Opnd,
+    elements_count: usize,
     state: &FrameState,
 ) -> lir::Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
 
-    let cap: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+    let cap: c_long = elements_count.try_into().expect("Unable to fit length of elements into c_long");
     let new_hash = asm_ccall!(asm, rb_hash_new_with_size, lir::Opnd::Imm(cap));
 
-    if !elements.is_empty() {
-        let argv = gen_push_opnds(jit, asm, &elements);
-        asm_ccall!(asm, rb_hash_bulk_insert, elements.len().into(), argv, new_hash);
-
-        gen_pop_opnds(asm, &elements);
+    if elements_count > 0 {
+        asm_ccall!(asm, rb_hash_bulk_insert, elements_count.into(), elements_ptr, new_hash);
     }
 
     new_hash
@@ -2023,34 +2021,25 @@ fn gen_push_opnds(jit: &mut JITState, asm: &mut Assembler, opnds: &[Opnd]) -> li
     asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, -total_offset_from_base))
 }
 
-fn gen_pop_opnds(asm: &mut Assembler, opnds: &[Opnd]) {
+fn gen_pop_opnds(asm: &mut Assembler, count: usize) {
     asm_comment!(asm, "restore C stack pointer");
-    let allocation_size = aligned_stack_bytes(opnds.len());
+    let allocation_size = aligned_stack_bytes(count);
     asm.add_into(NATIVE_STACK_PTR, allocation_size.into());
 }
 
-fn gen_toregexp(jit: &mut JITState, asm: &mut Assembler, opt: usize, values: Vec<Opnd>, state: &FrameState) -> Opnd {
+fn gen_toregexp(jit: &mut JITState, asm: &mut Assembler, opt: usize, values_ptr: Opnd, values_count: usize, state: &FrameState) -> Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
 
-    let first_opnd_ptr = gen_push_opnds(jit, asm, &values);
-
-    let tmp_ary = asm_ccall!(asm, rb_ary_tmp_new_from_values, Opnd::Imm(0), values.len().into(), first_opnd_ptr);
+    let tmp_ary = asm_ccall!(asm, rb_ary_tmp_new_from_values, Opnd::Imm(0), values_count.into(), values_ptr);
     let result = asm_ccall!(asm, rb_reg_new_ary, tmp_ary, opt.into());
     asm_ccall!(asm, rb_ary_clear, tmp_ary);
-
-    gen_pop_opnds(asm, &values);
 
     result
 }
 
-fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>, state: &FrameState) -> Opnd {
+fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings_ptr: Opnd, count: usize, state: &FrameState) -> Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
-
-    let first_string_ptr = gen_push_opnds(jit, asm, &strings);
-    let result = asm_ccall!(asm, rb_str_concat_literals, strings.len().into(), first_string_ptr);
-    gen_pop_opnds(asm, &strings);
-
-    result
+    asm_ccall!(asm, rb_str_concat_literals, count.into(), strings_ptr)
 }
 
 /// Generate a JIT entry that just increments exit_compilation_failure and exits
