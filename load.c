@@ -390,10 +390,10 @@ get_loaded_features_index(const rb_namespace_t *ns)
             features_index_add(ns, as_str, INT2FIX(i));
         }
         /* The user modified $LOADED_FEATURES, so we should restore the changes. */
-        if (!rb_ary_shared_with_p(features, CURRENT_NS_LOADED_FEATURES(vm_ns))) {
+        if (!rb_ary_shared_with_p(features, ns->loaded_features)) {
             rb_ary_replace(ns->loaded_features, features);
         }
-        reset_loaded_features_snapshot(vm_ns);
+        reset_loaded_features_snapshot(ns);
 
         features = ns->loaded_features_snapshot;
         long j = RARRAY_LEN(features);
