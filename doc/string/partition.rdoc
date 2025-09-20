@@ -1,12 +1,10 @@
-Returns a 3-element array of substrings of +self+.
+Returns a 3-element array of substrings
+that form a partition of +self+
 
-Matches a pattern against +self+, scanning from the beginning.
-The pattern is:
+Matches <tt>pattern</tt> against +self+, scanning from the beginning.
+Converts <tt>pattern</tt> a Regexp if it not already one.
 
-- +string_or_regexp+ itself, if it is a Regexp.
-- <tt>Regexp.quote(string_or_regexp)</tt>, if +string_or_regexp+ is a string.
-
-If the pattern is matched, returns pre-match, first-match, post-match:
+If the pattern is matched, returns pre-matched, first-matched, post-matched substrings:
 
   'hello'.partition('l')      # => ["he", "l", "lo"]
   'hello'.partition('ll')     # => ["he", "ll", "o"]
@@ -21,4 +19,4 @@ If the pattern is not matched, returns a copy of +self+ and two empty strings:
 
   'hello'.partition('x') # => ["hello", "", ""]
 
-Related: String#rpartition, String#split.
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].

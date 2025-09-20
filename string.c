@@ -11122,7 +11122,7 @@ rb_str_center(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    partition(string_or_regexp) -> [head, match, tail]
+ *    partition(pattern) -> array_of_three_substrings
  *
  *  :include: doc/string/partition.rdoc
  *
