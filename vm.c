@@ -2972,7 +2972,7 @@ rb_iseq_eval_main(const rb_iseq_t *iseq)
 {
     rb_execution_context_t *ec = GET_EC();
     VALUE val;
-    vm_set_main_stack(ec, iseq); // TODO: not need to set the namespace?
+    vm_set_main_stack(ec, iseq);
     val = vm_exec(ec);
     return val;
 }
