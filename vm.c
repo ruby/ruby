@@ -1325,12 +1325,22 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
         for (int i=RARRAY_LENINT(read_only_variables)-1; i>=0; i--) {
             ID id = NUM2ID(RARRAY_AREF(read_only_variables, i));
 
-            for (unsigned int j=0; j<ISEQ_BODY(src_env->iseq)->local_table_size; j++) {
-                if (id == ISEQ_BODY(src_env->iseq)->local_table[j]) {
+            const struct rb_iseq_constant_body *body = ISEQ_BODY(src_env->iseq);
+            for (unsigned int j=0; j<body->local_table_size; j++) {
+                if (id == body->local_table[j]) {
+                    // check reassignment
+                    if (body->lvar_states[j] == lvar_reassigned) {
+                        VALUE name = rb_id2str(id);
+                        VALUE msg = rb_sprintf("cannot make a shareable Proc because "
+                                               "the outer variable '%" PRIsVALUE "' may be reassigned.", name);
+                        rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, msg));
+                    }
+
+                    // check shareable
                     VALUE v = src_env->env[j];
                     if (!rb_ractor_shareable_p(v)) {
                         VALUE name = rb_id2str(id);
-                        VALUE msg = rb_sprintf("can not make shareable Proc because it can refer"
+                        VALUE msg = rb_sprintf("cannot make a shareable Proc because it can refer"
                                                " unshareable object %+" PRIsVALUE " from ", v);
                         if (name)
                             rb_str_catf(msg, "variable '%" PRIsVALUE "'", name);
@@ -1403,12 +1413,18 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, c
 }
 
 VALUE
-rb_proc_isolate_bang(VALUE self)
+rb_proc_isolate_bang(VALUE self, VALUE replace_self)
 {
     const rb_iseq_t *iseq = vm_proc_iseq(self);
 
     if (iseq) {
         rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
+
+        if (!UNDEF_P(replace_self)) {
+            VM_ASSERT(rb_ractor_shareable_p(replace_self));
+            RB_OBJ_WRITE(self, &proc->block.as.captured.self, replace_self);
+        }
+
         if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
 
         if (ISEQ_BODY(iseq)->outer_variables) {
@@ -1427,17 +1443,22 @@ VALUE
 rb_proc_isolate(VALUE self)
 {
     VALUE dst = rb_proc_dup(self);
-    rb_proc_isolate_bang(dst);
+    rb_proc_isolate_bang(dst, Qundef);
     return dst;
 }
 
 VALUE
-rb_proc_ractor_make_shareable(VALUE self)
+rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
 {
     const rb_iseq_t *iseq = vm_proc_iseq(self);
 
     if (iseq) {
         rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
+
+        if (!UNDEF_P(replace_self)) {
+            RB_OBJ_WRITE(self, &proc->block.as.captured.self, replace_self);
+        }
+
         if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
 
         if (!rb_ractor_shareable_p(vm_block_self(&proc->block))) {
@@ -1458,6 +1479,8 @@ rb_proc_ractor_make_shareable(VALUE self)
     }
 
     rb_obj_freeze(self);
+    FL_SET_RAW(self, RUBY_FL_SHAREABLE);
+
     return self;
 }
 
