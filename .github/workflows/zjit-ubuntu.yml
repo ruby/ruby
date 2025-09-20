@@ -72,6 +72,10 @@ jobs:
             configure: '--enable-zjit=dev --with-gcc=clang-14'
             libclang_path: '/usr/lib/llvm-14/lib/libclang.so.1'
 
+          - test_task: 'test-bundled-gems'
+            configure: '--enable-zjit=dev'
+            run_opts: '--zjit-call-threshold=1'
+
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.run_opts }}

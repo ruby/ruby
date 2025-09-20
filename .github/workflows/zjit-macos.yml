@@ -52,6 +52,10 @@ jobs:
             hint: 'combo build test'
             configure: '--enable-yjit --enable-zjit'
 
+          - test_task: 'test-bundled-gems'
+            configure: '--enable-zjit=dev'
+            run_opts: '--zjit-call-threshold=1'
+
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.run_opts }}
