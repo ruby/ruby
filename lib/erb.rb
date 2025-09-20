@@ -1125,19 +1125,58 @@ class ERB
     mod
   end
 
-  # Define unnamed class which has _methodname_ as instance method, and return it.
+  # :markup: markdown
   #
-  # example:
-  #   class MyClass_
-  #     def initialize(arg1, arg2)
-  #       @arg1 = arg1;  @arg2 = arg2
-  #     end
+  # :call-seq:
+  #   def_class(super_class = Object, method_name = 'result') -> new_class
+  #
+  # Returns a new nameless class whose superclass is `super_class`,
+  # and which has instance method `method_name`.
+  #
+  # Create a template from HTML that has embedded expression tags that use `@arg1` and `@arg2`:
+  #
+  # ```
+  # html = <<EOT
+  # <html>
+  # <body>
+  #   <p><%= @arg1 %></p>
+  #   <p><%= @arg2 %></p>
+  # </body>
+  # </html>
+  # EOT
+  # template = ERB.new(html)
+  # ```
+  #
+  # Create a base class that has `@arg1` and `arg2`:
+  #
+  # ```
+  # class MyBaseClass
+  #   def initialize(arg1, arg2)
+  #     @arg1 = arg1;
+  #     @arg2 = arg2
   #   end
-  #   filename = 'example.rhtml'  # @arg1 and @arg2 are used in example.rhtml
-  #   erb = ERB.new(File.read(filename))
-  #   erb.filename = filename
-  #   MyClass = erb.def_class(MyClass_, 'render()')
-  #   print MyClass.new('foo', 123).render()
+  # end
+  # ```
+  #
+  # Use method #def_class to create a subclass that has method `:render`:
+  #
+  # ```
+  # MySubClass = template.def_class(MyBaseClass, :render)
+  # ```
+  #
+  # Generate the result:
+  #
+  # ```
+  # puts MySubClass.new('foo', 123).render
+  # <html>
+  # <body>
+  #   <p>foo</p>
+  #   <p>123</p>
+  # </body>
+  # </html>
+  # ```
+  #
+  #
   def def_class(superklass=Object, methodname='result')
     cls = Class.new(superklass)
     def_method(cls, methodname, @filename || '(ERB)')
