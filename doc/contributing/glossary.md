@@ -33,6 +33,8 @@ Just a list of acronyms I've run across in the Ruby source code and their meanin
 | `me` | Method Entry. Refers to an `rb_method_entry_t` struct, the internal representation of a Ruby method. |
 | MRI | Matz's Ruby Implementation |
 | `pc` | Program Counter. Usually the instruction that will be executed _next_ by the VM. Pointed to by the `cfp` and incremented by the VM |
+| `snt` | Shared Native Thread. OS thread on which many ruby threads can run. Ruby threads from different ractors can even run on the same SNT. Ruby threads can switch SNTs when they context switch. SNTs are used in the M:N threading model. By default, non-main ractors use this model.
+| `dnt` | Dedicated Native Thread. OS thread on which only one ruby thread can run. The ruby thread always runs on that same OS thread. DNTs are used in the 1:1 threading model. By default, the main ractor uses this model.
 | `sp` | Stack Pointer. The top of the stack. The VM executes instructions in the `iseq` and instructions will push and pop values on the stack. The VM updates the `sp` on the `cfp` to point at the top of the stack|
 | `svar` | Special Variable. Refers to special local variables like `$~` and `$_`. See the `getspecial` instruction in `insns.def` |
 | `VALUE` | VALUE is a pointer to a ruby object from the Ruby C code. |
