@@ -604,6 +604,10 @@ rb_ast_dispose(rb_ast_t *ast)
         ast->node_buffer = 0;
         rb_rb_node_buffer_free(ast, ast->rb_node_buffer);
         ast->rb_node_buffer = 0;
+        if (ast->body.filepath) {
+            parser_string_free(ast, ast->body.filepath);
+            ast->body.filepath = NULL;
+        }
     }
 }
 
@@ -618,3 +622,5 @@ rb_node_get_type(const NODE *n)
 {
     return (enum node_type)nd_type(n);
 }
+
+#include "node.inc"

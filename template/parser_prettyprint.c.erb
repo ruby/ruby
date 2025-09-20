@@ -96,9 +96,11 @@ prettyprint_node(pm_buffer_t *output_buffer, const rb_node_t *node, pm_buffer_t 
                 }
             <%- when Prism::Template::ConstantListField -%>
                 pm_buffer_append_string(output_buffer, " [", 2);
-                for (uint32_t index = 0; index < cast-><%= field.name %>.size; index++) {
-                    if (index != 0) pm_buffer_append_string(output_buffer, ", ", 2);
-                    prettyprint_constant(output_buffer, cast-><%= field.name %>.ids[index]);
+                if (cast-><%= field.name %>) {
+                    for (int index = 0; index < cast-><%= field.name %>->size; index++) {
+                        if (index != 0) pm_buffer_append_string(output_buffer, ", ", 2);
+                        prettyprint_constant(output_buffer, cast-><%= field.name %>->ids[index]);
+                    }
                 }
                 pm_buffer_append_string(output_buffer, "]\n", 2);
             <%- when Prism::Template::LocationField -%>

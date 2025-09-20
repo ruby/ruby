@@ -1,4 +1,8 @@
+#ifndef RB_NODE_COMPILE_H
+#define RB_NODE_COMPILE_H
+
 #include "prism/prism.h"
+#include "iseq.h"
 #include "ruby/encoding.h"
 
 /**
@@ -24,10 +28,10 @@ typedef struct rb_scope_node {
     rb_node_t *ast_node;
     rb_node_t *parameters;
     rb_node_t *body;
-    pm_constant_id_list_t locals;
+    rb_ast_id_table_t *locals;
 
     // const pm_parser_t *parser;
-    rb_encoding *encoding;
+    rb_ast_t *ast;
 
     /**
      * This is a pointer to the list of script lines for the ISEQs that will be
@@ -37,20 +41,20 @@ typedef struct rb_scope_node {
      * needed by this struct). If it is not set, it will be NULL. It is
      * inherited by all child scopes.
      */
-    VALUE *script_lines;
+    // VALUE *script_lines;
 
     /**
      * This is the encoding of the actual filepath object that will be used when
      * a __FILE__ node is compiled or when the path has to be set on a syntax
      * error.
      */
-    rb_encoding *filepath_encoding;
+    // rb_encoding *filepath_encoding;
 
     // The size of the local table on the iseq which includes locals and hidden
     // variables.
     int local_table_for_iseq_size;
 
-    ID *constants;
+    // ID *constants;
     st_table *index_lookup_table;
 
     // The current coverage setting, passed down through the various scopes.
@@ -62,6 +66,11 @@ typedef struct rb_scope_node {
      */
     struct iseq_link_anchor *pre_execution_anchor;
 } rb_scope_node_t;
+
+typedef struct rb_ast_scope_struct {
+    rb_ast_t *ast;
+    rb_scope_node_t scope_node;
+} rb_ast_scope_t;
 
 void rb_scope_node_init(const rb_node_t *node, rb_scope_node_t *scope, rb_scope_node_t *previous);
 void rb_scope_node_destroy(rb_scope_node_t *scope_node);
@@ -80,10 +89,13 @@ void rb_scope_node_destroy(rb_scope_node_t *scope_node);
 void pm_options_version_for_current_ruby_set(pm_options_t *options);
 // void pm_parse_result_free(pm_parse_result_t *result);
 
-rb_iseq_t *rb_node_iseq_new(rb_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, enum rb_iseq_type, int *error_state);
-rb_iseq_t *rb_node_iseq_new_top(rb_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, int *error_state);
-rb_iseq_t *rb_node_iseq_new_main(rb_scope_node_t *node, VALUE path, VALUE realpath, const rb_iseq_t *parent, int opt, int *error_state);
-rb_iseq_t *rb_node_iseq_new_eval(rb_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth, int *error_state);
-rb_iseq_t *rb_node_iseq_new_with_opt(rb_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth, enum rb_iseq_type, const rb_compile_option_t *option, int *error_state);
+rb_iseq_t *rb_node_iseq_new(rb_scope_node_t *scope_node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, enum rb_iseq_type, int *error_state);
+rb_iseq_t *rb_node_iseq_new_top(rb_scope_node_t *scope_node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, int *error_state);
+rb_iseq_t *rb_node_iseq_new_main(const VALUE ast_scope_value, VALUE path, VALUE realpath, const rb_iseq_t *parent, int opt);
+rb_iseq_t *rb_node_iseq_new_eval(rb_scope_node_t *scope_node, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth, int *error_state);
+rb_iseq_t *rb_node_iseq_new_with_opt(rb_scope_node_t *scope_node, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth, enum rb_iseq_type, const rb_compile_option_t *option, VALUE script_lines, int *error_state);
 
-VALUE rb_node_iseq_compile_node(rb_iseq_t *iseq, rb_scope_node_t *node);
+VALUE rb_node_iseq_compile_node(rb_iseq_t *iseq, rb_scope_node_t *scope_node);
+VALUE rb_parse_process(rb_ast_scope_t *ast_scope, const rb_node_t *node);
+
+#endif

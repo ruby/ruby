@@ -388,7 +388,7 @@ programs: $(PROGRAM) $(WPROGRAM) $(arch)-fake.rb
 $(PREP): $(MKFILES)
 
 miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(ARCHFILE)
-miniruby$(EXEEXT): {$(VPATH)}parser_ast.h {$(VPATH)}parser_prettyprint.c
+miniruby$(EXEEXT): {$(VPATH)}parser_ast.h {$(VPATH)}parser_prettyprint.c {$(VPATH)}node.inc
 
 objs: $(ALLOBJS)
 
@@ -1069,6 +1069,9 @@ parse.h: {$(VPATH)}parse.c
 
 {$(VPATH)}parser_ast.h: $(PRISM_SRCDIR)/config.yml $(tooldir)/parser_template.rb $(srcdir)/template/parser_ast.h.erb
 	$(Q) $(BASERUBY) $(tooldir)/parser_template.rb parser_ast.h $@
+
+{$(VPATH)}node.inc: $(PRISM_SRCDIR)/config.yml $(tooldir)/parser_template.rb $(srcdir)/template/node.inc.erb
+	$(Q) $(BASERUBY) $(tooldir)/parser_template.rb node.inc $@
 
 {$(VPATH)}parser_prettyprint.c: $(PRISM_SRCDIR)/config.yml $(tooldir)/parser_template.rb $(srcdir)/template/parser_prettyprint.c.erb
 	$(Q) $(BASERUBY) $(tooldir)/parser_template.rb parser_prettyprint.c $@

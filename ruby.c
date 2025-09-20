@@ -2144,7 +2144,7 @@ static VALUE
 process_script(ruby_cmdline_options_t *opt)
 {
     rb_ast_t *ast;
-    VALUE ast_value;
+    VALUE ast_scope_value;
     VALUE parser = rb_parser_new();
     const unsigned int dump = opt->dump;
 
@@ -2164,7 +2164,7 @@ process_script(ruby_cmdline_options_t *opt)
         ruby_set_script_name(progname);
         rb_parser_set_options(parser, opt->do_print, opt->do_loop,
                               opt->do_line, opt->do_split);
-        ast_value = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
+        ast_scope_value = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
         VALUE f;
@@ -2172,14 +2172,14 @@ process_script(ruby_cmdline_options_t *opt)
         f = open_load_file(opt->script_name, &xflag);
         opt->xflag = xflag != 0;
         rb_parser_set_context(parser, 0, f == rb_stdin);
-        ast_value = load_file(parser, opt->script_name, f, 1, opt);
+        ast_scope_value = load_file(parser, opt->script_name, f, 1, opt);
     }
-    ast = rb_ruby_ast_data_get(ast_value);
+    ast = rb_ruby_ast_scope_data_get(ast_scope_value)->ast;
     if (!ast->body.root) {
         rb_ast_dispose(ast);
         return Qnil;
     }
-    return ast_value;
+    return ast_scope_value;
 }
 
 static uint8_t
@@ -2387,13 +2387,13 @@ has_dir_sep(const char *path)
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
-    VALUE ast_value = Qnil;
+    VALUE ast_scope_value = Qnil;
     struct {
-        rb_ast_t *ast;
+        rb_ast_scope_t *ast_scope;
         pm_parse_result_t prism;
     } result = {0};
 #define dispose_result() \
-    (result.ast ? rb_ast_dispose(result.ast) : pm_parse_result_free(&result.prism))
+    (result.ast_scope ? rb_ast_dispose(result.ast_scope->ast) : pm_parse_result_free(&result.prism))
 
     const rb_iseq_t *iseq;
     rb_encoding *enc, *lenc;
@@ -2641,8 +2641,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
 
     if (!rb_ruby_prism_p()) {
-        ast_value = process_script(opt);
-        if (!(result.ast = rb_ruby_ast_data_get(ast_value))) return Qfalse;
+        ast_scope_value = process_script(opt);
+        if (!(result.ast_scope = rb_ruby_ast_scope_data_get(ast_scope_value))) return Qfalse;
     }
     else {
         prism_script(opt, &result.prism);
@@ -2684,9 +2684,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
     if (dump & DUMP_BIT(parsetree)) {
         VALUE tree;
-        if (result.ast) {
-            // int comment = opt->dump & DUMP_BIT(opt_comment);
-            tree = parser_dump_tree(result.ast->body.root);
+        if (result.ast_scope) {
+            tree = parser_dump_tree(result.ast_scope->ast->body.root);
         }
         else {
             tree = prism_dump_tree(&result.prism);
@@ -2720,7 +2719,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         const rb_iseq_t *parent = vm_block_iseq(base_block);
         bool optimize = (opt->dump & DUMP_BIT(opt_optimize)) != 0;
 
-        if (!result.ast) {
+        if (!result.ast_scope) {
             pm_parse_result_t *pm = &result.prism;
             int error_state;
             iseq = pm_iseq_new_main(&pm->node, opt->script_name, path, parent, optimize, &error_state);
@@ -2733,9 +2732,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             }
         }
         else {
-            rb_ast_t *ast = result.ast;
-            iseq = rb_iseq_new_main(ast_value, opt->script_name, path, parent, optimize);
-            rb_ast_dispose(ast);
+            rb_ast_scope_t *ast_scope = result.ast_scope;
+            iseq = rb_node_iseq_new_main(ast_scope_value, opt->script_name, path, parent, optimize);
+            rb_ast_dispose(ast_scope->ast);
         }
     }
 
@@ -2785,7 +2784,7 @@ load_file_internal(VALUE argp_v)
     ruby_cmdline_options_t *opt = argp->opt;
     VALUE f = argp->f;
     int line_start = 1;
-    VALUE ast_value = Qnil;
+    VALUE ast_scope_value = Qnil;
     rb_encoding *enc;
     ID set_encoding;
 
@@ -2886,7 +2885,7 @@ load_file_internal(VALUE argp_v)
         return rb_parser_compile_string_path(parser, orig_fname, f, line_start);
     }
     rb_funcall(f, set_encoding, 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
-    ast_value = rb_parser_compile_file_path(parser, orig_fname, f, line_start);
+    ast_scope_value = rb_parser_compile_file_path(parser, orig_fname, f, line_start);
     rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
     if (script && rb_parser_end_seen_p(parser)) {
         /*
@@ -2904,7 +2903,7 @@ load_file_internal(VALUE argp_v)
         rb_define_global_const("DATA", f);
         argp->f = Qnil;
     }
-    return ast_value;
+    return ast_scope_value;
 }
 
 /* disabling O_NONBLOCK, and returns 0 on success, otherwise errno */
@@ -3036,9 +3035,9 @@ rb_load_file(const char *fname)
 void *
 rb_load_file_str(VALUE fname_v)
 {
-    VALUE ast_value;
-    ast_value = rb_parser_load_file(rb_parser_new(), fname_v);
-    return (void *)rb_ruby_ast_data_get(ast_value);
+    VALUE ast_scope_value;
+    ast_scope_value = rb_parser_load_file(rb_parser_new(), fname_v);
+    return (void *)rb_ruby_ast_scope_data_get(ast_scope_value)->ast; // TODO
 }
 
 VALUE

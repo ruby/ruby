@@ -2,6 +2,7 @@
 # mkdepend: scan prism/*.c => prism/templates/ext/prism/*.c.erb
 # mkdepend: scan prism/*.h => prism/templates/include/prism/*.h.erb
 # mkdepend: scan prism/**/*.h => prism/templates/include/prism/**/*.h.erb
+# mkdepend: scan node.inc => template/node.inc.erb
 # mkdepend: scan parser_ast.h => template/parser_ast.h.erb
 # mkdepend: scan parser_prettyprint.c => template/parser_prettyprint.c.erb
 # mkdepend: scan enc/trans/*.c => enc/trans/*.trans
@@ -27,6 +28,7 @@
 # mkdepend: depends lex.c => {$(VPATH)}lex.c
 # mkdepend: depends miniprelude.c => {$(VPATH)}miniprelude.c
 # mkdepend: depends newline.c => {$(VPATH)}newline.c
+# mkdepend: depends node.inc => {$(VPATH)}node.inc
 # mkdepend: depends node_name.inc => {$(VPATH)}node_name.inc
 # mkdepend: depends optinsn.inc => {$(VPATH)}optinsn.inc
 # mkdepend: depends optunifs.inc => {$(VPATH)}optunifs.inc
