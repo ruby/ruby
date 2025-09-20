@@ -186,27 +186,32 @@ rb_namespace_entry_mark(void *ptr)
     rb_gc_mark(ns->gvar_tbl);
 }
 
-// TODO: implemente namespace_entry_free to free loading_table etc
-/*
 static int
 free_loading_table_entry(st_data_t key, st_data_t value, st_data_t arg)
 {
     xfree((char *)key);
     return ST_DELETE;
 }
-        if (vm->loading_table) {
-            st_foreach(vm->loading_table, free_loading_table_entry, 0);
-            st_free_table(vm->loading_table);
-            vm->loading_table = 0;
-        }
-*/
-#define namespace_entry_free RUBY_TYPED_DEFAULT_FREE
+
+static void
+namespace_entry_free(void *ptr)
+{
+    rb_namespace_t *ns = (rb_namespace_t *)ptr;
+    if (ns->loading_table) {
+        st_foreach(ns->loading_table, free_loading_table_entry, 0);
+        st_free_table(ns->loading_table);
+        ns->loading_table = 0;
+    }
+    xfree(ptr);
+}
 
 static size_t
 namespace_entry_memsize(const void *ptr)
 {
-    // TODO: rb_st_memsize(loaded_features_index) + rb_st_memsize(vm->loading_table)
-    return sizeof(rb_namespace_t);
+    const rb_namespace_t *ns = (const rb_namespace_t *)ptr;
+    return sizeof(rb_namespace_t) + \
+        rb_st_memsize(ns->loaded_features_index) + \
+        rb_st_memsize(ns->loading_table);
 }
 
 const rb_data_type_t rb_namespace_data_type = {
