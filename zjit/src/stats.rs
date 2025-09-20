@@ -137,6 +137,10 @@ make_counters! {
     dynamic_send_type_invokeblock,
     dynamic_send_type_invokesuper,
 
+    // The number of times we do a dynamic ivar lookup from JIT code
+    dynamic_getivar_count,
+    dynamic_setivar_count,
+
     // Method call def_type related to fallback to dynamic dispatch
     send_fallback_iseq,
     send_fallback_cfunc,
