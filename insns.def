@@ -237,8 +237,7 @@ getclassvariable
 /* "class variable access from toplevel" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
-    rb_control_frame_t *cfp = GET_CFP();
-    val = vm_getclassvariable(GET_ISEQ(), cfp, id, ic);
+    val = vm_getclassvariable(GET_CFP(), id, ic);
 }
 
 /* Set value of class variable id of klass as val. */

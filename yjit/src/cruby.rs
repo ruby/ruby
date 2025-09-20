@@ -140,7 +140,7 @@ extern "C" {
     pub fn rb_aliased_callable_method_entry(
         me: *const rb_callable_method_entry_t,
     ) -> *const rb_callable_method_entry_t;
-    pub fn rb_vm_getclassvariable(iseq: IseqPtr, cfp: CfpPtr, id: ID, ic: ICVARC) -> VALUE;
+    pub fn rb_vm_getclassvariable(cfp: CfpPtr, id: ID, ic: ICVARC) -> VALUE;
     pub fn rb_vm_setclassvariable(
         iseq: IseqPtr,
         cfp: CfpPtr,
