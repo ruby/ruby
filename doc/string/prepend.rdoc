@@ -1,0 +1,8 @@
+Prepends each string in +other_strings+ to +self+; returns +self+:
+
+  s = 'foo'
+  s.prepend('bar', 'baz')            # => "barbazfoo"
+  'т'.prepend('т', 'е', 'с')         # => "тест"
+  'は'.prepend('こ', 'ん', 'に', 'ち') # => "こんにちは"
+
+Related: see {Modifying}[rdoc-ref:String@Modifying].
