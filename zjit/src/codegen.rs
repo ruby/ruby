@@ -696,11 +696,13 @@ fn gen_ccall_variadic(
 
 /// Emit an uncached instance variable lookup
 fn gen_getivar(asm: &mut Assembler, recv: Opnd, id: ID) -> Opnd {
+    gen_incr_counter(asm, Counter::dynamic_getivar_count);
     asm_ccall!(asm, rb_ivar_get, recv, id.0.into())
 }
 
 /// Emit an uncached instance variable store
 fn gen_setivar(asm: &mut Assembler, recv: Opnd, id: ID, val: Opnd) {
+    gen_incr_counter(asm, Counter::dynamic_setivar_count);
     asm_ccall!(asm, rb_ivar_set, recv, id.0.into(), val);
 }
 
