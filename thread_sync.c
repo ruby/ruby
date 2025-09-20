@@ -8,6 +8,7 @@ static VALUE rb_eClosedQueueError;
 /* Mutex */
 typedef struct rb_mutex_struct {
     rb_fiber_t *fiber;
+    VALUE thread; // even if the fiber is collected, we might need access to the thread in mutex_free
     struct rb_mutex_struct *next_mutex;
     struct ccan_list_head waitq; /* protected by GVL */
 } rb_mutex_t;
@@ -106,8 +107,6 @@ static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fib
  *
  */
 
-#define mutex_mark ((void(*)(void*))0)
-
 static size_t
 rb_mutex_num_waiting(rb_mutex_t *mutex)
 {
@@ -123,13 +122,39 @@ rb_mutex_num_waiting(rb_mutex_t *mutex)
 
 rb_thread_t* rb_fiber_threadptr(const rb_fiber_t *fiber);
 
+static bool
+locked_p(rb_mutex_t *mutex)
+{
+    return mutex->fiber != 0;
+}
+
+static void
+mutex_mark(void *ptr)
+{
+    rb_mutex_t *mutex = ptr;
+    VALUE fiber;
+    if (locked_p(mutex)) {
+        fiber = rb_fiberptr_self(mutex->fiber); // rb_fiber_t* doesn't move along with fiber object
+        if (fiber) rb_gc_mark_movable(fiber);
+        rb_gc_mark_movable(mutex->thread);
+    }
+}
+
+static void
+mutex_compact(void *ptr)
+{
+    rb_mutex_t *mutex = ptr;
+    if (locked_p(mutex)) {
+        mutex->thread = rb_gc_location(mutex->thread);
+    }
+}
+
 static void
 mutex_free(void *ptr)
 {
     rb_mutex_t *mutex = ptr;
-    if (mutex->fiber) {
-        /* rb_warn("free locked mutex"); */
-        const char *err = rb_mutex_unlock_th(mutex, rb_fiber_threadptr(mutex->fiber), mutex->fiber);
+    if (locked_p(mutex)) {
+        const char *err = rb_mutex_unlock_th(mutex, rb_thread_ptr(mutex->thread), mutex->fiber);
         if (err) rb_bug("%s", err);
     }
     ruby_xfree(ptr);
@@ -143,7 +168,7 @@ mutex_memsize(const void *ptr)
 
 static const rb_data_type_t mutex_data_type = {
     "mutex",
-    {mutex_mark, mutex_free, mutex_memsize,},
+    {mutex_mark, mutex_free, mutex_memsize, mutex_compact,},
     0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -204,7 +229,7 @@ rb_mutex_locked_p(VALUE self)
 {
     rb_mutex_t *mutex = mutex_ptr(self);
 
-    return RBOOL(mutex->fiber);
+    return RBOOL(locked_p(mutex));
 }
 
 static void
@@ -238,6 +263,8 @@ mutex_locked(rb_thread_t *th, VALUE self)
 {
     rb_mutex_t *mutex = mutex_ptr(self);
 
+    mutex->thread = th->self;
+    RB_OBJ_WRITTEN(self, Qundef, th->self);
     thread_mutex_insert(th, mutex);
 }
 
@@ -329,6 +356,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
 
                 if (!mutex->fiber) {
                     mutex->fiber = fiber;
+                    mutex->thread = th->self;
                 }
             }
             else {
@@ -369,6 +397,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
                 // unlocked by another thread while sleeping
                 if (!mutex->fiber) {
                     mutex->fiber = fiber;
+                    mutex->thread = th->self;
                 }
 
                 rb_ractor_sleeper_threads_dec(th->ractor);
@@ -385,6 +414,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
                 RUBY_VM_CHECK_INTS_BLOCKING(th->ec); /* may release mutex */
                 if (!mutex->fiber) {
                     mutex->fiber = fiber;
+                    mutex->thread = th->self;
                 }
             }
             else {
