@@ -167,11 +167,14 @@ rb_imemo_fields_clone(VALUE fields_obj)
     VALUE clone;
 
     if (rb_shape_too_complex_p(shape_id)) {
-        clone = rb_imemo_fields_new_complex(rb_imemo_fields_owner(fields_obj), 0);
-        RBASIC_SET_SHAPE_ID(clone, shape_id);
         st_table *src_table = rb_imemo_fields_complex_tbl(fields_obj);
-        st_table *dest_table = rb_imemo_fields_complex_tbl(clone);
+
+        st_table *dest_table = xcalloc(1, sizeof(st_table));
+        clone = rb_imemo_fields_new_complex_tbl(rb_imemo_fields_owner(fields_obj), dest_table);
+
         st_replace(dest_table, src_table);
+        RBASIC_SET_SHAPE_ID(clone, shape_id);
+
         st_foreach(dest_table, imemo_fields_complex_wb_i, (st_data_t)clone);
     }
     else {
