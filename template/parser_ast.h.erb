@@ -21,7 +21,7 @@ typedef struct rb_node rb_node_t;
 #include <stddef.h>
 #include <stdint.h>
 
-#define NULL_LOC_P(loc) (loc->beg_pos.lineno == 0 && loc->beg_pos.column == -1 && loc->end_pos.lineno == 0 && loc->end_pos.column == -1)
+#define NULL_LOC_P(loc) ((loc)->beg_pos.lineno == 0 && (loc)->beg_pos.column == -1 && (loc)->end_pos.lineno == 0 && (loc)->end_pos.column == -1)
 
 /**
  * A list of nodes in the source, most often used for lists of children.
@@ -155,7 +155,7 @@ typedef struct rb_<%= node.human %> {
     when Prism::Template::NodeField, Prism::Template::OptionalNodeField then "struct #{field.c_type} *#{field.name}"
     when Prism::Template::NodeListField then "struct rb_node_list2 #{field.name}"
     when Prism::Template::ConstantField, Prism::Template::OptionalConstantField then "ID #{field.name}"
-    when Prism::Template::ConstantListField then "pm_constant_id_list_t #{field.name}"
+    when Prism::Template::ConstantListField then "rb_ast_id_table_t *#{field.name}"
     when Prism::Template::StringField then "rb_parser_string_t *#{field.name}"
     when Prism::Template::LocationField, Prism::Template::OptionalLocationField then "rb_code_location_t #{field.name}"
     when Prism::Template::UInt8Field then "uint8_t #{field.name}"

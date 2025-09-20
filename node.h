@@ -174,4 +174,6 @@ nd_type_p(const NODE *n, enum node_type t)
     return (enum node_type)nd_type(n) == t;
 }
 
+const char *rb_node_type_to_str(rb_node_type_t node_type);
+
 #endif /* RUBY_NODE_H */

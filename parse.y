@@ -1306,11 +1306,11 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_ERROR(loc) (NODE *)rb_node_error_new(p,loc)
 
 /* prism node */
-static rb_program_node_t *rb_new_node_program_new(struct parser_params *p, pm_constant_id_list_t *locals, rb_statements_node_t *statements, const YYLTYPE *loc);
+static rb_program_node_t *rb_new_node_program_new(struct parser_params *p, rb_statements_node_t *statements, const YYLTYPE *loc);
 static rb_statements_node_t *rb_new_node_statements_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_nil_node_t *rb_new_node_nil_new(struct parser_params *p, const YYLTYPE *loc);
 
-#define NEW_RB_PROGRAM(l,s,loc) (rb_node_t *)rb_new_node_program_new(p,l,s,loc)
+#define NEW_RB_PROGRAM(s,loc) (rb_node_t *)rb_new_node_program_new(p,s,loc)
 #define NEW_RB_STATEMENTS(loc) rb_new_node_statements_new(p,loc)
 #define NEW_RB_NIL(loc) rb_new_node_nil_new(p,loc)
 
@@ -3230,7 +3230,7 @@ program		:  {
                             void_expr(p, node);
                         }
                         // p->eval_tree = NEW_SCOPE(0, block_append(p, p->eval_tree, $2), NULL, &@$);
-                        p->eval_tree = NEW_RB_PROGRAM(NULL, $2, &@$);
+                        p->eval_tree = NEW_RB_PROGRAM($2, &@$);
                     /*% ripper[final]: program!($:2) %*/
                         local_pop(p);
                     }
@@ -7517,6 +7517,7 @@ yycompile0(VALUE arg)
     p->ast->body.root = tree;
     p->ast->body.line_count = p->line_count;
     p->ast->body.encoding= p->enc;
+    p->ast->body.filepath = rb_str_to_parser_string(p, p->ruby_sourcefile_string);
     return TRUE;
 }
 
@@ -12559,10 +12560,10 @@ rb_node_newnode(struct parser_params *p, enum rb_node_type type, size_t size, si
 // static pm_program_node_t *
 // pm_program_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, pm_statements_node_t *statements)
 static rb_program_node_t *
-rb_new_node_program_new(struct parser_params *p, pm_constant_id_list_t *locals, rb_statements_node_t *statements, const YYLTYPE *loc)
+rb_new_node_program_new(struct parser_params *p, rb_statements_node_t *statements, const YYLTYPE *loc)
 {
     rb_program_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_PROGRAM_NODE, rb_program_node_t, loc);
-    pm_constant_id_list_init(&n->locals);
+    n->locals = local_tbl(p);
     n->statements = statements;
     return n;
 }
