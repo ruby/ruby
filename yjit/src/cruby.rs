@@ -142,7 +142,6 @@ extern "C" {
     ) -> *const rb_callable_method_entry_t;
     pub fn rb_vm_getclassvariable(cfp: CfpPtr, id: ID, ic: ICVARC) -> VALUE;
     pub fn rb_vm_setclassvariable(
-        iseq: IseqPtr,
         cfp: CfpPtr,
         id: ID,
         val: VALUE,

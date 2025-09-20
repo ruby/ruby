@@ -250,7 +250,7 @@ setclassvariable
 // attr bool leaf = false; /* has rb_warning() */
 {
     vm_ensure_not_refinement_module(GET_SELF());
-    vm_setclassvariable(GET_ISEQ(), GET_CFP(), id,  val, ic);
+    vm_setclassvariable(GET_CFP(), id,  val, ic);
 }
 
 DEFINE_INSN

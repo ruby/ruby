@@ -1623,9 +1623,10 @@ rb_vm_getclassvariable(const rb_control_frame_t *cfp, ID id, ICVARC ic)
 }
 
 static inline void
-vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID id, VALUE val, ICVARC ic)
+vm_setclassvariable(const rb_control_frame_t *reg_cfp, ID id, VALUE val, ICVARC ic)
 {
     const rb_cref_t *cref;
+    const rb_iseq_t *iseq = reg_cfp->iseq;
     cref = vm_get_cref(GET_EP());
 
     if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref && LIKELY(rb_ractor_main_p())) {
@@ -1643,9 +1644,9 @@ vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID
 }
 
 void
-rb_vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *cfp, ID id, VALUE val, ICVARC ic)
+rb_vm_setclassvariable(const rb_control_frame_t *cfp, ID id, VALUE val, ICVARC ic)
 {
-    vm_setclassvariable(iseq, cfp, id, val, ic);
+    vm_setclassvariable(cfp, id, val, ic);
 }
 
 static inline VALUE

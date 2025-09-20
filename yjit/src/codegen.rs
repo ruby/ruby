@@ -10230,7 +10230,6 @@ fn gen_setclassvariable(
     asm.ccall(
         rb_vm_setclassvariable as *const u8,
         vec![
-            Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ),
             CFP,
             Opnd::UImm(jit.get_arg(0).as_u64()),
             val,
