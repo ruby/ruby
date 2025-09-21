@@ -10713,7 +10713,8 @@ rb_str_scan(VALUE str, VALUE pat)
 
 
 /*
- *  call-seq: hex -> integer
+ *  call-seq:
+ *    hex -> integer
  *
  *  Interprets the leading substring of +self+ as hexadecimal, possibly signed;
  *  returns its value as an integer.
