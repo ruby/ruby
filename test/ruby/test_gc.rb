@@ -825,6 +825,8 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_exception_in_finalizer_procs
+    require '-test-/stack'
+    omit 'failing with ASAN' if Thread.asan?
     assert_in_out_err(["-W0"], "#{<<~"begin;"}\n#{<<~'end;'}", %w[c1 c2])
     c1 = proc do
       puts "c1"
@@ -845,6 +847,8 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_exception_in_finalizer_method
+    require '-test-/stack'
+    omit 'failing with ASAN' if Thread.asan?
     assert_in_out_err(["-W0"], "#{<<~"begin;"}\n#{<<~'end;'}", %w[c1 c2])
     def self.c1(x)
       puts "c1"
