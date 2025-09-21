@@ -93,7 +93,7 @@ runs:
         docker run
         --rm
         --user=root
-        --volume '${{ github.workspace }}:/github/workspace:ro'
+        --volume '${{ github.workspace }}:/github/workspace:rw'
         --workdir=/github/workspace
         --entrypoint=/github/workspace/.github/actions/compilers/entrypoint.sh
         --env CI

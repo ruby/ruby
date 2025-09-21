@@ -238,6 +238,7 @@ lcov*.info
 # /tool/
 /tool/config.guess
 /tool/config.sub
+/tool/dump_ast
 
 # /win32/
 /win32/*.ico
