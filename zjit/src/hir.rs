@@ -1993,9 +1993,9 @@ impl Function {
                         if low_is_fix || high_is_fix {
                             let low_fix = self.coerce_to_fixnum(block, low, state);
                             let high_fix = self.coerce_to_fixnum(block, high, state);
-                            let repl = self.push_insn(block, Insn::NewRangeFixnum{ low: low_fix, high: high_fix, flag, state });
-                            self.make_equal_to(insn_id, repl);
-                            self.insn_types[repl.0] = self.infer_type(repl);
+                            let replacement = self.push_insn(block, Insn::NewRangeFixnum { low: low_fix, high: high_fix, flag, state });
+                            self.make_equal_to(insn_id, replacement);
+                            self.insn_types[replacement.0] = self.infer_type(replacement);
                         } else {
                             self.push_insn_id(block, insn_id);
                         };
