@@ -4505,7 +4505,7 @@ rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    GC_ASSERT(objspace->rgengc.parent_object == 0 || FL_TEST(objspace->rgengc.parent_object, FL_WB_PROTECTED));
+    GC_ASSERT(objspace->rgengc.parent_object == 0 || !RVALUE_WB_UNPROTECTED(objspace, objspace->rgengc.parent_object));
 
     VALUE obj = *ptr;
 
