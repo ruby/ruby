@@ -1986,6 +1986,20 @@ impl Function {
                         self.insn_types[replacement.0] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
+                    Insn::NewRange { low, high, flag, state } => {
+                        let low_is_fix  = self.is_a(low,  types::Fixnum);
+                        let high_is_fix = self.is_a(high, types::Fixnum);
+
+                        if low_is_fix || high_is_fix {
+                            let low_fix = self.coerce_to_fixnum(block, low, state);
+                            let high_fix = self.coerce_to_fixnum(block, high, state);
+                            let replacement = self.push_insn(block, Insn::NewRangeFixnum { low: low_fix, high: high_fix, flag, state });
+                            self.make_equal_to(insn_id, replacement);
+                            self.insn_types[replacement.0] = self.infer_type(replacement);
+                        } else {
+                            self.push_insn_id(block, insn_id);
+                        };
+                    }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
             }
@@ -2192,52 +2206,6 @@ impl Function {
             .map(|b| if b { Qtrue } else { Qfalse })
             .map(|b| self.new_insn(Insn::Const { val: Const::Value(b) }))
             .unwrap_or(insn_id)
-    }
-
-    fn optimize_ranges(&mut self) {
-        for block in self.rpo() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
-
-            for insn_id in old_insns {
-                match self.find(insn_id) {
-                    Insn::NewRange { low, high, flag, state } => {
-
-                        // The NewRange rewrite triggers mostly on literals because that is the
-                        // case we can easily prove Fixnum statically and cheaply guard the other
-                        // side.
-                        let low_is_fix  = self.is_a(low,  types::Fixnum);
-                        let high_is_fix = self.is_a(high, types::Fixnum);
-
-                        if low_is_fix && high_is_fix {
-                            // Both statically fixnum => specialize directly
-                            let repl = self.push_insn(block, Insn::NewRangeFixnum { low, high, flag, state });
-                            self.make_equal_to(insn_id, repl);
-                            self.insn_types[repl.0] = self.infer_type(repl);
-                        } else if low_is_fix {
-                            // Only left is fixnum => guard right
-                            let high_fix = self.coerce_to_fixnum(block, high, state);
-                            let repl = self.push_insn(block, Insn::NewRangeFixnum { low, high: high_fix, flag, state });
-                            self.make_equal_to(insn_id, repl);
-                            self.insn_types[repl.0] = self.infer_type(repl);
-                        } else if high_is_fix {
-                            // Only right is fixnum => guard left
-                            let low_fix = self.coerce_to_fixnum(block, low, state);
-                            let repl = self.push_insn(block, Insn::NewRangeFixnum { low: low_fix, high, flag, state });
-                            self.make_equal_to(insn_id, repl);
-                            self.insn_types[repl.0] = self.infer_type(repl);
-                        } else {
-                            // Keep generic op
-                            self.push_insn_id(block, insn_id);
-                        }
-                    }
-                    _ => {
-                        self.push_insn_id(block, insn_id);
-                    }
-                }
-            }
-        }
-        self.infer_types();
     }
 
     /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
@@ -2634,8 +2602,6 @@ impl Function {
         self.optimize_getivar();
         #[cfg(debug_assertions)] self.assert_validates();
         self.optimize_c_calls();
-        #[cfg(debug_assertions)] self.assert_validates();
-        self.optimize_ranges();
         #[cfg(debug_assertions)] self.assert_validates();
         self.fold_constants();
         #[cfg(debug_assertions)] self.assert_validates();
@@ -7253,41 +7219,50 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_optimize_range_fixnum_inclusive_literals() {
+    fn test_optimize_new_range_fixnum_inclusive_literals() {
         eval("
             def test()
-              (1..2)
+              a = 2
+              (1..a)
             end
             test; test
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
-          v4:RangeExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v1:NilClass = Const Value(nil)
+          v5:Fixnum[2] = Const Value(2)
+          v8:Fixnum[1] = Const Value(1)
+          v16:RangeExact = NewRangeFixnum v8 NewRangeInclusive v5
           CheckInterrupts
-          Return v4
+          Return v16
         ");
     }
 
+
     #[test]
-    fn test_optimize_range_fixnum_exclusive_literals() {
+    fn test_optimize_new_range_fixnum_exclusive_literals() {
         eval("
             def test()
-              (1...2)
+              a = 2
+              (1...a)
             end
             test; test
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0(v0:BasicObject):
-          v4:RangeExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v1:NilClass = Const Value(nil)
+          v5:Fixnum[2] = Const Value(2)
+          v8:Fixnum[1] = Const Value(1)
+          v16:RangeExact = NewRangeFixnum v8 NewRangeExclusive v5
           CheckInterrupts
-          Return v4
+          Return v16
         ");
     }
 
     #[test]
-    fn test_optimize_range_fixnum_inclusive_high_guarded() {
+    fn test_optimize_new_range_fixnum_inclusive_high_guarded() {
         eval("
             def test(a)
               (1..a)
@@ -7306,7 +7281,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_optimize_range_fixnum_exclusive_high_guarded() {
+    fn test_optimize_new_range_fixnum_exclusive_high_guarded() {
         eval("
             def test(a)
               (1...a)
@@ -7325,7 +7300,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_optimize_range_fixnum_inclusive_low_guarded() {
+    fn test_optimize_new_range_fixnum_inclusive_low_guarded() {
         eval("
             def test(a)
               (a..10)
@@ -7344,7 +7319,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_optimize_range_fixnum_exclusive_low_guarded() {
+    fn test_optimize_new_range_fixnum_exclusive_low_guarded() {
         eval("
             def test(a)
               (a...10)

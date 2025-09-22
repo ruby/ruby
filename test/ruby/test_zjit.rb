@@ -1136,19 +1136,21 @@ class TestZJIT < Test::Unit::TestCase
   def test_new_range_fixnum_both_literals_inclusive
     assert_compiles '1..2', %q{
       def test()
-        (1..2)
+        a = 2
+        (1..a)
       end
       test; test
-    }, call_threshold: 2
+    }, call_threshold: 2, insns: [:newrange]
   end
 
   def test_new_range_fixnum_both_literals_exclusive
     assert_compiles '1...2', %q{
       def test()
-        (1...2)
+        a = 2
+        (1...a)
       end
       test; test
-    }, call_threshold: 2
+    }, call_threshold: 2, insns: [:newrange]
   end
 
   def test_new_range_fixnum_low_literal_inclusive
@@ -1157,7 +1159,7 @@ class TestZJIT < Test::Unit::TestCase
         (1..a)
       end
       test(2); test(3)
-    }, call_threshold: 2
+    }, call_threshold: 2, insns: [:newrange]
   end
 
   def test_new_range_fixnum_low_literal_exclusive
@@ -1166,7 +1168,7 @@ class TestZJIT < Test::Unit::TestCase
         (1...a)
       end
       test(2); test(3)
-    }, call_threshold: 2
+    }, call_threshold: 2, insns: [:newrange]
   end
 
   def test_new_range_fixnum_high_literal_inclusive
@@ -1175,7 +1177,7 @@ class TestZJIT < Test::Unit::TestCase
         (a..10)
       end
       test(2); test(3)
-    }, call_threshold: 2
+    }, call_threshold: 2, insns: [:newrange]
   end
 
   def test_new_range_fixnum_high_literal_exclusive
@@ -1184,7 +1186,7 @@ class TestZJIT < Test::Unit::TestCase
         (a...10)
       end
       test(2); test(3)
-    }, call_threshold: 2
+    }, call_threshold: 2, insns: [:newrange]
   end
 
   def test_if
