@@ -41,7 +41,8 @@ class << RubyVM::ZJIT
 
     # Show non-exit counters
     print_counters_with_prefix(prefix: 'dynamic_send_type_', prompt: 'dynamic send types', buf:, stats:, limit: 20)
-    print_counters_with_prefix(prefix: 'send_fallback_', prompt: 'send fallback def_types', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'unspecialized_def_type_', prompt: 'send fallback unspecialized def_types', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'send_fallback_', prompt: 'dynamic send types', buf:, stats:, limit: 20)
 
     # Show exit counters, ordered by the typical amount of exits for the prefix at the time
     print_counters_with_prefix(prefix: 'unhandled_yarv_insn_', prompt: 'unhandled YARV insns', buf:, stats:, limit: 20)
