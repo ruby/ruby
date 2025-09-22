@@ -470,6 +470,13 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_send_ccall_variadic_with_different_receiver_classes
+    assert_compiles '[true, true]', %q{
+      def test(obj) = obj.start_with?("a")
+      [test("abc"), test(:abc)]
+    }, call_threshold: 2
+  end
+
   def test_forwardable_iseq
     assert_compiles '1', %q{
       def test(...) = 1
