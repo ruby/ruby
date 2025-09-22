@@ -36,12 +36,14 @@ module EnvUtil
   end
   module_function :rubybin
 
-  LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
+  LANG_ENVS = %w"LANG LC_ALL LC_CTYPE".freeze
 
   DEFAULT_SIGNALS = Signal.list
   DEFAULT_SIGNALS.delete("TERM") if /mswin|mingw/ =~ RUBY_PLATFORM
+  DEFAULT_SIGNALS.freeze
 
-  RUBYLIB = ENV["RUBYLIB"]
+  RUBYLIB = ENV["RUBYLIB"].to_s.freeze
+  MULTIPLE_RACTORS = ENV["RUBY_TESTS_WITH_RACTORS"].to_i > 1
 
   class << self
     attr_accessor :timeout_scale
@@ -54,7 +56,7 @@ module EnvUtil
       @original_verbose = $VERBOSE
       @original_warning =
         if defined?(Warning.categories)
-          Warning.categories.to_h {|i| [i, Warning[i]]}
+          Warning.categories.to_h {|i| [i, Warning[i]]}.freeze
         elsif defined?(Warning.[]) # 2.7+
           %i[deprecated experimental performance].to_h do |i|
             [i, begin Warning[i]; rescue ArgumentError; end]
@@ -293,7 +295,9 @@ module EnvUtil
   ensure
     stderr, $stderr = $stderr, stderr
     $VERBOSE = EnvUtil.original_verbose
-    EnvUtil.original_warning&.each {|i, v| Warning[i] = v}
+    unless MULTIPLE_RACTORS
+      EnvUtil.original_warning&.each {|i, v| Warning[i] = v}
+    end
   end
   module_function :verbose_warning
 
@@ -329,50 +333,64 @@ module EnvUtil
   module_function :suppress_warning
 
   def under_gc_stress(stress = true)
-    stress, GC.stress = GC.stress, stress
-    yield
-  ensure
-    GC.stress = stress
+    raise Test::Unit::PendedError.new("not ractor safe (#{__method__})") if MULTIPLE_RACTORS
+    begin
+      stress, GC.stress = GC.stress, stress
+      yield
+    ensure
+      GC.stress = stress
+    end
   end
   module_function :under_gc_stress
 
   def under_gc_compact_stress(val = :empty, &block)
     raise "compaction doesn't work well on s390x. Omit the test in the caller." if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
+    raise Test::Unit::PendedError.new("not ractor safe (#{__method__})") if MULTIPLE_RACTORS
+    begin
+      if GC.respond_to?(:auto_compact)
+        auto_compact = GC.auto_compact
+        GC.auto_compact = val
+      end
 
-    if GC.respond_to?(:auto_compact)
-      auto_compact = GC.auto_compact
-      GC.auto_compact = val
+      under_gc_stress(&block)
+    ensure
+      GC.auto_compact = auto_compact if GC.respond_to?(:auto_compact)
     end
-
-    under_gc_stress(&block)
-  ensure
-    GC.auto_compact = auto_compact if GC.respond_to?(:auto_compact)
   end
   module_function :under_gc_compact_stress
 
   def without_gc
-    prev_disabled = GC.disable
-    yield
-  ensure
-    GC.enable unless prev_disabled
+    raise Test::Unit::PendedError.new("not ractor safe (#{__method__})") if MULTIPLE_RACTORS
+    begin
+      prev_disabled = GC.disable
+      yield
+    ensure
+      GC.enable unless prev_disabled
+    end
   end
   module_function :without_gc
 
   def with_default_external(enc = nil, of: nil)
+    raise Test::Unit::PendedError.new("not ractor safe (#{__method__})") if MULTIPLE_RACTORS
     enc = of.encoding if defined?(of.encoding)
     suppress_warning { Encoding.default_external = enc }
-    yield
-  ensure
-    suppress_warning { Encoding.default_external = EnvUtil.original_external_encoding }
+    begin
+      yield
+    ensure
+      suppress_warning { Encoding.default_external = EnvUtil.original_external_encoding }
+    end
   end
   module_function :with_default_external
 
   def with_default_internal(enc = nil, of: nil)
+    raise Test::Unit::PendedError.new("not ractor safe (#{__method__})") if MULTIPLE_RACTORS
     enc = of.encoding if defined?(of.encoding)
     suppress_warning { Encoding.default_internal = enc }
-    yield
-  ensure
-    suppress_warning { Encoding.default_internal = EnvUtil.original_internal_encoding }
+    begin
+      yield
+    ensure
+      suppress_warning { Encoding.default_internal = EnvUtil.original_internal_encoding }
+    end
   end
   module_function :with_default_internal
 
@@ -401,8 +419,8 @@ module EnvUtil
   module_function :labeled_class
 
   if /darwin/ =~ RUBY_PLATFORM
-    DIAGNOSTIC_REPORTS_PATH = File.expand_path("~/Library/Logs/DiagnosticReports")
-    DIAGNOSTIC_REPORTS_TIMEFORMAT = '%Y-%m-%d-%H%M%S'
+    DIAGNOSTIC_REPORTS_PATH = File.expand_path("~/Library/Logs/DiagnosticReports").freeze
+    DIAGNOSTIC_REPORTS_TIMEFORMAT = '%Y-%m-%d-%H%M%S'.freeze
     @ruby_install_name = RbConfig::CONFIG['RUBY_INSTALL_NAME']
 
     def self.diagnostic_reports(signame, pid, now)
@@ -481,10 +499,12 @@ end
 
 if defined?(RbConfig)
   module RbConfig
-    @ruby = EnvUtil.rubybin
+    RUBY__ = EnvUtil.rubybin.freeze
     class << self
       undef ruby if method_defined?(:ruby)
-      attr_reader :ruby
+      def ruby
+        RUBY__
+      end
     end
     dir = File.dirname(ruby)
     CONFIG['bindir'] = dir

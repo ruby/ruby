@@ -59,14 +59,16 @@ class TestWhileuntil < Test::Unit::TestCase
       end
       assert_equal(220, sum)
 
-      tmp = open(tmpfilename, "r")
-      while line = tmp.gets()
-        break if $. == 3
-        assert_no_match(/vt100/, line)
-        assert_no_match(/Amiga/, line)
-        assert_no_match(/paper/, line)
+      if main_ractor?
+        tmp = open(tmpfilename, "r")
+        while line = tmp.gets()
+          break if $. == 3
+          assert_no_match(/vt100/, line)
+          assert_no_match(/Amiga/, line)
+          assert_no_match(/paper/, line)
+        end
+        tmp.close
       end
-      tmp.close
 
       File.unlink tmpfilename or `/bin/rm -f "#{tmpfilename}"`
       assert_file.not_exist?(tmpfilename)

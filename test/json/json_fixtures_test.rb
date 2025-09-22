@@ -7,20 +7,23 @@ class JSONFixturesTest < Test::Unit::TestCase
 
   passed.each do |f|
     name = File.basename(f).gsub(".", "_")
-    source = File.read(f)
-    define_method("test_#{name}") do
-      assert JSON.parse(source), "Did not pass for fixture '#{File.basename(f)}': #{source.inspect}"
+    class_eval <<-RUBY, __FILE__, __LINE__+1
+    def test_#{name}
+      assert JSON.parse(File.read(#{f.inspect})), "Did not pass for fixture '#{File.basename(f)}': \#{File.read(#{f.inspect})}"
     end
+    RUBY
   end
 
   failed.each do |f|
     name = File.basename(f).gsub(".", "_")
-    source = File.read(f)
-    define_method("test_#{name}") do
-      assert_raise(JSON::ParserError, JSON::NestingError,
-        "Did not fail for fixture '#{name}': #{source.inspect}") do
-        JSON.parse(source)
+    class_eval <<-RUBY, __FILE__, __LINE__+1
+      def test_#{name}
+        source = File.read(#{f.inspect})
+        assert_raise(JSON::ParserError, JSON::NestingError,
+        "Did not fail for fixture '#{name}': \#{source.inspect}") do
+          JSON.parse(source)
+        end
       end
-    end
+    RUBY
   end
 end

@@ -84,13 +84,10 @@ class TestFileUtils < Test::Unit::TestCase
       return true
     end
 
-    @@no_broken_symlink = false
-    if /cygwin/ =~ RUBY_PLATFORM and /\bwinsymlinks:native(?:strict)?\b/ =~ ENV["CYGWIN"]
-      @@no_broken_symlink = true
-    end
+    NO_BROKEN_SYMLINK = /cygwin/ =~ RUBY_PLATFORM and /\bwinsymlinks:native(?:strict)?\b/ =~ ENV["CYGWIN"]
 
     def no_broken_symlink?
-      @@no_broken_symlink
+      NO_BROKEN_SYMLINK
     end
 
     def has_capsh?
@@ -196,7 +193,7 @@ class TestFileUtils < Test::Unit::TestCase
   end
 
 
-  TARGETS = %w( data/a data/all data/random data/zero )
+  TARGETS = %w( data/a data/all data/random data/zero ).freeze
 
   def prepare_data_file
     File.open('data/a', 'w') {|f|
