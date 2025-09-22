@@ -1892,6 +1892,24 @@ impl Function {
                             }
                             let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, state });
                             self.make_equal_to(insn_id, getivar);
+                        } else if def_type == VM_METHOD_TYPE_ATTRSET && args.len() == 1 {
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            if let Some(profiled_type) = profiled_type {
+                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                            }
+                            let id = unsafe { get_cme_def_body_attr_id(cme) };
+
+                            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
+                            // We omit gen_prepare_non_leaf_call on gen_setivar, so it's unsafe to raise for multi-ractor mode.
+                            if unsafe { rb_zjit_singleton_class_p(klass) } {
+                                let attached = unsafe { rb_class_attached_object(klass) };
+                                if unsafe { RB_TYPE_P(attached, RUBY_T_CLASS) || RB_TYPE_P(attached, RUBY_T_MODULE) } {
+                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
+                                }
+                            }
+                            let val = args[0];
+                            let setivar = self.push_insn(block, Insn::SetIvar { self_val: recv, id, val, state });
+                            self.make_equal_to(insn_id, setivar);
                         } else {
                             if let Insn::SendWithoutBlock { def_type: insn_def_type, .. } = &mut self.insns[insn_id.0] {
                                 *insn_def_type = Some(MethodType::from(def_type));
@@ -9657,6 +9675,52 @@ mod opt_tests {
           v17:NilClass = Const Value(nil)
           CheckInterrupts
           Return v17
+        ");
+    }
+
+    #[test]
+    fn test_inline_attr_accessor_set() {
+        eval("
+            class C
+              attr_accessor :foo
+            end
+
+            def test(o) = o.foo = 5
+            test C.new
+            test C.new
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:6:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v6:Fixnum[5] = Const Value(5)
+          PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
+          v15:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
+          SetIvar v15, :@foo, v6
+          CheckInterrupts
+          Return v6
+        ");
+    }
+
+    #[test]
+    fn test_inline_attr_writer_set() {
+        eval("
+            class C
+              attr_writer :foo
+            end
+
+            def test(o) = o.foo = 5
+            test C.new
+            test C.new
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:6:
+        bb0(v0:BasicObject, v1:BasicObject):
+          v6:Fixnum[5] = Const Value(5)
+          PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
+          v15:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
+          SetIvar v15, :@foo, v6
+          CheckInterrupts
+          Return v6
         ");
     }
 }
