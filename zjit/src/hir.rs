@@ -1864,16 +1864,12 @@ impl Function {
                             let Some(recv_type) = self.profiled_type_of_at(recv, frame_state.insn_idx) else {
                                 if get_option!(stats) {
                                     match self.is_polymorphic_at(recv, frame_state.insn_idx) {
-                                        Some(true) => {
-                                            self.push_insn(block, Insn::IncrCounter(Counter::send_fallback_polymorphic));
-                                        },
-                                        Some(false) => {
-                                            panic!("Should not have monomorphic profile at this point in this branch");
-                                        },
-                                        None => {
-                                            self.push_insn(block, Insn::IncrCounter(Counter::send_fallback_no_profiles));
-                                        }
-                                    }
+                                        Some(true) => self.push_insn(block, Insn::IncrCounter(Counter::send_fallback_polymorphic)),
+                                        // If the class isn't known statically, then it should not also be monomorphic
+                                        Some(false) => panic!("Should not have monomorphic profile at this point in this branch"),
+                                        None => self.push_insn(block, Insn::IncrCounter(Counter::send_fallback_no_profiles)),
+
+                                    };
                                 }
                                 self.push_insn_id(block, insn_id); continue;
                             };
