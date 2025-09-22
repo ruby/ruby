@@ -3148,7 +3148,7 @@ fn gen_set_ivar(
             asm.ccall(
                 rb_vm_setinstancevariable as *const u8,
                 vec![
-                    Opnd::const_ptr(jit.iseq as *const u8),
+                    VALUE(jit.iseq as usize).into(),
                     Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF),
                     ivar_name.into(),
                     val_opnd,
@@ -10207,7 +10207,7 @@ fn gen_getclassvariable(
     let val_opnd = asm.ccall(
         rb_vm_getclassvariable as *const u8,
         vec![
-            Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ),
+            VALUE(jit.iseq as usize).into(),
             CFP,
             Opnd::UImm(jit.get_arg(0).as_u64()),
             Opnd::UImm(jit.get_arg(1).as_u64()),
@@ -10231,7 +10231,7 @@ fn gen_setclassvariable(
     asm.ccall(
         rb_vm_setclassvariable as *const u8,
         vec![
-            Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ),
+            VALUE(jit.iseq as usize).into(),
             CFP,
             Opnd::UImm(jit.get_arg(0).as_u64()),
             val,
