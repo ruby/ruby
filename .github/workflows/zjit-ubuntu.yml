@@ -58,8 +58,8 @@ jobs:
             test_all_opts: '--seed=39471'
 
           - test_task: 'check'
-            run_opts: '--zjit-call-threshold=1 --zjit-disable-hir-opt'
-            specopts: '-T --zjit-call-threshold=1 -T --zjit-disable-hir-opt'
+            run_opts: '--zjit-disable-hir-opt --zjit-call-threshold=1'
+            specopts: '-T --zjit-disable-hir-opt -T --zjit-call-threshold=1'
             configure: '--enable-zjit=dev'
             test_all_opts: '--seed=39471'
 
