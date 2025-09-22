@@ -17,9 +17,10 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-RUBY = ARGV[0] || raise("Usage: ruby jit_bisect.rb <path_to_ruby> -- <options>")
+usage = "Usage: zjit_bisect.rb <path_to_ruby> -- <options>"
+RUBY = ARGV[0] || raise(usage)
 OPTIONS = ARGV[1..]
-raise("Usage: ruby jit_bisect.rb <path_to_ruby> -- <options>") if OPTIONS.empty?
+raise(usage) if OPTIONS.empty?
 LOGGER = Logger.new($stdout)
 
 # From https://github.com/tekknolagi/omegastar
@@ -103,7 +104,8 @@ end
 
 # Try running with no JIT list to get a stable baseline
 unless run_with_jit_list(RUBY, OPTIONS, []).success?
-  raise "Command failed with empty JIT list"
+  cmd = [RUBY, "--zjit-allowed-iseqs=/dev/null", *OPTIONS].shelljoin
+  raise "The command failed unexpectedly with an empty JIT list. To reproduce, try running the following: `#{cmd}`"
 end
 # Collect the JIT list from the failing Ruby process
 jit_list = nil
