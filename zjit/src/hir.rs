@@ -1865,13 +1865,13 @@ impl Function {
                                 if get_option!(stats) {
                                     match self.is_polymorphic_at(recv, frame_state.insn_idx) {
                                         Some(true) => {
-                                            self.push_insn(block, Insn::IncrCounter(Counter::dynamic_send_polymorphic));
+                                            self.push_insn(block, Insn::IncrCounter(Counter::send_fallback_polymorphic));
                                         },
                                         Some(false) => {
                                             panic!("Should not have monomorphic profile at this point in this branch");
                                         },
                                         None => {
-                                            self.push_insn(block, Insn::IncrCounter(Counter::dynamic_send_no_profiles));
+                                            self.push_insn(block, Insn::IncrCounter(Counter::send_fallback_no_profiles));
                                         }
                                     }
                                 }
