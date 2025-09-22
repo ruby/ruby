@@ -1173,12 +1173,12 @@ class ERB
   # template = ERB.new(html)
   # ```
   #
-  # Create a base class that has `@arg1` and `arg2`:
+  # Create a base class that has `@arg1` and `@arg2`:
   #
   # ```
   # class MyBaseClass
   #   def initialize(arg1, arg2)
-  #     @arg1 = arg1;
+  #     @arg1 = arg1
   #     @arg2 = arg2
   #   end
   # end
