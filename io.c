@@ -7835,7 +7835,8 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *  If a block is given, the stream is passed to the block
  *  (again, open for reading, writing, or both);
  *  when the block exits, the stream is closed,
- *  and the block's value is assigned to global variable <tt>$?</tt> and returned.
+ *  the block's value is returned,
+ *  and the global variable <tt>$?</tt> is set to the child's exit status.
  *
  *  Optional argument +mode+ may be any valid \IO mode.
  *  See {Access Modes}[rdoc-ref:File@Access+Modes].
