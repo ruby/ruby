@@ -1569,7 +1569,7 @@ impl Function {
             Insn::InvokeBlock { .. } => types::BasicObject,
             Insn::InvokeBuiltin { return_type, .. } => return_type.unwrap_or(types::BasicObject),
             Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
-            Insn::DefinedIvar { .. } => types::BasicObject,
+            Insn::DefinedIvar { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::GetConstantPath { .. } => types::BasicObject,
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::GetGlobal { .. } => types::BasicObject,
@@ -4971,9 +4971,38 @@ mod tests {
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
         bb0(v0:BasicObject):
-          v5:BasicObject = DefinedIvar v0, :@foo
+          v5:StringExact|NilClass = DefinedIvar v0, :@foo
           CheckInterrupts
           Return v5
+        ");
+    }
+
+    #[test]
+    fn if_defined_ivar() {
+        eval("
+            def test
+              if defined?(@foo)
+                3
+              else
+                4
+              end
+            end
+        ");
+        assert_contains_opcode("test", YARVINSN_definedivar);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0(v0:BasicObject):
+          v5:TrueClass|NilClass = DefinedIvar v0, :@foo
+          CheckInterrupts
+          v8:CBool = Test v5
+          IfFalse v8, bb1(v0)
+          v12:Fixnum[3] = Const Value(3)
+          CheckInterrupts
+          Return v12
+        bb1(v18:BasicObject):
+          v22:Fixnum[4] = Const Value(4)
+          CheckInterrupts
+          Return v22
         ");
     }
 
