@@ -1290,7 +1290,7 @@ fn gen_new_range(
     gen_prepare_non_leaf_call(jit, asm, state);
 
     // Call rb_range_new(low, high, flag)
-    asm_ccall!(asm, rb_range_new, low, high, (flag as i64).into())
+    asm_ccall!(asm, rb_range_new, low, high, (flag as i32).into())
 }
 
 fn gen_new_range_fixnum(

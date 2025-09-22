@@ -286,6 +286,7 @@ impl Const {
     }
 }
 
+#[derive(Clone, Copy)]
 pub enum RangeType {
     Inclusive = 0, // include the end value
     Exclusive = 1, // exclude the end value
@@ -306,14 +307,6 @@ impl std::fmt::Debug for RangeType {
     }
 }
 
-impl Clone for RangeType {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl Copy for RangeType {}
-
 impl From<u32> for RangeType {
     fn from(flag: u32) -> Self {
         match flag {
@@ -321,12 +314,6 @@ impl From<u32> for RangeType {
             1 => RangeType::Exclusive,
             _ => panic!("Invalid range flag: {}", flag),
         }
-    }
-}
-
-impl From<RangeType> for u32 {
-    fn from(range_type: RangeType) -> Self {
-        range_type as u32
     }
 }
 
