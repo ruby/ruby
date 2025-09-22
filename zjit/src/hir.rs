@@ -2169,6 +2169,11 @@ impl Function {
                             state
                         });
 
+                        if let Some(profiled_type) = profiled_type {
+                            // Guard receiver class
+                            recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                        }
+
                         let cfun = unsafe { get_mct_func(cfunc) }.cast();
                         let ccall = fun.push_insn(block, Insn::CCallVariadic {
                             cfun,
@@ -7131,9 +7136,10 @@ mod opt_tests {
           v4:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v6:StringExact = StringCopy v4
           PatchPoint MethodRedefined(Object@0x1008, puts@0x1010, cme:0x1018)
-          v16:BasicObject = CCallVariadic puts@0x1040, v0, v6
+          v16:HeapObject[class_exact*:Object@VALUE(0x1008)] = GuardType v0, HeapObject[class_exact*:Object@VALUE(0x1008)]
+          v17:BasicObject = CCallVariadic puts@0x1040, v16, v6
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -8515,7 +8521,8 @@ mod opt_tests {
           PatchPoint MethodRedefined(Set@0x1008, new@0x1010, cme:0x1018)
           v10:HeapObject = ObjectAlloc v34
           PatchPoint MethodRedefined(Set@0x1008, initialize@0x1040, cme:0x1048)
-          v39:BasicObject = CCallVariadic initialize@0x1070, v10
+          v39:HeapObject[class_exact:Set] = GuardType v10, HeapObject[class_exact:Set]
+          v40:BasicObject = CCallVariadic initialize@0x1070, v39
           CheckInterrupts
           CheckInterrupts
           Return v10
