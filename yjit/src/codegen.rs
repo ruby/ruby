@@ -3148,7 +3148,7 @@ fn gen_set_ivar(
             asm.ccall(
                 rb_vm_setinstancevariable as *const u8,
                 vec![
-                    Opnd::const_ptr(jit.iseq as *const u8),
+                    VALUE(jit.iseq as usize).into(),
                     Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF),
                     ivar_name.into(),
                     val_opnd,
