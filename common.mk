@@ -1316,6 +1316,7 @@ $(common_mk__artifact_): $(srcdir)/common.mk $(common_mk_includes)
 ripper_srcs: $(RIPPER_SRCS)
 
 $(RIPPER_SRCS): $(srcdir)/parse.y $(srcdir)/defs/id.def
+$(RIPPER_SRCS): $(srcdir)/ext/ripper/depend $(srcdir)/ext/ripper/extconf.rb
 $(RIPPER_SRCS): $(srcdir)/ext/ripper/tools/preproc.rb $(srcdir)/ext/ripper/tools/dsl.rb
 $(RIPPER_SRCS): $(srcdir)/ext/ripper/ripper_init.c.tmpl $(srcdir)/ext/ripper/eventids2.c
 	$(ECHO) generating $@
