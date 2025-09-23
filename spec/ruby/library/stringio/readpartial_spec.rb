@@ -10,13 +10,7 @@ describe "StringIO#readpartial" do
     @string.close unless @string.closed?
   end
 
-  it "raises IOError on closed stream" do
-    @string.close
-    -> { @string.readpartial(10) }.should raise_error(IOError)
-  end
-
   it "reads at most the specified number of bytes" do
-
     # buffered read
     @string.read(1).should == 'S'
     # return only specified number, not the whole buffer
@@ -67,14 +61,34 @@ describe "StringIO#readpartial" do
 
   it "raises IOError if the stream is closed" do
     @string.close
-    -> { @string.readpartial(1) }.should raise_error(IOError)
+    -> { @string.readpartial(1) }.should raise_error(IOError, "not opened for reading")
   end
 
   it "raises ArgumentError if the negative argument is provided" do
-    -> { @string.readpartial(-1) }.should raise_error(ArgumentError)
+    -> { @string.readpartial(-1) }.should raise_error(ArgumentError, "negative length -1 given")
   end
 
   it "immediately returns an empty string if the length argument is 0" do
     @string.readpartial(0).should == ""
+  end
+
+  it "raises IOError if the stream is closed and the length argument is 0" do
+    @string.close
+    -> { @string.readpartial(0) }.should raise_error(IOError, "not opened for reading")
+  end
+
+  it "clears and returns the given buffer if the length argument is 0" do
+    buffer = +"existing content"
+    @string.readpartial(0, buffer).should == buffer
+    buffer.should == ""
+  end
+
+  version_is StringIO::VERSION, "3.1.2" do # ruby_version_is "3.4"
+    it "preserves the encoding of the given buffer" do
+      buffer = ''.encode(Encoding::ISO_8859_1)
+      @string.readpartial(10, buffer)
+
+      buffer.encoding.should == Encoding::ISO_8859_1
+    end
   end
 end
