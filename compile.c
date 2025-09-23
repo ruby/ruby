@@ -13272,7 +13272,7 @@ ibf_dump_lvar_states(struct ibf_dump *dump, const rb_iseq_t *iseq)
     const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
     const int size = body->local_table_size;
     IBF_W_ALIGN(enum lvar_state);
-    return ibf_dump_write(dump, body->lvar_states, body->lvar_states ? size : 0);
+    return ibf_dump_write(dump, body->lvar_states, sizeof(enum lvar_state) * (body->lvar_states ? size : 0));
 }
 
 static enum lvar_state *
