@@ -491,6 +491,7 @@ typedef struct rb_objspace {
         unsigned int during_minor_gc : 1;
         unsigned int during_incremental_marking : 1;
         unsigned int measure_gc : 1;
+        unsigned int check_shareable : 1;
     } flags;
 
     rb_event_flag_t hook_events;
@@ -1453,6 +1454,19 @@ static inline int
 RVALUE_WHITE_P(rb_objspace_t *objspace, VALUE obj)
 {
     return !RVALUE_MARKED(objspace, obj);
+}
+
+bool
+rb_gc_impl_checking_shareable(void *objspace_ptr)
+{
+    rb_objspace_t *objspace = objspace_ptr;
+    return objspace->flags.check_shareable;
+}
+
+bool
+rb_gc_checking_shareable(void)
+{
+    return rb_gc_impl_checking_shareable(rb_gc_get_objspace());
 }
 
 bool
@@ -4962,6 +4976,52 @@ check_children_i(const VALUE child, void *ptr)
     }
 }
 
+static void
+check_shareable_i(const VALUE child, void *ptr)
+{
+    struct verify_internal_consistency_struct *data = (struct verify_internal_consistency_struct *)ptr;
+
+    if (!RB_OBJ_SHAREABLE_P(child)) {
+        fprintf(stderr, "(a) ");
+        rp(data->parent);
+        fprintf(stderr, "(b) ");
+        rp(child);
+        fprintf(stderr, "check_shareable_i: shareable (a) -> unshareable (b)\n");
+
+        data->err_count++;
+        rb_bug("!! violate shareable constraint !!");
+    }
+}
+
+static void
+gc_verify_shareable(rb_objspace_t *objspace, VALUE obj, void *data)
+{
+    // while objspace->flags.check_shareable is true,
+    // other Ractors should not run the GC, until the flag is not local.
+    // TODO: remove VM locking if the flag is Ractor local
+    RB_VM_LOCKING() {
+        objspace->flags.check_shareable = true;
+        rb_objspace_reachable_objects_from(obj, check_shareable_i, (void *)data);
+        objspace->flags.check_shareable = false;
+    }
+}
+
+// TODO: only one level (non-recursive)
+void
+rb_gc_verify_shareable(VALUE obj)
+{
+    rb_objspace_t *objspace = rb_gc_get_objspace();
+    struct verify_internal_consistency_struct data = {
+        .parent = obj,
+        .err_count = 0,
+    };
+    gc_verify_shareable(objspace, obj, &data);
+
+    if (data.err_count > 0) {
+        rb_bug("rb_gc_verify_shareable");
+    }
+}
+
 static int
 verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                               struct verify_internal_consistency_struct *data)
@@ -6645,6 +6705,7 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
     gc_enter_count(event);
     if (RB_UNLIKELY(during_gc != 0)) rb_bug("during_gc != 0");
     if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(objspace);
+    GC_ASSERT(!objspace->flags.check_shareable);
 
     during_gc = TRUE;
     RUBY_DEBUG_LOG("%s (%s)",gc_enter_event_cstr(event), gc_current_status(objspace));
@@ -6658,6 +6719,7 @@ static inline void
 gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev)
 {
     GC_ASSERT(during_gc != 0);
+    GC_ASSERT(!objspace->flags.check_shareable);
 
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_EXIT);
 

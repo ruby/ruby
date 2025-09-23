@@ -1113,6 +1113,44 @@ rb_ractor_hooks(rb_ractor_t *cr)
     return &cr->pub.hooks;
 }
 
+static void
+rb_obj_set_shareable_no_assert(VALUE obj)
+{
+    FL_SET_RAW(obj, FL_SHAREABLE);
+
+    if (rb_obj_exivar_p(obj)) {
+        VALUE fields = rb_obj_fields_no_ractor_check(obj);
+        if (imemo_type_p(fields, imemo_fields)) {
+            // no recursive mark
+            FL_SET_RAW(fields, FL_SHAREABLE);
+        }
+    }
+}
+
+#ifndef STRICT_VERIFY_SHAREABLE
+#define STRICT_VERIFY_SHAREABLE 0
+#endif
+
+bool
+rb_ractor_verify_shareable(VALUE obj)
+{
+#if STRICT_VERIFY_SHAREABLE
+    rb_gc_verify_shareable(obj);
+#endif
+    return true;
+}
+
+VALUE
+rb_obj_set_shareable(VALUE obj)
+{
+    RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
+
+    rb_obj_set_shareable_no_assert(obj);
+    RUBY_ASSERT(rb_ractor_verify_shareable(obj));
+
+    return obj;
+}
+
 /// traverse function
 
 // 2: stop search
@@ -1239,6 +1277,8 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
 
       case T_ARRAY:
         {
+            rb_ary_cancel_sharing(obj);
+
             for (int i = 0; i < RARRAY_LENINT(obj); i++) {
                 VALUE e = rb_ary_entry(obj, i);
                 if (obj_traverse_i(e, data)) return 1;
@@ -1422,7 +1462,7 @@ make_shareable_check_shareable(VALUE obj)
 static enum obj_traverse_iterator_result
 mark_shareable(VALUE obj)
 {
-    FL_SET_RAW(obj, RUBY_FL_SHAREABLE);
+    rb_obj_set_shareable_no_assert(obj);
     return traverse_cont;
 }
 

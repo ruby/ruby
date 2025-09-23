@@ -351,4 +351,7 @@ ruby_sized_realloc_n(void *ptr, size_t new_count, size_t element_size, size_t ol
 #define ruby_sized_xrealloc ruby_sized_xrealloc_inlined
 #define ruby_sized_xrealloc2 ruby_sized_xrealloc2_inlined
 #define ruby_sized_xfree ruby_sized_xfree_inlined
+
+void rb_gc_verify_shareable(VALUE);
+
 #endif /* INTERNAL_GC_H */
