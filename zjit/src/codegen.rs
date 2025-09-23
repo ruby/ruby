@@ -661,6 +661,9 @@ fn gen_ccall_variadic(
 ) -> lir::Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
 
+    let stack_growth = state.stack_size();
+    gen_stack_overflow_check(jit, asm, state, stack_growth);
+
     gen_push_frame(asm, args.len(), state, ControlFrame {
         recv,
         iseq: None,
@@ -1109,17 +1112,8 @@ fn gen_send_without_block_direct(
     state: &FrameState,
 ) -> lir::Opnd {
     let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.as_usize();
-    // Stack overflow check: fails if CFP<=SP at any point in the callee.
-    asm_comment!(asm, "stack overflow check");
     let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.as_usize();
-    // vm_push_frame() checks it against a decremented cfp, and CHECK_VM_STACK_OVERFLOW0
-    // adds to the margin another control frame with `&bounds[1]`.
-    const { assert!(RUBY_SIZEOF_CONTROL_FRAME % SIZEOF_VALUE == 0, "sizeof(rb_control_frame_t) is a multiple of sizeof(VALUE)"); }
-    let cfp_growth = 2 * (RUBY_SIZEOF_CONTROL_FRAME / SIZEOF_VALUE);
-    let peak_offset = SIZEOF_VALUE * (stack_growth + cfp_growth);
-    let stack_limit = asm.add(SP, peak_offset.into());
-    asm.cmp(CFP, stack_limit);
-    asm.jbe(side_exit(jit, state, StackOverflow));
+    gen_stack_overflow_check(jit, asm, state, stack_growth);
 
     // Save cfp->pc and cfp->sp for the caller frame
     gen_prepare_call_with_gc(asm, state, false);
@@ -1711,6 +1705,19 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
     let ep = asm.lea(Opnd::mem(64, SP, ep_offset * SIZEOF_VALUE_I32));
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_EP), ep);
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
+}
+
+/// Stack overflow check: fails if CFP<=SP at any point in the callee.
+fn gen_stack_overflow_check(jit: &mut JITState, asm: &mut Assembler, state: &FrameState, stack_growth: usize) {
+    asm_comment!(asm, "stack overflow check");
+    // vm_push_frame() checks it against a decremented cfp, and CHECK_VM_STACK_OVERFLOW0
+    // adds to the margin another control frame with `&bounds[1]`.
+    const { assert!(RUBY_SIZEOF_CONTROL_FRAME % SIZEOF_VALUE == 0, "sizeof(rb_control_frame_t) is a multiple of sizeof(VALUE)"); }
+    let cfp_growth = 2 * (RUBY_SIZEOF_CONTROL_FRAME / SIZEOF_VALUE);
+    let peak_offset = (cfp_growth + stack_growth) * SIZEOF_VALUE;
+    let stack_limit = asm.lea(Opnd::mem(64, SP, peak_offset as i32));
+    asm.cmp(CFP, stack_limit);
+    asm.jbe(side_exit(jit, state, StackOverflow));
 }
 
 /// Return an operand we use for the basic block argument at a given index
