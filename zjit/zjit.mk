@@ -56,7 +56,8 @@ ZJIT_BINDGEN_DIFF_OPTS =
 # Generate Rust bindings. See source for details.
 # Needs `./configure --enable-zjit=dev` and Clang.
 ifneq ($(strip $(CARGO)),) # if configure found Cargo
-.PHONY: zjit-bindgen zjit-bindgen-show-unused zjit-test zjit-test-lldb zjit-test-update
+.PHONY: zjit-bindgen zjit-bindgen-show-unused zjit-test zjit-test-update
+.PHONY: zjit-test-debug zjit-test-lldb zjit-test-gdb zjit-test-rr
 zjit-bindgen: zjit.$(OBJEXT)
 	ZJIT_SRC_ROOT_PATH='$(top_srcdir)' BINDGEN_JIT_NAME=zjit $(CARGO) run --manifest-path '$(top_srcdir)/zjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
 	$(Q) if [ 'x$(HAVE_GIT)' = xyes ]; then $(GIT) -C "$(top_srcdir)" diff $(ZJIT_BINDGEN_DIFF_OPTS) zjit/src/cruby_bindings.inc.rs; fi
@@ -93,8 +94,11 @@ zjit-test-update:
 	@$(CARGO) insta --version >/dev/null 2>&1 || { echo "Error: cargo-insta is not installed. Install with: cargo install cargo-insta"; exit 1; }
 	@$(CARGO) insta accept --manifest-path '$(top_srcdir)/zjit/Cargo.toml'
 
-# Run a ZJIT test written with Rust #[test] under LLDB
-zjit-test-lldb: libminiruby.a
+ZJIT_DEBUGGER =
+ZJIT_DEBUGGER_OPTS =
+
+# Run a ZJIT test written with Rust #[test] under $(ZJIT_DEBUGGER)
+zjit-test-debug: libminiruby.a
 	$(Q)set -eu; \
 	    if [ -z '$(ZJIT_TESTS)' ]; then \
 		echo "Please pass a ZJIT_TESTS=... filter to make."; \
@@ -104,7 +108,19 @@ zjit-test-lldb: libminiruby.a
 	    exe_path=`$(ZJIT_NEXTEST_ENV) \
 	    $(CARGO) nextest list --manifest-path '$(top_srcdir)/zjit/Cargo.toml' --message-format json --list-type=binaries-only | \
 	    $(BASERUBY) -rjson -e 'puts JSON.load(STDIN.read).dig("rust-binaries", "zjit", "binary-path")'`; \
-	    exec lldb $$exe_path -- --test-threads=1 $(ZJIT_TESTS)
+	    exec $(ZJIT_DEBUGGER) $$exe_path $(ZJIT_DEBUGGER_OPTS) --test-threads=1 $(ZJIT_TESTS)
+
+# Run a ZJIT test written with Rust #[test] under LLDB
+zjit-test-lldb:
+	$(Q) $(MAKE) zjit-test-debug ZJIT_DEBUGGER=lldb ZJIT_DEBUGGER_OPTS=--
+
+# Run a ZJIT test written with Rust #[test] under GDB
+zjit-test-gdb: libminiruby.a
+	$(Q) $(MAKE) zjit-test-debug ZJIT_DEBUGGER="gdb --args"
+
+# Run a ZJIT test written with Rust #[test] under rr-debugger
+zjit-test-rr: libminiruby.a
+	$(Q) $(MAKE) zjit-test-debug ZJIT_DEBUGGER="rr record"
 
 # A library for booting miniruby in tests.
 # Why not use libruby-static.a for this?
