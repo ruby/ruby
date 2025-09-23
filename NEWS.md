@@ -117,7 +117,7 @@ Note: We're only listing outstanding class updates.
 
     * `Ractor#close_incoming` and `Ractor#close_outgoing` were removed.
 
-    * `Ractor.sharealbe_proc` and `Ractor.shareable_lambda` is introduced
+    * `Ractor.shareable_proc` and `Ractor.shareable_lambda` is introduced
       to make shareable Proc or lambda.
       [[Feature #21550]], [[Feature #21557]]
 
