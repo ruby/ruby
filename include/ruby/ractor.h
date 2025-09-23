@@ -261,4 +261,18 @@ rb_ractor_shareable_p(VALUE obj)
     }
 }
 
+// TODO: optimize on interpreter core
+#ifndef RB_OBJ_SET_SHAREABLE
+VALUE rb_obj_set_shareable(VALUE obj); // ractor.c
+#define RB_OBJ_SET_SHAREABLE(obj) rb_obj_set_shareable(obj)
+#endif
+
+static inline VALUE
+RB_OBJ_SET_FROZEN_SHAREABLE(VALUE obj)
+{
+    RB_OBJ_FREEZE(obj);
+    RB_OBJ_SET_SHAREABLE(obj);
+    return obj;
+}
+
 #endif /* RUBY_RACTOR_H */
