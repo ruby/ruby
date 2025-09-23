@@ -971,14 +971,16 @@ rb_gc_obj_slot_size(VALUE obj)
 }
 
 static inline void
-gc_validate_pc(void)
+gc_validate_pc(VALUE obj)
 {
 #if RUBY_DEBUG
     rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *cfp = ec->cfp;
-    if (cfp && VM_FRAME_RUBYFRAME_P(cfp) && cfp->pc) {
-        RUBY_ASSERT(cfp->pc >= ISEQ_BODY(cfp->iseq)->iseq_encoded);
-        RUBY_ASSERT(cfp->pc <= ISEQ_BODY(cfp->iseq)->iseq_encoded + ISEQ_BODY(cfp->iseq)->iseq_size);
+    if (!RB_TYPE_P(obj, T_IMEMO) && cfp && VM_FRAME_RUBYFRAME_P(cfp) && cfp->pc) {
+        const VALUE *iseq_encoded = ISEQ_BODY(cfp->iseq)->iseq_encoded;
+        const VALUE *iseq_encoded_end = iseq_encoded + ISEQ_BODY(cfp->iseq)->iseq_size;
+        RUBY_ASSERT(cfp->pc >= iseq_encoded, "PC not set when allocating, breaking tracing");
+        RUBY_ASSERT(cfp->pc <= iseq_encoded_end, "PC not set when allocating, breaking tracing");
     }
 #endif
 }
@@ -988,7 +990,7 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, bool wb_protected, size_t s
 {
     VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, wb_protected, size);
 
-    gc_validate_pc();
+    gc_validate_pc(obj);
 
     if (UNLIKELY(rb_gc_event_hook_required_p(RUBY_INTERNAL_EVENT_NEWOBJ))) {
         int lev = RB_GC_VM_LOCK_NO_BARRIER();
