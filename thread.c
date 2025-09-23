@@ -2684,7 +2684,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
                 limits_us >>= -th->priority;
 
             if (th->status == THREAD_RUNNABLE)
-                th->running_time_us += 10 * 1000; // 10ms = 10_000us // TODO: use macro
+                th->running_time_us += THREAD_TIMER_INTERVAL_USEC;
 
             VM_ASSERT(th->ec->cfp);
             EXEC_EVENT_HOOK(th->ec, RUBY_INTERNAL_EVENT_SWITCH, th->ec->cfp->self,
