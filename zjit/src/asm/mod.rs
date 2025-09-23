@@ -317,19 +317,13 @@ impl fmt::LowerHex for CodeBlock {
 impl CodeBlock {
     /// Stubbed CodeBlock for testing. Can't execute generated code.
     pub fn new_dummy() -> Self {
-        const DEFAULT_MEM_SIZE: usize = 1024;
+        const DEFAULT_MEM_SIZE: usize = 1024 * 1024;
         CodeBlock::new_dummy_sized(DEFAULT_MEM_SIZE)
     }
 
     pub fn new_dummy_sized(mem_size: usize) -> Self {
-        use std::ptr::NonNull;
         use crate::virtualmem::*;
-        use crate::virtualmem::tests::TestingAllocator;
-
-        let alloc = TestingAllocator::new(mem_size);
-        let mem_start: *const u8 = alloc.mem_start();
-        let virt_mem = VirtualMem::new(alloc, 1, NonNull::new(mem_start as *mut u8).unwrap(), mem_size, 128 * 1024 * 1024);
-
+        let virt_mem = VirtualMem::alloc(mem_size, None);
         Self::new(Rc::new(RefCell::new(virt_mem)), false)
     }
 }

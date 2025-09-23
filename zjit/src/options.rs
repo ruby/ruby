@@ -301,12 +301,11 @@ fn update_profile_threshold() {
     }
 }
 
+/// Update --zjit-call-threshold for testing
 #[cfg(test)]
-pub fn internal_set_num_profiles(n: u8) {
-    let options = unsafe { OPTIONS.as_mut().unwrap() };
-    options.num_profiles = n;
-    let call_threshold = n.saturating_add(1);
+pub fn set_call_threshold(call_threshold: u64) {
     unsafe { rb_zjit_call_threshold = call_threshold as u64; }
+    rb_zjit_prepare_options();
     update_profile_threshold();
 }
 

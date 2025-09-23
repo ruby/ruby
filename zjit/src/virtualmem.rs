@@ -4,17 +4,8 @@
 // benefit.
 
 use std::ptr::NonNull;
-
+use crate::cruby::*;
 use crate::stats::zjit_alloc_size;
-
-#[cfg(test)]
-use crate::options::get_option;
-
-#[cfg(not(test))]
-pub type VirtualMem = VirtualMemory<sys::SystemAllocator>;
-
-#[cfg(test)]
-pub type VirtualMem = VirtualMemory<tests::TestingAllocator>;
 
 /// Memory for generated executable machine code. When not testing, we reserve address space for
 /// the entire region upfront and map physical memory into the reserved address space as needed. On
@@ -25,7 +16,7 @@ pub type VirtualMem = VirtualMemory<tests::TestingAllocator>;
 /// This handles ["W^X"](https://en.wikipedia.org/wiki/W%5EX) semi-automatically. Writes
 /// are always accepted and once writes are done a call to [Self::mark_all_executable] makes
 /// the code in the region executable.
-pub struct VirtualMemory<A: Allocator> {
+pub struct VirtualMem {
     /// Location of the virtual memory region.
     region_start: NonNull<u8>,
 
@@ -33,7 +24,7 @@ pub struct VirtualMemory<A: Allocator> {
     region_size_bytes: usize,
 
     /// mapped_region_bytes + zjit_alloc_size may not increase beyond this limit.
-    memory_limit_bytes: usize,
+    memory_limit_bytes: Option<usize>,
 
     /// Number of bytes per "page", memory protection permission can only be controlled at this
     /// granularity.
@@ -46,10 +37,6 @@ pub struct VirtualMemory<A: Allocator> {
     /// Keep track of the address of the last written to page.
     /// Used for changing protection to implement W^X.
     current_write_page: Option<usize>,
-
-    /// Zero size member for making syscalls to get physical memory during normal operation.
-    /// When testing this owns some memory.
-    allocator: A,
 }
 
 /// Groups together the two syscalls to get get new physical memory and to change
@@ -113,14 +100,13 @@ pub enum WriteError {
 
 use WriteError::*;
 
-impl<A: Allocator> VirtualMemory<A> {
+impl VirtualMem {
     /// Bring a part of the address space under management.
     pub fn new(
-        allocator: A,
         page_size: u32,
         virt_region_start: NonNull<u8>,
         region_size_bytes: usize,
-        memory_limit_bytes: usize,
+        memory_limit_bytes: Option<usize>,
     ) -> Self {
         assert_ne!(0, page_size);
         let page_size_bytes = page_size as usize;
@@ -132,8 +118,27 @@ impl<A: Allocator> VirtualMemory<A> {
             page_size_bytes,
             mapped_region_bytes: 0,
             current_write_page: None,
-            allocator,
         }
+    }
+
+    /// Allocate a VirtualMem insntace with a requested size
+    pub fn alloc(exec_mem_bytes: usize, mem_bytes: Option<usize>) -> Self {
+        let virt_block: *mut u8 = unsafe { rb_jit_reserve_addr_space(exec_mem_bytes as u32) };
+
+        // Memory protection syscalls need page-aligned addresses, so check it here. Assuming
+        // `virt_block` is page-aligned, `second_half` should be page-aligned as long as the
+        // page size in bytes is a power of two 2¹⁹ or smaller. This is because the user
+        // requested size is half of mem_option × 2²⁰ as it's in MiB.
+        //
+        // Basically, we don't support x86-64 2MiB and 1GiB pages. ARMv8 can do up to 64KiB
+        // (2¹⁶ bytes) pages, which should be fine. 4KiB pages seem to be the most popular though.
+        let page_size = unsafe { rb_jit_get_page_size() };
+        assert_eq!(
+            virt_block as usize % page_size as usize, 0,
+            "Start of virtual address block should be page-aligned",
+        );
+
+        Self::new(page_size, NonNull::new(virt_block).unwrap(), exec_mem_bytes, mem_bytes)
     }
 
     /// Return the start of the region as a raw pointer. Note that it could be a dangling
@@ -179,7 +184,12 @@ impl<A: Allocator> VirtualMemory<A> {
             let start = self.region_start.as_ptr();
             let mapped_region_end = start.wrapping_add(self.mapped_region_bytes);
             let whole_region_end = start.wrapping_add(self.region_size_bytes);
-            let alloc = &mut self.allocator;
+
+            // Ignore zjit_alloc_size() if self.memory_limit_bytes is None for testing
+            let mut required_region_bytes = page_addr + page_size - start as usize;
+            if self.memory_limit_bytes.is_some() {
+                required_region_bytes += zjit_alloc_size();
+            }
 
             assert!((start..=whole_region_end).contains(&mapped_region_end));
 
@@ -187,13 +197,13 @@ impl<A: Allocator> VirtualMemory<A> {
                 // Writing to a previously written to page.
                 // Need to make page writable, but no need to fill.
                 let page_size: u32 = page_size.try_into().unwrap();
-                if !alloc.mark_writable(page_addr as *const _, page_size) {
+                if !self.mark_writable(page_addr as *const _, page_size) {
                     return Err(FailedPageMapping);
                 }
 
                 self.current_write_page = Some(page_addr);
             } else if (start..whole_region_end).contains(&raw) &&
-                    (page_addr + page_size - start as usize) + zjit_alloc_size() < self.memory_limit_bytes {
+                    required_region_bytes < self.memory_limit_bytes.unwrap_or(self.region_size_bytes) {
                 // Writing to a brand new page
                 let mapped_region_end_addr = mapped_region_end as usize;
                 let alloc_size = page_addr - mapped_region_end_addr + page_size;
@@ -209,7 +219,7 @@ impl<A: Allocator> VirtualMemory<A> {
                 // Allocate new chunk
                 let alloc_size_u32: u32 = alloc_size.try_into().unwrap();
                 unsafe {
-                    if !alloc.mark_writable(mapped_region_end.cast(), alloc_size_u32) {
+                    if !self.mark_writable(mapped_region_end.cast(), alloc_size_u32) {
                         return Err(FailedPageMapping);
                     }
                     if cfg!(target_arch = "x86_64") {
@@ -246,7 +256,7 @@ impl<A: Allocator> VirtualMemory<A> {
         let mapped_region_bytes: u32 = self.mapped_region_bytes.try_into().unwrap();
 
         // Make mapped region executable
-        self.allocator.mark_executable(region_start.as_ptr(), mapped_region_bytes);
+        self.mark_executable(region_start.as_ptr(), mapped_region_bytes);
     }
 
     /// Free a range of bytes. start_ptr must be memory page-aligned.
@@ -263,23 +273,36 @@ impl<A: Allocator> VirtualMemory<A> {
         // code page, it's more appropriate to check the last byte against the virtual region.
         assert!(virtual_region.contains(&last_byte_to_free));
 
-        self.allocator.mark_unused(start_ptr.raw_ptr(self), size);
+        self.mark_unused(start_ptr.raw_ptr(self), size);
+    }
+
+    fn mark_writable(&mut self, ptr: *const u8, size: u32) -> bool {
+        unsafe { rb_jit_mark_writable(ptr as VoidPtr, size) }
+    }
+
+    fn mark_executable(&mut self, ptr: *const u8, size: u32) {
+        unsafe { rb_jit_mark_executable(ptr as VoidPtr, size) }
+    }
+
+    fn mark_unused(&mut self, ptr: *const u8, size: u32) -> bool {
+        unsafe { rb_jit_mark_unused(ptr as VoidPtr, size) }
     }
 }
+
+type VoidPtr = *mut std::os::raw::c_void;
 
 /// Something that could provide a base pointer to compute a raw pointer from a [CodePtr].
 pub trait CodePtrBase {
     fn base_ptr(&self) -> NonNull<u8>;
 }
 
-impl<A: Allocator> CodePtrBase for VirtualMemory<A> {
+impl CodePtrBase for VirtualMem {
     fn base_ptr(&self) -> NonNull<u8> {
         self.region_start
     }
 }
 
 /// Requires linking with CRuby to work
-#[cfg(not(test))]
 pub mod sys {
     use crate::cruby::*;
 
@@ -300,162 +323,5 @@ pub mod sys {
         fn mark_unused(&mut self, ptr: *const u8, size: u32) -> bool {
             unsafe { rb_jit_mark_unused(ptr as VoidPtr, size) }
         }
-    }
-}
-
-
-#[cfg(test)]
-pub mod tests {
-    use super::*;
-
-    // Track allocation requests and owns some fixed size backing memory for requests.
-    // While testing we don't execute generated code.
-    pub struct TestingAllocator {
-        requests: Vec<AllocRequest>,
-        memory: Vec<u8>,
-    }
-
-    #[derive(Debug)]
-    enum AllocRequest {
-        MarkWritable{ start_idx: usize, length: usize },
-        MarkExecutable{ start_idx: usize, length: usize },
-        MarkUnused,
-    }
-    use AllocRequest::*;
-
-    impl TestingAllocator {
-        pub fn new(mem_size: usize) -> Self {
-            Self { requests: Vec::default(), memory: vec![0; mem_size] }
-        }
-
-        pub fn mem_start(&self) -> *const u8 {
-            self.memory.as_ptr()
-        }
-
-        // Verify that write_byte() bounds checks. Return `ptr` as an index.
-        fn bounds_check_request(&self, ptr: *const u8, size: u32) -> usize {
-            let mem_start = self.memory.as_ptr() as usize;
-            let index = ptr as usize - mem_start;
-
-            assert!(index < self.memory.len());
-            assert!(index + size as usize <= self.memory.len());
-
-            index
-        }
-    }
-
-    // Bounds check and then record the request
-    impl super::Allocator for TestingAllocator {
-        fn mark_writable(&mut self, ptr: *const u8, length: u32) -> bool {
-            let index = self.bounds_check_request(ptr, length);
-            self.requests.push(MarkWritable { start_idx: index, length: length as usize });
-
-            true
-        }
-
-        fn mark_executable(&mut self, ptr: *const u8, length: u32) {
-            let index = self.bounds_check_request(ptr, length);
-            self.requests.push(MarkExecutable { start_idx: index, length: length as usize });
-
-            // We don't try to execute generated code in cfg(test)
-            // so no need to actually request executable memory.
-        }
-
-        fn mark_unused(&mut self, ptr: *const u8, length: u32) -> bool {
-            self.bounds_check_request(ptr, length);
-            self.requests.push(MarkUnused);
-
-            true
-        }
-    }
-
-    // Fictional architecture where each page is 4 bytes long
-    const PAGE_SIZE: usize = 4;
-    fn new_dummy_virt_mem() -> VirtualMemory<TestingAllocator> {
-        unsafe {
-            if crate::options::OPTIONS.is_none() {
-                crate::options::OPTIONS = Some(crate::options::Options::default());
-            }
-        }
-
-        let mem_size = PAGE_SIZE * 10;
-        let alloc = TestingAllocator::new(mem_size);
-        let mem_start: *const u8 = alloc.mem_start();
-
-        VirtualMemory::new(
-            alloc,
-            PAGE_SIZE.try_into().unwrap(),
-            NonNull::new(mem_start as *mut u8).unwrap(),
-            mem_size,
-            get_option!(mem_bytes),
-        )
-    }
-
-    #[test]
-    #[cfg(target_arch = "x86_64")]
-    fn new_memory_is_initialized() {
-        let mut virt = new_dummy_virt_mem();
-
-        virt.write_byte(virt.start_ptr(), 1).unwrap();
-        assert!(
-            virt.allocator.memory[..PAGE_SIZE].iter().all(|&byte| byte != 0),
-            "Entire page should be initialized",
-        );
-
-        // Skip a few page
-        let three_pages = 3 * PAGE_SIZE;
-        virt.write_byte(virt.start_ptr().add_bytes(three_pages), 1).unwrap();
-        assert!(
-            virt.allocator.memory[..three_pages].iter().all(|&byte| byte != 0),
-            "Gaps between write requests should be filled",
-        );
-    }
-
-    #[test]
-    fn no_redundant_syscalls_when_writing_to_the_same_page() {
-        let mut virt = new_dummy_virt_mem();
-
-        virt.write_byte(virt.start_ptr(), 1).unwrap();
-        virt.write_byte(virt.start_ptr(), 0).unwrap();
-
-        assert!(
-            matches!(
-                virt.allocator.requests[..],
-                [MarkWritable { start_idx: 0, length: PAGE_SIZE }],
-            )
-        );
-    }
-
-    #[test]
-    fn bounds_checking() {
-        use super::WriteError::*;
-        let mut virt = new_dummy_virt_mem();
-
-        let one_past_end = virt.start_ptr().add_bytes(virt.virtual_region_size());
-        assert_eq!(Err(OutOfBounds), virt.write_byte(one_past_end, 0));
-
-        let end_of_addr_space = CodePtr(u32::MAX);
-        assert_eq!(Err(OutOfBounds), virt.write_byte(end_of_addr_space, 0));
-    }
-
-    #[test]
-    fn only_written_to_regions_become_executable() {
-        // ... so we catch attempts to read/write/execute never-written-to regions
-        const THREE_PAGES: usize = PAGE_SIZE * 3;
-        let mut virt = new_dummy_virt_mem();
-        let page_two_start = virt.start_ptr().add_bytes(PAGE_SIZE * 2);
-        virt.write_byte(page_two_start, 1).unwrap();
-        virt.mark_all_executable();
-
-        assert!(virt.virtual_region_size() > THREE_PAGES);
-        assert!(
-            matches!(
-                virt.allocator.requests[..],
-                [
-                    MarkWritable { start_idx: 0, length: THREE_PAGES },
-                    MarkExecutable { start_idx: 0, length: THREE_PAGES },
-                ]
-            ),
-        );
     }
 }

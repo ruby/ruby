@@ -75,11 +75,6 @@ impl JITState {
 /// See jit_compile_exception() for details.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, jit_exception: bool) -> *const u8 {
-    // Do not test the JIT code in HIR tests
-    if cfg!(test) {
-        return std::ptr::null();
-    }
-
     // Take a lock to avoid writing to ISEQ in parallel with Ractors.
     // with_vm_lock() does nothing if the program doesn't use Ractors.
     with_vm_lock(src_loc!(), || {
