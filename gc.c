@@ -974,9 +974,12 @@ static inline void
 gc_validate_pc(VALUE obj)
 {
 #if RUBY_DEBUG
+    // IMEMOs and objects without a class (e.g managed id table) are not traceable
+    if (RB_TYPE_P(obj, T_IMEMO) || !CLASS_OF(obj)) return;
+
     rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *cfp = ec->cfp;
-    if (!RB_TYPE_P(obj, T_IMEMO) && cfp && VM_FRAME_RUBYFRAME_P(cfp) && cfp->pc) {
+    if (cfp && VM_FRAME_RUBYFRAME_P(cfp) && cfp->pc) {
         const VALUE *iseq_encoded = ISEQ_BODY(cfp->iseq)->iseq_encoded;
         const VALUE *iseq_encoded_end = iseq_encoded + ISEQ_BODY(cfp->iseq)->iseq_size;
         RUBY_ASSERT(cfp->pc >= iseq_encoded, "PC not set when allocating, breaking tracing");
