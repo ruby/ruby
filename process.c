@@ -8227,7 +8227,7 @@ ruby_real_ms_time(void)
  *  - +:microsecond+: Number of microseconds as an integer.
  *  - +:millisecond+: Number of milliseconds as an integer.
  *  - +:nanosecond+: Number of nanoseconds as an integer.
- *  - +::second+: Number of seconds as an integer.
+ *  - +:second+: Number of seconds as an integer.
  *
  *  Examples:
  *
