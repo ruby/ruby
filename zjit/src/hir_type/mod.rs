@@ -276,10 +276,14 @@ impl Type {
     /// `Type::from_cint(types::CUInt16, 12)`.
     pub fn from_cint(ty: Type, val: i64) -> Type {
         assert_eq!(ty.spec, Specialization::Any);
-        assert!((ty.is_subtype(types::CUnsigned) || ty.is_subtype(types::CSigned) || ty.is_subtype(types::CPtr)) &&
+        assert!((ty.is_subtype(types::CUnsigned) || ty.is_subtype(types::CSigned)) &&
                 ty.bits != types::CUnsigned.bits && ty.bits != types::CSigned.bits,
                 "ty must be a specific int size");
         Type { bits: ty.bits, spec: Specialization::Int(val as u64) }
+    }
+
+    pub fn from_cptr(val: *mut u8) -> Type {
+        Type { bits: bits::CPtr, spec: Specialization::Int(val as u64) }
     }
 
     /// Create a `Type` (a `CDouble` with double specialization) from a f64.

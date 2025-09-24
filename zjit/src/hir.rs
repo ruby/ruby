@@ -1532,7 +1532,7 @@ impl Function {
             Insn::Const { val: Const::CUInt16(val) } => Type::from_cint(types::CUInt16, *val as i64),
             Insn::Const { val: Const::CUInt32(val) } => Type::from_cint(types::CUInt32, *val as i64),
             Insn::Const { val: Const::CUInt64(val) } => Type::from_cint(types::CUInt64, *val as i64),
-            Insn::Const { val: Const::CPtr(val) } => Type::from_cint(types::CPtr, *val as i64),
+            Insn::Const { val: Const::CPtr(val) } => Type::from_cptr(*val),
             Insn::Const { val: Const::CDouble(val) } => Type::from_double(*val),
             Insn::Test { val } if self.type_of(*val).is_known_falsy() => Type::from_cbool(false),
             Insn::Test { val } if self.type_of(*val).is_known_truthy() => Type::from_cbool(true),
