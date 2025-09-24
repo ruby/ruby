@@ -110,7 +110,6 @@ make_counters! {
         exit_obj_to_string_fallback,
         exit_interrupt,
         exit_stackoverflow,
-        exit_optional_arguments,
         exit_block_param_proxy_modified,
         exit_block_param_proxy_not_iseq_or_ifunc,
     }
@@ -123,8 +122,14 @@ make_counters! {
     compile_error_register_spill_on_alloc,
     compile_error_parse_stack_underflow,
     compile_error_parse_malformed_iseq,
-    compile_error_parse_validation,
+    compile_error_parse_failed_optional_arguments,
     compile_error_parse_not_allowed,
+    compile_error_validation_block_has_no_terminator,
+    compile_error_validation_terminator_not_at_end,
+    compile_error_validation_mismatched_block_arity,
+    compile_error_validation_jump_target_not_in_rpo,
+    compile_error_validation_operand_not_defined,
+    compile_error_validation_duplicate_instruction,
 
     // The number of times YARV instructions are executed on JIT code
     zjit_insn_count,
@@ -203,6 +208,7 @@ pub enum CompileError {
 /// Return a raw pointer to the exit counter for a given CompileError
 pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
     use crate::hir::ParseError::*;
+    use crate::hir::ValidationError::*;
     use crate::stats::CompileError::*;
     use crate::stats::Counter::*;
     match compile_error {
@@ -212,10 +218,18 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
         RegisterSpillOnAlloc  => compile_error_register_spill_on_alloc,
         RegisterSpillOnCCall  => compile_error_register_spill_on_ccall,
         ParseError(parse_error) => match parse_error {
-            StackUnderflow(_) => compile_error_parse_stack_underflow,
-            MalformedIseq(_)  => compile_error_parse_malformed_iseq,
-            Validation(_)     => compile_error_parse_validation,
-            NotAllowed        => compile_error_parse_not_allowed,
+            StackUnderflow(_)       => compile_error_parse_stack_underflow,
+            MalformedIseq(_)        => compile_error_parse_malformed_iseq,
+            FailedOptionalArguments => compile_error_parse_failed_optional_arguments,
+            NotAllowed              => compile_error_parse_not_allowed,
+            Validation(validation) => match validation {
+                BlockHasNoTerminator(_)       => compile_error_validation_block_has_no_terminator,
+                TerminatorNotAtEnd(_, _, _)   => compile_error_validation_terminator_not_at_end,
+                MismatchedBlockArity(_, _, _) => compile_error_validation_mismatched_block_arity,
+                JumpTargetNotInRPO(_)         => compile_error_validation_jump_target_not_in_rpo,
+                OperandNotDefined(_, _, _)    => compile_error_validation_operand_not_defined,
+                DuplicateInstruction(_, _)    => compile_error_validation_duplicate_instruction,
+            },
         }
     }
 }
@@ -246,7 +260,6 @@ pub fn exit_counter_ptr(reason: crate::hir::SideExitReason) -> *mut u64 {
         StackOverflow                 => exit_stackoverflow,
         BlockParamProxyModified       => exit_block_param_proxy_modified,
         BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
-        OptionalArgumentsSupplied     => exit_optional_arguments,
     };
     counter_ptr(counter)
 }

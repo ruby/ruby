@@ -3,6 +3,7 @@
 #![allow(clippy::let_and_return)]
 
 use std::cell::{Cell, RefCell};
+use std::cmp::Ordering;
 use std::rc::Rc;
 use std::ffi::{c_int, c_long, c_void};
 use std::slice;
@@ -16,7 +17,7 @@ use crate::stats::{exit_counter_for_compile_error, incr_counter, incr_counter_by
 use crate::stats::{counter_ptr, with_time_stat, Counter, send_fallback_counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SCRATCH_OPND, SP};
-use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, RangeType, SideExitReason, SideExitReason::*, MethodType, SpecialObjectType, SpecialBackrefSymbol, SELF_PARAM_IDX};
+use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, MethodType, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType, SELF_PARAM_IDX};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types, Type};
 use crate::options::get_option;
@@ -34,7 +35,7 @@ struct JITState {
     labels: Vec<Option<Target>>,
 
     /// JIT entry point for the `iseq`
-    jit_entry: Option<Rc<RefCell<JITEntry>>>,
+    jit_entries: Vec<Rc<RefCell<JITEntry>>>,
 
     /// ISEQ calls that need to be compiled later
     iseq_calls: Vec<Rc<RefCell<IseqCall>>>,
@@ -50,7 +51,7 @@ impl JITState {
             iseq,
             opnds: vec![None; num_insns],
             labels: vec![None; num_blocks],
-            jit_entry: None,
+            jit_entries: Vec::default(),
             iseq_calls: Vec::default(),
             c_stack_slots,
         }
@@ -228,7 +229,7 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>,
     };
 
     // Compile the High-level IR
-    let (start_ptr, jit_entry_ptr, gc_offsets, iseq_calls) = gen_function(cb, iseq, function)?;
+    let (iseq_code_ptrs, gc_offsets, iseq_calls) = gen_function(cb, iseq, function)?;
 
     // Stub callee ISEQs for JIT-to-JIT calls
     for iseq_call in iseq_calls.iter() {
@@ -238,11 +239,11 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>,
     // Prepare for GC
     payload.iseq_calls.extend(iseq_calls.clone());
     append_gc_offsets(iseq, &gc_offsets);
-    Ok(IseqCodePtrs { start_ptr, jit_entry_ptr })
+    Ok(iseq_code_ptrs)
 }
 
 /// Compile a function
-fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Result<(CodePtr, CodePtr, Vec<CodePtr>, Vec<IseqCallRef>), CompileError> {
+fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Result<(IseqCodePtrs, Vec<CodePtr>, Vec<IseqCallRef>), CompileError> {
     let c_stack_slots = max_num_params(function).saturating_sub(ALLOC_REGS.len());
     let mut jit = JITState::new(iseq, function.num_insns(), function.num_blocks(), c_stack_slots);
     let mut asm = Assembler::new();
@@ -307,8 +308,14 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Resul
         }
     }
     result.map(|(start_ptr, gc_offsets)| {
-        let jit_entry_ptr = jit.jit_entry.unwrap().borrow().start_addr.get().unwrap();
-        (start_ptr, jit_entry_ptr, gc_offsets, jit.iseq_calls)
+        // Make sure jit_entry_ptrs can be used as a parallel vector to jit_entry_insns()
+        jit.jit_entries.sort_by(|a, b|
+            a.borrow().jit_entry_idx.partial_cmp(&b.borrow().jit_entry_idx).unwrap_or(Ordering::Equal)
+        );
+        let jit_entry_ptrs = jit.jit_entries.iter().map(|jit_entry|
+            jit_entry.borrow().start_addr.get().unwrap()
+        ).collect();
+        (IseqCodePtrs { start_ptr, jit_entry_ptrs }, gc_offsets, jit.iseq_calls)
     })
 }
 
@@ -375,7 +382,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         // TODO remove this check when we have stack args (we can use Time.new to test it)
         Insn::InvokeBuiltin { bf, state, .. } if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) => return Err(*state),
         Insn::InvokeBuiltin { bf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, opnds!(args)),
-        &Insn::EntryPoint { jit_entry } => no_output!(gen_entry_point(jit, asm, jit_entry)),
+        &Insn::EntryPoint { jit_entry_idx } => no_output!(gen_entry_point(jit, asm, jit_entry_idx)),
         Insn::Return { val } => no_output!(gen_return(asm, opnd!(val))),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state)),
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state)),
@@ -424,7 +431,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::DefinedIvar { self_val, id, pushval, .. } => { gen_defined_ivar(asm, opnd!(self_val), id, pushval) },
         &Insn::ArrayExtend { left, right, state } => { no_output!(gen_array_extend(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state))) },
         &Insn::GuardShape { val, shape, state } => gen_guard_shape(jit, asm, opnd!(val), shape, &function.frame_state(state)),
-        Insn::LoadPC => gen_load_pc(),
+        Insn::LoadPC => gen_load_pc(asm),
         &Insn::LoadIvarEmbedded { self_val, id, index } => gen_load_ivar_embedded(asm, opnd!(self_val), id, index),
         &Insn::LoadIvarExtended { self_val, id, index } => gen_load_ivar_extended(asm, opnd!(self_val), id, index),
         &Insn::ArrayMax { state, .. }
@@ -825,8 +832,8 @@ fn gen_guard_shape(jit: &mut JITState, asm: &mut Assembler, val: Opnd, shape: Sh
     val
 }
 
-fn gen_load_pc() -> Opnd {
-    Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC)
+fn gen_load_pc(asm: &mut Assembler) -> Opnd {
+    asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC))
 }
 
 fn gen_load_ivar_embedded(asm: &mut Assembler, self_val: Opnd, id: ID, index: u16) -> Opnd {
@@ -1313,12 +1320,11 @@ fn gen_object_alloc_class(asm: &mut Assembler, class: VALUE, state: &FrameState)
     }
 }
 
-/// Compile a frame setup. If is_jit_entry is true, remember the address of it as a JIT entry.
-fn gen_entry_point(jit: &mut JITState, asm: &mut Assembler, is_jit_entry: bool) {
-    if is_jit_entry {
-        assert!(jit.jit_entry.is_none(), "only one jit_entry is expected");
-        let jit_entry = JITEntry::new();
-        jit.jit_entry = Some(jit_entry.clone());
+/// Compile a frame setup. If jit_entry_idx is Some, remember the address of it as a JIT entry.
+fn gen_entry_point(jit: &mut JITState, asm: &mut Assembler, jit_entry_idx: Option<usize>) {
+    if let Some(jit_entry_idx) = jit_entry_idx {
+        let jit_entry = JITEntry::new(jit_entry_idx);
+        jit.jit_entries.push(jit_entry.clone());
         asm.pos_marker(move |code_ptr, _| {
             jit_entry.borrow_mut().start_addr.set(Some(code_ptr));
         });
@@ -1775,22 +1781,12 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
 
     let mut function = match iseq_to_hir(iseq) {
         Ok(function) => function,
-        Err(err) => {
-            let name = crate::cruby::iseq_get_location(iseq, 0);
-            debug!("ZJIT: iseq_to_hir: {err:?}: {name}");
-            return Err(CompileError::ParseError(err));
-        }
+        Err(err) => return Err(CompileError::ParseError(err)),
     };
     if !get_option!(disable_hir_opt) {
         function.optimize();
     }
     function.dump_hir();
-    #[cfg(debug_assertions)]
-    if let Err(err) = function.validate() {
-        debug!("ZJIT: compile_iseq: {err:?}");
-        use crate::hir::ParseError;
-        return Err(CompileError::ParseError(ParseError::Validation(err)));
-    }
     Ok(function)
 }
 
@@ -1928,9 +1924,14 @@ c_callable! {
 /// Compile an ISEQ for a function stub
 fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &Rc<RefCell<IseqCall>>) -> Result<CodePtr, CompileError> {
     // Compile the stubbed ISEQ
-    let IseqCodePtrs { jit_entry_ptr, .. } = gen_iseq(cb, iseq_call.borrow().iseq, None).inspect_err(|err| {
+    let IseqCodePtrs { jit_entry_ptrs, .. } = gen_iseq(cb, iseq_call.borrow().iseq, None).inspect_err(|err| {
         debug!("{err:?}: gen_iseq failed: {}", iseq_get_location(iseq_call.borrow().iseq, 0));
     })?;
+
+    // We currently don't support JIT-to-JIT calls for ISEQs with optional arguments.
+    // So we only need to use jit_entry_ptrs[0] for now. TODO: Support optional arguments.
+    assert_eq!(1, jit_entry_ptrs.len());
+    let jit_entry_ptr = jit_entry_ptrs[0];
 
     // Update the stub to call the code pointer
     let code_addr = jit_entry_ptr.raw_ptr(cb);
@@ -2131,14 +2132,17 @@ impl Assembler {
 
 /// Store info about a JIT entry point
 pub struct JITEntry {
+    /// Index that corresponds to jit_entry_insns()
+    jit_entry_idx: usize,
     /// Position where the entry point starts
     start_addr: Cell<Option<CodePtr>>,
 }
 
 impl JITEntry {
     /// Allocate a new JITEntry
-    fn new() -> Rc<RefCell<Self>> {
+    fn new(jit_entry_idx: usize) -> Rc<RefCell<Self>> {
         let jit_entry = JITEntry {
+            jit_entry_idx,
             start_addr: Cell::new(None),
         };
         Rc::new(RefCell::new(jit_entry))
