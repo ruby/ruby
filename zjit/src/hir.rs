@@ -270,7 +270,7 @@ pub enum Const {
     CUInt16(u16),
     CUInt32(u32),
     CUInt64(u64),
-    CPtr(*mut u8),
+    CPtr(*const u8),
     CDouble(f64),
 }
 
@@ -4139,7 +4139,7 @@ fn compile_entry_block(entry_block: BlockId, first_block: BlockId, fun: &mut Fun
     let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
     if !jit_entry && opt_num > 0 {
         let pc = fun.push_insn(entry_block, Insn::LoadPC);
-        let no_opts_pc = fun.push_insn(entry_block, Insn::Const { val: Const::CPtr(unsafe { rb_iseq_pc_at_idx(iseq, 0) } as *mut u8) });
+        let no_opts_pc = fun.push_insn(entry_block, Insn::Const { val: Const::CPtr(unsafe { rb_iseq_pc_at_idx(iseq, 0) } as *const u8) });
         let test_id = fun.push_insn(entry_block, Insn::IsBitEqual { left: pc, right: no_opts_pc });
 
         // Jump to the first_block if no optional arguments are supplied

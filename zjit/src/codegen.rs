@@ -965,8 +965,8 @@ fn gen_const_value(val: VALUE) -> lir::Opnd {
 }
 
 /// Compile Const::CPtr
-fn gen_const_cptr(val: *mut u8) -> lir::Opnd {
-    Opnd::UImm(val as u64)
+fn gen_const_cptr(val: *const u8) -> lir::Opnd {
+    Opnd::const_ptr(val)
 }
 
 /// Compile a basic block argument
