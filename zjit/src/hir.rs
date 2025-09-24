@@ -1608,17 +1608,31 @@ impl Function {
         self.insn_types.fill(types::Empty);
 
         // Fill parameter types
+        // TODO: Remove this when HIR incorporates parameter loads as well
         let entry_params = self.blocks[self.entry_block.0].params.iter();
         let param_types = self.param_types.iter();
         assert_eq!(
             entry_params.len(),
+            param_types.len(),
+            "param types should be initialized before type inference"
+        );
+        for (param, param_type) in std::iter::zip(entry_params, param_types.clone()) {
+            // We know that function parameters are BasicObject or some subclass
+            self.insn_types[param.0] = *param_type;
+        }
+
+        // Fill JIT entry parameter types
+        let entry_params = self.blocks[self.jit_entry_block.0].params.iter();
+        assert_eq!(
             entry_params.len(),
+            param_types.len(),
             "param types should be initialized before type inference"
         );
         for (param, param_type) in std::iter::zip(entry_params, param_types) {
             // We know that function parameters are BasicObject or some subclass
             self.insn_types[param.0] = *param_type;
         }
+
         let rpo = self.rpo();
         // Walk the graph, computing types until fixpoint
         let mut reachable = BlockSet::with_capacity(self.blocks.len());
@@ -3278,16 +3292,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     for local_idx in 0..num_locals(iseq) {
         if local_idx < unsafe { get_iseq_body_param_size(iseq) }.as_usize() {
             entry_state.locals.push(fun.push_insn(first_block, Insn::Param { idx: local_idx + 1 })); // +1 for self
+
+            let mut param_type = types::BasicObject;
+            // Rest parameters are always ArrayExact
+            if let Ok(true) = c_int::try_from(local_idx).map(|idx| idx == rest_param_idx) {
+                param_type = types::ArrayExact;
+            }
+            fun.param_types.push(param_type);
         } else {
             entry_state.locals.push(fun.push_insn(first_block, Insn::Const { val: Const::Value(Qnil) }));
         }
-
-        let mut param_type = types::BasicObject;
-        // Rest parameters are always ArrayExact
-        if let Ok(true) = c_int::try_from(local_idx).map(|idx| idx == rest_param_idx) {
-            param_type = types::ArrayExact;
-        }
-        fun.param_types.push(param_type);
     }
     queue.push_back((entry_state.clone(), first_block, /*insn_idx=*/0_u32, /*local_inval=*/false));
 
@@ -4473,6 +4487,7 @@ mod infer_tests {
         crate::cruby::with_rubyvm(|| {
             let mut function = Function::new(std::ptr::null());
             let param = function.push_insn(function.entry_block, Insn::Param { idx: SELF_PARAM_IDX });
+            function.push_insn(function.jit_entry_block, Insn::Param { idx: SELF_PARAM_IDX });
             function.param_types.push(types::BasicObject); // self
             let val = function.push_insn(function.entry_block, Insn::Test { val: param });
             function.infer_types();
@@ -4557,7 +4572,7 @@ mod snapshot_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -4649,7 +4664,7 @@ mod tests {
           v5:CBool = IsBitEqual v3, v4
           IfTrue v5, bb2(v1, v2)
           SideExit OptionalArgumentsSupplied
-        bb1(v10, v11):
+        bb1(v10:BasicObject, v11:BasicObject):
           EntryPoint JIT
           Jump bb2(v10, v11)
         bb2(v13:BasicObject, v14:BasicObject):
@@ -4669,7 +4684,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -4688,7 +4703,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -4707,7 +4722,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -4726,7 +4741,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -4745,7 +4760,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -4765,7 +4780,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -4784,7 +4799,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -4804,7 +4819,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -4823,7 +4838,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -4843,7 +4858,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -4863,7 +4878,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -4882,7 +4897,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -4903,7 +4918,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -4923,7 +4938,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -4942,7 +4957,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -4961,7 +4976,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -4980,7 +4995,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -4999,7 +5014,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5022,7 +5037,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5047,7 +5062,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5066,7 +5081,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5091,7 +5106,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5110,7 +5125,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5135,7 +5150,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5154,7 +5169,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5179,7 +5194,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5201,7 +5216,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5239,7 +5254,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5270,7 +5285,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5297,7 +5312,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5326,7 +5341,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5358,7 +5373,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -5392,7 +5407,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -5427,7 +5442,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -5449,7 +5464,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -5471,7 +5486,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -5493,7 +5508,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -5515,7 +5530,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -5537,7 +5552,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -5559,7 +5574,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -5581,7 +5596,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -5603,7 +5618,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -5625,7 +5640,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -5654,7 +5669,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5697,7 +5712,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -5724,7 +5739,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5759,7 +5774,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5787,7 +5802,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -5812,7 +5827,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5837,7 +5852,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5865,7 +5880,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -5884,7 +5899,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -5904,7 +5919,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -5923,7 +5938,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -5945,7 +5960,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5965,7 +5980,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -5985,7 +6000,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -6006,7 +6021,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -6022,7 +6037,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -6044,7 +6059,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -6072,7 +6087,7 @@ mod tests {
         bb0(v1:BasicObject, v2:ArrayExact):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:ArrayExact):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:ArrayExact):
@@ -6093,7 +6108,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -6113,7 +6128,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:ArrayExact, v4:BasicObject, v5:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3, v4, v5)
-        bb1(v8, v9, v10, v11, v12):
+        bb1(v8:BasicObject, v9:BasicObject, v10:ArrayExact, v11:BasicObject, v12:BasicObject):
           EntryPoint JIT
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:ArrayExact, v17:BasicObject, v18:BasicObject):
@@ -6138,7 +6153,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -6171,7 +6186,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -6193,7 +6208,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -6220,7 +6235,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -6247,7 +6262,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -6274,7 +6289,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -6305,7 +6320,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -6327,7 +6342,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -6349,7 +6364,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -6372,7 +6387,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -6395,7 +6410,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -6419,7 +6434,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -6442,7 +6457,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -6463,7 +6478,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -6484,7 +6499,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -6508,7 +6523,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -6531,7 +6546,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -6558,7 +6573,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -6581,7 +6596,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -6602,7 +6617,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -6623,7 +6638,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -6644,7 +6659,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -6665,7 +6680,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -6686,7 +6701,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -6707,7 +6722,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -6732,7 +6747,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -6765,7 +6780,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -6789,7 +6804,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -6823,7 +6838,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -6846,7 +6861,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3, v4)
-        bb1(v7, v8, v9, v10):
+        bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject, v10:BasicObject):
           EntryPoint JIT
           Jump bb2(v7, v8, v9, v10)
         bb2(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
@@ -6866,7 +6881,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -6889,7 +6904,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject, v5:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3, v4, v5)
-        bb1(v8, v9, v10, v11, v12):
+        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject, v11:BasicObject, v12:BasicObject):
           EntryPoint JIT
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:BasicObject):
@@ -6923,7 +6938,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -6945,7 +6960,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject, v5:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3, v4, v5)
-        bb1(v8, v9, v10, v11, v12):
+        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject, v11:BasicObject, v12:BasicObject):
           EntryPoint JIT
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:BasicObject):
@@ -6967,7 +6982,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -6999,7 +7014,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7024,7 +7039,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7054,7 +7069,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7079,7 +7094,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7109,7 +7124,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7137,7 +7152,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7150,7 +7165,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7171,7 +7186,7 @@ mod tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7193,7 +7208,7 @@ mod tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -7237,7 +7252,7 @@ mod graphviz_tests {
         </TABLE>>];
           bb0:v4 -> bb2:params:n;
           bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v6, v7, v8)&nbsp;</TD></TR>
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v5">EntryPoint JIT&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v9">Jump bb2(v6, v7, v8)&nbsp;</TD></TR>
         </TABLE>>];
@@ -7283,7 +7298,7 @@ mod graphviz_tests {
         </TABLE>>];
           bb0:v3 -> bb2:params:n;
           bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v5, v6)&nbsp;</TD></TR>
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v5:BasicObject, v6:BasicObject)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v4">EntryPoint JIT&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v7">Jump bb2(v5, v6)&nbsp;</TD></TR>
         </TABLE>>];
@@ -7347,7 +7362,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7377,7 +7392,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7402,7 +7417,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7430,7 +7445,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7458,7 +7473,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7483,7 +7498,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7509,7 +7524,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -7544,7 +7559,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7575,7 +7590,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7611,7 +7626,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7642,7 +7657,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7678,7 +7693,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7709,7 +7724,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7740,7 +7755,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7772,7 +7787,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7801,7 +7816,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -7829,7 +7844,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:ArrayExact):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:ArrayExact):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:ArrayExact):
@@ -7842,7 +7857,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -7854,7 +7869,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -7866,7 +7881,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -7879,7 +7894,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:ArrayExact, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:ArrayExact, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:ArrayExact, v12:BasicObject):
@@ -7903,7 +7918,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7931,7 +7946,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7957,7 +7972,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -7982,7 +7997,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -8010,7 +8025,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -8042,7 +8057,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -8070,7 +8085,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -8100,7 +8115,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -8121,7 +8136,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -8145,7 +8160,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -8169,7 +8184,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -8193,7 +8208,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -8217,7 +8232,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -8241,7 +8256,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -8268,7 +8283,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -8296,7 +8311,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -8322,7 +8337,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -8347,7 +8362,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -8372,7 +8387,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -8397,7 +8412,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -8423,7 +8438,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -8449,7 +8464,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -8475,7 +8490,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -8506,7 +8521,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -8531,7 +8546,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -8557,7 +8572,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -8586,7 +8601,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -8612,7 +8627,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -8639,7 +8654,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -8664,7 +8679,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -8691,7 +8706,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -8718,7 +8733,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -8745,7 +8760,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -8772,7 +8787,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -8800,7 +8815,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -8828,7 +8843,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -8855,7 +8870,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -8882,7 +8897,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -8909,7 +8924,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -8936,7 +8951,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -8963,7 +8978,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -8990,7 +9005,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9013,7 +9028,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -9035,7 +9050,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9060,7 +9075,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9090,7 +9105,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9120,7 +9135,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9146,7 +9161,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9169,7 +9184,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9202,7 +9217,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9231,7 +9246,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9256,7 +9271,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9283,7 +9298,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9305,7 +9320,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -9330,7 +9345,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -9357,7 +9372,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9391,7 +9406,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -9416,7 +9431,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9440,7 +9455,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9467,7 +9482,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9495,7 +9510,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9519,7 +9534,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9541,7 +9556,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9562,7 +9577,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9585,7 +9600,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9607,7 +9622,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9628,7 +9643,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9657,7 +9672,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9681,7 +9696,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9715,7 +9730,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9745,7 +9760,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9774,7 +9789,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9803,7 +9818,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9832,7 +9847,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9860,7 +9875,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9890,7 +9905,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9917,7 +9932,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -9947,7 +9962,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -9969,7 +9984,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -9991,7 +10006,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -10013,7 +10028,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10034,7 +10049,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10056,7 +10071,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10080,7 +10095,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10098,7 +10113,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10120,7 +10135,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10142,7 +10157,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10164,7 +10179,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10185,7 +10200,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10207,7 +10222,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10229,7 +10244,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10251,7 +10266,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10272,7 +10287,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10294,7 +10309,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10317,7 +10332,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10340,7 +10355,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10361,7 +10376,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10383,7 +10398,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10406,7 +10421,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10429,7 +10444,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10457,7 +10472,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -10486,7 +10501,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -10512,7 +10527,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -10540,7 +10555,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10566,7 +10581,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10590,7 +10605,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10614,7 +10629,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10638,7 +10653,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10662,7 +10677,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10689,7 +10704,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10715,7 +10730,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10743,7 +10758,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10765,7 +10780,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10785,7 +10800,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10810,7 +10825,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10832,7 +10847,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10857,7 +10872,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -10881,7 +10896,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -10905,7 +10920,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -10929,7 +10944,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -10953,7 +10968,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -10977,7 +10992,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -11001,7 +11016,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -11025,7 +11040,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -11049,7 +11064,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -11073,7 +11088,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -11097,7 +11112,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -11122,7 +11137,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -11146,7 +11161,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -11171,7 +11186,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
-        bb1(v6, v7, v8):
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
@@ -11198,7 +11213,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -11230,7 +11245,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -11263,7 +11278,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -11307,7 +11322,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -11334,7 +11349,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -11366,7 +11381,7 @@ mod opt_tests {
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
-        bb1(v4):
+        bb1(v4:BasicObject):
           EntryPoint JIT
           Jump bb2(v4)
         bb2(v6:BasicObject):
@@ -11397,7 +11412,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
@@ -11426,7 +11441,7 @@ mod opt_tests {
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
-        bb1(v5, v6):
+        bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
