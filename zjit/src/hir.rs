@@ -657,7 +657,7 @@ pub enum Insn {
         return_type: Option<Type>,  // None for unannotated builtins
     },
 
-    /// Set up frame and remember the address as a JIT entry if insn_idx is Some
+    /// Set up frame and remember the address as a JIT entry if jit_entry is true
     EntryPoint { jit_entry: bool },
     /// Control flow instructions
     Return { val: InsnId },
