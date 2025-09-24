@@ -419,6 +419,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GetSpecialSymbol { symbol_type, state: _ } => gen_getspecial_symbol(asm, *symbol_type),
         Insn::GetSpecialNumber { nth, state } => gen_getspecial_number(asm, *nth, &function.frame_state(*state)),
         &Insn::IncrCounter(counter) => no_output!(gen_incr_counter(asm, counter)),
+        Insn::CountUnoptimizedCFunc { signature, counter_ptr } => no_output!(gen_count_unoptimized_cfunc(asm, signature, *counter_ptr)),
         Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state)),
         &Insn::CheckInterrupts { state } => no_output!(gen_check_interrupts(jit, asm, &function.frame_state(state))),
         &Insn::HashDup { val, state } => { gen_hash_dup(asm, opnd!(val), &function.frame_state(state)) },
@@ -1526,6 +1527,17 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd,
     asm.cmp(val, Opnd::Value(expected));
     asm.jnz(side_exit(jit, state, GuardBitEquals(expected)));
     val
+}
+
+/// Generate code that records unoptimized C functions if --zjit-stats is enabled
+fn gen_count_unoptimized_cfunc(asm: &mut Assembler, signature: &str, counter_ptr: *mut u64) {
+    if get_option!(stats) {
+        unsafe extern "C" {
+            fn rb_zjit_count_unoptimized_cfunc(counter_ptr: *mut u64);
+        }
+        asm_comment!(asm, "count unoptimized cfunc: {}", signature);
+        asm_ccall!(asm, rb_zjit_count_unoptimized_cfunc, Opnd::const_ptr(counter_ptr as *const u8));
+    }
 }
 
 /// Generate code that increments a counter if --zjit-stats
