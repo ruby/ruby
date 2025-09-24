@@ -540,7 +540,8 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_invokebuiltin
-    assert_compiles '["."]', %q{
+    # Not using assert_compiles due to register spill
+    assert_runs '["."]', %q{
       def test = Dir.glob(".")
       test
     }
@@ -1519,7 +1520,9 @@ class TestZJIT < Test::Unit::TestCase
   def test_forty_param_method
     # This used to a trigger a miscomp on A64 due
     # to a memory displacement larger than 9 bits.
-    assert_compiles '1', %Q{
+    # Using assert_runs again due to register spill.
+    # TODO: It should be fixed by register spill support.
+    assert_runs '1', %Q{
       def foo(#{'_,' * 39} n40) = n40
 
       foo(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1)

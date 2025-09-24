@@ -35,10 +35,18 @@ impl IseqPayload {
     }
 }
 
+/// Set of CodePtrs for an ISEQ
+#[derive(Clone, Debug, PartialEq)]
+pub struct IseqCodePtrs {
+    /// Entry for the interpreter
+    pub start_ptr: CodePtr,
+    /// Entry for JIT-to-JIT calls
+    pub jit_entry_ptr: CodePtr,
+}
+
 #[derive(Debug, PartialEq)]
 pub enum IseqStatus {
-    /// CodePtr has the JIT code address of the first block
-    Compiled(CodePtr),
+    Compiled(IseqCodePtrs),
     CantCompile(CompileError),
     NotCompiled,
 }

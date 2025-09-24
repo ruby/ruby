@@ -8,7 +8,7 @@ use crate::cruby::get_class_name;
 use crate::cruby::ruby_sym_to_rust_string;
 use crate::cruby::rb_mRubyVMFrozenCore;
 use crate::cruby::rb_obj_class;
-use crate::hir::PtrPrintMap;
+use crate::hir::{Const, PtrPrintMap};
 use crate::profile::ProfiledType;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -95,6 +95,7 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
         Specialization::Int(val) if ty.is_subtype(types::CUInt16) => write!(f, "[{}]", val >> 48),
         Specialization::Int(val) if ty.is_subtype(types::CUInt32) => write!(f, "[{}]", val >> 32),
         Specialization::Int(val) if ty.is_subtype(types::CUInt64) => write!(f, "[{}]", val),
+        Specialization::Int(val) if ty.is_subtype(types::CPtr) => write!(f, "[{}]", Const::CPtr(val as *mut u8).print(printer.ptr_map)),
         Specialization::Int(val) => write!(f, "[{val}]"),
         Specialization::Double(val) => write!(f, "[{val}]"),
     }
@@ -279,6 +280,10 @@ impl Type {
                 ty.bits != types::CUnsigned.bits && ty.bits != types::CSigned.bits,
                 "ty must be a specific int size");
         Type { bits: ty.bits, spec: Specialization::Int(val as u64) }
+    }
+
+    pub fn from_cptr(val: *mut u8) -> Type {
+        Type { bits: bits::CPtr, spec: Specialization::Int(val as u64) }
     }
 
     /// Create a `Type` (a `CDouble` with double specialization) from a f64.

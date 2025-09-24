@@ -246,6 +246,7 @@ pub fn exit_counter_ptr(reason: crate::hir::SideExitReason) -> *mut u64 {
         StackOverflow                 => exit_stackoverflow,
         BlockParamProxyModified       => exit_block_param_proxy_modified,
         BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
+        OptionalArgumentsSupplied     => exit_optional_arguments,
     };
     counter_ptr(counter)
 }
