@@ -511,7 +511,7 @@ rb_vmdebug_thread_dump_state(FILE *errout, VALUE self)
 #  include <sys/mman.h>
 #  undef backtrace
 
-#  if defined(__arm64__)
+#  if defined(__arm64__) || defined(__POWERPC__)
 static bool
 is_coroutine_start(unw_word_t ip)
 {
@@ -632,6 +632,16 @@ darwin_sigtramp:
         // I wish I could use "ptrauth_strip()" but I get an error:
         // "this target does not support pointer authentication"
         trace[n++] = (void *)(ip & 0x7fffffffffffull);
+
+        // Apple's libunwind can't handle our coroutine switching code
+        if (is_coroutine_start(ip)) break;
+    }
+    return n;
+
+#  elif defined(__POWERPC__)
+    while (unw_step(&cursor) > 0) {
+        unw_get_reg(&cursor, UNW_REG_IP, &ip);
+        trace[n++] = (void *)ip;
 
         // Apple's libunwind can't handle our coroutine switching code
         if (is_coroutine_start(ip)) break;
