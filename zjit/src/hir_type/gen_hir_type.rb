@@ -202,7 +202,7 @@ $bits.keys.sort.map {|type_name|
 # we need the pointers to have been set by the VM.
 puts "  pub const ExactBitsAndClass: [(u64, *const VALUE); #{$c_names.size}] = ["
 $c_names.each {|type_name, c_name|
-  puts "  (bits::#{type_name}, &raw const crate::cruby::#{c_name}),"
+  puts "    (bits::#{type_name}, &raw const crate::cruby::#{c_name}),"
 }
 puts "  ];"
 puts "}"
