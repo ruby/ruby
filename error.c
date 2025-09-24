@@ -1090,7 +1090,7 @@ rb_bug_without_die_internal(const char *fmt, va_list args)
     const char *file = NULL;
     int line = 0;
 
-    if (GET_EC()) {
+    if (rb_current_execution_context(false)) {
         file = rb_source_location_cstr(&line);
     }
 
@@ -1123,7 +1123,7 @@ rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int sig, const voi
     const char *file = NULL;
     int line = 0;
 
-    if (GET_EC()) {
+    if (rb_current_execution_context(false)) {
         file = rb_source_location_cstr(&line);
     }
 
