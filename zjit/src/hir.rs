@@ -3148,7 +3148,6 @@ fn num_locals(iseq: *const rb_iseq_t) -> usize {
 
 /// If we can't handle the type of send (yet), bail out.
 fn unhandled_call_type(flags: u32) -> Result<(), CallType> {
-    if (flags & VM_CALL_ARGS_SPLAT) != 0 { return Err(CallType::Splat); }
     if (flags & VM_CALL_KWARG) != 0 { return Err(CallType::Kwarg); }
     if (flags & VM_CALL_TAILCALL) != 0 { return Err(CallType::Tailcall); }
     Ok(())
@@ -5461,7 +5460,9 @@ mod tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           v6:ArrayExact = ToArray v1
-          SideExit UnhandledCallType(Splat)
+          v8:BasicObject = SendWithoutBlock v0, :foo, v6
+          CheckInterrupts
+          Return v8
         ");
     }
 
@@ -5610,7 +5611,9 @@ mod tests {
           v6:ArrayExact = ToNewArray v1
           v7:Fixnum[1] = Const Value(1)
           ArrayPush v6, v7
-          SideExit UnhandledCallType(Splat)
+          v11:BasicObject = SendWithoutBlock v0, :foo, v6
+          CheckInterrupts
+          Return v11
         ");
     }
 
