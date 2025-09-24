@@ -203,13 +203,9 @@ $c_names.each {|_, c_name|
 }
 # TODO(max): Figure out how to lazily initialize this once at run-time because
 # we need the pointers to have been set by the VM.
-puts "  pub fn exact_bits_and_class() -> &'static [(u64, VALUE)] {"
-puts "    use std::sync::OnceLock;"
-puts "    static ExactBitsAndClass: OnceLock<[(u64, VALUE); #{$c_names.size}]> = OnceLock::new();"
-puts "    ExactBitsAndClass.get_or_init(|| { ["
+puts "  pub const ExactBitsAndClass: [(u64, *const VALUE); #{$c_names.size}] = ["
 $c_names.each {|type_name, c_name|
-  puts "      (bits::#{type_name}, unsafe { #{c_name} }),"
+  puts "  (bits::#{type_name}, &raw const #{c_name}),"
 }
-puts "    ] })"
-puts "  }"
+puts "  ];"
 puts "}"

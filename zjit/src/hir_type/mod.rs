@@ -178,9 +178,9 @@ impl Type {
     }
 
     fn bits_from_exact_class(class: VALUE) -> Option<u64> {
-        types::exact_bits_and_class()
+        types::ExactBitsAndClass
             .iter()
-            .find(|&(_, class_object)| *class_object == class)
+            .find(|&(_, class_object)| unsafe { **class_object } == class)
             .map(|&(bits, _)| bits)
     }
 
@@ -348,9 +348,9 @@ impl Type {
     }
 
     fn is_builtin(class: VALUE) -> bool {
-        types::exact_bits_and_class()
+        types::ExactBitsAndClass
             .iter()
-            .find(|&(_, class_object)| *class_object == class)
+            .find(|&(_, class_object)| unsafe { **class_object } == class)
             .is_some()
     }
 
@@ -447,10 +447,10 @@ impl Type {
         if let Some(val) = self.exact_ruby_class() {
             return Some(val);
         }
-        types::exact_bits_and_class()
+        types::ExactBitsAndClass
             .iter()
             .find(|&(bits, _)| self.is_subtype(Type::from_bits(*bits)))
-            .map(|&(_, class_object)| class_object)
+            .map(|&(_, class_object)| unsafe { *class_object })
     }
 
     /// Check bit equality of two `Type`s. Do not use! You are probably looking for [`Type::is_subtype`].

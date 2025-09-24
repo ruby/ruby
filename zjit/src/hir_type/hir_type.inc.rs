@@ -230,27 +230,23 @@ pub mod types {
   use crate::cruby::rb_cNilClass;
   use crate::cruby::rb_cTrueClass;
   use crate::cruby::rb_cFalseClass;
-  pub fn exact_bits_and_class() -> &'static [(u64, VALUE)] {
-    use std::sync::OnceLock;
-    static ExactBitsAndClass: OnceLock<[(u64, VALUE); 17]> = OnceLock::new();
-    ExactBitsAndClass.get_or_init(|| { [
-      (bits::ObjectExact, unsafe { rb_cObject }),
-      (bits::BasicObjectExact, unsafe { rb_cBasicObject }),
-      (bits::StringExact, unsafe { rb_cString }),
-      (bits::ArrayExact, unsafe { rb_cArray }),
-      (bits::HashExact, unsafe { rb_cHash }),
-      (bits::RangeExact, unsafe { rb_cRange }),
-      (bits::SetExact, unsafe { rb_cSet }),
-      (bits::RegexpExact, unsafe { rb_cRegexp }),
-      (bits::ModuleExact, unsafe { rb_cModule }),
-      (bits::Class, unsafe { rb_cClass }),
-      (bits::NumericExact, unsafe { rb_cNumeric }),
-      (bits::Integer, unsafe { rb_cInteger }),
-      (bits::Float, unsafe { rb_cFloat }),
-      (bits::Symbol, unsafe { rb_cSymbol }),
-      (bits::NilClass, unsafe { rb_cNilClass }),
-      (bits::TrueClass, unsafe { rb_cTrueClass }),
-      (bits::FalseClass, unsafe { rb_cFalseClass }),
-    ] })
-  }
+  pub const ExactBitsAndClass: [(u64, *const VALUE); 17] = [
+  (bits::ObjectExact, &raw const rb_cObject),
+  (bits::BasicObjectExact, &raw const rb_cBasicObject),
+  (bits::StringExact, &raw const rb_cString),
+  (bits::ArrayExact, &raw const rb_cArray),
+  (bits::HashExact, &raw const rb_cHash),
+  (bits::RangeExact, &raw const rb_cRange),
+  (bits::SetExact, &raw const rb_cSet),
+  (bits::RegexpExact, &raw const rb_cRegexp),
+  (bits::ModuleExact, &raw const rb_cModule),
+  (bits::Class, &raw const rb_cClass),
+  (bits::NumericExact, &raw const rb_cNumeric),
+  (bits::Integer, &raw const rb_cInteger),
+  (bits::Float, &raw const rb_cFloat),
+  (bits::Symbol, &raw const rb_cSymbol),
+  (bits::NilClass, &raw const rb_cNilClass),
+  (bits::TrueClass, &raw const rb_cTrueClass),
+  (bits::FalseClass, &raw const rb_cFalseClass),
+  ];
 }
