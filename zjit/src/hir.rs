@@ -4368,37 +4368,46 @@ mod validation_tests {
     #[test]
     fn instruction_appears_twice_in_same_block() {
         let mut function = Function::new(std::ptr::null());
-        let entry = function.entry_block;
-        let jit_entry = function.jit_entry_block;
-        function.push_insn(jit_entry, Insn::Jump(BranchEdge { target: entry, args: vec![] }));
-        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
-        function.push_insn_id(entry, val);
-        function.push_insn(entry, Insn::Return { val });
-        assert_matches_err(function.validate(), ValidationError::DuplicateInstruction(entry, val));
+        let block = function.new_block(0);
+
+        // Add jumps from entry blocks to avoid BlockHasNoterminator
+        function.push_insn(function.entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
+        function.push_insn(function.jit_entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
+
+        let val = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
+        function.push_insn_id(block, val);
+        function.push_insn(block, Insn::Return { val });
+        assert_matches_err(function.validate(), ValidationError::DuplicateInstruction(block, val));
     }
 
     #[test]
     fn instruction_appears_twice_with_different_ids() {
         let mut function = Function::new(std::ptr::null());
-        let entry = function.entry_block;
-        let jit_entry = function.jit_entry_block;
-        function.push_insn(jit_entry, Insn::Jump(BranchEdge { target: entry, args: vec![] }));
-        let val0 = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
-        let val1 = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let block = function.new_block(0);
+
+        // Add jumps from entry blocks to avoid BlockHasNoterminator
+        function.push_insn(function.entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
+        function.push_insn(function.jit_entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
+
+        let val0 = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
+        let val1 = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
         function.make_equal_to(val1, val0);
-        function.push_insn(entry, Insn::Return { val: val0 });
-        assert_matches_err(function.validate(), ValidationError::DuplicateInstruction(entry, val0));
+        function.push_insn(block, Insn::Return { val: val0 });
+        assert_matches_err(function.validate(), ValidationError::DuplicateInstruction(block, val0));
     }
 
     #[test]
     fn instruction_appears_twice_in_different_blocks() {
         let mut function = Function::new(std::ptr::null());
-        let entry = function.entry_block;
-        let jit_entry = function.jit_entry_block;
-        function.push_insn(jit_entry, Insn::Jump(BranchEdge { target: entry, args: vec![] }));
-        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let block = function.new_block(0);
+
+        // Add jumps from entry blocks to avoid BlockHasNoterminator
+        function.push_insn(function.entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
+        function.push_insn(function.jit_entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
+
+        let val = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
         let exit = function.new_block(0);
-        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
+        function.push_insn(block, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         function.push_insn_id(exit, val);
         function.push_insn(exit, Insn::Return { val });
         assert_matches_err(function.validate(), ValidationError::DuplicateInstruction(exit, val));
