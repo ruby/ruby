@@ -1745,14 +1745,14 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
     end_cfp = RUBY_VM_NEXT_CONTROL_FRAME(end_cfp);
 
     for (i=0; i<limit && cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
-        if (VM_FRAME_RUBYFRAME_P(cfp) && cfp->pc != 0) {
+        if (VM_FRAME_RUBYFRAME_P_UNCHECKED(cfp) && cfp->pc != 0) {
             if (start > 0) {
                 start--;
                 continue;
             }
 
             /* record frame info */
-            cme = rb_vm_frame_method_entry(cfp);
+            cme = rb_vm_frame_method_entry_unchecked(cfp);
             if (cme && cme->def->type == VM_METHOD_TYPE_ISEQ) {
                 buff[i] = (VALUE)cme;
             }
@@ -1770,6 +1770,8 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
                 // before entering a non-leaf method (so that `caller` will work),
                 // so only the topmost frame could possibly have an out-of-date PC.
                 // ZJIT doesn't set `cfp->jit_return`, so it's not a reliable signal.
+                // TODO(zjit): lightweight frames potentially makes more than
+                //             the top most frame invalid.
                 //
                 // Avoid passing invalid PC to calc_lineno() to avoid crashing.
                 if (cfp == top && (pc < iseq_encoded || pc > pc_end)) {
@@ -1783,7 +1785,7 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
             i++;
         }
         else {
-            cme = rb_vm_frame_method_entry(cfp);
+            cme = rb_vm_frame_method_entry_unchecked(cfp);
             if (cme && cme->def->type == VM_METHOD_TYPE_CFUNC) {
                 if (start > 0) {
                     start--;

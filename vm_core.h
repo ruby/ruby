@@ -1450,9 +1450,22 @@ VM_ENV_FLAGS(const VALUE *ep, long flag)
 }
 
 static inline unsigned long
+VM_ENV_FLAGS_UNCHECKED(const VALUE *ep, long flag)
+{
+    VALUE flags = ep[VM_ENV_DATA_INDEX_FLAGS];
+    return flags & flag;
+}
+
+static inline unsigned long
 VM_FRAME_TYPE(const rb_control_frame_t *cfp)
 {
     return VM_ENV_FLAGS(cfp->ep, VM_FRAME_MAGIC_MASK);
+}
+
+static inline unsigned long
+VM_FRAME_TYPE_UNCHECKED(const rb_control_frame_t *cfp)
+{
+    return VM_ENV_FLAGS_UNCHECKED(cfp->ep, VM_FRAME_MAGIC_MASK);
 }
 
 static inline int
@@ -1471,6 +1484,12 @@ static inline int
 VM_FRAME_FINISHED_P(const rb_control_frame_t *cfp)
 {
     return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_FINISH) != 0;
+}
+
+static inline int
+VM_FRAME_FINISHED_P_UNCHECKED(const rb_control_frame_t *cfp)
+{
+    return VM_ENV_FLAGS_UNCHECKED(cfp->ep, VM_FRAME_FLAG_FINISH) != 0;
 }
 
 static inline int
@@ -1499,9 +1518,21 @@ VM_FRAME_CFRAME_P(const rb_control_frame_t *cfp)
 }
 
 static inline int
+VM_FRAME_CFRAME_P_UNCHECKED(const rb_control_frame_t *cfp)
+{
+    return VM_ENV_FLAGS_UNCHECKED(cfp->ep, VM_FRAME_FLAG_CFRAME) != 0;
+}
+
+static inline int
 VM_FRAME_RUBYFRAME_P(const rb_control_frame_t *cfp)
 {
     return !VM_FRAME_CFRAME_P(cfp);
+}
+
+static inline int
+VM_FRAME_RUBYFRAME_P_UNCHECKED(const rb_control_frame_t *cfp)
+{
+    return !VM_FRAME_CFRAME_P_UNCHECKED(cfp);
 }
 
 static inline int
@@ -1522,11 +1553,23 @@ VM_ENV_LOCAL_P(const VALUE *ep)
     return VM_ENV_FLAGS(ep, VM_ENV_FLAG_LOCAL) ? 1 : 0;
 }
 
+static inline int
+VM_ENV_LOCAL_P_UNCHECKED(const VALUE *ep)
+{
+    return VM_ENV_FLAGS_UNCHECKED(ep, VM_ENV_FLAG_LOCAL) ? 1 : 0;
+}
+
+static inline const VALUE *
+VM_ENV_PREV_EP_UNCHECKED(const VALUE *ep)
+{
+    return GC_GUARDED_PTR_REF(ep[VM_ENV_DATA_INDEX_SPECVAL]);
+}
+
 static inline const VALUE *
 VM_ENV_PREV_EP(const VALUE *ep)
 {
     VM_ASSERT(VM_ENV_LOCAL_P(ep) == 0);
-    return GC_GUARDED_PTR_REF(ep[VM_ENV_DATA_INDEX_SPECVAL]);
+    return VM_ENV_PREV_EP_UNCHECKED(ep);
 }
 
 static inline VALUE
@@ -1934,6 +1977,7 @@ void rb_gc_mark_machine_context(const rb_execution_context_t *ec);
 rb_cref_t *rb_vm_rewrite_cref(rb_cref_t *node, VALUE old_klass, VALUE new_klass);
 
 const rb_callable_method_entry_t *rb_vm_frame_method_entry(const rb_control_frame_t *cfp);
+const rb_callable_method_entry_t *rb_vm_frame_method_entry_unchecked(const rb_control_frame_t *cfp);
 
 #define sysstack_error GET_VM()->special_exceptions[ruby_error_sysstack]
 
