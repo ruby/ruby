@@ -829,7 +829,10 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayDup { val, .. } => { write!(f, "ArrayDup {val}") }
             Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
             Insn::ObjectAlloc { val, .. } => { write!(f, "ObjectAlloc {val}") }
-            Insn::ObjectAllocClass { class, .. } => { write!(f, "ObjectAllocClass {}", class.print(self.ptr_map)) }
+            &Insn::ObjectAllocClass { class, .. } => {
+                let class_name = get_class_name(class);
+                write!(f, "ObjectAllocClass {class_name}:{}", class.print(self.ptr_map))
+            }
             Insn::StringCopy { val, .. } => { write!(f, "StringCopy {val}") }
             Insn::StringConcat { strings, .. } => {
                 write!(f, "StringConcat")?;
@@ -8378,7 +8381,7 @@ mod opt_tests {
           v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v6:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(C@0x1008, new@0x1010, cme:0x1018)
-          v37:HeapObject[class_exact:C] = ObjectAllocClass VALUE(0x1008)
+          v37:HeapObject[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
           PatchPoint MethodRedefined(C@0x1008, initialize@0x1040, cme:0x1048)
           v39:NilClass = CCall initialize@0x1070, v37
           CheckInterrupts
@@ -8407,7 +8410,7 @@ mod opt_tests {
           v6:NilClass = Const Value(nil)
           v7:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(C@0x1008, new@0x1010, cme:0x1018)
-          v39:HeapObject[class_exact:C] = ObjectAllocClass VALUE(0x1008)
+          v39:HeapObject[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
           PatchPoint MethodRedefined(C@0x1008, initialize@0x1040, cme:0x1048)
           v41:BasicObject = SendWithoutBlockDirect v39, :initialize (0x1070), v7
           CheckInterrupts
@@ -8430,7 +8433,7 @@ mod opt_tests {
           v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v6:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Object@0x1008, new@0x1010, cme:0x1018)
-          v37:ObjectExact = ObjectAllocClass VALUE(0x1008)
+          v37:ObjectExact = ObjectAllocClass Object:VALUE(0x1008)
           PatchPoint MethodRedefined(Object@0x1008, initialize@0x1040, cme:0x1048)
           v39:NilClass = CCall initialize@0x1070, v37
           CheckInterrupts
@@ -8453,7 +8456,7 @@ mod opt_tests {
           v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v6:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(BasicObject@0x1008, new@0x1010, cme:0x1018)
-          v37:BasicObjectExact = ObjectAllocClass VALUE(0x1008)
+          v37:BasicObjectExact = ObjectAllocClass BasicObject:VALUE(0x1008)
           PatchPoint MethodRedefined(BasicObject@0x1008, initialize@0x1040, cme:0x1048)
           v39:NilClass = CCall initialize@0x1070, v37
           CheckInterrupts
@@ -8476,7 +8479,7 @@ mod opt_tests {
           v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v6:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Hash@0x1008, new@0x1010, cme:0x1018)
-          v37:HashExact = ObjectAllocClass VALUE(0x1008)
+          v37:HashExact = ObjectAllocClass Hash:VALUE(0x1008)
           v12:BasicObject = SendWithoutBlock v37, :initialize
           CheckInterrupts
           CheckInterrupts
@@ -8568,7 +8571,7 @@ mod opt_tests {
           v7:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           v9:StringExact = StringCopy v7
           PatchPoint MethodRedefined(Regexp@0x1008, new@0x1018, cme:0x1020)
-          v41:RegexpExact = ObjectAllocClass VALUE(0x1008)
+          v41:RegexpExact = ObjectAllocClass Regexp:VALUE(0x1008)
           PatchPoint MethodRedefined(Regexp@0x1008, initialize@0x1048, cme:0x1050)
           v44:BasicObject = CCallVariadic initialize@0x1078, v41, v9
           CheckInterrupts

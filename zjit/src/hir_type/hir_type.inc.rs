@@ -213,40 +213,23 @@ pub mod types {
   pub const Symbol: Type = Type::from_bits(bits::Symbol);
   pub const TrueClass: Type = Type::from_bits(bits::TrueClass);
   pub const Undef: Type = Type::from_bits(bits::Undef);
-  use crate::cruby::rb_cObject;
-  use crate::cruby::rb_cBasicObject;
-  use crate::cruby::rb_cString;
-  use crate::cruby::rb_cArray;
-  use crate::cruby::rb_cHash;
-  use crate::cruby::rb_cRange;
-  use crate::cruby::rb_cSet;
-  use crate::cruby::rb_cRegexp;
-  use crate::cruby::rb_cModule;
-  use crate::cruby::rb_cClass;
-  use crate::cruby::rb_cNumeric;
-  use crate::cruby::rb_cInteger;
-  use crate::cruby::rb_cFloat;
-  use crate::cruby::rb_cSymbol;
-  use crate::cruby::rb_cNilClass;
-  use crate::cruby::rb_cTrueClass;
-  use crate::cruby::rb_cFalseClass;
   pub const ExactBitsAndClass: [(u64, *const VALUE); 17] = [
-  (bits::ObjectExact, &raw const rb_cObject),
-  (bits::BasicObjectExact, &raw const rb_cBasicObject),
-  (bits::StringExact, &raw const rb_cString),
-  (bits::ArrayExact, &raw const rb_cArray),
-  (bits::HashExact, &raw const rb_cHash),
-  (bits::RangeExact, &raw const rb_cRange),
-  (bits::SetExact, &raw const rb_cSet),
-  (bits::RegexpExact, &raw const rb_cRegexp),
-  (bits::ModuleExact, &raw const rb_cModule),
-  (bits::Class, &raw const rb_cClass),
-  (bits::NumericExact, &raw const rb_cNumeric),
-  (bits::Integer, &raw const rb_cInteger),
-  (bits::Float, &raw const rb_cFloat),
-  (bits::Symbol, &raw const rb_cSymbol),
-  (bits::NilClass, &raw const rb_cNilClass),
-  (bits::TrueClass, &raw const rb_cTrueClass),
-  (bits::FalseClass, &raw const rb_cFalseClass),
+  (bits::ObjectExact, &raw const crate::cruby::rb_cObject),
+  (bits::BasicObjectExact, &raw const crate::cruby::rb_cBasicObject),
+  (bits::StringExact, &raw const crate::cruby::rb_cString),
+  (bits::ArrayExact, &raw const crate::cruby::rb_cArray),
+  (bits::HashExact, &raw const crate::cruby::rb_cHash),
+  (bits::RangeExact, &raw const crate::cruby::rb_cRange),
+  (bits::SetExact, &raw const crate::cruby::rb_cSet),
+  (bits::RegexpExact, &raw const crate::cruby::rb_cRegexp),
+  (bits::ModuleExact, &raw const crate::cruby::rb_cModule),
+  (bits::Class, &raw const crate::cruby::rb_cClass),
+  (bits::NumericExact, &raw const crate::cruby::rb_cNumeric),
+  (bits::Integer, &raw const crate::cruby::rb_cInteger),
+  (bits::Float, &raw const crate::cruby::rb_cFloat),
+  (bits::Symbol, &raw const crate::cruby::rb_cSymbol),
+  (bits::NilClass, &raw const crate::cruby::rb_cNilClass),
+  (bits::TrueClass, &raw const crate::cruby::rb_cTrueClass),
+  (bits::FalseClass, &raw const crate::cruby::rb_cFalseClass),
   ];
 }

@@ -198,14 +198,11 @@ puts "pub mod types {
 $bits.keys.sort.map {|type_name|
     puts "  pub const #{type_name}: Type = Type::from_bits(bits::#{type_name});"
 }
-$c_names.each {|_, c_name|
-  puts "  use crate::cruby::#{c_name};"
-}
 # TODO(max): Figure out how to lazily initialize this once at run-time because
 # we need the pointers to have been set by the VM.
 puts "  pub const ExactBitsAndClass: [(u64, *const VALUE); #{$c_names.size}] = ["
 $c_names.each {|type_name, c_name|
-  puts "  (bits::#{type_name}, &raw const #{c_name}),"
+  puts "  (bits::#{type_name}, &raw const crate::cruby::#{c_name}),"
 }
 puts "  ];"
 puts "}"
