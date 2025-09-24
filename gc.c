@@ -2804,13 +2804,17 @@ mark_m_tbl(void *objspace, struct rb_id_table *tbl)
     }
 }
 
+bool rb_gc_impl_checking_shareable(void *objspace_ptr); // in defaut/deafult.c
+
 static enum rb_id_table_iterator_result
 mark_const_entry_i(VALUE value, void *objspace)
 {
     const rb_const_entry_t *ce = (const rb_const_entry_t *)value;
 
-    gc_mark_internal(ce->value);
-    gc_mark_internal(ce->file);
+    if (!rb_gc_impl_checking_shareable(objspace)) {
+        gc_mark_internal(ce->value);
+        gc_mark_internal(ce->file); // TODO: ce->file should be shareable?
+    }
     return ID_TABLE_CONTINUE;
 }
 
@@ -3071,7 +3075,12 @@ gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE namespace, void *a
         gc_mark_internal(RCLASSEXT_SUPER(ext));
     }
     mark_m_tbl(objspace, RCLASSEXT_M_TBL(ext));
-    gc_mark_internal(RCLASSEXT_FIELDS_OBJ(ext));
+
+    if (!rb_gc_impl_checking_shareable(objspace)) {
+        // unshareable
+        gc_mark_internal(RCLASSEXT_FIELDS_OBJ(ext));
+    }
+
     if (!RCLASSEXT_SHARED_CONST_TBL(ext) && RCLASSEXT_CONST_TBL(ext)) {
         mark_const_tbl(objspace, RCLASSEXT_CONST_TBL(ext));
     }
@@ -3137,7 +3146,8 @@ rb_gc_mark_children(void *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
-        if (FL_TEST_RAW(obj, FL_SINGLETON)) {
+        if (FL_TEST_RAW(obj, FL_SINGLETON) &&
+            !rb_gc_impl_checking_shareable(objspace)) {
             gc_mark_internal(RCLASS_ATTACHED_OBJECT(obj));
         }
         // Continue to the shared T_CLASS/T_MODULE

@@ -114,7 +114,8 @@ struct MEMO {
     } u3;
 };
 
-#define IMEMO_NEW(T, type, v0) ((T *)rb_imemo_new((type), (v0), sizeof(T)))
+#define IMEMO_NEW(T, type, v0) ((T *)rb_imemo_new((type), (v0), sizeof(T), false))
+#define SHAREABLE_IMEMO_NEW(T, type, v0) ((T *)rb_imemo_new((type), (v0), sizeof(T), true))
 
 /* ment is in method.h */
 
@@ -131,7 +132,7 @@ struct MEMO {
 #ifndef RUBY_RUBYPARSER_H
 typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
 #endif
-VALUE rb_imemo_new(enum imemo_type type, VALUE v0, size_t size);
+VALUE rb_imemo_new(enum imemo_type type, VALUE v0, size_t size, bool is_shareable);
 VALUE rb_imemo_tmpbuf_new(void);
 struct vm_ifunc *rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc);
 static inline enum imemo_type imemo_type(VALUE imemo);
@@ -270,9 +271,9 @@ STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.heap.fields
 
 #define IMEMO_OBJ_FIELDS(fields) ((struct rb_fields *)fields)
 
-VALUE rb_imemo_fields_new(VALUE owner, size_t capa);
-VALUE rb_imemo_fields_new_complex(VALUE owner, size_t capa);
-VALUE rb_imemo_fields_new_complex_tbl(VALUE owner, st_table *tbl);
+VALUE rb_imemo_fields_new(VALUE owner, size_t capa, bool shareable);
+VALUE rb_imemo_fields_new_complex(VALUE owner, size_t capa, bool shareable);
+VALUE rb_imemo_fields_new_complex_tbl(VALUE owner, st_table *tbl, bool shareable);
 VALUE rb_imemo_fields_clone(VALUE fields_obj);
 void rb_imemo_fields_clear(VALUE fields_obj);
 

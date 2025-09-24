@@ -207,28 +207,34 @@ static void
 ractor_mark(void *ptr)
 {
     rb_ractor_t *r = (rb_ractor_t *)ptr;
+    bool checking_shareable = rb_gc_checking_shareable();
 
     // mark received messages
     ractor_sync_mark(r);
 
     rb_gc_mark(r->loc);
     rb_gc_mark(r->name);
-    rb_gc_mark(r->r_stdin);
-    rb_gc_mark(r->r_stdout);
-    rb_gc_mark(r->r_stderr);
-    rb_gc_mark(r->verbose);
-    rb_gc_mark(r->debug);
-    rb_hook_list_mark(&r->pub.hooks);
 
-    if (r->threads.cnt > 0) {
-        rb_thread_t *th = 0;
-        ccan_list_for_each(&r->threads.set, th, lt_node) {
-            VM_ASSERT(th != NULL);
-            rb_gc_mark(th->self);
+    if (!checking_shareable) {
+        // may unshareable objects
+        rb_gc_mark(r->r_stdin);
+        rb_gc_mark(r->r_stdout);
+        rb_gc_mark(r->r_stderr);
+        rb_gc_mark(r->verbose);
+        rb_gc_mark(r->debug);
+
+        rb_hook_list_mark(&r->pub.hooks);
+
+        if (r->threads.cnt > 0) {
+            rb_thread_t *th = 0;
+            ccan_list_for_each(&r->threads.set, th, lt_node) {
+                VM_ASSERT(th != NULL);
+                rb_gc_mark(th->self);
+            }
         }
-    }
 
-    ractor_local_storage_mark(r);
+        ractor_local_storage_mark(r);
+    }
 }
 
 static void
@@ -493,8 +499,9 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
         }
         name = rb_str_new_frozen(name);
     }
-    r->name = name;
+    if (!SPECIAL_CONST_P(loc)) RB_OBJ_SET_SHAREABLE(loc);
     r->loc = loc;
+    r->name = name;
 }
 
 void
@@ -1462,6 +1469,10 @@ make_shareable_check_shareable(VALUE obj)
 static enum obj_traverse_iterator_result
 mark_shareable(VALUE obj)
 {
+    if (RB_TYPE_P(obj, T_STRING)) {
+        rb_str_make_independent(obj);
+    }
+
     rb_obj_set_shareable_no_assert(obj);
     return traverse_cont;
 }

@@ -7474,6 +7474,7 @@ Init_Hash(void)
     rb_define_singleton_method(rb_cHash, "ruby2_keywords_hash", rb_hash_s_ruby2_keywords_hash, 1);
 
     rb_cHash_empty_frozen = rb_hash_freeze(rb_hash_new());
+    RB_OBJ_SET_SHAREABLE(rb_cHash_empty_frozen);
     rb_vm_register_global_object(rb_cHash_empty_frozen);
 
     /* Document-class: ENV
@@ -7643,8 +7644,7 @@ Init_Hash(void)
     origenviron = environ;
     envtbl = TypedData_Wrap_Struct(rb_cObject, &env_data_type, NULL);
     rb_extend_object(envtbl, rb_mEnumerable);
-    FL_SET_RAW(envtbl, RUBY_FL_SHAREABLE);
-
+    RB_OBJ_SET_SHAREABLE(envtbl);
 
     rb_define_singleton_method(envtbl, "[]", rb_f_getenv, 1);
     rb_define_singleton_method(envtbl, "fetch", env_fetch, -1);

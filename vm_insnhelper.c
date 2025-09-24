@@ -6568,12 +6568,15 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
         return;
     }
 
-    struct iseq_inline_constant_cache_entry *ice = IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
+    struct iseq_inline_constant_cache_entry *ice = SHAREABLE_IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
     RB_OBJ_WRITE(ice, &ice->value, val);
     ice->ic_cref = vm_get_const_key_cref(reg_ep);
-    if (rb_ractor_shareable_p(val)) ice->flags |= IMEMO_CONST_CACHE_SHAREABLE;
-    RB_OBJ_WRITE(iseq, &ic->entry, ice);
 
+    if (rb_ractor_shareable_p(val)) {
+        RUBY_ASSERT((rb_gc_verify_shareable(val), 1));
+        ice->flags |= IMEMO_CONST_CACHE_SHAREABLE;
+    }
+    RB_OBJ_WRITE(iseq, &ic->entry, ice);
     RUBY_ASSERT(pc >= ISEQ_BODY(iseq)->iseq_encoded);
     unsigned pos = (unsigned)(pc - ISEQ_BODY(iseq)->iseq_encoded);
     rb_yjit_constant_ic_update(iseq, ic, pos);
@@ -6585,6 +6588,7 @@ rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const
     VALUE val;
     const ID *segments = ic->segments;
     struct iseq_inline_constant_cache_entry *ice = ic->entry;
+
     if (ice && vm_ic_hit_p(ice, GET_EP())) {
         val = ice->value;
 
@@ -6615,7 +6619,14 @@ vm_once_dispatch(rb_execution_context_t *ec, ISEQ iseq, ISE is)
         VALUE val;
         is->once.running_thread = th;
         val = rb_ensure(vm_once_exec, (VALUE)iseq, vm_once_clear, (VALUE)is);
+        // TODO: confirm that it is shareable
+
+        if (RB_FL_ABLE(val)) {
+            RB_OBJ_SET_SHAREABLE(val);
+        }
+
         RB_OBJ_WRITE(ec->cfp->iseq, &is->once.value, val);
+
         /* is->once.running_thread is cleared by vm_once_clear() */
         is->once.running_thread = RUNNING_THREAD_ONCE_DONE; /* success */
         return val;

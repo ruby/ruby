@@ -838,9 +838,9 @@ get_string_value(const NODE *node)
 {
     switch (nd_type(node)) {
       case NODE_STR:
-        return rb_node_str_string_val(node);
+        return RB_OBJ_SET_SHAREABLE(rb_node_str_string_val(node));
       case NODE_FILE:
-        return rb_node_file_path_val(node);
+        return RB_OBJ_SET_SHAREABLE(rb_node_file_path_val(node));
       default:
         rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
     }
@@ -1400,6 +1400,9 @@ static void
 iseq_insn_each_object_write_barrier(VALUE * obj, VALUE iseq)
 {
     RB_OBJ_WRITTEN(iseq, Qundef, *obj);
+    RUBY_ASSERT(SPECIAL_CONST_P(*obj) ||
+                RBASIC_CLASS(*obj) == 0 || // hidden
+                RB_OBJ_SHAREABLE_P(*obj));
 }
 
 static INSN *
@@ -2063,6 +2066,7 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
         for (i = 0; i < RARRAY_LEN(default_values); i++) {
             VALUE dv = RARRAY_AREF(default_values, i);
             if (dv == complex_mark) dv = Qundef;
+            if (!SPECIAL_CONST_P(dv)) rb_ractor_make_shareable(dv);
             RB_OBJ_WRITE(iseq, &dvs[i], dv);
         }
 
@@ -2749,6 +2753,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
                             rb_hash_rehash(map);
                             freeze_hide_obj(map);
+                            rb_ractor_make_shareable(map);
                             generated_iseq[code_index + 1 + j] = map;
                             ISEQ_MBITS_SET(mark_offset_bits, code_index + 1 + j);
                             RB_OBJ_WRITTEN(iseq, Qundef, map);
@@ -3489,7 +3494,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 is_frozen_putstring(beg, &str_beg) &&
                 !(insn_has_label_before(&beg->link) || insn_has_label_before(&end->link))) {
             int excl = FIX2INT(OPERAND_AT(range, 0));
-            VALUE lit_range = rb_range_new(str_beg, str_end, excl);
+            VALUE lit_range = RB_OBJ_SET_SHAREABLE(rb_range_new(str_beg, str_end, excl));
 
             ELEM_REMOVE(&beg->link);
             ELEM_REMOVE(&end->link);
@@ -3556,6 +3561,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             if (vm_ci_simple(ci) && vm_ci_argc(ci) == 0 && blockiseq == NULL && vm_ci_mid(ci) == idFreeze) {
                 VALUE hash = iobj->operands[0];
                 rb_obj_reveal(hash, rb_cHash);
+                RB_OBJ_SET_SHAREABLE(hash);
 
                 insn_replace_with_operands(iseq, iobj, BIN(opt_hash_freeze), 2, hash, (VALUE)ci);
                 ELEM_REMOVE(next);
@@ -3929,6 +3935,9 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                     rb_set_errinfo(errinfo);
                     COMPILE_ERROR(iseq, line, "%" PRIsVALUE, message);
                 }
+                else {
+                    RB_OBJ_SET_SHAREABLE(re);
+                }
                 RB_OBJ_WRITE(iseq, &OPERAND_AT(iobj, 0), re);
                 ELEM_REMOVE(iobj->link.next);
             }
@@ -4170,7 +4179,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 unsigned int flags = vm_ci_flag(ci);
                 if ((flags & set_flags) == set_flags && !(flags & unset_flags)) {
                     ((INSN*)niobj)->insn_id = BIN(putobject);
-                    RB_OBJ_WRITE(iseq, &OPERAND_AT(niobj, 0), rb_hash_freeze(rb_hash_resurrect(OPERAND_AT(niobj, 0))));
+                    RB_OBJ_WRITE(iseq, &OPERAND_AT(niobj, 0), RB_OBJ_SET_SHAREABLE(rb_hash_freeze(rb_hash_resurrect(OPERAND_AT(niobj, 0)))));
 
                     const struct rb_callinfo *nci = vm_ci_new(vm_ci_mid(ci),
                         flags & ~VM_CALL_KW_SPLAT_MUT, vm_ci_argc(ci), vm_ci_kwarg(ci));
@@ -4725,6 +4734,7 @@ compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
     if (!RNODE_DSTR(node)->nd_next) {
         VALUE lit = rb_node_dstr_string_val(node);
         ADD_INSN1(ret, node, putstring, lit);
+        RB_OBJ_SET_SHAREABLE(lit);
         RB_OBJ_WRITTEN(iseq, Qundef, lit);
     }
     else {
@@ -4744,6 +4754,7 @@ compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
         if (!popped) {
             VALUE src = rb_node_dregx_string_val(node);
             VALUE match = rb_reg_compile(src, cflag, NULL, 0);
+            RB_OBJ_SET_SHAREABLE(match);
             ADD_INSN1(ret, node, putobject, match);
             RB_OBJ_WRITTEN(iseq, Qundef, match);
         }
@@ -5088,13 +5099,21 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
 {
     switch (nd_type(node)) {
       case NODE_INTEGER:
-        return rb_node_integer_literal_val(node);
+        {
+            VALUE lit = rb_node_integer_literal_val(node);
+            if (!SPECIAL_CONST_P(lit)) RB_OBJ_SET_SHAREABLE(lit);
+            return lit;
+        }
       case NODE_FLOAT:
-        return rb_node_float_literal_val(node);
+        {
+            VALUE lit = rb_node_float_literal_val(node);
+            if (!SPECIAL_CONST_P(lit)) RB_OBJ_SET_SHAREABLE(lit);
+            return lit;
+        }
       case NODE_RATIONAL:
-        return rb_node_rational_literal_val(node);
+        return rb_ractor_make_shareable(rb_node_rational_literal_val(node));
       case NODE_IMAGINARY:
-        return rb_node_imaginary_literal_val(node);
+        return rb_ractor_make_shareable(rb_node_imaginary_literal_val(node));
       case NODE_NIL:
         return Qnil;
       case NODE_TRUE:
@@ -5104,7 +5123,7 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
       case NODE_SYM:
         return rb_node_sym_string_val(node);
       case NODE_REGX:
-        return rb_node_regx_string_val(node);
+        return RB_OBJ_SET_SHAREABLE(rb_node_regx_string_val(node));
       case NODE_LINE:
         return rb_node_line_lineno_val(node);
       case NODE_ENCODING:
@@ -5113,7 +5132,9 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
       case NODE_STR:
         if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
             VALUE lit = get_string_value(node);
-            return rb_str_with_debug_created_info(lit, rb_iseq_path(iseq), (int)nd_line(node));
+            VALUE str = rb_str_with_debug_created_info(lit, rb_iseq_path(iseq), (int)nd_line(node));
+            RB_OBJ_SET_SHAREABLE(str);
+            return str;
         }
         else {
             return get_string_value(node);
@@ -5211,7 +5232,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
                 /* Create a hidden array */
                 for (; count; count--, node = RNODE_LIST(node)->nd_next)
                     rb_ary_push(ary, static_literal_value(RNODE_LIST(node)->nd_head, iseq));
-                OBJ_FREEZE(ary);
+                RB_OBJ_SET_FROZEN_SHAREABLE(ary);
 
                 /* Emit optimized code */
                 FLUSH_CHUNK;
@@ -5223,6 +5244,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
                     ADD_INSN1(ret, line_node, putobject, ary);
                     ADD_INSN(ret, line_node, concattoarray);
                 }
+                RB_OBJ_SET_SHAREABLE(ary);
                 RB_OBJ_WRITTEN(iseq, Qundef, ary);
             }
         }
@@ -5349,13 +5371,14 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
                 for (; count; count--, node = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next) {
                     VALUE elem[2];
                     elem[0] = static_literal_value(RNODE_LIST(node)->nd_head, iseq);
+                    if (!RB_SPECIAL_CONST_P(elem[0])) RB_OBJ_SET_FROZEN_SHAREABLE(elem[0]);
                     elem[1] = static_literal_value(RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_head, iseq);
+                    if (!RB_SPECIAL_CONST_P(elem[1])) RB_OBJ_SET_FROZEN_SHAREABLE(elem[1]);
                     rb_ary_cat(ary, elem, 2);
                 }
                 VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
                 rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), hash);
-                hash = rb_obj_hide(hash);
-                OBJ_FREEZE(hash);
+                hash = RB_OBJ_SET_FROZEN_SHAREABLE(rb_obj_hide(hash));
 
                 /* Emit optimized code */
                 FLUSH_CHUNK();
@@ -6022,10 +6045,12 @@ collect_const_segments(rb_iseq_t *iseq, const NODE *node)
         switch (nd_type(node)) {
           case NODE_CONST:
             rb_ary_unshift(arr, ID2SYM(RNODE_CONST(node)->nd_vid));
+            RB_OBJ_SET_SHAREABLE(arr);
             return arr;
           case NODE_COLON3:
             rb_ary_unshift(arr, ID2SYM(RNODE_COLON3(node)->nd_mid));
             rb_ary_unshift(arr, ID2SYM(idNULL));
+            RB_OBJ_SET_SHAREABLE(arr);
             return arr;
           case NODE_COLON2:
             rb_ary_unshift(arr, ID2SYM(RNODE_COLON2(node)->nd_mid));
@@ -7122,6 +7147,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
 
     if (only_special_literals && ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
         ADD_INSN(ret, orig_node, dup);
+        rb_obj_hide(literals);
         ADD_INSN2(ret, orig_node, opt_case_dispatch, literals, elselabel);
         RB_OBJ_WRITTEN(iseq, Qundef, literals);
         LABEL_REF(elselabel);
@@ -7657,6 +7683,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
             ADD_INSN(ret, line_node, putnil);
         }
         else {
+            RB_OBJ_SET_FROZEN_SHAREABLE(keys);
             ADD_INSN1(ret, line_node, duparray, keys);
             RB_OBJ_WRITTEN(iseq, Qundef, rb_obj_hide(keys));
         }
@@ -7694,7 +7721,8 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
                         ADD_INSN(ret, line_node, dup);
                         ADD_INSNL(ret, line_node, branchif, match_succeeded);
 
-                        ADD_INSN1(ret, line_node, putobject, rb_str_freeze(rb_sprintf("key not found: %+"PRIsVALUE, key))); // (4)
+                        VALUE str = rb_str_freeze(rb_sprintf("key not found: %+"PRIsVALUE, key));
+                        ADD_INSN1(ret, line_node, putobject, RB_OBJ_SET_SHAREABLE(str)); // (4)
                         ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_ERROR_STRING + 2 /* (3), (4) */));
                         ADD_INSN1(ret, line_node, putobject, Qtrue); // (5)
                         ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_KEY_ERROR_P + 3 /* (3), (4), (5) */));
@@ -10163,9 +10191,13 @@ compile_match(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     INIT_ANCHOR(val);
     switch ((int)type) {
       case NODE_MATCH:
-        ADD_INSN1(recv, node, putobject, rb_node_regx_string_val(node));
-        ADD_INSN2(val, node, getspecial, INT2FIX(0),
-                  INT2FIX(0));
+        {
+            VALUE re = rb_node_regx_string_val(node);
+            RB_OBJ_SET_FROZEN_SHAREABLE(re);
+            ADD_INSN1(recv, node, putobject, re);
+            ADD_INSN2(val, node, getspecial, INT2FIX(0),
+                      INT2FIX(0));
+        }
         break;
       case NODE_MATCH2:
         CHECK(COMPILE(recv, "receiver", RNODE_MATCH2(node)->nd_recv));
@@ -10242,6 +10274,7 @@ compile_colon3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
         ISEQ_BODY(iseq)->ic_size++;
         VALUE segments = rb_ary_new_from_args(2, ID2SYM(idNULL), ID2SYM(RNODE_COLON3(node)->nd_mid));
+        RB_OBJ_SET_FROZEN_SHAREABLE(segments);
         ADD_INSN1(ret, node, opt_getconstant_path, segments);
         RB_OBJ_WRITTEN(iseq, Qundef, segments);
     }
@@ -10269,6 +10302,7 @@ compile_dots(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
             VALUE bv = optimized_range_item(b);
             VALUE ev = optimized_range_item(e);
             VALUE val = rb_range_new(bv, ev, excl);
+            rb_ractor_make_shareable(rb_obj_freeze(val));
             ADD_INSN1(ret, node, putobject, val);
             RB_OBJ_WRITTEN(iseq, Qundef, val);
         }
@@ -11080,6 +11114,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
             body->ic_size++;
             VALUE segments = rb_ary_new_from_args(1, ID2SYM(RNODE_CONST(node)->nd_vid));
+            RB_OBJ_SET_FROZEN_SHAREABLE(segments);
             ADD_INSN1(ret, node, opt_getconstant_path, segments);
             RB_OBJ_WRITTEN(iseq, Qundef, segments);
         }
@@ -11145,6 +11180,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case NODE_INTEGER:{
         VALUE lit = rb_node_integer_literal_val(node);
+        if (!SPECIAL_CONST_P(lit)) RB_OBJ_SET_SHAREABLE(lit);
         debugp_param("integer", lit);
         if (!popped) {
             ADD_INSN1(ret, node, putobject, lit);
@@ -11154,6 +11190,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case NODE_FLOAT:{
         VALUE lit = rb_node_float_literal_val(node);
+        if (!SPECIAL_CONST_P(lit)) RB_OBJ_SET_SHAREABLE(lit);
         debugp_param("float", lit);
         if (!popped) {
             ADD_INSN1(ret, node, putobject, lit);
@@ -11163,6 +11200,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case NODE_RATIONAL:{
         VALUE lit = rb_node_rational_literal_val(node);
+        rb_ractor_make_shareable(lit);
         debugp_param("rational", lit);
         if (!popped) {
             ADD_INSN1(ret, node, putobject, lit);
@@ -11172,6 +11210,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case NODE_IMAGINARY:{
         VALUE lit = rb_node_imaginary_literal_val(node);
+        rb_ractor_make_shareable(lit);
         debugp_param("imaginary", lit);
         if (!popped) {
             ADD_INSN1(ret, node, putobject, lit);
@@ -11188,6 +11227,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
             if ((option->debug_frozen_string_literal || RTEST(ruby_debug)) &&
                 option->frozen_string_literal != ISEQ_FROZEN_STRING_LITERAL_DISABLED) {
                 lit = rb_str_with_debug_created_info(lit, rb_iseq_path(iseq), line);
+                RB_OBJ_SET_SHAREABLE(lit);
             }
             switch (option->frozen_string_literal) {
               case ISEQ_FROZEN_STRING_LITERAL_UNSET:
@@ -11242,6 +11282,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case NODE_REGX:{
         if (!popped) {
             VALUE lit = rb_node_regx_string_val(node);
+            RB_OBJ_SET_SHAREABLE(lit);
             ADD_INSN1(ret, node, putobject, lit);
             RB_OBJ_WRITTEN(iseq, Qundef, lit);
         }
@@ -12105,6 +12146,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
                                 rb_hash_aset(map, key, (VALUE)label | 1);
                             }
                             RB_GC_GUARD(op);
+                            RB_OBJ_SET_SHAREABLE(rb_obj_hide(map)); // allow mutation while compiling
                             argv[j] = map;
                             RB_OBJ_WRITTEN(iseq, Qundef, map);
                         }
@@ -12992,7 +13034,7 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     v = rb_hash_dup(v); // hash dumped as frozen
                     RHASH_TBL_RAW(v)->type = &cdhash_type;
                     rb_hash_rehash(v); // hash function changed
-                    freeze_hide_obj(v);
+                    RB_OBJ_SET_SHAREABLE(freeze_hide_obj(v));
 
                     // Overwrite the existing hash in the object list.  This
                     // is to keep the object alive during load time.
@@ -14126,7 +14168,9 @@ ibf_load_object_float(const struct ibf_load *load, const struct ibf_object_heade
     double d;
     /* Avoid unaligned VFP load on ARMv7; IBF payload may be unaligned (C99 6.3.2.3 p7). */
     memcpy(&d, IBF_OBJBODY(double, offset), sizeof(d));
-    return DBL2NUM(d);
+    VALUE f = DBL2NUM(d);
+    if (!FLONUM_P(f)) RB_OBJ_SET_SHAREABLE(f);
+    return f;
 }
 
 static void
@@ -14197,7 +14241,7 @@ ibf_load_object_regexp(const struct ibf_load *load, const struct ibf_object_head
     VALUE reg = rb_reg_compile(srcstr, (int)regexp.option, NULL, 0);
 
     if (header->internal) rb_obj_hide(reg);
-    if (header->frozen)   rb_obj_freeze(reg);
+    if (header->frozen) RB_OBJ_SET_SHAREABLE(rb_obj_freeze(reg));
 
     return reg;
 }
@@ -14228,7 +14272,10 @@ ibf_load_object_array(const struct ibf_load *load, const struct ibf_object_heade
         rb_ary_push(ary, ibf_load_object(load, index));
     }
 
-    if (header->frozen) rb_ary_freeze(ary);
+    if (header->frozen) {
+        rb_ary_freeze(ary);
+        rb_ractor_make_shareable(ary); // TODO: check elements
+    }
 
     return ary;
 }
@@ -14273,7 +14320,9 @@ ibf_load_object_hash(const struct ibf_load *load, const struct ibf_object_header
     rb_hash_rehash(obj);
 
     if (header->internal) rb_obj_hide(obj);
-    if (header->frozen)   rb_obj_freeze(obj);
+    if (header->frozen) {
+        RB_OBJ_SET_FROZEN_SHAREABLE(obj);
+    }
 
     return obj;
 }
@@ -14309,7 +14358,7 @@ ibf_load_object_struct(const struct ibf_load *load, const struct ibf_object_head
     VALUE end = ibf_load_object(load, range->end);
     VALUE obj = rb_range_new(beg, end, range->excl);
     if (header->internal) rb_obj_hide(obj);
-    if (header->frozen)   rb_obj_freeze(obj);
+    if (header->frozen)   RB_OBJ_SET_FROZEN_SHAREABLE(obj);
     return obj;
 }
 
@@ -14337,7 +14386,7 @@ ibf_load_object_bignum(const struct ibf_load *load, const struct ibf_object_head
                                   big_unpack_flags |
                                   (sign == 0 ? INTEGER_PACK_NEGATIVE : 0));
     if (header->internal) rb_obj_hide(obj);
-    if (header->frozen)   rb_obj_freeze(obj);
+    if (header->frozen)   RB_OBJ_SET_FROZEN_SHAREABLE(obj);
     return obj;
 }
 
@@ -14398,7 +14447,7 @@ ibf_load_object_complex_rational(const struct ibf_load *load, const struct ibf_o
       rb_complex_new(a, b) : rb_rational_new(a, b);
 
     if (header->internal) rb_obj_hide(obj);
-    if (header->frozen)   rb_obj_freeze(obj);
+    if (header->frozen) rb_ractor_make_shareable(rb_obj_freeze(obj));
     return obj;
 }
 

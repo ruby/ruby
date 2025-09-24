@@ -19,6 +19,7 @@
 #include "internal/vm.h"
 #include "probes.h"
 #include "ruby/encoding.h"
+#include "ruby/ractor.h"
 #include "ruby/st.h"
 #include "symbol.h"
 #include "vm_sync.h"
@@ -200,7 +201,6 @@ dup_string_for_create(VALUE str)
     OBJ_FREEZE(str);
 
     str = rb_fstring(str);
-
     return str;
 }
 
@@ -255,8 +255,8 @@ sym_set_create(VALUE sym, void *data)
 
         rb_encoding *enc = rb_enc_get(str);
         rb_enc_set_index((VALUE)obj, rb_enc_to_index(enc));
-        OBJ_FREEZE((VALUE)obj);
         RB_OBJ_WRITE((VALUE)obj, &obj->fstr, str);
+        RB_OBJ_SET_FROZEN_SHAREABLE((VALUE)obj);
 
         int id = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
         if (id < 0) id = ID_INTERNAL;
