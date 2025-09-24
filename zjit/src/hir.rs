@@ -829,7 +829,10 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayDup { val, .. } => { write!(f, "ArrayDup {val}") }
             Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
             Insn::ObjectAlloc { val, .. } => { write!(f, "ObjectAlloc {val}") }
-            Insn::ObjectAllocClass { class, .. } => { write!(f, "ObjectAllocClass {}", class.print(self.ptr_map)) }
+            &Insn::ObjectAllocClass { class, .. } => {
+                let class_name = get_class_name(class);
+                write!(f, "ObjectAllocClass {class_name}:{}", class.print(self.ptr_map))
+            }
             Insn::StringCopy { val, .. } => { write!(f, "StringCopy {val}") }
             Insn::StringConcat { strings, .. } => {
                 write!(f, "StringConcat")?;
@@ -5637,7 +5640,7 @@ mod tests {
           v10:ArrayExact = ToArray v2
           PatchPoint NoEPEscape(test)
           GuardBlockParamProxy l0
-          v15:BasicObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          v15:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
           SideExit UnhandledYARVInsn(splatkw)
         ");
     }
@@ -6221,16 +6224,16 @@ mod tests {
           v10:BasicObject = InvokeBuiltin dir_s_open, v0, v1, v2
           PatchPoint NoEPEscape(open)
           GuardBlockParamProxy l0
-          v17:BasicObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          v17:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
           CheckInterrupts
-          v20:CBool = Test v17
+          v20:CBool[true] = Test v17
           IfFalse v20, bb1(v0, v1, v2, v3, v4, v10)
           PatchPoint NoEPEscape(open)
           v27:BasicObject = InvokeBlock, v10
           v31:BasicObject = InvokeBuiltin dir_s_close, v0, v10
           CheckInterrupts
           Return v27
-        bb1(v37:BasicObject, v38:BasicObject, v39:BasicObject, v40:BasicObject, v41:BasicObject, v42:BasicObject):
+        bb1(v37, v38, v39, v40, v41, v42):
           PatchPoint NoEPEscape(open)
           CheckInterrupts
           Return v42
@@ -8033,7 +8036,7 @@ mod opt_tests {
         bb0(v0:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, MY_MODULE)
-          v13:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v13:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           CheckInterrupts
           Return v13
         ");
@@ -8378,7 +8381,7 @@ mod opt_tests {
           v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v6:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(C@0x1008, new@0x1010, cme:0x1018)
-          v37:HeapObject[class_exact:C] = ObjectAllocClass VALUE(0x1008)
+          v37:HeapObject[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
           PatchPoint MethodRedefined(C@0x1008, initialize@0x1040, cme:0x1048)
           v39:NilClass = CCall initialize@0x1070, v37
           CheckInterrupts
@@ -8407,7 +8410,7 @@ mod opt_tests {
           v6:NilClass = Const Value(nil)
           v7:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(C@0x1008, new@0x1010, cme:0x1018)
-          v39:HeapObject[class_exact:C] = ObjectAllocClass VALUE(0x1008)
+          v39:HeapObject[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
           PatchPoint MethodRedefined(C@0x1008, initialize@0x1040, cme:0x1048)
           v41:BasicObject = SendWithoutBlockDirect v39, :initialize (0x1070), v7
           CheckInterrupts
@@ -8430,7 +8433,7 @@ mod opt_tests {
           v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v6:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Object@0x1008, new@0x1010, cme:0x1018)
-          v37:HeapObject[class_exact:Object] = ObjectAllocClass VALUE(0x1008)
+          v37:ObjectExact = ObjectAllocClass Object:VALUE(0x1008)
           PatchPoint MethodRedefined(Object@0x1008, initialize@0x1040, cme:0x1048)
           v39:NilClass = CCall initialize@0x1070, v37
           CheckInterrupts
@@ -8453,7 +8456,7 @@ mod opt_tests {
           v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v6:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(BasicObject@0x1008, new@0x1010, cme:0x1018)
-          v37:HeapObject[class_exact:BasicObject] = ObjectAllocClass VALUE(0x1008)
+          v37:BasicObjectExact = ObjectAllocClass BasicObject:VALUE(0x1008)
           PatchPoint MethodRedefined(BasicObject@0x1008, initialize@0x1040, cme:0x1048)
           v39:NilClass = CCall initialize@0x1070, v37
           CheckInterrupts
@@ -8476,7 +8479,7 @@ mod opt_tests {
           v34:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v6:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Hash@0x1008, new@0x1010, cme:0x1018)
-          v37:HashExact = ObjectAllocClass VALUE(0x1008)
+          v37:HashExact = ObjectAllocClass Hash:VALUE(0x1008)
           v12:BasicObject = SendWithoutBlock v37, :initialize
           CheckInterrupts
           CheckInterrupts
@@ -8523,7 +8526,7 @@ mod opt_tests {
           PatchPoint MethodRedefined(Set@0x1008, new@0x1010, cme:0x1018)
           v10:HeapObject = ObjectAlloc v34
           PatchPoint MethodRedefined(Set@0x1008, initialize@0x1040, cme:0x1048)
-          v39:HeapObject[class_exact:Set] = GuardType v10, HeapObject[class_exact:Set]
+          v39:SetExact = GuardType v10, SetExact
           v40:BasicObject = CCallVariadic initialize@0x1070, v39
           CheckInterrupts
           CheckInterrupts
@@ -8568,7 +8571,7 @@ mod opt_tests {
           v7:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           v9:StringExact = StringCopy v7
           PatchPoint MethodRedefined(Regexp@0x1008, new@0x1018, cme:0x1020)
-          v41:HeapObject[class_exact:Regexp] = ObjectAllocClass VALUE(0x1008)
+          v41:RegexpExact = ObjectAllocClass Regexp:VALUE(0x1008)
           PatchPoint MethodRedefined(Regexp@0x1008, initialize@0x1048, cme:0x1050)
           v44:BasicObject = CCallVariadic initialize@0x1078, v41, v9
           CheckInterrupts
@@ -8618,7 +8621,7 @@ mod opt_tests {
         fn test@<compiled>:2:
         bb0(v0:BasicObject, v1:BasicObject):
           GuardBlockParamProxy l0
-          v7:BasicObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          v7:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
           v9:BasicObject = Send v0, 0x1008, :tap, v7
           CheckInterrupts
           Return v9
@@ -9632,10 +9635,9 @@ mod opt_tests {
         bb0(v0:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, O)
-          v15:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v15:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(C@0x1010, foo@0x1018, cme:0x1020)
-          v18:HeapObject[VALUE(0x1008)] = GuardType v15, HeapObject
-          v19:HeapObject[VALUE(0x1008)] = GuardShape v18, 0x1048
+          v19:HeapObject[VALUE(0x1008)] = GuardShape v15, 0x1048
           v20:NilClass = Const Value(nil)
           CheckInterrupts
           Return v20
@@ -9659,10 +9661,9 @@ mod opt_tests {
         bb0(v0:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, O)
-          v15:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v15:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(C@0x1010, foo@0x1018, cme:0x1020)
-          v18:HeapObject[VALUE(0x1008)] = GuardType v15, HeapObject
-          v19:HeapObject[VALUE(0x1008)] = GuardShape v18, 0x1048
+          v19:HeapObject[VALUE(0x1008)] = GuardShape v15, 0x1048
           v20:NilClass = Const Value(nil)
           CheckInterrupts
           Return v20

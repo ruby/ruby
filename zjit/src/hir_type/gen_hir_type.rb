@@ -58,10 +58,19 @@ object_subclass = $object.subtype "ObjectSubclass"
 $subclass = [basic_object_subclass.name, object_subclass.name]
 $builtin_exact = [basic_object_exact.name, object_exact.name]
 
+$c_names = {
+  "ObjectExact" => "rb_cObject",
+  "BasicObjectExact" => "rb_cBasicObject",
+}
+
 # Define a new type that can be subclassed (most of them).
-def base_type name
+# If c_name is given, mark the rb_cXYZ object as equivalent to this exact type.
+def base_type name, c_name: nil
   type = $object.subtype name
   exact = type.subtype(name+"Exact")
+  if c_name
+    $c_names[exact.name] = c_name
+  end
   subclass = type.subtype(name+"Subclass")
   $builtin_exact << exact.name
   $subclass << subclass.name
@@ -69,39 +78,45 @@ def base_type name
 end
 
 # Define a new type that cannot be subclassed.
-def final_type name
-  type = $object.subtype name
+# If c_name is given, mark the rb_cXYZ object as equivalent to this type.
+def final_type name, base: $object, c_name: nil
+  if c_name
+    $c_names[name] = c_name
+  end
+  type = base.subtype name
   $builtin_exact << type.name
   type
 end
 
-base_type "String"
-base_type "Array"
-base_type "Hash"
-base_type "Range"
-base_type "Set"
-base_type "Regexp"
-module_class, _ = base_type "Module"
-module_class.subtype "Class"
+base_type "String", c_name: "rb_cString"
+base_type "Array", c_name: "rb_cArray"
+base_type "Hash", c_name: "rb_cHash"
+base_type "Range", c_name: "rb_cRange"
+base_type "Set", c_name: "rb_cSet"
+base_type "Regexp", c_name: "rb_cRegexp"
+module_class, _ = base_type "Module", c_name: "rb_cModule"
+class_ = final_type "Class", base: module_class, c_name: "rb_cClass"
 
-integer_exact = final_type "Integer"
+numeric, _ = base_type "Numeric", c_name: "rb_cNumeric"
+
+integer_exact = final_type "Integer", base: numeric, c_name: "rb_cInteger"
 # CRuby partitions Integer into immediate and non-immediate variants.
 fixnum = integer_exact.subtype "Fixnum"
 integer_exact.subtype "Bignum"
 
-float_exact = final_type "Float"
+float_exact = final_type "Float", base: numeric, c_name: "rb_cFloat"
 # CRuby partitions Float into immediate and non-immediate variants.
 flonum = float_exact.subtype "Flonum"
 float_exact.subtype "HeapFloat"
 
-symbol_exact = final_type "Symbol"
+symbol_exact = final_type "Symbol", c_name: "rb_cSymbol"
 # CRuby partitions Symbol into immediate and non-immediate variants.
 static_sym = symbol_exact.subtype "StaticSymbol"
 symbol_exact.subtype "DynamicSymbol"
 
-nil_exact = final_type "NilClass"
-true_exact = final_type "TrueClass"
-false_exact = final_type "FalseClass"
+nil_exact = final_type "NilClass", c_name: "rb_cNilClass"
+true_exact = final_type "TrueClass", c_name: "rb_cTrueClass"
+false_exact = final_type "FalseClass", c_name: "rb_cFalseClass"
 
 # Build the cvalue object universe. This is for C-level types that may be
 # passed around when calling into the Ruby VM or after some strength reduction
@@ -183,4 +198,9 @@ puts "pub mod types {
 $bits.keys.sort.map {|type_name|
     puts "  pub const #{type_name}: Type = Type::from_bits(bits::#{type_name});"
 }
+puts "  pub const ExactBitsAndClass: [(u64, *const VALUE); #{$c_names.size}] = ["
+$c_names.each {|type_name, c_name|
+  puts "    (bits::#{type_name}, &raw const crate::cruby::#{c_name}),"
+}
+puts "  ];"
 puts "}"
