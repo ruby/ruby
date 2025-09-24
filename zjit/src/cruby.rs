@@ -999,7 +999,7 @@ pub use manual_defs::*;
 pub mod test_utils {
     use std::{ptr::null, sync::Once};
 
-    use crate::{options::{internal_set_num_profiles, rb_zjit_call_threshold, rb_zjit_prepare_options, DEFAULT_CALL_THRESHOLD}, state::{rb_zjit_enabled_p, ZJITState}};
+    use crate::{options::{rb_zjit_call_threshold, rb_zjit_prepare_options, set_call_threshold, DEFAULT_CALL_THRESHOLD}, state::{rb_zjit_enabled_p, ZJITState}};
 
     use super::*;
 
@@ -1026,7 +1026,7 @@ pub mod test_utils {
 
             // The default rb_zjit_profile_threshold is too high, so lower it for HIR tests.
             if rb_zjit_call_threshold == DEFAULT_CALL_THRESHOLD {
-                internal_set_num_profiles(1);
+                set_call_threshold(2);
             }
 
             // Pass command line options so the VM loads core library methods defined in
@@ -1097,6 +1097,12 @@ pub mod test_utils {
             let wrapped_iseq = compile_to_wrapped_iseq(&unindent(program, false));
             unsafe { rb_funcallv(wrapped_iseq, ID!(eval), 0, null()) }
         })
+    }
+
+    /// Get the #inspect of a given Ruby program in Rust string
+    pub fn inspect(program: &str) -> String {
+        let inspect = format!("({program}).inspect");
+        ruby_str_to_rust_string(eval(&inspect))
     }
 
     /// Get the ISeq of a specified method

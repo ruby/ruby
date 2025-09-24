@@ -6545,6 +6545,7 @@ mod graphviz_tests {
 #[cfg(test)]
 mod opt_tests {
     use super::*;
+    use crate::options::*;
     use insta::assert_snapshot;
 
     #[track_caller]
@@ -8481,6 +8482,7 @@ mod opt_tests {
           CheckInterrupts
           Return v37
         ");
+        assert_snapshot!(inspect("test"), @"{}");
     }
 
     #[test]
@@ -9580,8 +9582,7 @@ mod opt_tests {
 
     #[test]
     fn test_dont_optimize_getivar_polymorphic() {
-        crate::options::rb_zjit_prepare_options();
-        crate::options::internal_set_num_profiles(3);
+        set_call_threshold(3);
         eval("
             class C
               attr_reader :foo, :bar

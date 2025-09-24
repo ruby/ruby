@@ -2058,10 +2058,12 @@ mod tests {
 
         // `IMMEDIATE_MAX_VALUE` number of dummy instructions will be generated
         // plus a compare, a jump instruction, and a label.
-        const MEMORY_REQUIRED: usize = (IMMEDIATE_MAX_VALUE + 8)*4;
+        // Adding page_size to avoid OOM on the last page.
+        let page_size = unsafe { rb_jit_get_page_size() } as usize;
+        let memory_required = (IMMEDIATE_MAX_VALUE + 8) * 4 + page_size;
 
         let mut asm = Assembler::new();
-        let mut cb = CodeBlock::new_dummy_sized(MEMORY_REQUIRED);
+        let mut cb = CodeBlock::new_dummy_sized(memory_required);
 
         let far_label = asm.new_label("far");
 

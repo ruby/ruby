@@ -4,17 +4,10 @@
 // benefit.
 
 use std::ptr::NonNull;
-
+use crate::cruby::*;
 use crate::stats::zjit_alloc_size;
 
-#[cfg(test)]
-use crate::options::get_option;
-
-#[cfg(not(test))]
 pub type VirtualMem = VirtualMemory<sys::SystemAllocator>;
-
-#[cfg(test)]
-pub type VirtualMem = VirtualMemory<tests::TestingAllocator>;
 
 /// Memory for generated executable machine code. When not testing, we reserve address space for
 /// the entire region upfront and map physical memory into the reserved address space as needed. On
@@ -33,7 +26,7 @@ pub struct VirtualMemory<A: Allocator> {
     region_size_bytes: usize,
 
     /// mapped_region_bytes + zjit_alloc_size may not increase beyond this limit.
-    memory_limit_bytes: usize,
+    memory_limit_bytes: Option<usize>,
 
     /// Number of bytes per "page", memory protection permission can only be controlled at this
     /// granularity.
@@ -113,6 +106,28 @@ pub enum WriteError {
 
 use WriteError::*;
 
+impl VirtualMem {
+    /// Allocate a VirtualMem insntace with a requested size
+    pub fn alloc(exec_mem_bytes: usize, mem_bytes: Option<usize>) -> Self {
+        let virt_block: *mut u8 = unsafe { rb_jit_reserve_addr_space(exec_mem_bytes as u32) };
+
+        // Memory protection syscalls need page-aligned addresses, so check it here. Assuming
+        // `virt_block` is page-aligned, `second_half` should be page-aligned as long as the
+        // page size in bytes is a power of two 2¹⁹ or smaller. This is because the user
+        // requested size is half of mem_option × 2²⁰ as it's in MiB.
+        //
+        // Basically, we don't support x86-64 2MiB and 1GiB pages. ARMv8 can do up to 64KiB
+        // (2¹⁶ bytes) pages, which should be fine. 4KiB pages seem to be the most popular though.
+        let page_size = unsafe { rb_jit_get_page_size() };
+        assert_eq!(
+            virt_block as usize % page_size as usize, 0,
+            "Start of virtual address block should be page-aligned",
+        );
+
+        Self::new(sys::SystemAllocator {}, page_size, NonNull::new(virt_block).unwrap(), exec_mem_bytes, mem_bytes)
+    }
+}
+
 impl<A: Allocator> VirtualMemory<A> {
     /// Bring a part of the address space under management.
     pub fn new(
@@ -120,7 +135,7 @@ impl<A: Allocator> VirtualMemory<A> {
         page_size: u32,
         virt_region_start: NonNull<u8>,
         region_size_bytes: usize,
-        memory_limit_bytes: usize,
+        memory_limit_bytes: Option<usize>,
     ) -> Self {
         assert_ne!(0, page_size);
         let page_size_bytes = page_size as usize;
@@ -181,6 +196,12 @@ impl<A: Allocator> VirtualMemory<A> {
             let whole_region_end = start.wrapping_add(self.region_size_bytes);
             let alloc = &mut self.allocator;
 
+            // Ignore zjit_alloc_size() if self.memory_limit_bytes is None for testing
+            let mut required_region_bytes = page_addr + page_size - start as usize;
+            if self.memory_limit_bytes.is_some() {
+                required_region_bytes += zjit_alloc_size();
+            }
+
             assert!((start..=whole_region_end).contains(&mapped_region_end));
 
             if (start..mapped_region_end).contains(&raw) {
@@ -193,7 +214,7 @@ impl<A: Allocator> VirtualMemory<A> {
 
                 self.current_write_page = Some(page_addr);
             } else if (start..whole_region_end).contains(&raw) &&
-                    (page_addr + page_size - start as usize) + zjit_alloc_size() < self.memory_limit_bytes {
+                    required_region_bytes < self.memory_limit_bytes.unwrap_or(self.region_size_bytes) {
                 // Writing to a brand new page
                 let mapped_region_end_addr = mapped_region_end as usize;
                 let alloc_size = page_addr - mapped_region_end_addr + page_size;
@@ -279,7 +300,6 @@ impl<A: Allocator> CodePtrBase for VirtualMemory<A> {
 }
 
 /// Requires linking with CRuby to work
-#[cfg(not(test))]
 pub mod sys {
     use crate::cruby::*;
 
@@ -387,7 +407,7 @@ pub mod tests {
             PAGE_SIZE.try_into().unwrap(),
             NonNull::new(mem_start as *mut u8).unwrap(),
             mem_size,
-            get_option!(mem_bytes),
+            None,
         )
     }
 
