@@ -45,6 +45,7 @@
 #include "ruby/re.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
+#include "ruby/ractor.h"
 #include "ruby_assert.h"
 #include "shape.h"
 #include "vm_sync.h"
@@ -537,7 +538,10 @@ fstring_concurrent_set_create(VALUE str, void *data)
 
     ENC_CODERANGE_SET(str, coderange);
     RBASIC(str)->flags |= RSTRING_FSTR;
-
+    if (!RB_OBJ_SHAREABLE_P(str)) {
+        RB_OBJ_SET_SHAREABLE(str);
+    }
+    RUBY_ASSERT((rb_gc_verify_shareable(str), 1));
     RUBY_ASSERT(RB_TYPE_P(str, T_STRING));
     RUBY_ASSERT(OBJ_FROZEN(str));
     RUBY_ASSERT(!FL_TEST_RAW(str, STR_FAKESTR));
@@ -583,6 +587,8 @@ register_fstring(VALUE str, bool copy, bool force_precompute_hash)
     RUBY_ASSERT(!rb_objspace_garbage_object_p(result));
     RUBY_ASSERT(RB_TYPE_P(result, T_STRING));
     RUBY_ASSERT(OBJ_FROZEN(result));
+    RUBY_ASSERT(RB_OBJ_SHAREABLE_P(result));
+    RUBY_ASSERT((rb_gc_verify_shareable(result), 1));
     RUBY_ASSERT(!FL_TEST_RAW(result, STR_FAKESTR));
     RUBY_ASSERT(RBASIC_CLASS(result) == rb_cString);
 
@@ -1555,6 +1561,10 @@ rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
         RBASIC(str)->flags |= RBASIC(orig)->flags & STR_NOFREE;
         RBASIC(orig)->flags &= ~STR_NOFREE;
         STR_SET_SHARED(orig, str);
+        if (RB_OBJ_SHAREABLE_P(orig)) {
+            RB_OBJ_SET_SHAREABLE(str);
+            RUBY_ASSERT((rb_gc_verify_shareable(str), 1));
+        }
     }
 
     RSTRING(str)->len = RSTRING(orig)->len;
@@ -1604,6 +1614,7 @@ heap_str_make_shared(VALUE klass, VALUE orig)
 {
     RUBY_ASSERT(!STR_EMBED_P(orig));
     RUBY_ASSERT(!STR_SHARED_P(orig));
+    RUBY_ASSERT(!RB_OBJ_SHAREABLE_P(orig));
 
     VALUE str = str_alloc_heap(klass);
     STR_SET_LEN(str, RSTRING_LEN(orig));
@@ -1613,7 +1624,7 @@ heap_str_make_shared(VALUE klass, VALUE orig)
     RBASIC(orig)->flags &= ~STR_NOFREE;
     STR_SET_SHARED(orig, str);
     if (klass == 0)
-        FL_UNSET_RAW(str, STR_BORROWED);
+      FL_UNSET_RAW(str, STR_BORROWED);
     return str;
 }
 
@@ -1663,7 +1674,12 @@ str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding)
             TERM_FILL(RSTRING_END(str), TERM_LEN(orig));
         }
         else {
-            str = heap_str_make_shared(klass, orig);
+            if (RB_OBJ_SHAREABLE_P(orig)) {
+                str = str_new(klass, RSTRING_PTR(orig), RSTRING_LEN(orig));
+            }
+            else {
+                str = heap_str_make_shared(klass, orig);
+            }
         }
     }
 
@@ -12676,7 +12692,9 @@ rb_enc_literal_str(const char *ptr, long len, rb_encoding *enc)
     }
 
     struct RString fake_str = {RBASIC_INIT};
-    return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), true, true);
+    VALUE str = register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), true, true);
+    RUBY_ASSERT(RB_OBJ_SHAREABLE_P(str) && (rb_gc_verify_shareable(str), 1));
+    return str;
 }
 
 VALUE

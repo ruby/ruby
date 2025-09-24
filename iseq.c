@@ -425,13 +425,15 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
         rb_gc_mark_and_move(&iseq->aux.loader.obj);
     }
     else if (FL_TEST_RAW((VALUE)iseq, ISEQ_USE_COMPILE_DATA)) {
-        const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
+        if (!rb_gc_checking_shareable()) {
+            const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
 
-        rb_iseq_mark_and_move_insn_storage(compile_data->insn.storage_head);
-        rb_iseq_mark_and_move_each_compile_data_value(iseq, reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL);
+            rb_iseq_mark_and_move_insn_storage(compile_data->insn.storage_head);
+            rb_iseq_mark_and_move_each_compile_data_value(iseq, reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL);
 
-        rb_gc_mark_and_move((VALUE *)&compile_data->err_info);
-        rb_gc_mark_and_move((VALUE *)&compile_data->catch_table_ary);
+            rb_gc_mark_and_move((VALUE *)&compile_data->err_info);
+            rb_gc_mark_and_move((VALUE *)&compile_data->catch_table_ary);
+        }
     }
     else {
         /* executable */
@@ -544,9 +546,14 @@ rb_iseq_pathobj_new(VALUE path, VALUE realpath)
         pathobj = rb_fstring(path);
     }
     else {
-        if (!NIL_P(realpath)) realpath = rb_fstring(realpath);
-        pathobj = rb_ary_new_from_args(2, rb_fstring(path), realpath);
+        if (!NIL_P(realpath)) {
+            realpath = rb_fstring(realpath);
+        }
+        VALUE fpath = rb_fstring(path);
+
+        pathobj = rb_ary_new_from_args(2, fpath, realpath);
         rb_ary_freeze(pathobj);
+        RB_OBJ_SET_SHAREABLE(pathobj);
     }
     return pathobj;
 }
@@ -565,6 +572,11 @@ rb_iseq_alloc_with_dummy_path(VALUE fname)
     rb_iseq_t *dummy_iseq = iseq_alloc();
 
     ISEQ_BODY(dummy_iseq)->type = ISEQ_TYPE_TOP;
+
+    if (!RB_OBJ_SHAREABLE_P(fname)) {
+        RB_OBJ_SET_FROZEN_SHAREABLE(fname);
+    }
+
     RB_OBJ_WRITE(dummy_iseq, &ISEQ_BODY(dummy_iseq)->location.pathobj, fname);
     RB_OBJ_WRITE(dummy_iseq, &ISEQ_BODY(dummy_iseq)->location.label, fname);
 
@@ -1568,6 +1580,7 @@ iseqw_new(const rb_iseq_t *iseq)
         RB_OBJ_WRITE(obj, ptr, iseq);
 
         /* cache a wrapper object */
+        RB_OBJ_SET_FROZEN_SHAREABLE((VALUE)obj);
         RB_OBJ_WRITE((VALUE)iseq, &iseq->wrapper, obj);
 
         return obj;

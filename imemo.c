@@ -40,9 +40,9 @@ rb_imemo_name(enum imemo_type type)
  * ========================================================================= */
 
 VALUE
-rb_imemo_new(enum imemo_type type, VALUE v0, size_t size)
+rb_imemo_new(enum imemo_type type, VALUE v0, size_t size, bool is_shareable)
 {
-    VALUE flags = T_IMEMO | FL_WB_PROTECTED | (type << FL_USHIFT);
+    VALUE flags = T_IMEMO | FL_WB_PROTECTED | (type << FL_USHIFT) | (is_shareable ? FL_SHAREABLE : 0);
     NEWOBJ_OF(obj, void, v0, flags, size, 0);
 
     return (VALUE)obj;
@@ -98,16 +98,16 @@ rb_free_tmp_buffer(volatile VALUE *store)
 }
 
 static VALUE
-imemo_fields_new(VALUE owner, size_t capa)
+imemo_fields_new(VALUE owner, size_t capa, bool shareable)
 {
     size_t embedded_size = offsetof(struct rb_fields, as.embed) + capa * sizeof(VALUE);
     if (rb_gc_size_allocatable_p(embedded_size)) {
-        VALUE fields = rb_imemo_new(imemo_fields, owner, embedded_size);
+        VALUE fields = rb_imemo_new(imemo_fields, owner, embedded_size, shareable);
         RUBY_ASSERT(IMEMO_TYPE_P(fields, imemo_fields));
         return fields;
     }
     else {
-        VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields));
+        VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
         IMEMO_OBJ_FIELDS(fields)->as.external.ptr = ALLOC_N(VALUE, capa);
         FL_SET_RAW(fields, OBJ_FIELD_HEAP);
         return fields;
@@ -115,24 +115,24 @@ imemo_fields_new(VALUE owner, size_t capa)
 }
 
 VALUE
-rb_imemo_fields_new(VALUE owner, size_t capa)
+rb_imemo_fields_new(VALUE owner, size_t capa, bool shareable)
 {
-    return imemo_fields_new(owner, capa);
+    return imemo_fields_new(owner, capa, shareable);
 }
 
 static VALUE
-imemo_fields_new_complex(VALUE owner, size_t capa)
+imemo_fields_new_complex(VALUE owner, size_t capa, bool shareable)
 {
-    VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields));
+    VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = st_init_numtable_with_size(capa);
     FL_SET_RAW(fields, OBJ_FIELD_HEAP);
     return fields;
 }
 
 VALUE
-rb_imemo_fields_new_complex(VALUE owner, size_t capa)
+rb_imemo_fields_new_complex(VALUE owner, size_t capa, bool shareable)
 {
-    return imemo_fields_new_complex(owner, capa);
+    return imemo_fields_new_complex(owner, capa, shareable);
 }
 
 static int
@@ -151,9 +151,9 @@ imemo_fields_complex_wb_i(st_data_t key, st_data_t value, st_data_t arg)
 }
 
 VALUE
-rb_imemo_fields_new_complex_tbl(VALUE owner, st_table *tbl)
+rb_imemo_fields_new_complex_tbl(VALUE owner, st_table *tbl, bool shareable)
 {
-    VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields));
+    VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = tbl;
     FL_SET_RAW(fields, OBJ_FIELD_HEAP);
     st_foreach(tbl, imemo_fields_trigger_wb_i, (st_data_t)fields);
@@ -170,7 +170,7 @@ rb_imemo_fields_clone(VALUE fields_obj)
         st_table *src_table = rb_imemo_fields_complex_tbl(fields_obj);
 
         st_table *dest_table = xcalloc(1, sizeof(st_table));
-        clone = rb_imemo_fields_new_complex_tbl(rb_imemo_fields_owner(fields_obj), dest_table);
+        clone = rb_imemo_fields_new_complex_tbl(rb_imemo_fields_owner(fields_obj), dest_table, false /* TODO: check */);
 
         st_replace(dest_table, src_table);
         RBASIC_SET_SHAPE_ID(clone, shape_id);
@@ -178,7 +178,7 @@ rb_imemo_fields_clone(VALUE fields_obj)
         st_foreach(dest_table, imemo_fields_complex_wb_i, (st_data_t)clone);
     }
     else {
-        clone = imemo_fields_new(rb_imemo_fields_owner(fields_obj), RSHAPE_CAPACITY(shape_id));
+        clone = imemo_fields_new(rb_imemo_fields_owner(fields_obj), RSHAPE_CAPACITY(shape_id), false /* TODO: check */);
         RBASIC_SET_SHAPE_ID(clone, shape_id);
         VALUE *fields = rb_imemo_fields_ptr(clone);
         attr_index_t fields_count = RSHAPE_LEN(shape_id);
@@ -303,7 +303,9 @@ mark_and_move_method_entry(rb_method_entry_t *ment, bool reference_updating)
             rb_gc_mark_and_move(&def->body.attr.location);
             break;
           case VM_METHOD_TYPE_BMETHOD:
-            rb_gc_mark_and_move(&def->body.bmethod.proc);
+            if (!rb_gc_checking_shareable()) {
+                rb_gc_mark_and_move(&def->body.bmethod.proc);
+            }
             if (def->body.bmethod.hooks) {
                 rb_hook_list_mark_and_move(def->body.bmethod.hooks);
             }
@@ -386,16 +388,27 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
       case imemo_constcache: {
         struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)obj;
 
-        rb_gc_mark_and_move(&ice->value);
+        if ((ice->flags & IMEMO_CONST_CACHE_SHAREABLE) ||
+            !rb_gc_checking_shareable()) {
+            rb_gc_mark_and_move(&ice->value);
+        }
 
         break;
       }
       case imemo_cref: {
         rb_cref_t *cref = (rb_cref_t *)obj;
 
-        rb_gc_mark_and_move(&cref->klass_or_self);
+        if (!rb_gc_checking_shareable()) {
+            // cref->klass_or_self can be unshareable, but no way to access it from other ractors
+            rb_gc_mark_and_move(&cref->klass_or_self);
+        }
+
         rb_gc_mark_and_move_ptr(&cref->next);
-        rb_gc_mark_and_move(&cref->refinements);
+
+        // TODO: Ractor and refeinements are not resolved yet
+        if (!rb_gc_checking_shareable()) {
+            rb_gc_mark_and_move(&cref->refinements);
+        }
 
         break;
       }
@@ -481,20 +494,25 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
       case imemo_fields: {
         rb_gc_mark_and_move((VALUE *)&RBASIC(obj)->klass);
 
-        if (rb_shape_obj_too_complex_p(obj)) {
-            st_table *tbl = rb_imemo_fields_complex_tbl(obj);
-            if (reference_updating) {
-                rb_gc_ref_update_table_values_only(tbl);
+        if (!rb_gc_checking_shareable()) {
+            // imemo_fields can refer unshareable objects
+            // even if the imemo_fields is shareable.
+
+            if (rb_shape_obj_too_complex_p(obj)) {
+                st_table *tbl = rb_imemo_fields_complex_tbl(obj);
+                if (reference_updating) {
+                    rb_gc_ref_update_table_values_only(tbl);
+                }
+                else {
+                    rb_mark_tbl_no_pin(tbl);
+                }
             }
             else {
-                rb_mark_tbl_no_pin(tbl);
-            }
-        }
-        else {
-            VALUE *fields = rb_imemo_fields_ptr(obj);
-            attr_index_t len = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
-            for (attr_index_t i = 0; i < len; i++) {
-                rb_gc_mark_and_move(&fields[i]);
+                VALUE *fields = rb_imemo_fields_ptr(obj);
+                attr_index_t len = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
+                for (attr_index_t i = 0; i < len; i++) {
+                    rb_gc_mark_and_move(&fields[i]);
+                }
             }
         }
         break;

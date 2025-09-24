@@ -340,7 +340,7 @@ vm_cc_new(VALUE klass,
           enum vm_cc_type type)
 {
     cc_check_class(klass);
-    struct rb_callcache *cc = IMEMO_NEW(struct rb_callcache, imemo_callcache, klass);
+    struct rb_callcache *cc = SHAREABLE_IMEMO_NEW(struct rb_callcache, imemo_callcache, klass);
     *((struct rb_callable_method_entry_struct **)&cc->cme_) = (struct rb_callable_method_entry_struct *)cme;
     *((vm_call_handler *)&cc->call_) = call;
 

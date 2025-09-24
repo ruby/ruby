@@ -555,7 +555,7 @@ RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(VALUE obj)
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
     rb_classext_t *ext = RCLASS_EXT_WRITABLE(obj);
     if (!ext->fields_obj) {
-        RB_OBJ_WRITE(obj, &ext->fields_obj, rb_imemo_fields_new(obj, 1));
+        RB_OBJ_WRITE(obj, &ext->fields_obj, rb_imemo_fields_new(obj, 1, true));
     }
     return ext->fields_obj;
 }
@@ -762,6 +762,7 @@ RCLASS_SET_CLASSPATH(VALUE klass, VALUE classpath, bool permanent)
     rb_classext_t *ext = RCLASS_EXT_READABLE(klass);
     assert(BUILTIN_TYPE(klass) == T_CLASS || BUILTIN_TYPE(klass) == T_MODULE);
     assert(classpath == 0 || BUILTIN_TYPE(classpath) == T_STRING);
+    assert(FL_TEST_RAW(classpath, RUBY_FL_SHAREABLE));
 
     RB_OBJ_WRITE(klass, &(RCLASSEXT_CLASSPATH(ext)), classpath);
     RCLASSEXT_PERMANENT_CLASSPATH(ext) = permanent;
@@ -773,6 +774,7 @@ RCLASS_WRITE_CLASSPATH(VALUE klass, VALUE classpath, bool permanent)
     rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
     assert(BUILTIN_TYPE(klass) == T_CLASS || BUILTIN_TYPE(klass) == T_MODULE);
     assert(classpath == 0 || BUILTIN_TYPE(classpath) == T_STRING);
+    assert(!RB_FL_ABLE(classpath) || FL_TEST_RAW(classpath, RUBY_FL_SHAREABLE));
 
     RB_OBJ_WRITE(klass, &(RCLASSEXT_CLASSPATH(ext)), classpath);
     RCLASSEXT_PERMANENT_CLASSPATH(ext) = permanent;

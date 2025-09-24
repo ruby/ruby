@@ -373,6 +373,7 @@ rb_managed_id_table_create(const rb_data_type_t *type, size_t capa)
 {
     struct rb_id_table *tbl;
     VALUE obj = TypedData_Make_Struct(0, struct rb_id_table, type, tbl);
+    RB_OBJ_SET_SHAREABLE(obj);
     rb_id_table_init(tbl, capa);
     return obj;
 }

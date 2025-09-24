@@ -201,6 +201,10 @@ parse_integer_value(const pm_integer_t *integer)
         result = rb_funcall(result, rb_intern("-@"), 0);
     }
 
+    if (!SPECIAL_CONST_P(result)) {
+        RB_OBJ_SET_SHAREABLE(result); // bignum
+    }
+
     return result;
 }
 
@@ -219,7 +223,11 @@ parse_integer(const pm_integer_node_t *node)
 static VALUE
 parse_float(const pm_float_node_t *node)
 {
-    return DBL2NUM(node->value);
+    VALUE val = DBL2NUM(node->value);
+    if (!FLONUM_P(val)) {
+        RB_OBJ_SET_SHAREABLE(val);
+    }
+    return val;
 }
 
 /**
@@ -233,7 +241,8 @@ parse_rational(const pm_rational_node_t *node)
 {
     VALUE numerator = parse_integer_value(&node->numerator);
     VALUE denominator = parse_integer_value(&node->denominator);
-    return rb_rational_new(numerator, denominator);
+
+    return rb_ractor_make_shareable(rb_rational_new(numerator, denominator));
 }
 
 /**
@@ -263,7 +272,7 @@ parse_imaginary(const pm_imaginary_node_t *node)
         rb_bug("Unexpected numeric type on imaginary number %s\n", pm_node_type_to_str(PM_NODE_TYPE(node->numeric)));
     }
 
-    return rb_complex_raw(INT2FIX(0), imaginary_part);
+    return RB_OBJ_SET_SHAREABLE(rb_complex_raw(INT2FIX(0), imaginary_part));
 }
 
 static inline VALUE
@@ -315,7 +324,7 @@ parse_static_literal_string(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, 
 
     if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
         int line_number = pm_node_line_number(scope_node->parser, node);
-        value = rb_str_with_debug_created_info(value, rb_iseq_path(iseq), line_number);
+        value = rb_ractor_make_shareable(rb_str_with_debug_created_info(value, rb_iseq_path(iseq), line_number));
     }
 
     return value;
@@ -531,8 +540,7 @@ parse_regexp(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const pm_node_t
         return Qnil;
     }
 
-    rb_obj_freeze(regexp);
-    return regexp;
+    return RB_OBJ_SET_SHAREABLE(rb_obj_freeze(regexp));
 }
 
 static inline VALUE
@@ -542,6 +550,7 @@ parse_regexp_literal(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, const p
     if (regexp_encoding == NULL) regexp_encoding = scope_node->encoding;
 
     VALUE string = rb_enc_str_new((const char *) pm_string_source(unescaped), pm_string_length(unescaped), regexp_encoding);
+    RB_OBJ_SET_SHAREABLE(string);
     return parse_regexp(iseq, scope_node, node, string);
 }
 
@@ -724,7 +733,9 @@ static VALUE
 pm_static_literal_string(rb_iseq_t *iseq, VALUE string, int line_number)
 {
     if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
-        return rb_str_with_debug_created_info(string, rb_iseq_path(iseq), line_number);
+        VALUE str = rb_str_with_debug_created_info(string, rb_iseq_path(iseq), line_number);
+        RB_OBJ_SET_SHAREABLE(str);
+        return str;
     }
     else {
         return rb_fstring(string);
@@ -753,7 +764,7 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, const pm_scope_n
             rb_ary_push(value, pm_static_literal_value(iseq, elements->nodes[index], scope_node));
         }
 
-        OBJ_FREEZE(value);
+        RB_OBJ_SET_FROZEN_SHAREABLE(value);
         return value;
       }
       case PM_FALSE_NODE:
@@ -776,7 +787,7 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, const pm_scope_n
         rb_hash_bulk_insert(RARRAY_LEN(array), RARRAY_CONST_PTR(array), value);
 
         value = rb_obj_hide(value);
-        OBJ_FREEZE(value);
+        RB_OBJ_SET_FROZEN_SHAREABLE(value);
         return value;
       }
       case PM_IMAGINARY_NODE:
@@ -1445,7 +1456,7 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                     VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
                     rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), hash);
                     hash = rb_obj_hide(hash);
-                    OBJ_FREEZE(hash);
+                    RB_OBJ_SET_FROZEN_SHAREABLE(hash);
 
                     // Emit optimized code.
                     FLUSH_CHUNK;
@@ -2860,8 +2871,10 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
             PUSH_INSN(ret, location, putnil);
         }
         else {
+            rb_obj_hide(keys);
+            RB_OBJ_SET_FROZEN_SHAREABLE(keys);
             PUSH_INSN1(ret, location, duparray, keys);
-            RB_OBJ_WRITTEN(iseq, Qundef, rb_obj_hide(keys));
+            RB_OBJ_WRITTEN(iseq, Qundef, keys);
         }
         PUSH_SEND(ret, location, rb_intern("deconstruct_keys"), INT2FIX(1));
 
@@ -2897,6 +2910,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
 
                     {
                         VALUE operand = rb_str_freeze(rb_sprintf("key not found: %+"PRIsVALUE, symbol));
+                        RB_OBJ_SET_SHAREABLE(operand);
                         PUSH_INSN1(ret, location, putobject, operand);
                     }
 
@@ -5545,6 +5559,7 @@ pm_compile_constant_read(rb_iseq_t *iseq, VALUE name, const pm_location_t *name_
     if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
         ISEQ_BODY(iseq)->ic_size++;
         VALUE segments = rb_ary_new_from_args(1, name);
+        RB_OBJ_SET_SHAREABLE(segments);
         PUSH_INSN1(ret, location, opt_getconstant_path, segments);
     }
     else {
@@ -5758,6 +5773,9 @@ pm_compile_shareable_constant_value(rb_iseq_t *iseq, const pm_node_t *node, cons
         if (shareability & PM_SHAREABLE_CONSTANT_NODE_FLAGS_LITERAL) {
             PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
             PUSH_SEQ(ret, value_seq);
+            if (!RB_OBJ_SHAREABLE_P(path)) {
+                RB_OBJ_SET_SHAREABLE(path);
+            }
             PUSH_INSN1(ret, location, putobject, path);
             PUSH_SEND_WITH_FLAG(ret, location, rb_intern("ensure_shareable"), INT2FIX(2), INT2FIX(VM_CALL_ARGS_SIMPLE));
         }
@@ -7108,6 +7126,7 @@ pm_compile_array_node(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_list
         if (!popped) {
             if (elements->size) {
                 VALUE value = pm_static_literal_value(iseq, node, scope_node);
+                RB_OBJ_SET_FROZEN_SHAREABLE(value);
                 PUSH_INSN1(ret, *location, duparray, value);
             }
             else {
@@ -7238,7 +7257,7 @@ pm_compile_array_node(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_list
                     rb_ary_push(tmp_array, pm_static_literal_value(iseq, elements->nodes[index++], scope_node));
 
                 index--; // about to be incremented by for loop
-                OBJ_FREEZE(tmp_array);
+                RB_OBJ_SET_FROZEN_SHAREABLE(tmp_array);
 
                 // Emit the optimized code.
                 FLUSH_CHUNK;
@@ -7465,7 +7484,6 @@ static VALUE
 pm_compile_case_node_dispatch(rb_iseq_t *iseq, VALUE dispatch, const pm_node_t *node, LABEL *label, const pm_scope_node_t *scope_node)
 {
     VALUE key = Qundef;
-
     switch (PM_NODE_TYPE(node)) {
       case PM_FLOAT_NODE: {
         key = pm_static_literal_value(iseq, node, scope_node);
@@ -7498,7 +7516,6 @@ pm_compile_case_node_dispatch(rb_iseq_t *iseq, VALUE dispatch, const pm_node_t *
     if (NIL_P(rb_hash_lookup(dispatch, key))) {
         rb_hash_aset(dispatch, key, ((VALUE) label) | 1);
     }
-
     return dispatch;
 }
 
@@ -7726,6 +7743,7 @@ pm_compile_case_node(rb_iseq_t *iseq, const pm_case_node_t *cast, const pm_node_
         // optimization.
         if (dispatch != Qundef) {
             PUSH_INSN(ret, location, dup);
+            RB_OBJ_SET_SHAREABLE(dispatch); // it is special that the hash is shareable but not frozen, because compile.c modify them. This Hahs instance is not accessible so it is safe to leave it.
             PUSH_INSN2(ret, location, opt_case_dispatch, dispatch, else_label);
             LABEL_REF(else_label);
         }
@@ -8953,6 +8971,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache && ((parts = pm_constant_path_parts(node, scope_node)) != Qnil)) {
             ISEQ_BODY(iseq)->ic_size++;
+            RB_OBJ_SET_SHAREABLE(parts);
             PUSH_INSN1(ret, location, opt_getconstant_path, parts);
         }
         else {
@@ -10068,6 +10087,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     exclude_end
                 );
 
+                RB_OBJ_SET_SHAREABLE(val);
                 PUSH_INSN1(ret, location, putobject, val);
             }
         }

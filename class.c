@@ -775,7 +775,7 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool namespaceable)
 
     RUBY_ASSERT(type == T_CLASS || type == T_ICLASS || type == T_MODULE);
 
-    VALUE flags = type;
+    VALUE flags = type | FL_SHAREABLE;
     if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
     if (namespaceable) flags |= RCLASS_NAMESPACEABLE;
 

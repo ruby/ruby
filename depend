@@ -263,6 +263,7 @@ array.$(OBJEXT): {$(VPATH)}onigmo.h
 array.$(OBJEXT): {$(VPATH)}oniguruma.h
 array.$(OBJEXT): {$(VPATH)}probes.dmyh
 array.$(OBJEXT): {$(VPATH)}probes.h
+array.$(OBJEXT): {$(VPATH)}ractor.h
 array.$(OBJEXT): {$(VPATH)}ruby_assert.h
 array.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 array.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -4385,6 +4386,7 @@ encoding.$(OBJEXT): {$(VPATH)}missing.h
 encoding.$(OBJEXT): {$(VPATH)}node.h
 encoding.$(OBJEXT): {$(VPATH)}onigmo.h
 encoding.$(OBJEXT): {$(VPATH)}oniguruma.h
+encoding.$(OBJEXT): {$(VPATH)}ractor.h
 encoding.$(OBJEXT): {$(VPATH)}regenc.h
 encoding.$(OBJEXT): {$(VPATH)}ruby_assert.h
 encoding.$(OBJEXT): {$(VPATH)}ruby_atomic.h
@@ -16794,6 +16796,7 @@ string.$(OBJEXT): {$(VPATH)}onigmo.h
 string.$(OBJEXT): {$(VPATH)}oniguruma.h
 string.$(OBJEXT): {$(VPATH)}probes.dmyh
 string.$(OBJEXT): {$(VPATH)}probes.h
+string.$(OBJEXT): {$(VPATH)}ractor.h
 string.$(OBJEXT): {$(VPATH)}re.h
 string.$(OBJEXT): {$(VPATH)}regex.h
 string.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -17265,6 +17268,7 @@ symbol.$(OBJEXT): {$(VPATH)}onigmo.h
 symbol.$(OBJEXT): {$(VPATH)}oniguruma.h
 symbol.$(OBJEXT): {$(VPATH)}probes.dmyh
 symbol.$(OBJEXT): {$(VPATH)}probes.h
+symbol.$(OBJEXT): {$(VPATH)}ractor.h
 symbol.$(OBJEXT): {$(VPATH)}ruby_assert.h
 symbol.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 symbol.$(OBJEXT): {$(VPATH)}rubyparser.h

@@ -5053,6 +5053,10 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                     rb_objspace_reachable_objects_from(obj, check_generation_i, (void *)data);
                 }
 
+                if (!is_marking(objspace) && RB_OBJ_SHAREABLE_P(obj)) {
+                    gc_verify_shareable(objspace, obj, data);
+                }
+
                 if (is_incremental_marking(objspace)) {
                     if (RVALUE_BLACK_P(objspace, obj)) {
                         /* reachable objects from black objects should be black or grey objects */
@@ -8975,6 +8979,12 @@ gc_profile_disable(VALUE _)
     return Qnil;
 }
 
+void
+rb_gc_verify_internal_consistency(void)
+{
+    gc_verify_internal_consistency(rb_gc_get_objspace());
+}
+
 /*
  *  call-seq:
  *     GC.verify_internal_consistency                  -> nil
@@ -8988,7 +8998,7 @@ gc_profile_disable(VALUE _)
 static VALUE
 gc_verify_internal_consistency_m(VALUE dummy)
 {
-    gc_verify_internal_consistency(rb_gc_get_objspace());
+    rb_gc_verify_internal_consistency();
     return Qnil;
 }
 
