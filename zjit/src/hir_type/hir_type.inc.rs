@@ -230,23 +230,27 @@ pub mod types {
   use crate::cruby::rb_cNilClass;
   use crate::cruby::rb_cTrueClass;
   use crate::cruby::rb_cFalseClass;
-  pub const ExactBitsAndClass: [(u64, VALUE); 17] = [
-    (bits::ObjectExact, unsafe { rb_cObject }),
-    (bits::BasicObjectExact, unsafe { rb_cBasicObject }),
-    (bits::StringExact, unsafe { rb_cString }),
-    (bits::ArrayExact, unsafe { rb_cArray }),
-    (bits::HashExact, unsafe { rb_cHash }),
-    (bits::RangeExact, unsafe { rb_cRange }),
-    (bits::SetExact, unsafe { rb_cSet }),
-    (bits::RegexpExact, unsafe { rb_cRegexp }),
-    (bits::ModuleExact, unsafe { rb_cModule }),
-    (bits::Class, unsafe { rb_cClass }),
-    (bits::NumericExact, unsafe { rb_cNumeric }),
-    (bits::Integer, unsafe { rb_cInteger }),
-    (bits::Float, unsafe { rb_cFloat }),
-    (bits::Symbol, unsafe { rb_cSymbol }),
-    (bits::NilClass, unsafe { rb_cNilClass }),
-    (bits::TrueClass, unsafe { rb_cTrueClass }),
-    (bits::FalseClass, unsafe { rb_cFalseClass }),
-  ];
+  pub fn exact_bits_and_class() -> &'static [(u64, VALUE)] {
+    use std::sync::OnceLock;
+    static ExactBitsAndClass: OnceLock<[(u64, VALUE); 17]> = OnceLock::new();
+    ExactBitsAndClass.get_or_init(|| { [
+      (bits::ObjectExact, unsafe { rb_cObject }),
+      (bits::BasicObjectExact, unsafe { rb_cBasicObject }),
+      (bits::StringExact, unsafe { rb_cString }),
+      (bits::ArrayExact, unsafe { rb_cArray }),
+      (bits::HashExact, unsafe { rb_cHash }),
+      (bits::RangeExact, unsafe { rb_cRange }),
+      (bits::SetExact, unsafe { rb_cSet }),
+      (bits::RegexpExact, unsafe { rb_cRegexp }),
+      (bits::ModuleExact, unsafe { rb_cModule }),
+      (bits::Class, unsafe { rb_cClass }),
+      (bits::NumericExact, unsafe { rb_cNumeric }),
+      (bits::Integer, unsafe { rb_cInteger }),
+      (bits::Float, unsafe { rb_cFloat }),
+      (bits::Symbol, unsafe { rb_cSymbol }),
+      (bits::NilClass, unsafe { rb_cNilClass }),
+      (bits::TrueClass, unsafe { rb_cTrueClass }),
+      (bits::FalseClass, unsafe { rb_cFalseClass }),
+    ] })
+  }
 }

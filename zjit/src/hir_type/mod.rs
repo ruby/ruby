@@ -2,7 +2,7 @@
 
 #![allow(non_upper_case_globals)]
 use crate::cruby::{rb_block_param_proxy, Qfalse, Qnil, Qtrue, RUBY_T_ARRAY, RUBY_T_CLASS, RUBY_T_HASH, RUBY_T_MODULE, RUBY_T_STRING, VALUE};
-use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass, rb_cRange, rb_cSet, rb_cRegexp, rb_cClass, rb_cModule, rb_zjit_singleton_class_p};
+use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cRange, rb_cModule, rb_zjit_singleton_class_p};
 use crate::cruby::ClassRelationship;
 use crate::cruby::get_class_name;
 use crate::cruby::ruby_sym_to_rust_string;
@@ -178,7 +178,10 @@ impl Type {
     }
 
     fn bits_from_exact_class(class: VALUE) -> Option<u64> {
-        types::ExactBitsAndClass.find(|&(bits, class_object)| class_object == class).map(|&(bits, _)| bits)
+        types::exact_bits_and_class()
+            .iter()
+            .find(|&(_, class_object)| *class_object == class)
+            .map(|&(bits, _)| bits)
     }
 
     fn from_heap_object(val: VALUE) -> Type {
@@ -345,7 +348,10 @@ impl Type {
     }
 
     fn is_builtin(class: VALUE) -> bool {
-        types::ExactBitsAndClass.find(|&(_, class_object)| class_object == class).is_some()
+        types::exact_bits_and_class()
+            .iter()
+            .find(|&(_, class_object)| *class_object == class)
+            .is_some()
     }
 
     /// Union both types together, preserving specialization if possible.
@@ -441,8 +447,9 @@ impl Type {
         if let Some(val) = self.exact_ruby_class() {
             return Some(val);
         }
-        types::ExactBitsAndClass
-            .find(|&(bits, class_object)| self.is_subtype(Type::from_bits(bits)))
+        types::exact_bits_and_class()
+            .iter()
+            .find(|&(bits, _)| self.is_subtype(Type::from_bits(*bits)))
             .map(|&(_, class_object)| class_object)
     }
 
@@ -491,6 +498,11 @@ mod tests {
     use crate::cruby::rb_hash_new;
     use crate::cruby::rb_float_new;
     use crate::cruby::define_class;
+    use crate::cruby::rb_cObject;
+    use crate::cruby::rb_cSet;
+    use crate::cruby::rb_cTrueClass;
+    use crate::cruby::rb_cFalseClass;
+    use crate::cruby::rb_cNilClass;
 
     #[track_caller]
     fn assert_bit_equal(left: Type, right: Type) {
