@@ -5398,6 +5398,14 @@ mod tests {
     }
 
     #[test]
+    fn test_setlocal_in_default_args_with_side_exit() {
+        eval("
+            def test(a = (def foo = nil)) = a
+        ");
+        assert_compile_fails("test", ParseError::FailedOptionalArguments);
+    }
+
+    #[test]
     fn test_setlocal_cyclic_default_args() {
         eval("
             def test = proc { |a=a| a }
