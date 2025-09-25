@@ -3156,17 +3156,17 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
 fn jit_entry_insns(iseq: IseqPtr) -> Vec<u32> {
     let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
     if opt_num > 0 {
-        // Deduplicate entries with HashSet since opt_table may have duplicated entries, e.g. proc { |a=a| a }
-        let mut result = HashSet::new();
+        let mut result = vec![];
 
         let opt_table = unsafe { get_iseq_body_param_opt_table(iseq) }; // `opt_num + 1` entries
         for opt_idx in 0..=opt_num as isize {
             let insn_idx = unsafe { opt_table.offset(opt_idx).read().as_u32() };
-            result.insert(insn_idx);
+            result.push(insn_idx);
         }
 
-        let mut result: Vec<_> = result.into_iter().collect();
+        // Deduplicate entries with HashSet since opt_table may have duplicated entries, e.g. proc { |a=a| a }
         result.sort();
+        result.dedup();
         result
     } else {
         vec![0]
