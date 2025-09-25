@@ -6,10 +6,10 @@
 #![allow(clippy::if_same_then_else)]
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
-    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, gc::{get_or_create_iseq_payload, IseqPayload}, options::{get_option, DumpHIR}, state::ZJITState
+    cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, gc::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState
 };
 use std::{
-    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_int, c_void, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
+    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
 };
 use crate::hir_type::{Type, types};
 use crate::bitset::BitSet;
@@ -456,7 +456,6 @@ pub enum SideExitReason {
     BlockParamProxyModified,
     BlockParamProxyNotIseqOrIfunc,
     StackOverflow,
-    OptionalArgumentsSupplied,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -661,8 +660,8 @@ pub enum Insn {
         return_type: Option<Type>,  // None for unannotated builtins
     },
 
-    /// Set up frame and remember the address as a JIT entry if jit_entry is true
-    EntryPoint { jit_entry: bool },
+    /// Set up frame. Remember the address as the JIT entry for the insn_idx in `jit_entry_insns()[jit_entry_idx]`.
+    EntryPoint { jit_entry_idx: Option<usize> },
     /// Control flow instructions
     Return { val: InsnId },
     /// Non-local control flow. See the throw YARV instruction
@@ -936,7 +935,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            &Insn::EntryPoint { jit_entry } => write!(f, "EntryPoint {}", if jit_entry { "JIT" } else { "interpreter" }),
+            &Insn::EntryPoint { jit_entry_idx: Some(idx) } => write!(f, "EntryPoint JIT({idx})"),
+            &Insn::EntryPoint { jit_entry_idx: None } => write!(f, "EntryPoint interpreter"),
             Insn::Return { val } => { write!(f, "Return {val}") }
             Insn::FixnumAdd  { left, right, .. } => { write!(f, "FixnumAdd {left}, {right}") },
             Insn::FixnumSub  { left, right, .. } => { write!(f, "FixnumSub {left}, {right}") },
@@ -1221,7 +1221,8 @@ fn can_direct_send(iseq: *const rb_iseq_t) -> bool {
 pub struct Function {
     // ISEQ this function refers to
     iseq: *const rb_iseq_t,
-    // The types for the parameters of this function
+    /// The types for the parameters of this function. They are copied to the type
+    /// of entry block params after infer_types() fills Empty to all insn_types.
     param_types: Vec<Type>,
 
     // TODO: get method name and source location from the ISEQ
@@ -1233,7 +1234,7 @@ pub struct Function {
     /// Entry block for the interpreter
     entry_block: BlockId,
     /// Entry block for JIT-to-JIT calls
-    jit_entry_block: BlockId,
+    jit_entry_blocks: Vec<BlockId>,
     profiles: Option<ProfileOracle>,
 }
 
@@ -1244,9 +1245,9 @@ impl Function {
             insns: vec![],
             insn_types: vec![],
             union_find: UnionFind::new().into(),
-            blocks: vec![Block::default(), Block::default()],
+            blocks: vec![Block::default()],
             entry_block: BlockId(0),
-            jit_entry_block: BlockId(1),
+            jit_entry_blocks: vec![],
             param_types: vec![],
             profiles: None,
         }
@@ -1607,40 +1608,60 @@ impl Function {
         }
     }
 
+    /// Set self.param_types. They are copied to the param types of entry blocks.
+    fn set_param_types(&mut self) {
+        let iseq = self.iseq;
+        let param_size = unsafe { get_iseq_body_param_size(iseq) }.as_usize();
+        let rest_param_idx = if !iseq.is_null() && unsafe { get_iseq_flags_has_rest(iseq) } {
+            let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
+            let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
+            Some(opt_num + lead_num)
+        } else {
+            None
+        };
+
+        self.param_types.push(types::BasicObject); // self
+        for local_idx in 0..param_size {
+            let param_type = if Some(local_idx as i32) == rest_param_idx {
+                types::ArrayExact // Rest parameters are always ArrayExact
+            } else {
+                types::BasicObject
+            };
+            self.param_types.push(param_type);
+        }
+    }
+
+    /// Copy self.param_types to the param types of entry blocks.
+    fn copy_param_types(&mut self) {
+        for entry_block in self.entry_blocks() {
+            let entry_params = self.blocks[entry_block.0].params.iter();
+            let param_types = self.param_types.iter();
+            assert_eq!(
+                entry_params.len(),
+                param_types.len(),
+                "param types should be initialized before type inference",
+            );
+            for (param, param_type) in std::iter::zip(entry_params, param_types) {
+                // We know that function parameters are BasicObject or some subclass
+                self.insn_types[param.0] = *param_type;
+            }
+        }
+    }
+
     fn infer_types(&mut self) {
         // Reset all types
         self.insn_types.fill(types::Empty);
 
-        // Fill parameter types
-        // TODO: Remove this when HIR incorporates parameter loads as well
-        let entry_params = self.blocks[self.entry_block.0].params.iter();
-        let param_types = self.param_types.iter();
-        assert_eq!(
-            entry_params.len(),
-            param_types.len(),
-            "param types should be initialized before type inference"
-        );
-        for (param, param_type) in std::iter::zip(entry_params, param_types.clone()) {
-            // We know that function parameters are BasicObject or some subclass
-            self.insn_types[param.0] = *param_type;
-        }
+        // Fill entry parameter types
+        self.copy_param_types();
 
-        // Fill JIT entry parameter types
-        let entry_params = self.blocks[self.jit_entry_block.0].params.iter();
-        assert_eq!(
-            entry_params.len(),
-            param_types.len(),
-            "param types should be initialized before type inference"
-        );
-        for (param, param_type) in std::iter::zip(entry_params, param_types) {
-            // We know that function parameters are BasicObject or some subclass
-            self.insn_types[param.0] = *param_type;
-        }
-
-        let rpo = self.rpo();
-        // Walk the graph, computing types until fixpoint
         let mut reachable = BlockSet::with_capacity(self.blocks.len());
-        reachable.insert(self.entry_block);
+        for entry_block in self.entry_blocks() {
+            reachable.insert(entry_block);
+        }
+
+        // Walk the graph, computing types until fixpoint
+        let rpo = self.rpo();
         loop {
             let mut changed = false;
             for &block in &rpo {
@@ -2623,15 +2644,21 @@ impl Function {
         }
     }
 
+    /// Return a list that has entry_block and then jit_entry_blocks
+    fn entry_blocks(&self) -> Vec<BlockId> {
+        let mut entry_blocks = self.jit_entry_blocks.clone();
+        entry_blocks.insert(0, self.entry_block);
+        entry_blocks
+    }
+
     /// Return a traversal of the `Function`'s `BlockId`s in reverse post-order.
     pub fn rpo(&self) -> Vec<BlockId> {
-        let mut result = self.po_from(self.entry_block);
+        let mut result = self.po_from(self.entry_blocks());
         result.reverse();
-        result.insert(1, self.jit_entry_block); // Put jit_entry_block after entry_block
         result
     }
 
-    fn po_from(&self, start: BlockId) -> Vec<BlockId> {
+    fn po_from(&self, starts: Vec<BlockId>) -> Vec<BlockId> {
         #[derive(PartialEq)]
         enum Action {
             VisitEdges,
@@ -2639,7 +2666,7 @@ impl Function {
         }
         let mut result = vec![];
         let mut seen = BlockSet::with_capacity(self.blocks.len());
-        let mut stack = vec![(start, Action::VisitEdges)];
+        let mut stack: Vec<_> = starts.iter().map(|&start| (start, Action::VisitEdges)).collect();
         while let Some((block, action)) = stack.pop() {
             if action == Action::VisitSelf {
                 result.push(block);
@@ -3125,16 +3152,36 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
     ((idx as isize) + (offset as isize)) as u32
 }
 
+/// List of insn_idx that starts a JIT entry block
+fn jit_entry_insns(iseq: IseqPtr) -> Vec<u32> {
+    let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
+    if opt_num > 0 {
+        let mut result = vec![];
+
+        let opt_table = unsafe { get_iseq_body_param_opt_table(iseq) }; // `opt_num + 1` entries
+        for opt_idx in 0..=opt_num as isize {
+            let insn_idx = unsafe { opt_table.offset(opt_idx).read().as_u32() };
+            result.push(insn_idx);
+        }
+
+        // Deduplicate entries with HashSet since opt_table may have duplicated entries, e.g. proc { |a=a| a }
+        result.sort();
+        result.dedup();
+        result
+    } else {
+        vec![0]
+    }
+}
+
 struct BytecodeInfo {
     jump_targets: Vec<u32>,
     has_blockiseq: bool,
 }
 
-fn compute_bytecode_info(iseq: *const rb_iseq_t) -> BytecodeInfo {
+fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &Vec<u32>) -> BytecodeInfo {
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     let mut insn_idx = 0;
-    let mut jump_targets = HashSet::new();
-    jump_targets.insert(0); // entry blocks jump to the first instruction
+    let mut jump_targets: HashSet<u32> = opt_table.iter().copied().collect();
     let mut has_blockiseq = false;
     while insn_idx < iseq_size {
         // Get the current pc and opcode
@@ -3185,6 +3232,7 @@ pub enum ParseError {
     StackUnderflow(FrameState),
     MalformedIseq(u32), // insn_idx into iseq_encoded
     Validation(ValidationError),
+    FailedOptionalArguments,
     NotAllowed,
 }
 
@@ -3258,9 +3306,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut fun = Function::new(iseq);
 
     // Compute a map of PC->Block by finding jump targets
-    let BytecodeInfo { jump_targets, has_blockiseq } = compute_bytecode_info(iseq);
+    let jit_entry_insns = jit_entry_insns(iseq);
+    let BytecodeInfo { jump_targets, has_blockiseq } = compute_bytecode_info(iseq, &jit_entry_insns);
     let mut insn_idx_to_block = HashMap::new();
     for insn_idx in jump_targets {
+        // Prepend a JIT entry block if it's a jit_entry_insn.
+        // compile_entry_block() assumes that a JIT entry block jumps to the next block.
+        if jit_entry_insns.contains(&insn_idx) {
+            let jit_entry_block = fun.new_block(insn_idx);
+            fun.jit_entry_blocks.push(jit_entry_block);
+        }
         insn_idx_to_block.insert(insn_idx, fun.new_block(insn_idx));
     }
 
@@ -3268,60 +3323,35 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     // optimizing locals in that case because they're shared with other frames.
     let ep_escaped = iseq_escapes_ep(iseq);
 
-    // Compile an interpreter entry to the first block
-    let first_block = insn_idx_to_block[&0];
-    compile_entry_block(fun.entry_block, first_block, &mut fun, false);
 
-    // Compile a JIT entry to the first block
-    compile_entry_block(fun.jit_entry_block, first_block, &mut fun, true);
+    // Compile an entry_block for the interpreter
+    compile_entry_block(&mut fun, &jit_entry_insns);
 
     // Iteratively fill out basic blocks using a queue
     // TODO(max): Basic block arguments at edges
-    let mut queue = std::collections::VecDeque::new();
-    // Index of the rest parameter for comparison below
-    let rest_param_idx = if !iseq.is_null() && unsafe { get_iseq_flags_has_rest(iseq) } {
-        let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
-        let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
-        opt_num + lead_num
-    } else {
-        -1
-    };
-    // The HIR function will have the same number of parameter as the iseq so
-    // we properly handle calls from the interpreter. Roughly speaking, each
-    // item between commas in the source increase the parameter count by one,
-    // regardless of parameter kind.
-    let mut entry_state = FrameState::new(iseq);
-    fun.push_insn(first_block, Insn::Param { idx: SELF_PARAM_IDX });
-    fun.param_types.push(types::BasicObject); // self
-    for local_idx in 0..num_locals(iseq) {
-        if local_idx < unsafe { get_iseq_body_param_size(iseq) }.as_usize() {
-            entry_state.locals.push(fun.push_insn(first_block, Insn::Param { idx: local_idx + 1 })); // +1 for self
+    let mut queue = VecDeque::new();
+    queue.push_back((FrameState::new(iseq), insn_idx_to_block[&0], /*insn_idx=*/0, /*local_inval=*/false));
 
-            let mut param_type = types::BasicObject;
-            // Rest parameters are always ArrayExact
-            if let Ok(true) = c_int::try_from(local_idx).map(|idx| idx == rest_param_idx) {
-                param_type = types::ArrayExact;
-            }
-            fun.param_types.push(param_type);
-        } else {
-            entry_state.locals.push(fun.push_insn(first_block, Insn::Const { val: Const::Value(Qnil) }));
-        }
-    }
-    queue.push_back((entry_state.clone(), first_block, /*insn_idx=*/0_u32, /*local_inval=*/false));
-
+    // Keep compiling blocks until the queue becomes empty
     let mut visited = HashSet::new();
-
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     while let Some((incoming_state, block, mut insn_idx, mut local_inval)) = queue.pop_front() {
+        // Compile each block only once
         if visited.contains(&block) { continue; }
         visited.insert(block);
-        let (self_param, mut state) = if insn_idx == 0 {
-            (fun.blocks[block.0].params[SELF_PARAM_IDX], incoming_state.clone())
-        } else {
-            let self_param = fun.push_insn(block, Insn::Param { idx: SELF_PARAM_IDX });
+
+        // Compile a JIT entry to the block if it's a jit_entry_insn
+        if let Some(block_idx) = jit_entry_insns.iter().position(|&idx| idx == insn_idx) {
+            compile_jit_entry_block(&mut fun, block_idx, block);
+        }
+
+        // Load basic block params first
+        let self_param = fun.push_insn(block, Insn::Param { idx: SELF_PARAM_IDX });
+        let mut state = {
             let mut result = FrameState::new(iseq);
             let mut idx = 1;
-            for _ in 0..incoming_state.locals.len() {
+            let local_size = if insn_idx == 0 { num_locals(iseq) } else { incoming_state.locals.len() };
+            for _ in 0..local_size {
                 result.locals.push(fun.push_insn(block, Insn::Param { idx }));
                 idx += 1;
             }
@@ -3329,8 +3359,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 result.stack.push(fun.push_insn(block, Insn::Param { idx }));
                 idx += 1;
             }
-            (self_param, result)
+            result
         };
+
         // Start the block off with a Snapshot so that if we need to insert a new Guard later on
         // and we don't have a Snapshot handy, we can just iterate backward (at the earliest, to
         // the beginning of the block).
@@ -4106,6 +4137,15 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         }
     }
 
+    // Bail out if there's a JIT entry block whose target block was not compiled
+    // due to an unsupported instruction in the middle of the ISEQ.
+    for jit_entry_block in fun.jit_entry_blocks.iter() {
+        if fun.blocks[jit_entry_block.0].insns.is_empty() {
+            return Err(ParseError::FailedOptionalArguments);
+        }
+    }
+
+    fun.set_param_types();
     fun.infer_types();
 
     match get_option!(dump_hir_init) {
@@ -4116,44 +4156,77 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     }
 
     fun.profiles = Some(profiles);
-    if let Err(e) = fun.validate() {
-        return Err(ParseError::Validation(e));
+    if let Err(err) = fun.validate() {
+        debug!("ZJIT: {err:?}: Initial HIR:\n{}", FunctionPrinter::without_snapshot(&fun));
+        return Err(ParseError::Validation(err));
     }
     Ok(fun)
 }
 
-/// Compile entry_block that jumps to first_block. Add prologue for the interpreter if jit_entry is false.
-fn compile_entry_block(entry_block: BlockId, first_block: BlockId, fun: &mut Function, jit_entry: bool) {
-    fun.push_insn(entry_block, Insn::EntryPoint { jit_entry });
+/// Compile an entry_block for the interpreter
+fn compile_entry_block(fun: &mut Function, jit_entry_insns: &Vec<u32>) {
+    let entry_block = fun.entry_block;
+    fun.push_insn(entry_block, Insn::EntryPoint { jit_entry_idx: None });
 
     // Prepare entry_state with basic block params
+    let (self_param, entry_state) = compile_entry_state(fun, entry_block);
+
+    // Jump to target blocks
+    let mut pc: Option<InsnId> = None;
+    let &last_entry_insn = jit_entry_insns.last().unwrap();
+    for (jit_entry_block_idx, &jit_entry_insn) in jit_entry_insns.iter().enumerate() {
+        let jit_entry_block = fun.jit_entry_blocks[jit_entry_block_idx];
+        let target_block = BlockId(jit_entry_block.0 + 1); // jit_entry_block precedes the jump target block
+
+        if jit_entry_insn == last_entry_insn {
+            // If it's the last possible entry, jump to the target_block without checking PC
+            fun.push_insn(entry_block, Insn::Jump(BranchEdge { target: target_block, args: entry_state.as_args(self_param) }));
+        } else {
+            // Otherwise, jump to the target_block only if PC matches.
+            let pc = pc.unwrap_or_else(|| {
+                let insn_id = fun.push_insn(entry_block, Insn::LoadPC);
+                pc = Some(insn_id);
+                insn_id
+            });
+            let expected_pc = fun.push_insn(entry_block, Insn::Const {
+                val: Const::CPtr(unsafe { rb_iseq_pc_at_idx(fun.iseq, jit_entry_insn) } as *const u8),
+            });
+            let test_id = fun.push_insn(entry_block, Insn::IsBitEqual { left: pc, right: expected_pc });
+            fun.push_insn(entry_block, Insn::IfTrue {
+                val: test_id,
+                target: BranchEdge { target: target_block, args: entry_state.as_args(self_param) },
+            });
+        }
+    }
+}
+
+/// Compile a jit_entry_block
+fn compile_jit_entry_block(fun: &mut Function, jit_entry_idx: usize, target_block: BlockId) {
+    let jit_entry_block = fun.jit_entry_blocks[jit_entry_idx];
+    fun.push_insn(jit_entry_block, Insn::EntryPoint { jit_entry_idx: Some(jit_entry_idx) });
+
+    // Prepare entry_state with basic block params
+    let (self_param, entry_state) = compile_entry_state(fun, jit_entry_block);
+
+    // Jump to target_block
+    fun.push_insn(jit_entry_block, Insn::Jump(BranchEdge { target: target_block, args: entry_state.as_args(self_param) }));
+}
+
+/// Compile params and initial locals for an entry block
+fn compile_entry_state(fun: &mut Function, entry_block: BlockId) -> (InsnId, FrameState) {
     let iseq = fun.iseq;
-    let mut entry_state = FrameState::new(iseq);
+    let param_size = unsafe { get_iseq_body_param_size(iseq) }.as_usize();
+
     let self_param = fun.push_insn(entry_block, Insn::Param { idx: SELF_PARAM_IDX });
-    for local_idx in 0..unsafe { get_iseq_body_param_size(iseq) }.as_usize() {
-        entry_state.locals.push(fun.push_insn(entry_block, Insn::Param { idx: local_idx + 1 })); // +1 for self
+    let mut entry_state = FrameState::new(iseq);
+    for local_idx in 0..num_locals(iseq) {
+        if local_idx < param_size {
+            entry_state.locals.push(fun.push_insn(entry_block, Insn::Param { idx: local_idx + 1 })); // +1 for self
+        } else {
+            entry_state.locals.push(fun.push_insn(entry_block, Insn::Const { val: Const::Value(Qnil) }));
+        }
     }
-
-    // Jump to the first_block. Conditionally side-exit for interpreter entry with optional arguments.
-    // TODO: Compile gen_entry_params() for !jit_entry here
-    let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
-    if !jit_entry && opt_num > 0 {
-        let pc = fun.push_insn(entry_block, Insn::LoadPC);
-        let no_opts_pc = fun.push_insn(entry_block, Insn::Const { val: Const::CPtr(unsafe { rb_iseq_pc_at_idx(iseq, 0) } as *const u8) });
-        let test_id = fun.push_insn(entry_block, Insn::IsBitEqual { left: pc, right: no_opts_pc });
-
-        // Jump to the first_block if no optional arguments are supplied
-        fun.push_insn(entry_block, Insn::IfTrue {
-            val: test_id,
-            target: BranchEdge { target: first_block, args: entry_state.as_args(self_param) },
-        });
-
-        // Side-exit if any optional argument is supplied
-        let state = fun.push_insn(entry_block, Insn::Snapshot { state: FrameState::new(iseq) }); // no need to spill params
-        fun.push_insn(entry_block, Insn::SideExit { state, reason: SideExitReason::OptionalArgumentsSupplied });
-    } else {
-        fun.push_insn(entry_block, Insn::Jump(BranchEdge { target: first_block, args: entry_state.as_args(self_param) }));
-    }
+    (self_param, entry_state)
 }
 
 #[cfg(test)]
@@ -4201,29 +4274,26 @@ mod rpo_tests {
     fn one_block() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let jit_entry = function.jit_entry_block;
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::Return { val });
-        assert_eq!(function.rpo(), vec![entry, jit_entry]);
+        assert_eq!(function.rpo(), vec![entry]);
     }
 
     #[test]
     fn jump() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let jit_entry = function.jit_entry_block;
         let exit = function.new_block(0);
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::Return { val });
-        assert_eq!(function.rpo(), vec![entry, jit_entry, exit]);
+        assert_eq!(function.rpo(), vec![entry, exit]);
     }
 
     #[test]
     fn diamond_iftrue() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let jit_entry = function.jit_entry_block;
         let side = function.new_block(0);
         let exit = function.new_block(0);
         function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
@@ -4232,14 +4302,13 @@ mod rpo_tests {
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::Return { val });
-        assert_eq!(function.rpo(), vec![entry, jit_entry, side, exit]);
+        assert_eq!(function.rpo(), vec![entry, side, exit]);
     }
 
     #[test]
     fn diamond_iffalse() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let jit_entry = function.jit_entry_block;
         let side = function.new_block(0);
         let exit = function.new_block(0);
         function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
@@ -4248,16 +4317,15 @@ mod rpo_tests {
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::Return { val });
-        assert_eq!(function.rpo(), vec![entry, jit_entry, side, exit]);
+        assert_eq!(function.rpo(), vec![entry, side, exit]);
     }
 
     #[test]
     fn a_loop() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let jit_entry = function.jit_entry_block;
         function.push_insn(entry, Insn::Jump(BranchEdge { target: entry, args: vec![] }));
-        assert_eq!(function.rpo(), vec![entry, jit_entry]);
+        assert_eq!(function.rpo(), vec![entry]);
     }
 }
 
@@ -4387,11 +4455,7 @@ mod validation_tests {
     fn instruction_appears_twice_in_same_block() {
         let mut function = Function::new(std::ptr::null());
         let block = function.new_block(0);
-
-        // Add jumps from entry blocks to avoid BlockHasNoterminator
         function.push_insn(function.entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
-        function.push_insn(function.jit_entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
-
         let val = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn_id(block, val);
         function.push_insn(block, Insn::Return { val });
@@ -4402,11 +4466,7 @@ mod validation_tests {
     fn instruction_appears_twice_with_different_ids() {
         let mut function = Function::new(std::ptr::null());
         let block = function.new_block(0);
-
-        // Add jumps from entry blocks to avoid BlockHasNoterminator
         function.push_insn(function.entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
-        function.push_insn(function.jit_entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
-
         let val0 = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
         let val1 = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
         function.make_equal_to(val1, val0);
@@ -4418,11 +4478,7 @@ mod validation_tests {
     fn instruction_appears_twice_in_different_blocks() {
         let mut function = Function::new(std::ptr::null());
         let block = function.new_block(0);
-
-        // Add jumps from entry blocks to avoid BlockHasNoterminator
         function.push_insn(function.entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
-        function.push_insn(function.jit_entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
-
         let val = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
         let exit = function.new_block(0);
         function.push_insn(block, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
@@ -4491,7 +4547,6 @@ mod infer_tests {
         crate::cruby::with_rubyvm(|| {
             let mut function = Function::new(std::ptr::null());
             let param = function.push_insn(function.entry_block, Insn::Param { idx: SELF_PARAM_IDX });
-            function.push_insn(function.jit_entry_block, Insn::Param { idx: SELF_PARAM_IDX });
             function.param_types.push(types::BasicObject); // self
             let val = function.push_insn(function.entry_block, Insn::Test { val: param });
             function.infer_types();
@@ -4577,7 +4632,7 @@ mod snapshot_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v13:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [a=v11, b=v12] }
@@ -4634,9 +4689,23 @@ mod tests {
         }
     }
 
+    /// Combine multiple hir_string() results to match all of them at once, which allows
+    /// us to avoid running the set of zjit-test -> zjit-test-update multiple times.
+    #[macro_export]
+    macro_rules! hir_strings {
+        ($( $s:expr ),+ $(,)?) => {{
+            vec![$( hir_string($s) ),+].join("\n")
+        }};
+    }
+
     #[track_caller]
     fn hir_string(method: &str) -> String {
-        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
+        hir_string_proc(&format!("{}.method(:{})", "self", method))
+    }
+
+    #[track_caller]
+    fn hir_string_proc(proc: &str) -> String {
+        let iseq = crate::cruby::with_rubyvm(|| get_proc_iseq(proc));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         let function = iseq_to_hir(iseq).unwrap();
         hir_string_function(&function)
@@ -4667,15 +4736,20 @@ mod tests {
           v4:CPtr[CPtr(0x1000)] = Const CPtr(0x1008)
           v5:CBool = IsBitEqual v3, v4
           IfTrue v5, bb2(v1, v2)
-          SideExit OptionalArgumentsSupplied
-        bb1(v10:BasicObject, v11:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v10, v11)
-        bb2(v13:BasicObject, v14:BasicObject):
-          v16:Fixnum[1] = Const Value(1)
-          v19:Fixnum[123] = Const Value(123)
+          Jump bb4(v1, v2)
+        bb1(v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v9, v10)
+        bb2(v12:BasicObject, v13:BasicObject):
+          v15:Fixnum[1] = Const Value(1)
+          Jump bb4(v12, v15)
+        bb3(v18:BasicObject, v19:BasicObject):
+          EntryPoint JIT(1)
+          Jump bb4(v18, v19)
+        bb4(v21:BasicObject, v22:BasicObject):
+          v26:Fixnum[123] = Const Value(123)
           CheckInterrupts
-          Return v19
+          Return v26
         ");
     }
 
@@ -4689,7 +4763,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[123] = Const Value(123)
@@ -4708,7 +4782,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:ArrayExact = NewArray
@@ -4727,7 +4801,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:ArrayExact = NewArray v9
@@ -4746,7 +4820,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v17:ArrayExact = NewArray v11, v12
@@ -4765,7 +4839,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[10] = Const Value(10)
@@ -4785,7 +4859,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v17:RangeExact = NewRange v11 NewRangeInclusive v12
@@ -4804,7 +4878,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[10] = Const Value(10)
@@ -4824,7 +4898,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v17:RangeExact = NewRange v11 NewRangeExclusive v12
@@ -4843,7 +4917,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -4863,7 +4937,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -4883,7 +4957,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:HashExact = NewHash
@@ -4902,7 +4976,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v16:StaticSymbol[:a] = Const Value(VALUE(0x1000))
@@ -4923,7 +4997,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -4943,7 +5017,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Bignum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -4962,7 +5036,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Flonum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -4981,7 +5055,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:HeapFloat[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -5000,7 +5074,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
@@ -5019,7 +5093,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -5042,7 +5116,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -5067,7 +5141,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           SideExit PatchPoint(BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE))
@@ -5086,7 +5160,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -5111,7 +5185,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE))
@@ -5130,7 +5204,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -5155,7 +5229,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           SideExit PatchPoint(BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE))
@@ -5174,7 +5248,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
@@ -5199,7 +5273,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           SideExit PatchPoint(BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS))
@@ -5219,15 +5293,16 @@ mod tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v11:Fixnum[1] = Const Value(1)
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v11
+          Return v13
         ");
     }
 
@@ -5259,7 +5334,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:BasicObject = GetLocal l2, EP@4
@@ -5279,6 +5354,77 @@ mod tests {
     }
 
     #[test]
+    fn test_setlocal_in_default_args() {
+        eval("
+            def test(a = (b = 1)) = [a, b]
+        ");
+        assert_contains_opcode("test", YARVINSN_setlocal_WC_0);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0(v1:BasicObject, v2:BasicObject):
+          EntryPoint interpreter
+          v3:NilClass = Const Value(nil)
+          v4:CPtr = LoadPC
+          v5:CPtr[CPtr(0x1000)] = Const CPtr(0x1008)
+          v6:CBool = IsBitEqual v4, v5
+          IfTrue v6, bb2(v1, v2, v3)
+          Jump bb4(v1, v2, v3)
+        bb1(v10:BasicObject, v11:BasicObject):
+          EntryPoint JIT(0)
+          v12:NilClass = Const Value(nil)
+          Jump bb2(v10, v11, v12)
+        bb2(v14:BasicObject, v15:BasicObject, v16:NilClass):
+          v20:Fixnum[1] = Const Value(1)
+          Jump bb4(v14, v20, v20)
+        bb3(v23:BasicObject, v24:BasicObject):
+          EntryPoint JIT(1)
+          v25:NilClass = Const Value(nil)
+          Jump bb4(v23, v24, v25)
+        bb4(v27:BasicObject, v28:BasicObject, v29:NilClass|Fixnum):
+          v34:ArrayExact = NewArray v28, v29
+          CheckInterrupts
+          Return v34
+        ");
+    }
+
+    #[test]
+    fn test_setlocal_in_default_args_with_tracepoint() {
+        eval("
+            def test(a = (b = 1)) = [a, b]
+            TracePoint.new(:line) {}.enable
+            test
+        ");
+        assert_compile_fails("test", ParseError::FailedOptionalArguments);
+    }
+
+    #[test]
+    fn test_setlocal_in_default_args_with_side_exit() {
+        eval("
+            def test(a = (def foo = nil)) = a
+        ");
+        assert_compile_fails("test", ParseError::FailedOptionalArguments);
+    }
+
+    #[test]
+    fn test_setlocal_cyclic_default_args() {
+        eval("
+            def test = proc { |a=a| a }
+        ");
+        assert_snapshot!(hir_string_proc("test"), @r"
+        fn block in test@<compiled>:2:
+        bb0(v1:BasicObject, v2:BasicObject):
+          EntryPoint interpreter
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          CheckInterrupts
+          Return v9
+        ");
+    }
+
+    #[test]
     fn defined_ivar() {
         eval("
             def test = defined?(@foo)
@@ -5290,7 +5436,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:StringExact|NilClass = DefinedIvar v6, :@foo
@@ -5317,7 +5463,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:TrueClass|NilClass = DefinedIvar v6, :@foo
@@ -5346,7 +5492,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:NilClass = Const Value(nil)
@@ -5378,7 +5524,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           CheckInterrupts
@@ -5410,27 +5556,28 @@ mod tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v5, v6)
-        bb2(v8:BasicObject, v9:BasicObject):
-          v10:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject):
+          EntryPoint JIT(0)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
           CheckInterrupts
-          v16:CBool = Test v9
-          IfFalse v16, bb3(v8, v9, v10)
-          v20:Fixnum[3] = Const Value(3)
+          v18:CBool = Test v11
+          IfFalse v18, bb3(v10, v11, v12)
+          v22:Fixnum[3] = Const Value(3)
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Jump bb4(v8, v9, v20)
-        bb3(v26:BasicObject, v27:BasicObject, v28:NilClass):
-          v32:Fixnum[4] = Const Value(4)
+          Jump bb4(v10, v11, v22)
+        bb3(v28:BasicObject, v29:BasicObject, v30:NilClass):
+          v34:Fixnum[4] = Const Value(4)
           PatchPoint NoEPEscape(test)
-          Jump bb4(v26, v27, v32)
-        bb4(v36:BasicObject, v37:BasicObject, v38:Fixnum):
+          Jump bb4(v28, v29, v34)
+        bb4(v38:BasicObject, v39:BasicObject, v40:Fixnum):
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v38
+          Return v40
         ");
     }
 
@@ -5447,7 +5594,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = SendWithoutBlock v11, :+, v12
@@ -5469,7 +5616,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = SendWithoutBlock v11, :-, v12
@@ -5491,7 +5638,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = SendWithoutBlock v11, :*, v12
@@ -5513,7 +5660,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = SendWithoutBlock v11, :/, v12
@@ -5535,7 +5682,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = SendWithoutBlock v11, :%, v12
@@ -5557,7 +5704,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = SendWithoutBlock v11, :==, v12
@@ -5579,7 +5726,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = SendWithoutBlock v11, :!=, v12
@@ -5601,7 +5748,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = SendWithoutBlock v11, :<, v12
@@ -5623,7 +5770,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = SendWithoutBlock v11, :<=, v12
@@ -5645,7 +5792,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = SendWithoutBlock v11, :>, v12
@@ -5672,35 +5819,37 @@ mod tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject):
+          EntryPoint JIT(0)
           v7:NilClass = Const Value(nil)
           v8:NilClass = Const Value(nil)
-          v12:Fixnum[0] = Const Value(0)
-          v15:Fixnum[10] = Const Value(10)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:NilClass, v12:NilClass):
+          v16:Fixnum[0] = Const Value(0)
+          v19:Fixnum[10] = Const Value(10)
           CheckInterrupts
-          Jump bb4(v6, v12, v15)
-        bb4(v21:BasicObject, v22:BasicObject, v23:BasicObject):
+          Jump bb4(v10, v16, v19)
+        bb4(v25:BasicObject, v26:BasicObject, v27:BasicObject):
           PatchPoint NoEPEscape(test)
-          v27:Fixnum[0] = Const Value(0)
-          v31:BasicObject = SendWithoutBlock v23, :>, v27
+          v31:Fixnum[0] = Const Value(0)
+          v35:BasicObject = SendWithoutBlock v27, :>, v31
           CheckInterrupts
-          v34:CBool = Test v31
-          IfTrue v34, bb3(v21, v22, v23)
-          v36:NilClass = Const Value(nil)
+          v38:CBool = Test v35
+          IfTrue v38, bb3(v25, v26, v27)
+          v40:NilClass = Const Value(nil)
           PatchPoint NoEPEscape(test)
           CheckInterrupts
-          Return v22
-        bb3(v46:BasicObject, v47:BasicObject, v48:BasicObject):
+          Return v26
+        bb3(v50:BasicObject, v51:BasicObject, v52:BasicObject):
           PatchPoint NoEPEscape(test)
-          v54:Fixnum[1] = Const Value(1)
-          v58:BasicObject = SendWithoutBlock v47, :+, v54
-          v61:Fixnum[1] = Const Value(1)
-          v65:BasicObject = SendWithoutBlock v48, :-, v61
-          Jump bb4(v46, v58, v65)
+          v58:Fixnum[1] = Const Value(1)
+          v62:BasicObject = SendWithoutBlock v51, :+, v58
+          v65:Fixnum[1] = Const Value(1)
+          v69:BasicObject = SendWithoutBlock v52, :-, v65
+          Jump bb4(v50, v62, v69)
         ");
     }
 
@@ -5717,7 +5866,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = SendWithoutBlock v11, :>=, v12
@@ -5742,23 +5891,24 @@ mod tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v11:TrueClass = Const Value(true)
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:TrueClass = Const Value(true)
           CheckInterrupts
-          v16:CBool[true] = Test v11
-          IfFalse v16, bb3(v6, v11)
-          v20:Fixnum[3] = Const Value(3)
+          v18:CBool[true] = Test v13
+          IfFalse v18, bb3(v8, v13)
+          v22:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v20
-        bb3(v26, v27):
-          v31 = Const Value(4)
+          Return v22
+        bb3(v28, v29):
+          v33 = Const Value(4)
           CheckInterrupts
-          Return v31
+          Return v33
         ");
     }
 
@@ -5779,7 +5929,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[2] = Const Value(2)
@@ -5807,7 +5957,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:BasicObject = GetLocal l0, EP@3
@@ -5832,7 +5982,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -5857,7 +6007,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -5885,7 +6035,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:ArrayExact = ToArray v9
@@ -5904,7 +6054,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:BasicObject = Send v8, 0x1000, :foo, v9
@@ -5924,7 +6074,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
@@ -5943,7 +6093,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:BasicObject = SendWithoutBlock v8, :foo, v9
@@ -5965,7 +6115,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:BasicObject = InvokeSuper v6, 0x1000
@@ -5985,7 +6135,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:BasicObject = InvokeSuper v6, 0x1000
@@ -6005,7 +6155,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:NilClass = Const Value(nil)
@@ -6026,7 +6176,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           SideExit UnhandledYARVInsn(invokesuperforward)
@@ -6042,7 +6192,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:NilClass = Const Value(nil)
@@ -6064,7 +6214,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
@@ -6092,7 +6242,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:ArrayExact):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:ArrayExact):
           v14:ArrayExact = ToNewArray v9
@@ -6113,7 +6263,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:BasicObject = SendForward 0x1000, :foo, v9
@@ -6131,16 +6281,17 @@ mod tests {
         fn test@<compiled>:2:
         bb0(v1:BasicObject, v2:BasicObject, v3:ArrayExact, v4:BasicObject, v5:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1, v2, v3, v4, v5)
-        bb1(v8:BasicObject, v9:BasicObject, v10:ArrayExact, v11:BasicObject, v12:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v8, v9, v10, v11, v12)
-        bb2(v14:BasicObject, v15:BasicObject, v16:ArrayExact, v17:BasicObject, v18:BasicObject):
-          v19:NilClass = Const Value(nil)
-          v24:ArrayExact = ToArray v16
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4, v5, v6)
+        bb1(v9:BasicObject, v10:BasicObject, v11:ArrayExact, v12:BasicObject, v13:BasicObject):
+          EntryPoint JIT(0)
+          v14:NilClass = Const Value(nil)
+          Jump bb2(v9, v10, v11, v12, v13, v14)
+        bb2(v16:BasicObject, v17:BasicObject, v18:ArrayExact, v19:BasicObject, v20:BasicObject, v21:NilClass):
+          v26:ArrayExact = ToArray v18
           PatchPoint NoEPEscape(test)
           GuardBlockParamProxy l0
-          v29:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          v31:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
           SideExit UnhandledYARVInsn(splatkw)
         ");
     }
@@ -6158,7 +6309,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:BasicObject = GetConstantPath 0x1000
@@ -6191,7 +6342,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX)
@@ -6213,7 +6364,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX)
@@ -6238,14 +6389,16 @@ mod tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v6, v7, v8)
-        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v13:NilClass = Const Value(nil)
-          v14:NilClass = Const Value(nil)
-          v21:BasicObject = SendWithoutBlock v11, :+, v12
+          v4:NilClass = Const Value(nil)
+          v5:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4, v5)
+        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          v11:NilClass = Const Value(nil)
+          v12:NilClass = Const Value(nil)
+          Jump bb2(v8, v9, v10, v11, v12)
+        bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
+          v25:BasicObject = SendWithoutBlock v15, :+, v16
           SideExit UnknownNewarraySend(MIN)
         ");
     }
@@ -6265,14 +6418,16 @@ mod tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v6, v7, v8)
-        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v13:NilClass = Const Value(nil)
-          v14:NilClass = Const Value(nil)
-          v21:BasicObject = SendWithoutBlock v11, :+, v12
+          v4:NilClass = Const Value(nil)
+          v5:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4, v5)
+        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          v11:NilClass = Const Value(nil)
+          v12:NilClass = Const Value(nil)
+          Jump bb2(v8, v9, v10, v11, v12)
+        bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
+          v25:BasicObject = SendWithoutBlock v15, :+, v16
           SideExit UnknownNewarraySend(HASH)
         ");
     }
@@ -6292,16 +6447,18 @@ mod tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v6, v7, v8)
-        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v13:NilClass = Const Value(nil)
-          v14:NilClass = Const Value(nil)
-          v21:BasicObject = SendWithoutBlock v11, :+, v12
-          v24:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v26:StringExact = StringCopy v24
+          v4:NilClass = Const Value(nil)
+          v5:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4, v5)
+        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          v11:NilClass = Const Value(nil)
+          v12:NilClass = Const Value(nil)
+          Jump bb2(v8, v9, v10, v11, v12)
+        bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
+          v25:BasicObject = SendWithoutBlock v15, :+, v16
+          v28:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v30:StringExact = StringCopy v28
           SideExit UnknownNewarraySend(PACK)
         ");
     }
@@ -6323,14 +6480,16 @@ mod tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v6, v7, v8)
-        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v13:NilClass = Const Value(nil)
-          v14:NilClass = Const Value(nil)
-          v21:BasicObject = SendWithoutBlock v11, :+, v12
+          v4:NilClass = Const Value(nil)
+          v5:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4, v5)
+        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
+          EntryPoint JIT(0)
+          v11:NilClass = Const Value(nil)
+          v12:NilClass = Const Value(nil)
+          Jump bb2(v8, v9, v10, v11, v12)
+        bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
+          v25:BasicObject = SendWithoutBlock v15, :+, v16
           SideExit UnknownNewarraySend(INCLUDE_P)
         ");
     }
@@ -6347,7 +6506,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v17:ArrayExact = NewArray v11, v12
@@ -6369,7 +6528,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v17:ArrayExact = NewArray v11, v12
@@ -6392,7 +6551,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -6415,7 +6574,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -6439,7 +6598,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -6462,7 +6621,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:BasicObject = GetGlobal :$foo
@@ -6483,7 +6642,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:ArrayExact = ToNewArray v9
@@ -6504,7 +6663,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
@@ -6528,7 +6687,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:ArrayExact = ToNewArray v9
@@ -6551,7 +6710,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:ArrayExact = ToNewArray v9
@@ -6578,7 +6737,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v16:NilClass = Const Value(nil)
@@ -6601,7 +6760,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = SendWithoutBlock v11, :[], v12
@@ -6622,7 +6781,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v16:BasicObject = SendWithoutBlock v9, :empty?
@@ -6643,7 +6802,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v16:BasicObject = SendWithoutBlock v9, :succ
@@ -6664,7 +6823,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = SendWithoutBlock v11, :&, v12
@@ -6685,7 +6844,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = SendWithoutBlock v11, :|, v12
@@ -6706,7 +6865,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v16:BasicObject = SendWithoutBlock v9, :!
@@ -6727,7 +6886,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = SendWithoutBlock v11, :=~, v12
@@ -6752,7 +6911,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
@@ -6779,55 +6938,61 @@ mod tests {
             end
         ");
         assert_contains_opcode("reverse_odd", YARVINSN_opt_reverse);
-        assert_snapshot!(hir_string("reverse_odd"), @r"
+        assert_contains_opcode("reverse_even", YARVINSN_opt_reverse);
+        assert_snapshot!(hir_strings!("reverse_odd", "reverse_even"), @r"
         fn reverse_odd@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v8:NilClass = Const Value(nil)
-          v9:NilClass = Const Value(nil)
-          PatchPoint SingleRactorMode
-          v15:BasicObject = GetIvar v6, :@a
-          PatchPoint SingleRactorMode
-          v18:BasicObject = GetIvar v6, :@b
-          PatchPoint SingleRactorMode
-          v21:BasicObject = GetIvar v6, :@c
-          PatchPoint NoEPEscape(reverse_odd)
-          v27:ArrayExact = NewArray v15, v18, v21
-          CheckInterrupts
-          Return v27
-        ");
-        assert_contains_opcode("reverse_even", YARVINSN_opt_reverse);
-        assert_snapshot!(hir_string("reverse_even"), @r"
-        fn reverse_even@<compiled>:8:
-        bb0(v1:BasicObject):
-          EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          v4:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject):
+          EntryPoint JIT(0)
           v8:NilClass = Const Value(nil)
           v9:NilClass = Const Value(nil)
           v10:NilClass = Const Value(nil)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:NilClass, v14:NilClass, v15:NilClass):
           PatchPoint SingleRactorMode
-          v16:BasicObject = GetIvar v6, :@a
+          v21:BasicObject = GetIvar v12, :@a
           PatchPoint SingleRactorMode
-          v19:BasicObject = GetIvar v6, :@b
+          v24:BasicObject = GetIvar v12, :@b
           PatchPoint SingleRactorMode
-          v22:BasicObject = GetIvar v6, :@c
-          PatchPoint SingleRactorMode
-          v25:BasicObject = GetIvar v6, :@d
-          PatchPoint NoEPEscape(reverse_even)
-          v31:ArrayExact = NewArray v16, v19, v22, v25
+          v27:BasicObject = GetIvar v12, :@c
+          PatchPoint NoEPEscape(reverse_odd)
+          v33:ArrayExact = NewArray v21, v24, v27
           CheckInterrupts
-          Return v31
+          Return v33
+
+        fn reverse_even@<compiled>:8:
+        bb0(v1:BasicObject):
+          EntryPoint interpreter
+          v2:NilClass = Const Value(nil)
+          v3:NilClass = Const Value(nil)
+          v4:NilClass = Const Value(nil)
+          v5:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4, v5)
+        bb1(v8:BasicObject):
+          EntryPoint JIT(0)
+          v9:NilClass = Const Value(nil)
+          v10:NilClass = Const Value(nil)
+          v11:NilClass = Const Value(nil)
+          v12:NilClass = Const Value(nil)
+          Jump bb2(v8, v9, v10, v11, v12)
+        bb2(v14:BasicObject, v15:NilClass, v16:NilClass, v17:NilClass, v18:NilClass):
+          PatchPoint SingleRactorMode
+          v24:BasicObject = GetIvar v14, :@a
+          PatchPoint SingleRactorMode
+          v27:BasicObject = GetIvar v14, :@b
+          PatchPoint SingleRactorMode
+          v30:BasicObject = GetIvar v14, :@c
+          PatchPoint SingleRactorMode
+          v33:BasicObject = GetIvar v14, :@d
+          PatchPoint NoEPEscape(reverse_even)
+          v39:ArrayExact = NewArray v24, v27, v30, v33
+          CheckInterrupts
+          Return v39
         ");
     }
 
@@ -6843,7 +7008,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           CheckInterrupts
@@ -6866,7 +7031,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3, v4)
         bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject, v10:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v7, v8, v9, v10)
         bb2(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:BasicObject):
           v20:Float = InvokeBuiltin rb_f_float, v12, v13, v14
@@ -6886,7 +7051,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:Class = InvokeBuiltin _bi20, v6
@@ -6907,28 +7072,29 @@ mod tests {
         fn open@<internal:dir>:
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject, v5:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1, v2, v3, v4, v5)
-        bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v8, v9, v10, v11, v12)
-        bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:BasicObject):
-          v19:NilClass = Const Value(nil)
-          v24:BasicObject = InvokeBuiltin dir_s_open, v14, v15, v16
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4, v5, v6)
+        bb1(v9:BasicObject, v10:BasicObject, v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          EntryPoint JIT(0)
+          v14:NilClass = Const Value(nil)
+          Jump bb2(v9, v10, v11, v12, v13, v14)
+        bb2(v16:BasicObject, v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:NilClass):
+          v26:BasicObject = InvokeBuiltin dir_s_open, v16, v17, v18
           PatchPoint NoEPEscape(open)
           GuardBlockParamProxy l0
-          v31:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          v33:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
           CheckInterrupts
-          v34:CBool[true] = Test v31
-          IfFalse v34, bb3(v14, v15, v16, v17, v18, v24)
+          v36:CBool[true] = Test v33
+          IfFalse v36, bb3(v16, v17, v18, v19, v20, v26)
           PatchPoint NoEPEscape(open)
-          v41:BasicObject = InvokeBlock, v24
-          v45:BasicObject = InvokeBuiltin dir_s_close, v14, v24
+          v43:BasicObject = InvokeBlock, v26
+          v47:BasicObject = InvokeBuiltin dir_s_close, v16, v26
           CheckInterrupts
-          Return v41
-        bb3(v51, v52, v53, v54, v55, v56):
+          Return v43
+        bb3(v53, v54, v55, v56, v57, v58):
           PatchPoint NoEPEscape(open)
           CheckInterrupts
-          Return v56
+          Return v58
         ");
     }
 
@@ -6943,7 +7109,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:BasicObject = InvokeBuiltin gc_enable, v6
@@ -6965,7 +7131,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3, v4, v5)
         bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:BasicObject):
           v22:FalseClass = Const Value(false)
@@ -6987,7 +7153,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:NilClass = Const Value(nil)
@@ -7019,7 +7185,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -7044,7 +7210,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -7074,7 +7240,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -7099,7 +7265,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -7129,7 +7295,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -7151,26 +7317,25 @@ mod tests {
             define_method(:throw_break) { break 2 }
         ");
         assert_contains_opcode("throw_return", YARVINSN_throw);
-        assert_snapshot!(hir_string("throw_return"), @r"
+        assert_contains_opcode("throw_break", YARVINSN_throw);
+        assert_snapshot!(hir_strings!("throw_return", "throw_break"), @r"
         fn block in <compiled>@<compiled>:2:
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v12:Fixnum[1] = Const Value(1)
           Throw TAG_RETURN, v12
-        ");
-        assert_contains_opcode("throw_break", YARVINSN_throw);
-        assert_snapshot!(hir_string("throw_break"), @r"
+
         fn block in <compiled>@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v12:Fixnum[2] = Const Value(2)
@@ -7191,7 +7356,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:BasicObject = InvokeBlock
@@ -7213,7 +7378,7 @@ mod tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v17:BasicObject = InvokeBlock, v11, v12
@@ -7257,7 +7422,7 @@ mod graphviz_tests {
           bb0:v4 -> bb2:params:n;
           bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v5">EntryPoint JIT&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v5">EntryPoint JIT(0)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v9">Jump bb2(v6, v7, v8)&nbsp;</TD></TR>
         </TABLE>>];
           bb1:v9 -> bb2:params:n;
@@ -7303,7 +7468,7 @@ mod graphviz_tests {
           bb0:v3 -> bb2:params:n;
           bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
         <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v5:BasicObject, v6:BasicObject)&nbsp;</TD></TR>
-        <TR><TD ALIGN="left" PORT="v4">EntryPoint JIT&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v4">EntryPoint JIT(0)&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v7">Jump bb2(v5, v6)&nbsp;</TD></TR>
         </TABLE>>];
           bb1:v7 -> bb2:params:n;
@@ -7336,7 +7501,7 @@ mod graphviz_tests {
 #[cfg(test)]
 mod opt_tests {
     use super::*;
-    use crate::options::*;
+    use crate::{hir_strings, options::*};
     use insta::assert_snapshot;
 
     #[track_caller]
@@ -7365,17 +7530,18 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v11:TrueClass = Const Value(true)
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:TrueClass = Const Value(true)
           CheckInterrupts
-          v20:Fixnum[3] = Const Value(3)
+          v22:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -7395,17 +7561,18 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v11:FalseClass = Const Value(false)
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:FalseClass = Const Value(false)
           CheckInterrupts
-          v31:Fixnum[4] = Const Value(4)
+          v33:Fixnum[4] = Const Value(4)
           CheckInterrupts
-          Return v31
+          Return v33
         ");
     }
 
@@ -7422,7 +7589,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -7450,7 +7617,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[5] = Const Value(5)
@@ -7478,7 +7645,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[0] = Const Value(0)
@@ -7503,7 +7670,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[6] = Const Value(6)
@@ -7529,7 +7696,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[0] = Const Value(0)
@@ -7564,7 +7731,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -7595,7 +7762,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -7631,7 +7798,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[2] = Const Value(2)
@@ -7662,7 +7829,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[2] = Const Value(2)
@@ -7698,7 +7865,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -7729,7 +7896,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[2] = Const Value(2)
@@ -7760,7 +7927,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -7792,7 +7959,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[2] = Const Value(2)
@@ -7821,7 +7988,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
@@ -7842,64 +8009,58 @@ mod opt_tests {
             def post(*rest, post) = post
             def block(&b) = nil
         ");
-
-        assert_snapshot!(hir_string("rest"), @r"
+        assert_snapshot!(hir_strings!("rest", "kw", "kw_rest", "block", "post"), @r"
         fn rest@<compiled>:2:
         bb0(v1:BasicObject, v2:ArrayExact):
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:ArrayExact):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:ArrayExact):
           CheckInterrupts
           Return v9
-        ");
-        // extra hidden param for the set of specified keywords
-        assert_snapshot!(hir_string("kw"), @r"
+
         fn kw@<compiled>:3:
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           CheckInterrupts
           Return v11
-        ");
-        assert_snapshot!(hir_string("kw_rest"), @r"
+
         fn kw_rest@<compiled>:4:
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           CheckInterrupts
           Return v9
-        ");
-        assert_snapshot!(hir_string("block"), @r"
+
         fn block@<compiled>:6:
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:NilClass = Const Value(nil)
           CheckInterrupts
           Return v13
-        ");
-        assert_snapshot!(hir_string("post"), @r"
+
         fn post@<compiled>:5:
         bb0(v1:BasicObject, v2:ArrayExact, v3:BasicObject):
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:ArrayExact, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:ArrayExact, v12:BasicObject):
           CheckInterrupts
@@ -7923,7 +8084,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
@@ -7951,7 +8112,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:BasicObject = SendWithoutBlock v6, :foo
@@ -7977,7 +8138,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
@@ -8002,7 +8163,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[3] = Const Value(3)
@@ -8030,7 +8191,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -8062,7 +8223,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
@@ -8090,7 +8251,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -8120,7 +8281,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v19:BasicObject = SendWithoutBlock v11, :+, v12
@@ -8141,7 +8302,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
@@ -8165,7 +8326,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
@@ -8189,7 +8350,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
@@ -8213,7 +8374,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
@@ -8237,7 +8398,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
@@ -8261,7 +8422,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
@@ -8286,17 +8447,18 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v11:Fixnum[2] = Const Value(2)
-          v14:Fixnum[1] = Const Value(1)
-          v22:RangeExact = NewRangeFixnum v14 NewRangeInclusive v11
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:Fixnum[2] = Const Value(2)
+          v16:Fixnum[1] = Const Value(1)
+          v24:RangeExact = NewRangeFixnum v16 NewRangeInclusive v13
           CheckInterrupts
-          Return v22
+          Return v24
         ");
     }
 
@@ -8314,17 +8476,18 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v11:Fixnum[2] = Const Value(2)
-          v14:Fixnum[1] = Const Value(1)
-          v22:RangeExact = NewRangeFixnum v14 NewRangeExclusive v11
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:Fixnum[2] = Const Value(2)
+          v16:Fixnum[1] = Const Value(1)
+          v24:RangeExact = NewRangeFixnum v16 NewRangeExclusive v13
           CheckInterrupts
-          Return v22
+          Return v24
         ");
     }
 
@@ -8342,7 +8505,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
@@ -8367,7 +8530,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
@@ -8392,7 +8555,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[10] = Const Value(10)
@@ -8417,7 +8580,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[10] = Const Value(10)
@@ -8441,16 +8604,17 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v12:ArrayExact = NewArray
-          v15:Fixnum[5] = Const Value(5)
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v14:ArrayExact = NewArray
+          v17:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v15
+          Return v17
         ");
     }
 
@@ -8467,16 +8631,17 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v11:RangeExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v14:Fixnum[5] = Const Value(5)
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:RangeExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v16:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v14
+          Return v16
         ");
     }
 
@@ -8493,21 +8658,22 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
-          v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v14:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v16:StringExact = StringCopy v14
-          v18:RangeExact = NewRange v13 NewRangeInclusive v16
+          v15:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v16:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v18:StringExact = StringCopy v16
+          v20:RangeExact = NewRange v15 NewRangeInclusive v18
           PatchPoint NoEPEscape(test)
-          v23:Fixnum[0] = Const Value(0)
+          v25:Fixnum[0] = Const Value(0)
           CheckInterrupts
-          Return v23
+          Return v25
         ");
     }
 
@@ -8524,16 +8690,17 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v5, v6)
-        bb2(v8:BasicObject, v9:BasicObject):
-          v10:NilClass = Const Value(nil)
-          v15:ArrayExact = NewArray v9
-          v18:Fixnum[5] = Const Value(5)
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject):
+          EntryPoint JIT(0)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
+          v17:ArrayExact = NewArray v11
+          v20:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v18
+          Return v20
         ");
     }
 
@@ -8549,17 +8716,18 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v12:HashExact = NewHash
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v14:HashExact = NewHash
           PatchPoint NoEPEscape(test)
-          v17:Fixnum[5] = Const Value(5)
+          v19:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v17
+          Return v19
         ");
     }
 
@@ -8575,19 +8743,20 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v6, v7, v8)
-        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v13:NilClass = Const Value(nil)
-          v17:StaticSymbol[:a] = Const Value(VALUE(0x1000))
-          v18:StaticSymbol[:b] = Const Value(VALUE(0x1008))
-          v20:HashExact = NewHash v17: v11, v18: v12
+          v4:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject):
+          EntryPoint JIT(0)
+          v10:NilClass = Const Value(nil)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:BasicObject, v14:BasicObject, v15:NilClass):
+          v19:StaticSymbol[:a] = Const Value(VALUE(0x1000))
+          v20:StaticSymbol[:b] = Const Value(VALUE(0x1008))
+          v22:HashExact = NewHash v19: v13, v20: v14
           PatchPoint NoEPEscape(test)
-          v25:Fixnum[5] = Const Value(5)
+          v27:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v25
+          Return v27
         ");
     }
 
@@ -8604,17 +8773,18 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v11:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v13:ArrayExact = ArrayDup v11
-          v16:Fixnum[5] = Const Value(5)
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v15:ArrayExact = ArrayDup v13
+          v18:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v16
+          Return v18
         ");
     }
 
@@ -8630,17 +8800,18 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v11:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v13:HashExact = HashDup v11
-          v16:Fixnum[5] = Const Value(5)
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v15:HashExact = HashDup v13
+          v18:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v16
+          Return v18
         ");
     }
 
@@ -8657,15 +8828,16 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v13:Fixnum[5] = Const Value(5)
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v15:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v13
+          Return v15
         ");
     }
 
@@ -8682,17 +8854,18 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v11:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v13:StringExact = StringCopy v11
-          v16:Fixnum[5] = Const Value(5)
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v15:StringExact = StringCopy v13
+          v18:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v16
+          Return v18
         ");
     }
 
@@ -8711,7 +8884,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
@@ -8738,7 +8911,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
@@ -8765,7 +8938,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
@@ -8792,7 +8965,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
@@ -8820,7 +8993,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
@@ -8848,7 +9021,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
@@ -8875,7 +9048,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
@@ -8902,7 +9075,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
@@ -8929,7 +9102,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
@@ -8956,7 +9129,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
@@ -8983,7 +9156,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
@@ -9010,7 +9183,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:BasicObject = GetConstantPath 0x1000
@@ -9033,7 +9206,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
@@ -9055,7 +9228,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:ArrayExact = NewArray
@@ -9078,19 +9251,20 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v12:ArrayExact = NewArray
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v14:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
-          v26:BasicObject = CCall itself@0x1038, v12
+          v28:BasicObject = CCall itself@0x1038, v14
           PatchPoint NoEPEscape(test)
-          v19:Fixnum[1] = Const Value(1)
+          v21:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v19
+          Return v21
         ");
     }
 
@@ -9108,21 +9282,22 @@ mod opt_tests {
         fn test@<compiled>:4:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, M)
-          v27:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v29:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(Module@0x1010, name@0x1018, cme:0x1020)
-          v29:StringExact|NilClass = CCall name@0x1048, v27
+          v31:StringExact|NilClass = CCall name@0x1048, v29
           PatchPoint NoEPEscape(test)
-          v19:Fixnum[1] = Const Value(1)
+          v21:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v19
+          Return v21
         ");
     }
 
@@ -9138,18 +9313,19 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v12:ArrayExact = NewArray
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v14:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
-          v26:Fixnum = CCall length@0x1038, v12
-          v19:Fixnum[5] = Const Value(5)
+          v28:Fixnum = CCall length@0x1038, v14
+          v21:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v19
+          Return v21
         ");
     }
 
@@ -9166,7 +9342,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -9189,7 +9365,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -9222,7 +9398,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -9251,7 +9427,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -9274,18 +9450,19 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v12:ArrayExact = NewArray
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v14:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
-          v26:Fixnum = CCall size@0x1038, v12
-          v19:Fixnum[5] = Const Value(5)
+          v28:Fixnum = CCall size@0x1038, v14
+          v21:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v19
+          Return v21
         ");
     }
 
@@ -9303,7 +9480,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -9325,7 +9502,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
@@ -9348,18 +9525,19 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject, v2:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v5, v6)
-        bb2(v8:BasicObject, v9:BasicObject):
-          v10:NilClass = Const Value(nil)
-          v14:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v16:ArrayExact = ArrayDup v14
+          v3:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject):
+          EntryPoint JIT(0)
+          v8:NilClass = Const Value(nil)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:NilClass):
+          v16:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v18:ArrayExact = ArrayDup v16
           PatchPoint MethodRedefined(Array@0x1008, first@0x1010, cme:0x1018)
-          v27:BasicObject = SendWithoutBlockDirect v16, :first (0x1040)
+          v29:BasicObject = SendWithoutBlockDirect v18, :first (0x1040)
           CheckInterrupts
-          Return v27
+          Return v29
         ");
     }
 
@@ -9377,7 +9555,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -9411,7 +9589,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
@@ -9436,7 +9614,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -9460,7 +9638,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:BasicObject = Send v6, 0x1000, :foo
@@ -9485,19 +9663,20 @@ mod opt_tests {
         fn test@<compiled>:4:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v11:Fixnum[1] = Const Value(1)
-          SetLocal l0, EP@3, v11
-          v16:BasicObject = Send v6, 0x1000, :foo
-          v17:BasicObject = GetLocal l0, EP@3
-          v20:BasicObject = GetLocal l0, EP@3
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:Fixnum[1] = Const Value(1)
+          SetLocal l0, EP@3, v13
+          v18:BasicObject = Send v8, 0x1000, :foo
+          v19:BasicObject = GetLocal l0, EP@3
+          v22:BasicObject = GetLocal l0, EP@3
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -9515,7 +9694,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -9539,7 +9718,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -9561,7 +9740,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -9582,7 +9761,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -9605,7 +9784,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:BasicObject = GetConstantPath 0x1000
@@ -9627,7 +9806,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:BasicObject = GetConstantPath 0x1000
@@ -9648,7 +9827,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -9677,7 +9856,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -9701,7 +9880,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -9735,7 +9914,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -9765,7 +9944,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -9794,7 +9973,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -9823,7 +10002,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -9852,7 +10031,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -9880,7 +10059,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -9910,7 +10089,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -9937,7 +10116,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -9967,7 +10146,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v17:ArrayExact = NewArray v11, v12
@@ -9989,7 +10168,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v17:ArrayExact = NewArray v11, v12
@@ -10011,7 +10190,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           GuardBlockParamProxy l0
@@ -10033,7 +10212,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -10054,7 +10233,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -10076,7 +10255,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -10100,7 +10279,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           SideExit PatchPoint(BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE))
@@ -10118,7 +10297,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -10140,7 +10319,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:HashExact = NewHash
@@ -10162,7 +10341,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:HashExact = NewHash
@@ -10184,7 +10363,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -10205,7 +10384,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -10227,7 +10406,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:ArrayExact = NewArray
@@ -10249,7 +10428,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:ArrayExact = NewArray
@@ -10271,7 +10450,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -10292,7 +10471,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -10314,7 +10493,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -10337,7 +10516,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -10360,7 +10539,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
@@ -10381,7 +10560,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -10403,7 +10582,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -10426,7 +10605,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -10449,7 +10628,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -10477,7 +10656,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -10506,7 +10685,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -10532,7 +10711,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -10558,16 +10737,17 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v11:NilClass = Const Value(nil)
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:NilClass = Const Value(nil)
           CheckInterrupts
           CheckInterrupts
-          Return v11
+          Return v13
         ");
     }
 
@@ -10584,18 +10764,19 @@ mod opt_tests {
         fn test@<compiled>:3:
         bb0(v1:BasicObject):
           EntryPoint interpreter
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v7:NilClass = Const Value(nil)
-          v11:Fixnum[1] = Const Value(1)
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:Fixnum[1] = Const Value(1)
           CheckInterrupts
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
-          v31:BasicObject = CCall itself@0x1038, v11
+          v33:BasicObject = CCall itself@0x1038, v13
           CheckInterrupts
-          Return v31
+          Return v33
         ");
     }
 
@@ -10610,7 +10791,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -10634,7 +10815,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -10658,7 +10839,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -10682,7 +10863,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -10709,7 +10890,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
@@ -10735,7 +10916,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -10763,7 +10944,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -10785,7 +10966,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:RegexpExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -10805,7 +10986,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:NilClass = Const Value(nil)
@@ -10830,7 +11011,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:NilClass = Const Value(nil)
@@ -10852,7 +11033,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -10877,7 +11058,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
@@ -10901,7 +11082,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
@@ -10925,7 +11106,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(FalseClass@0x1000, nil?@0x1008, cme:0x1010)
@@ -10949,7 +11130,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(TrueClass@0x1000, nil?@0x1008, cme:0x1010)
@@ -10973,7 +11154,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Symbol@0x1000, nil?@0x1008, cme:0x1010)
@@ -10997,7 +11178,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
@@ -11021,7 +11202,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Float@0x1000, nil?@0x1008, cme:0x1010)
@@ -11045,7 +11226,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(String@0x1000, nil?@0x1008, cme:0x1010)
@@ -11069,7 +11250,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Array@0x1000, !@0x1008, cme:0x1010)
@@ -11093,7 +11274,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Array@0x1000, empty?@0x1008, cme:0x1010)
@@ -11117,7 +11298,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Hash@0x1000, empty?@0x1008, cme:0x1010)
@@ -11142,7 +11323,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint MethodRedefined(C@0x1000, ==@0x1008, cme:0x1010)
@@ -11166,7 +11347,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 28)
@@ -11191,7 +11372,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 29)
@@ -11218,7 +11399,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
@@ -11250,7 +11431,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
@@ -11283,7 +11464,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
@@ -11327,7 +11508,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:BasicObject = SendWithoutBlock v9, :foo
@@ -11354,7 +11535,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -11386,7 +11567,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1)
         bb1(v4:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
@@ -11417,7 +11598,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
@@ -11446,7 +11627,7 @@ mod opt_tests {
           EntryPoint interpreter
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT
+          EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)

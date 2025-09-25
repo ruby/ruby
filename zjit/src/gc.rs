@@ -40,8 +40,8 @@ impl IseqPayload {
 pub struct IseqCodePtrs {
     /// Entry for the interpreter
     pub start_ptr: CodePtr,
-    /// Entry for JIT-to-JIT calls
-    pub jit_entry_ptr: CodePtr,
+    /// Entries for JIT-to-JIT calls
+    pub jit_entry_ptrs: Vec<CodePtr>,
 }
 
 #[derive(Debug, PartialEq)]
