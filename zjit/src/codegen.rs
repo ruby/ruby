@@ -3,7 +3,6 @@
 #![allow(clippy::let_and_return)]
 
 use std::cell::{Cell, RefCell};
-use std::cmp::Ordering;
 use std::rc::Rc;
 use std::ffi::{c_int, c_long, c_void};
 use std::slice;
@@ -309,9 +308,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Resul
     }
     result.map(|(start_ptr, gc_offsets)| {
         // Make sure jit_entry_ptrs can be used as a parallel vector to jit_entry_insns()
-        jit.jit_entries.sort_by(|a, b|
-            a.borrow().jit_entry_idx.partial_cmp(&b.borrow().jit_entry_idx).unwrap_or(Ordering::Equal)
-        );
+        jit.jit_entries.sort_by_key(|jit_entry| jit_entry.borrow().jit_entry_idx);
+
         let jit_entry_ptrs = jit.jit_entries.iter().map(|jit_entry|
             jit_entry.borrow().start_addr.get().unwrap()
         ).collect();
