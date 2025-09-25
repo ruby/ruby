@@ -127,6 +127,7 @@
 #include "vm_callinfo.h"
 #include "ractor_core.h"
 #include "yjit.h"
+#include "zjit.h"
 
 #include "builtin.h"
 #include "shape.h"
@@ -4104,6 +4105,14 @@ rb_gc_update_vm_references(void *objspace)
 
     if (rb_yjit_enabled_p) {
         rb_yjit_root_update_references();
+    }
+#endif
+
+#if USE_ZJIT
+    void rb_zjit_root_update_references(void); // in Rust
+
+    if (rb_zjit_enabled_p) {
+        rb_zjit_root_update_references();
     }
 #endif
 }
