@@ -803,12 +803,13 @@ defineclass
 (VALUE val)
 {
     VALUE klass = vm_find_or_create_class_by_id(id, flags, cbase, super);
+    const rb_namespace_t *ns = rb_current_namespace();
 
     rb_iseq_check(class_iseq);
 
     /* enter scope */
     vm_push_frame(ec, class_iseq, VM_FRAME_MAGIC_CLASS | VM_ENV_FLAG_LOCAL, klass,
-                  GET_BLOCK_HANDLER(),
+                  GC_GUARDED_PTR(ns),
                   (VALUE)vm_cref_push(ec, klass, NULL, FALSE, FALSE),
                   ISEQ_BODY(class_iseq)->iseq_encoded, GET_SP(),
                   ISEQ_BODY(class_iseq)->local_table_size,
