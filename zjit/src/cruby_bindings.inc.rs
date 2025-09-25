@@ -723,8 +723,8 @@ pub const DEFINED_REF: defined_type = 15;
 pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
-pub const RB_INVALID_SHAPE_ID: _bindgen_ty_38 = 4294967295;
-pub type _bindgen_ty_38 = u32;
+pub const RB_INVALID_SHAPE_ID: _bindgen_ty_12 = 4294967295;
+pub type _bindgen_ty_12 = u32;
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: robject_offsets = 16;
 pub const ROBJECT_OFFSET_AS_ARY: robject_offsets = 16;
 pub type robject_offsets = u32;
@@ -922,6 +922,11 @@ unsafe extern "C" {
         lines: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
     pub fn rb_jit_cont_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
+    pub fn rb_zjit_exit_locations_dict(
+        zjit_raw_samples: *mut VALUE,
+        zjit_line_samples: *mut ::std::os::raw::c_int,
+        samples_len: ::std::os::raw::c_int,
+    ) -> VALUE;
     pub fn rb_zjit_profile_disable(iseq: *const rb_iseq_t);
     pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_zjit_constcache_shareable(ice: *const iseq_inline_constant_cache_entry) -> bool;
@@ -1042,11 +1047,6 @@ unsafe extern "C" {
         line: ::std::os::raw::c_int,
     );
     pub fn rb_iseq_reset_jit_func(iseq: *const rb_iseq_t);
-    pub fn rb_zjit_exit_locations_dict(
-        zjit_raw_samples: *mut VALUE,
-        zjit_line_samples: *mut ::std::os::raw::c_int,
-        samples_len: ::std::os::raw::c_int,
-    ) -> VALUE;
     pub fn rb_jit_get_page_size() -> u32;
     pub fn rb_jit_reserve_addr_space(mem_size: u32) -> *mut u8;
     pub fn rb_jit_for_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
