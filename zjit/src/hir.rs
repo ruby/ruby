@@ -1644,7 +1644,7 @@ impl Function {
                 param_types.len(),
                 "param types should be initialized before type inference",
             );
-            for (param, param_type) in std::iter::zip(entry_params, param_types.clone()) {
+            for (param, param_type) in std::iter::zip(entry_params, param_types) {
                 // We know that function parameters are BasicObject or some subclass
                 self.insn_types[param.0] = *param_type;
             }
