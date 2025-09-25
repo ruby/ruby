@@ -128,6 +128,17 @@ pub extern "C" fn rb_zjit_iseq_update_references(payload: *mut c_void) {
     with_time_stat(gc_time_ns, || iseq_update_references(payload));
 }
 
+/// GC callback for finalizing an ISEQ
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_iseq_free(iseq: IseqPtr) {
+    if !ZJITState::has_instance() {
+        return;
+    }
+    // TODO(Shopify/ruby#682): Free `IseqPayload`
+    let invariants = ZJITState::get_invariants();
+    invariants.forget_iseq(iseq);
+}
+
 /// GC callback for updating object references after all object moves
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_root_update_references() {
