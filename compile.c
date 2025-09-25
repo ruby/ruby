@@ -14002,7 +14002,11 @@ struct ibf_object_symbol {
 
 #define IBF_ALIGNED_OFFSET(align, offset) /* offset > 0 */ \
     ((((offset) - 1) / (align) + 1) * (align))
-#define IBF_OBJBODY(type, offset) (const type *)\
+/* No cast, since it's UB to create an unaligned pointer.
+ * Leave as void* for use with memcpy in those cases.
+ * We align the offset, but the buffer pointer is only VALUE aligned,
+ * so the returned pointer may be unaligned for `type` .*/
+#define IBF_OBJBODY(type, offset) \
     ibf_load_check_offset(load, IBF_ALIGNED_OFFSET(RUBY_ALIGNOF(type), offset))
 
 static const void *
