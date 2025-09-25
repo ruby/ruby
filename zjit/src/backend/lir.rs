@@ -9,6 +9,7 @@ use crate::cruby::VALUE;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
+use crate::state::rb_zjit_record_exit_stack;
 
 pub use crate::backend::current::{
     Reg,
@@ -1627,6 +1628,14 @@ impl Assembler
                         self.load_into(SCRATCH_OPND, Opnd::const_ptr(exit_counter_ptr_for_opcode(opcode)));
                         self.incr_counter_with_reg(Opnd::mem(64, SCRATCH_OPND, 0), 1.into(), C_RET_OPND);
                     }
+
+                    if !pc.is_null() && get_option!(dump_side_exits) {
+                        self.load_into(C_ARG_OPNDS[0], Opnd::const_ptr(pc as *const u8));
+                        self.ccall(
+                             rb_zjit_record_exit_stack as *const u8,
+                             vec![]
+                        );
+                    }
                 }
 
                 asm_comment!(self, "exit to the interpreter");
@@ -2080,4 +2089,3 @@ mod tests {
         asm.load_into(mem, mem);
     }
 }
-
