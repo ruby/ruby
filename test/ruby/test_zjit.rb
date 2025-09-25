@@ -308,6 +308,39 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_optional_arguments
+    assert_compiles '[[1, 2, 3], [10, 20, 3], [100, 200, 300]]', %q{
+      def test(a, b = 2, c = 3)
+        [a, b, c]
+      end
+      [test(1), test(10, 20), test(100, 200, 300)]
+    }
+  end
+
+  def test_optional_arguments_setlocal
+    assert_compiles '[[2, 2], [1, nil]]', %q{
+      def test(a = (b = 2))
+        [a, b]
+      end
+      [test, test(1)]
+    }
+  end
+
+  def test_optional_arguments_cyclic
+    assert_compiles '[nil, 1]', %q{
+      test = proc { |a=a| a }
+      [test.call, test.call(1)]
+    }
+  end
+
+  def test_optional_arguments_side_exit
+    # This leads to FailedOptionalArguments, so not using assert_compiles
+    assert_runs '[:foo, nil, 1]', %q{
+      def test(a = (def foo = nil)) = a
+      [test, (undef :foo), test(1)]
+    }
+  end
+
   def test_getblockparamproxy
     assert_compiles '1', %q{
       def test(&block)
