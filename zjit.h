@@ -18,6 +18,7 @@ void rb_zjit_profile_insn(uint32_t insn, rb_execution_context_t *ec);
 void rb_zjit_profile_enable(const rb_iseq_t *iseq);
 void rb_zjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop);
 void rb_zjit_cme_invalidate(const rb_callable_method_entry_t *cme);
+void rb_zjit_cme_free(const rb_callable_method_entry_t *cme);
 void rb_zjit_invalidate_no_ep_escape(const rb_iseq_t *iseq);
 void rb_zjit_constant_state_changed(ID id);
 void rb_zjit_iseq_mark(void *payload);

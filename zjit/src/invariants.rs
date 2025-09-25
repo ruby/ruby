@@ -80,6 +80,11 @@ impl Invariants {
         self.no_ep_escape_iseq_patch_points.remove(&iseq);
     }
 
+    /// Forget a CME when freeing it. See [Self::forget_iseq] for reasoning.
+    pub fn forget_cme(&mut self, cme: *const rb_callable_method_entry_t) {
+        self.cme_patch_points.remove(&cme);
+    }
+
     /// Update ISEQ references in Invariants::ep_escape_iseqs
     fn update_ep_escape_iseqs(&mut self) {
         let updated = std::mem::take(&mut self.ep_escape_iseqs)
