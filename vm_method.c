@@ -859,6 +859,17 @@ rb_free_method_entry_vm_weak_references(const rb_method_entry_t *me)
 void
 rb_free_method_entry(const rb_method_entry_t *me)
 {
+#if USE_ZJIT
+    if (METHOD_ENTRY_CACHED(me)) {
+        rb_zjit_cme_free((const rb_callable_method_entry_t *)me);
+    }
+#endif
+
+#if USE_YJIT
+    // YJIT rb_yjit_root_mark() roots CMEs in `Invariants`,
+    // to remove from `Invariants` here.
+#endif
+
     rb_method_definition_release(me->def);
 }
 
