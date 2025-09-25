@@ -3331,6 +3331,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     compile_entry_block(&mut fun, &jit_entry_insns);
 
     // Iteratively fill out basic blocks using a queue
+    // TODO(max): Basic block arguments at edges
     let mut queue = VecDeque::new();
     queue.push_back((FrameState::new(iseq), insn_idx_to_block[&0], /*insn_idx=*/0, /*local_inval=*/false));
 
