@@ -1779,7 +1779,10 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
 
     let mut function = match iseq_to_hir(iseq) {
         Ok(function) => function,
-        Err(err) => return Err(CompileError::ParseError(err)),
+        Err(err) => {
+            debug!("ZJIT: iseq_to_hir: {err:?}: {}", iseq_get_location(iseq, 0));
+            return Err(CompileError::ParseError(err));
+        }
     };
     if !get_option!(disable_hir_opt) {
         function.optimize();
