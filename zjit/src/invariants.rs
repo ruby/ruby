@@ -66,6 +66,7 @@ impl Invariants {
     pub fn update_references(&mut self) {
         self.update_ep_escape_iseqs();
         self.update_no_ep_escape_iseq_patch_points();
+        self.update_cme_patch_points();
     }
 
     /// Forget an ISEQ when freeing it. We need to because a) if the address is reused, we'd be
@@ -98,6 +99,17 @@ impl Invariants {
             })
             .collect();
         self.no_ep_escape_iseq_patch_points = updated;
+    }
+
+    fn update_cme_patch_points(&mut self) {
+        let updated_cme_patch_points = std::mem::take(&mut self.cme_patch_points)
+            .into_iter()
+            .map(|(cme, patch_points)| {
+                let new_cme = unsafe { rb_gc_location(cme.into()) };
+                (new_cme.as_cme(), patch_points)
+            })
+            .collect();
+        self.cme_patch_points = updated_cme_patch_points;
     }
 }
 
