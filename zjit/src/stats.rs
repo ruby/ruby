@@ -463,3 +463,52 @@ pub fn with_time_stat<F, R>(counter: Counter, func: F) -> R where F: FnOnce() ->
 pub fn zjit_alloc_size() -> usize {
     jit::GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
 }
+
+/// Struct of arrays for --zjit-trace-exits.
+#[derive(Default)]
+pub struct SideExitLocations {
+    /// Control frames of method entries.
+    pub raw_samples: Vec<VALUE>,
+    /// Line numbers of the iseq caller.
+    pub line_samples: Vec<i32>,
+}
+
+/// Primitive called in zjit.rb
+///
+/// Check if trace_exits generation is enabled. Requires the stats feature
+/// to be enabled.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
+    if get_option!(stats) && get_option!(trace_side_exits) {
+        Qtrue
+    } else {
+        Qfalse
+    }
+}
+
+/// Call the C function to parse the raw_samples and line_samples
+/// into raw, lines, and frames hash for RubyVM::YJIT.exit_locations.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
+    if !zjit_enabled_p() || !get_option!(stats) || !get_option!(trace_side_exits) {
+        return Qnil;
+    }
+
+    // Can safely unwrap since `trace_side_exits` must be true at this point
+    let zjit_raw_samples = ZJITState::get_raw_samples().unwrap();
+    let zjit_line_samples = ZJITState::get_line_samples().unwrap();
+
+    assert_eq!(zjit_raw_samples.len(), zjit_line_samples.len());
+
+    // zjit_raw_samples and zjit_line_samples are the same length so
+    // pass only one of the lengths in the C function.
+    let samples_len = zjit_raw_samples.len() as i32;
+
+    unsafe {
+        rb_zjit_exit_locations_dict(
+            zjit_raw_samples.as_mut_ptr(),
+            zjit_line_samples.as_mut_ptr(),
+            samples_len
+        )
+    }
+}

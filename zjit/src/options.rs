@@ -69,6 +69,9 @@ pub struct Options {
     /// Dump all compiled machine code.
     pub dump_disasm: bool,
 
+    /// Trace and write side exit source maps to /tmp for stackprof.
+    pub trace_side_exits: bool,
+
     /// Dump code map to /tmp for performance profilers.
     pub perf: bool,
 
@@ -94,6 +97,7 @@ impl Default for Options {
             dump_hir_graphviz: None,
             dump_lir: false,
             dump_disasm: false,
+            trace_side_exits: false,
             perf: false,
             allowed_iseqs: None,
             log_compiled_iseqs: None,
@@ -115,6 +119,8 @@ pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
     ("--zjit-perf",  "Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf."),
     ("--zjit-log-compiled-iseqs=path",
                      "Log compiled ISEQs to the file. The file will be truncated."),
+    ("--zjit-trace-exits",
+                     "Record Ruby source location when side-exiting.")
 ];
 
 #[derive(Clone, Copy, Debug)]
@@ -233,6 +239,10 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("stats", "quiet") => {
             options.stats = true;
             options.print_stats = false;
+        }
+
+        ("trace-exits", "") => {
+            options.trace_side_exits = true;
         }
 
         ("debug", "") => options.debug = true,

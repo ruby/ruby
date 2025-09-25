@@ -281,6 +281,7 @@ fn main() {
         .allowlist_function("rb_RSTRING_PTR")
         .allowlist_function("rb_RSTRING_LEN")
         .allowlist_function("rb_ENCODING_GET")
+        .allowlist_function("rb_zjit_exit_locations_dict")
         .allowlist_function("rb_optimized_call")
         .allowlist_function("rb_jit_icache_invalidate")
         .allowlist_function("rb_zjit_print_exception")
@@ -327,6 +328,8 @@ fn main() {
         .allowlist_function("rb_class_new_instance_pass_kw")
         .allowlist_function("rb_obj_alloc")
         .allowlist_function("rb_obj_info")
+        // From include/ruby/debug.h
+        .allowlist_function("rb_profile_frames")
         .allowlist_function("ruby_xfree")
         .allowlist_function("rb_profile_frames")
 

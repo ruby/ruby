@@ -31,6 +31,95 @@
 
 #include <errno.h>
 
+#define PTR2NUM(x) (rb_int2inum((intptr_t)(void *)(x)))
+
+// For a given raw_sample (frame), set the hash with the caller's
+// name, file, and line number. Return the  hash with collected frame_info.
+static void
+rb_zjit_add_frame(VALUE hash, VALUE frame)
+{
+    VALUE frame_id = PTR2NUM(frame);
+
+    if (RTEST(rb_hash_aref(hash, frame_id))) {
+        return;
+    }
+    else {
+        VALUE frame_info = rb_hash_new();
+        // Full label for the frame
+        VALUE name = rb_profile_frame_full_label(frame);
+        // Absolute path of the frame from rb_iseq_realpath
+        VALUE file = rb_profile_frame_absolute_path(frame);
+        // Line number of the frame
+        VALUE line = rb_profile_frame_first_lineno(frame);
+
+        // If absolute path isn't available use the rb_iseq_path
+        if (NIL_P(file)) {
+            file = rb_profile_frame_path(frame);
+        }
+
+        rb_hash_aset(frame_info, ID2SYM(rb_intern("name")), name);
+        rb_hash_aset(frame_info, ID2SYM(rb_intern("file")), file);
+
+        if (line != INT2FIX(0)) {
+            rb_hash_aset(frame_info, ID2SYM(rb_intern("line")), line);
+        }
+
+       rb_hash_aset(hash, frame_id, frame_info);
+    }
+}
+
+// Parses the ZjitExitLocations raw_samples and line_samples collected by
+// rb_zjit_record_exit_stack and turns them into 3 hashes (raw, lines, and frames) to
+// be used by RubyVM::ZJIT.exit_locations. zjit_raw_samples represents the raw frames information
+// (without name, file, and line), and zjit_line_samples represents the line information
+// of the iseq caller.
+VALUE
+rb_zjit_exit_locations_dict(VALUE *zjit_raw_samples, int *zjit_line_samples, int samples_len)
+{
+    VALUE result = rb_hash_new();
+    VALUE raw_samples = rb_ary_new_capa(samples_len);
+    VALUE line_samples = rb_ary_new_capa(samples_len);
+    VALUE frames = rb_hash_new();
+    int idx = 0;
+
+    // While the index is less than samples_len, parse zjit_raw_samples and
+    // zjit_line_samples, then add casted values to raw_samples and line_samples array.
+    while (idx < samples_len) {
+        int num = (int)zjit_raw_samples[idx];
+        int line_num = (int)zjit_line_samples[idx];
+        idx++;
+
+        rb_ary_push(raw_samples, SIZET2NUM(num));
+        rb_ary_push(line_samples, INT2NUM(line_num));
+
+        // Loop through the length of samples_len and add data to the
+        // frames hash. Also push the current value onto the raw_samples
+        // and line_samples arrary respectively.
+        for (int o = 0; o < num; o++) {
+            rb_zjit_add_frame(frames, zjit_raw_samples[idx]);
+            rb_ary_push(raw_samples, SIZET2NUM(zjit_raw_samples[idx]));
+            rb_ary_push(line_samples, INT2NUM(zjit_line_samples[idx]));
+            idx++;
+        }
+
+        rb_ary_push(raw_samples, SIZET2NUM(zjit_raw_samples[idx]));
+        rb_ary_push(line_samples, INT2NUM(zjit_line_samples[idx]));
+        idx++;
+
+        rb_ary_push(raw_samples, SIZET2NUM(zjit_raw_samples[idx]));
+        rb_ary_push(line_samples, INT2NUM(zjit_line_samples[idx]));
+        idx++;
+    }
+
+    // Set add the raw_samples, line_samples, and frames to the results
+    // hash.
+    rb_hash_aset(result, ID2SYM(rb_intern("raw")), raw_samples);
+    rb_hash_aset(result, ID2SYM(rb_intern("lines")), line_samples);
+    rb_hash_aset(result, ID2SYM(rb_intern("frames")), frames);
+
+    return result;
+}
+
 void rb_zjit_profile_disable(const rb_iseq_t *iseq);
 
 void
@@ -217,6 +306,8 @@ VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self, VALUE target_key);
 VALUE rb_zjit_reset_stats_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_print_stats_p(rb_execution_context_t *ec, VALUE self);
+VALUE rb_zjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
+VALUE rb_zjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
 
 // Preprocessed zjit.rb generated during build
 #include "zjit.rbinc"
