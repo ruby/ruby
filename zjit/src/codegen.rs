@@ -311,7 +311,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Resul
         jit.jit_entries.sort_by_key(|jit_entry| jit_entry.borrow().jit_entry_idx);
 
         let jit_entry_ptrs = jit.jit_entries.iter().map(|jit_entry|
-            jit_entry.borrow().start_addr.get().unwrap()
+            jit_entry.borrow().start_addr.get().expect("start_addr should have been set by pos_marker in gen_entry_point")
         ).collect();
         (IseqCodePtrs { start_ptr, jit_entry_ptrs }, gc_offsets, jit.iseq_calls)
     })
