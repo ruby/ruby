@@ -935,11 +935,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            &Insn::EntryPoint { jit_entry_idx } => if let Some(jit_entry_idx) = jit_entry_idx {
-                write!(f, "EntryPoint JIT({jit_entry_idx})")
-            } else {
-                write!(f, "EntryPoint interpreter")
-            },
+            &Insn::EntryPoint { jit_entry_idx: Some(idx) } => write!(f, "EntryPoint JIT({idx})"),
+            &Insn::EntryPoint { jit_entry_idx: None } => write!(f, "EntryPoint interpreter"),
             Insn::Return { val } => { write!(f, "Return {val}") }
             Insn::FixnumAdd  { left, right, .. } => { write!(f, "FixnumAdd {left}, {right}") },
             Insn::FixnumSub  { left, right, .. } => { write!(f, "FixnumSub {left}, {right}") },
