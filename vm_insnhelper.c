@@ -761,6 +761,25 @@ check_method_entry(VALUE obj, int can_be_svar)
     }
 }
 
+static rb_callable_method_entry_t *
+env_method_entry_unchecked(VALUE obj, int can_be_svar)
+{
+    if (obj == Qfalse) return NULL;
+
+    switch (imemo_type(obj)) {
+      case imemo_ment:
+        return (rb_callable_method_entry_t *)obj;
+      case imemo_cref:
+        return NULL;
+      case imemo_svar:
+        if (can_be_svar) {
+            return env_method_entry_unchecked(((struct vm_svar *)obj)->cref_or_me, FALSE);
+        }
+      default:
+        return NULL;
+    }
+}
+
 const rb_callable_method_entry_t *
 rb_vm_frame_method_entry(const rb_control_frame_t *cfp)
 {
@@ -773,6 +792,20 @@ rb_vm_frame_method_entry(const rb_control_frame_t *cfp)
     }
 
     return check_method_entry(ep[VM_ENV_DATA_INDEX_ME_CREF], TRUE);
+}
+
+const rb_callable_method_entry_t *
+rb_vm_frame_method_entry_unchecked(const rb_control_frame_t *cfp)
+{
+    const VALUE *ep = cfp->ep;
+    rb_callable_method_entry_t *me;
+
+    while (!VM_ENV_LOCAL_P_UNCHECKED(ep)) {
+        if ((me = env_method_entry_unchecked(ep[VM_ENV_DATA_INDEX_ME_CREF], FALSE)) != NULL) return me;
+        ep = VM_ENV_PREV_EP_UNCHECKED(ep);
+    }
+
+    return env_method_entry_unchecked(ep[VM_ENV_DATA_INDEX_ME_CREF], TRUE);
 }
 
 static const rb_iseq_t *

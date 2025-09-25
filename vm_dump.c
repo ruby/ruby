@@ -61,14 +61,14 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     const char *magic, *iseq_name = "-", *selfstr = "-", *biseq_name = "-";
     VALUE tmp;
     const rb_iseq_t *iseq = NULL;
-    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
+    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry_unchecked(cfp);
 
     if (ep < 0 || (size_t)ep > ec->vm_stack_size) {
         ep = (ptrdiff_t)cfp->ep;
         ep_in_heap = 'p';
     }
 
-    switch (VM_FRAME_TYPE(cfp)) {
+    switch (VM_FRAME_TYPE_UNCHECKED(cfp)) {
       case VM_FRAME_MAGIC_TOP:
         magic = "TOP";
         break;
@@ -128,7 +128,9 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
                 iseq = cfp->iseq;
                 pc = cfp->pc - ISEQ_BODY(iseq)->iseq_encoded;
                 iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
-                line = rb_vm_get_sourceline(cfp);
+                if (pc >= 0 && pc <= ISEQ_BODY(iseq)->iseq_size) {
+                    line = rb_vm_get_sourceline(cfp);
+                }
                 if (line) {
                     snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(iseq)), line);
                 }
@@ -138,7 +140,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
             }
         }
     }
-    else if (me != NULL) {
+    else if (me != NULL && IMEMO_TYPE_P(me, imemo_ment)) {
         iseq_name = rb_id2name(me->def->original_id);
         snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
         line = -1;
@@ -158,7 +160,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     if (line) {
         kprintf(" %s", posbuf);
     }
-    if (VM_FRAME_FINISHED_P(cfp)) {
+    if (VM_FRAME_FINISHED_P_UNCHECKED(cfp)) {
         kprintf(" [FINISH]");
     }
     if (0) {
