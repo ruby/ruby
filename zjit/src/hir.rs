@@ -4232,29 +4232,6 @@ fn compile_entry_state(fun: &mut Function, entry_block: BlockId) -> (InsnId, Fra
     (self_param, entry_state)
 }
 
-/// Set param_types of the function. They are copied to the param types of entry blocks.
-fn set_param_types(fun: &mut Function) {
-    let iseq = fun.iseq;
-    let param_size = unsafe { get_iseq_body_param_size(iseq) }.as_usize();
-    let rest_param_idx = if !iseq.is_null() && unsafe { get_iseq_flags_has_rest(iseq) } {
-        let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
-        let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
-        Some(opt_num + lead_num)
-    } else {
-        None
-    };
-
-    fun.param_types.push(types::BasicObject); // self
-    for local_idx in 0..param_size {
-        let param_type = if Some(local_idx as i32) == rest_param_idx {
-            types::ArrayExact // Rest parameters are always ArrayExact
-        } else {
-            types::BasicObject
-        };
-        fun.param_types.push(param_type);
-    }
-}
-
 #[cfg(test)]
 mod union_find_tests {
     use super::UnionFind;
