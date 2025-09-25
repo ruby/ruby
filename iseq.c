@@ -175,6 +175,9 @@ rb_iseq_free(const rb_iseq_t *iseq)
             rb_yjit_live_iseq_count--;
         }
 #endif
+#if USE_ZJIT
+        rb_zjit_iseq_free(iseq);
+#endif
         ruby_xfree((void *)body->iseq_encoded);
         ruby_xfree((void *)body->insns_info.body);
         ruby_xfree((void *)body->insns_info.positions);

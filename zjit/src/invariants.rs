@@ -68,6 +68,17 @@ impl Invariants {
         self.update_no_ep_escape_iseq_patch_points();
     }
 
+    /// Forget an ISEQ when freeing it. We need to because a) if the address is reused, we'd be
+    /// tracking the wrong object b) dead VALUEs in the table can means we risk passing invalid
+    /// VALUEs to `rb_gc_location()`.
+    pub fn forget_iseq(&mut self, iseq: IseqPtr) {
+        // Why not patch the patch points? If the ISEQ is dead then the GC also proved that all
+        // generated code referencing the ISEQ are unreachable. We mark the ISEQs baked into
+        // generated code.
+        self.ep_escape_iseqs.remove(&iseq);
+        self.no_ep_escape_iseq_patch_points.remove(&iseq);
+    }
+
     /// Update ISEQ references in Invariants::ep_escape_iseqs
     fn update_ep_escape_iseqs(&mut self) {
         let updated = std::mem::take(&mut self.ep_escape_iseqs)
