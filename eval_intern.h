@@ -95,7 +95,10 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 
 #include <sys/stat.h>
 
+int ruby_thread_has_gvl_p(void);
+
 #define EC_PUSH_TAG(ec) do { \
+  VM_ASSERT(ruby_thread_has_gvl_p()); \
   rb_execution_context_t * const _ec = (ec); \
   struct rb_vm_tag _tag; \
   _tag.state = TAG_NONE; \
