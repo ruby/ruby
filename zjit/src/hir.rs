@@ -773,6 +773,8 @@ impl Insn {
             Insn::FixnumOr   { .. } => false,
             Insn::GetLocal   { .. } => false,
             Insn::IsNil      { .. } => false,
+            Insn::LoadPC => false,
+            Insn::LoadSelf => false,
             Insn::LoadIvarEmbedded { .. } => false,
             Insn::LoadIvarExtended { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
