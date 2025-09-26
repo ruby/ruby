@@ -14,7 +14,7 @@ use std::{
 use crate::hir_type::{Type, types};
 use crate::bitset::BitSet;
 use crate::profile::{TypeDistributionSummary, ProfiledType};
-use crate::stats::{Counter, get_or_create_unoptimized_cfunc_counter_ptr};
+use crate::stats::Counter;
 
 /// An index of an [`Insn`] in a [`Function`]. This is a popular
 /// type since this effectively acts as a pointer to an [`Insn`].
@@ -707,8 +707,8 @@ pub enum Insn {
     /// Increment a counter in ZJIT stats
     IncrCounter(Counter),
 
-    /// Increment a counter in ZJIT stats for the given unoptimized C function
-    CountUnoptimizedCFunc { signature: String, counter_ptr: *mut u64 },
+    /// Increment a counter in ZJIT stats for the given counter pointer
+    IncrDynamicCounter { counter_ptr: *mut u64 },
 
     /// Equivalent of RUBY_VM_CHECK_INTS. Automatically inserted by the compiler before jumps and
     /// return instructions.
@@ -723,7 +723,7 @@ impl Insn {
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::EntryPoint { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
-            | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::CountUnoptimizedCFunc { .. }
+            | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrDynamicCounter { .. }
             | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } => false,
             _ => true,
         }
@@ -975,7 +975,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             },
-            Insn::CountUnoptimizedCFunc { signature, .. } => write!(f, "CountUnoptimizedCFunc {}", signature),
+            Insn::IncrDynamicCounter { .. } => write!(f, "IncrDynamicCounter"),
             Insn::Snapshot { state } => write!(f, "Snapshot {}", state.print(self.ptr_map)),
             Insn::Defined { op_type, v, .. } => {
                 // op_type (enum defined_type) printing logic from iseq.c.
@@ -1380,7 +1380,7 @@ impl Function {
                     | SideExit {..}
                     | EntryPoint {..}
                     | LoadPC
-                    | CountUnoptimizedCFunc {..}
+                    | IncrDynamicCounter {..}
                     | IncrCounter(_)) => result.clone(),
             &Snapshot { state: FrameState { iseq, insn_idx, pc, ref stack, ref locals } } =>
                 Snapshot {
@@ -1530,7 +1530,7 @@ impl Function {
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::CountUnoptimizedCFunc { .. } =>
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrDynamicCounter { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -2284,10 +2284,12 @@ impl Function {
                             let called_id = unsafe { (*cme).called_id };
                             let class_name = get_class_name(owner);
                             let method_name = called_id.contents_lossy();
-                            let signature = format!("{}#{}", class_name, method_name);
-                            let counter_ptr = get_or_create_unoptimized_cfunc_counter_ptr(signature.clone());
+                            let qualified_method_name = format!("{}#{}", class_name, method_name);
+                            let unoptimized_cfunc_counter_pointers = ZJITState::get_unoptimized_cfunc_counter_pointers();
+                            let counter_ptr = unoptimized_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
+                            let counter_ptr = &mut **counter_ptr as *mut u64;
 
-                            self.push_insn(block, Insn::CountUnoptimizedCFunc { signature, counter_ptr });
+                            self.push_insn(block, Insn::IncrDynamicCounter { counter_ptr });
                         }
                         _ => {}
                     }
@@ -2435,7 +2437,7 @@ impl Function {
             | &Insn::GetLocal { .. }
             | &Insn::PutSpecialObject { .. }
             | &Insn::IncrCounter(_)
-            | &Insn::CountUnoptimizedCFunc { .. } =>
+            | &Insn::IncrDynamicCounter { .. } =>
                 {}
             &Insn::PatchPoint { state, .. }
             | &Insn::CheckInterrupts { state }
@@ -9502,7 +9504,7 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           v11:Fixnum[0] = Const Value(0)
-          CountUnoptimizedCFunc Kernel#itself
+          IncrDynamicCounter
           v13:BasicObject = SendWithoutBlock v10, :itself, v11
           CheckInterrupts
           Return v13
@@ -10341,7 +10343,7 @@ mod opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:HashExact = NewHash
-          CountUnoptimizedCFunc Kernel#dup
+          IncrDynamicCounter
           v13:BasicObject = SendWithoutBlock v11, :dup
           v15:BasicObject = SendWithoutBlock v13, :freeze
           CheckInterrupts
@@ -10365,7 +10367,7 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v11:HashExact = NewHash
           v12:NilClass = Const Value(nil)
-          CountUnoptimizedCFunc Hash#freeze
+          IncrDynamicCounter
           v14:BasicObject = SendWithoutBlock v11, :freeze, v12
           CheckInterrupts
           Return v14
@@ -10430,7 +10432,7 @@ mod opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:ArrayExact = NewArray
-          CountUnoptimizedCFunc Kernel#dup
+          IncrDynamicCounter
           v13:BasicObject = SendWithoutBlock v11, :dup
           v15:BasicObject = SendWithoutBlock v13, :freeze
           CheckInterrupts
@@ -10454,7 +10456,7 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v11:ArrayExact = NewArray
           v12:NilClass = Const Value(nil)
-          CountUnoptimizedCFunc Array#freeze
+          IncrDynamicCounter
           v14:BasicObject = SendWithoutBlock v11, :freeze, v12
           CheckInterrupts
           Return v14
@@ -10520,7 +10522,7 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v10
-          CountUnoptimizedCFunc String#dup
+          IncrDynamicCounter
           v14:BasicObject = SendWithoutBlock v12, :dup
           v16:BasicObject = SendWithoutBlock v14, :freeze
           CheckInterrupts
@@ -10545,7 +10547,7 @@ mod opt_tests {
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v10
           v13:NilClass = Const Value(nil)
-          CountUnoptimizedCFunc String#freeze
+          IncrDynamicCounter
           v15:BasicObject = SendWithoutBlock v12, :freeze, v13
           CheckInterrupts
           Return v15
@@ -10611,7 +10613,7 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v10
-          CountUnoptimizedCFunc String#dup
+          IncrDynamicCounter
           v14:BasicObject = SendWithoutBlock v12, :dup
           v16:BasicObject = SendWithoutBlock v14, :-@
           CheckInterrupts
@@ -10741,7 +10743,7 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v25:BasicObject = GuardTypeNot v9, String
-          CountUnoptimizedCFunc Array#to_s
+          IncrDynamicCounter
           v26:BasicObject = SendWithoutBlock v9, :to_s
           v17:String = AnyToString v9, str: v26
           v19:StringExact = StringConcat v13, v17
