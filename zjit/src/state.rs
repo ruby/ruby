@@ -266,7 +266,7 @@ fn record_profiling_frames() -> (i32, Vec<VALUE>, Vec<i32>) {
 
 /// Record a backtrace with ZJIT side exits
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_record_exit_stack(_exit_pc: *const VALUE)
+pub extern "C" fn rb_zjit_record_exit_stack(exit_pc: *const VALUE)
 {
     if !zjit_enabled_p() || !get_option!(dump_side_exits) {
         return;
@@ -333,7 +333,7 @@ pub extern "C" fn rb_zjit_record_exit_stack(_exit_pc: *const VALUE)
     });
 
     // Get the opcode from instruction handler at exit PC.
-    let insn = unsafe { rb_vm_insn_addr2opcode((*_exit_pc).as_ptr()) };
+    let insn = unsafe { rb_vm_insn_addr2opcode((*exit_pc).as_ptr()) };
     zjit_raw_samples.push(VALUE(insn as usize));
 
     // We don't know the line that this instruction sits at
