@@ -37,7 +37,7 @@ struct JITState {
     jit_entries: Vec<Rc<RefCell<JITEntry>>>,
 
     /// ISEQ calls that need to be compiled later
-    iseq_calls: Vec<Rc<RefCell<IseqCall>>>,
+    iseq_calls: Vec<IseqCallRef>,
 
     /// The number of bytes allocated for basic block arguments spilled onto the C stack
     c_stack_slots: usize,
@@ -132,17 +132,17 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
 }
 
 /// Stub a branch for a JIT-to-JIT call
-fn gen_iseq_call(cb: &mut CodeBlock, caller_iseq: IseqPtr, iseq_call: &Rc<RefCell<IseqCall>>) -> Result<(), CompileError> {
+fn gen_iseq_call(cb: &mut CodeBlock, caller_iseq: IseqPtr, iseq_call: &IseqCallRef) -> Result<(), CompileError> {
     // Compile a function stub
     let stub_ptr = gen_function_stub(cb, iseq_call.clone()).inspect_err(|err| {
         debug!("{err:?}: gen_function_stub failed: {} -> {}",
-               iseq_get_location(caller_iseq, 0), iseq_get_location(iseq_call.borrow().iseq, 0));
+               iseq_get_location(caller_iseq, 0), iseq_get_location(iseq_call.iseq.get(), 0));
     })?;
 
     // Update the JIT-to-JIT call to call the stub
     let stub_addr = stub_ptr.raw_ptr(cb);
-    let iseq = iseq_call.borrow().iseq;
-    iseq_call.borrow_mut().regenerate(cb, |asm| {
+    let iseq = iseq_call.iseq.get();
+    iseq_call.regenerate(cb, |asm| {
         asm_comment!(asm, "call function stub: {}", iseq_get_location(iseq, 0));
         asm.ccall(stub_addr, vec![]);
     });
@@ -236,7 +236,7 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>,
     }
 
     // Prepare for GC
-    payload.iseq_calls.extend(iseq_calls.clone());
+    payload.iseq_calls.extend(iseq_calls);
     append_gc_offsets(iseq, &gc_offsets);
     Ok(iseq_code_ptrs)
 }
@@ -1867,8 +1867,8 @@ c_callable! {
         with_vm_lock(src_loc!(), || {
             // gen_push_frame() doesn't set PC, so we need to set them before exit.
             // function_stub_hit_body() may allocate and call gc_validate_pc(), so we always set PC.
-            let iseq_call = unsafe { Rc::from_raw(iseq_call_ptr as *const RefCell<IseqCall>) };
-            let iseq = iseq_call.borrow().iseq;
+            let iseq_call = unsafe { Rc::from_raw(iseq_call_ptr as *const IseqCall) };
+            let iseq = iseq_call.iseq.get();
             let pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) }; // TODO: handle opt_pc once supported
             unsafe { rb_set_cfp_pc(cfp, pc) };
 
@@ -1904,7 +1904,7 @@ c_callable! {
             };
             if let Some(compile_error) = compile_error {
                 // We'll use this Rc again, so increment the ref count decremented by from_raw.
-                unsafe { Rc::increment_strong_count(iseq_call_ptr as *const RefCell<IseqCall>); }
+                unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
 
                 prepare_for_exit(iseq, cfp, sp, compile_error);
                 return ZJITState::get_exit_trampoline_with_counter().raw_ptr(cb);
@@ -1923,10 +1923,10 @@ c_callable! {
 }
 
 /// Compile an ISEQ for a function stub
-fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &Rc<RefCell<IseqCall>>) -> Result<CodePtr, CompileError> {
+fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result<CodePtr, CompileError> {
     // Compile the stubbed ISEQ
-    let IseqCodePtrs { jit_entry_ptrs, .. } = gen_iseq(cb, iseq_call.borrow().iseq, None).inspect_err(|err| {
-        debug!("{err:?}: gen_iseq failed: {}", iseq_get_location(iseq_call.borrow().iseq, 0));
+    let IseqCodePtrs { jit_entry_ptrs, .. } = gen_iseq(cb, iseq_call.iseq.get(), None).inspect_err(|err| {
+        debug!("{err:?}: gen_iseq failed: {}", iseq_get_location(iseq_call.iseq.get(), 0));
     })?;
 
     // We currently don't support JIT-to-JIT calls for ISEQs with optional arguments.
@@ -1936,8 +1936,8 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &Rc<RefCell<IseqCall>>)
 
     // Update the stub to call the code pointer
     let code_addr = jit_entry_ptr.raw_ptr(cb);
-    let iseq = iseq_call.borrow().iseq;
-    iseq_call.borrow_mut().regenerate(cb, |asm| {
+    let iseq = iseq_call.iseq.get();
+    iseq_call.regenerate(cb, |asm| {
         asm_comment!(asm, "call compiled function: {}", iseq_get_location(iseq, 0));
         asm.ccall(code_addr, vec![]);
     });
@@ -1946,9 +1946,9 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &Rc<RefCell<IseqCall>>)
 }
 
 /// Compile a stub for an ISEQ called by SendWithoutBlockDirect
-fn gen_function_stub(cb: &mut CodeBlock, iseq_call: Rc<RefCell<IseqCall>>) -> Result<CodePtr, CompileError> {
+fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodePtr, CompileError> {
     let mut asm = Assembler::new();
-    asm_comment!(asm, "Stub: {}", iseq_get_location(iseq_call.borrow().iseq, 0));
+    asm_comment!(asm, "Stub: {}", iseq_get_location(iseq_call.iseq.get(), 0));
 
     // Call function_stub_hit using the shared trampoline. See `gen_function_stub_hit_trampoline`.
     // Use load_into instead of mov, which is split on arm64, to avoid clobbering ALLOC_REGS.
@@ -2113,7 +2113,7 @@ fn aligned_stack_bytes(num_slots: usize) -> usize {
 
 impl Assembler {
     /// Make a C call while marking the start and end positions for IseqCall
-    fn ccall_with_iseq_call(&mut self, fptr: *const u8, opnds: Vec<Opnd>, iseq_call: &Rc<RefCell<IseqCall>>) -> Opnd {
+    fn ccall_with_iseq_call(&mut self, fptr: *const u8, opnds: Vec<Opnd>, iseq_call: &IseqCallRef) -> Opnd {
         // We need to create our own branch rc objects so that we can move the closure below
         let start_iseq_call = iseq_call.clone();
         let end_iseq_call = iseq_call.clone();
@@ -2122,10 +2122,10 @@ impl Assembler {
             fptr,
             opnds,
             move |code_ptr, _| {
-                start_iseq_call.borrow_mut().start_addr.set(Some(code_ptr));
+                start_iseq_call.start_addr.set(Some(code_ptr));
             },
             move |code_ptr, _| {
-                end_iseq_call.borrow_mut().end_addr.set(Some(code_ptr));
+                end_iseq_call.end_addr.set(Some(code_ptr));
             },
         )
     }
@@ -2154,7 +2154,7 @@ impl JITEntry {
 #[derive(Debug)]
 pub struct IseqCall {
     /// Callee ISEQ that start_addr jumps to
-    pub iseq: IseqPtr,
+    pub iseq: Cell<IseqPtr>,
 
     /// Position where the call instruction starts
     start_addr: Cell<Option<CodePtr>>,
@@ -2163,17 +2163,17 @@ pub struct IseqCall {
     end_addr: Cell<Option<CodePtr>>,
 }
 
-type IseqCallRef = Rc<RefCell<IseqCall>>;
+pub type IseqCallRef = Rc<IseqCall>;
 
 impl IseqCall {
     /// Allocate a new IseqCall
-    fn new(iseq: IseqPtr) -> Rc<RefCell<Self>> {
+    fn new(iseq: IseqPtr) -> IseqCallRef {
         let iseq_call = IseqCall {
-            iseq,
+            iseq: Cell::new(iseq),
             start_addr: Cell::new(None),
             end_addr: Cell::new(None),
         };
-        Rc::new(RefCell::new(iseq_call))
+        Rc::new(iseq_call)
     }
 
     /// Regenerate a IseqCall with a given callback
