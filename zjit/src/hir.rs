@@ -589,13 +589,17 @@ pub enum Insn {
 
     /// Load cfp->pc
     LoadPC,
+    /// Load cfp->self
+    LoadSelf,
     /// Read an instance variable at the given index, embedded in the object
     LoadIvarEmbedded { self_val: InsnId, id: ID, index: u16 },
     /// Read an instance variable at the given index, from the extended table
     LoadIvarExtended { self_val: InsnId, id: ID, index: u16 },
 
-    /// Get a local variable from a higher scope or the heap
-    GetLocal { level: u32, ep_offset: u32 },
+    /// Get a local variable from a higher scope or the heap.
+    /// If `use_sp` is true, it uses the SP register to optimize the read.
+    /// `rest_param` is used by infer_types to infer the ArrayExact type.
+    GetLocal { level: u32, ep_offset: u32, use_sp: bool, rest_param: bool },
     /// Set a local variable in a higher scope or the heap
     SetLocal { level: u32, ep_offset: u32, val: InsnId },
     GetSpecialSymbol { symbol_type: SpecialBackrefSymbol, state: InsnId },
@@ -992,12 +996,14 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::DefinedIvar { self_val, id, .. } => write!(f, "DefinedIvar {self_val}, :{}", id.contents_lossy()),
             Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy()),
             Insn::LoadPC => write!(f, "LoadPC"),
+            Insn::LoadSelf => write!(f, "LoadSelf"),
             &Insn::LoadIvarEmbedded { self_val, id, index } => write!(f, "LoadIvarEmbedded {self_val}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_index(index as u64)),
             &Insn::LoadIvarExtended { self_val, id, index } => write!(f, "LoadIvarExtended {self_val}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_index(index as u64)),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy()),
             Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy()),
             Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy()),
-            Insn::GetLocal { level, ep_offset } => write!(f, "GetLocal l{level}, EP@{ep_offset}"),
+            &Insn::GetLocal { level, ep_offset, use_sp: true, rest_param } => write!(f, "GetLocal l{level}, SP@{}{}", ep_offset + 1, if rest_param { ", *" } else { "" }),
+            &Insn::GetLocal { level, ep_offset, use_sp: false, rest_param } => write!(f, "GetLocal l{level}, EP@{ep_offset}{}", if rest_param { ", *" } else { "" }),
             Insn::SetLocal { val, level, ep_offset } => write!(f, "SetLocal l{level}, EP@{ep_offset}, {val}"),
             Insn::GetSpecialSymbol { symbol_type, .. } => write!(f, "GetSpecialSymbol {symbol_type:?}"),
             Insn::GetSpecialNumber { nth, .. } => write!(f, "GetSpecialNumber {nth}"),
@@ -1376,6 +1382,7 @@ impl Function {
                     | SideExit {..}
                     | EntryPoint {..}
                     | LoadPC
+                    | LoadSelf
                     | IncrCounter(_)) => result.clone(),
             &Snapshot { state: FrameState { iseq, insn_idx, pc, ref stack, ref locals } } =>
                 Snapshot {
@@ -1593,6 +1600,7 @@ impl Function {
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
             Insn::LoadPC => types::CPtr,
+            Insn::LoadSelf => types::BasicObject,
             Insn::LoadIvarEmbedded { .. } => types::BasicObject,
             Insn::LoadIvarExtended { .. } => types::BasicObject,
             Insn::GetSpecialSymbol { .. } => types::BasicObject,
@@ -1601,6 +1609,7 @@ impl Function {
             Insn::ToArray { .. } => types::ArrayExact,
             Insn::ObjToString { .. } => types::BasicObject,
             Insn::AnyToString { .. } => types::String,
+            Insn::GetLocal { rest_param: true, .. } => types::ArrayExact,
             Insn::GetLocal { .. } => types::BasicObject,
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
@@ -1608,17 +1617,11 @@ impl Function {
         }
     }
 
-    /// Set self.param_types. They are copied to the param types of entry blocks.
+    /// Set self.param_types. They are copied to the param types of jit_entry_blocks.
     fn set_param_types(&mut self) {
         let iseq = self.iseq;
         let param_size = unsafe { get_iseq_body_param_size(iseq) }.as_usize();
-        let rest_param_idx = if !iseq.is_null() && unsafe { get_iseq_flags_has_rest(iseq) } {
-            let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
-            let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
-            Some(opt_num + lead_num)
-        } else {
-            None
-        };
+        let rest_param_idx = iseq_rest_param_idx(iseq);
 
         self.param_types.push(types::BasicObject); // self
         for local_idx in 0..param_size {
@@ -1631,10 +1634,10 @@ impl Function {
         }
     }
 
-    /// Copy self.param_types to the param types of entry blocks.
+    /// Copy self.param_types to the param types of jit_entry_blocks.
     fn copy_param_types(&mut self) {
-        for entry_block in self.entry_blocks() {
-            let entry_params = self.blocks[entry_block.0].params.iter();
+        for jit_entry_block in self.jit_entry_blocks.iter() {
+            let entry_params = self.blocks[jit_entry_block.0].params.iter();
             let param_types = self.param_types.iter();
             assert_eq!(
                 entry_params.len(),
@@ -2414,7 +2417,8 @@ impl Function {
             &Insn::Const { .. }
             | &Insn::Param { .. }
             | &Insn::EntryPoint { .. }
-            | &Insn::LoadPC { .. }
+            | &Insn::LoadPC
+            | &Insn::LoadSelf
             | &Insn::GetLocal { .. }
             | &Insn::PutSpecialObject { .. }
             | &Insn::IncrCounter(_) =>
@@ -3653,7 +3657,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     if ep_escaped || has_blockiseq { // TODO: figure out how to drop has_blockiseq here
                         // Read the local using EP
-                        let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
+                        let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
                         state.setlocal(ep_offset, val); // remember the result to spill on side-exits
                         state.stack_push(val);
                     } else {
@@ -3687,7 +3691,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_getlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level: 1 }));
+                    state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level: 1, use_sp: false, rest_param: false }));
                 }
                 YARVINSN_setlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -3696,7 +3700,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_getlocal => {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let level = get_arg(pc, 1).as_u32();
-                    state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level }));
+                    state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level, use_sp: false, rest_param: false }));
                 }
                 YARVINSN_setlocal => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -3896,7 +3900,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // or not used after this. Max thinks we could eventually DCE them.
                         for local_idx in 0..state.locals.len() {
                             let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
-                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
+                            // TODO: We could use `use_sp: true` with PatchPoint
+                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
                             state.setlocal(ep_offset, val);
                         }
                     }
@@ -3925,7 +3930,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // Reload locals that may have been modified by the blockiseq.
                         for local_idx in 0..state.locals.len() {
                             let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
-                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
+                            // TODO: We could use `use_sp: true` with PatchPoint
+                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
                             state.setlocal(ep_offset, val);
                         }
                     }
@@ -3955,7 +3961,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // or not used after this. Max thinks we could eventually DCE them.
                         for local_idx in 0..state.locals.len() {
                             let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
-                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0 });
+                            // TODO: We could use `use_sp: true` with PatchPoint
+                            let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
                             state.setlocal(ep_offset, val);
                         }
                     }
@@ -4199,30 +4206,51 @@ fn compile_entry_block(fun: &mut Function, jit_entry_insns: &Vec<u32>) {
     }
 }
 
+/// Compile initial locals for an entry_block for the interpreter
+fn compile_entry_state(fun: &mut Function, entry_block: BlockId) -> (InsnId, FrameState) {
+    let iseq = fun.iseq;
+    let param_size = unsafe { get_iseq_body_param_size(iseq) }.as_usize();
+    let rest_param_idx = iseq_rest_param_idx(iseq);
+
+    let self_param = fun.push_insn(entry_block, Insn::LoadSelf);
+    let mut entry_state = FrameState::new(iseq);
+    for local_idx in 0..num_locals(iseq) {
+        if local_idx < param_size {
+            let ep_offset = local_idx_to_ep_offset(iseq, local_idx) as u32;
+            let use_sp = !iseq_escapes_ep(iseq); // If the ISEQ does not escape EP, we can assume EP + 1 == SP
+            let rest_param = Some(local_idx as i32) == rest_param_idx;
+            entry_state.locals.push(fun.push_insn(entry_block, Insn::GetLocal { level: 0, ep_offset, use_sp, rest_param }));
+        } else {
+            entry_state.locals.push(fun.push_insn(entry_block, Insn::Const { val: Const::Value(Qnil) }));
+        }
+    }
+    (self_param, entry_state)
+}
+
 /// Compile a jit_entry_block
 fn compile_jit_entry_block(fun: &mut Function, jit_entry_idx: usize, target_block: BlockId) {
     let jit_entry_block = fun.jit_entry_blocks[jit_entry_idx];
     fun.push_insn(jit_entry_block, Insn::EntryPoint { jit_entry_idx: Some(jit_entry_idx) });
 
     // Prepare entry_state with basic block params
-    let (self_param, entry_state) = compile_entry_state(fun, jit_entry_block);
+    let (self_param, entry_state) = compile_jit_entry_state(fun, jit_entry_block);
 
     // Jump to target_block
     fun.push_insn(jit_entry_block, Insn::Jump(BranchEdge { target: target_block, args: entry_state.as_args(self_param) }));
 }
 
-/// Compile params and initial locals for an entry block
-fn compile_entry_state(fun: &mut Function, entry_block: BlockId) -> (InsnId, FrameState) {
+/// Compile params and initial locals for a jit_entry_block
+fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId) -> (InsnId, FrameState) {
     let iseq = fun.iseq;
     let param_size = unsafe { get_iseq_body_param_size(iseq) }.as_usize();
 
-    let self_param = fun.push_insn(entry_block, Insn::Param { idx: SELF_PARAM_IDX });
+    let self_param = fun.push_insn(jit_entry_block, Insn::Param { idx: SELF_PARAM_IDX });
     let mut entry_state = FrameState::new(iseq);
     for local_idx in 0..num_locals(iseq) {
         if local_idx < param_size {
-            entry_state.locals.push(fun.push_insn(entry_block, Insn::Param { idx: local_idx + 1 })); // +1 for self
+            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Param { idx: local_idx + 1 })); // +1 for self
         } else {
-            entry_state.locals.push(fun.push_insn(entry_block, Insn::Const { val: Const::Value(Qnil) }));
+            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) }));
         }
     }
     (self_param, entry_state)
@@ -4542,18 +4570,6 @@ mod infer_tests {
     }
 
     #[test]
-    fn test_unknown() {
-        crate::cruby::with_rubyvm(|| {
-            let mut function = Function::new(std::ptr::null());
-            let param = function.push_insn(function.entry_block, Insn::Param { idx: SELF_PARAM_IDX });
-            function.param_types.push(types::BasicObject); // self
-            let val = function.push_insn(function.entry_block, Insn::Test { val: param });
-            function.infer_types();
-            assert_bit_equal(function.type_of(val), types::CBool);
-        });
-    }
-
-    #[test]
     fn newarray() {
         let mut function = Function::new(std::ptr::null());
         // Fake FrameState index of 0usize
@@ -4627,8 +4643,11 @@ mod snapshot_tests {
         eval("def test(a, b) = [a, b]");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -4729,8 +4748,10 @@ mod tests {
         eval("def test(x=1) = 123");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           v3:CPtr = LoadPC
           v4:CPtr[CPtr(0x1000)] = Const CPtr(0x1008)
           v5:CBool = IsBitEqual v3, v4
@@ -4758,8 +4779,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_putobject);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -4777,8 +4799,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_newarray);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -4796,8 +4819,10 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_newarray);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -4815,8 +4840,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_newarray);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -4834,8 +4862,10 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_newrange);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -4854,8 +4884,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_newrange);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -4873,8 +4906,10 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_newrange);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -4893,8 +4928,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_newrange);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -4912,8 +4950,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_duparray);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -4932,8 +4971,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_duphash);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -4952,8 +4992,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_newhash);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -4971,8 +5012,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_newhash);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -4992,8 +5036,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_putchilledstring);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5012,8 +5057,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_putobject);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5031,8 +5077,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_putobject);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5050,8 +5097,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_putobject);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5069,8 +5117,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_putobject);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5088,8 +5137,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_plus);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5111,8 +5161,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_hash_freeze);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5136,8 +5187,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_hash_freeze);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:5:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5155,8 +5207,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_ary_freeze);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5180,8 +5233,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_ary_freeze);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:5:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5199,8 +5253,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_str_freeze);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5224,8 +5279,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_str_freeze);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:5:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5243,8 +5299,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_str_uminus);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5268,8 +5325,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_str_uminus);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:5:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5290,8 +5348,9 @@ mod tests {
         assert_contains_opcodes("test", &[YARVINSN_getlocal_WC_0, YARVINSN_setlocal_WC_0]);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -5329,8 +5388,9 @@ mod tests {
               YARVINSN_getlocal, YARVINSN_setlocal]);
         assert_snapshot!(hir_string("test"), @r"
         fn block (3 levels) in <compiled>@<compiled>:10:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5360,8 +5420,10 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_setlocal_WC_0);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
           v3:NilClass = Const Value(nil)
           v4:CPtr = LoadPC
           v5:CPtr[CPtr(0x1000)] = Const CPtr(0x1008)
@@ -5411,8 +5473,10 @@ mod tests {
         ");
         assert_snapshot!(hir_string_proc("test"), @r"
         fn block in test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -5431,8 +5495,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_definedivar);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5458,8 +5523,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_definedivar);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5487,8 +5553,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_defined);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5519,8 +5586,10 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_leave);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -5553,8 +5622,10 @@ mod tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
           v3:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject):
@@ -5589,8 +5660,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_plus);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -5611,8 +5685,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_minus);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -5633,8 +5710,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_mult);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -5655,8 +5735,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_div);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -5677,8 +5760,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_mod);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -5699,8 +5785,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_eq);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -5721,8 +5810,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_neq);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -5743,8 +5835,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_lt);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -5765,8 +5860,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_le);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -5787,8 +5885,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_gt);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -5816,8 +5917,9 @@ mod tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           v3:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3)
@@ -5861,8 +5963,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_ge);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -5888,8 +5993,9 @@ mod tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -5924,8 +6030,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_send_without_block);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:6:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -5952,8 +6059,10 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_send);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -5977,8 +6086,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_intern);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -6002,8 +6112,9 @@ mod tests {
         // The 2 string literals have the same address because they're deduped.
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:1:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -6030,8 +6141,10 @@ mod tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -6049,8 +6162,10 @@ mod tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -6069,8 +6184,10 @@ mod tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -6088,8 +6205,10 @@ mod tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -6110,8 +6229,9 @@ mod tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -6130,8 +6250,9 @@ mod tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -6150,8 +6271,9 @@ mod tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -6171,8 +6293,10 @@ mod tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -6187,8 +6311,10 @@ mod tests {
         eval("def forwardable(...) = nil");
         assert_snapshot!(hir_string("forwardable"), @r"
         fn forwardable@<compiled>:1:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -6209,8 +6335,10 @@ mod tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -6237,8 +6365,10 @@ mod tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:ArrayExact):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:ArrayExact = GetLocal l0, SP@4, *
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:ArrayExact):
           EntryPoint JIT(0)
@@ -6258,8 +6388,10 @@ mod tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -6278,8 +6410,13 @@ mod tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:ArrayExact, v4:BasicObject, v5:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@8
+          v3:ArrayExact = GetLocal l0, SP@7, *
+          v4:BasicObject = GetLocal l0, SP@6
+          v5:BasicObject = GetLocal l0, SP@5
           v6:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5, v6)
         bb1(v9:BasicObject, v10:BasicObject, v11:ArrayExact, v12:BasicObject, v13:BasicObject):
@@ -6304,8 +6441,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_new);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -6337,8 +6475,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_newarray_send);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -6359,8 +6498,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_newarray_send);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -6386,8 +6528,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_newarray_send);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@7
+          v3:BasicObject = GetLocal l0, SP@6
           v4:NilClass = Const Value(nil)
           v5:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5)
@@ -6415,8 +6560,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_newarray_send);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@7
+          v3:BasicObject = GetLocal l0, SP@6
           v4:NilClass = Const Value(nil)
           v5:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5)
@@ -6444,8 +6592,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_newarray_send);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@7
+          v3:BasicObject = GetLocal l0, SP@6
           v4:NilClass = Const Value(nil)
           v5:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5)
@@ -6477,8 +6628,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_newarray_send);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@7
+          v3:BasicObject = GetLocal l0, SP@6
           v4:NilClass = Const Value(nil)
           v5:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5)
@@ -6501,8 +6655,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_length);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -6523,8 +6680,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_size);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -6546,8 +6706,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_getinstancevariable);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -6569,8 +6730,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_setinstancevariable);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -6593,8 +6755,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_setglobal);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -6616,8 +6779,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_getglobal);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -6637,8 +6801,10 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_splatarray);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -6658,8 +6824,10 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_concattoarray);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -6682,8 +6850,10 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_pushtoarray);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -6705,8 +6875,10 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_pushtoarray);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -6732,8 +6904,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_aset);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -6755,8 +6930,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_aref);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -6776,8 +6954,10 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_empty_p);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -6797,8 +6977,10 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_succ);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -6818,8 +7000,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_and);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -6839,8 +7024,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_or);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -6860,8 +7048,10 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_not);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -6881,8 +7071,11 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_opt_regexpmatch2);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -6906,8 +7099,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_putspecialobject);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -6940,8 +7134,9 @@ mod tests {
         assert_contains_opcode("reverse_even", YARVINSN_opt_reverse);
         assert_snapshot!(hir_strings!("reverse_odd", "reverse_even"), @r"
         fn reverse_odd@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           v3:NilClass = Const Value(nil)
           v4:NilClass = Const Value(nil)
@@ -6965,8 +7160,9 @@ mod tests {
           Return v33
 
         fn reverse_even@<compiled>:8:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           v3:NilClass = Const Value(nil)
           v4:NilClass = Const Value(nil)
@@ -7003,8 +7199,10 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_branchnil);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -7026,8 +7224,12 @@ mod tests {
         assert_contains_opcode("Float", YARVINSN_opt_invokebuiltin_delegate_leave);
         assert_snapshot!(hir_string("Float"), @r"
         fn Float@<internal:kernel>:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@6
+          v3:BasicObject = GetLocal l0, SP@5
+          v4:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3, v4)
         bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject, v10:BasicObject):
           EntryPoint JIT(0)
@@ -7046,8 +7248,9 @@ mod tests {
         assert_contains_opcode("class", YARVINSN_opt_invokebuiltin_delegate_leave);
         assert_snapshot!(hir_string("class"), @r"
         fn class@<internal:kernel>:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7069,8 +7272,13 @@ mod tests {
         let function = iseq_to_hir(iseq).unwrap();
         assert_snapshot!(hir_string_function(&function), @r"
         fn open@<internal:dir>:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject, v5:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@8
+          v3:BasicObject = GetLocal l0, SP@7
+          v4:BasicObject = GetLocal l0, SP@6
+          v5:BasicObject = GetLocal l0, SP@5
           v6:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4, v5, v6)
         bb1(v9:BasicObject, v10:BasicObject, v11:BasicObject, v12:BasicObject, v13:BasicObject):
@@ -7104,8 +7312,9 @@ mod tests {
         let function = iseq_to_hir(iseq).unwrap();
         assert_snapshot!(hir_string_function(&function), @r"
         fn enable@<internal:gc>:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7126,8 +7335,13 @@ mod tests {
         let function = iseq_to_hir(iseq).unwrap();
         assert_snapshot!(hir_string_function(&function), @r"
         fn start@<internal:gc>:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject, v5:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@7
+          v3:BasicObject = GetLocal l0, SP@6
+          v4:BasicObject = GetLocal l0, SP@5
+          v5:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3, v4, v5)
         bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject, v11:BasicObject, v12:BasicObject):
           EntryPoint JIT(0)
@@ -7148,8 +7362,10 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_dupn);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -7180,8 +7396,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_objtostring);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7205,8 +7422,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_concatstrings);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7235,8 +7453,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_concatstrings);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7260,8 +7479,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_toregexp);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7290,8 +7510,9 @@ mod tests {
         assert_contains_opcode("test", YARVINSN_toregexp);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7319,8 +7540,9 @@ mod tests {
         assert_contains_opcode("throw_break", YARVINSN_throw);
         assert_snapshot!(hir_strings!("throw_return", "throw_break"), @r"
         fn block in <compiled>@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7330,8 +7552,9 @@ mod tests {
           Throw TAG_RETURN, v12
 
         fn block in <compiled>@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7351,8 +7574,9 @@ mod tests {
         "#);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7373,8 +7597,11 @@ mod tests {
         "#);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -7414,8 +7641,11 @@ mod graphviz_tests {
         node [shape=plaintext];
         mode=hier; overlap=false; splines=true;
           bb0 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0()&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v0">EntryPoint interpreter&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v1">v1:BasicObject = LoadSelf&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v2">v2:BasicObject = GetLocal l0, SP@5&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v3">v3:BasicObject = GetLocal l0, SP@4&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v4">Jump bb2(v1, v2, v3)&nbsp;</TD></TR>
         </TABLE>>];
           bb0:v4 -> bb2:params:n;
@@ -7460,8 +7690,10 @@ mod graphviz_tests {
         node [shape=plaintext];
         mode=hier; overlap=false; splines=true;
           bb0 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0(v1:BasicObject, v2:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0()&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v0">EntryPoint interpreter&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v1">v1:BasicObject = LoadSelf&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v2">v2:BasicObject = GetLocal l0, SP@4&nbsp;</TD></TR>
         <TR><TD ALIGN="left" PORT="v3">Jump bb2(v1, v2)&nbsp;</TD></TR>
         </TABLE>>];
           bb0:v3 -> bb2:params:n;
@@ -7527,8 +7759,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -7558,8 +7791,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -7584,8 +7818,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7612,8 +7847,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7640,8 +7876,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7665,8 +7902,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7691,8 +7929,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -7726,8 +7966,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7757,8 +7998,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7793,8 +8035,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7824,8 +8067,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7860,8 +8104,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7891,8 +8136,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7922,8 +8168,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7954,8 +8201,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -7983,8 +8231,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -8010,8 +8260,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_strings!("rest", "kw", "kw_rest", "block", "post"), @r"
         fn rest@<compiled>:2:
-        bb0(v1:BasicObject, v2:ArrayExact):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:ArrayExact = GetLocal l0, SP@4, *
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:ArrayExact):
           EntryPoint JIT(0)
@@ -8021,8 +8273,11 @@ mod opt_tests {
           Return v9
 
         fn kw@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -8032,8 +8287,10 @@ mod opt_tests {
           Return v11
 
         fn kw_rest@<compiled>:4:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -8043,8 +8300,10 @@ mod opt_tests {
           Return v9
 
         fn block@<compiled>:6:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -8055,8 +8314,11 @@ mod opt_tests {
           Return v13
 
         fn post@<compiled>:5:
-        bb0(v1:BasicObject, v2:ArrayExact, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:ArrayExact = GetLocal l0, SP@5, *
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:ArrayExact, v8:BasicObject):
           EntryPoint JIT(0)
@@ -8079,8 +8341,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:5:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -8107,8 +8370,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:5:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -8133,8 +8397,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:6:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -8158,8 +8423,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -8186,8 +8452,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:5:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -8218,8 +8485,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:7:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -8246,8 +8514,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -8276,8 +8545,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:7:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -8297,8 +8569,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -8321,8 +8596,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -8345,8 +8622,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -8369,8 +8648,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -8393,8 +8675,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -8417,8 +8701,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -8444,8 +8730,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -8473,8 +8760,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -8500,8 +8788,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -8525,8 +8815,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -8550,8 +8842,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -8575,8 +8869,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -8601,8 +8897,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -8628,8 +8925,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -8655,8 +8953,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -8687,8 +8986,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
           v3:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject):
@@ -8713,8 +9014,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -8740,8 +9042,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@6
+          v3:BasicObject = GetLocal l0, SP@5
           v4:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3, v4)
         bb1(v7:BasicObject, v8:BasicObject, v9:BasicObject):
@@ -8770,8 +9075,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -8797,8 +9103,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -8825,8 +9132,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -8851,8 +9159,9 @@ mod opt_tests {
         "#);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -8879,8 +9188,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -8906,8 +9218,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -8933,8 +9248,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -8960,8 +9278,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -8988,8 +9309,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -9016,8 +9340,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -9043,8 +9370,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -9070,8 +9400,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -9097,8 +9430,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -9124,8 +9460,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -9151,8 +9490,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -9178,8 +9520,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9201,8 +9544,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -9223,8 +9568,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9248,8 +9594,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -9279,8 +9626,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:4:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -9310,8 +9658,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -9337,8 +9686,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9360,8 +9710,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9393,8 +9744,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9422,8 +9774,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:4:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9447,8 +9800,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -9475,8 +9829,9 @@ mod opt_tests {
         // Not specialized
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9497,8 +9852,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -9522,8 +9879,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
           v3:NilClass = Const Value(nil)
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject):
@@ -9550,8 +9909,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9584,8 +9944,10 @@ mod opt_tests {
 
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:8:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -9609,8 +9971,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9633,8 +9996,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9660,8 +10024,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:4:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -9689,8 +10054,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9713,8 +10079,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9735,8 +10102,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9756,8 +10124,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9779,8 +10148,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9801,8 +10171,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9822,8 +10193,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9851,8 +10223,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:8:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9875,8 +10248,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9909,8 +10283,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:7:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9939,8 +10314,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9968,8 +10344,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -9997,8 +10374,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10026,8 +10404,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10054,8 +10433,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10084,8 +10464,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10111,8 +10492,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10141,8 +10523,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -10163,8 +10548,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -10185,8 +10573,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -10207,8 +10597,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10228,8 +10619,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10250,8 +10642,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10274,8 +10667,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:5:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10292,8 +10686,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10314,8 +10709,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10336,8 +10732,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10358,8 +10755,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10379,8 +10777,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10401,8 +10800,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10423,8 +10823,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10445,8 +10846,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10466,8 +10868,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10488,8 +10891,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10511,8 +10915,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10534,8 +10939,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10555,8 +10961,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10577,8 +10984,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10600,8 +11008,9 @@ mod opt_tests {
         "##);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10623,8 +11032,9 @@ mod opt_tests {
         "##);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10651,8 +11061,10 @@ mod opt_tests {
 
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -10680,8 +11092,10 @@ mod opt_tests {
 
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:5:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -10706,8 +11120,10 @@ mod opt_tests {
 
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -10734,8 +11150,9 @@ mod opt_tests {
 
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -10761,8 +11178,9 @@ mod opt_tests {
 
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb2(v1, v2)
         bb1(v5:BasicObject):
@@ -10786,8 +11204,9 @@ mod opt_tests {
         "##);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10810,8 +11229,9 @@ mod opt_tests {
         "##);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10834,8 +11254,9 @@ mod opt_tests {
         "##);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10858,8 +11279,9 @@ mod opt_tests {
         "##);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10885,8 +11307,9 @@ mod opt_tests {
         "##);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:5:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10911,8 +11334,9 @@ mod opt_tests {
         "##);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:5:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10939,8 +11363,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:4:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10961,8 +11386,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -10981,8 +11407,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -11006,8 +11433,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -11028,8 +11456,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -11053,8 +11482,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -11077,8 +11507,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -11101,8 +11533,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -11125,8 +11559,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -11149,8 +11585,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -11173,8 +11611,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -11197,8 +11637,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -11221,8 +11663,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -11245,8 +11689,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -11269,8 +11715,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -11293,8 +11741,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -11318,8 +11768,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -11342,8 +11795,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -11367,8 +11823,11 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
-        bb0(v1:BasicObject, v2:BasicObject, v3:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2, v3)
         bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
           EntryPoint JIT(0)
@@ -11394,8 +11853,9 @@ mod opt_tests {
 
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -11426,8 +11886,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:10:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -11459,8 +11921,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:10:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -11503,8 +11967,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:20:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -11530,8 +11996,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:7:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -11562,8 +12029,9 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:7:
-        bb0(v1:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
           Jump bb2(v1)
         bb1(v4:BasicObject):
           EntryPoint JIT(0)
@@ -11593,8 +12061,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:6:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
@@ -11622,8 +12092,10 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:6:
-        bb0(v1:BasicObject, v2:BasicObject):
+        bb0():
           EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
           Jump bb2(v1, v2)
         bb1(v5:BasicObject, v6:BasicObject):
           EntryPoint JIT(0)
