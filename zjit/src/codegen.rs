@@ -4,7 +4,7 @@
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
-use std::ffi::{c_long, c_void};
+use std::ffi::{c_int, c_long, c_void};
 use std::slice;
 
 use crate::asm::Label;
@@ -558,7 +558,7 @@ fn gen_getlocal(asm: &mut Assembler, local_ep_offset: u32, level: u32, use_sp: b
 /// We generate this instruction with level=0 only when the local variable is on the heap, so we
 /// can't optimize the level=0 case using the SP register.
 fn gen_setlocal(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset: u32, level: u32) {
-    let local_ep_offset = i32::try_from(local_ep_offset).unwrap_or_else(|_| panic!("Could not convert local_ep_offset {local_ep_offset} to i32"));
+    let local_ep_offset = c_int::try_from(local_ep_offset).unwrap_or_else(|_| panic!("Could not convert local_ep_offset {local_ep_offset} to i32"));
     if level > 0 {
         gen_incr_counter(asm, Counter::vm_write_to_parent_iseq_local_count);
     }
