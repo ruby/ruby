@@ -1607,12 +1607,9 @@ impl Assembler
                     self.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
                 }
 
-                // Avoid setting cfp->pc when exiting entry_block with optional arguments
-                if !pc.is_null() {
-                    asm_comment!(self, "save cfp->pc");
-                    self.load_into(SCRATCH_OPND, Opnd::const_ptr(pc));
-                    self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), SCRATCH_OPND);
-                }
+                asm_comment!(self, "save cfp->pc");
+                self.load_into(SCRATCH_OPND, Opnd::const_ptr(pc));
+                self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), SCRATCH_OPND);
 
                 asm_comment!(self, "save cfp->sp");
                 self.lea_into(SCRATCH_OPND, Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));

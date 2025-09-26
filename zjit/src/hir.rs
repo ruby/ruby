@@ -3323,7 +3323,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     // optimizing locals in that case because they're shared with other frames.
     let ep_escaped = iseq_escapes_ep(iseq);
 
-
     // Compile an entry_block for the interpreter
     compile_entry_block(&mut fun, &jit_entry_insns);
 
