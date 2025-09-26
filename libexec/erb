@@ -90,29 +90,49 @@ class ERB
           when '-P'
             disable_percent = true
           when '--help'
-            raise "print this help"
+            raise ''
           when /\A-/
-            raise "unknown switch #{switch.dump}"
+            raise "Unknown switch: #{switch.dump}"
           else
             var, val = *switch.split('=', 2)
             (variables ||= {})[var] = val
           end
         end
       rescue                               # usage
-        STDERR.puts $!.to_s
-        STDERR.puts File.basename($0) +
-          " [switches] [var=value...] [inputfile]"
+        message = $!.to_s
+        STDERR.puts message unless message.empty?
+        STDERR.puts 'Usage:'
+        STDERR.puts "  #{File.basename($0)} [options] [filepaths]"
         STDERR.puts <<EOU
-  -x               print ruby script
-  -n               print ruby script with line number
-  -v               enable verbose mode
-  -d               set $DEBUG to true
-  -r library       load a library
-  -E ex[:in]       set default external/internal encodings
-  -U               set default encoding to UTF-8
-  -T trim_mode     specify trim_mode (0..2, -)
-  -P               disable ruby code evaluation for lines beginning with %
-  var=value        set variable
+
+Options:
+  -d          --debug      Set $DEBUG to enable debugging.
+  -E ex[:in]  --encoding ex[:in]
+                           Set default external and internal encodings.
+  -h          --help       Print this text and exit.
+  -n                       Print generated Ruby source code with line numbers;
+                           ignored if given without option -x.
+  -P                       Disable execution tag shorthand (for lines beginning with '%').
+  -r library               Load the named library.
+  -T trim_mode             Specify trim_mode:
+                           '0' means '%'; '1' means '%>'; '2' means '<>'; '-' means '%-'.
+  -U                       Set default encoding to UTF-8.
+  -v                       Set $VERBOSE to enable debugging,
+              --version    Print ERB version string and exit.
+  -x                       Print generated Ruby source code.
+              --           Treat all following words as filepaths (not options).
+  name=value               Set the variable named name to the given string value.
+
+Filepaths:
+  The erb program reads the text from all files at the filepaths as a single ERB template:
+  plain text, possibly with embedded ERB tags;
+  filepaths may be repeated.
+
+  The pseudo-filepath '-' (hyphen character) specifies the standard input.
+
+  If no filepaths are given, the sole input is the standard input.
+
+See details and examples at https://docs.ruby-lang.org/en/master/erb_executable_md.html  
 EOU
         exit 1
       end
