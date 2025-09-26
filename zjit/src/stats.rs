@@ -2,8 +2,6 @@
 
 use std::time::Instant;
 use std::sync::atomic::Ordering;
-use std::sync::{LazyLock, Mutex};
-use std::collections::HashMap;
 
 #[cfg(feature = "stats_allocator")]
 #[path = "../../jit/src/lib.rs"]
@@ -189,21 +187,6 @@ pub(crate) use incr_counter;
 
 /// The number of side exits from each YARV instruction
 pub type ExitCounters = [u64; VM_INSTRUCTION_SIZE as usize];
-
-/// Store signature ("Klass#method") to counter pointer mappings for unoptimized cfuncs
-pub static UNOPTIMIZED_CFUNC_COUNTER_POINTERS: LazyLock<Mutex<HashMap<String, Box<u64>>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
-
-/// Get or create a counter pointer for the given signature
-pub fn get_or_create_unoptimized_cfunc_counter_ptr(signature: String) -> *mut u64 {
-    let mut map = UNOPTIMIZED_CFUNC_COUNTER_POINTERS.lock().unwrap();
-    let counter = map.entry(signature).or_insert_with(|| Box::new(0));
-    &mut **counter as *mut u64
-}
-
-#[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_count_unoptimized_cfunc(counter_ptr: *mut u64) {
-    unsafe { *counter_ptr += 1 }
-}
 
 /// Return a raw pointer to the exit counter for a given YARV opcode
 pub fn exit_counter_ptr_for_opcode(opcode: u32) -> *mut u64 {
@@ -402,7 +385,7 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     }
 
     // Set unoptimized cfunc counters
-    let unoptimized_cfuncs = UNOPTIMIZED_CFUNC_COUNTER_POINTERS.lock().unwrap();
+    let unoptimized_cfuncs = ZJITState::get_unoptimized_cfunc_counter_pointers();
     for (signature, counter) in unoptimized_cfuncs.iter() {
         let key_string = format!("not_optimized_cfuncs_{}", signature);
         set_stat_usize!(hash, &key_string, **counter);
