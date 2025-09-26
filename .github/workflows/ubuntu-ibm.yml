@@ -91,6 +91,11 @@ jobs:
         working-directory:
         if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
 
+      - name: Print HOME env
+        run: |
+          echo "HOME: ${HOME}"
+        working-directory:
+
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
