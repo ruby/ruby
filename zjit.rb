@@ -24,7 +24,7 @@ class << RubyVM::ZJIT
 
   # Check if `--zjit-trace-exits` is used
   def trace_exit_locations_enabled?
-      Primitive.rb_zjit_trace_exit_locations_enabled_p
+    Primitive.rb_zjit_trace_exit_locations_enabled_p
   end
 
   # If --zjit-trace-exits is enabled parse the hashes from
