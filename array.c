@@ -3874,6 +3874,24 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
+/*
+ *  call-seq:
+ *    values -> new_array
+ *
+ *  Retuns a new array with a shallow copy of the elements of +self+.
+ */
+
+static VALUE
+rb_ary_values(VALUE ary)
+{
+    long len = RARRAY_LEN(ary);
+    VALUE new_ary = rb_ary_new_capa(len);
+
+    if (len > 0) {
+        rb_ary_cat(new_ary, RARRAY_CONST_PTR(ary), len);
+    }
+    return new_ary;
+}
 
 /*
  *  call-seq:
@@ -8668,6 +8686,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - #take_while: Returns leading elements as determined by a given block.
  *  - #uniq: Returns an array containing non-duplicate elements.
  *  - #values_at: Returns the elements at given offsets.
+ *  - #values: Returns +self+. Helpful for compatibility with Hash#values.
  *
  *  === Methods for Assigning
  *
@@ -8823,6 +8842,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "filter!", rb_ary_select_bang, 0);
     rb_define_method(rb_cArray, "keep_if", rb_ary_keep_if, 0);
     rb_define_method(rb_cArray, "values_at", rb_ary_values_at, -1);
+    rb_define_method(rb_cArray, "values", rb_ary_values, 0);
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
     rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at_m, 1);
     rb_define_method(rb_cArray, "delete_if", rb_ary_delete_if, 0);
