@@ -8,6 +8,7 @@ use crate::asm::CodeBlock;
 use crate::options::get_option;
 use crate::stats::{Counters, ExitCounters};
 use crate::virtualmem::CodePtr;
+use std::collections::HashMap;
 
 #[allow(non_upper_case_globals)]
 #[unsafe(no_mangle)]
@@ -46,6 +47,9 @@ pub struct ZJITState {
 
     /// Trampoline to call function_stub_hit
     function_stub_hit_trampoline: CodePtr,
+
+    /// Counter pointers for unoptimized C functions
+    unoptimized_cfunc_counter_pointers: HashMap<String, Box<u64>>,
 }
 
 /// Private singleton instance of the codegen globals
@@ -80,6 +84,7 @@ impl ZJITState {
             exit_trampoline,
             function_stub_hit_trampoline,
             exit_trampoline_with_counter: exit_trampoline,
+            unoptimized_cfunc_counter_pointers: HashMap::new(),
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
 
@@ -136,6 +141,11 @@ impl ZJITState {
     /// Get a mutable reference to side-exit counters
     pub fn get_exit_counters() -> &'static mut ExitCounters {
         &mut ZJITState::get_instance().exit_counters
+    }
+
+    /// Get a mutable reference to unoptimized cfunc counter pointers
+    pub fn get_unoptimized_cfunc_counter_pointers() -> &'static mut HashMap<String, Box<u64>> {
+        &mut ZJITState::get_instance().unoptimized_cfunc_counter_pointers
     }
 
     /// Was --zjit-save-compiled-iseqs specified?

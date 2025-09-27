@@ -707,6 +707,9 @@ pub enum Insn {
     /// Increment a counter in ZJIT stats
     IncrCounter(Counter),
 
+    /// Increment a counter in ZJIT stats for the given counter pointer
+    IncrDynamicCounter { counter_ptr: *mut u64 },
+
     /// Equivalent of RUBY_VM_CHECK_INTS. Automatically inserted by the compiler before jumps and
     /// return instructions.
     CheckInterrupts { state: InsnId },
@@ -720,7 +723,7 @@ impl Insn {
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::EntryPoint { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
-            | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_)
+            | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrDynamicCounter { .. }
             | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } => false,
             _ => true,
         }
@@ -972,6 +975,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             },
+            Insn::IncrDynamicCounter { .. } => write!(f, "IncrDynamicCounter"),
             Insn::Snapshot { state } => write!(f, "Snapshot {}", state.print(self.ptr_map)),
             Insn::Defined { op_type, v, .. } => {
                 // op_type (enum defined_type) printing logic from iseq.c.
@@ -1376,6 +1380,7 @@ impl Function {
                     | SideExit {..}
                     | EntryPoint {..}
                     | LoadPC
+                    | IncrDynamicCounter {..}
                     | IncrCounter(_)) => result.clone(),
             &Snapshot { state: FrameState { iseq, insn_idx, pc, ref stack, ref locals } } =>
                 Snapshot {
@@ -1525,7 +1530,7 @@ impl Function {
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } =>
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrDynamicCounter { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -2149,9 +2154,9 @@ impl Function {
             self_type: Type,
             send: Insn,
             send_insn_id: InsnId,
-        ) -> Result<(), ()> {
+        ) -> Result<(), Option<*const rb_callable_method_entry_struct>> {
             let Insn::SendWithoutBlock { mut recv, cd, mut args, state, .. } = send else {
-                return Err(());
+                return Err(None);
             };
 
             let call_info = unsafe { (*cd).ci };
@@ -2163,20 +2168,20 @@ impl Function {
                 (class, None)
             } else {
                 let iseq_insn_idx = fun.frame_state(state).insn_idx;
-                let Some(recv_type) = fun.profiled_type_of_at(recv, iseq_insn_idx) else { return Err(()) };
+                let Some(recv_type) = fun.profiled_type_of_at(recv, iseq_insn_idx) else { return Err(None) };
                 (recv_type.class(), Some(recv_type))
             };
 
             // Do method lookup
-            let method = unsafe { rb_callable_method_entry(recv_class, method_id) };
+            let method: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
             if method.is_null() {
-                return Err(());
+                return Err(None);
             }
 
             // Filter for C methods
             let def_type = unsafe { get_cme_def_type(method) };
             if def_type != VM_METHOD_TYPE_CFUNC {
-                return Err(());
+                return Err(None);
             }
 
             // Find the `argc` (arity) of the C method, which describes the parameters it expects
@@ -2188,7 +2193,7 @@ impl Function {
                     //
                     // Bail on argc mismatch
                     if argc != cfunc_argc as u32 {
-                        return Err(());
+                        return Err(Some(method));
                     }
 
                     // Filter for a leaf and GC free function
@@ -2196,7 +2201,7 @@ impl Function {
                     let Some(FnProperties { leaf: true, no_gc: true, return_type, elidable }) =
                         ZJITState::get_method_annotations().get_cfunc_properties(method)
                     else {
-                        return Err(());
+                        return Err(Some(method));
                     };
 
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
@@ -2213,13 +2218,13 @@ impl Function {
                         cfunc_args.append(&mut args);
                         let ccall = fun.push_insn(block, Insn::CCall { cfun, args: cfunc_args, name: method_id, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
-                        return Ok(());
+                        return Ok(())
                     }
                 }
                 // Variadic method
                 -1 => {
                     if unsafe { rb_zjit_method_tracing_currently_enabled() } {
-                        return Err(());
+                        return Err(None);
                     }
                     // The method gets a pointer to the first argument
                     // func(int argc, VALUE *argv, VALUE recv)
@@ -2251,8 +2256,9 @@ impl Function {
                         });
 
                         fun.make_equal_to(send_insn_id, ccall);
-                        return Ok(());
+                        return Ok(())
                     }
+
                     // Fall through for complex cases (splat, kwargs, etc.)
                 }
                 -2 => {
@@ -2262,7 +2268,7 @@ impl Function {
                 _ => unreachable!("unknown cfunc kind: argc={argc}")
             }
 
-            Err(())
+            Err(Some(method))
         }
 
         for block in self.rpo() {
@@ -2271,8 +2277,21 @@ impl Function {
             for insn_id in old_insns {
                 if let send @ Insn::SendWithoutBlock { recv, .. } = self.find(insn_id) {
                     let recv_type = self.type_of(recv);
-                    if reduce_to_ccall(self, block, recv_type, send, insn_id).is_ok() {
-                        continue;
+                    match reduce_to_ccall(self, block, recv_type, send, insn_id) {
+                        Ok(()) => continue,
+                        Err(Some(cme)) => {
+                            let owner = unsafe { (*cme).owner };
+                            let called_id = unsafe { (*cme).called_id };
+                            let class_name = get_class_name(owner);
+                            let method_name = called_id.contents_lossy();
+                            let qualified_method_name = format!("{}#{}", class_name, method_name);
+                            let unoptimized_cfunc_counter_pointers = ZJITState::get_unoptimized_cfunc_counter_pointers();
+                            let counter_ptr = unoptimized_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
+                            let counter_ptr = &mut **counter_ptr as *mut u64;
+
+                            self.push_insn(block, Insn::IncrDynamicCounter { counter_ptr });
+                        }
+                        _ => {}
                     }
                 }
                 self.push_insn_id(block, insn_id);
@@ -2417,7 +2436,8 @@ impl Function {
             | &Insn::LoadPC { .. }
             | &Insn::GetLocal { .. }
             | &Insn::PutSpecialObject { .. }
-            | &Insn::IncrCounter(_) =>
+            | &Insn::IncrCounter(_)
+            | &Insn::IncrDynamicCounter { .. } =>
                 {}
             &Insn::PatchPoint { state, .. }
             | &Insn::CheckInterrupts { state }
@@ -9484,6 +9504,7 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           v11:Fixnum[0] = Const Value(0)
+          IncrDynamicCounter
           v13:BasicObject = SendWithoutBlock v10, :itself, v11
           CheckInterrupts
           Return v13
@@ -10322,6 +10343,7 @@ mod opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:HashExact = NewHash
+          IncrDynamicCounter
           v13:BasicObject = SendWithoutBlock v11, :dup
           v15:BasicObject = SendWithoutBlock v13, :freeze
           CheckInterrupts
@@ -10345,6 +10367,7 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v11:HashExact = NewHash
           v12:NilClass = Const Value(nil)
+          IncrDynamicCounter
           v14:BasicObject = SendWithoutBlock v11, :freeze, v12
           CheckInterrupts
           Return v14
@@ -10409,6 +10432,7 @@ mod opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:ArrayExact = NewArray
+          IncrDynamicCounter
           v13:BasicObject = SendWithoutBlock v11, :dup
           v15:BasicObject = SendWithoutBlock v13, :freeze
           CheckInterrupts
@@ -10432,6 +10456,7 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v11:ArrayExact = NewArray
           v12:NilClass = Const Value(nil)
+          IncrDynamicCounter
           v14:BasicObject = SendWithoutBlock v11, :freeze, v12
           CheckInterrupts
           Return v14
@@ -10497,6 +10522,7 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v10
+          IncrDynamicCounter
           v14:BasicObject = SendWithoutBlock v12, :dup
           v16:BasicObject = SendWithoutBlock v14, :freeze
           CheckInterrupts
@@ -10521,6 +10547,7 @@ mod opt_tests {
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v10
           v13:NilClass = Const Value(nil)
+          IncrDynamicCounter
           v15:BasicObject = SendWithoutBlock v12, :freeze, v13
           CheckInterrupts
           Return v15
@@ -10586,6 +10613,7 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v10
+          IncrDynamicCounter
           v14:BasicObject = SendWithoutBlock v12, :dup
           v16:BasicObject = SendWithoutBlock v14, :-@
           CheckInterrupts
@@ -10715,6 +10743,7 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v25:BasicObject = GuardTypeNot v9, String
+          IncrDynamicCounter
           v26:BasicObject = SendWithoutBlock v9, :to_s
           v17:String = AnyToString v9, str: v26
           v19:StringExact = StringConcat v13, v17
