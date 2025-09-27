@@ -1734,6 +1734,14 @@ dummy
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 20], [1, 9, 1, 14], [1, 14, 1, 15], [1, 19, 1, 20]])
     end
 
+    def test_ensure_locations
+      node = ast_parse("begin; ensure; end")
+      assert_locations(node.children[-1].locations, [[1, 5, 1, 14], [1, 7, 1, 13], [1, 15, 1, 18]])
+
+      node = ast_parse("begin; foo; ensure; bar; end")
+      assert_locations(node.children[-1].locations, [[1, 5, 1, 24], [1, 12, 1, 18], [1, 25, 1, 28]])
+    end
+
     private
     def ast_parse(src, **options)
       begin
