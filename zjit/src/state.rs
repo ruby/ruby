@@ -1,12 +1,12 @@
 //! Runtime state of ZJIT.
 
 use crate::codegen::{gen_exit_trampoline, gen_exit_trampoline_with_counter, gen_function_stub_hit_trampoline};
-use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, EcPtr, Qnil, VALUE, VM_INSTRUCTION_SIZE};
+use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, EcPtr, Qnil, rb_vm_insn_addr2opcode, rb_profile_frames, VALUE, VM_INSTRUCTION_SIZE, size_t, rb_gc_mark};
 use crate::cruby_methods;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
 use crate::options::get_option;
-use crate::stats::{Counters, ExitCounters};
+use crate::stats::{Counters, ExitCounters, SideExitLocations};
 use crate::virtualmem::CodePtr;
 
 #[allow(non_upper_case_globals)]
@@ -46,6 +46,9 @@ pub struct ZJITState {
 
     /// Trampoline to call function_stub_hit
     function_stub_hit_trampoline: CodePtr,
+
+    /// Locations of side exists within generated code
+    exit_locations: Option<SideExitLocations>,
 }
 
 /// Private singleton instance of the codegen globals
@@ -69,6 +72,12 @@ impl ZJITState {
         let exit_trampoline = gen_exit_trampoline(&mut cb).unwrap();
         let function_stub_hit_trampoline = gen_function_stub_hit_trampoline(&mut cb).unwrap();
 
+        let exit_locations = if get_option!(dump_side_exits) {
+            Some(SideExitLocations::default())
+        } else {
+            None
+        };
+
         // Initialize the codegen globals instance
         let zjit_state = ZJITState {
             code_block: cb,
@@ -80,6 +89,7 @@ impl ZJITState {
             exit_trampoline,
             function_stub_hit_trampoline,
             exit_trampoline_with_counter: exit_trampoline,
+            exit_locations,
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
 
@@ -184,6 +194,16 @@ impl ZJITState {
     pub fn get_function_stub_hit_trampoline() -> CodePtr {
         ZJITState::get_instance().function_stub_hit_trampoline
     }
+
+    /// Get a mutable reference to the yjit raw samples Vec
+    pub fn get_raw_samples() -> Option<&'static mut Vec<VALUE>> {
+        ZJITState::get_instance().exit_locations.as_mut().map(|el| &mut el.raw_samples)
+    }
+
+    /// Get a mutable reference to yjit the line samples Vec.
+    pub fn get_line_samples() -> Option<&'static mut Vec<i32>> {
+        ZJITState::get_instance().exit_locations.as_mut().map(|el| &mut el.line_samples)
+    }
 }
 
 /// Initialize ZJIT
@@ -218,4 +238,140 @@ pub extern "C" fn rb_zjit_init() {
 pub extern "C" fn rb_zjit_assert_compiles(_ec: EcPtr, _self: VALUE) -> VALUE {
     ZJITState::enable_assert_compiles();
     Qnil
+}
+
+/// Call `rb_profile_frames` and format the result into buffers.
+fn record_profiling_frames() -> (i32, Vec<VALUE>, Vec<i32>) {
+    // Use the same buffer size as Stackprof.
+    const BUFF_LEN: usize = 2048;
+
+    let mut frames_buffer = vec![VALUE(0_usize); BUFF_LEN];
+    let mut lines_buffer = vec![0; BUFF_LEN];
+
+    let stack_length = unsafe {
+        rb_profile_frames(
+            0,
+            BUFF_LEN as i32,
+            frames_buffer.as_mut_ptr(),
+            lines_buffer.as_mut_ptr(),
+        )
+    };
+
+    // Trim at `stack_length` since anything past it is redundant
+    frames_buffer.truncate(stack_length as usize);
+    lines_buffer.truncate(stack_length as usize);
+
+    (stack_length, frames_buffer, lines_buffer)
+}
+
+/// Record a backtrace with ZJIT side exits
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_record_exit_stack(exit_pc: *const VALUE)
+{
+    if !zjit_enabled_p() || !get_option!(dump_side_exits) {
+        return;
+    }
+
+    let (stack_length, frames_buffer, lines_buffer) = record_profiling_frames();
+
+    // Can safely unwrap since `dump_side_exits` must be true at this point
+    let zjit_raw_samples = ZJITState::get_raw_samples().unwrap();
+    let zjit_lines_samples = ZJITState::get_line_samples().unwrap();
+    assert_eq!(zjit_raw_samples.len(), zjit_lines_samples.len());
+
+    // todo(aidenfoxivey): why is this +3 here
+    let samples_length = (stack_length as usize) + 3;
+
+    // If zjit_raw_samples is less than or equal to the current length of the samples
+    // we might have seen this stack trace previously.
+    if zjit_raw_samples.len() >= samples_length {
+        let prev_stack_len_index = zjit_raw_samples.len() - samples_length;
+        let prev_stack_len = i64::from(zjit_raw_samples[prev_stack_len_index]);
+        let mut idx = stack_length - 1;
+        let mut prev_frame_idx = 0;
+        let mut seen_already = true;
+
+        // If the previous stack length and current stack length are equal,
+        // loop and compare the current frame to the previous frame. If they are
+        // not equal, set seen_already to false and break out of the loop.
+        if prev_stack_len == stack_length as i64 {
+            while idx >= 0 {
+                let current_frame = frames_buffer[idx as usize];
+                let prev_frame = zjit_raw_samples[prev_stack_len_index + prev_frame_idx + 1];
+
+                // If the current frame and previous frame are not equal, set
+                // seen_already to false and break out of the loop.
+                if current_frame != prev_frame {
+                    seen_already = false;
+                    break;
+                }
+
+                idx -= 1;
+                prev_frame_idx += 1;
+            }
+
+            // If we know we've seen this stack before, increment the counter by 1.
+            if seen_already {
+                let prev_idx = zjit_raw_samples.len() - 1;
+                let prev_count = i64::from(zjit_raw_samples[prev_idx]);
+                let new_count = prev_count + 1;
+
+                zjit_raw_samples[prev_idx] = VALUE(new_count as usize);
+                zjit_lines_samples[prev_idx] = new_count as i32;
+
+                return;
+            }
+        }
+    }
+
+    zjit_raw_samples.push(VALUE(stack_length as usize));
+    zjit_lines_samples.push(stack_length);
+
+    frames_buffer.iter().zip(lines_buffer.iter()).rev().for_each(|(frame, line)| {
+        zjit_raw_samples.push(*frame);
+        zjit_lines_samples.push(*line);
+    });
+
+    // Get the opcode from instruction handler at exit PC.
+    let insn = unsafe { rb_vm_insn_addr2opcode((*exit_pc).as_ptr()) };
+    zjit_raw_samples.push(VALUE(insn as usize));
+
+    // We don't know the line that this instruction sits at
+    zjit_lines_samples.push(0);
+
+    // Push number of times seen onto the stack, which is 1
+    // because it's the first time we've seen it.
+    zjit_raw_samples.push(VALUE(1_usize));
+    zjit_lines_samples.push(1);
+}
+
+/// Mark `raw_samples` so they can be used by rb_yjit_add_frame.
+pub fn gc_mark_raw_samples() {
+    // Return if YJIT is not enabled
+    if !zjit_enabled_p() || !get_option!(stats) || !get_option!(dump_side_exits) {
+        return;
+    }
+
+    let mut idx: size_t = 0;
+    let zjit_raw_samples = ZJITState::get_raw_samples().unwrap();
+
+    while idx < zjit_raw_samples.len() as size_t {
+        let num = zjit_raw_samples[idx as usize];
+        let mut i = 0;
+        idx += 1;
+
+        // Mark the zjit_raw_samples at the given index. These represent
+        // the data that needs to be GC'd which are the current frames.
+        while i < i32::from(num) {
+            unsafe { rb_gc_mark(zjit_raw_samples[idx as usize]); }
+            i += 1;
+            idx += 1;
+        }
+
+        // Increase index for exit instruction.
+        idx += 1;
+        // Increase index for bookeeping value (number of times we've seen this
+        // row in a stack).
+        idx += 1;
+    }
 }

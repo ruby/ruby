@@ -9,6 +9,7 @@ use crate::cruby::VALUE;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
+use crate::state::rb_zjit_record_exit_stack;
 
 pub use crate::backend::current::{
     Reg,
@@ -1629,6 +1630,14 @@ impl Assembler
                     }
                 }
 
+                if get_option!(dump_side_exits) {
+                    self.load_into(C_ARG_OPNDS[0], Opnd::const_ptr(pc as *const u8));
+                    self.ccall(
+                         rb_zjit_record_exit_stack as *const u8,
+                         vec![]
+                    );
+                }
+
                 asm_comment!(self, "exit to the interpreter");
                 self.frame_teardown(&[]); // matching the setup in :bb0-prologue:
                 self.mov(C_RET_OPND, Opnd::UImm(Qundef.as_u64()));
@@ -2080,4 +2089,3 @@ mod tests {
         asm.load_into(mem, mem);
     }
 }
-
