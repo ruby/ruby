@@ -101,9 +101,6 @@ jobs:
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
 
-      - run: make prepare-gems
-        if: ${{ matrix.test_task == 'test-bundled-gems' }}
-
       - run: make
 
       - name: Verify that --zjit-dump-disasm works
