@@ -1,24 +1,32 @@
 Returns a 3-element array of substrings of +self+.
 
-Matches a pattern against +self+, scanning from the beginning.
-The pattern is:
+Converts +pattern+ to a Regexp, if it is not already one.
+Matches +pattern+ against +self+, scanning from the beginning.
 
-- +string_or_regexp+ itself, if it is a Regexp.
-- <tt>Regexp.quote(string_or_regexp)</tt>, if +string_or_regexp+ is a string.
+If the pattern is matched, returns the array:
 
-If the pattern is matched, returns pre-match, first-match, post-match:
+  [pre_match, first_match, post_match]
+
+where:
+
+- +first_match+ is the first-found matching substring.
+- +pre_match+ and +post_match+ are the preceding and following substrings.
+
+Examples:
 
   'hello'.partition('l')      # => ["he", "l", "lo"]
   'hello'.partition('ll')     # => ["he", "ll", "o"]
   'hello'.partition('h')      # => ["", "h", "ello"]
   'hello'.partition('o')      # => ["hell", "o", ""]
   'hello'.partition(/l+/)     #=> ["he", "ll", "o"]
-  'hello'.partition('')       # => ["", "", "hello"]
+  'hello'.partition('')       # => ["", "", "hello"]  # Note: this post_match is a copy of self.
   'тест'.partition('т')       # => ["", "т", "ест"]
   'こんにちは'.partition('に')  # => ["こん", "に", "ちは"]
+
+Does _not_ set {pattern-matching global variables}[rdoc-ref:globals.md@Pattern+Matching].
 
 If the pattern is not matched, returns a copy of +self+ and two empty strings:
 
   'hello'.partition('x') # => ["hello", "", ""]
 
-Related: String#rpartition, String#split.
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
