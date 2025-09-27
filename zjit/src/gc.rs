@@ -1,9 +1,7 @@
 //! This module is responsible for marking/moving objects on GC.
 
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::{ffi::c_void, ops::Range};
-use crate::codegen::IseqCall;
+use crate::codegen::IseqCallRef;
 use crate::stats::CompileError;
 use crate::{cruby::*, profile::IseqProfile, state::ZJITState, stats::with_time_stat, virtualmem::CodePtr};
 use crate::stats::Counter::gc_time_ns;
@@ -21,7 +19,7 @@ pub struct IseqPayload {
     pub gc_offsets: Vec<CodePtr>,
 
     /// JIT-to-JIT calls in the ISEQ. The IseqPayload's ISEQ is the caller of it.
-    pub iseq_calls: Vec<Rc<RefCell<IseqCall>>>,
+    pub iseq_calls: Vec<IseqCallRef>,
 }
 
 impl IseqPayload {
@@ -191,10 +189,10 @@ fn iseq_update_references(payload: &mut IseqPayload) {
 
     // Move ISEQ references in IseqCall
     for iseq_call in payload.iseq_calls.iter_mut() {
-        let old_iseq = iseq_call.borrow().iseq;
+        let old_iseq = iseq_call.iseq.get();
         let new_iseq = unsafe { rb_gc_location(VALUE(old_iseq as usize)) }.0 as IseqPtr;
         if old_iseq != new_iseq {
-            iseq_call.borrow_mut().iseq = new_iseq;
+            iseq_call.iseq.set(new_iseq);
         }
     }
 
