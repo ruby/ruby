@@ -613,9 +613,12 @@ pub enum Insn {
     IfTrue { val: InsnId, target: BranchEdge },
     IfFalse { val: InsnId, target: BranchEdge },
 
-    /// Call a C function
+    /// Call a C function without pushing a frame
     /// `name` is for printing purposes only
     CCall { cfun: *const u8, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
+
+    /// Call a C function that pushes a frame
+    CallCFunc {cfun: *const u8, args: Vec<InsnId>, cme: *const rb_callable_method_entry_t, name: ID, state: InsnId },
 
     /// Call a variadic C function with signature: func(int argc, VALUE *argv, VALUE recv)
     /// This handles frame setup, argv creation, and frame teardown all in one
@@ -960,6 +963,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::CCall { cfun, args, name, return_type: _, elidable: _ } => {
                 write!(f, "CCall {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                Ok(())
+            },
+            Insn::CallCFunc { cfun, args, name, .. } => {
+                write!(f, "CCfunc {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1475,6 +1485,7 @@ impl Function {
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
             &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun, args: find_vec!(args), name, return_type, elidable },
+            &CallCFunc { cfun, ref args, cme, name, state } => CallCFunc { cfun, args: find_vec!(args), cme, name, state: find!(state) },
             &CCallVariadic { cfun, recv, ref args, cme, name, state } => CCallVariadic {
                 cfun, recv: find!(recv), args: find_vec!(args), cme, name, state
             },
@@ -1559,6 +1570,7 @@ impl Function {
             Insn::NewRangeFixnum { .. } => types::RangeExact,
             Insn::ObjectAlloc { .. } => types::HeapObject,
             Insn::ObjectAllocClass { class, .. } => Type::from_class(*class),
+            Insn::CallCFunc { .. } => types::BasicObject,
             Insn::CCall { return_type, .. } => *return_type,
             Insn::CCallVariadic { .. } => types::BasicObject,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
@@ -2191,30 +2203,35 @@ impl Function {
                         return Err(());
                     }
 
+                    let ci_flags = unsafe { vm_ci_flag(call_info) };
+
+                    if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
+                        return Err(());
+                    }
+
+                    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme: method }, state });
+                    if let Some(profiled_type) = profiled_type {
+                        // Guard receiver class
+                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                    }
+                    let cfun = unsafe { get_mct_func(cfunc) }.cast();
+                    let mut cfunc_args = vec![recv];
+                    cfunc_args.append(&mut args);
+
                     // Filter for a leaf and GC free function
                     use crate::cruby_methods::FnProperties;
-                    let Some(FnProperties { leaf: true, no_gc: true, return_type, elidable }) =
-                        ZJITState::get_method_annotations().get_cfunc_properties(method)
-                    else {
-                        return Err(());
-                    };
 
-                    let ci_flags = unsafe { vm_ci_flag(call_info) };
                     // Filter for simple call sites (i.e. no splats etc.)
-                    if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
-                        // Commit to the replacement. Put PatchPoint.
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme: method }, state });
-                        if let Some(profiled_type) = profiled_type {
-                            // Guard receiver class
-                            recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                        }
-                        let cfun = unsafe { get_mct_func(cfunc) }.cast();
-                        let mut cfunc_args = vec![recv];
-                        cfunc_args.append(&mut args);
+                    // Commit to the replacement. Put PatchPoint.
+                    if let Some(FnProperties { leaf: true, no_gc: true, return_type, elidable }) = ZJITState::get_method_annotations().get_cfunc_properties(method) {
                         let ccall = fun.push_insn(block, Insn::CCall { cfun, args: cfunc_args, name: method_id, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
-                        return Ok(());
+                    } else {
+                        let ccall = fun.push_insn(block, Insn::CallCFunc { cfun, args: cfunc_args, cme: method, name: method_id, state });
+                        fun.make_equal_to(send_insn_id, ccall);
                     }
+
+                    return Ok(());
                 }
                 // Variadic method
                 -1 => {
@@ -2513,7 +2530,8 @@ impl Function {
                 worklist.extend(args);
                 worklist.push_back(state);
             }
-            &Insn::InvokeBuiltin { ref args, state, .. }
+            &Insn::CallCFunc { ref args, state, .. }
+            | &Insn::InvokeBuiltin { ref args, state, .. }
             | &Insn::InvokeBlock { ref args, state, .. } => {
                 worklist.extend(args);
                 worklist.push_back(state)
@@ -10322,8 +10340,9 @@ mod opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:HashExact = NewHash
-          v13:BasicObject = SendWithoutBlock v11, :dup
-          v15:BasicObject = SendWithoutBlock v13, :freeze
+          PatchPoint MethodRedefined(Hash@0x1000, dup@0x1008, cme:0x1010)
+          v22:BasicObject = CCfunc dup@0x1038, v11
+          v15:BasicObject = SendWithoutBlock v22, :freeze
           CheckInterrupts
           Return v15
         ");
@@ -10409,8 +10428,9 @@ mod opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:ArrayExact = NewArray
-          v13:BasicObject = SendWithoutBlock v11, :dup
-          v15:BasicObject = SendWithoutBlock v13, :freeze
+          PatchPoint MethodRedefined(Array@0x1000, dup@0x1008, cme:0x1010)
+          v22:BasicObject = CCfunc dup@0x1038, v11
+          v15:BasicObject = SendWithoutBlock v22, :freeze
           CheckInterrupts
           Return v15
         ");
@@ -10497,8 +10517,9 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v10
-          v14:BasicObject = SendWithoutBlock v12, :dup
-          v16:BasicObject = SendWithoutBlock v14, :freeze
+          PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
+          v23:BasicObject = CCfunc dup@0x1040, v12
+          v16:BasicObject = SendWithoutBlock v23, :freeze
           CheckInterrupts
           Return v16
         ");
@@ -10586,8 +10607,9 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v10
-          v14:BasicObject = SendWithoutBlock v12, :dup
-          v16:BasicObject = SendWithoutBlock v14, :-@
+          PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
+          v23:BasicObject = CCfunc dup@0x1040, v12
+          v16:BasicObject = SendWithoutBlock v23, :-@
           CheckInterrupts
           Return v16
         ");
@@ -10715,8 +10737,10 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v25:BasicObject = GuardTypeNot v9, String
-          v26:BasicObject = SendWithoutBlock v9, :to_s
-          v17:String = AnyToString v9, str: v26
+          PatchPoint MethodRedefined(Array@0x1008, to_s@0x1010, cme:0x1018)
+          v28:ArrayExact = GuardType v9, ArrayExact
+          v29:BasicObject = CCfunc to_s@0x1040, v28
+          v17:String = AnyToString v9, str: v29
           v19:StringExact = StringConcat v13, v17
           CheckInterrupts
           Return v19
