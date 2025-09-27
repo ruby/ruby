@@ -4086,15 +4086,14 @@ rb_ascii8bit_appendable_encoding_index(rb_encoding *enc, unsigned int code)
 
 /*
  *  call-seq:
- *    prepend(*other_strings)  -> string
+ *    prepend(*other_strings) -> new_string
  *
- *  Prepends each string in +other_strings+ to +self+ and returns +self+:
+ *  Prefixes to +self+ the concatenation of the given +other_strings+; returns +self+:
  *
- *    s = 'foo'
- *    s.prepend('bar', 'baz') # => "barbazfoo"
- *    s                       # => "barbazfoo"
+ *    'baz'.prepend('foo', 'bar') # => "foobarbaz"
  *
- *  Related: String#concat.
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
+ *
  */
 
 static VALUE

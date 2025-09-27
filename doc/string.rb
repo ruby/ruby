@@ -388,6 +388,7 @@
 # - #<<: Returns +self+ concatenated with a given string or integer.
 # - #append_as_bytes: Returns +self+ concatenated with strings without performing any
 #   encoding validation or conversion.
+# - #prepend: Prefixes to +self+ the concatenation of given other strings.
 #
 # _Substitution_
 #
@@ -448,7 +449,6 @@
 # - #+: Returns the concatenation of +self+ and a given other string.
 # - #center: Returns a copy of +self+, centered by specified padding.
 # - #concat: Returns the concatenation of +self+ with given other strings.
-# - #prepend: Returns the concatenation of a given other string with +self+.
 # - #ljust: Returns a copy of +self+ of a given length, right-padded with a given other string.
 # - #rjust: Returns a copy of +self+ of a given length, left-padded with a given other string.
 #
