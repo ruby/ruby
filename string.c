@@ -10728,19 +10728,44 @@ rb_str_scan(VALUE str, VALUE pat)
  *  call-seq:
  *    hex -> integer
  *
- *  Interprets the leading substring of +self+ as hexadecimal;
- *  returns its integer value:
+ *  Interprets the leading substring of +self+ as hexadecimal, possibly signed;
+ *  returns its value as an integer.
  *
- *    '0xFFFF'.hex     # => 65535
- *    'FFzzzFF'.hex    # =>   255  # Hex ends at first non-hex character, 'z'.
- *    'ffzzzFF'.hex    # =>   255  # Case does not matter.
- *    '-FFzzzFF'.hex   # =>  -255  # May have leading '-'.
- *    '0xFFzzzFF'.hex  # =>   255  # May have leading '0x'.
- *    '-0xFFzzzFF'.hex # =>  -255  # May have leading '-0x'.
+ *  The leading substring is interpreted as hexadecimal when it begins with:
  *
- *  Returns zero if there is no such leading substring:
+ *  - One or more character representing hexadecimal digits
+ *    (each in one of the ranges <tt>'0'..'9'</tt>, <tt>'a'..'f'</tt>, or <tt>'A'..'F'</tt>);
+ *    the string to be interpreted ends at the first character that does not represent a hexadecimal digit:
  *
- *    'zzz'.hex # => 0
+ *      'f'.hex        # => 15
+ *      '11'.hex       # => 17
+ *      'FFF'.hex      # => 4095
+ *      'fffg'.hex     # => 4095
+ *      'foo'.hex      # => 15   # 'f' hexadecimal, 'oo' not.
+ *      'bar'.hex      # => 186  # 'ba' hexadecimal, 'r' not.
+ *      'deadbeef'.hex # => 3735928559
+ *
+ *  - <tt>'0x'</tt> or <tt>'0X'</tt>, followed by one or more hexadecimal digits:
+ *
+ *      '0xfff'.hex    # => 4095
+ *      '0xfffg'.hex   # => 4095
+ *
+ *  Any of the above may prefixed with <tt>'-'</tt>, which negates the interpreted value:
+ *
+ *    '-fff'.hex      # => -4095
+ *    '-0xFFF'.hex    # => -4095
+ *
+ *  For any substring not described above, returns zero:
+ *
+ *    'xxx'.hex     # => 0
+ *    ''.hex        # => 0
+ *
+ *  Note that, unlike #oct, this method interprets only hexadecimal,
+ *  and not binary, octal, or decimal notations:
+ *
+ *    '0b111'.hex   # => 45329
+ *    '0o777'.hex   # => 0
+ *    '0d999'.hex   # => 55705
  *
  *  Related: See {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
  */

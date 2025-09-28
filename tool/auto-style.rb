@@ -71,9 +71,9 @@ class Git
   private
 
   def git(*args, **opts)
-    cmd = ['git', *args].shelljoin
-    puts "+ #{cmd}"
-    ret = with_clean_env { system('git', *args, **opts) }
+    cmd = ['git', *args]
+    puts "+ #{cmd.shelljoin}"
+    ret = with_clean_env { system(*cmd, **opts) }
     unless ret or opts[:err]
       abort "Failed to run: #{cmd}"
     end

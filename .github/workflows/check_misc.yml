@@ -29,17 +29,24 @@ jobs:
           checkout: '' # false (ref: https://github.com/actions/runner/issues/2238)
 
       # Run this step first to make sure auto-style commits are pushed
-      - name: ${{ github.ref == 'refs/heads/master' && 'Auto-correct' || 'Check for' }} code styles
+      - name: Auto-correct code styles
         run: |
           set -x
-          ruby tool/auto-style.rb "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" "$PUSH_REF"
+          ruby tool/auto-style.rb "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" refs/heads/master
         env:
-          EMAIL: svn-admin@ruby-lang.org
+          GITHUB_OLD_SHA: ${{ github.event.before }}
+          GITHUB_NEW_SHA: ${{ github.event.after }}
           GIT_AUTHOR_NAME: git
           GIT_COMMITTER_NAME: git
+          EMAIL: svn-admin@ruby-lang.org
+        if: ${{ github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master' && github.event_name == 'push' }}
+      - name: Check for code styles
+        run: |
+          set -x
+          ruby tool/auto-style.rb "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA"
+        env:
           GITHUB_OLD_SHA: ${{ github.event.pull_request.base.sha }}
           GITHUB_NEW_SHA: ${{ github.event.pull_request.merge_commit_sha }}
-          PUSH_REF: ${{ github.ref == 'refs/heads/master' && github.ref || '' }}
         if: ${{ github.repository == 'ruby/ruby' && startsWith(github.event_name, 'pull') }}
 
       - name: Check if C-sources are US-ASCII
