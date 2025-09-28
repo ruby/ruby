@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # Usage:
-#   auto-style.rb [oldrev] [newrev] [pushref]
+#   auto-style.rb oldrev newrev [pushref]
 
 require 'shellwords'
 require 'tmpdir'
@@ -251,7 +251,7 @@ if (dry_run = oldrev == '-n') or oldrev == '--'
   _, *updated_files = ARGV
   git = Git.new(nil, nil)
 else
-  unless dry_run = pushref.empty?
+  unless dry_run = pushref.nil?
     branch = IO.popen(['git', 'rev-parse', '--symbolic', '--abbrev-ref', pushref], &:read).strip
   end
   git = Git.new(oldrev, newrev, branch)
