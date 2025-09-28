@@ -32,15 +32,14 @@ jobs:
       - name: Auto-correct code styles
         run: |
           set -x
-          ruby tool/auto-style.rb "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" "$PUSH_REF"
+          ruby tool/auto-style.rb "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" refs/heads/master
         env:
           GITHUB_OLD_SHA: ${{ github.event.before }}
           GITHUB_NEW_SHA: ${{ github.event.after }}
           GIT_AUTHOR_NAME: git
           GIT_COMMITTER_NAME: git
           EMAIL: svn-admin@ruby-lang.org
-          PUSH_REF: ${{ github.ref }}
-        if: ${{ github.repository == 'ruby/ruby' && github.event_name == 'push' }}
+        if: ${{ github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master' && github.event_name == 'push' }}
       - name: Check for code styles
         run: |
           set -x
