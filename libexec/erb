@@ -132,7 +132,7 @@ Filepaths:
 
   If no filepaths are given, the sole input is the standard input.
 
-See details and examples at https://docs.ruby-lang.org/en/master/erb_executable_md.html  
+See details and examples at https://docs.ruby-lang.org/en/master/erb_executable_md.html
 EOU
         exit 1
       end
