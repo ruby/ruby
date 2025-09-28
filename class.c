@@ -650,7 +650,7 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool namespaceable)
 {
     rb_ns_subclasses_t *ns_subclasses;
     rb_subclass_anchor_t *anchor;
-    const rb_namespace_t *ns = rb_definition_namespace();
+    const rb_namespace_t *ns = rb_current_namespace();
 
     if (!ruby_namespace_init_done) {
         namespaceable = true;
@@ -692,6 +692,10 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool namespaceable)
       RCLASS_FIELDS(obj) = 0;
       RCLASS_SET_SUPER((VALUE)obj, 0);
      */
+
+    if (namespaceable) {
+        ((struct RClass_namespaceable *)obj)->ns_classext_tbl = NULL;
+    }
 
     RCLASS_PRIME_NS((VALUE)obj) = ns;
     // Classes/Modules defined in user namespaces are

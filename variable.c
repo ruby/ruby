@@ -1012,6 +1012,7 @@ rb_gvar_set(ID id, VALUE val)
     RB_VM_LOCKING() {
         entry = rb_global_entry(id);
 
+        // TODO: consider root/main namespaces
         if (USE_NAMESPACE_GVAR_TBL(ns, entry)) {
             rb_hash_aset(ns->gvar_tbl, rb_id2sym(entry->id), val);
             retval = val;
@@ -3170,43 +3171,6 @@ autoload_apply_constants(VALUE _arguments)
     return Qtrue;
 }
 
-struct autoload_feature_require_data {
-    struct autoload_load_arguments *arguments;
-    VALUE receiver;
-    VALUE feature;
-};
-
-static VALUE
-autoload_feature_require_in_builtin(VALUE arg)
-{
-    struct autoload_feature_require_data *data = (struct autoload_feature_require_data *)arg;
-
-    VALUE result = rb_funcall(data->receiver, rb_intern("require"), 1, data->feature);
-    if (RTEST(result)) {
-        return rb_mutex_synchronize(autoload_mutex, autoload_apply_constants, (VALUE)data->arguments);
-    }
-    return Qnil;
-}
-
-static VALUE
-autoload_feature_require_ensure_in_builtin(VALUE _arg)
-{
-    /*
-     * The gccct should be cleared again after the rb_funcall() to remove
-     * the inconsistent cache entry against the current namespace.
-     */
-    rb_gccct_clear_table(Qnil);
-    rb_namespace_disable_builtin();
-    return Qnil;
-}
-
-static VALUE
-autoload_feature_require_in_builtin_wrap(VALUE arg)
-{
-    return rb_ensure(autoload_feature_require_in_builtin, arg,
-                     autoload_feature_require_ensure_in_builtin, Qnil);
-}
-
 static VALUE
 autoload_feature_require(VALUE _arguments)
 {
@@ -3220,26 +3184,16 @@ autoload_feature_require(VALUE _arguments)
     // We save this for later use in autoload_apply_constants:
     arguments->autoload_data = rb_check_typeddata(autoload_const->autoload_data_value, &autoload_data_type);
 
-    if (NIL_P(autoload_namespace)) {
-        rb_namespace_enable_builtin();
-        /*
-         * Clear the global cc cache table because the require method can be different from the current
-         * namespace's one and it may cause inconsistent cc-cme states.
-         * For example, the assertion below may fail in gccct_method_search();
-         * VM_ASSERT(vm_cc_check_cme(cc, rb_callable_method_entry(klass, mid)))
-         */
-        rb_gccct_clear_table(Qnil);
-        struct autoload_feature_require_data data = {
-            .arguments = arguments,
-            .receiver = receiver,
-            .feature = arguments->autoload_data->feature,
-        };
-        return rb_namespace_exec(rb_builtin_namespace(), autoload_feature_require_in_builtin_wrap, (VALUE)&data);
-    }
-
-    if (RTEST(autoload_namespace) && NAMESPACE_OPTIONAL_P(rb_get_namespace_t(autoload_namespace))) {
+    if (rb_namespace_available() && NAMESPACE_OBJ_P(autoload_namespace))
         receiver = autoload_namespace;
-    }
+
+    /*
+     * Clear the global cc cache table because the require method can be different from the current
+     * namespace's one and it may cause inconsistent cc-cme states.
+     * For example, the assertion below may fail in gccct_method_search();
+     * VM_ASSERT(vm_cc_check_cme(cc, rb_callable_method_entry(klass, mid)))
+     */
+    rb_gccct_clear_table(Qnil);
 
     VALUE result = rb_funcall(receiver, rb_intern("require"), 1, arguments->autoload_data->feature);
 

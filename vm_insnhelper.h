@@ -144,7 +144,7 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
     }
 }
 
-#define GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
+#define GET_BLOCK_HANDLER() VM_CF_BLOCK_HANDLER(GET_CFP())
 
 /**********************************************************/
 /* deal with control flow 3: exception                    */
