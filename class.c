@@ -693,6 +693,10 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool namespaceable)
       RCLASS_SET_SUPER((VALUE)obj, 0);
      */
 
+    if (namespaceable) {
+        ((struct RClass_namespaceable *)obj)->ns_classext_tbl = NULL;
+    }
+
     RCLASS_PRIME_NS((VALUE)obj) = ns;
     // Classes/Modules defined in user namespaces are
     // writable directly because it exists only in a namespace.
