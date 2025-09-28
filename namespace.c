@@ -202,7 +202,6 @@ namespace_entry_free(void *ptr)
         st_free_table(ns->loading_table);
         ns->loading_table = 0;
     }
-    xfree(ptr);
 }
 
 static size_t
