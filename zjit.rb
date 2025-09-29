@@ -53,6 +53,8 @@ class << RubyVM::ZJIT
     # Show the most important stats ratio_in_zjit at the end
     print_counters([
       :dynamic_send_count,
+      :dynamic_getivar_count,
+      :dynamic_setivar_count,
 
       :compiled_iseq_count,
       :failed_iseq_count,
