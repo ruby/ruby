@@ -84,6 +84,19 @@ set src=%2
 set dest=%dest:/=\%
 set src=%src:/=\%
 
+if not "%src%" == "-" goto :srcfile
+    if not "%TMPDIR%" == "" (
+        set src=%TMPDIR%\ifchange%RANDOM%.tmp
+    ) else if not "%TEMP%" == "" (
+        set src=%TEMP%\ifchange%RANDOM%.tmp
+    ) else if not "%TMP%" == "" (
+        set src=%TMP%\ifchange%RANDOM%.tmp
+    ) else (
+        set src=.\ifchange%RANDOM%.tmp
+    )
+    findstr -r -c:"^" > "%src%"
+:srcfile
+
 if exist %dest% (
     if not exist %src% goto :nt_unchanged1
     if not "%empty%" == "" for %%I in (%src%) do if %%~zI == 0 goto :nt_unchanged
