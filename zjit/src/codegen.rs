@@ -419,6 +419,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GetSpecialSymbol { symbol_type, state: _ } => gen_getspecial_symbol(asm, *symbol_type),
         Insn::GetSpecialNumber { nth, state } => gen_getspecial_number(asm, *nth, &function.frame_state(*state)),
         &Insn::IncrCounter(counter) => no_output!(gen_incr_counter(asm, counter)),
+        Insn::IncrCounterPtr { counter_ptr } => no_output!(gen_incr_counter_ptr(asm, *counter_ptr)),
         Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state)),
         &Insn::CheckInterrupts { state } => no_output!(gen_check_interrupts(jit, asm, &function.frame_state(state))),
         &Insn::HashDup { val, state } => { gen_hash_dup(asm, opnd!(val), &function.frame_state(state)) },
@@ -1528,15 +1529,20 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd,
     val
 }
 
+/// Generate code that records unoptimized C functions if --zjit-stats is enabled
+fn gen_incr_counter_ptr(asm: &mut Assembler, counter_ptr: *mut u64) {
+    if get_option!(stats) {
+        let ptr_reg = asm.load(Opnd::const_ptr(counter_ptr as *const u8));
+        let counter_opnd = Opnd::mem(64, ptr_reg, 0);
+        asm.incr_counter(counter_opnd, Opnd::UImm(1));
+    }
+}
+
 /// Generate code that increments a counter if --zjit-stats
 fn gen_incr_counter(asm: &mut Assembler, counter: Counter) {
     if get_option!(stats) {
         let ptr = counter_ptr(counter);
-        let ptr_reg = asm.load(Opnd::const_ptr(ptr as *const u8));
-        let counter_opnd = Opnd::mem(64, ptr_reg, 0);
-
-        // Increment and store the updated value
-        asm.incr_counter(counter_opnd, Opnd::UImm(1));
+        gen_incr_counter_ptr(asm, ptr);
     }
 }
 

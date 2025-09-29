@@ -384,6 +384,13 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
         set_stat_f64!(hash, "ratio_in_zjit", 100.0 * zjit_insn_count as f64 / total_insn_count as f64);
     }
 
+    // Set unoptimized cfunc counters
+    let unoptimized_cfuncs = ZJITState::get_unoptimized_cfunc_counter_pointers();
+    for (signature, counter) in unoptimized_cfuncs.iter() {
+        let key_string = format!("not_optimized_cfuncs_{}", signature);
+        set_stat_usize!(hash, &key_string, **counter);
+    }
+
     hash
 }
 
