@@ -16,7 +16,7 @@ use crate::stats::{exit_counter_for_compile_error, incr_counter, incr_counter_by
 use crate::stats::{counter_ptr, with_time_stat, Counter, send_fallback_counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SCRATCH_OPND, SP};
-use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, MethodType, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType, SELF_PARAM_IDX};
+use crate::hir::{iseq_to_hir, BlockId, BranchEdge, Invariant, MethodType, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types, Type};
 use crate::options::get_option;
@@ -126,7 +126,7 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
     })?;
 
     // Compile an entry point to the JIT code
-    gen_entry(cb, iseq, &function, start_ptr).inspect_err(|err| {
+    gen_entry(cb, iseq, start_ptr).inspect_err(|err| {
         debug!("{err:?}: gen_entry failed: {}", iseq_get_location(iseq, 0));
     })
 }
@@ -164,11 +164,10 @@ fn register_with_perf(iseq_name: String, start_ptr: usize, code_size: usize) {
 }
 
 /// Compile a JIT entry
-fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_ptr: CodePtr) -> Result<CodePtr, CompileError> {
+fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function_ptr: CodePtr) -> Result<CodePtr, CompileError> {
     // Set up registers for CFP, EC, SP, and basic block arguments
     let mut asm = Assembler::new();
     gen_entry_prologue(&mut asm, iseq);
-    gen_entry_params(&mut asm, iseq, function.entry_block());
 
     // Jump to the first block using a call instruction
     asm.ccall(function_ptr.raw_ptr(cb), vec![]);
@@ -409,8 +408,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
         Insn::GetGlobal { id, state } => gen_getglobal(jit, asm, *id, &function.frame_state(*state)),
-        &Insn::GetLocal { ep_offset, level } => gen_getlocal_with_ep(asm, ep_offset, level),
-        &Insn::SetLocal { val, ep_offset, level } => no_output!(gen_setlocal_with_ep(asm, opnd!(val), function.type_of(val), ep_offset, level)),
+        &Insn::GetLocal { ep_offset, level, use_sp, .. } => gen_getlocal(asm, ep_offset, level, use_sp),
+        &Insn::SetLocal { val, ep_offset, level } => no_output!(gen_setlocal(asm, opnd!(val), function.type_of(val), ep_offset, level)),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, *ic, &function.frame_state(*state)),
         Insn::SetIvar { self_val, id, val, state: _ } => no_output!(gen_setivar(asm, opnd!(self_val), *id, opnd!(val))),
         Insn::SideExit { state, reason } => no_output!(gen_side_exit(jit, asm, reason, &function.frame_state(*state))),
@@ -430,6 +429,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ArrayExtend { left, right, state } => { no_output!(gen_array_extend(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state))) },
         &Insn::GuardShape { val, shape, state } => gen_guard_shape(jit, asm, opnd!(val), shape, &function.frame_state(state)),
         Insn::LoadPC => gen_load_pc(asm),
+        Insn::LoadSelf => gen_load_self(),
         &Insn::LoadIvarEmbedded { self_val, id, index } => gen_load_ivar_embedded(asm, opnd!(self_val), id, index),
         &Insn::LoadIvarExtended { self_val, id, index } => gen_load_ivar_extended(asm, opnd!(self_val), id, index),
         &Insn::ArrayMax { state, .. }
@@ -537,19 +537,28 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, 
 /// Get a local variable from a higher scope or the heap. `local_ep_offset` is in number of VALUEs.
 /// We generate this instruction with level=0 only when the local variable is on the heap, so we
 /// can't optimize the level=0 case using the SP register.
-fn gen_getlocal_with_ep(asm: &mut Assembler, local_ep_offset: u32, level: u32) -> lir::Opnd {
+fn gen_getlocal(asm: &mut Assembler, local_ep_offset: u32, level: u32, use_sp: bool) -> lir::Opnd {
+    let local_ep_offset = i32::try_from(local_ep_offset).unwrap_or_else(|_| panic!("Could not convert local_ep_offset {local_ep_offset} to i32"));
     if level > 0 {
         gen_incr_counter(asm, Counter::vm_read_from_parent_iseq_local_count);
     }
-    let ep = gen_get_ep(asm, level);
-    let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).unwrap_or_else(|_| panic!("Could not convert local_ep_offset {local_ep_offset} to i32")));
-    asm.load(Opnd::mem(64, ep, offset))
+    let local = if use_sp {
+        assert_eq!(level, 0, "use_sp optimization should be used only for level=0 locals");
+        let offset = -(SIZEOF_VALUE_I32 * (local_ep_offset + 1));
+        Opnd::mem(64, SP, offset)
+    } else {
+        let ep = gen_get_ep(asm, level);
+        let offset = -(SIZEOF_VALUE_I32 * local_ep_offset);
+        Opnd::mem(64, ep, offset)
+    };
+    asm.load(local)
 }
 
 /// Set a local variable from a higher scope or the heap. `local_ep_offset` is in number of VALUEs.
 /// We generate this instruction with level=0 only when the local variable is on the heap, so we
 /// can't optimize the level=0 case using the SP register.
-fn gen_setlocal_with_ep(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset: u32, level: u32) {
+fn gen_setlocal(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset: u32, level: u32) {
+    let local_ep_offset = c_int::try_from(local_ep_offset).unwrap_or_else(|_| panic!("Could not convert local_ep_offset {local_ep_offset} to i32"));
     if level > 0 {
         gen_incr_counter(asm, Counter::vm_write_to_parent_iseq_local_count);
     }
@@ -558,12 +567,12 @@ fn gen_setlocal_with_ep(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep
     // When we've proved that we're writing an immediate,
     // we can skip the write barrier.
     if val_type.is_immediate() {
-        let offset = -(SIZEOF_VALUE_I32 * i32::try_from(local_ep_offset).unwrap_or_else(|_| panic!("Could not convert local_ep_offset {local_ep_offset} to i32")));
+        let offset = -(SIZEOF_VALUE_I32 * local_ep_offset);
         asm.mov(Opnd::mem(64, ep, offset), val);
     } else {
         // We're potentially writing a reference to an IMEMO/env object,
         // so take care of the write barrier with a function.
-        let local_index = c_int::try_from(local_ep_offset).ok().and_then(|idx| idx.checked_mul(-1)).unwrap_or_else(|| panic!("Could not turn {local_ep_offset} into a negative c_int"));
+        let local_index = local_ep_offset * -1;
         asm_ccall!(asm, rb_vm_env_write, ep, local_index.into(), val);
     }
 }
@@ -834,6 +843,10 @@ fn gen_load_pc(asm: &mut Assembler) -> Opnd {
     asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC))
 }
 
+fn gen_load_self() -> Opnd {
+    Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)
+}
+
 fn gen_load_ivar_embedded(asm: &mut Assembler, self_val: Opnd, id: ID, index: u16) -> Opnd {
     // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
 
@@ -871,53 +884,6 @@ fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
     asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
 }
 
-/// Assign method arguments to basic block arguments at JIT entry
-fn gen_entry_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block) {
-    let num_params = entry_block.params().len() - 1; // -1 to exclude self
-    if num_params > 0 {
-        asm_comment!(asm, "set method params: {num_params}");
-
-        // Fill basic block parameters.
-        // Doing it in reverse is load-bearing. High index params have memory slots that might
-        // require using a register to fill. Filling them first avoids clobbering.
-        for idx in (0..num_params).rev() {
-            let param = param_opnd(idx + 1); // +1 for self
-            let local = gen_entry_param(asm, iseq, idx);
-
-            // Funky offset adjustment to write into the native stack frame of the
-            // HIR function we'll be calling into. This only makes sense in context
-            // of the schedule of instructions in gen_entry() for the JIT entry point.
-            //
-            // The entry point needs to load VALUEs into native stack slots _before_ the
-            // frame containing the slots exists. So, we anticipate the stack frame size
-            // of the Function and subtract offsets based on that.
-            //
-            // native SP at entry point ─────►┌────────────┐   Native SP grows downwards
-            //                                │            │ ↓ on all arches we support.
-            //                         SP-0x8 ├────────────┤
-            //                                │            │
-            // where native SP         SP-0x10├────────────┤
-            // would be while                 │            │
-            // the HIR function ────────────► └────────────┘
-            // is running
-            match param {
-                Opnd::Mem(lir::Mem { base: _, disp, num_bits }) => {
-                    let param_slot = Opnd::mem(num_bits, NATIVE_STACK_PTR, disp - Assembler::frame_size());
-                    asm.mov(param_slot, local);
-                }
-                // Prepare for parallel move for locals in registers
-                reg @ Opnd::Reg(_) => {
-                    asm.load_into(reg, local);
-                }
-                _ => unreachable!("on entry, params are either in memory or in reg. Got {param:?}")
-            }
-
-            // Assign local variables to the basic block arguments
-        }
-    }
-    asm.load_into(param_opnd(SELF_PARAM_IDX), Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF));
-}
-
 /// Set branch params to basic block arguments
 fn gen_branch_params(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdge) {
     if branch.args.is_empty() {
@@ -939,28 +905,6 @@ fn gen_branch_params(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdg
         }
     }
     asm.parallel_mov(moves);
-}
-
-/// Get a method parameter on JIT entry. As of entry, whether EP is escaped or not solely
-/// depends on the ISEQ type.
-fn gen_entry_param(asm: &mut Assembler, iseq: IseqPtr, local_idx: usize) -> lir::Opnd {
-    let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
-
-    // If the ISEQ does not escape EP, we can optimize the local variable access using the SP register.
-    if !iseq_entry_escapes_ep(iseq) {
-        // Create a reference to the local variable using the SP register. We assume EP == BP.
-        // TODO: Implement the invalidation in rb_zjit_invalidate_no_ep_escape()
-        let offs = -(SIZEOF_VALUE_I32 * (ep_offset + 1));
-        Opnd::mem(64, SP, offs)
-    } else {
-        // Get the EP of the current CFP
-        let ep_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP);
-        let ep_reg = asm.load(ep_opnd);
-
-        // Create a reference to the local variable using cfp->ep
-        let offs = -(SIZEOF_VALUE_I32 * ep_offset);
-        Opnd::mem(64, ep_reg, offs)
-    }
 }
 
 /// Compile a constant
@@ -1814,20 +1758,6 @@ fn build_side_exit(jit: &JITState, state: &FrameState, reason: SideExitReason, l
         locals,
         reason,
         label,
-    }
-}
-
-/// Return true if a given ISEQ is known to escape EP to the heap on entry.
-///
-/// As of vm_push_frame(), EP is always equal to BP. However, after pushing
-/// a frame, some ISEQ setups call vm_bind_update_env(), which redirects EP.
-fn iseq_entry_escapes_ep(iseq: IseqPtr) -> bool {
-    match unsafe { get_iseq_body_type(iseq) } {
-        // <main> frame is always associated to TOPLEVEL_BINDING.
-        ISEQ_TYPE_MAIN |
-        // Kernel#eval uses a heap EP when a Binding argument is not nil.
-        ISEQ_TYPE_EVAL => true,
-        _ => false,
     }
 }
 

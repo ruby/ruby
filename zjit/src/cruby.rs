@@ -294,7 +294,10 @@ pub fn iseq_opcode_at_idx(iseq: IseqPtr, insn_idx: u32) -> u32 {
     unsafe { rb_iseq_opcode_at_pc(iseq, pc) as u32 }
 }
 
-/// Return true if the ISEQ always uses a frame with escaped EP.
+/// Return true if a given ISEQ is known to escape EP to the heap on entry.
+///
+/// As of vm_push_frame(), EP is always equal to BP. However, after pushing
+/// a frame, some ISEQ setups call vm_bind_update_env(), which redirects EP.
 pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
     match unsafe { get_iseq_body_type(iseq) } {
         // The EP of the <main> frame points to TOPLEVEL_BINDING
@@ -302,6 +305,17 @@ pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
         // eval frames point to the EP of another frame or scope
         ISEQ_TYPE_EVAL => true,
         _ => false,
+    }
+}
+
+/// Index of the local variable that has a rest parameter if any
+pub fn iseq_rest_param_idx(iseq: IseqPtr) -> Option<i32> {
+    if !iseq.is_null() && unsafe { get_iseq_flags_has_rest(iseq) } {
+        let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
+        let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
+        Some(opt_num + lead_num)
+    } else {
+        None
     }
 }
 
