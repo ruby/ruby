@@ -9,7 +9,10 @@ use std::slice;
 
 use crate::asm::Label;
 use crate::backend::current::{Reg, ALLOC_REGS};
-use crate::invariants::{track_bop_assumption, track_cme_assumption, track_no_ep_escape_assumption, track_no_trace_point_assumption, track_single_ractor_assumption, track_stable_constant_names_assumption};
+use crate::invariants::{
+    track_bop_assumption, track_cme_assumption, track_no_ep_escape_assumption, track_no_trace_point_assumption,
+    track_single_ractor_assumption, track_stable_constant_names_assumption, track_no_singleton_class_assumption
+};
 use crate::gc::{append_gc_offsets, get_or_create_iseq_payload, get_or_create_iseq_payload_ptr, IseqCodePtrs, IseqPayload, IseqStatus};
 use crate::state::ZJITState;
 use crate::stats::{send_fallback_counter, exit_counter_for_compile_error, incr_counter, incr_counter_by, send_fallback_counter_for_method_type, send_fallback_counter_ptr_for_opcode, CompileError};
@@ -653,6 +656,9 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invarian
             }
             Invariant::SingleRactorMode => {
                 track_single_ractor_assumption(code_ptr, side_exit_ptr, payload_ptr);
+            }
+            Invariant::NoSingletonClass { klass } => {
+                track_no_singleton_class_assumption(klass, code_ptr, side_exit_ptr, payload_ptr);
             }
         }
     });
