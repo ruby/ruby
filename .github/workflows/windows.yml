@@ -154,30 +154,9 @@ jobs:
       # windows-11-arm runner cannot run `ruby tool/file2lastrev.rb --revision.h --output=revision.h`
       - name: make revision.h
         run: |
-          if not exist revision.h (
-            for /f "tokens=1-3" %%I in ('git log -1 "--date=format-local:%%F %%T" "--format=%%H %%cd" @') do (
-              set rev=%%I
-              set dt=%%J
-              set tm=%%K
-            )
-            call set yy=%%dt:~0,4%%
-            call set /a mm=100%%dt:~5,2%% %%%% 100
-            call set /a dd=100%%dt:~8,2%% %%%% 100
-            call set branch=%%GITHUB_REF:refs/heads/=%%
-            (
-              call echo #define RUBY_REVISION "%%rev:~,10%%"
-              call echo #define RUBY_FULL_REVISION "%%rev%%"
-              call echo #define RUBY_BRANCH_NAME "%%branch%%"
-              call echo #define RUBY_RELEASE_DATETIME "%%dt%%T%%tm%%"
-              call echo #define RUBY_RELEASE_YEAR %%yy%%
-              call echo #define RUBY_RELEASE_MONTH %%mm%%
-              call echo #define RUBY_RELEASE_DAY %%dd%%
-            ) > revision.h
-            copy /y NUL .revision.time
-          )
+          win32\lastrev.bat | win32\ifchange.bat --timestamp=.revision.time revision.h -
           type revision.h
-        env:
-          TZ: UTC
+        working-directory: src
 
       - run: nmake
 
