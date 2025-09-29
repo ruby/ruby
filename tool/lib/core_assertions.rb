@@ -507,19 +507,9 @@ eom
           assert_respond_to(expected, :===)
           assert = :assert_match
         end
-        ex = m = nil
-        if respond_to?(:multiple_ractors?) && multiple_ractors?
-            ex = assert_raise(exception, msg || proc {"Exception(#{exception}) with message matches to #{expected.inspect}"}) do
-              yield
-            end
-            m = ex.message
-        else
-          EnvUtil.with_default_internal(of: expected) do
-            ex = assert_raise(exception, msg || proc {"Exception(#{exception}) with message matches to #{expected.inspect}"}) do
-              yield
-            end
-            m = ex.message
-          end
+
+        ex = assert_raise(exception, msg || proc {"Exception(#{exception}) with message matches to #{expected.inspect}"}) do
+          yield
         end
         m = ex.message
         msg = message(msg, "") {"Expected Exception(#{exception}) was raised, but the message doesn't match"}
