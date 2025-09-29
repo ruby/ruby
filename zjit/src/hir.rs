@@ -12165,13 +12165,21 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:6:
-        bb0(v0:BasicObject, v1:BasicObject):
-          v6:Fixnum[5] = Const Value(5)
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[5] = Const Value(5)
           PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
-          v15:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
-          SetIvar v15, :@foo, v6
+          v23:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          SetIvar v23, :@foo, v14
           CheckInterrupts
-          Return v6
+          Return v14
         ");
     }
 
@@ -12188,13 +12196,21 @@ mod opt_tests {
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:6:
-        bb0(v0:BasicObject, v1:BasicObject):
-          v6:Fixnum[5] = Const Value(5)
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[5] = Const Value(5)
           PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
-          v15:HeapObject[class_exact:C] = GuardType v1, HeapObject[class_exact:C]
-          SetIvar v15, :@foo, v6
+          v23:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          SetIvar v23, :@foo, v14
           CheckInterrupts
-          Return v6
+          Return v14
         ");
     }
 }
