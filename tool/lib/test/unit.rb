@@ -1522,12 +1522,16 @@ module Test
       end
 
       @@installed_at_exit ||= false
-      OUT = "$stdout"
       @@after_tests = []
       @@current_repeat_count = 0
 
+      class << self
+        def ractors_enabled?
+          ENV["RUBY_TESTS_WITH_RACTORS"].to_i > 0
+        end
+      end
       def ractors_enabled?
-        ENV["RUBY_TESTS_WITH_RACTORS"].to_i > 0
+        self.class.ractors_enabled?
       end
       private :ractors_enabled?
 
@@ -1541,34 +1545,50 @@ module Test
         @@after_tests << block
       end
 
+      if ractors_enabled?
+        OUT = 1
+        def self.output
+          case OUT
+          when 1
+            $stdout
+          when 2
+            $stderr
+          else
+            raise "Not supported"
+          end
+        end
+
+        ##
+        # Sets Test::Unit::Runner to write output to +stream+.  $stdout is the default
+        # output. NOTE: if not $stdout or $stderr, may not be ractor safe!
+
+        def self.output= stream
+          saved_verbose = $VERBOSE
+          begin
+            $VERBOSE = nil
+            fd_num = stream.to_i
+            if [1,2].include?(fd_num)
+              const_set(:OUT, fd_num)
+            else
+              raise ArgumentError, "Must give stdout or stderr (fd 1 or 2), got fd=#{fd_num}"
+            end
+          ensure
+            $VERBOSE = saved_verbose
+          end
+        end
+      else
+        @@out = $stdout
+        def self.output
+          @@out
+        end
+        def self.output=(out)
+          @@out = out
+        end
+      end
+
       ##
       # Returns the stream to use for output.
 
-      def self.output
-        if String === OUT
-          eval OUT # due to Ractors
-        else
-          OUT
-        end
-      end
-
-      ##
-      # Sets Test::Unit::Runner to write output to +stream+.  $stdout is the default
-      # output. NOTE: if not $stdout or $stderr, may not be ractor safe!
-
-      def self.output= stream
-        old_verbose = $VERBOSE
-        $VERBOSE = nil
-        fd_num = stream.to_i
-        if [1,2].include?(fd_num)
-          stream = fd_num == 1 ? "$stdout" : "$stderr" # best guess
-          const_set(:OUT, stream)
-        else
-          const_set(:OUT, stream)
-        end
-      ensure
-        $VERBOSE = old_verbose
-      end
 
       ##
       # Tells Test::Unit::Runner to delegate to +runner+, an instance of a
