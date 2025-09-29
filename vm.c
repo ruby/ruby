@@ -3280,7 +3280,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 
     if (vm) {
         rb_thread_t *th = vm->ractor.main_thread;
-        VALUE *stack = th->ec->vm_stack;
+
         if (rb_free_at_exit) {
             rb_free_encoded_insn_data();
             rb_free_global_enc_table();
@@ -3345,7 +3345,6 @@ ruby_vm_destruct(rb_vm_t *vm)
                 rb_free_default_rand_key();
                 if (th && vm->fork_gen == 0) {
                     /* If we have forked, main_thread may not be the initial thread */
-                    xfree(stack);
                     ruby_mimfree(th);
                 }
             }
@@ -3827,7 +3826,9 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 
     if (self == 0) {
         size_t size = vm->default_params.thread_vm_stack_size / sizeof(VALUE);
-        rb_ec_initialize_vm_stack(th->ec, ALLOC_N(VALUE, size), size);
+        VALUE *stack = ALLOC_N(VALUE, size);
+        rb_ec_initialize_vm_stack(th->ec, stack, size);
+        rb_thread_malloc_stack_set(th, stack);
     }
     else {
         VM_ASSERT(th->ec->cfp == NULL);

@@ -3492,4 +3492,11 @@ rb_thread_lock_native_thread(void)
     return is_snt;
 }
 
+void
+rb_thread_malloc_stack_set(rb_thread_t *th, void *stack)
+{
+    th->sched.malloc_stack = true;
+    th->sched.context_stack = stack;
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
