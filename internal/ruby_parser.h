@@ -8,7 +8,6 @@
 #include "internal/parse.h"
 #include "internal/rational.h"
 #include "rubyparser.h"
-#include "rb_node_compile.h"
 #include "vm.h"
 
 struct lex_pointer_string {
@@ -106,6 +105,5 @@ enum lex_state_e {
 
 VALUE rb_ruby_ast_new(const NODE *const root);
 rb_ast_t *rb_ruby_ast_data_get(VALUE ast_value);
-rb_ast_scope_t *rb_ruby_ast_scope_data_get(VALUE ast_scope_value);
 
 #endif /* INTERNAL_RUBY_PARSE_H */

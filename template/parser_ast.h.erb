@@ -70,11 +70,13 @@ typedef uint16_t rb_node_flags_t;
 static const rb_node_flags_t RB_NODE_FLAG_NEWLINE = 0x1;
 static const rb_node_flags_t RB_NODE_FLAG_STATIC_LITERAL = 0x2;
 
+#define RB_NODE(node) ((rb_node_t *)(node))
+
 /**
  * Cast the type to an enum to allow the compiler to provide exhaustiveness
  * checking.
  */
-#define RB_NODE_TYPE(node) ((enum rb_node_type) (node)->type)
+#define RB_NODE_TYPE(node) ((enum rb_node_type) (RB_NODE(node)->type))
 
 /**
  * Return true if the type of the given node matches the given type.

@@ -307,7 +307,6 @@ free_rb_ast_value(rb_ast_t *ast, void *ctx, rb_node_t *node)
       case RB_PROGRAM_NODE:
         {
             rb_program_node_t *n = (rb_program_node_t *)node;
-            pm_constant_id_list_free(&n->locals);
             break;
         }
       case RB_STATEMENTS_NODE:

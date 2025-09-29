@@ -5,7 +5,6 @@
 #include "internal/ruby_parser.h"
 
 #include "node.h"
-#include "rb_node_compile.h"
 #include "rubyparser.h"
 #include "internal/error.h"
 
@@ -743,94 +742,75 @@ static const rb_data_type_t ast_data_type = {
     0, 0, RUBY_TYPED_THREAD_SAFE_FREE
 };
 
-static void
-ast_scope_free(void *ptr)
+static VALUE
+ast_alloc(void)
 {
-    rb_ast_scope_t *ast_scope = (rb_ast_scope_t *)ptr;
-    rb_ast_free(ast_scope->ast);
-    rb_scope_node_destroy(&ast_scope->scope_node);
+    return TypedData_Wrap_Struct(0, &ast_data_type, NULL);
 }
-
-static const rb_data_type_t ast_scope_data_type = {
-    "AST",
-    {
-        NULL,
-        ast_scope_free,
-        NULL, // No dsize() because this object does not appear in ObjectSpace.
-    },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
-};
-
 
 VALUE
 rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
 {
     struct ruby_parser *parser;
-    rb_ast_scope_t *ast_scope;
-    VALUE ast_scope_value = TypedData_Make_Struct(0, rb_ast_scope_t, &ast_scope_data_type, ast_scope);
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast_scope->ast = parser_compile_file_path(parser, fname, file, start);
+    DATA_PTR(ast_value) = parser_compile_file_path(parser, fname, file, start);
     RB_GC_GUARD(vparser);
 
-    return ast_scope_value;
+    return ast_value;
 }
 
 VALUE
 rb_parser_compile_array(VALUE vparser, VALUE fname, VALUE array, int start)
 {
     struct ruby_parser *parser;
-    rb_ast_scope_t *ast_scope;
-    VALUE ast_scope_value = TypedData_Make_Struct(0, rb_ast_scope_t, &ast_scope_data_type, ast_scope);
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast_scope->ast = parser_compile_array(parser, fname, array, start);
+    DATA_PTR(ast_value) = parser_compile_array(parser, fname, array, start);
     RB_GC_GUARD(vparser);
 
-    return ast_scope_value;
+    return ast_value;
 }
 
 VALUE
 rb_parser_compile_generic(VALUE vparser, rb_parser_lex_gets_func *lex_gets, VALUE fname, VALUE input, int start)
 {
     struct ruby_parser *parser;
-    rb_ast_scope_t *ast_scope;
-    VALUE ast_scope_value = TypedData_Make_Struct(0, rb_ast_scope_t, &ast_scope_data_type, ast_scope);
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast_scope->ast = parser_compile_generic(parser, lex_gets, fname, input, start);
+    DATA_PTR(ast_value) = parser_compile_generic(parser, lex_gets, fname, input, start);
     RB_GC_GUARD(vparser);
 
-    return ast_scope_value;
+    return ast_value;
 }
 
 VALUE
 rb_parser_compile_string(VALUE vparser, const char *f, VALUE s, int line)
 {
     struct ruby_parser *parser;
-    rb_ast_scope_t *ast_scope;
-    VALUE ast_scope_value = TypedData_Make_Struct(0, rb_ast_scope_t, &ast_scope_data_type, ast_scope);
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast_scope->ast = parser_compile_string(parser, f, s, line);
-    rb_parse_process(ast_scope, ast_scope->ast->body.root, Qnil);
+    DATA_PTR(ast_value) = parser_compile_string(parser, f, s, line);
     RB_GC_GUARD(vparser);
 
-    return ast_scope_value;
+    return ast_value;
 }
 
 VALUE
 rb_parser_compile_string_path(VALUE vparser, VALUE f, VALUE s, int line)
 {
     struct ruby_parser *parser;
-    rb_ast_scope_t *ast_scope;
-    VALUE ast_scope_value = TypedData_Make_Struct(0, rb_ast_scope_t, &ast_scope_data_type, ast_scope);
+    VALUE ast_value = ast_alloc();
 
     TypedData_Get_Struct(vparser, struct ruby_parser, &ruby_parser_data_type, parser);
-    ast_scope->ast = parser_compile_string_path(parser, f, s, line);
+    DATA_PTR(ast_value) = parser_compile_string_path(parser, f, s, line);
     RB_GC_GUARD(vparser);
 
-    return ast_scope_value;
+    return ast_value;
 }
 
 VALUE
@@ -1169,13 +1149,4 @@ rb_ruby_ast_data_get(VALUE ast_value)
     if (NIL_P(ast_value)) return NULL;
     TypedData_Get_Struct(ast_value, rb_ast_t, &ast_data_type, ast);
     return ast;
-}
-
-rb_ast_scope_t *
-rb_ruby_ast_scope_data_get(VALUE ast_scope_value)
-{
-    rb_ast_scope_t *ast_scope;
-    if (NIL_P(ast_scope_value)) return NULL;
-    TypedData_Get_Struct(ast_scope_value, rb_ast_scope_t, &ast_scope_data_type, ast_scope);
-    return ast_scope;
 }
