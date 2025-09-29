@@ -826,12 +826,14 @@ Init_enable_namespace(void)
 
 #ifdef RUBY_DEBUG
 
+/* :nodoc: */
 static VALUE
 rb_namespace_s_root(VALUE recv)
 {
     return root_namespace->ns_object;
 }
 
+/* :nodoc: */
 static VALUE
 rb_namespace_s_main(VALUE recv)
 {
@@ -908,6 +910,7 @@ dump_classext_i(rb_classext_t *ext, bool is_prime, VALUE _ns, void *data)
     }
 }
 
+/* :nodoc: */
 static VALUE
 rb_f_dump_classext(VALUE recv, VALUE klass)
 {
