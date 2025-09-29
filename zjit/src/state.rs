@@ -51,8 +51,8 @@ pub struct ZJITState {
     /// Trampoline to call function_stub_hit
     function_stub_hit_trampoline: CodePtr,
 
-    /// Counter pointers for unoptimized C functions
-    unoptimized_cfunc_counter_pointers: HashMap<String, Box<u64>>,
+    /// Counter pointers for full frame C functions
+    full_frame_cfunc_counter_pointers: HashMap<String, Box<u64>>,
 
     /// Locations of side exists within generated code
     exit_locations: Option<SideExitLocations>,
@@ -97,7 +97,7 @@ impl ZJITState {
             exit_trampoline,
             function_stub_hit_trampoline,
             exit_trampoline_with_counter: exit_trampoline,
-            unoptimized_cfunc_counter_pointers: HashMap::new(),
+            full_frame_cfunc_counter_pointers: HashMap::new(),
             exit_locations,
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
@@ -162,9 +162,9 @@ impl ZJITState {
         &mut ZJITState::get_instance().send_fallback_counters
     }
 
-    /// Get a mutable reference to unoptimized cfunc counter pointers
-    pub fn get_unoptimized_cfunc_counter_pointers() -> &'static mut HashMap<String, Box<u64>> {
-        &mut ZJITState::get_instance().unoptimized_cfunc_counter_pointers
+    /// Get a mutable reference to full frame cfunc counter pointers
+    pub fn get_not_inlined_cfunc_counter_pointers() -> &'static mut HashMap<String, Box<u64>> {
+        &mut ZJITState::get_instance().full_frame_cfunc_counter_pointers
     }
 
     /// Was --zjit-save-compiled-iseqs specified?

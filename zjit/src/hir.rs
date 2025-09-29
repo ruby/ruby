@@ -2266,9 +2266,9 @@ impl Function {
             self_type: Type,
             send: Insn,
             send_insn_id: InsnId,
-        ) -> Result<(), Option<*const rb_callable_method_entry_struct>> {
+        ) -> Result<(), ()> {
             let Insn::SendWithoutBlock { mut recv, cd, mut args, state, .. } = send else {
-                return Err(None);
+                return Err(());
             };
 
             let call_info = unsafe { (*cd).ci };
@@ -2280,20 +2280,20 @@ impl Function {
                 (class, None)
             } else {
                 let iseq_insn_idx = fun.frame_state(state).insn_idx;
-                let Some(recv_type) = fun.profiled_type_of_at(recv, iseq_insn_idx) else { return Err(None) };
+                let Some(recv_type) = fun.profiled_type_of_at(recv, iseq_insn_idx) else { return Err(()) };
                 (recv_type.class(), Some(recv_type))
             };
 
             // Do method lookup
             let method: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
             if method.is_null() {
-                return Err(None);
+                return Err(());
             }
 
             // Filter for C methods
             let def_type = unsafe { get_cme_def_type(method) };
             if def_type != VM_METHOD_TYPE_CFUNC {
-                return Err(None);
+                return Err(());
             }
 
             // Find the `argc` (arity) of the C method, which describes the parameters it expects
@@ -2305,13 +2305,13 @@ impl Function {
                     //
                     // Bail on argc mismatch
                     if argc != cfunc_argc as u32 {
-                        return Err(Some(method));
+                        return Err(());
                     }
 
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
 
                     if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
-                        return Err(Some(method));
+                        return Err(());
                     }
 
                     gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
@@ -2334,6 +2334,9 @@ impl Function {
                         let ccall = fun.push_insn(block, Insn::CCall { cfun, args: cfunc_args, name: method_id, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
                     } else {
+                        if get_option!(stats) {
+                            count_not_inlined_cfunc(fun, block, method);
+                        }
                         let ccall = fun.push_insn(block, Insn::CCallWithFrame { cfun, args: cfunc_args, cme: method, name: method_id, state });
                         fun.make_equal_to(send_insn_id, ccall);
                     }
@@ -2343,12 +2346,15 @@ impl Function {
                 // Variadic method
                 -1 => {
                     if unsafe { rb_zjit_method_tracing_currently_enabled() } {
-                        return Err(None);
+                        return Err(());
                     }
                     // The method gets a pointer to the first argument
                     // func(int argc, VALUE *argv, VALUE recv)
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
                     if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
+                        if get_option!(stats) {
+                            count_not_inlined_cfunc(fun, block, method);
+                        }
                         gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
 
                         if recv_class.instance_can_have_singleton_class() {
@@ -2383,7 +2389,20 @@ impl Function {
                 _ => unreachable!("unknown cfunc kind: argc={argc}")
             }
 
-            Err(Some(method))
+            Err(())
+        }
+
+        fn count_not_inlined_cfunc(fun: &mut Function, block: BlockId, cme: *const rb_callable_method_entry_t) {
+            let owner = unsafe { (*cme).owner };
+            let called_id = unsafe { (*cme).called_id };
+            let class_name = get_class_name(owner);
+            let method_name = called_id.contents_lossy();
+            let qualified_method_name = format!("{}#{}", class_name, method_name);
+            let not_inlined_cfunc_counter_pointers = ZJITState::get_not_inlined_cfunc_counter_pointers();
+            let counter_ptr = not_inlined_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
+            let counter_ptr = &mut **counter_ptr as *mut u64;
+
+            fun.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
         }
 
         for block in self.rpo() {
@@ -2392,23 +2411,8 @@ impl Function {
             for insn_id in old_insns {
                 if let send @ Insn::SendWithoutBlock { recv, .. } = self.find(insn_id) {
                     let recv_type = self.type_of(recv);
-                    match reduce_to_ccall(self, block, recv_type, send, insn_id) {
-                        Ok(()) => continue,
-                        Err(Some(cme)) => {
-                            if get_option!(stats) {
-                                let owner = unsafe { (*cme).owner };
-                                let called_id = unsafe { (*cme).called_id };
-                                let class_name = get_class_name(owner);
-                                let method_name = called_id.contents_lossy();
-                                let qualified_method_name = format!("{}#{}", class_name, method_name);
-                                let unoptimized_cfunc_counter_pointers = ZJITState::get_unoptimized_cfunc_counter_pointers();
-                                let counter_ptr = unoptimized_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
-                                let counter_ptr = &mut **counter_ptr as *mut u64;
-
-                                self.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
-                            }
-                        }
-                        _ => {}
+                    if reduce_to_ccall(self, block, recv_type, send, insn_id).is_ok() {
+                        continue;
                     }
                 }
                 self.push_insn_id(block, insn_id);
