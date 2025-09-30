@@ -355,8 +355,7 @@ impl Type {
     fn is_builtin(class: VALUE) -> bool {
         types::ExactBitsAndClass
             .iter()
-            .find(|&(_, class_object)| unsafe { **class_object } == class)
-            .is_some()
+            .any(|&(_, class_object)| unsafe { *class_object } == class)
     }
 
     /// Union both types together, preserving specialization if possible.

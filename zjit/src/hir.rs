@@ -3206,7 +3206,7 @@ struct BytecodeInfo {
     has_blockiseq: bool,
 }
 
-fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &Vec<u32>) -> BytecodeInfo {
+fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeInfo {
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     let mut insn_idx = 0;
     let mut jump_targets: HashSet<u32> = opt_table.iter().copied().collect();
@@ -4194,7 +4194,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 }
 
 /// Compile an entry_block for the interpreter
-fn compile_entry_block(fun: &mut Function, jit_entry_insns: &Vec<u32>) {
+fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32]) {
     let entry_block = fun.entry_block;
     fun.push_insn(entry_block, Insn::EntryPoint { jit_entry_idx: None });
 

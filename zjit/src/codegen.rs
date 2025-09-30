@@ -573,7 +573,7 @@ fn gen_setlocal(asm: &mut Assembler, val: Opnd, val_type: Type, local_ep_offset:
     } else {
         // We're potentially writing a reference to an IMEMO/env object,
         // so take care of the write barrier with a function.
-        let local_index = local_ep_offset * -1;
+        let local_index = -local_ep_offset;
         asm_ccall!(asm, rb_vm_env_write, ep, local_index.into(), val);
     }
 }
