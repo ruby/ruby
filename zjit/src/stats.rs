@@ -2,6 +2,7 @@
 
 use std::time::Instant;
 use std::sync::atomic::Ordering;
+use crate::options::OPTIONS;
 
 #[cfg(feature = "stats_allocator")]
 #[path = "../../jit/src/lib.rs"]
@@ -475,11 +476,11 @@ pub struct SideExitLocations {
 
 /// Primitive called in zjit.rb
 ///
-/// Check if trace_exits generation is enabled. Requires the stats feature
-/// to be enabled.
+/// Check if trace_exits generation is enabled.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    if get_option!(stats) && get_option!(trace_side_exits) {
+    // Builtin zjit.rb calls this even if ZJIT is disabled, so OPTIONS may not be set.
+    if unsafe { OPTIONS.as_ref() }.is_some_and(|opts| opts.trace_side_exits) {
         Qtrue
     } else {
         Qfalse
@@ -490,7 +491,7 @@ pub extern "C" fn rb_zjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self:
 /// into raw, lines, and frames hash for RubyVM::YJIT.exit_locations.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    if !zjit_enabled_p() || !get_option!(stats) || !get_option!(trace_side_exits) {
+    if !zjit_enabled_p() || !get_option!(trace_side_exits) {
         return Qnil;
     }
 

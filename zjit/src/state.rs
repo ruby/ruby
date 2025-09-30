@@ -392,7 +392,7 @@ pub extern "C" fn rb_zjit_record_exit_stack(exit_pc: *const VALUE) {
 /// Mark `raw_samples` so they can be used by rb_zjit_add_frame.
 pub fn gc_mark_raw_samples() {
     // Return if ZJIT is not enabled
-    if !zjit_enabled_p() || !get_option!(stats) || !get_option!(trace_side_exits) {
+    if !zjit_enabled_p() || !get_option!(trace_side_exits) {
         return;
     }
 
