@@ -4,8 +4,6 @@ require_relative 'utils'
 if defined?(OpenSSL) && defined?(OpenSSL::PKey::DH)
 
 class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
-  NEW_KEYLEN = 2048
-
   def test_new_empty
     # pkeys are immutable with OpenSSL >= 3.0
     if openssl?(3, 0, 0)
@@ -18,22 +16,30 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end
 
   def test_new_generate
-    # This test is slow
-    dh = OpenSSL::PKey::DH.new(NEW_KEYLEN)
-    assert_key(dh)
+    begin
+      dh1 = OpenSSL::PKey::DH.new(512)
+    rescue OpenSSL::PKey::PKeyError
+      omit "generating 512-bit DH parameters failed; " \
+        "likely not supported by this OpenSSL build"
+    end
+    assert_equal(512, dh1.p.num_bits)
+    assert_key(dh1)
+
+    dh2 = OpenSSL::PKey::DH.generate(512)
+    assert_equal(512, dh2.p.num_bits)
+    assert_key(dh2)
+    assert_not_equal(dh1.p, dh2.p)
   end if ENV["OSSL_TEST_ALL"] == "1"
 
   def test_new_break
     unless openssl? && OpenSSL.fips_mode
-      assert_nil(OpenSSL::PKey::DH.new(NEW_KEYLEN) { break })
       assert_raise(RuntimeError) do
-        OpenSSL::PKey::DH.new(NEW_KEYLEN) { raise }
+        OpenSSL::PKey::DH.new(2048) { raise }
       end
     else
       # The block argument is not executed in FIPS case.
       # See https://github.com/ruby/openssl/issues/692 for details.
-      assert(OpenSSL::PKey::DH.new(NEW_KEYLEN) { break })
-      assert(OpenSSL::PKey::DH.new(NEW_KEYLEN) { raise })
+      assert_kind_of(OpenSSL::PKey::DH, OpenSSL::PKey::DH.new(2048) { raise })
     end
   end
 
@@ -56,15 +62,15 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end
 
   def test_DHparams
-    dh = Fixtures.pkey("dh2048_ffdhe2048")
-    dh_params = dh.public_key
+    dh_params = Fixtures.pkey("dh2048_ffdhe2048")
 
     asn1 = OpenSSL::ASN1::Sequence([
-      OpenSSL::ASN1::Integer(dh.p),
-      OpenSSL::ASN1::Integer(dh.g)
+      OpenSSL::ASN1::Integer(dh_params.p),
+      OpenSSL::ASN1::Integer(dh_params.g)
     ])
+    assert_equal(asn1.to_der, dh_params.to_der)
     key = OpenSSL::PKey::DH.new(asn1.to_der)
-    assert_same_dh dh_params, key
+    assert_same_dh_params(dh_params, key)
 
     pem = <<~EOF
     -----BEGIN DH PARAMETERS-----
@@ -76,14 +82,20 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
     -----END DH PARAMETERS-----
     EOF
+    assert_equal(pem, dh_params.export)
 
     key = OpenSSL::PKey::DH.new(pem)
-    assert_same_dh dh_params, key
+    assert_same_dh_params(dh_params, key)
+    assert_no_key(key)
     key = OpenSSL::PKey.read(pem)
-    assert_same_dh dh_params, key
+    assert_same_dh_params(dh_params, key)
+    assert_no_key(key)
 
-    assert_equal asn1.to_der, dh.to_der
-    assert_equal pem, dh.export
+    key = OpenSSL::PKey.generate_key(dh_params)
+    assert_same_dh_params(dh_params, key)
+    assert_key(key)
+    assert_equal(dh_params.to_der, key.to_der)
+    assert_equal(dh_params.to_pem, key.to_pem)
   end
 
   def test_public_key
@@ -96,14 +108,14 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
 
   def test_generate_key
     # Deprecated in v3.0.0; incompatible with OpenSSL 3.0
-    # Creates a copy with params only
-    dh = Fixtures.pkey("dh2048_ffdhe2048").public_key
+    dh = Fixtures.pkey("dh2048_ffdhe2048")
     assert_no_key(dh)
     dh.generate_key!
     assert_key(dh)
 
-    dh2 = dh.public_key
+    dh2 = OpenSSL::PKey::DH.new(dh.to_der)
     dh2.generate_key!
+    assert_not_equal(dh.pub_key, dh2.pub_key)
     assert_equal(dh.compute_key(dh2.pub_key), dh2.compute_key(dh.pub_key))
   end if !openssl?(3, 0, 0)
 
@@ -209,14 +221,14 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end
 
   def assert_key(dh)
-    assert(dh.public?)
-    assert(dh.private?)
-    assert(dh.pub_key)
-    assert(dh.priv_key)
+    assert_true(dh.public?)
+    assert_true(dh.private?)
+    assert_kind_of(OpenSSL::BN, dh.pub_key)
+    assert_kind_of(OpenSSL::BN, dh.priv_key)
   end
 
-  def assert_same_dh(expected, key)
-    check_component(expected, key, [:p, :q, :g, :pub_key, :priv_key])
+  def assert_same_dh_params(expected, key)
+    check_component(expected, key, [:p, :q, :g])
   end
 end
 
