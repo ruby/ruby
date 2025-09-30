@@ -153,6 +153,20 @@ To build with stats support:
 make -j
 ```
 
+### Tracing side exits
+
+Through [Stackprof](https://github.com/tmm1/stackprof), detailed information about the methods that the JIT side-exits from can be displayed after some execution of a program. Note that the use of `--zjit-trace-exits` must be used alongside `--zjit-stats`.
+
+```bash
+./miniruby --zjit-stats --zjit-trace-exits script.rb
+```
+
+A file called `zjit_exit_locations.dump` will be created in the same directory as `script.rb`. Viewing the side exited methods can be done with Stackprof:
+
+```bash
+stackprof path/to/zjit_exit_locations.dump
+```
+
 ## ZJIT Glossary
 
 This glossary contains terms that are helpful for understanding ZJIT.

@@ -5,6 +5,7 @@ use crate::codegen::IseqCallRef;
 use crate::stats::CompileError;
 use crate::{cruby::*, profile::IseqProfile, state::ZJITState, stats::with_time_stat, virtualmem::CodePtr};
 use crate::stats::Counter::gc_time_ns;
+use crate::state::gc_mark_raw_samples;
 
 /// This is all the data ZJIT stores on an ISEQ. We mark objects in this struct on GC.
 #[derive(Debug)]
@@ -249,4 +250,10 @@ pub fn remove_gc_offsets(payload_ptr: *mut IseqPayload, removed_range: &Range<Co
 /// Return true if given `Range<CodePtr>` ranges overlap with each other
 fn ranges_overlap<T>(left: &Range<T>, right: &Range<T>) -> bool where T: PartialOrd {
     left.start < right.end && right.start < left.end
+}
+
+/// Callback for marking GC objects inside [Invariants].
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_root_mark() {
+    gc_mark_raw_samples();
 }

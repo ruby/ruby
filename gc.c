@@ -3070,6 +3070,14 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
     }
 #endif
 
+#if USE_ZJIT
+    void rb_zjit_root_mark(void);
+    if (rb_zjit_enabled_p) {
+        MARK_CHECKPOINT("ZJIT");
+        rb_zjit_root_mark();
+    }
+#endif
+
     MARK_CHECKPOINT("machine_context");
     mark_current_machine_context(ec);
 
