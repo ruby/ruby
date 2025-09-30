@@ -10,7 +10,31 @@
 
 ::- find the latest build tool and its setup batch file.
 @set VSDEVCMD=
-@for /f "delims=" %%I in ('"%vswhere%" -products * -latest -property installationPath') do @(
+@set VSDEV_ARGS=
+@set where_opt=
+@set arch=
+:argloop
+@(set arg=%1) & if defined arg (shift) else (goto :argend)
+    @if "%arg%" == "-prerelease" (
+        set where_opt=-prerelease
+        goto :argloop
+    )
+    @if /i "%arg%" == "-arch" (
+        set arch=%1
+        shift
+        goto :argloop
+    )
+    @if /i "%arg:~0,6%" == "-arch=" (
+        set arch=%arg:~6%
+        goto :argloop
+    )
+
+    @set VSDEV_ARGS=%VSDEV_ARGS% %arg%
+    @goto :argloop
+:argend
+@if defined VSDEV_ARGS set VSDEV_ARGS=%VSDEV_ARGS:~1%
+
+@for /f "delims=" %%I in ('"%vswhere%" -products * -latest -property installationPath %where_opt%') do @(
   set VSDEVCMD=%%I\Common7\Tools\VsDevCmd.bat
 )
 @if not defined VSDEVCMD (
@@ -19,9 +43,14 @@
 )
 
 ::- default to the current processor.
-@set arch=%PROCESSOR_ARCHITECTURE%
+@set host_arch=%PROCESSOR_ARCHITECTURE%
+@if not defined arch set arch=%PROCESSOR_ARCHITECTURE%
 ::- `vsdevcmd.bat` requires arch names to be lowercase
 @for %%i in (a b c d e f g h i j k l m n o p q r s t u v w x y z) do @(
   call set arch=%%arch:%%i=%%i%%
+  call set host_arch=%%host_arch:%%i=%%i%%
 )
-@(endlocal && "%VSDEVCMD%" -arch=%arch% -host_arch=%arch% %*)
+@if "%arch%" == "x86_64" set arch=amd64
+
+::- chain to `vsdevcmd.bat`
+@(endlocal && "%VSDEVCMD%" -arch=%arch% -host_arch=%host_arch% %VSDEV_ARGS%)
