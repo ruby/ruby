@@ -1401,6 +1401,13 @@ impl Function {
         id
     }
 
+    fn remove_block(&mut self, block_id: BlockId) {
+        if BlockId(self.blocks.len() - 1) != block_id {
+            panic!("Can only remove the last block");
+        }
+        self.blocks.pop();
+    }
+
     /// Return a reference to the Block at the given index.
     pub fn block(&self, block_id: BlockId) -> &Block {
         &self.blocks[block_id.0]
@@ -1880,6 +1887,23 @@ impl Function {
             }
         }
         None
+    }
+
+    pub fn likely_a(&self, val: InsnId, ty: Type, state: InsnId) -> bool {
+        if self.type_of(val).is_subtype(ty) {
+            return true;
+        }
+        let frame_state = self.frame_state(state);
+        let iseq_insn_idx = frame_state.insn_idx as usize;
+        let Some(profiled_type) = self.profiled_type_of_at(val, iseq_insn_idx) else {
+            return false;
+        };
+        Type::from_profiled_type(profiled_type).is_subtype(ty)
+    }
+
+    pub fn coerce_to(&mut self, block: BlockId, val: InsnId, guard_type: Type, state: InsnId) -> InsnId {
+        if self.is_a(val, guard_type) { return val; }
+        self.push_insn(block, Insn::GuardType { val, guard_type, state })
     }
 
     fn likely_is_fixnum(&self, val: InsnId, profiled_type: ProfiledType) -> bool {
@@ -2405,6 +2429,20 @@ impl Function {
                         count_not_annotated_cfunc(fun, block, method);
                     }
                     let props = props.unwrap_or_default();
+
+                    // Try inlining the cfunc into HIR
+                    let tmp_block = fun.new_block(u32::MAX);
+                    if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
+                        // Copy contents of tmp_block to block
+                        assert!(block != tmp_block);
+                        let insns = fun.blocks[tmp_block.0].insns.drain(..).collect::<Vec<_>>();
+                        fun.blocks[block.0].insns.extend(insns);
+                        fun.make_equal_to(send_insn_id, replacement);
+                        fun.remove_block(tmp_block);
+                        return Ok(());
+                    }
+
+                    // No inling; emit a call
                     let return_type = props.return_type;
                     let elidable = props.elidable;
                     // Filter for a leaf and GC free function
@@ -9860,9 +9898,8 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
           v22:Fixnum = GuardType v9, Fixnum
-          v23:BasicObject = CCall itself@0x1038, v22
           CheckInterrupts
-          Return v23
+          Return v22
         ");
     }
 
@@ -9884,9 +9921,8 @@ mod opt_tests {
           v11:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
-          v22:BasicObject = CCall itself@0x1038, v11
           CheckInterrupts
-          Return v22
+          Return v11
         ");
     }
 
@@ -9913,7 +9949,6 @@ mod opt_tests {
           v14:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
-          v30:BasicObject = CCall itself@0x1038, v14
           PatchPoint NoEPEscape(test)
           v21:Fixnum[1] = Const Value(1)
           CheckInterrupts
@@ -11528,9 +11563,8 @@ mod opt_tests {
           v13:Fixnum[1] = Const Value(1)
           CheckInterrupts
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
-          v34:BasicObject = CCall itself@0x1038, v13
           CheckInterrupts
-          Return v34
+          Return v13
         ");
     }
 
@@ -12618,7 +12652,55 @@ mod opt_tests {
           v12:StringExact = StringCopy v10
           PatchPoint MethodRedefined(String@0x1008, to_s@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(String@0x1008)
-          v23:StringExact = CCallWithFrame to_s@0x1040, v12
+          CheckInterrupts
+          Return v12
+        ");
+    }
+
+    #[test]
+    fn test_inline_string_literal_to_s() {
+        eval(r#"
+            def test = "foo".to_s
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:StringExact = StringCopy v10
+          PatchPoint MethodRedefined(String@0x1008, to_s@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(String@0x1008)
+          CheckInterrupts
+          Return v12
+        ");
+    }
+
+    #[test]
+    fn test_inline_profiled_string_to_s() {
+        eval(r#"
+            def test(o) = o.to_s
+            test "foo"
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, to_s@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v23:StringExact = GuardType v9, StringExact
           CheckInterrupts
           Return v23
         ");
