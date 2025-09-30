@@ -169,9 +169,12 @@ jobs:
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
 
-      - if: ${{ failure() }}
+      - name: Dump crash logs
+        if: ${{ failure() }}
         continue-on-error: true
-        run: tail --verbose --lines=+1 rb_crash_*.txt
+        run: |
+          tail --verbose --lines=+1 rb_crash_*.txt
+          exit 1
 
       - uses: ./.github/actions/slack
         with:
