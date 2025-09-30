@@ -12,6 +12,7 @@ use crate::cruby::*;
 use std::collections::HashMap;
 use std::ffi::c_void;
 use crate::hir_type::{types, Type};
+use crate::hir;
 
 pub struct Annotations {
     cfuncs: HashMap<*mut c_void, FnProperties>,
@@ -29,6 +30,7 @@ pub struct FnProperties {
     pub return_type: Type,
     /// Whether it's legal to remove the call if the result is unused
     pub elidable: bool,
+    pub inline: fn(&mut hir::Function, hir::BlockId, hir::InsnId, &[hir::InsnId], hir::InsnId) -> Option<hir::InsnId>,
 }
 
 impl Annotations {
@@ -140,8 +142,12 @@ pub fn init() -> Annotations {
     let builtin_funcs = &mut HashMap::new();
 
     macro_rules! annotate {
+        ($module:ident, $method_name:literal, $inline:ident) => {
+            let props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: types::BasicObject, inline: $inline };
+            annotate_c_method(cfuncs, unsafe { $module }, $method_name, props);
+        };
         ($module:ident, $method_name:literal, $return_type:expr, $($properties:ident),+) => {
-            let mut props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: $return_type };
+            let mut props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: $return_type, inline: no_inline };
             $(
                 props.$properties = true;
             )+
@@ -158,7 +164,8 @@ pub fn init() -> Annotations {
                 no_gc: false,
                 leaf: false,
                 elidable: false,
-                return_type: $return_type
+                return_type: $return_type,
+                inline: no_inline,
             };
             $(props.$properties = true;)+
             annotate_builtin_method(builtin_funcs, unsafe { $module }, $method_name, props);
@@ -178,6 +185,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cBasicObject, "==", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "initialize", types::NilClass, no_gc, leaf, elidable);
+    annotate!(rb_cString, "to_s", inline_string_to_s);
 
     annotate_builtin!(rb_mKernel, "Float", types::Float);
     annotate_builtin!(rb_mKernel, "Integer", types::Integer);
@@ -187,4 +195,16 @@ pub fn init() -> Annotations {
         cfuncs: std::mem::take(cfuncs),
         builtin_funcs: std::mem::take(builtin_funcs),
     }
+}
+
+fn no_inline(_fun: &mut hir::Function, _block: hir::BlockId, _recv: hir::InsnId, _args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    None
+}
+
+fn inline_string_to_s(fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    if args.len() == 0 && fun.likely_a(recv, types::StringExact, state) {
+        // No need to coerce the receiver; that is done by the SendWithoutBlock rewriting.
+        return Some(recv);
+    }
+    None
 }
