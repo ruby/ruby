@@ -221,8 +221,8 @@ class << RubyVM::ZJIT
     return if stats.empty?
 
     counters.transform_keys! { |key| key.to_s.delete_prefix(prefix) }
-    left_pad = counters.keys.map(&:size).max
-    right_pad = counters.values.map { |value| number_with_delimiter(value).size }.max
+    key_pad = counters.keys.map(&:size).max
+    value_pad = counters.values.map { |value| number_with_delimiter(value).size }.max
     total = counters.values.sum
 
     counters = counters.to_a
@@ -234,9 +234,7 @@ class << RubyVM::ZJIT
     buf << " (%.1f%% of total #{number_with_delimiter(total)})" % (100.0 * counters.map(&:last).sum / total) if limit
     buf << ":\n"
     counters.each do |key, value|
-      padded_key = key.rjust(left_pad, ' ')
-      padded_value = number_with_delimiter(value).rjust(right_pad, ' ')
-      buf << "  #{padded_key}: #{padded_value} #{'(%4.1f%%)' % (100.0 * value / total)}\n"
+      buf << "  %*s: %*s (%4.1f%%)\n" % [key_pad, key, value_pad, number_with_delimiter(value), (100.0 * value / total)]
     end
   end
 
