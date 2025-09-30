@@ -398,7 +398,7 @@
 # - #gsub!: Replaces each substring that matches a given pattern with a given replacement string;
 #   returns +self+ if any changes, +nil+ otherwise.
 # - #succ! (aliased as #next!): Returns +self+ modified to become its own successor.
-# - #initialize_copy (aliased as #replace): Returns +self+ with its entire content replaced by a given string.
+# - #replace (aliased as #initialize_copy): Returns +self+ with its entire content replaced by a given string.
 # - #reverse!: Returns +self+ with its characters in reverse order.
 # - #setbyte: Sets the byte at a given integer offset to a given value; returns the argument.
 # - #tr!: Replaces specified characters in +self+ with specified replacement characters;
