@@ -236,7 +236,7 @@ class << RubyVM::ZJIT
     counters.each do |key, value|
       padded_key = key.rjust(left_pad, ' ')
       padded_value = number_with_delimiter(value).rjust(right_pad, ' ')
-      buf << "  #{padded_key}: #{padded_value} (%4.1f%%)\n" % (100.0 * value / total)
+      buf << "  #{padded_key}: #{padded_value} #{'(%4.1f%%)' % (100.0 * value / total)}\n"
     end
   end
 
