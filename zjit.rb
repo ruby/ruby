@@ -39,11 +39,13 @@ class << RubyVM::ZJIT
     buf = +"***ZJIT: Printing ZJIT statistics on exit***\n"
     stats = self.stats
 
-    # Show non-exit counters
-    print_counters_with_prefix(prefix: 'dynamic_send_type_', prompt: 'dynamic send types', buf:, stats:, limit: 20)
-    print_counters_with_prefix(prefix: 'unspecialized_def_type_', prompt: 'send fallback unspecialized def_types', buf:, stats:, limit: 20)
-    print_counters_with_prefix(prefix: 'send_fallback_', prompt: 'dynamic send types', buf:, stats:, limit: 20)
+    # Show counters independent from exit_* or dynamic_send_*
     print_counters_with_prefix(prefix: 'not_optimized_cfuncs_', prompt: 'unoptimized sends to C functions', buf:, stats:, limit: 20)
+
+    # Show fallback counters, ordered by the typical amount of fallbacks for the prefix at the time
+    print_counters_with_prefix(prefix: 'unspecialized_def_type_', prompt: 'not optimized method types', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'not_optimized_yarv_insn_', prompt: 'not optimized instructions', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'send_fallback_', prompt: 'send fallback reasons', buf:, stats:, limit: 20)
 
     # Show exit counters, ordered by the typical amount of exits for the prefix at the time
     print_counters_with_prefix(prefix: 'unhandled_yarv_insn_', prompt: 'unhandled YARV insns', buf:, stats:, limit: 20)

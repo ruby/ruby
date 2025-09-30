@@ -12,12 +12,12 @@ use crate::backend::current::{Reg, ALLOC_REGS};
 use crate::invariants::{track_bop_assumption, track_cme_assumption, track_no_ep_escape_assumption, track_no_trace_point_assumption, track_single_ractor_assumption, track_stable_constant_names_assumption};
 use crate::gc::{append_gc_offsets, get_or_create_iseq_payload, get_or_create_iseq_payload_ptr, IseqCodePtrs, IseqPayload, IseqStatus};
 use crate::state::ZJITState;
-use crate::stats::{exit_counter_for_compile_error, incr_counter, incr_counter_by, CompileError};
-use crate::stats::{counter_ptr, with_time_stat, Counter, send_fallback_counter, Counter::{compile_time_ns, exit_compile_error}};
+use crate::stats::{send_fallback_counter, exit_counter_for_compile_error, incr_counter, incr_counter_by, send_fallback_counter_for_method_type, send_fallback_counter_ptr_for_opcode, CompileError};
+use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SCRATCH_OPND, SP};
-use crate::hir::{iseq_to_hir, BlockId, BranchEdge, Invariant, MethodType, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
-use crate::hir::{Const, FrameState, Function, Insn, InsnId};
+use crate::hir::{iseq_to_hir, BlockId, BranchEdge, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
+use crate::hir::{Const, FrameState, Function, Insn, InsnId, SendFallbackReason};
 use crate::hir_type::{types, Type};
 use crate::options::get_option;
 use crate::cast::IntoUsize;
@@ -366,15 +366,15 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Jump(branch) => no_output!(gen_jump(jit, asm, branch)),
         Insn::IfTrue { val, target } => no_output!(gen_if_true(jit, asm, opnd!(val), target)),
         Insn::IfFalse { val, target } => no_output!(gen_if_false(jit, asm, opnd!(val), target)),
-        &Insn::Send { cd, blockiseq, state, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state)),
-        &Insn::SendForward { cd, blockiseq, state, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state)),
-        Insn::SendWithoutBlock { cd, state, def_type, .. } => gen_send_without_block(jit, asm, *cd, *def_type, &function.frame_state(*state)),
+        &Insn::Send { cd, blockiseq, state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
+        &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
+        &Insn::SendWithoutBlock { cd, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
         // Give up SendWithoutBlockDirect for 6+ args since asm.ccall() doesn't support it.
         Insn::SendWithoutBlockDirect { cd, state, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() => // +1 for self
-            gen_send_without_block(jit, asm, *cd, None, &function.frame_state(*state)),
+            gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), SendFallbackReason::SendWithoutBlockDirectTooManyArgs),
         Insn::SendWithoutBlockDirect { cme, iseq, recv, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state)),
-        &Insn::InvokeSuper { cd, blockiseq, state, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state)),
-        Insn::InvokeBlock { cd, state, .. } => gen_invokeblock(jit, asm, *cd, &function.frame_state(*state)),
+        &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
+        &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
         // Ensure we have enough room fit ec, self, and arguments
         // TODO remove this check when we have stack args (we can use Time.new to test it)
         Insn::InvokeBuiltin { bf, state, .. } if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) => return Err(*state),
@@ -981,9 +981,9 @@ fn gen_send(
     cd: *const rb_call_data,
     blockiseq: IseqPtr,
     state: &FrameState,
+    reason: SendFallbackReason,
 ) -> lir::Opnd {
-    gen_incr_counter(asm, Counter::dynamic_send_count);
-    gen_incr_counter(asm, Counter::dynamic_send_type_send);
+    gen_incr_send_fallback_counter(asm, reason);
 
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
@@ -1003,9 +1003,9 @@ fn gen_send_forward(
     cd: *const rb_call_data,
     blockiseq: IseqPtr,
     state: &FrameState,
+    reason: SendFallbackReason,
 ) -> lir::Opnd {
-    gen_incr_counter(asm, Counter::dynamic_send_count);
-    gen_incr_counter(asm, Counter::dynamic_send_type_send_forward);
+    gen_incr_send_fallback_counter(asm, reason);
 
     gen_prepare_non_leaf_call(jit, asm, state);
 
@@ -1024,15 +1024,10 @@ fn gen_send_without_block(
     jit: &mut JITState,
     asm: &mut Assembler,
     cd: *const rb_call_data,
-    def_type: Option<MethodType>,
     state: &FrameState,
+    reason: SendFallbackReason,
 ) -> lir::Opnd {
-    gen_incr_counter(asm, Counter::dynamic_send_count);
-    gen_incr_counter(asm, Counter::dynamic_send_type_send_without_block);
-
-    if let Some(def_type) = def_type {
-        gen_incr_counter(asm, send_fallback_counter(def_type));
-    }
+    gen_incr_send_fallback_counter(asm, reason);
 
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
@@ -1118,9 +1113,9 @@ fn gen_invokeblock(
     asm: &mut Assembler,
     cd: *const rb_call_data,
     state: &FrameState,
+    reason: SendFallbackReason,
 ) -> lir::Opnd {
-    gen_incr_counter(asm, Counter::dynamic_send_count);
-    gen_incr_counter(asm, Counter::dynamic_send_type_invokeblock);
+    gen_incr_send_fallback_counter(asm, reason);
 
     gen_prepare_non_leaf_call(jit, asm, state);
 
@@ -1141,9 +1136,9 @@ fn gen_invokesuper(
     cd: *const rb_call_data,
     blockiseq: IseqPtr,
     state: &FrameState,
+    reason: SendFallbackReason,
 ) -> lir::Opnd {
-    gen_incr_counter(asm, Counter::dynamic_send_count);
-    gen_incr_counter(asm, Counter::dynamic_send_type_invokesuper);
+    gen_incr_send_fallback_counter(asm, reason);
 
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_comment!(asm, "call super with dynamic dispatch");
@@ -1545,6 +1540,23 @@ fn gen_incr_counter(asm: &mut Assembler, counter: Counter) {
     if get_option!(stats) {
         let ptr = counter_ptr(counter);
         gen_incr_counter_ptr(asm, ptr);
+    }
+}
+
+/// Increment a counter for each DynamicSendReason. If the variant has
+/// a counter prefix to break down the details, increment that as well.
+fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReason) {
+    gen_incr_counter(asm, send_fallback_counter(reason));
+
+    use SendFallbackReason::*;
+    match reason {
+        NotOptimizedInstruction(opcode) => {
+            gen_incr_counter_ptr(asm, send_fallback_counter_ptr_for_opcode(opcode));
+        }
+        SendWithoutBlockNotOptimizedMethodType(method_type) => {
+            gen_incr_counter(asm, send_fallback_counter_for_method_type(method_type));
+        }
+        _ => {}
     }
 }
 
