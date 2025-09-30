@@ -7052,10 +7052,12 @@ rb_str_reverse(VALUE str)
  *
  *  Returns +self+ with its characters reversed:
  *
- *    s = 'stressed'
- *    s.reverse! # => "desserts"
- *    s          # => "desserts"
+ *    'drawer'.reverse!       # => "reward"
+ *    'reviled'.reverse!      # => "deliver"
+ *    'stressed'.reverse!     # => "desserts"
+ *    'semordnilaps'.reverse! # => "spalindromes"
  *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
