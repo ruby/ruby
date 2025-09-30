@@ -1986,7 +1986,7 @@ impl Function {
                             }
                             let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, state });
                             self.make_equal_to(insn_id, getivar);
-                        } else if def_type == VM_METHOD_TYPE_ATTRSET && args.len() == 1 {
+                        } else if let (VM_METHOD_TYPE_ATTRSET, [setter_rhs]) = (def_type, args.as_slice()) {
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
