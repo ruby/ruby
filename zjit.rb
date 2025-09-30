@@ -119,7 +119,7 @@ class << RubyVM::ZJIT
       raise ArgumentError, "--zjit-trace-exits must be enabled to use dump_exit_locations."
     end
 
-    File.write(filename, Marshal.dump(RubyVM::ZJIT.exit_locations))
+    File.binwrite(filename, Marshal.dump(RubyVM::ZJIT.exit_locations))
   end
 
   # Check if `--zjit-stats` is used
