@@ -661,6 +661,7 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invarian
 /// Lowering for [`Insn::CCall`]. This is a low-level raw call that doesn't know
 /// anything about the callee, so handling for e.g. GC safety is dealt with elsewhere.
 fn gen_ccall(asm: &mut Assembler, cfun: *const u8, args: Vec<Opnd>) -> lir::Opnd {
+    gen_incr_counter(asm, Counter::inline_cfunc_optimized_send_count);
     asm.ccall(cfun, args)
 }
 
@@ -675,6 +676,8 @@ fn gen_ccall_variadic(
     cme: *const rb_callable_method_entry_t,
     state: &FrameState,
 ) -> lir::Opnd {
+    gen_incr_counter(asm, Counter::variadic_cfunc_optimized_send_count);
+
     gen_prepare_non_leaf_call(jit, asm, state);
 
     let stack_growth = state.stack_size();
@@ -1051,6 +1054,8 @@ fn gen_send_without_block_direct(
     args: Vec<Opnd>,
     state: &FrameState,
 ) -> lir::Opnd {
+    gen_incr_counter(asm, Counter::iseq_optimized_send_count);
+
     let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.as_usize();
     let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.as_usize();
     gen_stack_overflow_check(jit, asm, state, stack_growth);

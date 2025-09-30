@@ -21,6 +21,9 @@ macro_rules! make_counters {
         dynamic_send {
             $($dynamic_send_counter_name:ident,)+
         }
+        optimized_send {
+            $($optimized_send_counter_name:ident,)+
+        }
         $($counter_name:ident,)+
     ) => {
         /// Struct containing the counter values
@@ -29,6 +32,7 @@ macro_rules! make_counters {
             $(pub $default_counter_name: u64,)+
             $(pub $exit_counter_name: u64,)+
             $(pub $dynamic_send_counter_name: u64,)+
+            $(pub $optimized_send_counter_name: u64,)+
             $(pub $counter_name: u64,)+
         }
 
@@ -39,6 +43,7 @@ macro_rules! make_counters {
             $($default_counter_name,)+
             $($exit_counter_name,)+
             $($dynamic_send_counter_name,)+
+            $($optimized_send_counter_name,)+
             $($counter_name,)+
         }
 
@@ -48,6 +53,7 @@ macro_rules! make_counters {
                     $( Counter::$default_counter_name => stringify!($default_counter_name).to_string(), )+
                     $( Counter::$exit_counter_name => stringify!($exit_counter_name).to_string(), )+
                     $( Counter::$dynamic_send_counter_name => stringify!($dynamic_send_counter_name).to_string(), )+
+                    $( Counter::$optimized_send_counter_name => stringify!($optimized_send_counter_name).to_string(), )+
                     $( Counter::$counter_name => stringify!($counter_name).to_string(), )+
                 }
             }
@@ -60,6 +66,7 @@ macro_rules! make_counters {
                 $( Counter::$default_counter_name => std::ptr::addr_of_mut!(counters.$default_counter_name), )+
                 $( Counter::$exit_counter_name => std::ptr::addr_of_mut!(counters.$exit_counter_name), )+
                 $( Counter::$dynamic_send_counter_name => std::ptr::addr_of_mut!(counters.$dynamic_send_counter_name), )+
+                $( Counter::$optimized_send_counter_name => std::ptr::addr_of_mut!(counters.$optimized_send_counter_name), )+
                 $( Counter::$counter_name => std::ptr::addr_of_mut!(counters.$counter_name), )+
             }
         }
@@ -78,6 +85,11 @@ macro_rules! make_counters {
         /// List of other counters that are summed as dynamic_send_count.
         pub const DYNAMIC_SEND_COUNTERS: &'static [Counter] = &[
             $( Counter::$dynamic_send_counter_name, )+
+        ];
+
+        /// List of other counters that are summed as optimized_send_count.
+        pub const OPTIMIZED_SEND_COUNTERS: &'static [Counter] = &[
+            $( Counter::$optimized_send_counter_name, )+
         ];
 
         /// List of other counters that are available only for --zjit-stats.
@@ -138,6 +150,13 @@ make_counters! {
         send_fallback_send_without_block_direct_too_many_args,
         send_fallback_obj_to_string_not_string,
         send_fallback_not_optimized_instruction,
+    }
+
+    // Optimized send counters that are summed as optimized_send_count
+    optimized_send {
+        iseq_optimized_send_count,
+        inline_cfunc_optimized_send_count,
+        variadic_cfunc_optimized_send_count,
     }
 
     // compile_error_: Compile error reasons
@@ -420,6 +439,16 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
         set_stat_usize!(hash, &counter.name(), count);
     }
     set_stat_usize!(hash, "dynamic_send_count", dynamic_send_count);
+
+    // Set optimized send counters
+    let mut optimized_send_count = 0;
+    for &counter in OPTIMIZED_SEND_COUNTERS {
+        let count = unsafe { *counter_ptr(counter) };
+        optimized_send_count += count;
+        set_stat_usize!(hash, &counter.name(), count);
+    }
+    set_stat_usize!(hash, "optimized_send_count", optimized_send_count);
+    set_stat_usize!(hash, "send_count", dynamic_send_count + optimized_send_count);
 
     // Set send fallback counters for NotOptimizedInstruction
     let send_fallback_counters = ZJITState::get_send_fallback_counters();
