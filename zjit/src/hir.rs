@@ -1986,7 +1986,7 @@ impl Function {
                             }
                             let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, state });
                             self.make_equal_to(insn_id, getivar);
-                        } else if let (VM_METHOD_TYPE_ATTRSET, [setter_rhs]) = (def_type, args.as_slice()) {
+                        } else if let (VM_METHOD_TYPE_ATTRSET, [val]) = (def_type, args.as_slice()) {
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
@@ -2001,7 +2001,6 @@ impl Function {
                                     self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
                                 }
                             }
-                            let val = args[0];
                             self.push_insn(block, Insn::SetIvar { self_val: recv, id, val, state });
                             self.make_equal_to(insn_id, val);
                         } else {
