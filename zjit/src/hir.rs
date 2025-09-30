@@ -15,6 +15,7 @@ use crate::hir_type::{Type, types};
 use crate::bitset::BitSet;
 use crate::profile::{TypeDistributionSummary, ProfiledType};
 use crate::stats::Counter;
+use SendFallbackReason::*;
 
 /// An index of an [`Insn`] in a [`Function`]. This is a popular
 /// type since this effectively acts as a pointer to an [`Insn`].
@@ -514,6 +515,21 @@ impl std::fmt::Display for SideExitReason {
     }
 }
 
+/// Reason why a send-ish instruction cannot be optimized from a fallback instruction
+#[derive(Debug, Clone, Copy)]
+pub enum SendFallbackReason {
+    SendWithoutBlockPolymorphic,
+    SendWithoutBlockNoProfiles,
+    SendWithoutBlockCfuncNotVariadic,
+    SendWithoutBlockCfuncArrayVariadic,
+    SendWithoutBlockNotOptimizedMethodType(MethodType),
+    SendWithoutBlockDirectTooManyArgs,
+    ObjToStringNotString,
+    /// Initial fallback reason for every instruction, which should be mutated to
+    /// a more actionable reason when an attempt to specialize the instruction fails.
+    NotOptimizedInstruction(ruby_vminsn_type),
+}
+
 /// An instruction in the SSA IR. The output of an instruction is referred to by the index of
 /// the instruction ([`InsnId`]). SSA form enables this, and [`UnionFind`] ([`Function::find`])
 /// helps with editing.
@@ -638,13 +654,39 @@ pub enum Insn {
         recv: InsnId,
         cd: *const rb_call_data,
         args: Vec<InsnId>,
-        def_type: Option<MethodType>, // Assigned in `optimize_direct_sends` if it's not optimized
         state: InsnId,
+        reason: SendFallbackReason,
     },
-    Send { recv: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
-    SendForward { recv: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
-    InvokeSuper { recv: InsnId, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
-    InvokeBlock { cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
+    Send {
+        recv: InsnId,
+        cd: *const rb_call_data,
+        blockiseq: IseqPtr,
+        args: Vec<InsnId>,
+        state: InsnId,
+        reason: SendFallbackReason,
+    },
+    SendForward {
+        recv: InsnId,
+        cd: *const rb_call_data,
+        blockiseq: IseqPtr,
+        args: Vec<InsnId>,
+        state: InsnId,
+        reason: SendFallbackReason,
+    },
+    InvokeSuper {
+        recv: InsnId,
+        cd: *const rb_call_data,
+        blockiseq: IseqPtr,
+        args: Vec<InsnId>,
+        state: InsnId,
+        reason: SendFallbackReason,
+    },
+    InvokeBlock {
+        cd: *const rb_call_data,
+        args: Vec<InsnId>,
+        state: InsnId,
+        reason: SendFallbackReason,
+    },
 
     /// Optimized ISEQ call
     SendWithoutBlockDirect {
@@ -1442,12 +1484,12 @@ impl Function {
                 str: find!(str),
                 state,
             },
-            &SendWithoutBlock { recv, cd, ref args, def_type, state } => SendWithoutBlock {
+            &SendWithoutBlock { recv, cd, ref args, state, reason } => SendWithoutBlock {
                 recv: find!(recv),
                 cd,
                 args: find_vec!(args),
-                def_type,
                 state,
+                reason,
             },
             &SendWithoutBlockDirect { recv, cd, cme, iseq, ref args, state } => SendWithoutBlockDirect {
                 recv: find!(recv),
@@ -1457,31 +1499,35 @@ impl Function {
                 args: find_vec!(args),
                 state,
             },
-            &Send { recv, cd, blockiseq, ref args, state } => Send {
+            &Send { recv, cd, blockiseq, ref args, state, reason } => Send {
                 recv: find!(recv),
                 cd,
                 blockiseq,
                 args: find_vec!(args),
                 state,
+                reason,
             },
-            &SendForward { recv, cd, blockiseq, ref args, state } => SendForward {
+            &SendForward { recv, cd, blockiseq, ref args, state, reason } => SendForward {
                 recv: find!(recv),
                 cd,
                 blockiseq,
                 args: find_vec!(args),
                 state,
+                reason,
             },
-            &InvokeSuper { recv, cd, blockiseq, ref args, state } => InvokeSuper {
+            &InvokeSuper { recv, cd, blockiseq, ref args, state, reason } => InvokeSuper {
                 recv: find!(recv),
                 cd,
                 blockiseq,
                 args: find_vec!(args),
                 state,
+                reason,
             },
-            &InvokeBlock { cd, ref args, state } => InvokeBlock {
+            &InvokeBlock { cd, ref args, state, reason } => InvokeBlock {
                 cd,
                 args: find_vec!(args),
                 state,
+                reason,
             },
             &InvokeBuiltin { bf, ref args, state, return_type } => InvokeBuiltin { bf, args: find_vec!(args), state, return_type },
             &ArrayDup { val, state } => ArrayDup { val: find!(val), state },
@@ -1512,6 +1558,22 @@ impl Function {
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
             &ArrayPush { array, val, state } => ArrayPush { array: find!(array), val: find!(val), state },
             &CheckInterrupts { state } => CheckInterrupts { state },
+        }
+    }
+
+    /// Update DynamicSendReason for the instruction at insn_id
+    fn set_dynamic_send_reason(&mut self, insn_id: InsnId, dynamic_send_reason: SendFallbackReason) {
+        use Insn::*;
+        if get_option!(stats) {
+            match self.insns.get_mut(insn_id.0).unwrap() {
+                Send { reason, .. }
+                | SendForward { reason, .. }
+                | SendWithoutBlock { reason, .. }
+                | InvokeSuper { reason, .. }
+                | InvokeBlock { reason, .. }
+                => *reason = dynamic_send_reason,
+                _ => unreachable!("unexpected instruction {} at {insn_id}", self.find(insn_id))
+            }
         }
     }
 
@@ -1927,12 +1989,11 @@ impl Function {
                             let Some(recv_type) = self.profiled_type_of_at(recv, frame_state.insn_idx) else {
                                 if get_option!(stats) {
                                     match self.is_polymorphic_at(recv, frame_state.insn_idx) {
-                                        Some(true) => self.push_insn(block, Insn::IncrCounter(Counter::send_fallback_polymorphic)),
+                                        Some(true) => self.set_dynamic_send_reason(insn_id, SendWithoutBlockPolymorphic),
                                         // If the class isn't known statically, then it should not also be monomorphic
                                         Some(false) => panic!("Should not have monomorphic profile at this point in this branch"),
-                                        None => self.push_insn(block, Insn::IncrCounter(Counter::send_fallback_no_profiles)),
-
-                                    };
+                                        None => self.set_dynamic_send_reason(insn_id, SendWithoutBlockNoProfiles),
+                                    }
                                 }
                                 self.push_insn_id(block, insn_id); continue;
                             };
@@ -1943,9 +2004,7 @@ impl Function {
                         // Do method lookup
                         let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
                         if cme.is_null() {
-                            if let Insn::SendWithoutBlock { def_type: insn_def_type, .. } = &mut self.insns[insn_id.0] {
-                                *insn_def_type = Some(MethodType::Null);
-                            }
+                            self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Null));
                             self.push_insn_id(block, insn_id); continue;
                         }
                         // Load an overloaded cme if applicable. See vm_search_cc().
@@ -1958,9 +2017,7 @@ impl Function {
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                             if !can_direct_send(iseq) {
-                                if let Insn::SendWithoutBlock { def_type: insn_def_type, .. } = &mut self.insns[insn_id.0] {
-                                    *insn_def_type = Some(MethodType::from(def_type));
-                                }
+                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Iseq));
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
@@ -1987,9 +2044,7 @@ impl Function {
                             let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, state });
                             self.make_equal_to(insn_id, getivar);
                         } else {
-                            if let Insn::SendWithoutBlock { def_type: insn_def_type, .. } = &mut self.insns[insn_id.0] {
-                                *insn_def_type = Some(MethodType::from(def_type));
-                            }
+                            self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)));
                             self.push_insn_id(block, insn_id); continue;
                         }
                     }
@@ -2031,7 +2086,7 @@ impl Function {
                             self.make_equal_to(insn_id, guard);
                         } else {
                             self.push_insn(block, Insn::GuardTypeNot { val, guard_type: types::String, state});
-                            let send_to_s = self.push_insn(block, Insn::SendWithoutBlock { recv: val, cd, args: vec![], def_type: None, state});
+                            let send_to_s = self.push_insn(block, Insn::SendWithoutBlock { recv: val, cd, args: vec![], state, reason: ObjToStringNotString });
                             self.make_equal_to(insn_id, send_to_s);
                         }
                     }
@@ -2206,6 +2261,7 @@ impl Function {
                     let Some(FnProperties { leaf: true, no_gc: true, return_type, elidable }) =
                         ZJITState::get_method_annotations().get_cfunc_properties(method)
                     else {
+                        fun.set_dynamic_send_reason(send_insn_id, SendWithoutBlockCfuncNotVariadic);
                         return Err(Some(method));
                     };
 
@@ -2269,6 +2325,7 @@ impl Function {
                 -2 => {
                     // (self, args_ruby_array) parameter form
                     // Falling through for now
+                    fun.set_dynamic_send_reason(send_insn_id, SendWithoutBlockCfuncArrayVariadic);
                 }
                 _ => unreachable!("unknown cfunc kind: argc={argc}")
             }
@@ -3787,7 +3844,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, def_type: None, state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
                     state.stack_push(send);
                 }
                 YARVINSN_opt_hash_freeze => {
@@ -3895,7 +3952,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, def_type: None, state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
                     state.stack_push(send);
                 }
                 YARVINSN_send => {
@@ -3915,7 +3972,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
                     state.stack_push(send);
 
                     if !blockiseq.is_null() {
@@ -3947,7 +4004,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let args = state.stack_pop_n(argc as usize + usize::from(forwarding))?;
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send_forward = fun.push_insn(block, Insn::SendForward { recv, cd, blockiseq, args, state: exit_id });
+                    let send_forward = fun.push_insn(block, Insn::SendForward { recv, cd, blockiseq, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
                     state.stack_push(send_forward);
 
                     if !blockiseq.is_null() {
@@ -3976,7 +4033,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let recv = state.stack_pop()?;
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_ptr();
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let result = fun.push_insn(block, Insn::InvokeSuper { recv, cd, blockiseq, args, state: exit_id });
+                    let result = fun.push_insn(block, Insn::InvokeSuper { recv, cd, blockiseq, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
                     state.stack_push(result);
 
                     if !blockiseq.is_null() {
@@ -4005,7 +4062,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
                     let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let result = fun.push_insn(block, Insn::InvokeBlock { cd, args, state: exit_id });
+                    let result = fun.push_insn(block, Insn::InvokeBlock { cd, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
                     state.stack_push(result);
                 }
                 YARVINSN_getglobal => {

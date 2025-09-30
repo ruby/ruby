@@ -6,7 +6,7 @@ use crate::cruby_methods;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
 use crate::options::get_option;
-use crate::stats::{Counters, ExitCounters};
+use crate::stats::{Counters, InsnCounters};
 use crate::virtualmem::CodePtr;
 use std::collections::HashMap;
 
@@ -28,7 +28,10 @@ pub struct ZJITState {
     counters: Counters,
 
     /// Side-exit counters
-    exit_counters: ExitCounters,
+    exit_counters: InsnCounters,
+
+    /// Send fallback counters
+    send_fallback_counters: InsnCounters,
 
     /// Assumptions that require invalidation
     invariants: Invariants,
@@ -78,6 +81,7 @@ impl ZJITState {
             code_block: cb,
             counters: Counters::default(),
             exit_counters: [0; VM_INSTRUCTION_SIZE as usize],
+            send_fallback_counters: [0; VM_INSTRUCTION_SIZE as usize],
             invariants: Invariants::default(),
             assert_compiles: false,
             method_annotations: cruby_methods::init(),
@@ -139,8 +143,13 @@ impl ZJITState {
     }
 
     /// Get a mutable reference to side-exit counters
-    pub fn get_exit_counters() -> &'static mut ExitCounters {
+    pub fn get_exit_counters() -> &'static mut InsnCounters {
         &mut ZJITState::get_instance().exit_counters
+    }
+
+    /// Get a mutable reference to fallback counters
+    pub fn get_send_fallback_counters() -> &'static mut InsnCounters {
+        &mut ZJITState::get_instance().send_fallback_counters
     }
 
     /// Get a mutable reference to unoptimized cfunc counter pointers
