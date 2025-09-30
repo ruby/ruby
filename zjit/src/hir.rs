@@ -9693,9 +9693,8 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
           v21:Fixnum = GuardType v9, Fixnum
-          v22:BasicObject = CCall itself@0x1038, v21
           CheckInterrupts
-          Return v22
+          Return v9
         ");
     }
 
@@ -9716,9 +9715,8 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v11:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
-          v20:BasicObject = CCall itself@0x1038, v11
           CheckInterrupts
-          Return v20
+          Return v11
         ");
     }
 
@@ -9744,7 +9742,6 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v14:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
-          v28:BasicObject = CCall itself@0x1038, v14
           PatchPoint NoEPEscape(test)
           v21:Fixnum[1] = Const Value(1)
           CheckInterrupts
@@ -11329,9 +11326,8 @@ mod opt_tests {
           v13:Fixnum[1] = Const Value(1)
           CheckInterrupts
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
-          v33:BasicObject = CCall itself@0x1038, v13
           CheckInterrupts
-          Return v33
+          Return v13
         ");
     }
 

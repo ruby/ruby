@@ -172,7 +172,7 @@ pub fn init() -> Annotations {
         }
     }
 
-    annotate!(rb_mKernel, "itself", types::BasicObject, no_gc, leaf, elidable);
+    annotate!(rb_mKernel, "itself", inline_kernel_itself);
     annotate!(rb_cString, "bytesize", types::Fixnum, no_gc, leaf);
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", types::BoolExact, no_gc, leaf);
@@ -203,6 +203,14 @@ fn no_inline(_fun: &mut hir::Function, _block: hir::BlockId, _recv: hir::InsnId,
 
 fn inline_string_to_s(fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if args.len() == 0 && fun.likely_a(recv, types::StringExact, state) {
+        // No need to coerce the receiver; that is done by the SendWithoutBlock rewriting.
+        return Some(recv);
+    }
+    None
+}
+
+fn inline_kernel_itself(_fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    if args.len() == 0 {
         // No need to coerce the receiver; that is done by the SendWithoutBlock rewriting.
         return Some(recv);
     }
