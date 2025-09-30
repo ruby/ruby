@@ -323,7 +323,7 @@ ary_memcpy0(VALUE ary, long beg, long argc, const VALUE *argv, VALUE buff_owner_
 {
     RUBY_ASSERT(!ARY_SHARED_P(buff_owner_ary));
 
-    if (argc > (int)(128/sizeof(VALUE)) /* is magic number (cache line size) */) {
+    if (false && argc > (int)(128/sizeof(VALUE)) /* is magic number (cache line size) */) {
         rb_gc_writebarrier_remember(buff_owner_ary);
         RARRAY_PTR_USE(ary, ptr, {
             MEMCPY(ptr+beg, argv, VALUE, argc);
