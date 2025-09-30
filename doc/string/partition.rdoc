@@ -1,9 +1,6 @@
 Returns a 3-element array of substrings of +self+.
 
-Converts +pattern+ to a Regexp, if it is not already one.
-Matches +pattern+ against +self+, scanning from the beginning.
-
-If the pattern is matched, returns the array:
+If +pattern+ is matched, returns the array:
 
   [pre_match, first_match, post_match]
 
@@ -12,21 +9,36 @@ where:
 - +first_match+ is the first-found matching substring.
 - +pre_match+ and +post_match+ are the preceding and following substrings.
 
-Examples:
+If +pattern+ is not matched, returns the array:
 
-  'hello'.partition('l')      # => ["he", "l", "lo"]
-  'hello'.partition('ll')     # => ["he", "ll", "o"]
-  'hello'.partition('h')      # => ["", "h", "ello"]
-  'hello'.partition('o')      # => ["hell", "o", ""]
-  'hello'.partition(/l+/)     #=> ["he", "ll", "o"]
-  'hello'.partition('')       # => ["", "", "hello"]  # Note: this post_match is a copy of self.
-  'тест'.partition('т')       # => ["", "т", "ест"]
-  'こんにちは'.partition('に')  # => ["こん", "に", "ちは"]
+  [self.dup, "", ""]
 
-Does _not_ set {pattern-matching global variables}[rdoc-ref:globals.md@Pattern+Matching].
+Note that in the examples below, a returned string <tt>'hello'</tt>
+is a copy of +self+, not +self+.
 
-If the pattern is not matched, returns a copy of +self+ and two empty strings:
+If +pattern+ is a Regexp, performs the equivalent of <tt>self.match(pattern)</tt>
+(also setting {pattern-matching global variables}[rdoc-ref:globals.md@Pattern+Matching]):
 
-  'hello'.partition('x') # => ["hello", "", ""]
+  'hello'.partition(/h/)  # => ["", "h", "ello"]
+  'hello'.partition(/l/)  # => ["he", "l", "lo"]
+  'hello'.partition(/l+/) # => ["he", "ll", "o"]
+  'hello'.partition(/o/)  # => ["hell", "o", ""]
+  'hello'.partition(/^/)  # => ["", "", "hello"]
+  'hello'.partition(//)   # => ["", "", "hello"]
+  'hello'.partition(/$/)  # => ["hello", "", ""]
+  'hello'.partition(/x/)  # => ["hello", "", ""]
+
+If +pattern+ is not a Regexp, converts it to a string (if it is not already one),
+then performs the equivalet of <tt>self.index(pattern)</tt>
+(and does _not_ set {pattern-matching global variables}[rdoc-ref:globals.md@Pattern+Matching]):
+
+  'hello'.partition('h')     # => ["", "h", "ello"]
+  'hello'.partition('l')     # => ["he", "l", "lo"]
+  'hello'.partition('ll')    # => ["he", "ll", "o"]
+  'hello'.partition('o')     # => ["hell", "o", ""]
+  'hello'.partition('')      # => ["", "", "hello"]
+  'hello'.partition('x')     # => ["hello", "", ""]
+  'тест'.partition('т')      # => ["", "т", "ест"]
+  'こんにちは'.partition('に') # => ["こん", "に", "ちは"]
 
 Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
