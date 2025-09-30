@@ -93,8 +93,9 @@ rb_zjit_exit_locations_dict(VALUE *zjit_raw_samples, int *zjit_line_samples, int
         int line_num = (int)zjit_line_samples[idx];
         idx++;
 
-        rb_ary_push(raw_samples, SIZET2NUM(num));
-        rb_ary_push(line_samples, INT2NUM(line_num));
+        // + 1 as we append an additional sample for the insn
+        rb_ary_push(raw_samples, SIZET2NUM(num + 1));
+        rb_ary_push(line_samples, INT2NUM(line_num + 1));
 
         // Loop through the length of samples_len and add data to the
         // frames hash. Also push the current value onto the raw_samples
