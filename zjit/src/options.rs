@@ -314,7 +314,7 @@ fn update_profile_threshold() {
 /// Update --zjit-call-threshold for testing
 #[cfg(test)]
 pub fn set_call_threshold(call_threshold: u64) {
-    unsafe { rb_zjit_call_threshold = call_threshold as u64; }
+    unsafe { rb_zjit_call_threshold = call_threshold; }
     rb_zjit_prepare_options();
     update_profile_threshold();
 }
