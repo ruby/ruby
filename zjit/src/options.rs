@@ -73,7 +73,7 @@ pub struct Options {
     pub trace_side_exits: bool,
 
     /// Frequency of tracing side exits.
-    pub trace_side_exits_sample_rate: usize,
+    pub trace_side_exits_sample_interval: usize,
 
     /// Dump code map to /tmp for performance profilers.
     pub perf: bool,
@@ -101,7 +101,7 @@ impl Default for Options {
             dump_lir: false,
             dump_disasm: false,
             trace_side_exits: false,
-            trace_side_exits_sample_rate: 0,
+            trace_side_exits_sample_interval: 0,
             perf: false,
             allowed_iseqs: None,
             log_compiled_iseqs: None,
@@ -251,11 +251,11 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             options.trace_side_exits = true;
         }
 
-        ("trace-exits-sample-rate", sample_rate) => {
+        ("trace-exits-sample-rate", sample_interval) => {
             // Even if `trace_side_exits` is already set, set it.
             options.trace_side_exits = true;
-            // `sample_rate` must provide a string that can be validly parsed to a `usize`.
-            let sample_rate = match sample_rate.parse::<usize>() {
+            // `sample_interval ` must provide a string that can be validly parsed to a `usize`.
+            let sample_interval = match sample_interval.parse::<usize>() {
                 Ok(n) => n,
                 Err(_) => return None,
             };
@@ -263,15 +263,15 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             // A system may have multiple periodicities of different periods: p_1, p_2, ..., p_n.
             // Choosing a prime sampling rate will ensure that each period is coprime with that
             // sampling rate, which helps prevent systematically skipping certain side exits while tracing.
-            if sample_rate > 1 && !is_prime(sample_rate) {
+            if sample_interval > 1 && !is_prime(sample_interval) {
                 eprintln!("Warning: Using a composite number for a sampling rate can result in inaccurate data")
             }
 
-            if sample_rate < 7 {
+            if sample_interval < 7 {
                 eprintln!("Warning: Using a number under 7 as a sampling rate can result in inaccurate data")
             }
 
-            options.trace_side_exits_sample_rate = sample_rate;
+            options.trace_side_exits_sample_interval = sample_interval;
         }
 
         ("debug", "") => options.debug = true,

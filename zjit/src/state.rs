@@ -229,6 +229,7 @@ impl ZJITState {
         ZJITState::get_instance().exit_locations.as_mut().map(|el| &mut el.skipped_samples)
     }
 
+    /// Get number of skipped samples.
     pub fn set_skipped_samples(n: usize) -> Option<()> {
         ZJITState::get_instance().exit_locations.as_mut().map(|el| el.skipped_samples = n)
     }
@@ -363,15 +364,17 @@ pub extern "C" fn rb_zjit_record_exit_stack(exit_pc: *const VALUE) {
         return;
     }
 
-    if get_option!(trace_side_exits_sample_rate) > 0 {
-        // If `trace_side_exits_sample_rate` is set, then can safely unwrap
+    // When `trace_side_exits_sample_interval` is zero, then the feature is disabled.
+    if get_option!(trace_side_exits_sample_interval) != 0 {
+        // If `trace_side_exits_sample_interval` is set, then can safely unwrap
         // both `get_skipped_samples` and `set_skipped_samples`.
-        let skipped_samples = ZJITState::get_skipped_samples().unwrap();
-        if get_option!(trace_side_exits_sample_rate) <= *skipped_samples {
-            ZJITState::set_skipped_samples(0).unwrap();
-        } else {
-            ZJITState::set_skipped_samples(*skipped_samples + 1).unwrap();
+        let skipped_samples = *ZJITState::get_skipped_samples().unwrap();
+        if skipped_samples < get_option!(trace_side_exits_sample_interval) {
+            // Skip sample and increment counter.
+            ZJITState::set_skipped_samples(skipped_samples + 1).unwrap();
             return;
+        } else {
+            ZJITState::set_skipped_samples(0).unwrap();
         }
     }
 
