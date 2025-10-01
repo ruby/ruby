@@ -6648,11 +6648,13 @@ rb_str_gsub(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    replace(other_string) -> self
  *
- *  Replaces the contents of +self+ with the contents of +other_string+:
+ *  Replaces the contents of +self+ with the contents of +other_string+;
+ *  returns +self+:
  *
  *    s = 'foo'        # => "foo"
  *    s.replace('bar') # => "bar"
  *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 VALUE
@@ -12820,6 +12822,7 @@ Init_String(void)
     rb_define_singleton_method(rb_cString, "new", rb_str_s_new, -1);
     rb_define_singleton_method(rb_cString, "try_convert", rb_str_s_try_convert, 1);
     rb_define_method(rb_cString, "initialize", rb_str_init, -1);
+    rb_define_method(rb_cString, "replace", rb_str_replace, 1);
     rb_define_method(rb_cString, "initialize_copy", rb_str_replace, 1);
     rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);
     rb_define_method(rb_cString, "==", rb_str_equal, 1);
@@ -12850,7 +12853,6 @@ Init_String(void)
     rb_define_method(rb_cString, "byteindex", rb_str_byteindex_m, -1);
     rb_define_method(rb_cString, "rindex", rb_str_rindex_m, -1);
     rb_define_method(rb_cString, "byterindex", rb_str_byterindex_m, -1);
-    rb_define_method(rb_cString, "replace", rb_str_replace, 1);
     rb_define_method(rb_cString, "clear", rb_str_clear, 0);
     rb_define_method(rb_cString, "chr", rb_str_chr, 0);
     rb_define_method(rb_cString, "getbyte", rb_str_getbyte, 1);
