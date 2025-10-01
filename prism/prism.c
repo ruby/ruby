@@ -5281,8 +5281,7 @@ pm_interpolated_string_node_append(pm_interpolated_string_node_t *node, pm_node_
     switch (PM_NODE_TYPE(part)) {
         case PM_STRING_NODE:
             // If inner string is not frozen, it stops being a static literal. We should *not* clear other flags,
-            // because concatenating two frozen strings (`'foo' 'bar'`) is still frozen. This holds true for
-            // as long as this interpolation only consists of other string literals.
+            // because concatenating two frozen strings (`'foo' 'bar'`) is still frozen.
             if (!PM_NODE_FLAG_P(part, PM_STRING_FLAGS_FROZEN)) {
                 pm_node_flag_unset((pm_node_t *) node, PM_NODE_FLAG_STATIC_LITERAL);
             }
@@ -5325,7 +5324,7 @@ pm_interpolated_string_node_append(pm_interpolated_string_node_t *node, pm_node_
             } else {
                 // In all other cases, we lose the static literal flag here and
                 // become mutable.
-                CLEAR_FLAGS(node);
+                pm_node_flag_unset((pm_node_t *) node, PM_NODE_FLAG_STATIC_LITERAL);
             }
 
             break;
