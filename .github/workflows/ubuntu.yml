@@ -77,16 +77,6 @@ jobs:
           ${{ !endsWith(matrix.os, 'arm')
           && !endsWith(matrix.os, 'ppc64le') && !endsWith(matrix.os, 's390x') }}
 
-      # A temporary workaround: Set HOME env to pass the step
-      # ./.github/actions/setup/directories.
-      # https://github.com/IBM/actionspz/issues/30
-      - name: Set HOME env
-        run: |
-          echo "HOME: ${HOME}"
-          echo "HOME=$(ls -d ~)" >> $GITHUB_ENV
-        working-directory:
-        if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
-
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
@@ -141,14 +131,6 @@ jobs:
       - name: Disable DFLTCC
         run: echo "DFLTCC=0" >> $GITHUB_ENV
         if: ${{ endsWith(matrix.os, 's390x') }}
-
-      # A temporary workaround: Set the user's primary group to avoid a mismatch
-      # between the group IDs of "id -g" and C function getpwuid(uid_t uid)
-      # pw_gid.
-      # https://github.com/IBM/actionspz/issues/31
-      - name: Set user's group id
-        run: sudo usermod -g "$(id -g)" runner
-        if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
 
       - name: make ${{ matrix.test_task }}
         run: |
