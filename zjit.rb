@@ -129,6 +129,8 @@ class << RubyVM::ZJIT
     File.open(filename, "wb") do |file|
       Marshal.dump(RubyVM::ZJIT.exit_locations, file)
     end
+
+    File.size(filename)
   end
 
   # Check if `--zjit-stats` is used
@@ -275,9 +277,9 @@ class << RubyVM::ZJIT
   def dump_locations # :nodoc:
     return unless trace_exit_locations_enabled?
 
-    filename = "zjit_exit_locations.dump"
-    dump_exit_locations(filename)
+    filename = "zjit_exits_#{Time.now.to_i}.dump"
+    n_bytes = dump_exit_locations(filename)
 
-    $stderr.puts("ZJIT exit locations dumped to `#{filename}`.")
+    $stderr.puts("#{n_bytes} bytes written to #{filename}.")
   end
 end
