@@ -278,7 +278,7 @@ pub struct IseqProfile {
     opnd_types: Vec<Vec<TypeDistribution>>,
 
     /// Number of profiled executions for each YARV instruction, indexed by the instruction index
-    num_profiles: Vec<u8>,
+    num_profiles: Vec<u32>,
 }
 
 impl IseqProfile {

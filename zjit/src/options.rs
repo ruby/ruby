@@ -6,7 +6,7 @@ use crate::cruby::*;
 use std::collections::HashSet;
 
 /// Default --zjit-num-profiles
-const DEFAULT_NUM_PROFILES: u8 = 5;
+const DEFAULT_NUM_PROFILES: u32 = 5;
 
 /// Default --zjit-call-threshold. This should be large enough to avoid compiling
 /// warmup code, but small enough to perform well on micro-benchmarks.
@@ -40,7 +40,7 @@ pub struct Options {
     pub mem_bytes: usize,
 
     /// Number of times YARV instructions should be profiled.
-    pub num_profiles: u8,
+    pub num_profiles: u32,
 
     /// Enable YJIT statsitics
     pub stats: bool,
@@ -112,9 +112,9 @@ pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
     ("--zjit-mem-size=num",
                      "Max amount of memory that ZJIT can use (in MiB)."),
     ("--zjit-call-threshold=num",
-                     "Number of calls to trigger JIT (default: 2)."),
+                     "Number of calls to trigger JIT (default: 30)."),
     ("--zjit-num-profiles=num",
-                     "Number of profiled calls before JIT (default: 1, max: 255)."),
+                     "Number of profiled calls before JIT (default: 5)."),
     ("--zjit-stats[=quiet]", "Enable collecting ZJIT statistics (=quiet to suppress output)."),
     ("--zjit-perf",  "Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf."),
     ("--zjit-log-compiled-iseqs=path",
