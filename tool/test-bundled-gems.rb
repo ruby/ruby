@@ -33,7 +33,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   next if bundled_gems&.none? {|pat| File.fnmatch?(pat, gem)}
   next unless File.directory?("#{gem_dir}/src/#{gem}/test")
 
-  test_command = "#{ruby} -C #{gem_dir}/src/#{gem} #{rake} test"
+  test_command = [ruby, "-C", "#{gem_dir}/src/#{gem}", rake, "test"]
   first_timeout = 600 # 10min
 
   toplib = gem
@@ -61,7 +61,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
       rbs_skip_tests << File.join(__dir__, "/rbs_skip_tests_windows")
     end
 
-    test_command << " stdlib_test validate RBS_SKIP_TESTS=#{rbs_skip_tests.join(File::PATH_SEPARATOR)} SKIP_RBS_VALIDATION=true"
+    test_command.concat %W[stdlib_test validate RBS_SKIP_TESTS=#{rbs_skip_tests.join(File::PATH_SEPARATOR)} SKIP_RBS_VALIDATION=true]
     first_timeout *= 3
 
   when "debug"
@@ -71,7 +71,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     load_path = true
 
   when "test-unit"
-    test_command = "#{ruby} -C #{gem_dir}/src/#{gem} test/run.rb"
+    test_command = [ruby, "-C", "#{gem_dir}/src/#{gem}", "test/run.rb"]
 
   when "win32ole"
     next unless /mswin|mingw/ =~ RUBY_PLATFORM
@@ -89,18 +89,17 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   # 93(bright yellow) is copied from .github/workflows/mingw.yml
   puts "#{github_actions ? "::group::\e\[93m" : "\n"}Testing the #{gem} gem#{github_actions ? "\e\[m" : ""}"
   print "[command]" if github_actions
-  puts test_command
+  p test_command
   timeouts = {nil => first_timeout, INT: 30, TERM: 10, KILL: nil}
   if /mingw|mswin/ =~ RUBY_PLATFORM
     timeouts.delete(:TERM)      # Inner process signal on Windows
-    timeouts.delete(:INT)       # root process will be terminated too
     group = :new_pgroup
     pg = ""
   else
     group = :pgroup
     pg = "-"
   end
-  pid = Process.spawn(test_command, group => true)
+  pid = Process.spawn(*test_command, group => true)
   timeouts.each do |sig, sec|
     if sig
       puts "Sending #{sig} signal"
