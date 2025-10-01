@@ -2254,6 +2254,10 @@ impl Function {
     /// Optimize SendWithoutBlock that land in a C method to a direct CCall without
     /// runtime lookup.
     fn optimize_c_calls(&mut self) {
+        if unsafe { rb_zjit_method_tracing_currently_enabled() } {
+            return;
+        }
+
         fn gen_patch_points_for_optimized_ccall(fun: &mut Function, block: BlockId, recv_class: VALUE, method_id: ID, method: *const rb_callable_method_entry_struct, state: InsnId) {
             fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoTracePoint, state });
             fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme: method }, state });
@@ -2345,9 +2349,6 @@ impl Function {
                 }
                 // Variadic method
                 -1 => {
-                    if unsafe { rb_zjit_method_tracing_currently_enabled() } {
-                        return Err(());
-                    }
                     // The method gets a pointer to the first argument
                     // func(int argc, VALUE *argv, VALUE recv)
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
