@@ -72,6 +72,9 @@ pub struct Options {
     /// Trace and write side exit source maps to /tmp for stackprof.
     pub trace_side_exits: bool,
 
+    /// Frequency of tracing side exits.
+    pub trace_side_exits_sample_rate: usize,
+
     /// Dump code map to /tmp for performance profilers.
     pub perf: bool,
 
@@ -98,6 +101,7 @@ impl Default for Options {
             dump_lir: false,
             dump_disasm: false,
             trace_side_exits: false,
+            trace_side_exits_sample_rate: 0,
             perf: false,
             allowed_iseqs: None,
             log_compiled_iseqs: None,
@@ -120,7 +124,9 @@ pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
     ("--zjit-log-compiled-iseqs=path",
                      "Log compiled ISEQs to the file. The file will be truncated."),
     ("--zjit-trace-exits",
-                     "Record Ruby source location when side-exiting.")
+                     "Record Ruby source location when side-exiting."),
+    ("--zjit-trace-exits-sample-rate",
+                     "Frequency at which to record side exits.")
 ];
 
 #[derive(Clone, Copy, Debug)]
@@ -243,6 +249,29 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("trace-exits", "") => {
             options.trace_side_exits = true;
+        }
+
+        ("trace-exits-sample-rate", sample_rate) => {
+            // Even if `trace_side_exits` is already set, set it.
+            options.trace_side_exits = true;
+            // `sample_rate` must provide a string that can be validly parsed to a `usize`.
+            let sample_rate = match sample_rate.parse::<usize>() {
+                Ok(n) => n,
+                Err(_) => return None,
+            };
+
+            // A system may have multiple periodicities of different periods: p_1, p_2, ..., p_n.
+            // Choosing a prime sampling rate will ensure that each period is coprime with that
+            // sampling rate, which helps prevent systematically skipping certain side exits while tracing.
+            if sample_rate > 1 && !is_prime(sample_rate) {
+                eprintln!("Warning: Using a composite number for a sampling rate can result in inaccurate data")
+            }
+
+            if sample_rate < 7 {
+                eprintln!("Warning: Using a number under 7 as a sampling rate can result in inaccurate data")
+            }
+
+            options.trace_side_exits_sample_rate = sample_rate;
         }
 
         ("debug", "") => options.debug = true,
@@ -376,4 +405,21 @@ pub extern "C" fn rb_zjit_print_stats_p(_ec: EcPtr, _self: VALUE) -> VALUE {
     } else {
         Qfalse
     }
+}
+
+/// Simple primality test for selecting a prime sampling rate. Note that it is only efficient
+/// for small primes and is application specific.
+fn is_prime(n: usize) -> bool {
+    if n % 2 == 0 { return false; }
+
+    let mut i = 3;
+    while i * i <= n {
+        if n % i == 0 {
+            return false;
+        }
+        // Skip even numbers, since they were caught in the first if statement.
+        i += 2;
+    }
+
+    true
 }
