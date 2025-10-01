@@ -220,7 +220,13 @@ vm_check_ints_blocking(rb_execution_context_t *ec)
     else {
         th->pending_interrupt_queue_checked = 0;
         RUBY_VM_SET_INTERRUPT(ec);
+
+        VALUE scheduler = rb_fiber_scheduler_current();
+        if (scheduler != Qnil) {
+            rb_fiber_scheduler_kernel_sleep(scheduler, RB_INT2FIX(0));
+        }
     }
+
     return rb_threadptr_execute_interrupts(th, 1);
 }
 
