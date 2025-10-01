@@ -71,6 +71,7 @@ impl Invariants {
         self.update_ep_escape_iseqs();
         self.update_no_ep_escape_iseq_patch_points();
         self.update_cme_patch_points();
+        self.update_no_singleton_class_patch_points();
     }
 
     /// Forget an ISEQ when freeing it. We need to because a) if the address is reused, we'd be
@@ -87,6 +88,11 @@ impl Invariants {
     /// Forget a CME when freeing it. See [Self::forget_iseq] for reasoning.
     pub fn forget_cme(&mut self, cme: *const rb_callable_method_entry_t) {
         self.cme_patch_points.remove(&cme);
+    }
+
+    /// Forget a class when freeing it. See [Self::forget_iseq] for reasoning.
+    pub fn forget_klass(&mut self, klass: VALUE) {
+        self.no_singleton_class_patch_points.remove(&klass);
     }
 
     /// Update ISEQ references in Invariants::ep_escape_iseqs
@@ -119,6 +125,17 @@ impl Invariants {
             })
             .collect();
         self.cme_patch_points = updated_cme_patch_points;
+    }
+
+    fn update_no_singleton_class_patch_points(&mut self) {
+        let updated_no_singleton_class_patch_points = std::mem::take(&mut self.no_singleton_class_patch_points)
+            .into_iter()
+            .map(|(klass, patch_points)| {
+                let new_klass = unsafe { rb_gc_location(klass) };
+                (new_klass, patch_points)
+            })
+            .collect();
+        self.no_singleton_class_patch_points = updated_no_singleton_class_patch_points;
     }
 }
 
