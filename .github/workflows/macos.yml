@@ -45,8 +45,6 @@ jobs:
             os: macos-14
           - test_task: check
             os: macos-15
-          - test_task: check
-            os: macos-13
       fail-fast: false
 
     env:
