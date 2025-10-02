@@ -255,23 +255,10 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             // Even if `trace_side_exits` is already set, set it.
             options.trace_side_exits = true;
             // `sample_interval ` must provide a string that can be validly parsed to a `usize`.
-            let sample_interval = match sample_interval.parse::<usize>() {
-                Ok(n) => n,
+            match sample_interval.parse::<usize>() {
+                Ok(n) => options.trace_side_exits_sample_interval = n,
                 Err(_) => return None,
-            };
-
-            // A system may have multiple periodicities of different periods: p_1, p_2, ..., p_n.
-            // Choosing a prime sampling rate will ensure that each period is coprime with that
-            // sampling rate, which helps prevent systematically skipping certain side exits while tracing.
-            if sample_interval > 1 && !is_prime(sample_interval) {
-                eprintln!("Warning: Using a composite number for a sampling rate can result in inaccurate data")
             }
-
-            if sample_interval < 7 {
-                eprintln!("Warning: Using a number under 7 as a sampling rate can result in inaccurate data")
-            }
-
-            options.trace_side_exits_sample_interval = sample_interval;
         }
 
         ("debug", "") => options.debug = true,
@@ -405,21 +392,4 @@ pub extern "C" fn rb_zjit_print_stats_p(_ec: EcPtr, _self: VALUE) -> VALUE {
     } else {
         Qfalse
     }
-}
-
-/// Simple primality test for selecting a prime sampling rate. Note that it is only efficient
-/// for small primes and is application specific.
-fn is_prime(n: usize) -> bool {
-    if n % 2 == 0 { return false; }
-
-    let mut i = 3;
-    while i * i <= n {
-        if n % i == 0 {
-            return false;
-        }
-        // Skip even numbers, since they were caught in the first if statement.
-        i += 2;
-    }
-
-    true
 }
