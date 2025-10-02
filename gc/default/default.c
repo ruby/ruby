@@ -4393,6 +4393,7 @@ static void
 gc_mark(rb_objspace_t *objspace, VALUE obj)
 {
     GC_ASSERT(during_gc);
+    GC_ASSERT(!objspace->flags.during_reference_updating);
 
     rgengc_check_relation(objspace, obj);
     if (!gc_mark_set(objspace, obj)) return; /* already marked */
