@@ -255,10 +255,7 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             // Even if `trace_side_exits` is already set, set it.
             options.trace_side_exits = true;
             // `sample_interval ` must provide a string that can be validly parsed to a `usize`.
-            match sample_interval.parse::<usize>() {
-                Ok(n) => options.trace_side_exits_sample_interval = n,
-                Err(_) => return None,
-            }
+            options.trace_side_exits_sample_interval = sample_interval.parse::<usize>().ok()?;
         }
 
         ("debug", "") => options.debug = true,
