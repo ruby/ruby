@@ -6411,6 +6411,51 @@ rb_ary_uniq(VALUE ary)
 
 /*
  *  call-seq:
+ *     duplicates?                -> true or false
+ *     duplicates? {|item| ...}   -> true or false
+ *
+ *  Returns +true+ if duplicates are found in +self+, otherwise returns +false+.
+ *
+ *  If +self+ is empty, returns +false+.
+ *
+ *  If a block is given, it will use the return value of the block for comparison.
+ *
+ *     [ "a", "b", "c" ].duplicates?   # => false
+ *
+ *     [ "a", "b", "a" ].duplicates?   # => true
+ *
+ *     [ "a", "b", "A" ].duplicates? {|s| s.upcase}   # => true
+ *
+ */
+
+static VALUE
+rb_ary_duplicates_p(VALUE ary)
+{
+    VALUE hash;
+    long i;
+    int block_given = rb_block_given_p();
+
+    if (RARRAY_LEN(ary) <= 1) {
+	return Qfalse;
+    }
+
+    hash = ary_tmp_hash_new(ary);
+
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+        VALUE elt = RARRAY_AREF(ary, i);
+        if (block_given) {
+            elt = rb_yield(elt);
+        }
+        if (rb_hash_add_new_element(hash, elt, elt)) {
+            return Qtrue;
+        }
+    }
+
+    return Qfalse;
+}
+
+/*
+ *  call-seq:
  *    compact! -> self or nil
  *
  *  Removes all +nil+ elements from +self+;
@@ -8855,6 +8900,7 @@ Init_Array(void)
 
     rb_define_method(rb_cArray, "uniq", rb_ary_uniq, 0);
     rb_define_method(rb_cArray, "uniq!", rb_ary_uniq_bang, 0);
+    rb_define_method(rb_cArray, "duplicates?", rb_ary_duplicates_p, 0);
     rb_define_method(rb_cArray, "compact", rb_ary_compact, 0);
     rb_define_method(rb_cArray, "compact!", rb_ary_compact_bang, 0);
     rb_define_method(rb_cArray, "flatten", rb_ary_flatten, -1);
