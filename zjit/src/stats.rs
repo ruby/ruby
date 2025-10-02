@@ -501,6 +501,8 @@ pub struct SideExitLocations {
     pub raw_samples: Vec<VALUE>,
     /// Line numbers of the iseq caller.
     pub line_samples: Vec<i32>,
+    /// Skipped samples
+    pub skipped_samples: usize
 }
 
 /// Primitive called in zjit.rb

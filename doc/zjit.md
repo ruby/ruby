@@ -155,7 +155,7 @@ make -j
 
 ### Tracing side exits
 
-Through [Stackprof](https://github.com/tmm1/stackprof), detailed information about the methods that the JIT side-exits from can be displayed after some execution of a program.
+Through [Stackprof](https://github.com/tmm1/stackprof), detailed information about the methods that the JIT side-exits from can be displayed after some execution of a program. Optionally, you can use `--zjit-trace-exits-sample-rate=N` to sample every N-th occurrence. Enabling `--zjit-trace-exits-sample-rate=N` will automatically enable `--zjit-trace-exits`.
 
 ```bash
 ./miniruby --zjit-trace-exits script.rb
