@@ -1923,14 +1923,12 @@ impl Function {
         let idx_type = self.type_of(idx_val);
         if self_type.is_subtype(types::ArrayExact) {
             if let Some(array_obj) = self_type.ruby_object() {
-                if array_obj.is_frozen() {
-                    if let Some(idx) = idx_type.fixnum_value() {
-                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop: BOP_AREF }, state });
-                        let val = unsafe { rb_yarv_ary_entry_internal(array_obj, idx) };
-                        let const_insn = self.push_insn(block, Insn::Const { val: Const::Value(val) });
-                        self.make_equal_to(orig_insn_id, const_insn);
-                        return;
-                    }
+                if let Some(idx) = idx_type.fixnum_value() {
+                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop: BOP_AREF }, state });
+                    let val = unsafe { rb_yarv_ary_entry_internal(array_obj, idx) };
+                    let const_insn = self.push_insn(block, Insn::Const { val: Const::Value(val) });
+                    self.make_equal_to(orig_insn_id, const_insn);
+                    return;
                 }
             }
         }
