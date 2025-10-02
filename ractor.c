@@ -514,7 +514,6 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     rb_ractor_t *r = RACTOR_PTR(rv);
     ractor_init(r, name, loc);
 
-    // can block here
     r->pub.id = ractor_next_id();
     RUBY_DEBUG_LOG("r:%u", r->pub.id);
 
