@@ -128,9 +128,8 @@ class << RubyVM::ZJIT
 
     File.open(filename, "wb") do |file|
       Marshal.dump(RubyVM::ZJIT.exit_locations, file)
+      file.size
     end
-
-    File.size(filename)
   end
 
   # Check if `--zjit-stats` is used
