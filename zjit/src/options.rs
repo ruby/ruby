@@ -126,7 +126,7 @@ pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
     ("--zjit-trace-exits",
                      "Record Ruby source location when side-exiting."),
     ("--zjit-trace-exits-sample-rate",
-                     "Frequency at which to record side exits.")
+                     "Frequency at which to record side exits. Must be able to fit in `usize`.")
 ];
 
 #[derive(Clone, Copy, Debug)]
