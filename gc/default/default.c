@@ -4544,6 +4544,28 @@ pin_value(st_data_t key, st_data_t value, st_data_t data)
     return ST_CONTINUE;
 }
 
+static inline void
+gc_mark_set_parent_raw(rb_objspace_t *objspace, VALUE obj, bool old_p)
+{
+    asan_unpoison_memory_region(&objspace->rgengc.parent_object, sizeof(objspace->rgengc.parent_object), false);
+    asan_unpoison_memory_region(&objspace->rgengc.parent_object_old_p, sizeof(objspace->rgengc.parent_object_old_p), false);
+    objspace->rgengc.parent_object = obj;
+    objspace->rgengc.parent_object_old_p = old_p;
+}
+
+static inline void
+gc_mark_set_parent(rb_objspace_t *objspace, VALUE obj)
+{
+    gc_mark_set_parent_raw(objspace, obj, RVALUE_OLD_P(objspace, obj));
+}
+
+static inline void
+gc_mark_set_parent_invalid(rb_objspace_t *objspace)
+{
+    asan_poison_memory_region(&objspace->rgengc.parent_object, sizeof(objspace->rgengc.parent_object));
+    asan_poison_memory_region(&objspace->rgengc.parent_object_old_p, sizeof(objspace->rgengc.parent_object_old_p));
+}
+
 static void
 mark_roots(rb_objspace_t *objspace, const char **categoryp)
 {
@@ -4552,8 +4574,7 @@ mark_roots(rb_objspace_t *objspace, const char **categoryp)
 } while (0)
 
     MARK_CHECKPOINT("objspace");
-    objspace->rgengc.parent_object = Qundef;
-    objspace->rgengc.parent_object_old_p = false;
+    gc_mark_set_parent_raw(objspace, Qundef, false);
 
     if (finalizer_table != NULL) {
         st_foreach(finalizer_table, pin_value, (st_data_t)objspace);
@@ -4563,13 +4584,7 @@ mark_roots(rb_objspace_t *objspace, const char **categoryp)
 
     rb_gc_save_machine_context();
     rb_gc_mark_roots(objspace, categoryp);
-}
-
-static inline void
-gc_mark_set_parent(rb_objspace_t *objspace, VALUE obj)
-{
-    objspace->rgengc.parent_object = obj;
-    objspace->rgengc.parent_object_old_p = RVALUE_OLD_P(objspace, obj);
+    gc_mark_set_parent_invalid(objspace);
 }
 
 static void
@@ -4577,6 +4592,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 {
     gc_mark_set_parent(objspace, obj);
     rb_gc_mark_children(objspace, obj);
+    gc_mark_set_parent_invalid(objspace);
 }
 
 /**
@@ -5986,9 +6002,11 @@ gc_mark_from(rb_objspace_t *objspace, VALUE obj, VALUE parent)
 {
     gc_mark_set_parent(objspace, parent);
     rgengc_check_relation(objspace, obj);
-    if (gc_mark_set(objspace, obj) == FALSE) return;
-    gc_aging(objspace, obj);
-    gc_grey(objspace, obj);
+    if (gc_mark_set(objspace, obj) != FALSE) {
+        gc_aging(objspace, obj);
+        gc_grey(objspace, obj);
+    }
+    gc_mark_set_parent_invalid(objspace);
 }
 
 NOINLINE(static void gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t *objspace));
