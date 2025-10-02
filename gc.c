@@ -1311,6 +1311,9 @@ rb_gc_obj_free(void *objspace, VALUE obj)
         break;
       case T_MODULE:
       case T_CLASS:
+#if USE_ZJIT
+        rb_zjit_klass_free(obj);
+#endif
         args.klass = obj;
         rb_class_classext_foreach(obj, classext_free, (void *)&args);
         if (RCLASS_CLASSEXT_TBL(obj)) {

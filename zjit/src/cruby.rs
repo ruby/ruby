@@ -450,6 +450,16 @@ impl VALUE {
         self.static_sym_p() || self.dynamic_sym_p()
     }
 
+    pub fn instance_can_have_singleton_class(self) -> bool {
+        if self == unsafe { rb_cInteger } || self == unsafe { rb_cFloat } ||
+            self == unsafe { rb_cSymbol } || self == unsafe { rb_cNilClass } ||
+            self == unsafe { rb_cTrueClass } || self == unsafe { rb_cFalseClass } {
+
+            return false
+        }
+        true
+    }
+
     /// Return true for a static (non-heap) Ruby symbol (RB_STATIC_SYM_P)
     pub fn static_sym_p(self) -> bool {
         let VALUE(cval) = self;

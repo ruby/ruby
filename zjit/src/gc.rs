@@ -148,6 +148,16 @@ pub extern "C" fn rb_zjit_cme_free(cme: *const rb_callable_method_entry_struct) 
     invariants.forget_cme(cme);
 }
 
+/// GC callback for finalizing a class
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_klass_free(klass: VALUE) {
+    if !ZJITState::has_instance() {
+        return;
+    }
+    let invariants = ZJITState::get_invariants();
+    invariants.forget_klass(klass);
+}
+
 /// GC callback for updating object references after all object moves
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_root_update_references() {
