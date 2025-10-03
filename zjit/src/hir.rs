@@ -647,12 +647,12 @@ pub enum Insn {
 
     /// Call a C function without pushing a frame
     /// `name` is for printing purposes only
-    CCall { cfun: *const u8, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
+    CCall { cfunc: *const u8, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
 
     /// Call a C function that pushes a frame
     CCallWithFrame {
         cd: *const rb_call_data, // cd for falling back to SendWithoutBlock
-        cfun: *const u8,
+        cfunc: *const u8,
         args: Vec<InsnId>,
         cme: *const rb_callable_method_entry_t,
         name: ID,
@@ -662,7 +662,7 @@ pub enum Insn {
     /// Call a variadic C function with signature: func(int argc, VALUE *argv, VALUE recv)
     /// This handles frame setup, argv creation, and frame teardown all in one
     CCallVariadic {
-        cfun: *const u8,
+        cfunc: *const u8,
         recv: InsnId,
         args: Vec<InsnId>,
         cme: *const rb_callable_method_entry_t,
@@ -1031,22 +1031,22 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardBlockParamProxy { level, .. } => write!(f, "GuardBlockParamProxy l{level}"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
-            Insn::CCall { cfun, args, name, return_type: _, elidable: _ } => {
-                write!(f, "CCall {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
+            Insn::CCall { cfunc, args, name, return_type: _, elidable: _ } => {
+                write!(f, "CCall {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
             },
-            Insn::CCallWithFrame { cfun, args, name, .. } => {
-                write!(f, "CallCFunc {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
+            Insn::CCallWithFrame { cfunc, args, name, .. } => {
+                write!(f, "CallCFunc {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
             },
-            Insn::CCallVariadic { cfun,  recv, args, name, .. } => {
-                write!(f, "CCallVariadic {}@{:p}, {recv}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
+            Insn::CCallVariadic { cfunc,  recv, args, name, .. } => {
+                write!(f, "CCallVariadic {}@{:p}, {recv}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1563,10 +1563,10 @@ impl Function {
             &HashDup { val, state } => HashDup { val: find!(val), state },
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
-            &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun, args: find_vec!(args), name, return_type, elidable },
-            &CCallWithFrame { cd, cfun, ref args, cme, name, state } => CCallWithFrame { cd, cfun, args: find_vec!(args), cme, name, state: find!(state) },
-            &CCallVariadic { cfun, recv, ref args, cme, name, state } => CCallVariadic {
-                cfun, recv: find!(recv), args: find_vec!(args), cme, name, state
+            &CCall { cfunc, ref args, name, return_type, elidable } => CCall { cfunc, args: find_vec!(args), name, return_type, elidable },
+            &CCallWithFrame { cd, cfunc, ref args, cme, name, state } => CCallWithFrame { cd, cfunc, args: find_vec!(args), cme, name, state: find!(state) },
+            &CCallVariadic { cfunc, recv, ref args, cme, name, state } => CCallVariadic {
+                cfunc, recv: find!(recv), args: find_vec!(args), cme, name, state
             },
             &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
@@ -2334,7 +2334,7 @@ impl Function {
                         // Guard receiver class
                         recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                     }
-                    let cfun = unsafe { get_mct_func(cfunc) }.cast();
+                    let cfunc = unsafe { get_mct_func(cfunc) }.cast();
                     let mut cfunc_args = vec![recv];
                     cfunc_args.append(&mut args);
 
@@ -2343,13 +2343,13 @@ impl Function {
                     // Filter for simple call sites (i.e. no splats etc.)
                     // Commit to the replacement. Put PatchPoint.
                     if let Some(FnProperties { leaf: true, no_gc: true, return_type, elidable }) = ZJITState::get_method_annotations().get_cfunc_properties(method) {
-                        let ccall = fun.push_insn(block, Insn::CCall { cfun, args: cfunc_args, name: method_id, return_type, elidable });
+                        let ccall = fun.push_insn(block, Insn::CCall { cfunc, args: cfunc_args, name: method_id, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
                     } else {
                         if get_option!(stats) {
                             count_not_inlined_cfunc(fun, block, method);
                         }
-                        let ccall = fun.push_insn(block, Insn::CCallWithFrame { cd, cfun, args: cfunc_args, cme: method, name: method_id, state });
+                        let ccall = fun.push_insn(block, Insn::CCallWithFrame { cd, cfunc, args: cfunc_args, cme: method, name: method_id, state });
                         fun.make_equal_to(send_insn_id, ccall);
                     }
 
@@ -2374,9 +2374,9 @@ impl Function {
                             recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                         }
 
-                        let cfun = unsafe { get_mct_func(cfunc) }.cast();
+                        let cfunc = unsafe { get_mct_func(cfunc) }.cast();
                         let ccall = fun.push_insn(block, Insn::CCallVariadic {
-                            cfun,
+                            cfunc,
                             recv,
                             args,
                             cme: method,
