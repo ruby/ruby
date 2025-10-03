@@ -153,7 +153,7 @@ class << RubyVM::ZJIT
     stats = self.stats
 
     # Show counters independent from exit_* or dynamic_send_*
-    print_counters_with_prefix(prefix: 'not_optimized_cfuncs_', prompt: 'unoptimized sends to C functions', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'not_inlined_cfuncs_', prompt: 'not inlined C methods', buf:, stats:, limit: 20)
 
     # Show fallback counters, ordered by the typical amount of fallbacks for the prefix at the time
     print_counters_with_prefix(prefix: 'unspecialized_def_type_', prompt: 'not optimized method types', buf:, stats:, limit: 20)

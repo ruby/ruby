@@ -535,6 +535,7 @@ pub enum SendFallbackReason {
     SendWithoutBlockCfuncArrayVariadic,
     SendWithoutBlockNotOptimizedMethodType(MethodType),
     SendWithoutBlockDirectTooManyArgs,
+    CCallWithFrameTooManyArgs,
     ObjToStringNotString,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
@@ -644,14 +645,24 @@ pub enum Insn {
     IfTrue { val: InsnId, target: BranchEdge },
     IfFalse { val: InsnId, target: BranchEdge },
 
-    /// Call a C function
+    /// Call a C function without pushing a frame
     /// `name` is for printing purposes only
-    CCall { cfun: *const u8, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
+    CCall { cfunc: *const u8, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
+
+    /// Call a C function that pushes a frame
+    CCallWithFrame {
+        cd: *const rb_call_data, // cd for falling back to SendWithoutBlock
+        cfunc: *const u8,
+        args: Vec<InsnId>,
+        cme: *const rb_callable_method_entry_t,
+        name: ID,
+        state: InsnId
+    },
 
     /// Call a variadic C function with signature: func(int argc, VALUE *argv, VALUE recv)
     /// This handles frame setup, argv creation, and frame teardown all in one
     CCallVariadic {
-        cfun: *const u8,
+        cfunc: *const u8,
         recv: InsnId,
         args: Vec<InsnId>,
         cme: *const rb_callable_method_entry_t,
@@ -1020,15 +1031,22 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardBlockParamProxy { level, .. } => write!(f, "GuardBlockParamProxy l{level}"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
-            Insn::CCall { cfun, args, name, return_type: _, elidable: _ } => {
-                write!(f, "CCall {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
+            Insn::CCall { cfunc, args, name, return_type: _, elidable: _ } => {
+                write!(f, "CCall {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
             },
-            Insn::CCallVariadic { cfun,  recv, args, name, .. } => {
-                write!(f, "CCallVariadic {}@{:p}, {recv}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
+            Insn::CCallWithFrame { cfunc, args, name, .. } => {
+                write!(f, "CallCFunc {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                Ok(())
+            },
+            Insn::CCallVariadic { cfunc,  recv, args, name, .. } => {
+                write!(f, "CCallVariadic {}@{:p}, {recv}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1545,9 +1563,10 @@ impl Function {
             &HashDup { val, state } => HashDup { val: find!(val), state },
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
-            &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun, args: find_vec!(args), name, return_type, elidable },
-            &CCallVariadic { cfun, recv, ref args, cme, name, state } => CCallVariadic {
-                cfun, recv: find!(recv), args: find_vec!(args), cme, name, state
+            &CCall { cfunc, ref args, name, return_type, elidable } => CCall { cfunc, args: find_vec!(args), name, return_type, elidable },
+            &CCallWithFrame { cd, cfunc, ref args, cme, name, state } => CCallWithFrame { cd, cfunc, args: find_vec!(args), cme, name, state: find!(state) },
+            &CCallVariadic { cfunc, recv, ref args, cme, name, state } => CCallVariadic {
+                cfunc, recv: find!(recv), args: find_vec!(args), cme, name, state
             },
             &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
@@ -1646,6 +1665,7 @@ impl Function {
             Insn::NewRangeFixnum { .. } => types::RangeExact,
             Insn::ObjectAlloc { .. } => types::HeapObject,
             Insn::ObjectAllocClass { class, .. } => Type::from_class(*class),
+            Insn::CCallWithFrame { .. } => types::BasicObject,
             Insn::CCall { return_type, .. } => *return_type,
             Insn::CCallVariadic { .. } => types::BasicObject,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
@@ -2242,6 +2262,10 @@ impl Function {
     /// Optimize SendWithoutBlock that land in a C method to a direct CCall without
     /// runtime lookup.
     fn optimize_c_calls(&mut self) {
+        if unsafe { rb_zjit_method_tracing_currently_enabled() } {
+            return;
+        }
+
         fn gen_patch_points_for_optimized_ccall(fun: &mut Function, block: BlockId, recv_class: VALUE, method_id: ID, method: *const rb_callable_method_entry_struct, state: InsnId) {
             fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoTracePoint, state });
             fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme: method }, state });
@@ -2254,9 +2278,9 @@ impl Function {
             self_type: Type,
             send: Insn,
             send_insn_id: InsnId,
-        ) -> Result<(), Option<*const rb_callable_method_entry_struct>> {
+        ) -> Result<(), ()> {
             let Insn::SendWithoutBlock { mut recv, cd, mut args, state, .. } = send else {
-                return Err(None);
+                return Err(());
             };
 
             let call_info = unsafe { (*cd).ci };
@@ -2268,20 +2292,20 @@ impl Function {
                 (class, None)
             } else {
                 let iseq_insn_idx = fun.frame_state(state).insn_idx;
-                let Some(recv_type) = fun.profiled_type_of_at(recv, iseq_insn_idx) else { return Err(None) };
+                let Some(recv_type) = fun.profiled_type_of_at(recv, iseq_insn_idx) else { return Err(()) };
                 (recv_type.class(), Some(recv_type))
             };
 
             // Do method lookup
             let method: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
             if method.is_null() {
-                return Err(None);
+                return Err(());
             }
 
             // Filter for C methods
             let def_type = unsafe { get_cme_def_type(method) };
             if def_type != VM_METHOD_TYPE_CFUNC {
-                return Err(None);
+                return Err(());
             }
 
             // Find the `argc` (arity) of the C method, which describes the parameters it expects
@@ -2293,48 +2317,53 @@ impl Function {
                     //
                     // Bail on argc mismatch
                     if argc != cfunc_argc as u32 {
-                        return Err(Some(method));
+                        return Err(());
                     }
+
+                    let ci_flags = unsafe { vm_ci_flag(call_info) };
+
+                    if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
+                        return Err(());
+                    }
+
+                    gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
+                    if recv_class.instance_can_have_singleton_class() {
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
+                    }
+                    if let Some(profiled_type) = profiled_type {
+                        // Guard receiver class
+                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                    }
+                    let cfunc = unsafe { get_mct_func(cfunc) }.cast();
+                    let mut cfunc_args = vec![recv];
+                    cfunc_args.append(&mut args);
 
                     // Filter for a leaf and GC free function
                     use crate::cruby_methods::FnProperties;
-                    let Some(FnProperties { leaf: true, no_gc: true, return_type, elidable }) =
-                        ZJITState::get_method_annotations().get_cfunc_properties(method)
-                    else {
-                        fun.set_dynamic_send_reason(send_insn_id, SendWithoutBlockCfuncNotVariadic);
-                        return Err(Some(method));
-                    };
-
-                    let ci_flags = unsafe { vm_ci_flag(call_info) };
                     // Filter for simple call sites (i.e. no splats etc.)
-                    if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
-                        gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
-
-                        if recv_class.instance_can_have_singleton_class() {
-                            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
-                        }
-                        if let Some(profiled_type) = profiled_type {
-                            // Guard receiver class
-                            recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                        }
-
-                        let cfun = unsafe { get_mct_func(cfunc) }.cast();
-                        let mut cfunc_args = vec![recv];
-                        cfunc_args.append(&mut args);
-                        let ccall = fun.push_insn(block, Insn::CCall { cfun, args: cfunc_args, name: method_id, return_type, elidable });
+                    // Commit to the replacement. Put PatchPoint.
+                    if let Some(FnProperties { leaf: true, no_gc: true, return_type, elidable }) = ZJITState::get_method_annotations().get_cfunc_properties(method) {
+                        let ccall = fun.push_insn(block, Insn::CCall { cfunc, args: cfunc_args, name: method_id, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
-                        return Ok(())
+                    } else {
+                        if get_option!(stats) {
+                            count_not_inlined_cfunc(fun, block, method);
+                        }
+                        let ccall = fun.push_insn(block, Insn::CCallWithFrame { cd, cfunc, args: cfunc_args, cme: method, name: method_id, state });
+                        fun.make_equal_to(send_insn_id, ccall);
                     }
+
+                    return Ok(());
                 }
                 // Variadic method
                 -1 => {
-                    if unsafe { rb_zjit_method_tracing_currently_enabled() } {
-                        return Err(None);
-                    }
                     // The method gets a pointer to the first argument
                     // func(int argc, VALUE *argv, VALUE recv)
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
                     if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
+                        if get_option!(stats) {
+                            count_not_inlined_cfunc(fun, block, method);
+                        }
                         gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
 
                         if recv_class.instance_can_have_singleton_class() {
@@ -2345,9 +2374,9 @@ impl Function {
                             recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                         }
 
-                        let cfun = unsafe { get_mct_func(cfunc) }.cast();
+                        let cfunc = unsafe { get_mct_func(cfunc) }.cast();
                         let ccall = fun.push_insn(block, Insn::CCallVariadic {
-                            cfun,
+                            cfunc,
                             recv,
                             args,
                             cme: method,
@@ -2369,7 +2398,20 @@ impl Function {
                 _ => unreachable!("unknown cfunc kind: argc={argc}")
             }
 
-            Err(Some(method))
+            Err(())
+        }
+
+        fn count_not_inlined_cfunc(fun: &mut Function, block: BlockId, cme: *const rb_callable_method_entry_t) {
+            let owner = unsafe { (*cme).owner };
+            let called_id = unsafe { (*cme).called_id };
+            let class_name = get_class_name(owner);
+            let method_name = called_id.contents_lossy();
+            let qualified_method_name = format!("{}#{}", class_name, method_name);
+            let not_inlined_cfunc_counter_pointers = ZJITState::get_not_inlined_cfunc_counter_pointers();
+            let counter_ptr = not_inlined_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
+            let counter_ptr = &mut **counter_ptr as *mut u64;
+
+            fun.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
         }
 
         for block in self.rpo() {
@@ -2378,23 +2420,8 @@ impl Function {
             for insn_id in old_insns {
                 if let send @ Insn::SendWithoutBlock { recv, .. } = self.find(insn_id) {
                     let recv_type = self.type_of(recv);
-                    match reduce_to_ccall(self, block, recv_type, send, insn_id) {
-                        Ok(()) => continue,
-                        Err(Some(cme)) => {
-                            if get_option!(stats) {
-                                let owner = unsafe { (*cme).owner };
-                                let called_id = unsafe { (*cme).called_id };
-                                let class_name = get_class_name(owner);
-                                let method_name = called_id.contents_lossy();
-                                let qualified_method_name = format!("{}#{}", class_name, method_name);
-                                let unoptimized_cfunc_counter_pointers = ZJITState::get_unoptimized_cfunc_counter_pointers();
-                                let counter_ptr = unoptimized_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
-                                let counter_ptr = &mut **counter_ptr as *mut u64;
-
-                                self.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
-                            }
-                        }
-                        _ => {}
+                    if reduce_to_ccall(self, block, recv_type, send, insn_id).is_ok() {
+                        continue;
                     }
                 }
                 self.push_insn_id(block, insn_id);
@@ -2637,7 +2664,8 @@ impl Function {
                 worklist.extend(args);
                 worklist.push_back(state);
             }
-            &Insn::InvokeBuiltin { ref args, state, .. }
+            &Insn::CCallWithFrame { ref args, state, .. }
+            | &Insn::InvokeBuiltin { ref args, state, .. }
             | &Insn::InvokeBlock { ref args, state, .. } => {
                 worklist.extend(args);
                 worklist.push_back(state)
@@ -10864,8 +10892,10 @@ mod opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:HashExact = NewHash
-          v13:BasicObject = SendWithoutBlock v11, :dup
-          v15:BasicObject = SendWithoutBlock v13, :freeze
+          PatchPoint MethodRedefined(Hash@0x1000, dup@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          v24:BasicObject = CallCFunc dup@0x1038, v11
+          v15:BasicObject = SendWithoutBlock v24, :freeze
           CheckInterrupts
           Return v15
         ");
@@ -10955,8 +10985,10 @@ mod opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:ArrayExact = NewArray
-          v13:BasicObject = SendWithoutBlock v11, :dup
-          v15:BasicObject = SendWithoutBlock v13, :freeze
+          PatchPoint MethodRedefined(Array@0x1000, dup@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v24:BasicObject = CallCFunc dup@0x1038, v11
+          v15:BasicObject = SendWithoutBlock v24, :freeze
           CheckInterrupts
           Return v15
         ");
@@ -11047,8 +11079,10 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v10
-          v14:BasicObject = SendWithoutBlock v12, :dup
-          v16:BasicObject = SendWithoutBlock v14, :freeze
+          PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(String@0x1008)
+          v25:BasicObject = CallCFunc dup@0x1040, v12
+          v16:BasicObject = SendWithoutBlock v25, :freeze
           CheckInterrupts
           Return v16
         ");
@@ -11140,8 +11174,10 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v10
-          v14:BasicObject = SendWithoutBlock v12, :dup
-          v16:BasicObject = SendWithoutBlock v14, :-@
+          PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(String@0x1008)
+          v25:BasicObject = CallCFunc dup@0x1040, v12
+          v16:BasicObject = SendWithoutBlock v25, :-@
           CheckInterrupts
           Return v16
         ");
@@ -11279,8 +11315,11 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v25:BasicObject = GuardTypeNot v9, String
-          v26:BasicObject = SendWithoutBlock v9, :to_s
-          v17:String = AnyToString v9, str: v26
+          PatchPoint MethodRedefined(Array@0x1008, to_s@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          v30:ArrayExact = GuardType v9, ArrayExact
+          v31:BasicObject = CallCFunc to_s@0x1040, v30
+          v17:String = AnyToString v9, str: v31
           v19:StringExact = StringConcat v13, v17
           CheckInterrupts
           Return v19
