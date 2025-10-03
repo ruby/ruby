@@ -535,6 +535,7 @@ pub enum SendFallbackReason {
     SendWithoutBlockCfuncArrayVariadic,
     SendWithoutBlockNotOptimizedMethodType(MethodType),
     SendWithoutBlockDirectTooManyArgs,
+    CCallWithFrameTooManyArgs,
     ObjToStringNotString,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
@@ -649,7 +650,14 @@ pub enum Insn {
     CCall { cfun: *const u8, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
 
     /// Call a C function that pushes a frame
-    CCallWithFrame {cfun: *const u8, args: Vec<InsnId>, cme: *const rb_callable_method_entry_t, name: ID, state: InsnId },
+    CCallWithFrame {
+        cd: *const rb_call_data, // cd for falling back to SendWithoutBlock
+        cfun: *const u8,
+        args: Vec<InsnId>,
+        cme: *const rb_callable_method_entry_t,
+        name: ID,
+        state: InsnId
+    },
 
     /// Call a variadic C function with signature: func(int argc, VALUE *argv, VALUE recv)
     /// This handles frame setup, argv creation, and frame teardown all in one
@@ -1556,7 +1564,7 @@ impl Function {
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
             &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun, args: find_vec!(args), name, return_type, elidable },
-            &CCallWithFrame { cfun, ref args, cme, name, state } => CCallWithFrame { cfun, args: find_vec!(args), cme, name, state: find!(state) },
+            &CCallWithFrame { cd, cfun, ref args, cme, name, state } => CCallWithFrame { cd, cfun, args: find_vec!(args), cme, name, state: find!(state) },
             &CCallVariadic { cfun, recv, ref args, cme, name, state } => CCallVariadic {
                 cfun, recv: find!(recv), args: find_vec!(args), cme, name, state
             },
@@ -2341,7 +2349,7 @@ impl Function {
                         if get_option!(stats) {
                             count_not_inlined_cfunc(fun, block, method);
                         }
-                        let ccall = fun.push_insn(block, Insn::CCallWithFrame { cfun, args: cfunc_args, cme: method, name: method_id, state });
+                        let ccall = fun.push_insn(block, Insn::CCallWithFrame { cd, cfun, args: cfunc_args, cme: method, name: method_id, state });
                         fun.make_equal_to(send_insn_id, ccall);
                     }
 

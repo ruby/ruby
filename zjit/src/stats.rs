@@ -148,6 +148,7 @@ make_counters! {
         send_fallback_send_without_block_cfunc_array_variadic,
         send_fallback_send_without_block_not_optimized_method_type,
         send_fallback_send_without_block_direct_too_many_args,
+        send_fallback_ccall_with_frame_too_many_args,
         send_fallback_obj_to_string_not_string,
         send_fallback_not_optimized_instruction,
     }
@@ -318,6 +319,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendWithoutBlockCfuncArrayVariadic        => send_fallback_send_without_block_cfunc_array_variadic,
         SendWithoutBlockNotOptimizedMethodType(_) => send_fallback_send_without_block_not_optimized_method_type,
         SendWithoutBlockDirectTooManyArgs         => send_fallback_send_without_block_direct_too_many_args,
+        CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
         NotOptimizedInstruction(_)                => send_fallback_not_optimized_instruction,
     }
