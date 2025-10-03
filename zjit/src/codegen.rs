@@ -355,6 +355,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::NewRange { low, high, flag, state } => gen_new_range(jit, asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
+        Insn::ArrayAref { array, index, state } => gen_array_aref(asm, opnd!(array), opnd!(index), &function.frame_state(*state)),
         Insn::ObjectAlloc { val, state } => gen_object_alloc(jit, asm, opnd!(val), &function.frame_state(*state)),
         &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(asm, class, &function.frame_state(state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
@@ -1198,6 +1199,22 @@ fn gen_new_array(
     }
 
     new_array
+}
+
+/// Compile array access (array[index])
+fn gen_array_aref(
+    asm: &mut Assembler,
+    array: Opnd,
+    index: Opnd,
+    state: &FrameState,
+) -> lir::Opnd {
+    unsafe extern "C" {
+        fn rb_ary_entry(ary: VALUE, off: c_long) -> VALUE;
+    }
+
+    gen_prepare_leaf_call_with_gc(asm, state);
+
+    asm_ccall!(asm, rb_ary_entry, array, index)
 }
 
 /// Compile a new hash instruction
