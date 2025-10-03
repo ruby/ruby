@@ -284,14 +284,11 @@ impl CodeBlock {
 
     /// Call a func with the disasm of generated code for testing
     #[allow(unused_variables)]
-    #[cfg(test)]
-    pub fn with_disasm<T>(&self, func: T) where T: Fn(String) {
-        #[cfg(feature = "disasm")]
-        {
-            let start_addr = self.get_ptr(0).raw_addr(self);
-            let end_addr = self.get_write_ptr().raw_addr(self);
-            func(crate::disasm::disasm_addr_range(self, start_addr, end_addr));
-        }
+    #[cfg(all(test, feature = "disasm"))]
+    pub fn disasm(&self) -> String {
+        let start_addr = self.get_ptr(0).raw_addr(self);
+        let end_addr = self.get_write_ptr().raw_addr(self);
+        crate::disasm::disasm_addr_range(self, start_addr, end_addr)
     }
 
     /// Return the hex dump of generated code for testing
@@ -299,6 +296,35 @@ impl CodeBlock {
     pub fn hexdump(&self) -> String {
         format!("{:x}", self)
     }
+}
+
+/// Combine multiple cb.disasm() results to match all of them at once, which allows
+/// us to avoid running the set of zjit-test -> zjit-test-update multiple times.
+#[cfg(all(test, feature = "disasm"))]
+#[macro_export]
+macro_rules! disasms {
+    ($( $cb:expr ),+ $(,)?) => {{
+        crate::disasms_with!("", $( $cb ),+)
+    }};
+}
+
+/// Basically `disasms!` but allows a non-"" delimiter, such as "\n"
+#[cfg(all(test, feature = "disasm"))]
+#[macro_export]
+macro_rules! disasms_with {
+    ($join:expr, $( $cb:expr ),+ $(,)?) => {{
+        vec![$( $cb.disasm() ),+].join($join)
+    }};
+}
+
+/// Combine multiple cb.hexdump() results to match all of them at once, which allows
+/// us to avoid running the set of zjit-test -> zjit-test-update multiple times.
+#[cfg(test)]
+#[macro_export]
+macro_rules! hexdumps {
+    ($( $cb:expr ),+ $(,)?) => {{
+        vec![$( $cb.hexdump() ),+].join("\n")
+    }};
 }
 
 /// Produce hex string output from the bytes in a code block
