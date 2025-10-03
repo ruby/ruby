@@ -1,3 +1,4 @@
+#include "internal.h"
 #include "ruby/ruby.h"
 #include "ruby/assert.h"
 #include "ruby/atomic.h"
@@ -6,7 +7,6 @@
 #include "ruby/st.h"
 #include "internal/object.h"
 #include "internal/array.h"
-#include "internal.h"
 
 #include "gc/gc.h"
 #include "gc/gc_impl.h"
