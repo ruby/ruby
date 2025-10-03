@@ -298,6 +298,17 @@ impl CodeBlock {
     }
 }
 
+/// Run assert_snapshot! only if cfg!(feature = "disasm").
+/// $actual can be not only `cb.disasm()` but also `disasms!(cb1, cb2, ...)`.
+#[cfg(test)]
+#[macro_export]
+macro_rules! assert_disasm_snapshot {
+    ($actual: expr, @$($tt: tt)*) => {{
+        #[cfg(feature = "disasm")]
+        assert_snapshot!($actual, @$($tt)*)
+    }};
+}
+
 /// Combine multiple cb.disasm() results to match all of them at once, which allows
 /// us to avoid running the set of zjit-test -> zjit-test-update multiple times.
 #[cfg(all(test, feature = "disasm"))]

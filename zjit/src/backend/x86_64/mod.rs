@@ -919,6 +919,7 @@ impl Assembler
 #[cfg(test)]
 mod tests {
     use insta::assert_snapshot;
+    use crate::assert_disasm_snapshot;
     use super::*;
 
     fn setup_asm() -> (Assembler, CodeBlock) {
@@ -933,8 +934,7 @@ mod tests {
         let _ = asm.add(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: mov rax, rax
         0x3: add rax, 0xff
         ");
@@ -949,8 +949,7 @@ mod tests {
         let _ = asm.add(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: mov rax, rax
         0x3: movabs r11, 0xffffffffffff
         0xd: add rax, r11
@@ -966,8 +965,7 @@ mod tests {
         let _ = asm.and(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: mov rax, rax
         0x3: and rax, 0xff
         ");
@@ -982,8 +980,7 @@ mod tests {
         let _ = asm.and(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: mov rax, rax
         0x3: movabs r11, 0xffffffffffff
         0xd: and rax, r11
@@ -998,8 +995,7 @@ mod tests {
         asm.cmp(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"  0x0: cmp rax, 0xff");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: cmp rax, 0xff");
         assert_snapshot!(cb.hexdump(), @"4881f8ff000000");
     }
 
@@ -1010,8 +1006,7 @@ mod tests {
         asm.cmp(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: movabs r11, 0xffffffffffff
         0xa: cmp rax, r11
         ");
@@ -1025,8 +1020,7 @@ mod tests {
         asm.cmp(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"  0x0: cmp rax, -1");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: cmp rax, -1");
         assert_snapshot!(cb.hexdump(), @"4883f8ff");
     }
 
@@ -1039,8 +1033,7 @@ mod tests {
         asm.cmp(shape_opnd, Opnd::UImm(0xF000));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"  0x0: cmp word ptr [rax + 6], 0xf000");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: cmp word ptr [rax + 6], 0xf000");
         assert_snapshot!(cb.hexdump(), @"6681780600f0");
     }
 
@@ -1053,8 +1046,7 @@ mod tests {
         asm.cmp(shape_opnd, Opnd::UImm(0xF000_0000));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"  0x0: cmp dword ptr [rax + 4], 0xf0000000");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: cmp dword ptr [rax + 4], 0xf0000000");
         assert_snapshot!(cb.hexdump(), @"817804000000f0");
     }
 
@@ -1066,8 +1058,7 @@ mod tests {
         let _ = asm.or(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: mov rax, rax
         0x3: or rax, 0xff
         ");
@@ -1082,8 +1073,7 @@ mod tests {
         let _ = asm.or(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: mov rax, rax
         0x3: movabs r11, 0xffffffffffff
         0xd: or rax, r11
@@ -1099,8 +1089,7 @@ mod tests {
         let _ = asm.sub(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: mov rax, rax
         0x3: sub rax, 0xff
         ");
@@ -1115,8 +1104,7 @@ mod tests {
         let _ = asm.sub(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: mov rax, rax
         0x3: movabs r11, 0xffffffffffff
         0xd: sub rax, r11
@@ -1131,8 +1119,7 @@ mod tests {
         asm.test(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"  0x0: test rax, 0xff");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: test rax, 0xff");
         assert_snapshot!(cb.hexdump(), @"48f7c0ff000000");
     }
 
@@ -1143,8 +1130,7 @@ mod tests {
         asm.test(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 0);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: movabs r11, 0xffffffffffff
         0xa: test rax, r11
         ");
@@ -1159,8 +1145,7 @@ mod tests {
         let _ = asm.xor(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: mov rax, rax
         0x3: xor rax, 0xff
         ");
@@ -1175,8 +1160,7 @@ mod tests {
         let _ = asm.xor(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: mov rax, rax
         0x3: movabs r11, 0xffffffffffff
         0xd: xor rax, r11
@@ -1192,8 +1176,7 @@ mod tests {
         asm.mov(SP, sp); // should be merged to lea
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"  0x0: lea rbx, [rbx + 8]");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: lea rbx, [rbx + 8]");
         assert_snapshot!(cb.hexdump(), @"488d5b08");
     }
 
@@ -1206,8 +1189,7 @@ mod tests {
         asm.mov(Opnd::mem(64, SP, 0), sp); // should NOT be merged to lea
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: movabs r11, 0xffffffffffff
         0xa: cmp rax, r11
         ");
@@ -1225,8 +1207,7 @@ mod tests {
         asm.mov(Opnd::Reg(RAX_REG), result);
         asm.compile_with_num_regs(&mut cb, 2);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: mov rax, qword ptr [rbx + 8]
         0x4: test rax, rax
         0x7: mov eax, 0x14
@@ -1245,8 +1226,7 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"  0x0: add r13, 0x40");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: add r13, 0x40");
         assert_snapshot!(cb.hexdump(), @"4983c540");
     }
 
@@ -1257,8 +1237,7 @@ mod tests {
         asm.add_into(CFP, Opnd::UImm(0x40));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"  0x0: add r13, 0x40");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: add r13, 0x40");
         assert_snapshot!(cb.hexdump(), @"4983c540");
     }
 
@@ -1270,8 +1249,7 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"  0x0: sub r13, 0x40");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: sub r13, 0x40");
         assert_snapshot!(cb.hexdump(), @"4983ed40");
     }
 
@@ -1282,8 +1260,7 @@ mod tests {
         asm.sub_into(CFP, Opnd::UImm(0x40));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"  0x0: sub r13, 0x40");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: sub r13, 0x40");
         assert_snapshot!(cb.hexdump(), @"4983ed40");
     }
 
@@ -1295,8 +1272,7 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"  0x0: and r13, 0x40");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: and r13, 0x40");
         assert_snapshot!(cb.hexdump(), @"4983e540");
     }
 
@@ -1308,8 +1284,7 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"  0x0: or r13, 0x40");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: or r13, 0x40");
         assert_snapshot!(cb.hexdump(), @"4983cd40");
     }
 
@@ -1321,8 +1296,7 @@ mod tests {
         asm.mov(CFP, sp); // should be merged to add
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"  0x0: xor r13, 0x40");
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: xor r13, 0x40");
         assert_snapshot!(cb.hexdump(), @"4983f540");
     }
 
@@ -1337,8 +1311,7 @@ mod tests {
         ]);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @r"
+        assert_disasm_snapshot!(cb.disasm(), @r"
         0x0: mov eax, 0
         0x5: call rax
         ");
@@ -1358,8 +1331,7 @@ mod tests {
         ]);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"
+        assert_disasm_snapshot!(cb.disasm(), @"
             0x0: mov r11, rsi
             0x3: mov rsi, rdi
             0x6: mov rdi, r11
@@ -1383,8 +1355,7 @@ mod tests {
         ]);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"
+        assert_disasm_snapshot!(cb.disasm(), @"
             0x0: mov r11, rsi
             0x3: mov rsi, rdi
             0x6: mov rdi, r11
@@ -1410,8 +1381,7 @@ mod tests {
         ]);
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"
+        assert_disasm_snapshot!(cb.disasm(), @"
             0x0: mov r11, rsi
             0x3: mov rsi, rdx
             0x6: mov rdx, rdi
@@ -1439,8 +1409,7 @@ mod tests {
         ]);
         asm.compile_with_num_regs(&mut cb, 3);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"
+        assert_disasm_snapshot!(cb.disasm(), @"
             0x0: mov eax, 1
             0x5: mov ecx, 2
             0xa: mov edx, 3
@@ -1469,8 +1438,7 @@ mod tests {
 
         asm.compile_with_num_regs(&mut cb, 1);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"
+        assert_disasm_snapshot!(cb.disasm(), @"
             0x0: cmp qword ptr [rbx + 0x10], 1
             0x5: mov edi, 4
             0xa: cmovg rdi, qword ptr [rbx]
@@ -1490,8 +1458,7 @@ mod tests {
 
         asm.compile_with_num_regs(&mut cb, 3);
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"
+        assert_disasm_snapshot!(cb.disasm(), @"
             0x0: movabs rax, 0x7f22c88d1930
             0xa: mov ecx, 4
             0xf: cmove rax, rcx
@@ -1509,8 +1476,8 @@ mod tests {
         asm.mov(shape_opnd, Opnd::Imm(0x8000_0001));
 
         asm.compile_with_num_regs(&mut cb, 0);
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"
+
+        assert_disasm_snapshot!(cb.disasm(), @"
             0x0: mov dword ptr [rax], 0x80000001
             0x6: mov dword ptr [rax], 0x80000001
         ");
@@ -1529,8 +1496,8 @@ mod tests {
         asm.frame_teardown(&[]);
 
         asm.compile_with_num_regs(&mut cb, 0);
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"
+
+        assert_disasm_snapshot!(cb.disasm(), @"
             0x0: push rbp
             0x1: mov rbp, rsp
             0x4: push r13
@@ -1563,8 +1530,7 @@ mod tests {
         let gc_offsets = asm.x86_emit(&mut cb).unwrap();
         assert_eq!(1, gc_offsets.len(), "VALUE source operand should be reported as gc offset");
 
-        #[cfg(feature = "disasm")]
-        assert_snapshot!(cb.disasm(), @"
+        assert_disasm_snapshot!(cb.disasm(), @"
             0x0: movabs r11, 0x1000
             0xa: mov qword ptr [rbx], r11
         ");
