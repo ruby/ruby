@@ -3306,8 +3306,7 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_id_table_free(vm->constant_cache);
             set_free_table(vm->unused_block_warning_table);
 
-            xfree(th->nt);
-            th->nt = NULL;
+            rb_thread_free_native_thread(th);
 
 #ifndef HAVE_SETPROCTITLE
             ruby_free_proctitle();
