@@ -6044,6 +6044,7 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 
     if (SPECIAL_CONST_P(b)) return;
 
+    GC_ASSERT(!during_gc);
     GC_ASSERT(RB_BUILTIN_TYPE(a) != T_NONE);
     GC_ASSERT(RB_BUILTIN_TYPE(a) != T_MOVED);
     GC_ASSERT(RB_BUILTIN_TYPE(a) != T_ZOMBIE);
