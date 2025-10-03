@@ -2,7 +2,9 @@
 
 use insta::assert_snapshot;
 
-use crate::asm::x86_64::*;
+#[cfg(feature = "disasm")]
+use crate::disasms;
+use crate::{asm::x86_64::*, hexdumps, assert_disasm_snapshot};
 
 /// Check that the bytes for an instruction sequence match a hex string
 fn check_bytes<R>(bytes: &str, run: R) where R: FnOnce(&mut super::CodeBlock) {
@@ -36,39 +38,43 @@ fn test_add() {
     let cb15 = compile(|cb| add(cb, ECX, imm_opnd(8)));
     let cb16 = compile(|cb| add(cb, ECX, imm_opnd(255)));
 
-    cb01.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add cl, 3"));
-    cb02.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add cl, bl"));
-    cb03.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add cl, spl"));
-    cb04.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add cx, bx"));
-    cb05.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add rax, rbx"));
-    cb06.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add ecx, edx"));
-    cb07.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add rdx, r14"));
-    cb08.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add qword ptr [rax], rdx"));
-    cb09.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add rdx, qword ptr [rax]"));
-    cb10.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add rdx, qword ptr [rax + 8]"));
-    cb11.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add rdx, qword ptr [rax + 0xff]"));
-    cb12.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add qword ptr [rax + 0x7f], 0xff"));
-    cb13.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add dword ptr [rax], edx"));
-    cb14.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add rsp, 8"));
-    cb15.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add ecx, 8"));
-    cb16.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add ecx, 0xff"));
+    assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16), @r"
+    0x0: add cl, 3
+    0x0: add cl, bl
+    0x0: add cl, spl
+    0x0: add cx, bx
+    0x0: add rax, rbx
+    0x0: add ecx, edx
+    0x0: add rdx, r14
+    0x0: add qword ptr [rax], rdx
+    0x0: add rdx, qword ptr [rax]
+    0x0: add rdx, qword ptr [rax + 8]
+    0x0: add rdx, qword ptr [rax + 0xff]
+    0x0: add qword ptr [rax + 0x7f], 0xff
+    0x0: add dword ptr [rax], edx
+    0x0: add rsp, 8
+    0x0: add ecx, 8
+    0x0: add ecx, 0xff
+    ");
 
-    assert_snapshot!(cb01.hexdump(), @"80c103");
-    assert_snapshot!(cb02.hexdump(), @"00d9");
-    assert_snapshot!(cb03.hexdump(), @"4000e1");
-    assert_snapshot!(cb04.hexdump(), @"6601d9");
-    assert_snapshot!(cb05.hexdump(), @"4801d8");
-    assert_snapshot!(cb06.hexdump(), @"01d1");
-    assert_snapshot!(cb07.hexdump(), @"4c01f2");
-    assert_snapshot!(cb08.hexdump(), @"480110");
-    assert_snapshot!(cb09.hexdump(), @"480310");
-    assert_snapshot!(cb10.hexdump(), @"48035008");
-    assert_snapshot!(cb11.hexdump(), @"480390ff000000");
-    assert_snapshot!(cb12.hexdump(), @"4881407fff000000");
-    assert_snapshot!(cb13.hexdump(), @"0110");
-    assert_snapshot!(cb14.hexdump(), @"4883c408");
-    assert_snapshot!(cb15.hexdump(), @"83c108");
-    assert_snapshot!(cb16.hexdump(), @"81c1ff000000");
+    assert_snapshot!(hexdumps!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16), @r"
+    80c103
+    00d9
+    4000e1
+    6601d9
+    4801d8
+    01d1
+    4c01f2
+    480110
+    480310
+    48035008
+    480390ff000000
+    4881407fff000000
+    0110
+    4883c408
+    83c108
+    81c1ff000000
+    ");
 }
 
 #[test]
@@ -86,23 +92,27 @@ fn test_add_unsigned() {
     let cb7 = compile(|cb| add(cb, R8, uimm_opnd(1)));
     let cb8 = compile(|cb| add(cb, R8, uimm_opnd(i32::MAX.try_into().unwrap())));
 
-    cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add r8b, 1"));
-    cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add r8b, 0x7f"));
-    cb3.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add r8w, 1"));
-    cb4.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add r8w, 0x7fff"));
-    cb5.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add r8d, 1"));
-    cb6.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add r8d, 0x7fffffff"));
-    cb7.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add r8, 1"));
-    cb8.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: add r8, 0x7fffffff"));
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @r"
+    0x0: add r8b, 1
+    0x0: add r8b, 0x7f
+    0x0: add r8w, 1
+    0x0: add r8w, 0x7fff
+    0x0: add r8d, 1
+    0x0: add r8d, 0x7fffffff
+    0x0: add r8, 1
+    0x0: add r8, 0x7fffffff
+    ");
 
-    assert_snapshot!(cb1.hexdump(), @"4180c001");
-    assert_snapshot!(cb2.hexdump(), @"4180c07f");
-    assert_snapshot!(cb3.hexdump(), @"664183c001");
-    assert_snapshot!(cb4.hexdump(), @"664181c0ff7f");
-    assert_snapshot!(cb5.hexdump(), @"4183c001");
-    assert_snapshot!(cb6.hexdump(), @"4181c0ffffff7f");
-    assert_snapshot!(cb7.hexdump(), @"4983c001");
-    assert_snapshot!(cb8.hexdump(), @"4981c0ffffff7f");
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @r"
+    4180c001
+    4180c07f
+    664183c001
+    664181c0ff7f
+    4183c001
+    4181c0ffffff7f
+    4983c001
+    4981c0ffffff7f
+    ");
 }
 
 #[test]
@@ -110,11 +120,15 @@ fn test_and() {
     let cb1 = compile(|cb| and(cb, EBP, R12D));
     let cb2 = compile(|cb| and(cb, mem_opnd(64, RAX, 0), imm_opnd(0x08)));
 
-    cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: and ebp, r12d"));
-    cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: and qword ptr [rax], 8"));
+    assert_disasm_snapshot!(disasms!(cb1, cb2), @r"
+    0x0: and ebp, r12d
+    0x0: and qword ptr [rax], 8
+    ");
 
-    assert_snapshot!(cb1.hexdump(), @"4421e5");
-    assert_snapshot!(cb2.hexdump(), @"48832008");
+    assert_snapshot!(hexdumps!(cb1, cb2), @r"
+    4421e5
+    48832008
+    ");
 }
 
 #[test]
@@ -124,7 +138,7 @@ fn test_call_label() {
         call_label(cb, label_idx);
         cb.link_labels();
     });
-    cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: call 0"));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: call 0");
     assert_snapshot!(cb.hexdump(), @"e8fbffffff");
 }
 
@@ -135,21 +149,21 @@ fn test_call_ptr() {
         let ptr = cb.get_write_ptr();
         call_ptr(cb, RAX, ptr.raw_ptr(cb));
     });
-    cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: call 0"));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: call 0");
     assert_snapshot!(cb.hexdump(), @"e8fbffffff");
 }
 
 #[test]
 fn test_call_reg() {
     let cb = compile(|cb| call(cb, RAX));
-    cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: call rax"));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: call rax");
     assert_snapshot!(cb.hexdump(), @"ffd0");
 }
 
 #[test]
 fn test_call_mem() {
     let cb = compile(|cb| call(cb, mem_opnd(64, RSP, 8)));
-    cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: call qword ptr [rsp + 8]"));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: call qword ptr [rsp + 8]");
     assert_snapshot!(cb.hexdump(), @"ff542408");
 }
 
@@ -161,17 +175,21 @@ fn test_cmovcc() {
     let cb4 = compile(|cb| cmovl(cb, RBX, RBP));
     let cb5 = compile(|cb| cmovle(cb, ESI, mem_opnd(32, RSP, 4)));
 
-    cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmovg esi, edi"));
-    cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmovg esi, dword ptr [rbp + 0xc]"));
-    cb3.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmovl eax, ecx"));
-    cb4.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmovl rbx, rbp"));
-    cb5.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmovle esi, dword ptr [rsp + 4]"));
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5), @r"
+    0x0: cmovg esi, edi
+    0x0: cmovg esi, dword ptr [rbp + 0xc]
+    0x0: cmovl eax, ecx
+    0x0: cmovl rbx, rbp
+    0x0: cmovle esi, dword ptr [rsp + 4]
+    ");
 
-    assert_snapshot!(cb1.hexdump(), @"0f4ff7");
-    assert_snapshot!(cb2.hexdump(), @"0f4f750c");
-    assert_snapshot!(cb3.hexdump(), @"0f4cc1");
-    assert_snapshot!(cb4.hexdump(), @"480f4cdd");
-    assert_snapshot!(cb5.hexdump(), @"0f4e742404");
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4, cb5), @r"
+    0f4ff7
+    0f4f750c
+    0f4cc1
+    480f4cdd
+    0f4e742404
+    ");
 }
 
 #[test]
@@ -182,23 +200,27 @@ fn test_cmp() {
     let cb4 = compile(|cb| cmp(cb, RAX, imm_opnd(2)));
     let cb5 = compile(|cb| cmp(cb, ECX, uimm_opnd(0x8000_0000)));
 
-    cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmp cl, dl"));
-    cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmp ecx, edi"));
-    cb3.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmp rdx, qword ptr [r12]"));
-    cb4.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmp rax, 2"));
-    cb5.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cmp ecx, 0x80000000"));
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5), @r"
+    0x0: cmp cl, dl
+    0x0: cmp ecx, edi
+    0x0: cmp rdx, qword ptr [r12]
+    0x0: cmp rax, 2
+    0x0: cmp ecx, 0x80000000
+    ");
 
-    assert_snapshot!(cb1.hexdump(), @"38d1");
-    assert_snapshot!(cb2.hexdump(), @"39f9");
-    assert_snapshot!(cb3.hexdump(), @"493b1424");
-    assert_snapshot!(cb4.hexdump(), @"4883f802");
-    assert_snapshot!(cb5.hexdump(), @"81f900000080");
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4, cb5), @r"
+    38d1
+    39f9
+    493b1424
+    4883f802
+    81f900000080
+    ");
 }
 
 #[test]
 fn test_cqo() {
     let cb = compile(cqo);
-    cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: cqo"));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: cqo");
     assert_snapshot!(cb.hexdump(), @"4899");
 }
 
@@ -209,13 +231,17 @@ fn test_imul() {
     // Operands flipped for encoding since multiplication is commutative
     let cb3 = compile(|cb| imul(cb, mem_opnd(64, RAX, 0), RDX));
 
-    cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: imul rax, rbx"));
-    cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: imul rdx, qword ptr [rax]"));
-    cb3.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: imul rdx, qword ptr [rax]"));
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3), @r"
+    0x0: imul rax, rbx
+    0x0: imul rdx, qword ptr [rax]
+    0x0: imul rdx, qword ptr [rax]
+    ");
 
-    assert_snapshot!(cb1.hexdump(), @"480fafc3");
-    assert_snapshot!(cb2.hexdump(), @"480faf10");
-    assert_snapshot!(cb3.hexdump(), @"480faf10");
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3), @r"
+    480fafc3
+    480faf10
+    480faf10
+    ");
 }
 
 #[test]
@@ -225,7 +251,7 @@ fn test_jge_label() {
         jge_label(cb, label_idx);
         cb.link_labels();
     });
-    cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: jge 0"));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: jge 0");
     assert_snapshot!(cb.hexdump(), @"0f8dfaffffff");
 }
 
@@ -246,17 +272,21 @@ fn test_jmp_label() {
         cb.link_labels();
     });
 
-    cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: jmp 5"));
-    cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: jmp 0"));
+    assert_disasm_snapshot!(disasms!(cb1, cb2), @r"
+    0x0: jmp 5
+    0x0: jmp 0
+    ");
 
-    assert_snapshot!(cb1.hexdump(), @"e900000000");
-    assert_snapshot!(cb2.hexdump(), @"e9fbffffff");
+    assert_snapshot!(hexdumps!(cb1, cb2), @r"
+    e900000000
+    e9fbffffff
+    ");
 }
 
 #[test]
 fn test_jmp_rm() {
     let cb = compile(|cb| jmp_rm(cb, R12));
-    cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: jmp r12"));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: jmp r12");
     assert_snapshot!(cb.hexdump(), @"41ffe4");
 }
 
@@ -267,7 +297,8 @@ fn test_jo_label() {
         jo_label(cb, label_idx);
         cb.link_labels();
     });
-    cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: jo 0"));
+
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: jo 0");
     assert_snapshot!(cb.hexdump(), @"0f80faffffff");
 }
 
@@ -278,15 +309,19 @@ fn test_lea() {
     let cb3 = compile(|cb| lea(cb, RAX, mem_opnd(8, RIP, 5)));
     let cb4 = compile(|cb| lea(cb, RDI, mem_opnd(8, RIP, 5)));
 
-    cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: lea rdx, [rcx + 8]"));
-    cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: lea rax, [rip]"));
-    cb3.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: lea rax, [rip + 5]"));
-    cb4.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: lea rdi, [rip + 5]"));
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4), @r"
+    0x0: lea rdx, [rcx + 8]
+    0x0: lea rax, [rip]
+    0x0: lea rax, [rip + 5]
+    0x0: lea rdi, [rip + 5]
+    ");
 
-    assert_snapshot!(cb1.hexdump(), @"488d5108");
-    assert_snapshot!(cb2.hexdump(), @"488d0500000000");
-    assert_snapshot!(cb3.hexdump(), @"488d0505000000");
-    assert_snapshot!(cb4.hexdump(), @"488d3d05000000");
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4), @r"
+    488d5108
+    488d0500000000
+    488d0505000000
+    488d3d05000000
+    ");
 }
 
 #[test]
@@ -320,59 +355,69 @@ fn test_mov() {
     let cb25 = compile(|cb| mov(cb, mem_opnd(64, R11, 0), R10));
     let cb26 = compile(|cb| mov(cb, mem_opnd(64, RDX, -8), imm_opnd(-12)));
 
-    cb01.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov eax, 7"));
-    cb02.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov eax, 0xfffffffd"));
-    cb03.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov r15d, 3"));
-    cb04.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov eax, ebx"));
-    cb05.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov eax, ecx"));
-    cb06.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov edx, dword ptr [rbx + 0x80]"));
-    cb07.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov rax, qword ptr [rsp + 4]"));
-    cb08.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov r8d, 0x34"));
-    cb09.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movabs r8, 0x80000000"));
-    cb10.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movabs r8, 0xffffffffffffffff"));
-    cb11.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov eax, 0x34"));
-    cb12.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movabs rax, 0xffc0000000000002"));
-    cb13.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movabs rax, 0x80000000"));
-    cb14.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movabs rax, 0xffffffffffffffcc"));
-    cb15.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movabs rax, 0xffffffffffffffff"));
-    cb16.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov cl, r9b"));
-    cb17.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov rbx, rax"));
-    cb18.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov rdi, rbx"));
-    cb19.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov sil, 0xb"));
-    cb20.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov byte ptr [rsp], 0xfd"));
-    cb21.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov qword ptr [rdi + 8], 1"));
-    cb22.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov dword ptr [rax + 4], 0x11"));
-    cb23.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov dword ptr [rax + 4], 0x80000001"));
-    cb24.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov dword ptr [r8 + 0x14], ebx"));
-    cb25.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov qword ptr [r11], r10"));
-    cb26.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov qword ptr [rdx - 8], 0xfffffffffffffff4"));
+    assert_disasm_snapshot!(disasms!(
+        cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13,
+        cb14, cb15, cb16, cb17, cb18, cb19, cb20, cb21, cb22, cb23, cb24, cb25, cb26,
+    ), @r"
+    0x0: mov eax, 7
+    0x0: mov eax, 0xfffffffd
+    0x0: mov r15d, 3
+    0x0: mov eax, ebx
+    0x0: mov eax, ecx
+    0x0: mov edx, dword ptr [rbx + 0x80]
+    0x0: mov rax, qword ptr [rsp + 4]
+    0x0: mov r8d, 0x34
+    0x0: movabs r8, 0x80000000
+    0x0: movabs r8, 0xffffffffffffffff
+    0x0: mov eax, 0x34
+    0x0: movabs rax, 0xffc0000000000002
+    0x0: movabs rax, 0x80000000
+    0x0: movabs rax, 0xffffffffffffffcc
+    0x0: movabs rax, 0xffffffffffffffff
+    0x0: mov cl, r9b
+    0x0: mov rbx, rax
+    0x0: mov rdi, rbx
+    0x0: mov sil, 0xb
+    0x0: mov byte ptr [rsp], 0xfd
+    0x0: mov qword ptr [rdi + 8], 1
+    0x0: mov dword ptr [rax + 4], 0x11
+    0x0: mov dword ptr [rax + 4], 0x80000001
+    0x0: mov dword ptr [r8 + 0x14], ebx
+    0x0: mov qword ptr [r11], r10
+    0x0: mov qword ptr [rdx - 8], 0xfffffffffffffff4
+    ");
 
-    assert_snapshot!(cb01.hexdump(), @"b807000000");
-    assert_snapshot!(cb02.hexdump(), @"b8fdffffff");
-    assert_snapshot!(cb03.hexdump(), @"41bf03000000");
-    assert_snapshot!(cb04.hexdump(), @"89d8");
-    assert_snapshot!(cb05.hexdump(), @"89c8");
-    assert_snapshot!(cb06.hexdump(), @"8b9380000000");
-    assert_snapshot!(cb07.hexdump(), @"488b442404");
-    assert_snapshot!(cb08.hexdump(), @"41b834000000");
-    assert_snapshot!(cb09.hexdump(), @"49b80000008000000000");
-    assert_snapshot!(cb10.hexdump(), @"49b8ffffffffffffffff");
-    assert_snapshot!(cb11.hexdump(), @"b834000000");
-    assert_snapshot!(cb12.hexdump(), @"48b8020000000000c0ff");
-    assert_snapshot!(cb13.hexdump(), @"48b80000008000000000");
-    assert_snapshot!(cb14.hexdump(), @"48b8ccffffffffffffff");
-    assert_snapshot!(cb15.hexdump(), @"48b8ffffffffffffffff");
-    assert_snapshot!(cb16.hexdump(), @"4488c9");
-    assert_snapshot!(cb17.hexdump(), @"4889c3");
-    assert_snapshot!(cb18.hexdump(), @"4889df");
-    assert_snapshot!(cb19.hexdump(), @"40b60b");
-    assert_snapshot!(cb20.hexdump(), @"c60424fd");
-    assert_snapshot!(cb21.hexdump(), @"48c7470801000000");
-    assert_snapshot!(cb22.hexdump(), @"c7400411000000");
-    assert_snapshot!(cb23.hexdump(), @"c7400401000080");
-    assert_snapshot!(cb24.hexdump(), @"41895814");
-    assert_snapshot!(cb25.hexdump(), @"4d8913");
-    assert_snapshot!(cb26.hexdump(), @"48c742f8f4ffffff");
+    assert_snapshot!(hexdumps!(
+        cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13,
+        cb14, cb15, cb16, cb17, cb18, cb19, cb20, cb21, cb22, cb23, cb24, cb25, cb26
+    ), @r"
+    b807000000
+    b8fdffffff
+    41bf03000000
+    89d8
+    89c8
+    8b9380000000
+    488b442404
+    41b834000000
+    49b80000008000000000
+    49b8ffffffffffffffff
+    b834000000
+    48b8020000000000c0ff
+    48b80000008000000000
+    48b8ccffffffffffffff
+    48b8ffffffffffffffff
+    4488c9
+    4889c3
+    4889df
+    40b60b
+    c60424fd
+    48c7470801000000
+    c7400411000000
+    c7400401000080
+    41895814
+    4d8913
+    48c742f8f4ffffff
+    ");
 }
 
 #[test]
@@ -380,11 +425,15 @@ fn test_movabs() {
     let cb1 = compile(|cb| movabs(cb, R8, 0x34));
     let cb2 = compile(|cb| movabs(cb, R8, 0x80000000));
 
-    cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movabs r8, 0x34"));
-    cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movabs r8, 0x80000000"));
+    assert_disasm_snapshot!(disasms!(cb1, cb2), @r"
+    0x0: movabs r8, 0x34
+    0x0: movabs r8, 0x80000000
+    ");
 
-    assert_snapshot!(cb1.hexdump(), @"49b83400000000000000");
-    assert_snapshot!(cb2.hexdump(), @"49b80000008000000000");
+    assert_snapshot!(hexdumps!(cb1, cb2), @r"
+    49b83400000000000000
+    49b80000008000000000
+    ");
 }
 
 #[test]
@@ -421,49 +470,53 @@ fn test_mov_unsigned() {
     // MOV r64, imm64, will not move down into 32 bit since it does not fit into 32 bits
     let cb21 = compile(|cb| mov(cb, R8, uimm_opnd(u64::MAX)));
 
-    cb01.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov al, 1"));
-    cb02.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov al, 0xff"));
-    cb03.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov ax, 1"));
-    cb04.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov ax, 0xffff"));
-    cb05.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov eax, 1"));
-    cb06.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov eax, 0xffffffff"));
-    cb07.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov r8d, 0"));
-    cb08.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov r8d, 0xffffffff"));
-    cb09.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov eax, 1"));
-    cb10.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov eax, 0xffffffff"));
-    cb11.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movabs rax, 0x100000000"));
-    cb12.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movabs rax, 0xffffffffffffffff"));
-    cb13.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movabs r8, 0xffffffffffffffff"));
-    cb14.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov r8b, 1"));
-    cb15.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov r8b, 0xff"));
-    cb16.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov r8w, 1"));
-    cb17.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov r8w, 0xffff"));
-    cb18.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov r8d, 1"));
-    cb19.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov r8d, 0xffffffff"));
-    cb20.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov r8d, 1"));
-    cb21.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movabs r8, 0xffffffffffffffff"));
+    assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17, cb18, cb19, cb20, cb21), @r"
+    0x0: mov al, 1
+    0x0: mov al, 0xff
+    0x0: mov ax, 1
+    0x0: mov ax, 0xffff
+    0x0: mov eax, 1
+    0x0: mov eax, 0xffffffff
+    0x0: mov r8d, 0
+    0x0: mov r8d, 0xffffffff
+    0x0: mov eax, 1
+    0x0: mov eax, 0xffffffff
+    0x0: movabs rax, 0x100000000
+    0x0: movabs rax, 0xffffffffffffffff
+    0x0: movabs r8, 0xffffffffffffffff
+    0x0: mov r8b, 1
+    0x0: mov r8b, 0xff
+    0x0: mov r8w, 1
+    0x0: mov r8w, 0xffff
+    0x0: mov r8d, 1
+    0x0: mov r8d, 0xffffffff
+    0x0: mov r8d, 1
+    0x0: movabs r8, 0xffffffffffffffff
+    ");
 
-    assert_snapshot!(cb01.hexdump(), @"b001");
-    assert_snapshot!(cb02.hexdump(), @"b0ff");
-    assert_snapshot!(cb03.hexdump(), @"66b80100");
-    assert_snapshot!(cb04.hexdump(), @"66b8ffff");
-    assert_snapshot!(cb05.hexdump(), @"b801000000");
-    assert_snapshot!(cb06.hexdump(), @"b8ffffffff");
-    assert_snapshot!(cb07.hexdump(), @"41b800000000");
-    assert_snapshot!(cb08.hexdump(), @"41b8ffffffff");
-    assert_snapshot!(cb09.hexdump(), @"b801000000");
-    assert_snapshot!(cb10.hexdump(), @"b8ffffffff");
-    assert_snapshot!(cb11.hexdump(), @"48b80000000001000000");
-    assert_snapshot!(cb12.hexdump(), @"48b8ffffffffffffffff");
-    assert_snapshot!(cb13.hexdump(), @"49b8ffffffffffffffff");
-    assert_snapshot!(cb14.hexdump(), @"41b001");
-    assert_snapshot!(cb15.hexdump(), @"41b0ff");
-    assert_snapshot!(cb16.hexdump(), @"6641b80100");
-    assert_snapshot!(cb17.hexdump(), @"6641b8ffff");
-    assert_snapshot!(cb18.hexdump(), @"41b801000000");
-    assert_snapshot!(cb19.hexdump(), @"41b8ffffffff");
-    assert_snapshot!(cb20.hexdump(), @"41b801000000");
-    assert_snapshot!(cb21.hexdump(), @"49b8ffffffffffffffff");
+    assert_snapshot!(hexdumps!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17, cb18, cb19, cb20, cb21), @r"
+    b001
+    b0ff
+    66b80100
+    66b8ffff
+    b801000000
+    b8ffffffff
+    41b800000000
+    41b8ffffffff
+    b801000000
+    b8ffffffff
+    48b80000000001000000
+    48b8ffffffffffffffff
+    49b8ffffffffffffffff
+    41b001
+    41b0ff
+    6641b80100
+    6641b8ffff
+    41b801000000
+    41b8ffffffff
+    41b801000000
+    49b8ffffffffffffffff
+    ");
 }
 
 #[test]
@@ -474,17 +527,21 @@ fn test_mov_iprel() {
     let cb4 = compile(|cb| mov(cb, RAX, mem_opnd(64, RIP, 5)));
     let cb5 = compile(|cb| mov(cb, RDI, mem_opnd(64, RIP, 5)));
 
-    cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov eax, dword ptr [rip]"));
-    cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov eax, dword ptr [rip + 5]"));
-    cb3.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov rax, qword ptr [rip]"));
-    cb4.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov rax, qword ptr [rip + 5]"));
-    cb5.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: mov rdi, qword ptr [rip + 5]"));
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5), @r"
+    0x0: mov eax, dword ptr [rip]
+    0x0: mov eax, dword ptr [rip + 5]
+    0x0: mov rax, qword ptr [rip]
+    0x0: mov rax, qword ptr [rip + 5]
+    0x0: mov rdi, qword ptr [rip + 5]
+    ");
 
-    assert_snapshot!(cb1.hexdump(), @"8b0500000000");
-    assert_snapshot!(cb2.hexdump(), @"8b0505000000");
-    assert_snapshot!(cb3.hexdump(), @"488b0500000000");
-    assert_snapshot!(cb4.hexdump(), @"488b0505000000");
-    assert_snapshot!(cb5.hexdump(), @"488b3d05000000");
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4, cb5), @r"
+    8b0500000000
+    8b0505000000
+    488b0500000000
+    488b0505000000
+    488b3d05000000
+    ");
 }
 
 #[test]
@@ -498,23 +555,27 @@ fn test_movsx() {
     let cb7 = compile(|cb| movsx(cb, RAX, mem_opnd(8, RSP, 0)));
     let cb8 = compile(|cb| movsx(cb, RDX, mem_opnd(16, R13, 4)));
 
-    cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movsx ax, al"));
-    cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movsx edx, al"));
-    cb3.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movsx rax, bl"));
-    cb4.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movsx ecx, ax"));
-    cb5.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movsx r11, cl"));
-    cb6.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movsxd r10, dword ptr [rsp + 0xc]"));
-    cb7.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movsx rax, byte ptr [rsp]"));
-    cb8.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: movsx rdx, word ptr [r13 + 4]"));
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @r"
+    0x0: movsx ax, al
+    0x0: movsx edx, al
+    0x0: movsx rax, bl
+    0x0: movsx ecx, ax
+    0x0: movsx r11, cl
+    0x0: movsxd r10, dword ptr [rsp + 0xc]
+    0x0: movsx rax, byte ptr [rsp]
+    0x0: movsx rdx, word ptr [r13 + 4]
+    ");
 
-    assert_snapshot!(cb1.hexdump(), @"660fbec0");
-    assert_snapshot!(cb2.hexdump(), @"0fbed0");
-    assert_snapshot!(cb3.hexdump(), @"480fbec3");
-    assert_snapshot!(cb4.hexdump(), @"0fbfc8");
-    assert_snapshot!(cb5.hexdump(), @"4c0fbed9");
-    assert_snapshot!(cb6.hexdump(), @"4c6354240c");
-    assert_snapshot!(cb7.hexdump(), @"480fbe0424");
-    assert_snapshot!(cb8.hexdump(), @"490fbf5504");
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @r"
+    660fbec0
+    0fbed0
+    480fbec3
+    0fbfc8
+    4c0fbed9
+    4c6354240c
+    480fbe0424
+    490fbf5504
+    ");
 }
 
 #[test]
@@ -532,40 +593,38 @@ fn test_nop() {
     let cb11 = compile(|cb| nop(cb, 11));
     let cb12 = compile(|cb| nop(cb, 12));
 
-    cb01.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: nop"));
-    cb02.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: nop"));
-    cb03.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: nop dword ptr [rax]"));
-    cb04.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: nop dword ptr [rax]"));
-    cb05.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: nop dword ptr [rax + rax]"));
-    cb06.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: nop word ptr [rax + rax]"));
-    cb07.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: nop dword ptr [rax]"));
-    cb08.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: nop dword ptr [rax + rax]"));
-    cb09.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: nop word ptr [rax + rax]"));
-    cb10.with_disasm(|disasm| assert_snapshot!(disasm, @r"
+    assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12), @r"
+    0x0: nop
+    0x0: nop
+    0x0: nop dword ptr [rax]
+    0x0: nop dword ptr [rax]
+    0x0: nop dword ptr [rax + rax]
+    0x0: nop word ptr [rax + rax]
+    0x0: nop dword ptr [rax]
+    0x0: nop dword ptr [rax + rax]
+    0x0: nop word ptr [rax + rax]
     0x0: nop word ptr [rax + rax]
     0x9: nop
-    "));
-    cb11.with_disasm(|disasm| assert_snapshot!(disasm, @r"
     0x0: nop word ptr [rax + rax]
     0x9: nop
-    "));
-    cb12.with_disasm(|disasm| assert_snapshot!(disasm, @r"
     0x0: nop word ptr [rax + rax]
     0x9: nop dword ptr [rax]
-    "));
+    ");
 
-    assert_snapshot!(cb01.hexdump(), @"90");
-    assert_snapshot!(cb02.hexdump(), @"6690");
-    assert_snapshot!(cb03.hexdump(), @"0f1f00");
-    assert_snapshot!(cb04.hexdump(), @"0f1f4000");
-    assert_snapshot!(cb05.hexdump(), @"0f1f440000");
-    assert_snapshot!(cb06.hexdump(), @"660f1f440000");
-    assert_snapshot!(cb07.hexdump(), @"0f1f8000000000");
-    assert_snapshot!(cb08.hexdump(), @"0f1f840000000000");
-    assert_snapshot!(cb09.hexdump(), @"660f1f840000000000");
-    assert_snapshot!(cb10.hexdump(), @"660f1f84000000000090");
-    assert_snapshot!(cb11.hexdump(), @"660f1f8400000000006690");
-    assert_snapshot!(cb12.hexdump(), @"660f1f8400000000000f1f00");
+    assert_snapshot!(hexdumps!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12), @r"
+    90
+    6690
+    0f1f00
+    0f1f4000
+    0f1f440000
+    660f1f440000
+    0f1f8000000000
+    0f1f840000000000
+    660f1f840000000000
+    660f1f84000000000090
+    660f1f8400000000006690
+    660f1f8400000000000f1f00
+    ");
 }
 
 #[test]
@@ -588,47 +647,51 @@ fn test_not() {
     let cb16 = compile(|cb| not(cb, mem_opnd(32, RDX, -55)));
     let cb17 = compile(|cb| not(cb, mem_opnd(32, RDX, -555)));
 
-    cb01.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not ax"));
-    cb02.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not eax"));
-    cb03.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not qword ptr [r12]"));
-    cb04.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not dword ptr [rsp + 0x12d]"));
-    cb05.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not dword ptr [rsp]"));
-    cb06.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not dword ptr [rsp + 3]"));
-    cb07.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not dword ptr [rbp]"));
-    cb08.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not dword ptr [rbp + 0xd]"));
-    cb09.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not rax"));
-    cb10.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not r11"));
-    cb11.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not dword ptr [rax]"));
-    cb12.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not dword ptr [rsi]"));
-    cb13.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not dword ptr [rdi]"));
-    cb14.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not dword ptr [rdx + 0x37]"));
-    cb15.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not dword ptr [rdx + 0x539]"));
-    cb16.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not dword ptr [rdx - 0x37]"));
-    cb17.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: not dword ptr [rdx - 0x22b]"));
+    assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17), @r"
+    0x0: not ax
+    0x0: not eax
+    0x0: not qword ptr [r12]
+    0x0: not dword ptr [rsp + 0x12d]
+    0x0: not dword ptr [rsp]
+    0x0: not dword ptr [rsp + 3]
+    0x0: not dword ptr [rbp]
+    0x0: not dword ptr [rbp + 0xd]
+    0x0: not rax
+    0x0: not r11
+    0x0: not dword ptr [rax]
+    0x0: not dword ptr [rsi]
+    0x0: not dword ptr [rdi]
+    0x0: not dword ptr [rdx + 0x37]
+    0x0: not dword ptr [rdx + 0x539]
+    0x0: not dword ptr [rdx - 0x37]
+    0x0: not dword ptr [rdx - 0x22b]
+    ");
 
-    assert_snapshot!(cb01.hexdump(), @"66f7d0");
-    assert_snapshot!(cb02.hexdump(), @"f7d0");
-    assert_snapshot!(cb03.hexdump(), @"49f71424");
-    assert_snapshot!(cb04.hexdump(), @"f794242d010000");
-    assert_snapshot!(cb05.hexdump(), @"f71424");
-    assert_snapshot!(cb06.hexdump(), @"f7542403");
-    assert_snapshot!(cb07.hexdump(), @"f75500");
-    assert_snapshot!(cb08.hexdump(), @"f7550d");
-    assert_snapshot!(cb09.hexdump(), @"48f7d0");
-    assert_snapshot!(cb10.hexdump(), @"49f7d3");
-    assert_snapshot!(cb11.hexdump(), @"f710");
-    assert_snapshot!(cb12.hexdump(), @"f716");
-    assert_snapshot!(cb13.hexdump(), @"f717");
-    assert_snapshot!(cb14.hexdump(), @"f75237");
-    assert_snapshot!(cb15.hexdump(), @"f79239050000");
-    assert_snapshot!(cb16.hexdump(), @"f752c9");
-    assert_snapshot!(cb17.hexdump(), @"f792d5fdffff");
+    assert_snapshot!(hexdumps!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17), @r"
+    66f7d0
+    f7d0
+    49f71424
+    f794242d010000
+    f71424
+    f7542403
+    f75500
+    f7550d
+    48f7d0
+    49f7d3
+    f710
+    f716
+    f717
+    f75237
+    f79239050000
+    f752c9
+    f792d5fdffff
+    ");
 }
 
 #[test]
 fn test_or() {
     let cb = compile(|cb| or(cb, EDX, ESI));
-    cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: or edx, esi"));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: or edx, esi");
     assert_snapshot!(cb.hexdump(), @"09f2");
 }
 
@@ -645,27 +708,31 @@ fn test_pop() {
     let cb09 = compile(|cb| pop(cb, mem_opnd_sib(64, RAX, RCX, 8, 3)));
     let cb10 = compile(|cb| pop(cb, mem_opnd_sib(64, R8, RCX, 8, 3)));
 
-    cb01.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: pop rax"));
-    cb02.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: pop rbx"));
-    cb03.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: pop rsp"));
-    cb04.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: pop rbp"));
-    cb05.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: pop r12"));
-    cb06.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: pop qword ptr [rax]"));
-    cb07.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: pop qword ptr [r8]"));
-    cb08.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: pop qword ptr [r8 + 3]"));
-    cb09.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: pop qword ptr [rax + rcx*8 + 3]"));
-    cb10.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: pop qword ptr [r8 + rcx*8 + 3]"));
+    assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10), @r"
+    0x0: pop rax
+    0x0: pop rbx
+    0x0: pop rsp
+    0x0: pop rbp
+    0x0: pop r12
+    0x0: pop qword ptr [rax]
+    0x0: pop qword ptr [r8]
+    0x0: pop qword ptr [r8 + 3]
+    0x0: pop qword ptr [rax + rcx*8 + 3]
+    0x0: pop qword ptr [r8 + rcx*8 + 3]
+    ");
 
-    assert_snapshot!(cb01.hexdump(), @"58");
-    assert_snapshot!(cb02.hexdump(), @"5b");
-    assert_snapshot!(cb03.hexdump(), @"5c");
-    assert_snapshot!(cb04.hexdump(), @"5d");
-    assert_snapshot!(cb05.hexdump(), @"415c");
-    assert_snapshot!(cb06.hexdump(), @"8f00");
-    assert_snapshot!(cb07.hexdump(), @"418f00");
-    assert_snapshot!(cb08.hexdump(), @"418f4003");
-    assert_snapshot!(cb09.hexdump(), @"8f44c803");
-    assert_snapshot!(cb10.hexdump(), @"418f44c803");
+    assert_snapshot!(hexdumps!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10), @r"
+    58
+    5b
+    5c
+    5d
+    415c
+    8f00
+    418f00
+    418f4003
+    8f44c803
+    418f44c803
+    ");
 }
 
 #[test]
@@ -679,29 +746,33 @@ fn test_push() {
     let cb7 = compile(|cb| push(cb, mem_opnd_sib(64, RAX, RCX, 8, 3)));
     let cb8 = compile(|cb| push(cb, mem_opnd_sib(64, R8, RCX, 8, 3)));
 
-    cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: push rax"));
-    cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: push rbx"));
-    cb3.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: push r12"));
-    cb4.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: push qword ptr [rax]"));
-    cb5.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: push qword ptr [r8]"));
-    cb6.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: push qword ptr [r8 + 3]"));
-    cb7.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: push qword ptr [rax + rcx*8 + 3]"));
-    cb8.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: push qword ptr [r8 + rcx*8 + 3]"));
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @r"
+    0x0: push rax
+    0x0: push rbx
+    0x0: push r12
+    0x0: push qword ptr [rax]
+    0x0: push qword ptr [r8]
+    0x0: push qword ptr [r8 + 3]
+    0x0: push qword ptr [rax + rcx*8 + 3]
+    0x0: push qword ptr [r8 + rcx*8 + 3]
+    ");
 
-    assert_snapshot!(cb1.hexdump(), @"50");
-    assert_snapshot!(cb2.hexdump(), @"53");
-    assert_snapshot!(cb3.hexdump(), @"4154");
-    assert_snapshot!(cb4.hexdump(), @"ff30");
-    assert_snapshot!(cb5.hexdump(), @"41ff30");
-    assert_snapshot!(cb6.hexdump(), @"41ff7003");
-    assert_snapshot!(cb7.hexdump(), @"ff74c803");
-    assert_snapshot!(cb8.hexdump(), @"41ff74c803");
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @r"
+    50
+    53
+    4154
+    ff30
+    41ff30
+    41ff7003
+    ff74c803
+    41ff74c803
+    ");
 }
 
 #[test]
 fn test_ret() {
     let cb = compile(ret);
-    cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: ret"));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: ret");
     assert_snapshot!(cb.hexdump(), @"c3");
 }
 
@@ -713,30 +784,34 @@ fn test_sal() {
     let cb4 = compile(|cb| sal(cb, mem_opnd(32, RSP, 68), uimm_opnd(1)));
     let cb5 = compile(|cb| sal(cb, RCX, CL));
 
-    cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: shl cx, 1"));
-    cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: shl ecx, 1"));
-    cb3.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: shl ebp, 5"));
-    cb4.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: shl dword ptr [rsp + 0x44], 1"));
-    cb5.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: shl rcx, cl"));
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5), @r"
+    0x0: shl cx, 1
+    0x0: shl ecx, 1
+    0x0: shl ebp, 5
+    0x0: shl dword ptr [rsp + 0x44], 1
+    0x0: shl rcx, cl
+    ");
 
-    assert_snapshot!(cb1.hexdump(), @"66d1e1");
-    assert_snapshot!(cb2.hexdump(), @"d1e1");
-    assert_snapshot!(cb3.hexdump(), @"c1e505");
-    assert_snapshot!(cb4.hexdump(), @"d1642444");
-    assert_snapshot!(cb5.hexdump(), @"48d3e1");
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4, cb5), @r"
+    66d1e1
+    d1e1
+    c1e505
+    d1642444
+    48d3e1
+    ");
 }
 
 #[test]
 fn test_sar() {
     let cb = compile(|cb| sar(cb, EDX, uimm_opnd(1)));
-    cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: sar edx, 1"));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: sar edx, 1");
     assert_snapshot!(cb.hexdump(), @"d1fa");
 }
 
 #[test]
 fn test_shr() {
     let cb = compile(|cb| shr(cb, R14, uimm_opnd(7)));
-    cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: shr r14, 7"));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: shr r14, 7");
     assert_snapshot!(cb.hexdump(), @"49c1ee07");
 }
 
@@ -745,11 +820,15 @@ fn test_sub() {
     let cb1 = compile(|cb| sub(cb, EAX, imm_opnd(1)));
     let cb2 = compile(|cb| sub(cb, RAX, imm_opnd(2)));
 
-    cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: sub eax, 1"));
-    cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: sub rax, 2"));
+    assert_disasm_snapshot!(disasms!(cb1, cb2), @r"
+    0x0: sub eax, 1
+    0x0: sub rax, 2
+    ");
 
-    assert_snapshot!(cb1.hexdump(), @"83e801");
-    assert_snapshot!(cb2.hexdump(), @"4883e802");
+    assert_snapshot!(hexdumps!(cb1, cb2), @r"
+    83e801
+    4883e802
+    ");
 }
 
 #[test]
@@ -782,45 +861,49 @@ fn test_test() {
     let cb18 = compile(|cb| test(cb, mem_opnd(64, RSI, 64), imm_opnd(0x08)));
     let cb19 = compile(|cb| test(cb, RCX, imm_opnd(0x08)));
 
-    cb01.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test al, al"));
-    cb02.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test ax, ax"));
-    cb03.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test cl, 8"));
-    cb04.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test dl, 7"));
-    cb05.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test cl, 8"));
-    cb06.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test byte ptr [rdx + 8], 8"));
-    cb07.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test byte ptr [rdx + 8], 0xff"));
-    cb08.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test dx, 0xffff"));
-    cb09.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test word ptr [rdx + 8], 0xffff"));
-    cb10.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test byte ptr [rsi], 1"));
-    cb11.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test byte ptr [rsi + 0x10], 1"));
-    cb12.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test byte ptr [rsi - 0x10], 1"));
-    cb13.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test dword ptr [rsi + 0x40], eax"));
-    cb14.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test qword ptr [rdi + 0x2a], rax"));
-    cb15.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test rax, rax"));
-    cb16.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test rax, rsi"));
-    cb17.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test qword ptr [rsi + 0x40], -9"));
-    cb18.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test qword ptr [rsi + 0x40], 8"));
-    cb19.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: test rcx, 8"));
+    assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17, cb18, cb19), @r"
+    0x0: test al, al
+    0x0: test ax, ax
+    0x0: test cl, 8
+    0x0: test dl, 7
+    0x0: test cl, 8
+    0x0: test byte ptr [rdx + 8], 8
+    0x0: test byte ptr [rdx + 8], 0xff
+    0x0: test dx, 0xffff
+    0x0: test word ptr [rdx + 8], 0xffff
+    0x0: test byte ptr [rsi], 1
+    0x0: test byte ptr [rsi + 0x10], 1
+    0x0: test byte ptr [rsi - 0x10], 1
+    0x0: test dword ptr [rsi + 0x40], eax
+    0x0: test qword ptr [rdi + 0x2a], rax
+    0x0: test rax, rax
+    0x0: test rax, rsi
+    0x0: test qword ptr [rsi + 0x40], -9
+    0x0: test qword ptr [rsi + 0x40], 8
+    0x0: test rcx, 8
+    ");
 
-    assert_snapshot!(cb01.hexdump(), @"84c0");
-    assert_snapshot!(cb02.hexdump(), @"6685c0");
-    assert_snapshot!(cb03.hexdump(), @"f6c108");
-    assert_snapshot!(cb04.hexdump(), @"f6c207");
-    assert_snapshot!(cb05.hexdump(), @"f6c108");
-    assert_snapshot!(cb06.hexdump(), @"f6420808");
-    assert_snapshot!(cb07.hexdump(), @"f64208ff");
-    assert_snapshot!(cb08.hexdump(), @"66f7c2ffff");
-    assert_snapshot!(cb09.hexdump(), @"66f74208ffff");
-    assert_snapshot!(cb10.hexdump(), @"f60601");
-    assert_snapshot!(cb11.hexdump(), @"f6461001");
-    assert_snapshot!(cb12.hexdump(), @"f646f001");
-    assert_snapshot!(cb13.hexdump(), @"854640");
-    assert_snapshot!(cb14.hexdump(), @"4885472a");
-    assert_snapshot!(cb15.hexdump(), @"4885c0");
-    assert_snapshot!(cb16.hexdump(), @"4885f0");
-    assert_snapshot!(cb17.hexdump(), @"48f74640f7ffffff");
-    assert_snapshot!(cb18.hexdump(), @"48f7464008000000");
-    assert_snapshot!(cb19.hexdump(), @"48f7c108000000");
+    assert_snapshot!(hexdumps!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17, cb18, cb19), @r"
+    84c0
+    6685c0
+    f6c108
+    f6c207
+    f6c108
+    f6420808
+    f64208ff
+    66f7c2ffff
+    66f74208ffff
+    f60601
+    f6461001
+    f646f001
+    854640
+    4885472a
+    4885c0
+    4885f0
+    48f74640f7ffffff
+    48f7464008000000
+    48f7c108000000
+    ");
 }
 
 #[test]
@@ -830,21 +913,25 @@ fn test_xchg() {
     let cb3 = compile(|cb| xchg(cb, RCX, RBX));
     let cb4 = compile(|cb| xchg(cb, R9, R15));
 
-    cb1.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: xchg rcx, rax"));
-    cb2.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: xchg r13, rax"));
-    cb3.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: xchg rcx, rbx"));
-    cb4.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: xchg r9, r15"));
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4), @r"
+    0x0: xchg rcx, rax
+    0x0: xchg r13, rax
+    0x0: xchg rcx, rbx
+    0x0: xchg r9, r15
+    ");
 
-    assert_snapshot!(cb1.hexdump(), @"4891");
-    assert_snapshot!(cb2.hexdump(), @"4995");
-    assert_snapshot!(cb3.hexdump(), @"4887d9");
-    assert_snapshot!(cb4.hexdump(), @"4d87f9");
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4), @r"
+    4891
+    4995
+    4887d9
+    4d87f9
+    ");
 }
 
 #[test]
 fn test_xor() {
     let cb = compile(|cb| xor(cb, EAX, EAX));
-    cb.with_disasm(|disasm| assert_snapshot!(disasm, @"  0x0: xor eax, eax"));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: xor eax, eax");
     assert_snapshot!(cb.hexdump(), @"31c0");
 }
 
