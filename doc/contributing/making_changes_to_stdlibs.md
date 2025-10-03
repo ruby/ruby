@@ -4,7 +4,7 @@ Everything in the [lib](https://github.com/ruby/ruby/tree/master/lib) directory 
 If you'd like to make contributions to standard libraries, do so in the standalone repositories, and the
 changes will be automatically mirrored into the Ruby repository.
 
-For example, CSV lives in [a separate repository](https://github.com/ruby/csv) and is mirrored into [Ruby](https://github.com/ruby/ruby/tree/master/lib/csv).
+For example, CGI lives in [a separate repository](https://github.com/ruby/cgi) and is mirrored into [Ruby](https://github.com/ruby/ruby/tree/master/lib/cgi).
 
 ## Maintainers
 
