@@ -670,6 +670,8 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invarian
 
 /// Generate code for a C function call that pushes a frame
 fn gen_ccall_with_frame(jit: &mut JITState, asm: &mut Assembler, cfunc: *const u8, args: Vec<Opnd>, cme: *const rb_callable_method_entry_t, state: &FrameState) -> lir::Opnd {
+    gen_incr_counter(asm, Counter::non_variadic_cfunc_optimized_send_count);
+
     gen_prepare_non_leaf_call(jit, asm, state);
 
     gen_push_frame(asm, args.len(), state, ControlFrame {
