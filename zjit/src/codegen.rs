@@ -1212,8 +1212,6 @@ fn gen_array_aref(
         fn rb_ary_entry(ary: VALUE, off: c_long) -> VALUE;
     }
 
-    gen_prepare_leaf_call_with_gc(asm, state);
-
     asm_ccall!(asm, rb_ary_entry, array, index)
 }
 
