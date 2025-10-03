@@ -191,20 +191,29 @@ typedef struct {
     wbcheck_color_t color;  // Tri-color marking color
 } rb_wbcheck_object_info_t;
 
-// Structure to track objects that need dfree called
-typedef struct wbcheck_zombie {
-    VALUE obj;
-    void (*dfree)(void *);
-    void *data;
-    struct wbcheck_zombie *next;
-} wbcheck_zombie_t;
+// Finalizer job types
+struct wbcheck_final_job {
+    struct wbcheck_final_job *next;
+    enum {
+        WBCHECK_FINAL_JOB_DFREE,
+        WBCHECK_FINAL_JOB_FINALIZE,
+    } kind;
+    union {
+        struct {
+            void (*func)(void *);
+            void *data;
+        } dfree;
+        struct {
+            VALUE finalizer_array;
+        } finalize;
+    } as;
+};
 
 // wbcheck objspace structure to track all objects
 typedef struct {
     st_table *object_table;  // Hash table to track all allocated objects (VALUE -> rb_wbcheck_object_info_t*)
     wbcheck_object_list_t *objects_to_capture; // Objects that need initial reference capture
     wbcheck_object_list_t *objects_to_verify; // Objects that need verification after write barriers
-    wbcheck_zombie_t *zombie_list; // Linked list of objects with dfree functions to call
     wbcheck_object_list_t *current_refs; // Current list for collecting references during marking
     wbcheck_object_list_t *mark_queue; // Queue of gray objects for tri-color marking
     wbcheck_object_list_t *weak_references; // Array of weak reference pointers (VALUE* cast to VALUE)
@@ -215,6 +224,8 @@ typedef struct {
     size_t missed_write_barrier_parents; // Number of parent objects with missed write barriers
     size_t missed_write_barrier_children; // Total number of missed write barriers detected
     size_t simulated_gc_count; // Simulated GC count incremented on each GC.start
+    struct wbcheck_final_job *finalizer_jobs; // Linked list of finalizer jobs
+    rb_postponed_job_handle_t finalizer_postponed_job; // Postponed job handle for finalizers
 } rb_wbcheck_objspace_t;
 
 // Global objspace pointer for accessing from obj_slot_size function
@@ -224,8 +235,9 @@ static rb_wbcheck_objspace_t *wbcheck_global_objspace = NULL;
 static void wbcheck_foreach_object(rb_wbcheck_objspace_t *objspace, int (*callback)(VALUE obj, rb_wbcheck_object_info_t *info, void *data), void *data);
 static int wbcheck_verify_all_references_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *data);
 static int wbcheck_update_all_snapshots_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *data);
-static void wbcheck_finalize_zombies(rb_wbcheck_objspace_t *objspace);
 static void wbcheck_run_finalizers_for_object(VALUE obj, rb_wbcheck_object_info_t *info);
+static void gc_run_finalizers(void *data);
+static void make_final_job(rb_wbcheck_objspace_t *objspace, VALUE obj, VALUE finalizer_array);
 
 // Helper functions for object tracking
 static rb_wbcheck_object_info_t *
@@ -412,7 +424,6 @@ rb_gc_impl_objspace_alloc(void)
 
     objspace->objects_to_capture = wbcheck_object_list_init();  // Initialize empty list
     objspace->objects_to_verify = wbcheck_object_list_init();   // Initialize empty list
-    objspace->zombie_list = NULL;      // No zombies initially
     objspace->current_refs = NULL;     // No current refs initially
     objspace->mark_queue = wbcheck_object_list_init(); // Initialize mark queue
     objspace->weak_references = wbcheck_object_list_init(); // Initialize weak references array
@@ -430,9 +441,14 @@ rb_gc_impl_objspace_alloc(void)
 void
 rb_gc_impl_objspace_init(void *objspace_ptr)
 {
+    rb_wbcheck_objspace_t *objspace = objspace_ptr;
+
     // Object table is already initialized in objspace_alloc
     // Set up global objspace pointer for obj_slot_size function
-    wbcheck_global_objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    wbcheck_global_objspace = objspace;
+
+    // Initialize postponed job for finalizers
+    objspace->finalizer_postponed_job = rb_postponed_job_preregister(0, gc_run_finalizers, objspace);
 }
 
 void *
@@ -724,6 +740,21 @@ wbcheck_mark_phase(rb_wbcheck_objspace_t *objspace)
     // Mark all finalizer arrays first to keep them alive
     st_foreach(objspace->object_table, st_foreach_mark_finalizers, (st_data_t)objspace);
 
+    // Mark finalizer arrays in pending jobs to keep them alive
+    struct wbcheck_final_job *job = objspace->finalizer_jobs;
+    while (job != NULL) {
+        switch (job->kind) {
+          case WBCHECK_FINAL_JOB_DFREE:
+            break;
+          case WBCHECK_FINAL_JOB_FINALIZE:
+            wbcheck_mark_gray(objspace, job->as.finalize.finalizer_array);
+            break;
+          default:
+            rb_bug("wbcheck_mark_phase: unknown final job type %d", job->kind);
+        }
+        job = job->next;
+    }
+
     // Mark roots gray
     rb_gc_save_machine_context();
     rb_gc_mark_roots(objspace, NULL);
@@ -772,9 +803,11 @@ wbcheck_sweep_callback(st_data_t key, st_data_t val, st_data_t arg, int error)
         // Clear weak references first
         rb_gc_obj_free_vm_weak_references(obj);
 
-        // Run finalizers if they exist
-        // FIXME: this probably need to be deferred
-        wbcheck_run_finalizers_for_object(obj, info);
+        // Queue finalizers for postponed job if they exist
+        if (info->finalizers) {
+            make_final_job(objspace, obj, info->finalizers);
+            rb_postponed_job_trigger(objspace->finalizer_postponed_job);
+        }
 
         // Call rb_gc_obj_free which handles finalizers/zombies
         if (rb_gc_obj_free(objspace, obj)) {
@@ -788,13 +821,16 @@ wbcheck_sweep_callback(st_data_t key, st_data_t val, st_data_t arg, int error)
 
             return ST_DELETE; // Remove from hash table
         } else {
-            // Object became a zombie with finalizers, keep tracking it
-            // but free our reference lists since they're no longer valid
+            // Object became a zombie - it will be freed by postponed job
+            // Remove from tracking since we can't safely access it anymore
             wbcheck_object_list_free(info->gc_mark_snapshot);
             wbcheck_object_list_free(info->writebarrier_children);
-            info->gc_mark_snapshot = NULL;
-            info->writebarrier_children = NULL;
-            return ST_CONTINUE; // Keep in hash table
+            free(info);
+
+            // Free the actual object memory
+            free((void *)obj);
+
+            return ST_DELETE; // Remove from hash table
         }
     }
 
@@ -810,9 +846,6 @@ wbcheck_sweep_phase(rb_wbcheck_objspace_t *objspace)
 
     // Sweep unmarked objects
     st_foreach_check(objspace->object_table, wbcheck_sweep_callback, (st_data_t)objspace, 0);
-
-    // Process zombies (objects with dfree functions)
-    wbcheck_finalize_zombies(objspace);
 
     size_t objects_after = st_table_size(objspace->object_table);
     size_t freed_objects = objects_before - objects_after;
@@ -1325,19 +1358,25 @@ rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), 
 void
 rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), void *data)
 {
+    if (dfree == NULL) return;
+
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
 
-    // Allocate a new zombie entry
-    wbcheck_zombie_t *zombie = malloc(sizeof(wbcheck_zombie_t));
-    if (!zombie) rb_bug("wbcheck: failed to allocate zombie entry");
+    struct wbcheck_final_job *job = malloc(sizeof(struct wbcheck_final_job));
+    job->kind = WBCHECK_FINAL_JOB_DFREE;
+    job->as.dfree.func = dfree;
+    job->as.dfree.data = data;
 
-    zombie->obj = obj;
-    zombie->dfree = dfree;
-    zombie->data = data;
+    // Use atomic CAS like MMTK to safely add to the job list
+    struct wbcheck_final_job *prev;
+    do {
+        job->next = objspace->finalizer_jobs;
+        prev = RUBY_ATOMIC_PTR_CAS(objspace->finalizer_jobs, job->next, job);
+    } while (prev != job->next);
 
-    // Add to the front of the zombie list
-    zombie->next = objspace->zombie_list;
-    objspace->zombie_list = zombie;
+    if (!ruby_free_at_exit_p()) {
+        rb_postponed_job_trigger(objspace->finalizer_postponed_job);
+    }
 
     WBCHECK_DEBUG("wbcheck: made zombie for object %p with dfree function\n", (void *)obj);
 }
@@ -1347,7 +1386,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
 {
     unsigned int lev = RB_GC_VM_LOCK();
 
-    rb_wbcheck_objspace_t *objspace = objspace_ptr;
+    (void)objspace_ptr;
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
 
     GC_ASSERT(!OBJ_FROZEN(obj));
@@ -1358,16 +1397,16 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
     VALUE result = block;
 
     if (!table) {
-        /* First finalizer for this object */
-        table = rb_ary_new_from_values(1, &block);
+        /* First finalizer for this object - store object ID as first element */
+        table = rb_ary_new3(2, rb_obj_id(obj), block);
         rb_obj_hide(table);
         info->finalizers = table;
     } else {
-        /* Check for duplicate finalizers */
+        /* Check for duplicate finalizers (skip index 0 which is object ID) */
         long len = RARRAY_LEN(table);
         long i;
 
-        for (i = 0; i < len; i++) {
+        for (i = 1; i < len; i++) {
             VALUE recv = RARRAY_AREF(table, i);
             if (rb_equal(recv, block)) {
                 result = recv;  /* Duplicate found, return existing */
@@ -1388,7 +1427,7 @@ rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
 {
     unsigned int lev = RB_GC_VM_LOCK();
 
-    rb_wbcheck_objspace_t *objspace = objspace_ptr;
+    (void)objspace_ptr;
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
 
     GC_ASSERT(!OBJ_FROZEN(obj));
@@ -1402,7 +1441,7 @@ rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
 void
 rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 {
-    rb_wbcheck_objspace_t *objspace = objspace_ptr;
+    (void)objspace_ptr;
 
     if (!FL_TEST(obj, FL_FINALIZE)) return;
 
@@ -1413,6 +1452,7 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 
     if (src_info->finalizers) {
         VALUE table = rb_ary_dup(src_info->finalizers);
+        RARRAY_ASET(table, 0, rb_obj_id(dest));
         rb_obj_hide(table);
         dest_info->finalizers = table;
         FL_SET(dest, FL_FINALIZE);
@@ -1426,7 +1466,59 @@ wbcheck_get_final(long i, void *data)
 {
     VALUE table = (VALUE)data;
 
-    return RARRAY_AREF(table, i);
+    return RARRAY_AREF(table, i + 1);
+}
+
+static void
+make_final_job(rb_wbcheck_objspace_t *objspace, VALUE obj, VALUE finalizer_array)
+{
+    RUBY_ASSERT(RB_FL_TEST(obj, FL_FINALIZE));
+    RUBY_ASSERT(RB_BUILTIN_TYPE(finalizer_array) == T_ARRAY);
+
+    RB_FL_UNSET(obj, FL_FINALIZE);
+
+    struct wbcheck_final_job *job = malloc(sizeof(struct wbcheck_final_job));
+    job->next = objspace->finalizer_jobs;
+    job->kind = WBCHECK_FINAL_JOB_FINALIZE;
+    job->as.finalize.finalizer_array = finalizer_array;
+
+    objspace->finalizer_jobs = job;
+}
+
+static void
+gc_run_finalizers(void *data)
+{
+    rb_wbcheck_objspace_t *objspace = data;
+
+    rb_gc_set_pending_interrupt();
+
+    while (objspace->finalizer_jobs != NULL) {
+        struct wbcheck_final_job *job = objspace->finalizer_jobs;
+        objspace->finalizer_jobs = job->next;
+
+        switch (job->kind) {
+          case WBCHECK_FINAL_JOB_DFREE:
+            job->as.dfree.func(job->as.dfree.data);
+            break;
+          case WBCHECK_FINAL_JOB_FINALIZE: {
+            VALUE finalizer_array = job->as.finalize.finalizer_array;
+
+            rb_gc_run_obj_finalizer(
+                RARRAY_AREF(finalizer_array, 0),
+                RARRAY_LEN(finalizer_array) - 1,
+                wbcheck_get_final,
+                (void *)finalizer_array
+            );
+
+            RB_GC_GUARD(finalizer_array);
+            break;
+          }
+        }
+
+        free(job);
+    }
+
+    rb_gc_unset_pending_interrupt();
 }
 
 static void
@@ -1434,8 +1526,8 @@ wbcheck_run_finalizers_for_object(VALUE obj, rb_wbcheck_object_info_t *info)
 {
     if (info->finalizers) {
         VALUE table = info->finalizers;
-        long count = RARRAY_LEN(table);
-        rb_gc_run_obj_finalizer(rb_obj_id(obj), count, wbcheck_get_final, (void *)table);
+        long count = RARRAY_LEN(table) - 1;
+        rb_gc_run_obj_finalizer(RARRAY_AREF(table, 0), count, wbcheck_get_final, (void *)table);
         FL_UNSET(obj, FL_FINALIZE);
     }
     info->finalizers = 0;
@@ -1491,30 +1583,6 @@ wbcheck_shutdown_finalizer_callback(VALUE obj, rb_wbcheck_object_info_t *info, v
     return ST_CONTINUE;
 }
 
-static void
-wbcheck_finalize_zombies(rb_wbcheck_objspace_t *objspace)
-{
-    wbcheck_zombie_t *zombie = objspace->zombie_list;
-
-    while (zombie) {
-        wbcheck_zombie_t *next = zombie->next;
-
-        if (zombie->dfree) {
-            WBCHECK_DEBUG("wbcheck: calling dfree for zombie object %p\n", (void *)zombie->obj);
-            zombie->dfree(zombie->data);
-        }
-
-        // Free the actual object memory and remove from tracking table
-        WBCHECK_DEBUG("wbcheck: freeing zombie object memory %p\n", (void *)zombie->obj);
-        wbcheck_unregister_object(objspace, zombie->obj);
-        free((void *)zombie->obj);
-
-        free(zombie);
-        zombie = next;
-    }
-
-    objspace->zombie_list = NULL;
-}
 
 void
 rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
@@ -1548,10 +1616,10 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     wbcheck_foreach_object(objspace, wbcheck_shutdown_finalizer_callback, objspace_ptr);
     WBCHECK_DEBUG("wbcheck: finished calling rb_gc_obj_free\n");
 
-    // Call dfree functions for all zombie objects (e.g., File objects)
-    WBCHECK_DEBUG("wbcheck: finalizing zombie objects\n");
-    wbcheck_finalize_zombies(objspace);
-    WBCHECK_DEBUG("wbcheck: finished finalizing zombie objects\n");
+    // Run any pending finalizer jobs (dfree functions)
+    WBCHECK_DEBUG("wbcheck: running pending finalizer jobs\n");
+    gc_run_finalizers(objspace);
+    WBCHECK_DEBUG("wbcheck: finished running finalizer jobs\n");
     RB_GC_VM_UNLOCK(lev);
 }
 
