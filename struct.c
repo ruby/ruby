@@ -834,10 +834,13 @@ struct_alloc(VALUE klass)
     else {
         NEWOBJ_OF(st, struct RStruct, klass, flags, sizeof(struct RStruct), 0);
 
+        st->as.heap.ptr = NULL;
+        st->as.heap.fields_obj = 0;
+        st->as.heap.len = 0;
+
         st->as.heap.ptr = struct_heap_alloc((VALUE)st, n);
         rb_mem_clear((VALUE *)st->as.heap.ptr, n);
         st->as.heap.len = n;
-        st->as.heap.fields_obj = 0;
 
         return (VALUE)st;
     }
