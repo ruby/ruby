@@ -529,6 +529,15 @@ thread_cleanup_func(void *th_ptr, int atfork)
     rb_native_mutex_destroy(&th->interrupt_lock);
 }
 
+void
+rb_thread_free_native_thread(void *th_ptr)
+{
+    rb_thread_t *th = th_ptr;
+
+    native_thread_destroy_atfork(th->nt);
+    th->nt = NULL;
+}
+
 static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *);
 static VALUE rb_thread_to_s(VALUE thread);
 
