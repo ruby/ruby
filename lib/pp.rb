@@ -453,11 +453,11 @@ class Set # :nodoc:
         }
       }
     }
-  end
+  end unless method_defined?(:pretty_print)
 
   def pretty_print_cycle(pp)    # :nodoc:
     pp.text sprintf('#<Set: {%s}>', empty? ? '' : '...')
-  end
+  end unless method_defined?(:pretty_print_cycle)
 end
 
 class << ENV # :nodoc:
