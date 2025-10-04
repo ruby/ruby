@@ -34,6 +34,9 @@ jobs:
         env:
           GITHUB_OLD_SHA: ${{ github.event.before }}
           GITHUB_NEW_SHA: ${{ github.event.after }}
+          SLACK_WEBHOOK_URL_ALERTS: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL_COMMITS: ${{ secrets.SLACK_WEBHOOK_URL_COMMITS }}
+          SLACK_WEBHOOK_URL_RUBY_JP: ${{ secrets.SLACK_WEBHOOK_URL_RUBY_JP }}
         if: ${{ github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master' && github.event_name == 'push' }}
         continue-on-error: true # The next auto-style should always run
 

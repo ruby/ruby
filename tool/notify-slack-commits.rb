@@ -6,7 +6,7 @@ require "json"
 require "digest/md5"
 
 SLACK_WEBHOOK_URLS = [
-  ENV.fetch("SLACK_WEBHOOK_URL").chomp, # ruby-lang#alerts
+  ENV.fetch("SLACK_WEBHOOK_URL_ALERTS").chomp, # ruby-lang#alerts
   ENV.fetch("SLACK_WEBHOOK_URL_COMMITS").chomp, # ruby-lang#commits
   ENV.fetch("SLACK_WEBHOOK_URL_RUBY_JP").chomp, # ruby-jp#ruby-commits
 ]
