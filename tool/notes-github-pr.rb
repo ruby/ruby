@@ -100,7 +100,7 @@ module Git
   end
 end
 
-github = GitHub.new(ENV.fetch("GITHUB_TOKEN"))
+github = GitHub.new(ENV.fetch('GITHUB_TOKEN'))
 
 repo_path, *rest = ARGV
 rest.each_slice(3).map do |oldrev, newrev, refname|
