@@ -129,7 +129,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
       puts colorize.decorate(mesg, "skip")
     else
       failed << gem
-      exit_code = $?.exitstatus if $?.exitstatus
+      exit_code = 1
     end
   end
 end
