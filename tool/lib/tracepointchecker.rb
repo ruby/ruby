@@ -120,7 +120,7 @@ module TracePointChecker
 end if defined?(TracePoint.stat)
 
 class ::Test::Unit::TestCase
-  include TracePointChecker::ZombieTraceHunter
+  include TracePointChecker::ZombieTraceHunter unless ENV["RUBY_TESTS_WITH_RACTORS"]
 end if defined?(TracePointChecker)
 
 # TracePointChecker.start verbose: false

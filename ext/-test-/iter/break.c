@@ -19,6 +19,10 @@ iter_break_value(VALUE self, VALUE val)
 void
 Init_break(VALUE klass)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    // Mark this extension as Ractor-safe.
+    rb_ext_ractor_safe(true);
+#endif
     VALUE breakable = rb_define_module_under(klass, "Breakable");
     rb_define_module_function(breakable, "iter_break", iter_break, 0);
     rb_define_module_function(breakable, "iter_break_value", iter_break_value, 1);

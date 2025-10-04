@@ -5,8 +5,8 @@ require "test/unit"
 
 class TestComprehensiveCaseMapping < Test::Unit::TestCase
   UNICODE_VERSION = RbConfig::CONFIG['UNICODE_VERSION']
-  path = File.expand_path("../../../enc/unicode/data/#{UNICODE_VERSION}", __dir__)
-  UNICODE_DATA_PATH = File.directory?("#{path}/ucd") ? "#{path}/ucd" : path
+  path = File.expand_path("../../../enc/unicode/data/#{UNICODE_VERSION}", __dir__).freeze
+  UNICODE_DATA_PATH = File.directory?("#{path}/ucd") ? "#{path}/ucd".freeze : path
 
   def self.hex2utf8(s)
     s.split(' ').map { |c| c.to_i(16) }.pack('U*')
@@ -29,7 +29,7 @@ class TestComprehensiveCaseMapping < Test::Unit::TestCase
   end
 end
 
-TestComprehensiveCaseMapping.data_files_available? and  class TestComprehensiveCaseMapping
+TestComprehensiveCaseMapping.data_files_available? && will_run_in_main_ractor? && class TestComprehensiveCaseMapping
   (CaseTest = Struct.new(:method_name, :attributes, :first_data, :follow_data)).class_eval do
     def initialize(method_name, attributes, first_data, follow_data=first_data)
       super
