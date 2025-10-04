@@ -172,7 +172,14 @@ class PPCycleTest < Test::Unit::TestCase
     assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup)) unless RUBY_ENGINE == "truffleruby"
   end
 
-  if defined?(Data.define)
+  verbose, $VERBOSE = $VERBOSE, nil
+  begin
+    has_data_define = defined?(Data.define)
+  ensure
+    $VERBOSE = verbose
+  end
+
+  if has_data_define
     D = Data.define(:aaa, :bbb)
     def test_data
       a = D.new("aaa", "bbb")

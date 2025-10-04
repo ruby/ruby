@@ -490,6 +490,13 @@ class Struct # :nodoc:
   end
 end
 
+verbose, $VERBOSE = $VERBOSE, nil
+begin
+  has_data_define = defined?(Data.define)
+ensure
+  $VERBOSE = verbose
+end
+
 class Data # :nodoc:
   def pretty_print(q) # :nodoc:
     class_name = PP.mcall(self, Kernel, :class).name
@@ -522,7 +529,7 @@ class Data # :nodoc:
   def pretty_print_cycle(q) # :nodoc:
     q.text sprintf("#<data %s:...>", PP.mcall(self, Kernel, :class).name)
   end
-end if defined?(Data.define)
+end if has_data_define
 
 class Range # :nodoc:
   def pretty_print(q) # :nodoc:
