@@ -23,13 +23,7 @@ jobs:
           fetch-depth: 100 # for notify-slack-commits
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
 
-      - uses: ./.github/actions/setup/directories
-        with:
-          makeup: true
-          # Skip overwriting MATZBOT_AUTO_UPDATE_TOKEN
-          checkout: '' # false (ref: https://github.com/actions/runner/issues/2238)
-
-      # Run this step first to make the notification available before any other failure
+      # Run this step first (even before `make up` in the next step) to make the notification available before any other failure
       - name: Notify commit to Slack
         run: ruby tool/notify-slack-commits.rb "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" refs/heads/master
         env:
@@ -40,6 +34,12 @@ jobs:
           SLACK_WEBHOOK_URL_RUBY_JP: ${{ secrets.SLACK_WEBHOOK_URL_RUBY_JP }}
         if: ${{ github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master' && github.event_name == 'push' }}
         continue-on-error: true # The next auto-style should always run
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          makeup: true
+          # Skip overwriting MATZBOT_AUTO_UPDATE_TOKEN
+          checkout: '' # false (ref: https://github.com/actions/runner/issues/2238)
 
       # Run this step early to make sure auto-style commits are pushed
       - name: Auto-correct code styles
