@@ -68,6 +68,9 @@ jobs:
           GITHUB_OLD_SHA: ${{ github.event.before }}
           GITHUB_NEW_SHA: ${{ github.event.after }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: git
+          GIT_COMMITTER_NAME: git
+          EMAIL: svn-admin@ruby-lang.org
         if: ${{ github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master' && github.event_name == 'push' }}
 
       - name: Check if C-sources are US-ASCII
