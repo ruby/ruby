@@ -577,6 +577,7 @@ pub enum Insn {
     ArrayExtend { left: InsnId, right: InsnId, state: InsnId },
     /// Push `val` onto `array`, where `array` is already `Array`.
     ArrayPush { array: InsnId, val: InsnId, state: InsnId },
+    ArrayAref { array: InsnId, index: InsnId, state: InsnId },
 
     HashDup { val: InsnId, state: InsnId },
 
@@ -881,6 +882,10 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     write!(f, "{prefix}{element}")?;
                     prefix = ", ";
                 }
+                Ok(())
+            }
+            Insn::ArrayAref { array, index, .. } => {
+                write!(f, "ArrayAref {array}[{index}]")?;
                 Ok(())
             }
             Insn::NewHash { elements, .. } => {
@@ -1560,6 +1565,7 @@ impl Function {
             },
             &InvokeBuiltin { bf, ref args, state, return_type } => InvokeBuiltin { bf, args: find_vec!(args), state, return_type },
             &ArrayDup { val, state } => ArrayDup { val: find!(val), state },
+            &ArrayAref { array, index, state } => ArrayAref { array: find!(array), index, state },
             &HashDup { val, state } => HashDup { val: find!(val), state },
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
@@ -1659,6 +1665,7 @@ impl Function {
             Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
+            Insn::ArrayAref { .. } => todo!(), // Unclear what type this should return
             Insn::NewHash { .. } => types::HashExact,
             Insn::HashDup { .. } => types::HashExact,
             Insn::NewRange { .. } => types::RangeExact,
@@ -1962,6 +1969,15 @@ impl Function {
                         self.make_equal_to(orig_insn_id, const_insn);
                         return;
                     }
+                } else if self.type_of(idx_val).is_subtype(types::Fixnum) {
+                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop: BOP_AREF }, state });
+                    let result = self.push_insn(block, Insn::ArrayAref {
+                        array: self_val,
+                        index: idx_val,
+                        state
+                    });
+                    self.make_equal_to(orig_insn_id, result);
+                    return;
                 }
             }
         }
@@ -2652,6 +2668,11 @@ impl Function {
             | &Insn::Throw { val, state, .. }
             | &Insn::HashDup { val, state } => {
                 worklist.push_back(val);
+                worklist.push_back(state);
+            }
+            &Insn::ArrayAref { array, index, state } => {
+                worklist.push_back(array);
+                worklist.push_back(index);
                 worklist.push_back(state);
             }
             &Insn::Send { recv, ref args, state, .. }
