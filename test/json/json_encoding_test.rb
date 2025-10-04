@@ -35,6 +35,8 @@ class JSONEncodingTest < Test::Unit::TestCase
     # Ref: https://github.com/ruby/json/issues/859
     s = "01234567890"
     assert_equal '"234567890"', JSON.dump(s[2..-1])
+    s = '01234567890123456789"a"b"c"d"e"f"g"h'
+    assert_equal '"\"a\"b\"c\"d\"e\"f\"g\""', JSON.dump(s[20, 15])
   end
 
   def test_unicode
