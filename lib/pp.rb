@@ -443,6 +443,13 @@ class Hash # :nodoc:
   end
 end
 
+if defined?(Set)
+  if set_pp = Set.instance_method(:initialize).source_location
+    set_pp = !set_pp.first.end_with?("/set.rb") # not defined in set.rb
+  else
+    set_pp = true               # defined in C
+  end
+end
 class Set # :nodoc:
   def pretty_print(pp)  # :nodoc:
     pp.group(1, '#<Set:', '>') {
@@ -453,12 +460,12 @@ class Set # :nodoc:
         }
       }
     }
-  end unless method_defined?(:pretty_print)
+  end
 
   def pretty_print_cycle(pp)    # :nodoc:
     pp.text sprintf('#<Set: {%s}>', empty? ? '' : '...')
-  end unless method_defined?(:pretty_print_cycle)
-end
+  end
+end if set_pp
 
 class << ENV # :nodoc:
   def pretty_print(q) # :nodoc:
