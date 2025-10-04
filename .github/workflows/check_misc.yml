@@ -63,7 +63,7 @@ jobs:
         if: ${{ github.repository == 'ruby/ruby' && startsWith(github.event_name, 'pull') }}
 
       - name: Push PR notes to GitHub
-        run: ruby tool/notes-github-pr.rb "$(pwd)" "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" refs/heads/master
+        run: ruby tool/notes-github-pr.rb "$(pwd)/.git" "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" refs/heads/master
         env:
           GITHUB_OLD_SHA: ${{ github.event.before }}
           GITHUB_NEW_SHA: ${{ github.event.after }}
