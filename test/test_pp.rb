@@ -2,10 +2,13 @@
 
 require 'pp'
 require 'delegate'
+require 'set'
 require 'test/unit'
 require 'ruby2_keywords'
 
 module PPTestModule
+
+SetPP = Set.instance_method(:pretty_print).source_location[0].end_with?("/pp.rb")
 
 class PPTest < Test::Unit::TestCase
   def test_list0123_12
@@ -15,6 +18,10 @@ class PPTest < Test::Unit::TestCase
   def test_list0123_11
     assert_equal("[0,\n 1,\n 2,\n 3]\n", PP.pp([0,1,2,3], ''.dup, 11))
   end
+
+  def test_set
+    assert_equal("Set[0, 1, 2, 3]\n", PP.pp(Set[0,1,2,3], ''.dup, 16))
+  end if SetPP
 
   OverriddenStruct = Struct.new("OverriddenStruct", :members, :class)
   def test_struct_override_members # [ruby-core:7865]
@@ -163,6 +170,12 @@ class PPCycleTest < Test::Unit::TestCase
     a[0] = a
     assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup))
   end
+
+  def test_set
+    s = Set[]
+    s.add s
+    assert_equal("Set[Set[...]]\n", PP.pp(s, ''.dup))
+  end if SetPP
 
   S = Struct.new("S", :a, :b)
   def test_struct
