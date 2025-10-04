@@ -62,17 +62,6 @@ jobs:
           GITHUB_NEW_SHA: ${{ github.event.pull_request.merge_commit_sha }}
         if: ${{ github.repository == 'ruby/ruby' && startsWith(github.event_name, 'pull') }}
 
-      - name: Push PR notes to GitHub
-        run: ruby tool/notes-github-pr.rb "$(pwd)/.git" "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" refs/heads/master
-        env:
-          GITHUB_OLD_SHA: ${{ github.event.before }}
-          GITHUB_NEW_SHA: ${{ github.event.after }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GIT_AUTHOR_NAME: git
-          GIT_COMMITTER_NAME: git
-          EMAIL: svn-admin@ruby-lang.org
-        if: ${{ github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master' && github.event_name == 'push' }}
-
       - name: Check if C-sources are US-ASCII
         run: |
           grep -r -n --include='*.[chyS]' --include='*.asm' $'[^\t-~]' -- . && exit 1 || :
@@ -142,6 +131,17 @@ jobs:
           path: html
           name: ${{ steps.docs.outputs.htmlout }}
         if: ${{ steps.docs.outcome == 'success' }}
+
+      - name: Push PR notes to GitHub
+        run: ruby tool/notes-github-pr.rb "$(pwd)/.git" "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" refs/heads/master
+        env:
+          GITHUB_OLD_SHA: ${{ github.event.before }}
+          GITHUB_NEW_SHA: ${{ github.event.after }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: git
+          GIT_COMMITTER_NAME: git
+          EMAIL: svn-admin@ruby-lang.org
+        if: ${{ github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master' && github.event_name == 'push' }}
 
       - uses: ./.github/actions/slack
         with:

@@ -103,45 +103,36 @@ end
 github = GitHub.new(ENV.fetch('GITHUB_TOKEN'))
 
 repo_path, *rest = ARGV
-rest.each_slice(3).map do |oldrev, newrev, refname|
-  branch = Git.abbrev_ref(refname, repo_path: repo_path)
-  next if branch != 'master' # we use pull requests only for master branches
+rest.each_slice(3).map do |oldrev, newrev, _refname|
+  system('git', 'fetch', 'origin', 'refs/notes/commits:refs/notes/commits', exception: true)
 
-  Dir.mktmpdir do |workdir|
-    # Clone a branch and fetch notes
-    depth = Git.rev_list("#{oldrev}..#{newrev}", repo_path: repo_path).size + 50
-    system('git', 'clone', "--depth=#{depth}", "--branch=#{branch}", "file://#{repo_path}", workdir)
-    Dir.chdir(workdir)
-    system('git', 'fetch', 'origin', 'refs/notes/commits:refs/notes/commits')
+  updated = false
+  Git.rev_list("#{oldrev}..#{newrev}", first_parent: true).each do |sha|
+    github.pulls(owner: 'ruby', repo: 'ruby', commit_sha: sha).each do |pull|
+      number = pull.fetch('number')
+      url = pull.fetch('html_url')
+      next unless url.start_with?('https://github.com/ruby/ruby/pull/')
 
-    updated = false
-    Git.rev_list("#{oldrev}..#{newrev}", first_parent: true).each do |sha|
-      github.pulls(owner: 'ruby', repo: 'ruby', commit_sha: sha).each do |pull|
-        number = pull.fetch('number')
-        url = pull.fetch('html_url')
-        next unless url.start_with?('https://github.com/ruby/ruby/pull/')
+      # "Merged" notes for "Squash and merge"
+      message = Git.commit_message(sha)
+      notes = Git.notes_message(sha)
+      if !message.include?(url) && !message.match(/[ (]##{number}[) ]/) && !notes.include?(url)
+        system('git', 'notes', 'append', '-m', "Merged: #{url}", sha, exception: true)
+        updated = true
+      end
 
-        # "Merged" notes for "Squash and merge"
-        message = Git.commit_message(sha)
-        notes = Git.notes_message(sha)
-        if !message.include?(url) && !message.match(/[ (]##{number}[) ]/) && !notes.include?(url)
-          system('git', 'notes', 'append', '-m', "Merged: #{url}", sha)
-          updated = true
-        end
-
-        # "Merged-By" notes for "Rebase and merge"
-        if Git.committer_name(sha) == 'GitHub' && Git.committer_email(sha) == 'noreply@github.com'
-          username = github.pull_request(owner: 'ruby', repo: 'ruby', number: number).fetch('merged_by').fetch('login')
-          email = github.user(username: username).fetch('email')
-          email ||= SVN_TO_EMAILS[GITHUB_TO_SVN.fetch(username, username)]&.first
-          system('git', 'notes', 'append', '-m', "Merged-By: #{username}#{(" <#{email}>" if email)}", sha)
-          updated = true
-        end
+      # "Merged-By" notes for "Rebase and merge"
+      if Git.committer_name(sha) == 'GitHub' && Git.committer_email(sha) == 'noreply@github.com'
+        username = github.pull_request(owner: 'ruby', repo: 'ruby', number: number).fetch('merged_by').fetch('login')
+        email = github.user(username: username).fetch('email')
+        email ||= SVN_TO_EMAILS[GITHUB_TO_SVN.fetch(username, username)]&.first
+        system('git', 'notes', 'append', '-m', "Merged-By: #{username}#{(" <#{email}>" if email)}", sha, exception: true)
+        updated = true
       end
     end
+  end
 
-    if updated
-      system('git', 'push', 'origin', 'refs/notes/commits')
-    end
+  if updated
+    system('git', 'push', 'origin', 'refs/notes/commits', exception: true)
   end
 end
