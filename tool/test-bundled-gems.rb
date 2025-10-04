@@ -100,7 +100,15 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     group = :pgroup
     pg = "-"
   end
-  pid = Process.spawn(test_command, group => true)
+  if rubyopt = ENV["TEST_BUNDLED_GEMS_RUBYOPT"]
+    env = ENV.to_h
+    env["RUBYOPT"] = rubyopt
+    puts "TEST_BUNDLED_GEMS_RUBYOPT is specified. Adding `#{rubyopt}` to RUBYOPT"
+    pid = Process.spawn(env, test_command, group => true)
+  else
+    pid = Process.spawn(test_command, group => true)
+  end
+
   timeouts.each do |sig, sec|
     if sig
       puts "Sending #{sig} signal"
