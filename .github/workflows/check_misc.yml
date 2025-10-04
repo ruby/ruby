@@ -132,6 +132,13 @@ jobs:
           name: ${{ steps.docs.outputs.htmlout }}
         if: ${{ steps.docs.outcome == 'success' }}
 
+      - name: Push PR notes to GitHub
+        run: ruby tool/notify-github-pr.rb "$(pwd)" "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" refs/heads/master
+        env:
+          GITHUB_OLD_SHA: ${{ github.event.before }}
+          GITHUB_NEW_SHA: ${{ github.event.after }}
+        if: ${{ github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master' && github.event_name == 'push' }}
+
       - uses: ./.github/actions/slack
         with:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
