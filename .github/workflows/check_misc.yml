@@ -137,6 +137,7 @@ jobs:
         env:
           GITHUB_OLD_SHA: ${{ github.event.before }}
           GITHUB_NEW_SHA: ${{ github.event.after }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: ${{ github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master' && github.event_name == 'push' }}
 
       - uses: ./.github/actions/slack
