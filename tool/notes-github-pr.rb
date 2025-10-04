@@ -20,7 +20,8 @@ GITHUB_TO_SVN = {
   'unak'        => 'usa',
 }
 
-SVN_TO_EMAILS = YAML.safe_load(File.read(File.expand_path('../config/email.yml', __dir__)))
+EMAIL_YML_URL = 'https://raw.githubusercontent.com/ruby/git.ruby-lang.org/refs/heads/master/config/email.yml'
+SVN_TO_EMAILS = YAML.safe_load(Net::HTTP.get_response(URI(EMAIL_YML_URL)).tap(&:value).body)
 
 class GitHub
   ENDPOINT = URI.parse('https://api.github.com')
