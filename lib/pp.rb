@@ -145,21 +145,13 @@ class PP < PrettyPrint
     # Yields to a block
     # and preserves the previous set of objects being printed.
     def guard_inspect_key
-      if Thread.current[:__recursive_key__] == nil
-        Thread.current[:__recursive_key__] = {}.compare_by_identity
-      end
-
-      if Thread.current[:__recursive_key__][:inspect] == nil
-        Thread.current[:__recursive_key__][:inspect] = {}.compare_by_identity
-      end
-
-      save = Thread.current[:__recursive_key__][:inspect]
-
+      recursive_state = Thread.current[:__recursive_key__] ||= {}.compare_by_identity
+      save = recursive_state[:inspect] ||= {}.compare_by_identity
       begin
-        Thread.current[:__recursive_key__][:inspect] = {}.compare_by_identity
+        recursive_state[:inspect] = {}.compare_by_identity
         yield
       ensure
-        Thread.current[:__recursive_key__][:inspect] = save
+        recursive_state[:inspect] = save
       end
     end
 
@@ -167,9 +159,8 @@ class PP < PrettyPrint
     # to be pretty printed. Used to break cycles in chains of objects to be
     # pretty printed.
     def check_inspect_key(id)
-      Thread.current[:__recursive_key__] &&
-      Thread.current[:__recursive_key__][:inspect] &&
-      Thread.current[:__recursive_key__][:inspect].include?(id)
+      recursive_state = Thread.current[:__recursive_key__] or return false
+      recursive_state[:inspect]&.include?(id)
     end
 
     # Adds the object_id +id+ to the set of objects being pretty printed, so
@@ -186,7 +177,7 @@ class PP < PrettyPrint
     private def guard_inspect(object)
       recursive_state = Thread.current[:__recursive_key__]
 
-      if recursive_state && recursive_state.key?(:inspect)
+      if recursive_state&.key?(:inspect)
         begin
           push_inspect_key(object)
           yield
