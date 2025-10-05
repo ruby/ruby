@@ -5803,17 +5803,16 @@ rb_str_aref(VALUE str, VALUE indx)
 
 
 /*
- *  call-seq:
+ *  :call-seq
+ *
+ *    self[substring] -> new_string or nil
+ *    self[regexp, capture = 0] -> new_string or nil
  *    self[index] -> new_string or nil
  *    self[start, length] -> new_string or nil
  *    self[range] -> new_string or nil
- *    self[regexp, capture = 0] -> new_string or nil
- *    self[substring] -> new_string or nil
  *
- *  Returns the substring of +self+ specified by the arguments.
- *  See examples at {String Slices}[rdoc-ref:String@String+Slices].
+ *  :include: doc/string/slice.rdoc
  *
- *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
