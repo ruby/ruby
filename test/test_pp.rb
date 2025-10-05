@@ -257,7 +257,6 @@ class PPSingleLineTest < Test::Unit::TestCase
   end
 
   def test_hash_symbol_colon_key
-    omit if RUBY_VERSION < "3.4."
     no_quote = "{a: 1, a!: 1, a?: 1}"
     unicode_quote = "{\u{3042}: 1}"
     quote0 = '{"": 1}'
@@ -270,7 +269,7 @@ class PPSingleLineTest < Test::Unit::TestCase
     assert_equal(quote1, PP.singleline_pp(eval(quote1), ''.dup))
     assert_equal(quote2, PP.singleline_pp(eval(quote2), ''.dup))
     assert_equal(quote3, PP.singleline_pp(eval(quote3), ''.dup))
-  end
+  end if RUBY_VERSION >= "3.4."
 
   def test_hash_in_array
     omit if RUBY_ENGINE == "jruby"
