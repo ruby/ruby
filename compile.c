@@ -12928,8 +12928,10 @@ ibf_dump_object_float(struct ibf_dump *dump, VALUE obj)
 static VALUE
 ibf_load_object_float(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    const double *dblp = IBF_OBJBODY(double, offset);
-    return DBL2NUM(*dblp);
+    double d;
+    /* Avoid unaligned VFP load on ARMv7; IBF payload may be unaligned (C99 6.3.2.3 p7). */
+    memcpy(&d, IBF_OBJBODY(double, offset), sizeof(d));
+    return DBL2NUM(d);
 }
 
 static void
