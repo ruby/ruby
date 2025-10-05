@@ -273,8 +273,21 @@ class PPSingleLineTest < Test::Unit::TestCase
 
   def test_hash_in_array
     omit if RUBY_ENGINE == "jruby"
-    assert_equal("[{}]", PP.singleline_pp([->(*a){a.last.clear}.ruby2_keywords.call(a: 1)], ''.dup))
-    assert_equal("[{}]", PP.singleline_pp([Hash.ruby2_keywords_hash({})], ''.dup))
+    assert_equal("[{}]", passing_keywords {PP.singleline_pp([->(*a){a.last.clear}.ruby2_keywords.call(a: 1)], ''.dup)})
+    assert_equal("[{}]", passing_keywords {PP.singleline_pp([Hash.ruby2_keywords_hash({})], ''.dup)})
+  end
+
+  if RUBY_VERSION >= "3.0"
+    def passing_keywords(&_)
+      yield
+    end
+  else
+    def passing_keywords(&_)
+      verbose, $VERBOSE = $VERBOSE, nil
+      yield
+    ensure
+      $VERBOSE = verbose
+    end
   end
 
   def test_direct_pp
