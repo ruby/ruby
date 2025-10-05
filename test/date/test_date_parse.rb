@@ -1304,4 +1304,20 @@ class TestDateParse < Test::Unit::TestCase
 
     assert_raise(ArgumentError) { Date._parse("Jan " + "9" * 1000000) }
   end
+
+  def test_string_argument
+    s = '2001-02-03T04:05:06Z'
+    obj = Class.new(Struct.new(:to_str, :count)) do
+      def to_str
+        self.count +=1
+        super
+      end
+    end.new(s, 0)
+
+    all_assertions_foreach(nil, :_parse, :_iso8601, :_rfc3339, :_xmlschema) do |m|
+      obj.count = 0
+      assert_not_equal({}, Date.__send__(m, obj))
+      assert_equal(1, obj.count)
+    end
+  end
 end

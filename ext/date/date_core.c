@@ -4464,11 +4464,11 @@ get_limit(VALUE opt)
 #define rb_category_warn(category, fmt) rb_warn(fmt)
 #endif
 
-static void
+static VALUE
 check_limit(VALUE str, VALUE opt)
 {
     size_t slen, limit;
-    if (NIL_P(str)) return;
+    if (NIL_P(str)) return str;
     StringValue(str);
     slen = RSTRING_LEN(str);
     limit = get_limit(opt);
@@ -4476,6 +4476,7 @@ check_limit(VALUE str, VALUE opt)
 	rb_raise(rb_eArgError,
 		 "string length (%"PRI_SIZE_PREFIX"u) exceeds the limit %"PRI_SIZE_PREFIX"u", slen, limit);
     }
+    return str;
 }
 
 static VALUE
@@ -4484,8 +4485,7 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
     VALUE vstr, vcomp, hash, opt;
 
     argc = rb_scan_args(argc, argv, "11:", &vstr, &vcomp, &opt);
-    check_limit(vstr, opt);
-    StringValue(vstr);
+    vstr = check_limit(vstr, opt);
     if (!rb_enc_str_asciicompat_p(vstr))
 	rb_raise(rb_eArgError,
 		 "string should have ASCII compatible encoding");
@@ -4620,7 +4620,7 @@ date_s__iso8601(int argc, VALUE *argv, VALUE klass)
     VALUE str, opt;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
-    check_limit(str, opt);
+    str = check_limit(str, opt);
 
     return date__iso8601(str);
 }
@@ -4690,7 +4690,7 @@ date_s__rfc3339(int argc, VALUE *argv, VALUE klass)
     VALUE str, opt;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
-    check_limit(str, opt);
+    str = check_limit(str, opt);
 
     return date__rfc3339(str);
 }
@@ -4759,7 +4759,7 @@ date_s__xmlschema(int argc, VALUE *argv, VALUE klass)
     VALUE str, opt;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
-    check_limit(str, opt);
+    str = check_limit(str, opt);
 
     return date__xmlschema(str);
 }
@@ -4828,7 +4828,7 @@ date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
     VALUE str, opt;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
-    check_limit(str, opt);
+    str = check_limit(str, opt);
 
     return date__rfc2822(str);
 }
@@ -4896,7 +4896,7 @@ date_s__httpdate(int argc, VALUE *argv, VALUE klass)
     VALUE str, opt;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
-    check_limit(str, opt);
+    str = check_limit(str, opt);
 
     return date__httpdate(str);
 }
@@ -4965,7 +4965,7 @@ date_s__jisx0301(int argc, VALUE *argv, VALUE klass)
     VALUE str, opt;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
-    check_limit(str, opt);
+    str = check_limit(str, opt);
 
     return date__jisx0301(str);
 }
