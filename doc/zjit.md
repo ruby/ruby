@@ -34,8 +34,11 @@ cargo doc --document-private-items -p zjit --open
 ## Testing
 
 Make sure you have a `--enable-zjit=dev` build, and install the following tools:
-- `brew install cargo-nextest` - Required for running tests
-- `cargo install cargo-insta` - Required for updating snapshots
+```
+cargo install cargo-nextest
+cargo install cargo-insta
+```
+`cargo-nextest` is required for running tests, whereas `cargo-insta` is used for updating snapshots.
 
 ### make zjit-check
 
