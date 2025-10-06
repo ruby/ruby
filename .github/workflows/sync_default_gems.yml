@@ -1,11 +1,5 @@
 name: Sync default gems
 on:
-  # Main use of this workflow. Called by default gem repositories by API.
-  repository_dispatch:
-    types:
-      - sync_default_gems
-
-  # Web UI dispatch for testing and manual operations.
   workflow_dispatch:
     inputs:
       gem:
