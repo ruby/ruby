@@ -43,7 +43,14 @@ jobs:
         run: git config merge.renameLimit 999999
 
       - name: Run tool/sync_default_gems.rb
-        run: ruby tool/sync_default_gems.rb "${gem_name}" "${gem_before}..${gem_after}"
+        id: sync
+        run: |
+          ruby_before=$(git rev-parse HEAD)
+          set -x
+          ruby tool/sync_default_gems.rb "${gem_name}" "${gem_before}..${gem_after}"
+          if [[ "$(git rev-parse HEAD)" != "$ruby_before" ]]; then
+            echo update=true >> $GITHUB_OUTPUT
+          fi
         env:
           gem_name: ${{ github.event.client_payload.gem || github.event.inputs.gem }}
           gem_before: ${{ github.event.client_payload.before || github.event.inputs.before }}
@@ -56,6 +63,7 @@ jobs:
         run: |
           git pull --ff-only origin ${GITHUB_REF#refs/heads/}
           git push origin ${GITHUB_REF#refs/heads/}
+        if: ${{ steps.sync.outputs.update }}
 
       - uses: ./.github/actions/slack
         with:
