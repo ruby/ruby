@@ -755,7 +755,6 @@ rb_initialize_main_namespace(void)
     VM_ASSERT(NAMESPACE_OBJ_P(main_ns));
     ns = rb_get_namespace_t(main_ns);
     ns->ns_object = main_ns;
-    ns->ns_id = namespace_generate_id();
     ns->is_user = true;
     ns->is_optional = false;
 
