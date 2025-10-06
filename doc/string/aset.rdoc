@@ -5,71 +5,6 @@ Note: The form <tt>self[regexp, capture = 0]=</tt>
 updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables];
 the other forms do not.
 
-<b>Form <tt>self[substring] = other_string</tt></b>
-
-With string argument +substring+ given:
-
-  s = 'hello'
-  s['l'] = 'foo'  # => "foo"
-  s  # => "hefoolo"
-
-  s = 'hello'
-  s['ll'] = 'foo'  # => "foo"
-  s  # => "hefooo"
-
-  s = 'тест'
-  s['ес'] = 'foo'  # => "foo"
-  s  # => "тfooт"
-
-  s = 'こんにちは'
-  s['んにち'] = 'foo'  # => "foo"
-  s  # => "こfooは"
-
-  s['nosuch'] = 'foo' # Raises IndexError: string not matched.
-
-<b>Form <tt>self[regexp, capture = 0] = other_string</tt></b>
-
-With Regexp argument +regexp+ given and +capture+ as zero,
-searches for a matching substring in +self+;
-updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
-
-  s = 'hello'
-  s[/l/] = 'L'       # => "L"
-  [$`, $&, $']       # => ["he", "l", "lo"]
-  s[/eLlo/] = 'owdy' # => "owdy"
-  [$`, $&, $']       # => ["h", "eLlo", ""]
-  s[/eLlo/] = 'owdy' # Raises IndexError: regexp not matched.
-  [$`, $&, $']       # => [nil, nil, nil]
-
-With +capture+ as a positive integer +n+,
-searches for the +n+th matched group:
-
-  s = 'hello'
-  s[/(h)(e)(l+)(o)/] = 'foo'    # => "foo"
-  [$`, $&, $']                  # => ["", "hello", ""]
-
-  s = 'hello'
-  s[/(h)(e)(l+)(o)/, 1] = 'foo' # => "foo"
-  s                             # => "fooello"
-  [$`, $&, $']                  # => ["", "hello", ""]
-
-  s = 'hello'
-  s[/(h)(e)(l+)(o)/, 2] = 'foo' # => "foo"
-  s                             # => "hfoollo"
-  [$`, $&, $']                  # => ["", "hello", ""]
-
-  s = 'hello'
-  s[/(h)(e)(l+)(o)/, 4] = 'foo' # => "foo"
-  s                             # => "hellfoo"
-  [$`, $&, $']                  # => ["", "hello", ""]
-
-  s = 'hello'
-  # => "hello"
-  s[/(h)(e)(l+)(o)/, 5] = 'foo  # Raises IndexError: index 5 out of regexp.
-
-  s = 'hello'
-  s[/nosuch/] = 'foo'           # Raises IndexError: regexp not matched.
-
 <b>Form <tt>self[index] = other_string</tt></b>
 
 With non-negative integer argument +index+ given,
@@ -164,7 +99,7 @@ the argument is appended to +self+:
 <b>Form <tt>self[range] = other_string</tt></b>
 
 With Range argument +range+ given,
-searches for substring <tt>substring = self[range.start, range.size]</tt>:
+equivalent to <tt>self[range.start, range.size] = other_string</tt>:
 
   s0 = 'hello'
   s1 = 'hello'
@@ -183,5 +118,70 @@ searches for substring <tt>substring = self[range.start, range.size]</tt>:
 
   s = 'hello'
   s[9..10] = 'foo' # Raises RangeError: 9..10 out of range
+
+<b>Form <tt>self[regexp, capture = 0] = other_string</tt></b>
+
+With Regexp argument +regexp+ given and +capture+ as zero,
+searches for a matching substring in +self+;
+updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
+
+  s = 'hello'
+  s[/l/] = 'L'       # => "L"
+  [$`, $&, $']       # => ["he", "l", "lo"]
+  s[/eLlo/] = 'owdy' # => "owdy"
+  [$`, $&, $']       # => ["h", "eLlo", ""]
+  s[/eLlo/] = 'owdy' # Raises IndexError: regexp not matched.
+  [$`, $&, $']       # => [nil, nil, nil]
+
+With +capture+ as a positive integer +n+,
+searches for the +n+th matched group:
+
+  s = 'hello'
+  s[/(h)(e)(l+)(o)/] = 'foo'    # => "foo"
+  [$`, $&, $']                  # => ["", "hello", ""]
+
+  s = 'hello'
+  s[/(h)(e)(l+)(o)/, 1] = 'foo' # => "foo"
+  s                             # => "fooello"
+  [$`, $&, $']                  # => ["", "hello", ""]
+
+  s = 'hello'
+  s[/(h)(e)(l+)(o)/, 2] = 'foo' # => "foo"
+  s                             # => "hfoollo"
+  [$`, $&, $']                  # => ["", "hello", ""]
+
+  s = 'hello'
+  s[/(h)(e)(l+)(o)/, 4] = 'foo' # => "foo"
+  s                             # => "hellfoo"
+  [$`, $&, $']                  # => ["", "hello", ""]
+
+  s = 'hello'
+  # => "hello"
+  s[/(h)(e)(l+)(o)/, 5] = 'foo  # Raises IndexError: index 5 out of regexp.
+
+  s = 'hello'
+  s[/nosuch/] = 'foo'           # Raises IndexError: regexp not matched.
+
+<b>Form <tt>self[substring] = other_string</tt></b>
+
+With string argument +substring+ given:
+
+  s = 'hello'
+  s['l'] = 'foo'  # => "foo"
+  s  # => "hefoolo"
+
+  s = 'hello'
+  s['ll'] = 'foo'  # => "foo"
+  s  # => "hefooo"
+
+  s = 'тест'
+  s['ес'] = 'foo'  # => "foo"
+  s  # => "тfooт"
+
+  s = 'こんにちは'
+  s['んにち'] = 'foo'  # => "foo"
+  s  # => "こfooは"
+
+  s['nosuch'] = 'foo' # Raises IndexError: string not matched.
 
 Related: see {Modifying}[rdoc-ref:String@Modifying].

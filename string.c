@@ -5804,11 +5804,11 @@ rb_str_aref(VALUE str, VALUE indx)
 
 /*
  *  call-seq:
- *    self[substring] -> new_string or nil
- *    self[regexp, capture = 0] -> new_string or nil
  *    self[index] -> new_string or nil
  *    self[start, length] -> new_string or nil
  *    self[range] -> new_string or nil
+ *    self[regexp, capture = 0] -> new_string or nil
+ *    self[substring] -> new_string or nil
  *
  *  :include: doc/string/aref.rdoc
  *
@@ -6025,11 +6025,11 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 
 /*
  *  call-seq:
- *    self[substring] = other_string -> new_string
- *    self[regexp, capture = 0] = other_string -> new_string
  *    self[index] = other_string -> new_string
  *    self[start, length] = other_string -> new_string
  *    self[range] = other_string -> new_string
+ *    self[regexp, capture = 0] = other_string -> new_string
+ *    self[substring] = other_string -> new_string
  *
  *  :include: doc/string/aset.rdoc
  *
@@ -6077,11 +6077,11 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
 
 /*
  *  call-seq:
- *    slice!(substring)           -> new_string or nil
- *    slice!(regexp, capture = 0) -> new_string or nil
  *    slice!(index)               -> new_string or nil
  *    slice!(start, length)       -> new_string or nil
  *    slice!(range)               -> new_string or nil
+ *    slice!(regexp, capture = 0) -> new_string or nil
+ *    slice!(substring)           -> new_string or nil
  *
  *  Like String#[] (and its alias String#slice), except that:
  *

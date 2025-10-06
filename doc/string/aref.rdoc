@@ -1,47 +1,5 @@
 Returns the substring of +self+ specified by the arguments.
 
-Note: The form <tt>self[regexp, capture = 0]</tt>
-updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables];
-the other forms do not.
-
-<b>Form <tt>self[substring]</tt></b>
-
-With string argument +substring+ given,
-returns the matching substring of +self+, if found:
-
-  'hello'['ell']      # => "ell"
-  'hello'['']         # => ""
-  'hello'['nosuch']   # => nil
-  'тест'['ес']        # => "ес"
-  'こんにちは'['んにち'] # => "んにち"
-
-<b>Form <tt>self[regexp, capture = 0]</tt></b>
-
-With Regexp argument +regexp+ given and +capture+ as zero,
-searches for a matching substring in +self+;
-updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
-
-  'hello'[/ell/]     # => "ell"
-  [$`, $&, $']       # => ["h", "ell", "o"]
-  'hello'[/l+/]      # => "ll"
-  [$`, $&, $']       # => ["he", "ll", "o"]
-  'hello'[//]        # => ""
-  [$`, $&, $']       # => ["", "", "hello"]
-  'hello'[/nosuch/]  # => nil
-  [$`, $&, $']       # => [nil, nil, nil]
-
-With +capture+ as a positive integer +n+,
-returns the +n+th matched group:
-
-  'hello'[/(h)(e)(l+)(o)/]    # => "hello"
-  'hello'[/(h)(e)(l+)(o)/, 1] # => "h"
-  $1                          # => "h"
-  'hello'[/(h)(e)(l+)(o)/, 2] # => "e"
-  $2                          # => "e"
-  'hello'[/(h)(e)(l+)(o)/, 3] # => "ll"
-  'hello'[/(h)(e)(l+)(o)/, 4] # => "o"
-  'hello'[/(h)(e)(l+)(o)/, 5] # => nil
-
 <b>Form <tt>self[index]</tt></b>
 
 With non-negative integer argument +index+ given,
@@ -67,7 +25,7 @@ returns a substring of size +length+ characters (as available)
 beginning at character offset specified by +start+.
 
 If argument +start+ is non-negative,
-the offset is +start':
+the offset is +start+:
 
   'hello'[0, 1]  # => "h"
   'hello'[0, 5]  # => "hello"
@@ -92,8 +50,7 @@ returns a new empty string:
 <b>Form <tt>self[range]</tt></b>
 
 With Range argument +range+ given,
-forms substring <tt>substring = self[range.start, range.size]</tt>
-and returns <tt>self[substring]</tt>:
+forms substring <tt>substring = self[range.start, range.size]</tt>:
 
   'hello'[0..2]  # => "hel"
   'hello'[0, 3]  # => "hel"
@@ -103,5 +60,39 @@ and returns <tt>self[substring]</tt>:
 
   'hello'[0, 0]  # => ""
   'hello'[0...0] # => ""
+
+<b>Form <tt>self[regexp, capture = 0]</tt></b>
+
+With Regexp argument +regexp+ given and +capture+ as zero,
+searches for a matching substring in +self+;
+updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
+
+  'hello'[/ell/]     # => "ell"
+  'hello'[/l+/]      # => "ll"
+  'hello'[//]        # => ""
+  'hello'[/nosuch/]  # => nil
+
+With +capture+ as a positive integer +n+,
+returns the +n+th matched group:
+
+  'hello'[/(h)(e)(l+)(o)/]    # => "hello"
+  'hello'[/(h)(e)(l+)(o)/, 1] # => "h"
+  $1                          # => "h"
+  'hello'[/(h)(e)(l+)(o)/, 2] # => "e"
+  $2                          # => "e"
+  'hello'[/(h)(e)(l+)(o)/, 3] # => "ll"
+  'hello'[/(h)(e)(l+)(o)/, 4] # => "o"
+  'hello'[/(h)(e)(l+)(o)/, 5] # => nil
+
+<b>Form <tt>self[substring]</tt></b>
+
+With string argument +substring+ given,
+returns the matching substring of +self+, if found:
+
+  'hello'['ell']      # => "ell"
+  'hello'['']         # => ""
+  'hello'['nosuch']   # => nil
+  'тест'['ес']        # => "ес"
+  'こんにちは'['んにち'] # => "んにち"
 
 Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
