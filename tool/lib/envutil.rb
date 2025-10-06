@@ -43,12 +43,21 @@ module EnvUtil
   DEFAULT_SIGNALS.freeze
 
   RUBYLIB = ENV["RUBYLIB"].to_s.freeze
-  MULTIPLE_RACTORS = ENV["RUBY_TESTS_WITH_RACTORS"].to_i > 1
+  RUBY_TESTS_WITH_RACTORS = ENV["RUBY_TESTS_WITH_RACTORS"].to_i
 
   class << self
     attr_accessor :timeout_scale
     attr_reader :original_internal_encoding, :original_external_encoding,
                 :original_verbose, :original_warning
+
+    # multiple ractors for each testcase
+    def multiple_ractors?
+      RUBY_TESTS_WITH_RACTORS > 1
+    end
+    # at least 1 ractor for each testcase
+    def tests_with_ractors?
+      RUBY_TESTS_WITH_RACTORS > 0
+    end
 
     def capture_global_values
       @original_internal_encoding = Encoding.default_internal
@@ -296,7 +305,7 @@ module EnvUtil
   ensure
     stderr, $stderr = $stderr, stderr
     $VERBOSE = EnvUtil.original_verbose
-    unless MULTIPLE_RACTORS
+    unless EnvUtil.multiple_ractors?
       EnvUtil.original_warning&.each {|i, v| Warning[i] = v}
     end
   end
@@ -334,7 +343,7 @@ module EnvUtil
   module_function :suppress_warning
 
   def under_gc_stress(stress = true)
-    raise Test::Unit::PendedError.new("not ractor safe (#{__method__})") if MULTIPLE_RACTORS
+    raise Test::Unit::PendedError.new("not ractor safe (#{__method__})") if EnvUtil.multiple_ractors?
     begin
       stress, GC.stress = GC.stress, stress
       yield
@@ -346,7 +355,7 @@ module EnvUtil
 
   def under_gc_compact_stress(val = :empty, &block)
     raise "compaction doesn't work well on s390x. Omit the test in the caller." if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
-    raise Test::Unit::PendedError.new("not ractor safe (#{__method__})") if MULTIPLE_RACTORS
+    raise Test::Unit::PendedError.new("not ractor safe (#{__method__})") if EnvUtil.multiple_ractors?
     begin
       if GC.respond_to?(:auto_compact)
         auto_compact = GC.auto_compact
@@ -361,7 +370,7 @@ module EnvUtil
   module_function :under_gc_compact_stress
 
   def without_gc
-    raise Test::Unit::PendedError.new("not ractor safe (#{__method__})") if MULTIPLE_RACTORS
+    raise Test::Unit::PendedError.new("not ractor safe (#{__method__})") if EnvUtil.multiple_ractors?
     begin
       prev_disabled = GC.disable
       yield
@@ -372,7 +381,7 @@ module EnvUtil
   module_function :without_gc
 
   def with_default_external(enc = nil, of: nil)
-    raise Test::Unit::PendedError.new("not ractor safe (#{__method__})") if MULTIPLE_RACTORS
+    raise Test::Unit::PendedError.new("not ractor safe (#{__method__})") if EnvUtil.multiple_ractors?
     enc = of.encoding if defined?(of.encoding)
     suppress_warning { Encoding.default_external = enc }
     begin
@@ -384,7 +393,7 @@ module EnvUtil
   module_function :with_default_external
 
   def with_default_internal(enc = nil, of: nil)
-    raise Test::Unit::PendedError.new("not ractor safe (#{__method__})") if MULTIPLE_RACTORS
+    raise Test::Unit::PendedError.new("not ractor safe (#{__method__})") if EnvUtil.multiple_ractors?
     enc = of.encoding if defined?(of.encoding)
     suppress_warning { Encoding.default_internal = enc }
     begin

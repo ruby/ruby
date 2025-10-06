@@ -171,10 +171,10 @@ module Test
         opts = option_parser
         setup_options(opts, options)
         opts.parse!(args)
-        @option_parser = nil if ractors_enabled?
+        @option_parser = nil if EnvUtil.tests_with_ractors?
         orig_args -= args
         args = @init_hook.call(args, options) if @init_hook
-        @init_hook = nil if ractors_enabled?
+        @init_hook = nil if EnvUtil.tests_with_ractors?
         non_options(args, options)
         @run_options = orig_args
 
@@ -820,7 +820,7 @@ module Test
       end
 
       def _run_suites suites, type
-        if ENV["RUBY_TESTS_WITH_RACTORS"]
+        if EnvUtil.tests_with_ractors?
           Ractor.make_shareable(RbConfig::CONFIG)
           Ractor.make_shareable(RbConfig::MAKEFILE_CONFIG)
         end
@@ -1525,16 +1525,6 @@ module Test
       @@after_tests = []
       @@current_repeat_count = 0
 
-      class << self
-        def ractors_enabled?
-          ENV["RUBY_TESTS_WITH_RACTORS"].to_i > 0
-        end
-      end
-      def ractors_enabled?
-        self.class.ractors_enabled?
-      end
-      private :ractors_enabled?
-
       ##
       # A simple hook allowing you to run a block of code after _all_ of
       # the tests are done. Eg:
@@ -1545,7 +1535,7 @@ module Test
         @@after_tests << block
       end
 
-      if ractors_enabled?
+      if EnvUtil.tests_with_ractors?
         OUT = 1
         def self.output
           case OUT
@@ -1715,8 +1705,8 @@ module Test
           trace = true
         end
 
-        run_tests_inside_ractors_num = ENV["RUBY_TESTS_WITH_RACTORS"].to_i
-        if run_tests_inside_ractors_num > 0
+        run_tests_inside_ractors_num = EnvUtil::RUBY_TESTS_WITH_RACTORS
+        if run_tests_inside_ractors_num > 1
           def GC.stress=(val)
             raise "Cannot call GC.stress=(val) concurrently (it might not be set back properly after teardown)"
           end
@@ -1855,7 +1845,7 @@ module Test
         @report = []
         @errors = @failures = @skips = 0
         @verbose = false
-        unless ractors_enabled?
+        unless EnvUtil.tests_with_ractors?
           @mutex = Thread::Mutex.new
           @info_signal = Signal.list['INFO']
         end
@@ -1886,7 +1876,7 @@ module Test
         self.options.merge! args
 
         puts "Run options: #{help}"
-        ractors_num = ENV["RUBY_TESTS_WITH_RACTORS"].to_i
+        ractors_num = EnvUtil::RUBY_TESTS_WITH_RACTORS
         if ractors_num > 0
           puts "\nNOTE: Running tests inside ractors (each test method inside #{ractors_num} " \
             "ractor#{ractors_num > 1 ? 's' : ''})"

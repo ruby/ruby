@@ -1,4 +1,6 @@
 # frozen_string_literal: true
+require_relative "envutil"
+
 class LeakChecker
   @@try_lsof = nil # not-tried-yet
 
@@ -14,7 +16,8 @@ class LeakChecker
   end
 
   def check(test_name)
-    return if ENV["RUBY_TESTS_WITH_RACTORS"]
+    # TODO: enable some leak checks even with ractors. Checks are run after all ractors are joined.
+    return if EnvUtil.tests_with_ractors?
     if /i386-solaris/ =~ RUBY_PLATFORM && /TestGem/ =~ test_name
       GC.verify_internal_consistency
     end
@@ -131,7 +134,6 @@ class LeakChecker
 
   def extend_tempfile_counter
     return if defined? LeakChecker::TempfileCounter
-    return if ENV["RUBY_TESTS_WITH_RACTORS"]
     m = Module.new {
       @count = 0
       class << self
@@ -152,7 +154,7 @@ class LeakChecker
 
   def find_tempfiles(prev_count=-1)
     return [prev_count, []] unless defined? Tempfile
-    return [prev_count,[]] if ENV["RUBY_TESTS_WITH_RACTORS"]
+    return [prev_count,[]] if EnvUtil.tests_with_ractors?
     extend_tempfile_counter
     count = TempfileCounter.count
     if prev_count == count
@@ -167,7 +169,7 @@ class LeakChecker
 
   def check_tempfile_leak(test_name)
     return false unless defined? Tempfile
-    return false if ENV["RUBY_TESTS_WITH_RACTORS"]
+    return false if EnvUtil.tests_with_ractors?
     count1, initial_tempfiles = @tempfile_info
     count2, current_tempfiles = find_tempfiles(count1)
     leaked = false
