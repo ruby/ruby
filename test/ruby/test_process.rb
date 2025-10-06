@@ -280,7 +280,7 @@ class TestProcess < Test::Unit::TestCase
     end;
   end
 
-  MANDATORY_ENVS = %w[RUBYLIB GEM_HOME GEM_PATH]
+  MANDATORY_ENVS = %w[RUBYLIB GEM_HOME GEM_PATH RUBY_FREE_AT_EXIT]
   case RbConfig::CONFIG['target_os']
   when /linux/
     MANDATORY_ENVS << 'LD_PRELOAD'
