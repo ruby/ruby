@@ -60,12 +60,12 @@ module Test
       end
 
       def multiple_ractors?
-        ENV["RUBY_TESTS_WITH_RACTORS"].to_i > 1
+        EnvUtil.multiple_ractors?
       end
 
       # In order to guard generating methods dynamically that will run inside another ractor
       def will_run_in_main_ractor?
-        ENV["RUBY_TESTS_WITH_RACTORS"].to_i == 0
+        EnvUtil::RUBY_TESTS_WITH_RACTORS == 0
       end
     end
 
