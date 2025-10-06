@@ -1,5 +1,4 @@
 require 'rbconfig'
-require 'timeout'
 require 'fileutils'
 require_relative 'lib/colorize'
 require_relative 'lib/gem_env'
@@ -101,35 +100,39 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     pg = "-"
   end
   pid = Process.spawn(test_command, group => true)
+  mon_thr = Process.detach(pid)
   timeouts.each do |sig, sec|
     if sig
       puts "Sending #{sig} signal"
+      break if /mingw|mswin/ =~ RUBY_PLATFORM
       Process.kill("#{pg}#{sig}", pid)
     end
-    begin
-      break Timeout.timeout(sec) {Process.wait(pid)}
-    rescue Timeout::Error
-    end
+    break if mon_thr.join(sec)
   rescue Interrupt
     exit_code = Signal.list["INT"]
     Process.kill("#{pg}KILL", pid)
     Process.wait(pid)
     break
   end
+  if mon_thr.alive?
+    # On Windows, process killed by SIGKILL returns 0 so use another termination method
+    system("taskkill /F /PID #{pid}") if /mingw|mswin/ =~ RUBY_PLATFORM
+  end
 
+  status = mon_thr.value
   print "::endgroup::\n" if github_actions
-  unless $?.success?
+  unless status.success?
 
     mesg = "Tests failed " +
-           ($?.signaled? ? "by SIG#{Signal.signame($?.termsig)}" :
-              "with exit code #{$?.exitstatus}")
+           (status.signaled? ? "by SIG#{Signal.signame(status.termsig)}" :
+              "with exit code #{status.exitstatus}")
     puts colorize.decorate(mesg, "fail")
     if allowed_failures.include?(gem)
       mesg = "Ignoring test failures for #{gem} due to \$TEST_BUNDLED_GEMS_ALLOW_FAILURES or DEFAULT_ALLOWED_FAILURES"
       puts colorize.decorate(mesg, "skip")
     else
       failed << gem
-      exit_code = $?.exitstatus if $?.exitstatus
+      exit_code = status.exitstatus if status.exitstatus != 0
     end
   end
 end
