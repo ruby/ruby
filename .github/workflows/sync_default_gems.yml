@@ -46,9 +46,9 @@ jobs:
             echo update=true >> $GITHUB_OUTPUT
           fi
         env:
-          gem_name: ${{ github.event.client_payload.gem || github.event.inputs.gem }}
-          gem_before: ${{ github.event.client_payload.before || github.event.inputs.before }}
-          gem_after: ${{ github.event.client_payload.after || github.event.inputs.after }}
+          gem_name: ${{ github.event.inputs.gem }}
+          gem_before: ${{ github.event.inputs.before }}
+          gem_after: ${{ github.event.inputs.after }}
           EMAIL: svn-admin@ruby-lang.org
           GIT_AUTHOR_NAME: git
           GIT_COMMITTER_NAME: git
