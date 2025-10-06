@@ -48,13 +48,13 @@ macro_rules! make_counters {
         }
 
         impl Counter {
-            pub fn name(&self) -> String {
+            pub fn name(&self) -> &'static str {
                 match self {
-                    $( Counter::$default_counter_name => stringify!($default_counter_name).to_string(), )+
-                    $( Counter::$exit_counter_name => stringify!($exit_counter_name).to_string(), )+
-                    $( Counter::$dynamic_send_counter_name => stringify!($dynamic_send_counter_name).to_string(), )+
-                    $( Counter::$optimized_send_counter_name => stringify!($optimized_send_counter_name).to_string(), )+
-                    $( Counter::$counter_name => stringify!($counter_name).to_string(), )+
+                    $( Counter::$default_counter_name => stringify!($default_counter_name), )+
+                    $( Counter::$exit_counter_name => stringify!($exit_counter_name), )+
+                    $( Counter::$dynamic_send_counter_name => stringify!($dynamic_send_counter_name), )+
+                    $( Counter::$optimized_send_counter_name => stringify!($optimized_send_counter_name), )+
+                    $( Counter::$counter_name => stringify!($counter_name), )+
                 }
             }
         }
