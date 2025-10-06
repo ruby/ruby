@@ -260,7 +260,7 @@ else
     end
 
     # Merge revision from Git patch
-    git_uri = "https://git.ruby-lang.org/ruby.git/patch/?id=#{git_rev}"
+    git_uri = "https://github.com/ruby/ruby/commit/#{git_rev}.patch"
     resp = Net::HTTP.get_response(URI(git_uri))
     if resp.code != '200'
       abort "'#{git_uri}' returned status '#{resp.code}':\n#{resp.body}"
