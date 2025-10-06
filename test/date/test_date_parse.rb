@@ -544,6 +544,8 @@ class TestDateParse < Test::Unit::TestCase
 
     h = Date._parse('')
     assert_equal({}, h)
+
+    assert_raise(TypeError) {Date._parse(nil)}
   end
 
   def test_parse

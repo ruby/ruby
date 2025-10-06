@@ -4468,7 +4468,6 @@ static VALUE
 check_limit(VALUE str, VALUE opt)
 {
     size_t slen, limit;
-    if (NIL_P(str)) return str;
     StringValue(str);
     slen = RSTRING_LEN(str);
     limit = get_limit(opt);
@@ -4620,7 +4619,7 @@ date_s__iso8601(int argc, VALUE *argv, VALUE klass)
     VALUE str, opt;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
-    str = check_limit(str, opt);
+    if (!NIL_P(str)) str = check_limit(str, opt);
 
     return date__iso8601(str);
 }
@@ -4690,7 +4689,7 @@ date_s__rfc3339(int argc, VALUE *argv, VALUE klass)
     VALUE str, opt;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
-    str = check_limit(str, opt);
+    if (!NIL_P(str)) str = check_limit(str, opt);
 
     return date__rfc3339(str);
 }
@@ -4759,7 +4758,7 @@ date_s__xmlschema(int argc, VALUE *argv, VALUE klass)
     VALUE str, opt;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
-    str = check_limit(str, opt);
+    if (!NIL_P(str)) str = check_limit(str, opt);
 
     return date__xmlschema(str);
 }
@@ -4828,7 +4827,7 @@ date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
     VALUE str, opt;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
-    str = check_limit(str, opt);
+    if (!NIL_P(str)) str = check_limit(str, opt);
 
     return date__rfc2822(str);
 }
@@ -4896,7 +4895,7 @@ date_s__httpdate(int argc, VALUE *argv, VALUE klass)
     VALUE str, opt;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
-    str = check_limit(str, opt);
+    if (!NIL_P(str)) str = check_limit(str, opt);
 
     return date__httpdate(str);
 }
@@ -4965,7 +4964,7 @@ date_s__jisx0301(int argc, VALUE *argv, VALUE klass)
     VALUE str, opt;
 
     rb_scan_args(argc, argv, "1:", &str, &opt);
-    str = check_limit(str, opt);
+    if (!NIL_P(str)) str = check_limit(str, opt);
 
     return date__jisx0301(str);
 }
