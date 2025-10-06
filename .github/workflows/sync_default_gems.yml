@@ -1,0 +1,67 @@
+name: Sync default gems
+on:
+  # Main use of this workflow. Called by default gem repositories by API.
+  repository_dispatch:
+    types:
+      - sync_default_gems
+
+  # Web UI dispatch for testing and manual operations.
+  workflow_dispatch:
+    inputs:
+      gem:
+        required: true
+        description: 'Name of the gem to be synchronized'
+        type: string
+      before:
+        required: true
+        description: 'Gem commit SHA before sync'
+        type: string
+      after:
+        required: true
+        description: 'Gem commit SHA after sync'
+        type: string
+
+jobs:
+  sync_default_gems:
+    name: Update default gems list
+
+    permissions:
+      contents: write # for Git to git push
+
+    runs-on: ubuntu-latest
+
+    if: ${{ github.repository == 'ruby/ruby' }}
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        name: Check out ruby/ruby
+        with:
+          token: ${{ (github.repository == 'ruby/ruby' && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Run tool/sync_default_gems.rb
+        run: ruby tool/sync_default_gems.rb "${gem_name}" "${gem_before}..${gem_after}"
+        env:
+          gem_name: ${{ github.event.client_payload.gem || github.event.inputs.gem }}
+          gem_before: ${{ github.event.client_payload.before || github.event.inputs.before }}
+          gem_after: ${{ github.event.client_payload.after || github.event.inputs.after }}
+
+      - name: Check diffs
+        id: diff
+        run: |
+          git diff --color --no-ext-diff --ignore-submodules --exit-code ||
+          echo update=true >> $GITHUB_OUTPUT
+
+      - name: Push
+        run: |
+          git pull --ff-only origin ${GITHUB_REF#refs/heads/}
+          git push origin ${GITHUB_REF#refs/heads/}
+        env:
+          EMAIL: svn-admin@ruby-lang.org
+          GIT_AUTHOR_NAME: git
+          GIT_COMMITTER_NAME: git
+        if: ${{ steps.diff.outputs.update }}
+
+      - uses: ./.github/actions/slack
+        with:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}

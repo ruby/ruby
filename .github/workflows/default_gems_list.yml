@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  update_default_gems:
+  update_default_gems_list:
     name: Update default gems list
 
     permissions:
