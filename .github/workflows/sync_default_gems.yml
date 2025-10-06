@@ -23,7 +23,7 @@ on:
 
 jobs:
   sync_default_gems:
-    name: Update default gems list
+    name: Sync default gems
 
     permissions:
       contents: write # for Git to git push
