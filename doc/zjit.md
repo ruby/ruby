@@ -3,7 +3,8 @@
 ## Build Instructions
 
 To build ZJIT on macOS:
-```
+
+```bash
 ./autogen.sh
 
 ./configure \
@@ -15,62 +16,48 @@ To build ZJIT on macOS:
 make -j miniruby
 ```
 
-## Useful dev commands
-
-To view YARV output for code snippets:
-```
-./miniruby --dump=insns -e0
-```
-
-To run code snippets with ZJIT:
-```
-./miniruby --zjit -e0
-```
-
-You can also try https://www.rubyexplorer.xyz/ to view Ruby YARV disasm output with syntax highlighting
-in a way that can be easily shared with other team members.
-
 ## Documentation
 
 You can generate and open the source level documentation in your browser using:
-```
+
+```bash
 cargo doc --document-private-items -p zjit --open
 ```
 
 ## Testing
 
-Make sure you have a `--enable-zjit=dev` build, and install the following tools:
-```
+Note that tests link against CRuby, so directly calling `cargo test`, or `cargo nextest` should not build. All tests are instead accessed through `make`.
+
+### Setup
+
+First, ensure you have `cargo` installed. If you do not already have it, you can use [rustup.rs](https://rustup.rs/).
+
+Make sure to add `--enable-zjit=dev` when you run `configure`, then install the following tools:
+
+```bash
 cargo install cargo-nextest
 cargo install cargo-insta
 ```
-`cargo-nextest` is required for running tests, whereas `cargo-insta` is used for updating snapshots.
 
-### make zjit-check
+`cargo-insta` is used for updating snapshots. `cargo-nextest` runs each test in its own process, which is valuable since CRuby only supports booting once per process, and most APIs are not thread safe.
 
-This command runs all ZJIT tests: `make zjit-test` and `test/ruby/test_zjit.rb`.
+### Running unit tests
 
-```
-make zjit-check
-```
+For testing functionality within ZJIT, use:
 
-### make zjit-test
-
-This command runs Rust unit tests using `insta` for snapshot testing.
-
-```
+```bash
 make zjit-test
 ```
 
 You can also run a single test case by specifying the function name:
 
-```
+```bash
 make zjit-test ZJIT_TESTS=test_putobject
 ```
 
 #### Snapshot Testing
 
-ZJIT uses [insta](https://insta.rs/) for snapshot testing. When tests fail due to snapshot mismatches, pending snapshots are created. The test command will notify you if there are pending snapshots:
+ZJIT uses [insta](https://insta.rs/) for snapshot testing within unit tests. When tests fail due to snapshot mismatches, pending snapshots are created. The test command will notify you if there are pending snapshots:
 
 ```
 Pending snapshots found. Accept with: make zjit-test-update
@@ -78,48 +65,38 @@ Pending snapshots found. Accept with: make zjit-test-update
 
 To update/accept all the snapshot changes:
 
-```
+```bash
 make zjit-test-update
 ```
 
 You can also review snapshot changes interactively one by one:
 
-```
+```bash
 cd zjit && cargo insta review
 ```
 
 Test changes will be reviewed alongside code changes.
 
-<details>
-
-<summary>Setting up zjit-test</summary>
-
-ZJIT uses `cargo-nextest` for Rust unit tests instead of `cargo test`.
-`cargo-nextest` runs each test in its own process, which is valuable since
-CRuby only supports booting once per process, and most APIs are not thread
-safe. Use `brew install cargo-nextest` to install it on macOS, otherwise, refer
-to <https://nexte.st/docs/installation/pre-built-binaries/> for installation
-instructions.
-
-Since it uses Cargo, you'll also need a `configure --enable-zjit=dev ...` build
-for `make zjit-test`. Since the tests need to link against CRuby, directly
-calling `cargo test`, or `cargo nextest` likely won't build. Make sure to
-use `make`.
-
-</details>
-
-### test/ruby/test\_zjit.rb
+### Running integration tests
 
 This command runs Ruby execution tests.
 
-```
+```bash
 make test-all TESTS="test/ruby/test_zjit.rb"
 ```
 
 You can also run a single test case by matching the method name:
 
-```
+```bash
 make test-all TESTS="test/ruby/test_zjit.rb -n TestZJIT#test_putobject"
+```
+
+### Running all tests
+
+Runs both `make zjit-test` and `test/ruby/test_zjit.rb`:
+
+```bash
+make zjit-check
 ```
 
 ## Statistics Collection
@@ -173,11 +150,28 @@ Through [Stackprof](https://github.com/tmm1/stackprof), detailed information abo
 ./miniruby --zjit-trace-exits script.rb
 ```
 
-A file called `zjit_exit_locations.dump` will be created in the same directory as `script.rb`. Viewing the side exited methods can be done with Stackprof:
+A file called `zjit_exit_locations{timestamp}.dump` will be created in the same directory as `script.rb`. Viewing the side exited methods can be done with Stackprof:
 
 ```bash
-stackprof path/to/zjit_exit_locations.dump
+stackprof path/to/zjit_exit_locations{timestamp}.dump
 ```
+
+## Useful dev commands
+
+To view YARV output for code snippets:
+
+```bash
+./miniruby --dump=insns -e0
+```
+
+To run code snippets with ZJIT:
+
+```bash
+./miniruby --zjit -e0
+```
+
+You can also try https://www.rubyexplorer.xyz/ to view Ruby YARV disasm output with syntax highlighting
+in a way that can be easily shared with other team members.
 
 ## ZJIT Glossary
 
