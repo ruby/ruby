@@ -191,6 +191,7 @@ The following default gems are updated.
 * json 2.15.0
 * openssl 4.0.0.pre
 * optparse 0.7.0.dev.2
+* pp 0.6.3
 * prism 1.5.1
 * psych 5.2.6
 * resolv 0.6.2
