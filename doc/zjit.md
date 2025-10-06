@@ -26,7 +26,10 @@ in a way that can be easily shared with other team members.
 
 ## Documentation
 
-You can generate and open the source level documentation in your browser using `cargo doc --open --document-private-items`.
+You can generate and open the source level documentation in your browser using:
+```
+cargo doc --document-private-items -p zjit --open
+```
 
 ## Testing
 
