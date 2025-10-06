@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         name: Check out ruby/ruby
         with:
-          fetch-depth: 0 # Fetch all history to recognize past renames
+          fetch-depth: 999999 # Fetch all history to follow past renames. Not using 0 to avoid fetching tags/branches.
           token: ${{ github.repository == 'ruby/ruby' && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Increase rename limit
