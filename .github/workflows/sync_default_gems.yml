@@ -48,15 +48,14 @@ jobs:
           gem_name: ${{ github.event.client_payload.gem || github.event.inputs.gem }}
           gem_before: ${{ github.event.client_payload.before || github.event.inputs.before }}
           gem_after: ${{ github.event.client_payload.after || github.event.inputs.after }}
+          EMAIL: svn-admin@ruby-lang.org
+          GIT_AUTHOR_NAME: git
+          GIT_COMMITTER_NAME: git
 
       - name: Push
         run: |
           git pull --ff-only origin ${GITHUB_REF#refs/heads/}
           git push origin ${GITHUB_REF#refs/heads/}
-        env:
-          EMAIL: svn-admin@ruby-lang.org
-          GIT_AUTHOR_NAME: git
-          GIT_COMMITTER_NAME: git
 
       - uses: ./.github/actions/slack
         with:
