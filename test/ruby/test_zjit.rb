@@ -2127,6 +2127,7 @@ class TestZJIT < Test::Unit::TestCase
         # After reset, counters should be zero or at least much smaller
         # (some instructions might execute between reset and reading stats)
         :zjit_insn_count.then { |s| initial_stats[s] > 0 && reset_stats[s] < initial_stats[s] },
+        :compiled_iseq_count.then { |s| initial_stats[s] > 0 && reset_stats[s] < initial_stats[s] }
       ].all?
     }, stats: true
   end
