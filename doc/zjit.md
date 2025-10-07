@@ -150,10 +150,10 @@ Through [Stackprof](https://github.com/tmm1/stackprof), detailed information abo
 ./miniruby --zjit-trace-exits script.rb
 ```
 
-A file called `zjit_exit_locations{timestamp}.dump` will be created in the same directory as `script.rb`. Viewing the side exited methods can be done with Stackprof:
+A file called `zjit_exits_{pid}.dump` will be created in the same directory as `script.rb`. Viewing the side exited methods can be done with Stackprof:
 
 ```bash
-stackprof path/to/zjit_exit_locations{timestamp}.dump
+stackprof path/to/zjit_exits_{pid}.dump
 ```
 
 ## Useful dev commands

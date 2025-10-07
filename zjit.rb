@@ -277,7 +277,7 @@ class << RubyVM::ZJIT
   def dump_locations # :nodoc:
     return unless trace_exit_locations_enabled?
 
-    filename = "zjit_exits_#{Time.now.to_i}.dump"
+    filename = "zjit_exits_#{Process.pid}.dump"
     n_bytes = dump_exit_locations(filename)
 
     $stderr.puts("#{n_bytes} bytes written to #{filename}.")
