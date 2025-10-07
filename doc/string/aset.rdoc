@@ -1,10 +1,6 @@
 Returns +self+ with all, a substring, or none of its contents replaced;
 returns the argument +other_string+.
 
-Note: The form <tt>self[regexp, capture = 0]=</tt>
-updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables];
-the other forms do not.
-
 <b>Form <tt>self[index] = other_string</tt></b>
 
 With non-negative integer argument +index+ given,

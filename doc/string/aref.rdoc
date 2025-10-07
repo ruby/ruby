@@ -50,7 +50,7 @@ returns a new empty string:
 <b>Form <tt>self[range]</tt></b>
 
 With Range argument +range+ given,
-forms substring <tt>substring = self[range.start, range.size]</tt>:
+forms substring <tt>self[range.start, range.size]</tt>:
 
   'hello'[0..2]  # => "hel"
   'hello'[0, 3]  # => "hel"
