@@ -210,6 +210,8 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(--enable foobarbazqux -e) + [""], "", [],
                       /unknown argument for --enable: 'foobarbazqux'/)
     assert_in_out_err(%w(--enable), "", [], /missing argument for --enable/)
+    assert_in_out_err(%w(-e) + ['p defined? Gem'], "", %w["constant"], [], gems: true)
+    assert_in_out_err(%w(-e) + ['p defined? Gem'], "", %w["constant"], [], gems: nil)
   end
 
   def test_disable
@@ -219,7 +221,7 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(--disable foobarbazqux -e) + [""], "", [],
                       /unknown argument for --disable: 'foobarbazqux'/)
     assert_in_out_err(%w(--disable), "", [], /missing argument for --disable/)
-    assert_in_out_err(%w(-e) + ['p defined? Gem'], "", ["nil"], [])
+    assert_in_out_err(%w(-e) + ['p defined? Gem'], "", ["nil"], [], gems: false)
     assert_in_out_err(%w(--disable-did_you_mean -e) + ['p defined? DidYouMean'], "", ["nil"], [])
     assert_in_out_err(%w(-e) + ['p defined? DidYouMean'], "", ["nil"], [])
   end
