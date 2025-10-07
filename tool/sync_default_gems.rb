@@ -626,14 +626,12 @@ module SyncDefaultGems
       return picked || nil      # Fail unless cherry-picked
     end
 
-    if porcelain_status().empty?
-      system(*%w"git cherry-pick --skip")
-      return false
-    end
-
     # Commit cherry-picked commit
     if picked
       system(*%w"git commit --amend --no-edit")
+    elsif porcelain_status().empty?
+      system(*%w"git cherry-pick --skip")
+      return false
     else
       system(*%w"git cherry-pick --continue --no-edit")
     end or return nil
