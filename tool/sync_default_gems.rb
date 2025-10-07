@@ -628,7 +628,7 @@ module SyncDefaultGems
 
     if porcelain_status().empty?
       system(*%w"git cherry-pick --skip")
-      return true
+      return false
     end
 
     # Commit cherry-picked commit
