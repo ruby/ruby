@@ -197,7 +197,7 @@ The following default gems are updated.
 * resolv 0.6.2
 * stringio 3.1.8.dev
 * strscan 3.1.6.dev
-* uri 1.0.3
+* uri 1.0.4
 * weakref 0.1.4
 
 The following bundled gems are added.
