@@ -119,8 +119,8 @@ VM_EP_RUBY_LEP(const rb_execution_context_t *ec, const rb_control_frame_t *curre
         while (VM_ENV_FLAGS(ep, VM_FRAME_FLAG_CFRAME) != 0) {
             if (!cfp) {
                 cfp = rb_vm_search_cf_from_ep(ec, checkpoint_cfp, ep);
-                VM_NAMESPACE_ASSERT(cfp, "rb_vm_search_cf_from_ep should return a valid cfp for the ep, but NULL");
-                VM_NAMESPACE_ASSERT(cfp->ep == ep, "rb_vm_search_cf_from_ep returns an unmatched cfp");
+                VM_NAMESPACE_ASSERT(cfp, "Failed to search cfp from ep");
+                VM_NAMESPACE_ASSERT(cfp->ep == ep, "Searched cfp's ep is not equal to ep");
             }
             if (!cfp) {
                 return NULL;

@@ -62,6 +62,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     VALUE tmp;
     const rb_iseq_t *iseq = NULL;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry_unchecked(cfp);
+    const rb_namespace_t *ns = NULL;
 
     if (ep < 0 || (size_t)ep > ec->vm_stack_size) {
         ep = (ptrdiff_t)cfp->ep;
@@ -71,12 +72,17 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     switch (VM_FRAME_TYPE_UNCHECKED(cfp)) {
       case VM_FRAME_MAGIC_TOP:
         magic = "TOP";
+        ns = VM_ENV_NAMESPACE_UNCHECKED(cfp->ep);
         break;
       case VM_FRAME_MAGIC_METHOD:
         magic = "METHOD";
+        if (me) {
+            ns = me->def->ns;
+        }
         break;
       case VM_FRAME_MAGIC_CLASS:
         magic = "CLASS";
+        ns = VM_ENV_NAMESPACE_UNCHECKED(cfp->ep);
         break;
       case VM_FRAME_MAGIC_BLOCK:
         magic = "BLOCK";
@@ -156,6 +162,12 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     }
     kprintf("s:%04"PRIdPTRDIFF" ", cfp->sp - ec->vm_stack);
     kprintf(ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "E:%06"PRIxPTRDIFF" ", ep % 10000);
+    if (ns) {
+        kprintf("n:%04ld ", ns->ns_id % 10000);
+    }
+    else {
+        kprintf("n:---- ");
+    }
     kprintf("%-6s", magic);
     if (line) {
         kprintf(" %s", posbuf);
