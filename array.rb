@@ -212,7 +212,7 @@ class Array
     indexes
   end
 
-  with_yjit do
+  with_jit do
     if Primitive.rb_builtin_basic_definition_p(:each)
       undef :each
 

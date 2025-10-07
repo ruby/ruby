@@ -133,7 +133,7 @@ require 'json/common'
 # When not specified:
 #   # The last value is used and a deprecation warning emitted.
 #   JSON.parse('{"a": 1, "a":2}') => {"a" => 2}
-#   # waring: detected duplicate keys in JSON object.
+#   # warning: detected duplicate keys in JSON object.
 #   # This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`
 #
 # When set to `+true+`
@@ -307,6 +307,25 @@ require 'json/common'
 #
 # ---
 #
+# Option +allow_duplicate_key+ (boolean) specifies whether
+# hashes with duplicate keys should be allowed or produce an error.
+# defaults to emit a deprecation warning.
+#
+# With the default, (not set):
+#   Warning[:deprecated] = true
+#   JSON.generate({ foo: 1, "foo" => 2 })
+#   # warning: detected duplicate key "foo" in {foo: 1, "foo" => 2}.
+#   # This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`
+#   # => '{"foo":1,"foo":2}'
+#
+# With <tt>false</tt>
+#   JSON.generate({ foo: 1, "foo" => 2 }, allow_duplicate_key: false)
+#   # detected duplicate key "foo" in {foo: 1, "foo" => 2} (JSON::GeneratorError)
+#
+# In version 3.0, <tt>false</tt> will become the default.
+#
+# ---
+#
 # Option +max_nesting+ (\Integer) specifies the maximum nesting depth
 # in +obj+; defaults to +100+.
 #
@@ -383,6 +402,9 @@ require 'json/common'
 #   }
 #
 # == \JSON Additions
+#
+# Note that JSON Additions must only be used with trusted data, and is
+# deprecated.
 #
 # When you "round trip" a non-\String object from Ruby to \JSON and back,
 # you have a new \String, instead of the object you began with:

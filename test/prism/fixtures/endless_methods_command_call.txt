@@ -1,0 +1,8 @@
+private def foo = puts "Hello"
+private def foo = puts "Hello", "World"
+private def foo = puts "Hello" do expr end
+private def foo() = puts "Hello"
+private def foo(x) = puts x
+private def obj.foo = puts "Hello"
+private def obj.foo() = puts "Hello"
+private def obj.foo(x) = puts x

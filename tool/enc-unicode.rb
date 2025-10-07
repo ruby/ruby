@@ -12,6 +12,9 @@
 # You can get source file for gperf.  After this, simply make ruby.
 # Or directly run:
 # tool/enc-unicode.rb --header data_dir emoji_data_dir > enc/unicode/<VERSION>/name2ctype.h
+#
+# There are Makefile rules that automate steps above: `make update-unicode` and
+# `make enc/unicode/<VERSION>/name2ctype.h`.
 
 while arg = ARGV.shift
   case arg

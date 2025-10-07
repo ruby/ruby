@@ -311,6 +311,44 @@ RSpec.describe "bundle lock" do
     expect { read_lockfile }.to raise_error(Errno::ENOENT)
   end
 
+  it "updates a specific gem and write to a custom location" do
+    build_repo4 do
+      build_gem "uri", %w[1.0.2 1.0.3]
+      build_gem "warning", %w[1.4.0 1.5.0]
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+
+      gem "uri"
+      gem "warning"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: https://gem.repo4
+        specs:
+          uri (1.0.2)
+          warning (1.4.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        uri
+        warning
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "lock --update uri --lockfile=lock"
+
+    lockfile_content = read_lockfile("lock")
+    expect(lockfile_content).to include("uri (1.0.3)")
+    expect(lockfile_content).to include("warning (1.4.0)")
+  end
+
   it "writes to custom location using --lockfile when a default lockfile is present" do
     gemfile_with_rails_weakling_and_foo_from_repo4
 
@@ -2059,15 +2097,13 @@ RSpec.describe "bundle lock" do
     L
   end
 
-  it "generates checksums by default if configured to do so" do
+  it "generates checksums by default" do
     build_repo4 do
       build_gem "nokogiri", "1.14.2"
       build_gem "nokogiri", "1.14.2" do |s|
         s.platform = "x86_64-linux"
       end
     end
-
-    bundle "config lockfile_checksums true"
 
     simulate_platform "x86_64-linux" do
       install_gemfile <<-G
@@ -2096,6 +2132,43 @@ RSpec.describe "bundle lock" do
       DEPENDENCIES
         nokogiri
       #{checksums}
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
+  it "disables checksums if configured to do so" do
+    build_repo4 do
+      build_gem "nokogiri", "1.14.2"
+      build_gem "nokogiri", "1.14.2" do |s|
+        s.platform = "x86_64-linux"
+      end
+    end
+
+    bundle "config lockfile_checksums false"
+
+    simulate_platform "x86_64-linux" do
+      install_gemfile <<-G
+        source "https://gem.repo4"
+
+        gem "nokogiri"
+      G
+    end
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          nokogiri (1.14.2)
+          nokogiri (1.14.2-x86_64-linux)
+
+      PLATFORMS
+        ruby
+        x86_64-linux
+
+      DEPENDENCIES
+        nokogiri
+
       BUNDLED WITH
          #{Bundler::VERSION}
     L
@@ -2237,7 +2310,6 @@ RSpec.describe "bundle lock" do
               nokogiri (1.14.2-x86_64-linux)
 
           PLATFORMS
-            ruby
             x86_64-linux
 
           DEPENDENCIES

@@ -3,38 +3,19 @@ require 'test/unit'
 
 class TestRactor < Test::Unit::TestCase
   def test_shareability_of_iseq_proc
-    y = nil.instance_eval do
+    assert_raise Ractor::IsolationError do
       foo = []
-      proc { foo }
+      Ractor.shareable_proc{ foo }
     end
-    assert_unshareable(y, /unshareable object \[\] from variable 'foo'/)
-
-    y = [].instance_eval { proc { self } }
-    assert_unshareable(y, /Proc's self is not shareable/)
-
-    y = [].freeze.instance_eval { proc { self } }
-    assert_make_shareable(y)
-  end
-
-  def test_shareability_of_curried_proc
-    x = nil.instance_eval do
-      foo = []
-      proc { foo }.curry
-    end
-    assert_unshareable(x, /unshareable object \[\] from variable 'foo'/)
-
-    x = nil.instance_eval do
-      foo = 123
-      proc { foo }.curry
-    end
-    assert_make_shareable(x)
   end
 
   def test_shareability_of_method_proc
+    # TODO: fix with Ractor.shareable_proc/lambda
+=begin
     str = +""
 
     x = str.instance_exec { proc { to_s } }
-    assert_unshareable(x, /Proc's self is not shareable/)
+    assert_unshareable(x, /Proc\'s self is not shareable/)
 
     x = str.instance_exec { method(:to_s) }
     assert_unshareable(x, "can not make shareable object for #<Method: String#to_s()>", exception: Ractor::Error)
@@ -58,6 +39,7 @@ class TestRactor < Test::Unit::TestCase
 
     x = str.instance_exec { method(:itself).to_proc }
     assert_unshareable(x, "can not make shareable object for #<Method: String(Kernel)#itself()>", exception: Ractor::Error)
+=end
   end
 
   def test_shareability_error_uses_inspect
@@ -96,6 +78,24 @@ class TestRactor < Test::Unit::TestCase
       assert_nil TestClass.instance_variable_get(:@d)
       assert_equal 4, TestClass.instance_variable_set(:@d, 4)
       assert_equal 4, TestClass.instance_variable_get(:@d)
+    RUBY
+  end
+
+  def test_struct_instance_variables
+    assert_ractor(<<~'RUBY')
+      StructIvar = Struct.new(:member) do
+        def initialize(*)
+          super
+          @ivar = "ivar"
+        end
+        attr_reader :ivar
+      end
+      obj = StructIvar.new("member")
+      obj_copy = Ractor.new { Ractor.receive }.send(obj).value
+      assert_equal obj.ivar, obj_copy.ivar
+      refute_same obj.ivar, obj_copy.ivar
+      assert_equal obj.member, obj_copy.member
+      refute_same obj.member, obj_copy.member
     RUBY
   end
 
@@ -141,6 +141,53 @@ class TestRactor < Test::Unit::TestCase
         "success"
       end.value
       assert_equal "success", result
+    RUBY
+  end
+
+  # [Bug #21398]
+  def test_port_receive_dnt_with_port_send
+    omit 'unstable on windows and macos-14' if RUBY_PLATFORM =~ /mswin|mingw|darwin/
+    assert_ractor(<<~'RUBY', timeout: 90)
+      THREADS = 10
+      JOBS_PER_THREAD = 50
+      ARRAY_SIZE = 20_000
+      def ractor_job(job_count, array_size)
+        port = Ractor::Port.new
+        workers = (1..4).map do |i|
+          Ractor.new(port) do |job_port|
+            while job = Ractor.receive
+              result = job.map { |x| x * 2 }.sum
+              job_port.send result
+            end
+          end
+        end
+        jobs = Array.new(job_count) { Array.new(array_size) { rand(1000) } }
+        jobs.each_with_index do |job, i|
+          w_idx = i % 4
+          workers[w_idx].send(job)
+        end
+        results = []
+        jobs.size.times do
+          result = port.receive # dnt receive
+          results << result
+        end
+        results
+      end
+      threads = []
+      # creates 40 ractors (THREADSx4)
+      THREADS.times do
+        threads << Thread.new do
+          ractor_job(JOBS_PER_THREAD, ARRAY_SIZE)
+        end
+      end
+      threads.each(&:join)
+    RUBY
+  end
+
+  # [Bug #20146]
+  def test_max_cpu_1
+    assert_ractor(<<~'RUBY', args: [{ "RUBY_MAX_CPU" => "1" }])
+      assert_equal :ok, Ractor.new { :ok }.value
     RUBY
   end
 

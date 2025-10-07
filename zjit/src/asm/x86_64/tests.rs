@@ -1,6 +1,10 @@
 #![cfg(test)]
 
-use crate::asm::x86_64::*;
+use insta::assert_snapshot;
+
+#[cfg(feature = "disasm")]
+use crate::disasms;
+use crate::{asm::x86_64::*, hexdumps, assert_disasm_snapshot};
 
 /// Check that the bytes for an instruction sequence match a hex string
 fn check_bytes<R>(bytes: &str, run: R) where R: FnOnce(&mut super::CodeBlock) {
@@ -9,364 +13,822 @@ fn check_bytes<R>(bytes: &str, run: R) where R: FnOnce(&mut super::CodeBlock) {
     assert_eq!(format!("{:x}", cb), bytes);
 }
 
+fn compile<R>(run: R) -> CodeBlock where R: FnOnce(&mut super::CodeBlock) {
+    let mut cb = super::CodeBlock::new_dummy();
+    run(&mut cb);
+    cb
+}
+
 #[test]
 fn test_add() {
-    check_bytes("80c103", |cb| add(cb, CL, imm_opnd(3)));
-    check_bytes("00d9", |cb| add(cb, CL, BL));
-    check_bytes("4000e1", |cb| add(cb, CL, SPL));
-    check_bytes("6601d9", |cb| add(cb, CX, BX));
-    check_bytes("4801d8", |cb| add(cb, RAX, RBX));
-    check_bytes("01d1", |cb| add(cb, ECX, EDX));
-    check_bytes("4c01f2", |cb| add(cb, RDX, R14));
-    check_bytes("480110", |cb| add(cb, mem_opnd(64, RAX, 0), RDX));
-    check_bytes("480310", |cb| add(cb, RDX, mem_opnd(64, RAX, 0)));
-    check_bytes("48035008", |cb| add(cb, RDX, mem_opnd(64, RAX, 8)));
-    check_bytes("480390ff000000", |cb| add(cb, RDX, mem_opnd(64, RAX, 255)));
-    check_bytes("4881407fff000000", |cb| add(cb, mem_opnd(64, RAX, 127), imm_opnd(255)));
-    check_bytes("0110", |cb| add(cb, mem_opnd(32, RAX, 0), EDX));
-    check_bytes("4883c408", |cb| add(cb, RSP, imm_opnd(8)));
-    check_bytes("83c108", |cb| add(cb, ECX, imm_opnd(8)));
-    check_bytes("81c1ff000000", |cb| add(cb, ECX, imm_opnd(255)));
+    let cb01 = compile(|cb| add(cb, CL, imm_opnd(3)));
+    let cb02 = compile(|cb| add(cb, CL, BL));
+    let cb03 = compile(|cb| add(cb, CL, SPL));
+    let cb04 = compile(|cb| add(cb, CX, BX));
+    let cb05 = compile(|cb| add(cb, RAX, RBX));
+    let cb06 = compile(|cb| add(cb, ECX, EDX));
+    let cb07 = compile(|cb| add(cb, RDX, R14));
+    let cb08 = compile(|cb| add(cb, mem_opnd(64, RAX, 0), RDX));
+    let cb09 = compile(|cb| add(cb, RDX, mem_opnd(64, RAX, 0)));
+    let cb10 = compile(|cb| add(cb, RDX, mem_opnd(64, RAX, 8)));
+    let cb11 = compile(|cb| add(cb, RDX, mem_opnd(64, RAX, 255)));
+    let cb12 = compile(|cb| add(cb, mem_opnd(64, RAX, 127), imm_opnd(255)));
+    let cb13 = compile(|cb| add(cb, mem_opnd(32, RAX, 0), EDX));
+    let cb14 = compile(|cb| add(cb, RSP, imm_opnd(8)));
+    let cb15 = compile(|cb| add(cb, ECX, imm_opnd(8)));
+    let cb16 = compile(|cb| add(cb, ECX, imm_opnd(255)));
+
+    assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16), @r"
+    0x0: add cl, 3
+    0x0: add cl, bl
+    0x0: add cl, spl
+    0x0: add cx, bx
+    0x0: add rax, rbx
+    0x0: add ecx, edx
+    0x0: add rdx, r14
+    0x0: add qword ptr [rax], rdx
+    0x0: add rdx, qword ptr [rax]
+    0x0: add rdx, qword ptr [rax + 8]
+    0x0: add rdx, qword ptr [rax + 0xff]
+    0x0: add qword ptr [rax + 0x7f], 0xff
+    0x0: add dword ptr [rax], edx
+    0x0: add rsp, 8
+    0x0: add ecx, 8
+    0x0: add ecx, 0xff
+    ");
+
+    assert_snapshot!(hexdumps!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16), @r"
+    80c103
+    00d9
+    4000e1
+    6601d9
+    4801d8
+    01d1
+    4c01f2
+    480110
+    480310
+    48035008
+    480390ff000000
+    4881407fff000000
+    0110
+    4883c408
+    83c108
+    81c1ff000000
+    ");
 }
 
 #[test]
 fn test_add_unsigned() {
     // ADD r/m8, imm8
-    check_bytes("4180c001", |cb| add(cb, R8B, uimm_opnd(1)));
-    check_bytes("4180c07f", |cb| add(cb, R8B, imm_opnd(i8::MAX.try_into().unwrap())));
-
+    let cb1 = compile(|cb| add(cb, R8B, uimm_opnd(1)));
+    let cb2 = compile(|cb| add(cb, R8B, imm_opnd(i8::MAX.into())));
     // ADD r/m16, imm16
-    check_bytes("664183c001", |cb| add(cb, R8W, uimm_opnd(1)));
-    check_bytes("664181c0ff7f", |cb| add(cb, R8W, uimm_opnd(i16::MAX.try_into().unwrap())));
-
+    let cb3 = compile(|cb| add(cb, R8W, uimm_opnd(1)));
+    let cb4 = compile(|cb| add(cb, R8W, uimm_opnd(i16::MAX.try_into().unwrap())));
     // ADD r/m32, imm32
-    check_bytes("4183c001", |cb| add(cb, R8D, uimm_opnd(1)));
-    check_bytes("4181c0ffffff7f", |cb| add(cb, R8D, uimm_opnd(i32::MAX.try_into().unwrap())));
-
+    let cb5 = compile(|cb| add(cb, R8D, uimm_opnd(1)));
+    let cb6 = compile(|cb| add(cb, R8D, uimm_opnd(i32::MAX.try_into().unwrap())));
     // ADD r/m64, imm32
-    check_bytes("4983c001", |cb| add(cb, R8, uimm_opnd(1)));
-    check_bytes("4981c0ffffff7f", |cb| add(cb, R8, uimm_opnd(i32::MAX.try_into().unwrap())));
+    let cb7 = compile(|cb| add(cb, R8, uimm_opnd(1)));
+    let cb8 = compile(|cb| add(cb, R8, uimm_opnd(i32::MAX.try_into().unwrap())));
+
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @r"
+    0x0: add r8b, 1
+    0x0: add r8b, 0x7f
+    0x0: add r8w, 1
+    0x0: add r8w, 0x7fff
+    0x0: add r8d, 1
+    0x0: add r8d, 0x7fffffff
+    0x0: add r8, 1
+    0x0: add r8, 0x7fffffff
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @r"
+    4180c001
+    4180c07f
+    664183c001
+    664181c0ff7f
+    4183c001
+    4181c0ffffff7f
+    4983c001
+    4981c0ffffff7f
+    ");
 }
 
 #[test]
 fn test_and() {
-    check_bytes("4421e5", |cb| and(cb, EBP, R12D));
-    check_bytes("48832008", |cb| and(cb, mem_opnd(64, RAX, 0), imm_opnd(0x08)));
+    let cb1 = compile(|cb| and(cb, EBP, R12D));
+    let cb2 = compile(|cb| and(cb, mem_opnd(64, RAX, 0), imm_opnd(0x08)));
+
+    assert_disasm_snapshot!(disasms!(cb1, cb2), @r"
+    0x0: and ebp, r12d
+    0x0: and qword ptr [rax], 8
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2), @r"
+    4421e5
+    48832008
+    ");
 }
 
 #[test]
 fn test_call_label() {
-    check_bytes("e8fbffffff", |cb| {
+    let cb = compile(|cb| {
         let label_idx = cb.new_label("fn".to_owned());
         call_label(cb, label_idx);
         cb.link_labels();
     });
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: call 0");
+    assert_snapshot!(cb.hexdump(), @"e8fbffffff");
 }
 
 #[test]
 fn test_call_ptr() {
     // calling a lower address
-    check_bytes("e8fbffffff", |cb| {
+    let cb = compile(|cb| {
         let ptr = cb.get_write_ptr();
         call_ptr(cb, RAX, ptr.raw_ptr(cb));
     });
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: call 0");
+    assert_snapshot!(cb.hexdump(), @"e8fbffffff");
 }
 
 #[test]
 fn test_call_reg() {
-    check_bytes("ffd0", |cb| call(cb, RAX));
+    let cb = compile(|cb| call(cb, RAX));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: call rax");
+    assert_snapshot!(cb.hexdump(), @"ffd0");
 }
 
 #[test]
 fn test_call_mem() {
-    check_bytes("ff542408", |cb| call(cb, mem_opnd(64, RSP, 8)));
+    let cb = compile(|cb| call(cb, mem_opnd(64, RSP, 8)));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: call qword ptr [rsp + 8]");
+    assert_snapshot!(cb.hexdump(), @"ff542408");
 }
 
 #[test]
 fn test_cmovcc() {
-    check_bytes("0f4ff7", |cb| cmovg(cb, ESI, EDI));
-    check_bytes("0f4f750c", |cb| cmovg(cb, ESI, mem_opnd(32, RBP, 12)));
-    check_bytes("0f4cc1", |cb| cmovl(cb, EAX, ECX));
-    check_bytes("480f4cdd", |cb| cmovl(cb, RBX, RBP));
-    check_bytes("0f4e742404", |cb| cmovle(cb, ESI, mem_opnd(32, RSP, 4)));
+    let cb1 = compile(|cb| cmovg(cb, ESI, EDI));
+    let cb2 = compile(|cb| cmovg(cb, ESI, mem_opnd(32, RBP, 12)));
+    let cb3 = compile(|cb| cmovl(cb, EAX, ECX));
+    let cb4 = compile(|cb| cmovl(cb, RBX, RBP));
+    let cb5 = compile(|cb| cmovle(cb, ESI, mem_opnd(32, RSP, 4)));
+
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5), @r"
+    0x0: cmovg esi, edi
+    0x0: cmovg esi, dword ptr [rbp + 0xc]
+    0x0: cmovl eax, ecx
+    0x0: cmovl rbx, rbp
+    0x0: cmovle esi, dword ptr [rsp + 4]
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4, cb5), @r"
+    0f4ff7
+    0f4f750c
+    0f4cc1
+    480f4cdd
+    0f4e742404
+    ");
 }
 
 #[test]
 fn test_cmp() {
-    check_bytes("38d1", |cb| cmp(cb, CL, DL));
-    check_bytes("39f9", |cb| cmp(cb, ECX, EDI));
-    check_bytes("493b1424", |cb| cmp(cb, RDX, mem_opnd(64, R12, 0)));
-    check_bytes("4883f802", |cb| cmp(cb, RAX, imm_opnd(2)));
-    check_bytes("81f900000080", |cb| cmp(cb, ECX, uimm_opnd(0x8000_0000)));
+    let cb1 = compile(|cb| cmp(cb, CL, DL));
+    let cb2 = compile(|cb| cmp(cb, ECX, EDI));
+    let cb3 = compile(|cb| cmp(cb, RDX, mem_opnd(64, R12, 0)));
+    let cb4 = compile(|cb| cmp(cb, RAX, imm_opnd(2)));
+    let cb5 = compile(|cb| cmp(cb, ECX, uimm_opnd(0x8000_0000)));
+
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5), @r"
+    0x0: cmp cl, dl
+    0x0: cmp ecx, edi
+    0x0: cmp rdx, qword ptr [r12]
+    0x0: cmp rax, 2
+    0x0: cmp ecx, 0x80000000
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4, cb5), @r"
+    38d1
+    39f9
+    493b1424
+    4883f802
+    81f900000080
+    ");
 }
 
 #[test]
 fn test_cqo() {
-    check_bytes("4899", |cb| cqo(cb));
+    let cb = compile(cqo);
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: cqo");
+    assert_snapshot!(cb.hexdump(), @"4899");
 }
 
 #[test]
 fn test_imul() {
-    check_bytes("480fafc3", |cb| imul(cb, RAX, RBX));
-    check_bytes("480faf10", |cb| imul(cb, RDX, mem_opnd(64, RAX, 0)));
-
+    let cb1 = compile(|cb| imul(cb, RAX, RBX));
+    let cb2 = compile(|cb| imul(cb, RDX, mem_opnd(64, RAX, 0)));
     // Operands flipped for encoding since multiplication is commutative
-    check_bytes("480faf10", |cb| imul(cb, mem_opnd(64, RAX, 0), RDX));
+    let cb3 = compile(|cb| imul(cb, mem_opnd(64, RAX, 0), RDX));
+
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3), @r"
+    0x0: imul rax, rbx
+    0x0: imul rdx, qword ptr [rax]
+    0x0: imul rdx, qword ptr [rax]
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3), @r"
+    480fafc3
+    480faf10
+    480faf10
+    ");
 }
 
 #[test]
 fn test_jge_label() {
-    check_bytes("0f8dfaffffff", |cb| {
+    let cb = compile(|cb| {
         let label_idx = cb.new_label("loop".to_owned());
         jge_label(cb, label_idx);
         cb.link_labels();
     });
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: jge 0");
+    assert_snapshot!(cb.hexdump(), @"0f8dfaffffff");
 }
 
 #[test]
 fn test_jmp_label() {
     // Forward jump
-    check_bytes("e900000000", |cb| {
+    let cb1 = compile(|cb| {
         let label_idx = cb.new_label("next".to_owned());
         jmp_label(cb, label_idx);
         cb.write_label(label_idx);
         cb.link_labels();
     });
-
     // Backwards jump
-    check_bytes("e9fbffffff", |cb| {
+    let cb2 = compile(|cb| {
         let label_idx = cb.new_label("loop".to_owned());
         cb.write_label(label_idx);
         jmp_label(cb, label_idx);
         cb.link_labels();
     });
+
+    assert_disasm_snapshot!(disasms!(cb1, cb2), @r"
+    0x0: jmp 5
+    0x0: jmp 0
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2), @r"
+    e900000000
+    e9fbffffff
+    ");
 }
 
 #[test]
 fn test_jmp_rm() {
-    check_bytes("41ffe4", |cb| jmp_rm(cb, R12));
+    let cb = compile(|cb| jmp_rm(cb, R12));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: jmp r12");
+    assert_snapshot!(cb.hexdump(), @"41ffe4");
 }
 
 #[test]
 fn test_jo_label() {
-    check_bytes("0f80faffffff", |cb| {
+    let cb = compile(|cb| {
         let label_idx = cb.new_label("loop".to_owned());
         jo_label(cb, label_idx);
         cb.link_labels();
     });
+
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: jo 0");
+    assert_snapshot!(cb.hexdump(), @"0f80faffffff");
 }
 
 #[test]
 fn test_lea() {
-    check_bytes("488d5108", |cb| lea(cb, RDX, mem_opnd(64, RCX, 8)));
-    check_bytes("488d0500000000", |cb| lea(cb, RAX, mem_opnd(8, RIP, 0)));
-    check_bytes("488d0505000000", |cb| lea(cb, RAX, mem_opnd(8, RIP, 5)));
-    check_bytes("488d3d05000000", |cb| lea(cb, RDI, mem_opnd(8, RIP, 5)));
+    let cb1 = compile(|cb| lea(cb, RDX, mem_opnd(64, RCX, 8)));
+    let cb2 = compile(|cb| lea(cb, RAX, mem_opnd(8, RIP, 0)));
+    let cb3 = compile(|cb| lea(cb, RAX, mem_opnd(8, RIP, 5)));
+    let cb4 = compile(|cb| lea(cb, RDI, mem_opnd(8, RIP, 5)));
+
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4), @r"
+    0x0: lea rdx, [rcx + 8]
+    0x0: lea rax, [rip]
+    0x0: lea rax, [rip + 5]
+    0x0: lea rdi, [rip + 5]
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4), @r"
+    488d5108
+    488d0500000000
+    488d0505000000
+    488d3d05000000
+    ");
 }
 
 #[test]
 fn test_mov() {
-    check_bytes("b807000000", |cb| mov(cb, EAX, imm_opnd(7)));
-    check_bytes("b8fdffffff", |cb| mov(cb, EAX, imm_opnd(-3)));
-    check_bytes("41bf03000000", |cb| mov(cb, R15, imm_opnd(3)));
-    check_bytes("89d8", |cb| mov(cb, EAX, EBX));
-    check_bytes("89c8", |cb| mov(cb, EAX, ECX));
-    check_bytes("8b9380000000", |cb| mov(cb, EDX, mem_opnd(32, RBX, 128)));
-    check_bytes("488b442404", |cb| mov(cb, RAX, mem_opnd(64, RSP, 4)));
-
+    let cb01 = compile(|cb| mov(cb, EAX, imm_opnd(7)));
+    let cb02 = compile(|cb| mov(cb, EAX, imm_opnd(-3)));
+    let cb03 = compile(|cb| mov(cb, R15, imm_opnd(3)));
+    let cb04 = compile(|cb| mov(cb, EAX, EBX));
+    let cb05 = compile(|cb| mov(cb, EAX, ECX));
+    let cb06 = compile(|cb| mov(cb, EDX, mem_opnd(32, RBX, 128)));
+    let cb07 = compile(|cb| mov(cb, RAX, mem_opnd(64, RSP, 4)));
     // Test `mov rax, 3` => `mov eax, 3` optimization
-    check_bytes("41b834000000", |cb| mov(cb, R8, imm_opnd(0x34)));
-    check_bytes("49b80000008000000000", |cb| mov(cb, R8, imm_opnd(0x80000000)));
-    check_bytes("49b8ffffffffffffffff", |cb| mov(cb, R8, imm_opnd(-1)));
+    let cb08 = compile(|cb| mov(cb, R8, imm_opnd(0x34)));
+    let cb09 = compile(|cb| mov(cb, R8, imm_opnd(0x80000000)));
+    let cb10 = compile(|cb| mov(cb, R8, imm_opnd(-1)));
+    let cb11 = compile(|cb| mov(cb, RAX, imm_opnd(0x34)));
+    let cb12 = compile(|cb| mov(cb, RAX, imm_opnd(-18014398509481982)));
+    let cb13 = compile(|cb| mov(cb, RAX, imm_opnd(0x80000000)));
+    let cb14 = compile(|cb| mov(cb, RAX, imm_opnd(-52))); // yasm thinks this could use a dword immediate instead of qword
+    let cb15 = compile(|cb| mov(cb, RAX, imm_opnd(-1))); // yasm thinks this could use a dword immediate instead of qword
+    let cb16 = compile(|cb| mov(cb, CL, R9B));
+    let cb17 = compile(|cb| mov(cb, RBX, RAX));
+    let cb18 = compile(|cb| mov(cb, RDI, RBX));
+    let cb19 = compile(|cb| mov(cb, SIL, imm_opnd(11)));
+    let cb20 = compile(|cb| mov(cb, mem_opnd(8, RSP, 0), imm_opnd(-3)));
+    let cb21 = compile(|cb| mov(cb, mem_opnd(64, RDI, 8), imm_opnd(1)));
+    //let cb = compile(|cb| mov(cb, mem_opnd(32, EAX, 4), imm_opnd(0x34))); // We don't distinguish between EAX and RAX here - that's probably fine?
+    let cb22 = compile(|cb| mov(cb, mem_opnd(32, RAX, 4), imm_opnd(17)));
+    let cb23 = compile(|cb| mov(cb, mem_opnd(32, RAX, 4), uimm_opnd(0x80000001)));
+    let cb24 = compile(|cb| mov(cb, mem_opnd(32, R8, 20), EBX));
+    let cb25 = compile(|cb| mov(cb, mem_opnd(64, R11, 0), R10));
+    let cb26 = compile(|cb| mov(cb, mem_opnd(64, RDX, -8), imm_opnd(-12)));
 
-    check_bytes("b834000000", |cb| mov(cb, RAX, imm_opnd(0x34)));
-    check_bytes("48b8020000000000c0ff", |cb| mov(cb, RAX, imm_opnd(-18014398509481982)));
-    check_bytes("48b80000008000000000", |cb| mov(cb, RAX, imm_opnd(0x80000000)));
-    check_bytes("48b8ccffffffffffffff", |cb| mov(cb, RAX, imm_opnd(-52))); // yasm thinks this could use a dword immediate instead of qword
-    check_bytes("48b8ffffffffffffffff", |cb| mov(cb, RAX, imm_opnd(-1))); // yasm thinks this could use a dword immediate instead of qword
-    check_bytes("4488c9", |cb| mov(cb, CL, R9B));
-    check_bytes("4889c3", |cb| mov(cb, RBX, RAX));
-    check_bytes("4889df", |cb| mov(cb, RDI, RBX));
-    check_bytes("40b60b", |cb| mov(cb, SIL, imm_opnd(11)));
+    assert_disasm_snapshot!(disasms!(
+        cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13,
+        cb14, cb15, cb16, cb17, cb18, cb19, cb20, cb21, cb22, cb23, cb24, cb25, cb26,
+    ), @r"
+    0x0: mov eax, 7
+    0x0: mov eax, 0xfffffffd
+    0x0: mov r15d, 3
+    0x0: mov eax, ebx
+    0x0: mov eax, ecx
+    0x0: mov edx, dword ptr [rbx + 0x80]
+    0x0: mov rax, qword ptr [rsp + 4]
+    0x0: mov r8d, 0x34
+    0x0: movabs r8, 0x80000000
+    0x0: movabs r8, 0xffffffffffffffff
+    0x0: mov eax, 0x34
+    0x0: movabs rax, 0xffc0000000000002
+    0x0: movabs rax, 0x80000000
+    0x0: movabs rax, 0xffffffffffffffcc
+    0x0: movabs rax, 0xffffffffffffffff
+    0x0: mov cl, r9b
+    0x0: mov rbx, rax
+    0x0: mov rdi, rbx
+    0x0: mov sil, 0xb
+    0x0: mov byte ptr [rsp], 0xfd
+    0x0: mov qword ptr [rdi + 8], 1
+    0x0: mov dword ptr [rax + 4], 0x11
+    0x0: mov dword ptr [rax + 4], 0x80000001
+    0x0: mov dword ptr [r8 + 0x14], ebx
+    0x0: mov qword ptr [r11], r10
+    0x0: mov qword ptr [rdx - 8], 0xfffffffffffffff4
+    ");
 
-    check_bytes("c60424fd", |cb| mov(cb, mem_opnd(8, RSP, 0), imm_opnd(-3)));
-    check_bytes("48c7470801000000", |cb| mov(cb, mem_opnd(64, RDI, 8), imm_opnd(1)));
-    //check_bytes("67c7400411000000", |cb| mov(cb, mem_opnd(32, EAX, 4), imm_opnd(0x34))); // We don't distinguish between EAX and RAX here - that's probably fine?
-    check_bytes("c7400411000000", |cb| mov(cb, mem_opnd(32, RAX, 4), imm_opnd(17)));
-    check_bytes("c7400401000080", |cb| mov(cb, mem_opnd(32, RAX, 4), uimm_opnd(0x80000001)));
-    check_bytes("41895814", |cb| mov(cb, mem_opnd(32, R8, 20), EBX));
-    check_bytes("4d8913", |cb| mov(cb, mem_opnd(64, R11, 0), R10));
-    check_bytes("48c742f8f4ffffff", |cb| mov(cb, mem_opnd(64, RDX, -8), imm_opnd(-12)));
+    assert_snapshot!(hexdumps!(
+        cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13,
+        cb14, cb15, cb16, cb17, cb18, cb19, cb20, cb21, cb22, cb23, cb24, cb25, cb26
+    ), @r"
+    b807000000
+    b8fdffffff
+    41bf03000000
+    89d8
+    89c8
+    8b9380000000
+    488b442404
+    41b834000000
+    49b80000008000000000
+    49b8ffffffffffffffff
+    b834000000
+    48b8020000000000c0ff
+    48b80000008000000000
+    48b8ccffffffffffffff
+    48b8ffffffffffffffff
+    4488c9
+    4889c3
+    4889df
+    40b60b
+    c60424fd
+    48c7470801000000
+    c7400411000000
+    c7400401000080
+    41895814
+    4d8913
+    48c742f8f4ffffff
+    ");
 }
 
 #[test]
 fn test_movabs() {
-    check_bytes("49b83400000000000000", |cb| movabs(cb, R8, 0x34));
-    check_bytes("49b80000008000000000", |cb| movabs(cb, R8, 0x80000000));
+    let cb1 = compile(|cb| movabs(cb, R8, 0x34));
+    let cb2 = compile(|cb| movabs(cb, R8, 0x80000000));
+
+    assert_disasm_snapshot!(disasms!(cb1, cb2), @r"
+    0x0: movabs r8, 0x34
+    0x0: movabs r8, 0x80000000
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2), @r"
+    49b83400000000000000
+    49b80000008000000000
+    ");
 }
 
 #[test]
 fn test_mov_unsigned() {
     // MOV AL, imm8
-    check_bytes("b001", |cb| mov(cb, AL, uimm_opnd(1)));
-    check_bytes("b0ff", |cb| mov(cb, AL, uimm_opnd(u8::MAX.into())));
-
+    let cb01 = compile(|cb| mov(cb, AL, uimm_opnd(1)));
+    let cb02 = compile(|cb| mov(cb, AL, uimm_opnd(u8::MAX.into())));
     // MOV AX, imm16
-    check_bytes("66b80100", |cb| mov(cb, AX, uimm_opnd(1)));
-    check_bytes("66b8ffff", |cb| mov(cb, AX, uimm_opnd(u16::MAX.into())));
-
+    let cb03 = compile(|cb| mov(cb, AX, uimm_opnd(1)));
+    let cb04 = compile(|cb| mov(cb, AX, uimm_opnd(u16::MAX.into())));
     // MOV EAX, imm32
-    check_bytes("b801000000", |cb| mov(cb, EAX, uimm_opnd(1)));
-    check_bytes("b8ffffffff", |cb| mov(cb, EAX, uimm_opnd(u32::MAX.into())));
-    check_bytes("41b800000000", |cb| mov(cb, R8, uimm_opnd(0)));
-    check_bytes("41b8ffffffff", |cb| mov(cb, R8, uimm_opnd(0xFF_FF_FF_FF)));
-
+    let cb05 = compile(|cb| mov(cb, EAX, uimm_opnd(1)));
+    let cb06 = compile(|cb| mov(cb, EAX, uimm_opnd(u32::MAX.into())));
+    let cb07 = compile(|cb| mov(cb, R8, uimm_opnd(0)));
+    let cb08 = compile(|cb| mov(cb, R8, uimm_opnd(0xFF_FF_FF_FF)));
     // MOV RAX, imm64, will move down into EAX since it fits into 32 bits
-    check_bytes("b801000000", |cb| mov(cb, RAX, uimm_opnd(1)));
-    check_bytes("b8ffffffff", |cb| mov(cb, RAX, uimm_opnd(u32::MAX.into())));
-
+    let cb09 = compile(|cb| mov(cb, RAX, uimm_opnd(1)));
+    let cb10 = compile(|cb| mov(cb, RAX, uimm_opnd(u32::MAX.into())));
     // MOV RAX, imm64, will not move down into EAX since it does not fit into 32 bits
-    check_bytes("48b80000000001000000", |cb| mov(cb, RAX, uimm_opnd(u32::MAX as u64 + 1)));
-    check_bytes("48b8ffffffffffffffff", |cb| mov(cb, RAX, uimm_opnd(u64::MAX)));
-    check_bytes("49b8ffffffffffffffff", |cb| mov(cb, R8, uimm_opnd(u64::MAX)));
-
+    let cb11 = compile(|cb| mov(cb, RAX, uimm_opnd(u32::MAX as u64 + 1)));
+    let cb12 = compile(|cb| mov(cb, RAX, uimm_opnd(u64::MAX)));
+    let cb13 = compile(|cb| mov(cb, R8, uimm_opnd(u64::MAX)));
     // MOV r8, imm8
-    check_bytes("41b001", |cb| mov(cb, R8B, uimm_opnd(1)));
-    check_bytes("41b0ff", |cb| mov(cb, R8B, uimm_opnd(u8::MAX.into())));
-
+    let cb14 = compile(|cb| mov(cb, R8B, uimm_opnd(1)));
+    let cb15 = compile(|cb| mov(cb, R8B, uimm_opnd(u8::MAX.into())));
     // MOV r16, imm16
-    check_bytes("6641b80100", |cb| mov(cb, R8W, uimm_opnd(1)));
-    check_bytes("6641b8ffff", |cb| mov(cb, R8W, uimm_opnd(u16::MAX.into())));
-
+    let cb16 = compile(|cb| mov(cb, R8W, uimm_opnd(1)));
+    let cb17 = compile(|cb| mov(cb, R8W, uimm_opnd(u16::MAX.into())));
     // MOV r32, imm32
-    check_bytes("41b801000000", |cb| mov(cb, R8D, uimm_opnd(1)));
-    check_bytes("41b8ffffffff", |cb| mov(cb, R8D, uimm_opnd(u32::MAX.into())));
-
+    let cb18 = compile(|cb| mov(cb, R8D, uimm_opnd(1)));
+    let cb19 = compile(|cb| mov(cb, R8D, uimm_opnd(u32::MAX.into())));
     // MOV r64, imm64, will move down into 32 bit since it fits into 32 bits
-    check_bytes("41b801000000", |cb| mov(cb, R8, uimm_opnd(1)));
-
+    let cb20 = compile(|cb| mov(cb, R8, uimm_opnd(1)));
     // MOV r64, imm64, will not move down into 32 bit since it does not fit into 32 bits
-    check_bytes("49b8ffffffffffffffff", |cb| mov(cb, R8, uimm_opnd(u64::MAX)));
+    let cb21 = compile(|cb| mov(cb, R8, uimm_opnd(u64::MAX)));
+
+    assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17, cb18, cb19, cb20, cb21), @r"
+    0x0: mov al, 1
+    0x0: mov al, 0xff
+    0x0: mov ax, 1
+    0x0: mov ax, 0xffff
+    0x0: mov eax, 1
+    0x0: mov eax, 0xffffffff
+    0x0: mov r8d, 0
+    0x0: mov r8d, 0xffffffff
+    0x0: mov eax, 1
+    0x0: mov eax, 0xffffffff
+    0x0: movabs rax, 0x100000000
+    0x0: movabs rax, 0xffffffffffffffff
+    0x0: movabs r8, 0xffffffffffffffff
+    0x0: mov r8b, 1
+    0x0: mov r8b, 0xff
+    0x0: mov r8w, 1
+    0x0: mov r8w, 0xffff
+    0x0: mov r8d, 1
+    0x0: mov r8d, 0xffffffff
+    0x0: mov r8d, 1
+    0x0: movabs r8, 0xffffffffffffffff
+    ");
+
+    assert_snapshot!(hexdumps!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17, cb18, cb19, cb20, cb21), @r"
+    b001
+    b0ff
+    66b80100
+    66b8ffff
+    b801000000
+    b8ffffffff
+    41b800000000
+    41b8ffffffff
+    b801000000
+    b8ffffffff
+    48b80000000001000000
+    48b8ffffffffffffffff
+    49b8ffffffffffffffff
+    41b001
+    41b0ff
+    6641b80100
+    6641b8ffff
+    41b801000000
+    41b8ffffffff
+    41b801000000
+    49b8ffffffffffffffff
+    ");
 }
 
 #[test]
 fn test_mov_iprel() {
-    check_bytes("8b0500000000", |cb| mov(cb, EAX, mem_opnd(32, RIP, 0)));
-    check_bytes("8b0505000000", |cb| mov(cb, EAX, mem_opnd(32, RIP, 5)));
+    let cb1 = compile(|cb| mov(cb, EAX, mem_opnd(32, RIP, 0)));
+    let cb2 = compile(|cb| mov(cb, EAX, mem_opnd(32, RIP, 5)));
+    let cb3 = compile(|cb| mov(cb, RAX, mem_opnd(64, RIP, 0)));
+    let cb4 = compile(|cb| mov(cb, RAX, mem_opnd(64, RIP, 5)));
+    let cb5 = compile(|cb| mov(cb, RDI, mem_opnd(64, RIP, 5)));
 
-    check_bytes("488b0500000000", |cb| mov(cb, RAX, mem_opnd(64, RIP, 0)));
-    check_bytes("488b0505000000", |cb| mov(cb, RAX, mem_opnd(64, RIP, 5)));
-    check_bytes("488b3d05000000", |cb| mov(cb, RDI, mem_opnd(64, RIP, 5)));
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5), @r"
+    0x0: mov eax, dword ptr [rip]
+    0x0: mov eax, dword ptr [rip + 5]
+    0x0: mov rax, qword ptr [rip]
+    0x0: mov rax, qword ptr [rip + 5]
+    0x0: mov rdi, qword ptr [rip + 5]
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4, cb5), @r"
+    8b0500000000
+    8b0505000000
+    488b0500000000
+    488b0505000000
+    488b3d05000000
+    ");
 }
 
 #[test]
 fn test_movsx() {
-    check_bytes("660fbec0", |cb| movsx(cb, AX, AL));
-    check_bytes("0fbed0", |cb| movsx(cb, EDX, AL));
-    check_bytes("480fbec3", |cb| movsx(cb, RAX, BL));
-    check_bytes("0fbfc8", |cb| movsx(cb, ECX, AX));
-    check_bytes("4c0fbed9", |cb| movsx(cb, R11, CL));
-    check_bytes("4c6354240c", |cb| movsx(cb, R10, mem_opnd(32, RSP, 12)));
-    check_bytes("480fbe0424", |cb| movsx(cb, RAX, mem_opnd(8, RSP, 0)));
-    check_bytes("490fbf5504", |cb| movsx(cb, RDX, mem_opnd(16, R13, 4)));
+    let cb1 = compile(|cb| movsx(cb, AX, AL));
+    let cb2 = compile(|cb| movsx(cb, EDX, AL));
+    let cb3 = compile(|cb| movsx(cb, RAX, BL));
+    let cb4 = compile(|cb| movsx(cb, ECX, AX));
+    let cb5 = compile(|cb| movsx(cb, R11, CL));
+    let cb6 = compile(|cb| movsx(cb, R10, mem_opnd(32, RSP, 12)));
+    let cb7 = compile(|cb| movsx(cb, RAX, mem_opnd(8, RSP, 0)));
+    let cb8 = compile(|cb| movsx(cb, RDX, mem_opnd(16, R13, 4)));
+
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @r"
+    0x0: movsx ax, al
+    0x0: movsx edx, al
+    0x0: movsx rax, bl
+    0x0: movsx ecx, ax
+    0x0: movsx r11, cl
+    0x0: movsxd r10, dword ptr [rsp + 0xc]
+    0x0: movsx rax, byte ptr [rsp]
+    0x0: movsx rdx, word ptr [r13 + 4]
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @r"
+    660fbec0
+    0fbed0
+    480fbec3
+    0fbfc8
+    4c0fbed9
+    4c6354240c
+    480fbe0424
+    490fbf5504
+    ");
 }
 
 #[test]
 fn test_nop() {
-    check_bytes("90", |cb| nop(cb, 1));
-    check_bytes("6690", |cb| nop(cb, 2));
-    check_bytes("0f1f00", |cb| nop(cb, 3));
-    check_bytes("0f1f4000", |cb| nop(cb, 4));
-    check_bytes("0f1f440000", |cb| nop(cb, 5));
-    check_bytes("660f1f440000", |cb| nop(cb, 6));
-    check_bytes("0f1f8000000000", |cb| nop(cb, 7));
-    check_bytes("0f1f840000000000", |cb| nop(cb, 8));
-    check_bytes("660f1f840000000000", |cb| nop(cb, 9));
-    check_bytes("660f1f84000000000090", |cb| nop(cb, 10));
-    check_bytes("660f1f8400000000006690", |cb| nop(cb, 11));
-    check_bytes("660f1f8400000000000f1f00", |cb| nop(cb, 12));
+    let cb01 = compile(|cb| nop(cb, 1));
+    let cb02 = compile(|cb| nop(cb, 2));
+    let cb03 = compile(|cb| nop(cb, 3));
+    let cb04 = compile(|cb| nop(cb, 4));
+    let cb05 = compile(|cb| nop(cb, 5));
+    let cb06 = compile(|cb| nop(cb, 6));
+    let cb07 = compile(|cb| nop(cb, 7));
+    let cb08 = compile(|cb| nop(cb, 8));
+    let cb09 = compile(|cb| nop(cb, 9));
+    let cb10 = compile(|cb| nop(cb, 10));
+    let cb11 = compile(|cb| nop(cb, 11));
+    let cb12 = compile(|cb| nop(cb, 12));
+
+    assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12), @r"
+    0x0: nop
+    0x0: nop
+    0x0: nop dword ptr [rax]
+    0x0: nop dword ptr [rax]
+    0x0: nop dword ptr [rax + rax]
+    0x0: nop word ptr [rax + rax]
+    0x0: nop dword ptr [rax]
+    0x0: nop dword ptr [rax + rax]
+    0x0: nop word ptr [rax + rax]
+    0x0: nop word ptr [rax + rax]
+    0x9: nop
+    0x0: nop word ptr [rax + rax]
+    0x9: nop
+    0x0: nop word ptr [rax + rax]
+    0x9: nop dword ptr [rax]
+    ");
+
+    assert_snapshot!(hexdumps!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12), @r"
+    90
+    6690
+    0f1f00
+    0f1f4000
+    0f1f440000
+    660f1f440000
+    0f1f8000000000
+    0f1f840000000000
+    660f1f840000000000
+    660f1f84000000000090
+    660f1f8400000000006690
+    660f1f8400000000000f1f00
+    ");
 }
 
 #[test]
 fn test_not() {
-    check_bytes("66f7d0", |cb| not(cb, AX));
-    check_bytes("f7d0", |cb| not(cb, EAX));
-    check_bytes("49f71424", |cb| not(cb, mem_opnd(64, R12, 0)));
-    check_bytes("f794242d010000", |cb| not(cb, mem_opnd(32, RSP, 301)));
-    check_bytes("f71424", |cb| not(cb, mem_opnd(32, RSP, 0)));
-    check_bytes("f7542403", |cb| not(cb, mem_opnd(32, RSP, 3)));
-    check_bytes("f75500", |cb| not(cb, mem_opnd(32, RBP, 0)));
-    check_bytes("f7550d", |cb| not(cb, mem_opnd(32, RBP, 13)));
-    check_bytes("48f7d0", |cb| not(cb, RAX));
-    check_bytes("49f7d3", |cb| not(cb, R11));
-    check_bytes("f710", |cb| not(cb, mem_opnd(32, RAX, 0)));
-    check_bytes("f716", |cb| not(cb, mem_opnd(32, RSI, 0)));
-    check_bytes("f717", |cb| not(cb, mem_opnd(32, RDI, 0)));
-    check_bytes("f75237", |cb| not(cb, mem_opnd(32, RDX, 55)));
-    check_bytes("f79239050000", |cb| not(cb, mem_opnd(32, RDX, 1337)));
-    check_bytes("f752c9", |cb| not(cb, mem_opnd(32, RDX, -55)));
-    check_bytes("f792d5fdffff", |cb| not(cb, mem_opnd(32, RDX, -555)));
+    let cb01 = compile(|cb| not(cb, AX));
+    let cb02 = compile(|cb| not(cb, EAX));
+    let cb03 = compile(|cb| not(cb, mem_opnd(64, R12, 0)));
+    let cb04 = compile(|cb| not(cb, mem_opnd(32, RSP, 301)));
+    let cb05 = compile(|cb| not(cb, mem_opnd(32, RSP, 0)));
+    let cb06 = compile(|cb| not(cb, mem_opnd(32, RSP, 3)));
+    let cb07 = compile(|cb| not(cb, mem_opnd(32, RBP, 0)));
+    let cb08 = compile(|cb| not(cb, mem_opnd(32, RBP, 13)));
+    let cb09 = compile(|cb| not(cb, RAX));
+    let cb10 = compile(|cb| not(cb, R11));
+    let cb11 = compile(|cb| not(cb, mem_opnd(32, RAX, 0)));
+    let cb12 = compile(|cb| not(cb, mem_opnd(32, RSI, 0)));
+    let cb13 = compile(|cb| not(cb, mem_opnd(32, RDI, 0)));
+    let cb14 = compile(|cb| not(cb, mem_opnd(32, RDX, 55)));
+    let cb15 = compile(|cb| not(cb, mem_opnd(32, RDX, 1337)));
+    let cb16 = compile(|cb| not(cb, mem_opnd(32, RDX, -55)));
+    let cb17 = compile(|cb| not(cb, mem_opnd(32, RDX, -555)));
+
+    assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17), @r"
+    0x0: not ax
+    0x0: not eax
+    0x0: not qword ptr [r12]
+    0x0: not dword ptr [rsp + 0x12d]
+    0x0: not dword ptr [rsp]
+    0x0: not dword ptr [rsp + 3]
+    0x0: not dword ptr [rbp]
+    0x0: not dword ptr [rbp + 0xd]
+    0x0: not rax
+    0x0: not r11
+    0x0: not dword ptr [rax]
+    0x0: not dword ptr [rsi]
+    0x0: not dword ptr [rdi]
+    0x0: not dword ptr [rdx + 0x37]
+    0x0: not dword ptr [rdx + 0x539]
+    0x0: not dword ptr [rdx - 0x37]
+    0x0: not dword ptr [rdx - 0x22b]
+    ");
+
+    assert_snapshot!(hexdumps!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17), @r"
+    66f7d0
+    f7d0
+    49f71424
+    f794242d010000
+    f71424
+    f7542403
+    f75500
+    f7550d
+    48f7d0
+    49f7d3
+    f710
+    f716
+    f717
+    f75237
+    f79239050000
+    f752c9
+    f792d5fdffff
+    ");
 }
 
 #[test]
 fn test_or() {
-    check_bytes("09f2", |cb| or(cb, EDX, ESI));
+    let cb = compile(|cb| or(cb, EDX, ESI));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: or edx, esi");
+    assert_snapshot!(cb.hexdump(), @"09f2");
 }
 
 #[test]
 fn test_pop() {
-    check_bytes("58", |cb| pop(cb, RAX));
-    check_bytes("5b", |cb| pop(cb, RBX));
-    check_bytes("5c", |cb| pop(cb, RSP));
-    check_bytes("5d", |cb| pop(cb, RBP));
-    check_bytes("415c", |cb| pop(cb, R12));
-    check_bytes("8f00", |cb| pop(cb, mem_opnd(64, RAX, 0)));
-    check_bytes("418f00", |cb| pop(cb, mem_opnd(64, R8, 0)));
-    check_bytes("418f4003", |cb| pop(cb, mem_opnd(64, R8, 3)));
-    check_bytes("8f44c803", |cb| pop(cb, mem_opnd_sib(64, RAX, RCX, 8, 3)));
-    check_bytes("418f44c803", |cb| pop(cb, mem_opnd_sib(64, R8, RCX, 8, 3)));
+    let cb01 = compile(|cb| pop(cb, RAX));
+    let cb02 = compile(|cb| pop(cb, RBX));
+    let cb03 = compile(|cb| pop(cb, RSP));
+    let cb04 = compile(|cb| pop(cb, RBP));
+    let cb05 = compile(|cb| pop(cb, R12));
+    let cb06 = compile(|cb| pop(cb, mem_opnd(64, RAX, 0)));
+    let cb07 = compile(|cb| pop(cb, mem_opnd(64, R8, 0)));
+    let cb08 = compile(|cb| pop(cb, mem_opnd(64, R8, 3)));
+    let cb09 = compile(|cb| pop(cb, mem_opnd_sib(64, RAX, RCX, 8, 3)));
+    let cb10 = compile(|cb| pop(cb, mem_opnd_sib(64, R8, RCX, 8, 3)));
+
+    assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10), @r"
+    0x0: pop rax
+    0x0: pop rbx
+    0x0: pop rsp
+    0x0: pop rbp
+    0x0: pop r12
+    0x0: pop qword ptr [rax]
+    0x0: pop qword ptr [r8]
+    0x0: pop qword ptr [r8 + 3]
+    0x0: pop qword ptr [rax + rcx*8 + 3]
+    0x0: pop qword ptr [r8 + rcx*8 + 3]
+    ");
+
+    assert_snapshot!(hexdumps!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10), @r"
+    58
+    5b
+    5c
+    5d
+    415c
+    8f00
+    418f00
+    418f4003
+    8f44c803
+    418f44c803
+    ");
 }
 
 #[test]
 fn test_push() {
-    check_bytes("50", |cb| push(cb, RAX));
-    check_bytes("53", |cb| push(cb, RBX));
-    check_bytes("4154", |cb| push(cb, R12));
-    check_bytes("ff30", |cb| push(cb, mem_opnd(64, RAX, 0)));
-    check_bytes("41ff30", |cb| push(cb, mem_opnd(64, R8, 0)));
-    check_bytes("41ff7003", |cb| push(cb, mem_opnd(64, R8, 3)));
-    check_bytes("ff74c803", |cb| push(cb, mem_opnd_sib(64, RAX, RCX, 8, 3)));
-    check_bytes("41ff74c803", |cb| push(cb, mem_opnd_sib(64, R8, RCX, 8, 3)));
+    let cb1 = compile(|cb| push(cb, RAX));
+    let cb2 = compile(|cb| push(cb, RBX));
+    let cb3 = compile(|cb| push(cb, R12));
+    let cb4 = compile(|cb| push(cb, mem_opnd(64, RAX, 0)));
+    let cb5 = compile(|cb| push(cb, mem_opnd(64, R8, 0)));
+    let cb6 = compile(|cb| push(cb, mem_opnd(64, R8, 3)));
+    let cb7 = compile(|cb| push(cb, mem_opnd_sib(64, RAX, RCX, 8, 3)));
+    let cb8 = compile(|cb| push(cb, mem_opnd_sib(64, R8, RCX, 8, 3)));
+
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @r"
+    0x0: push rax
+    0x0: push rbx
+    0x0: push r12
+    0x0: push qword ptr [rax]
+    0x0: push qword ptr [r8]
+    0x0: push qword ptr [r8 + 3]
+    0x0: push qword ptr [rax + rcx*8 + 3]
+    0x0: push qword ptr [r8 + rcx*8 + 3]
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4, cb5, cb6, cb7, cb8), @r"
+    50
+    53
+    4154
+    ff30
+    41ff30
+    41ff7003
+    ff74c803
+    41ff74c803
+    ");
 }
 
 #[test]
 fn test_ret() {
-    check_bytes("c3", |cb| ret(cb));
+    let cb = compile(ret);
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: ret");
+    assert_snapshot!(cb.hexdump(), @"c3");
 }
 
 #[test]
 fn test_sal() {
-    check_bytes("66d1e1", |cb| sal(cb, CX, uimm_opnd(1)));
-    check_bytes("d1e1", |cb| sal(cb, ECX, uimm_opnd(1)));
-    check_bytes("c1e505", |cb| sal(cb, EBP, uimm_opnd(5)));
-    check_bytes("d1642444", |cb| sal(cb, mem_opnd(32, RSP, 68), uimm_opnd(1)));
-    check_bytes("48d3e1", |cb| sal(cb, RCX, CL));
+    let cb1 = compile(|cb| sal(cb, CX, uimm_opnd(1)));
+    let cb2 = compile(|cb| sal(cb, ECX, uimm_opnd(1)));
+    let cb3 = compile(|cb| sal(cb, EBP, uimm_opnd(5)));
+    let cb4 = compile(|cb| sal(cb, mem_opnd(32, RSP, 68), uimm_opnd(1)));
+    let cb5 = compile(|cb| sal(cb, RCX, CL));
+
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5), @r"
+    0x0: shl cx, 1
+    0x0: shl ecx, 1
+    0x0: shl ebp, 5
+    0x0: shl dword ptr [rsp + 0x44], 1
+    0x0: shl rcx, cl
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4, cb5), @r"
+    66d1e1
+    d1e1
+    c1e505
+    d1642444
+    48d3e1
+    ");
 }
 
 #[test]
 fn test_sar() {
-    check_bytes("d1fa", |cb| sar(cb, EDX, uimm_opnd(1)));
+    let cb = compile(|cb| sar(cb, EDX, uimm_opnd(1)));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: sar edx, 1");
+    assert_snapshot!(cb.hexdump(), @"d1fa");
 }
 
 #[test]
 fn test_shr() {
-    check_bytes("49c1ee07", |cb| shr(cb, R14, uimm_opnd(7)));
+    let cb = compile(|cb| shr(cb, R14, uimm_opnd(7)));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: shr r14, 7");
+    assert_snapshot!(cb.hexdump(), @"49c1ee07");
 }
 
 #[test]
 fn test_sub() {
-    check_bytes("83e801", |cb| sub(cb, EAX, imm_opnd(1)));
-    check_bytes("4883e802", |cb| sub(cb, RAX, imm_opnd(2)));
+    let cb1 = compile(|cb| sub(cb, EAX, imm_opnd(1)));
+    let cb2 = compile(|cb| sub(cb, RAX, imm_opnd(2)));
+
+    assert_disasm_snapshot!(disasms!(cb1, cb2), @r"
+    0x0: sub eax, 1
+    0x0: sub rax, 2
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2), @r"
+    83e801
+    4883e802
+    ");
 }
 
 #[test]
@@ -374,44 +836,103 @@ fn test_sub() {
 fn test_sub_uimm_too_large() {
     // This immediate becomes a different value after
     // sign extension, so not safe to encode.
-    check_bytes("ff", |cb| sub(cb, RCX, uimm_opnd(0x8000_0000)));
+    compile(|cb| sub(cb, RCX, uimm_opnd(0x8000_0000)));
 }
 
 #[test]
 fn test_test() {
-    check_bytes("84c0", |cb| test(cb, AL, AL));
-    check_bytes("6685c0", |cb| test(cb, AX, AX));
-    check_bytes("f6c108", |cb| test(cb, CL, uimm_opnd(8)));
-    check_bytes("f6c207", |cb| test(cb, DL, uimm_opnd(7)));
-    check_bytes("f6c108", |cb| test(cb, RCX, uimm_opnd(8)));
-    check_bytes("f6420808", |cb| test(cb, mem_opnd(8, RDX, 8), uimm_opnd(8)));
-    check_bytes("f64208ff", |cb| test(cb, mem_opnd(8, RDX, 8), uimm_opnd(255)));
-    check_bytes("66f7c2ffff", |cb| test(cb, DX, uimm_opnd(0xffff)));
-    check_bytes("66f74208ffff", |cb| test(cb, mem_opnd(16, RDX, 8), uimm_opnd(0xffff)));
-    check_bytes("f60601", |cb| test(cb, mem_opnd(8, RSI, 0), uimm_opnd(1)));
-    check_bytes("f6461001", |cb| test(cb, mem_opnd(8, RSI, 16), uimm_opnd(1)));
-    check_bytes("f646f001", |cb| test(cb, mem_opnd(8, RSI, -16), uimm_opnd(1)));
-    check_bytes("854640", |cb| test(cb, mem_opnd(32, RSI, 64), EAX));
-    check_bytes("4885472a", |cb| test(cb, mem_opnd(64, RDI, 42), RAX));
-    check_bytes("4885c0", |cb| test(cb, RAX, RAX));
-    check_bytes("4885f0", |cb| test(cb, RAX, RSI));
-    check_bytes("48f74640f7ffffff", |cb| test(cb, mem_opnd(64, RSI, 64), imm_opnd(!0x08)));
-    check_bytes("48f7464008000000", |cb| test(cb, mem_opnd(64, RSI, 64), imm_opnd(0x08)));
-    check_bytes("48f7c108000000", |cb| test(cb, RCX, imm_opnd(0x08)));
-    //check_bytes("48a9f7ffff0f", |cb| test(cb, RAX, imm_opnd(0x0FFFFFF7)));
+    let cb01 = compile(|cb| test(cb, AL, AL));
+    let cb02 = compile(|cb| test(cb, AX, AX));
+    let cb03 = compile(|cb| test(cb, CL, uimm_opnd(8)));
+    let cb04 = compile(|cb| test(cb, DL, uimm_opnd(7)));
+    let cb05 = compile(|cb| test(cb, RCX, uimm_opnd(8)));
+    let cb06 = compile(|cb| test(cb, mem_opnd(8, RDX, 8), uimm_opnd(8)));
+    let cb07 = compile(|cb| test(cb, mem_opnd(8, RDX, 8), uimm_opnd(255)));
+    let cb08 = compile(|cb| test(cb, DX, uimm_opnd(0xffff)));
+    let cb09 = compile(|cb| test(cb, mem_opnd(16, RDX, 8), uimm_opnd(0xffff)));
+    let cb10 = compile(|cb| test(cb, mem_opnd(8, RSI, 0), uimm_opnd(1)));
+    let cb11 = compile(|cb| test(cb, mem_opnd(8, RSI, 16), uimm_opnd(1)));
+    let cb12 = compile(|cb| test(cb, mem_opnd(8, RSI, -16), uimm_opnd(1)));
+    let cb13 = compile(|cb| test(cb, mem_opnd(32, RSI, 64), EAX));
+    let cb14 = compile(|cb| test(cb, mem_opnd(64, RDI, 42), RAX));
+    let cb15 = compile(|cb| test(cb, RAX, RAX));
+    let cb16 = compile(|cb| test(cb, RAX, RSI));
+    let cb17 = compile(|cb| test(cb, mem_opnd(64, RSI, 64), imm_opnd(!0x08)));
+    let cb18 = compile(|cb| test(cb, mem_opnd(64, RSI, 64), imm_opnd(0x08)));
+    let cb19 = compile(|cb| test(cb, RCX, imm_opnd(0x08)));
+
+    assert_disasm_snapshot!(disasms!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17, cb18, cb19), @r"
+    0x0: test al, al
+    0x0: test ax, ax
+    0x0: test cl, 8
+    0x0: test dl, 7
+    0x0: test cl, 8
+    0x0: test byte ptr [rdx + 8], 8
+    0x0: test byte ptr [rdx + 8], 0xff
+    0x0: test dx, 0xffff
+    0x0: test word ptr [rdx + 8], 0xffff
+    0x0: test byte ptr [rsi], 1
+    0x0: test byte ptr [rsi + 0x10], 1
+    0x0: test byte ptr [rsi - 0x10], 1
+    0x0: test dword ptr [rsi + 0x40], eax
+    0x0: test qword ptr [rdi + 0x2a], rax
+    0x0: test rax, rax
+    0x0: test rax, rsi
+    0x0: test qword ptr [rsi + 0x40], -9
+    0x0: test qword ptr [rsi + 0x40], 8
+    0x0: test rcx, 8
+    ");
+
+    assert_snapshot!(hexdumps!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17, cb18, cb19), @r"
+    84c0
+    6685c0
+    f6c108
+    f6c207
+    f6c108
+    f6420808
+    f64208ff
+    66f7c2ffff
+    66f74208ffff
+    f60601
+    f6461001
+    f646f001
+    854640
+    4885472a
+    4885c0
+    4885f0
+    48f74640f7ffffff
+    48f7464008000000
+    48f7c108000000
+    ");
 }
 
 #[test]
 fn test_xchg() {
-    check_bytes("4891", |cb| xchg(cb, RAX, RCX));
-    check_bytes("4995", |cb| xchg(cb, RAX, R13));
-    check_bytes("4887d9", |cb| xchg(cb, RCX, RBX));
-    check_bytes("4d87f9", |cb| xchg(cb, R9, R15));
+    let cb1 = compile(|cb| xchg(cb, RAX, RCX));
+    let cb2 = compile(|cb| xchg(cb, RAX, R13));
+    let cb3 = compile(|cb| xchg(cb, RCX, RBX));
+    let cb4 = compile(|cb| xchg(cb, R9, R15));
+
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4), @r"
+    0x0: xchg rcx, rax
+    0x0: xchg r13, rax
+    0x0: xchg rcx, rbx
+    0x0: xchg r9, r15
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4), @r"
+    4891
+    4995
+    4887d9
+    4d87f9
+    ");
 }
 
 #[test]
 fn test_xor() {
-    check_bytes("31c0", |cb| xor(cb, EAX, EAX));
+    let cb = compile(|cb| xor(cb, EAX, EAX));
+    assert_disasm_snapshot!(cb.disasm(), @"  0x0: xor eax, eax");
+    assert_snapshot!(cb.hexdump(), @"31c0");
 }
 
 #[test]
@@ -436,26 +957,4 @@ fn basic_capstone_usage() -> std::result::Result<(), capstone::Error> {
             "expected to disassemble to int3",
         )),
     }
-}
-
-#[test]
-#[ignore]
-#[cfg(feature = "disasm")]
-fn block_comments() {
-    let mut cb = super::CodeBlock::new_dummy();
-
-    let first_write_ptr = cb.get_write_ptr().raw_addr(&cb);
-    cb.add_comment("Beginning");
-    xor(&mut cb, EAX, EAX); // 2 bytes long
-    let second_write_ptr = cb.get_write_ptr().raw_addr(&cb);
-    cb.add_comment("Two bytes in");
-    cb.add_comment("Still two bytes in");
-    cb.add_comment("Still two bytes in"); // Duplicate, should be ignored
-    test(&mut cb, mem_opnd(64, RSI, 64), imm_opnd(!0x08)); // 8 bytes long
-    let third_write_ptr = cb.get_write_ptr().raw_addr(&cb);
-    cb.add_comment("Ten bytes in");
-
-    assert_eq!(&vec!( "Beginning".to_string() ), cb.comments_at(first_write_ptr).unwrap());
-    assert_eq!(&vec!( "Two bytes in".to_string(), "Still two bytes in".to_string() ), cb.comments_at(second_write_ptr).unwrap());
-    assert_eq!(&vec!( "Ten bytes in".to_string() ), cb.comments_at(third_write_ptr).unwrap());
 }

@@ -112,6 +112,8 @@ void pm_integers_reduce(pm_integer_t *numerator, pm_integer_t *denominator);
  *
  * @param buffer The buffer to append the string to.
  * @param integer The integer to convert to a string.
+ *
+ * \public \memberof pm_integer_t
  */
 PRISM_EXPORTED_FUNCTION void pm_integer_string(pm_buffer_t *buffer, const pm_integer_t *integer);
 
@@ -120,6 +122,8 @@ PRISM_EXPORTED_FUNCTION void pm_integer_string(pm_buffer_t *buffer, const pm_int
  * the integer exceeds the size of a single node in the linked list.
  *
  * @param integer The integer to free.
+ *
+ * \public \memberof pm_integer_t
  */
 PRISM_EXPORTED_FUNCTION void pm_integer_free(pm_integer_t *integer);
 

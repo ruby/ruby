@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle install with :allow_offline_install" do
-  before do
-    bundle "config set allow_offline_install true"
-  end
-
+RSpec.describe "bundle install allows offline install" do
   context "with no cached data locally" do
     it "still installs" do
       install_gemfile <<-G, artifice: "compact_index"

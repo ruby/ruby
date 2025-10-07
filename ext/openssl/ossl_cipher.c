@@ -32,6 +32,7 @@
  */
 static VALUE cCipher;
 static VALUE eCipherError;
+static VALUE eAuthTagError;
 static ID id_auth_tag_len, id_key_set;
 
 static VALUE ossl_cipher_alloc(VALUE klass);
@@ -415,8 +416,17 @@ ossl_cipher_final(VALUE self)
 
     GetCipher(self, ctx);
     str = rb_str_new(0, EVP_CIPHER_CTX_block_size(ctx));
-    if (!EVP_CipherFinal_ex(ctx, (unsigned char *)RSTRING_PTR(str), &out_len))
-	ossl_raise(eCipherError, NULL);
+    if (!EVP_CipherFinal_ex(ctx, (unsigned char *)RSTRING_PTR(str), &out_len)) {
+        /* For AEAD ciphers, this is likely an authentication failure */
+        if (EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER) {
+            /* For AEAD ciphers, EVP_CipherFinal_ex failures are authentication tag verification failures */
+            ossl_raise(eAuthTagError, "AEAD authentication tag verification failed");
+        }
+        else {
+            /* For non-AEAD ciphers */
+            ossl_raise(eCipherError, "cipher final failed");
+        }
+    }
     assert(out_len <= RSTRING_LEN(str));
     rb_str_set_len(str, out_len);
 
@@ -1027,6 +1037,7 @@ Init_ossl_cipher(void)
      */
     cCipher = rb_define_class_under(mOSSL, "Cipher", rb_cObject);
     eCipherError = rb_define_class_under(cCipher, "CipherError", eOSSLError);
+    eAuthTagError = rb_define_class_under(cCipher, "AuthTagError", eCipherError);
 
     rb_define_alloc_func(cCipher, ossl_cipher_alloc);
     rb_define_method(cCipher, "initialize_copy", ossl_cipher_copy, 1);

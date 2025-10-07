@@ -7,12 +7,6 @@ require_relative "installer/gem_installer"
 
 module Bundler
   class Installer
-    class << self
-      attr_accessor :ambiguous_gems
-
-      Installer.ambiguous_gems = []
-    end
-
     attr_reader :post_install_messages, :definition
 
     # Begins the installation process for Bundler.

@@ -1,5 +1,8 @@
+//! Model for creating generating textual assembler code.
+
 use std::collections::BTreeMap;
 use std::fmt;
+use std::ops::Range;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::mem;
@@ -7,7 +10,9 @@ use crate::virtualmem::*;
 
 // Lots of manual vertical alignment in there that rustfmt doesn't handle well.
 #[rustfmt::skip]
+#[cfg(target_arch = "x86_64")]
 pub mod x86_64;
+#[cfg(target_arch = "aarch64")]
 pub mod arm64;
 
 /// Index to a label created by cb.new_label()
@@ -81,6 +86,11 @@ impl CodeBlock {
         }
     }
 
+    /// Size of the region in bytes that we have allocated physical memory for.
+    pub fn mapped_region_size(&self) -> usize {
+        self.mem_block.borrow().mapped_region_size()
+    }
+
     /// Add an assembly comment if the feature is on.
     pub fn add_comment(&mut self, comment: &str) {
         if !self.keep_comments {
@@ -122,7 +132,7 @@ impl CodeBlock {
     }
 
     /// Invoke a callback with write_ptr temporarily adjusted to a given address
-    pub fn with_write_ptr(&mut self, code_ptr: CodePtr, callback: impl Fn(&mut CodeBlock)) {
+    pub fn with_write_ptr(&mut self, code_ptr: CodePtr, callback: impl Fn(&mut CodeBlock)) -> Range<CodePtr> {
         // Temporarily update the write_pos. Ignore the dropped_bytes flag at the old address.
         let old_write_pos = self.write_pos;
         let old_dropped_bytes = self.dropped_bytes;
@@ -132,9 +142,13 @@ impl CodeBlock {
         // Invoke the callback
         callback(self);
 
+        // Build a code range modified by the callback
+        let ret = code_ptr..self.get_write_ptr();
+
         // Restore the original write_pos and dropped_bytes flag.
         self.dropped_bytes = old_dropped_bytes;
         self.write_pos = old_write_pos;
+        ret
     }
 
     /// Get a (possibly dangling) direct pointer into the executable memory block
@@ -267,6 +281,61 @@ impl CodeBlock {
     pub fn mark_all_executable(&mut self) {
         self.mem_block.borrow_mut().mark_all_executable();
     }
+
+    /// Call a func with the disasm of generated code for testing
+    #[allow(unused_variables)]
+    #[cfg(all(test, feature = "disasm"))]
+    pub fn disasm(&self) -> String {
+        let start_addr = self.get_ptr(0).raw_addr(self);
+        let end_addr = self.get_write_ptr().raw_addr(self);
+        crate::disasm::disasm_addr_range(self, start_addr, end_addr)
+    }
+
+    /// Return the hex dump of generated code for testing
+    #[cfg(test)]
+    pub fn hexdump(&self) -> String {
+        format!("{:x}", self)
+    }
+}
+
+/// Run assert_snapshot! only if cfg!(feature = "disasm").
+/// $actual can be not only `cb.disasm()` but also `disasms!(cb1, cb2, ...)`.
+#[cfg(test)]
+#[macro_export]
+macro_rules! assert_disasm_snapshot {
+    ($actual: expr, @$($tt: tt)*) => {{
+        #[cfg(feature = "disasm")]
+        assert_snapshot!($actual, @$($tt)*)
+    }};
+}
+
+/// Combine multiple cb.disasm() results to match all of them at once, which allows
+/// us to avoid running the set of zjit-test -> zjit-test-update multiple times.
+#[cfg(all(test, feature = "disasm"))]
+#[macro_export]
+macro_rules! disasms {
+    ($( $cb:expr ),+ $(,)?) => {{
+        crate::disasms_with!("", $( $cb ),+)
+    }};
+}
+
+/// Basically `disasms!` but allows a non-"" delimiter, such as "\n"
+#[cfg(all(test, feature = "disasm"))]
+#[macro_export]
+macro_rules! disasms_with {
+    ($join:expr, $( $cb:expr ),+ $(,)?) => {{
+        vec![$( $cb.disasm() ),+].join($join)
+    }};
+}
+
+/// Combine multiple cb.hexdump() results to match all of them at once, which allows
+/// us to avoid running the set of zjit-test -> zjit-test-update multiple times.
+#[cfg(test)]
+#[macro_export]
+macro_rules! hexdumps {
+    ($( $cb:expr ),+ $(,)?) => {{
+        vec![$( $cb.hexdump() ),+].join("\n")
+    }};
 }
 
 /// Produce hex string output from the bytes in a code block
@@ -285,15 +354,13 @@ impl fmt::LowerHex for CodeBlock {
 impl CodeBlock {
     /// Stubbed CodeBlock for testing. Can't execute generated code.
     pub fn new_dummy() -> Self {
-        use std::ptr::NonNull;
+        const DEFAULT_MEM_SIZE: usize = 1024 * 1024;
+        CodeBlock::new_dummy_sized(DEFAULT_MEM_SIZE)
+    }
+
+    pub fn new_dummy_sized(mem_size: usize) -> Self {
         use crate::virtualmem::*;
-        use crate::virtualmem::tests::TestingAllocator;
-
-        let mem_size = 1024;
-        let alloc = TestingAllocator::new(mem_size);
-        let mem_start: *const u8 = alloc.mem_start();
-        let virt_mem = VirtualMem::new(alloc, 1, NonNull::new(mem_start as *mut u8).unwrap(), mem_size, 128 * 1024 * 1024);
-
+        let virt_mem = VirtualMem::alloc(mem_size, None);
         Self::new(Rc::new(RefCell::new(virt_mem)), false)
     }
 }
@@ -318,7 +385,7 @@ pub fn imm_num_bits(imm: i64) -> u8
         return 32;
     }
 
-    return 64;
+    64
 }
 
 /// Compute the number of bits needed to encode an unsigned value
@@ -335,10 +402,9 @@ pub fn uimm_num_bits(uimm: u64) -> u8
         return 32;
     }
 
-    return 64;
+    64
 }
 
-/*
 #[cfg(test)]
 mod tests
 {
@@ -374,32 +440,4 @@ mod tests
         assert_eq!(uimm_num_bits((u32::MAX as u64) + 1), 64);
         assert_eq!(uimm_num_bits(u64::MAX), 64);
     }
-
-    #[test]
-    fn test_code_size() {
-        // Write 4 bytes in the first page
-        let mut cb = CodeBlock::new_dummy(CodeBlock::PREFERRED_CODE_PAGE_SIZE * 2);
-        cb.write_bytes(&[0, 0, 0, 0]);
-        assert_eq!(cb.code_size(), 4);
-
-        // Moving to the next page should not increase code_size
-        cb.next_page(cb.get_write_ptr(), |_, _| {});
-        assert_eq!(cb.code_size(), 4);
-
-        // Write 4 bytes in the second page
-        cb.write_bytes(&[0, 0, 0, 0]);
-        assert_eq!(cb.code_size(), 8);
-
-        // Rewrite 4 bytes in the first page
-        let old_write_pos = cb.get_write_pos();
-        cb.set_pos(0);
-        cb.write_bytes(&[1, 1, 1, 1]);
-
-        // Moving from an old page to the next page should not increase code_size
-        cb.next_page(cb.get_write_ptr(), |_, _| {});
-        cb.set_pos(old_write_pos);
-        assert_eq!(cb.code_size(), 8);
-    }
 }
-
-*/

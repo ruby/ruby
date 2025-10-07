@@ -1855,7 +1855,7 @@ XXX
   #
   def permute!(argv = default_argv, **keywords)
     nonopts = []
-    order!(argv, **keywords, &nonopts.method(:<<))
+    order!(argv, **keywords) {|nonopt| nonopts << nonopt}
     argv[0, 0] = nonopts
     argv
   end
@@ -1908,13 +1908,16 @@ XXX
     single_options, *long_options = *args
 
     result = {}
+    setter = (symbolize_names ?
+                ->(name, val) {result[name.to_sym] = val}
+              : ->(name, val) {result[name] = val})
 
     single_options.scan(/(.)(:)?/) do |opt, val|
       if val
-        result[opt] = nil
+        setter[opt, nil]
         define("-#{opt} VAL")
       else
-        result[opt] = false
+        setter[opt, false]
         define("-#{opt}")
       end
     end if single_options
@@ -1923,16 +1926,16 @@ XXX
       arg, desc = arg.split(';', 2)
       opt, val = arg.split(':', 2)
       if val
-        result[opt] = val.empty? ? nil : val
+        setter[opt, (val unless val.empty?)]
         define("--#{opt}=#{result[opt] || "VAL"}", *[desc].compact)
       else
-        result[opt] = false
+        setter[opt, false]
         define("--#{opt}", *[desc].compact)
       end
     end
 
-    parse_in_order(argv, result.method(:[]=), **keywords)
-    symbolize_names ? result.transform_keys(&:to_sym) : result
+    parse_in_order(argv, setter, **keywords)
+    result
   end
 
   #
@@ -1982,7 +1985,7 @@ XXX
       visit(:complete, typ, opt, icase, *pat) {|o, *sw| return sw}
     }
     exc = ambiguous ? AmbiguousOption : InvalidOption
-    raise exc.new(opt, additional: self.method(:additional_message).curry[typ])
+    raise exc.new(opt, additional: proc {|o| additional_message(typ, o)})
   end
   private :complete
 
@@ -2047,19 +2050,27 @@ XXX
   def load(filename = nil, **keywords)
     unless filename
       basename = File.basename($0, '.*')
-      return true if load(File.expand_path(basename, '~/.options'), **keywords) rescue nil
+      return true if load(File.expand_path("~/.options/#{basename}"), **keywords) rescue nil
       basename << ".options"
+      if !(xdg = ENV['XDG_CONFIG_HOME']) or xdg.empty?
+        # https://specifications.freedesktop.org/basedir-spec/latest/#variables
+        #
+        # If $XDG_CONFIG_HOME is either not set or empty, a default
+        # equal to $HOME/.config should be used.
+        xdg = ['~/.config', true]
+      end
       return [
-        # XDG
-        ENV['XDG_CONFIG_HOME'],
-        '~/.config',
+        xdg,
+
         *ENV['XDG_CONFIG_DIRS']&.split(File::PATH_SEPARATOR),
 
         # Haiku
-        '~/config/settings',
-      ].any? {|dir|
+        ['~/config/settings', true],
+      ].any? {|dir, expand|
         next if !dir or dir.empty?
-        load(File.expand_path(basename, dir), **keywords) rescue nil
+        filename = File.join(dir, basename)
+        filename = File.expand_path(filename) if expand
+        load(filename, **keywords) rescue nil
       }
     end
     begin
@@ -2265,9 +2276,10 @@ XXX
       argv
     end
 
+    DIR = File.join(__dir__, '')
     def self.filter_backtrace(array)
       unless $DEBUG
-        array.delete_if(&%r"\A#{Regexp.quote(__FILE__)}:"o.method(:=~))
+        array.delete_if {|bt| bt.start_with?(DIR)}
       end
       array
     end

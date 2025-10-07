@@ -441,12 +441,12 @@ impl CodeBlock {
 
         // Ignore empty code ranges
         if start_addr == end_addr {
-            return (0..0).into_iter();
+            return 0..0;
         }
 
         let start_page = (start_addr.raw_addr(self) - mem_start) / self.page_size;
         let end_page = (end_addr.raw_addr(self) - mem_start - 1) / self.page_size;
-        (start_page..end_page + 1).into_iter()
+        start_page..end_page + 1
     }
 
     /// Get a (possibly dangling) direct pointer to the current write position

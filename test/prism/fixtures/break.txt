@@ -20,6 +20,10 @@ tap { break() }
 
 tap { break(1) }
 
+tap { (break 1) }
+
+tap { foo && (break 1) }
+
 foo { break 42 } == 42
 
 foo { |a| break } == 42

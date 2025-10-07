@@ -1534,14 +1534,6 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
-  def test_opt_aref_with
-    assert_compiles(<<~RUBY, insns: %i[opt_aref_with], result: "bar", frozen_string_literal: false)
-      h = {"foo" => "bar"}
-
-      h["foo"]
-    RUBY
-  end
-
   def test_proc_block_arg
     assert_compiles(<<~RUBY, result: [:proc, :no_block])
       def yield_if_given = block_given? ? yield : :no_block

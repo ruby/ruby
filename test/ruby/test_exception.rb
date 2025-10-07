@@ -1525,4 +1525,31 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       assert_in_out_err(%W[-r#{lib} #{main}], "", [], [:*, "\n""path=#{main}\n", :*])
     end
   end
+
+  class Ex; end
+
+  def test_exception_message_for_unexpected_implicit_conversion_type
+    a = Ex.new
+    def self.x(a) = nil
+
+    assert_raise_with_message(TypeError, "no implicit conversion of TestException::Ex into Hash") do
+      x(**a)
+    end
+    assert_raise_with_message(TypeError, "no implicit conversion of TestException::Ex into Proc") do
+      x(&a)
+    end
+
+    def a.to_a = 1
+    def a.to_hash = 1
+    def a.to_proc = 1
+    assert_raise_with_message(TypeError, "can't convert TestException::Ex to Array (TestException::Ex#to_a gives Integer)") do
+      x(*a)
+    end
+    assert_raise_with_message(TypeError, "can't convert TestException::Ex to Hash (TestException::Ex#to_hash gives Integer)") do
+      x(**a)
+    end
+    assert_raise_with_message(TypeError, "can't convert TestException::Ex to Proc (TestException::Ex#to_proc gives Integer)") do
+      x(&a)
+    end
+  end
 end

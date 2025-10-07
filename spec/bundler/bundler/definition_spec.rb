@@ -299,10 +299,6 @@ RSpec.describe Bundler::Definition do
         []
       end
 
-      def rubygems_remotes
-        []
-      end
-
       def replace_sources!(arg)
         nil
       end

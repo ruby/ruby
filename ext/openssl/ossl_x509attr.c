@@ -54,14 +54,9 @@ ossl_x509attr_new(X509_ATTRIBUTE *attr)
     VALUE obj;
 
     obj = NewX509Attr(cX509Attr);
-    if (!attr) {
-	new = X509_ATTRIBUTE_new();
-    } else {
-	new = X509_ATTRIBUTE_dup(attr);
-    }
-    if (!new) {
-	ossl_raise(eX509AttrError, NULL);
-    }
+    new = X509_ATTRIBUTE_dup(attr);
+    if (!new)
+        ossl_raise(eX509AttrError, "X509_ATTRIBUTE_dup");
     SetX509Attr(obj, new);
 
     return obj;

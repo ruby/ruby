@@ -11,7 +11,7 @@ RSpec.describe Bundler::SourceList do
 
   subject(:source_list) { Bundler::SourceList.new }
 
-  let(:rubygems_aggregate) { Bundler::Source::Rubygems.new }
+  let(:global_rubygems_source) { Bundler::Source::Rubygems.new }
   let(:metadata_source) { Bundler::Source::Metadata.new }
 
   describe "adding sources" do
@@ -118,11 +118,11 @@ RSpec.describe Bundler::SourceList do
     describe "#add_global_rubygems_remote" do
       let!(:returned_source) { source_list.add_global_rubygems_remote("https://rubygems.org/") }
 
-      it "returns the aggregate rubygems source" do
+      it "returns the global rubygems source" do
         expect(returned_source).to be_instance_of(Bundler::Source::Rubygems)
       end
 
-      it "adds the provided remote to the beginning of the aggregate source" do
+      it "adds the provided remote to the beginning of the global source" do
         source_list.add_global_rubygems_remote("https://othersource.org")
         expect(returned_source.remotes).to eq [
           Gem::URI("https://othersource.org/"),
@@ -156,21 +156,21 @@ RSpec.describe Bundler::SourceList do
   end
 
   describe "#all_sources" do
-    it "includes the aggregate rubygems source when rubygems sources have been added" do
+    it "includes the global rubygems source when rubygems sources have been added" do
       source_list.add_git_source("uri" => "git://host/path.git")
       source_list.add_rubygems_source("remotes" => ["https://rubygems.org"])
       source_list.add_path_source("path" => "/path/to/gem")
       source_list.add_plugin_source("new_source", "uri" => "https://some.url/a")
 
-      expect(source_list.all_sources).to include rubygems_aggregate
+      expect(source_list.all_sources).to include global_rubygems_source
     end
 
-    it "includes the aggregate rubygems source when no rubygems sources have been added" do
+    it "includes the global rubygems source when no rubygems sources have been added" do
       source_list.add_git_source("uri" => "git://host/path.git")
       source_list.add_path_source("path" => "/path/to/gem")
       source_list.add_plugin_source("new_source", "uri" => "https://some.url/a")
 
-      expect(source_list.all_sources).to include rubygems_aggregate
+      expect(source_list.all_sources).to include global_rubygems_source
     end
 
     it "returns sources of the same type in the reverse order that they were added" do
@@ -204,7 +204,7 @@ RSpec.describe Bundler::SourceList do
         Bundler::Source::Rubygems.new("remotes" => ["https://third-rubygems.org"]),
         Bundler::Source::Rubygems.new("remotes" => ["https://fourth-rubygems.org"]),
         Bundler::Source::Rubygems.new("remotes" => ["https://fifth-rubygems.org"]),
-        rubygems_aggregate,
+        global_rubygems_source,
         metadata_source,
       ]
     end
@@ -297,19 +297,19 @@ RSpec.describe Bundler::SourceList do
   end
 
   describe "#rubygems_sources" do
-    it "includes the aggregate rubygems source when rubygems sources have been added" do
+    it "includes the global rubygems source when rubygems sources have been added" do
       source_list.add_git_source("uri" => "git://host/path.git")
       source_list.add_rubygems_source("remotes" => ["https://rubygems.org"])
       source_list.add_path_source("path" => "/path/to/gem")
 
-      expect(source_list.rubygems_sources).to include rubygems_aggregate
+      expect(source_list.rubygems_sources).to include global_rubygems_source
     end
 
-    it "returns only the aggregate rubygems source when no rubygems sources have been added" do
+    it "returns only the global rubygems source when no rubygems sources have been added" do
       source_list.add_git_source("uri" => "git://host/path.git")
       source_list.add_path_source("path" => "/path/to/gem")
 
-      expect(source_list.rubygems_sources).to eq [rubygems_aggregate]
+      expect(source_list.rubygems_sources).to eq [global_rubygems_source]
     end
 
     it "returns rubygems sources in the reverse order that they were added" do
@@ -331,7 +331,7 @@ RSpec.describe Bundler::SourceList do
         Bundler::Source::Rubygems.new("remotes" => ["https://third-rubygems.org"]),
         Bundler::Source::Rubygems.new("remotes" => ["https://fourth-rubygems.org"]),
         Bundler::Source::Rubygems.new("remotes" => ["https://fifth-rubygems.org"]),
-        rubygems_aggregate,
+        global_rubygems_source,
       ]
     end
   end

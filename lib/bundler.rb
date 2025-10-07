@@ -54,7 +54,6 @@ module Bundler
   autoload :FREEBSD,                File.expand_path("bundler/constants", __dir__)
   autoload :GemHelper,              File.expand_path("bundler/gem_helper", __dir__)
   autoload :GemVersionPromoter,     File.expand_path("bundler/gem_version_promoter", __dir__)
-  autoload :Graph,                  File.expand_path("bundler/graph", __dir__)
   autoload :Index,                  File.expand_path("bundler/index", __dir__)
   autoload :Injector,               File.expand_path("bundler/injector", __dir__)
   autoload :Installer,              File.expand_path("bundler/installer", __dir__)
@@ -219,8 +218,7 @@ module Bundler
     end
 
     def environment
-      SharedHelpers.major_deprecation 2, "Bundler.environment has been removed in favor of Bundler.load", print_caller_location: true
-      load
+      SharedHelpers.feature_removed! "Bundler.environment has been removed in favor of Bundler.load"
     end
 
     # Returns an instance of Bundler::Definition for given Gemfile and lockfile
@@ -365,16 +363,11 @@ module Bundler
       ORIGINAL_ENV.clone
     end
 
-    # @deprecated Use `unbundled_env` instead
     def clean_env
-      message =
-        "`Bundler.clean_env` has been deprecated in favor of `Bundler.unbundled_env`. " \
-        "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`"
       removed_message =
         "`Bundler.clean_env` has been removed in favor of `Bundler.unbundled_env`. " \
         "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`"
-      Bundler::SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
-      unbundled_env
+      Bundler::SharedHelpers.feature_removed!(removed_message)
     end
 
     # @return [Hash] Environment with all bundler-related variables removed
@@ -392,16 +385,11 @@ module Bundler
       with_env(original_env) { yield }
     end
 
-    # @deprecated Use `with_unbundled_env` instead
     def with_clean_env
-      message =
-        "`Bundler.with_clean_env` has been deprecated in favor of `Bundler.with_unbundled_env`. " \
-        "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`"
       removed_message =
         "`Bundler.with_clean_env` has been removed in favor of `Bundler.with_unbundled_env`. " \
         "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`"
-      Bundler::SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
-      with_env(unbundled_env) { yield }
+      Bundler::SharedHelpers.feature_removed!(removed_message)
     end
 
     # Run block with all bundler-related variables removed
@@ -414,16 +402,11 @@ module Bundler
       with_original_env { Kernel.system(*args) }
     end
 
-    # @deprecated Use `unbundled_system` instead
     def clean_system(*args)
-      message =
-        "`Bundler.clean_system` has been deprecated in favor of `Bundler.unbundled_system`. " \
-        "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`"
       removed_message =
         "`Bundler.clean_system` has been removed in favor of `Bundler.unbundled_system`. " \
         "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`"
-      Bundler::SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
-      with_env(unbundled_env) { Kernel.system(*args) }
+      Bundler::SharedHelpers.feature_removed!(removed_message)
     end
 
     # Run subcommand in an environment with all bundler related variables removed
@@ -436,16 +419,11 @@ module Bundler
       with_original_env { Kernel.exec(*args) }
     end
 
-    # @deprecated Use `unbundled_exec` instead
     def clean_exec(*args)
-      message =
-        "`Bundler.clean_exec` has been deprecated in favor of `Bundler.unbundled_exec`. " \
-        "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`"
       removed_message =
         "`Bundler.clean_exec` has been removed in favor of `Bundler.unbundled_exec`. " \
         "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`"
-      Bundler::SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
-      with_env(unbundled_env) { Kernel.exec(*args) }
+      Bundler::SharedHelpers.feature_removed!(removed_message)
     end
 
     # Run a `Kernel.exec` to a subcommand in an environment with all bundler related variables removed

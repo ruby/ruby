@@ -47,19 +47,19 @@ module ERB::Util
   alias h html_escape
   module_function :h
 
-  #
-  # A utility method for encoding the String _s_ as a URL.
-  #
-  #   require "erb"
-  #   include ERB::Util
-  #
-  #   puts url_encode("Programming Ruby:  The Pragmatic Programmer's Guide")
-  #
-  # _Generates_
-  #
-  #   Programming%20Ruby%3A%20%20The%20Pragmatic%20Programmer%27s%20Guide
-  #
   if CGI.respond_to?(:escapeURIComponent)
+    #
+    # A utility method for encoding the String _s_ as a URL.
+    #
+    #   require "erb"
+    #   include ERB::Util
+    #
+    #   puts url_encode("Programming Ruby:  The Pragmatic Programmer's Guide")
+    #
+    # _Generates_
+    #
+    #   Programming%20Ruby%3A%20%20The%20Pragmatic%20Programmer%27s%20Guide
+    #
     def url_encode(s)
       CGI.escapeURIComponent(s.to_s)
     end

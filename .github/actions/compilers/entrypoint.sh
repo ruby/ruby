@@ -26,7 +26,7 @@ export CONFIGURE_TTY='never'
 export RUBY_DEBUG='ci rgengc'
 export RUBY_TESTOPTS='-q --color=always --tty=no'
 export RUBY_DEBUG_COUNTER_DISABLE='1'
-export GNUMAKEFLAGS="-j$((1 + $(nproc --all)))"
+export GNUMAKEFLAGS="-j$((1 + $(nproc)))"
 
 case "x${INPUT_ENABLE_SHARED}" in
 x | xno | xfalse )

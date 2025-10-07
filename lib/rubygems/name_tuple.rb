@@ -6,7 +6,7 @@
 # wrap the data returned from the indexes.
 
 class Gem::NameTuple
-  def initialize(name, version, platform=Gem::Platform::RUBY)
+  def initialize(name, version, platform = Gem::Platform::RUBY)
     @name = name
     @version = version
 

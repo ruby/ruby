@@ -196,6 +196,15 @@ class TC_IPAddr < Test::Unit::TestCase
     }
     assert_equal("::192.168.1.2", b.to_s)
     assert_equal(Socket::AF_INET6, b.family)
+    assert_equal(128, b.prefix)
+
+    a = IPAddr.new("192.168.0.0/16")
+    assert_warning(/obsolete/) {
+      b = a.ipv4_compat
+    }
+    assert_equal("::192.168.0.0", b.to_s)
+    assert_equal(Socket::AF_INET6, b.family)
+    assert_equal(112, b.prefix)
   end
 
   def test_ipv4_mapped

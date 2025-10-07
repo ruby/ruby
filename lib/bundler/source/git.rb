@@ -268,7 +268,7 @@ module Bundler
       private
 
       def cache_to(custom_path, try_migrate: false)
-        return unless Bundler.feature_flag.cache_all?
+        return unless Bundler.settings[:cache_all]
 
         app_cache_path = app_cache_path(custom_path)
 
@@ -416,7 +416,6 @@ module Bundler
       def fetch
         git_proxy.checkout
       rescue GitError => e
-        raise unless Bundler.feature_flag.allow_offline_install?
         Bundler.ui.warn "Using cached git data because of network errors:\n#{e}"
       end
 

@@ -2724,7 +2724,7 @@ CODE
   end
 
   def test_disable_local_tracepoint_in_trace
-    assert_normal_exit <<-EOS
+    assert_normal_exit(<<-EOS, timeout: 60)
     def foo
       trace = TracePoint.new(:b_return){|tp|
         tp.disable

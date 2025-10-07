@@ -51,7 +51,7 @@ define rp
     printf "%sT_OBJECT%s: ", $color_type, $color_end
     print ((struct RObject *)($arg0))->basic
     if ($flags & ROBJECT_EMBED)
-      print/x *((VALUE*)((struct RObject*)($arg0))->as.ary) @ (rb_shape_get_shape($arg0)->capacity)
+      print/x *((VALUE*)((struct RObject*)($arg0))->as.ary) @ (RSHAPE_CAPACITY(rb_obj_shape_id($arg0)))
     else
       print (((struct RObject *)($arg0))->as.heap)
       if (((struct RObject*)($arg0))->as.heap.numiv) > 0

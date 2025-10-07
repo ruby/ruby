@@ -13,6 +13,22 @@ RSpec.describe "git base name" do
 end
 
 RSpec.describe "bundle cache with git" do
+  it "does not copy repository to vendor cache when cache_all set to false" do
+    git = build_git "foo"
+    ref = git.ref_for("main", 11)
+
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      gem "foo", :git => '#{lib_path("foo-1.0")}'
+    G
+
+    bundle "config cache_all false"
+    bundle :cache
+    expect(bundled_app("vendor/cache/foo-1.0-#{ref}")).not_to exist
+
+    expect(the_bundle).to include_gems "foo 1.0"
+  end
+
   it "copies repository to vendor cache and uses it" do
     git = build_git "foo"
     ref = git.ref_for("main", 11)
@@ -22,7 +38,6 @@ RSpec.describe "bundle cache with git" do
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
-    bundle "config set cache_all true"
     bundle :cache
     expect(bundled_app("vendor/cache/foo-1.0-#{ref}")).to exist
     expect(bundled_app("vendor/cache/foo-1.0-#{ref}/.git")).not_to exist
@@ -43,7 +58,6 @@ RSpec.describe "bundle cache with git" do
 
     bundle "config set --local path vendor/bundle"
     bundle "install"
-    bundle "config set cache_all true"
     bundle :cache
 
     expect(bundled_app("vendor/cache/foo-1.0-#{ref}")).to exist
@@ -61,7 +75,6 @@ RSpec.describe "bundle cache with git" do
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
-    bundle "config set cache_all true"
     bundle :cache
     bundle :cache
 
@@ -79,7 +92,6 @@ RSpec.describe "bundle cache with git" do
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
-    bundle "config set cache_all true"
     bundle :cache
 
     update_git "foo" do |s|
@@ -109,7 +121,6 @@ RSpec.describe "bundle cache with git" do
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
-    bundle "config set cache_all true"
     bundle :cache
 
     update_git "foo" do |s|
@@ -140,7 +151,6 @@ RSpec.describe "bundle cache with git" do
 
     bundle %(config set local.foo #{lib_path("foo-1.0")})
     bundle "install"
-    bundle "config set cache_all true"
     bundle :cache
 
     expect(bundled_app("vendor/cache/foo-invalid-#{ref}")).to exist
@@ -164,7 +174,7 @@ RSpec.describe "bundle cache with git" do
     bundle "config set path vendor/bundle"
     bundle :install
 
-    pristine_system_gems :bundler
+    pristine_system_gems
     with_path_as "" do
       bundle "config set deployment true"
       bundle "install --local"
@@ -179,10 +189,9 @@ RSpec.describe "bundle cache with git" do
       source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
-    bundle "config set cache_all true"
     bundle :cache, "all-platforms" => true
 
-    pristine_system_gems :bundler
+    pristine_system_gems
     bundle "config set frozen true"
     bundle "install --local --verbose"
     expect(out).to_not include("Fetching")
@@ -196,10 +205,9 @@ RSpec.describe "bundle cache with git" do
       source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
-    bundle "config set cache_all true"
     bundle :cache, "all-platforms" => true
 
-    pristine_system_gems :bundler
+    pristine_system_gems
     bundle "config set frozen true"
     bundle "install --local --verbose"
     expect(out).to_not include("Fetching")
@@ -213,10 +221,9 @@ RSpec.describe "bundle cache with git" do
       source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
-    bundle "config set cache_all true"
     bundle :cache, "all-platforms" => true
 
-    pristine_system_gems :bundler
+    pristine_system_gems
     bundle "config set frozen true"
 
     # Remove untracked files (including the empty refs dir in the cache)
@@ -242,7 +249,6 @@ RSpec.describe "bundle cache with git" do
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
     bundle "config set global_gem_cache false"
-    bundle "config set cache_all true"
     bundle "config path vendor/bundle"
     bundle :install
 
@@ -274,7 +280,6 @@ RSpec.describe "bundle cache with git" do
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
     bundle "config set global_gem_cache false"
-    bundle "config set cache_all true"
     bundle "config path vendor/bundle"
     bundle :install
 
@@ -304,7 +309,6 @@ RSpec.describe "bundle cache with git" do
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
     bundle "config set global_gem_cache false"
-    bundle "config set cache_all true"
     bundle "config path vendor/bundle"
     bundle :install
 
@@ -342,7 +346,6 @@ RSpec.describe "bundle cache with git" do
     G
 
     ref = git.ref_for("main", 11)
-    bundle "config set cache_all true"
     bundle :cache
 
     expect(bundled_app("vendor/cache/has_submodule-1.0-#{ref}")).to exist
@@ -362,7 +365,6 @@ RSpec.describe "bundle cache with git" do
       source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
-    bundle "config set cache_all true"
     bundle :cache
 
     ref = git.ref_for("main", 11)
@@ -377,10 +379,9 @@ RSpec.describe "bundle cache with git" do
       source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
-    bundle "config set cache_all true"
     bundle :cache, "all-platforms" => true, :install => false
 
-    pristine_system_gems :bundler
+    pristine_system_gems
     with_path_as "" do
       bundle "config set deployment true"
       bundle :install, local: true
@@ -436,7 +437,6 @@ RSpec.describe "bundle cache with git" do
       source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
-    bundle "config set cache_all true"
 
     # The algorithm for the cache location for a git checkout is
     # in Bundle::Source::Git#cache_path
@@ -498,7 +498,6 @@ RSpec.describe "bundle cache with git" do
     end
 
     FileUtils.mkdir_p(bundled_app("vendor/cache"))
-    bundle "config set cache_all all"
 
     install_gemfile <<-G
       source "https://gem.repo1"

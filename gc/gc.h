@@ -58,7 +58,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 // files in Ruby.
 size_t rb_size_mul_or_raise(size_t x, size_t y, VALUE exc);
 void rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data);
-void rb_obj_info_dump(VALUE obj);
+const char *rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj);
 const char *rb_obj_info(VALUE obj);
 size_t rb_obj_memsize_of(VALUE obj);
 bool ruby_free_at_exit_p(void);

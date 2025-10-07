@@ -47,11 +47,7 @@ impl Scanning<Ruby> for VMScanning {
             );
             let forwarded_target = object_tracer.trace_object(target_object);
             if forwarded_target != target_object {
-                trace!(
-                    "  Forwarded target {} -> {}",
-                    target_object,
-                    forwarded_target
-                );
+                trace!("  Forwarded target {target_object} -> {forwarded_target}");
             }
             forwarded_target
         };
@@ -251,15 +247,11 @@ impl<F: RootsWorkFactory<RubySlot>> GCWork<Ruby> for ScanWbUnprotectedRoots<F> {
         VMScanning::collect_object_roots_in("wb_unprot_roots", gc_tls, &mut self.factory, || {
             for object in self.objects.iter().copied() {
                 if object.is_reachable() {
-                    debug!(
-                        "[wb_unprot_roots] Visiting WB-unprotected object (parent): {}",
-                        object
-                    );
+                    debug!("[wb_unprot_roots] Visiting WB-unprotected object (parent): {object}");
                     (upcalls().scan_object_ruby_style)(object);
                 } else {
                     debug!(
-                        "[wb_unprot_roots] Skipping young WB-unprotected object (parent): {}",
-                        object
+                        "[wb_unprot_roots] Skipping young WB-unprotected object (parent): {object}"
                     );
                 }
             }

@@ -61,6 +61,16 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     assert_equal 3, key.e
   end
 
+  def test_new_empty
+    # pkeys are immutable with OpenSSL >= 3.0
+    if openssl?(3, 0, 0)
+      assert_raise(ArgumentError) { OpenSSL::PKey::RSA.new }
+    else
+      key = OpenSSL::PKey::RSA.new
+      assert_nil(key.n)
+    end
+  end
+
   def test_s_generate
     key1 = OpenSSL::PKey::RSA.generate(2048)
     assert_equal 2048, key1.n.num_bits
@@ -181,7 +191,7 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     assert_raise(OpenSSL::PKey::PKeyError, "[Bug #12783]") {
       rsa.verify("SHA1", "a", "b")
     }
-  end
+  end unless openssl?(3, 0, 0) # Empty RSA is not possible with OpenSSL >= 3.0
 
   def test_sign_verify_pss
     key = Fixtures.pkey("rsa2048")

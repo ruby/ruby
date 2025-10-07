@@ -45,11 +45,11 @@ typedef struct {
         /** This is a slice of another string, and should not be freed. */
         PM_STRING_SHARED,
 
-        /** This string owns its memory, and should be freed using `pm_string_free`. */
+        /** This string owns its memory, and should be freed using `pm_string_free()`. */
         PM_STRING_OWNED,
 
 #ifdef PRISM_HAS_MMAP
-        /** This string is a memory-mapped file, and should be freed using `pm_string_free`. */
+        /** This string is a memory-mapped file, and should be freed using `pm_string_free()`. */
         PM_STRING_MAPPED
 #endif
     } type;
@@ -130,6 +130,8 @@ typedef enum {
  * @param string The string to initialize.
  * @param filepath The filepath to read.
  * @return The success of the read, indicated by the value of the enum.
+ *
+ * \public \memberof pm_string_t
  */
 PRISM_EXPORTED_FUNCTION pm_string_init_result_t pm_string_mapped_init(pm_string_t *string, const char *filepath);
 
@@ -141,6 +143,8 @@ PRISM_EXPORTED_FUNCTION pm_string_init_result_t pm_string_mapped_init(pm_string_
  * @param string The string to initialize.
  * @param filepath The filepath to read.
  * @return The success of the read, indicated by the value of the enum.
+ *
+ * \public \memberof pm_string_t
  */
 PRISM_EXPORTED_FUNCTION pm_string_init_result_t pm_string_file_init(pm_string_t *string, const char *filepath);
 
@@ -169,6 +173,8 @@ int pm_string_compare(const pm_string_t *left, const pm_string_t *right);
  *
  * @param string The string to get the length of.
  * @return The length of the string.
+ *
+ * \public \memberof pm_string_t
  */
 PRISM_EXPORTED_FUNCTION size_t pm_string_length(const pm_string_t *string);
 
@@ -177,6 +183,8 @@ PRISM_EXPORTED_FUNCTION size_t pm_string_length(const pm_string_t *string);
  *
  * @param string The string to get the start pointer of.
  * @return The start pointer of the string.
+ *
+ * \public \memberof pm_string_t
  */
 PRISM_EXPORTED_FUNCTION const uint8_t * pm_string_source(const pm_string_t *string);
 
@@ -184,6 +192,8 @@ PRISM_EXPORTED_FUNCTION const uint8_t * pm_string_source(const pm_string_t *stri
  * Free the associated memory of the given string.
  *
  * @param string The string to free.
+ *
+ * \public \memberof pm_string_t
  */
 PRISM_EXPORTED_FUNCTION void pm_string_free(pm_string_t *string);
 

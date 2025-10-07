@@ -1,17 +1,18 @@
-Calls the given block with each successive byte from +self+;
+With a block given, calls the block with each successive byte from +self+;
 returns +self+:
 
-  'hello'.each_byte {|byte| print byte, ' ' }
-  print "\n"
-  'тест'.each_byte {|byte| print byte, ' ' }
-  print "\n"
-  'こんにちは'.each_byte {|byte| print byte, ' ' }
-  print "\n"
+  a = []
+  'hello'.each_byte {|byte| a.push(byte) }     # Five 1-byte characters.
+  a # => [104, 101, 108, 108, 111]
+  a = []
+  'тест'.each_byte {|byte| a.push(byte) }      # Four 2-byte characters.
+  a # => [209, 130, 208, 181, 209, 129, 209, 130]
+  a = []
+  'こんにちは'.each_byte {|byte| a.push(byte) }  # Five 3-byte characters.
+  a # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
 
-Output:
+With no block given, returns an enumerator.
 
-  104 101 108 108 111
-  209 130 208 181 209 129 209 130
-  227 129 147 227 130 147 227 129 171 227 129 161 227 129 175
+Related: see {Iterating}[rdoc-ref:String@Iterating].
 
-Returns an enumerator if no block is given.
+

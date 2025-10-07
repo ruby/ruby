@@ -1,3 +1,5 @@
 x do
   it
 end
+
+-> { it }

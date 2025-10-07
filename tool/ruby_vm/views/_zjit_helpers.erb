@@ -5,7 +5,7 @@ static int
 vm_bare_insn_to_zjit_insn(int insn)
 {
     switch (insn) {
-% RubyVM::ZJITInstructions.to_a.each do |insn|
+% RubyVM::ZJITInstruction.all.each do |insn|
       case BIN(<%= insn.jump_destination %>):
         return <%= insn.bin %>;
 % end
@@ -19,7 +19,7 @@ static int
 vm_zjit_insn_to_bare_insn(int insn)
 {
     switch (insn) {
-% RubyVM::ZJITInstructions.to_a.each do |insn|
+% RubyVM::ZJITInstruction.all.each do |insn|
       case <%= insn.bin %>:
         return BIN(<%= insn.jump_destination %>);
 % end

@@ -2,9 +2,8 @@
 
 module Spec
   class CommandExecution
-    def initialize(command, working_directory:, timeout:)
+    def initialize(command, timeout:)
       @command = command
-      @working_directory = working_directory
       @timeout = timeout
       @original_stdout = String.new
       @original_stderr = String.new

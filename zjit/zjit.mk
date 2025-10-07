@@ -9,6 +9,7 @@ ZJIT_SRC_FILES = $(wildcard \
 	$(top_srcdir)/zjit/src/*/*.rs \
 	$(top_srcdir)/zjit/src/*/*/*.rs \
 	$(top_srcdir)/zjit/src/*/*/*/*.rs \
+	$(top_srcdir)/jit/src/lib.rs \
 	)
 
 $(RUST_LIB): $(ZJIT_SRC_FILES)
@@ -50,16 +51,13 @@ zjit-check:
 	$(MAKE) zjit-test
 	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_zjit.rb'
 
-.PHONY: zjit-test-all
-zjit-test-all:
-	$(MAKE) test-all RUST_BACKTRACE=1 TEST_EXCLUDES='--excludes-dir=$(top_srcdir)/test/.excludes-zjit --name=!/memory_leak/' RUN_OPTS='--zjit-call-threshold=1' TESTS='$(top_srcdir)/test/ruby'
-
 ZJIT_BINDGEN_DIFF_OPTS =
 
 # Generate Rust bindings. See source for details.
 # Needs `./configure --enable-zjit=dev` and Clang.
 ifneq ($(strip $(CARGO)),) # if configure found Cargo
-.PHONY: zjit-bindgen zjit-bindgen-show-unused zjit-test zjit-test-lldb
+.PHONY: zjit-bindgen zjit-bindgen-show-unused zjit-test zjit-test-update
+.PHONY: zjit-test-debug zjit-test-lldb zjit-test-gdb zjit-test-rr
 zjit-bindgen: zjit.$(OBJEXT)
 	ZJIT_SRC_ROOT_PATH='$(top_srcdir)' BINDGEN_JIT_NAME=zjit $(CARGO) run --manifest-path '$(top_srcdir)/zjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
 	$(Q) if [ 'x$(HAVE_GIT)' = xyes ]; then $(GIT) -C "$(top_srcdir)" diff $(ZJIT_BINDGEN_DIFF_OPTS) zjit/src/cruby_bindings.inc.rs; fi
@@ -77,13 +75,30 @@ ZJIT_NEXTEST_ENV := RUBY_BUILD_DIR='$(TOP_BUILD_DIR)' \
 # On darwin, it's available through `brew install cargo-nextest`. See
 # https://nexte.st/docs/installation/pre-built-binaries/ otherwise.
 zjit-test: libminiruby.a
+	@set +e; \
 	$(ZJIT_NEXTEST_ENV) $(CARGO) nextest run \
 		--manifest-path '$(top_srcdir)/zjit/Cargo.toml' \
+		--no-fail-fast \
 		'--features=$(ZJIT_TEST_FEATURES)' \
-		$(ZJIT_TESTS)
+		$(ZJIT_TESTS); \
+	exit_code=$$?; \
+	if [ -f '$(top_srcdir)/zjit/src/.hir.rs.pending-snap' ]; then \
+		echo ""; \
+		echo "Pending snapshots found. Accept with: make zjit-test-update"; \
+	fi; \
+	exit $$exit_code
 
-# Run a ZJIT test written with Rust #[test] under LLDB
-zjit-test-lldb: libminiruby.a
+# Accept all pending snapshots (requires cargo-insta)
+# Install with: cargo install cargo-insta
+zjit-test-update:
+	@$(CARGO) insta --version >/dev/null 2>&1 || { echo "Error: cargo-insta is not installed. Install with: cargo install cargo-insta"; exit 1; }
+	@$(CARGO) insta accept --manifest-path '$(top_srcdir)/zjit/Cargo.toml'
+
+ZJIT_DEBUGGER =
+ZJIT_DEBUGGER_OPTS =
+
+# Run a ZJIT test written with Rust #[test] under $(ZJIT_DEBUGGER)
+zjit-test-debug: libminiruby.a
 	$(Q)set -eu; \
 	    if [ -z '$(ZJIT_TESTS)' ]; then \
 		echo "Please pass a ZJIT_TESTS=... filter to make."; \
@@ -93,7 +108,19 @@ zjit-test-lldb: libminiruby.a
 	    exe_path=`$(ZJIT_NEXTEST_ENV) \
 	    $(CARGO) nextest list --manifest-path '$(top_srcdir)/zjit/Cargo.toml' --message-format json --list-type=binaries-only | \
 	    $(BASERUBY) -rjson -e 'puts JSON.load(STDIN.read).dig("rust-binaries", "zjit", "binary-path")'`; \
-	    exec lldb $$exe_path -- --test-threads=1 $(ZJIT_TESTS)
+	    exec $(ZJIT_DEBUGGER) $$exe_path $(ZJIT_DEBUGGER_OPTS) --test-threads=1 $(ZJIT_TESTS)
+
+# Run a ZJIT test written with Rust #[test] under LLDB
+zjit-test-lldb:
+	$(Q) $(MAKE) zjit-test-debug ZJIT_DEBUGGER=lldb ZJIT_DEBUGGER_OPTS=--
+
+# Run a ZJIT test written with Rust #[test] under GDB
+zjit-test-gdb: libminiruby.a
+	$(Q) $(MAKE) zjit-test-debug ZJIT_DEBUGGER="gdb --args"
+
+# Run a ZJIT test written with Rust #[test] under rr-debugger
+zjit-test-rr: libminiruby.a
+	$(Q) $(MAKE) zjit-test-debug ZJIT_DEBUGGER="rr record"
 
 # A library for booting miniruby in tests.
 # Why not use libruby-static.a for this?

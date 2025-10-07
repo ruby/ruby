@@ -152,7 +152,7 @@ module Prism
         # ^^
         # ```
         def visit_back_reference_read_node(node)
-          s(node, :back_ref, node.name.name.delete_prefix("$").to_sym)
+          s(node, :back_ref, node.name.to_s.delete_prefix("$").to_sym)
         end
 
         # ```
@@ -1151,8 +1151,8 @@ module Prism
         def visit_lambda_node(node)
           parameters =
             case node.parameters
-            when nil, NumberedParametersNode
-              s(node, :args)
+            when nil, ItParametersNode, NumberedParametersNode
+              0
             else
               visit(node.parameters)
             end

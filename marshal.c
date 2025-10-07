@@ -2572,19 +2572,19 @@ Init_marshal(void)
 }
 
 static int
-marshal_compat_table_mark_i(st_data_t key, st_data_t value, st_data_t _)
+marshal_compat_table_mark_and_move_i(st_data_t key, st_data_t value, st_data_t _)
 {
     marshal_compat_t *p = (marshal_compat_t *)value;
-    rb_gc_mark_movable(p->newclass);
-    rb_gc_mark_movable(p->oldclass);
+    rb_gc_mark_and_move(&p->newclass);
+    rb_gc_mark_and_move(&p->oldclass);
     return ST_CONTINUE;
 }
 
 static void
-marshal_compat_table_mark(void *tbl)
+marshal_compat_table_mark_and_move(void *tbl)
 {
     if (!tbl) return;
-    st_foreach(tbl, marshal_compat_table_mark_i, 0);
+    st_foreach(tbl, marshal_compat_table_mark_and_move_i, 0);
 }
 
 static int
@@ -2607,29 +2607,13 @@ marshal_compat_table_memsize(const void *data)
     return st_memsize(data) + sizeof(marshal_compat_t) * st_table_size(data);
 }
 
-static int
-marshal_compat_table_compact_i(st_data_t key, st_data_t value, st_data_t _)
-{
-    marshal_compat_t *p = (marshal_compat_t *)value;
-    p->newclass = rb_gc_location(p->newclass);
-    p->oldclass = rb_gc_location(p->oldclass);
-    return ST_CONTINUE;
-}
-
-static void
-marshal_compat_table_compact(void *tbl)
-{
-    if (!tbl) return;
-    st_foreach(tbl, marshal_compat_table_compact_i, 0);
-}
-
 static const rb_data_type_t marshal_compat_type = {
     .wrap_struct_name = "marshal_compat_table",
     .function = {
-        .dmark = marshal_compat_table_mark,
+        .dmark = marshal_compat_table_mark_and_move,
         .dfree = marshal_compat_table_free,
         .dsize = marshal_compat_table_memsize,
-        .dcompact = marshal_compat_table_compact,
+        .dcompact = marshal_compat_table_mark_and_move,
     },
     .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY,
 };

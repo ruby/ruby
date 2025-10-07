@@ -70,6 +70,31 @@ class TestStringIO < Test::Unit::TestCase
     assert_nil io.getc
   end
 
+  def test_eof_null
+    io = StringIO.new(nil)
+    assert_predicate io, :eof?
+  end
+
+  def test_pread_null
+    io = StringIO.new(nil)
+    assert_raise(EOFError) { io.pread(1, 0) }
+  end
+
+  def test_read_null
+    io = StringIO.new(nil)
+    assert_equal "", io.read(0)
+  end
+
+  def test_seek_null
+    io = StringIO.new(nil)
+    assert_equal(0, io.seek(0, IO::SEEK_SET))
+    assert_equal(0, io.pos)
+    assert_equal(0, io.seek(0, IO::SEEK_CUR))
+    assert_equal(0, io.pos)
+    assert_equal(0, io.seek(0, IO::SEEK_END))  # This should not segfault
+    assert_equal(0, io.pos)
+  end
+
   def test_truncate
     io = StringIO.new("")
     io.puts "abc"

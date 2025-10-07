@@ -22,23 +22,6 @@ class Integer
   end
 end
 
-module Enumerable
-  unless method_defined?(:each_slice)
-    def each_slice(n)
-      ary = []
-      each do |i|
-        ary << i
-        if ary.size >= n
-          yield ary
-          ary = []
-        end
-      end
-      yield ary unless ary.empty?
-      self
-    end
-  end
-end
-
 class Array
   def to_UTF8() collect {|c| c.to_UTF8}.join('') end
 

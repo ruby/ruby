@@ -155,33 +155,6 @@ RSpec.describe "post bundle message" do
     end
   end
 
-  describe "for second bundle install run after first run using --without" do
-    it "with --without one group" do
-      bundle "install --without emo"
-      bundle :install
-      expect(out).to include(bundle_show_system_message)
-      expect(out).to include("Gems in the group 'emo' were not installed")
-      expect(out).to include(bundle_complete_message)
-      expect(out).to include(installed_gems_stats)
-    end
-
-    it "with --without two groups" do
-      bundle "install --without emo test"
-      bundle :install
-      expect(out).to include(bundle_show_system_message)
-      expect(out).to include("Gems in the groups 'emo' and 'test' were not installed")
-      expect(out).to include(bundle_complete_message)
-    end
-
-    it "with --without more groups" do
-      bundle "install --without emo obama test"
-      bundle :install
-      expect(out).to include(bundle_show_system_message)
-      expect(out).to include("Gems in the groups 'emo', 'obama' and 'test' were not installed")
-      expect(out).to include(bundle_complete_message)
-    end
-  end
-
   describe "for bundle update" do
     it "shows proper messages according to the configured groups" do
       bundle :update, all: true

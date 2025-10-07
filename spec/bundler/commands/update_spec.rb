@@ -445,6 +445,49 @@ RSpec.describe "bundle update" do
       expect(out).to include("Installing sneakers 2.11.0").and include("Installing rake 13.0.6")
     end
 
+    it "downgrades indirect dependencies if required to fulfill an explicit upgrade request" do
+      build_repo4 do
+        build_gem "rbs", "3.6.1"
+        build_gem "rbs", "3.9.4"
+
+        build_gem "solargraph", "0.56.0" do |s|
+          s.add_dependency "rbs", "~> 3.3"
+        end
+
+        build_gem "solargraph", "0.56.2" do |s|
+          s.add_dependency "rbs", "~> 3.6.1"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem 'solargraph', '~> 0.56.0'
+      G
+
+      lockfile <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            rbs (3.9.4)
+            solargraph (0.56.0)
+              rbs (~> 3.3)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          solargraph (~> 0.56.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "lock --update solargraph"
+
+      expect(lockfile).to include("solargraph (0.56.2)")
+    end
+
     it "does not downgrade direct dependencies unnecessarily" do
       build_repo4 do
         build_gem "redis", "4.8.1"
@@ -773,7 +816,7 @@ RSpec.describe "bundle update" do
     end
 
     it "should fail loudly" do
-      bundle "install --deployment"
+      bundle "config deployment true"
       bundle "update", all: true, raise_on_error: false
 
       expect(last_command).to be_failure
@@ -1033,68 +1076,6 @@ RSpec.describe "bundle update" do
         BUNDLED WITH
            #{Bundler::VERSION}
       L
-    end
-  end
-
-  context "with multiple, duplicated sources, with lockfile in old format" do
-    before do
-      build_repo2 do
-        build_gem "dotenv", "2.7.6"
-
-        build_gem "oj", "3.11.3"
-        build_gem "oj", "3.11.5"
-
-        build_gem "vcr", "6.0.0"
-      end
-
-      build_repo3 do
-        build_gem "pkg-gem-flowbyte-with-dep", "1.0.0" do |s|
-          s.add_dependency "oj"
-        end
-      end
-
-      gemfile <<~G
-        source "https://gem.repo2"
-
-        gem "dotenv"
-
-        source "https://gem.repo3" do
-          gem 'pkg-gem-flowbyte-with-dep'
-        end
-
-        gem "vcr",source: "https://gem.repo2"
-      G
-
-      lockfile <<~L
-        GEM
-          remote: https://gem.repo2/
-          remote: https://gem.repo3/
-          specs:
-            dotenv (2.7.6)
-            oj (3.11.3)
-            pkg-gem-flowbyte-with-dep (1.0.0)
-              oj
-            vcr (6.0.0)
-
-        PLATFORMS
-          #{local_platform}
-
-        DEPENDENCIES
-          dotenv
-          pkg-gem-flowbyte-with-dep!
-          vcr!
-
-        BUNDLED WITH
-           #{Bundler::VERSION}
-      L
-    end
-
-    it "works" do
-      bundle :install, artifice: "compact_index"
-      bundle "update oj", artifice: "compact_index"
-
-      expect(out).to include("Bundle updated!")
-      expect(the_bundle).to include_gems "oj 3.11.5"
     end
   end
 end
@@ -1809,7 +1790,7 @@ RSpec.describe "bundle update --bundler" do
     system_gems "bundler-9.9.9", path: local_gem_path
 
     bundle "update --bundler=9.9.9", env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
-    expect(err).to include("An update to the version of bundler itself was requested, but the lockfile can't be updated because frozen mode is set")
+    expect(err).to include("An update to the version of Bundler itself was requested, but the lockfile can't be updated because frozen mode is set")
   end
 end
 

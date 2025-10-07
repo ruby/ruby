@@ -99,16 +99,18 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
     To cross build arm64 binary:
 
     ```
-    cmd /k win32\vssetup.cmd -arch arm64
+    cmd /k win32\vssetup.cmd -arch=arm64
     ```
 
     To cross build x64 binary:
 
     ```
-    cmd /k win32\vssetup.cmd -arch x64
+    cmd /k win32\vssetup.cmd -arch=x64
     ```
 
-    See `win32\vssetup.cmd -help` for other command line options.
+    This batch file is a wrapper of `vsdevcmd.bat` and options are
+    passed to it as-is.  `win32\vssetup.cmd -help` for other command
+    line options.
 
     **Note** building ruby requires following commands.
 
@@ -283,6 +285,7 @@ Any icon files(`*.ico`) in the build directory, directories specified with
 _icondirs_ make variable and `win32` directory under the ruby
 source directory will be included in DLL or executable files, according
 to their base names.
+
     $(RUBY_INSTALL_NAME).ico or ruby.ico   --> $(RUBY_INSTALL_NAME).exe
     $(RUBYW_INSTALL_NAME).ico or rubyw.ico --> $(RUBYW_INSTALL_NAME).exe
     the others                             --> $(RUBY_SO_NAME).dll

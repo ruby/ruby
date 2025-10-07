@@ -225,8 +225,8 @@ module EnvUtil
 
     args = [args] if args.kind_of?(String)
     # use the same parser as current ruby
-    if args.none? { |arg| arg.start_with?("--parser=") }
-      current_parser = RUBY_DESCRIPTION =~ /prism/i ? "prism" : "parse.y"
+    if (args.none? { |arg| arg.start_with?("--parser=") } and
+        /^ +--parser=/ =~ IO.popen([rubybin, "--help"], &:read))
       args = ["--parser=#{current_parser}"] + args
     end
     pid = spawn(child_env, *precommand, rubybin, *args, opt)
@@ -276,6 +276,12 @@ module EnvUtil
   end
   module_function :invoke_ruby
 
+  def current_parser
+    features = RUBY_DESCRIPTION[%r{\)\K [-+*/%._0-9a-zA-Z ]*(?=\[[-+*/%._0-9a-zA-Z]+\]\z)}]
+    features&.split&.include?("+PRISM") ? "prism" : "parse.y"
+  end
+  module_function :current_parser
+
   def verbose_warning
     class << (stderr = "".dup)
       alias write concat
@@ -291,6 +297,21 @@ module EnvUtil
     EnvUtil.original_warning&.each {|i, v| Warning[i] = v}
   end
   module_function :verbose_warning
+
+  if defined?(Warning.[]=)
+    def deprecation_warning
+      previous_deprecated = Warning[:deprecated]
+      Warning[:deprecated] = true
+      yield
+    ensure
+      Warning[:deprecated] = previous_deprecated
+    end
+  else
+    def deprecation_warning
+      yield
+    end
+  end
+  module_function :deprecation_warning
 
   def default_warning
     $VERBOSE = false

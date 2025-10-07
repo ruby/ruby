@@ -212,6 +212,8 @@ typedef enum pm_<%= flag.human %> {
     /** <%= value.comment %> */
     PM_<%= flag.human.upcase %>_<%= value.name %> = <%= 1 << (index + Prism::Template::COMMON_FLAGS_COUNT) %>,
     <%- end -%>
+
+    PM_<%= flag.human.upcase %>_LAST,
 } pm_<%= flag.human %>_t;
 <%- end -%>
 

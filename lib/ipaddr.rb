@@ -381,7 +381,9 @@ class IPAddr
     if !ipv4?
       raise InvalidAddressError, "not an IPv4 address: #{@addr}"
     end
-    return self.clone.set(@addr, Socket::AF_INET6)
+    clone = self.clone.set(@addr, Socket::AF_INET6)
+    clone.instance_variable_set(:@mask_addr, @mask_addr | 0xffffffffffffffffffffffff00000000)
+    clone
   end
 
   # Returns a new ipaddr built by converting the IPv6 address into a

@@ -840,6 +840,30 @@ class TestRequire < Test::Unit::TestCase
         p :ok
       end;
     }
+
+    # [Bug #21567]
+    assert_separately(%w[-rtempfile], "#{<<~"begin;"}\n#{<<~"end;"}")
+    begin;
+      class MyString
+        def initialize(path)
+          @path = path
+        end
+
+        def to_str
+          $LOADED_FEATURES.clear
+          @path
+        end
+
+        def to_path = @path
+      end
+
+      def create_ruby_file = Tempfile.open(["test", ".rb"]).path
+
+      require MyString.new(create_ruby_file)
+      $LOADED_FEATURES.unshift(create_ruby_file)
+      $LOADED_FEATURES << MyString.new(create_ruby_file)
+      require create_ruby_file
+    end;
   end
 
   def test_loading_fifo_threading_raise
@@ -1010,5 +1034,19 @@ class TestRequire < Test::Unit::TestCase
         require file.path
       end
     RUBY
+  end
+
+  def test_bug_21568
+    load_path = $LOAD_PATH.dup
+    loaded_featrures = $LOADED_FEATURES.dup
+
+    $LOAD_PATH.clear
+    $LOADED_FEATURES.replace(["foo.so", "a/foo.rb", "b/foo.rb"])
+
+    assert_nothing_raised(LoadError) { require "foo" }
+
+  ensure
+    $LOAD_PATH.replace(load_path) if load_path
+    $LOADED_FEATURES.replace loaded_featrures
   end
 end

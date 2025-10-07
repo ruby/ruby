@@ -3055,7 +3055,9 @@ bignew_1(VALUE klass, size_t len, int sign)
 VALUE
 rb_big_new(size_t len, int sign)
 {
-    return bignew(len, sign != 0);
+    VALUE obj = bignew(len, sign != 0);
+    memset(BIGNUM_DIGITS(obj), 0, len * sizeof(BDIGIT));
+    return obj;
 }
 
 VALUE
@@ -6346,7 +6348,7 @@ bigand_int(VALUE x, long xn, BDIGIT hibitsx, long y)
     BDIGIT hibitsy;
 
     if (y == 0) return INT2FIX(0);
-    if (xn == 0) return hibitsx ? LONG2NUM(y) : 0;
+    if (xn == 0) return hibitsx ? LONG2NUM(y) : INT2FIX(0);
     hibitsy = 0 <= y ? 0 : BDIGMAX;
     xds = BDIGITS(x);
 #if SIZEOF_BDIGIT >= SIZEOF_LONG
@@ -6755,6 +6757,73 @@ rb_big_aref(VALUE x, VALUE y)
         if (xds[i])
             return (xds[s1] & bit) ? INT2FIX(0) : INT2FIX(1);
     return (xds[s1] & bit) ? INT2FIX(1) : INT2FIX(0);
+}
+
+VALUE
+rb_big_aref2(VALUE x, VALUE beg, VALUE len)
+{
+    BDIGIT *xds, *vds;
+    VALUE v;
+    size_t copy_begin, xn, shift;
+    ssize_t begin, length, end;
+    bool negative_add_one;
+
+    beg = rb_to_int(beg);
+    len = rb_to_int(len);
+    length = NUM2SSIZET(len);
+    begin = NUM2SSIZET(beg);
+    end = NUM2SSIZET(rb_int_plus(beg, len));
+    shift = begin < 0 ? -begin : 0;
+    xn = BIGNUM_LEN(x);
+    xds = BDIGITS(x);
+
+    if (length < 0) return rb_big_rshift(x, beg);
+    if (length == 0 || end <= 0) return INT2FIX(0);
+    if (begin < 0) begin = 0;
+
+    if ((size_t)(end - 1) / BITSPERDIG >= xn) {
+        /* end > xn * BITSPERDIG */
+        end = xn * BITSPERDIG;
+    }
+
+    if ((size_t)begin / BITSPERDIG < xn) {
+        /* begin < xn * BITSPERDIG */
+        size_t shift_bits, copy_end;
+        copy_begin = begin / BITSPERDIG;
+        shift_bits = begin % BITSPERDIG;
+        copy_end = (end - 1) / BITSPERDIG + 1;
+        v = bignew(copy_end - copy_begin, 1);
+        vds = BDIGITS(v);
+        MEMCPY(vds, xds + copy_begin, BDIGIT, copy_end - copy_begin);
+        negative_add_one = (vds[0] & ((1 << shift_bits) - 1)) == 0;
+        v = bignorm(v);
+        if (shift_bits) v = rb_int_rshift(v, SIZET2NUM(shift_bits));
+    }
+    else {
+        /* Out of range */
+        v = INT2FIX(0);
+        negative_add_one = false;
+        copy_begin = begin = end = 0;
+    }
+
+    if (BIGNUM_NEGATIVE_P(x)) {
+        size_t mask_size = length - shift;
+        VALUE mask = rb_int_minus(rb_int_lshift(INT2FIX(1), SIZET2NUM(mask_size)), INT2FIX(1));
+        v = rb_int_xor(v, mask);
+        for (size_t i = 0; negative_add_one && i < copy_begin; i++) {
+            if (xds[i]) negative_add_one = false;
+        }
+        if (negative_add_one) v = rb_int_plus(v, INT2FIX(1));
+        v = rb_int_and(v, mask);
+    }
+    else {
+        size_t mask_size = (size_t)end - begin;
+        VALUE mask = rb_int_minus(rb_int_lshift(INT2FIX(1), SIZET2NUM(mask_size)), INT2FIX(1));
+        v = rb_int_and(v, mask);
+    }
+    RB_GC_GUARD(x);
+    if (shift) v = rb_int_lshift(v, SSIZET2NUM(shift));
+    return v;
 }
 
 VALUE

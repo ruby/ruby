@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "openssl"
-  spec.version       = "3.3.0"
+  spec.version       = "4.0.0.pre"
   spec.authors       = ["Martin Bosslet", "SHIBATA Hiroshi", "Zachary Scott", "Kazuki Yamaguchi"]
   spec.email         = ["ruby-core@ruby-lang.org"]
   spec.summary       = %q{SSL/TLS and general-purpose cryptography for Ruby}

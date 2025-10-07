@@ -210,6 +210,16 @@ RSpec.describe Bundler::RubyDsl do
           it_behaves_like "it stores the ruby version"
         end
       end
+
+      context "when the file does not exist" do
+        let(:ruby_version_file_path) { nil }
+        let(:ruby_version_arg) { nil }
+        let(:file) { "nonexistent.txt" }
+
+        it "raises an error" do
+          expect { subject }.to raise_error(Bundler::GemfileError, /Could not find version file nonexistent.txt/)
+        end
+      end
     end
   end
 end

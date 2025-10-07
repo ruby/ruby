@@ -434,7 +434,7 @@ module Spec
 
       def _build(options = {})
         full_name = "bundler-#{@version}"
-        build_path = @context.tmp + full_name
+        build_path = (options[:build_path] || @context.tmp) + full_name
         bundler_path = build_path + "#{full_name}.gem"
 
         require "fileutils"

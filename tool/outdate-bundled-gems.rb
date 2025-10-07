@@ -115,7 +115,7 @@ srcdir = Removal.new(ARGV.shift)
 curdir = !srcdir.base || File.identical?(srcdir.base, ".") ? srcdir : Removal.new
 
 bundled = File.readlines("#{srcdir.base}gems/bundled_gems").
-            grep(/^(\w\S+)\s+\S+(?:\s+\S+\s+(\S+))?/) {$~.captures}.to_h rescue nil
+            grep(/^(\w[^\#\s]+)\s+[^\#\s]+(?:\s+[^\#\s]+\s+([^\#\s]+))?/) {$~.captures}.to_h rescue nil
 
 srcdir.glob(".bundle/gems/*/") do |dir|
   base = File.basename(dir)

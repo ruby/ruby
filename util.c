@@ -529,7 +529,7 @@ ruby_strdup(const char *str)
 char *
 ruby_getcwd(void)
 {
-    VALUE guard = rb_imemo_tmpbuf_auto_free_pointer();
+    VALUE guard = rb_imemo_tmpbuf_new();
     int size = 200;
     char *buf = xmalloc(size);
 

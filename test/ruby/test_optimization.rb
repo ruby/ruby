@@ -606,11 +606,11 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
 
   class Bug10557
-    def [](_)
+    def [](_, &)
       block_given?
     end
 
-    def []=(_, _)
+    def []=(_, _, &)
       block_given?
     end
   end
@@ -1256,6 +1256,9 @@ class TestRubyOptimization < Test::Unit::TestCase
       insn = iseq.disasm
       assert_match(/opt_new/, insn)
       assert_match(/OptNewFoo:.+@a=1, @b=2/, iseq.eval.inspect)
+      # clean up to avoid warnings
+      Object.send :remove_const, :OptNewFoo
+      Object.remove_method :optnew_foo if defined?(optnew_foo)
     end
     [
       'def optnew_foo(&) = OptNewFoo.new(&)',

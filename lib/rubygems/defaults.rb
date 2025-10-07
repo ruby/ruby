@@ -13,7 +13,7 @@ module Gem
   # An Array of the default sources that come with RubyGems
 
   def self.default_sources
-    %w[https://rubygems.org/]
+    @default_sources ||= %w[https://rubygems.org/]
   end
 
   ##

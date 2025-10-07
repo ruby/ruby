@@ -1,0 +1,5 @@
+# frozen_string_literal: false
+
+'foo' 'bar'
+
+'foo' 'bar' "baz#{bat}"

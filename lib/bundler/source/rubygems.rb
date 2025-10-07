@@ -168,12 +168,6 @@ module Bundler
           return nil # no post-install message
         end
 
-        if spec.remote
-          # Check for this spec from other sources
-          uris = [spec.remote, *remotes_for_spec(spec)].map(&:anonymized_uri).uniq
-          Installer.ambiguous_gems << [spec.name, *uris] if uris.length > 1
-        end
-
         path = fetch_gem_if_possible(spec, options[:previous_spec])
         raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
 
@@ -330,13 +324,6 @@ module Bundler
 
       def credless_remotes
         remotes.map(&method(:remove_auth))
-      end
-
-      def remotes_for_spec(spec)
-        specs.search_all(spec.name).inject([]) do |uris, s|
-          uris << s.remote if s.remote
-          uris
-        end
       end
 
       def cached_gem(spec)

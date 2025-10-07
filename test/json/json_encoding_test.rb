@@ -31,6 +31,14 @@ class JSONEncodingTest < Test::Unit::TestCase
     assert_equal @generated, JSON.generate(@utf_16_data, ascii_only: true)
   end
 
+  def test_generate_shared_string
+    # Ref: https://github.com/ruby/json/issues/859
+    s = "01234567890"
+    assert_equal '"234567890"', JSON.dump(s[2..-1])
+    s = '01234567890123456789"a"b"c"d"e"f"g"h'
+    assert_equal '"\"a\"b\"c\"d\"e\"f\"g\""', JSON.dump(s[20, 15])
+  end
+
   def test_unicode
     assert_equal '""', ''.to_json
     assert_equal '"\\b"', "\b".to_json
@@ -145,19 +153,11 @@ class JSONEncodingTest < Test::Unit::TestCase
   end
 
   def test_invalid_utf8_sequences
-    # Create strings with invalid UTF-8 sequences
     invalid_utf8 = "\xFF\xFF"
-
-    # Test that generating JSON with invalid UTF-8 raises an error
-    # Different JSON implementations may handle this differently,
-    # so we'll check if any exception is raised
-    begin
+    error = assert_raise(JSON::GeneratorError) do
       generate(invalid_utf8)
-      raise "Expected an exception when generating JSON with invalid UTF8"
-    rescue StandardError => e
-      assert true
-      assert_match(%r{source sequence is illegal/malformed utf-8}, e.message)
     end
+    assert_match(%r{source sequence is illegal/malformed utf-8}, error.message)
   end
 
   def test_surrogate_pair_handling

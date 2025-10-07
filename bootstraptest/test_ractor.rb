@@ -145,28 +145,47 @@ assert_equal '[:ok, :ok, :ok]', %q{
   }.map(&:value)
 }
 
-# Ractor.make_shareable issue for locals in proc [Bug #18023]
-assert_equal '[:a, :b, :c, :d, :e]', %q{
-  v1, v2, v3, v4, v5 = :a, :b, :c, :d, :e
-  closure = Ractor.current.instance_eval{ Proc.new { [v1, v2, v3, v4, v5] } }
-
-  Ractor.make_shareable(closure).call
+assert_equal "42", %q{
+  a = 42
+  Ractor.shareable_lambda{ a }.call
 }
 
 # Ractor.make_shareable issue for locals in proc [Bug #18023]
-assert_equal '[:a, :b, :c, :d, :e, :f, :g]', %q{
-  a = :a
-  closure = Ractor.current.instance_eval do
-    -> {
-      b, c, d = :b, :c, :d
-      -> {
-        e, f, g = :e, :f, :g
-        -> { [a, b, c, d, e, f, g] }
-      }.call
-    }.call
+assert_equal '[:a, :b, :c, :d, :e]', %q{
+  v1, v2, v3, v4, v5 = :a, :b, :c, :d, :e
+  closure = Proc.new { [v1, v2, v3, v4, v5] }
+  Ractor.shareable_proc(&closure).call
+}
+
+# Ractor::IsolationError cases
+assert_equal '3', %q{
+  ok = 0
+
+  begin
+    a = 1
+    Ractor.shareable_proc{a}
+    a = 2
+  rescue Ractor::IsolationError => e
+    ok += 1
   end
 
-  Ractor.make_shareable(closure).call
+  begin
+    cond = false
+    a = 1
+    a = 2 if cond
+    Ractor.shareable_proc{a}
+  rescue Ractor::IsolationError => e
+    ok += 1
+  end
+
+  begin
+    1.times{|i|
+      i = 2
+      Ractor.shareable_proc{i}
+    }
+  rescue Ractor::IsolationError => e
+    ok += 1
+  end
 }
 
 ###
@@ -415,7 +434,7 @@ assert_equal '{ok: 3}', %q{
   end
 
   3.times.map{Ractor.receive}.tally
-} unless yjit_enabled? || zjit_enabled? # YJIT: `[BUG] Bus Error at 0x000000010b7002d0` in jit_exec(), ZJIT hangs
+} unless yjit_enabled? # YJIT: `[BUG] Bus Error at 0x000000010b7002d0` in jit_exec()
 
 # unshareable object are copied
 assert_equal 'false', %q{
@@ -588,8 +607,8 @@ assert_equal 'true', %q{
   r.value[:frozen]
 }
 
-# Access to global-variables are prohibited
-assert_equal 'can not access global variables $gv from non-main Ractors', %q{
+# Access to global-variables are prohibited (read)
+assert_equal 'can not access global variable $gv from non-main Ractor', %q{
   $gv = 1
   r = Ractor.new do
     $gv
@@ -602,8 +621,8 @@ assert_equal 'can not access global variables $gv from non-main Ractors', %q{
   end
 }
 
-# Access to global-variables are prohibited
-assert_equal 'can not access global variables $gv from non-main Ractors', %q{
+# Access to global-variables are prohibited (write)
+assert_equal 'can not access global variable $gv from non-main Ractor', %q{
   r = Ractor.new do
     $gv = 1
   end
@@ -967,7 +986,7 @@ assert_equal 'can not access non-shareable objects in constant C::CONST by non-m
   end
   RUBY
 
-# Constant cache should care about non-sharable constants
+# Constant cache should care about non-shareable constants
 assert_equal "can not access non-shareable objects in constant Object::STR by non-main Ractor.", <<~'RUBY', frozen_string_literal: false
   STR = "hello"
   def str; STR; end
@@ -1137,41 +1156,17 @@ assert_equal 'true', %q{
   [a.frozen?, a[0].frozen?] == [true, false]
 }
 
-# Ractor.make_shareable(a_proc) makes a proc shareable.
+# Ractor.make_shareable(a_proc) is not supported now.
 assert_equal 'true', %q{
-  a = [1, [2, 3], {a: "4"}]
+  pr = Proc.new{}
 
-  pr = Ractor.current.instance_eval do
-    Proc.new do
-      a
-    end
+  begin
+    Ractor.make_shareable(pr)
+  rescue Ractor::Error
+    true
+  else
+    false
   end
-
-  Ractor.make_shareable(a) # referred value should be shareable
-  Ractor.make_shareable(pr)
-  Ractor.shareable?(pr)
-}
-
-# Ractor.make_shareable(a_proc) makes inner structure shareable and freezes it
-assert_equal 'true,true,true,true', %q{
-  class Proc
-    attr_reader :obj
-    def initialize
-      @obj = Object.new
-    end
-  end
-
-  pr = Ractor.current.instance_eval do
-    Proc.new {}
-  end
-
-  results = []
-  Ractor.make_shareable(pr)
-  results << Ractor.shareable?(pr)
-  results << pr.frozen?
-  results << Ractor.shareable?(pr.obj)
-  results << pr.obj.frozen?
-  results.map(&:to_s).join(',')
 }
 
 # Ractor.shareable?(recursive_objects)
@@ -1202,48 +1197,14 @@ assert_equal '[C, M]', %q{
   Ractor.make_shareable(ary = [C, M])
 }
 
-# Ractor.make_shareable with curried proc checks isolation of original proc
-assert_equal 'isolation error', %q{
-  a = Object.new
-  orig = proc { a }
-  curried = orig.curry
-
-  begin
-    Ractor.make_shareable(curried)
-  rescue Ractor::IsolationError
-    'isolation error'
-  else
-    'no error'
-  end
-}
-
 # define_method() can invoke different Ractor's proc if the proc is shareable.
 assert_equal '1', %q{
   class C
     a = 1
-    define_method "foo", Ractor.make_shareable(Proc.new{ a })
-    a = 2
+    define_method "foo", Ractor.shareable_proc{ a }
   end
 
   Ractor.new{ C.new.foo }.value
-}
-
-# Ractor.make_shareable(a_proc) makes a proc shareable.
-assert_equal 'can not make a Proc shareable because it accesses outer variables (a).', %q{
-  a = b = nil
-  pr = Ractor.current.instance_eval do
-    Proc.new do
-      c = b # assign to a is okay because c is block local variable
-      # reading b is okay
-      a = b # assign to a is not allowed #=> Ractor::Error
-    end
-  end
-
-  begin
-    Ractor.make_shareable(pr)
-  rescue => e
-    e.message
-  end
 }
 
 # Ractor.make_shareable(obj, copy: true) makes copied shareable object.
@@ -1455,49 +1416,21 @@ assert_equal "ok", %q{
       loop do
         10_000.times.map { Object.new }
         port << Time.now
+        Ractor.receive
       end
     end
   end
 
-  1_000.times { port.receive }
+  100.times {
+    workers.each do
+      port.receive
+    end
+    workers.each do |w|
+      w.send(nil)
+    end
+  }
   "ok"
 } if !yjit_enabled? && ENV['GITHUB_WORKFLOW'] != 'ModGC' # flaky
-
-assert_equal "ok", %q{
-  def foo(*); ->{ super }; end
-  begin
-    Ractor.make_shareable(foo)
-  rescue Ractor::IsolationError
-    "ok"
-  end
-}
-
-assert_equal "ok", %q{
-  def foo(**); ->{ super }; end
-  begin
-    Ractor.make_shareable(foo)
-  rescue Ractor::IsolationError
-    "ok"
-  end
-}
-
-assert_equal "ok", %q{
-  def foo(...); ->{ super }; end
-  begin
-    Ractor.make_shareable(foo)
-  rescue Ractor::IsolationError
-    "ok"
-  end
-}
-
-assert_equal "ok", %q{
-  def foo((x), (y)); ->{ super }; end
-  begin
-    Ractor.make_shareable(foo([], []))
-  rescue Ractor::IsolationError
-    "ok"
-  end
-}
 
 # check method cache invalidation
 assert_equal "ok", %q{
@@ -1563,6 +1496,33 @@ assert_equal 'true', %q{
 
   n = CS.inject(1){|r, c| r * c.foo} * LN
   rs.map{|r| r.value} == Array.new(RN){n}
+}
+
+# check method cache invalidation
+assert_equal 'true', %q{
+  class Foo
+    def hello = nil
+  end
+
+  r1 = Ractor.new do
+    1000.times do
+      class Foo
+        def hello = nil
+      end
+    end
+  end
+
+  r2 = Ractor.new do
+    1000.times do
+      o = Foo.new
+      o.hello
+    end
+  end
+
+  r1.value
+  r2.value
+
+  true
 }
 
 # check experimental warning
@@ -2292,18 +2252,55 @@ assert_equal '[["Only the successor ractor can take a value", 9], ["ok", 2]]', %
   }.tally.sort
 }
 
-# Ractor#take will warn for compatibility.
-# This method will be removed after 2025/09/01
-assert_equal "2", %q{
-  raise "remove Ractor#take and this test" if Time.now > Time.new(2025, 9, 2)
-  $VERBOSE = true
-  r = Ractor.new{42}
-  $msg = []
-  def Warning.warn(msg)
-    $msg << msg
+# Cause lots of inline CC misses.
+assert_equal 'ok', <<~'RUBY'
+  class A; def test; 1 + 1; end; end
+  class B; def test; 1 + 1; end; end
+  class C; def test; 1 + 1; end; end
+  class D; def test; 1 + 1; end; end
+  class E; def test; 1 + 1; end; end
+  class F; def test; 1 + 1; end; end
+  class G; def test; 1 + 1; end; end
+
+  objs = [A.new, B.new, C.new, D.new, E.new, F.new, G.new].freeze
+
+  def call_test(obj)
+    obj.test
   end
-  r.take
-  r.take
-  raise unless $msg.all?{/Ractor#take/ =~ it}
-  $msg.size
-}
+
+  ractors = 7.times.map do
+    Ractor.new(objs) do |objs|
+      objs = objs.shuffle
+      100_000.times do
+        objs.each do |o|
+          call_test(o)
+        end
+      end
+    end
+  end
+  ractors.each(&:join)
+  :ok
+RUBY
+
+# This test checks that we do not trigger a GC when we have malloc with Ractor
+# locks. We cannot trigger a GC with Ractor locks because GC requires VM lock
+# and Ractor barrier. If another Ractor is waiting on this Ractor lock, then it
+# will deadlock because the other Ractor will never join the barrier.
+#
+# Creating Ractor::Port requires locking the Ractor and inserting into an
+# st_table, which can call malloc.
+assert_equal 'ok', <<~'RUBY'
+  r = Ractor.new do
+    loop do
+      Ractor::Port.new
+    end
+  end
+
+  10.times do
+    10_000.times do
+      r.send(nil)
+    end
+    sleep(0.01)
+  end
+  :ok
+RUBY

@@ -44,7 +44,7 @@ calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
         }
         if (lineno) *lineno = ISEQ_BODY(iseq)->location.first_lineno;
 #ifdef USE_ISEQ_NODE_ID
-        if (node_id) *node_id = -1;
+        if (node_id) *node_id = ISEQ_BODY(iseq)->location.node_id;
 #endif
         return 1;
     }
@@ -400,7 +400,7 @@ location_path_m(VALUE self)
 static int
 location_node_id(rb_backtrace_location_t *loc)
 {
-    if (loc->iseq && loc->pc) {
+    if (loc->iseq) {
         return calc_node_id(loc->iseq, loc->pc);
     }
     return -1;
@@ -858,7 +858,7 @@ rb_backtrace_to_location_ary(VALUE self)
 VALUE
 rb_location_ary_to_backtrace(VALUE ary)
 {
-    if (!RB_TYPE_P(ary, T_ARRAY) || !rb_frame_info_p(RARRAY_AREF(ary, 0))) {
+    if (!RB_TYPE_P(ary, T_ARRAY) || RARRAY_LEN(ary) == 0 || !rb_frame_info_p(RARRAY_AREF(ary, 0))) {
         return Qfalse;
     }
 
@@ -1745,14 +1745,14 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
     end_cfp = RUBY_VM_NEXT_CONTROL_FRAME(end_cfp);
 
     for (i=0; i<limit && cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
-        if (VM_FRAME_RUBYFRAME_P(cfp) && cfp->pc != 0) {
+        if (VM_FRAME_RUBYFRAME_P_UNCHECKED(cfp) && cfp->pc != 0) {
             if (start > 0) {
                 start--;
                 continue;
             }
 
             /* record frame info */
-            cme = rb_vm_frame_method_entry(cfp);
+            cme = rb_vm_frame_method_entry_unchecked(cfp);
             if (cme && cme->def->type == VM_METHOD_TYPE_ISEQ) {
                 buff[i] = (VALUE)cme;
             }
@@ -1761,22 +1761,31 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
             }
 
             if (lines) {
-                // The topmost frame may not have an updated PC because the JIT
-                // may not have set one.  The JIT compiler will update the PC
-                // before entering a new function (so that `caller` will work),
-                // so only the topmost frame could possibly have an out of date PC
-                if (cfp == top && cfp->jit_return) {
+                const VALUE *pc = cfp->pc;
+                VALUE *iseq_encoded = ISEQ_BODY(cfp->iseq)->iseq_encoded;
+                VALUE *pc_end = iseq_encoded + ISEQ_BODY(cfp->iseq)->iseq_size;
+
+                // The topmost frame may have an invalid PC because the JIT
+                // may leave it uninitialized for speed. JIT code must update the PC
+                // before entering a non-leaf method (so that `caller` will work),
+                // so only the topmost frame could possibly have an out-of-date PC.
+                // ZJIT doesn't set `cfp->jit_return`, so it's not a reliable signal.
+                // TODO(zjit): lightweight frames potentially makes more than
+                //             the top most frame invalid.
+                //
+                // Avoid passing invalid PC to calc_lineno() to avoid crashing.
+                if (cfp == top && (pc < iseq_encoded || pc > pc_end)) {
                     lines[i] = 0;
                 }
                 else {
-                    lines[i] = calc_lineno(cfp->iseq, cfp->pc);
+                    lines[i] = calc_lineno(cfp->iseq, pc);
                 }
             }
 
             i++;
         }
         else {
-            cme = rb_vm_frame_method_entry(cfp);
+            cme = rb_vm_frame_method_entry_unchecked(cfp);
             if (cme && cme->def->type == VM_METHOD_TYPE_CFUNC) {
                 if (start > 0) {
                     start--;

@@ -56,6 +56,7 @@ static VALUE eDSAError;
  *
  * If called without arguments, creates a new instance with no key components
  * set. They can be set individually by #set_pqg and #set_key.
+ * This form is not compatible with OpenSSL 3.0 or later.
  *
  * If called with a String, tries to parse as DER or PEM encoding of a \DSA key.
  * See also OpenSSL::PKey.read which can parse keys of any kinds.
@@ -96,10 +97,15 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     /* The DSA.new(size, generator) form is handled by lib/openssl/pkey.rb */
     rb_scan_args(argc, argv, "02", &arg, &pass);
     if (argc == 0) {
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
+        rb_raise(rb_eArgError, "OpenSSL::PKey::DSA.new cannot be called " \
+                 "without arguments; pkeys are immutable with OpenSSL 3.0");
+#else
         dsa = DSA_new();
         if (!dsa)
             ossl_raise(eDSAError, "DSA_new");
         goto legacy;
+#endif
     }
 
     pass = ossl_pem_passwd_value(pass);

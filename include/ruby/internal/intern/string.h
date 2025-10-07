@@ -591,10 +591,9 @@ void rb_must_asciicompat(VALUE obj);
 VALUE rb_str_dup(VALUE str);
 
 /**
- * I guess there  is no use case  of this function in  extension libraries, but
- * this is  a routine identical  to rb_str_dup(),  except it always  creates an
- * instance of ::rb_cString regardless of the given object's class.  This makes
- * the most sense when the passed string is formerly hidden by rb_obj_hide().
+ * Like rb_str_dup(), but always create an instance of  ::rb_cString
+ * regardless of the given object's class. This makes the most sense
+ * when the passed string is formerly hidden by rb_obj_hide().
  *
  * @param[in]  str  A string, possibly hidden.
  * @return     A duplicated new instance of ::rb_cString.
@@ -970,8 +969,8 @@ st_index_t rb_str_hash(VALUE str);
  *
  * @param[in]  str1  A string.
  * @param[in]  str2  Another string.
- * @retval     1     They have identical contents, length, and encodings.
- * @retval     0     Otherwise.
+ * @retval     0     They have identical contents, length, and encodings.
+ * @retval     1     Otherwise.
  * @pre        Both   objects   must  not  be  any   arbitrary  objects  except
  *             ::RString.
  *

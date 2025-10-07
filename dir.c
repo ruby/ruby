@@ -1480,7 +1480,7 @@ rb_dir_getwd_ospath(void)
     VALUE cwd;
     VALUE path_guard;
 
-    path_guard = rb_imemo_tmpbuf_auto_free_pointer();
+    path_guard = rb_imemo_tmpbuf_new();
     path = ruby_getcwd();
     rb_imemo_tmpbuf_set_ptr(path_guard, path);
 #ifdef __APPLE__

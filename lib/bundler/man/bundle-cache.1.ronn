@@ -15,9 +15,6 @@ use the gems in the cache in preference to the ones on `rubygems.org`.
 
 ## OPTIONS
 
-* `--all`:
-  Include all sources (including path and git).
-
 * `--all-platforms`:
   Include gems for all platforms present in the lockfile, not only the current one.
 
@@ -30,23 +27,13 @@ use the gems in the cache in preference to the ones on `rubygems.org`.
 * `--no-install`:
   Don't install the gems, only update the cache.
 
-* `--no-prune`:
-  Don't remove stale gems from the cache.
-
-* `--path=PATH`:
-  Specify a different path than the system default ($BUNDLE_PATH or $GEM_HOME).
-
 * `--quiet`:
   Only output warnings and errors.
-
-* `--frozen`:
-  Do not allow the Gemfile.lock to be updated after this bundle cache operation's install.
 
 ## GIT AND PATH GEMS
 
 The `bundle cache` command can also package `:git` and `:path` dependencies
-besides .gem files. This needs to be explicitly enabled via the `--all` option.
-Once used, the `--all` option will be remembered.
+besides .gem files. This can be disabled setting `cache_all` to false.
 
 ## SUPPORT FOR MULTIPLE PLATFORMS
 

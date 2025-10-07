@@ -1,3 +1,5 @@
+//! Optimized bitset implementation.
+
 type Entry = u128;
 
 const ENTRY_NUM_BITS: usize = Entry::BITS as usize;
@@ -65,40 +67,40 @@ mod tests {
     #[should_panic]
     fn get_over_capacity_panics() {
         let set = BitSet::with_capacity(0);
-        assert_eq!(set.get(0usize), false);
+        assert!(!set.get(0usize));
     }
 
     #[test]
     fn with_capacity_defaults_to_zero() {
         let set = BitSet::with_capacity(4);
-        assert_eq!(set.get(0usize), false);
-        assert_eq!(set.get(1usize), false);
-        assert_eq!(set.get(2usize), false);
-        assert_eq!(set.get(3usize), false);
+        assert!(!set.get(0usize));
+        assert!(!set.get(1usize));
+        assert!(!set.get(2usize));
+        assert!(!set.get(3usize));
     }
 
     #[test]
     fn insert_sets_bit() {
         let mut set = BitSet::with_capacity(4);
-        assert_eq!(set.insert(1usize), true);
-        assert_eq!(set.get(1usize), true);
+        assert!(set.insert(1usize));
+        assert!(set.get(1usize));
     }
 
     #[test]
     fn insert_with_set_bit_returns_false() {
         let mut set = BitSet::with_capacity(4);
-        assert_eq!(set.insert(1usize), true);
-        assert_eq!(set.insert(1usize), false);
+        assert!(set.insert(1usize));
+        assert!(!set.insert(1usize));
     }
 
     #[test]
     fn insert_all_sets_all_bits() {
         let mut set = BitSet::with_capacity(4);
         set.insert_all();
-        assert_eq!(set.get(0usize), true);
-        assert_eq!(set.get(1usize), true);
-        assert_eq!(set.get(2usize), true);
-        assert_eq!(set.get(3usize), true);
+        assert!(set.get(0usize));
+        assert!(set.get(1usize));
+        assert!(set.get(2usize));
+        assert!(set.get(3usize));
     }
 
     #[test]
@@ -117,8 +119,8 @@ mod tests {
         right.insert(1usize);
         right.insert(2usize);
         left.intersect_with(&right);
-        assert_eq!(left.get(0usize), false);
-        assert_eq!(left.get(1usize), true);
-        assert_eq!(left.get(2usize), false);
+        assert!(!left.get(0usize));
+        assert!(left.get(1usize));
+        assert!(!left.get(2usize));
     }
 }

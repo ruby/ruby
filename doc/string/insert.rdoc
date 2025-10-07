@@ -1,0 +1,16 @@
+Inserts the given +other_string+ into +self+; returns +self+.
+
+If the given +index+ is non-negative, inserts +other_string+ at offset +index+:
+
+  'foo'.insert(0, 'bar')       # => "barfoo"
+  'foo'.insert(1, 'bar')       # => "fbaroo"
+  'foo'.insert(3, 'bar')       # => "foobar"
+  'тест'.insert(2, 'bar')      # => "теbarст"  # Characters, not bytes.
+  'こんにちは'.insert(2, 'bar') # => "こんbarにちは"
+
+If the +index+ is negative, counts backward from the end of +self+
+and inserts +other_string+ _after_ the offset:
+
+  'foo'.insert(-2, 'bar') # => "fobaro"
+
+Related: see {Modifying}[rdoc-ref:String@Modifying].

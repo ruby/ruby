@@ -161,9 +161,9 @@ ossl_pkcs12_s_create(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-ossl_pkey_new_i(VALUE arg)
+ossl_pkey_wrap_i(VALUE arg)
 {
-    return ossl_pkey_new((EVP_PKEY *)arg);
+    return ossl_pkey_wrap((EVP_PKEY *)arg);
 }
 
 static VALUE
@@ -211,7 +211,7 @@ ossl_pkcs12_initialize(int argc, VALUE *argv, VALUE self)
     if(!PKCS12_parse(pkcs, passphrase, &key, &x509, &x509s))
 	ossl_raise(ePKCS12Error, "PKCS12_parse");
     if (key) {
-	pkey = rb_protect(ossl_pkey_new_i, (VALUE)key, &st);
+	pkey = rb_protect(ossl_pkey_wrap_i, (VALUE)key, &st);
 	if (st) goto err;
     }
     if (x509) {

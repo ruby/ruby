@@ -91,7 +91,6 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
 
       DEFAULT_CERT_STORE = OpenSSL::X509::Store.new # :nodoc:
       DEFAULT_CERT_STORE.set_default_paths
-      DEFAULT_CERT_STORE.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
 
       # A callback invoked when DH parameters are required for ephemeral DH key
       # exchange.

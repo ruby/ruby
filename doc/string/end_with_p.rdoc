@@ -1,11 +1,10 @@
-Returns whether +self+ ends with any of the given +strings+.
+Returns whether +self+ ends with any of the given +strings+:
 
-Returns +true+ if any given string matches the end, +false+ otherwise:
+  'foo'.end_with?('oo')         # => true
+  'foo'.end_with?('bar', 'oo')  # => true
+  'foo'.end_with?('bar', 'baz') # => false
+  'foo'.end_with?('')           # => true
+  'тест'.end_with?('т')         # => true
+  'こんにちは'.end_with?('は')   # => true
 
-  'hello'.end_with?('ello')               #=> true
-  'hello'.end_with?('heaven', 'ello')     #=> true
-  'hello'.end_with?('heaven', 'paradise') #=> false
-  'тест'.end_with?('т')                   # => true
-  'こんにちは'.end_with?('は')              # => true
-
-Related: String#start_with?.
+Related: see {Querying}[rdoc-ref:String@Querying].

@@ -9,7 +9,7 @@ module Bundler
       :metadata_source
 
     def global_rubygems_source
-      @global_rubygems_source ||= rubygems_aggregate_class.new("allow_local" => true)
+      @global_rubygems_source ||= source_class.new("allow_local" => true)
     end
 
     def initialize
@@ -21,17 +21,7 @@ module Bundler
       @rubygems_sources       = []
       @metadata_source        = Source::Metadata.new
 
-      @merged_gem_lockfile_sections = false
       @local_mode = true
-    end
-
-    def merged_gem_lockfile_sections?
-      @merged_gem_lockfile_sections
-    end
-
-    def merged_gem_lockfile_sections!(replacement_source)
-      @merged_gem_lockfile_sections = true
-      @global_rubygems_source = replacement_source
     end
 
     def aggregate_global_source?
@@ -90,10 +80,6 @@ module Bundler
       @rubygems_sources
     end
 
-    def rubygems_remotes
-      rubygems_sources.flat_map(&:remotes).uniq
-    end
-
     def all_sources
       path_sources + git_sources + plugin_sources + rubygems_sources + [metadata_source]
     end
@@ -115,11 +101,7 @@ module Bundler
     end
 
     def lock_rubygems_sources
-      if merged_gem_lockfile_sections?
-        [combine_rubygems_sources]
-      else
-        rubygems_sources.sort_by(&:identifier)
-      end
+      rubygems_sources.sort_by(&:identifier)
     end
 
     # Returns true if there are changes
@@ -129,16 +111,7 @@ module Bundler
       @rubygems_sources, @path_sources, @git_sources, @plugin_sources = map_sources(replacement_sources)
       @global_rubygems_source = global_replacement_source(replacement_sources)
 
-      different_sources?(lock_sources, replacement_sources)
-    end
-
-    # Returns true if there are changes
-    def expired_sources?(replacement_sources)
-      return false if replacement_sources.empty?
-
-      lock_sources = dup_with_replaced_sources(replacement_sources).lock_sources
-
-      different_sources?(lock_sources, replacement_sources)
+      !equivalent_sources?(lock_sources, replacement_sources)
     end
 
     def prefer_local!
@@ -164,12 +137,6 @@ module Bundler
     end
 
     private
-
-    def dup_with_replaced_sources(replacement_sources)
-      new_source_list = dup
-      new_source_list.replace_sources!(replacement_sources)
-      new_source_list
-    end
 
     def map_sources(replacement_sources)
       rubygems = @rubygems_sources.map do |source|
@@ -224,11 +191,7 @@ module Bundler
       end
     end
 
-    def different_sources?(lock_sources, replacement_sources)
-      !equivalent_sources?(lock_sources, replacement_sources)
-    end
-
-    def rubygems_aggregate_class
+    def source_class
       Source::Rubygems
     end
 
@@ -245,10 +208,6 @@ module Bundler
       when Plugin::API::Source  then plugin_sources
       else raise ArgumentError, "Invalid source: #{source.inspect}"
       end
-    end
-
-    def combine_rubygems_sources
-      Source::Rubygems.new("remotes" => rubygems_remotes)
     end
 
     def warn_on_git_protocol(source)

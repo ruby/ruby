@@ -30,6 +30,8 @@ class Gem::Package::TarReader
     nil
   end
 
+  attr_reader :io # :nodoc:
+
   ##
   # Creates a new tar file reader on +io+ which needs to respond to #pos,
   # #eof?, #read, #getc and #pos=

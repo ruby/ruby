@@ -1,7 +1,6 @@
 require_relative "../thor"
 require_relative "group"
 
-require "yaml"
 require "digest/sha2"
 require "pathname"
 
@@ -195,6 +194,7 @@ private
   def thor_yaml
     @thor_yaml ||= begin
       yaml_file = File.join(thor_root, "thor.yml")
+      require "yaml"
       yaml = YAML.load_file(yaml_file) if File.exist?(yaml_file)
       yaml || {}
     end

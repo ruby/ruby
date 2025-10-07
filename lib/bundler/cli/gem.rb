@@ -382,7 +382,6 @@ module Bundler
     def ask_and_set_linter
       return if skip?(:linter)
       linter_template = options[:linter] || Bundler.settings["gem.linter"]
-      linter_template = deprecated_rubocop_option if linter_template.nil?
 
       if linter_template.to_s.empty?
         Bundler.ui.info "\nDo you want to add a code linter and formatter to your gem? " \
@@ -413,27 +412,6 @@ module Bundler
       end
 
       linter_template
-    end
-
-    def deprecated_rubocop_option
-      if !options[:rubocop].nil?
-        if options[:rubocop]
-          Bundler::SharedHelpers.major_deprecation 2,
-            "--rubocop is deprecated, use --linter=rubocop",
-            removed_message: "--rubocop has been removed, use --linter=rubocop"
-          "rubocop"
-        else
-          Bundler::SharedHelpers.major_deprecation 2,
-            "--no-rubocop is deprecated, use --linter",
-            removed_message: "--no-rubocop has been removed, use --linter"
-          false
-        end
-      elsif !Bundler.settings["gem.rubocop"].nil?
-        Bundler::SharedHelpers.major_deprecation 2,
-          "config gem.rubocop is deprecated; we've updated your config to use gem.linter instead",
-          removed_message: "config gem.rubocop has been removed; we've updated your config to use gem.linter instead"
-        Bundler.settings["gem.rubocop"] ? "rubocop" : false
-      end
     end
 
     def bundler_dependency_version

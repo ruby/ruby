@@ -191,8 +191,8 @@ ossl_x509store_set_vfy_cb(VALUE self, VALUE cb)
 
     GetX509Store(self, store);
     rb_iv_set(self, "@verify_callback", cb);
-    // We don't need to trigger a write barrier because `rb_iv_set` did it.
     X509_STORE_set_ex_data(store, store_ex_verify_cb_idx, (void *)cb);
+    RB_OBJ_WRITTEN(self, Qundef, cb);
 
     return cb;
 }
@@ -611,6 +611,7 @@ ossl_x509stctx_verify(VALUE self)
     GetX509StCtx(self, ctx);
     VALUE cb = rb_iv_get(self, "@verify_callback");
     X509_STORE_CTX_set_ex_data(ctx, stctx_ex_verify_cb_idx, (void *)cb);
+    RB_OBJ_WRITTEN(self, Qundef, cb);
 
     switch (X509_verify_cert(ctx)) {
       case 1:
@@ -735,10 +736,14 @@ static VALUE
 ossl_x509stctx_get_curr_cert(VALUE self)
 {
     X509_STORE_CTX *ctx;
+    X509 *x509;
 
     GetX509StCtx(self, ctx);
+    x509 = X509_STORE_CTX_get_current_cert(ctx);
+    if (!x509)
+        return Qnil;
 
-    return ossl_x509_new(X509_STORE_CTX_get_current_cert(ctx));
+    return ossl_x509_new(x509);
 }
 
 /*

@@ -182,6 +182,10 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     end
   end
 
+  def test_auth_tag_error_inheritance
+    assert_equal OpenSSL::Cipher::CipherError, OpenSSL::Cipher::AuthTagError.superclass
+  end
+
   def test_authenticated
     cipher = OpenSSL::Cipher.new('aes-128-gcm')
     assert_predicate(cipher, :authenticated?)
@@ -212,7 +216,8 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct.length, auth_tag: tag[0, 8], auth_data: aad)
     assert_equal pt, cipher.update(ct) << cipher.final
 
-    # wrong tag is rejected
+    # wrong tag is rejected - in CCM, authentication happens during update, but
+    # we consider this a general CipherError since update failures can have various causes
     tag2 = tag.dup
     tag2.setbyte(-1, (tag2.getbyte(-1) + 1) & 0xff)
     cipher = new_decryptor("aes-128-ccm", **kwargs, ccm_data_len: ct.length, auth_tag: tag2, auth_data: aad)
@@ -265,19 +270,19 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     tag2.setbyte(-1, (tag2.getbyte(-1) + 1) & 0xff)
     cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_tag: tag2, auth_data: aad)
     cipher.update(ct)
-    assert_raise(OpenSSL::Cipher::CipherError) { cipher.final }
+    assert_raise(OpenSSL::Cipher::AuthTagError) { cipher.final }
 
     # wrong aad is rejected
     aad2 = aad[0..-2] << aad[-1].succ
     cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_tag: tag, auth_data: aad2)
     cipher.update(ct)
-    assert_raise(OpenSSL::Cipher::CipherError) { cipher.final }
+    assert_raise(OpenSSL::Cipher::AuthTagError) { cipher.final }
 
     # wrong ciphertext is rejected
     ct2 = ct[0..-2] << ct[-1].succ
     cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_tag: tag, auth_data: aad)
     cipher.update(ct2)
-    assert_raise(OpenSSL::Cipher::CipherError) { cipher.final }
+    assert_raise(OpenSSL::Cipher::AuthTagError) { cipher.final }
   end
 
   def test_aes_gcm_variable_iv_len

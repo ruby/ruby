@@ -29,7 +29,7 @@ module Bundler
     end
 
     def dependencies
-      specs.first.runtime_dependencies.map {|d| [d, platform] }
+      (materialized_spec || specs.first).runtime_dependencies.map {|d| [d, platform] }
     end
 
     def materialized_spec

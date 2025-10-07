@@ -1,4 +1,4 @@
-#!ruby -an
+#!ruby -alnF\s+|#.*
 BEGIN {
   require 'fileutils'
   require_relative 'lib/colorize'
@@ -21,7 +21,6 @@ BEGIN {
 n, v, u, r = $F
 
 next unless n
-next if n =~ /^#/
 next if bundled_gems&.all? {|pat| !File.fnmatch?(pat, n)}
 
 unless File.exist?("#{n}/.git")
@@ -41,9 +40,8 @@ else
 end
 
 checkout = %w"git -c advice.detachedHead=false checkout"
-print %[checking out #{color.notice(c)} (v=#{color.info(v)}]
-print %[, r=#{color.info(r)}] if r
-puts ") ..."
+info = %[, r=#{color.info(r)}] if r
+puts "checking out #{color.notice(c)} (v=#{color.info(v)}#{info}) ..."
 unless system(*checkout, c, "--", chdir: n)
   abort if r or !system(*checkout, v, "--", chdir: n)
 end

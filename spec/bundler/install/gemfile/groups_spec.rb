@@ -113,13 +113,6 @@ RSpec.describe "bundle install with groups" do
         expect(the_bundle).not_to include_gems "activesupport 2.3.5", groups: [:default]
       end
 
-      it "remembers previous exclusion with `--without`" do
-        bundle "install --without emo"
-        expect(the_bundle).not_to include_gems "activesupport 2.3.5"
-        bundle :install
-        expect(the_bundle).not_to include_gems "activesupport 2.3.5"
-      end
-
       it "does not say it installed gems from the excluded group" do
         bundle "config set --local without emo"
         bundle :install
@@ -159,20 +152,6 @@ RSpec.describe "bundle install with groups" do
         ENV["BUNDLE_WITHOUT"] = nil
       end
 
-      it "clears --without when passed an empty list" do
-        bundle "install --without emo"
-
-        bundle "install --without ''"
-        expect(the_bundle).to include_gems "activesupport 2.3.5"
-      end
-
-      it "doesn't clear without when nothing is passed" do
-        bundle "install --without emo"
-
-        bundle :install
-        expect(the_bundle).not_to include_gems "activesupport 2.3.5"
-      end
-
       it "does not install gems from the optional group" do
         bundle :install
         expect(the_bundle).not_to include_gems "thin 1.0"
@@ -184,42 +163,11 @@ RSpec.describe "bundle install with groups" do
         expect(the_bundle).to include_gems "thin 1.0"
       end
 
-      it "installs gems from the previously requested group" do
-        bundle "install --with debugging"
-        expect(the_bundle).to include_gems "thin 1.0"
-        bundle :install
-        expect(the_bundle).to include_gems "thin 1.0"
-      end
-
       it "installs gems from the optional groups requested with BUNDLE_WITH" do
         ENV["BUNDLE_WITH"] = "debugging"
         bundle :install
         expect(the_bundle).to include_gems "thin 1.0"
         ENV["BUNDLE_WITH"] = nil
-      end
-
-      it "clears --with when passed an empty list" do
-        bundle "install --with debugging"
-        bundle "install --with ''"
-        expect(the_bundle).not_to include_gems "thin 1.0"
-      end
-
-      it "removes groups from without when passed at --with" do
-        bundle "config set --local without emo"
-        bundle "install --with emo"
-        expect(the_bundle).to include_gems "activesupport 2.3.5"
-      end
-
-      it "removes groups from with when passed at --without" do
-        bundle "config set --local with debugging"
-        bundle "install --without debugging", raise_on_error: false
-        expect(the_bundle).not_to include_gem "thin 1.0"
-      end
-
-      it "errors out when passing a group to with and without via CLI flags" do
-        bundle "install --with emo debugging --without emo", raise_on_error: false
-        expect(last_command).to be_failure
-        expect(err).to include("The offending groups are: emo")
       end
 
       it "allows the BUNDLE_WITH setting to override BUNDLE_WITHOUT" do
@@ -233,12 +181,6 @@ RSpec.describe "bundle install with groups" do
 
         bundle :install
         expect(the_bundle).to include_gem "thin 1.0"
-      end
-
-      it "can add and remove a group at the same time" do
-        bundle "install --with debugging --without emo"
-        expect(the_bundle).to include_gems "thin 1.0"
-        expect(the_bundle).not_to include_gems "activesupport 2.3.5"
       end
 
       it "has no effect when listing a not optional group in with" do
@@ -365,7 +307,7 @@ RSpec.describe "bundle install with groups" do
     end
   end
 
-  describe "when locked and installed with `without` option" do
+  describe "when locked and installed with `without` setting" do
     before(:each) do
       build_repo2
 
@@ -382,7 +324,7 @@ RSpec.describe "bundle install with groups" do
       G
     end
 
-    it "uses the correct versions even if --without was used on the original" do
+    it "uses versions from excluded gems in a machine without the without configuration" do
       expect(the_bundle).to include_gems "myrack 0.9.1"
       expect(the_bundle).not_to include_gems "myrack_middleware 1.0"
       simulate_new_machine

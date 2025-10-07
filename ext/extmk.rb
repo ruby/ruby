@@ -43,6 +43,7 @@ require 'rbconfig'
 
 $topdir = "."
 $top_srcdir = srcdir
+$extmk = true
 inplace = File.identical?($top_srcdir, $topdir)
 
 $" << "mkmf.rb"

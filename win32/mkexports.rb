@@ -155,7 +155,7 @@ class Exports::Cygwin < Exports
     re = /\s(?:(T)|[[:upper:]])\s#{symprefix}((?!#{PrivateNames}).*)$/
     objdump(objs) do |l|
       next if /@.*@/ =~ l
-      yield $2, !$1 if re =~ l
+      yield $2.strip, !$1 if re =~ l
     end
   end
 end

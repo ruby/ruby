@@ -78,6 +78,7 @@
 #include "internal/class.h"
 #include "internal/cont.h"
 #include "internal/error.h"
+#include "internal/eval.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/io.h"
@@ -441,7 +442,7 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
         th->keeping_mutexes = mutex->next_mutex;
 
         // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
-
+        VM_ASSERT(mutex->fiber);
         const char *error_message = rb_mutex_unlock_th(mutex, th, mutex->fiber);
         if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
     }
@@ -526,6 +527,15 @@ thread_cleanup_func(void *th_ptr, int atfork)
     }
 
     rb_native_mutex_destroy(&th->interrupt_lock);
+}
+
+void
+rb_thread_free_native_thread(void *th_ptr)
+{
+    rb_thread_t *th = th_ptr;
+
+    native_thread_destroy_atfork(th->nt);
+    th->nt = NULL;
 }
 
 static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *);
@@ -840,7 +850,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
         th->invoke_type = thread_invoke_type_ractor_proc;
         th->ractor = params->g;
         th->ractor->threads.main = th;
-        th->invoke_arg.proc.proc = rb_proc_isolate_bang(params->proc);
+        th->invoke_arg.proc.proc = rb_proc_isolate_bang(params->proc, Qnil);
         th->invoke_arg.proc.args = INT2FIX(RARRAY_LENINT(params->args));
         th->invoke_arg.proc.kw_splat = rb_keyword_given_p();
         rb_ractor_send_parameters(ec, params->g, params->args);
@@ -2710,18 +2720,11 @@ rb_threadptr_ready(rb_thread_t *th)
 static VALUE
 rb_threadptr_raise(rb_thread_t *target_th, int argc, VALUE *argv)
 {
-    VALUE exc;
-
     if (rb_threadptr_dead(target_th)) {
         return Qnil;
     }
 
-    if (argc == 0) {
-        exc = rb_exc_new(rb_eRuntimeError, 0, 0);
-    }
-    else {
-        exc = rb_make_exception(argc, argv);
-    }
+    VALUE exception = rb_exception_setup(argc, argv);
 
     /* making an exception object can switch thread,
        so we need to check thread deadness again */
@@ -2729,9 +2732,9 @@ rb_threadptr_raise(rb_thread_t *target_th, int argc, VALUE *argv)
         return Qnil;
     }
 
-    rb_ec_setup_exception(GET_EC(), exc, Qundef);
-    rb_threadptr_pending_interrupt_enque(target_th, exc);
+    rb_threadptr_pending_interrupt_enque(target_th, exception);
     rb_threadptr_interrupt(target_th);
+
     return Qnil;
 }
 

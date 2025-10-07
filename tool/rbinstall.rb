@@ -1021,7 +1021,6 @@ install?(:local, :comm, :man) do
   prepare "manpages", mandir, ([] | mdocs.collect {|mdoc| mdoc[/\d+$/]}).sort.collect {|sec| "man#{sec}"}
 
   mantype, suffix, compress = Compressors.for($mantype)
-  mandir = File.join(mandir, "man")
   has_goruby = File.exist?(goruby_install_name+exeext)
   require File.join(srcdir, "tool/mdoc2man.rb") if /\Adoc\b/ !~ mantype
   mdocs.each do |mdoc|
@@ -1031,8 +1030,8 @@ install?(:local, :comm, :man) do
       next unless has_goruby
     end
 
-    destdir = mandir + (section = mdoc[/\d+$/])
-    destname = ruby_install_name.sub(/ruby/, base.chomp(".#{section}"))
+    destdir = File.join(mandir, "man" + (section = mdoc[/\d+$/]))
+    destname = $script_installer.transform(base.chomp(".#{section}"))
     destfile = File.join(destdir, "#{destname}.#{section}")
 
     if /\Adoc\b/ =~ mantype or !mdoc_file?(mdoc)

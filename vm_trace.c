@@ -35,6 +35,7 @@
 #include "vm_core.h"
 #include "ruby/ractor.h"
 #include "yjit.h"
+#include "zjit.h"
 
 #include "builtin.h"
 
@@ -71,7 +72,7 @@ rb_hook_list_mark(rb_hook_list_t *hooks)
 }
 
 void
-rb_hook_list_mark_and_update(rb_hook_list_t *hooks)
+rb_hook_list_mark_and_move(rb_hook_list_t *hooks)
 {
     rb_event_hook_t *hook = hooks->hooks;
 
@@ -135,6 +136,7 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
         // Do this after event flags updates so other ractors see updated vm events
         // when they wake up.
         rb_yjit_tracing_invalidate_all();
+        rb_zjit_tracing_invalidate_all();
     }
 }
 
@@ -1285,6 +1287,7 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     }
 
     rb_yjit_tracing_invalidate_all();
+    rb_zjit_tracing_invalidate_all();
 
     ruby_vm_event_local_num++;
 

@@ -2,12 +2,8 @@
 
 RSpec.describe "bundle install with git sources" do
   describe "when floating on main" do
-    before :each do
-      build_git "foo" do |s|
-        s.executables = "foobar"
-      end
-
-      install_gemfile <<-G
+    let(:base_gemfile) do
+      <<-G
         source "https://gem.repo1"
         git "#{lib_path("foo-1.0")}" do
           gem 'foo'
@@ -15,7 +11,16 @@ RSpec.describe "bundle install with git sources" do
       G
     end
 
+    let(:install_base_gemfile) do
+      build_git "foo" do |s|
+        s.executables = "foobar"
+      end
+
+      install_gemfile base_gemfile
+    end
+
     it "fetches gems" do
+      install_base_gemfile
       expect(the_bundle).to include_gems("foo 1.0")
 
       run <<-RUBY
@@ -26,18 +31,58 @@ RSpec.describe "bundle install with git sources" do
       expect(out).to eq("WIN")
     end
 
+    it "does not (yet?) enforce CHECKSUMS" do
+      build_git "foo"
+      revision = revision_for(lib_path("foo-1.0"))
+
+      bundle "config set lockfile_checksums true"
+      gemfile base_gemfile
+
+      lockfile <<~L
+        GIT
+          remote: #{lib_path("foo-1.0")}
+          revision: #{revision}
+          specs:
+            foo (1.0)
+
+        GEM
+          remote: https://gem.repo1/
+          specs:
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          foo!
+
+        CHECKSUMS
+          foo (1.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "config set frozen true"
+
+      bundle "install"
+      expect(the_bundle).to include_gems("foo 1.0")
+    end
+
     it "caches the git repo" do
+      install_base_gemfile
       expect(Dir["#{default_bundle_path}/cache/bundler/git/foo-1.0-*"]).to have_attributes size: 1
     end
 
     it "does not write to cache on bundler/setup" do
+      install_base_gemfile
       FileUtils.rm_r(default_cache_path)
       ruby "require 'bundler/setup'"
       expect(default_cache_path).not_to exist
     end
 
     it "caches the git repo globally and properly uses the cached repo on the next invocation" do
-      pristine_system_gems :bundler
+      install_base_gemfile
+      pristine_system_gems
       bundle "config set global_gem_cache true"
       bundle :install
       expect(Dir["#{home}/.bundle/cache/git/foo-1.0-*"]).to have_attributes size: 1
@@ -48,6 +93,7 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "caches the evaluated gemspec" do
+      install_base_gemfile
       git = update_git "foo" do |s|
         s.executables = ["foobar"] # we added this the first time, so keep it now
         s.files = ["bin/foobar"] # updating git nukes the files list
@@ -66,6 +112,7 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "does not update the git source implicitly" do
+      install_base_gemfile
       update_git "foo"
 
       install_gemfile bundled_app2("Gemfile"), <<-G, dir: bundled_app2
@@ -84,6 +131,7 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "sets up git gem executables on the path" do
+      install_base_gemfile
       bundle "exec foobar"
       expect(out).to eq("1.0")
     end
@@ -136,7 +184,7 @@ RSpec.describe "bundle install with git sources" do
 
     it "still works after moving the application directory" do
       bundle "config set --local path vendor/bundle"
-      bundle "install"
+      install_base_gemfile
 
       FileUtils.mv bundled_app, tmp("bundled_app.bck")
 
@@ -145,7 +193,7 @@ RSpec.describe "bundle install with git sources" do
 
     it "can still install after moving the application directory" do
       bundle "config set --local path vendor/bundle"
-      bundle "install"
+      install_base_gemfile
 
       FileUtils.mv bundled_app, tmp("bundled_app.bck")
 
@@ -1241,7 +1289,7 @@ RSpec.describe "bundle install with git sources" do
         gem "valim", "= 1.0", :git => "#{lib_path("valim")}"
       G
 
-      pristine_system_gems :bundler
+      pristine_system_gems
 
       bundle "config set --local deployment true"
       bundle :install
@@ -1628,7 +1676,7 @@ In Gemfile:
       G
       bundle "config set --global path vendor/bundle"
       bundle :install
-      pristine_system_gems :bundler
+      pristine_system_gems
 
       bundle "install", env: { "PATH" => "" }
       expect(out).to_not include("You need to install git to be able to use gems from git repositories.")

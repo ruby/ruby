@@ -20,6 +20,7 @@ class JSONInRactorTest < Test::Unit::TestCase
 
   def test_generate
     pid = fork do
+      Warning[:experimental] = false
       r = Ractor.new do
         json = JSON.generate({
           'a' => 2,
@@ -42,7 +43,7 @@ class JSONInRactorTest < Test::Unit::TestCase
       else
         puts "Expected:"
         puts expected_json
-        puts "Acutual:"
+        puts "Actual:"
         puts actual_json
         puts
         exit 1

@@ -437,7 +437,7 @@ These keyword-value pairs specify encoding options:
   - <tt>:xml: nil</tt> (default): No handling for XML entities.
   - <tt>:xml: :text</tt>: Treat source text as XML;
     replace each undefined character
-    with its upper-case hexdecimal numeric character reference,
+    with its upper-case hexadecimal numeric character reference,
     except that:
 
     - <tt>&</tt> is replaced with <tt>&amp;</tt>.
@@ -446,7 +446,7 @@ These keyword-value pairs specify encoding options:
 
   - <tt>:xml: :attr</tt>: Treat source text as XML attribute value;
     replace each undefined character
-    with its upper-case hexdecimal numeric character reference,
+    with its upper-case hexadecimal numeric character reference,
     except that:
 
     - The replacement string <tt>r</tt> is double-quoted (<tt>"r"</tt>).

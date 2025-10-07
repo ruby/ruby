@@ -47,7 +47,7 @@ port.receive # get a message to the port. Only the creator Ractor can receive fr
 #=> 42
 ```
 
-Ractors have its own deafult port and `Ractor#send`, `Ractor.receive` will use it.
+Ractors have its own default port and `Ractor#send`, `Ractor.receive` will use it.
 
 ### Copy & Move semantics to send messages
 
@@ -201,7 +201,7 @@ You can wait multiple Ractor port's receiving.
 The return value of `Ractor.select()` is `[port, msg]` where `port` is a ready port and `msg` is received message.
 
 To make convenient, `Ractor.select` can also accept Ractors to wait the termination of Ractors.
-The return value of `Ractor.select()` is `[r, msg]` where `r` is a terminated Ractor and `msg` is the value of Ractor's blcok.
+The return value of `Ractor.select()` is `[r, msg]` where `r` is a terminated Ractor and `msg` is the value of Ractor's block.
 
 Wait for a single ractor (same as `Ractor#value`):
 
@@ -359,7 +359,7 @@ The following objects are shareable.
 
 Implementation: Now shareable objects (`RVALUE`) have `FL_SHAREABLE` flag. This flag can be added lazily.
 
-To make shareable objects, `Ractor.make_shareable(obj)` method is provided. In this case, try to make sharaeble by freezing `obj` and recursively traversable objects. This method accepts `copy:` keyword (default value is false).`Ractor.make_shareable(obj, copy: true)` tries to make a deep copy of `obj` and make the copied object shareable.
+To make shareable objects, `Ractor.make_shareable(obj)` method is provided. In this case, try to make shareable by freezing `obj` and recursively traversable objects. This method accepts `copy:` keyword (default value is false).`Ractor.make_shareable(obj, copy: true)` tries to make a deep copy of `obj` and make the copied object shareable.
 
 ## Language changes to isolate unshareable objects between Ractors
 
@@ -384,7 +384,7 @@ rescue Ractor::RemoteError => e
 end
 ```
 
-Note that some special global variables, such as `$stdin`, `$stdout` and `$stderr` are Ractor-lcoal. See [[Bug #17268]](https://bugs.ruby-lang.org/issues/17268) for more details.
+Note that some special global variables, such as `$stdin`, `$stdout` and `$stderr` are Ractor-local. See [[Bug #17268]](https://bugs.ruby-lang.org/issues/17268) for more details.
 
 ### Instance variables of shareable objects
 

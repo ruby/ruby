@@ -501,13 +501,10 @@ eom
           assert = :assert_match
         end
 
-        ex = m = nil
-        EnvUtil.with_default_internal(of: expected) do
-          ex = assert_raise(exception, msg || proc {"Exception(#{exception}) with message matches to #{expected.inspect}"}) do
-            yield
-          end
-          m = ex.message
+        ex = assert_raise(exception, msg || proc {"Exception(#{exception}) with message matches to #{expected.inspect}"}) do
+          yield
         end
+        m = ex.message
         msg = message(msg, "") {"Expected Exception(#{exception}) was raised, but the message doesn't match"}
 
         if assert == :assert_equal
@@ -690,17 +687,15 @@ eom
         assert_warning(*args) {$VERBOSE = false; yield}
       end
 
-      def assert_deprecated_warning(mesg = /deprecated/)
+      def assert_deprecated_warning(mesg = /deprecated/, &block)
         assert_warning(mesg) do
-          Warning[:deprecated] = true if Warning.respond_to?(:[]=)
-          yield
+          EnvUtil.deprecation_warning(&block)
         end
       end
 
-      def assert_deprecated_warn(mesg = /deprecated/)
+      def assert_deprecated_warn(mesg = /deprecated/, &block)
         assert_warn(mesg) do
-          Warning[:deprecated] = true if Warning.respond_to?(:[]=)
-          yield
+          EnvUtil.deprecation_warning(&block)
         end
       end
 

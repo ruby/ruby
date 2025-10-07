@@ -35,6 +35,8 @@
 #include "iseq.h"
 #include "symbol.h" // This includes a macro for a more performant rb_id2sym.
 #include "yjit.h"
+#include "insns.inc"
+#include "zjit.h"
 #include "ruby/st.h"
 #include "ruby/vm.h"
 #include "vm_core.h"
@@ -45,8 +47,6 @@
 #include "ractor_core.h"
 #include "vm_sync.h"
 #include "shape.h"
-#include "insns.inc"
-#include "zjit.h"
 
 #include "builtin.h"
 
@@ -95,6 +95,48 @@ rb_vm_search_cf_from_ep(const rb_execution_context_t *ec, const rb_control_frame
     }
 }
 
+static const VALUE *
+VM_EP_RUBY_LEP(const rb_execution_context_t *ec, const rb_control_frame_t *current_cfp)
+{
+    const VALUE *ep = current_cfp->ep;
+    const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
+    const rb_control_frame_t *cfp = NULL, *checkpoint_cfp = current_cfp;
+
+    while (!VM_ENV_LOCAL_P(ep) || VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
+        while (!VM_ENV_LOCAL_P(ep)) {
+            ep = VM_ENV_PREV_EP(ep);
+        }
+        while (VM_ENV_FLAGS(ep, VM_FRAME_FLAG_CFRAME) != 0) {
+            if (!cfp) {
+                cfp = rb_vm_search_cf_from_ep(ec, checkpoint_cfp, ep);
+                VM_ASSERT(cfp, "rb_vm_search_cf_from_ep should return a valid cfp for the ep");
+                VM_ASSERT(cfp->ep == ep);
+            }
+            if (!cfp) {
+                return NULL;
+            }
+            VM_ASSERT(cfp->ep);
+            VM_ASSERT(cfp->ep == ep);
+
+            if (VM_FRAME_FINISHED_P(cfp)) {
+                rb_bug("CFUNC frame should not FINISHED");
+            }
+            cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+            if (cfp >= eocfp) {
+                return NULL;
+            }
+            VM_ASSERT(cfp, "CFUNC should have a valid previous control frame");
+            ep = cfp->ep;
+            if (!ep) {
+                return NULL;
+            }
+        }
+        checkpoint_cfp = cfp;
+        cfp = NULL;
+    }
+    return ep;
+}
+
 const VALUE *
 rb_vm_ep_local_ep(const VALUE *ep)
 {
@@ -118,7 +160,15 @@ PUREFUNC(static inline VALUE VM_CF_BLOCK_HANDLER(const rb_control_frame_t * cons
 static inline VALUE
 VM_CF_BLOCK_HANDLER(const rb_control_frame_t * const cfp)
 {
-    const VALUE *ep = VM_CF_LEP(cfp);
+    const VALUE *ep;
+    if (VM_ENV_NAMESPACED_P(cfp->ep)) {
+        VM_ASSERT(VM_ENV_LOCAL_P(cfp->ep));
+        /* Never set black_handler for VM_FRAME_MAGIC_TOP or VM_FRAME_MAGIC_CLASS
+         * and the specval is used for namespace (rb_namespace_t) in these case
+         */
+        return VM_BLOCK_HANDLER_NONE;
+    }
+    ep = VM_CF_LEP(cfp);
     return VM_ENV_BLOCK_HANDLER(ep);
 }
 
@@ -445,7 +495,7 @@ jit_compile(rb_execution_context_t *ec)
 
         // At call-threshold, compile the ISEQ with ZJIT.
         if (body->jit_entry_calls == rb_zjit_call_threshold) {
-            rb_zjit_compile_iseq(iseq, ec, false);
+            rb_zjit_compile_iseq(iseq, false);
         }
     }
 #endif
@@ -493,8 +543,25 @@ jit_compile_exception(rb_execution_context_t *ec)
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
-    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
+#if USE_ZJIT
+    if (body->jit_exception == NULL && rb_zjit_enabled_p) {
+        body->jit_exception_calls++;
+
+        // At profile-threshold, rewrite some of the YARV instructions
+        // to zjit_* instructions to profile these instructions.
+        if (body->jit_exception_calls == rb_zjit_profile_threshold) {
+            rb_zjit_profile_enable(iseq);
+        }
+
+        // At call-threshold, compile the ISEQ with ZJIT.
+        if (body->jit_exception_calls == rb_zjit_call_threshold) {
+            rb_zjit_compile_iseq(iseq, true);
+        }
+    }
+#endif
+
 #if USE_YJIT
+    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
     if (body->jit_exception == NULL && rb_yjit_enabled_p) {
         body->jit_exception_calls++;
         if (body->jit_exception_calls == rb_yjit_call_threshold) {
@@ -577,7 +644,7 @@ rb_current_ec_set(rb_execution_context_t *ec)
 }
 
 
-#if defined(__arm64__) || defined(__aarch64__)
+#ifdef RB_THREAD_CURRENT_EC_NOINLINE
 rb_execution_context_t *
 rb_current_ec(void)
 {
@@ -607,7 +674,7 @@ rb_serial_t ruby_vm_global_cvar_state = 1;
 
 static const struct rb_callcache vm_empty_cc = {
     .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
-    .klass = Qfalse,
+    .klass = Qundef,
     .cme_  = NULL,
     .call_ = vm_call_general,
     .aux_  = {
@@ -617,7 +684,7 @@ static const struct rb_callcache vm_empty_cc = {
 
 static const struct rb_callcache vm_empty_cc_for_super = {
     .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
-    .klass = Qfalse,
+    .klass = Qundef,
     .cme_  = NULL,
     .call_ = vm_call_super_method,
     .aux_  = {
@@ -761,15 +828,16 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 /* control stack frame */
 
 static void
-vm_set_top_stack(rb_execution_context_t *ec, const rb_iseq_t *iseq)
+vm_set_top_stack(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_namespace_t *ns)
 {
     if (ISEQ_BODY(iseq)->type != ISEQ_TYPE_TOP) {
         rb_raise(rb_eTypeError, "Not a toplevel InstructionSequence");
     }
 
     /* for return */
-    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH, rb_ec_thread_ptr(ec)->top_self,
-                  VM_BLOCK_HANDLER_NONE,
+    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
+                  rb_ec_thread_ptr(ec)->top_self,
+                  GC_GUARDED_PTR(ns),
                   (VALUE)vm_cref_new_toplevel(ec), /* cref or me */
                   ISEQ_BODY(iseq)->iseq_encoded, ec->cfp->sp,
                   ISEQ_BODY(iseq)->local_table_size, ISEQ_BODY(iseq)->stack_max);
@@ -976,6 +1044,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
         }
     }
     else {
+        VM_ASSERT(VM_ENV_LOCAL_P(ep));
         VALUE block_handler = VM_ENV_BLOCK_HANDLER(ep);
 
         if (block_handler != VM_BLOCK_HANDLER_NONE) {
@@ -1044,7 +1113,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     // Invalidate JIT code that assumes cfp->ep == vm_base_ptr(cfp).
     if (env->iseq) {
         rb_yjit_invalidate_ep_is_bp(env->iseq);
-        rb_zjit_invalidate_ep_is_bp(env->iseq);
+        rb_zjit_invalidate_no_ep_escape(env->iseq);
     }
 
     return (VALUE)env;
@@ -1163,7 +1232,6 @@ vm_proc_create_from_captured(VALUE klass,
 {
     VALUE procval = rb_proc_alloc(klass);
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
-    const rb_namespace_t *ns = rb_current_namespace();
 
     VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), captured->ep));
 
@@ -1173,7 +1241,6 @@ vm_proc_create_from_captured(VALUE klass,
     rb_vm_block_ep_update(procval, &proc->block, captured->ep);
 
     vm_block_type_set(&proc->block, block_type);
-    proc->ns = ns;
     proc->is_from_method = is_from_method;
     proc->is_lambda = is_lambda;
 
@@ -1205,12 +1272,10 @@ proc_create(VALUE klass, const struct rb_block *block, int8_t is_from_method, in
 {
     VALUE procval = rb_proc_alloc(klass);
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
-    const rb_namespace_t *ns = rb_current_namespace();
 
     VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), vm_block_ep(block)));
     rb_vm_block_copy(procval, &proc->block, block);
     vm_block_type_set(&proc->block, block->type);
-    proc->ns = ns;
     proc->is_from_method = is_from_method;
     proc->is_lambda = is_lambda;
 
@@ -1308,12 +1373,22 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
         for (int i=RARRAY_LENINT(read_only_variables)-1; i>=0; i--) {
             ID id = NUM2ID(RARRAY_AREF(read_only_variables, i));
 
-            for (unsigned int j=0; j<ISEQ_BODY(src_env->iseq)->local_table_size; j++) {
-                if (id == ISEQ_BODY(src_env->iseq)->local_table[j]) {
+            const struct rb_iseq_constant_body *body = ISEQ_BODY(src_env->iseq);
+            for (unsigned int j=0; j<body->local_table_size; j++) {
+                if (id == body->local_table[j]) {
+                    // check reassignment
+                    if (body->lvar_states[j] == lvar_reassigned) {
+                        VALUE name = rb_id2str(id);
+                        VALUE msg = rb_sprintf("cannot make a shareable Proc because "
+                                               "the outer variable '%" PRIsVALUE "' may be reassigned.", name);
+                        rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, msg));
+                    }
+
+                    // check shareable
                     VALUE v = src_env->env[j];
                     if (!rb_ractor_shareable_p(v)) {
                         VALUE name = rb_id2str(id);
-                        VALUE msg = rb_sprintf("can not make shareable Proc because it can refer"
+                        VALUE msg = rb_sprintf("cannot make a shareable Proc because it can refer"
                                                " unshareable object %+" PRIsVALUE " from ", v);
                         if (name)
                             rb_str_catf(msg, "variable '%" PRIsVALUE "'", name);
@@ -1386,12 +1461,18 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, c
 }
 
 VALUE
-rb_proc_isolate_bang(VALUE self)
+rb_proc_isolate_bang(VALUE self, VALUE replace_self)
 {
     const rb_iseq_t *iseq = vm_proc_iseq(self);
 
     if (iseq) {
         rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
+
+        if (!UNDEF_P(replace_self)) {
+            VM_ASSERT(rb_ractor_shareable_p(replace_self));
+            RB_OBJ_WRITE(self, &proc->block.as.captured.self, replace_self);
+        }
+
         if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
 
         if (ISEQ_BODY(iseq)->outer_variables) {
@@ -1410,17 +1491,22 @@ VALUE
 rb_proc_isolate(VALUE self)
 {
     VALUE dst = rb_proc_dup(self);
-    rb_proc_isolate_bang(dst);
+    rb_proc_isolate_bang(dst, Qundef);
     return dst;
 }
 
 VALUE
-rb_proc_ractor_make_shareable(VALUE self)
+rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
 {
     const rb_iseq_t *iseq = vm_proc_iseq(self);
 
     if (iseq) {
         rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
+
+        if (!UNDEF_P(replace_self)) {
+            RB_OBJ_WRITE(self, &proc->block.as.captured.self, replace_self);
+        }
+
         if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
 
         if (!rb_ractor_shareable_p(vm_block_self(&proc->block))) {
@@ -1441,6 +1527,8 @@ rb_proc_ractor_make_shareable(VALUE self)
     }
 
     rb_obj_freeze(self);
+    FL_SET_RAW(self, RUBY_FL_SHAREABLE);
+
     return self;
 }
 
@@ -1541,6 +1629,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     rb_node_init(RNODE(&tmp_node), NODE_SCOPE);
     tmp_node.nd_tbl = dyns;
     tmp_node.nd_body = 0;
+    tmp_node.nd_parent = NULL;
     tmp_node.nd_args = 0;
 
     VALUE ast_value = rb_ruby_ast_new(RNODE(&tmp_node));
@@ -2869,24 +2958,11 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
 /* misc */
 
 VALUE
-rb_iseq_eval(const rb_iseq_t *iseq)
+rb_iseq_eval(const rb_iseq_t *iseq, const rb_namespace_t *ns)
 {
     rb_execution_context_t *ec = GET_EC();
     VALUE val;
-    vm_set_top_stack(ec, iseq);
-    // TODO: set the namespace frame like require/load
-    val = vm_exec(ec);
-    return val;
-}
-
-VALUE
-rb_iseq_eval_with_refinement(const rb_iseq_t *iseq, VALUE mod)
-{
-    rb_execution_context_t *ec = GET_EC();
-    VALUE val;
-    vm_set_top_stack(ec, iseq);
-    rb_vm_using_module(mod);
-    // TODO: set the namespace frame like require/load
+    vm_set_top_stack(ec, iseq, ns);
     val = vm_exec(ec);
     return val;
 }
@@ -2897,7 +2973,6 @@ rb_iseq_eval_main(const rb_iseq_t *iseq)
     rb_execution_context_t *ec = GET_EC();
     VALUE val;
     vm_set_main_stack(ec, iseq);
-    // TODO: set the namespace frame like require/load
     val = vm_exec(ec);
     return val;
 }
@@ -2937,10 +3012,11 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
     rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *reg_cfp = ec->cfp;
     const rb_iseq_t *iseq = rb_iseq_new(Qnil, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
+    const rb_namespace_t *ns = rb_current_namespace();
     VALUE val;
 
     vm_push_frame(ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
-                  recv, block_handler,
+                  recv, GC_GUARDED_PTR(ns),
                   (VALUE)vm_cref_new_toplevel(ec), /* cref or me */
                   0, reg_cfp->sp, 0, 0);
 
@@ -2950,9 +3026,11 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
     return val;
 }
 
+/* namespace */
+
 VALUE
-rb_vm_call_cfunc2(VALUE recv, VALUE (*func)(VALUE, VALUE), VALUE arg1, VALUE arg2,
-                 VALUE block_handler, VALUE filename)
+rb_vm_call_cfunc_in_namespace(VALUE recv, VALUE (*func)(VALUE, VALUE), VALUE arg1, VALUE arg2,
+                              VALUE filename, const rb_namespace_t *ns)
 {
     rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *reg_cfp = ec->cfp;
@@ -2960,7 +3038,7 @@ rb_vm_call_cfunc2(VALUE recv, VALUE (*func)(VALUE, VALUE), VALUE arg1, VALUE arg
     VALUE val;
 
     vm_push_frame(ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
-                  recv, block_handler,
+                  recv, GC_GUARDED_PTR(ns),
                   (VALUE)vm_cref_new_toplevel(ec), /* cref or me */
                   0, reg_cfp->sp, 0, 0);
 
@@ -2968,6 +3046,95 @@ rb_vm_call_cfunc2(VALUE recv, VALUE (*func)(VALUE, VALUE), VALUE arg1, VALUE arg
 
     rb_vm_pop_frame(ec);
     return val;
+}
+
+void
+rb_vm_frame_flag_set_ns_require(const rb_execution_context_t *ec)
+{
+    VM_ASSERT(rb_namespace_available());
+    VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_NS_REQUIRE);
+}
+
+static const rb_namespace_t *
+current_namespace_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
+{
+    rb_callable_method_entry_t *cme;
+    const rb_namespace_t *ns;
+    const VALUE *lep = VM_EP_RUBY_LEP(ec, cfp);
+    VM_ASSERT(lep);
+    VM_ASSERT(rb_namespace_available());
+
+    if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_METHOD)) {
+        cme = check_method_entry(lep[VM_ENV_DATA_INDEX_ME_CREF], TRUE);
+        VM_ASSERT(cme);
+        VM_ASSERT(cme->def);
+        return cme->def->ns;
+    }
+    else if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_TOP) || VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_CLASS)) {
+        VM_ASSERT(VM_ENV_LOCAL_P(lep));
+        return VM_ENV_NAMESPACE(lep);
+    }
+    else if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_DUMMY)) {
+        // No valid local ep found (just after process boot?)
+        // return the root namespace (the only valid namespace) until the main is initialized
+        ns = rb_main_namespace();
+        if (ns)
+            return ns;
+        return rb_root_namespace();
+    }
+    else {
+        rb_bug("BUG: Local ep without cme/namespace, flags: %08lX", (unsigned long)lep[VM_ENV_DATA_INDEX_FLAGS]);
+    }
+    UNREACHABLE_RETURN(0);
+}
+
+const rb_namespace_t *
+rb_vm_current_namespace(const rb_execution_context_t *ec)
+{
+    VM_ASSERT(rb_namespace_available());
+    return current_namespace_on_cfp(ec, ec->cfp);
+}
+
+static const rb_control_frame_t *
+find_loader_control_frame(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, const rb_control_frame_t *end_cfp)
+{
+    while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
+        if (!VM_ENV_FRAME_TYPE_P(cfp->ep, VM_FRAME_MAGIC_CFUNC))
+            break;
+        if (!NAMESPACE_ROOT_P(current_namespace_on_cfp(ec, cfp)))
+            break;
+        cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
+    VM_ASSERT(RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp));
+    return cfp;
+}
+
+const rb_namespace_t *
+rb_vm_loading_namespace(const rb_execution_context_t *ec)
+{
+    const rb_control_frame_t *cfp, *current_cfp, *end_cfp;
+
+    if (!rb_namespace_available() || !ec)
+        return rb_root_namespace();
+
+    cfp = ec->cfp;
+    current_cfp = cfp;
+    end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
+
+    while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
+        if (VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_NS_REQUIRE)) {
+            if (RTEST(cfp->self) && NAMESPACE_OBJ_P(cfp->self)) {
+                // Namespace#require, #require_relative, #load
+                return rb_get_namespace_t(cfp->self);
+            }
+            // Kernel#require, #require_relative, #load
+            cfp = find_loader_control_frame(ec, cfp, end_cfp);
+            return current_namespace_on_cfp(ec, cfp);
+        }
+        cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
+    // no require/load with explicit namespaces.
+    return current_namespace_on_cfp(ec, current_cfp);
 }
 
 /* vm */
@@ -2980,21 +3147,12 @@ rb_vm_update_references(void *ptr)
 
         vm->self = rb_gc_location(vm->self);
         vm->mark_object_ary = rb_gc_location(vm->mark_object_ary);
-        vm->load_path = rb_gc_location(vm->load_path);
-        vm->load_path_snapshot = rb_gc_location(vm->load_path_snapshot);
-
-        if (vm->load_path_check_cache) {
-            vm->load_path_check_cache = rb_gc_location(vm->load_path_check_cache);
-        }
-
-        vm->expanded_load_path = rb_gc_location(vm->expanded_load_path);
-        vm->loaded_features = rb_gc_location(vm->loaded_features);
-        vm->loaded_features_snapshot = rb_gc_location(vm->loaded_features_snapshot);
-        vm->loaded_features_realpaths = rb_gc_location(vm->loaded_features_realpaths);
-        vm->loaded_features_realpath_map = rb_gc_location(vm->loaded_features_realpath_map);
-        vm->top_self = rb_gc_location(vm->top_self);
-        vm->require_stack = rb_gc_location(vm->require_stack);
         vm->orig_progname = rb_gc_location(vm->orig_progname);
+
+        if (vm->root_namespace)
+            rb_namespace_gc_update_references(vm->root_namespace);
+        if (vm->main_namespace)
+            rb_namespace_gc_update_references(vm->main_namespace);
 
         rb_gc_update_values(RUBY_NSIG, vm->trap_list.cmd);
 
@@ -3067,28 +3225,17 @@ rb_vm_mark(void *ptr)
 
         rb_gc_mark_movable(vm->self);
 
+        if (vm->root_namespace) {
+            rb_namespace_entry_mark(vm->root_namespace);
+        }
         if (vm->main_namespace) {
-            rb_namespace_entry_mark((void *)vm->main_namespace);
+            rb_namespace_entry_mark(vm->main_namespace);
         }
 
         rb_gc_mark_movable(vm->mark_object_ary);
-        rb_gc_mark_movable(vm->load_path);
-        rb_gc_mark_movable(vm->load_path_snapshot);
-        rb_gc_mark_movable(vm->load_path_check_cache);
-        rb_gc_mark_movable(vm->expanded_load_path);
-        rb_gc_mark_movable(vm->loaded_features);
-        rb_gc_mark_movable(vm->loaded_features_snapshot);
-        rb_gc_mark_movable(vm->loaded_features_realpaths);
-        rb_gc_mark_movable(vm->loaded_features_realpath_map);
-        rb_gc_mark_movable(vm->require_stack);
-        rb_gc_mark_movable(vm->top_self);
         rb_gc_mark_movable(vm->orig_progname);
         rb_gc_mark_movable(vm->coverages);
         rb_gc_mark_movable(vm->me2counter);
-
-        if (vm->loading_table) {
-            rb_mark_tbl(vm->loading_table);
-        }
 
         rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
 
@@ -3124,14 +3271,6 @@ rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE cls,
     rb_vm_register_global_object(exc);
 }
 
-static int
-free_loading_table_entry(st_data_t key, st_data_t value, st_data_t arg)
-{
-    xfree((char *)key);
-    return ST_DELETE;
-}
-
-void rb_free_loaded_features_index(rb_vm_t *vm);
 void rb_objspace_free_objects(void *objspace);
 
 int
@@ -3141,19 +3280,18 @@ ruby_vm_destruct(rb_vm_t *vm)
 
     if (vm) {
         rb_thread_t *th = vm->ractor.main_thread;
-        VALUE *stack = th->ec->vm_stack;
+
         if (rb_free_at_exit) {
             rb_free_encoded_insn_data();
             rb_free_global_enc_table();
             rb_free_loaded_builtin_table();
+            rb_free_global_symbol_table();
 
             rb_free_shared_fiber_pool();
-            rb_free_static_symid_str();
             rb_free_transcoder_table();
             rb_free_vm_opt_tables();
             rb_free_warning();
             rb_free_rb_global_tbl();
-            rb_free_loaded_features_index(vm);
 
             rb_id_table_free(vm->negative_cme_table);
             st_free_table(vm->overloaded_cme_table);
@@ -3168,8 +3306,7 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_id_table_free(vm->constant_cache);
             set_free_table(vm->unused_block_warning_table);
 
-            xfree(th->nt);
-            th->nt = NULL;
+            rb_thread_free_native_thread(th);
 
 #ifndef HAVE_SETPROCTITLE
             ruby_free_proctitle();
@@ -3184,11 +3321,6 @@ ruby_vm_destruct(rb_vm_t *vm)
 
         rb_vm_living_threads_init(vm);
         ruby_vm_run_at_exit_hooks(vm);
-        if (vm->loading_table) {
-            st_foreach(vm->loading_table, free_loading_table_entry, 0);
-            st_free_table(vm->loading_table);
-            vm->loading_table = 0;
-        }
         if (vm->ci_table) {
             st_free_table(vm->ci_table);
             vm->ci_table = NULL;
@@ -3210,11 +3342,8 @@ ruby_vm_destruct(rb_vm_t *vm)
                 rb_objspace_free_objects(objspace);
                 rb_free_generic_fields_tbl_();
                 rb_free_default_rand_key();
-                if (th && vm->fork_gen == 0) {
-                    /* If we have forked, main_thread may not be the initial thread */
-                    xfree(stack);
-                    ruby_mimfree(th);
-                }
+
+                ruby_mimfree(th);
             }
             rb_objspace_free(objspace);
         }
@@ -3288,8 +3417,6 @@ vm_memsize(const void *ptr)
 
     return (
         sizeof(rb_vm_t) +
-        rb_st_memsize(vm->loaded_features_index) +
-        rb_st_memsize(vm->loading_table) +
         rb_vm_memsize_postponed_job_queue() +
         rb_vm_memsize_workqueue(&vm->workqueue) +
         vm_memsize_at_exit_list(vm->at_exit) +
@@ -3441,6 +3568,9 @@ rb_execution_context_update(rb_execution_context_t *ec)
     }
 
     ec->storage = rb_gc_location(ec->storage);
+
+    ec->gen_fields_cache.obj = rb_gc_location(ec->gen_fields_cache.obj);
+    ec->gen_fields_cache.fields_obj = rb_gc_location(ec->gen_fields_cache.fields_obj);
 }
 
 static enum rb_id_table_iterator_result
@@ -3505,6 +3635,9 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     rb_gc_mark(ec->private_const_reference);
 
     rb_gc_mark_movable(ec->storage);
+
+    rb_gc_mark_weak((VALUE *)&ec->gen_fields_cache.obj);
+    rb_gc_mark_weak((VALUE *)&ec->gen_fields_cache.fields_obj);
 }
 
 void rb_fiber_mark_self(rb_fiber_t *fib);
@@ -3552,8 +3685,6 @@ thread_mark(void *ptr)
     rb_gc_mark(th->pending_interrupt_mask_stack);
     rb_gc_mark(th->top_self);
     rb_gc_mark(th->top_wrapper);
-    rb_gc_mark(th->namespaces);
-    if (NAMESPACE_USER_P(th->ns)) rb_namespace_entry_mark(th->ns);
     if (th->root_fiber) rb_fiber_mark_self(th->root_fiber);
 
     RUBY_ASSERT(th->ec == rb_fiberptr_get_ec(th->ec->fiber_ptr));
@@ -3680,6 +3811,8 @@ rb_ec_clear_vm_stack(rb_execution_context_t *ec)
 static void
 th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 {
+    const rb_namespace_t *ns = rb_current_namespace();
+
     th->self = self;
 
     rb_threadptr_root_fiber_setup(th);
@@ -3690,7 +3823,9 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 
     if (self == 0) {
         size_t size = vm->default_params.thread_vm_stack_size / sizeof(VALUE);
-        rb_ec_initialize_vm_stack(th->ec, ALLOC_N(VALUE, size), size);
+        VALUE *stack = ALLOC_N(VALUE, size);
+        rb_ec_initialize_vm_stack(th->ec, stack, size);
+        rb_thread_malloc_stack_set(th, stack);
     }
     else {
         VM_ASSERT(th->ec->cfp == NULL);
@@ -3701,9 +3836,12 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->status = THREAD_RUNNABLE;
     th->last_status = Qnil;
     th->top_wrapper = 0;
-    th->top_self = vm->top_self; // 0 while self == 0
-    th->namespaces = 0;
-    th->ns = 0;
+    if (ns->top_self) {
+        th->top_self = ns->top_self;
+    }
+    else {
+        th->top_self = 0;
+    }
     th->value = Qundef;
 
     th->ec->errinfo = Qnil;
@@ -3733,16 +3871,10 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 VALUE
 rb_thread_alloc(VALUE klass)
 {
-    rb_namespace_t *ns;
-    rb_execution_context_t *ec = GET_EC();
     VALUE self = thread_alloc(klass);
     rb_thread_t *target_th = rb_thread_ptr(self);
     target_th->ractor = GET_RACTOR();
     th_init(target_th, self, target_th->vm = GET_VM());
-    if ((ns = rb_ec_thread_ptr(ec)->ns) == 0) {
-        ns = rb_main_namespace();
-    }
-    target_th->ns = ns;
     return self;
 }
 
@@ -4289,8 +4421,6 @@ Init_VM(void)
         th->vm = vm;
         th->top_wrapper = 0;
         th->top_self = rb_vm_top_self();
-        th->namespaces = 0;
-        th->ns = 0;
 
         rb_vm_register_global_object((VALUE)iseq);
         th->ec->cfp->iseq = iseq;
@@ -4505,18 +4635,24 @@ Init_vm_objects(void)
 
     /* initialize mark object array, hash */
     vm->mark_object_ary = pin_array_list_new(Qnil);
-    vm->loading_table = st_init_strtable();
     vm->ci_table = st_init_table(&vm_ci_hashtype);
     vm->cc_refinement_table = rb_set_init_numtable();
 }
+
+#if USE_ZJIT
+extern VALUE rb_zjit_option_enabled_p(rb_execution_context_t *ec, VALUE self);
+#else
+static VALUE rb_zjit_option_enabled_p(rb_execution_context_t *ec, VALUE self) { return Qfalse; }
+#endif
+
+// Whether JIT is enabled or not, we need to load/undef `#with_jit` for other builtins.
+#include "jit_hook.rbinc"
+#include "jit_undef.rbinc"
 
 // Stub for builtin function when not building YJIT units
 #if !USE_YJIT
 void Init_builtin_yjit(void) {}
 #endif
-
-// Whether YJIT is enabled or not, we load yjit_hook.rb to remove Kernel#with_yjit.
-#include "yjit_hook.rbinc"
 
 // Stub for builtin function when not building ZJIT units
 #if !USE_ZJIT
@@ -4534,17 +4670,20 @@ main_to_s(VALUE obj)
 VALUE
 rb_vm_top_self(void)
 {
-    return GET_VM()->top_self;
+    const rb_namespace_t *ns = rb_current_namespace();
+    VM_ASSERT(ns);
+    VM_ASSERT(ns->top_self);
+    return ns->top_self;
 }
 
 void
 Init_top_self(void)
 {
     rb_vm_t *vm = GET_VM();
-
-    vm->top_self = rb_obj_alloc(rb_cObject);
-    rb_define_singleton_method(rb_vm_top_self(), "to_s", main_to_s, 0);
-    rb_define_alias(rb_singleton_class(rb_vm_top_self()), "inspect", "to_s");
+    vm->root_namespace = (rb_namespace_t *)rb_root_namespace();
+    vm->root_namespace->top_self = rb_obj_alloc(rb_cObject);
+    rb_define_singleton_method(vm->root_namespace->top_self, "to_s", main_to_s, 0);
+    rb_define_alias(rb_singleton_class(vm->root_namespace->top_self), "inspect", "to_s");
 }
 
 VALUE *

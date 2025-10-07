@@ -880,21 +880,20 @@ class TestHash < Test::Unit::TestCase
     assert_equal(quote1, eval(quote1).inspect)
     assert_equal(quote2, eval(quote2).inspect)
     assert_equal(quote3, eval(quote3).inspect)
-    begin
-      verbose_bak, $VERBOSE = $VERBOSE, nil
-      enc = Encoding.default_external
-      Encoding.default_external = Encoding::ASCII
+
+    EnvUtil.with_default_external(Encoding::ASCII) do
       utf8_ascii_hash = '{"\\u3042": 1}'
       assert_equal(eval(utf8_ascii_hash).inspect, utf8_ascii_hash)
-      Encoding.default_external = Encoding::UTF_8
+    end
+
+    EnvUtil.with_default_external(Encoding::UTF_8) do
       utf8_hash = "{\u3042: 1}"
       assert_equal(eval(utf8_hash).inspect, utf8_hash)
-      Encoding.default_external = Encoding::Windows_31J
+    end
+
+    EnvUtil.with_default_external(Encoding::Windows_31J) do
       sjis_hash = "{\x87]: 1}".force_encoding('sjis')
       assert_equal(eval(sjis_hash).inspect, sjis_hash)
-    ensure
-      Encoding.default_external = enc
-      $VERBOSE = verbose_bak
     end
   end
 
@@ -2008,7 +2007,7 @@ class TestHashOnly < Test::Unit::TestCase
 
     EnvUtil.without_gc do
       before = ObjectSpace.count_objects[:T_STRING]
-      5.times{ h["abc"] }
+      5.times{ h["abc".freeze] }
       assert_equal before, ObjectSpace.count_objects[:T_STRING]
     end
   end

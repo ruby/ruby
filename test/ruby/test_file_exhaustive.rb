@@ -197,12 +197,23 @@ class TestFileExhaustive < Test::Unit::TestCase
     [regular_file, utf8_file].each do |file|
       assert_equal(file, File.open(file) {|f| f.path})
       assert_equal(file, File.path(file))
-      o = Object.new
-      class << o; self; end.class_eval do
-        define_method(:to_path) { file }
-      end
+      o = Struct.new(:to_path).new(file)
+      assert_equal(file, File.path(o))
+      o = Struct.new(:to_str).new(file)
       assert_equal(file, File.path(o))
     end
+
+    conv_error = ->(method, msg = "converting with #{method}") {
+      o = Struct.new(method).new(42)
+      assert_raise(TypeError, msg) {File.path(o)}
+      o = Struct.new(method).new("abc".encode(Encoding::UTF_32BE))
+      assert_raise(Encoding::CompatibilityError, msg) {File.path(o)}
+      o = Struct.new(method).new("\0")
+      assert_raise(ArgumentError, msg) {File.path(o)}
+    }
+
+    conv_error[:to_path]
+    conv_error[:to_str]
   end
 
   def assert_integer(n)
@@ -1477,6 +1488,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_test
+    omit 'timestamp check is unstable on macOS' if RUBY_PLATFORM =~ /darwin/
     fn1 = regular_file
     hardlinkfile
     sleep(1.1)

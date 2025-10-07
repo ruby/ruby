@@ -4947,7 +4947,7 @@ rb_io_each_codepoint(VALUE io)
             fptr->cbuf.off += n;
             fptr->cbuf.len -= n;
             rb_yield(UINT2NUM(c));
-            rb_io_check_byte_readable(fptr);
+            rb_io_check_char_readable(fptr);
         }
     }
     NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
@@ -7835,7 +7835,8 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *  If a block is given, the stream is passed to the block
  *  (again, open for reading, writing, or both);
  *  when the block exits, the stream is closed,
- *  and the block's value is assigned to global variable <tt>$?</tt> and returned.
+ *  the block's value is returned,
+ *  and the global variable <tt>$?</tt> is set to the child's exit status.
  *
  *  Optional argument +mode+ may be any valid \IO mode.
  *  See {Access Modes}[rdoc-ref:File@Access+Modes].
@@ -9999,14 +10000,14 @@ io_wait(int argc, VALUE *argv, VALUE io)
 }
 
 static void
-argf_mark(void *ptr)
+argf_mark_and_move(void *ptr)
 {
     struct argf *p = ptr;
-    rb_gc_mark(p->filename);
-    rb_gc_mark(p->current_file);
-    rb_gc_mark(p->argv);
-    rb_gc_mark(p->inplace);
-    rb_gc_mark(p->encs.ecopts);
+    rb_gc_mark_and_move(&p->filename);
+    rb_gc_mark_and_move(&p->current_file);
+    rb_gc_mark_and_move(&p->argv);
+    rb_gc_mark_and_move(&p->inplace);
+    rb_gc_mark_and_move(&p->encs.ecopts);
 }
 
 static size_t
@@ -10017,20 +10018,9 @@ argf_memsize(const void *ptr)
     return size;
 }
 
-static void
-argf_compact(void *ptr)
-{
-    struct argf *p = ptr;
-    p->filename = rb_gc_location(p->filename);
-    p->current_file = rb_gc_location(p->current_file);
-    p->argv = rb_gc_location(p->argv);
-    p->inplace = rb_gc_location(p->inplace);
-    p->encs.ecopts = rb_gc_location(p->encs.ecopts);
-}
-
 static const rb_data_type_t argf_type = {
     "ARGF",
-    {argf_mark, RUBY_TYPED_DEFAULT_FREE, argf_memsize, argf_compact},
+    {argf_mark_and_move, RUBY_TYPED_DEFAULT_FREE, argf_memsize, argf_mark_and_move},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 

@@ -25,6 +25,7 @@ module Bundler
 
   class GemNotFound < BundlerError; status_code(7); end
   class InstallHookError < BundlerError; status_code(8); end
+  class RemovedError < BundlerError; status_code(9); end
   class GemfileNotFound < BundlerError; status_code(10); end
   class GitError < BundlerError; status_code(11); end
   class DeprecatedError < BundlerError; status_code(12); end
@@ -76,11 +77,6 @@ module Bundler
     def mismatch_resolution_instructions
       removable, remote = [@existing, @checksum].partition(&:removable?)
       case removable.size
-      when 0
-        msg = +"Mismatched checksums each have an authoritative source:\n"
-        msg << "  1. #{@existing.sources.reject(&:removable?).map(&:to_s).join(" and ")}\n"
-        msg << "  2. #{@checksum.sources.reject(&:removable?).map(&:to_s).join(" and ")}\n"
-        msg << "You may need to alter your Gemfile sources to resolve this issue.\n"
       when 1
         msg = +"If you trust #{remote.first.sources.first}, to resolve this issue you can:\n"
         msg << removable.first.removal_instructions

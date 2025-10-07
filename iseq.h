@@ -175,7 +175,12 @@ ISEQ_COMPILE_DATA_CLEAR(rb_iseq_t *iseq)
 static inline rb_iseq_t *
 iseq_imemo_alloc(void)
 {
-    return IMEMO_NEW(rb_iseq_t, imemo_iseq, 0);
+    rb_iseq_t *iseq = IMEMO_NEW(rb_iseq_t, imemo_iseq, 0);
+
+    // Clear out the whole iseq except for the flags.
+    memset((char *)iseq + sizeof(VALUE), 0, sizeof(rb_iseq_t) - sizeof(VALUE));
+
+    return iseq;
 }
 
 VALUE rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt);
@@ -187,6 +192,7 @@ void rb_iseq_init_trace(rb_iseq_t *iseq);
 int rb_iseq_add_local_tracepoint_recursively(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval, unsigned int target_line, bool target_bmethod);
 int rb_iseq_remove_local_tracepoint_recursively(const rb_iseq_t *iseq, VALUE tpval);
 const rb_iseq_t *rb_iseq_load_iseq(VALUE fname);
+const rb_iseq_t *rb_iseq_compile_iseq(VALUE str, VALUE fname);
 int rb_iseq_opt_frozen_string_literal(void);
 
 #if VM_INSN_INFO_TABLE_IMPL == 2

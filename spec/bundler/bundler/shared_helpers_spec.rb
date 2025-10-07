@@ -538,11 +538,11 @@ RSpec.describe Bundler::SharedHelpers do
 
     it "raises the appropriate errors when _past_ the deprecated major version" do
       expect { subject.major_deprecation(36, "Message") }.
-        to raise_error(Bundler::DeprecatedError, "[REMOVED] Message")
+        to raise_error(Bundler::RemovedError, "[REMOVED] Message")
       expect { subject.major_deprecation(36, "Message", removed_message: "Removal") }.
-        to raise_error(Bundler::DeprecatedError, "[REMOVED] Removal")
+        to raise_error(Bundler::RemovedError, "[REMOVED] Removal")
       expect { subject.major_deprecation(35, "Message", removed_message: "Removal", print_caller_location: true) }.
-        to raise_error(Bundler::DeprecatedError, /^\[REMOVED\] Removal \(called at .*:\d+\)$/)
+        to raise_error(Bundler::RemovedError, "[REMOVED] Removal")
     end
   end
 end

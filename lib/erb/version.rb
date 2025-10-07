@@ -1,4 +1,5 @@
 # frozen_string_literal: true
 class ERB
-  VERSION = '5.0.2'
+  # The string \ERB version.
+  VERSION = '5.0.3'
 end

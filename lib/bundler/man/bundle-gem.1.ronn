@@ -135,9 +135,6 @@ configuration file using the following names:
 * `--no-linter`:
   Do not add a linter (overrides `--linter` specified in the global config).
 
-* `--rubocop`:
-  Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set --global gem.rubocop true`.
-
 * `--edit=EDIT`, `-e=EDIT`:
   Open the resulting GEM_NAME.gemspec in EDIT, or the default editor if not
   specified. The default is `$BUNDLER_EDITOR`, `$VISUAL`, or `$EDITOR`.

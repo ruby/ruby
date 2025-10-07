@@ -342,6 +342,14 @@ rb_mmtk_update_global_tables(int table)
     rb_gc_vm_weak_table_foreach(rb_mmtk_update_table_i, NULL, NULL, true, (enum rb_gc_vm_weak_tables)table);
 }
 
+static bool
+rb_mmtk_special_const_p(MMTk_ObjectReference object)
+{
+    VALUE obj = (VALUE)object;
+
+    return RB_SPECIAL_CONST_P(obj);
+}
+
 // Bootup
 MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
@@ -360,6 +368,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_update_global_tables,
     rb_mmtk_global_tables_count,
     rb_mmtk_update_finalizer_table,
+    rb_mmtk_special_const_p,
 };
 
 // Use max 80% of the available memory by default for MMTk
@@ -589,7 +598,7 @@ rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
 // Object allocation
 
 VALUE
-rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size)
+rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
 {
 #define MMTK_ALLOCATION_SEMANTICS_DEFAULT 0
     struct objspace *objspace = objspace_ptr;
@@ -613,9 +622,6 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     alloc_obj[-1] = alloc_size;
     alloc_obj[0] = flags;
     alloc_obj[1] = klass;
-    if (alloc_size > 16) alloc_obj[2] = v1;
-    if (alloc_size > 24) alloc_obj[3] = v2;
-    if (alloc_size > 32) alloc_obj[4] = v3;
 
     mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, alloc_size + 8, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
 
@@ -652,21 +658,21 @@ rb_gc_impl_size_allocatable_p(size_t size)
 
 // Malloc
 void *
-rb_gc_impl_malloc(void *objspace_ptr, size_t size)
+rb_gc_impl_malloc(void *objspace_ptr, size_t size, bool gc_allowed)
 {
     // TODO: don't use system malloc
     return malloc(size);
 }
 
 void *
-rb_gc_impl_calloc(void *objspace_ptr, size_t size)
+rb_gc_impl_calloc(void *objspace_ptr, size_t size, bool gc_allowed)
 {
     // TODO: don't use system calloc
     return calloc(1, size);
 }
 
 void *
-rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size)
+rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size, bool gc_allowed)
 {
     // TODO: don't use system realloc
     return realloc(ptr, new_size);

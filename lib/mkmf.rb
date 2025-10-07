@@ -419,7 +419,7 @@ MESSAGE
 
     # disable ASAN leak reporting - conftest programs almost always don't bother
     # to free their memory.
-    envs['ASAN_OPTIONS'] = "detect_leaks=0" unless ENV.key?('ASAN_OPTIONS')
+    envs['LSAN_OPTIONS'] = "detect_leaks=0" unless ENV.key?('LSAN_OPTIONS')
 
     return envs, expand[commands]
   end
@@ -860,7 +860,7 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
         v
       }
       unless strvars.empty?
-        prepare << "char " << strvars.map {|v| "#{v}[1024]"}.join(", ") << "; "
+        prepare << "char " << strvars.map {|v| %[#{v}[1024] = ""]}.join(", ") << "; "
       end
     when nil
       call = ""

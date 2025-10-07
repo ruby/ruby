@@ -12,13 +12,11 @@ module Gem
   VERSION = "3.8.0.dev"
 end
 
-# Must be first since it unloads the prelude from 1.9.2
-require_relative "rubygems/compatibility"
-
 require_relative "rubygems/defaults"
 require_relative "rubygems/deprecate"
 require_relative "rubygems/errors"
 require_relative "rubygems/target_rbconfig"
+require_relative "rubygems/win_platform"
 
 ##
 # RubyGems is the Ruby standard for publishing and managing third party
@@ -116,18 +114,6 @@ require_relative "rubygems/target_rbconfig"
 module Gem
   RUBYGEMS_DIR = __dir__
 
-  ##
-  # An Array of Regexps that match windows Ruby platforms.
-
-  WIN_PATTERNS = [
-    /bccwin/i,
-    /cygwin/i,
-    /djgpp/i,
-    /mingw/i,
-    /mswin/i,
-    /wince/i,
-  ].freeze
-
   GEM_DEP_FILES = %w[
     gem.deps.rb
     gems.rb
@@ -162,8 +148,6 @@ module Gem
   # This particular timestamp is for 1980-01-02 00:00:00 GMT.
 
   DEFAULT_SOURCE_DATE_EPOCH = 315_619_200
-
-  @@win_platform = nil
 
   @configuration = nil
   @gemdeps = nil
@@ -227,7 +211,7 @@ module Gem
     finish_resolve rs
   end
 
-  def self.finish_resolve(request_set=Gem::RequestSet.new)
+  def self.finish_resolve(request_set = Gem::RequestSet.new)
     request_set.import Gem::Specification.unresolved_deps.values
     request_set.import Gem.loaded_specs.values.map {|s| Gem::Dependency.new(s.name, s.version) }
 
@@ -298,6 +282,13 @@ module Gem
     spec = find_and_activate_spec_for_exe name, exec_name, requirements
 
     if spec.name == "bundler"
+      # Old versions of Bundler need a workaround to support nested `bundle
+      # exec` invocations by overriding `Gem.activate_bin_path`. However,
+      # RubyGems now uses this new `Gem.activate_and_load_bin_path` helper in
+      # binstubs, which is of course not overridden in Bundler since it didn't
+      # exist at the time. So, include the override here to workaround that.
+      load ENV["BUNDLE_BIN_PATH"] if ENV["BUNDLE_BIN_PATH"] && spec.version <= "2.5.22"
+
       # Make sure there's no version of Bundler in `$LOAD_PATH` that's different
       # from the version we just activated. If that was the case (it happens
       # when testing Bundler from ruby/ruby), we would load Bundler extensions
@@ -337,7 +328,7 @@ module Gem
   ##
   # The path where gem executables are to be installed.
 
-  def self.bindir(install_dir=Gem.dir)
+  def self.bindir(install_dir = Gem.dir)
     return File.join install_dir, "bin" unless
       install_dir.to_s == Gem.default_dir.to_s
     Gem.default_bindir
@@ -346,7 +337,7 @@ module Gem
   ##
   # The path were rubygems plugins are to be installed.
 
-  def self.plugindir(install_dir=Gem.dir)
+  def self.plugindir(install_dir = Gem.dir)
     File.join install_dir, "plugins"
   end
 
@@ -530,7 +521,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Note that find_files will return all files even if they are from different
   # versions of the same gem.  See also find_latest_files
 
-  def self.find_files(glob, check_load_path=true)
+  def self.find_files(glob, check_load_path = true)
     files = []
 
     files = find_files_from_load_path glob if check_load_path
@@ -567,7 +558,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Unlike find_files, find_latest_files will return only files from the
   # latest version of a gem.
 
-  def self.find_latest_files(glob, check_load_path=true)
+  def self.find_latest_files(glob, check_load_path = true)
     files = []
 
     files = find_files_from_load_path glob if check_load_path
@@ -1085,18 +1076,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     hash = { "GEM_HOME" => home, "GEM_PATH" => paths.empty? ? home : paths.join(File::PATH_SEPARATOR) }
     hash.delete_if {|_, v| v.nil? }
     self.paths = hash
-  end
-
-  ##
-  # Is this a windows platform?
-
-  def self.win_platform?
-    if @@win_platform.nil?
-      ruby_platform = RbConfig::CONFIG["host_os"]
-      @@win_platform = !WIN_PATTERNS.find {|r| ruby_platform =~ r }.nil?
-    end
-
-    @@win_platform
   end
 
   ##

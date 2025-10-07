@@ -9,7 +9,6 @@ rdoc_include:
 - doc
 
 exclude:
-- \Alib/irb
 - \.gemspec\z
 
 autolink_excluded_words:
@@ -20,5 +19,7 @@ autolink_excluded_words:
 - RDoc
 - Ruby
 - Set
+- ZJIT
+- YJIT
 
 canonical_root: https://docs.ruby-lang.org/en/master

@@ -544,7 +544,7 @@ module TestStruct
         Struct.send(:remove_const, :A)
       end
 
-      1_000.times(&code)
+      10_000.times(&code)
     PREP
       50_000.times(&code)
     CODE

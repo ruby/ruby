@@ -6,7 +6,9 @@
 require 'fileutils'
 require 'open-uri'
 require 'pathname'
+verbose, $VERBOSE = $VERBOSE, nil
 require 'net/https'
+$VERBOSE = verbose
 
 class Downloader
   def self.find(dlname)

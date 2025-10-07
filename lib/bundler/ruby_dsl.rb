@@ -57,6 +57,8 @@ module Bundler
       else
         file_content.strip
       end
+    rescue Errno::ENOENT
+      raise GemfileError, "Could not find version file #{filename}"
     end
   end
 end

@@ -39,7 +39,7 @@ const rb_data_type_t ossl_evp_pkey_type = {
 };
 
 static VALUE
-pkey_new0(VALUE arg)
+pkey_wrap0(VALUE arg)
 {
     EVP_PKEY *pkey = (EVP_PKEY *)arg;
     VALUE klass, obj;
@@ -65,12 +65,12 @@ pkey_new0(VALUE arg)
 }
 
 VALUE
-ossl_pkey_new(EVP_PKEY *pkey)
+ossl_pkey_wrap(EVP_PKEY *pkey)
 {
     VALUE obj;
     int status;
 
-    obj = rb_protect(pkey_new0, (VALUE)pkey, &status);
+    obj = rb_protect(pkey_wrap0, (VALUE)pkey, &status);
     if (status) {
 	EVP_PKEY_free(pkey);
 	rb_jump_tag(status);
@@ -94,7 +94,8 @@ ossl_pkey_read(BIO *bio, const char *input_type, int selection, VALUE pass)
                                          selection, NULL, NULL);
     if (!dctx)
         goto out;
-    if (OSSL_DECODER_CTX_set_pem_password_cb(dctx, ossl_pem_passwd_cb,
+    if (selection == EVP_PKEY_KEYPAIR &&
+        OSSL_DECODER_CTX_set_pem_password_cb(dctx, ossl_pem_passwd_cb,
                                              ppass) != 1)
         goto out;
     while (1) {
@@ -239,7 +240,7 @@ ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
     BIO_free(bio);
     if (!pkey)
 	ossl_raise(ePKeyError, "Could not parse PKey");
-    return ossl_pkey_new(pkey);
+    return ossl_pkey_wrap(pkey);
 }
 
 static VALUE
@@ -443,7 +444,7 @@ pkey_generate(int argc, VALUE *argv, VALUE self, int genparam)
         }
     }
 
-    return ossl_pkey_new(gen_arg.pkey);
+    return ossl_pkey_wrap(gen_arg.pkey);
 }
 
 /*
@@ -507,7 +508,7 @@ ossl_pkey_s_generate_key(int argc, VALUE *argv, VALUE self)
 void
 ossl_pkey_check_public_key(const EVP_PKEY *pkey)
 {
-#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
     if (EVP_PKEY_missing_parameters(pkey))
         ossl_raise(ePKeyError, "parameters missing");
 #else
@@ -687,7 +688,7 @@ ossl_pkey_new_raw_private_key(VALUE self, VALUE type, VALUE key)
         ossl_raise(ePKeyError, "EVP_PKEY_new_raw_private_key");
 #endif
 
-    return ossl_pkey_new(pkey);
+    return ossl_pkey_wrap(pkey);
 }
 
 /*
@@ -719,7 +720,7 @@ ossl_pkey_new_raw_public_key(VALUE self, VALUE type, VALUE key)
         ossl_raise(ePKeyError, "EVP_PKEY_new_raw_public_key");
 #endif
 
-    return ossl_pkey_new(pkey);
+    return ossl_pkey_wrap(pkey);
 }
 
 /*

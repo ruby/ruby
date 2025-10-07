@@ -94,6 +94,7 @@ VALUE pm_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lin
 VALUE pm_load_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines);
 VALUE pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *script_lines);
 VALUE pm_parse_stdin(pm_parse_result_t *result);
+void pm_options_version_for_current_ruby_set(pm_options_t *options);
 void pm_parse_result_free(pm_parse_result_t *result);
 
 rb_iseq_t *pm_iseq_new(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, enum rb_iseq_type, int *error_state);

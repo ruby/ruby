@@ -163,10 +163,7 @@ impl X86Opnd {
     }
 
     pub fn is_some(&self) -> bool {
-        match self {
-            X86Opnd::None => false,
-            _ => true
-        }
+        !matches!(self, X86Opnd::None)
     }
 
 }
@@ -284,11 +281,11 @@ pub fn mem_opnd(num_bits: u8, base_reg: X86Opnd, disp: i32) -> X86Opnd
     } else {
         X86Opnd::Mem(
             X86Mem {
-                num_bits: num_bits,
+                num_bits,
                 base_reg_no: base_reg.reg_no,
                 idx_reg_no: None,
                 scale_exp: 0,
-                disp: disp,
+                disp,
             }
         )
     }
@@ -316,34 +313,6 @@ pub fn mem_opnd_sib(num_bits: u8, base_opnd: X86Opnd, index_opnd: X86Opnd, scale
         unreachable!()
     }
 }
-
-/*
-// Struct member operand
-#define member_opnd(base_reg, struct_type, member_name) mem_opnd( \
-    8 * sizeof(((struct_type*)0)->member_name), \
-    base_reg,                                   \
-    offsetof(struct_type, member_name)          \
-)
-
-// Struct member operand with an array index
-#define member_opnd_idx(base_reg, struct_type, member_name, idx) mem_opnd( \
-    8 * sizeof(((struct_type*)0)->member_name[0]),     \
-    base_reg,                                       \
-    (offsetof(struct_type, member_name) +           \
-     sizeof(((struct_type*)0)->member_name[0]) * idx)  \
-)
-*/
-
-/*
-// TODO: this should be a method, X86Opnd.resize() or X86Opnd.subreg()
-static x86opnd_t resize_opnd(x86opnd_t opnd, uint32_t num_bits)
-{
-    assert (num_bits % 8 == 0);
-    x86opnd_t sub = opnd;
-    sub.num_bits = num_bits;
-    return sub;
-}
-*/
 
 pub fn imm_opnd(value: i64) -> X86Opnd
 {
@@ -1102,46 +1071,6 @@ pub fn movsx(cb: &mut CodeBlock, dst: X86Opnd, src: X86Opnd) {
         unreachable!();
     }
 }
-
-/*
-/// movzx - Move with zero extension (unsigned values)
-void movzx(codeblock_t *cb, x86opnd_t dst, x86opnd_t src)
-{
-    cb.writeASM("movzx", dst, src);
-
-    uint32_t dstSize;
-    if (dst.isReg)
-        dstSize = dst.reg.size;
-    else
-        assert (false, "movzx dst must be a register");
-
-    uint32_t srcSize;
-    if (src.isReg)
-        srcSize = src.reg.size;
-    else if (src.isMem)
-        srcSize = src.mem.size;
-    else
-        assert (false);
-
-    assert (
-        srcSize < dstSize,
-        "movzx: srcSize >= dstSize"
-    );
-
-    if (srcSize is 8)
-    {
-        cb.writeRMInstr!('r', 0xFF, 0x0F, 0xB6)(dstSize is 16, dstSize is 64, dst, src);
-    }
-    else if (srcSize is 16)
-    {
-        cb.writeRMInstr!('r', 0xFF, 0x0F, 0xB7)(dstSize is 16, dstSize is 64, dst, src);
-    }
-    else
-    {
-        assert (false, "invalid src operand size for movxz");
-    }
-}
-*/
 
 /// nop - Noop, one or multiple bytes long
 pub fn nop(cb: &mut CodeBlock, length: u32) {

@@ -44,14 +44,16 @@ class ErrorHighlightTest < Test::Unit::TestCase
     def assert_error_message(klass, expected_msg, &blk)
       omit unless klass < ErrorHighlight::CoreExt
       err = assert_raise(klass, &blk)
-      spot = ErrorHighlight.spot(err)
-      if spot
-        assert_kind_of(Integer, spot[:first_lineno])
-        assert_kind_of(Integer, spot[:first_column])
-        assert_kind_of(Integer, spot[:last_lineno])
-        assert_kind_of(Integer, spot[:last_column])
-        assert_kind_of(String, spot[:snippet])
-        assert_kind_of(Array, spot[:script_lines])
+      unless klass == ArgumentError && err.message =~ /\A(?:wrong number of arguments|missing keyword|unknown keyword|no keywords accepted)\b/
+        spot = ErrorHighlight.spot(err)
+        if spot
+          assert_kind_of(Integer, spot[:first_lineno])
+          assert_kind_of(Integer, spot[:first_column])
+          assert_kind_of(Integer, spot[:last_lineno])
+          assert_kind_of(Integer, spot[:last_column])
+          assert_kind_of(String, spot[:snippet])
+          assert_kind_of(Array, spot[:script_lines])
+        end
       end
       assert_equal(preprocess(expected_msg).chomp, err.detailed_message(highlight: false).sub(/ \((?:NoMethod|Name)Error\)/, ""))
     end
@@ -889,27 +891,13 @@ uninitialized constant ErrorHighlightTest::NotDefined
     end
   end
 
-  if ErrorHighlight.const_get(:Spotter).const_get(:OPT_GETCONSTANT_PATH)
-    def test_COLON2_5
-      # Unfortunately, we cannot identify which `NotDefined` caused the NameError
-      assert_error_message(NameError, <<~END) do
-  uninitialized constant ErrorHighlightTest::NotDefined
-      END
-
-        ErrorHighlightTest::NotDefined::NotDefined
-      end
-    end
-  else
-    def test_COLON2_5
-      assert_error_message(NameError, <<~END) do
+  def test_COLON2_5
+    # Unfortunately, we cannot identify which `NotDefined` caused the NameError
+    assert_error_message(NameError, <<~END) do
 uninitialized constant ErrorHighlightTest::NotDefined
+    END
 
-        ErrorHighlightTest::NotDefined::NotDefined
-                          ^^^^^^^^^^^^
-      END
-
-        ErrorHighlightTest::NotDefined::NotDefined
-      end
+      ErrorHighlightTest::NotDefined::NotDefined
     end
   end
 
@@ -1111,12 +1099,13 @@ no implicit conversion from nil to integer (TypeError)
   end
 
   def test_args_ATTRASGN_1
-    v = []
-    assert_error_message(ArgumentError, <<~END) do
-wrong number of arguments (given 1, expected 2..3) (ArgumentError)
+    v = method(:raise).to_proc
+    recv = NEW_MESSAGE_FORMAT ? "an instance of Proc" : v.inspect
+    assert_error_message(NoMethodError, <<~END) do
+undefined method `[]=' for #{ recv }
 
       v [ ] = 1
-         ^^^^^^
+        ^^^^^
     END
 
       v [ ] = 1
@@ -1199,16 +1188,16 @@ no implicit conversion from nil to integer (TypeError)
   end
 
   def test_args_OP_ASGN1_aref_2
-    v = []
+    v = method(:raise).to_proc
 
     assert_error_message(ArgumentError, <<~END) do
-wrong number of arguments (given 0, expected 1..2) (ArgumentError)
+ArgumentError (ArgumentError)
 
-      v [ ] += 42
-         ^^^^^^^^
+      v [ArgumentError] += 42
+         ^^^^^^^^^^^^^^^^^^^^
     END
 
-      v [ ] += 42
+      v [ArgumentError] += 42
     end
   end
 
@@ -1450,6 +1439,187 @@ undefined method `foo' for #{ NIL_RECV_MESSAGE }
     rescue NoMethodError => exc
       def exc.backtrace_locations = []
       raise
+    end
+  end
+
+  begin
+    ->{}.call(1)
+  rescue ArgumentError => exc
+    MethodDefLocationSupported =
+      RubyVM::AbstractSyntaxTree.respond_to?(:node_id_for_backtrace_location) &&
+      RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(exc.backtrace_locations.first)
+  end
+
+  WRONG_NUMBER_OF_ARGUMENTS_LIENO = __LINE__ + 1
+  def wrong_number_of_arguments_test(x, y)
+    x + y
+  end
+
+  def test_wrong_number_of_arguments_for_method
+    lineno = __LINE__
+    assert_error_message(ArgumentError, <<~END) do
+wrong number of arguments (given 1, expected 2) (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 16 }
+    |       wrong_number_of_arguments_test(1)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    callee: #{ __FILE__ }:#{ WRONG_NUMBER_OF_ARGUMENTS_LIENO }
+    #{
+      MethodDefLocationSupported ?
+   "|   def wrong_number_of_arguments_test(x, y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^" :
+   "(cannot create a snippet of the method definition; use Ruby 3.5 or later)"
+   }
+    END
+
+      wrong_number_of_arguments_test(1)
+    end
+  end
+
+  KEYWORD_TEST_LINENO = __LINE__ + 1
+  def keyword_test(kw1:, kw2:, kw3:)
+    kw1 + kw2 + kw3
+  end
+
+  def test_missing_keyword
+    lineno = __LINE__
+    assert_error_message(ArgumentError, <<~END) do
+missing keyword: :kw3 (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 16 }
+    |       keyword_test(kw1: 1, kw2: 2)
+            ^^^^^^^^^^^^
+    callee: #{ __FILE__ }:#{ KEYWORD_TEST_LINENO }
+    #{
+      MethodDefLocationSupported ?
+   "|   def keyword_test(kw1:, kw2:, kw3:)
+            ^^^^^^^^^^^^" :
+   "(cannot create a snippet of the method definition; use Ruby 3.5 or later)"
+   }
+    END
+
+      keyword_test(kw1: 1, kw2: 2)
+    end
+  end
+
+  def test_unknown_keyword
+    lineno = __LINE__
+    assert_error_message(ArgumentError, <<~END) do
+unknown keyword: :kw4 (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 16 }
+    |       keyword_test(kw1: 1, kw2: 2, kw3: 3, kw4: 4)
+            ^^^^^^^^^^^^
+    callee: #{ __FILE__ }:#{ KEYWORD_TEST_LINENO }
+    #{
+      MethodDefLocationSupported ?
+   "|   def keyword_test(kw1:, kw2:, kw3:)
+            ^^^^^^^^^^^^" :
+   "(cannot create a snippet of the method definition; use Ruby 3.5 or later)"
+   }
+    END
+
+      keyword_test(kw1: 1, kw2: 2, kw3: 3, kw4: 4)
+    end
+  end
+
+  WRONG_NUBMER_OF_ARGUMENTS_TEST2_LINENO = __LINE__ + 1
+  def wrong_number_of_arguments_test2(
+    long_argument_name_x,
+    long_argument_name_y,
+    long_argument_name_z
+  )
+    long_argument_name_x + long_argument_name_y + long_argument_name_z
+  end
+
+  def test_wrong_number_of_arguments_for_method2
+    lineno = __LINE__
+    assert_error_message(ArgumentError, <<~END) do
+wrong number of arguments (given 1, expected 3) (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 16 }
+    |       wrong_number_of_arguments_test2(1)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    callee: #{ __FILE__ }:#{ WRONG_NUBMER_OF_ARGUMENTS_TEST2_LINENO }
+    #{
+      MethodDefLocationSupported ?
+   "|   def wrong_number_of_arguments_test2(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^" :
+   "(cannot create a snippet of the method definition; use Ruby 3.5 or later)"
+   }
+    END
+
+      wrong_number_of_arguments_test2(1)
+    end
+  end
+
+  def test_wrong_number_of_arguments_for_lambda_literal
+    v = -> {}
+    lineno = __LINE__
+    assert_error_message(ArgumentError, <<~END) do
+wrong number of arguments (given 1, expected 0) (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 16 }
+    |       v.call(1)
+             ^^^^^
+    callee: #{ __FILE__ }:#{ lineno - 1 }
+    #{
+      MethodDefLocationSupported ?
+   "|     v = -> {}
+              ^^" :
+   "(cannot create a snippet of the method definition; use Ruby 3.5 or later)"
+   }
+    END
+
+      v.call(1)
+    end
+  end
+
+  def test_wrong_number_of_arguments_for_lambda_method
+    v = lambda { }
+    lineno = __LINE__
+    assert_error_message(ArgumentError, <<~END) do
+wrong number of arguments (given 1, expected 0) (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 16 }
+    |       v.call(1)
+             ^^^^^
+    callee: #{ __FILE__ }:#{ lineno - 1 }
+    #{
+      MethodDefLocationSupported ?
+   "|     v = lambda { }
+                     ^" :
+   "(cannot create a snippet of the method definition; use Ruby 3.5 or later)"
+   }
+    END
+
+      v.call(1)
+    end
+  end
+
+  DEFINE_METHOD_TEST_LINENO = __LINE__ + 1
+  define_method :define_method_test do |x, y|
+    x + y
+  end
+
+  def test_wrong_number_of_arguments_for_define_method
+    lineno = __LINE__
+    assert_error_message(ArgumentError, <<~END) do
+wrong number of arguments (given 1, expected 2) (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 16 }
+    |       define_method_test(1)
+            ^^^^^^^^^^^^^^^^^^
+    callee: #{ __FILE__ }:#{ DEFINE_METHOD_TEST_LINENO }
+    #{
+      MethodDefLocationSupported ?
+   "|   define_method :define_method_test do |x, y|
+                                          ^^" :
+   "(cannot create a snippet of the method definition; use Ruby 3.5 or later)"
+   }
+    END
+
+      define_method_test(1)
     end
   end
 

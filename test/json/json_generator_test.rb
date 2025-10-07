@@ -234,6 +234,24 @@ class JSONGeneratorTest < Test::Unit::TestCase
       :space                 => "",
       :space_before          => "",
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
+
+    state = JSON::State.new(allow_duplicate_key: true)
+    assert_equal({
+      :allow_duplicate_key   => true,
+      :allow_nan             => false,
+      :array_nl              => "",
+      :as_json               => false,
+      :ascii_only            => false,
+      :buffer_initial_length => 1024,
+      :depth                 => 0,
+      :script_safe           => false,
+      :strict                => false,
+      :indent                => "",
+      :max_nesting           => 100,
+      :object_nl             => "",
+      :space                 => "",
+      :space_before          => "",
+    }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
   def test_allow_nan
@@ -404,6 +422,18 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_raise JSON::GeneratorError do
       generate(Object.new, strict: true)
     end
+
+    assert_raise JSON::GeneratorError do
+      generate([Object.new], strict: true)
+    end
+
+    assert_raise JSON::GeneratorError do
+      generate({ "key" => Object.new }, strict: true)
+    end
+
+    assert_raise JSON::GeneratorError do
+      generate({ Object.new => "value" }, strict: true)
+    end
   end
 
   def test_nesting
@@ -472,6 +502,18 @@ class JSONGeneratorTest < Test::Unit::TestCase
     #
     data = ['"""""""""""""""""""""""""']
     json = '["\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""]'
+    assert_equal json, generate(data)
+    #
+    data = '"""""'
+    json = '"\"\"\"\"\""'
+    assert_equal json, generate(data)
+    #
+    data = "abc\n"
+    json = '"abc\\n"'
+    assert_equal json, generate(data)
+    #
+    data = "\nabc"
+    json = '"\\nabc"'
     assert_equal json, generate(data)
     #
     data = ["'"]
@@ -780,29 +822,44 @@ class JSONGeneratorTest < Test::Unit::TestCase
 
   def test_json_generate_as_json_convert_to_proc
     object = Object.new
-    assert_equal object.object_id.to_json, JSON.generate(object, strict: true, as_json: :object_id)
+    assert_equal object.object_id.to_json, JSON.generate(object, strict: true, as_json: -> (o, is_key) { o.object_id })
+  end
+
+  def assert_float_roundtrip(expected, actual)
+    assert_equal(expected, JSON.generate(actual))
+    assert_equal(actual, JSON.parse(JSON.generate(actual)), "JSON: #{JSON.generate(actual)}")
   end
 
   def test_json_generate_float
-      values = [-1.0, 1.0, 0.0, 12.2, 7.5 / 3.2, 12.0, 100.0, 1000.0]
-      expecteds = ["-1.0", "1.0", "0.0", "12.2", "2.34375", "12.0", "100.0", "1000.0"]
+    assert_float_roundtrip "-1.0", -1.0
+    assert_float_roundtrip "1.0", 1.0
+    assert_float_roundtrip "0.0", 0.0
+    assert_float_roundtrip "12.2", 12.2
+    assert_float_roundtrip "2.34375", 7.5 / 3.2
+    assert_float_roundtrip "12.0", 12.0
+    assert_float_roundtrip "100.0", 100.0
+    assert_float_roundtrip "1000.0", 1000.0
 
-      if RUBY_ENGINE == "jruby"
-        values << 1746861937.7842371
-        expecteds << "1.7468619377842371E9"
-      else
-        values << 1746861937.7842371
-        expecteds << "1746861937.7842371"
-      end
+    if RUBY_ENGINE == "jruby"
+      assert_float_roundtrip "1.7468619377842371E9", 1746861937.7842371
+    else
+      assert_float_roundtrip "1746861937.7842371", 1746861937.7842371
+    end
 
-      if RUBY_ENGINE == "ruby"
-        values << -2.2471348024634545e-08 << -2.2471348024634545e-09 << -2.2471348024634545e-10
-        expecteds << "-0.000000022471348024634545" << "-0.0000000022471348024634545" << "-2.2471348024634546e-10"
-      end
+    if RUBY_ENGINE == "ruby"
+      assert_float_roundtrip "100000000000000.0", 100000000000000.0
+      assert_float_roundtrip "1e+15", 1e+15
+      assert_float_roundtrip "-100000000000000.0", -100000000000000.0
+      assert_float_roundtrip "-1e+15", -1e+15
+      assert_float_roundtrip "1111111111111111.1", 1111111111111111.1
+      assert_float_roundtrip "1.1111111111111112e+16", 11111111111111111.1
+      assert_float_roundtrip "-1111111111111111.1", -1111111111111111.1
+      assert_float_roundtrip "-1.1111111111111112e+16", -11111111111111111.1
 
-      values.zip(expecteds).each do |value, expected|
-        assert_equal expected, value.to_json
-      end
+      assert_float_roundtrip "-0.000000022471348024634545", -2.2471348024634545e-08
+      assert_float_roundtrip "-0.0000000022471348024634545", -2.2471348024634545e-09
+      assert_float_roundtrip "-2.2471348024634546e-10", -2.2471348024634545e-10
+    end
   end
 
   def test_numbers_of_various_sizes
@@ -815,5 +872,25 @@ class JSONGeneratorTest < Test::Unit::TestCase
     numbers.each do |number|
       assert_equal "[#{number}]", JSON.generate([number])
     end
+  end
+
+  def test_generate_duplicate_keys_allowed
+    hash = { foo: 1, "foo" => 2 }
+    assert_equal %({"foo":1,"foo":2}), JSON.generate(hash, allow_duplicate_key: true)
+  end
+
+  def test_generate_duplicate_keys_deprecated
+    hash = { foo: 1, "foo" => 2 }
+    assert_deprecated_warning(/allow_duplicate_key/) do
+      assert_equal %({"foo":1,"foo":2}), JSON.generate(hash)
+    end
+  end
+
+  def test_generate_duplicate_keys_disallowed
+    hash = { foo: 1, "foo" => 2 }
+    error = assert_raise JSON::GeneratorError do
+      JSON.generate(hash, allow_duplicate_key: false)
+    end
+    assert_equal %(detected duplicate key "foo" in #{hash.inspect}), error.message
   end
 end

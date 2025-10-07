@@ -29,6 +29,10 @@
 #include <string.h>
 #include <stdint.h>
 
+#ifdef JSON_DEBUG
+#include <assert.h>
+#endif
+
 #define npowers     87
 #define steppowers  8
 #define firstpower -348 /* 10 ^ -348 */
@@ -320,15 +324,7 @@ static int emit_digits(char* digits, int ndigits, char* dest, int K, bool neg)
 {
     int exp = absv(K + ndigits - 1);
 
-    int max_trailing_zeros = 7;
-
-    if(neg) {
-        max_trailing_zeros -= 1;
-    }
-
-    /* write plain integer */
-    if(K >= 0 && (exp < (ndigits + max_trailing_zeros))) {
-
+    if(K >= 0 && exp < 15) {
         memcpy(dest, digits, ndigits);
         memset(dest + ndigits, '0', K);
 
@@ -432,9 +428,11 @@ static int filter_special(double fp, char* dest)
  *
  * Input:
  * fp -> the double to convert, dest -> destination buffer.
- * The generated string will never be longer than 28 characters.
- * Make sure to pass a pointer to at least 28 bytes of memory.
+ * The generated string will never be longer than 32 characters.
+ * Make sure to pass a pointer to at least 32 bytes of memory.
  * The emitted string will not be null terminated.
+ *
+ *
  *
  * Output:
  * The number of written characters.
@@ -474,6 +472,9 @@ static int fpconv_dtoa(double d, char dest[28])
     int ndigits = grisu2(d, digits, &K);
 
     str_len += emit_digits(digits, ndigits, dest + str_len, K, neg);
+#ifdef JSON_DEBUG
+    assert(str_len <= 32);
+#endif
 
     return str_len;
 }

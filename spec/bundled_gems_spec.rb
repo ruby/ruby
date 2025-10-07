@@ -31,7 +31,7 @@ RSpec.configure do |config|
     FileUtils.cp_r Spec::Path.pristine_system_gem_path, Spec::Path.system_gem_path
     FileUtils.mkdir_p Spec::Path.base_system_gem_path.join("gems")
     %w[sinatra rack tilt rack-protection rack-session rack-test mustermann base64 logger compact_index].each do |gem|
-      path = Dir[File.expand_path("../.bundle/gems/#{gem}-*", __dir__)].map(&:to_s).first
+      path, = Dir[File.expand_path("../.bundle/gems/#{gem}-*", __dir__)]
       FileUtils.cp_r path, Spec::Path.base_system_gem_path.join("gems")
     end
 

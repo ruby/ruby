@@ -156,29 +156,20 @@ RSpec.describe "bundle binstubs <gem>" do
     end
   end
 
-  context "--path" do
-    it "sets the binstubs dir" do
-      install_gemfile <<-G
-        source "https://gem.repo1"
-        gem "myrack"
-      G
-
-      bundle "binstubs myrack --path exec"
-
-      expect(bundled_app("exec/myrackup")).to exist
+  context "with the binstubs dir configured" do
+    before do
+      bundle "config bin exec"
     end
 
-    it "setting is saved for bundle install" do
+    it "creates the binstubs in the configured dir" do
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
-        gem "rails"
       G
 
-      bundle "binstubs myrack", path: "exec"
-      bundle :install
+      bundle "binstubs myrack"
 
-      expect(bundled_app("exec/rails")).to exist
+      expect(bundled_app("exec/myrackup")).to exist
     end
   end
 
@@ -201,11 +192,10 @@ RSpec.describe "bundle binstubs <gem>" do
       expect(File.read(bundled_app("bin/myrackup"))).to_not include("Gem.bin_path")
     end
 
-    context "when specified --path option" do
-      it "generates a standalone binstub at the given path" do
-        bundle "binstubs myrack --standalone --path foo"
-        expect(bundled_app("foo/myrackup")).to exist
-      end
+    it "generates a standalone binstub at the given path when configured" do
+      bundle "config bin foo"
+      bundle "binstubs myrack --standalone"
+      expect(bundled_app("foo/myrackup")).to exist
     end
 
     context "when specified --all-platforms option" do

@@ -280,7 +280,8 @@
 # If the argument +capture+ is provided and not <tt>0</tt>,
 # it should be either a capture group index (integer)
 # or a capture group name (String or Symbol);
-# the slice is the specified capture (see Regexp@Groups and Captures):
+# the slice is the specified capture
+# (see {Groups and Captures}[rdoc-ref:Regexp@Groups+and+Captures]):
 #
 #   s = 'hello there'
 #   s[/[aeiou](.)\1/, 1] # => "l"
@@ -334,7 +335,7 @@
 # _Counts_
 #
 # - #length (aliased as #size): Returns the count of characters (not bytes).
-# - #empty?: Returns +true+ if +self.length+ is zero; +false+ otherwise.
+# - #empty?: Returns whether the length of +self+ is zero.
 # - #bytesize: Returns the count of bytes.
 # - #count: Returns the count of substrings matching given strings.
 #
@@ -387,6 +388,7 @@
 # - #<<: Returns +self+ concatenated with a given string or integer.
 # - #append_as_bytes: Returns +self+ concatenated with strings without performing any
 #   encoding validation or conversion.
+# - #prepend: Prefixes to +self+ the concatenation of given other strings.
 #
 # _Substitution_
 #
@@ -396,7 +398,7 @@
 # - #gsub!: Replaces each substring that matches a given pattern with a given replacement string;
 #   returns +self+ if any changes, +nil+ otherwise.
 # - #succ! (aliased as #next!): Returns +self+ modified to become its own successor.
-# - #initialize_copy (aliased as #replace): Returns +self+ with its entire content replaced by a given string.
+# - #replace: Returns +self+ with its entire content replaced by a given string.
 # - #reverse!: Returns +self+ with its characters in reverse order.
 # - #setbyte: Sets the byte at a given integer offset to a given value; returns the argument.
 # - #tr!: Replaces specified characters in +self+ with specified replacement characters;
@@ -447,7 +449,6 @@
 # - #+: Returns the concatenation of +self+ and a given other string.
 # - #center: Returns a copy of +self+, centered by specified padding.
 # - #concat: Returns the concatenation of +self+ with given other strings.
-# - #prepend: Returns the concatenation of a given other string with +self+.
 # - #ljust: Returns a copy of +self+ of a given length, right-padded with a given other string.
 # - #rjust: Returns a copy of +self+ of a given length, left-padded with a given other string.
 #
@@ -460,8 +461,7 @@
 #
 # _Substitution_
 #
-# - #dump: Returns a copy of +self+ with all non-printing characters replaced by \xHH notation
-#   and all special characters escaped.
+# - #dump: Returns a printable version of +self+, enclosed in double-quotes.
 # - #undump: Returns a copy of +self+ with all <tt>\xNN</tt> notations replaced by <tt>\uNNNN</tt> notations
 #   and all escaped characters unescaped.
 # - #sub: Returns a copy of +self+ with the first substring matching a given pattern

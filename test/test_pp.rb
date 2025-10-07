@@ -2,10 +2,13 @@
 
 require 'pp'
 require 'delegate'
+require 'set'
 require 'test/unit'
 require 'ruby2_keywords'
 
 module PPTestModule
+
+SetPP = Set.instance_method(:pretty_print).source_location[0].end_with?("/pp.rb")
 
 class PPTest < Test::Unit::TestCase
   def test_list0123_12
@@ -15,6 +18,10 @@ class PPTest < Test::Unit::TestCase
   def test_list0123_11
     assert_equal("[0,\n 1,\n 2,\n 3]\n", PP.pp([0,1,2,3], ''.dup, 11))
   end
+
+  def test_set
+    assert_equal("Set[0, 1, 2, 3]\n", PP.pp(Set[0,1,2,3], ''.dup, 16))
+  end if SetPP
 
   OverriddenStruct = Struct.new("OverriddenStruct", :members, :class)
   def test_struct_override_members # [ruby-core:7865]
@@ -130,6 +137,20 @@ class PPInspectTest < Test::Unit::TestCase
     assert_equal("#{a.inspect}\n", result)
   end
 
+  def test_iv_hiding
+    a = Object.new
+    def a.pretty_print_instance_variables() [:@b] end
+    a.instance_eval { @a = "aaa"; @b = "bbb" }
+    assert_match(/\A#<Object:0x[\da-f]+ @b="bbb">\n\z/, PP.pp(a, ''.dup))
+  end
+
+  def test_iv_hiding_via_ruby
+    a = Object.new
+    def a.instance_variables_to_inspect() [:@b] end
+    a.instance_eval { @a = "aaa"; @b = "bbb" }
+    assert_match(/\A#<Object:0x[\da-f]+ @b="bbb">\n\z/, PP.pp(a, ''.dup))
+  end
+
   def test_basic_object
     a = BasicObject.new
     assert_match(/\A#<BasicObject:0x[\da-f]+>\n\z/, PP.pp(a, ''.dup))
@@ -150,6 +171,12 @@ class PPCycleTest < Test::Unit::TestCase
     assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup))
   end
 
+  def test_set
+    s = Set[]
+    s.add s
+    assert_equal("Set[Set[...]]\n", PP.pp(s, ''.dup))
+  end if SetPP
+
   S = Struct.new("S", :a, :b)
   def test_struct
     a = S.new(1,2)
@@ -158,7 +185,14 @@ class PPCycleTest < Test::Unit::TestCase
     assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup)) unless RUBY_ENGINE == "truffleruby"
   end
 
-  if defined?(Data.define)
+  verbose, $VERBOSE = $VERBOSE, nil
+  begin
+    has_data_define = defined?(Data.define)
+  ensure
+    $VERBOSE = verbose
+  end
+
+  if has_data_define
     D = Data.define(:aaa, :bbb)
     def test_data
       a = D.new("aaa", "bbb")
@@ -223,7 +257,6 @@ class PPSingleLineTest < Test::Unit::TestCase
   end
 
   def test_hash_symbol_colon_key
-    omit if RUBY_VERSION < "3.4."
     no_quote = "{a: 1, a!: 1, a?: 1}"
     unicode_quote = "{\u{3042}: 1}"
     quote0 = '{"": 1}'
@@ -236,12 +269,25 @@ class PPSingleLineTest < Test::Unit::TestCase
     assert_equal(quote1, PP.singleline_pp(eval(quote1), ''.dup))
     assert_equal(quote2, PP.singleline_pp(eval(quote2), ''.dup))
     assert_equal(quote3, PP.singleline_pp(eval(quote3), ''.dup))
-  end
+  end if RUBY_VERSION >= "3.4."
 
   def test_hash_in_array
     omit if RUBY_ENGINE == "jruby"
-    assert_equal("[{}]", PP.singleline_pp([->(*a){a.last.clear}.ruby2_keywords.call(a: 1)], ''.dup))
-    assert_equal("[{}]", PP.singleline_pp([Hash.ruby2_keywords_hash({})], ''.dup))
+    assert_equal("[{}]", passing_keywords {PP.singleline_pp([->(*a){a.last.clear}.ruby2_keywords.call(a: 1)], ''.dup)})
+    assert_equal("[{}]", passing_keywords {PP.singleline_pp([Hash.ruby2_keywords_hash({})], ''.dup)})
+  end
+
+  if RUBY_VERSION >= "3.0"
+    def passing_keywords(&_)
+      yield
+    end
+  else
+    def passing_keywords(&_)
+      verbose, $VERBOSE = $VERBOSE, nil
+      yield
+    ensure
+      $VERBOSE = verbose
+    end
   end
 
   def test_direct_pp

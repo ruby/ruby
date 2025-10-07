@@ -140,7 +140,7 @@ class Gem::DependencyList
   # If removing the gemspec creates breaks a currently ok dependency, then it
   # is NOT ok to remove the gemspec.
 
-  def ok_to_remove?(full_name, check_dev=true)
+  def ok_to_remove?(full_name, check_dev = true)
     gem_to_remove = find_name full_name
 
     # If the state is inconsistent, at least don't crash

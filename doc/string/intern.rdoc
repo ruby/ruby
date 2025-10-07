@@ -1,0 +1,9 @@
+Returns the Symbol object derived from +self+,
+creating it if it did not already exist:
+
+  'foo'.intern       # => :foo
+  'тест'.intern      # => :тест
+  'こんにちは'.intern # => :こんにちは
+
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
+

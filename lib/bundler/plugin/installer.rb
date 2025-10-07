@@ -43,16 +43,6 @@ module Bundler
       private
 
       def check_sources_consistency!(options)
-        if options.key?(:git) && options.key?(:local_git)
-          raise InvalidOption, "Remote and local plugin git sources can't be both specified"
-        end
-
-        # back-compat; local_git is an alias for git
-        if options.key?(:local_git)
-          Bundler::SharedHelpers.major_deprecation(2, "--local_git is deprecated, use --git")
-          options[:git] = options.delete(:local_git)
-        end
-
         if (options.keys & [:source, :git, :path]).length > 1
           raise InvalidOption, "Only one of --source, --git, or --path may be specified"
         end

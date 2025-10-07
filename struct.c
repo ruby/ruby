@@ -811,19 +811,32 @@ struct_alloc(VALUE klass)
 {
     long n = num_members(klass);
     size_t embedded_size = offsetof(struct RStruct, as.ary) + (sizeof(VALUE) * n);
+    if (RCLASS_MAX_IV_COUNT(klass) > 0) {
+        embedded_size += sizeof(VALUE);
+    }
+
     VALUE flags = T_STRUCT | (RGENGC_WB_PROTECTED_STRUCT ? FL_WB_PROTECTED : 0);
 
     if (n > 0 && rb_gc_size_allocatable_p(embedded_size)) {
         flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
 
         NEWOBJ_OF(st, struct RStruct, klass, flags, embedded_size, 0);
-
+        if (RCLASS_MAX_IV_COUNT(klass) == 0 && embedded_size == rb_gc_obj_slot_size((VALUE)st)) {
+            FL_SET_RAW((VALUE)st, RSTRUCT_GEN_FIELDS);
+        }
+        else {
+            RSTRUCT_SET_FIELDS_OBJ((VALUE)st, 0);
+        }
         rb_mem_clear((VALUE *)st->as.ary, n);
 
         return (VALUE)st;
     }
     else {
         NEWOBJ_OF(st, struct RStruct, klass, flags, sizeof(struct RStruct), 0);
+
+        st->as.heap.ptr = NULL;
+        st->as.heap.fields_obj = 0;
+        st->as.heap.len = 0;
 
         st->as.heap.ptr = struct_heap_alloc((VALUE)st, n);
         rb_mem_clear((VALUE *)st->as.heap.ptr, n);

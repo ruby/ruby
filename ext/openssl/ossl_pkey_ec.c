@@ -147,9 +147,14 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "02", &arg, &pass);
     if (NIL_P(arg)) {
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
+        rb_raise(rb_eArgError, "OpenSSL::PKey::EC.new cannot be called " \
+                 "without arguments; pkeys are immutable with OpenSSL 3.0");
+#else
         if (!(ec = EC_KEY_new()))
             ossl_raise(eECError, "EC_KEY_new");
         goto legacy;
+#endif
     }
     else if (rb_obj_is_kind_of(arg, cEC_GROUP)) {
         ec = ec_key_new_from_group(arg);
@@ -246,7 +251,7 @@ ossl_ec_key_get_group(VALUE self)
 static VALUE
 ossl_ec_key_set_group(VALUE self, VALUE group_v)
 {
-#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
     rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
 #else
     EC_KEY *ec;
@@ -288,7 +293,7 @@ static VALUE ossl_ec_key_get_private_key(VALUE self)
  */
 static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
 {
-#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
     rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
 #else
     EC_KEY *ec;
@@ -339,7 +344,7 @@ static VALUE ossl_ec_key_get_public_key(VALUE self)
  */
 static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
 {
-#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
     rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
 #else
     EC_KEY *ec;
@@ -511,7 +516,7 @@ ossl_ec_key_to_der(VALUE self)
  */
 static VALUE ossl_ec_key_generate_key(VALUE self)
 {
-#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
     rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
 #else
     EC_KEY *ec;
@@ -805,11 +810,10 @@ static VALUE ossl_ec_group_get_order(VALUE self)
 {
     VALUE bn_obj;
     BIGNUM *bn;
-    EC_GROUP *group = NULL;
+    EC_GROUP *group;
 
     GetECGroup(self, group);
-
-    bn_obj = ossl_bn_new(NULL);
+    bn_obj = ossl_bn_new(BN_value_one());
     bn = GetBNPtr(bn_obj);
 
     if (EC_GROUP_get_order(group, bn, ossl_bn_ctx) != 1)
@@ -830,11 +834,10 @@ static VALUE ossl_ec_group_get_cofactor(VALUE self)
 {
     VALUE bn_obj;
     BIGNUM *bn;
-    EC_GROUP *group = NULL;
+    EC_GROUP *group;
 
     GetECGroup(self, group);
-
-    bn_obj = ossl_bn_new(NULL);
+    bn_obj = ossl_bn_new(BN_value_one());
     bn = GetBNPtr(bn_obj);
 
     if (EC_GROUP_get_cofactor(group, bn, ossl_bn_ctx) != 1)
@@ -1370,7 +1373,7 @@ static VALUE ossl_ec_point_make_affine(VALUE self)
     GetECPointGroup(self, group);
 
     rb_warn("OpenSSL::PKey::EC::Point#make_affine! is deprecated");
-#if !OSSL_OPENSSL_PREREQ(3, 0, 0) && !defined(OPENSSL_IS_AWSLC)
+#if !defined(OSSL_HAVE_IMMUTABLE_PKEY) && !defined(OPENSSL_IS_AWSLC)
     if (EC_POINT_make_affine(group, point, ossl_bn_ctx) != 1)
         ossl_raise(eEC_POINT, "EC_POINT_make_affine");
 #endif

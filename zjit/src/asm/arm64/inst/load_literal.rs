@@ -1,3 +1,5 @@
+#![allow(clippy::identity_op)]
+
 use super::super::arg::{InstructionOffset, truncate_imm};
 
 /// The size of the operands being operated on.
