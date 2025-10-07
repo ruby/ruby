@@ -73,6 +73,9 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   when "test-unit"
     test_command = [ruby, "-C", "#{gem_dir}/src/#{gem}", "test/run.rb"]
 
+  when "csv"
+    first_timeout = 30
+
   when "win32ole"
     next unless /mswin|mingw/ =~ RUBY_PLATFORM
 
