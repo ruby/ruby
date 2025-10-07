@@ -1150,8 +1150,16 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
     enum {other_runtime_info = 0};
 #endif
     const rb_vm_t *const vm = GET_VM();
-    const rb_namespace_t *ns = rb_current_namespace();
+    const rb_namespace_t *current_ns = rb_current_namespace_in_crash_report();
     const rb_execution_context_t *ec = rb_current_execution_context(false);
+    VALUE loaded_features;
+
+    if (current_ns) {
+        loaded_features = current_ns->loaded_features;
+    }
+    else {
+        loaded_features = rb_root_namespace()->loaded_features;
+    }
 
     if (vm && ec) {
         rb_vmdebug_stack_dump_raw(ec, ec->cfp, errout);
@@ -1201,17 +1209,22 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
         }
         if (rb_namespace_available()) {
             kprintf("* Namespace: enabled\n");
-            kprintf("* Current namespace id: %ld, type: %s\n",
-                    ns->ns_id,
-                    NAMESPACE_USER_P(ns) ? (NAMESPACE_MAIN_P(ns) ? "main" : "user") : "root");
+            if (current_ns) {
+                kprintf("* Current namespace id: %ld, type: %s\n",
+                        current_ns->ns_id,
+                        NAMESPACE_USER_P(current_ns) ? (NAMESPACE_MAIN_P(current_ns) ? "main" : "user") : "root");
+            }
+            else {
+                kprintf("* Current namespace: NULL (crashed)\n");
+            }
         }
         else {
             kprintf("* Namespace: disabled\n");
         }
-        if (ns->loaded_features) {
+        if (loaded_features) {
             kprintf("* Loaded features:\n\n");
-            for (i=0; i<RARRAY_LEN(ns->loaded_features); i++) {
-                name = RARRAY_AREF(ns->loaded_features, i);
+            for (i=0; i<RARRAY_LEN(loaded_features); i++) {
+                name = RARRAY_AREF(loaded_features, i);
                 if (RB_TYPE_P(name, T_STRING)) {
                     kprintf(" %4d %.*s\n", i,
                             LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));

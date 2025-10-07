@@ -50,6 +50,7 @@ static bool tmp_dir_has_dirsep;
 
 bool ruby_namespace_enabled = false; // extern
 bool ruby_namespace_init_done = false; // extern
+bool ruby_namespace_crashed = false; // extern, changed only in vm.c
 
 VALUE rb_resolve_feature_path(VALUE klass, VALUE fname);
 static VALUE rb_namespace_inspect(VALUE obj);
@@ -95,6 +96,14 @@ rb_loading_namespace(void)
         return root_namespace;
 
     return rb_vm_loading_namespace(GET_EC());
+}
+
+const rb_namespace_t *
+rb_current_namespace_in_crash_report(void)
+{
+    if (ruby_namespace_crashed)
+        return NULL;
+    return rb_current_namespace();
 }
 
 static long namespace_id_counter = 0;
