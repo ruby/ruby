@@ -284,7 +284,7 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
             if (pos >= 0) {
                 long *ptr = rb_darray_data_ptr(feature_indexes);
                 long len = rb_darray_size(feature_indexes);
-                MEMMOVE(ptr + pos, ptr + pos + 1, long, len - pos - 1);
+                MEMMOVE(ptr + pos + 1, ptr + pos, long, len - pos - 1);
                 ptr[pos] = FIX2LONG(offset);
             }
         }
