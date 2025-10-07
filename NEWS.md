@@ -188,7 +188,7 @@ The following default gems are updated.
 * io-console 0.8.1
 * io-nonblock 0.3.2
 * io-wait 0.3.2
-* json 2.15.0
+* json 2.15.1
 * openssl 4.0.0.pre
 * optparse 0.7.0.dev.2
 * pp 0.6.3
