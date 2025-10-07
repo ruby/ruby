@@ -761,6 +761,9 @@ rb_initialize_main_namespace(void)
     rb_const_set(rb_cNamespace, rb_intern("MAIN"), main_ns);
 
     vm->main_namespace = main_namespace = ns;
+
+    // create the writable classext of ::Object explicitly to finalize the set of visible top-level constants
+    RCLASS_EXT_WRITABLE_IN_NS(rb_cObject, ns);
 }
 
 static VALUE
