@@ -35,9 +35,9 @@ class << RubyVM::ZJIT
     return unless trace_exit_locations_enabled?
 
     results = Primitive.rb_zjit_get_exit_locations
-    raw_samples = results[:raw].dup
-    line_samples = results[:lines].dup
-    frames = results[:frames].dup
+    raw_samples = results[:raw]
+    line_samples = results[:lines]
+    frames = results[:frames]
     samples_count = 0
 
     # Loop through the instructions and set the frame hash with the data.
