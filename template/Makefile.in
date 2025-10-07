@@ -20,6 +20,7 @@ srcdir = @srcdir@
 top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
 tooldir = $(srcdir)/tool
+prismobjdir = ./prism
 
 PLATFORM_DIR = @PLATFORM_DIR@
 
