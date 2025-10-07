@@ -336,10 +336,14 @@ RCLASS_SET_NAMESPACE_CLASSEXT(VALUE obj, const rb_namespace_t *ns, rb_classext_t
     return first_set;
 }
 
+#define VM_ASSERT_NAMESPACEABLE_TYPE(klass) \
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS), "%s is not namespaceable type", rb_type_str(BUILTIN_TYPE(klass)))
+
 static inline bool
 RCLASS_PRIME_CLASSEXT_READABLE_P(VALUE klass)
 {
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
+    VM_ASSERT(klass != 0, "klass should be a valid object");
+    VM_ASSERT_NAMESPACEABLE_TYPE(klass);
     // if the lookup table exists, then it means the prime classext is NOT directly readable.
     return !FL_TEST_RAW(klass, RCLASS_NAMESPACEABLE) || RCLASS_CLASSEXT_TBL(klass) == NULL;
 }
@@ -347,15 +351,16 @@ RCLASS_PRIME_CLASSEXT_READABLE_P(VALUE klass)
 static inline bool
 RCLASS_PRIME_CLASSEXT_WRITABLE_P(VALUE klass)
 {
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
+    VM_ASSERT(klass != 0, "klass should be a valid object");
+    VM_ASSERT_NAMESPACEABLE_TYPE(klass);
     return FL_TEST(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
 }
 
 static inline void
 RCLASS_SET_PRIME_CLASSEXT_WRITABLE(VALUE klass, bool writable)
 {
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
-
+    VM_ASSERT(klass != 0, "klass should be a valid object");
+    VM_ASSERT_NAMESPACEABLE_TYPE(klass);
     if (writable) {
         FL_SET(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
     }
@@ -429,6 +434,7 @@ RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_namespace_t *ns)
             ext = rb_class_duplicate_classext(RCLASS_EXT_PRIME(obj), obj, ns);
             first_set = RCLASS_SET_NAMESPACE_CLASSEXT(obj, ns, ext);
             if (first_set) {
+                // TODO: are there any case that a class/module become non-writable after its birthtime?
                 RCLASS_SET_PRIME_CLASSEXT_WRITABLE(obj, false);
             }
         }

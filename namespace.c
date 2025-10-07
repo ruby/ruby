@@ -845,11 +845,15 @@ rb_namespace_s_main(VALUE recv)
 static const char *
 classname(VALUE klass)
 {
-    VALUE p = RCLASS_CLASSPATH(klass);
+    VALUE p;
+    if (!klass) {
+        return "Qfalse";
+    }
+    p = RCLASSEXT_CLASSPATH(RCLASS_EXT_PRIME(klass));
     if (RTEST(p))
         return RSTRING_PTR(p);
     if (RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS))
-        return RSTRING_PTR(rb_inspect(klass));
+        return "AnyClassValue";
     return "NonClassValue";
 }
 
@@ -973,6 +977,27 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
     return res;
 }
 
+static VALUE
+rb_namespace_root_p(VALUE namespace)
+{
+    const rb_namespace_t *ns = (const rb_namespace_t *)rb_get_namespace_t(namespace);
+    return RBOOL(NAMESPACE_ROOT_P(ns));
+}
+
+static VALUE
+rb_namespace_main_p(VALUE namespace)
+{
+    const rb_namespace_t *ns = (const rb_namespace_t *)rb_get_namespace_t(namespace);
+    return RBOOL(NAMESPACE_MAIN_P(ns));
+}
+
+static VALUE
+rb_namespace_user_p(VALUE namespace)
+{
+    const rb_namespace_t *ns = (const rb_namespace_t *)rb_get_namespace_t(namespace);
+    return RBOOL(NAMESPACE_USER_P(ns));
+}
+
 #endif /* RUBY_DEBUG */
 
 /*
@@ -1010,6 +1035,10 @@ Init_Namespace(void)
         rb_define_singleton_method(rb_cNamespace, "root", rb_namespace_s_root, 0);
         rb_define_singleton_method(rb_cNamespace, "main", rb_namespace_s_main, 0);
         rb_define_global_function("dump_classext", rb_f_dump_classext, 1);
+
+        rb_define_method(rb_cNamespace, "root?", rb_namespace_root_p, 0);
+        rb_define_method(rb_cNamespace, "main?", rb_namespace_main_p, 0);
+        rb_define_method(rb_cNamespace, "user?", rb_namespace_user_p, 0);
 #endif
     }
 
