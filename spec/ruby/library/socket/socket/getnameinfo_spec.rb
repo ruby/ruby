@@ -60,6 +60,24 @@ describe "Socket.getnameinfo" do
     name_info = Socket.getnameinfo ["AF_INET", 9, 'foo', '127.0.0.1']
     name_info[1].should == 'discard'
   end
+
+  ruby_version_is ""..."3.3" do
+    it "raises SocketError when fails to resolve address" do
+      -> {
+        Socket.getnameinfo(["AF_UNIX", 80, "0.0.0.0"])
+      }.should raise_error(SocketError)
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "raises ResolutionError when fails to resolve address" do
+      -> {
+        Socket.getnameinfo(["AF_UNIX", 80, "0.0.0.0"])
+      }.should raise_error(Socket::ResolutionError) { |e|
+        e.error_code.should == Socket::EAI_FAMILY
+      }
+    end
+  end
 end
 
 describe 'Socket.getnameinfo' do

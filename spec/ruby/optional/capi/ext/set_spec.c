@@ -47,6 +47,7 @@ VALUE set_spec_rb_set_size(VALUE self, VALUE set) {
 
 void Init_set_spec(void) {
   VALUE cls = rb_define_class("CApiSetSpecs", rb_cObject);
+
   rb_define_method(cls, "rb_set_foreach", set_spec_rb_set_foreach, 2);
   rb_define_method(cls, "rb_set_new", set_spec_rb_set_new, 0);
   rb_define_method(cls, "rb_set_new_capa", set_spec_rb_set_new_capa, 1);

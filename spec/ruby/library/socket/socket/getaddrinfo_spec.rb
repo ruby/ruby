@@ -106,6 +106,24 @@ describe "Socket.getaddrinfo" do
       ]
       res.each { |a| expected.should include(a) }
     end
+
+    ruby_version_is ""..."3.3" do
+      it "raises SocketError when fails to resolve address" do
+        -> {
+          Socket.getaddrinfo("www.kame.net", 80, "AF_UNIX")
+        }.should raise_error(SocketError)
+      end
+    end
+
+    ruby_version_is "3.3" do
+      it "raises ResolutionError when fails to resolve address" do
+        -> {
+          Socket.getaddrinfo("www.kame.net", 80, "AF_UNIX")
+        }.should raise_error(Socket::ResolutionError) { |e|
+          e.error_code.should == Socket::EAI_FAMILY
+        }
+      end
+    end
   end
 end
 
