@@ -5394,6 +5394,32 @@ mod tests {
     }
 
     #[test]
+    fn test_opt_aref() {
+        eval("
+            arr = [1,2,3]
+            def test(arr) = arr[0]
+            test(arr)
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_aref);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:Fixnum[0] = Const Value(0)
+          v17:BasicObject = SendWithoutBlock v9, :[], v13
+          CheckInterrupts
+          Return v17
+        ");
+    }
+
+    #[test]
     fn test_opt_str_freeze() {
         eval("
             def test = ''.freeze
