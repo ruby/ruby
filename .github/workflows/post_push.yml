@@ -13,8 +13,7 @@ jobs:
       - name: Sync git.ruby-lang.org
         run: |
           mkdir -p ~/.ssh
-          echo "$RUBY_GIT_SYNC_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
+          (umask 066; printenv RUBY_GIT_SYNC_PRIVATE_KEY > ~/.ssh/id_ed25519)
           ssh-keyscan -t ed25519 git.ruby-lang.org >> ~/.ssh/known_hosts
           ssh -i ~/.ssh/id_ed25519 git-sync@git.ruby-lang.org "sudo -u git /home/git/git.ruby-lang.org/bin/update-ruby.sh $GITHUB_REF"
         env:
