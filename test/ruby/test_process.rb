@@ -58,6 +58,8 @@ class TestProcess < Test::Unit::TestCase
 
   def test_rlimit_nofile
     return unless rlimit_exist?
+    omit "LSAN needs to open proc file" if Test::Sanitizers.lsan_enabled?
+
     with_tmpchdir {
       File.write 's', <<-"End"
         # Too small RLIMIT_NOFILE, such as zero, causes problems.
