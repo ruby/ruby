@@ -1251,7 +1251,7 @@ the potential vulnerability arising from this is the {regular expression denial-
 
 \Regexp matching can apply an optimization to prevent ReDoS attacks.
 When the optimization is applied, matching time increases linearly (not polynomially or exponentially)
-in relation to the input size, and a ReDoS attach is not possible.
+in relation to the input size, and a ReDoS attack is not possible.
 
 This optimization is applied if the pattern meets these criteria:
 
