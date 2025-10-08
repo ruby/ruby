@@ -6,24 +6,26 @@ use crate::cruby::*;
 use std::collections::HashSet;
 
 /// Default --zjit-num-profiles
-const DEFAULT_NUM_PROFILES: u32 = 5;
+const DEFAULT_NUM_PROFILES: NumProfiles = 5;
+pub type NumProfiles = u32;
 
 /// Default --zjit-call-threshold. This should be large enough to avoid compiling
 /// warmup code, but small enough to perform well on micro-benchmarks.
-pub const DEFAULT_CALL_THRESHOLD: u64 = 30;
+pub const DEFAULT_CALL_THRESHOLD: CallThreshold = 30;
+pub type CallThreshold = u64;
 
 /// Number of calls to start profiling YARV instructions.
 /// They are profiled `rb_zjit_call_threshold - rb_zjit_profile_threshold` times,
 /// which is equal to --zjit-num-profiles.
 #[unsafe(no_mangle)]
 #[allow(non_upper_case_globals)]
-pub static mut rb_zjit_profile_threshold: u64 = DEFAULT_CALL_THRESHOLD - DEFAULT_NUM_PROFILES as u64;
+pub static mut rb_zjit_profile_threshold: CallThreshold = DEFAULT_CALL_THRESHOLD - DEFAULT_NUM_PROFILES as CallThreshold;
 
 /// Number of calls to compile ISEQ with ZJIT at jit_compile() in vm.c.
 /// --zjit-call-threshold=1 compiles on first execution without profiling information.
 #[unsafe(no_mangle)]
 #[allow(non_upper_case_globals)]
-pub static mut rb_zjit_call_threshold: u64 = DEFAULT_CALL_THRESHOLD;
+pub static mut rb_zjit_call_threshold: CallThreshold = DEFAULT_CALL_THRESHOLD;
 
 /// ZJIT command-line options. This is set before rb_zjit_init() sets
 /// ZJITState so that we can query some options while loading builtins.
@@ -40,7 +42,7 @@ pub struct Options {
     pub mem_bytes: usize,
 
     /// Number of times YARV instructions should be profiled.
-    pub num_profiles: u32,
+    pub num_profiles: NumProfiles,
 
     /// Enable YJIT statsitics
     pub stats: bool,
@@ -319,14 +321,14 @@ fn update_profile_threshold() {
         unsafe { rb_zjit_profile_threshold = 0; }
     } else {
         // Otherwise, profile instructions at least once.
-        let num_profiles = get_option!(num_profiles) as u64;
-        unsafe { rb_zjit_profile_threshold = rb_zjit_call_threshold.saturating_sub(num_profiles).max(1) };
+        let num_profiles = get_option!(num_profiles);
+        unsafe { rb_zjit_profile_threshold = rb_zjit_call_threshold.saturating_sub(num_profiles as CallThreshold).max(1) };
     }
 }
 
 /// Update --zjit-call-threshold for testing
 #[cfg(test)]
-pub fn set_call_threshold(call_threshold: u64) {
+pub fn set_call_threshold(call_threshold: CallThreshold) {
     unsafe { rb_zjit_call_threshold = call_threshold; }
     rb_zjit_prepare_options();
     update_profile_threshold();
