@@ -1382,7 +1382,7 @@ rb_require_internal(VALUE fname)
 int
 ruby_require_internal(const char *fname, unsigned int len)
 {
-    struct RString fake;
+    struct RString fake = {RBASIC_INIT};
     VALUE str = rb_setup_fake_str(&fake, fname, len, 0);
     rb_execution_context_t *ec = GET_EC();
     int result = require_internal(ec, str, 0, RTEST(ruby_verbose));
@@ -1424,7 +1424,7 @@ rb_require_string_internal(VALUE fname, bool resurrect)
 VALUE
 rb_require(const char *fname)
 {
-    struct RString fake;
+    struct RString fake = {RBASIC_INIT};
     VALUE str = rb_setup_fake_str(&fake, fname, strlen(fname), 0);
     return rb_require_string_internal(str, true);
 }
