@@ -322,7 +322,7 @@ fn update_profile_threshold() {
     } else {
         // Otherwise, profile instructions at least once.
         let num_profiles = get_option!(num_profiles);
-        unsafe { rb_zjit_profile_threshold = rb_zjit_call_threshold.saturating_sub(num_profiles as CallThreshold).max(1) };
+        unsafe { rb_zjit_profile_threshold = rb_zjit_call_threshold.saturating_sub(num_profiles.into()).max(1) };
     }
 }
 
