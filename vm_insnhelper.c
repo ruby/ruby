@@ -6259,7 +6259,7 @@ static VALUE
 vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE target)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_INCLUDE_P, ARRAY_REDEFINED_OP_FLAG)) {
-        struct RArray fake_ary;
+        struct RArray fake_ary = {RBASIC_INIT};
         VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, num);
         return rb_ary_includes(ary, target);
     }
@@ -6279,7 +6279,7 @@ static VALUE
 vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt, VALUE buffer)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_PACK, ARRAY_REDEFINED_OP_FLAG)) {
-        struct RArray fake_ary;
+        struct RArray fake_ary = {RBASIC_INIT};
         VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, num);
         return rb_ec_pack_ary(ec, ary, fmt, (UNDEF_P(buffer) ? Qnil : buffer));
     }
