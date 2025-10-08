@@ -39,12 +39,6 @@ jobs:
           RUBY_GIT_SYNC_PRIVATE_KEY: ${{ secrets.RUBY_GIT_SYNC_PRIVATE_KEY }}
         if: ${{ github.repository == 'ruby/ruby' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/ruby_')) && github.event_name == 'push' }}
 
-      - uses: ./.github/actions/setup/directories
-        with:
-          makeup: true
-          # Skip overwriting MATZBOT_AUTO_UPDATE_TOKEN
-          checkout: '' # false (ref: https://github.com/actions/runner/issues/2238)
-
       - name: Auto-correct code styles
         run: |
           set -x
