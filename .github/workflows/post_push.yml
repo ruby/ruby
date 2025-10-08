@@ -24,7 +24,7 @@ jobs:
 
       - name: Fetch changesets on bugs.ruby-lang.org
         run: |
-          curl "https://bugs.ruby-lang.org/sys/fetch_changesets?key=${REDMINE_SYS_API_KEY}" --fail-with-body -w '* status: %{http_code}\n'
+          curl "https://bugs.ruby-lang.org/sys/fetch_changesets?key=${REDMINE_SYS_API_KEY}" -s --fail-with-body -w '* status: %{http_code}\n'
         env:
           REDMINE_SYS_API_KEY: ${{ secrets.REDMINE_SYS_API_KEY }}
         if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/ruby_') }}
