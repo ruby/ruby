@@ -14,11 +14,23 @@ asan_enabled_p(VALUE self)
 #endif
 }
 
+static VALUE
+lsan_enabled_p(VALUE self)
+{
+#if defined(__has_feature)
+    /* clang uses __has_feature for determining LSAN */
+    return __has_feature(leak_sanitizer) ? Qtrue : Qfalse;
+#else
+    return Qfalse;
+#endif
+}
+
 void
 Init_sanitizers(void)
 {
     VALUE m = rb_define_module("Test");
     VALUE c = rb_define_class_under(m, "Sanitizers", rb_cObject);
     rb_define_singleton_method(c, "asan_enabled?", asan_enabled_p, 0);
+    rb_define_singleton_method(c, "lsan_enabled?", lsan_enabled_p, 0);
 }
 
