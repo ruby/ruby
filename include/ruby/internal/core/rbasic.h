@@ -104,6 +104,9 @@ RBasic {
         klass(RBIMPL_VALUE_NULL)
     {
     }
+# define RBASIC_INIT RBasic()
+#else
+# define RBASIC_INIT {RBIMPL_VALUE_NULL}
 #endif
 };
 

@@ -2321,7 +2321,7 @@ name_err_mesg_to_str(VALUE obj)
     VALUE mesg = ptr->mesg;
     if (NIL_P(mesg)) return Qnil;
     else {
-        struct RString s_str, c_str, d_str;
+        struct RString s_str = {RBASIC_INIT}, c_str = {RBASIC_INIT}, d_str = {RBASIC_INIT};
         VALUE c, s, d = 0, args[4], c2;
         int state = 0;
         rb_encoding *usascii = rb_usascii_encoding();

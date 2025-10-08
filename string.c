@@ -486,14 +486,14 @@ rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encod
 VALUE
 rb_fstring_new(const char *ptr, long len)
 {
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), FALSE);
 }
 
 VALUE
 rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc)
 {
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), FALSE);
 }
 
@@ -12084,7 +12084,7 @@ rb_str_to_interned_str(VALUE str)
 VALUE
 rb_interned_str(const char *ptr, long len)
 {
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), TRUE);
 }
 
@@ -12101,7 +12101,7 @@ rb_enc_interned_str(const char *ptr, long len, rb_encoding *enc)
         rb_enc_autoload(enc);
     }
 
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), TRUE);
 }
 

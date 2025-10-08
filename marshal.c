@@ -1438,7 +1438,7 @@ long
 ruby_marshal_read_long(const char **buf, long len)
 {
     long x;
-    struct RString src;
+    struct RString src = {RBASIC_INIT};
     struct load_arg arg;
     memset(&arg, 0, sizeof(arg));
     arg.src = rb_setup_fake_str(&src, *buf, len, 0);
