@@ -12926,6 +12926,9 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
     struct rb_call_data *cd_entries = load_body->call_data;
     int ic_index = 0;
 
+    load_body->iseq_encoded = code;
+    load_body->iseq_size = 0;
+
     iseq_bits_t * mark_offset_bits;
 
     iseq_bits_t tmp[1] = {0};
@@ -13057,7 +13060,6 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
         }
     }
 
-    load_body->iseq_encoded = code;
     load_body->iseq_size = code_index;
 
     if (ISEQ_MBITS_BUFLEN(load_body->iseq_size) == 1) {
