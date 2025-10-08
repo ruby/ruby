@@ -19,6 +19,10 @@ class TestArray < Test::Unit::TestCase
     assert_instance_of(x.class, y)
   end
 
+  def test_for_experiment
+    assert_equal(3, [1, 2].sum)
+  end
+
   def test_percent_i
     assert_equal([:foo, :bar], %i[foo bar])
     assert_equal([:"\"foo"], %i["foo])
