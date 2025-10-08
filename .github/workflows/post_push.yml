@@ -46,7 +46,7 @@ jobs:
       - name: Notify commit to ruby-cvs
         run: |
           SENDMAIL="ssh -i ${HOME}/.ssh/id_ed25519 git-sync@git.ruby-lang.org /usr/sbin/sendmail" \
-            ruby tool/commit-mail.rb . ruby-cvs@g.ruby-lang.org \
+            ruby tool/commit-email.rb . ruby-cvs@g.ruby-lang.org \
             "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" "$GITHUB_REF" \
             --viewer-uri "https://github.com/ruby/ruby/commit/" \
             --error-to cvs-admin@ruby-lang.org
