@@ -1,32 +1,15 @@
 name: Post-push
-on: push
+on:
+  push:
+    branches:
+      - master
+      - 'ruby_*_*'
 jobs:
   hooks:
     name: Post-push hooks
-
-    permissions:
-      contents: write # for Git to git push
-
     runs-on: ubuntu-latest
-
+    if: ${{ github.repository == 'ruby/ruby' }}
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-        with:
-          fetch-depth: 500 # for notify-slack-commits
-          token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
-
-      # Run this step first (even before `make up` in the next step) to make the notification available before any other failure
-      - name: Notify commit to Slack
-        run: ruby tool/notify-slack-commits.rb "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" refs/heads/master
-        env:
-          GITHUB_OLD_SHA: ${{ github.event.before }}
-          GITHUB_NEW_SHA: ${{ github.event.after }}
-          SLACK_WEBHOOK_URL_ALERTS: ${{ secrets.SLACK_WEBHOOK_URL_ALERTS }}
-          SLACK_WEBHOOK_URL_COMMITS: ${{ secrets.SLACK_WEBHOOK_URL_COMMITS }}
-          SLACK_WEBHOOK_URL_RUBY_JP: ${{ secrets.SLACK_WEBHOOK_URL_RUBY_JP }}
-        if: ${{ github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master' && github.event_name == 'push' }}
-        continue-on-error: true # The next auto-style should always run
-
       - name: Sync git.ruby-lang.org
         run: |
           mkdir -p ~/.ssh
@@ -37,7 +20,22 @@ jobs:
         env:
           GITHUB_REF: ${{ github.ref }}
           RUBY_GIT_SYNC_PRIVATE_KEY: ${{ secrets.RUBY_GIT_SYNC_PRIVATE_KEY }}
-        if: ${{ github.repository == 'ruby/ruby' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/ruby_')) && github.event_name == 'push' }}
+        if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/ruby_') }}
+
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 500 # for notify-slack-commits
+          token: ${{ secrets.MATZBOT_AUTO_UPDATE_TOKEN }}
+
+      - name: Notify commit to Slack
+        run: ruby tool/notify-slack-commits.rb "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" refs/heads/master
+        env:
+          GITHUB_OLD_SHA: ${{ github.event.before }}
+          GITHUB_NEW_SHA: ${{ github.event.after }}
+          SLACK_WEBHOOK_URL_ALERTS: ${{ secrets.SLACK_WEBHOOK_URL_ALERTS }}
+          SLACK_WEBHOOK_URL_COMMITS: ${{ secrets.SLACK_WEBHOOK_URL_COMMITS }}
+          SLACK_WEBHOOK_URL_RUBY_JP: ${{ secrets.SLACK_WEBHOOK_URL_RUBY_JP }}
+        if: ${{ github.ref == 'refs/heads/master' }}
 
       - name: Auto-correct code styles
         run: |
@@ -49,7 +47,7 @@ jobs:
           GIT_AUTHOR_NAME: git
           GIT_COMMITTER_NAME: git
           EMAIL: svn-admin@ruby-lang.org
-        if: ${{ github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master' && github.event_name == 'push' }}
+        if: ${{ github.ref == 'refs/heads/master' }}
 
       - name: Push PR notes to GitHub
         run: ruby tool/notes-github-pr.rb "$(pwd)/.git" "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" refs/heads/master
@@ -60,7 +58,7 @@ jobs:
           GIT_AUTHOR_NAME: git
           GIT_COMMITTER_NAME: git
           EMAIL: svn-admin@ruby-lang.org
-        if: ${{ github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master' && github.event_name == 'push' }}
+        if: ${{ github.ref == 'refs/heads/master' }}
 
       - uses: ./.github/actions/slack
         with:
