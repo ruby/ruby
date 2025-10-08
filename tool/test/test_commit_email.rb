@@ -30,8 +30,9 @@ class TestCommitEmail < Test::Unit::TestCase
   # Just testing an exit status :p
   # TODO: prepare something in test/fixtures/xxx and test output
   def test_successful_run
-    unless EnvUtil.invoke_ruby([gem_env, '-e', 'require "nkf"'], '', true).last.success?
-      omit "bundled gems are not available"
+    _, err, status = EnvUtil.invoke_ruby([gem_env, '-e', 'require "nkf"'], '', false, true)
+    unless status.success?
+      omit "bundled gems are not available: #{err}"
     end
 
     Dir.chdir(@ruby) do
