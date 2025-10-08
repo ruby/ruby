@@ -22,6 +22,12 @@ jobs:
           RUBY_GIT_SYNC_PRIVATE_KEY: ${{ secrets.RUBY_GIT_SYNC_PRIVATE_KEY }}
         if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/ruby_') }}
 
+      - name: Fetch changesets on bugs.ruby-lang.org
+        run: curl "https://bugs.ruby-lang.org/sys/fetch_changesets?key=${REDMINE_SYS_API_KEY}" --fail-with-body -w '* status: %{http_code}\n'
+        env:
+          REDMINE_SYS_API_KEY: ${{ secrets.REDMINE_SYS_API_KEY }}
+        if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/ruby_') }}
+
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 500 # for notify-slack-commits
