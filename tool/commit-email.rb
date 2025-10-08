@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 
 require "optparse"
-require "ostruct"
 require "nkf"
 require "shellwords"
 
@@ -145,15 +144,15 @@ class GitInfoBuilder
   end
 end
 
+CommitEmailOptions = Struct.new(:error_to, :viewer_uri)
+
 CommitEmail = Module.new
 class << CommitEmail
   SENDMAIL = ENV.fetch('SENDMAIL', '/usr/sbin/sendmail')
   private_constant :SENDMAIL
 
   def parse(args)
-    options = OpenStruct.new
-    options.error_to = nil
-    options.viewvc_uri = nil
+    options = CommitEmailOptions.new
 
     opts = OptionParser.new do |opts|
       opts.separator('')
