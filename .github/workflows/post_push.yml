@@ -30,6 +30,21 @@ jobs:
         if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/ruby_') }}
 
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 500
+
+      - name: Notify commit to ruby-cvs
+        run: |
+          SENDMAIL="ssh -i ${HOME}/.ssh/id_ed25519 git-sync@git.ruby-lang.org /usr/sbin/sendmail" \
+            ruby tool/commit-mail.rb . ruby-cvs@g.ruby-lang.org \
+            "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" "$GITHUB_REF" \
+            --viewer-uri "https://github.com/ruby/ruby/commit/" \
+            --error-to cvs-admin@ruby-lang.org
+        env:
+          GITHUB_OLD_SHA: ${{ github.event.before }}
+          GITHUB_NEW_SHA: ${{ github.event.after }}
+          GITHUB_REF: ${{ github.ref }}
+        if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/ruby_') }}
 
       - uses: ./.github/actions/slack
         with:
