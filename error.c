@@ -2067,7 +2067,7 @@ name_err_mesg_to_str(VALUE obj)
     mesg = ptr[NAME_ERR_MESG__MESG];
     if (NIL_P(mesg)) return Qnil;
     else {
-        struct RString s_str, d_str;
+        struct RString s_str = {RBASIC_INIT}, d_str = {RBASIC_INIT};
         VALUE c, s, d = 0, args[4];
         int state = 0, singleton = 0;
         rb_encoding *usascii = rb_usascii_encoding();
