@@ -15,10 +15,10 @@ asan_enabled_p(VALUE self)
 }
 
 void
-Init_asan(void)
+Init_sanitizers(void)
 {
     VALUE m = rb_define_module("Test");
-    VALUE c = rb_define_class_under(m, "ASAN", rb_cObject);
+    VALUE c = rb_define_class_under(m, "Sanitizers", rb_cObject);
     rb_define_singleton_method(c, "enabled?", asan_enabled_p, 0);
 }
 
