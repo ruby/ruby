@@ -37,15 +37,16 @@ jobs:
 
       # Sync git.ruby-lang.org before pushing new commits to avoid duplicated syncs
       - name: Sync git.ruby-lang.org
-        env:
-          RUBY_GIT_SYNC_PRIVATE_KEY: ${{ secrets.RUBY_GIT_SYNC_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
           echo "$RUBY_GIT_SYNC_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -t ed25519 git.ruby-lang.org >> ~/.ssh/known_hosts
-          ssh -i ~/.ssh/id_ed25519 git-sync@git.ruby-lang.org 'sudo -u git /home/git/git.ruby-lang.org/bin/update-ruby.sh master'
-        if: ${{ github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master' && github.event_name == 'push' }}
+          ssh -i ~/.ssh/id_ed25519 git-sync@git.ruby-lang.org "sudo -u git /home/git/git.ruby-lang.org/bin/update-ruby.sh $GITHUB_REF"
+        env:
+          GITHUB_REF: ${{ github.ref }}
+          RUBY_GIT_SYNC_PRIVATE_KEY: ${{ secrets.RUBY_GIT_SYNC_PRIVATE_KEY }}
+        if: ${{ github.repository == 'ruby/ruby' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/ruby_')) && github.event_name == 'push' }}
 
       - uses: ./.github/actions/setup/directories
         with:
