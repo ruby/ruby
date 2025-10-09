@@ -83,11 +83,9 @@ RSpec.describe "major deprecations" do
       bundle "exec --no-keep-file-descriptors -e 1", raise_on_error: false
     end
 
-    it "is deprecated" do
-      expect(deprecations).to include "The `--no-keep-file-descriptors` has been deprecated. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to"
+    it "is removed and shows a helpful error message about it" do
+      expect(err).to include "The `--no-keep-file-descriptors` has been removed. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to"
     end
-
-    pending "is removed and shows a helpful error message about it", bundler: "4"
   end
 
   describe "bundle update --quiet" do
