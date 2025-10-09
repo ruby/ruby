@@ -29,6 +29,8 @@ class TestCommitEmail < Test::Unit::TestCase
   end
 
   def test_sendmail_encoding
+    omit 'the sendmail script does not work on windows' if windows?
+
     Dir.chdir(@ruby) do
       before_rev = git('rev-parse', 'HEAD^').chomp
       long_rev = git('rev-parse', 'HEAD').chomp
