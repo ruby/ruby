@@ -535,6 +535,9 @@ pub enum SendFallbackReason {
     SendWithoutBlockCfuncArrayVariadic,
     SendWithoutBlockNotOptimizedMethodType(MethodType),
     SendWithoutBlockDirectTooManyArgs,
+    SendPolymorphic,
+    SendNoProfiles,
+    SendNotOptimizedMethodType(MethodType),
     CCallWithFrameTooManyArgs,
     ObjToStringNotString,
     /// Initial fallback reason for every instruction, which should be mutated to
@@ -2122,6 +2125,42 @@ impl Function {
                             self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)));
                             self.push_insn_id(block, insn_id); continue;
                         }
+                    }
+                    // This doesn't actually optimize Send yet, just replaces the fallback reason to be more precise.
+                    // TODO: Optimize Send
+                    Insn::Send { recv, cd, state, .. } => {
+                        let frame_state = self.frame_state(state);
+                        let klass = if let Some(klass) = self.type_of(recv).runtime_exact_ruby_class() {
+                            // If we know the class statically, use it to fold the lookup at compile-time.
+                            klass
+                        } else {
+                            let Some(recv_type) = self.profiled_type_of_at(recv, frame_state.insn_idx) else {
+                                if get_option!(stats) {
+                                    match self.is_polymorphic_at(recv, frame_state.insn_idx) {
+                                        Some(true) => self.set_dynamic_send_reason(insn_id, SendPolymorphic),
+                                        // If the class isn't known statically, then it should not also be monomorphic
+                                        Some(false) => panic!("Should not have monomorphic profile at this point in this branch"),
+                                        None => self.set_dynamic_send_reason(insn_id, SendNoProfiles),
+                                    }
+                                }
+                                self.push_insn_id(block, insn_id); continue;
+                            };
+                            recv_type.class()
+                        };
+                        let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
+                        let mid = unsafe { vm_ci_mid(ci) };
+                        // Do method lookup
+                        let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
+                        if cme.is_null() {
+                            self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodType(MethodType::Null));
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        // Load an overloaded cme if applicable. See vm_search_cc().
+                        // It allows you to use a faster ISEQ if possible.
+                        cme = unsafe { rb_check_overloaded_cme(cme, ci) };
+                        let def_type = unsafe { get_cme_def_type(cme) };
+                        self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodType(MethodType::from(def_type)));
+                        self.push_insn_id(block, insn_id); continue;
                     }
                     Insn::GetConstantPath { ic, state, .. } => {
                         let idlist: *const ID = unsafe { (*ic).segments };

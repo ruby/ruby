@@ -1616,7 +1616,7 @@ fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReaso
         NotOptimizedInstruction(opcode) => {
             gen_incr_counter_ptr(asm, send_fallback_counter_ptr_for_opcode(opcode));
         }
-        SendWithoutBlockNotOptimizedMethodType(method_type) => {
+        SendWithoutBlockNotOptimizedMethodType(method_type) | SendNotOptimizedMethodType(method_type) => {
             gen_incr_counter(asm, send_fallback_counter_for_method_type(method_type));
         }
         _ => {}
