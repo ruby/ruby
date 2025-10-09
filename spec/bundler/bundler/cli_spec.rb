@@ -266,7 +266,7 @@ end
 RSpec.describe "bundler executable" do
   it "shows the bundler version just as the `bundle` executable does" do
     bundler "--version"
-    expect(out).to eq("#{Bundler::VERSION}")
+    expect(out).to eq(Bundler::VERSION.to_s)
 
     bundle "config simulate_version 5"
     bundler "--version"

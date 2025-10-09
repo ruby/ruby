@@ -12,7 +12,7 @@ RSpec.describe "bundle version" do
   context "with -v" do
     it "outputs the version and virtual version if set" do
       bundle "-v"
-      expect(out).to eq("#{Bundler::VERSION}")
+      expect(out).to eq(Bundler::VERSION.to_s)
 
       bundle "config simulate_version 5"
       bundle "-v"
@@ -23,7 +23,7 @@ RSpec.describe "bundle version" do
   context "with --version" do
     it "outputs the version and virtual version if set" do
       bundle "--version"
-      expect(out).to eq("#{Bundler::VERSION}")
+      expect(out).to eq(Bundler::VERSION.to_s)
 
       bundle "config simulate_version 5"
       bundle "--version"
