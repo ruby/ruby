@@ -290,7 +290,7 @@ fn main() {
         .allowlist_function("rb_zjit_insn_leaf")
         .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
-        .allowlist_var("RB_INVALID_SHAPE_ID")
+        .allowlist_type("zjit_exported_constants")
         .allowlist_function("rb_assert_holding_vm_lock")
         .allowlist_function("rb_jit_shape_too_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")

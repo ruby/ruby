@@ -656,7 +656,9 @@ pub enum Insn {
         args: Vec<InsnId>,
         cme: *const rb_callable_method_entry_t,
         name: ID,
-        state: InsnId
+        state: InsnId,
+        return_type: Type,
+        elidable: bool,
     },
 
     /// Call a variadic C function with signature: func(int argc, VALUE *argv, VALUE recv)
@@ -668,6 +670,8 @@ pub enum Insn {
         cme: *const rb_callable_method_entry_t,
         name: ID,
         state: InsnId,
+        return_type: Type,
+        elidable: bool,
     },
 
     /// Un-optimized fallback implementation (dynamic dispatch) for send-ish instructions
@@ -845,6 +849,7 @@ impl Insn {
             Insn::LoadIvarEmbedded { .. } => false,
             Insn::LoadIvarExtended { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
+            Insn::CCallWithFrame { elidable, .. } => !elidable,
             Insn::ObjectAllocClass { .. } => false,
             // TODO: NewRange is effects free if we can prove the two ends to be Fixnum,
             // but we don't have type information here in `impl Insn`. See rb_range_new().
@@ -1039,7 +1044,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             },
             Insn::CCallWithFrame { cfunc, args, name, .. } => {
-                write!(f, "CallCFunc {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
+                write!(f, "CCallWithFrame {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1564,9 +1569,9 @@ impl Function {
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
             &CCall { cfunc, ref args, name, return_type, elidable } => CCall { cfunc, args: find_vec!(args), name, return_type, elidable },
-            &CCallWithFrame { cd, cfunc, ref args, cme, name, state } => CCallWithFrame { cd, cfunc, args: find_vec!(args), cme, name, state: find!(state) },
-            &CCallVariadic { cfunc, recv, ref args, cme, name, state } => CCallVariadic {
-                cfunc, recv: find!(recv), args: find_vec!(args), cme, name, state
+            &CCallWithFrame { cd, cfunc, ref args, cme, name, state, return_type, elidable } => CCallWithFrame { cd, cfunc, args: find_vec!(args), cme, name, state: find!(state), return_type, elidable },
+            &CCallVariadic { cfunc, recv, ref args, cme, name, state, return_type, elidable } => CCallVariadic {
+                cfunc, recv: find!(recv), args: find_vec!(args), cme, name, state, return_type, elidable
             },
             &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
@@ -1665,9 +1670,9 @@ impl Function {
             Insn::NewRangeFixnum { .. } => types::RangeExact,
             Insn::ObjectAlloc { .. } => types::HeapObject,
             Insn::ObjectAllocClass { class, .. } => Type::from_class(*class),
-            Insn::CCallWithFrame { .. } => types::BasicObject,
+            &Insn::CCallWithFrame { return_type, .. } => return_type,
             Insn::CCall { return_type, .. } => *return_type,
-            Insn::CCallVariadic { .. } => types::BasicObject,
+            &Insn::CCallVariadic { return_type, .. } => return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_value(*expected)),
@@ -2322,10 +2327,12 @@ impl Function {
 
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
 
+                    // Filter for simple call sites (i.e. no splats etc.)
                     if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
                         return Err(());
                     }
 
+                    // Commit to the replacement. Put PatchPoint.
                     gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
                     if recv_class.instance_can_have_singleton_class() {
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
@@ -2338,18 +2345,22 @@ impl Function {
                     let mut cfunc_args = vec![recv];
                     cfunc_args.append(&mut args);
 
+                    let props = ZJITState::get_method_annotations().get_cfunc_properties(method);
+                    if props.is_none() && get_option!(stats) {
+                        count_not_annotated_cfunc(fun, block, method);
+                    }
+                    let props = props.unwrap_or_default();
+                    let return_type = props.return_type;
+                    let elidable = props.elidable;
                     // Filter for a leaf and GC free function
-                    use crate::cruby_methods::FnProperties;
-                    // Filter for simple call sites (i.e. no splats etc.)
-                    // Commit to the replacement. Put PatchPoint.
-                    if let Some(FnProperties { leaf: true, no_gc: true, return_type, elidable }) = ZJITState::get_method_annotations().get_cfunc_properties(method) {
+                    if props.leaf && props.no_gc {
                         let ccall = fun.push_insn(block, Insn::CCall { cfunc, args: cfunc_args, name: method_id, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
                     } else {
                         if get_option!(stats) {
                             count_not_inlined_cfunc(fun, block, method);
                         }
-                        let ccall = fun.push_insn(block, Insn::CCallWithFrame { cd, cfunc, args: cfunc_args, cme: method, name: method_id, state });
+                        let ccall = fun.push_insn(block, Insn::CCallWithFrame { cd, cfunc, args: cfunc_args, cme: method, name: method_id, state, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
                     }
 
@@ -2375,6 +2386,13 @@ impl Function {
                         }
 
                         let cfunc = unsafe { get_mct_func(cfunc) }.cast();
+                        let props = ZJITState::get_method_annotations().get_cfunc_properties(method);
+                        if props.is_none() && get_option!(stats) {
+                            count_not_annotated_cfunc(fun, block, method);
+                        }
+                        let props = props.unwrap_or_default();
+                        let return_type = props.return_type;
+                        let elidable = props.elidable;
                         let ccall = fun.push_insn(block, Insn::CCallVariadic {
                             cfunc,
                             recv,
@@ -2382,6 +2400,8 @@ impl Function {
                             cme: method,
                             name: method_id,
                             state,
+                            return_type,
+                            elidable,
                         });
 
                         fun.make_equal_to(send_insn_id, ccall);
@@ -2409,6 +2429,19 @@ impl Function {
             let qualified_method_name = format!("{}#{}", class_name, method_name);
             let not_inlined_cfunc_counter_pointers = ZJITState::get_not_inlined_cfunc_counter_pointers();
             let counter_ptr = not_inlined_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
+            let counter_ptr = &mut **counter_ptr as *mut u64;
+
+            fun.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
+        }
+
+        fn count_not_annotated_cfunc(fun: &mut Function, block: BlockId, cme: *const rb_callable_method_entry_t) {
+            let owner = unsafe { (*cme).owner };
+            let called_id = unsafe { (*cme).called_id };
+            let class_name = get_class_name(owner);
+            let method_name = called_id.contents_lossy();
+            let qualified_method_name = format!("{}#{}", class_name, method_name);
+            let not_annotated_cfunc_counter_pointers = ZJITState::get_not_annotated_cfunc_counter_pointers();
+            let counter_ptr = not_annotated_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
             let counter_ptr = &mut **counter_ptr as *mut u64;
 
             fun.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
@@ -9070,6 +9103,64 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_opt_aref_array() {
+        eval("
+            arr = [1,2,3]
+            def test(arr) = arr[0]
+            test(arr)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Array@0x1000, []@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v26:ArrayExact = GuardType v9, ArrayExact
+          v27:BasicObject = CCallVariadic []@0x1038, v26, v13
+          CheckInterrupts
+          Return v27
+        ");
+        assert_snapshot!(inspect("test [1,2,3]"), @"1");
+    }
+
+    #[test]
+    fn test_opt_aref_hash() {
+        eval("
+            arr = {0 => 4}
+            def test(arr) = arr[0]
+            test(arr)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Hash@0x1000, []@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          v26:HashExact = GuardType v9, HashExact
+          v27:BasicObject = CCallWithFrame []@0x1038, v26, v13
+          CheckInterrupts
+          Return v27
+        ");
+        assert_snapshot!(inspect("test({0 => 4})"), @"4");
+    }
+
+    #[test]
     fn test_eliminate_new_range() {
         eval("
             def test()
@@ -10894,7 +10985,7 @@ mod opt_tests {
           v11:HashExact = NewHash
           PatchPoint MethodRedefined(Hash@0x1000, dup@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Hash@0x1000)
-          v24:BasicObject = CallCFunc dup@0x1038, v11
+          v24:BasicObject = CCallWithFrame dup@0x1038, v11
           v15:BasicObject = SendWithoutBlock v24, :freeze
           CheckInterrupts
           Return v15
@@ -10987,7 +11078,7 @@ mod opt_tests {
           v11:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, dup@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
-          v24:BasicObject = CallCFunc dup@0x1038, v11
+          v24:BasicObject = CCallWithFrame dup@0x1038, v11
           v15:BasicObject = SendWithoutBlock v24, :freeze
           CheckInterrupts
           Return v15
@@ -11081,7 +11172,7 @@ mod opt_tests {
           v12:StringExact = StringCopy v10
           PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(String@0x1008)
-          v25:BasicObject = CallCFunc dup@0x1040, v12
+          v25:BasicObject = CCallWithFrame dup@0x1040, v12
           v16:BasicObject = SendWithoutBlock v25, :freeze
           CheckInterrupts
           Return v16
@@ -11176,7 +11267,7 @@ mod opt_tests {
           v12:StringExact = StringCopy v10
           PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(String@0x1008)
-          v25:BasicObject = CallCFunc dup@0x1040, v12
+          v25:BasicObject = CCallWithFrame dup@0x1040, v12
           v16:BasicObject = SendWithoutBlock v25, :-@
           CheckInterrupts
           Return v16
@@ -11318,7 +11409,7 @@ mod opt_tests {
           PatchPoint MethodRedefined(Array@0x1008, to_s@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(Array@0x1008)
           v30:ArrayExact = GuardType v9, ArrayExact
-          v31:BasicObject = CallCFunc to_s@0x1040, v30
+          v31:BasicObject = CCallWithFrame to_s@0x1040, v30
           v17:String = AnyToString v9, str: v31
           v19:StringExact = StringConcat v13, v17
           CheckInterrupts
@@ -12369,6 +12460,108 @@ mod opt_tests {
           SetIvar v23, :@foo, v14
           CheckInterrupts
           Return v14
+        ");
+    }
+
+    #[test]
+    fn test_array_reverse_returns_array() {
+        eval(r#"
+            def test = [].reverse
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:ArrayExact = NewArray
+          PatchPoint MethodRedefined(Array@0x1000, reverse@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v22:ArrayExact = CCallWithFrame reverse@0x1038, v11
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_array_reverse_is_elidable() {
+        eval(r#"
+            def test
+              [].reverse
+              5
+            end
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:ArrayExact = NewArray
+          PatchPoint MethodRedefined(Array@0x1000, reverse@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v16:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
+    fn test_array_join_returns_string() {
+        eval(r#"
+            def test = [].join ","
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:ArrayExact = NewArray
+          v12:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v14:StringExact = StringCopy v12
+          PatchPoint MethodRedefined(Array@0x1008, join@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          v25:StringExact = CCallVariadic join@0x1040, v11, v14
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_string_to_s_returns_string() {
+        eval(r#"
+            def test = "".to_s
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:StringExact = StringCopy v10
+          PatchPoint MethodRedefined(String@0x1008, to_s@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(String@0x1008)
+          v23:StringExact = CCallWithFrame to_s@0x1040, v12
+          CheckInterrupts
+          Return v23
         ");
     }
 }

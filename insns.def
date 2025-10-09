@@ -1519,6 +1519,7 @@ opt_aref
  * default_proc.  This is a method call.  So opt_aref is
  * (surprisingly) not leaf. */
 // attr bool leaf = false; /* has rb_funcall() */ /* calls #yield */
+// attr bool zjit_profile = true;
 {
     val = vm_opt_aref(recv, obj);
 
