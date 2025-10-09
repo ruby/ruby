@@ -5,6 +5,8 @@ require 'fileutils'
 require 'open3'
 
 class TestCommitEmail < Test::Unit::TestCase
+  STDIN_DELIMITER = "---\n"
+
   def setup
     @ruby = Dir.mktmpdir
     Dir.chdir(@ruby) do
@@ -20,7 +22,7 @@ class TestCommitEmail < Test::Unit::TestCase
     @sendmail = File.join(Dir.mktmpdir, 'sendmail')
     File.write(@sendmail, <<~SENDMAIL)
       #!/usr/bin/env ruby
-      puts "---"
+      print #{STDIN_DELIMITER.dump}
       puts STDIN.read
     SENDMAIL
     FileUtils.chmod(0755, @sendmail)
@@ -43,11 +45,10 @@ class TestCommitEmail < Test::Unit::TestCase
         '--viewer-uri', 'https://github.com/ruby/ruby/commit/',
         '--error-to', 'cvs-admin@ruby-lang.org',
       ], '', true)
+      stdin = out.split(STDIN_DELIMITER, 2).last
 
       assert_true(status.success?)
-      assert_equal(out, <<~EOS)
-        master: #{short_rev} (Jóhän Grübél)
-        ---
+      assert_equal(stdin, <<~EOS)
         Mime-Version: 1.0
         Content-Type: text/plain; charset=utf-8
         Content-Transfer-Encoding: quoted-printable
