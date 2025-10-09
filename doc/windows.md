@@ -122,7 +122,7 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
 
 4.  If you want to build from GIT source, following commands are required.
     * `git`
-    * `ruby` 3.0 or later
+    * `ruby` 3.1 or later
 
     You can use [scoop](https://scoop.sh/) to install them like:
 
