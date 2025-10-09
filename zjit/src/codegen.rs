@@ -1248,7 +1248,8 @@ fn gen_aref_fixnum(
     array: Opnd,
     index: Opnd,
 ) -> lir::Opnd {
-    asm_ccall!(asm, rb_ary_entry, array, index)
+    let unboxed_idx = asm.rshift(index, Opnd::UImm(1));
+    asm_ccall!(asm, rb_ary_entry, array, unboxed_idx)
 }
 
 /// Compile a new hash instruction
