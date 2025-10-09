@@ -1044,7 +1044,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             },
             Insn::CCallWithFrame { cfunc, args, name, .. } => {
-                write!(f, "CallCFunc {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
+                write!(f, "CCallWithFrame {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -10985,7 +10985,7 @@ mod opt_tests {
           v11:HashExact = NewHash
           PatchPoint MethodRedefined(Hash@0x1000, dup@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Hash@0x1000)
-          v24:BasicObject = CallCFunc dup@0x1038, v11
+          v24:BasicObject = CCallWithFrame dup@0x1038, v11
           v15:BasicObject = SendWithoutBlock v24, :freeze
           CheckInterrupts
           Return v15
@@ -11078,7 +11078,7 @@ mod opt_tests {
           v11:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, dup@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
-          v24:BasicObject = CallCFunc dup@0x1038, v11
+          v24:BasicObject = CCallWithFrame dup@0x1038, v11
           v15:BasicObject = SendWithoutBlock v24, :freeze
           CheckInterrupts
           Return v15
@@ -11172,7 +11172,7 @@ mod opt_tests {
           v12:StringExact = StringCopy v10
           PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(String@0x1008)
-          v25:BasicObject = CallCFunc dup@0x1040, v12
+          v25:BasicObject = CCallWithFrame dup@0x1040, v12
           v16:BasicObject = SendWithoutBlock v25, :freeze
           CheckInterrupts
           Return v16
@@ -11267,7 +11267,7 @@ mod opt_tests {
           v12:StringExact = StringCopy v10
           PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(String@0x1008)
-          v25:BasicObject = CallCFunc dup@0x1040, v12
+          v25:BasicObject = CCallWithFrame dup@0x1040, v12
           v16:BasicObject = SendWithoutBlock v25, :-@
           CheckInterrupts
           Return v16
@@ -11409,7 +11409,7 @@ mod opt_tests {
           PatchPoint MethodRedefined(Array@0x1008, to_s@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(Array@0x1008)
           v30:ArrayExact = GuardType v9, ArrayExact
-          v31:BasicObject = CallCFunc to_s@0x1040, v30
+          v31:BasicObject = CCallWithFrame to_s@0x1040, v30
           v17:String = AnyToString v9, str: v31
           v19:StringExact = StringConcat v13, v17
           CheckInterrupts
@@ -12481,7 +12481,7 @@ mod opt_tests {
           v11:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, reverse@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
-          v22:ArrayExact = CallCFunc reverse@0x1038, v11
+          v22:ArrayExact = CCallWithFrame reverse@0x1038, v11
           CheckInterrupts
           Return v22
         ");
@@ -12559,7 +12559,7 @@ mod opt_tests {
           v12:StringExact = StringCopy v10
           PatchPoint MethodRedefined(String@0x1008, to_s@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(String@0x1008)
-          v23:StringExact = CallCFunc to_s@0x1040, v12
+          v23:StringExact = CCallWithFrame to_s@0x1040, v12
           CheckInterrupts
           Return v23
         ");
