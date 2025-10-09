@@ -161,7 +161,7 @@ The following bundled gems are promoted from default gems.
 * pstore 0.2.0
 * benchmark 0.4.1
 * logger 1.7.0
-* rdoc 6.14.2
+* rdoc 6.15.0
 * win32ole 1.9.2
 * irb 1.15.2
 * reline 0.6.2
@@ -205,15 +205,15 @@ The following bundled gems are added.
 
 The following bundled gems are updated.
 
-* minitest 5.25.5
+* minitest 5.26.0
 * rake 13.3.0
 * test-unit 3.7.0
-* rexml 3.4.2
-* net-imap 0.5.10
+* rexml 3.4.4
+* net-imap 0.5.12
 * net-smtp 0.5.1
 * matrix 0.4.3
 * prime 0.1.4
-* rbs 3.9.4
+* rbs 3.9.5
 * debug 1.11.0
 * base64 0.3.0
 * bigdecimal 3.2.2
