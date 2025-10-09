@@ -31,6 +31,18 @@ pub struct FnProperties {
     pub elidable: bool,
 }
 
+/// A safe default for un-annotated Ruby methods: we can't optimize them or their returned values.
+impl Default for FnProperties {
+    fn default() -> Self {
+        Self {
+            no_gc: false,
+            leaf: false,
+            return_type: types::BasicObject,
+            elidable: false,
+        }
+    }
+}
+
 impl Annotations {
     /// Query about properties of a C method
     pub fn get_cfunc_properties(&self, method: *const rb_callable_method_entry_t) -> Option<FnProperties> {
