@@ -62,4 +62,5 @@ jobs:
       - uses: ./.github/actions/slack
         with:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+          event_name: workflow_dispatch
         if: ${{ failure() }}
