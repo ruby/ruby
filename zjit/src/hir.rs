@@ -141,6 +141,11 @@ pub enum Invariant {
     NoEPEscape(IseqPtr),
     /// There is one ractor running. If a non-root ractor gets spawned, this is invalidated.
     SingleRactorMode,
+    /// Objects of this class have no singleton class.
+    /// When a singleton class is created for an object of this class, this is invalidated.
+    NoSingletonClass {
+        klass: VALUE,
+    },
 }
 
 impl Invariant {
@@ -255,6 +260,12 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
             Invariant::NoTracePoint => write!(f, "NoTracePoint"),
             Invariant::NoEPEscape(iseq) => write!(f, "NoEPEscape({})", &iseq_name(iseq)),
             Invariant::SingleRactorMode => write!(f, "SingleRactorMode"),
+            Invariant::NoSingletonClass { klass } => {
+                let class_name = get_class_name(klass);
+                write!(f, "NoSingletonClass({}@{:p})",
+                    class_name,
+                    self.ptr_map.map_ptr(klass.as_ptr::<VALUE>()))
+            }
         }
     }
 }
@@ -524,6 +535,7 @@ pub enum SendFallbackReason {
     SendWithoutBlockCfuncArrayVariadic,
     SendWithoutBlockNotOptimizedMethodType(MethodType),
     SendWithoutBlockDirectTooManyArgs,
+    CCallWithFrameTooManyArgs,
     ObjToStringNotString,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
@@ -633,19 +645,33 @@ pub enum Insn {
     IfTrue { val: InsnId, target: BranchEdge },
     IfFalse { val: InsnId, target: BranchEdge },
 
-    /// Call a C function
+    /// Call a C function without pushing a frame
     /// `name` is for printing purposes only
-    CCall { cfun: *const u8, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
+    CCall { cfunc: *const u8, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
+
+    /// Call a C function that pushes a frame
+    CCallWithFrame {
+        cd: *const rb_call_data, // cd for falling back to SendWithoutBlock
+        cfunc: *const u8,
+        args: Vec<InsnId>,
+        cme: *const rb_callable_method_entry_t,
+        name: ID,
+        state: InsnId,
+        return_type: Type,
+        elidable: bool,
+    },
 
     /// Call a variadic C function with signature: func(int argc, VALUE *argv, VALUE recv)
     /// This handles frame setup, argv creation, and frame teardown all in one
     CCallVariadic {
-        cfun: *const u8,
+        cfunc: *const u8,
         recv: InsnId,
         args: Vec<InsnId>,
         cme: *const rb_callable_method_entry_t,
         name: ID,
         state: InsnId,
+        return_type: Type,
+        elidable: bool,
     },
 
     /// Un-optimized fallback implementation (dynamic dispatch) for send-ish instructions
@@ -823,6 +849,7 @@ impl Insn {
             Insn::LoadIvarEmbedded { .. } => false,
             Insn::LoadIvarExtended { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
+            Insn::CCallWithFrame { elidable, .. } => !elidable,
             Insn::ObjectAllocClass { .. } => false,
             // TODO: NewRange is effects free if we can prove the two ends to be Fixnum,
             // but we don't have type information here in `impl Insn`. See rb_range_new().
@@ -1009,15 +1036,22 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardBlockParamProxy { level, .. } => write!(f, "GuardBlockParamProxy l{level}"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
-            Insn::CCall { cfun, args, name, return_type: _, elidable: _ } => {
-                write!(f, "CCall {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
+            Insn::CCall { cfunc, args, name, return_type: _, elidable: _ } => {
+                write!(f, "CCall {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
             },
-            Insn::CCallVariadic { cfun,  recv, args, name, .. } => {
-                write!(f, "CCallVariadic {}@{:p}, {recv}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
+            Insn::CCallWithFrame { cfunc, args, name, .. } => {
+                write!(f, "CCallWithFrame {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                Ok(())
+            },
+            Insn::CCallVariadic { cfunc,  recv, args, name, .. } => {
+                write!(f, "CCallVariadic {}@{:p}, {recv}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1534,9 +1568,10 @@ impl Function {
             &HashDup { val, state } => HashDup { val: find!(val), state },
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
-            &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun, args: find_vec!(args), name, return_type, elidable },
-            &CCallVariadic { cfun, recv, ref args, cme, name, state } => CCallVariadic {
-                cfun, recv: find!(recv), args: find_vec!(args), cme, name, state
+            &CCall { cfunc, ref args, name, return_type, elidable } => CCall { cfunc, args: find_vec!(args), name, return_type, elidable },
+            &CCallWithFrame { cd, cfunc, ref args, cme, name, state, return_type, elidable } => CCallWithFrame { cd, cfunc, args: find_vec!(args), cme, name, state: find!(state), return_type, elidable },
+            &CCallVariadic { cfunc, recv, ref args, cme, name, state, return_type, elidable } => CCallVariadic {
+                cfunc, recv: find!(recv), args: find_vec!(args), cme, name, state, return_type, elidable
             },
             &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
@@ -1635,8 +1670,9 @@ impl Function {
             Insn::NewRangeFixnum { .. } => types::RangeExact,
             Insn::ObjectAlloc { .. } => types::HeapObject,
             Insn::ObjectAllocClass { class, .. } => Type::from_class(*class),
+            &Insn::CCallWithFrame { return_type, .. } => return_type,
             Insn::CCall { return_type, .. } => *return_type,
-            Insn::CCallVariadic { .. } => types::BasicObject,
+            &Insn::CCallVariadic { return_type, .. } => return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_value(*expected)),
@@ -2021,6 +2057,9 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            if klass.instance_can_have_singleton_class() {
+                                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
+                            }
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
@@ -2028,6 +2067,9 @@ impl Function {
                             self.make_equal_to(insn_id, send_direct);
                         } else if def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            if klass.instance_can_have_singleton_class() {
+                                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
+                            }
                             if let Some(profiled_type) = profiled_type {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
@@ -2097,6 +2139,7 @@ impl Function {
                         };
 
                         if recv_type.is_string() {
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_type.class() }, state });
                             let guard = self.push_insn(block, Insn::GuardType { val, guard_type: types::String, state });
                             // Infer type so AnyToString can fold off this
                             self.insn_types[guard.0] = self.infer_type(guard);
@@ -2224,6 +2267,15 @@ impl Function {
     /// Optimize SendWithoutBlock that land in a C method to a direct CCall without
     /// runtime lookup.
     fn optimize_c_calls(&mut self) {
+        if unsafe { rb_zjit_method_tracing_currently_enabled() } {
+            return;
+        }
+
+        fn gen_patch_points_for_optimized_ccall(fun: &mut Function, block: BlockId, recv_class: VALUE, method_id: ID, method: *const rb_callable_method_entry_struct, state: InsnId) {
+            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoTracePoint, state });
+            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme: method }, state });
+        }
+
         // Try to reduce one SendWithoutBlock to a CCall
         fn reduce_to_ccall(
             fun: &mut Function,
@@ -2231,9 +2283,9 @@ impl Function {
             self_type: Type,
             send: Insn,
             send_insn_id: InsnId,
-        ) -> Result<(), Option<*const rb_callable_method_entry_struct>> {
+        ) -> Result<(), ()> {
             let Insn::SendWithoutBlock { mut recv, cd, mut args, state, .. } = send else {
-                return Err(None);
+                return Err(());
             };
 
             let call_info = unsafe { (*cd).ci };
@@ -2245,20 +2297,20 @@ impl Function {
                 (class, None)
             } else {
                 let iseq_insn_idx = fun.frame_state(state).insn_idx;
-                let Some(recv_type) = fun.profiled_type_of_at(recv, iseq_insn_idx) else { return Err(None) };
+                let Some(recv_type) = fun.profiled_type_of_at(recv, iseq_insn_idx) else { return Err(()) };
                 (recv_type.class(), Some(recv_type))
             };
 
             // Do method lookup
             let method: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
             if method.is_null() {
-                return Err(None);
+                return Err(());
             }
 
             // Filter for C methods
             let def_type = unsafe { get_cme_def_type(method) };
             if def_type != VM_METHOD_TYPE_CFUNC {
-                return Err(None);
+                return Err(());
             }
 
             // Find the `argc` (arity) of the C method, which describes the parameters it expects
@@ -2270,67 +2322,86 @@ impl Function {
                     //
                     // Bail on argc mismatch
                     if argc != cfunc_argc as u32 {
-                        return Err(Some(method));
+                        return Err(());
                     }
-
-                    // Filter for a leaf and GC free function
-                    use crate::cruby_methods::FnProperties;
-                    let Some(FnProperties { leaf: true, no_gc: true, return_type, elidable }) =
-                        ZJITState::get_method_annotations().get_cfunc_properties(method)
-                    else {
-                        fun.set_dynamic_send_reason(send_insn_id, SendWithoutBlockCfuncNotVariadic);
-                        return Err(Some(method));
-                    };
 
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
+
                     // Filter for simple call sites (i.e. no splats etc.)
-                    if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
-                        // Commit to the replacement. Put PatchPoint.
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme: method }, state });
-                        if let Some(profiled_type) = profiled_type {
-                            // Guard receiver class
-                            recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                        }
-                        let cfun = unsafe { get_mct_func(cfunc) }.cast();
-                        let mut cfunc_args = vec![recv];
-                        cfunc_args.append(&mut args);
-                        let ccall = fun.push_insn(block, Insn::CCall { cfun, args: cfunc_args, name: method_id, return_type, elidable });
-                        fun.make_equal_to(send_insn_id, ccall);
-                        return Ok(())
+                    if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
+                        return Err(());
                     }
+
+                    // Commit to the replacement. Put PatchPoint.
+                    gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
+                    if recv_class.instance_can_have_singleton_class() {
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
+                    }
+                    if let Some(profiled_type) = profiled_type {
+                        // Guard receiver class
+                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                    }
+                    let cfunc = unsafe { get_mct_func(cfunc) }.cast();
+                    let mut cfunc_args = vec![recv];
+                    cfunc_args.append(&mut args);
+
+                    let props = ZJITState::get_method_annotations().get_cfunc_properties(method);
+                    if props.is_none() && get_option!(stats) {
+                        count_not_annotated_cfunc(fun, block, method);
+                    }
+                    let props = props.unwrap_or_default();
+                    let return_type = props.return_type;
+                    let elidable = props.elidable;
+                    // Filter for a leaf and GC free function
+                    if props.leaf && props.no_gc {
+                        let ccall = fun.push_insn(block, Insn::CCall { cfunc, args: cfunc_args, name: method_id, return_type, elidable });
+                        fun.make_equal_to(send_insn_id, ccall);
+                    } else {
+                        if get_option!(stats) {
+                            count_not_inlined_cfunc(fun, block, method);
+                        }
+                        let ccall = fun.push_insn(block, Insn::CCallWithFrame { cd, cfunc, args: cfunc_args, cme: method, name: method_id, state, return_type, elidable });
+                        fun.make_equal_to(send_insn_id, ccall);
+                    }
+
+                    return Ok(());
                 }
                 // Variadic method
                 -1 => {
-                    if unsafe { rb_zjit_method_tracing_currently_enabled() } {
-                        return Err(None);
-                    }
                     // The method gets a pointer to the first argument
                     // func(int argc, VALUE *argv, VALUE recv)
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
                     if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoTracePoint, state });
-                        fun.push_insn(block, Insn::PatchPoint {
-                            invariant: Invariant::MethodRedefined {
-                                klass: recv_class,
-                                method: method_id,
-                                cme: method
-                            },
-                            state
-                        });
+                        if get_option!(stats) {
+                            count_not_inlined_cfunc(fun, block, method);
+                        }
+                        gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
 
+                        if recv_class.instance_can_have_singleton_class() {
+                            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
+                        }
                         if let Some(profiled_type) = profiled_type {
                             // Guard receiver class
                             recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                         }
 
-                        let cfun = unsafe { get_mct_func(cfunc) }.cast();
+                        let cfunc = unsafe { get_mct_func(cfunc) }.cast();
+                        let props = ZJITState::get_method_annotations().get_cfunc_properties(method);
+                        if props.is_none() && get_option!(stats) {
+                            count_not_annotated_cfunc(fun, block, method);
+                        }
+                        let props = props.unwrap_or_default();
+                        let return_type = props.return_type;
+                        let elidable = props.elidable;
                         let ccall = fun.push_insn(block, Insn::CCallVariadic {
-                            cfun,
+                            cfunc,
                             recv,
                             args,
                             cme: method,
                             name: method_id,
                             state,
+                            return_type,
+                            elidable,
                         });
 
                         fun.make_equal_to(send_insn_id, ccall);
@@ -2347,7 +2418,33 @@ impl Function {
                 _ => unreachable!("unknown cfunc kind: argc={argc}")
             }
 
-            Err(Some(method))
+            Err(())
+        }
+
+        fn count_not_inlined_cfunc(fun: &mut Function, block: BlockId, cme: *const rb_callable_method_entry_t) {
+            let owner = unsafe { (*cme).owner };
+            let called_id = unsafe { (*cme).called_id };
+            let class_name = get_class_name(owner);
+            let method_name = called_id.contents_lossy();
+            let qualified_method_name = format!("{}#{}", class_name, method_name);
+            let not_inlined_cfunc_counter_pointers = ZJITState::get_not_inlined_cfunc_counter_pointers();
+            let counter_ptr = not_inlined_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
+            let counter_ptr = &mut **counter_ptr as *mut u64;
+
+            fun.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
+        }
+
+        fn count_not_annotated_cfunc(fun: &mut Function, block: BlockId, cme: *const rb_callable_method_entry_t) {
+            let owner = unsafe { (*cme).owner };
+            let called_id = unsafe { (*cme).called_id };
+            let class_name = get_class_name(owner);
+            let method_name = called_id.contents_lossy();
+            let qualified_method_name = format!("{}#{}", class_name, method_name);
+            let not_annotated_cfunc_counter_pointers = ZJITState::get_not_annotated_cfunc_counter_pointers();
+            let counter_ptr = not_annotated_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
+            let counter_ptr = &mut **counter_ptr as *mut u64;
+
+            fun.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
         }
 
         for block in self.rpo() {
@@ -2356,23 +2453,8 @@ impl Function {
             for insn_id in old_insns {
                 if let send @ Insn::SendWithoutBlock { recv, .. } = self.find(insn_id) {
                     let recv_type = self.type_of(recv);
-                    match reduce_to_ccall(self, block, recv_type, send, insn_id) {
-                        Ok(()) => continue,
-                        Err(Some(cme)) => {
-                            if get_option!(stats) {
-                                let owner = unsafe { (*cme).owner };
-                                let called_id = unsafe { (*cme).called_id };
-                                let class_name = get_class_name(owner);
-                                let method_name = called_id.contents_lossy();
-                                let qualified_method_name = format!("{}#{}", class_name, method_name);
-                                let unoptimized_cfunc_counter_pointers = ZJITState::get_unoptimized_cfunc_counter_pointers();
-                                let counter_ptr = unoptimized_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
-                                let counter_ptr = &mut **counter_ptr as *mut u64;
-
-                                self.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
-                            }
-                        }
-                        _ => {}
+                    if reduce_to_ccall(self, block, recv_type, send, insn_id).is_ok() {
+                        continue;
                     }
                 }
                 self.push_insn_id(block, insn_id);
@@ -2615,7 +2697,8 @@ impl Function {
                 worklist.extend(args);
                 worklist.push_back(state);
             }
-            &Insn::InvokeBuiltin { ref args, state, .. }
+            &Insn::CCallWithFrame { ref args, state, .. }
+            | &Insn::InvokeBuiltin { ref args, state, .. }
             | &Insn::InvokeBlock { ref args, state, .. } => {
                 worklist.extend(args);
                 worklist.push_back(state)
@@ -8448,10 +8531,11 @@ mod opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v19:BasicObject = SendWithoutBlockDirect v18, :foo (0x1038)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v20:BasicObject = SendWithoutBlockDirect v19, :foo (0x1038)
           CheckInterrupts
-          Return v19
+          Return v20
         ");
     }
 
@@ -8504,10 +8588,11 @@ mod opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v19:BasicObject = SendWithoutBlockDirect v18, :foo (0x1038)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v20:BasicObject = SendWithoutBlockDirect v19, :foo (0x1038)
           CheckInterrupts
-          Return v19
+          Return v20
         ");
     }
 
@@ -8531,10 +8616,11 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[3] = Const Value(3)
           PatchPoint MethodRedefined(Object@0x1000, Integer@0x1008, cme:0x1010)
-          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v20:BasicObject = SendWithoutBlockDirect v19, :Integer (0x1038), v10
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v21:BasicObject = SendWithoutBlockDirect v20, :Integer (0x1038), v10
           CheckInterrupts
-          Return v20
+          Return v21
         ");
     }
 
@@ -8561,10 +8647,11 @@ mod opt_tests {
           v10:Fixnum[1] = Const Value(1)
           v11:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v21:BasicObject = SendWithoutBlockDirect v20, :foo (0x1038), v10, v11
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v21:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v22:BasicObject = SendWithoutBlockDirect v21, :foo (0x1038), v10, v11
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -8592,13 +8679,15 @@ mod opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v22:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v23:BasicObject = SendWithoutBlockDirect v22, :foo (0x1038)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v23:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v24:BasicObject = SendWithoutBlockDirect v23, :foo (0x1038)
           PatchPoint MethodRedefined(Object@0x1000, bar@0x1040, cme:0x1048)
-          v25:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v26:BasicObject = SendWithoutBlockDirect v25, :bar (0x1038)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v27:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v28:BasicObject = SendWithoutBlockDirect v27, :bar (0x1038)
           CheckInterrupts
-          Return v26
+          Return v28
         ");
     }
 
@@ -8623,10 +8712,11 @@ mod opt_tests {
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v10
           PatchPoint MethodRedefined(Object@0x1008, puts@0x1010, cme:0x1018)
-          v22:HeapObject[class_exact*:Object@VALUE(0x1008)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1008)]
-          v23:BasicObject = CCallVariadic puts@0x1040, v22, v12
+          PatchPoint NoSingletonClass(Object@0x1008)
+          v23:HeapObject[class_exact*:Object@VALUE(0x1008)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1008)]
+          v24:BasicObject = CCallVariadic puts@0x1040, v23, v12
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -9010,6 +9100,64 @@ mod opt_tests {
           CheckInterrupts
           Return v17
         ");
+    }
+
+    #[test]
+    fn test_opt_aref_array() {
+        eval("
+            arr = [1,2,3]
+            def test(arr) = arr[0]
+            test(arr)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Array@0x1000, []@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v26:ArrayExact = GuardType v9, ArrayExact
+          v27:BasicObject = CCallVariadic []@0x1038, v26, v13
+          CheckInterrupts
+          Return v27
+        ");
+        assert_snapshot!(inspect("test [1,2,3]"), @"1");
+    }
+
+    #[test]
+    fn test_opt_aref_hash() {
+        eval("
+            arr = {0 => 4}
+            def test(arr) = arr[0]
+            test(arr)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Hash@0x1000, []@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          v26:HashExact = GuardType v9, HashExact
+          v27:BasicObject = CCallWithFrame []@0x1038, v26, v13
+          CheckInterrupts
+          Return v27
+        ");
+        assert_snapshot!(inspect("test({0 => 4})"), @"4");
     }
 
     #[test]
@@ -9652,10 +9800,10 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
-          v21:Fixnum = GuardType v9, Fixnum
-          v22:BasicObject = CCall itself@0x1038, v21
+          v22:Fixnum = GuardType v9, Fixnum
+          v23:BasicObject = CCall itself@0x1038, v22
           CheckInterrupts
-          Return v22
+          Return v23
         ");
     }
 
@@ -9676,9 +9824,10 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v11:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
-          v20:BasicObject = CCall itself@0x1038, v11
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v22:BasicObject = CCall itself@0x1038, v11
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -9704,7 +9853,8 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v14:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
-          v28:BasicObject = CCall itself@0x1038, v14
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v30:BasicObject = CCall itself@0x1038, v14
           PatchPoint NoEPEscape(test)
           v21:Fixnum[1] = Const Value(1)
           CheckInterrupts
@@ -9738,7 +9888,8 @@ mod opt_tests {
           PatchPoint StableConstantNames(0x1000, M)
           v29:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(Module@0x1010, name@0x1018, cme:0x1020)
-          v31:StringExact|NilClass = CCall name@0x1048, v29
+          PatchPoint NoSingletonClass(Module@0x1010)
+          v33:StringExact|NilClass = CCall name@0x1048, v29
           PatchPoint NoEPEscape(test)
           v21:Fixnum[1] = Const Value(1)
           CheckInterrupts
@@ -9768,7 +9919,8 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v14:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
-          v28:Fixnum = CCall length@0x1038, v14
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v30:Fixnum = CCall length@0x1038, v14
           v21:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v21
@@ -9910,7 +10062,8 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:NilClass):
           v14:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
-          v28:Fixnum = CCall size@0x1038, v14
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v30:Fixnum = CCall size@0x1038, v14
           v21:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v21
@@ -9991,9 +10144,10 @@ mod opt_tests {
           v16:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v18:ArrayExact = ArrayDup v16
           PatchPoint MethodRedefined(Array@0x1008, first@0x1010, cme:0x1018)
-          v29:BasicObject = SendWithoutBlockDirect v18, :first (0x1040)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          v30:BasicObject = SendWithoutBlockDirect v18, :first (0x1040)
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -10019,9 +10173,10 @@ mod opt_tests {
           PatchPoint StableConstantNames(0x1000, M)
           v21:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(Module@0x1010, class@0x1018, cme:0x1020)
-          v23:BasicObject = SendWithoutBlockDirect v21, :class (0x1048)
+          PatchPoint NoSingletonClass(Module@0x1010)
+          v24:BasicObject = SendWithoutBlockDirect v21, :class (0x1048)
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -10052,10 +10207,11 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          v21:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v22:BasicObject = SendWithoutBlockDirect v21, :foo (0x1038)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          v23:BasicObject = SendWithoutBlockDirect v22, :foo (0x1038)
           CheckInterrupts
-          Return v22
+          Return v23
         ");
     }
 
@@ -10233,9 +10389,10 @@ mod opt_tests {
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v10
           PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010, cme:0x1018)
-          v21:Fixnum = CCall bytesize@0x1040, v12
+          PatchPoint NoSingletonClass(String@0x1008)
+          v23:Fixnum = CCall bytesize@0x1040, v12
           CheckInterrupts
-          Return v21
+          Return v23
         ");
     }
 
@@ -10361,7 +10518,8 @@ mod opt_tests {
           PatchPoint MethodRedefined(C@0x1008, new@0x1010, cme:0x1018)
           v43:HeapObject[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
           PatchPoint MethodRedefined(C@0x1008, initialize@0x1040, cme:0x1048)
-          v45:NilClass = CCall initialize@0x1070, v43
+          PatchPoint NoSingletonClass(C@0x1008)
+          v47:NilClass = CCall initialize@0x1070, v43
           CheckInterrupts
           CheckInterrupts
           Return v43
@@ -10397,7 +10555,8 @@ mod opt_tests {
           PatchPoint MethodRedefined(C@0x1008, new@0x1010, cme:0x1018)
           v45:HeapObject[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
           PatchPoint MethodRedefined(C@0x1008, initialize@0x1040, cme:0x1048)
-          v47:BasicObject = SendWithoutBlockDirect v45, :initialize (0x1070), v13
+          PatchPoint NoSingletonClass(C@0x1008)
+          v48:BasicObject = SendWithoutBlockDirect v45, :initialize (0x1070), v13
           CheckInterrupts
           CheckInterrupts
           Return v45
@@ -10427,7 +10586,8 @@ mod opt_tests {
           PatchPoint MethodRedefined(Object@0x1008, new@0x1010, cme:0x1018)
           v43:ObjectExact = ObjectAllocClass Object:VALUE(0x1008)
           PatchPoint MethodRedefined(Object@0x1008, initialize@0x1040, cme:0x1048)
-          v45:NilClass = CCall initialize@0x1070, v43
+          PatchPoint NoSingletonClass(Object@0x1008)
+          v47:NilClass = CCall initialize@0x1070, v43
           CheckInterrupts
           CheckInterrupts
           Return v43
@@ -10457,7 +10617,8 @@ mod opt_tests {
           PatchPoint MethodRedefined(BasicObject@0x1008, new@0x1010, cme:0x1018)
           v43:BasicObjectExact = ObjectAllocClass BasicObject:VALUE(0x1008)
           PatchPoint MethodRedefined(BasicObject@0x1008, initialize@0x1040, cme:0x1048)
-          v45:NilClass = CCall initialize@0x1070, v43
+          PatchPoint NoSingletonClass(BasicObject@0x1008)
+          v47:NilClass = CCall initialize@0x1070, v43
           CheckInterrupts
           CheckInterrupts
           Return v43
@@ -10517,9 +10678,10 @@ mod opt_tests {
           v13:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Array@0x1008, new@0x1010, cme:0x1018)
           PatchPoint MethodRedefined(Class@0x1040, new@0x1010, cme:0x1018)
-          v51:BasicObject = CCallVariadic new@0x1048, v42, v13
+          PatchPoint NoSingletonClass(Class@0x1040)
+          v53:BasicObject = CCallVariadic new@0x1048, v42, v13
           CheckInterrupts
-          Return v51
+          Return v53
         ");
     }
 
@@ -10546,8 +10708,9 @@ mod opt_tests {
           PatchPoint MethodRedefined(Set@0x1008, new@0x1010, cme:0x1018)
           v16:HeapObject = ObjectAlloc v40
           PatchPoint MethodRedefined(Set@0x1008, initialize@0x1040, cme:0x1048)
-          v45:SetExact = GuardType v16, SetExact
-          v46:BasicObject = CCallVariadic initialize@0x1070, v45
+          PatchPoint NoSingletonClass(Set@0x1008)
+          v46:SetExact = GuardType v16, SetExact
+          v47:BasicObject = CCallVariadic initialize@0x1070, v46
           CheckInterrupts
           CheckInterrupts
           Return v16
@@ -10576,9 +10739,10 @@ mod opt_tests {
           v12:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(String@0x1008, new@0x1010, cme:0x1018)
           PatchPoint MethodRedefined(Class@0x1040, new@0x1010, cme:0x1018)
-          v49:BasicObject = CCallVariadic new@0x1048, v40
+          PatchPoint NoSingletonClass(Class@0x1040)
+          v51:BasicObject = CCallVariadic new@0x1048, v40
           CheckInterrupts
-          Return v49
+          Return v51
         ");
     }
 
@@ -10607,7 +10771,8 @@ mod opt_tests {
           PatchPoint MethodRedefined(Regexp@0x1008, new@0x1018, cme:0x1020)
           v47:RegexpExact = ObjectAllocClass Regexp:VALUE(0x1008)
           PatchPoint MethodRedefined(Regexp@0x1008, initialize@0x1048, cme:0x1050)
-          v50:BasicObject = CCallVariadic initialize@0x1078, v47, v15
+          PatchPoint NoSingletonClass(Regexp@0x1008)
+          v51:BasicObject = CCallVariadic initialize@0x1078, v47, v15
           CheckInterrupts
           CheckInterrupts
           Return v47
@@ -10633,9 +10798,10 @@ mod opt_tests {
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v17:ArrayExact = NewArray v11, v12
           PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
-          v28:Fixnum = CCall length@0x1038, v17
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v30:Fixnum = CCall length@0x1038, v17
           CheckInterrupts
-          Return v28
+          Return v30
         ");
     }
 
@@ -10658,9 +10824,10 @@ mod opt_tests {
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           v17:ArrayExact = NewArray v11, v12
           PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
-          v28:Fixnum = CCall size@0x1038, v17
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v30:Fixnum = CCall size@0x1038, v17
           CheckInterrupts
-          Return v28
+          Return v30
         ");
     }
 
@@ -10816,8 +10983,10 @@ mod opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:HashExact = NewHash
-          v13:BasicObject = SendWithoutBlock v11, :dup
-          v15:BasicObject = SendWithoutBlock v13, :freeze
+          PatchPoint MethodRedefined(Hash@0x1000, dup@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          v24:BasicObject = CCallWithFrame dup@0x1038, v11
+          v15:BasicObject = SendWithoutBlock v24, :freeze
           CheckInterrupts
           Return v15
         ");
@@ -10907,8 +11076,10 @@ mod opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v11:ArrayExact = NewArray
-          v13:BasicObject = SendWithoutBlock v11, :dup
-          v15:BasicObject = SendWithoutBlock v13, :freeze
+          PatchPoint MethodRedefined(Array@0x1000, dup@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v24:BasicObject = CCallWithFrame dup@0x1038, v11
+          v15:BasicObject = SendWithoutBlock v24, :freeze
           CheckInterrupts
           Return v15
         ");
@@ -10999,8 +11170,10 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v10
-          v14:BasicObject = SendWithoutBlock v12, :dup
-          v16:BasicObject = SendWithoutBlock v14, :freeze
+          PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(String@0x1008)
+          v25:BasicObject = CCallWithFrame dup@0x1040, v12
+          v16:BasicObject = SendWithoutBlock v25, :freeze
           CheckInterrupts
           Return v16
         ");
@@ -11092,8 +11265,10 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:StringExact = StringCopy v10
-          v14:BasicObject = SendWithoutBlock v12, :dup
-          v16:BasicObject = SendWithoutBlock v14, :-@
+          PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(String@0x1008)
+          v25:BasicObject = CCallWithFrame dup@0x1040, v12
+          v16:BasicObject = SendWithoutBlock v25, :-@
           CheckInterrupts
           Return v16
         ");
@@ -11169,8 +11344,9 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v25:String = GuardType v9, String
-          v19:StringExact = StringConcat v13, v25
+          PatchPoint NoSingletonClass(String@0x1008)
+          v26:String = GuardType v9, String
+          v19:StringExact = StringConcat v13, v26
           CheckInterrupts
           Return v19
         ");
@@ -11200,8 +11376,9 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v25:String = GuardType v9, String
-          v19:StringExact = StringConcat v13, v25
+          PatchPoint NoSingletonClass(MyString@0x1008)
+          v26:String = GuardType v9, String
+          v19:StringExact = StringConcat v13, v26
           CheckInterrupts
           Return v19
         ");
@@ -11229,8 +11406,11 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v25:BasicObject = GuardTypeNot v9, String
-          v26:BasicObject = SendWithoutBlock v9, :to_s
-          v17:String = AnyToString v9, str: v26
+          PatchPoint MethodRedefined(Array@0x1008, to_s@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          v30:ArrayExact = GuardType v9, ArrayExact
+          v31:BasicObject = CCallWithFrame to_s@0x1040, v30
+          v17:String = AnyToString v9, str: v31
           v19:StringExact = StringConcat v13, v17
           CheckInterrupts
           Return v19
@@ -11289,9 +11469,9 @@ mod opt_tests {
           v13:Fixnum[1] = Const Value(1)
           CheckInterrupts
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
-          v33:BasicObject = CCall itself@0x1038, v13
+          v34:BasicObject = CCall itself@0x1038, v13
           CheckInterrupts
-          Return v33
+          Return v34
         ");
     }
 
@@ -11443,9 +11623,10 @@ mod opt_tests {
           v10:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:ArrayExact = ArrayDup v10
           PatchPoint MethodRedefined(Array@0x1008, max@0x1010, cme:0x1018)
-          v21:BasicObject = SendWithoutBlockDirect v12, :max (0x1040)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          v22:BasicObject = SendWithoutBlockDirect v12, :max (0x1040)
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -11515,9 +11696,9 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
-          v21:TrueClass = CCall nil?@0x1038, v10
+          v22:TrueClass = CCall nil?@0x1038, v10
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -11564,9 +11745,9 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
-          v21:FalseClass = CCall nil?@0x1038, v10
+          v22:FalseClass = CCall nil?@0x1038, v10
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -11615,10 +11796,10 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
-          v23:NilClass = GuardType v9, NilClass
-          v24:TrueClass = CCall nil?@0x1038, v23
+          v24:NilClass = GuardType v9, NilClass
+          v25:TrueClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -11641,10 +11822,10 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(FalseClass@0x1000, nil?@0x1008, cme:0x1010)
-          v23:FalseClass = GuardType v9, FalseClass
-          v24:FalseClass = CCall nil?@0x1038, v23
+          v24:FalseClass = GuardType v9, FalseClass
+          v25:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -11667,10 +11848,10 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(TrueClass@0x1000, nil?@0x1008, cme:0x1010)
-          v23:TrueClass = GuardType v9, TrueClass
-          v24:FalseClass = CCall nil?@0x1038, v23
+          v24:TrueClass = GuardType v9, TrueClass
+          v25:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -11693,10 +11874,10 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Symbol@0x1000, nil?@0x1008, cme:0x1010)
-          v23:StaticSymbol = GuardType v9, StaticSymbol
-          v24:FalseClass = CCall nil?@0x1038, v23
+          v24:StaticSymbol = GuardType v9, StaticSymbol
+          v25:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -11719,10 +11900,10 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
-          v23:Fixnum = GuardType v9, Fixnum
-          v24:FalseClass = CCall nil?@0x1038, v23
+          v24:Fixnum = GuardType v9, Fixnum
+          v25:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -11745,10 +11926,10 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Float@0x1000, nil?@0x1008, cme:0x1010)
-          v23:Flonum = GuardType v9, Flonum
-          v24:FalseClass = CCall nil?@0x1038, v23
+          v24:Flonum = GuardType v9, Flonum
+          v25:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -11771,10 +11952,11 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(String@0x1000, nil?@0x1008, cme:0x1010)
-          v23:StringExact = GuardType v9, StringExact
-          v24:FalseClass = CCall nil?@0x1038, v23
+          PatchPoint NoSingletonClass(String@0x1000)
+          v25:StringExact = GuardType v9, StringExact
+          v26:FalseClass = CCall nil?@0x1038, v25
           CheckInterrupts
-          Return v24
+          Return v26
         ");
     }
 
@@ -11797,10 +11979,11 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Array@0x1000, !@0x1008, cme:0x1010)
-          v23:ArrayExact = GuardType v9, ArrayExact
-          v24:BoolExact = CCall !@0x1038, v23
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v25:ArrayExact = GuardType v9, ArrayExact
+          v26:BoolExact = CCall !@0x1038, v25
           CheckInterrupts
-          Return v24
+          Return v26
         ");
     }
 
@@ -11823,10 +12006,11 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Array@0x1000, empty?@0x1008, cme:0x1010)
-          v23:ArrayExact = GuardType v9, ArrayExact
-          v24:BoolExact = CCall empty?@0x1038, v23
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v25:ArrayExact = GuardType v9, ArrayExact
+          v26:BoolExact = CCall empty?@0x1038, v25
           CheckInterrupts
-          Return v24
+          Return v26
         ");
     }
 
@@ -11849,10 +12033,11 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Hash@0x1000, empty?@0x1008, cme:0x1010)
-          v23:HashExact = GuardType v9, HashExact
-          v24:BoolExact = CCall empty?@0x1038, v23
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          v25:HashExact = GuardType v9, HashExact
+          v26:BoolExact = CCall empty?@0x1038, v25
           CheckInterrupts
-          Return v24
+          Return v26
         ");
     }
 
@@ -11877,10 +12062,11 @@ mod opt_tests {
           Jump bb2(v6, v7, v8)
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint MethodRedefined(C@0x1000, ==@0x1008, cme:0x1010)
-          v26:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
-          v27:BoolExact = CCall ==@0x1038, v26, v12
+          PatchPoint NoSingletonClass(C@0x1000)
+          v28:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
+          v29:BoolExact = CCall ==@0x1038, v28, v12
           CheckInterrupts
-          Return v27
+          Return v29
         ");
     }
 
@@ -11960,10 +12146,11 @@ mod opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v18:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v19:BasicObject = SendWithoutBlockDirect v18, :foo (0x1038)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v20:BasicObject = SendWithoutBlockDirect v19, :foo (0x1038)
           CheckInterrupts
-          Return v19
+          Return v20
         ");
     }
 
@@ -11994,11 +12181,12 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          v21:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v24:HeapObject[class_exact:C] = GuardShape v21, 0x1038
-          v25:BasicObject = LoadIvarEmbedded v24, :@foo@0x1039
+          PatchPoint NoSingletonClass(C@0x1000)
+          v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          v25:HeapObject[class_exact:C] = GuardShape v22, 0x1038
+          v26:BasicObject = LoadIvarEmbedded v25, :@foo@0x1039
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -12029,11 +12217,12 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          v21:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v24:HeapObject[class_exact:C] = GuardShape v21, 0x1038
-          v25:BasicObject = LoadIvarEmbedded v24, :@foo@0x1039
+          PatchPoint NoSingletonClass(C@0x1000)
+          v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          v25:HeapObject[class_exact:C] = GuardShape v22, 0x1038
+          v26:BasicObject = LoadIvarEmbedded v25, :@foo@0x1039
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -12106,10 +12295,11 @@ mod opt_tests {
           PatchPoint StableConstantNames(0x1000, O)
           v21:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(C@0x1010, foo@0x1018, cme:0x1020)
-          v25:HeapObject[VALUE(0x1008)] = GuardShape v21, 0x1048
-          v26:NilClass = Const Value(nil)
+          PatchPoint NoSingletonClass(C@0x1010)
+          v26:HeapObject[VALUE(0x1008)] = GuardShape v21, 0x1048
+          v27:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -12139,10 +12329,11 @@ mod opt_tests {
           PatchPoint StableConstantNames(0x1000, O)
           v21:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(C@0x1010, foo@0x1018, cme:0x1020)
-          v25:HeapObject[VALUE(0x1008)] = GuardShape v21, 0x1048
-          v26:NilClass = Const Value(nil)
+          PatchPoint NoSingletonClass(C@0x1010)
+          v26:HeapObject[VALUE(0x1008)] = GuardShape v21, 0x1048
+          v27:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
@@ -12169,11 +12360,12 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          v21:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v24:HeapObject[class_exact:C] = GuardShape v21, 0x1038
-          v25:NilClass = Const Value(nil)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          v25:HeapObject[class_exact:C] = GuardShape v22, 0x1038
+          v26:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -12200,11 +12392,12 @@ mod opt_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(C@0x1000, foo@0x1008, cme:0x1010)
-          v21:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v24:HeapObject[class_exact:C] = GuardShape v21, 0x1038
-          v25:NilClass = Const Value(nil)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          v25:HeapObject[class_exact:C] = GuardShape v22, 0x1038
+          v26:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v25
+          Return v26
         ");
     }
 
@@ -12267,6 +12460,108 @@ mod opt_tests {
           SetIvar v23, :@foo, v14
           CheckInterrupts
           Return v14
+        ");
+    }
+
+    #[test]
+    fn test_array_reverse_returns_array() {
+        eval(r#"
+            def test = [].reverse
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:ArrayExact = NewArray
+          PatchPoint MethodRedefined(Array@0x1000, reverse@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v22:ArrayExact = CCallWithFrame reverse@0x1038, v11
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_array_reverse_is_elidable() {
+        eval(r#"
+            def test
+              [].reverse
+              5
+            end
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:ArrayExact = NewArray
+          PatchPoint MethodRedefined(Array@0x1000, reverse@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v16:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
+    fn test_array_join_returns_string() {
+        eval(r#"
+            def test = [].join ","
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:ArrayExact = NewArray
+          v12:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v14:StringExact = StringCopy v12
+          PatchPoint MethodRedefined(Array@0x1008, join@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          v25:StringExact = CCallVariadic join@0x1040, v11, v14
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_string_to_s_returns_string() {
+        eval(r#"
+            def test = "".to_s
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:StringExact = StringCopy v10
+          PatchPoint MethodRedefined(String@0x1008, to_s@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(String@0x1008)
+          v23:StringExact = CCallWithFrame to_s@0x1040, v12
+          CheckInterrupts
+          Return v23
         ");
     }
 }

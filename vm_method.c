@@ -195,8 +195,9 @@ rb_vm_ccs_invalidate_and_free(struct rb_class_cc_entries *ccs)
 void
 rb_vm_cc_table_delete(VALUE table, ID mid)
 {
-    struct rb_class_cc_entries *ccs;
-    if (rb_managed_id_table_lookup(table, mid, (VALUE *)&ccs)) {
+    VALUE ccs_obj;
+    if (rb_managed_id_table_lookup(table, mid, &ccs_obj)) {
+        struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_obj;
         rb_managed_id_table_delete(table, mid);
         rb_vm_ccs_invalidate_and_free(ccs);
     }

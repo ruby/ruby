@@ -419,7 +419,7 @@ MESSAGE
 
     # disable ASAN leak reporting - conftest programs almost always don't bother
     # to free their memory.
-    envs['ASAN_OPTIONS'] = "detect_leaks=0" unless ENV.key?('ASAN_OPTIONS')
+    envs['LSAN_OPTIONS'] = "detect_leaks=0" unless ENV.key?('LSAN_OPTIONS')
 
     return envs, expand[commands]
   end

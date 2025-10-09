@@ -17,7 +17,7 @@
     * [autoconf] - 2.67 or later
     * [gperf] - 3.1 or later
         * Usually unneeded; only if you edit some source files using gperf
-    * ruby - 3.0 or later
+    * ruby - 3.1 or later
         * We can upgrade this version to system ruby version of the latest
           Ubuntu LTS.
     * git - 2.32 or later

@@ -44,6 +44,7 @@ Lint/FloatOutOfRange:
 Lint/ImplicitStringConcatenation:
   Exclude:
     - 'language/string_spec.rb'
+    - 'core/string/chilled_string_spec.rb'
 
 # Offense count: 4
 Lint/IneffectiveAccessModifier:

@@ -26,7 +26,7 @@ ruby/spec is known to be tested in these implementations for every commit:
 
 * [MRI](https://rubyci.org/) on 30 platforms and 4 versions
 * [JRuby](https://github.com/jruby/jruby/tree/master/spec/ruby) for both 1.7 and 9.x
-* [TruffleRuby](https://github.com/oracle/truffleruby/tree/master/spec/ruby)
+* [TruffleRuby](https://github.com/truffleruby/truffleruby/tree/master/spec/ruby)
 * [Opal](https://github.com/opal/opal/tree/master/spec)
 * [Artichoke](https://github.com/artichoke/spec/tree/artichoke-vendor)
 

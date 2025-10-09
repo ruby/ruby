@@ -50,6 +50,7 @@ static bool tmp_dir_has_dirsep;
 
 bool ruby_namespace_enabled = false; // extern
 bool ruby_namespace_init_done = false; // extern
+bool ruby_namespace_crashed = false; // extern, changed only in vm.c
 
 VALUE rb_resolve_feature_path(VALUE klass, VALUE fname);
 static VALUE rb_namespace_inspect(VALUE obj);
@@ -95,6 +96,14 @@ rb_loading_namespace(void)
         return root_namespace;
 
     return rb_vm_loading_namespace(GET_EC());
+}
+
+const rb_namespace_t *
+rb_current_namespace_in_crash_report(void)
+{
+    if (ruby_namespace_crashed)
+        return NULL;
+    return rb_current_namespace();
 }
 
 static long namespace_id_counter = 0;
@@ -755,13 +764,15 @@ rb_initialize_main_namespace(void)
     VM_ASSERT(NAMESPACE_OBJ_P(main_ns));
     ns = rb_get_namespace_t(main_ns);
     ns->ns_object = main_ns;
-    ns->ns_id = namespace_generate_id();
     ns->is_user = true;
     ns->is_optional = false;
 
     rb_const_set(rb_cNamespace, rb_intern("MAIN"), main_ns);
 
     vm->main_namespace = main_namespace = ns;
+
+    // create the writable classext of ::Object explicitly to finalize the set of visible top-level constants
+    RCLASS_EXT_WRITABLE_IN_NS(rb_cObject, ns);
 }
 
 static VALUE
@@ -843,11 +854,15 @@ rb_namespace_s_main(VALUE recv)
 static const char *
 classname(VALUE klass)
 {
-    VALUE p = RCLASS_CLASSPATH(klass);
+    VALUE p;
+    if (!klass) {
+        return "Qfalse";
+    }
+    p = RCLASSEXT_CLASSPATH(RCLASS_EXT_PRIME(klass));
     if (RTEST(p))
         return RSTRING_PTR(p);
     if (RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS))
-        return RSTRING_PTR(rb_inspect(klass));
+        return "AnyClassValue";
     return "NonClassValue";
 }
 
@@ -971,6 +986,30 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
     return res;
 }
 
+/* :nodoc: */
+static VALUE
+rb_namespace_root_p(VALUE namespace)
+{
+    const rb_namespace_t *ns = (const rb_namespace_t *)rb_get_namespace_t(namespace);
+    return RBOOL(NAMESPACE_ROOT_P(ns));
+}
+
+/* :nodoc: */
+static VALUE
+rb_namespace_main_p(VALUE namespace)
+{
+    const rb_namespace_t *ns = (const rb_namespace_t *)rb_get_namespace_t(namespace);
+    return RBOOL(NAMESPACE_MAIN_P(ns));
+}
+
+/* :nodoc: */
+static VALUE
+rb_namespace_user_p(VALUE namespace)
+{
+    const rb_namespace_t *ns = (const rb_namespace_t *)rb_get_namespace_t(namespace);
+    return RBOOL(NAMESPACE_USER_P(ns));
+}
+
 #endif /* RUBY_DEBUG */
 
 /*
@@ -1008,6 +1047,10 @@ Init_Namespace(void)
         rb_define_singleton_method(rb_cNamespace, "root", rb_namespace_s_root, 0);
         rb_define_singleton_method(rb_cNamespace, "main", rb_namespace_s_main, 0);
         rb_define_global_function("dump_classext", rb_f_dump_classext, 1);
+
+        rb_define_method(rb_cNamespace, "root?", rb_namespace_root_p, 0);
+        rb_define_method(rb_cNamespace, "main?", rb_namespace_main_p, 0);
+        rb_define_method(rb_cNamespace, "user?", rb_namespace_user_p, 0);
 #endif
     }
 

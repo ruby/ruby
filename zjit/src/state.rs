@@ -51,8 +51,11 @@ pub struct ZJITState {
     /// Trampoline to call function_stub_hit
     function_stub_hit_trampoline: CodePtr,
 
-    /// Counter pointers for unoptimized C functions
-    unoptimized_cfunc_counter_pointers: HashMap<String, Box<u64>>,
+    /// Counter pointers for full frame C functions
+    full_frame_cfunc_counter_pointers: HashMap<String, Box<u64>>,
+
+    /// Counter pointers for un-annotated C functions
+    not_annotated_frame_cfunc_counter_pointers: HashMap<String, Box<u64>>,
 
     /// Locations of side exists within generated code
     exit_locations: Option<SideExitLocations>,
@@ -97,7 +100,8 @@ impl ZJITState {
             exit_trampoline,
             function_stub_hit_trampoline,
             exit_trampoline_with_counter: exit_trampoline,
-            unoptimized_cfunc_counter_pointers: HashMap::new(),
+            full_frame_cfunc_counter_pointers: HashMap::new(),
+            not_annotated_frame_cfunc_counter_pointers: HashMap::new(),
             exit_locations,
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
@@ -162,9 +166,14 @@ impl ZJITState {
         &mut ZJITState::get_instance().send_fallback_counters
     }
 
-    /// Get a mutable reference to unoptimized cfunc counter pointers
-    pub fn get_unoptimized_cfunc_counter_pointers() -> &'static mut HashMap<String, Box<u64>> {
-        &mut ZJITState::get_instance().unoptimized_cfunc_counter_pointers
+    /// Get a mutable reference to full frame cfunc counter pointers
+    pub fn get_not_inlined_cfunc_counter_pointers() -> &'static mut HashMap<String, Box<u64>> {
+        &mut ZJITState::get_instance().full_frame_cfunc_counter_pointers
+    }
+
+    /// Get a mutable reference to non-annotated cfunc counter pointers
+    pub fn get_not_annotated_cfunc_counter_pointers() -> &'static mut HashMap<String, Box<u64>> {
+        &mut ZJITState::get_instance().not_annotated_frame_cfunc_counter_pointers
     }
 
     /// Was --zjit-save-compiled-iseqs specified?
@@ -222,6 +231,16 @@ impl ZJITState {
     /// Get a mutable reference to the ZJIT line samples Vec.
     pub fn get_line_samples() -> Option<&'static mut Vec<i32>> {
         ZJITState::get_instance().exit_locations.as_mut().map(|el| &mut el.line_samples)
+    }
+
+    /// Get number of skipped samples.
+    pub fn get_skipped_samples() -> Option<&'static mut usize> {
+        ZJITState::get_instance().exit_locations.as_mut().map(|el| &mut el.skipped_samples)
+    }
+
+    /// Get number of skipped samples.
+    pub fn set_skipped_samples(n: usize) -> Option<()> {
+        ZJITState::get_instance().exit_locations.as_mut().map(|el| el.skipped_samples = n)
     }
 }
 
@@ -352,6 +371,20 @@ fn try_increment_existing_stack(
 pub extern "C" fn rb_zjit_record_exit_stack(exit_pc: *const VALUE) {
     if !zjit_enabled_p() || !get_option!(trace_side_exits) {
         return;
+    }
+
+    // When `trace_side_exits_sample_interval` is zero, then the feature is disabled.
+    if get_option!(trace_side_exits_sample_interval) != 0 {
+        // If `trace_side_exits_sample_interval` is set, then can safely unwrap
+        // both `get_skipped_samples` and `set_skipped_samples`.
+        let skipped_samples = *ZJITState::get_skipped_samples().unwrap();
+        if skipped_samples < get_option!(trace_side_exits_sample_interval) {
+            // Skip sample and increment counter.
+            ZJITState::set_skipped_samples(skipped_samples + 1).unwrap();
+            return;
+        } else {
+            ZJITState::set_skipped_samples(0).unwrap();
+        }
     }
 
     let (stack_length, frames_buffer, lines_buffer) = record_profiling_frames();

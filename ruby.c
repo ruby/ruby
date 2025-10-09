@@ -1826,10 +1826,13 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     GET_VM()->running = 1;
     memset(ruby_vm_redefined_flag, 0, sizeof(ruby_vm_redefined_flag));
 
+    ruby_init_prelude();
+
+    /* Initialize the main namespace after loading libraries (including rubygems)
+     * to enable those in both root and main */
     if (rb_namespace_available())
         rb_initialize_main_namespace();
     rb_namespace_init_done();
-    ruby_init_prelude();
 
     // Initialize JITs after ruby_init_prelude() because JITing prelude is typically not optimal.
 #if USE_YJIT

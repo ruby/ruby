@@ -48,13 +48,13 @@ macro_rules! make_counters {
         }
 
         impl Counter {
-            pub fn name(&self) -> String {
+            pub fn name(&self) -> &'static str {
                 match self {
-                    $( Counter::$default_counter_name => stringify!($default_counter_name).to_string(), )+
-                    $( Counter::$exit_counter_name => stringify!($exit_counter_name).to_string(), )+
-                    $( Counter::$dynamic_send_counter_name => stringify!($dynamic_send_counter_name).to_string(), )+
-                    $( Counter::$optimized_send_counter_name => stringify!($optimized_send_counter_name).to_string(), )+
-                    $( Counter::$counter_name => stringify!($counter_name).to_string(), )+
+                    $( Counter::$default_counter_name => stringify!($default_counter_name), )+
+                    $( Counter::$exit_counter_name => stringify!($exit_counter_name), )+
+                    $( Counter::$dynamic_send_counter_name => stringify!($dynamic_send_counter_name), )+
+                    $( Counter::$optimized_send_counter_name => stringify!($optimized_send_counter_name), )+
+                    $( Counter::$counter_name => stringify!($counter_name), )+
                 }
             }
         }
@@ -148,6 +148,7 @@ make_counters! {
         send_fallback_send_without_block_cfunc_array_variadic,
         send_fallback_send_without_block_not_optimized_method_type,
         send_fallback_send_without_block_direct_too_many_args,
+        send_fallback_ccall_with_frame_too_many_args,
         send_fallback_obj_to_string_not_string,
         send_fallback_not_optimized_instruction,
     }
@@ -156,6 +157,7 @@ make_counters! {
     optimized_send {
         iseq_optimized_send_count,
         inline_cfunc_optimized_send_count,
+        non_variadic_cfunc_optimized_send_count,
         variadic_cfunc_optimized_send_count,
     }
 
@@ -318,6 +320,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendWithoutBlockCfuncArrayVariadic        => send_fallback_send_without_block_cfunc_array_variadic,
         SendWithoutBlockNotOptimizedMethodType(_) => send_fallback_send_without_block_not_optimized_method_type,
         SendWithoutBlockDirectTooManyArgs         => send_fallback_send_without_block_direct_too_many_args,
+        CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
         NotOptimizedInstruction(_)                => send_fallback_not_optimized_instruction,
     }
@@ -470,10 +473,17 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
         set_stat_f64!(hash, "ratio_in_zjit", 100.0 * zjit_insn_count as f64 / total_insn_count as f64);
     }
 
-    // Set unoptimized cfunc counters
-    let unoptimized_cfuncs = ZJITState::get_unoptimized_cfunc_counter_pointers();
-    for (signature, counter) in unoptimized_cfuncs.iter() {
-        let key_string = format!("not_optimized_cfuncs_{}", signature);
+    // Set not inlined cfunc counters
+    let not_inlined_cfuncs = ZJITState::get_not_inlined_cfunc_counter_pointers();
+    for (signature, counter) in not_inlined_cfuncs.iter() {
+        let key_string = format!("not_inlined_cfuncs_{}", signature);
+        set_stat_usize!(hash, &key_string, **counter);
+    }
+
+    // Set not annotated cfunc counters
+    let not_annotated_cfuncs = ZJITState::get_not_annotated_cfunc_counter_pointers();
+    for (signature, counter) in not_annotated_cfuncs.iter() {
+        let key_string = format!("not_annotated_cfuncs_{}", signature);
         set_stat_usize!(hash, &key_string, **counter);
     }
 
@@ -501,6 +511,8 @@ pub struct SideExitLocations {
     pub raw_samples: Vec<VALUE>,
     /// Line numbers of the iseq caller.
     pub line_samples: Vec<i32>,
+    /// Skipped samples
+    pub skipped_samples: usize
 }
 
 /// Primitive called in zjit.rb

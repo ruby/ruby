@@ -2111,6 +2111,74 @@ RSpec.describe "the lockfile format" do
     L
   end
 
+  it "successfully updates the lockfile when a new gem is added in the Gemfile includes a gem that shouldn't be included" do
+    build_repo4 do
+      build_gem "logger", "1.7.0"
+      build_gem "rack", "3.2.0"
+      build_gem "net-smtp", "0.5.0"
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "logger"
+      gem "net-smtp"
+
+      install_if -> { false } do
+        gem 'rack', github: 'rack/rack'
+      end
+    G
+
+    lockfile <<~L
+      GIT
+        remote: https://github.com/rack/rack.git
+        revision: 2fface9ac09fc582a81386becd939c987ad33f99
+        specs:
+          rack (3.2.0)
+
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          logger (1.7.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        logger
+        rack!
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install"
+
+    expect(lockfile).to eq <<~L
+      GIT
+        remote: https://github.com/rack/rack.git
+        revision: 2fface9ac09fc582a81386becd939c987ad33f99
+        specs:
+          rack (3.2.0)
+
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          logger (1.7.0)
+          net-smtp (0.5.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        logger
+        net-smtp
+        rack!
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
   shared_examples_for "a lockfile missing dependent specs" do
     it "auto-heals" do
       build_repo4 do

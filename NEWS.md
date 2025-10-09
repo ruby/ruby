@@ -161,7 +161,7 @@ The following bundled gems are promoted from default gems.
 * pstore 0.2.0
 * benchmark 0.4.1
 * logger 1.7.0
-* rdoc 6.14.2
+* rdoc 6.15.0
 * win32ole 1.9.2
 * irb 1.15.2
 * reline 0.6.2
@@ -180,22 +180,24 @@ The following default gem is added.
 
 The following default gems are updated.
 
-* RubyGems 3.8.0.dev
-* bundler 2.8.0.dev
-* erb 5.0.2
+* RubyGems 4.0.0.dev
+* bundler 4.0.0.dev
+* erb 5.0.3
 * etc 1.4.6
 * fcntl 1.3.0
 * io-console 0.8.1
 * io-nonblock 0.3.2
 * io-wait 0.3.2
-* json 2.14.1
+* json 2.15.1
+* openssl 4.0.0.pre
 * optparse 0.7.0.dev.2
-* prism 1.5.1
+* pp 0.6.3
+* prism 1.5.2
 * psych 5.2.6
 * resolv 0.6.2
 * stringio 3.1.8.dev
 * strscan 3.1.6.dev
-* uri 1.0.3
+* uri 1.0.4
 * weakref 0.1.4
 
 The following bundled gems are added.
@@ -203,15 +205,15 @@ The following bundled gems are added.
 
 The following bundled gems are updated.
 
-* minitest 5.25.5
+* minitest 5.26.0
 * rake 13.3.0
 * test-unit 3.7.0
-* rexml 3.4.2
-* net-imap 0.5.10
+* rexml 3.4.4
+* net-imap 0.5.12
 * net-smtp 0.5.1
 * matrix 0.4.3
 * prime 0.1.4
-* rbs 3.9.4
+* rbs 3.9.5
 * debug 1.11.0
 * base64 0.3.0
 * bigdecimal 3.2.2

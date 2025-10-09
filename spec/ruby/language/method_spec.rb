@@ -1487,3 +1487,163 @@ describe "Inside 'endless' method definitions" do
     greet("Homer").should == "Hi, Homer"
   end
 end
+
+describe "warning about not used block argument" do
+  ruby_version_is "3.4" do
+    it "warns when passing a block argument to a method that never uses it" do
+      def m_that_does_not_use_block
+        42
+      end
+
+      -> {
+        m_that_does_not_use_block { }
+      }.should complain(
+        /#{__FILE__}:#{__LINE__ - 2}: warning: the block passed to 'm_that_does_not_use_block' defined at #{__FILE__}:#{__LINE__ - 7} may be ignored/,
+        verbose: true)
+    end
+
+    it "does not warn when passing a block argument to a method that declares a block parameter" do
+      def m_with_block_parameter(&block)
+        42
+      end
+
+      -> { m_with_block_parameter { } }.should_not complain(verbose: true)
+    end
+
+    it "does not warn when passing a block argument to a method that declares an anonymous block parameter" do
+      def m_with_anonymous_block_parameter(&)
+        42
+      end
+
+      -> { m_with_anonymous_block_parameter { } }.should_not complain(verbose: true)
+    end
+
+    it "does not warn when passing a block argument to a method that yields an implicit block parameter" do
+      def m_with_yield
+        yield 42
+      end
+
+      -> { m_with_yield { } }.should_not complain(verbose: true)
+    end
+
+    it "warns when passing a block argument to a method that calls #block_given?" do
+      def m_with_block_given
+        block_given?
+      end
+
+      -> {
+        m_with_block_given { }
+      }.should complain(
+        /#{__FILE__}:#{__LINE__ - 2}: warning: the block passed to 'm_with_block_given' defined at #{__FILE__}:#{__LINE__ - 7} may be ignored/,
+        verbose: true)
+    end
+
+    it "does not warn when passing a block argument to a method that calls super" do
+      parent = Class.new do
+        def m
+        end
+      end
+
+      child = Class.new(parent) do
+        def m
+          super
+        end
+      end
+
+      obj = child.new
+      -> { obj.m { } }.should_not complain(verbose: true)
+    end
+
+    it "does not warn when passing a block argument to a method that calls super(...)" do
+      parent = Class.new do
+        def m(a)
+        end
+      end
+
+      child = Class.new(parent) do
+        def m(...)
+          super(...)
+        end
+      end
+
+      obj = child.new
+      -> { obj.m(42) { } }.should_not complain(verbose: true)
+    end
+
+    it "does not warn when called #initialize()" do
+      klass = Class.new do
+        def initialize
+        end
+      end
+
+      -> { klass.new {} }.should_not complain(verbose: true)
+    end
+
+    it "does not warn when passing a block argument to a method that calls super()" do
+      parent = Class.new do
+        def m
+        end
+      end
+
+      child = Class.new(parent) do
+        def m
+          super()
+        end
+      end
+
+      obj = child.new
+      -> { obj.m { } }.should_not complain(verbose: true)
+    end
+
+    it "warns only once per call site" do
+      def m_that_does_not_use_block
+        42
+      end
+
+      def call_m_that_does_not_use_block
+        m_that_does_not_use_block {}
+      end
+
+      -> {
+        m_that_does_not_use_block { }
+      }.should complain(/the block passed to 'm_that_does_not_use_block' defined at .+ may be ignored/, verbose: true)
+
+      -> {
+        m_that_does_not_use_block { }
+      }.should_not complain(verbose: true)
+    end
+
+    it "can be disabled with :strict_unused_block warning category" do
+      def m_that_does_not_use_block
+        42
+      end
+
+      # ensure that warning is emitted
+      -> { m_that_does_not_use_block { } }.should complain(verbose: true)
+
+      warn_experimental = Warning[:strict_unused_block]
+      Warning[:strict_unused_block] = false
+      begin
+        -> { m_that_does_not_use_block { } }.should_not complain(verbose: true)
+      ensure
+        Warning[:strict_unused_block] = warn_experimental
+      end
+    end
+
+    it "can be enabled with :strict_unused_block = true warning category in not verbose mode" do
+      def m_that_does_not_use_block
+        42
+      end
+
+      warn_experimental = Warning[:strict_unused_block]
+      Warning[:strict_unused_block] = true
+      begin
+        -> {
+          m_that_does_not_use_block { }
+      }.should complain(/the block passed to 'm_that_does_not_use_block' defined at .+ may be ignored/)
+      ensure
+        Warning[:strict_unused_block] = warn_experimental
+      end
+    end
+  end
+end

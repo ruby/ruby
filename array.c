@@ -4569,7 +4569,7 @@ take_items(VALUE obj, long n)
  *     [:c3, :b3, :a3]]
  *
  *  For an *object* in *other_arrays* that is not actually an array,
- *  forms the the "other array" as <tt>object.to_ary</tt>, if defined,
+ *  forms the "other array" as <tt>object.to_ary</tt>, if defined,
  *  or as <tt>object.each.to_a</tt> otherwise.
  *
  *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].

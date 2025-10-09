@@ -1,13 +1,13 @@
 require_relative "version"
 
 module ErrorHighlight
-  # Identify the code fragment at that a given exception occurred.
+  # Identify the code fragment where a given exception occurred.
   #
   # Options:
   #
   # point_type: :name | :args
-  #   :name (default) points the method/variable name that the exception occurred.
-  #   :args points the arguments of the method call that the exception occurred.
+  #   :name (default) points to the method/variable name where the exception occurred.
+  #   :args points to the arguments of the method call where the exception occurred.
   #
   # backtrace_location: Thread::Backtrace::Location
   #   It locates the code fragment of the given backtrace_location.
@@ -113,7 +113,7 @@ module ErrorHighlight
         snippet = @node.script_lines[lineno - 1 .. last_lineno - 1].join("")
         snippet += "\n" unless snippet.end_with?("\n")
 
-        # It require some work to support Unicode (or multibyte) characters.
+        # It requires some work to support Unicode (or multibyte) characters.
         # Tentatively, we stop highlighting if the code snippet has non-ascii characters.
         # See https://github.com/ruby/error_highlight/issues/4
         raise NonAscii unless snippet.ascii_only?
@@ -504,7 +504,6 @@ module ErrorHighlight
     def spot_fcall_for_args
       _mid, nd_args = @node.children
       if nd_args && nd_args.first_lineno == nd_args.last_lineno
-        # binary operator
         fetch_line(nd_args.first_lineno)
         @beg_column = nd_args.first_column
         @end_column = nd_args.last_column

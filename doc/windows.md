@@ -122,7 +122,7 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
 
 4.  If you want to build from GIT source, following commands are required.
     * `git`
-    * `ruby` 3.0 or later
+    * `ruby` 3.1 or later
 
     You can use [scoop](https://scoop.sh/) to install them like:
 
@@ -285,6 +285,7 @@ Any icon files(`*.ico`) in the build directory, directories specified with
 _icondirs_ make variable and `win32` directory under the ruby
 source directory will be included in DLL or executable files, according
 to their base names.
+
     $(RUBY_INSTALL_NAME).ico or ruby.ico   --> $(RUBY_INSTALL_NAME).exe
     $(RUBYW_INSTALL_NAME).ico or rubyw.ico --> $(RUBYW_INSTALL_NAME).exe
     the others                             --> $(RUBY_SO_NAME).dll

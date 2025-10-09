@@ -2,7 +2,7 @@
 
 use std::{collections::{HashMap, HashSet}, mem};
 
-use crate::{backend::lir::{asm_comment, Assembler}, cruby::{iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag, ID}, gc::IseqPayload, hir::Invariant, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
+use crate::{backend::lir::{asm_comment, Assembler}, cruby::{iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock, IseqPtr, RedefinitionFlag, ID, VALUE}, gc::IseqPayload, hir::Invariant, options::debug, state::{zjit_enabled_p, ZJITState}, virtualmem::CodePtr};
 use crate::stats::with_time_stat;
 use crate::stats::Counter::invalidation_time_ns;
 use crate::gc::remove_gc_offsets;
@@ -59,6 +59,10 @@ pub struct Invariants {
 
     /// Set of patch points that assume that the interpreter is running with only one ractor
     single_ractor_patch_points: HashSet<PatchPoint>,
+
+    /// Map from a class to a set of patch points that assume objects of the class
+    /// will have no singleton class.
+    no_singleton_class_patch_points: HashMap<VALUE, HashSet<PatchPoint>>,
 }
 
 impl Invariants {
@@ -67,6 +71,7 @@ impl Invariants {
         self.update_ep_escape_iseqs();
         self.update_no_ep_escape_iseq_patch_points();
         self.update_cme_patch_points();
+        self.update_no_singleton_class_patch_points();
     }
 
     /// Forget an ISEQ when freeing it. We need to because a) if the address is reused, we'd be
@@ -83,6 +88,11 @@ impl Invariants {
     /// Forget a CME when freeing it. See [Self::forget_iseq] for reasoning.
     pub fn forget_cme(&mut self, cme: *const rb_callable_method_entry_t) {
         self.cme_patch_points.remove(&cme);
+    }
+
+    /// Forget a class when freeing it. See [Self::forget_iseq] for reasoning.
+    pub fn forget_klass(&mut self, klass: VALUE) {
+        self.no_singleton_class_patch_points.remove(&klass);
     }
 
     /// Update ISEQ references in Invariants::ep_escape_iseqs
@@ -115,6 +125,17 @@ impl Invariants {
             })
             .collect();
         self.cme_patch_points = updated_cme_patch_points;
+    }
+
+    fn update_no_singleton_class_patch_points(&mut self) {
+        let updated_no_singleton_class_patch_points = std::mem::take(&mut self.no_singleton_class_patch_points)
+            .into_iter()
+            .map(|(klass, patch_points)| {
+                let new_klass = unsafe { rb_gc_location(klass) };
+                (new_klass, patch_points)
+            })
+            .collect();
+        self.no_singleton_class_patch_points = updated_no_singleton_class_patch_points;
     }
 }
 
@@ -245,6 +266,21 @@ pub fn track_stable_constant_names_assumption(
     }
 }
 
+/// Track a patch point for objects of a given class will have no singleton class.
+pub fn track_no_singleton_class_assumption(
+    klass: VALUE,
+    patch_point_ptr: CodePtr,
+    side_exit_ptr: CodePtr,
+    payload_ptr: *mut IseqPayload,
+) {
+    let invariants = ZJITState::get_invariants();
+    invariants.no_singleton_class_patch_points.entry(klass).or_default().insert(PatchPoint {
+        patch_point_ptr,
+        side_exit_ptr,
+        payload_ptr,
+    });
+}
+
 /// Called when a method is redefined. Invalidates all JIT code that depends on the CME.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_cme_invalidate(cme: *const rb_callable_method_entry_t) {
@@ -355,5 +391,22 @@ pub extern "C" fn rb_zjit_tracing_invalidate_all() {
         compile_patch_points!(cb, patch_points, "TracePoint is enabled, invalidating no TracePoint assumption");
 
         cb.mark_all_executable();
+    });
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_invalidate_no_singleton_class(klass: VALUE) {
+    if !zjit_enabled_p() {
+        return;
+    }
+
+    with_vm_lock(src_loc!(), || {
+        let invariants = ZJITState::get_invariants();
+        if let Some(patch_points) = invariants.no_singleton_class_patch_points.remove(&klass) {
+            let cb = ZJITState::get_code_block();
+            debug!("Singleton class created for {:?}", klass);
+            compile_patch_points!(cb, patch_points, "Singleton class created for {:?}", klass);
+            cb.mark_all_executable();
+        }
     });
 }

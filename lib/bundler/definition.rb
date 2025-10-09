@@ -282,10 +282,15 @@ module Bundler
     end
 
     def filter_relevant(dependencies)
-      platforms_array = [Bundler.generic_local_platform].freeze
       dependencies.select do |d|
-        d.should_include? && !d.gem_platforms(platforms_array).empty?
+        relevant_deps?(d)
       end
+    end
+
+    def relevant_deps?(dep)
+      platforms_array = [Bundler.generic_local_platform].freeze
+
+      dep.should_include? && !dep.gem_platforms(platforms_array).empty?
     end
 
     def locked_dependencies
@@ -973,10 +978,11 @@ module Bundler
       @missing_lockfile_dep = nil
       @changed_dependencies = []
 
-      current_dependencies.each do |dep|
+      @dependencies.each do |dep|
         if dep.source
           dep.source = sources.get(dep.source)
         end
+        next unless relevant_deps?(dep)
 
         name = dep.name
 

@@ -34,10 +34,10 @@ require 'English'
 
 ### Separators
 
-| Variable    | English                    | Contains                                   |
-|-------------|----------------------------|--------------------------------------------|
-| `$/`        | `$INPUT_RECORD_SEPARATOR`  | Input record separator; initially newline. |
-| `$\\\\`     | `$OUTPUT_RECORD_SEPARATOR` | Output record separator; initially `nil`.  |
+| Variable | English                    | Contains                                   |
+|----------|----------------------------|--------------------------------------------|
+| `$/`     | `$INPUT_RECORD_SEPARATOR`  | Input record separator; initially newline. |
+| `$\`     | `$OUTPUT_RECORD_SEPARATOR` | Output record separator; initially `nil`.  |
 
 ### Streams
 
@@ -179,7 +179,7 @@ English - `$INPUT_RECORD_SEPARATOR`, `$RS`.
 
 Aliased as `$-0`.
 
-### `$\\` (Output Record Separator)
+### `$\` (Output Record Separator)
 
 An output record separator, initially `nil`.
 

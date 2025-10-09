@@ -54,6 +54,7 @@ typedef struct rb_namespace_struct rb_namespace_t;
 
 RUBY_EXTERN bool ruby_namespace_enabled;
 RUBY_EXTERN bool ruby_namespace_init_done;
+RUBY_EXTERN bool ruby_namespace_crashed;
 
 static inline bool
 rb_namespace_available(void)
@@ -65,6 +66,7 @@ const rb_namespace_t * rb_root_namespace(void);
 const rb_namespace_t * rb_main_namespace(void);
 const rb_namespace_t * rb_current_namespace(void);
 const rb_namespace_t * rb_loading_namespace(void);
+const rb_namespace_t * rb_current_namespace_in_crash_report(void);
 
 void rb_namespace_entry_mark(void *);
 void rb_namespace_gc_update_references(void *ptr);

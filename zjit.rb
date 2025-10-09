@@ -35,18 +35,17 @@ class << RubyVM::ZJIT
     return unless trace_exit_locations_enabled?
 
     results = Primitive.rb_zjit_get_exit_locations
-    raw_samples = results[:raw].dup
-    line_samples = results[:lines].dup
-    frames = results[:frames].dup
+    raw_samples = results[:raw]
+    line_samples = results[:lines]
+    frames = results[:frames]
     samples_count = 0
 
-    # Loop through the instructions and set the frame hash with the data.
-    # We use nonexistent.def for the file name, otherwise insns.def will be displayed
-    # and that information isn't useful in this context.
+    # Use nonexistent.def as a dummy file name.
+    frame_template = { samples: 0, total_samples: 0, edges: {}, name: name, file: "nonexistent.def", line: nil, lines: {} }
+
+    # Loop through all possible instructions and setup the frame hash.
     RubyVM::INSTRUCTION_NAMES.each_with_index do |name, frame_id|
-      frame_hash = { samples: 0, total_samples: 0, edges: {}, name: name, file: "nonexistent.def", line: nil, lines: {} }
-      results[:frames][frame_id] = frame_hash
-      frames[frame_id] = frame_hash
+      frames[frame_id] = frame_template.dup.tap { |h| h[:name] = name }
     end
 
     # Loop through the raw_samples and build the hashes for StackProf.
@@ -100,10 +99,13 @@ class << RubyVM::ZJIT
     end
 
     results[:samples] = samples_count
-    # Set missed_samples and gc_samples to 0 as their values
-    # don't matter to us in this context.
+
+    # These values are mandatory to include for stackprof, but we don't use them.
     results[:missed_samples] = 0
     results[:gc_samples] = 0
+
+    results[:frames].reject! { |k, v| v[:samples] == 0 }
+
     results
   end
 
@@ -128,6 +130,7 @@ class << RubyVM::ZJIT
 
     File.open(filename, "wb") do |file|
       Marshal.dump(RubyVM::ZJIT.exit_locations, file)
+      file.size
     end
   end
 
@@ -152,7 +155,8 @@ class << RubyVM::ZJIT
     stats = self.stats
 
     # Show counters independent from exit_* or dynamic_send_*
-    print_counters_with_prefix(prefix: 'not_optimized_cfuncs_', prompt: 'unoptimized sends to C functions', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'not_inlined_cfuncs_', prompt: 'not inlined C methods', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'not_annotated_cfuncs_', prompt: 'not annotated C methods', buf:, stats:, limit: 20)
 
     # Show fallback counters, ordered by the typical amount of fallbacks for the prefix at the time
     print_counters_with_prefix(prefix: 'unspecialized_def_type_', prompt: 'not optimized method types', buf:, stats:, limit: 20)
@@ -171,6 +175,7 @@ class << RubyVM::ZJIT
       :optimized_send_count,
       :iseq_optimized_send_count,
       :inline_cfunc_optimized_send_count,
+      :non_variadic_cfunc_optimized_send_count,
       :variadic_cfunc_optimized_send_count,
     ], buf:, stats:, right_align: true, base: :send_count)
     print_counters([
@@ -275,9 +280,9 @@ class << RubyVM::ZJIT
   def dump_locations # :nodoc:
     return unless trace_exit_locations_enabled?
 
-    filename = "zjit_exit_locations.dump"
-    dump_exit_locations(filename)
+    filename = "zjit_exits_#{Process.pid}.dump"
+    n_bytes = dump_exit_locations(filename)
 
-    $stderr.puts("ZJIT exit locations dumped to `#{filename}`.")
+    $stderr.puts("#{n_bytes} bytes written to #{filename}.")
   end
 end

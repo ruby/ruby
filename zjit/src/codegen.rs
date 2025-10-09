@@ -9,7 +9,10 @@ use std::slice;
 
 use crate::asm::Label;
 use crate::backend::current::{Reg, ALLOC_REGS};
-use crate::invariants::{track_bop_assumption, track_cme_assumption, track_no_ep_escape_assumption, track_no_trace_point_assumption, track_single_ractor_assumption, track_stable_constant_names_assumption};
+use crate::invariants::{
+    track_bop_assumption, track_cme_assumption, track_no_ep_escape_assumption, track_no_trace_point_assumption,
+    track_single_ractor_assumption, track_stable_constant_names_assumption, track_no_singleton_class_assumption
+};
 use crate::gc::{append_gc_offsets, get_or_create_iseq_payload, get_or_create_iseq_payload_ptr, IseqCodePtrs, IseqPayload, IseqStatus};
 use crate::state::ZJITState;
 use crate::stats::{send_fallback_counter, exit_counter_for_compile_error, incr_counter, incr_counter_by, send_fallback_counter_for_method_type, send_fallback_counter_ptr_for_opcode, CompileError};
@@ -401,9 +404,13 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(jit, asm, opnd!(val), *expected, &function.frame_state(*state)),
         &Insn::GuardBlockParamProxy { level, state } => no_output!(gen_guard_block_param_proxy(jit, asm, level, &function.frame_state(state))),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
-        Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfun, opnds!(args)),
-        Insn::CCallVariadic { cfun, recv, args, name: _, cme, state } => {
-            gen_ccall_variadic(jit, asm, *cfun, opnd!(recv), opnds!(args), *cme, &function.frame_state(*state))
+        Insn::CCall { cfunc, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, opnds!(args)),
+        // Give up CCallWithFrame for 7+ args since asm.ccall() doesn't support it.
+        Insn::CCallWithFrame { cd, state, args, .. } if args.len() > C_ARG_OPNDS.len() =>
+            gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), SendFallbackReason::CCallWithFrameTooManyArgs),
+        Insn::CCallWithFrame { cfunc, args, cme, state, .. } => gen_ccall_with_frame(jit, asm, *cfunc, opnds!(args), *cme, &function.frame_state(*state)),
+        Insn::CCallVariadic { cfunc, recv, args, name: _, cme, state, return_type: _, elidable: _ } => {
+            gen_ccall_variadic(jit, asm, *cfunc, opnd!(recv), opnds!(args), *cme, &function.frame_state(*state))
         }
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, *id, opnd!(val), &function.frame_state(*state))),
@@ -654,15 +661,55 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invarian
             Invariant::SingleRactorMode => {
                 track_single_ractor_assumption(code_ptr, side_exit_ptr, payload_ptr);
             }
+            Invariant::NoSingletonClass { klass } => {
+                track_no_singleton_class_assumption(klass, code_ptr, side_exit_ptr, payload_ptr);
+            }
         }
     });
 }
 
+/// Generate code for a C function call that pushes a frame
+fn gen_ccall_with_frame(jit: &mut JITState, asm: &mut Assembler, cfunc: *const u8, args: Vec<Opnd>, cme: *const rb_callable_method_entry_t, state: &FrameState) -> lir::Opnd {
+    gen_incr_counter(asm, Counter::non_variadic_cfunc_optimized_send_count);
+
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    gen_push_frame(asm, args.len(), state, ControlFrame {
+        recv: args[0],
+        iseq: None,
+        cme,
+        frame_type: VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL,
+    });
+
+    asm_comment!(asm, "switch to new SP register");
+    let sp_offset = (state.stack().len() - args.len() + VM_ENV_DATA_SIZE.as_usize()) * SIZEOF_VALUE;
+    let new_sp = asm.add(SP, sp_offset.into());
+    asm.mov(SP, new_sp);
+
+    asm_comment!(asm, "switch to new CFP");
+    let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+
+    let result = asm.ccall(cfunc, args);
+
+    asm_comment!(asm, "pop C frame");
+    let new_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+
+    asm_comment!(asm, "restore SP register for the caller");
+    let new_sp = asm.sub(SP, sp_offset.into());
+    asm.mov(SP, new_sp);
+
+    result
+}
+
 /// Lowering for [`Insn::CCall`]. This is a low-level raw call that doesn't know
 /// anything about the callee, so handling for e.g. GC safety is dealt with elsewhere.
-fn gen_ccall(asm: &mut Assembler, cfun: *const u8, args: Vec<Opnd>) -> lir::Opnd {
+fn gen_ccall(asm: &mut Assembler, cfunc: *const u8, args: Vec<Opnd>) -> lir::Opnd {
     gen_incr_counter(asm, Counter::inline_cfunc_optimized_send_count);
-    asm.ccall(cfun, args)
+    asm.ccall(cfunc, args)
 }
 
 /// Generate code for a variadic C function call
@@ -670,7 +717,7 @@ fn gen_ccall(asm: &mut Assembler, cfun: *const u8, args: Vec<Opnd>) -> lir::Opnd
 fn gen_ccall_variadic(
     jit: &mut JITState,
     asm: &mut Assembler,
-    cfun: *const u8,
+    cfunc: *const u8,
     recv: Opnd,
     args: Vec<Opnd>,
     cme: *const rb_callable_method_entry_t,
@@ -701,7 +748,7 @@ fn gen_ccall_variadic(
     asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
     let argv_ptr = gen_push_opnds(jit, asm, &args);
-    let result = asm.ccall(cfun, vec![args.len().into(), argv_ptr, recv]);
+    let result = asm.ccall(cfunc, vec![args.len().into(), argv_ptr, recv]);
     gen_pop_opnds(asm, &args);
 
     asm_comment!(asm, "pop C frame");

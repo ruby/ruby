@@ -2127,6 +2127,7 @@ class TestZJIT < Test::Unit::TestCase
         # After reset, counters should be zero or at least much smaller
         # (some instructions might execute between reset and reading stats)
         :zjit_insn_count.then { |s| initial_stats[s] > 0 && reset_stats[s] < initial_stats[s] },
+        :compiled_iseq_count.then { |s| initial_stats[s] > 0 && reset_stats[s] < initial_stats[s] }
       ].all?
     }, stats: true
   end
@@ -2910,6 +2911,65 @@ class TestZJIT < Test::Unit::TestCase
 
       a(Foo)
     }, call_threshold: 2, insns: [:opt_new]
+  end
+
+  def test_singleton_class_invalidation_annotated_ccall
+    assert_compiles '[false, true]', %q{
+      def define_singleton(obj, define)
+        if define
+          # Wrap in C method frame to avoid exiting JIT on defineclass
+          [nil].reverse_each do
+            class << obj
+              def ==(_)
+                true
+              end
+            end
+          end
+        end
+        false
+      end
+
+      def test(define)
+        obj = BasicObject.new
+        # This == call gets compiled to a CCall
+        obj == define_singleton(obj, define)
+      end
+
+      result = []
+      result << test(false)  # Compiles BasicObject#==
+      result << test(true)   # Should use singleton#== now
+      result
+    }, call_threshold: 2
+  end
+
+  def test_singleton_class_invalidation_optimized_variadic_ccall
+    assert_compiles '[1, 1000]', %q{
+      def define_singleton(arr, define)
+        if define
+          # Wrap in C method frame to avoid exiting JIT on defineclass
+          [nil].reverse_each do
+            class << arr
+              def push(x)
+                super(x * 1000)
+              end
+            end
+          end
+        end
+        1
+      end
+
+      def test(define)
+        arr = []
+        val = define_singleton(arr, define)
+        arr.push(val)  # This CCall should be invalidated if singleton was defined
+        arr[0]
+      end
+
+      result = []
+      result << test(false)  # Compiles Array#push as CCall
+      result << test(true)   # Singleton defined, CCall should be invalidated
+      result
+    }, call_threshold: 2
   end
 
   private

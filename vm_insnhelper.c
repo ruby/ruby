@@ -2120,8 +2120,9 @@ vm_evict_cc(VALUE klass, VALUE cc_tbl, ID mid)
             return;
         }
 
-        struct rb_class_cc_entries *ccs = NULL;
-        rb_managed_id_table_lookup(cc_tbl, mid, (VALUE *)&ccs);
+        VALUE ccs_obj = 0;
+        rb_managed_id_table_lookup(cc_tbl, mid, &ccs_obj);
+        struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_obj;
 
         if (!ccs || !METHOD_ENTRY_INVALIDATED(ccs->cme)) {
             // Another ractor replaced that entry while we were waiting on the VM lock.
@@ -2182,7 +2183,11 @@ vm_populate_cc(VALUE klass, const struct rb_callinfo * const ci, ID mid)
     if (ccs == NULL) {
         VM_ASSERT(cc_tbl);
 
-        if (!LIKELY(rb_managed_id_table_lookup(cc_tbl, mid, (VALUE *)&ccs))) {
+        VALUE ccs_obj;
+        if (UNLIKELY(rb_managed_id_table_lookup(cc_tbl, mid, &ccs_obj))) {
+            ccs = (struct rb_class_cc_entries *)ccs_obj;
+        }
+        else {
             // TODO: required?
             ccs = vm_ccs_create(klass, cc_tbl, mid, cme);
         }
@@ -2217,7 +2222,9 @@ retry:
         // CCS data is keyed on method id, so we don't need the method id
         // for doing comparisons in the `for` loop below.
 
-        if (rb_managed_id_table_lookup(cc_tbl, mid, (VALUE *)&ccs)) {
+        VALUE ccs_obj;
+        if (rb_managed_id_table_lookup(cc_tbl, mid, &ccs_obj)) {
+            ccs = (struct rb_class_cc_entries *)ccs_obj;
             const int ccs_len = ccs->len;
 
             if (UNLIKELY(METHOD_ENTRY_INVALIDATED(ccs->cme))) {
@@ -6421,7 +6428,7 @@ static VALUE
 vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE target)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_INCLUDE_P, ARRAY_REDEFINED_OP_FLAG)) {
-        struct RArray fake_ary;
+        struct RArray fake_ary = {RBASIC_INIT};
         VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, num);
         return rb_ary_includes(ary, target);
     }
@@ -6441,7 +6448,7 @@ static VALUE
 vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt, VALUE buffer)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_PACK, ARRAY_REDEFINED_OP_FLAG)) {
-        struct RArray fake_ary;
+        struct RArray fake_ary = {RBASIC_INIT};
         VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, num);
         return rb_ec_pack_ary(ec, ary, fmt, (UNDEF_P(buffer) ? Qnil : buffer));
     }

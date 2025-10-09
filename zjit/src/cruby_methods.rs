@@ -31,6 +31,18 @@ pub struct FnProperties {
     pub elidable: bool,
 }
 
+/// A safe default for un-annotated Ruby methods: we can't optimize them or their returned values.
+impl Default for FnProperties {
+    fn default() -> Self {
+        Self {
+            no_gc: false,
+            leaf: false,
+            return_type: types::BasicObject,
+            elidable: false,
+        }
+    }
+}
+
 impl Annotations {
     /// Query about properties of a C method
     pub fn get_cfunc_properties(&self, method: *const rb_callable_method_entry_t) -> Option<FnProperties> {
@@ -140,11 +152,12 @@ pub fn init() -> Annotations {
     let builtin_funcs = &mut HashMap::new();
 
     macro_rules! annotate {
-        ($module:ident, $method_name:literal, $return_type:expr, $($properties:ident),+) => {
+        ($module:ident, $method_name:literal, $return_type:expr $(, $properties:ident)*) => {
+            #[allow(unused_mut)]
             let mut props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: $return_type };
             $(
                 props.$properties = true;
-            )+
+            )*
             annotate_c_method(cfuncs, unsafe { $module }, $method_name, props);
         }
     }
@@ -167,11 +180,14 @@ pub fn init() -> Annotations {
 
     annotate!(rb_mKernel, "itself", types::BasicObject, no_gc, leaf, elidable);
     annotate!(rb_cString, "bytesize", types::Fixnum, no_gc, leaf);
+    annotate!(rb_cString, "to_s", types::StringExact);
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cArray, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cArray, "empty?", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cArray, "reverse", types::ArrayExact, leaf, elidable);
+    annotate!(rb_cArray, "join", types::StringExact);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cNilClass, "nil?", types::TrueClass, no_gc, leaf, elidable);
     annotate!(rb_mKernel, "nil?", types::FalseClass, no_gc, leaf, elidable);

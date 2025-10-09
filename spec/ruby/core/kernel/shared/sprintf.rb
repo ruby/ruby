@@ -449,7 +449,7 @@ describe :kernel_sprintf, shared: true do
 
       it "is escaped by %" do
         @method.call("%%").should == "%"
-        @method.call("%%d", 10).should == "%d"
+        @method.call("%%d").should == "%d"
       end
     end
   end

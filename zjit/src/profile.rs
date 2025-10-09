@@ -3,7 +3,7 @@
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
-use crate::{cruby::*, gc::get_or_create_iseq_payload, options::get_option};
+use crate::{cruby::*, gc::get_or_create_iseq_payload, options::{get_option, NumProfiles}};
 use crate::distribution::{Distribution, DistributionSummary};
 use crate::stats::Counter::profile_time_ns;
 use crate::stats::with_time_stat;
@@ -73,6 +73,7 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
         YARVINSN_opt_and   => profile_operands(profiler, profile, 2),
         YARVINSN_opt_or    => profile_operands(profiler, profile, 2),
         YARVINSN_opt_empty_p => profile_operands(profiler, profile, 1),
+        YARVINSN_opt_aref  => profile_operands(profiler, profile, 2),
         YARVINSN_opt_not   => profile_operands(profiler, profile, 1),
         YARVINSN_getinstancevariable => profile_self(profiler, profile),
         YARVINSN_objtostring   => profile_operands(profiler, profile, 1),
@@ -278,7 +279,7 @@ pub struct IseqProfile {
     opnd_types: Vec<Vec<TypeDistribution>>,
 
     /// Number of profiled executions for each YARV instruction, indexed by the instruction index
-    num_profiles: Vec<u8>,
+    num_profiles: Vec<NumProfiles>,
 }
 
 impl IseqProfile {

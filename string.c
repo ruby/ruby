@@ -655,14 +655,14 @@ rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encod
 VALUE
 rb_fstring_new(const char *ptr, long len)
 {
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), false, false);
 }
 
 VALUE
 rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc)
 {
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), false, false);
 }
 
@@ -6497,7 +6497,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
                 val = rb_obj_as_string(rb_yield(match0));
             }
             else {
-                struct RString fake_str;
+                struct RString fake_str = {RBASIC_INIT};
                 VALUE key;
                 if (mode == FAST_MAP) {
                     // It is safe to use a fake_str here because we established that it won't escape,
@@ -6648,11 +6648,13 @@ rb_str_gsub(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    replace(other_string) -> self
  *
- *  Replaces the contents of +self+ with the contents of +other_string+:
+ *  Replaces the contents of +self+ with the contents of +other_string+;
+ *  returns +self+:
  *
  *    s = 'foo'        # => "foo"
  *    s.replace('bar') # => "bar"
  *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 VALUE
@@ -7052,10 +7054,12 @@ rb_str_reverse(VALUE str)
  *
  *  Returns +self+ with its characters reversed:
  *
- *    s = 'stressed'
- *    s.reverse! # => "desserts"
- *    s          # => "desserts"
+ *    'drawer'.reverse!       # => "reward"
+ *    'reviled'.reverse!      # => "deliver"
+ *    'stressed'.reverse!     # => "desserts"
+ *    'semordnilaps'.reverse! # => "spalindromes"
  *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
@@ -12743,7 +12747,7 @@ rb_str_to_interned_str(VALUE str)
 VALUE
 rb_interned_str(const char *ptr, long len)
 {
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), true, false);
 }
 
@@ -12760,7 +12764,7 @@ rb_enc_interned_str(const char *ptr, long len, rb_encoding *enc)
         rb_enc_autoload(enc);
     }
 
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), true, false);
 }
 
@@ -12771,7 +12775,7 @@ rb_enc_literal_str(const char *ptr, long len, rb_encoding *enc)
         rb_enc_autoload(enc);
     }
 
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), true, true);
 }
 
@@ -12818,6 +12822,7 @@ Init_String(void)
     rb_define_singleton_method(rb_cString, "new", rb_str_s_new, -1);
     rb_define_singleton_method(rb_cString, "try_convert", rb_str_s_try_convert, 1);
     rb_define_method(rb_cString, "initialize", rb_str_init, -1);
+    rb_define_method(rb_cString, "replace", rb_str_replace, 1);
     rb_define_method(rb_cString, "initialize_copy", rb_str_replace, 1);
     rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);
     rb_define_method(rb_cString, "==", rb_str_equal, 1);
@@ -12848,7 +12853,6 @@ Init_String(void)
     rb_define_method(rb_cString, "byteindex", rb_str_byteindex_m, -1);
     rb_define_method(rb_cString, "rindex", rb_str_rindex_m, -1);
     rb_define_method(rb_cString, "byterindex", rb_str_byterindex_m, -1);
-    rb_define_method(rb_cString, "replace", rb_str_replace, 1);
     rb_define_method(rb_cString, "clear", rb_str_clear, 0);
     rb_define_method(rb_cString, "chr", rb_str_chr, 0);
     rb_define_method(rb_cString, "getbyte", rb_str_getbyte, 1);

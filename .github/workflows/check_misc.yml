@@ -28,18 +28,6 @@ jobs:
           # Skip overwriting MATZBOT_AUTO_UPDATE_TOKEN
           checkout: '' # false (ref: https://github.com/actions/runner/issues/2238)
 
-      # Run this step first to make sure auto-style commits are pushed
-      - name: Auto-correct code styles
-        run: |
-          set -x
-          ruby tool/auto-style.rb "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" refs/heads/master
-        env:
-          GITHUB_OLD_SHA: ${{ github.event.before }}
-          GITHUB_NEW_SHA: ${{ github.event.after }}
-          GIT_AUTHOR_NAME: git
-          GIT_COMMITTER_NAME: git
-          EMAIL: svn-admin@ruby-lang.org
-        if: ${{ github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master' && github.event_name == 'push' }}
       - name: Check for code styles
         run: |
           set -x
@@ -47,6 +35,7 @@ jobs:
         env:
           GITHUB_OLD_SHA: ${{ github.event.pull_request.base.sha }}
           GITHUB_NEW_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        # Skip 'push' events because post_push.yml fixes them on push
         if: ${{ github.repository == 'ruby/ruby' && startsWith(github.event_name, 'pull') }}
 
       - name: Check if C-sources are US-ASCII
@@ -71,23 +60,16 @@ jobs:
       - name: Check if to generate documents
         id: rdoc
         run: |
-          ref=$(sed 's/#.*//;/^rdoc /!d' gems/bundled_gems | awk '{print $4}')
-          echo ref=$ref >> $GITHUB_OUTPUT
-        # Generate only when document commit/PR
-        if: >-
-          ${{false
-          || contains(github.event.head_commit.message, '[ruby/rdoc]')
-          || contains(github.event.head_commit.message, '[DOC]')
-          || contains(github.event.pull_request.title, '[DOC]')
-          || contains(github.event.pull_request.labels.*.name, 'Documentation')
-          }}
+          set -- $(sed 's/#.*//;/^rdoc /!d' gems/bundled_gems)
+          { echo version=$2; echo ref=$4; } >> $GITHUB_OUTPUT
+          echo RDOC='ruby -W0 --disable-gems tool/rdoc-srcdir -q' >> $GITHUB_ENV
 
       - name: Checkout rdoc
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           repository: ruby/rdoc
           ref: ${{ steps.rdoc.outputs.ref }}
-          path: .bundle/gems/rdoc-0
+          path: .bundle/gems/rdoc-${{ steps.rdoc.outputs.version }}
         if: ${{ steps.rdoc.outputs.ref != '' }}
 
       - name: Generate rdoc
@@ -99,18 +81,26 @@ jobs:
           bundle config --local path vendor/bundle
           bundle install --jobs 4
           bundle exec rake generate
-        working-directory: .bundle/gems/rdoc-0
+        working-directory: .bundle/gems/rdoc-${{ steps.rdoc.outputs.version }}
         if: ${{ steps.rdoc.outputs.ref != '' }}
+
+      - name: Core docs coverage
+        run: |
+          $RDOC -C -x ^ext -x ^lib .
 
       - name: Generate docs
         id: docs
         run: |
-          $RDOC -C -x ^ext -x ^lib .
           $RDOC --op html .
           echo htmlout=ruby-html-${GITHUB_SHA:0:10} >> $GITHUB_OUTPUT
-        env:
-          RDOC: ruby -W0 --disable-gems tool/rdoc-srcdir -q
-        if: ${{ steps.rdoc.outcome == 'success' }}
+        # Generate only when document commit/PR
+        if: >-
+          ${{false
+          || contains(github.event.head_commit.message, '[ruby/rdoc]')
+          || contains(github.event.head_commit.message, '[DOC]')
+          || contains(github.event.pull_request.title, '[DOC]')
+          || contains(github.event.pull_request.labels.*.name, 'Documentation')
+          }}
 
       - name: Upload docs
         uses: actions/upload-artifact@v4

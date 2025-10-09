@@ -268,7 +268,7 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
             if (pos >= 0) {
                 long *ptr = rb_darray_data_ptr(feature_indexes);
                 long len = rb_darray_size(feature_indexes);
-                MEMMOVE(ptr + pos, ptr + pos + 1, long, len - pos - 1);
+                MEMMOVE(ptr + pos + 1, ptr + pos, long, len - pos - 1);
                 ptr[pos] = FIX2LONG(offset);
             }
         }
@@ -1289,14 +1289,15 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
 {
     volatile int result = -1;
     rb_thread_t *th = rb_ec_thread_ptr(ec);
+    const rb_namespace_t *ns = rb_loading_namespace();
     volatile const struct {
         VALUE wrapper, self, errinfo;
         rb_execution_context_t *ec;
+        const rb_namespace_t *ns;
     } saved = {
         th->top_wrapper, th->top_self, ec->errinfo,
-        ec,
+        ec, ns,
     };
-    const rb_namespace_t *ns = rb_loading_namespace();
     enum ruby_tag_type state;
     char *volatile ftptr = 0;
     VALUE path;
@@ -1365,6 +1366,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     EC_POP_TAG();
 
     ec = saved.ec;
+    ns = saved.ns;
     rb_thread_t *th2 = rb_ec_thread_ptr(ec);
     th2->top_self = saved.self;
     th2->top_wrapper = saved.wrapper;
@@ -1432,7 +1434,7 @@ rb_require_internal(VALUE fname)
 int
 ruby_require_internal(const char *fname, unsigned int len)
 {
-    struct RString fake;
+    struct RString fake = {RBASIC_INIT};
     VALUE str = rb_setup_fake_str(&fake, fname, len, 0);
     rb_execution_context_t *ec = GET_EC();
     int result = require_internal(ec, str, 0, RTEST(ruby_verbose));
@@ -1474,7 +1476,7 @@ rb_require_string_internal(VALUE fname, bool resurrect)
 VALUE
 rb_require(const char *fname)
 {
-    struct RString fake;
+    struct RString fake = {RBASIC_INIT};
     VALUE str = rb_setup_fake_str(&fake, fname, strlen(fname), 0);
     return rb_require_string_internal(str, true);
 }

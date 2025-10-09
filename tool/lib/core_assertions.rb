@@ -74,10 +74,7 @@ module Test
     module CoreAssertions
       require_relative 'envutil'
       require 'pp'
-      begin
-        require '-test-/asan'
-      rescue LoadError
-      end
+      require '-test-/asan'
 
       nil.pretty_inspect
 
@@ -97,9 +94,11 @@ module Test
       end
 
       def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil,
-                            success: nil, failed: nil, **opt)
+                            success: nil, failed: nil, gems: false, **opt)
         args = Array(args).dup
-        args.insert((Hash === args[0] ? 1 : 0), '--disable=gems')
+        unless gems.nil?
+          args.insert((Hash === args[0] ? 1 : 0), "--#{gems ? 'enable' : 'disable'}=gems")
+        end
         stdout, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, true, true, **opt)
         desc = failed[status, message, stderr] if failed
         desc ||= FailDesc[status, message, stderr]
@@ -160,7 +159,7 @@ module Test
         pend 'assert_no_memory_leak may consider MJIT memory usage as leak' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
         # ASAN has the same problem - its shadow memory greatly increases memory usage
         # (plus asan has better ways to detect memory leaks than this assertion)
-        pend 'assert_no_memory_leak may consider ASAN memory usage as leak' if defined?(Test::ASAN) && Test::ASAN.enabled?
+        pend 'assert_no_memory_leak may consider ASAN memory usage as leak' if Test::ASAN.enabled?
 
         require_relative 'memory_status'
         raise Test::Unit::PendedError, "unsupported platform" unless defined?(Memory::Status)
