@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require "optparse"
-require "base64"
+require "nkf"
 require "shellwords"
 
 CommitEmailInfo = Struct.new(
@@ -207,8 +207,7 @@ class << CommitEmail
   private
 
   def b_encode(str)
-    base64_str = Base64.encode64(str.force_encoding('UTF-8')).strip # NKF.nkf('-WwMB', str)
-    "=?UTF-8?B?#{base64_str}?="
+    NKF.nkf('-WwM', str)
   end
 
   def make_body(info, viewer_uri:)
@@ -352,7 +351,7 @@ class << CommitEmail
       escaped_name = name.gsub(/["\\\n]/) { |c| "\\#{c}" }
       %Q["#{escaped_name}" <#{email}>]
     else
-      escaped_name = b_encode(name)
+      escaped_name = "=?UTF-8?B?#{NKF.nkf('-WwMB', name)}?="
       %Q[#{escaped_name} <#{email}>]
     end
   end
