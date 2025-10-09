@@ -8,7 +8,7 @@ class TestCommitEmail < Test::Unit::TestCase
   def setup
     @ruby = Dir.mktmpdir
     Dir.chdir(@ruby) do
-      git('init')
+      git('init', '--initial-branch=master')
       git('config', 'user.name', 'Jóhän Grübél')
       git('config', 'user.email', 'johan@example.com')
       git('commit', '--allow-empty', '-m', 'New repository initialized by cvs2svn.')
@@ -30,11 +30,6 @@ class TestCommitEmail < Test::Unit::TestCase
   # Just testing an exit status :p
   # TODO: prepare something in test/fixtures/xxx and test output
   def test_successful_run
-    _, err, status = EnvUtil.invoke_ruby([gem_env, '-e', 'require "nkf"'], '', false, true)
-    unless status.success?
-      omit "bundled gems are not available: #{err}"
-    end
-
     Dir.chdir(@ruby) do
       out, _, status = EnvUtil.invoke_ruby([
         { 'SENDMAIL' => @sendmail }.merge!(gem_env),
@@ -49,9 +44,10 @@ class TestCommitEmail < Test::Unit::TestCase
 
   private
 
-  # Cancel the gem environments set by tool/test/init.rb
+  # Resurrect the gem environment preserved by tool/test/init.rb.
+  # This should work as long as you have run `make up` or `make install`.
   def gem_env
-    { 'GEM_PATH' => nil, 'GEM_HOME' => nil }
+    { 'GEM_PATH' => ENV['BUNDLED_GEM_PATH'], 'GEM_HOME' => ENV['BUNDLED_GEM_HOME'] }
   end
 
   def git(*cmd)
