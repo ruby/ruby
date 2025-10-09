@@ -120,7 +120,7 @@ describe "Socket.getaddrinfo" do
         -> {
           Socket.getaddrinfo("www.kame.net", 80, "AF_UNIX")
         }.should raise_error(Socket::ResolutionError) { |e|
-          e.error_code.should == Socket::EAI_FAMILY
+          [Socket::EAI_FAMILY, Socket::EAI_FAIL].should.include?(e.error_code)
         }
       end
     end

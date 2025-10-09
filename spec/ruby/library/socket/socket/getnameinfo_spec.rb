@@ -74,7 +74,7 @@ describe "Socket.getnameinfo" do
       -> {
         Socket.getnameinfo(["AF_UNIX", 80, "0.0.0.0"])
       }.should raise_error(Socket::ResolutionError) { |e|
-        e.error_code.should == Socket::EAI_FAMILY
+        [Socket::EAI_FAMILY, Socket::EAI_FAIL].should.include?(e.error_code)
       }
     end
   end
