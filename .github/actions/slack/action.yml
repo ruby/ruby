@@ -24,6 +24,11 @@ inputs:
     description: >-
       Target event to trigger notification. Notify only push by default.
 
+  extra_channel_id:
+    required: false
+    description: >-
+      Slack channel ID to notify besides #alerts and #alerts-emoji.
+
 outputs: {} # Nothing?
 
 runs:
@@ -39,6 +44,7 @@ runs:
             "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
             "commit": "${{ github.sha }}",
             "branch": "${{ github.ref_name }}"
+            ${{ inputs.extra_channel_id && format(', "extra_channel_id": "{0}"', inputs.extra_channel_id) }}
           }
       env:
         SLACK_WEBHOOK_URL: ${{ inputs.SLACK_WEBHOOK_URL }}
