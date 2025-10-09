@@ -14,7 +14,7 @@ class TestCommitEmail < Test::Unit::TestCase
       env = { 'GIT_AUTHOR_DATE' => '2025-10-08T12:00:00Z', 'TZ' => 'UTC' }
       git('commit', '--allow-empty', '-m', 'New repository initialized by cvs2svn.', env:)
       git('commit', '--allow-empty', '-m', 'Initial revision', env:)
-      git('commit', '--allow-empty', '-m', 'version 1.0.0', env:)
+      git('commit', '--allow-empty', '-m', 'version　1.0.0', env:)
     end
 
     @sendmail = File.join(Dir.mktmpdir, 'sendmail')
@@ -33,13 +33,13 @@ class TestCommitEmail < Test::Unit::TestCase
 
     Dir.chdir(@ruby) do
       before_rev = git('rev-parse', 'HEAD^').chomp
-      long_rev = git('rev-parse', 'HEAD').chomp
-      short_rev = long_rev[0...10]
+      after_rev = git('rev-parse', 'HEAD').chomp
+      short_rev = after_rev[0...10]
 
       out, _, status = EnvUtil.invoke_ruby([
         { 'SENDMAIL' => @sendmail, 'TZ' => 'UTC' }.merge!(gem_env),
         @commit_email, './', 'cvs-admin@ruby-lang.org',
-        before_rev, long_rev, 'refs/heads/master',
+        before_rev, after_rev, 'refs/heads/master',
         '--viewer-uri', 'https://github.com/ruby/ruby/commit/',
         '--error-to', 'cvs-admin@ruby-lang.org',
       ], '', true)
@@ -53,7 +53,7 @@ class TestCommitEmail < Test::Unit::TestCase
         Content-Transfer-Encoding: quoted-printable
         From: =?UTF-8?B?SsOzaMOkbiBHcsO8YsOpbA==?= <noreply@ruby-lang.org>
         To: cvs-admin@ruby-lang.org
-        Subject: #{short_rev} (master): version 1.0.0
+        Subject: #{short_rev} (master): =?UTF-8?B?dmVyc2lvbuOAgDEuMC4w?=
         J=C3=B3h=C3=A4n Gr=C3=BCb=C3=A9l\t2025-10-08 12:00:00 +0000 (Wed, 08 Oct 2=
         025)
 
@@ -62,7 +62,7 @@ class TestCommitEmail < Test::Unit::TestCase
           https://github.com/ruby/ruby/commit/#{short_rev}
 
           Log:
-            version 1.0.0=
+            version=E3=80=801.0.0=
       EOS
     end
   end
