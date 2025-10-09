@@ -176,7 +176,7 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'C++20', with: { CXXFLAGS: '-std=c++20 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
       - { uses: './.github/actions/compilers', name: 'C++23', with: { CXXFLAGS: '-std=c++23 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
       - { uses: './.github/actions/compilers', name: 'C++26', with: { CXXFLAGS: '-std=c++26 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
-      - { uses: './.github/actions/compilers', name: 'gmp',                 with: { append_configure: '--with-gmp', check: 'ruby/test_bignum.rb', mspecopt: "/github/workspace/src/spec/ruby/core/integer" } }
+      - { uses: './.github/actions/compilers', name: 'gmp',                 with: { append_configure: '--with-gmp', test_all: 'ruby/test_bignum.rb', test_spec: "/github/workspace/src/spec/ruby/core/integer" } }
       - { uses: './.github/actions/compilers', name: 'jemalloc',            with: { append_configure: '--with-jemalloc' } }
       - { uses: './.github/actions/compilers', name: 'valgrind',            with: { append_configure: '--with-valgrind' } }
       - { uses: './.github/actions/compilers', name: 'coroutine=ucontext',  with: { append_configure: '--with-coroutine=ucontext' } }

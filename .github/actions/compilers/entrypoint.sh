@@ -70,25 +70,20 @@ if [[ -n "${INPUT_STATIC_EXTS}" ]]; then
     echo "::endgroup::"
 fi
 
-btests=''
-tests=''
-spec_opts=''
+if [ -n "$INPUT_TEST_ALL" ]; then
+  tests=" -- $INPUT_TEST_ALL"
+else
+  tests=" -- ruby -ext-"
+fi
 
 pushd ${builddir}
 
 grouped make showflags
 grouped make all
-grouped make test BTESTS="${btests}"
-
-[[ -z "${INPUT_CHECK}" ]] && exit 0
-
-if [ "$INPUT_CHECK" = "true" ]; then
-  tests+=" -- ruby -ext-"
-else
-  tests+=" -- $INPUT_CHECK"
-fi
-
 # grouped make install
-grouped make test-tool
-grouped make test-all TESTS="$tests"
-grouped env CHECK_LEAKS=true make test-spec MSPECOPT="$INPUT_MSPECOPT" SPECOPTS="${spec_opts}"
+
+# Run only `make test` by default. Run other tests if specified.
+grouped make test
+if [[ -n "$INPUT_CHECK" ]]; then grouped make test-tool; fi
+if [[ -n "$INPUT_CHECK" || -n "$INPUT_TEST_ALL" ]]; then grouped make test-all TESTS="$tests"; fi
+if [[ -n "$INPUT_CHECK" || -n "$INPUT_TEST_SPEC" ]]; then grouped env CHECK_LEAKS=true make test-spec MSPECOPT="$INPUT_TEST_SPEC"; fi

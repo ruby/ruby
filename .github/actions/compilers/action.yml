@@ -60,11 +60,17 @@ inputs:
     description: >-
       Whether to run `make check`
 
-  mspecopt:
+  test_all:
     required: false
     default: ''
     description: >-
-      Additional options for mspec.
+      Whether to run `make test-all` with options for test-all.
+
+  test_spec:
+    required: false
+    default: ''
+    description: >-
+      Whether to run `make test-spec` with options for mspec.
 
   static_exts:
     required: false
@@ -105,7 +111,8 @@ runs:
         --env INPUT_CPPFLAGS='${{ inputs.cppflags }}'
         --env INPUT_APPEND_CONFIGURE='${{ inputs.append_configure }}'
         --env INPUT_CHECK='${{ inputs.check }}'
-        --env INPUT_MSPECOPT='${{ inputs.mspecopt }}'
+        --env INPUT_TEST_ALL='${{ inputs.test_all }}'
+        --env INPUT_TEST_SPEC='${{ inputs.test_spec }}'
         --env INPUT_ENABLE_SHARED='${{ inputs.enable_shared }}'
         --env INPUT_STATIC_EXTS='${{ inputs.static_exts }}'
         --env LAUNCHABLE_ORGANIZATION='${{ github.repository_owner }}'
