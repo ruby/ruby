@@ -140,11 +140,12 @@ pub fn init() -> Annotations {
     let builtin_funcs = &mut HashMap::new();
 
     macro_rules! annotate {
-        ($module:ident, $method_name:literal, $return_type:expr, $($properties:ident),+) => {
+        ($module:ident, $method_name:literal, $return_type:expr $(, $properties:ident)*) => {
+            #[allow(unused_mut)]
             let mut props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: $return_type };
             $(
                 props.$properties = true;
-            )+
+            )*
             annotate_c_method(cfuncs, unsafe { $module }, $method_name, props);
         }
     }
