@@ -2345,7 +2345,11 @@ impl Function {
                     let mut cfunc_args = vec![recv];
                     cfunc_args.append(&mut args);
 
-                    let props = ZJITState::get_method_annotations().get_cfunc_properties(method).unwrap_or_default();
+                    let props = ZJITState::get_method_annotations().get_cfunc_properties(method);
+                    if props.is_none() && get_option!(stats) {
+                        count_not_annotated_cfunc(fun, block, method);
+                    }
+                    let props = props.unwrap_or_default();
                     let return_type = props.return_type;
                     let elidable = props.elidable;
                     // Filter for a leaf and GC free function
@@ -2382,7 +2386,11 @@ impl Function {
                         }
 
                         let cfunc = unsafe { get_mct_func(cfunc) }.cast();
-                        let props = ZJITState::get_method_annotations().get_cfunc_properties(method).unwrap_or_default();
+                        let props = ZJITState::get_method_annotations().get_cfunc_properties(method);
+                        if props.is_none() && get_option!(stats) {
+                            count_not_annotated_cfunc(fun, block, method);
+                        }
+                        let props = props.unwrap_or_default();
                         let return_type = props.return_type;
                         let elidable = props.elidable;
                         let ccall = fun.push_insn(block, Insn::CCallVariadic {
@@ -2421,6 +2429,19 @@ impl Function {
             let qualified_method_name = format!("{}#{}", class_name, method_name);
             let not_inlined_cfunc_counter_pointers = ZJITState::get_not_inlined_cfunc_counter_pointers();
             let counter_ptr = not_inlined_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
+            let counter_ptr = &mut **counter_ptr as *mut u64;
+
+            fun.push_insn(block, Insn::IncrCounterPtr { counter_ptr });
+        }
+
+        fn count_not_annotated_cfunc(fun: &mut Function, block: BlockId, cme: *const rb_callable_method_entry_t) {
+            let owner = unsafe { (*cme).owner };
+            let called_id = unsafe { (*cme).called_id };
+            let class_name = get_class_name(owner);
+            let method_name = called_id.contents_lossy();
+            let qualified_method_name = format!("{}#{}", class_name, method_name);
+            let not_annotated_cfunc_counter_pointers = ZJITState::get_not_annotated_cfunc_counter_pointers();
+            let counter_ptr = not_annotated_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
             let counter_ptr = &mut **counter_ptr as *mut u64;
 
             fun.push_insn(block, Insn::IncrCounterPtr { counter_ptr });

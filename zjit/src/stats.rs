@@ -480,6 +480,13 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
         set_stat_usize!(hash, &key_string, **counter);
     }
 
+    // Set not annotated cfunc counters
+    let not_annotated_cfuncs = ZJITState::get_not_annotated_cfunc_counter_pointers();
+    for (signature, counter) in not_annotated_cfuncs.iter() {
+        let key_string = format!("not_annotated_cfuncs_{}", signature);
+        set_stat_usize!(hash, &key_string, **counter);
+    }
+
     hash
 }
 
