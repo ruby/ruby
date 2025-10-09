@@ -2342,7 +2342,14 @@ impl Function {
                     use crate::cruby_methods::FnProperties;
                     // Filter for simple call sites (i.e. no splats etc.)
                     // Commit to the replacement. Put PatchPoint.
-                    if let Some(FnProperties { leaf: true, no_gc: true, return_type, elidable }) = ZJITState::get_method_annotations().get_cfunc_properties(method) {
+                    let props = ZJITState::get_method_annotations().get_cfunc_properties(method)
+                                .unwrap_or(FnProperties { leaf: false,
+                                                          no_gc: false,
+                                                          return_type: types::BasicObject,
+                                                          elidable: false });
+                    if props.leaf && props.no_gc {
+                        let return_type = props.return_type;
+                        let elidable = props.elidable;
                         let ccall = fun.push_insn(block, Insn::CCall { cfunc, args: cfunc_args, name: method_id, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
                     } else {
