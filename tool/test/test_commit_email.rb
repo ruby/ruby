@@ -35,7 +35,7 @@ class TestCommitEmail < Test::Unit::TestCase
       short_rev = long_rev[0...10]
 
       out, _, status = EnvUtil.invoke_ruby([
-        { 'SENDMAIL' => @sendmail }.merge!(gem_env),
+        { 'SENDMAIL' => @sendmail, 'TZ' => 'UTC' }.merge!(gem_env),
         @commit_email, './', 'cvs-admin@ruby-lang.org',
         before_rev, long_rev, 'refs/heads/master',
         '--viewer-uri', 'https://github.com/ruby/ruby/commit/',
