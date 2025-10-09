@@ -656,7 +656,8 @@ pub enum Insn {
         args: Vec<InsnId>,
         cme: *const rb_callable_method_entry_t,
         name: ID,
-        state: InsnId
+        state: InsnId,
+        return_type: Type,
     },
 
     /// Call a variadic C function with signature: func(int argc, VALUE *argv, VALUE recv)
@@ -1564,7 +1565,7 @@ impl Function {
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
             &CCall { cfunc, ref args, name, return_type, elidable } => CCall { cfunc, args: find_vec!(args), name, return_type, elidable },
-            &CCallWithFrame { cd, cfunc, ref args, cme, name, state } => CCallWithFrame { cd, cfunc, args: find_vec!(args), cme, name, state: find!(state) },
+            &CCallWithFrame { cd, cfunc, ref args, cme, name, state, return_type } => CCallWithFrame { cd, cfunc, args: find_vec!(args), cme, name, state: find!(state), return_type },
             &CCallVariadic { cfunc, recv, ref args, cme, name, state } => CCallVariadic {
                 cfunc, recv: find!(recv), args: find_vec!(args), cme, name, state
             },
@@ -1665,7 +1666,7 @@ impl Function {
             Insn::NewRangeFixnum { .. } => types::RangeExact,
             Insn::ObjectAlloc { .. } => types::HeapObject,
             Insn::ObjectAllocClass { class, .. } => Type::from_class(*class),
-            Insn::CCallWithFrame { .. } => types::BasicObject,
+            &Insn::CCallWithFrame { return_type, .. } => return_type,
             Insn::CCall { return_type, .. } => *return_type,
             Insn::CCallVariadic { .. } => types::BasicObject,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
@@ -2347,8 +2348,8 @@ impl Function {
                                                           no_gc: false,
                                                           return_type: types::BasicObject,
                                                           elidable: false });
+                    let return_type = props.return_type;
                     if props.leaf && props.no_gc {
-                        let return_type = props.return_type;
                         let elidable = props.elidable;
                         let ccall = fun.push_insn(block, Insn::CCall { cfunc, args: cfunc_args, name: method_id, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
@@ -2356,7 +2357,7 @@ impl Function {
                         if get_option!(stats) {
                             count_not_inlined_cfunc(fun, block, method);
                         }
-                        let ccall = fun.push_insn(block, Insn::CCallWithFrame { cd, cfunc, args: cfunc_args, cme: method, name: method_id, state });
+                        let ccall = fun.push_insn(block, Insn::CCallWithFrame { cd, cfunc, args: cfunc_args, cme: method, name: method_id, state, return_type });
                         fun.make_equal_to(send_insn_id, ccall);
                     }
 
