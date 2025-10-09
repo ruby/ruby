@@ -125,6 +125,7 @@ fn main() {
         .allowlist_function("rb_ary_unshift_m")
         .allowlist_function("rb_ec_ary_new_from_values")
         .allowlist_function("rb_ary_tmp_new_from_values")
+        .allowlist_function("rb_ary_entry")
         .allowlist_function("rb_class_attached_object")
         .allowlist_function("rb_singleton_class")
         .allowlist_function("rb_define_class")
