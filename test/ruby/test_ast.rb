@@ -1519,6 +1519,26 @@ dummy
       assert_locations(node.children[-1].children[0].locations, [[1, 3, 1, 8], [1, 4, 1, 7]])
     end
 
+    def test_fndptn_locations
+      node = ast_parse("[0, 1, 2] => [*, 1, *]")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 14, 1, 21], [1, 13, 1, 14], [1, 21, 1, 22]])
+
+      node = ast_parse("[0, 1, 2] in [*, 1, *]")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 14, 1, 21], [1, 13, 1, 14], [1, 21, 1, 22]])
+
+      node = ast_parse("x in Foo(*, 1, *)")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 5, 1, 16], [1, 8, 1, 9], [1, 16, 1, 17]])
+
+      node = ast_parse("x in Foo[*, 1, *]")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 5, 1, 16], [1, 8, 1, 9], [1, 16, 1, 17]])
+
+      node = ast_parse("x => *, 1, *")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 5, 1, 12], nil, nil])
+
+      node = ast_parse("x in *, 1, *")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 5, 1, 12], nil, nil])
+    end
+
     def test_for_locations
       node = ast_parse("for a in b; end")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 15], [1, 0, 1, 3], [1, 6, 1, 8], nil, [1, 12, 1, 15]])
