@@ -11,7 +11,7 @@ class TestCommitEmail < Test::Unit::TestCase
       git('init', '--initial-branch=master')
       git('config', 'user.name', 'Jóhän Grübél')
       git('config', 'user.email', 'johan@example.com')
-      env = { 'GIT_AUTHOR_DATE' => '2025-10-08T12:00:00Z' }
+      env = { 'GIT_AUTHOR_DATE' => '2025-10-08T12:00:00Z', 'TZ' => 'UTC' }
       git('commit', '--allow-empty', '-m', 'New repository initialized by cvs2svn.', env:)
       git('commit', '--allow-empty', '-m', 'Initial revision', env:)
       git('commit', '--allow-empty', '-m', 'version 1.0.0', env:)
@@ -52,7 +52,7 @@ class TestCommitEmail < Test::Unit::TestCase
         From: =?UTF-8?B?SsOzaMOkbiBHcsO8YsOpbA==?= <noreply@ruby-lang.org>
         To: cvs-admin@ruby-lang.org
         Subject: #{short_rev} (master): version 1.0.0
-        J=C3=B3h=C3=A4n Gr=C3=BCb=C3=A9l\t2025-10-08 05:00:00 -0700 (Wed, 08 Oct 2=
+        J=C3=B3h=C3=A4n Gr=C3=BCb=C3=A9l\t2025-10-08 12:00:00 +0000 (Wed, 08 Oct 2=
         025)
 
           New Revision: #{short_rev}
