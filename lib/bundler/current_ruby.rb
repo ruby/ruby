@@ -50,19 +50,10 @@ module Bundler
     end
 
     def maglev?
-      message =
-        "`CurrentRuby#maglev?` is deprecated with no replacement. Please use the " \
-        "built-in Ruby `RUBY_ENGINE` constant to check the Ruby implementation you are running on."
       removed_message =
         "`CurrentRuby#maglev?` was removed with no replacement. Please use the " \
         "built-in Ruby `RUBY_ENGINE` constant to check the Ruby implementation you are running on."
-      internally_exempted = caller_locations(1, 1).first.path == __FILE__
-
-      unless internally_exempted
-        SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
-      end
-
-      RUBY_ENGINE == "maglev"
+      SharedHelpers.feature_removed!(removed_message)
     end
 
     def truffleruby?
@@ -90,14 +81,11 @@ module Bundler
       end
 
       define_method(:"maglev_#{trimmed_version}?") do
-        message =
-          "`CurrentRuby##{__method__}` is deprecated with no replacement. Please use the " \
-          "built-in Ruby `RUBY_ENGINE` and `RUBY_VERSION` constants to perform a similar check."
         removed_message =
           "`CurrentRuby##{__method__}` was removed with no replacement. Please use the " \
           "built-in Ruby `RUBY_ENGINE` and `RUBY_VERSION` constants to perform a similar check."
 
-        SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
+        SharedHelpers.feature_removed!(removed_message)
 
         send(:"maglev?") && send(:"on_#{trimmed_version}?")
       end
