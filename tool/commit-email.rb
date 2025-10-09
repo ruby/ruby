@@ -317,20 +317,14 @@ class << CommitEmail
   end
 
   def make_header(to, from, info)
-    headers = []
-    headers << x_author(info)
-    headers << x_repository(info)
-    headers << x_revision(info)
-    headers << x_id(info)
-    headers << 'Mime-Version: 1.0'
-    headers << 'Content-Type: text/plain; charset=utf-8'
-    headers << 'Content-Transfer-Encoding: quoted-printable'
-    headers << "From: #{from}"
-    headers << "To: #{to}"
-    headers << "Subject: #{make_subject(info)}"
-    headers.find_all do |header|
-      /\A\s*\z/ !~ header
-    end.join("\n")
+    <<~EOS
+      Mime-Version: 1.0
+      Content-Type: text/plain; charset=utf-8
+      Content-Transfer-Encoding: quoted-printable
+      From: #{from}
+      To: #{to}
+      Subject: #{make_subject(info)}
+    EOS
   end
 
   def make_subject(info)
@@ -356,24 +350,8 @@ class << CommitEmail
     end
   end
 
-  def x_author(info)
-    "X-SVN-Author: #{b_encode(info.author)}"
-  end
-
-  def x_repository(info)
-    'X-SVN-Repository: XXX'
-  end
-
-  def x_id(info)
-    "X-SVN-Commit-Id: #{info.entire_sha256}"
-  end
-
-  def x_revision(info)
-    "X-SVN-Revision: #{info.revision}"
-  end
-
   def make_mail(to, from, info, viewer_uri:)
-    "#{make_header(to, from, info)}\n#{make_body(info, viewer_uri: viewer_uri)}"
+    make_header(to, from, info) + make_body(info, viewer_uri: viewer_uri)
   end
 end
 

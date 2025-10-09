@@ -46,10 +46,6 @@ class TestCommitEmail < Test::Unit::TestCase
       assert_equal(out, <<~EOS)
         master: #{short_rev} (Jóhän Grübél)
         ---
-        X-SVN-Author: =?UTF-8?B?SsOzaMOkbiBHcsO8YsOpbA==?=
-        X-SVN-Repository: XXX
-        X-SVN-Revision: #{short_rev}
-        X-SVN-Commit-Id: #{long_rev}
         Mime-Version: 1.0
         Content-Type: text/plain; charset=utf-8
         Content-Transfer-Encoding: quoted-printable
