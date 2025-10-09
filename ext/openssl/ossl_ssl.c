@@ -1959,9 +1959,10 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 
     VALUE io = rb_attr_get(self, id_i_io);
 
-    rb_str_locktmp(str);
     for (;;) {
+        rb_str_locktmp(str);
         int nread = SSL_read(ssl, RSTRING_PTR(str), ilen);
+        rb_str_unlocktmp(str);
 
         cb_state = rb_attr_get(self, ID_callback_state);
         if (!NIL_P(cb_state)) {
@@ -1972,32 +1973,27 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 
         switch (ssl_get_error(ssl, nread)) {
           case SSL_ERROR_NONE:
-            rb_str_unlocktmp(str);
             rb_str_set_len(str, nread);
             return str;
           case SSL_ERROR_ZERO_RETURN:
-            rb_str_unlocktmp(str);
             if (no_exception_p(opts)) { return Qnil; }
             rb_eof_error();
           case SSL_ERROR_WANT_WRITE:
             if (nonblock) {
-                rb_str_unlocktmp(str);
                 if (no_exception_p(opts)) { return sym_wait_writable; }
                 write_would_block(nonblock);
             }
             io_wait_writable(io);
-            continue;
+            break;
           case SSL_ERROR_WANT_READ:
             if (nonblock) {
-                rb_str_unlocktmp(str);
                 if (no_exception_p(opts)) { return sym_wait_readable; }
                 read_would_block(nonblock);
             }
             io_wait_readable(io);
-            continue;
+            break;
           case SSL_ERROR_SYSCALL:
             if (!ERR_peek_error()) {
-                rb_str_unlocktmp(str);
                 if (errno)
                     rb_sys_fail(0);
                 else {
@@ -2014,9 +2010,13 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
             }
             /* fall through */
           default:
-            rb_str_unlocktmp(str);
             ossl_raise(eSSLError, "SSL_read");
         }
+
+        // Ensure the buffer is not modified during io_wait_*able()
+        rb_str_modify(str);
+        if (rb_str_capacity(str) < (size_t)ilen)
+            rb_raise(eSSLError, "read buffer was modified");
     }
 }
 

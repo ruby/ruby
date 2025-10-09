@@ -33,6 +33,12 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     end
   end
 
+  def test_new_empty
+    key = OpenSSL::PKey::DSA.new
+    assert_nil(key.p)
+    assert_raise(OpenSSL::PKey::PKeyError) { key.to_der }
+  end
+
   def test_generate
     # DSA.generate used to call DSA_generate_parameters_ex(), which adjusts the
     # size of q according to the size of p

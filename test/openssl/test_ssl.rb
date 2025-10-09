@@ -256,11 +256,16 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl.syswrite(str)
         assert_equal(str, ssl.sysread(str.bytesize))
 
-        ssl.timeout = 1
-        assert_raise(IO::TimeoutError) {ssl.read(1)}
+        ssl.timeout = 0.1
+        assert_raise(IO::TimeoutError) { ssl.sysread(1) }
 
         ssl.syswrite(str)
         assert_equal(str, ssl.sysread(str.bytesize))
+
+        buf = "orig".b
+        assert_raise(IO::TimeoutError) { ssl.sysread(1, buf) }
+        assert_equal("orig", buf)
+        assert_nothing_raised { buf.clear }
       end
     end
   end
