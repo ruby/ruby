@@ -5394,32 +5394,6 @@ mod tests {
     }
 
     #[test]
-    fn test_opt_aref() {
-        eval("
-            arr = [1,2,3]
-            def test(arr) = arr[0]
-            test(arr)
-        ");
-        assert_contains_opcode("test", YARVINSN_opt_aref);
-        assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:3:
-        bb0():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal l0, SP@4
-          Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT(0)
-          Jump bb2(v5, v6)
-        bb2(v8:BasicObject, v9:BasicObject):
-          v13:Fixnum[0] = Const Value(0)
-          v17:BasicObject = SendWithoutBlock v9, :[], v13
-          CheckInterrupts
-          Return v17
-        ");
-    }
-
-    #[test]
     fn test_opt_str_freeze() {
         eval("
             def test = ''.freeze
@@ -9092,6 +9066,62 @@ mod opt_tests {
           v17:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v17
+        ");
+    }
+
+    #[test]
+    fn test_opt_aref_array() {
+        eval("
+            arr = [1,2,3]
+            def test(arr) = arr[0]
+            test(arr)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Array@0x1000, []@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v26:ArrayExact = GuardType v9, ArrayExact
+          v27:BasicObject = CCallVariadic []@0x1038, v26, v13
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_opt_aref_hash() {
+        eval("
+            arr = {0 => 4}
+            def test(arr) = arr[0]
+            test(arr)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Hash@0x1000, []@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          v26:HashExact = GuardType v9, HashExact
+          v27:BasicObject = CallCFunc []@0x1038, v26, v13
+          CheckInterrupts
+          Return v27
         ");
     }
 
