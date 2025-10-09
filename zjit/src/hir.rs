@@ -1975,7 +1975,8 @@ impl Function {
                         return;
                     }
                 }
-            } else if self.type_of(idx_val).is_subtype(types::Fixnum) {
+            }
+            if self.type_of(idx_val).is_subtype(types::Fixnum) {
                 self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop: BOP_AREF }, state });
                 let fixnum_idx = self.push_insn(block, Insn::GuardType { val: idx_val, guard_type: types::Fixnum, state });
                 let result = self.push_insn(block, Insn::ArrayArefFixnum {
@@ -12582,6 +12583,36 @@ mod opt_tests {
           v23:StringExact = CCallWithFrame to_s@0x1040, v12
           CheckInterrupts
           Return v23
+        ");
+    }
+
+    #[test]
+    fn test_array_aref_fixnum() {
+        eval("
+            def test
+              arr = [1, 2, 3]
+              arr[0]
+            end
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v15:ArrayExact = ArrayDup v13
+          v18:Fixnum[0] = Const Value(0)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
+          v30:BasicObject = ArrayAref v15[v18]
+          CheckInterrupts
+          Return v30
         ");
     }
 }
