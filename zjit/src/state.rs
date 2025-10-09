@@ -54,6 +54,9 @@ pub struct ZJITState {
     /// Counter pointers for full frame C functions
     full_frame_cfunc_counter_pointers: HashMap<String, Box<u64>>,
 
+    /// Counter pointers for un-annotated C functions
+    not_annotated_frame_cfunc_counter_pointers: HashMap<String, Box<u64>>,
+
     /// Locations of side exists within generated code
     exit_locations: Option<SideExitLocations>,
 }
@@ -98,6 +101,7 @@ impl ZJITState {
             function_stub_hit_trampoline,
             exit_trampoline_with_counter: exit_trampoline,
             full_frame_cfunc_counter_pointers: HashMap::new(),
+            not_annotated_frame_cfunc_counter_pointers: HashMap::new(),
             exit_locations,
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
@@ -165,6 +169,11 @@ impl ZJITState {
     /// Get a mutable reference to full frame cfunc counter pointers
     pub fn get_not_inlined_cfunc_counter_pointers() -> &'static mut HashMap<String, Box<u64>> {
         &mut ZJITState::get_instance().full_frame_cfunc_counter_pointers
+    }
+
+    /// Get a mutable reference to non-annotated cfunc counter pointers
+    pub fn get_not_annotated_cfunc_counter_pointers() -> &'static mut HashMap<String, Box<u64>> {
+        &mut ZJITState::get_instance().not_annotated_frame_cfunc_counter_pointers
     }
 
     /// Was --zjit-save-compiled-iseqs specified?
