@@ -1298,30 +1298,6 @@ ossl_asn1obj_get_ln(VALUE self)
     return ret;
 }
 
-/*
- *  call-seq:
- *     oid == other_oid => true or false
- *
- *  Returns +true+ if _other_oid_ is the same as _oid_
- */
-static VALUE
-ossl_asn1obj_eq(VALUE self, VALUE other)
-{
-    VALUE valSelf, valOther;
-    int nidSelf, nidOther;
-
-    valSelf = ossl_asn1_get_value(self);
-    valOther = ossl_asn1_get_value(other);
-
-    if ((nidSelf = OBJ_txt2nid(StringValueCStr(valSelf))) == NID_undef)
-	ossl_raise(eASN1Error, "OBJ_txt2nid");
-
-    if ((nidOther = OBJ_txt2nid(StringValueCStr(valOther))) == NID_undef)
-	ossl_raise(eASN1Error, "OBJ_txt2nid");
-
-    return nidSelf == nidOther ? Qtrue : Qfalse;
-}
-
 static VALUE
 asn1obj_get_oid_i(VALUE vobj)
 {
@@ -1364,6 +1340,25 @@ ossl_asn1obj_get_oid(VALUE self)
     if (state)
 	rb_jump_tag(state);
     return str;
+}
+
+/*
+ *  call-seq:
+ *     oid == other_oid => true or false
+ *
+ *  Returns +true+ if _other_oid_ is the same as _oid_.
+ */
+static VALUE
+ossl_asn1obj_eq(VALUE self, VALUE other)
+{
+    VALUE oid1, oid2;
+
+    if (!rb_obj_is_kind_of(other, cASN1ObjectId))
+        return Qfalse;
+
+    oid1 = ossl_asn1obj_get_oid(self);
+    oid2 = ossl_asn1obj_get_oid(other);
+    return rb_str_equal(oid1, oid2);
 }
 
 #define OSSL_ASN1_IMPL_FACTORY_METHOD(klass) \

@@ -937,6 +937,7 @@ ossl_pkey_export_spki(VALUE self, int to_der)
     BIO *bio;
 
     GetPKey(self, pkey);
+    ossl_pkey_check_public_key(pkey);
     bio = BIO_new(BIO_s_mem());
     if (!bio)
 	ossl_raise(ePKeyError, "BIO_new");

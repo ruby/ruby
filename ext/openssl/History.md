@@ -1,3 +1,15 @@
+Version 3.2.2
+=============
+
+Merged changes in 3.1.2.
+
+
+Version 3.2.1
+=============
+
+Merged changes in 3.0.3.
+
+
 Version 3.2.0
 =============
 
@@ -38,6 +50,29 @@ Notable changes
   [[GitHub #141]](https://github.com/ruby/openssl/pull/141)
 
 
+Version 3.1.2
+=============
+
+Bug fixes
+---------
+
+* Fix crash when attempting to export an incomplete `OpenSSL::PKey::DSA` key.
+  [[GitHub #845]](https://github.com/ruby/openssl/issues/845)
+  [[GitHub #847]](https://github.com/ruby/openssl/pull/847)
+* Remove the `OpenSSL::X509::V_FLAG_CRL_CHECK_ALL` flag from the default store
+  used by `OpenSSL::SSL::SSLContext#set_params`. It causes certificate
+  verification to fail with OpenSSL 3.6.0. It has no effect with any other
+  OpenSSL versions.
+  [[GitHub #949]](https://github.com/ruby/openssl/issues/949)
+  [[GitHub #950]](https://github.com/ruby/openssl/pull/950)
+
+
+Version 3.1.1
+=============
+
+Merged changes in 3.0.3.
+
+
 Version 3.1.0
 =============
 
@@ -72,6 +107,31 @@ Notable changes
   [[GitHub #558]](https://github.com/ruby/openssl/pull/558)
 * Improve support for recent LibreSSL versions. This includes HKDF support in
   LibreSSL 3.6 and Ed25519 support in LibreSSL 3.7.
+
+
+Version 3.0.3
+=============
+
+Bug fixes
+---------
+
+* Fix a performance regression introduced in v2.1.3 on a buffered write to
+  `SSLSocket`.
+  [[GitHub #706]](https://github.com/ruby/openssl/pull/706)
+* Fix `OpenSSL::PKCS7` to handle PKCS#7 structures without content.
+  [[GitHub #690]](https://github.com/ruby/openssl/pull/690)
+  [[GitHub #752]](https://github.com/ruby/openssl/pull/752)
+* Fix `OpenSSL::ASN1::ObjectId#==` with OIDs without a known name.
+  [[GitHub #791]](https://github.com/ruby/openssl/issues/791)
+  [[GitHub #792]](https://github.com/ruby/openssl/pull/792)
+* Fix `OpenSSL::X509::Certificate#crl_uris` to handle CDP with multiple CRL
+  URIs.
+  [[GitHub #775]](https://github.com/ruby/openssl/issues/775)
+  [[GitHub #776]](https://github.com/ruby/openssl/pull/776)
+* Fix `OpenSSL::Cipher#update` to always make the output buffer `String`
+  independent.
+  [[Bug #20937]](https://bugs.ruby-lang.org/issues/20937)
+  [[GitHub #824]](https://github.com/ruby/openssl/pull/824)
 
 
 Version 3.0.2
