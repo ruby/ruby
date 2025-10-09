@@ -45,7 +45,7 @@ class TestCommitEmail < Test::Unit::TestCase
         '--viewer-uri', 'https://github.com/ruby/ruby/commit/',
         '--error-to', 'cvs-admin@ruby-lang.org',
       ], '', true)
-      stdin = out.split(STDIN_DELIMITER, 2).last
+      stdin = out.b.split(STDIN_DELIMITER.b, 2).last.force_encoding('UTF-8')
 
       assert_true(status.success?)
       assert_equal(stdin, <<~EOS)
