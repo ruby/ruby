@@ -104,7 +104,8 @@ jobs:
         run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
 
       - run: make prepare-gems
-        if: ${{ matrix.test_task == 'test-bundled-gems' }}
+        # `make test-tool` is part of `make check`, and tools may rely on bundled gems
+        if: ${{ matrix.test_task == 'test-bundled-gems' || matrix.test_task == 'check' }}
 
       - run: make
 

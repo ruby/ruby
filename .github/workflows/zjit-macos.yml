@@ -101,6 +101,10 @@ jobs:
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
 
+      - run: make prepare-gems
+        # `make test-tool` is part of `make check`, and tools may rely on bundled gems
+        if: ${{ matrix.test_task == 'check' }}
+
       - run: make
 
       - name: Verify that --zjit-dump-disasm works
