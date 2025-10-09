@@ -1977,10 +1977,10 @@ impl Function {
                 }
             } else if self.type_of(idx_val).is_subtype(types::Fixnum) {
                 self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop: BOP_AREF }, state });
-                self.push_insn(block, Insn::GuardType { val: idx_val, guard_type: types::Fixnum, state });
+                let fixnum_idx = self.push_insn(block, Insn::GuardType { val: idx_val, guard_type: types::Fixnum, state });
                 let result = self.push_insn(block, Insn::ArrayArefFixnum {
                     array: self_val,
-                    index: idx_val,
+                    index: fixnum_idx,
                 });
                 self.make_equal_to(orig_insn_id, result);
                 return;
