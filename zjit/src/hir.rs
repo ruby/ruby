@@ -9095,6 +9095,7 @@ mod opt_tests {
           CheckInterrupts
           Return v27
         ");
+        assert_snapshot!(inspect("test [1,2,3]"), @"1");
     }
 
     #[test]
@@ -9123,6 +9124,7 @@ mod opt_tests {
           CheckInterrupts
           Return v27
         ");
+        assert_snapshot!(inspect("test({0 => 4})"), @"4");
     }
 
     #[test]
