@@ -540,7 +540,18 @@ module Bundler
 
       setup_domain!(add_checksums: true)
 
-      specs # force materialization to real specifications, so that checksums are fetched
+      # force materialization to real specifications, so that checksums are fetched
+      specs.each do |spec|
+        next unless spec.source.is_a?(Bundler::Source::Rubygems)
+        # Checksum was fetched from the compact index API.
+        next if !spec.source.checksum_store.missing?(spec) && !spec.source.checksum_store.empty?(spec)
+        # The gem isn't installed, can't compute the checksum.
+        next unless spec.loaded_from
+
+        package = Gem::Package.new(spec.source.cached_built_in_gem(spec))
+        checksum = Checksum.from_gem_package(package)
+        spec.source.checksum_store.register(spec, checksum)
+      end
     end
 
     private
