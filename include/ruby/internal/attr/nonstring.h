@@ -27,6 +27,8 @@
 # define RBIMPL_ATTR_NONSTRING() __attribute__((nonstring))
 # if RBIMPL_COMPILER_SINCE(GCC, 15, 0, 0)
 #   define RBIMPL_ATTR_NONSTRING_ARRAY() RBIMPL_ATTR_NONSTRING()
+# elif RBIMPL_COMPILER_SINCE(Clang, 21, 0, 0)
+#   define RBIMPL_ATTR_NONSTRING_ARRAY() RBIMPL_ATTR_NONSTRING()
 # else
 #   define RBIMPL_ATTR_NONSTRING_ARRAY() /* void */
 # endif

@@ -182,20 +182,22 @@ The following default gems are updated.
 
 * RubyGems 3.8.0.dev
 * bundler 2.8.0.dev
-* erb 5.0.2
+* erb 5.0.3
 * etc 1.4.6
 * fcntl 1.3.0
 * io-console 0.8.1
 * io-nonblock 0.3.2
 * io-wait 0.3.2
-* json 2.15.0
+* json 2.15.1
+* openssl 4.0.0.pre
 * optparse 0.7.0.dev.2
+* pp 0.6.3
 * prism 1.5.1
 * psych 5.2.6
 * resolv 0.6.2
 * stringio 3.1.8.dev
 * strscan 3.1.6.dev
-* uri 1.0.3
+* uri 1.0.4
 * weakref 0.1.4
 
 The following bundled gems are added.

@@ -35,18 +35,17 @@ class << RubyVM::ZJIT
     return unless trace_exit_locations_enabled?
 
     results = Primitive.rb_zjit_get_exit_locations
-    raw_samples = results[:raw].dup
-    line_samples = results[:lines].dup
-    frames = results[:frames].dup
+    raw_samples = results[:raw]
+    line_samples = results[:lines]
+    frames = results[:frames]
     samples_count = 0
 
-    # Loop through the instructions and set the frame hash with the data.
-    # We use nonexistent.def for the file name, otherwise insns.def will be displayed
-    # and that information isn't useful in this context.
+    # Use nonexistent.def as a dummy file name.
+    frame_template = { samples: 0, total_samples: 0, edges: {}, name: name, file: "nonexistent.def", line: nil, lines: {} }
+
+    # Loop through all possible instructions and setup the frame hash.
     RubyVM::INSTRUCTION_NAMES.each_with_index do |name, frame_id|
-      frame_hash = { samples: 0, total_samples: 0, edges: {}, name: name, file: "nonexistent.def", line: nil, lines: {} }
-      results[:frames][frame_id] = frame_hash
-      frames[frame_id] = frame_hash
+      frames[frame_id] = frame_template.dup.tap { |h| h[:name] = name }
     end
 
     # Loop through the raw_samples and build the hashes for StackProf.
@@ -100,10 +99,13 @@ class << RubyVM::ZJIT
     end
 
     results[:samples] = samples_count
-    # Set missed_samples and gc_samples to 0 as their values
-    # don't matter to us in this context.
+
+    # These values are mandatory to include for stackprof, but we don't use them.
     results[:missed_samples] = 0
     results[:gc_samples] = 0
+
+    results[:frames].reject! { |k, v| v[:samples] == 0 }
+
     results
   end
 
@@ -277,7 +279,7 @@ class << RubyVM::ZJIT
   def dump_locations # :nodoc:
     return unless trace_exit_locations_enabled?
 
-    filename = "zjit_exits_#{Time.now.to_i}.dump"
+    filename = "zjit_exits_#{Process.pid}.dump"
     n_bytes = dump_exit_locations(filename)
 
     $stderr.puts("#{n_bytes} bytes written to #{filename}.")

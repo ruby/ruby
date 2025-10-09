@@ -49,7 +49,7 @@ describe :array_unshift, shared: true do
     -> { ArraySpecs.frozen_array.send(@method) }.should raise_error(FrozenError)
   end
 
-  # https://github.com/oracle/truffleruby/issues/2772
+  # https://github.com/truffleruby/truffleruby/issues/2772
   it "doesn't rely on Array#[]= so it can be overridden" do
     subclass = Class.new(Array) do
       def []=(*)

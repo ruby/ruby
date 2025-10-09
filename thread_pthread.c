@@ -90,9 +90,16 @@ static const void *const condattr_monotonic = NULL;
   #endif
 #endif
 
+#ifdef HAVE_SCHED_YIELD
+#define native_thread_yield() (void)sched_yield()
+#else
+#define native_thread_yield() ((void)0)
+#endif
+
 // native thread wrappers
 
 #define NATIVE_MUTEX_LOCK_DEBUG 0
+#define NATIVE_MUTEX_LOCK_DEBUG_YIELD 0
 
 static void
 mutex_debug(const char *msg, void *lock)
@@ -111,6 +118,9 @@ void
 rb_native_mutex_lock(pthread_mutex_t *lock)
 {
     int r;
+#if NATIVE_MUTEX_LOCK_DEBUG_YIELD
+    native_thread_yield();
+#endif
     mutex_debug("lock", lock);
     if ((r = pthread_mutex_lock(lock)) != 0) {
         rb_bug_errno("pthread_mutex_lock", r);
@@ -309,12 +319,6 @@ static rb_serial_t current_fork_gen = 1; /* We can't use GET_VM()->fork_gen */
 #endif
 
 static void threadptr_trap_interrupt(rb_thread_t *);
-
-#ifdef HAVE_SCHED_YIELD
-#define native_thread_yield() (void)sched_yield()
-#else
-#define native_thread_yield() ((void)0)
-#endif
 
 static void native_thread_dedicated_inc(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_thread *nt);
 static void native_thread_dedicated_dec(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_thread *nt);

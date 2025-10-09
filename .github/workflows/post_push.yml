@@ -1,0 +1,85 @@
+name: Post-push
+on:
+  push:
+    branches:
+      - master
+      - 'ruby_*_*'
+jobs:
+  hooks:
+    name: Post-push hooks
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'ruby/ruby' }}
+    steps:
+      - name: Sync git.ruby-lang.org
+        run: |
+          mkdir -p ~/.ssh
+          (umask 066; printenv RUBY_GIT_SYNC_PRIVATE_KEY > ~/.ssh/id_ed25519)
+          ssh-keyscan -t ed25519 git.ruby-lang.org >> ~/.ssh/known_hosts
+          ssh -i ~/.ssh/id_ed25519 git-sync@git.ruby-lang.org "sudo -u git /home/git/git.ruby-lang.org/bin/update-ruby.sh $GITHUB_REF"
+        env:
+          GITHUB_REF: ${{ github.ref }}
+          RUBY_GIT_SYNC_PRIVATE_KEY: ${{ secrets.RUBY_GIT_SYNC_PRIVATE_KEY }}
+        if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/ruby_') }}
+
+      - name: Fetch changesets on bugs.ruby-lang.org
+        run: |
+          curl "https://bugs.ruby-lang.org/sys/fetch_changesets?key=${REDMINE_SYS_API_KEY}" -s --fail-with-body -w '* status: %{http_code}\n'
+        env:
+          REDMINE_SYS_API_KEY: ${{ secrets.REDMINE_SYS_API_KEY }}
+        if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/ruby_') }}
+
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 500 # for notify-slack-commits
+          token: ${{ secrets.MATZBOT_AUTO_UPDATE_TOKEN }}
+
+      - name: Notify commit to Slack
+        run: ruby tool/notify-slack-commits.rb "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" refs/heads/master
+        env:
+          GITHUB_OLD_SHA: ${{ github.event.before }}
+          GITHUB_NEW_SHA: ${{ github.event.after }}
+          SLACK_WEBHOOK_URL_ALERTS: ${{ secrets.SLACK_WEBHOOK_URL_ALERTS }}
+          SLACK_WEBHOOK_URL_COMMITS: ${{ secrets.SLACK_WEBHOOK_URL_COMMITS }}
+          SLACK_WEBHOOK_URL_RUBY_JP: ${{ secrets.SLACK_WEBHOOK_URL_RUBY_JP }}
+        if: ${{ github.ref == 'refs/heads/master' }}
+
+      - name: Notify commit to ruby-cvs
+        run: |
+          SENDMAIL="ssh -i ${HOME}/.ssh/id_ed25519 git-sync@git.ruby-lang.org /usr/sbin/sendmail" \
+            ruby tool/commit-email.rb . ruby-cvs@g.ruby-lang.org \
+            "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" "$GITHUB_REF" \
+            --viewer-uri "https://github.com/ruby/ruby/commit/" \
+            --error-to cvs-admin@ruby-lang.org
+        env:
+          GITHUB_OLD_SHA: ${{ github.event.before }}
+          GITHUB_NEW_SHA: ${{ github.event.after }}
+          GITHUB_REF: ${{ github.ref }}
+        if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/ruby_') }}
+
+      - name: Auto-correct code styles
+        run: |
+          set -x
+          ruby tool/auto-style.rb "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" refs/heads/master
+        env:
+          GITHUB_OLD_SHA: ${{ github.event.before }}
+          GITHUB_NEW_SHA: ${{ github.event.after }}
+          GIT_AUTHOR_NAME: git
+          GIT_COMMITTER_NAME: git
+          EMAIL: svn-admin@ruby-lang.org
+        if: ${{ github.ref == 'refs/heads/master' }}
+
+      - name: Push PR notes to GitHub
+        run: ruby tool/notes-github-pr.rb "$(pwd)/.git" "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" refs/heads/master
+        env:
+          GITHUB_OLD_SHA: ${{ github.event.before }}
+          GITHUB_NEW_SHA: ${{ github.event.after }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: git
+          GIT_COMMITTER_NAME: git
+          EMAIL: svn-admin@ruby-lang.org
+        if: ${{ github.ref == 'refs/heads/master' }}
+
+      - uses: ./.github/actions/slack
+        with:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}

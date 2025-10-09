@@ -62,6 +62,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     VALUE tmp;
     const rb_iseq_t *iseq = NULL;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry_unchecked(cfp);
+    const rb_namespace_t *ns = NULL;
 
     if (ep < 0 || (size_t)ep > ec->vm_stack_size) {
         ep = (ptrdiff_t)cfp->ep;
@@ -71,12 +72,17 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     switch (VM_FRAME_TYPE_UNCHECKED(cfp)) {
       case VM_FRAME_MAGIC_TOP:
         magic = "TOP";
+        ns = VM_ENV_NAMESPACE_UNCHECKED(cfp->ep);
         break;
       case VM_FRAME_MAGIC_METHOD:
         magic = "METHOD";
+        if (me) {
+            ns = me->def->ns;
+        }
         break;
       case VM_FRAME_MAGIC_CLASS:
         magic = "CLASS";
+        ns = VM_ENV_NAMESPACE_UNCHECKED(cfp->ep);
         break;
       case VM_FRAME_MAGIC_BLOCK:
         magic = "BLOCK";
@@ -156,6 +162,12 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     }
     kprintf("s:%04"PRIdPTRDIFF" ", cfp->sp - ec->vm_stack);
     kprintf(ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "E:%06"PRIxPTRDIFF" ", ep % 10000);
+    if (ns) {
+        kprintf("n:%04ld ", ns->ns_id % 10000);
+    }
+    else {
+        kprintf("n:---- ");
+    }
     kprintf("%-6s", magic);
     if (line) {
         kprintf(" %s", posbuf);
@@ -1150,8 +1162,16 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
     enum {other_runtime_info = 0};
 #endif
     const rb_vm_t *const vm = GET_VM();
-    const rb_namespace_t *ns = rb_current_namespace();
+    const rb_namespace_t *current_ns = rb_current_namespace_in_crash_report();
     const rb_execution_context_t *ec = rb_current_execution_context(false);
+    VALUE loaded_features;
+
+    if (current_ns) {
+        loaded_features = current_ns->loaded_features;
+    }
+    else {
+        loaded_features = rb_root_namespace()->loaded_features;
+    }
 
     if (vm && ec) {
         rb_vmdebug_stack_dump_raw(ec, ec->cfp, errout);
@@ -1201,17 +1221,22 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
         }
         if (rb_namespace_available()) {
             kprintf("* Namespace: enabled\n");
-            kprintf("* Current namespace id: %ld, type: %s\n",
-                    ns->ns_id,
-                    NAMESPACE_USER_P(ns) ? (NAMESPACE_MAIN_P(ns) ? "main" : "user") : "root");
+            if (current_ns) {
+                kprintf("* Current namespace id: %ld, type: %s\n",
+                        current_ns->ns_id,
+                        NAMESPACE_USER_P(current_ns) ? (NAMESPACE_MAIN_P(current_ns) ? "main" : "user") : "root");
+            }
+            else {
+                kprintf("* Current namespace: NULL (crashed)\n");
+            }
         }
         else {
             kprintf("* Namespace: disabled\n");
         }
-        if (ns->loaded_features) {
+        if (loaded_features) {
             kprintf("* Loaded features:\n\n");
-            for (i=0; i<RARRAY_LEN(ns->loaded_features); i++) {
-                name = RARRAY_AREF(ns->loaded_features, i);
+            for (i=0; i<RARRAY_LEN(loaded_features); i++) {
+                name = RARRAY_AREF(loaded_features, i);
                 if (RB_TYPE_P(name, T_STRING)) {
                     kprintf(" %4d %.*s\n", i,
                             LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));

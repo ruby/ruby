@@ -1592,7 +1592,6 @@ q.pop
 
   # [Bug #21342]
   def test_unlock_locked_mutex_with_collected_fiber
-    bug21127 = '[ruby-core:120930] [Bug #21127]'
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       5.times do

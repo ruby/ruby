@@ -1585,6 +1585,12 @@ VM_ENV_NAMESPACE(const VALUE *ep)
     return (const rb_namespace_t *)GC_GUARDED_PTR_REF(ep[VM_ENV_DATA_INDEX_SPECVAL]);
 }
 
+static inline const rb_namespace_t *
+VM_ENV_NAMESPACE_UNCHECKED(const VALUE *ep)
+{
+    return (const rb_namespace_t *)GC_GUARDED_PTR_REF(ep[VM_ENV_DATA_INDEX_SPECVAL]);
+}
+
 #if VM_CHECK_MODE > 0
 int rb_vm_ep_in_heap_p(const VALUE *ep);
 #endif

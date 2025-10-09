@@ -163,6 +163,7 @@ describe :kernel_float, shared: true do
       -> { @object.send(:Float, "+1.") }.should raise_error(ArgumentError)
       -> { @object.send(:Float, "-1.") }.should raise_error(ArgumentError)
       -> { @object.send(:Float, "1.e+0") }.should raise_error(ArgumentError)
+      -> { @object.send(:Float, "1.e-2") }.should raise_error(ArgumentError)
     end
   end
 
@@ -172,6 +173,7 @@ describe :kernel_float, shared: true do
       @object.send(:Float, "+1.").should == 1.0
       @object.send(:Float, "-1.").should == -1.0
       @object.send(:Float, "1.e+0").should == 1.0
+      @object.send(:Float, "1.e-2").should be_close(0.01, TOLERANCE)
     end
   end
 

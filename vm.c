@@ -95,6 +95,16 @@ rb_vm_search_cf_from_ep(const rb_execution_context_t *ec, const rb_control_frame
     }
 }
 
+#if VM_CHECK_MODE > 0
+// ruby_namespace_crashed defined in internal/namespace.h
+#define VM_NAMESPACE_CRASHED() {ruby_namespace_crashed = true;}
+#define VM_NAMESPACE_ASSERT(expr, msg) \
+    if (!(expr)) { ruby_namespace_crashed = true; rb_bug(msg); }
+#else
+#define VM_NAMESPACE_CRASHED() {}
+#define VM_NAMESPACE_ASSERT(expr, msg) ((void)0)
+#endif
+
 static const VALUE *
 VM_EP_RUBY_LEP(const rb_execution_context_t *ec, const rb_control_frame_t *current_cfp)
 {
@@ -109,23 +119,22 @@ VM_EP_RUBY_LEP(const rb_execution_context_t *ec, const rb_control_frame_t *curre
         while (VM_ENV_FLAGS(ep, VM_FRAME_FLAG_CFRAME) != 0) {
             if (!cfp) {
                 cfp = rb_vm_search_cf_from_ep(ec, checkpoint_cfp, ep);
-                VM_ASSERT(cfp, "rb_vm_search_cf_from_ep should return a valid cfp for the ep");
-                VM_ASSERT(cfp->ep == ep);
+                VM_NAMESPACE_ASSERT(cfp, "Failed to search cfp from ep");
+                VM_NAMESPACE_ASSERT(cfp->ep == ep, "Searched cfp's ep is not equal to ep");
             }
             if (!cfp) {
                 return NULL;
             }
-            VM_ASSERT(cfp->ep);
-            VM_ASSERT(cfp->ep == ep);
+            VM_NAMESPACE_ASSERT(cfp->ep, "cfp->ep == NULL");
+            VM_NAMESPACE_ASSERT(cfp->ep == ep, "cfp->ep != ep");
 
-            if (VM_FRAME_FINISHED_P(cfp)) {
-                rb_bug("CFUNC frame should not FINISHED");
-            }
+            VM_NAMESPACE_ASSERT(!VM_FRAME_FINISHED_P(cfp), "CFUNC frame should not FINISHED");
+
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
             if (cfp >= eocfp) {
                 return NULL;
             }
-            VM_ASSERT(cfp, "CFUNC should have a valid previous control frame");
+            VM_NAMESPACE_ASSERT(cfp, "CFUNC should have a valid previous control frame");
             ep = cfp->ep;
             if (!ep) {
                 return NULL;
@@ -3061,17 +3070,17 @@ current_namespace_on_cfp(const rb_execution_context_t *ec, const rb_control_fram
     rb_callable_method_entry_t *cme;
     const rb_namespace_t *ns;
     const VALUE *lep = VM_EP_RUBY_LEP(ec, cfp);
-    VM_ASSERT(lep);
-    VM_ASSERT(rb_namespace_available());
+    VM_NAMESPACE_ASSERT(lep, "lep should be valid");
+    VM_NAMESPACE_ASSERT(rb_namespace_available(), "namespace should be available here");
 
     if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_METHOD)) {
         cme = check_method_entry(lep[VM_ENV_DATA_INDEX_ME_CREF], TRUE);
-        VM_ASSERT(cme);
-        VM_ASSERT(cme->def);
+        VM_NAMESPACE_ASSERT(cme, "cme should be valid");
+        VM_NAMESPACE_ASSERT(cme->def, "cme->def shold be valid");
         return cme->def->ns;
     }
     else if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_TOP) || VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_CLASS)) {
-        VM_ASSERT(VM_ENV_LOCAL_P(lep));
+        VM_NAMESPACE_ASSERT(VM_ENV_LOCAL_P(lep), "lep should be local on MAGIC_TOP or MAGIC_CLASS frames");
         return VM_ENV_NAMESPACE(lep);
     }
     else if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_DUMMY)) {
@@ -3083,6 +3092,7 @@ current_namespace_on_cfp(const rb_execution_context_t *ec, const rb_control_fram
         return rb_root_namespace();
     }
     else {
+        VM_NAMESPACE_CRASHED();
         rb_bug("BUG: Local ep without cme/namespace, flags: %08lX", (unsigned long)lep[VM_ENV_DATA_INDEX_FLAGS]);
     }
     UNREACHABLE_RETURN(0);
@@ -3091,7 +3101,6 @@ current_namespace_on_cfp(const rb_execution_context_t *ec, const rb_control_fram
 const rb_namespace_t *
 rb_vm_current_namespace(const rb_execution_context_t *ec)
 {
-    VM_ASSERT(rb_namespace_available());
     return current_namespace_on_cfp(ec, ec->cfp);
 }
 
@@ -3306,8 +3315,7 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_id_table_free(vm->constant_cache);
             set_free_table(vm->unused_block_warning_table);
 
-            xfree(th->nt);
-            th->nt = NULL;
+            rb_thread_free_native_thread(th);
 
 #ifndef HAVE_SETPROCTITLE
             ruby_free_proctitle();

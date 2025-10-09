@@ -718,6 +718,21 @@ describe "Module#autoload" do
     end
   end
 
+  it "should trigger the autoload when using `private_constant`" do
+    @remove << :DynClass
+    module ModuleSpecs::Autoload
+      autoload :DynClass, fixture(__FILE__, "autoload_c.rb")
+      private_constant :DynClass
+
+      ScratchPad.recorded.should be_nil
+
+      DynClass::C.new.loaded.should == :dynclass_c
+      ScratchPad.recorded.should == :loaded
+    end
+
+    -> { ModuleSpecs::Autoload::DynClass }.should raise_error(NameError, /private constant/)
+  end
+
   # [ruby-core:19127] [ruby-core:29941]
   it "does NOT raise a NameError when the autoload file did not define the constant and a module is opened with the same name" do
     module ModuleSpecs::Autoload

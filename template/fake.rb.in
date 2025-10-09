@@ -49,6 +49,7 @@ class Object
   else%><%=v.inspect%><%end%>
 % }
 end
+v=$VERBOSE;$VERBOSE=nil;module Ruby; end;$VERBOSE=v
 module Ruby
   constants.each {|n| remove_const n}
 % arg['versions'].each {|n, v|

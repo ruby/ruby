@@ -845,7 +845,7 @@ lookup_id_str(ID id)
 ID
 rb_intern3(const char *name, long len, rb_encoding *enc)
 {
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     VALUE str = rb_setup_fake_str(&fake_str, name, len, enc);
     OBJ_FREEZE(str);
 
@@ -1222,7 +1222,7 @@ rb_check_symbol(volatile VALUE *namep)
 ID
 rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc)
 {
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     const VALUE name = rb_setup_fake_str(&fake_str, ptr, len, enc);
 
     sym_check_asciionly(name, true);
@@ -1234,7 +1234,7 @@ VALUE
 rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
 {
     VALUE sym;
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     const VALUE name = rb_setup_fake_str(&fake_str, ptr, len, enc);
 
     sym_check_asciionly(name, true);
@@ -1258,7 +1258,7 @@ FUNC_MINIMIZED(VALUE rb_sym_intern_ascii_cstr(const char *ptr));
 VALUE
 rb_sym_intern(const char *ptr, long len, rb_encoding *enc)
 {
-    struct RString fake_str;
+    struct RString fake_str = {RBASIC_INIT};
     const VALUE name = rb_setup_fake_str(&fake_str, ptr, len, enc);
     return rb_str_intern(name);
 }

@@ -64,6 +64,8 @@ void rb_thread_io_close_wait(struct rb_io *);
 
 void rb_ec_check_ints(struct rb_execution_context_struct *ec);
 
+void rb_thread_free_native_thread(void *th_ptr);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 void *rb_thread_prevent_fork(void *(*func)(void *), void *data); /* for ext/socket/raddrinfo.c */
