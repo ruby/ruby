@@ -32,25 +32,6 @@ module OpenSSL
         }.call
       }
 
-      if defined?(OpenSSL::PKey::DH)
-        DH_ffdhe2048 = OpenSSL::PKey::DH.new <<-_end_of_pem_
------BEGIN DH PARAMETERS-----
-MIIBCAKCAQEA//////////+t+FRYortKmq/cViAnPTzx2LnFg84tNpWp4TZBFGQz
-+8yTnc4kmz75fS/jY2MMddj2gbICrsRhetPfHtXV/WVhJDP1H18GbtCFY2VVPe0a
-87VXE15/V8k1mE8McODmi3fipona8+/och3xWKE2rec1MKzKT0g6eXq8CrGCsyT7
-YdEIqUuyyOP7uWrat2DX9GgdT0Kj3jlN9K5W7edjcrsZCwenyO4KbXCeAvzhzffi
-7MA0BM0oNC9hkXL+nOmFg/+OTxIy7vKBg8P+OxtMb61zO7X8vC7CIAXFjvGDfRaD
-ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
------END DH PARAMETERS-----
-        _end_of_pem_
-        private_constant :DH_ffdhe2048
-
-        DEFAULT_TMP_DH_CALLBACK = lambda { |ctx, is_export, keylen| # :nodoc:
-          warn "using default DH parameters." if $VERBOSE
-          DH_ffdhe2048
-        }
-      end
-
       if !OpenSSL::OPENSSL_VERSION.start_with?("OpenSSL")
         DEFAULT_PARAMS.merge!(
           min_version: OpenSSL::SSL::TLS1_VERSION,
@@ -85,25 +66,13 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
             AES256-SHA256
             AES128-SHA
             AES256-SHA
-          }.join(":"),
+          }.join(":").freeze,
         )
       end
+      DEFAULT_PARAMS.freeze
 
       DEFAULT_CERT_STORE = OpenSSL::X509::Store.new # :nodoc:
       DEFAULT_CERT_STORE.set_default_paths
-
-      # A callback invoked when DH parameters are required for ephemeral DH key
-      # exchange.
-      #
-      # The callback is invoked with the SSLSocket, a
-      # flag indicating the use of an export cipher and the keylength
-      # required.
-      #
-      # The callback must return an OpenSSL::PKey::DH instance of the correct
-      # key length.
-      #
-      # <b>Deprecated in version 3.0.</b> Use #tmp_dh= instead.
-      attr_accessor :tmp_dh_callback
 
       # A callback invoked at connect time to distinguish between multiple
       # server names.
@@ -146,7 +115,14 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
         params.each{|name, value| self.__send__("#{name}=", value) }
         if self.verify_mode != OpenSSL::SSL::VERIFY_NONE
           unless self.ca_file or self.ca_path or self.cert_store
-            self.cert_store = DEFAULT_CERT_STORE
+            if not defined?(Ractor) or Ractor.current == Ractor.main
+              self.cert_store = DEFAULT_CERT_STORE
+            else
+              self.cert_store = Ractor.current[:__openssl_default_store__] ||=
+                OpenSSL::X509::Store.new.tap { |store|
+                  store.set_default_paths
+                }
+            end
           end
         end
         return params
@@ -454,10 +430,6 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
 
       def client_cert_cb
         @context.client_cert_cb
-      end
-
-      def tmp_dh_callback
-        @context.tmp_dh_callback || OpenSSL::SSL::SSLContext::DEFAULT_TMP_DH_CALLBACK
       end
 
       def session_new_cb

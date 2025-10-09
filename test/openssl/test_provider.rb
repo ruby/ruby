@@ -46,6 +46,7 @@ class OpenSSL::TestProvider < OpenSSL::TestCase
 
     with_openssl(<<-'end;')
       begin
+        OpenSSL::Provider.load("default")
         OpenSSL::Provider.load("legacy")
       rescue OpenSSL::Provider::ProviderError
         omit "Only for OpenSSL with legacy provider"

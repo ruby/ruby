@@ -986,6 +986,7 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
     return res;
 }
 
+/* :nodoc: */
 static VALUE
 rb_namespace_root_p(VALUE namespace)
 {
@@ -993,6 +994,7 @@ rb_namespace_root_p(VALUE namespace)
     return RBOOL(NAMESPACE_ROOT_P(ns));
 }
 
+/* :nodoc: */
 static VALUE
 rb_namespace_main_p(VALUE namespace)
 {
@@ -1000,6 +1002,7 @@ rb_namespace_main_p(VALUE namespace)
     return RBOOL(NAMESPACE_MAIN_P(ns));
 }
 
+/* :nodoc: */
 static VALUE
 rb_namespace_user_p(VALUE namespace)
 {

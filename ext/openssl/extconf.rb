@@ -147,7 +147,7 @@ have_func("EVP_PBE_scrypt(\"\", 0, (unsigned char *)\"\", 0, 0, 0, 0, 0, NULL, 0
 have_func("EVP_PKEY_check(NULL)", evp_h)
 
 # added in 3.0.0
-have_func("SSL_set0_tmp_dh_pkey(NULL, NULL)", ssl_h)
+have_func("SSL_CTX_set0_tmp_dh_pkey(NULL, NULL)", ssl_h)
 have_func("ERR_get_error_all(NULL, NULL, NULL, NULL, NULL)", "openssl/err.h")
 have_func("SSL_CTX_load_verify_file(NULL, \"\")", ssl_h)
 have_func("BN_check_prime(NULL, NULL, NULL)", "openssl/bn.h")

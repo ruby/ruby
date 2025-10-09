@@ -14613,6 +14613,18 @@ update_parameter_state(pm_parser_t *parser, pm_token_t *token, pm_parameters_ord
 }
 
 /**
+ * Ensures that after parsing a parameter, the next token is not `=`.
+ * Some parameters like `def(* = 1)` cannot become optional. When no parens
+ * are present like in `def * = 1`, this creates ambiguity with endless method definitions.
+ */
+static inline void
+refute_optional_parameter(pm_parser_t *parser) {
+    if (match1(parser, PM_TOKEN_EQUAL)) {
+        pm_parser_err_previous(parser, PM_ERR_DEF_ENDLESS_PARAMETERS);
+    }
+}
+
+/**
  * Parse a list of parameters on a method definition.
  */
 static pm_parameters_node_t *
@@ -14664,6 +14676,10 @@ parse_parameters(
                     parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_FORWARDING_BLOCK;
                 }
 
+                if (!uses_parentheses) {
+                    refute_optional_parameter(parser);
+                }
+
                 pm_block_parameter_node_t *param = pm_block_parameter_node_create(parser, &name, &operator);
                 if (repeated) {
                     pm_node_flag_set_repeated_parameter((pm_node_t *)param);
@@ -14684,6 +14700,10 @@ parse_parameters(
 
                 bool succeeded = update_parameter_state(parser, &parser->current, &order);
                 parser_lex(parser);
+
+                if (!uses_parentheses) {
+                    refute_optional_parameter(parser);
+                }
 
                 parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_FORWARDING_ALL;
                 pm_forwarding_parameter_node_t *param = pm_forwarding_parameter_node_create(parser, &parser->previous);
@@ -14866,6 +14886,10 @@ parse_parameters(
                         context_pop(parser);
                         pm_parameters_node_keywords_append(params, param);
 
+                        if (!uses_parentheses) {
+                            refute_optional_parameter(parser);
+                        }
+
                         // If parsing the value of the parameter resulted in error recovery,
                         // then we can put a missing node in its place and stop parsing the
                         // parameters entirely now.
@@ -14895,6 +14919,10 @@ parse_parameters(
                 } else {
                     name = not_provided(parser);
                     parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_FORWARDING_POSITIONALS;
+                }
+
+                if (!uses_parentheses) {
+                    refute_optional_parameter(parser);
                 }
 
                 pm_node_t *param = (pm_node_t *) pm_rest_parameter_node_create(parser, &operator, &name);
@@ -14943,6 +14971,10 @@ parse_parameters(
                     if (repeated) {
                         pm_node_flag_set_repeated_parameter(param);
                     }
+                }
+
+                if (!uses_parentheses) {
+                    refute_optional_parameter(parser);
                 }
 
                 if (params->keyword_rest == NULL) {

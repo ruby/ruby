@@ -9,6 +9,9 @@ require 'securerandom'
 begin
   require 'zlib'
 rescue LoadError
+else
+  z = "/zlib.#{RbConfig::CONFIG["DLEXT"]}"
+  LOADED_ZLIB, = $".select {|f| f.end_with?(z)}
 end
 
 if defined? Zlib
@@ -1525,7 +1528,7 @@ if defined? Zlib
     end
 
     def test_gunzip_no_memory_leak
-      assert_no_memory_leak(%[-rzlib], "#{<<~"{#"}", "#{<<~'};'}")
+      assert_no_memory_leak(%W[-r#{LOADED_ZLIB}], "#{<<~"{#"}", "#{<<~'};'}")
       d = Zlib.gzip("data")
       {#
         10_000.times {Zlib.gunzip(d)}

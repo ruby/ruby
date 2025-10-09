@@ -887,7 +887,7 @@ no-test-testframework: PHONY
 test-tool: $(TEST_RUNNABLE)-test-tool
 yes-test-tool: prog PHONY
 	$(ACTIONS_GROUP)
-	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TOOL_TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS)
+	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TOOL_TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS) $(TESTS)
 	$(ACTIONS_ENDGROUP)
 no-test-tool: PHONY
 
