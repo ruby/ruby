@@ -1,5 +1,5 @@
 @echo off
-setlocal
+@setlocal EnableExtensions DisableDelayedExpansion || exit /b -1
 set recursive=
 :optloop
 if "%1" == "-f" shift

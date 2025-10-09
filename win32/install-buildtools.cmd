@@ -1,5 +1,5 @@
 @echo off
-setlocal
+@setlocal EnableExtensions DisableDelayedExpansion || exit /b -1
 
 set components=VC.Tools.x86.x64 VC.Redist.14.Latest CoreBuildTools
 set components=%components% Windows11SDK.26100

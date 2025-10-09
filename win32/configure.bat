@@ -1,5 +1,5 @@
 @echo off
-@setlocal disabledelayedexpansion
+@setlocal EnableExtensions DisableDelayedExpansion || exit /b -1
 set PROMPT=$E[94m+$E[m$S
 set witharg=
 
