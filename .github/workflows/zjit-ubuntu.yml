@@ -69,8 +69,9 @@ jobs:
 
           - test_task: 'zjit-bindgen'
             hint: 'To fix: use patch in logs'
-            configure: '--enable-zjit=dev --with-gcc=clang-14'
-            libclang_path: '/usr/lib/llvm-14/lib/libclang.so.1'
+            configure: '--enable-zjit=dev --with-gcc=clang-16'
+            clang_path: '/usr/bin/clang-16'
+            runs-on: 'ubuntu-24.04' # for clang-16
 
           - test_task: 'test-bundled-gems'
             configure: '--enable-zjit=dev'
@@ -87,7 +88,7 @@ jobs:
       RUST_BACKTRACE: 1
       ZJIT_RB_BUG: 1
 
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.runs-on || 'ubuntu-22.04' }}
 
     if: >-
       ${{!(false
@@ -175,7 +176,7 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
           SYNTAX_SUGGEST_TIMEOUT: '5'
           ZJIT_BINDGEN_DIFF_OPTS: '--exit-code'
-          LIBCLANG_PATH: ${{ matrix.libclang_path }}
+          CLANG_PATH: ${{ matrix.clang_path }}
           TESTS: ${{ matrix.test_all_opts }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
