@@ -34,9 +34,6 @@ class TestCommitEmail < Test::Unit::TestCase
       long_rev = git('rev-parse', 'HEAD').chomp
       short_rev = long_rev[0...10]
 
-      env = {
-        'SENDMAIL' => @sendmail,
-      }.merge!(gem_env)
       out, _, status = EnvUtil.invoke_ruby([
         { 'SENDMAIL' => @sendmail }.merge!(gem_env),
         @commit_email, './', 'cvs-admin@ruby-lang.org',
