@@ -62,7 +62,7 @@ jobs:
       - uses: ./.github/actions/slack
         with:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-          label: ${{ github.event.inputs.gem }} ${{ github.event.inputs.before[0:10] }}..${{ github.event.inputs.after[0:10] }}
+          label: "${{ github.event.inputs.gem }} (<https://github.com/${{ github.event.inputs.gem == 'rubygems' && 'rubygems' || 'ruby' }}/${{ github.event.inputs.gem }}/compare/${{ github.event.inputs.before }}...${{ github.event.inputs.after }}|diff>)"
           event_name: workflow_dispatch
           extra_channel_id: C05FPKAU743 # alerts-sync
         if: ${{ failure() }}
