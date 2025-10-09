@@ -180,6 +180,7 @@ pub fn init() -> Annotations {
 
     annotate!(rb_mKernel, "itself", types::BasicObject, no_gc, leaf, elidable);
     annotate!(rb_cString, "bytesize", types::Fixnum, no_gc, leaf);
+    annotate!(rb_cString, "to_s", types::StringExact);
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", types::Fixnum, no_gc, leaf, elidable);
