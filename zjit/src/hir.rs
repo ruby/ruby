@@ -12481,4 +12481,29 @@ mod opt_tests {
           Return v25
         ");
     }
+
+    #[test]
+    fn test_string_to_s_returns_string() {
+        eval(r#"
+            def test = "".to_s
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:StringExact = StringCopy v10
+          PatchPoint MethodRedefined(String@0x1008, to_s@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(String@0x1008)
+          v23:StringExact = CallCFunc to_s@0x1040, v12
+          CheckInterrupts
+          Return v23
+        ");
+    }
 }
