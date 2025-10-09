@@ -658,6 +658,7 @@ pub enum Insn {
         name: ID,
         state: InsnId,
         return_type: Type,
+        elidable: bool,
     },
 
     /// Call a variadic C function with signature: func(int argc, VALUE *argv, VALUE recv)
@@ -846,6 +847,7 @@ impl Insn {
             Insn::LoadIvarEmbedded { .. } => false,
             Insn::LoadIvarExtended { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
+            Insn::CCallWithFrame { elidable, .. } => !elidable,
             Insn::ObjectAllocClass { .. } => false,
             // TODO: NewRange is effects free if we can prove the two ends to be Fixnum,
             // but we don't have type information here in `impl Insn`. See rb_range_new().
@@ -1565,7 +1567,7 @@ impl Function {
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
             &CCall { cfunc, ref args, name, return_type, elidable } => CCall { cfunc, args: find_vec!(args), name, return_type, elidable },
-            &CCallWithFrame { cd, cfunc, ref args, cme, name, state, return_type } => CCallWithFrame { cd, cfunc, args: find_vec!(args), cme, name, state: find!(state), return_type },
+            &CCallWithFrame { cd, cfunc, ref args, cme, name, state, return_type, elidable } => CCallWithFrame { cd, cfunc, args: find_vec!(args), cme, name, state: find!(state), return_type, elidable },
             &CCallVariadic { cfunc, recv, ref args, cme, name, state } => CCallVariadic {
                 cfunc, recv: find!(recv), args: find_vec!(args), cme, name, state
             },
@@ -2349,15 +2351,15 @@ impl Function {
                                                           return_type: types::BasicObject,
                                                           elidable: false });
                     let return_type = props.return_type;
+                    let elidable = props.elidable;
                     if props.leaf && props.no_gc {
-                        let elidable = props.elidable;
                         let ccall = fun.push_insn(block, Insn::CCall { cfunc, args: cfunc_args, name: method_id, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
                     } else {
                         if get_option!(stats) {
                             count_not_inlined_cfunc(fun, block, method);
                         }
-                        let ccall = fun.push_insn(block, Insn::CCallWithFrame { cd, cfunc, args: cfunc_args, cme: method, name: method_id, state, return_type });
+                        let ccall = fun.push_insn(block, Insn::CCallWithFrame { cd, cfunc, args: cfunc_args, cme: method, name: method_id, state, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
                     }
 
@@ -12459,6 +12461,33 @@ mod opt_tests {
           v22:ArrayExact = CallCFunc reverse@0x1038, v11
           CheckInterrupts
           Return v22
+        ");
+    }
+
+    #[test]
+    fn test_array_reverse_is_elidable() {
+        eval(r#"
+            def test
+              [].reverse
+              5
+            end
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:ArrayExact = NewArray
+          PatchPoint MethodRedefined(Array@0x1000, reverse@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v16:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v16
         ");
     }
 }
