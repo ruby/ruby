@@ -17,7 +17,7 @@ on:
 
 jobs:
   sync_default_gems:
-    name: Sync default gems
+    name: Sync default gem ${{ github.event.inputs.gem }}
 
     permissions:
       contents: write # for Git to git push
