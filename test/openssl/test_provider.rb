@@ -12,15 +12,14 @@ class OpenSSL::TestProvider < OpenSSL::TestCase
   end
 
   def test_openssl_provider_names
-    omit 'not working on freebsd RubyCI' if ENV['RUBYCI_NICKNAME'] =~ /freebsd/
     with_openssl <<-'end;'
-      legacy_provider = OpenSSL::Provider.load("legacy")
+      base_provider = OpenSSL::Provider.load("base")
       assert_equal(2, OpenSSL::Provider.provider_names.size)
-      assert_includes(OpenSSL::Provider.provider_names, "legacy")
+      assert_includes(OpenSSL::Provider.provider_names, "base")
 
-      assert_equal(true, legacy_provider.unload)
+      assert_equal(true, base_provider.unload)
       assert_equal(1, OpenSSL::Provider.provider_names.size)
-      assert_not_includes(OpenSSL::Provider.provider_names, "legacy")
+      assert_not_includes(OpenSSL::Provider.provider_names, "base")
     end;
   end
 
@@ -34,9 +33,13 @@ class OpenSSL::TestProvider < OpenSSL::TestCase
   end
 
   def test_openssl_legacy_provider
-    omit 'not working on freebsd RubyCI' if ENV['RUBYCI_NICKNAME'] =~ /freebsd/
     with_openssl(<<-'end;')
-      OpenSSL::Provider.load("legacy")
+      begin
+        OpenSSL::Provider.load("legacy")
+      rescue OpenSSL::Provider::ProviderError
+        omit "Only for OpenSSL with legacy provider"
+      end
+
       algo = "RC4"
       data = "a" * 1000
       key = OpenSSL::Random.random_bytes(16)

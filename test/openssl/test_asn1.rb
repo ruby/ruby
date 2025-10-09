@@ -326,7 +326,9 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     oid = (0...100).to_a.join(".").b
     obj = OpenSSL::ASN1::ObjectId.new(oid)
     assert_equal oid, obj.oid
+  end
 
+  def test_object_identifier_equality
     aki = [
       OpenSSL::ASN1::ObjectId.new("authorityKeyIdentifier"),
       OpenSSL::ASN1::ObjectId.new("X509v3 Authority Key Identifier"),
@@ -341,17 +343,22 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
 
     aki.each do |a|
       aki.each do |b|
-        assert a == b
+        assert_equal true, a == b
       end
 
       ski.each do |b|
-        refute a == b
+        assert_equal false, a == b
       end
     end
 
-    assert_raise(TypeError) {
-      OpenSSL::ASN1::ObjectId.new("authorityKeyIdentifier") == nil
-    }
+    obj1 = OpenSSL::ASN1::ObjectId.new("1.2.34.56789.10")
+    obj2 = OpenSSL::ASN1::ObjectId.new("1.2.34.56789.10")
+    obj3 = OpenSSL::ASN1::ObjectId.new("1.2.34.56789.11")
+    omit "OID 1.2.34.56789.10 is registered" if obj1.sn
+    assert_equal true, obj1 == obj2
+    assert_equal false, obj1 == obj3
+
+    assert_equal false, OpenSSL::ASN1::ObjectId.new("authorityKeyIdentifier") == nil
   end
 
   def test_sequence

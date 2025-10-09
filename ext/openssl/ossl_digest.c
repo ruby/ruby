@@ -232,6 +232,7 @@ ossl_digest_finish(int argc, VALUE *argv, VALUE self)
         str = rb_str_new(NULL, out_len);
     } else {
         StringValue(str);
+        rb_str_modify(str);
         rb_str_resize(str, out_len);
     }
 

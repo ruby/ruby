@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 require_relative "utils"
 
-require 'benchmark'
-
 if defined?(OpenSSL)
 
 class OpenSSL::OSSL < OpenSSL::SSLTestCase
@@ -54,8 +52,14 @@ class OpenSSL::OSSL < OpenSSL::SSLTestCase
 
     a_b_time = a_c_time = 0
     100.times do
-      a_b_time += Benchmark.measure { 100.times { OpenSSL.fixed_length_secure_compare(a, b) } }.real
-      a_c_time += Benchmark.measure { 100.times { OpenSSL.fixed_length_secure_compare(a, c) } }.real
+      t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      100.times { OpenSSL.fixed_length_secure_compare(a, b) }
+      t2 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      100.times { OpenSSL.fixed_length_secure_compare(a, c) }
+      t3 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+      a_b_time += t2 - t1
+      a_c_time += t3 - t2
     end
     assert_operator(a_b_time, :<, a_c_time * 10, "fixed_length_secure_compare timing test failed")
     assert_operator(a_c_time, :<, a_b_time * 10, "fixed_length_secure_compare timing test failed")
