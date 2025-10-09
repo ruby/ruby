@@ -9,6 +9,10 @@ class TestRactor < Test::Unit::TestCase
     end
   end
 
+  def test_cannot_copy_proc
+    assert_unshareable(-> { }, /cannot copy/, copy: true)
+  end
+
   def test_shareability_of_method_proc
     # TODO: fix with Ractor.shareable_proc/lambda
 =begin
@@ -197,10 +201,10 @@ class TestRactor < Test::Unit::TestCase
     assert Ractor.shareable?(obj), "object didn't become shareable"
   end
 
-  def assert_unshareable(obj, msg=nil, exception: Ractor::IsolationError)
+  def assert_unshareable(obj, msg=nil, copy: false, exception: Ractor::IsolationError)
     refute Ractor.shareable?(obj), "object is already shareable"
     assert_raise_with_message(exception, msg) do
-      Ractor.make_shareable(obj)
+      Ractor.make_shareable(obj, copy:)
     end
     refute Ractor.shareable?(obj), "despite raising, object became shareable"
   end
