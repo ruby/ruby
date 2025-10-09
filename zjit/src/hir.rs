@@ -670,6 +670,8 @@ pub enum Insn {
         cme: *const rb_callable_method_entry_t,
         name: ID,
         state: InsnId,
+        return_type: Type,
+        elidable: bool,
     },
 
     /// Un-optimized fallback implementation (dynamic dispatch) for send-ish instructions
@@ -1568,8 +1570,8 @@ impl Function {
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
             &CCall { cfunc, ref args, name, return_type, elidable } => CCall { cfunc, args: find_vec!(args), name, return_type, elidable },
             &CCallWithFrame { cd, cfunc, ref args, cme, name, state, return_type, elidable } => CCallWithFrame { cd, cfunc, args: find_vec!(args), cme, name, state: find!(state), return_type, elidable },
-            &CCallVariadic { cfunc, recv, ref args, cme, name, state } => CCallVariadic {
-                cfunc, recv: find!(recv), args: find_vec!(args), cme, name, state
+            &CCallVariadic { cfunc, recv, ref args, cme, name, state, return_type, elidable } => CCallVariadic {
+                cfunc, recv: find!(recv), args: find_vec!(args), cme, name, state, return_type, elidable
             },
             &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
@@ -1670,7 +1672,7 @@ impl Function {
             Insn::ObjectAllocClass { class, .. } => Type::from_class(*class),
             &Insn::CCallWithFrame { return_type, .. } => return_type,
             Insn::CCall { return_type, .. } => *return_type,
-            Insn::CCallVariadic { .. } => types::BasicObject,
+            &Insn::CCallVariadic { return_type, .. } => return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_value(*expected)),
@@ -2325,10 +2327,12 @@ impl Function {
 
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
 
+                    // Filter for simple call sites (i.e. no splats etc.)
                     if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
                         return Err(());
                     }
 
+                    // Commit to the replacement. Put PatchPoint.
                     gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
                     if recv_class.instance_can_have_singleton_class() {
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
@@ -2341,17 +2345,10 @@ impl Function {
                     let mut cfunc_args = vec![recv];
                     cfunc_args.append(&mut args);
 
-                    // Filter for a leaf and GC free function
-                    use crate::cruby_methods::FnProperties;
-                    // Filter for simple call sites (i.e. no splats etc.)
-                    // Commit to the replacement. Put PatchPoint.
-                    let props = ZJITState::get_method_annotations().get_cfunc_properties(method)
-                                .unwrap_or(FnProperties { leaf: false,
-                                                          no_gc: false,
-                                                          return_type: types::BasicObject,
-                                                          elidable: false });
+                    let props = ZJITState::get_method_annotations().get_cfunc_properties(method).unwrap_or_default();
                     let return_type = props.return_type;
                     let elidable = props.elidable;
+                    // Filter for a leaf and GC free function
                     if props.leaf && props.no_gc {
                         let ccall = fun.push_insn(block, Insn::CCall { cfunc, args: cfunc_args, name: method_id, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
@@ -2385,6 +2382,9 @@ impl Function {
                         }
 
                         let cfunc = unsafe { get_mct_func(cfunc) }.cast();
+                        let props = ZJITState::get_method_annotations().get_cfunc_properties(method).unwrap_or_default();
+                        let return_type = props.return_type;
+                        let elidable = props.elidable;
                         let ccall = fun.push_insn(block, Insn::CCallVariadic {
                             cfunc,
                             recv,
@@ -2392,6 +2392,8 @@ impl Function {
                             cme: method,
                             name: method_id,
                             state,
+                            return_type,
+                            elidable,
                         });
 
                         fun.make_equal_to(send_insn_id, ccall);
