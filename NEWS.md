@@ -180,8 +180,8 @@ The following default gem is added.
 
 The following default gems are updated.
 
-* RubyGems 3.8.0.dev
-* bundler 2.8.0.dev
+* RubyGems 4.0.0.dev
+* bundler 4.0.0.dev
 * erb 5.0.3
 * etc 1.4.6
 * fcntl 1.3.0
