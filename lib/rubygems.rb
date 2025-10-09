@@ -9,7 +9,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "3.8.0.dev"
+  VERSION = "4.0.0.dev"
 end
 
 require_relative "rubygems/defaults"
