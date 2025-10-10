@@ -59,6 +59,8 @@ int ruby_assert_critical_section_entered = 0;
 
 static void *native_main_thread_stack_top;
 
+bool ruby_vm_during_cleanup = false;
+
 VALUE rb_str_concat_literals(size_t, const VALUE*);
 
 VALUE vm_exec(rb_execution_context_t *);
@@ -3286,6 +3288,7 @@ int
 ruby_vm_destruct(rb_vm_t *vm)
 {
     RUBY_FREE_ENTER("vm");
+    ruby_vm_during_cleanup = true;
 
     if (vm) {
         rb_thread_t *th = vm->ractor.main_thread;
