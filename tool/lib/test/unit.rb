@@ -171,8 +171,10 @@ module Test
         opts = option_parser
         setup_options(opts, options)
         opts.parse!(args)
+        @option_parser = nil if ractors_enabled?
         orig_args -= args
         args = @init_hook.call(args, options) if @init_hook
+        @init_hook = nil if ractors_enabled?
         non_options(args, options)
         @run_options = orig_args
 
@@ -818,6 +820,10 @@ module Test
       end
 
       def _run_suites suites, type
+        if ENV["RUBY_TESTS_WITH_RACTORS"]
+          Ractor.make_shareable(RbConfig::CONFIG)
+          Ractor.make_shareable(RbConfig::MAKEFILE_CONFIG)
+        end
         _prepare_run(suites, type)
         @interrupt = nil
         result = []
@@ -1505,6 +1511,9 @@ module Test
 
       attr_accessor :info_signal
 
+      TESTCASE_COPYABLE_IVARS = Ractor.make_shareable({:@_assertions => true, :@__passed__ => true, :@__name__ => true})
+      RUNNER_COPYABLE_IVARS = Ractor.make_shareable({:@report => true, :@failures => true, :@errors => true, :@skips => true, :@assertion_count => true, :@test_count => true})
+
       ##
       # Lazy accessor for options.
 
@@ -1513,9 +1522,14 @@ module Test
       end
 
       @@installed_at_exit ||= false
-      @@out = $stdout
+      OUT = "$stdout"
       @@after_tests = []
       @@current_repeat_count = 0
+
+      def ractors_enabled?
+        ENV["RUBY_TESTS_WITH_RACTORS"].to_i > 0
+      end
+      private :ractors_enabled?
 
       ##
       # A simple hook allowing you to run a block of code after _all_ of
@@ -1531,15 +1545,29 @@ module Test
       # Returns the stream to use for output.
 
       def self.output
-        @@out
+        if String === OUT
+          eval OUT # due to Ractors
+        else
+          OUT
+        end
       end
 
       ##
       # Sets Test::Unit::Runner to write output to +stream+.  $stdout is the default
-      # output
+      # output. NOTE: if not $stdout or $stderr, may not be ractor safe!
 
       def self.output= stream
-        @@out = stream
+        old_verbose = $VERBOSE
+        $VERBOSE = nil
+        fd_num = stream.to_i
+        if [1,2].include?(fd_num)
+          stream = fd_num == 1 ? "$stdout" : "$stderr" # best guess
+          const_set(:OUT, stream)
+        else
+          const_set(:OUT, stream)
+        end
+      ensure
+        $VERBOSE = old_verbose
       end
 
       ##
@@ -1667,9 +1695,15 @@ module Test
           trace = true
         end
 
+        run_tests_inside_ractors_num = ENV["RUBY_TESTS_WITH_RACTORS"].to_i
+        if run_tests_inside_ractors_num > 0
+          def GC.stress=(val)
+            raise "Cannot call GC.stress=(val) concurrently (it might not be set back properly after teardown)"
+          end
+        end
+        tests_run = 0
         assertions = all_test_methods.map { |method|
-
-          inst = suite.new method
+          inst = suite.new method.to_s
           _start_method(inst)
           inst._assertions = 0
 
@@ -1680,13 +1714,68 @@ module Test
             if trace
               ObjectSpace.trace_object_allocations {inst.run self}
             else
-              inst.run self
+              if run_tests_inside_ractors_num > 0
+                old_report = self.report
+                old_failures = self.failures
+                old_errors = self.errors
+                old_skips = self.skips
+                old_assertion_count = self.assertion_count
+                old_test_count = self.test_count
+                self.report = []
+                self.failures = 0
+                self.errors = 0
+                self.skips = 0
+                self.assertion_count = 0
+                self.test_count = 0
+                rs = run_tests_inside_ractors_num.times.map do
+                  Ractor.new(inst, self) do |instance, runner|
+                    res = instance.run runner
+                    testcase_copyable_ivars = TESTCASE_COPYABLE_IVARS
+                    runner_copyable_ivars = RUNNER_COPYABLE_IVARS
+                    instance.instance_variables.each do |ivar|
+                      unless testcase_copyable_ivars[ivar]
+                        instance.remove_instance_variable(ivar)
+                      end
+                    end
+                    runner.instance_variables.each do |ivar|
+                      unless runner_copyable_ivars[ivar]
+                        runner.remove_instance_variable(ivar)
+                      end
+                    end
+                    [instance, runner, res]
+                  end
+                end
+                ractor_results = []
+                while rs.any?
+                  r, obj = Ractor.select(*rs)
+                  inst, runner, res = *obj
+                  ractor_results << [res, inst, runner]
+                  rs.delete(r)
+                end
+                # ractors done
+                self.report = old_report
+                self.failures = old_failures
+                self.errors = old_errors
+                self.skips = old_skips
+                self.assertion_count = old_assertion_count
+                self.test_count = old_test_count
+                res = +""
+                ractor_results.each do |(res0, inst, runner)|
+                  res << res0
+                  _merge_results_from_ractor(inst, runner)
+                end
+                inst._assertions = self.assertion_count - old_assertion_count
+                res
+              else
+                inst.run self
+              end
             end
+
+          tests_run += 1
 
           print "%.2f s = " % (Time.now - start_time) if @verbose
           print result
           puts if @verbose
-          $stdout.flush
 
           leakchecker.check("#{inst.class}\##{inst.__name__}")
 
@@ -1695,6 +1784,18 @@ module Test
           inst._assertions
         }
         return assertions.size, assertions.inject(0) { |sum, n| sum + n }
+      end
+
+      def __init_runner(runner)
+      end
+
+      def _merge_results_from_ractor(inst, runner_cpy)
+        self.report += runner_cpy.report
+        self.failures += runner_cpy.failures
+        self.errors += runner_cpy.errors
+        self.skips += runner_cpy.skips
+        self.assertion_count += inst._assertions
+        self.test_count += runner_cpy.test_count
       end
 
       def _start_method(inst)
@@ -1734,8 +1835,10 @@ module Test
         @report = []
         @errors = @failures = @skips = 0
         @verbose = false
-        @mutex = Thread::Mutex.new
-        @info_signal = Signal.list['INFO']
+        unless ractors_enabled?
+          @mutex = Thread::Mutex.new
+          @info_signal = Signal.list['INFO']
+        end
         @repeat_count = nil
       end
 
@@ -1763,6 +1866,11 @@ module Test
         self.options.merge! args
 
         puts "Run options: #{help}"
+        ractors_num = ENV["RUBY_TESTS_WITH_RACTORS"].to_i
+        if ractors_num > 0
+          puts "\nNOTE: Running tests inside ractors (each test method inside #{ractors_num} " \
+            "ractor#{ractors_num > 1 ? 's' : ''})"
+        end
 
         self.class.plugins.each do |plugin|
           send plugin

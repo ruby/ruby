@@ -14,6 +14,7 @@ class LeakChecker
   end
 
   def check(test_name)
+    return if ENV["RUBY_TESTS_WITH_RACTORS"]
     if /i386-solaris/ =~ RUBY_PLATFORM && /TestGem/ =~ test_name
       GC.verify_internal_consistency
     end
@@ -130,6 +131,7 @@ class LeakChecker
 
   def extend_tempfile_counter
     return if defined? LeakChecker::TempfileCounter
+    return if ENV["RUBY_TESTS_WITH_RACTORS"]
     m = Module.new {
       @count = 0
       class << self
@@ -150,6 +152,7 @@ class LeakChecker
 
   def find_tempfiles(prev_count=-1)
     return [prev_count, []] unless defined? Tempfile
+    return [prev_count,[]] if ENV["RUBY_TESTS_WITH_RACTORS"]
     extend_tempfile_counter
     count = TempfileCounter.count
     if prev_count == count
@@ -164,6 +167,7 @@ class LeakChecker
 
   def check_tempfile_leak(test_name)
     return false unless defined? Tempfile
+    return false if ENV["RUBY_TESTS_WITH_RACTORS"]
     count1, initial_tempfiles = @tempfile_info
     count2, current_tempfiles = find_tempfiles(count1)
     leaked = false
