@@ -12610,7 +12610,7 @@ mod opt_tests {
           v15:ArrayExact = ArrayDup v13
           v18:Fixnum[0] = Const Value(0)
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
-          v30:BasicObject = ArrayAref v15[v18]
+          v30:BasicObject = ArrayArefFixnum v15, v18
           CheckInterrupts
           Return v30
         ");
