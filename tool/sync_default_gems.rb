@@ -64,6 +64,10 @@ module SyncDefaultGems
 
   CLASSICAL_DEFAULT_BRANCH = "master"
 
+  # Allow synchronizing commits up to this FETCH_DEPTH. We've historically merged PRs
+  # with about 250 commits to ruby/ruby, so we use this depth for ruby/ruby in general.
+  FETCH_DEPTH = 500
+
   class << REPOSITORIES
     def [](gem)
       repo, branch = super(gem)
@@ -662,7 +666,7 @@ module SyncDefaultGems
         `git remote add #{gem} https://github.com/#{repo}.git`
       end
     end
-    system(*%W"git fetch --no-tags #{gem}")
+    system(*%W"git fetch --no-tags --depth=#{FETCH_DEPTH} #{gem} #{default_branch}")
 
     commits = commits_in_ranges(gem, repo, default_branch, ranges)
 
