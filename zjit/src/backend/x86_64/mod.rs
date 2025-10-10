@@ -95,14 +95,20 @@ pub const ALLOC_REGS: &[Reg] = &[
     RAX_REG,
 ];
 
-impl Assembler
-{
-    /// Special scratch registers for intermediate processing.
-    /// This register is call-clobbered (so we don't have to save it before using it).
-    /// Avoid using if you can since this is used to lower [Insn] internally and
-    /// so conflicts are possible.
-    pub const SCRATCH_REG: Reg = R11_REG;
-    const SCRATCH0: X86Opnd = X86Opnd::Reg(Assembler::SCRATCH_REG);
+/// Special scratch register for intermediate processing.
+/// It should be used only by x86_split_with_scratch_reg or new_with_scratch_reg.
+const SCRATCH_OPND: Opnd = Opnd::Reg(R11_REG);
+
+impl Assembler {
+    /// Return an Assembler with scratch registers disabled in the backend, and a scratch register.
+    pub fn new_with_scratch_reg() -> (Self, Opnd) {
+        (Self::new_with_label_names(Vec::default(), 0, true), SCRATCH_OPND)
+    }
+
+    /// Return true if opnd is a scratch reg
+    pub fn is_scratch_reg(opnd: Opnd) -> bool {
+        opnd == SCRATCH_OPND
+    }
 
     /// Get the list of registers from which we can allocate on this platform
     pub fn get_alloc_regs() -> Vec<Reg> {
@@ -127,7 +133,7 @@ impl Assembler
     {
         let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
         let mut iterator = self.insns.into_iter().enumerate().peekable();
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), live_ranges.len());
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), live_ranges.len(), self.accept_scratch_reg);
 
         while let Some((index, mut insn)) = iterator.next() {
             let is_load = matches!(insn, Insn::Load { .. } | Insn::LoadInto { .. });
@@ -374,36 +380,165 @@ impl Assembler
         asm
     }
 
-    /// Emit platform-specific machine code
-    pub fn x86_emit(&mut self, cb: &mut CodeBlock) -> Option<Vec<CodePtr>> {
+    /// Split instructions using scratch registers. To maximize the use of the register pool
+    /// for VRegs, most splits should happen in `x86_split`. However, some instructions need
+    /// to be split with registers after `alloc_regs`, e.g. for `compile_side_exits`, so this
+    /// splits them and uses scratch registers for it.
+    pub fn x86_split_with_scratch_reg(mut self) -> Assembler {
         /// For some instructions, we want to be able to lower a 64-bit operand
         /// without requiring more registers to be available in the register
-        /// allocator. So we just use the SCRATCH0 register temporarily to hold
+        /// allocator. So we just use the SCRATCH_OPND register temporarily to hold
         /// the value before we immediately use it.
-        fn emit_64bit_immediate(cb: &mut CodeBlock, opnd: &Opnd) -> X86Opnd {
+        fn split_64bit_immediate(asm: &mut Assembler, opnd: Opnd) -> Opnd {
             match opnd {
                 Opnd::Imm(value) => {
                     // 32-bit values will be sign-extended
-                    if imm_num_bits(*value) > 32 {
-                        mov(cb, Assembler::SCRATCH0, opnd.into());
-                        Assembler::SCRATCH0
+                    if imm_num_bits(value) > 32 {
+                        asm.mov(SCRATCH_OPND, opnd);
+                        SCRATCH_OPND
                     } else {
-                        opnd.into()
+                        opnd
                     }
                 },
                 Opnd::UImm(value) => {
                     // 32-bit values will be sign-extended
-                    if imm_num_bits(*value as i64) > 32 {
-                        mov(cb, Assembler::SCRATCH0, opnd.into());
-                        Assembler::SCRATCH0
+                    if imm_num_bits(value as i64) > 32 {
+                        asm.mov(SCRATCH_OPND, opnd);
+                        SCRATCH_OPND
                     } else {
-                        imm_opnd(*value as i64)
+                        Opnd::Imm(value as i64)
                     }
                 },
-                _ => opnd.into()
+                _ => opnd
             }
         }
 
+        let mut iterator = self.insns.into_iter().enumerate().peekable();
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.live_ranges.len(), true);
+
+        while let Some((_, mut insn)) = iterator.next() {
+            match &mut insn {
+                Insn::Add { right, .. } |
+                Insn::Sub { right, .. } |
+                Insn::Mul { right, .. } |
+                Insn::And { right, .. } |
+                Insn::Or { right, .. } |
+                Insn::Xor { right, .. } |
+                Insn::Test { right, .. } => {
+                    *right = split_64bit_immediate(&mut asm, *right);
+                    asm.push_insn(insn);
+                }
+                Insn::Cmp { left, right } => {
+                    let num_bits = match right {
+                        Opnd::Imm(value) => Some(imm_num_bits(*value)),
+                        Opnd::UImm(value) => Some(uimm_num_bits(*value)),
+                        _ => None
+                    };
+
+                    // If the immediate is less than 64 bits (like 32, 16, 8), and the operand
+                    // sizes match, then we can represent it as an immediate in the instruction
+                    // without moving it to a register first.
+                    // IOW, 64 bit immediates must always be moved to a register
+                    // before comparisons, where other sizes may be encoded
+                    // directly in the instruction.
+                    let use_imm = num_bits.is_some() && left.num_bits() == num_bits && num_bits.unwrap() < 64;
+                    if !use_imm {
+                        *right = split_64bit_immediate(&mut asm, *right);
+                    }
+                    asm.push_insn(insn);
+                }
+                // For compile_side_exits, support splitting simple C arguments here
+                Insn::CCall { opnds, .. } if !opnds.is_empty() => {
+                    for (i, opnd) in opnds.iter().enumerate() {
+                        asm.load_into(C_ARG_OPNDS[i], *opnd);
+                    }
+                    *opnds = vec![];
+                    asm.push_insn(insn);
+                }
+                &mut Insn::Lea { opnd, out } => {
+                    match (opnd, out) {
+                        // Split here for compile_side_exits
+                        (Opnd::Mem(_), Opnd::Mem(_)) => {
+                            asm.lea_into(SCRATCH_OPND, opnd);
+                            asm.store(out, SCRATCH_OPND);
+                        }
+                        _ => {
+                            asm.push_insn(insn);
+                        }
+                    }
+                }
+                Insn::LeaJumpTarget { target, out } => {
+                    if let Target::Label(_) = target {
+                        asm.push_insn(Insn::LeaJumpTarget { out: SCRATCH_OPND, target: target.clone() });
+                        asm.mov(*out, SCRATCH_OPND);
+                    }
+                }
+                // Convert Opnd::const_ptr into Opnd::Mem. This split is done here to give
+                // a register for compile_side_exits.
+                &mut Insn::IncrCounter { mem, value } => {
+                    assert!(matches!(mem, Opnd::UImm(_)));
+                    asm.load_into(SCRATCH_OPND, mem);
+                    asm.incr_counter(Opnd::mem(64, SCRATCH_OPND, 0), value);
+                }
+                // Resolve ParallelMov that couldn't be handled without a scratch register.
+                Insn::ParallelMov { moves } => {
+                    for (reg, opnd) in Self::resolve_parallel_moves(&moves, Some(SCRATCH_OPND)).unwrap() {
+                        asm.load_into(Opnd::Reg(reg), opnd);
+                    }
+                }
+                // Handle various operand combinations for spills on compile_side_exits.
+                &mut Insn::Store { dest, src } => {
+                    let Opnd::Mem(Mem { num_bits, .. }) = dest else {
+                        panic!("Unexpected Insn::Store destination in x86_split_with_scratch_reg: {dest:?}");
+                    };
+
+                    let src = match src {
+                        Opnd::Reg(_) => src,
+                        Opnd::Mem(_) => {
+                            asm.mov(SCRATCH_OPND, src);
+                            SCRATCH_OPND
+                        }
+                        Opnd::Imm(imm) => {
+                            // For 64 bit destinations, 32-bit values will be sign-extended
+                            if num_bits == 64 && imm_num_bits(imm) > 32 {
+                                asm.mov(SCRATCH_OPND, src);
+                                SCRATCH_OPND
+                            } else if uimm_num_bits(imm as u64) <= num_bits {
+                                // If the bit string is short enough for the destination, use the unsigned representation.
+                                // Note that 64-bit and negative values are ruled out.
+                                Opnd::UImm(imm as u64)
+                            } else {
+                                src
+                            }
+                        }
+                        Opnd::UImm(imm) => {
+                            // For 64 bit destinations, 32-bit values will be sign-extended
+                            if num_bits == 64 && imm_num_bits(imm as i64) > 32 {
+                                asm.mov(SCRATCH_OPND, src);
+                                SCRATCH_OPND
+                            } else {
+                                src.into()
+                            }
+                        }
+                        Opnd::Value(_) => {
+                            asm.load_into(SCRATCH_OPND, src);
+                            SCRATCH_OPND
+                        }
+                        src @ (Opnd::None | Opnd::VReg { .. }) => panic!("Unexpected source operand during x86_split_with_scratch_reg: {src:?}"),
+                    };
+                    asm.store(dest, src);
+                }
+                _ => {
+                    asm.push_insn(insn);
+                }
+            }
+        }
+
+        asm
+    }
+
+    /// Emit platform-specific machine code
+    pub fn x86_emit(&mut self, cb: &mut CodeBlock) -> Option<Vec<CodePtr>> {
         fn emit_csel(
             cb: &mut CodeBlock,
             truthy: Opnd,
@@ -506,33 +641,27 @@ impl Assembler
                 }
 
                 Insn::Add { left, right, .. } => {
-                    let opnd1 = emit_64bit_immediate(cb, right);
-                    add(cb, left.into(), opnd1);
+                    add(cb, left.into(), right.into());
                 },
 
                 Insn::Sub { left, right, .. } => {
-                    let opnd1 = emit_64bit_immediate(cb, right);
-                    sub(cb, left.into(), opnd1);
+                    sub(cb, left.into(), right.into());
                 },
 
                 Insn::Mul { left, right, .. } => {
-                    let opnd1 = emit_64bit_immediate(cb, right);
-                    imul(cb, left.into(), opnd1);
+                    imul(cb, left.into(), right.into());
                 },
 
                 Insn::And { left, right, .. } => {
-                    let opnd1 = emit_64bit_immediate(cb, right);
-                    and(cb, left.into(), opnd1);
+                    and(cb, left.into(), right.into());
                 },
 
                 Insn::Or { left, right, .. } => {
-                    let opnd1 = emit_64bit_immediate(cb, right);
-                    or(cb, left.into(), opnd1);
+                    or(cb, left.into(), right.into());
                 },
 
                 Insn::Xor { left, right, .. } => {
-                    let opnd1 = emit_64bit_immediate(cb, right);
-                    xor(cb, left.into(), opnd1);
+                    xor(cb, left.into(), right.into());
                 },
 
                 Insn::Not { opnd, .. } => {
@@ -551,64 +680,6 @@ impl Assembler
                     shr(cb, opnd.into(), shift.into())
                 },
 
-                store_insn @ Insn::Store { dest, src } => {
-                    let &Opnd::Mem(Mem { num_bits, base: MemBase::Reg(base_reg_no), disp: _ }) = dest else {
-                        panic!("Unexpected Insn::Store destination in x64_emit: {dest:?}");
-                    };
-
-                    // This kind of tricky clobber can only happen for explicit use of SCRATCH_REG,
-                    // so we panic to get the author to change their code.
-                    #[track_caller]
-                    fn assert_no_clobber(store_insn: &Insn, user_use: u8, backend_use: Reg) {
-                        assert_ne!(
-                            backend_use.reg_no,
-                            user_use,
-                            "Emitting {store_insn:?} would clobber {user_use:?}, in conflict with its semantics"
-                        );
-                    }
-
-                    let scratch = X86Opnd::Reg(Self::SCRATCH_REG);
-                    let src = match src {
-                        Opnd::Reg(_) => src.into(),
-                        &Opnd::Mem(_) => {
-                            assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH_REG);
-                            mov(cb, scratch, src.into());
-                            scratch
-                        }
-                        &Opnd::Imm(imm) => {
-                            // For 64 bit destinations, 32-bit values will be sign-extended
-                            if num_bits == 64 && imm_num_bits(imm) > 32 {
-                                assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH_REG);
-                                mov(cb, scratch, src.into());
-                                scratch
-                            } else if uimm_num_bits(imm as u64) <= num_bits {
-                                // If the bit string is short enough for the destination, use the unsigned representation.
-                                // Note that 64-bit and negative values are ruled out.
-                                uimm_opnd(imm as u64)
-                            } else {
-                                src.into()
-                            }
-                        }
-                        &Opnd::UImm(imm) => {
-                            // For 64 bit destinations, 32-bit values will be sign-extended
-                            if num_bits == 64 && imm_num_bits(imm as i64) > 32 {
-                                assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH_REG);
-                                mov(cb, scratch, src.into());
-                                scratch
-                            } else {
-                                src.into()
-                            }
-                        }
-                        &Opnd::Value(value) => {
-                            assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH_REG);
-                            emit_load_gc_value(cb, &mut gc_offsets, scratch, value);
-                            scratch
-                        }
-                        src @ (Opnd::None | Opnd::VReg { .. }) => panic!("Unexpected source operand during x86_emit: {src:?}")
-                    };
-                    mov(cb, dest.into(), src);
-                }
-
                 // This assumes only load instructions can contain references to GC'd Value operands
                 Insn::Load { opnd, out } |
                 Insn::LoadInto { dest: out, opnd } => {
@@ -626,6 +697,7 @@ impl Assembler
 
                 Insn::ParallelMov { .. } => unreachable!("{insn:?} should have been lowered at alloc_regs()"),
 
+                Insn::Store { dest, src } |
                 Insn::Mov { dest, src } => {
                     mov(cb, dest.into(), src.into());
                 },
@@ -638,13 +710,12 @@ impl Assembler
                 // Load address of jump target
                 Insn::LeaJumpTarget { target, out } => {
                     if let Target::Label(label) = target {
+                        let out = *out;
                         // Set output to the raw address of the label
-                        cb.label_ref(*label, 7, |cb, src_addr, dst_addr| {
+                        cb.label_ref(*label, 7, move |cb, src_addr, dst_addr| {
                             let disp = dst_addr - src_addr;
-                            lea(cb, Self::SCRATCH0, mem_opnd(8, RIP, disp.try_into().unwrap()));
+                            lea(cb, out.into(), mem_opnd(8, RIP, disp.try_into().unwrap()));
                         });
-
-                        mov(cb, out.into(), Self::SCRATCH0);
                     } else {
                         // Set output to the jump target's raw address
                         let target_code = target.unwrap_code_ptr();
@@ -700,30 +771,12 @@ impl Assembler
 
                 // Compare
                 Insn::Cmp { left, right } => {
-                    let num_bits = match right {
-                        Opnd::Imm(value) => Some(imm_num_bits(*value)),
-                        Opnd::UImm(value) => Some(uimm_num_bits(*value)),
-                        _ => None
-                    };
-
-                    // If the immediate is less than 64 bits (like 32, 16, 8), and the operand
-                    // sizes match, then we can represent it as an immediate in the instruction
-                    // without moving it to a register first.
-                    // IOW, 64 bit immediates must always be moved to a register
-                    // before comparisons, where other sizes may be encoded
-                    // directly in the instruction.
-                    if num_bits.is_some() && left.num_bits() == num_bits && num_bits.unwrap() < 64 {
-                        cmp(cb, left.into(), right.into());
-                    } else {
-                        let emitted = emit_64bit_immediate(cb, right);
-                        cmp(cb, left.into(), emitted);
-                    }
+                    cmp(cb, left.into(), right.into());
                 }
 
                 // Test and set flags
                 Insn::Test { left, right } => {
-                    let emitted = emit_64bit_immediate(cb, right);
-                    test(cb, left.into(), emitted);
+                    test(cb, left.into(), right.into());
                 }
 
                 Insn::JmpOpnd(opnd) => {
@@ -893,9 +946,16 @@ impl Assembler
 
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
+        // The backend is allowed to use scratch registers only if it has not accepted them so far.
+        let use_scratch_regs = !self.accept_scratch_reg;
+
         let asm = self.x86_split();
         let mut asm = asm.alloc_regs(regs)?;
+        // We put compile_side_exits after alloc_regs to avoid extending live ranges for VRegs spilled on side exits.
         asm.compile_side_exits();
+        if use_scratch_regs {
+            asm = asm.x86_split_with_scratch_reg();
+        }
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {
@@ -1527,6 +1587,7 @@ mod tests {
         assert!(imitation_heap_value.heap_object_p());
         asm.store(Opnd::mem(VALUE_BITS, SP, 0), imitation_heap_value.into());
 
+        asm = asm.x86_split_with_scratch_reg();
         let gc_offsets = asm.x86_emit(&mut cb).unwrap();
         assert_eq!(1, gc_offsets.len(), "VALUE source operand should be reported as gc offset");
 
