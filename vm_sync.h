@@ -142,11 +142,14 @@ rb_vm_lock_leave_cr(struct rb_ractor_struct *cr, unsigned int *levp, const char 
 
 #if RUBY_DEBUG > 0
 void RUBY_ASSERT_vm_locking(void);
+void RUBY_ASSERT_vm_locking_with_barrier(void);
 void RUBY_ASSERT_vm_unlocking(void);
 #define ASSERT_vm_locking() RUBY_ASSERT_vm_locking()
+#define ASSERT_vm_locking_with_barrier() RUBY_ASSERT_vm_locking_with_barrier()
 #define ASSERT_vm_unlocking() RUBY_ASSERT_vm_unlocking()
 #else
 #define ASSERT_vm_locking()
+#define ASSERT_vm_locking_with_barrier()
 #define ASSERT_vm_unlocking()
 #endif
 

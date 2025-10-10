@@ -600,8 +600,7 @@ rb_obj_is_fstring_table(VALUE obj)
 void
 rb_gc_free_fstring(VALUE obj)
 {
-    // Assume locking and barrier (which there is no assert for)
-    ASSERT_vm_locking();
+    ASSERT_vm_locking_with_barrier();
 
     rb_concurrent_set_delete_by_identity(fstring_table_obj, obj);
 
