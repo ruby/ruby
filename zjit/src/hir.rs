@@ -2434,7 +2434,7 @@ impl Function {
                     let tmp_block = fun.new_block(u32::MAX);
                     if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
                         // Copy contents of tmp_block to block
-                        assert!(block != tmp_block);
+                        assert_ne!(block, tmp_block);
                         let insns = fun.blocks[tmp_block.0].insns.drain(..).collect::<Vec<_>>();
                         fun.blocks[block.0].insns.extend(insns);
                         fun.make_equal_to(send_insn_id, replacement);
