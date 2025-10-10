@@ -77,6 +77,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def mkcdtmpdir
+    omit "Dir.chdir" unless main_ractor?
     Dir.mktmpdir {|d|
       Dir.chdir(d) {
         yield
@@ -1145,7 +1146,7 @@ class TestIO < Test::Unit::TestCase
     assert_equal("abcd", dst.read)
     assert_equal(4, pos, bug11015)
   ensure
-    dst.close!
+    dst&.close!
   end
 
   def test_copy_stream_pathname_to_pathname
@@ -1916,6 +1917,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def make_tempfile
+    pend "Tempfile" unless main_ractor?
     t = Tempfile.new("test_io")
     t.binmode
     t.puts "foo"
@@ -2539,7 +2541,7 @@ class TestIO < Test::Unit::TestCase
     feature2250 = '[ruby-core:26222]'
     pre = 'ft2250'
 
-    Dir.mktmpdir {|d|
+    Dir.mktmpdir("#{Ractor.current.object_id}") {|d|
       t = open("#{d}/#{pre}", "w")
       f = IO.for_fd(t.fileno)
       assert_equal(true, f.autoclose?)
@@ -2590,7 +2592,7 @@ class TestIO < Test::Unit::TestCase
       assert_nothing_raised(Errno::EBADF, feature2250) {t.close}
     end
   ensure
-    t.close!
+    t&.close!
   end
 
   def test_open_redirect
@@ -2823,22 +2825,25 @@ class TestIO < Test::Unit::TestCase
 
   bug11320 = '[ruby-core:69780] [Bug #11320]'
   ["UTF-8", "EUC-JP", "Shift_JIS"].each do |enc|
-    define_method("test_reopen_nonascii(#{enc})") do
-      mkcdtmpdir do
-        fname = "\u{30eb 30d3 30fc}".encode(enc)
-        File.write(fname, '')
-        assert_file.exist?(fname)
-        stdin = $stdin.dup
-        begin
-          assert_nothing_raised(Errno::ENOENT, "#{bug11320}: #{enc}") {
-            $stdin.reopen(fname, 'r')
-          }
-        ensure
-          $stdin.reopen(stdin)
-          stdin.close
+    class_eval <<-RUBY
+      def test_reopen_nonascii_#{enc.sub('-', '_')}
+        mkcdtmpdir do
+          enc = #{enc.inspect}
+          fname = "#{'\u{30eb 30d3 30fc}'}".encode(enc)
+          File.write(fname, '')
+          assert_file.exist?(fname)
+          stdin = $stdin.dup
+          begin
+            assert_nothing_raised(Errno::ENOENT, "#{bug11320}: #{enc}") {
+              $stdin.reopen(fname, 'r')
+            }
+          ensure
+            $stdin.reopen(stdin)
+            stdin.close
+          end
         end
       end
-    end
+    RUBY
   end
 
   def test_reopen_ivar
@@ -3629,7 +3634,7 @@ __END__
   end if /^(?:i.?86|x86_64)-linux/ =~ RUBY_PLATFORM
 
   def test_ioctl_linux2
-    return unless STDIN.tty? # stdin is not a terminal
+    return unless $stdin.tty? # stdin is not a terminal
     begin
       f = File.open('/dev/tty')
     rescue Errno::ENOENT, Errno::ENXIO => e
@@ -3686,12 +3691,15 @@ __END__
   end
 
   def test_std_fileno
-    assert_equal(0, STDIN.fileno)
-    assert_equal(1, STDOUT.fileno)
-    assert_equal(2, STDERR.fileno)
     assert_equal(0, $stdin.fileno)
     assert_equal(1, $stdout.fileno)
     assert_equal(2, $stderr.fileno)
+  end
+
+  def test_std_fileno_ractor_unsafe
+    assert_equal(0, STDIN.fileno)
+    assert_equal(1, STDOUT.fileno)
+    assert_equal(2, STDERR.fileno)
   end
 
   def test_frozen_fileno
@@ -3786,7 +3794,7 @@ __END__
     end
     assert_equal(data, w.join(""), bug9847)
   ensure
-    t.close!
+    t&.close!
   end
 
   def test_read_buffer_not_raise_shared_string_error
@@ -4457,6 +4465,22 @@ __END__
       thread.join
 
       assert_predicate(status, :success?)
+    RUBY
+  end
+
+  def test_no_fork_in_ractor
+    omit "fork is not supported" unless Process.respond_to?(:fork)
+
+    assert_ractor(<<~'RUBY')
+      r = Ractor.new do
+        begin
+          fork { }
+          :ng
+        rescue Ractor::IsolationError
+          :ok
+        end
+      end
+      assert_equal :ok, r.value
     RUBY
   end
 end

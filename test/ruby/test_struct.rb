@@ -203,11 +203,6 @@ module TestStruct
     o.a = o
     assert_match(/^#<struct a=#<struct #<.*?>:...>>$/, o.inspect)
 
-    @Struct.new("Foo", :a)
-    o = @Struct::Foo.new(1)
-    assert_equal("#<struct #@Struct::Foo a=1>", o.inspect)
-    @Struct.instance_eval { remove_const(:Foo) }
-
     klass = @Struct.new(:a, :b)
     o = klass.new(1, 2)
     assert_equal("#<struct a=1, b=2>", o.inspect)
@@ -227,6 +222,13 @@ module TestStruct
     assert_equal([:@a, :"@a="].sort.inspect, methods.sort.inspect, '[Bug #8756]')
     assert_include(methods, :@a)
     assert_include(methods, :"@a=")
+  end
+
+  def test_inspect_ractor_unsafe
+    @Struct.new("Foo", :a)
+    o = @Struct::Foo.new(1)
+    assert_equal("#<struct #@Struct::Foo a=1>", o.inspect)
+    @Struct.instance_eval { remove_const(:Foo) }
   end
 
   def test_init_copy
