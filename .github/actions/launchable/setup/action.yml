@@ -289,7 +289,7 @@ runs:
         shell: bash
         working-directory: ${{ inputs.builddir }}
         post: |
-          launchable detect-flakes --session "${test_all_session}" file > flake.txt
+          launchable detect-flakes --session "${test_all_session}" --retry-threshold=high file > flake.txt
           cat flake.txt
       if: ${{ always() && steps.setup-launchable.outcome == 'success' }}
       env:
