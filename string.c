@@ -5809,10 +5809,8 @@ rb_str_aref(VALUE str, VALUE indx)
  *    self[regexp, capture = 0] -> new_string or nil
  *    self[substring] -> new_string or nil
  *
- *  Returns the substring of +self+ specified by the arguments.
- *  See examples at {String Slices}[rdoc-ref:String@String+Slices].
+ *  :include: doc/string/aref.rdoc
  *
- *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
@@ -6026,30 +6024,14 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 
 /*
  *  call-seq:
- *    self[index] = new_string
- *    self[start, length] = new_string
- *    self[range] = new_string
- *    self[regexp, capture = 0] = new_string
- *    self[substring] = new_string
+ *    self[index] = other_string -> new_string
+ *    self[start, length] = other_string -> new_string
+ *    self[range] = other_string -> new_string
+ *    self[regexp, capture = 0] = other_string -> new_string
+ *    self[substring] = other_string -> new_string
  *
- *  Replaces all, some, or none of the contents of +self+; returns +new_string+.
- *  See {String Slices}[rdoc-ref:String@String+Slices].
+ *  :include: doc/string/aset.rdoc
  *
- *  A few examples:
- *
- *    s = 'foo'
- *    s[2] = 'rtune'     # => "rtune"
- *    s                  # => "fortune"
- *    s[1, 5] = 'init'   # => "init"
- *    s                  # => "finite"
- *    s[3..4] = 'al'     # => "al"
- *    s                  # => "finale"
- *    s[/e$/] = 'ly'     # => "ly"
- *    s                  # => "finally"
- *    s['lly'] = 'ncial' # => "ncial"
- *    s                  # => "financial"
- *
- *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
@@ -6100,18 +6082,20 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
  *    slice!(regexp, capture = 0) -> new_string or nil
  *    slice!(substring)           -> new_string or nil
  *
- *  Removes and returns the substring of +self+ specified by the arguments.
- *  See {String Slices}[rdoc-ref:String@String+Slices].
+ *  Like String#[] (and its alias String#slice), except that:
+ *
+ *  - Performs substitutions in +self+ (not in a copy of +self+).
+ *  - Returns the removed substring if any modifications were made, +nil+ otherwise.
  *
  *  A few examples:
  *
- *     string = "This is a string"
- *     string.slice!(2)        #=> "i"
- *     string.slice!(3..6)     #=> " is "
- *     string.slice!(/s.*t/)   #=> "sa st"
- *     string.slice!("r")      #=> "r"
- *     string                  #=> "Thing"
+ *    s = 'hello'
+ *    s.slice!('e') # => "e"
+ *    s             # => "hllo"
+ *    s.slice!('e') # => nil
+ *    s             # => "hllo"
  *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
