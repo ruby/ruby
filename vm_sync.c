@@ -26,6 +26,20 @@ RUBY_ASSERT_vm_locking(void)
 }
 
 void
+RUBY_ASSERT_vm_locking_with_barrier(void)
+{
+    if (rb_multi_ractor_p()) {
+        rb_vm_t *vm = GET_VM();
+        VM_ASSERT(vm_locked(vm));
+
+        if (vm->ractor.cnt > 1) {
+            /* Written to only when holding both ractor.sync and ractor.sched lock */
+            VM_ASSERT(vm->ractor.sched.barrier_waiting);
+        }
+    }
+}
+
+void
 RUBY_ASSERT_vm_unlocking(void)
 {
     if (rb_multi_ractor_p()) {

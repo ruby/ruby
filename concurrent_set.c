@@ -352,8 +352,7 @@ rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
 VALUE
 rb_concurrent_set_delete_by_identity(VALUE set_obj, VALUE key)
 {
-    // Assume locking and barrier (which there is no assert for).
-    ASSERT_vm_locking();
+    ASSERT_vm_locking_with_barrier();
 
     struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
 
@@ -391,8 +390,7 @@ rb_concurrent_set_delete_by_identity(VALUE set_obj, VALUE key)
 void
 rb_concurrent_set_foreach_with_replace(VALUE set_obj, int (*callback)(VALUE *key, void *data), void *data)
 {
-    // Assume locking and barrier (which there is no assert for).
-    ASSERT_vm_locking();
+    ASSERT_vm_locking_with_barrier();
 
     struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
 
