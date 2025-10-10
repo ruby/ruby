@@ -1153,6 +1153,14 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_array_fixnum_aref
+    assert_compiles '3', %q{
+      def test(x) = [1,2,3][x]
+      test(2)
+      test(2)
+    }, call_threshold: 2, insns: [:opt_aref]
+  end
+
   def test_new_range_inclusive
     assert_compiles '1..5', %q{
       def test(a, b) = a..b

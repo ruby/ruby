@@ -786,6 +786,7 @@ unsafe extern "C" {
     pub fn rb_ary_resurrect(ary: VALUE) -> VALUE;
     pub fn rb_ary_cat(ary: VALUE, train: *const VALUE, len: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_ary_push(ary: VALUE, elem: VALUE) -> VALUE;
+    pub fn rb_ary_entry(ary: VALUE, off: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_ary_clear(ary: VALUE) -> VALUE;
     pub fn rb_ary_concat(lhs: VALUE, rhs: VALUE) -> VALUE;
     pub fn rb_hash_new() -> VALUE;

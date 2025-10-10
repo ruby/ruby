@@ -577,6 +577,7 @@ pub enum Insn {
     ArrayExtend { left: InsnId, right: InsnId, state: InsnId },
     /// Push `val` onto `array`, where `array` is already `Array`.
     ArrayPush { array: InsnId, val: InsnId, state: InsnId },
+    ArrayArefFixnum { array: InsnId, index: InsnId },
 
     HashDup { val: InsnId, state: InsnId },
 
@@ -886,6 +887,10 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     write!(f, "{prefix}{element}")?;
                     prefix = ", ";
                 }
+                Ok(())
+            }
+            Insn::ArrayArefFixnum { array, index, .. } => {
+                write!(f, "ArrayArefFixnum {array}, {index}")?;
                 Ok(())
             }
             Insn::NewHash { elements, .. } => {
@@ -1579,6 +1584,7 @@ impl Function {
             &NewHash { ref elements, state } => NewHash { elements: find_vec!(elements), state: find!(state) },
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
             &NewRangeFixnum { low, high, flag, state } => NewRangeFixnum { low: find!(low), high: find!(high), flag, state: find!(state) },
+            &ArrayArefFixnum { array, index } => ArrayArefFixnum { array: find!(array), index: find!(index) },
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
@@ -1664,6 +1670,7 @@ impl Function {
             Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
+            Insn::ArrayArefFixnum { .. } => types::BasicObject,
             Insn::NewHash { .. } => types::HashExact,
             Insn::HashDup { .. } => types::HashExact,
             Insn::NewRange { .. } => types::RangeExact,
@@ -1968,6 +1975,16 @@ impl Function {
                         return;
                     }
                 }
+            }
+            if self.type_of(idx_val).is_subtype(types::Fixnum) {
+                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop: BOP_AREF }, state });
+                let fixnum_idx = self.push_insn(block, Insn::GuardType { val: idx_val, guard_type: types::Fixnum, state });
+                let result = self.push_insn(block, Insn::ArrayArefFixnum {
+                    array: self_val,
+                    index: fixnum_idx,
+                });
+                self.make_equal_to(orig_insn_id, result);
+                return;
             }
         }
         self.push_insn_id(block, orig_insn_id);
@@ -2686,6 +2703,10 @@ impl Function {
             | &Insn::HashDup { val, state } => {
                 worklist.push_back(val);
                 worklist.push_back(state);
+            }
+            &Insn::ArrayArefFixnum { array, index } => {
+                worklist.push_back(array);
+                worklist.push_back(index);
             }
             &Insn::Send { recv, ref args, state, .. }
             | &Insn::SendForward { recv, ref args, state, .. }
@@ -12562,6 +12583,36 @@ mod opt_tests {
           v23:StringExact = CCallWithFrame to_s@0x1040, v12
           CheckInterrupts
           Return v23
+        ");
+    }
+
+    #[test]
+    fn test_array_aref_fixnum() {
+        eval("
+            def test
+              arr = [1, 2, 3]
+              arr[0]
+            end
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
+          EntryPoint JIT(0)
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v13:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v15:ArrayExact = ArrayDup v13
+          v18:Fixnum[0] = Const Value(0)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_AREF)
+          v30:BasicObject = ArrayArefFixnum v15, v18
+          CheckInterrupts
+          Return v30
         ");
     }
 }
