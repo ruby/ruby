@@ -15,7 +15,7 @@ module Bundler
 
       Bundler.self_manager.update_bundler_and_restart_with_it_if_needed(update_bundler) if update_bundler
 
-      Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.feature_flag.plugins?
+      Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.settings[:plugins]
 
       sources = Array(options[:source])
       groups  = Array(options[:group]).map(&:to_sym)

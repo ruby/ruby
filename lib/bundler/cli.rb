@@ -143,7 +143,7 @@ module Bundler
     end
 
     def self.handle_no_command_error(command, has_namespace = $thor_runner)
-      if Bundler.feature_flag.plugins? && Bundler::Plugin.command?(command)
+      if Bundler.settings[:plugins] && Bundler::Plugin.command?(command)
         return Bundler::Plugin.exec_command(command, ARGV[1..-1])
       end
 
@@ -623,7 +623,7 @@ module Bundler
       end
     end
 
-    if Bundler.feature_flag.plugins?
+    if Bundler.settings[:plugins]
       require_relative "cli/plugin"
       desc "plugin", "Manage the bundler plugins"
       subcommand "plugin", Plugin
