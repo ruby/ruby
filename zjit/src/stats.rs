@@ -188,20 +188,35 @@ make_counters! {
     dynamic_getivar_count,
     dynamic_setivar_count,
 
-    // Method call def_type related to fallback to dynamic dispatch
-    unspecialized_def_type_iseq,
-    unspecialized_def_type_cfunc,
-    unspecialized_def_type_attrset,
-    unspecialized_def_type_ivar,
-    unspecialized_def_type_bmethod,
-    unspecialized_def_type_zsuper,
-    unspecialized_def_type_alias,
-    unspecialized_def_type_undef,
-    unspecialized_def_type_not_implemented,
-    unspecialized_def_type_optimized,
-    unspecialized_def_type_missing,
-    unspecialized_def_type_refined,
-    unspecialized_def_type_null,
+    // Method call def_type related to send without block fallback to dynamic dispatch
+    unspecialized_send_without_block_def_type_iseq,
+    unspecialized_send_without_block_def_type_cfunc,
+    unspecialized_send_without_block_def_type_attrset,
+    unspecialized_send_without_block_def_type_ivar,
+    unspecialized_send_without_block_def_type_bmethod,
+    unspecialized_send_without_block_def_type_zsuper,
+    unspecialized_send_without_block_def_type_alias,
+    unspecialized_send_without_block_def_type_undef,
+    unspecialized_send_without_block_def_type_not_implemented,
+    unspecialized_send_without_block_def_type_optimized,
+    unspecialized_send_without_block_def_type_missing,
+    unspecialized_send_without_block_def_type_refined,
+    unspecialized_send_without_block_def_type_null,
+
+    // Method call def_type related to send fallback to dynamic dispatch
+    unspecialized_send_def_type_iseq,
+    unspecialized_send_def_type_cfunc,
+    unspecialized_send_def_type_attrset,
+    unspecialized_send_def_type_ivar,
+    unspecialized_send_def_type_bmethod,
+    unspecialized_send_def_type_zsuper,
+    unspecialized_send_def_type_alias,
+    unspecialized_send_def_type_undef,
+    unspecialized_send_def_type_not_implemented,
+    unspecialized_send_def_type_optimized,
+    unspecialized_send_def_type_missing,
+    unspecialized_send_def_type_refined,
+    unspecialized_send_def_type_null,
 
     // Writes to the VM frame
     vm_write_pc_count,
@@ -332,24 +347,45 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
     }
 }
 
+pub fn send_without_block_fallback_counter_for_method_type(method_type: crate::hir::MethodType) -> Counter {
+    use crate::hir::MethodType::*;
+    use crate::stats::Counter::*;
+
+    match method_type {
+        Iseq => unspecialized_send_without_block_def_type_iseq,
+        Cfunc => unspecialized_send_without_block_def_type_cfunc,
+        Attrset => unspecialized_send_without_block_def_type_attrset,
+        Ivar => unspecialized_send_without_block_def_type_ivar,
+        Bmethod => unspecialized_send_without_block_def_type_bmethod,
+        Zsuper => unspecialized_send_without_block_def_type_zsuper,
+        Alias => unspecialized_send_without_block_def_type_alias,
+        Undefined => unspecialized_send_without_block_def_type_undef,
+        NotImplemented => unspecialized_send_without_block_def_type_not_implemented,
+        Optimized => unspecialized_send_without_block_def_type_optimized,
+        Missing => unspecialized_send_without_block_def_type_missing,
+        Refined => unspecialized_send_without_block_def_type_refined,
+        Null => unspecialized_send_without_block_def_type_null,
+    }
+}
+
 pub fn send_fallback_counter_for_method_type(method_type: crate::hir::MethodType) -> Counter {
     use crate::hir::MethodType::*;
     use crate::stats::Counter::*;
 
     match method_type {
-        Iseq => unspecialized_def_type_iseq,
-        Cfunc => unspecialized_def_type_cfunc,
-        Attrset => unspecialized_def_type_attrset,
-        Ivar => unspecialized_def_type_ivar,
-        Bmethod => unspecialized_def_type_bmethod,
-        Zsuper => unspecialized_def_type_zsuper,
-        Alias => unspecialized_def_type_alias,
-        Undefined => unspecialized_def_type_undef,
-        NotImplemented => unspecialized_def_type_not_implemented,
-        Optimized => unspecialized_def_type_optimized,
-        Missing => unspecialized_def_type_missing,
-        Refined => unspecialized_def_type_refined,
-        Null => unspecialized_def_type_null,
+        Iseq => unspecialized_send_def_type_iseq,
+        Cfunc => unspecialized_send_def_type_cfunc,
+        Attrset => unspecialized_send_def_type_attrset,
+        Ivar => unspecialized_send_def_type_ivar,
+        Bmethod => unspecialized_send_def_type_bmethod,
+        Zsuper => unspecialized_send_def_type_zsuper,
+        Alias => unspecialized_send_def_type_alias,
+        Undefined => unspecialized_send_def_type_undef,
+        NotImplemented => unspecialized_send_def_type_not_implemented,
+        Optimized => unspecialized_send_def_type_optimized,
+        Missing => unspecialized_send_def_type_missing,
+        Refined => unspecialized_send_def_type_refined,
+        Null => unspecialized_send_def_type_null,
     }
 }
 
