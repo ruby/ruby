@@ -23,6 +23,10 @@ class TestArray < Test::Unit::TestCase
     assert_equal(3, [1, 2].sum)
   end
 
+  def test_for_experiment2
+    assert_equal(3, [1, 2].sum)
+  end
+
   def test_percent_i
     assert_equal([:foo, :bar], %i[foo bar])
     assert_equal([:"\"foo"], %i["foo])
