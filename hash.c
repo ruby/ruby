@@ -1970,6 +1970,9 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
     else {
         st_insert(RHASH_ST_TABLE(arg), (st_data_t)key, (st_data_t)value);
     }
+
+    RB_OBJ_WRITTEN(arg, Qundef, key);
+    RB_OBJ_WRITTEN(arg, Qundef, value);
     return ST_CONTINUE;
 }
 

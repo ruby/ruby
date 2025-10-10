@@ -794,7 +794,7 @@ require_libraries(VALUE *req_list)
     while (list && RARRAY_LEN(list) > 0) {
         VALUE feature = rb_ary_shift(list);
         rb_enc_associate(feature, extenc);
-        RBASIC_SET_CLASS_RAW(feature, rb_cString);
+        RBASIC_SET_CLASS(feature, rb_cString);
         OBJ_FREEZE(feature);
         rb_funcallv(self, require, 1, &feature);
     }

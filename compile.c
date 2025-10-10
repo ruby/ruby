@@ -2984,7 +2984,6 @@ iseq_set_exception_table(rb_iseq_t *iseq)
             RUBY_ASSERT(pos >= 0);
             entry->end = (unsigned int)pos;
             entry->iseq = (rb_iseq_t *)ptr[3];
-            RB_OBJ_WRITTEN(iseq, Qundef, entry->iseq);
 
             /* stack depth */
             if (ptr[4]) {
@@ -3005,6 +3004,9 @@ iseq_set_exception_table(rb_iseq_t *iseq)
             }
         }
         ISEQ_BODY(iseq)->catch_table = table;
+        for (i = 0; i < table->size; i++) {
+            RB_OBJ_WRITTEN(iseq, Qundef, table->entries[i].iseq);
+        }
         RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, 0); /* free */
     }
 
@@ -12920,23 +12922,25 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
     VALUE iseqv = (VALUE)iseq;
     unsigned int code_index;
     ibf_offset_t reading_pos = bytecode_offset;
-    VALUE *code = ALLOC_N(VALUE, iseq_size);
+    VALUE *code = ZALLOC_N(VALUE, iseq_size);
 
     struct rb_iseq_constant_body *load_body = ISEQ_BODY(iseq);
     struct rb_call_data *cd_entries = load_body->call_data;
     int ic_index = 0;
 
+    bool needs_bitmap = false;
     iseq_bits_t * mark_offset_bits;
-
-    iseq_bits_t tmp[1] = {0};
-
     if (ISEQ_MBITS_BUFLEN(iseq_size) == 1) {
-        mark_offset_bits = tmp;
+        load_body->mark_bits.single = 0;
+        mark_offset_bits = &load_body->mark_bits.single;
     }
     else {
-        mark_offset_bits = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(iseq_size));
+        load_body->mark_bits.list = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(iseq_size));
+        mark_offset_bits = load_body->mark_bits.list;
     }
-    bool needs_bitmap = false;
+
+    load_body->iseq_encoded = code;
+    load_body->iseq_size = iseq_size;
 
     for (code_index=0; code_index<iseq_size;) {
         /* opcode */
@@ -13055,22 +13059,12 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
         if (insn_len(insn) != op_index+1) {
             rb_raise(rb_eRuntimeError, "operand size mismatch");
         }
+        rb_gc();
     }
 
-    load_body->iseq_encoded = code;
-    load_body->iseq_size = code_index;
-
-    if (ISEQ_MBITS_BUFLEN(load_body->iseq_size) == 1) {
-        load_body->mark_bits.single = mark_offset_bits[0];
-    }
-    else {
-        if (needs_bitmap) {
-            load_body->mark_bits.list = mark_offset_bits;
-        }
-        else {
-            load_body->mark_bits.list = 0;
-            ruby_xfree(mark_offset_bits);
-        }
+    if (!needs_bitmap) {
+        ruby_xfree(load_body->mark_bits.list);
+        load_body->mark_bits.list = NULL;
     }
 
     RUBY_ASSERT(code_index == iseq_size);
