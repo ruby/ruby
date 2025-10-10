@@ -1029,6 +1029,7 @@ thread_sched_to_waiting_common(struct rb_thread_sched *sched, rb_thread_t *th)
 static void
 thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
 {
+    ASSERT_vm_unlocking();
     thread_sched_lock(sched, th);
     {
         thread_sched_to_waiting_common(sched, th);
