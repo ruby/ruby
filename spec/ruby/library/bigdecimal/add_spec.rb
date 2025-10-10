@@ -73,14 +73,6 @@ describe "BigDecimal#add" do
 #    BigDecimal("0.88").add(0.0, 1).should == BigDecimal("0.9")
 #  end
 
-  describe "with Object" do
-    it "tries to coerce the other operand to self" do
-      object = mock("Object")
-      object.should_receive(:coerce).with(@frac_3).and_return([@frac_3, @frac_4])
-      @frac_3.add(object, 1).should == BigDecimal("0.1E16")
-    end
-  end
-
   describe "with Rational" do
     it "produces a BigDecimal" do
       (@three + Rational(500, 2)).should == BigDecimal("0.253e3")

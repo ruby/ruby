@@ -37,9 +37,11 @@ describe "BigDecimal#remainder" do
     @neg_int.remainder(@pos_frac).should == @neg_int - @pos_frac * (@neg_int / @pos_frac).truncate
   end
 
-  it "returns NaN used with zero" do
-    @mixed.remainder(@zero).should.nan?
-    @zero.remainder(@zero).should.nan?
+  version_is BigDecimal::VERSION, "3.3.0" do
+    it "raises ZeroDivisionError used with zero" do
+      -> { @mixed.remainder(@zero) }.should raise_error(ZeroDivisionError)
+      -> { @zero.remainder(@zero) }.should raise_error(ZeroDivisionError)
+    end
   end
 
   it "returns zero if used on zero" do

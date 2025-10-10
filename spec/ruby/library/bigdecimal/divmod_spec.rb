@@ -154,12 +154,19 @@ describe "BigDecimal#divmod" do
     end
   end
 
-  it "returns an array of zero and the dividend if the divisor is Infinity" do
-    @regular_vals.each do |val|
-      array = val.divmod(@infinity)
-      array.length.should == 2
-      array[0].should == @zero
-      array[1].should == val
+  version_is BigDecimal::VERSION, "3.3.0" do
+    it "returns an array of zero and the dividend or minus one and Infinity if the divisor is Infinity" do
+      @regular_vals.each do |val|
+        array = val.divmod(@infinity)
+        array.length.should == 2
+        if val >= 0
+          array[0].should == @zero
+          array[1].should == val
+        else
+          array[0].should == @one_minus
+          array[1].should == @infinity
+        end
+      end
     end
   end
 
