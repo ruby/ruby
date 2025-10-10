@@ -2416,13 +2416,6 @@ impl Function {
                     if recv_class.instance_can_have_singleton_class() {
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
                     }
-                    if let Some(profiled_type) = profiled_type {
-                        // Guard receiver class
-                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                    }
-                    let cfunc = unsafe { get_mct_func(cfunc) }.cast();
-                    let mut cfunc_args = vec![recv];
-                    cfunc_args.append(&mut args);
 
                     let props = ZJITState::get_method_annotations().get_cfunc_properties(method);
                     if props.is_none() && get_option!(stats) {
@@ -2443,6 +2436,13 @@ impl Function {
                     }
 
                     // No inling; emit a call
+                    if let Some(profiled_type) = profiled_type {
+                        // Guard receiver class
+                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                    }
+                    let cfunc = unsafe { get_mct_func(cfunc) }.cast();
+                    let mut cfunc_args = vec![recv];
+                    cfunc_args.append(&mut args);
                     let return_type = props.return_type;
                     let elidable = props.elidable;
                     // Filter for a leaf and GC free function

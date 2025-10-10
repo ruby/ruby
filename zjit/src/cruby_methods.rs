@@ -220,7 +220,7 @@ fn no_inline(_fun: &mut hir::Function, _block: hir::BlockId, _recv: hir::InsnId,
 
 fn inline_string_to_s(fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if args.len() == 0 && fun.likely_a(recv, types::StringExact, state) {
-        // No need to coerce the receiver; that is done by the SendWithoutBlock rewriting.
+        let recv = fun.coerce_to(block, recv, types::StringExact, state);
         return Some(recv);
     }
     None
