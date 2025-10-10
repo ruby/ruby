@@ -11466,6 +11466,8 @@ pm_parse_stdin_eof(void *stream)
     return wrapped_stdin->eof_seen;
 }
 
+VALUE rb_io_gets_limit_internal(VALUE io, long limit);
+
 /**
  * An implementation of fgets that is suitable for use with Ruby IO objects.
  */
@@ -11476,7 +11478,7 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
 
     struct rb_stdin_wrapper * wrapped_stdin = (struct rb_stdin_wrapper *)stream;
 
-    VALUE line = rb_funcall(wrapped_stdin->rb_stdin, rb_intern("gets"), 1, INT2FIX(size - 1));
+    VALUE line = rb_io_gets_limit_internal(wrapped_stdin->rb_stdin, size - 1);
     if (NIL_P(line)) {
         return NULL;
     }
