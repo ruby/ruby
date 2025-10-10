@@ -107,7 +107,7 @@ module Bundler
       shell.say
       self.class.send(:class_options_help, shell)
     end
-    default_task(Bundler.feature_flag.default_cli_command)
+    default_task(Bundler.settings[:default_cli_command])
 
     class_option "no-color", type: :boolean, desc: "Disable colorization in output"
     class_option "retry", type: :numeric, aliases: "-r", banner: "NUM",
@@ -143,7 +143,7 @@ module Bundler
     end
 
     def self.handle_no_command_error(command, has_namespace = $thor_runner)
-      if Bundler.feature_flag.plugins? && Bundler::Plugin.command?(command)
+      if Bundler.settings[:plugins] && Bundler::Plugin.command?(command)
         return Bundler::Plugin.exec_command(command, ARGV[1..-1])
       end
 
@@ -623,7 +623,7 @@ module Bundler
       end
     end
 
-    if Bundler.feature_flag.plugins?
+    if Bundler.settings[:plugins]
       require_relative "cli/plugin"
       desc "plugin", "Manage the bundler plugins"
       subcommand "plugin", Plugin

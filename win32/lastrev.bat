@@ -1,5 +1,6 @@
-@setlocal
 @echo off
+@setlocal EnableExtensions DisableDelayedExpansion || exit /b -1
+
 if "%1" == "" (set gitdir=.) else (set gitdir=%1)
 set TZ=UTC
 for /f "usebackq tokens=1-3" %%I in (

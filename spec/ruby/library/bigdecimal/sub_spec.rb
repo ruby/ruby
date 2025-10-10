@@ -35,14 +35,6 @@ describe "BigDecimal#sub" do
     @frac_1.sub(@frac_1, 1000000).should == @zero
   end
 
-  describe "with Object" do
-    it "tries to coerce the other operand to self" do
-      object = mock("Object")
-      object.should_receive(:coerce).with(@frac_3).and_return([@frac_3, @frac_4])
-      @frac_3.sub(object, 1).should == BigDecimal("-0.9E15")
-    end
-  end
-
   describe "with Rational" do
     it "produces a BigDecimal" do
       (@three - Rational(500, 2)).should == BigDecimal('-0.247e3')

@@ -27,12 +27,6 @@ module Bundler
 
     (1..10).each {|v| define_method("bundler_#{v}_mode?") { @major_version >= v } }
 
-    settings_flag(:global_gem_cache) { bundler_5_mode? }
-    settings_flag(:plugins) { @bundler_version >= Gem::Version.new("1.14") }
-    settings_flag(:update_requires_all_flag) { bundler_5_mode? }
-
-    settings_option(:default_cli_command) { bundler_4_mode? ? :cli_help : :install }
-
     def removed_major?(target_major_version)
       @major_version > target_major_version
     end

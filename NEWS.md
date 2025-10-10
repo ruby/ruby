@@ -216,7 +216,7 @@ The following bundled gems are updated.
 * rbs 3.9.5
 * debug 1.11.0
 * base64 0.3.0
-* bigdecimal 3.2.2
+* bigdecimal 3.3.1
 * drb 2.2.3
 * syslog 0.3.0
 * csv 3.3.5

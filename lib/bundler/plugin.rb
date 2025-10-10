@@ -220,7 +220,7 @@ module Bundler
     #
     # @param [String] event
     def hook(event, *args, &arg_blk)
-      return unless Bundler.feature_flag.plugins?
+      return unless Bundler.settings[:plugins]
       unless Events.defined_event?(event)
         raise ArgumentError, "Event '#{event}' not defined in Bundler::Plugin::Events"
       end

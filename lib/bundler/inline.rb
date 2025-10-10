@@ -51,7 +51,7 @@ def gemfile(force_latest_compatible = false, options = {}, &gemfile)
     Bundler.instance_variable_set(:@bundle_path, Pathname.new(Gem.dir))
     Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", "Gemfile"
 
-    Bundler::Plugin.gemfile_install(&gemfile) if Bundler.feature_flag.plugins?
+    Bundler::Plugin.gemfile_install(&gemfile) if Bundler.settings[:plugins]
     builder = Bundler::Dsl.new
     builder.instance_eval(&gemfile)
 

@@ -9153,7 +9153,7 @@ mod opt_tests {
           PatchPoint MethodRedefined(Hash@0x1000, []@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Hash@0x1000)
           v26:HashExact = GuardType v9, HashExact
-          v27:BasicObject = CallCFunc []@0x1038, v26, v13
+          v27:BasicObject = CCallWithFrame []@0x1038, v26, v13
           CheckInterrupts
           Return v27
         ");

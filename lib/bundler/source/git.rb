@@ -238,7 +238,7 @@ module Bundler
       # across different projects, this cache will be shared.
       # When using local git repos, this is set to the local repo.
       def cache_path
-        @cache_path ||= if Bundler.feature_flag.global_gem_cache?
+        @cache_path ||= if Bundler.settings[:global_gem_cache]
           Bundler.user_cache
         else
           Bundler.bundle_path.join("cache", "bundler")

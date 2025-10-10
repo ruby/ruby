@@ -1,4 +1,4 @@
-@setlocal ENABLEEXTENSIONS
+@setlocal EnableExtensions DisableDelayedExpansion || exit /b -1
 ::- do not `echo off` that affects the called batch files
 
 ::- check for vswhere

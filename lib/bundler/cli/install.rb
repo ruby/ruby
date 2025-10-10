@@ -38,7 +38,7 @@ module Bundler
 
       Bundler::Fetcher.disable_endpoint = options["full-index"]
 
-      Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.feature_flag.plugins?
+      Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.settings[:plugins]
 
       # For install we want to enable strict validation
       # (rather than some optimizations we perform at app runtime).

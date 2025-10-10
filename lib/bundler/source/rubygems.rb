@@ -493,7 +493,7 @@ module Bundler
       # @return [Pathname] The global cache path.
       #
       def download_cache_path(spec)
-        return unless Bundler.feature_flag.global_gem_cache?
+        return unless Bundler.settings[:global_gem_cache]
         return unless remote = spec.remote
         return unless cache_slug = remote.cache_slug
 

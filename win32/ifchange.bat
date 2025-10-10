@@ -1,6 +1,8 @@
 @echo off
 :: usage: ifchange target temporary
 
+@setlocal EnableExtensions DisableDelayedExpansion || exit /b -1
+
 :: @set PROMPT=$T:$S
 for %%I in (%0) do set progname=%%~nI
 set timestamp=

@@ -15,7 +15,7 @@ module Bundler
 
       Bundler.self_manager.update_bundler_and_restart_with_it_if_needed(update_bundler) if update_bundler
 
-      Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.feature_flag.plugins?
+      Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.settings[:plugins]
 
       sources = Array(options[:source])
       groups  = Array(options[:group]).map(&:to_sym)
@@ -23,7 +23,7 @@ module Bundler
       full_update = gems.empty? && sources.empty? && groups.empty? && !options[:ruby] && !update_bundler
 
       if full_update && !options[:all]
-        if Bundler.feature_flag.update_requires_all_flag?
+        if Bundler.settings[:update_requires_all_flag]
           raise InvalidOption, "To update everything, pass the `--all` flag."
         end
         SharedHelpers.major_deprecation 4, "Pass --all to `bundle update` to update everything"

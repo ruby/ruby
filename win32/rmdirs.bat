@@ -1,5 +1,5 @@
-::-*- batch -*-
 @echo off
+@setlocal EnableExtensions DisableDelayedExpansion || exit /b -1
 if "%1" == "-p" shift
 :begin
 if "%1" == "" goto :end

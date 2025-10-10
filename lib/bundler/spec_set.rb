@@ -179,9 +179,7 @@ module Bundler
     end
 
     def -(other)
-      SharedHelpers.major_deprecation 2, "SpecSet#- has been removed with no replacement"
-
-      SpecSet.new(to_a - other.to_a)
+      SharedHelpers.feature_removed! "SpecSet#- has been removed with no replacement"
     end
 
     def find_by_name_and_platform(name, platform)
@@ -212,9 +210,7 @@ module Bundler
     end
 
     def <<(spec)
-      SharedHelpers.major_deprecation 2, "SpecSet#<< has been removed with no replacement"
-
-      @specs << spec
+      SharedHelpers.feature_removed! "SpecSet#<< has been removed with no replacement"
     end
 
     def length

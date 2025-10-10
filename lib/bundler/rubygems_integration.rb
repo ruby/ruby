@@ -416,11 +416,7 @@ module Bundler
     end
 
     def all_specs
-      SharedHelpers.major_deprecation 2, "Bundler.rubygems.all_specs has been removed in favor of Bundler.rubygems.installed_specs"
-
-      Gem::Specification.stubs.map do |stub|
-        StubSpecification.from_stub(stub)
-      end
+      SharedHelpers.feature_removed! "Bundler.rubygems.all_specs has been removed in favor of Bundler.rubygems.installed_specs"
     end
 
     def installed_specs
