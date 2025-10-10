@@ -107,7 +107,7 @@ module Bundler
       shell.say
       self.class.send(:class_options_help, shell)
     end
-    default_task(Bundler.feature_flag.default_cli_command)
+    default_task(Bundler.settings[:default_cli_command])
 
     class_option "no-color", type: :boolean, desc: "Disable colorization in output"
     class_option "retry", type: :numeric, aliases: "-r", banner: "NUM",

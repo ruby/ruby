@@ -29,8 +29,6 @@ module Bundler
 
     settings_flag(:update_requires_all_flag) { bundler_5_mode? }
 
-    settings_option(:default_cli_command) { bundler_4_mode? ? :cli_help : :install }
-
     def removed_major?(target_major_version)
       @major_version > target_major_version
     end
