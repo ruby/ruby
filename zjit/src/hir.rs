@@ -890,7 +890,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::ArrayArefFixnum { array, index, .. } => {
-                write!(f, "ArrayAref {array}[{index}]")?;
+                write!(f, "ArrayArefFixnum {array}, {index}")?;
                 Ok(())
             }
             Insn::NewHash { elements, .. } => {
