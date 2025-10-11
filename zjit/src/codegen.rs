@@ -18,7 +18,7 @@ use crate::state::ZJITState;
 use crate::stats::{send_fallback_counter, exit_counter_for_compile_error, incr_counter, incr_counter_by, send_fallback_counter_for_method_type, send_without_block_fallback_counter_for_method_type, send_fallback_counter_ptr_for_opcode, CompileError};
 use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
-use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SCRATCH_OPND, SP};
+use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SP};
 use crate::hir::{iseq_to_hir, BlockId, BranchEdge, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId, SendFallbackReason};
 use crate::hir_type::{types, Type};
@@ -1592,9 +1592,7 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd,
 /// Generate code that records unoptimized C functions if --zjit-stats is enabled
 fn gen_incr_counter_ptr(asm: &mut Assembler, counter_ptr: *mut u64) {
     if get_option!(stats) {
-        let ptr_reg = asm.load(Opnd::const_ptr(counter_ptr as *const u8));
-        let counter_opnd = Opnd::mem(64, ptr_reg, 0);
-        asm.incr_counter(counter_opnd, Opnd::UImm(1));
+        asm.incr_counter(Opnd::const_ptr(counter_ptr as *const u8), Opnd::UImm(1));
     }
 }
 
@@ -1963,12 +1961,12 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
 
 /// Compile a stub for an ISEQ called by SendWithoutBlockDirect
 fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodePtr, CompileError> {
-    let mut asm = Assembler::new();
+    let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
     asm_comment!(asm, "Stub: {}", iseq_get_location(iseq_call.iseq.get(), 0));
 
     // Call function_stub_hit using the shared trampoline. See `gen_function_stub_hit_trampoline`.
     // Use load_into instead of mov, which is split on arm64, to avoid clobbering ALLOC_REGS.
-    asm.load_into(SCRATCH_OPND, Opnd::const_ptr(Rc::into_raw(iseq_call)));
+    asm.load_into(scratch_reg, Opnd::const_ptr(Rc::into_raw(iseq_call)));
     asm.jmp(ZJITState::get_function_stub_hit_trampoline().into());
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
@@ -1979,7 +1977,7 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
 
 /// Generate a trampoline that is used when a
 pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
-    let mut asm = Assembler::new();
+    let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
     asm_comment!(asm, "function_stub_hit trampoline");
 
     // Maintain alignment for x86_64, and set up a frame for arm64 properly
@@ -1992,8 +1990,8 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
     const { assert!(ALLOC_REGS.len() % 2 == 0, "x86_64 would need to push one more if we push an odd number of regs"); }
 
     // Compile the stubbed ISEQ
-    let jump_addr = asm_ccall!(asm, function_stub_hit, SCRATCH_OPND, CFP, SP);
-    asm.mov(SCRATCH_OPND, jump_addr);
+    let jump_addr = asm_ccall!(asm, function_stub_hit, scratch_reg, CFP, SP);
+    asm.mov(scratch_reg, jump_addr);
 
     asm_comment!(asm, "restore argument registers");
     for &reg in ALLOC_REGS.iter().rev() {
@@ -2003,8 +2001,8 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
     // Discard the current frame since the JIT function will set it up again
     asm.frame_teardown(&[]);
 
-    // Jump to SCRATCH_OPND so that cpop_into() doesn't clobber it
-    asm.jmp_opnd(SCRATCH_OPND);
+    // Jump to scratch_reg so that cpop_into() doesn't clobber it
+    asm.jmp_opnd(scratch_reg);
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);

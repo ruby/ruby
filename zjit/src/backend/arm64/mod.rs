@@ -113,8 +113,8 @@ fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr, padding: bool) {
         b(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
         1
     } else {
-        let num_insns = emit_load_value(cb, Assembler::SCRATCH0, dst_addr as u64);
-        br(cb, Assembler::SCRATCH0);
+        let num_insns = emit_load_value(cb, Assembler::EMIT0_OPND, dst_addr as u64);
+        br(cb, Assembler::EMIT0_OPND);
         num_insns + 1
     };
 
@@ -181,7 +181,7 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
 
 /// List of registers that can be used for register allocation.
 /// This has the same number of registers for x86_64 and arm64.
-/// SCRATCH0 and SCRATCH1 are excluded.
+/// SCRATCH_OPND, EMIT0_OPND, and EMIT1_OPND are excluded.
 pub const ALLOC_REGS: &[Reg] = &[
     X0_REG,
     X1_REG,
@@ -193,17 +193,27 @@ pub const ALLOC_REGS: &[Reg] = &[
     X12_REG,
 ];
 
-impl Assembler
-{
-    /// Special scratch registers for intermediate processing.
-    /// This register is call-clobbered (so we don't have to save it before using it).
-    /// Avoid using if you can since this is used to lower [Insn] internally and
-    /// so conflicts are possible.
-    pub const SCRATCH_REG: Reg = X16_REG;
-    const SCRATCH0_REG: Reg = Self::SCRATCH_REG;
-    const SCRATCH1_REG: Reg = X17_REG;
-    const SCRATCH0: A64Opnd = A64Opnd::Reg(Self::SCRATCH0_REG);
-    const SCRATCH1: A64Opnd = A64Opnd::Reg(Self::SCRATCH1_REG);
+/// Special scratch register for intermediate processing.
+/// It should be used only by arm64_split_with_scratch_reg or new_with_scratch_reg.
+const SCRATCH_OPND: Opnd = Opnd::Reg(X15_REG);
+
+impl Assembler {
+    /// Special registers for intermediate processing in arm64_emit. It should be used only by arm64_emit.
+    /// TODO: Remove the use of these registers by splitting instructions in arm64_split_with_scratch_reg.
+    const EMIT0_REG: Reg = X16_REG;
+    const EMIT1_REG: Reg = X17_REG;
+    const EMIT0_OPND: A64Opnd = A64Opnd::Reg(Self::EMIT0_REG);
+    const EMIT1_OPND: A64Opnd = A64Opnd::Reg(Self::EMIT1_REG);
+
+    /// Return an Assembler with scratch registers disabled in the backend, and a scratch register.
+    pub fn new_with_scratch_reg() -> (Self, Opnd) {
+        (Self::new_with_label_names(Vec::default(), 0, true), SCRATCH_OPND)
+    }
+
+    /// Return true if opnd is a scratch reg
+    pub fn is_scratch_reg(opnd: Opnd) -> bool {
+        opnd == SCRATCH_OPND
+    }
 
     /// Get the list of registers from which we will allocate on this platform
     pub fn get_alloc_regs() -> Vec<Reg> {
@@ -372,7 +382,7 @@ impl Assembler
 
         let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
         let mut iterator = self.insns.into_iter().enumerate().peekable();
-        let mut asm_local = Assembler::new_with_label_names(take(&mut self.label_names), live_ranges.len());
+        let mut asm_local = Assembler::new_with_label_names(take(&mut self.label_names), live_ranges.len(), self.accept_scratch_reg);
         let asm = &mut asm_local;
 
         while let Some((index, mut insn)) = iterator.next() {
@@ -555,14 +565,6 @@ impl Assembler
                         }
                     }
                 },
-                Insn::IncrCounter { mem, value } => {
-                    let counter_addr = match mem {
-                        Opnd::Mem(_) => asm.lea(*mem),
-                        _ => *mem
-                    };
-
-                    asm.incr_counter(counter_addr, *value);
-                },
                 Insn::JmpOpnd(opnd) => {
                     if let Opnd::Mem(_) = opnd {
                         let opnd0 = split_load_operand(asm, *opnd);
@@ -679,6 +681,58 @@ impl Assembler
         asm_local
     }
 
+    /// Split instructions using scratch registers. To maximize the use of the register pool
+    /// for VRegs, most splits should happen in `x86_split`. However, some instructions need
+    /// to be split with registers after `alloc_regs`, e.g. for `compile_side_exits`, so this
+    /// splits them and uses scratch registers for it.
+    fn arm64_split_with_scratch_reg(mut self) -> Assembler {
+        let mut iterator = self.insns.into_iter().enumerate().peekable();
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.live_ranges.len(), true);
+
+        while let Some((_, mut insn)) = iterator.next() {
+            match &mut insn {
+                // For compile_side_exits, support splitting simple C arguments here
+                Insn::CCall { opnds, .. } if !opnds.is_empty() => {
+                    for (i, opnd) in opnds.iter().enumerate() {
+                        asm.load_into(C_ARG_OPNDS[i], *opnd);
+                    }
+                    *opnds = vec![];
+                    asm.push_insn(insn);
+                }
+                &mut Insn::Lea { opnd, out } => {
+                    match (opnd, out) {
+                        // Split here for compile_side_exits
+                        (Opnd::Mem(_), Opnd::Mem(_)) => {
+                            asm.lea_into(SCRATCH_OPND, opnd);
+                            asm.store(out, SCRATCH_OPND);
+                        }
+                        _ => {
+                            asm.push_insn(insn);
+                        }
+                    }
+                }
+                // Convert Opnd::const_ptr into Opnd::Mem. It's split here compile_side_exits.
+                &mut Insn::IncrCounter { mem, value } => {
+                    assert!(matches!(mem, Opnd::UImm(_)));
+                    asm.load_into(SCRATCH_OPND, mem);
+                    asm.lea_into(SCRATCH_OPND, Opnd::mem(64, SCRATCH_OPND, 0));
+                    asm.incr_counter(SCRATCH_OPND, value);
+                }
+                // Resolve ParallelMov that couldn't be handled without a scratch register.
+                Insn::ParallelMov { moves } => {
+                    for (reg, opnd) in Self::resolve_parallel_moves(moves, Some(SCRATCH_OPND)).unwrap() {
+                        asm.load_into(Opnd::Reg(reg), opnd);
+                    }
+                }
+                _ => {
+                    asm.push_insn(insn);
+                }
+            }
+        }
+
+        asm
+    }
+
     /// Emit platform-specific machine code
     /// Returns a list of GC offsets. Can return failure to signal caller to retry.
     fn arm64_emit(&mut self, cb: &mut CodeBlock) -> Option<Vec<CodePtr>> {
@@ -739,8 +793,8 @@ impl Assembler
                     // that if it doesn't match it will skip over the
                     // instructions used for branching.
                     bcond(cb, Condition::inverse(CONDITION), (load_insns + 2).into());
-                    emit_load_value(cb, Assembler::SCRATCH0, dst_addr as u64);
-                    br(cb, Assembler::SCRATCH0);
+                    emit_load_value(cb, Assembler::EMIT0_OPND, dst_addr as u64);
+                    br(cb, Assembler::EMIT0_OPND);
 
                     // Here we'll return the number of instructions that it
                     // took to write out the destination address + 1 for the
@@ -806,8 +860,8 @@ impl Assembler
                     } else {
                         cbz(cb, reg, InstructionOffset::from_insns(load_insns + 2));
                     }
-                    emit_load_value(cb, Assembler::SCRATCH0, dst_addr);
-                    br(cb, Assembler::SCRATCH0);
+                    emit_load_value(cb, Assembler::EMIT0_OPND, dst_addr);
+                    br(cb, Assembler::EMIT0_OPND);
                 }
                 */
             } else {
@@ -979,7 +1033,7 @@ impl Assembler
                         (Some(Insn::JoMul(_)), _) |
                         (Some(Insn::PosMarker(_)), Some(Insn::JoMul(_))) => {
                             // Compute the high 64 bits
-                            smulh(cb, Self::SCRATCH0, left.into(), right.into());
+                            smulh(cb, Self::EMIT0_OPND, left.into(), right.into());
 
                             // Compute the low 64 bits
                             // This may clobber one of the input registers,
@@ -988,11 +1042,11 @@ impl Assembler
 
                             // Produce a register that is all zeros or all ones
                             // Based on the sign bit of the 64-bit mul result
-                            asr(cb, Self::SCRATCH1, out.into(), A64Opnd::UImm(63));
+                            asr(cb, Self::EMIT1_OPND, out.into(), A64Opnd::UImm(63));
 
                             // If the high 64-bits are not all zeros or all ones,
                             // matching the sign bit, then we have an overflow
-                            cmp(cb, Self::SCRATCH0, Self::SCRATCH1);
+                            cmp(cb, Self::EMIT0_OPND, Self::EMIT1_OPND);
                             // Insn::JoMul will emit_conditional_jump::<{Condition::NE}>
                         }
                         _ => {
@@ -1021,77 +1075,57 @@ impl Assembler
                 Insn::LShift { opnd, shift, out } => {
                     lsl(cb, out.into(), opnd.into(), shift.into());
                 },
-                store_insn @ Insn::Store { dest, src } => {
-                    // With minor exceptions, as long as `dest` is a Mem, all forms of `src` are
-                    // accepted. As a rule of thumb, avoid using Assembler::SCRATCH as a memory
-                    // base register to gurantee things will work.
+                Insn::Store { dest, src } => {
+                    // With minor exceptions, as long as `dest` is a Mem, all forms of `src` are accepted.
                     let &Opnd::Mem(Mem { num_bits: dest_num_bits, base: MemBase::Reg(base_reg_no), disp }) = dest else {
                         panic!("Unexpected Insn::Store destination in arm64_emit: {dest:?}");
                     };
 
-                    // This kind of tricky clobber can only happen for explicit use of SCRATCH_REG,
-                    // so we panic to get the author to change their code.
-                    #[track_caller]
-                    fn assert_no_clobber(store_insn: &Insn, user_use: u8, backend_use: Reg) {
-                        assert_ne!(
-                            backend_use.reg_no,
-                            user_use,
-                            "Emitting {store_insn:?} would clobber {user_use:?}, in conflict with its semantics"
-                        );
-                    }
-
-                    // Split src into SCRATCH0 if necessary
+                    // Split src into EMIT0_OPND if necessary
                     let src_reg: A64Reg = match src {
                         Opnd::Reg(reg) => *reg,
                         // Use zero register when possible
                         Opnd::UImm(0) | Opnd::Imm(0) => XZR_REG,
                         // Immediates
                         &Opnd::Imm(imm) => {
-                            assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH0_REG);
-                            emit_load_value(cb, Self::SCRATCH0, imm as u64);
-                            Self::SCRATCH0_REG
+                            emit_load_value(cb, Self::EMIT0_OPND, imm as u64);
+                            Self::EMIT0_REG
                         }
                         &Opnd::UImm(imm) => {
-                            assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH0_REG);
-                            emit_load_value(cb, Self::SCRATCH0, imm);
-                            Self::SCRATCH0_REG
+                            emit_load_value(cb, Self::EMIT0_OPND, imm);
+                            Self::EMIT0_REG
                         }
                         &Opnd::Value(value) => {
-                            assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH0_REG);
-                            emit_load_gc_value(cb, &mut gc_offsets, Self::SCRATCH0, value);
-                            Self::SCRATCH0_REG
+                            emit_load_gc_value(cb, &mut gc_offsets, Self::EMIT0_OPND, value);
+                            Self::EMIT0_REG
                         }
                         src_mem @ &Opnd::Mem(Mem { num_bits: src_num_bits, base: MemBase::Reg(src_base_reg_no), disp: src_disp }) => {
-                            // For mem-to-mem store, load the source into SCRATCH0
-                            assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH0_REG);
+                            // For mem-to-mem store, load the source into EMIT0_OPND
                             let src_mem = if mem_disp_fits_bits(src_disp) {
                                 src_mem.into()
                             } else {
-                                // Split the load address into SCRATCH0 first if necessary
-                                assert_no_clobber(store_insn, src_base_reg_no, Self::SCRATCH0_REG);
-                                load_effective_address(cb, Self::SCRATCH0, src_base_reg_no, src_disp);
-                                A64Opnd::new_mem(dest_num_bits, Self::SCRATCH0, 0)
+                                // Split the load address into EMIT0_OPND first if necessary
+                                load_effective_address(cb, Self::EMIT0_OPND, src_base_reg_no, src_disp);
+                                A64Opnd::new_mem(dest_num_bits, Self::EMIT0_OPND, 0)
                             };
                             match src_num_bits {
-                                64 | 32 => ldur(cb, Self::SCRATCH0, src_mem),
-                                16 => ldurh(cb, Self::SCRATCH0, src_mem),
-                                8 => ldurb(cb, Self::SCRATCH0, src_mem),
+                                64 | 32 => ldur(cb, Self::EMIT0_OPND, src_mem),
+                                16 => ldurh(cb, Self::EMIT0_OPND, src_mem),
+                                8 => ldurb(cb, Self::EMIT0_OPND, src_mem),
                                 num_bits => panic!("unexpected num_bits: {num_bits}")
                             };
-                            Self::SCRATCH0_REG
+                            Self::EMIT0_REG
                         }
                         src @ (Opnd::Mem(_) | Opnd::None | Opnd::VReg { .. }) => panic!("Unexpected source operand during arm64_emit: {src:?}")
                     };
                     let src = A64Opnd::Reg(src_reg);
 
-                    // Split dest into SCRATCH1 if necessary.
+                    // Split dest into EMIT1_OPND if necessary.
                     let dest = if mem_disp_fits_bits(disp) {
                         dest.into()
                     } else {
-                        assert_no_clobber(store_insn, src_reg.reg_no, Self::SCRATCH1_REG);
-                        assert_no_clobber(store_insn, base_reg_no, Self::SCRATCH1_REG);
-                        load_effective_address(cb, Self::SCRATCH1, base_reg_no, disp);
-                        A64Opnd::new_mem(dest_num_bits, Self::SCRATCH1, 0)
+                        load_effective_address(cb, Self::EMIT1_OPND, base_reg_no, disp);
+                        A64Opnd::new_mem(dest_num_bits, Self::EMIT1_OPND, 0)
                     };
 
                     // This order may be surprising but it is correct. The way
@@ -1169,10 +1203,10 @@ impl Assembler
                     if let Target::Label(label_idx) = target {
                         // Set output to the raw address of the label
                         cb.label_ref(*label_idx, 4, |cb, end_addr, dst_addr| {
-                            adr(cb, Self::SCRATCH0, A64Opnd::new_imm(dst_addr - (end_addr - 4)));
+                            adr(cb, Self::EMIT0_OPND, A64Opnd::new_imm(dst_addr - (end_addr - 4)));
                         });
 
-                        mov(cb, out.into(), Self::SCRATCH0);
+                        mov(cb, out.into(), Self::EMIT0_OPND);
                     } else {
                         // Set output to the jump target's raw address
                         let target_code = target.unwrap_code_ptr();
@@ -1197,15 +1231,15 @@ impl Assembler
                     }
 
                     // Push the flags/state register
-                    mrs(cb, Self::SCRATCH0, SystemRegister::NZCV);
-                    emit_push(cb, Self::SCRATCH0);
+                    mrs(cb, Self::EMIT0_OPND, SystemRegister::NZCV);
+                    emit_push(cb, Self::EMIT0_OPND);
                 },
                 Insn::CPopAll => {
                     let regs = Assembler::get_caller_save_regs();
 
                     // Pop the state/flags register
-                    msr(cb, SystemRegister::NZCV, Self::SCRATCH0);
-                    emit_pop(cb, Self::SCRATCH0);
+                    msr(cb, SystemRegister::NZCV, Self::EMIT0_OPND);
+                    emit_pop(cb, Self::EMIT0_OPND);
 
                     for reg in regs.into_iter().rev() {
                         emit_pop(cb, A64Opnd::Reg(reg));
@@ -1221,8 +1255,8 @@ impl Assembler
                     if b_offset_fits_bits((dst_addr - src_addr) / 4) {
                         bl(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
                     } else {
-                        emit_load_value(cb, Self::SCRATCH0, dst_addr as u64);
-                        blr(cb, Self::SCRATCH0);
+                        emit_load_value(cb, Self::EMIT0_OPND, dst_addr as u64);
+                        blr(cb, Self::EMIT0_OPND);
                     }
                 },
                 Insn::CRet { .. } => {
@@ -1302,17 +1336,17 @@ impl Assembler
                     let label = cb.new_label("incr_counter_loop".to_string());
                     cb.write_label(label);
 
-                    ldaxr(cb, Self::SCRATCH0, mem.into());
-                    add(cb, Self::SCRATCH0, Self::SCRATCH0, value.into());
+                    ldaxr(cb, Self::EMIT0_OPND, mem.into());
+                    add(cb, Self::EMIT0_OPND, Self::EMIT0_OPND, value.into());
 
                     // The status register that gets used to track whether or
                     // not the store was successful must be 32 bytes. Since we
-                    // store the SCRATCH registers as their 64-bit versions, we
+                    // store the EMIT registers as their 64-bit versions, we
                     // need to rewrap it here.
-                    let status = A64Opnd::Reg(Self::SCRATCH1.unwrap_reg().with_num_bits(32));
-                    stlxr(cb, status, Self::SCRATCH0, mem.into());
+                    let status = A64Opnd::Reg(Self::EMIT1_REG.with_num_bits(32));
+                    stlxr(cb, status, Self::EMIT0_OPND, mem.into());
 
-                    cmp(cb, Self::SCRATCH1, A64Opnd::new_uimm(0));
+                    cmp(cb, Self::EMIT1_OPND, A64Opnd::new_uimm(0));
                     emit_conditional_jump::<{Condition::NE}>(cb, Target::Label(label));
                 },
                 Insn::Breakpoint => {
@@ -1363,9 +1397,16 @@ impl Assembler
 
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
+        // The backend is allowed to use scratch registers only if it has not accepted them so far.
+        let use_scratch_reg = !self.accept_scratch_reg;
+
         let asm = self.arm64_split();
         let mut asm = asm.alloc_regs(regs)?;
+        // We put compile_side_exits after alloc_regs to avoid extending live ranges for VRegs spilled on side exits.
         asm.compile_side_exits();
+        if use_scratch_reg {
+            asm = asm.arm64_split_with_scratch_reg();
+        }
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {
@@ -1810,13 +1851,18 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
-    fn test_store_unserviceable() {
-        let (mut asm, mut cb) = setup_asm();
-        // This would put the source into SCRATCH_REG, messing up the destination
-        asm.store(Opnd::mem(64, SCRATCH_OPND, 0), 0x83902.into());
+    fn test_store_with_scratch_reg() {
+        let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
+        let mut cb = CodeBlock::new_dummy();
+        asm.store(Opnd::mem(64, scratch_reg, 0), 0x83902.into());
 
         asm.compile_with_num_regs(&mut cb, 0);
+        assert_disasm_snapshot!(cb.disasm(), @r"
+        0x0: mov x16, #0x3902
+        0x4: movk x16, #8, lsl #16
+        0x8: stur x16, [x15]
+        ");
+        assert_snapshot!(cb.hexdump(), @"502087d21001a0f2f00100f8");
     }
 
     #[test]
@@ -2300,13 +2346,13 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov x16, x0
+            0x0: mov x15, x0
             0x4: mov x0, x1
-            0x8: mov x1, x16
+            0x8: mov x1, x15
             0xc: mov x16, #0
             0x10: blr x16
         ");
-        assert_snapshot!(cb.hexdump(), @"f00300aae00301aae10310aa100080d200023fd6");
+        assert_snapshot!(cb.hexdump(), @"ef0300aae00301aae1030faa100080d200023fd6");
     }
 
     #[test]
@@ -2324,16 +2370,16 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov x16, x2
+            0x0: mov x15, x2
             0x4: mov x2, x3
-            0x8: mov x3, x16
-            0xc: mov x16, x0
+            0x8: mov x3, x15
+            0xc: mov x15, x0
             0x10: mov x0, x1
-            0x14: mov x1, x16
+            0x14: mov x1, x15
             0x18: mov x16, #0
             0x1c: blr x16
         ");
-        assert_snapshot!(cb.hexdump(), @"f00302aae20303aae30310aaf00300aae00301aae10310aa100080d200023fd6");
+        assert_snapshot!(cb.hexdump(), @"ef0302aae20303aae3030faaef0300aae00301aae1030faa100080d200023fd6");
     }
 
     #[test]
@@ -2350,13 +2396,13 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
 
         assert_disasm_snapshot!(cb.disasm(), @"
-            0x0: mov x16, x0
+            0x0: mov x15, x0
             0x4: mov x0, x1
             0x8: mov x1, x2
-            0xc: mov x2, x16
+            0xc: mov x2, x15
             0x10: mov x16, #0
             0x14: blr x16
         ");
-        assert_snapshot!(cb.hexdump(), @"f00300aae00301aae10302aae20310aa100080d200023fd6");
+        assert_snapshot!(cb.hexdump(), @"ef0300aae00301aae10302aae2030faa100080d200023fd6");
     }
 }
