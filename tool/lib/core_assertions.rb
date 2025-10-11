@@ -328,6 +328,13 @@ eom
         args.insert((Hash === args.first ? 1 : 0), "-w", "--disable=gems", *$:.map {|l| "-I#{l}"})
         args << "--debug" if RUBY_ENGINE == 'jruby' # warning: tracing (e.g. set_trace_func) will not capture all events without --debug flag
         stdout, stderr, status = EnvUtil.invoke_ruby(args, src, capture_stdout, true, **opt)
+
+        if Test::Sanitizers.lsan_enabled?
+          # LSAN may output messages like the following line into stderr. We should ignore it.
+          #   ==276855==Running thread 276851 was not suspended. False leaks are possible.
+          # See https://github.com/google/sanitizers/issues/1479
+          stderr.gsub!(/==\d+==Running thread \d+ was not suspended\. False leaks are possible\.\n/, "")
+        end
       ensure
         if res_c
           res_c.close
