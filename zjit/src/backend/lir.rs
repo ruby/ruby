@@ -1255,10 +1255,15 @@ impl Assembler
                     assert_ne!(self.live_ranges[idx].end, None);
                     self.live_ranges[idx].end = Some(self.live_ranges[idx].end().max(insn_idx));
                 }
-                Opnd::Reg(_) => {
-                    assert!(self.accept_scratch_reg || !Self::is_scratch_reg(*opnd));
-                }
                 _ => {}
+            }
+        }
+
+        // If this Assembler should not accept scratch registers, assert no use of them.
+        if !self.accept_scratch_reg {
+            let opnd_iter = insn.opnd_iter();
+            for opnd in opnd_iter {
+                assert!(!Self::has_scratch_reg(*opnd), "should not use scratch register: {opnd:?}");
             }
         }
 

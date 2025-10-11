@@ -83,7 +83,7 @@ impl From<&Opnd> for X86Opnd {
 
 /// List of registers that can be used for register allocation.
 /// This has the same number of registers for x86_64 and arm64.
-/// SCRATCH_REG is excluded.
+/// SCRATCH_OPND is excluded.
 pub const ALLOC_REGS: &[Reg] = &[
     RDI_REG,
     RSI_REG,
@@ -105,9 +105,15 @@ impl Assembler {
         (Self::new_with_label_names(Vec::default(), 0, true), SCRATCH_OPND)
     }
 
-    /// Return true if opnd is a scratch reg
-    pub fn is_scratch_reg(opnd: Opnd) -> bool {
-        opnd == SCRATCH_OPND
+    /// Return true if opnd contains a scratch reg
+    pub fn has_scratch_reg(opnd: Opnd) -> bool {
+        match opnd {
+            Opnd::Reg(_) => opnd == SCRATCH_OPND,
+            Opnd::Mem(Mem { base: MemBase::Reg(reg_no), .. }) => {
+                reg_no == SCRATCH_OPND.unwrap_reg().reg_no
+            }
+            _ => false,
+        }
     }
 
     /// Get the list of registers from which we can allocate on this platform

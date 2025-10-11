@@ -210,9 +210,15 @@ impl Assembler {
         (Self::new_with_label_names(Vec::default(), 0, true), SCRATCH_OPND)
     }
 
-    /// Return true if opnd is a scratch reg
-    pub fn is_scratch_reg(opnd: Opnd) -> bool {
-        opnd == SCRATCH_OPND
+    /// Return true if opnd contains a scratch reg
+    pub fn has_scratch_reg(opnd: Opnd) -> bool {
+        match opnd {
+            Opnd::Reg(_) => opnd == SCRATCH_OPND,
+            Opnd::Mem(Mem { base: MemBase::Reg(reg_no), .. }) => {
+                reg_no == SCRATCH_OPND.unwrap_reg().reg_no
+            }
+            _ => false,
+        }
     }
 
     /// Get the list of registers from which we will allocate on this platform
@@ -1851,7 +1857,7 @@ mod tests {
     }
 
     #[test]
-    fn test_store_with_scratch_reg() {
+    fn test_store_with_valid_scratch_reg() {
         let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
         let mut cb = CodeBlock::new_dummy();
         asm.store(Opnd::mem(64, scratch_reg, 0), 0x83902.into());
@@ -1863,6 +1869,28 @@ mod tests {
         0x8: stur x16, [x15]
         ");
         assert_snapshot!(cb.hexdump(), @"502087d21001a0f2f00100f8");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_store_with_invalid_scratch_reg() {
+        let (_, scratch_reg) = Assembler::new_with_scratch_reg();
+        let (mut asm, mut cb) = setup_asm();
+        // This would put the source into scratch_reg, messing up the destination
+        asm.store(Opnd::mem(64, scratch_reg, 0), 0x83902.into());
+
+        asm.compile_with_num_regs(&mut cb, 0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_load_into_with_invalid_scratch_reg() {
+        let (_, scratch_reg) = Assembler::new_with_scratch_reg();
+        let (mut asm, mut cb) = setup_asm();
+        // This would put the source into scratch_reg, messing up the destination
+        asm.load_into(scratch_reg, 0x83902.into());
+
+        asm.compile_with_num_regs(&mut cb, 0);
     }
 
     #[test]
