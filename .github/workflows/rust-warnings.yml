@@ -21,7 +21,7 @@ permissions:
   contents: read
 
 jobs:
-  make:
+  rust-warnings:
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
 
@@ -46,6 +46,15 @@ jobs:
         run: |
           set -eu
           cargo check --quiet --all-features --message-format=json \
-            | jq -r 'select(.message.level == "warning" or .message.level == "error") | .message.rendered' \
+            | jq -r 'select(.message.level | IN("warning", "error")) | .message.rendered' \
+            | tee messages.txt
+          (exit "${PIPESTATUS[0]}") && ! grep --quiet '[^[:space:]]' messages.txt
+
+      - name: "📜 `rustdoc` warnings"
+        shell: bash
+        run: |
+          set -eu
+          cargo doc --document-private-items --all --no-deps --message-format=json \
+            | jq -r 'select(.message.level | IN("warning", "error")) | .message.rendered' \
             | tee messages.txt
           (exit "${PIPESTATUS[0]}") && ! grep --quiet '[^[:space:]]' messages.txt
