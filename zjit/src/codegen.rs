@@ -1242,7 +1242,7 @@ fn gen_new_array(
     new_array
 }
 
-/// Compile array access (array[index])
+/// Compile array access (`array[index]`)
 fn gen_aref_fixnum(
     asm: &mut Assembler,
     array: Opnd,

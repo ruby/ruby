@@ -46,7 +46,7 @@ pub struct VirtualMemory<A: Allocator> {
 /// Mutable parts of [`VirtualMemory`].
 pub struct VirtualMemoryMut<A: Allocator> {
     /// Number of bytes that have we have allocated physical memory for starting at
-    /// [Self::region_start].
+    /// [VirtualMemory::region_start].
     mapped_region_bytes: usize,
 
     /// Keep track of the address of the last written to page.

@@ -262,7 +262,7 @@ fn ranges_overlap<T>(left: &Range<T>, right: &Range<T>) -> bool where T: Partial
     left.start < right.end && right.start < left.end
 }
 
-/// Callback for marking GC objects inside [Invariants].
+/// Callback for marking GC objects inside [crate::invariants::Invariants].
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_root_mark() {
     gc_mark_raw_samples();
