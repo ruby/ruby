@@ -1035,4 +1035,18 @@ class TestRequire < Test::Unit::TestCase
       end
     RUBY
   end
+
+  def test_bug_21568
+    load_path = $LOAD_PATH.dup
+    loaded_featrures = $LOADED_FEATURES.dup
+
+    $LOAD_PATH.clear
+    $LOADED_FEATURES.replace(["foo.so", "a/foo.rb", "b/foo.rb"])
+
+    assert_nothing_raised(LoadError) { require "foo" }
+
+  ensure
+    $LOAD_PATH.replace(load_path) if load_path
+    $LOADED_FEATURES.replace loaded_featrures
+  end
 end
