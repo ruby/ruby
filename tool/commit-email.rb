@@ -211,7 +211,7 @@ class << CommitEmail
   end
 
   def make_body(info, viewer_uri:)
-    body = ''
+    body = +''
     body << "#{info.author}\t#{format_time(info.date)}\n"
     body << "\n"
     body << "  New Revision: #{info.revision}\n"
@@ -276,7 +276,6 @@ class << CommitEmail
   end
 
   def changed_dirs_info(info, uri)
-    rev = info.revision
     (info.added_dirs.collect do |dir|
        "  Added: #{dir}\n"
      end + info.deleted_dirs.collect do |dir|
@@ -293,14 +292,11 @@ class << CommitEmail
         values.collect do |type, value|
           case type
           when :added
-            command = 'cat'
             rev = "?revision=#{info.revision}&view=markup"
           when :modified, :property_changed
-            command = 'diff'
             prev_revision = (info.revision.is_a?(Integer) ? info.revision - 1 : "#{info.revision}^")
             rev = "?r1=#{info.revision}&r2=#{prev_revision}&diff_format=u"
           when :deleted, :copied
-            command = 'cat'
             rev = ''
           else
             raise "unknown diff type: #{value[:type]}"
@@ -328,7 +324,7 @@ class << CommitEmail
   end
 
   def make_subject(info)
-    subject = ''
+    subject = +''
     subject << "#{info.revision}"
     subject << " (#{info.branch})"
     subject << ': '
