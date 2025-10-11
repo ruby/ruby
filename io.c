@@ -4307,11 +4307,17 @@ rb_io_gets(VALUE io)
 }
 
 VALUE
-rb_io_gets_internal(VALUE io)
+rb_io_gets_limit_internal(VALUE io, long limit)
 {
     rb_io_t *fptr;
     GetOpenFile(io, fptr);
-    return rb_io_getline_0(rb_default_rs, -1, FALSE, fptr);
+    return rb_io_getline_0(rb_default_rs, limit, FALSE, fptr);
+}
+
+VALUE
+rb_io_gets_internal(VALUE io)
+{
+    return rb_io_gets_limit_internal(io, -1);
 }
 
 /*
