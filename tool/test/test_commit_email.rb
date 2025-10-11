@@ -20,12 +20,11 @@ class TestCommitEmail < Test::Unit::TestCase
     end
 
     @sendmail = File.join(Dir.mktmpdir, 'sendmail')
-    File.write(@sendmail, <<~SENDMAIL)
-      #!/usr/bin/env ruby
-      print #{STDIN_DELIMITER.dump}
-      puts STDIN.read
+    File.write(@sendmail, <<~SENDMAIL, mode: "wx", perm: 0755)
+      #!/bin/sh
+      echo #{STDIN_DELIMITER.chomp.dump}
+      exec cat
     SENDMAIL
-    FileUtils.chmod(0755, @sendmail)
 
     @commit_email = File.expand_path('../../tool/commit-email.rb', __dir__)
   end
