@@ -121,7 +121,7 @@ class GitInfoBuilder
   end
 
   def git_show(revision, format:)
-    git('show', "--pretty=#{format}", '--no-patch', revision).strip
+    git('show', '--no-show-signature', "--pretty=#{format}", '--no-patch', revision).strip
   end
 
   def git(*args)
@@ -180,7 +180,7 @@ class << CommitEmail
     args, options = parse(rest)
 
     infos = args.each_slice(3).flat_map do |oldrev, newrev, refname|
-      revisions = IO.popen(['git', 'log', '--reverse', '--pretty=%H', "#{oldrev}^..#{newrev}"], &:read).lines.map(&:strip)
+      revisions = IO.popen(['git', 'log', '--no-show-signature', '--reverse', '--pretty=%H', "#{oldrev}^..#{newrev}"], &:read).lines.map(&:strip)
       revisions[0..-2].zip(revisions[1..-1]).map do |old, new|
         GitInfoBuilder.new(repo_path).build(old, new, refname)
       end
