@@ -602,6 +602,7 @@ pub enum Insn {
     IsBitEqual { left: InsnId, right: InsnId },
     Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId, state: InsnId },
     GetConstantPath { ic: *const iseq_inline_constant_cache, state: InsnId },
+    FixnumBitCheck { val: InsnId, index: u8 },
 
     /// Get a global variable named `id`
     GetGlobal { id: ID, state: InsnId },
@@ -1040,6 +1041,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardBlockParamProxy { level, .. } => write!(f, "GuardBlockParamProxy l{level}"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
+            Insn::FixnumBitCheck {val, index} => { write!(f, "FixnumBitCheck {val}, {index}") },
             Insn::CCall { cfunc, args, name, return_type: _, elidable: _ } => {
                 write!(f, "CCall {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
@@ -1482,6 +1484,7 @@ impl Function {
                     }
                 },
             &Return { val } => Return { val: find!(val) },
+            &FixnumBitCheck { val, index } => FixnumBitCheck { val: find!(val), index },
             &Throw { throw_state, val, state } => Throw { throw_state, val: find!(val), state },
             &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
             &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
@@ -1707,6 +1710,7 @@ impl Function {
             Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::DefinedIvar { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::GetConstantPath { .. } => types::BasicObject,
+            Insn::FixnumBitCheck { .. } => types::BoolExact,
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
@@ -2623,6 +2627,9 @@ impl Function {
             | &Insn::CheckInterrupts { state }
             | &Insn::GetConstantPath { ic: _, state } => {
                 worklist.push_back(state);
+            }
+            &Insn::FixnumBitCheck { val, index: _ } => {
+                worklist.push_back(val)
             }
             &Insn::ArrayMax { ref elements, state }
             | &Insn::NewHash { ref elements, state }
@@ -3762,6 +3769,17 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let pushval = get_arg(pc, 2);
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     state.stack_push(fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id }));
+                }
+                YARVINSN_checkkeyword => {
+                    // When a keyword is unspecified past index 32, a hash will be used instead.
+                    // This can only happen in iseqs taking more than 32 keywords.
+                    // TODO: implement this. YJIT handles this in codegen.rs at line 2748
+
+                    let ep_offset = get_arg(pc, 0).as_u32();
+                    let index = get_arg(pc, 1).as_u64();
+                    let index: u8 = index.try_into().map_err(|_| ParseError::MalformedIseq(insn_idx))?;
+                    let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
+                    state.stack_push(fun.push_insn(block, Insn::FixnumBitCheck { val, index }));
                 }
                 YARVINSN_opt_getconstant_path => {
                     let ic = get_arg(pc, 0).as_ptr();
@@ -5056,6 +5074,44 @@ mod tests {
           Return v17
         ");
     }
+
+    #[test]
+    fn test_checkkeyword() {
+        eval("
+            def test x:rand
+                x
+            end
+            test(x: true)
+        ");
+        assert_contains_opcode("test", YARVINSN_checkkeyword);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          v14:BasicObject = GetLocal l0, EP@3
+          v15:BoolExact = FixnumBitCheck v14, 0
+          CheckInterrupts
+          v18:CBool = Test v15
+          IfTrue v18, bb3(v10, v11, v12)
+          v21:BasicObject = SendWithoutBlock v10, :rand
+          PatchPoint NoEPEscape(test)
+          Jump bb3(v10, v21, v12)
+        bb3(v25:BasicObject, v26:BasicObject, v27:BasicObject):
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v26
+        ");
+        assert_snapshot!(inspect("test(x: true)"), @"true");
+    }
+
 
     #[test]
     fn test_new_range_inclusive_with_one_element() {
