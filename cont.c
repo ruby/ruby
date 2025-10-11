@@ -774,44 +774,40 @@ static void
 fiber_pool_stack_release(struct fiber_pool_stack * stack)
 {
     struct fiber_pool * pool = stack->pool;
-    RB_VM_LOCK_ENTER();
-    {
-        struct fiber_pool_vacancy * vacancy = fiber_pool_vacancy_pointer(stack->base, stack->size);
+    struct fiber_pool_vacancy * vacancy = fiber_pool_vacancy_pointer(stack->base, stack->size);
 
-        if (DEBUG) fprintf(stderr, "fiber_pool_stack_release: %p used=%"PRIuSIZE"\n", stack->base, stack->pool->used);
+    if (DEBUG) fprintf(stderr, "fiber_pool_stack_release: %p used=%"PRIuSIZE"\n", stack->base, stack->pool->used);
 
-        // Copy the stack details into the vacancy area:
-        vacancy->stack = *stack;
-        // After this point, be careful about updating/using state in stack, since it's copied to the vacancy area.
+    // Copy the stack details into the vacancy area:
+    vacancy->stack = *stack;
+    // After this point, be careful about updating/using state in stack, since it's copied to the vacancy area.
 
-        // Reset the stack pointers and reserve space for the vacancy data:
-        fiber_pool_vacancy_reset(vacancy);
+    // Reset the stack pointers and reserve space for the vacancy data:
+    fiber_pool_vacancy_reset(vacancy);
 
-        // Push the vacancy into the vancancies list:
-        pool->vacancies = fiber_pool_vacancy_push(vacancy, pool->vacancies);
-        pool->used -= 1;
+    // Push the vacancy into the vancancies list:
+    pool->vacancies = fiber_pool_vacancy_push(vacancy, pool->vacancies);
+    pool->used -= 1;
 
 #ifdef FIBER_POOL_ALLOCATION_FREE
-        struct fiber_pool_allocation * allocation = stack->allocation;
+    struct fiber_pool_allocation * allocation = stack->allocation;
 
-        allocation->used -= 1;
+    allocation->used -= 1;
 
-        // Release address space and/or dirty memory:
-        if (allocation->used == 0) {
-            fiber_pool_allocation_free(allocation);
-        }
-        else if (stack->pool->free_stacks) {
-            fiber_pool_stack_free(&vacancy->stack);
-        }
-#else
-        // This is entirely optional, but clears the dirty flag from the stack
-        // memory, so it won't get swapped to disk when there is memory pressure:
-        if (stack->pool->free_stacks) {
-            fiber_pool_stack_free(&vacancy->stack);
-        }
-#endif
+    // Release address space and/or dirty memory:
+    if (allocation->used == 0) {
+        fiber_pool_allocation_free(allocation);
     }
-    RB_VM_LOCK_LEAVE();
+    else if (stack->pool->free_stacks) {
+        fiber_pool_stack_free(&vacancy->stack);
+    }
+#else
+    // This is entirely optional, but clears the dirty flag from the stack
+    // memory, so it won't get swapped to disk when there is memory pressure:
+    if (stack->pool->free_stacks) {
+        fiber_pool_stack_free(&vacancy->stack);
+    }
+#endif
 }
 
 static inline void
@@ -922,6 +918,17 @@ fiber_stack_release(rb_fiber_t * fiber)
 
     // The stack is no longer associated with this execution context:
     rb_ec_clear_vm_stack(ec);
+}
+
+static void
+fiber_stack_release_locked(rb_fiber_t *fiber)
+{
+    if (!ruby_vm_during_cleanup) {
+        // We can't try to acquire the VM lock here because MMTK calls free in its own native thread which has no ec.
+        // This assertion will fail on MMTK but we currently don't have CI for debug releases of MMTK, so we can assert for now.
+        ASSERT_vm_locking_with_barrier();
+    }
+    fiber_stack_release(fiber);
 }
 
 static const char *
@@ -1084,7 +1091,7 @@ cont_free(void *ptr)
     else {
         rb_fiber_t *fiber = (rb_fiber_t*)cont;
         coroutine_destroy(&fiber->context);
-        fiber_stack_release(fiber);
+        fiber_stack_release_locked(fiber);
     }
 
     RUBY_FREE_UNLESS_NULL(cont->saved_vm_stack.ptr);
@@ -2741,7 +2748,9 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, rb_fi
     // We cannot free the stack until the pthread is joined:
 #ifndef COROUTINE_PTHREAD_CONTEXT
     if (resuming_fiber && FIBER_TERMINATED_P(fiber)) {
-        fiber_stack_release(fiber);
+        RB_VM_LOCKING() {
+            fiber_stack_release(fiber);
+        }
     }
 #endif
 

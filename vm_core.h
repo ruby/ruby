@@ -823,6 +823,8 @@ typedef struct rb_vm_struct {
     } default_params;
 } rb_vm_t;
 
+extern bool ruby_vm_during_cleanup;
+
 /* default values */
 
 #define RUBY_VM_SIZE_ALIGN 4096
