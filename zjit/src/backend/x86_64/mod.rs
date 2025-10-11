@@ -95,8 +95,8 @@ pub const ALLOC_REGS: &[Reg] = &[
     RAX_REG,
 ];
 
-/// Special scratch register for intermediate processing.
-/// It should be used only by x86_split_with_scratch_reg or new_with_scratch_reg.
+/// Special scratch register for intermediate processing. It should be used only by
+/// [`Assembler::x86_split_with_scratch_reg`] or [`Assembler::new_with_scratch_reg`].
 const SCRATCH_OPND: Opnd = Opnd::Reg(R11_REG);
 
 impl Assembler {
@@ -381,9 +381,9 @@ impl Assembler {
     }
 
     /// Split instructions using scratch registers. To maximize the use of the register pool
-    /// for VRegs, most splits should happen in `x86_split`. However, some instructions need
-    /// to be split with registers after `alloc_regs`, e.g. for `compile_side_exits`, so this
-    /// splits them and uses scratch registers for it.
+    /// for VRegs, most splits should happen in [`Self::x86_split`]. However, some instructions
+    /// need to be split with registers after `alloc_regs`, e.g. for `compile_side_exits`, so
+    /// this splits them and uses scratch registers for it.
     pub fn x86_split_with_scratch_reg(mut self) -> Assembler {
         /// For some instructions, we want to be able to lower a 64-bit operand
         /// without requiring more registers to be available in the register

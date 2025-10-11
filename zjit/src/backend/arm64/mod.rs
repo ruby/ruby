@@ -193,8 +193,8 @@ pub const ALLOC_REGS: &[Reg] = &[
     X12_REG,
 ];
 
-/// Special scratch register for intermediate processing.
-/// It should be used only by arm64_split_with_scratch_reg or new_with_scratch_reg.
+/// Special scratch register for intermediate processing. It should be used only by
+/// [`Assembler::arm64_split_with_scratch_reg`] or [`Assembler::new_with_scratch_reg`].
 const SCRATCH_OPND: Opnd = Opnd::Reg(X15_REG);
 
 impl Assembler {
@@ -681,9 +681,9 @@ impl Assembler {
         asm_local
     }
 
-    /// Split instructions using scratch registers. To maximize the use of the register pool
-    /// for VRegs, most splits should happen in `x86_split`. However, some instructions need
-    /// to be split with registers after `alloc_regs`, e.g. for `compile_side_exits`, so this
+    /// Split instructions using scratch registers. To maximize the use of the register pool for
+    /// VRegs, most splits should happen in [`Self::arm64_split`]. However, some instructions
+    /// need to be split with registers after `alloc_regs`, e.g. for `compile_side_exits`, so this
     /// splits them and uses scratch registers for it.
     fn arm64_split_with_scratch_reg(mut self) -> Assembler {
         let mut iterator = self.insns.into_iter().enumerate().peekable();
