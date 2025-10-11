@@ -2777,6 +2777,22 @@ EOT
     }
   end if /mswin|mingw/ =~ RUBY_PLATFORM
 
+  def test_read_with_length_and_eof
+    bug21634 = '[Bug #21634]'
+    with_tmpdir {
+      str = "abcd\x1A"
+      generate_file("tmp", str)
+      open("tmp", "rt") do |f|
+        i = 0
+        until f.eof?
+          assert_equal(str[i], f.read(1), bug21634)
+          i += 1
+        end
+        assert_equal(str.size, i, bug21634)
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
   def test_read_with_buf_broken_ascii_only
     a, b = IO.pipe
     a.binmode
