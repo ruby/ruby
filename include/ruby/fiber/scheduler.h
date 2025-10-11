@@ -167,6 +167,14 @@ VALUE rb_fiber_scheduler_kernel_sleep(VALUE scheduler, VALUE duration);
  */
 VALUE rb_fiber_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv);
 
+/**
+ * Yield to the scheduler, to be resumed on the next scheduling cycle.
+ *
+ * @param[in]  scheduler  Target scheduler.
+ * @return     What `scheduler.yield` returns.
+ */
+VALUE rb_fiber_scheduler_yield(VALUE scheduler);
+
 /* Description TBW */
 #if 0
 VALUE rb_fiber_scheduler_timeout_after(VALUE scheduler, VALUE timeout, VALUE exception, VALUE message);
