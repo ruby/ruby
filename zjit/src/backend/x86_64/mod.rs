@@ -354,9 +354,9 @@ impl Assembler {
 
                     // Load each operand into the corresponding argument register.
                     if !opnds.is_empty() {
-                        let mut args: Vec<(Reg, Opnd)> = vec![];
+                        let mut args: Vec<(Opnd, Opnd)> = vec![];
                         for (idx, opnd) in opnds.iter_mut().enumerate() {
-                            args.push((C_ARG_OPNDS[idx].unwrap_reg(), *opnd));
+                            args.push((C_ARG_OPNDS[idx], *opnd));
                         }
                         asm.parallel_mov(args);
                     }
@@ -479,6 +479,16 @@ impl Assembler {
                         asm.mov(*out, SCRATCH_OPND);
                     }
                 }
+                &mut Insn::Load { out, opnd } |
+                &mut Insn::LoadInto { dest: out, opnd } => {
+                    // If a load attempt fails due to register spill, load into a scratch register first.
+                    if matches!(out, Opnd::Mem(_)) {
+                        asm.load_into(SCRATCH_OPND, opnd);
+                        asm.store(out, SCRATCH_OPND);
+                    } else {
+                        asm.push_insn(insn);
+                    }
+                }
                 // Convert Opnd::const_ptr into Opnd::Mem. This split is done here to give
                 // a register for compile_side_exits.
                 &mut Insn::IncrCounter { mem, value } => {
@@ -488,8 +498,8 @@ impl Assembler {
                 }
                 // Resolve ParallelMov that couldn't be handled without a scratch register.
                 Insn::ParallelMov { moves } => {
-                    for (reg, opnd) in Self::resolve_parallel_moves(&moves, Some(SCRATCH_OPND)).unwrap() {
-                        asm.load_into(Opnd::Reg(reg), opnd);
+                    for (dst, src) in Self::resolve_parallel_moves(&moves, Some(SCRATCH_OPND)).unwrap() {
+                        asm.load_into(dst, src);
                     }
                 }
                 // Handle various operand combinations for spills on compile_side_exits.
@@ -689,6 +699,7 @@ impl Assembler {
                 // This assumes only load instructions can contain references to GC'd Value operands
                 Insn::Load { opnd, out } |
                 Insn::LoadInto { dest: out, opnd } => {
+                    assert!(matches!(out, Opnd::Reg(_)), "load destination must be a register: {insn:?}");
                     match opnd {
                         Opnd::Value(val) if val.heap_object_p() => {
                             emit_load_gc_value(cb, &mut gc_offsets, out.into(), *val);
