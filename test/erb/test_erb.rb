@@ -77,6 +77,9 @@ class TestERB < Test::Unit::TestCase
 
     assert_equal("", ERB::Util.html_escape(nil))
     assert_equal("123", ERB::Util.html_escape(123))
+
+    assert_equal(65536+5, ERB::Util.html_escape("x"*65536 + "&").size)
+    assert_equal(65536+5, ERB::Util.html_escape("&" + "x"*65536).size)
   end
 
   def test_html_escape_to_s

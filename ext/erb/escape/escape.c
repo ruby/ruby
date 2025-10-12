@@ -49,7 +49,7 @@ optimized_escape_html(VALUE str)
         const unsigned char c = *cstr++;
         uint8_t len = html_escape_table[c].len;
         if (len) {
-            uint16_t segment_len = cstr - segment_start - 1;
+            size_t segment_len = cstr - segment_start - 1;
             if (!buf) {
                 buf = ALLOCV_N(char, vbuf, escaped_length(str));
                 dest = buf;
@@ -64,7 +64,7 @@ optimized_escape_html(VALUE str)
         }
     }
     if (buf) {
-        uint16_t segment_len = cstr - segment_start;
+        size_t segment_len = cstr - segment_start;
         if (segment_len) {
             memcpy(dest, segment_start, segment_len);
             dest += segment_len;
