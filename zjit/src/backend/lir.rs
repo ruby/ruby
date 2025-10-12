@@ -1034,6 +1034,9 @@ impl fmt::Debug for Insn {
 
         // Print list of operands
         let mut opnd_iter = self.opnd_iter();
+        if let Insn::FrameSetup { slot_count, .. } = self {
+            write!(fmt, "{slot_count}")?;
+        }
         if let Some(first_opnd) = opnd_iter.next() {
             write!(fmt, "{first_opnd:?}")?;
         }
@@ -1081,13 +1084,19 @@ struct RegisterPool {
     /// List of registers that can be allocated
     regs: Vec<Reg>,
 
-    /// Some(vreg_idx) if the register at the index in `pool` is used by the VReg.
-    /// None if the register is not in use.
-    pool: Vec<Option<usize>>,
+    /// Map from index at `regs` to Some(vreg_idx) if allocated
+    regs_pool: Vec<Option<usize>>,
 
     /// The number of live registers.
     /// Provides a quick way to query `pool.filter(|r| r.is_some()).count()`
     live_regs: usize,
+
+    /// The number of spilled basic block arguments.
+    /// We reserve this size of stack slots for non-RegisterPool usages.
+    stack_base_idx: usize,
+
+    /// The maximum number of spilled VRegs at a time
+    max_spilled: usize,
 }
 
 impl RegisterPool {
@@ -1096,8 +1105,10 @@ impl RegisterPool {
         let pool = vec![None; regs.len()];
         RegisterPool {
             regs,
-            pool,
+            regs_pool: pool,
             live_regs: 0,
+            stack_base_idx: 0,
+            max_spilled: 0,
         }
     }
 
@@ -1105,8 +1116,8 @@ impl RegisterPool {
     /// has been allocated and is live.
     fn alloc_reg(&mut self, vreg_idx: usize) -> Option<Reg> {
         for (reg_idx, reg) in self.regs.iter().enumerate() {
-            if self.pool[reg_idx].is_none() {
-                self.pool[reg_idx] = Some(vreg_idx);
+            if self.regs_pool[reg_idx].is_none() {
+                self.regs_pool[reg_idx] = Some(vreg_idx);
                 self.live_regs += 1;
                 return Some(*reg);
             }
@@ -1118,8 +1129,8 @@ impl RegisterPool {
     fn take_reg(&mut self, reg: &Reg, vreg_idx: usize) -> Reg {
         let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no)
             .unwrap_or_else(|| panic!("Unable to find register: {}", reg.reg_no));
-        assert_eq!(self.pool[reg_idx], None, "register already allocated for VReg({:?})", self.pool[reg_idx]);
-        self.pool[reg_idx] = Some(vreg_idx);
+        assert_eq!(self.regs_pool[reg_idx], None, "register already allocated for VReg({:?})", self.regs_pool[reg_idx]);
+        self.regs_pool[reg_idx] = Some(vreg_idx);
         self.live_regs += 1;
         *reg
     }
@@ -1129,8 +1140,8 @@ impl RegisterPool {
     fn dealloc_reg(&mut self, reg: &Reg) {
         let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no)
             .unwrap_or_else(|| panic!("Unable to find register: {}", reg.reg_no));
-        if self.pool[reg_idx].is_some() {
-            self.pool[reg_idx] = None;
+        if self.regs_pool[reg_idx].is_some() {
+            self.regs_pool[reg_idx] = None;
             self.live_regs -= 1;
         }
     }
@@ -1139,7 +1150,7 @@ impl RegisterPool {
     fn live_regs(&self) -> Vec<(Reg, usize)> {
         let mut live_regs = Vec::with_capacity(self.live_regs);
         for (reg_idx, &reg) in self.regs.iter().enumerate() {
-            if let Some(vreg_idx) = self.pool[reg_idx] {
+            if let Some(vreg_idx) = self.regs_pool[reg_idx] {
                 live_regs.push((reg, vreg_idx));
             }
         }
@@ -1149,7 +1160,7 @@ impl RegisterPool {
     /// Return vreg_idx if a given register is already in use
     fn vreg_for(&self, reg: &Reg) -> Option<usize> {
         let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no).unwrap();
-        self.pool[reg_idx]
+        self.regs_pool[reg_idx]
     }
 
     /// Return true if no register is in use
@@ -1356,12 +1367,22 @@ impl Assembler
         // List of registers saved before a C call, paired with the VReg index.
         let mut saved_regs: Vec<(Reg, usize)> = vec![];
 
+        // Remember the indexes of Insn::FrameSetup to update the stack size later
+        let mut frame_setup_idxs: Vec<usize> = vec![];
+
         // live_ranges is indexed by original `index` given by the iterator.
         let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
         let mut iterator = self.insns.into_iter().enumerate().peekable();
         let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), live_ranges.len(), self.accept_scratch_reg);
 
         while let Some((index, mut insn)) = iterator.next() {
+            // Let the RegisterPool notify the number of spilled basic block args to avoid clobbering them.
+            if let Insn::FrameSetup { slot_count, .. } = insn {
+                assert!(pool.stack_base_idx == 0 || pool.stack_base_idx == slot_count, "FrameSetup should have the same slot_count");
+                pool.stack_base_idx = slot_count;
+                frame_setup_idxs.push(asm.insns.len());
+            }
+
             let before_ccall = match (&insn, iterator.peek().map(|(_, insn)| insn)) {
                 (Insn::ParallelMov { .. }, Some(Insn::CCall { .. })) |
                 (Insn::CCall { .. }, _) if !pool.is_empty() => {
@@ -1562,6 +1583,16 @@ impl Assembler
                     pool.take_reg(&reg, vreg_idx);
                 }
                 saved_regs.clear();
+            }
+        }
+
+        // Extend the stack space for spilled operands
+        for frame_setup_idx in frame_setup_idxs {
+            match &mut asm.insns[frame_setup_idx] {
+                Insn::FrameSetup { slot_count, .. } => {
+                    *slot_count += pool.max_spilled;
+                }
+                _ => unreachable!(),
             }
         }
 
