@@ -420,6 +420,9 @@ impl Assembler {
             }
         }
 
+        // Prepare StackAllocator to calculate stack_idx_to_disp
+        let stack_allocator = StackAllocator::new(self.stack_base_idx);
+
         let mut iterator = self.insns.into_iter().enumerate().peekable();
         let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.live_ranges.len(), true);
 
@@ -482,6 +485,19 @@ impl Assembler {
                 }
                 &mut Insn::Load { out, opnd } |
                 &mut Insn::LoadInto { dest: out, opnd } => {
+                    // If the load target has MemBase::Stack, lower it to Stack::Reg.
+                    let opnd = if let Opnd::Mem(Mem { base: MemBase::Stack { stack_idx, num_bits: stack_num_bits }, disp, num_bits }) = opnd {
+                        // Convert MemBase::Stack to the original Opnd::Mem
+                        let stack_disp = stack_allocator.stack_idx_to_disp(stack_idx);
+                        let base_mem = Opnd::Mem(Mem { base: MemBase::Reg(NATIVE_BASE_PTR_REG_NO), disp: stack_disp, num_bits: stack_num_bits });
+
+                        // Lower MemBase::Stack to MemBase::Reg using a scratch register
+                        asm.load_into(SCRATCH_OPND, base_mem);
+                        Opnd::Mem(Mem { base: MemBase::Reg(SCRATCH_OPND.unwrap_reg().reg_no), disp, num_bits })
+                    } else {
+                        opnd
+                    };
+
                     // If a load attempt fails due to register spill, load into a scratch register first.
                     if matches!(out, Opnd::Mem(_)) {
                         asm.load_into(SCRATCH_OPND, opnd);
