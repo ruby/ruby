@@ -174,7 +174,7 @@ pub const RIP: X86Opnd = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::
 // 64-bit GP registers
 const RAX_REG_NO: u8 = 0;
 const RSP_REG_NO: u8 = 4;
-const RBP_REG_NO: u8 = 5;
+pub const RBP_REG_NO: u8 = 5;
 const R12_REG_NO: u8 = 12;
 const R13_REG_NO: u8 = 13;
 
