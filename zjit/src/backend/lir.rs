@@ -24,8 +24,12 @@ pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum MemBase
 {
-    Reg(u8),
+    /// Virtual register: Lowered to MemBase::Reg or MemBase::Stack in alloc_regs.
     VReg(usize),
+    /// Stack slot: Lowered to MemBase::Reg in split_with_scratch_reg.
+    Stack(usize),
+    /// Register: Every Opnd::Mem should have this MemBase as of emit.
+    Reg(u8),
 }
 
 // Memory location
@@ -1194,7 +1198,8 @@ pub struct Assembler {
 
     /// Spilled VRegs use NATIVE_BASE_PTR + stack_base_idx as the
     /// first stack slot for spilled VRegs. This is equal to the
-    /// number of spilled basic block arguments.
+    /// number of spilled basic block arguments. It's used to lower
+    /// MemBase::Stack into MemBase::Reg in split_with_scratch_reg.
     pub(super) stack_base_idx: usize,
 
     /// If Some, the next ccall should verify its leafness
@@ -1543,6 +1548,9 @@ impl Assembler
                         match vreg_mapping[idx].unwrap() {
                             Opnd::Reg(reg) => {
                                 *opnd = Opnd::Mem(Mem { base: MemBase::Reg(reg.reg_no), disp, num_bits });
+                            }
+                            Opnd::Mem(_mem) => {
+                                // TODO: use MemBase::Stack
                             }
                             _ => unreachable!(),
                         }
