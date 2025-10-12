@@ -228,20 +228,26 @@ fn test_cqo() {
 fn test_imul() {
     let cb1 = compile(|cb| imul(cb, RAX, RBX));
     let cb2 = compile(|cb| imul(cb, RDX, mem_opnd(64, RAX, 0)));
-    // Operands flipped for encoding since multiplication is commutative
-    let cb3 = compile(|cb| imul(cb, mem_opnd(64, RAX, 0), RDX));
 
-    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3), @r"
+    assert_disasm_snapshot!(disasms!(cb1, cb2), @r"
     0x0: imul rax, rbx
     0x0: imul rdx, qword ptr [rax]
-    0x0: imul rdx, qword ptr [rax]
     ");
 
-    assert_snapshot!(hexdumps!(cb1, cb2, cb3), @r"
+    assert_snapshot!(hexdumps!(cb1, cb2), @r"
     480fafc3
     480faf10
-    480faf10
     ");
+}
+
+#[test]
+#[should_panic]
+fn test_imul_mem_reg() {
+    // imul doesn't have (Mem, Reg) encoding. Since multiplication is communicative, imul() could
+    // swap operands. However, x86_scratch_split may need to move the result to the output operand,
+    // which can be complicated if the assembler may sometimes change the result operand.
+    // So x86_scratch_split should be responsible for that swap, not the assembler.
+    compile(|cb| imul(cb, mem_opnd(64, RAX, 0), RDX));
 }
 
 #[test]
