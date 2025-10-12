@@ -182,7 +182,7 @@ The following default gems are updated.
 
 * RubyGems 4.0.0.dev
 * bundler 4.0.0.dev
-* erb 5.1.0
+* erb 5.1.1
 * etc 1.4.6
 * fcntl 1.3.0
 * io-console 0.8.1
