@@ -996,7 +996,9 @@ impl Assembler {
 #[cfg(test)]
 mod tests {
     use insta::assert_snapshot;
-    use crate::assert_disasm_snapshot;
+    #[cfg(feature = "disasm")]
+    use crate::disasms_with;
+    use crate::{assert_disasm_snapshot, hexdumps};
     use super::*;
 
     fn setup_asm() -> (Assembler, CodeBlock) {
@@ -1563,18 +1565,19 @@ mod tests {
 
     #[test]
     fn frame_setup_teardown() {
-        let (mut asm, mut cb) = setup_asm();
-        asm.frame_setup(JIT_PRESERVED_REGS, 0);
+        let (mut asm, mut cb1) = setup_asm();
+        asm.frame_setup(JIT_PRESERVED_REGS);
         asm.frame_teardown(JIT_PRESERVED_REGS);
-
         asm.cret(C_RET_OPND);
+        asm.compile_with_num_regs(&mut cb1, 0);
 
-        asm.frame_setup(&[], 5);
+        let (mut asm, mut cb2) = setup_asm();
+        asm.stack_base_idx = 5;
+        asm.frame_setup(&[]);
         asm.frame_teardown(&[]);
+        asm.compile_with_num_regs(&mut cb2, 0);
 
-        asm.compile_with_num_regs(&mut cb, 0);
-
-        assert_disasm_snapshot!(cb.disasm(), @"
+        assert_disasm_snapshot!(disasms_with!("\n", cb1, cb2), @r"
             0x0: push rbp
             0x1: mov rbp, rsp
             0x4: push r13
@@ -1587,13 +1590,17 @@ mod tests {
             0x19: mov rsp, rbp
             0x1c: pop rbp
             0x1d: ret
-            0x1e: push rbp
-            0x1f: mov rbp, rsp
-            0x22: sub rsp, 0x30
-            0x26: mov rsp, rbp
-            0x29: pop rbp
+
+            0x0: push rbp
+            0x1: mov rbp, rsp
+            0x4: sub rsp, 0x30
+            0x8: mov rsp, rbp
+            0xb: pop rbp
         ");
-        assert_snapshot!(cb.hexdump(), @"554889e541555341544883ec084c8b6df8488b5df04c8b65e84889ec5dc3554889e54883ec304889ec5d");
+        assert_snapshot!(hexdumps!(cb1, cb2), @r"
+        554889e541555341544883ec084c8b6df8488b5df04c8b65e84889ec5dc3
+        554889e54883ec304889ec5d
+        ");
     }
 
     #[test]

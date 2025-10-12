@@ -1192,6 +1192,11 @@ pub struct Assembler {
     /// On `compile`, it also disables the backend's use of them.
     pub(super) accept_scratch_reg: bool,
 
+    /// Spilled VRegs use NATIVE_BASE_PTR + stack_base_idx as the
+    /// first stack slot for spilled VRegs. This is equal to the
+    /// number of spilled basic block arguments.
+    pub(super) stack_base_idx: usize,
+
     /// If Some, the next ccall should verify its leafness
     leaf_ccall_stack_size: Option<usize>
 }
@@ -1201,6 +1206,13 @@ impl Assembler
     /// Create an Assembler
     pub fn new() -> Self {
         Self::new_with_label_names(Vec::default(), 0, false)
+    }
+
+    /// Create an Assembler, reserving a specified number of stack slots
+    pub fn new_with_stack_slots(stack_base_idx: usize) -> Self {
+        let mut asm = Self::new();
+        asm.stack_base_idx = stack_base_idx;
+        asm
     }
 
     /// Create an Assembler with parameters that are populated by another Assembler instance.
@@ -1214,6 +1226,7 @@ impl Assembler
             live_ranges,
             label_names,
             accept_scratch_reg,
+            stack_base_idx: 0,
             leaf_ccall_stack_size: None,
         }
     }
@@ -1871,7 +1884,8 @@ impl Assembler {
         out
     }
 
-    pub fn frame_setup(&mut self, preserved_regs: &'static [Opnd], slot_count: usize) {
+    pub fn frame_setup(&mut self, preserved_regs: &'static [Opnd]) {
+        let slot_count = self.stack_base_idx;
         self.push_insn(Insn::FrameSetup { preserved: preserved_regs, slot_count });
     }
 
