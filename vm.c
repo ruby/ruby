@@ -108,6 +108,7 @@ rb_vm_search_cf_from_ep(const rb_execution_context_t *ec, const rb_control_frame
 static const VALUE *
 VM_EP_RUBY_LEP(const rb_execution_context_t *ec, const rb_control_frame_t *current_cfp)
 {
+    // rb_vmdebug_namespace_env_dump_raw() simulates this function
     const VALUE *ep = current_cfp->ep;
     const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
     const rb_control_frame_t *cfp = NULL, *checkpoint_cfp = current_cfp;

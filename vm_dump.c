@@ -162,6 +162,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     }
     kprintf("s:%04"PRIdPTRDIFF" ", cfp->sp - ec->vm_stack);
     kprintf(ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "E:%06"PRIxPTRDIFF" ", ep % 10000);
+    kprintf("l:%s ", VM_ENV_LOCAL_P(cfp->ep) ? "y" : "n");
     if (ns) {
         kprintf("n:%04ld ", ns->ns_id % 10000);
     }
@@ -216,6 +217,247 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
         }
     }
     return true;
+  error:
+    return false;
+}
+
+static inline const rb_control_frame_t *
+vmdebug_search_cf_from_ep(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, const VALUE * const ep)
+{
+    if (!ep) {
+        return NULL;
+    }
+    else {
+        const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
+
+        while (cfp < eocfp) {
+            if (cfp->ep == ep) {
+                return cfp;
+            }
+            cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+        }
+
+        return NULL;
+    }
+}
+
+static rb_callable_method_entry_t *
+vmdebug_env_method_entry_unchecked(VALUE obj, int can_be_svar)
+{
+    if (obj == Qfalse) return NULL;
+
+    switch (imemo_type(obj)) {
+      case imemo_ment:
+        return (rb_callable_method_entry_t *)obj;
+      case imemo_cref:
+        return NULL;
+      case imemo_svar:
+        if (can_be_svar) {
+            return vmdebug_env_method_entry_unchecked(((struct vm_svar *)obj)->cref_or_me, FALSE);
+        }
+      default:
+        return NULL;
+    }
+}
+
+static const rb_callable_method_entry_t *
+vmdebug_frame_method_entry_unchecked(const VALUE *ep)
+{
+    rb_callable_method_entry_t *me;
+
+    while (!VM_ENV_LOCAL_P_UNCHECKED(ep)) {
+        if ((me = vmdebug_env_method_entry_unchecked(ep[VM_ENV_DATA_INDEX_ME_CREF], FALSE)) != NULL) return me;
+        ep = VM_ENV_PREV_EP_UNCHECKED(ep);
+    }
+
+    return vmdebug_env_method_entry_unchecked(ep[VM_ENV_DATA_INDEX_ME_CREF], TRUE);
+}
+
+static bool
+namespace_env_dump(const rb_execution_context_t *ec, const VALUE *env, const rb_control_frame_t *checkpoint_cfp, FILE *errout)
+{
+    ptrdiff_t pc = -1;
+    ptrdiff_t ep = env - ec->vm_stack;
+    char ep_in_heap = ' ';
+    char posbuf[MAX_POSBUF+1];
+    int line = 0;
+    const char *magic, *iseq_name = "-";
+    VALUE tmp;
+    const rb_iseq_t *iseq = NULL;
+    const rb_namespace_t *ns = NULL;
+    const rb_control_frame_t *cfp = vmdebug_search_cf_from_ep(ec, checkpoint_cfp, env);
+    const rb_callable_method_entry_t *me = vmdebug_frame_method_entry_unchecked(env);
+
+    if (ep < 0 || (size_t)ep > ec->vm_stack_size) {
+        if (cfp) {
+            ep = (ptrdiff_t)cfp->ep;
+            ep_in_heap = 'p';
+        }
+    }
+
+    switch (VM_ENV_FLAGS_UNCHECKED(env, VM_FRAME_MAGIC_MASK)) {
+    case VM_FRAME_MAGIC_TOP:
+        magic = "TOP";
+        ns = VM_ENV_NAMESPACE_UNCHECKED(env);
+        break;
+    case VM_FRAME_MAGIC_METHOD:
+        magic = "METHOD";
+        if (me) {
+            ns = me->def->ns;
+        }
+        break;
+    case VM_FRAME_MAGIC_CLASS:
+        magic = "CLASS";
+        ns = VM_ENV_NAMESPACE_UNCHECKED(env);
+        break;
+    case VM_FRAME_MAGIC_BLOCK:
+        magic = "BLOCK";
+        break;
+    case VM_FRAME_MAGIC_CFUNC:
+        magic = "CFUNC";
+        if (me) {
+            ns = me->def->ns;
+        }
+        break;
+    case VM_FRAME_MAGIC_IFUNC:
+        magic = "IFUNC";
+        break;
+    case VM_FRAME_MAGIC_EVAL:
+        magic = "EVAL";
+        break;
+    case VM_FRAME_MAGIC_RESCUE:
+        magic = "RESCUE";
+        break;
+    case VM_FRAME_MAGIC_DUMMY:
+        magic = "DUMMY";
+        break;
+    case 0:
+        magic = "------";
+        break;
+    default:
+        magic = "(none)";
+        break;
+    }
+
+    if (cfp && cfp->iseq != 0) {
+#define RUBY_VM_IFUNC_P(ptr) IMEMO_TYPE_P(ptr, imemo_ifunc)
+        if (RUBY_VM_IFUNC_P(cfp->iseq)) {
+            iseq_name = "<ifunc>";
+        }
+        else if (SYMBOL_P((VALUE)cfp->iseq)) {
+            tmp = rb_sym2str((VALUE)cfp->iseq);
+            iseq_name = RSTRING_PTR(tmp);
+            snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
+            line = -1;
+        }
+        else {
+            if (cfp->pc) {
+                iseq = cfp->iseq;
+                pc = cfp->pc - ISEQ_BODY(iseq)->iseq_encoded;
+                iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
+                if (pc >= 0 && pc <= ISEQ_BODY(iseq)->iseq_size) {
+                    line = rb_vm_get_sourceline(cfp);
+                }
+                if (line) {
+                    snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(iseq)), line);
+                }
+            }
+            else {
+                iseq_name = "<dummy_frame>";
+            }
+        }
+    }
+    else if (me != NULL && IMEMO_TYPE_P(me, imemo_ment)) {
+        iseq_name = rb_id2name(me->def->original_id);
+        snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
+        line = -1;
+    }
+
+    if (cfp) {
+        kprintf("c:%04"PRIdPTRDIFF" ",
+                ((rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size) - cfp));
+    }
+    else {
+        kprintf("c:---- ");
+    }
+    kprintf(ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "E:%06"PRIxPTRDIFF" ", ep % 10000);
+    kprintf("l:%s ", VM_ENV_LOCAL_P(env) ? "y" : "n");
+    if (ns) {
+        kprintf("n:%04ld ", ns->ns_id % 10000);
+    }
+    else {
+        kprintf("n:---- ");
+    }
+    kprintf("%-6s", magic);
+    if (line) {
+        kprintf(" %s", posbuf);
+    }
+    if (VM_ENV_FLAGS_UNCHECKED(env, VM_FRAME_FLAG_FINISH) != 0) {
+        kprintf(" [FINISH]");
+    }
+    kprintf("\n");
+    return true;
+  error:
+    return false;
+}
+
+static bool
+namespace_env_dump_unchecked(const rb_execution_context_t *ec, const VALUE *env, const rb_control_frame_t *checkpoint_cfp, FILE *errout)
+{
+    if (env == NULL) {
+        kprintf("c:---- e:000000 l:- n:---- (none)\n");
+        return true;
+    }
+    else {
+        return namespace_env_dump(ec, env, checkpoint_cfp, errout);
+    }
+  error:
+    return false;
+}
+
+bool
+rb_vmdebug_namespace_env_dump_raw(const rb_execution_context_t *ec, const rb_control_frame_t *current_cfp, FILE *errout)
+{
+    // See VM_EP_RUBY_LEP for the original logic
+    const VALUE *ep = current_cfp->ep;
+    const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
+    const rb_control_frame_t *cfp = NULL, *checkpoint_cfp = current_cfp;
+
+    kprintf("-- Namespace detection information "
+            "-----------------------------------------\n");
+
+    namespace_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
+
+    while (!VM_ENV_LOCAL_P(ep) || VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
+        while (!VM_ENV_LOCAL_P(ep)) {
+            ep = VM_ENV_PREV_EP(ep);
+            namespace_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
+        }
+        while (VM_ENV_FLAGS(ep, VM_FRAME_FLAG_CFRAME) != 0) {
+            if (!cfp) {
+                cfp = vmdebug_search_cf_from_ep(ec, checkpoint_cfp, ep);
+            }
+            if (!cfp) {
+                goto stop;
+            }
+            cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+            if (cfp >= eocfp) {
+                kprintf("[PREVIOUS CONTROL FRAME IS OUT OF BOUND]\n");
+                goto stop;
+            }
+            ep = cfp->ep;
+            namespace_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
+            if (!ep) {
+                goto stop;
+            }
+        }
+        checkpoint_cfp = cfp;
+        cfp = NULL;
+    }
+  stop:
+    kprintf("\n");
+    return true;
+
   error:
     return false;
 }
@@ -1132,6 +1374,7 @@ rb_dump_machine_register(FILE *errout, const ucontext_t *ctx)
 bool
 rb_vm_bugreport(const void *ctx, FILE *errout)
 {
+    const char *ns_env = getenv("RUBY_BUGREPORT_NAMESPACE_ENV");
     const char *cmd = getenv("RUBY_ON_BUG");
     if (cmd) {
         char buf[0x100];
@@ -1175,6 +1418,9 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
 
     if (vm && ec) {
         rb_vmdebug_stack_dump_raw(ec, ec->cfp, errout);
+        if (ns_env) {
+            rb_vmdebug_namespace_env_dump_raw(ec, ec->cfp, errout);
+        }
         rb_backtrace_print_as_bugreport(errout);
         kputs("\n");
         // If we get here, hopefully things are intact enough that
