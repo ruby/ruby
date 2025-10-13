@@ -1009,6 +1009,16 @@ rb_gvar_set(ID id, VALUE val)
     struct rb_global_entry *entry;
     const rb_namespace_t *ns = rb_current_namespace();
 
+    bool gvar_set_event_enabled = (ruby_vm_event_enabled_global_flags & RUBY_EVENT_GVAR_SET) &&
+        (ruby_vm_event_flags & RUBY_EVENT_GVAR_SET);
+
+    if (UNLIKELY(gvar_set_event_enabled)) {
+        VALUE pair = rb_ary_new_capa(2);
+        rb_ary_push(pair, rb_id2sym(id));
+        rb_ary_push(pair, val);
+        EXEC_EVENT_HOOK(GET_EC(), RUBY_EVENT_GVAR_SET, Qnil, id, 0, 0, pair);
+    }
+
     RB_VM_LOCKING() {
         entry = rb_global_entry(id);
 

@@ -9209,6 +9209,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_global_variable_and_write_node_t *cast = (const pm_global_variable_and_write_node_t *) node;
         LABEL *end_label = NEW_LABEL(location.line);
 
+        PUSH_TRACE(ret, RUBY_EVENT_GVAR_SET);
+
         VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
         PUSH_INSN1(ret, location, getglobal, name);
         if (!popped) PUSH_INSN(ret, location, dup);
@@ -9229,6 +9231,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // ^^^^^^^^^^^
         const pm_global_variable_operator_write_node_t *cast = (const pm_global_variable_operator_write_node_t *) node;
 
+        PUSH_TRACE(ret, RUBY_EVENT_GVAR_SET);
+
         VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
         PUSH_INSN1(ret, location, getglobal, name);
         PM_COMPILE_NOT_POPPED(cast->value);
@@ -9248,6 +9252,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_global_variable_or_write_node_t *cast = (const pm_global_variable_or_write_node_t *) node;
         LABEL *set_label = NEW_LABEL(location.line);
         LABEL *end_label = NEW_LABEL(location.line);
+
+        PUSH_TRACE(ret, RUBY_EVENT_GVAR_SET);
 
         PUSH_INSN(ret, location, putnil);
         VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
@@ -9285,6 +9291,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // $foo = 1
         // ^^^^^^^^
         const pm_global_variable_write_node_t *cast = (const pm_global_variable_write_node_t *) node;
+
+        PUSH_TRACE(ret, RUBY_EVENT_GVAR_SET);
+
         PM_COMPILE_NOT_POPPED(cast->value);
         if (!popped) PUSH_INSN(ret, location, dup);
 
