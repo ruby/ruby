@@ -17,8 +17,8 @@ When +pattern+ is a Regexp, returns the index of the last match in self:
   'foo'.rindex(/oo/)  # => 1
   'foo'.rindex(/ooo/) # => nil
 
-When +offset+ is non-negative, begins the search at position +offset+;
-the returned index is relative to the beginning of +self+:
+When +offset+ is non-negative, it specifies the maximum starting position in the
+string to end the search:
 
   'foo'.rindex('o', 0) # => nil
   'foo'.rindex('o', 1) # => 1
