@@ -18,7 +18,7 @@ pub use arg::*;
 pub use opnd::*;
 
 /// The extend type for register operands in extended register instructions.
-/// It's the reuslt size is determined by the the destination register and
+/// It's the result size is determined by the destination register and
 /// the source size interpreted using the last letter.
 #[derive(Clone, Copy)]
 pub enum ExtendType {
