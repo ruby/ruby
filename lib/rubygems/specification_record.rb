@@ -73,7 +73,7 @@ module Gem
     end
 
     ##
-    # Adds +spec+ to the the record, keeping the collection properly sorted.
+    # Adds +spec+ to the record, keeping the collection properly sorted.
 
     def add_spec(spec)
       return if all.include? spec
