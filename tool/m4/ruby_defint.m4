@@ -17,7 +17,8 @@ typedef $1 t; int s = sizeof(t) == 42;])],
     ["${ac_cv_sizeof___int128@%:@*:}"], [ rb_cv_type_$1="m4_if([$3], [], [], [$3 ])__int128"],
     [ rb_cv_type_$1=no])])])
 AS_IF([test "${rb_cv_type_$1}" != no], [
-    type="${rb_cv_type_$1@%:@@%:@unsigned }"
+    type="${rb_cv_type_$1@%:@@%:@*signed }"
+    AS_IF([test "$type" = "long long"], [type=long_long])
     AS_IF([test "$type" != yes && eval 'test -n "${ac_cv_sizeof_'$type'+set}"'], [
 	eval cond='"${ac_cv_sizeof_'$type'}"'
 	AS_CASE([$cond], [*:*], [
