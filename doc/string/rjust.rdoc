@@ -14,3 +14,5 @@ If +size+ is not greater than the size of +self+, returns a copy of +self+:
 
   'hello'.rjust(5, 'ab')  # => "hello"
   'hello'.rjust(1, 'ab')  # => "hello"
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
