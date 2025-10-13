@@ -1236,6 +1236,11 @@ main()
 		ac_cv_header_sys_time_h=no
 		ac_cv_header_sys_times_h=no
 		ac_cv_header_sys_socket_h=no
+		ac_cv_func_chown=yes
+		ac_cv_func_getegid=yes
+		ac_cv_func_geteuid=yes
+		ac_cv_func_getgid=yes
+		ac_cv_func_getuid=yes
 		ac_cv_func_execv=yes
 		ac_cv_func_lstat=yes
 		ac_cv_func_times=yes
@@ -1248,6 +1253,8 @@ main()
 		ac_cv_func_readlink=yes
 		ac_cv_func_shutdown=yes
 		ac_cv_func_symlink=yes
+		ac_cv_func_clock_getres=yes
+		ac_cv_func_clock_gettime=yes
 		ac_cv_lib_crypt_crypt=no
 		ac_cv_func_getpgrp_void=no
 		ac_cv_func_memcmp_working=yes
@@ -1264,8 +1271,8 @@ main()
 		AS_IF([test "$target_cpu" = x64], [
 		    ac_cv_func___builtin_setjmp=yes
 		    ac_cv_func_round=no
+		    ac_cv_func_tgamma=no
 		])
-		ac_cv_func_tgamma=no
 		AC_CHECK_TYPE([NET_LUID], [], [],
 			      [@%:@include <winsock2.h>
 			       @%:@include <windows.h>
