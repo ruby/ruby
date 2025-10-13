@@ -1107,7 +1107,7 @@ static rb_node_zsuper_t * rb_node_zsuper_new(struct parser_params *p, const YYLT
 static rb_node_list_t *rb_node_list_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc);
 static rb_node_list_t *rb_node_list_new2(struct parser_params *p, NODE *nd_head, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
 static rb_node_zlist_t *rb_node_zlist_new(struct parser_params *p, const YYLTYPE *loc);
-static rb_node_hash_t *rb_node_hash_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc);
+static rb_node_hash_t *rb_node_hash_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
 static rb_node_return_t *rb_node_return_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 static rb_node_yield_t *rb_node_yield_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc);
 static rb_node_lvar_t *rb_node_lvar_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc);
@@ -1215,7 +1215,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_LIST(a,loc) (NODE *)rb_node_list_new(p,a,loc)
 #define NEW_LIST2(h,l,n,loc) (NODE *)rb_node_list_new2(p,h,l,n,loc)
 #define NEW_ZLIST(loc) (NODE *)rb_node_zlist_new(p,loc)
-#define NEW_HASH(a,loc) (NODE *)rb_node_hash_new(p,a,loc)
+#define NEW_HASH(a,loc,o_loc,c_loc) (NODE *)rb_node_hash_new(p,a,loc,o_loc,c_loc)
 #define NEW_RETURN(s,loc,k_loc) (NODE *)rb_node_return_new(p,s,loc,k_loc)
 #define NEW_YIELD(a,loc,k_loc,l_loc,r_loc) (NODE *)rb_node_yield_new(p,a,loc,k_loc,l_loc,r_loc)
 #define NEW_LVAR(v,loc) (NODE *)rb_node_lvar_new(p,v,loc)
@@ -1467,8 +1467,8 @@ static NODE *const_decl(struct parser_params *p, NODE* path, const YYLTYPE *loc)
 static rb_node_opt_arg_t *opt_arg_append(rb_node_opt_arg_t*, rb_node_opt_arg_t*);
 static rb_node_kw_arg_t *kwd_append(rb_node_kw_arg_t*, rb_node_kw_arg_t*);
 
-static NODE *new_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc);
-static NODE *new_unique_key_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc);
+static NODE *new_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
+static NODE *new_unique_key_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
 
 static NODE *new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
 
@@ -4124,12 +4124,12 @@ aref_args	: none
                 | args trailer
                 | args ',' assocs trailer
                     {
-                        $$ = $3 ? arg_append(p, $1, new_hash(p, $3, &@3), &@$) : $1;
+                        $$ = $3 ? arg_append(p, $1, new_hash(p, $3, &@3, &NULL_LOC, &NULL_LOC), &@$) : $1;
                     /*% ripper: args_add!($:1, bare_assoc_hash!($:3)) %*/
                     }
                 | assocs trailer
                     {
-                        $$ = $1 ? NEW_LIST(new_hash(p, $1, &@1), &@$) : 0;
+                        $$ = $1 ? NEW_LIST(new_hash(p, $1, &@1, &NULL_LOC, &NULL_LOC), &@$) : 0;
                     /*% ripper: args_add!(args_new!, bare_assoc_hash!($:1)) %*/
                     }
                 ;
@@ -4187,12 +4187,12 @@ opt_call_args	: none
                 | args ','
                 | args ',' assocs ','
                     {
-                        $$ = $3 ? arg_append(p, $1, new_hash(p, $3, &@3), &@$) : $1;
+                        $$ = $3 ? arg_append(p, $1, new_hash(p, $3, &@3, &NULL_LOC, &NULL_LOC), &@$) : $1;
                     /*% ripper: args_add!($:1, bare_assoc_hash!($:3)) %*/
                     }
                 | assocs ','
                     {
-                        $$ = $1 ? NEW_LIST(new_hash(p, $1, &@1), &@1) : 0;
+                        $$ = $1 ? NEW_LIST(new_hash(p, $1, &@1, &NULL_LOC, &NULL_LOC), &@1) : 0;
                     /*% ripper: args_add!(args_new!, bare_assoc_hash!($:1)) %*/
                     }
                 ;
@@ -4214,13 +4214,13 @@ call_args	: value_expr(command)
                     }
                 | assocs opt_block_arg
                     {
-                        $$ = $1 ? NEW_LIST(new_hash(p, $1, &@1), &@1) : 0;
+                        $$ = $1 ? NEW_LIST(new_hash(p, $1, &@1, &NULL_LOC, &NULL_LOC), &@1) : 0;
                         $$ = arg_blk_pass($$, $2);
                     /*% ripper: args_add_block!(args_add!(args_new!, bare_assoc_hash!($:1)), $:2) %*/
                     }
                 | args ',' assocs opt_block_arg
                     {
-                        $$ = $3 ? arg_append(p, $1, new_hash(p, $3, &@3), &@$) : $1;
+                        $$ = $3 ? arg_append(p, $1, new_hash(p, $3, &@3, &NULL_LOC, &NULL_LOC), &@$) : $1;
                         $$ = arg_blk_pass($$, $4);
                     /*% ripper: args_add_block!(args_add!($:1, bare_assoc_hash!($:3)), $:4) %*/
                     }
@@ -4412,7 +4412,7 @@ primary		: inline_primary
                 }
             | tLBRACE assoc_list '}'
                 {
-                    $$ = new_hash(p, $2, &@$);
+                    $$ = new_hash(p, $2, &@$, &@1, &@3);
                     RNODE_HASH($$)->nd_brace = TRUE;
                 /*% ripper: hash!($:2) %*/
                 }
@@ -5472,7 +5472,7 @@ p_as		: p_expr tASSOC p_variable
                     {
                         NODE *n = NEW_LIST($1, &@$);
                         n = list_append(p, n, $3);
-                        $$ = new_hash(p, n, &@$);
+                        $$ = new_hash(p, n, &@$, &NULL_LOC, &NULL_LOC);
                     /*% ripper: binary!($:1, ID2VAL((id_assoc)), $:3) %*/
                     }
                 | p_alt
@@ -5692,22 +5692,22 @@ p_arg		: p_expr
 
 p_kwargs	: p_kwarg ',' p_any_kwrest
                     {
-                        $$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), $3, &@$);
+                        $$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$, &NULL_LOC, &NULL_LOC), $3, &@$);
                     /*% ripper: [$:1, $:3] %*/
                     }
                 | p_kwarg
                     {
-                        $$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), 0, &@$);
+                        $$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$, &NULL_LOC, &NULL_LOC), 0, &@$);
                     /*% ripper: [$:1, Qnil] %*/
                     }
                 | p_kwarg ','
                     {
-                        $$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), 0, &@$);
+                        $$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$, &NULL_LOC, &NULL_LOC), 0, &@$);
                     /*% ripper: [$:1, Qnil] %*/
                     }
                 | p_any_kwrest
                     {
-                        $$ =  new_hash_pattern_tail(p, new_hash(p, 0, &@$), $1, &@$);
+                        $$ =  new_hash_pattern_tail(p, new_hash(p, 0, &@$, &NULL_LOC, &NULL_LOC), $1, &@$);
                     /*% ripper: [[], $:1] %*/
                     }
                 ;
@@ -11779,11 +11779,13 @@ rb_node_zlist_new(struct parser_params *p, const YYLTYPE *loc)
 }
 
 static rb_node_hash_t *
-rb_node_hash_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc)
+rb_node_hash_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
 {
     rb_node_hash_t *n = NODE_NEWNODE(NODE_HASH, rb_node_hash_t, loc);
     n->nd_head = nd_head;
     n->nd_brace = 0;
+    n->opening_loc = *opening_loc;
+    n->closing_loc = *closing_loc;
 
     return n;
 }
@@ -14698,10 +14700,10 @@ warn_duplicate_keys(struct parser_params *p, NODE *hash)
 }
 
 static NODE *
-new_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc)
+new_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
 {
     if (hash) warn_duplicate_keys(p, hash);
-    return NEW_HASH(hash, loc);
+    return NEW_HASH(hash, loc, opening_loc, closing_loc);
 }
 
 static void
@@ -14736,9 +14738,9 @@ error_duplicate_pattern_key(struct parser_params *p, VALUE key, const YYLTYPE *l
 }
 
 static NODE *
-new_unique_key_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc)
+new_unique_key_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
 {
-    return NEW_HASH(hash, loc);
+    return NEW_HASH(hash, loc, opening_loc, closing_loc);
 }
 
 static NODE *
@@ -15101,7 +15103,7 @@ new_args_forward_call(struct parser_params *p, NODE *leading, const YYLTYPE *loc
     NODE *args = leading ? rest_arg_append(p, leading, rest, argsloc) : NEW_SPLAT(rest, loc, &NULL_LOC);
     block->forwarding = TRUE;
 #ifndef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
-    args = arg_append(p, args, new_hash(p, kwrest, loc), argsloc);
+    args = arg_append(p, args, new_hash(p, kwrest, loc, &NULL_LOC, &NULL_LOC), argsloc);
 #endif
     return arg_blk_pass(args, block);
 }
@@ -15481,7 +15483,7 @@ parser_append_options(struct parser_params *p, NODE *node)
         if (p->do_chomp) {
             NODE *chomp = NEW_SYM(rb_str_new_cstr("chomp"), LOC);
             chomp = list_append(p, NEW_LIST(chomp, LOC), NEW_TRUE(LOC));
-            irs = list_append(p, irs, NEW_HASH(chomp, LOC));
+            irs = list_append(p, irs, NEW_HASH(chomp, LOC, &NULL_LOC, &NULL_LOC));
         }
 
         node = NEW_WHILE((NODE *)NEW_FCALL(idGets, irs, LOC), node, 1, LOC, &NULL_LOC, &NULL_LOC);

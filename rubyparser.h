@@ -595,6 +595,8 @@ typedef struct RNode_HASH {
 
     struct RNode *nd_head;
     long nd_brace;
+    rb_code_location_t opening_loc;
+    rb_code_location_t closing_loc;
 } rb_node_hash_t;
 
 typedef struct RNode_RETURN {
