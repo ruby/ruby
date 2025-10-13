@@ -63,16 +63,13 @@ optimized_escape_html(VALUE str)
             dest += len;
         }
     }
+    VALUE escaped = str;
     if (buf) {
         size_t segment_len = cstr - segment_start;
         if (segment_len) {
             memcpy(dest, segment_start, segment_len);
             dest += segment_len;
         }
-    }
-
-    VALUE escaped = str;
-    if (buf) {
         escaped = rb_str_new(buf, dest - buf);
         preserve_original_state(str, escaped);
         ALLOCV_END(vbuf);
