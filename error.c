@@ -1686,7 +1686,7 @@ check_order_keyword(VALUE opt)
  *   - If the value of keyword +order+ is +:top+ (the default),
  *     lists the error message and the innermost backtrace entry first.
  *   - If the value of keyword +order+ is +:bottom+,
- *     lists the error message the the innermost entry last.
+ *     lists the error message the innermost entry last.
  *
  * Example:
  *

@@ -132,7 +132,7 @@ struct rb_io {
     struct rb_execution_context_struct *closing_ec;
     VALUE wakeup_mutex;
 
-    // The fork generation of the the blocking operations list.
+    // The fork generation of the blocking operations list.
     rb_serial_t fork_generation;
 };
 
