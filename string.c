@@ -11181,8 +11181,6 @@ rb_str_ljust(int argc, VALUE *argv, VALUE str)
  *
  *  :include: doc/string/rjust.rdoc
  *
- *  Related: String#ljust, String#center.
- *
  */
 
 static VALUE
