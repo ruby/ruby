@@ -2000,7 +2000,6 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
         cref = vm_cref_dup(orig_cref);
     }
     vm_set_eval_stack(ec, iseq, cref, &block);
-    // TODO: set the namespace frame
 
     /* kick */
     return vm_exec(ec);
@@ -2022,8 +2021,6 @@ eval_string_with_scope(VALUE scope, VALUE src, VALUE file, int line)
     if (ISEQ_BODY(iseq)->local_table_size > 0) {
         vm_bind_update_env(scope, bind, vm_make_env_object(ec, ec->cfp));
     }
-
-    // TODO: set the namespace frame
 
     /* kick */
     return vm_exec(ec);
