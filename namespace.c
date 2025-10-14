@@ -118,6 +118,12 @@ namespace_generate_id(void)
     return id;
 }
 
+static VALUE
+namespace_main_to_s(VALUE obj)
+{
+    return rb_str_new2("main");
+}
+
 static void
 namespace_entry_initialize(rb_namespace_t *ns)
 {
@@ -128,9 +134,8 @@ namespace_entry_initialize(rb_namespace_t *ns)
     ns->ns_id = 0;
 
     ns->top_self = rb_obj_alloc(rb_cObject);
-    // TODO:
-    // rb_define_singleton_method(rb_vm_top_self(), "to_s", main_to_s, 0);
-    // rb_define_alias(rb_singleton_class(rb_vm_top_self()), "inspect", "to_s");
+    rb_define_singleton_method(ns->top_self, "to_s", namespace_main_to_s, 0);
+    rb_define_alias(rb_singleton_class(ns->top_self), "inspect", "to_s");
     ns->load_path = rb_ary_dup(root->load_path);
     ns->expanded_load_path = rb_ary_dup(root->expanded_load_path);
     ns->load_path_snapshot = rb_ary_new();
