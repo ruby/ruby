@@ -196,6 +196,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cArray, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cArray, "reverse", types::ArrayExact, leaf, elidable);
     annotate!(rb_cArray, "join", types::StringExact);
+    annotate!(rb_cArray, "[]", inline_array_aref);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cNilClass, "nil?", types::TrueClass, no_gc, leaf, elidable);
     annotate!(rb_mKernel, "nil?", types::FalseClass, no_gc, leaf, elidable);
@@ -218,7 +219,7 @@ fn no_inline(_fun: &mut hir::Function, _block: hir::BlockId, _recv: hir::InsnId,
     None
 }
 
-fn inline_string_to_s(fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_to_s(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if args.len() == 0 && fun.likely_a(recv, types::StringExact, state) {
         let recv = fun.coerce_to(block, recv, types::StringExact, state);
         return Some(recv);
@@ -230,6 +231,17 @@ fn inline_kernel_itself(_fun: &mut hir::Function, _block: hir::BlockId, recv: hi
     if args.len() == 0 {
         // No need to coerce the receiver; that is done by the SendWithoutBlock rewriting.
         return Some(recv);
+    }
+    None
+}
+
+fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    if let &[index] = args {
+        if fun.likely_a(index, types::Fixnum, state) {
+            let index = fun.coerce_to(block, index, types::Fixnum, state);
+            let result = fun.push_insn(block, hir::Insn::ArrayArefFixnum { array: recv, index });
+            return Some(result);
+        }
     }
     None
 }
