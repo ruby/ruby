@@ -12759,4 +12759,35 @@ mod opt_tests {
           Return v30
         ");
     }
+
+    #[test]
+    fn test_array_aref_fixnum_array_subclass() {
+        eval("
+            class C < Array; end
+            def test(arr, idx)
+              arr[idx]
+            end
+            test(C.new([1, 2, 3]), 0)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, []@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v28:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
+          v29:Fixnum = GuardType v12, Fixnum
+          v30:BasicObject = ArrayArefFixnum v28, v29
+          CheckInterrupts
+          Return v30
+        ");
+    }
 }
