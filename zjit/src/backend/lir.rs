@@ -17,7 +17,6 @@ pub use crate::backend::current::{
     NATIVE_STACK_PTR, NATIVE_BASE_PTR,
     C_ARG_OPNDS, C_RET_REG, C_RET_OPND,
 };
-pub const SCRATCH_OPND: Opnd = Opnd::Reg(Assembler::SCRATCH_REG);
 
 pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
 
@@ -1173,6 +1172,10 @@ pub struct Assembler {
     /// Names of labels
     pub(super) label_names: Vec<String>,
 
+    /// If true, `push_insn` is allowed to use scratch registers.
+    /// On `compile`, it also disables the backend's use of them.
+    pub(super) accept_scratch_reg: bool,
+
     /// If Some, the next ccall should verify its leafness
     leaf_ccall_stack_size: Option<usize>
 }
@@ -1181,12 +1184,12 @@ impl Assembler
 {
     /// Create an Assembler
     pub fn new() -> Self {
-        Self::new_with_label_names(Vec::default(), 0)
+        Self::new_with_label_names(Vec::default(), 0, false)
     }
 
     /// Create an Assembler with parameters that are populated by another Assembler instance.
     /// This API is used for copying an Assembler for the next compiler pass.
-    pub fn new_with_label_names(label_names: Vec<String>, num_vregs: usize) -> Self {
+    pub fn new_with_label_names(label_names: Vec<String>, num_vregs: usize, accept_scratch_reg: bool) -> Self {
         let mut live_ranges = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
         live_ranges.resize(num_vregs, LiveRange { start: None, end: None });
 
@@ -1194,6 +1197,7 @@ impl Assembler
             insns: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
             live_ranges,
             label_names,
+            accept_scratch_reg,
             leaf_ccall_stack_size: None,
         }
     }
@@ -1255,6 +1259,14 @@ impl Assembler
             }
         }
 
+        // If this Assembler should not accept scratch registers, assert no use of them.
+        if !self.accept_scratch_reg {
+            let opnd_iter = insn.opnd_iter();
+            for opnd in opnd_iter {
+                assert!(!Self::has_scratch_reg(*opnd), "should not use scratch register: {opnd:?}");
+            }
+        }
+
         self.insns.push(insn);
     }
 
@@ -1268,9 +1280,9 @@ impl Assembler
         Target::Label(label)
     }
 
-    // Shuffle register moves, sometimes adding extra moves using SCRATCH_REG,
+    // Shuffle register moves, sometimes adding extra moves using scratch_reg,
     // so that they will not rewrite each other before they are used.
-    pub fn resolve_parallel_moves(old_moves: &[(Reg, Opnd)]) -> Vec<(Reg, Opnd)> {
+    pub fn resolve_parallel_moves(old_moves: &[(Reg, Opnd)], scratch_reg: Option<Opnd>) -> Option<Vec<(Reg, Opnd)>> {
         // Return the index of a move whose destination is not used as a source if any.
         fn find_safe_move(moves: &[(Reg, Opnd)]) -> Option<usize> {
             moves.iter().enumerate().find(|&(_, &(dest_reg, _))| {
@@ -1289,19 +1301,21 @@ impl Assembler
                 new_moves.push(old_moves.remove(index));
             }
 
-            // No safe move. Load the source of one move into SCRATCH_REG, and
-            // then load SCRATCH_REG into the destination when it's safe.
+            // No safe move. Load the source of one move into scratch_reg, and
+            // then load scratch_reg into the destination when it's safe.
             if !old_moves.is_empty() {
-                // Make sure it's safe to use SCRATCH_REG
-                assert!(old_moves.iter().all(|&(_, opnd)| opnd != SCRATCH_OPND));
+                // If scratch_reg is None, return None and leave it to *_split_with_scratch_regs to resolve it.
+                let scratch_reg = scratch_reg?.unwrap_reg();
+                // Make sure it's safe to use scratch_reg
+                assert!(old_moves.iter().all(|&(_, opnd)| opnd != Opnd::Reg(scratch_reg)));
 
-                // Move SCRATCH <- opnd, and delay reg <- SCRATCH
+                // Move scratch_reg <- opnd, and delay reg <- scratch_reg
                 let (reg, opnd) = old_moves.remove(0);
-                new_moves.push((Assembler::SCRATCH_REG, opnd));
-                old_moves.push((reg, SCRATCH_OPND));
+                new_moves.push((scratch_reg, opnd));
+                old_moves.push((reg, Opnd::Reg(scratch_reg)));
             }
         }
-        new_moves
+        Some(new_moves)
     }
 
     /// Sets the out field on the various instructions that require allocated
@@ -1345,7 +1359,7 @@ impl Assembler
         // live_ranges is indexed by original `index` given by the iterator.
         let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
         let mut iterator = self.insns.into_iter().enumerate().peekable();
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), live_ranges.len());
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), live_ranges.len(), self.accept_scratch_reg);
 
         while let Some((index, mut insn)) = iterator.next() {
             let before_ccall = match (&insn, iterator.peek().map(|(_, insn)| insn)) {
@@ -1510,9 +1524,14 @@ impl Assembler
             let is_ccall = matches!(insn, Insn::CCall { .. });
             match insn {
                 Insn::ParallelMov { moves } => {
-                    // Now that register allocation is done, it's ready to resolve parallel moves.
-                    for (reg, opnd) in Self::resolve_parallel_moves(&moves) {
-                        asm.load_into(Opnd::Reg(reg), opnd);
+                    // For trampolines that use scratch registers, attempt to lower ParallelMov without scratch_reg.
+                    if let Some(moves) = Self::resolve_parallel_moves(&moves, None) {
+                        for (reg, opnd) in moves {
+                            asm.load_into(Opnd::Reg(reg), opnd);
+                        }
+                    } else {
+                        // If it needs a scratch_reg, leave it to *_split_with_scratch_regs to handle it.
+                        asm.push_insn(Insn::ParallelMov { moves });
                     }
                 }
                 Insn::CCall { opnds, fptr, start_marker, end_marker, out } => {
@@ -1586,7 +1605,7 @@ impl Assembler
 
         for (idx, target) in targets {
             // Compile a side exit. Note that this is past the split pass and alloc_regs(),
-            // so you can't use a VReg or an instruction that needs to be split.
+            // so you can't use an instruction that returns a VReg.
             if let Target::SideExit { pc, stack, locals, reason, label } = target {
                 asm_comment!(self, "Exit: {reason}");
                 let side_exit_label = if let Some(label) = label {
@@ -1609,35 +1628,24 @@ impl Assembler
                 }
 
                 asm_comment!(self, "save cfp->pc");
-                self.load_into(SCRATCH_OPND, Opnd::const_ptr(pc));
-                self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), SCRATCH_OPND);
+                self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc));
 
                 asm_comment!(self, "save cfp->sp");
-                self.lea_into(SCRATCH_OPND, Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
-                let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
-                self.store(cfp_sp, SCRATCH_OPND);
+                self.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
 
                 // Using C_RET_OPND as an additional scratch register, which is no longer used
                 if get_option!(stats) {
                     asm_comment!(self, "increment a side exit counter");
-                    self.load_into(SCRATCH_OPND, Opnd::const_ptr(exit_counter_ptr(reason)));
-                    self.incr_counter_with_reg(Opnd::mem(64, SCRATCH_OPND, 0), 1.into(), C_RET_OPND);
+                    self.incr_counter(Opnd::const_ptr(exit_counter_ptr(reason)), 1.into());
 
                     if let SideExitReason::UnhandledYARVInsn(opcode) = reason {
                         asm_comment!(self, "increment an unhandled YARV insn counter");
-                        self.load_into(SCRATCH_OPND, Opnd::const_ptr(exit_counter_ptr_for_opcode(opcode)));
-                        self.incr_counter_with_reg(Opnd::mem(64, SCRATCH_OPND, 0), 1.into(), C_RET_OPND);
+                        self.incr_counter(Opnd::const_ptr(exit_counter_ptr_for_opcode(opcode)), 1.into());
                     }
                 }
 
                 if get_option!(trace_side_exits) {
-                    // Use `load_into` with `C_ARG_OPNDS` instead of `opnds` argument for ccall, since `compile_side_exits`
-                    // is after the split pass, which would allow use of `opnds`.
-                    self.load_into(C_ARG_OPNDS[0], Opnd::const_ptr(pc as *const u8));
-                    self.ccall(
-                         rb_zjit_record_exit_stack as *const u8,
-                         vec![]
-                    );
+                    asm_ccall!(self, rb_zjit_record_exit_stack, Opnd::const_ptr(pc as *const u8));
                 }
 
                 asm_comment!(self, "exit to the interpreter");
@@ -1823,19 +1831,6 @@ impl Assembler {
         self.push_insn(Insn::IncrCounter { mem, value });
     }
 
-    /// incr_counter() but uses a specific register to split Insn::Lea
-    pub fn incr_counter_with_reg(&mut self, mem: Opnd, value: Opnd, reg: Opnd) {
-        assert!(matches!(reg, Opnd::Reg(_)), "incr_counter_with_reg should take a register, got: {reg:?}");
-        let counter_opnd = if cfg!(target_arch = "aarch64") { // See arm64_split()
-            assert_ne!(reg, SCRATCH_OPND, "SCRATCH_REG should be reserved for IncrCounter");
-            self.lea_into(reg, mem);
-            reg
-        } else { // x86_emit() expects Opnd::Mem
-            mem
-        };
-        self.incr_counter(counter_opnd, value);
-    }
-
     pub fn jbe(&mut self, target: Target) {
         self.push_insn(Insn::Jbe(target));
     }
@@ -1898,7 +1893,7 @@ impl Assembler {
     }
 
     pub fn lea_into(&mut self, out: Opnd, opnd: Opnd) {
-        assert!(matches!(out, Opnd::Reg(_)), "Destination of lea_into must be a register, got: {out:?}");
+        assert!(matches!(out, Opnd::Reg(_) | Opnd::Mem(_)), "Destination of lea_into must be a register or memory, got: {out:?}");
         self.push_insn(Insn::Lea { opnd, out });
     }
 

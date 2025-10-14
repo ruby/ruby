@@ -20,7 +20,6 @@ pub mod arm64;
 pub struct Label(pub usize);
 
 /// Reference to an ASM label
-#[derive(Clone)]
 pub struct LabelRef {
     // Position in the code block where the label reference exists
     pos: usize,
@@ -34,7 +33,7 @@ pub struct LabelRef {
     num_bytes: usize,
 
     /// The object that knows how to encode the branch instruction.
-    encode: fn(&mut CodeBlock, i64, i64)
+    encode: Box<dyn Fn(&mut CodeBlock, i64, i64)>,
 }
 
 /// Block of memory into which instructions can be assembled
@@ -223,11 +222,11 @@ impl CodeBlock {
     }
 
     // Add a label reference at the current write position
-    pub fn label_ref(&mut self, label: Label, num_bytes: usize, encode: fn(&mut CodeBlock, i64, i64)) {
+    pub fn label_ref(&mut self, label: Label, num_bytes: usize, encode: impl Fn(&mut CodeBlock, i64, i64) + 'static) {
         assert!(label.0 < self.label_addrs.len());
 
         // Keep track of the reference
-        self.label_refs.push(LabelRef { pos: self.write_pos, label, num_bytes, encode });
+        self.label_refs.push(LabelRef { pos: self.write_pos, label, num_bytes, encode: Box::new(encode) });
 
         // Move past however many bytes the instruction takes up
         if self.write_pos + num_bytes < self.mem_size {
@@ -251,7 +250,7 @@ impl CodeBlock {
             assert!(label_addr < self.mem_size);
 
             self.write_pos = ref_pos;
-            (label_ref.encode)(self, (ref_pos + label_ref.num_bytes) as i64, label_addr as i64);
+            (label_ref.encode.as_ref())(self, (ref_pos + label_ref.num_bytes) as i64, label_addr as i64);
 
             // Assert that we've written the same number of bytes that we
             // expected to have written.
