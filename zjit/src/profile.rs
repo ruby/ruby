@@ -74,6 +74,8 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
         YARVINSN_opt_or    => profile_operands(profiler, profile, 2),
         YARVINSN_opt_empty_p => profile_operands(profiler, profile, 1),
         YARVINSN_opt_aref  => profile_operands(profiler, profile, 2),
+        YARVINSN_opt_ltlt  => profile_operands(profiler, profile, 2),
+        YARVINSN_opt_aset  => profile_operands(profiler, profile, 3),
         YARVINSN_opt_not   => profile_operands(profiler, profile, 1),
         YARVINSN_getinstancevariable => profile_self(profiler, profile),
         YARVINSN_objtostring   => profile_operands(profiler, profile, 1),

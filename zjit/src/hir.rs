@@ -12817,4 +12817,63 @@ mod opt_tests {
           Return v25
         ");
     }
+
+    #[test]
+    fn test_optimize_array_aset() {
+        eval("
+            def test(arr)
+              arr[1] = 10
+            end
+            test([])
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          v15:Fixnum[10] = Const Value(10)
+          PatchPoint MethodRedefined(Array@0x1000, []=@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v28:ArrayExact = GuardType v9, ArrayExact
+          v29:BasicObject = CCallVariadic []=@0x1038, v28, v14, v15
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
+    fn test_optimize_array_ltlt() {
+        eval("
+            def test(arr)
+              arr << 1
+            end
+            test([])
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Array@0x1000, <<@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v26:ArrayExact = GuardType v9, ArrayExact
+          v27:BasicObject = CCallWithFrame <<@0x1038, v26, v13
+          CheckInterrupts
+          Return v27
+        ");
+    }
 }
