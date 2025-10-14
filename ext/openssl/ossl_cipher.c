@@ -219,9 +219,8 @@ ossl_cipher_init(VALUE self, int enc)
  *
  *  Initializes the Cipher for encryption.
  *
- *  Make sure to call Cipher#encrypt or Cipher#decrypt before using any of the
- *  following methods:
- *  * [#key=, #iv=, #random_key, #random_iv, #pkcs5_keyivgen]
+ *  Make sure to call either #encrypt or #decrypt before using the Cipher for
+ *  any operation or setting any parameters.
  *
  *  Internally calls EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, 1).
  */
@@ -237,9 +236,8 @@ ossl_cipher_encrypt(VALUE self)
  *
  *  Initializes the Cipher for decryption.
  *
- *  Make sure to call Cipher#encrypt or Cipher#decrypt before using any of the
- *  following methods:
- *  * [#key=, #iv=, #random_key, #random_iv, #pkcs5_keyivgen]
+ *  Make sure to call either #encrypt or #decrypt before using the Cipher for
+ *  any operation or setting any parameters.
  *
  *  Internally calls EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, 0).
  */
@@ -255,19 +253,15 @@ ossl_cipher_decrypt(VALUE self)
  *
  *  Generates and sets the key/IV based on a password.
  *
- *  *WARNING*: This method is only PKCS5 v1.5 compliant when using RC2, RC4-40,
- *  or DES with MD5 or SHA1. Using anything else (like AES) will generate the
- *  key/iv using an OpenSSL specific method. This method is deprecated and
- *  should no longer be used. Use a PKCS5 v2 key generation method from
- *  OpenSSL::PKCS5 instead.
+ *  *WARNING*: This method is deprecated and should not be used. This method
+ *  corresponds to EVP_BytesToKey(), a non-standard OpenSSL extension of the
+ *  legacy PKCS #5 v1.5 key derivation function. See OpenSSL::KDF for other
+ *  options to derive keys from passwords.
  *
  *  === Parameters
  *  * _salt_ must be an 8 byte string if provided.
  *  * _iterations_ is an integer with a default of 2048.
  *  * _digest_ is a Digest object that defaults to 'MD5'
- *
- *  A minimum of 1000 iterations is recommended.
- *
  */
 static VALUE
 ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
@@ -339,6 +333,9 @@ ossl_cipher_update_long(EVP_CIPHER_CTX *ctx, unsigned char *out, long *out_len_p
  *
  *  If _buffer_ is given, the encryption/decryption result will be written to
  *  it. _buffer_ will be resized automatically.
+ *
+ *  *NOTE*: When decrypting using an AEAD cipher, the integrity of the output
+ *  is not verified until #final has been called.
  */
 static VALUE
 ossl_cipher_update(int argc, VALUE *argv, VALUE self)
@@ -398,14 +395,17 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
  *     cipher.final -> string
  *
  *  Returns the remaining data held in the cipher object. Further calls to
- *  Cipher#update or Cipher#final will return garbage. This call should always
+ *  Cipher#update or Cipher#final are invalid. This call should always
  *  be made as the last call of an encryption or decryption operation, after
  *  having fed the entire plaintext or ciphertext to the Cipher instance.
  *
- *  If an authenticated cipher was used, a CipherError is raised if the tag
- *  could not be authenticated successfully. Only call this method after
- *  setting the authentication tag and passing the entire contents of the
- *  ciphertext into the cipher.
+ *  When encrypting using an AEAD cipher, the authentication tag can be
+ *  retrieved by #auth_tag after #final has been called.
+ *
+ *  When decrypting using an AEAD cipher, this method will verify the integrity
+ *  of the ciphertext and the associated data with the authentication tag,
+ *  which must be set by #auth_tag= prior to calling this method.
+ *  If the verification fails, CipherError will be raised.
  */
 static VALUE
 ossl_cipher_final(VALUE self)
@@ -452,7 +452,7 @@ ossl_cipher_name(VALUE self)
 
 /*
  *  call-seq:
- *     cipher.key = string -> string
+ *     cipher.key = string
  *
  *  Sets the cipher key. To generate a key, you should either use a secure
  *  random byte string or, if the key is to be derived from a password, you
@@ -460,6 +460,8 @@ ossl_cipher_name(VALUE self)
  *  generate a secure random-based key, Cipher#random_key may be used.
  *
  *  Only call this method after calling Cipher#encrypt or Cipher#decrypt.
+ *
+ *  See also the man page EVP_CipherInit_ex(3).
  */
 static VALUE
 ossl_cipher_set_key(VALUE self, VALUE key)
@@ -484,15 +486,21 @@ ossl_cipher_set_key(VALUE self, VALUE key)
 
 /*
  *  call-seq:
- *     cipher.iv = string -> string
+ *     cipher.iv = string
  *
  *  Sets the cipher IV. Please note that since you should never be using ECB
  *  mode, an IV is always explicitly required and should be set prior to
- *  encryption. The IV itself can be safely transmitted in public, but it
- *  should be unpredictable to prevent certain kinds of attacks. You may use
- *  Cipher#random_iv to create a secure random IV.
+ *  encryption. The IV itself can be safely transmitted in public.
  *
- *  Only call this method after calling Cipher#encrypt or Cipher#decrypt.
+ *  This method expects the String to have the length equal to #iv_len. To use
+ *  a different IV length with an AEAD cipher, #iv_len= must be set prior to
+ *  calling this method.
+ *
+ *  *NOTE*: In OpenSSL API conventions, the IV value may correspond to the
+ *  "nonce" instead in some cipher modes. Refer to the OpenSSL man pages for
+ *  details.
+ *
+ *  See also the man page EVP_CipherInit_ex(3).
  */
 static VALUE
 ossl_cipher_set_iv(VALUE self, VALUE iv)
@@ -520,8 +528,7 @@ ossl_cipher_set_iv(VALUE self, VALUE iv)
  *  call-seq:
  *     cipher.authenticated? -> true | false
  *
- *  Indicated whether this Cipher instance uses an Authenticated Encryption
- *  mode.
+ *  Indicates whether this Cipher instance uses an AEAD mode.
  */
 static VALUE
 ossl_cipher_is_authenticated(VALUE self)
@@ -535,21 +542,23 @@ ossl_cipher_is_authenticated(VALUE self)
 
 /*
  *  call-seq:
- *     cipher.auth_data = string -> string
+ *     cipher.auth_data = string
  *
- *  Sets the cipher's additional authenticated data. This field must be
- *  set when using AEAD cipher modes such as GCM or CCM. If no associated
- *  data shall be used, this method must *still* be called with a value of "".
+ *  Sets additional authenticated data (AAD), also called associated data, for
+ *  this Cipher. This method is available for AEAD ciphers.
+ *
  *  The contents of this field should be non-sensitive data which will be
  *  added to the ciphertext to generate the authentication tag which validates
  *  the contents of the ciphertext.
  *
- *  The AAD must be set prior to encryption or decryption. In encryption mode,
- *  it must be set after calling Cipher#encrypt and setting Cipher#key= and
- *  Cipher#iv=. When decrypting, the authenticated data must be set after key,
- *  iv and especially *after* the authentication tag has been set. I.e. set it
- *  only after calling Cipher#decrypt, Cipher#key=, Cipher#iv= and
- *  Cipher#auth_tag= first.
+ *  This method must be called after #key= and #iv= have been set, but before
+ *  starting actual encryption or decryption with #update. In some cipher modes,
+ *  #auth_tag_len= and #ccm_data_len= may also need to be called before this
+ *  method.
+ *
+ *  See also the "AEAD Interface" section of the man page EVP_EncryptInit(3).
+ *  This method internally calls EVP_CipherUpdate() with the output buffer
+ *  set to NULL.
  */
 static VALUE
 ossl_cipher_set_auth_data(VALUE self, VALUE data)
@@ -577,16 +586,17 @@ ossl_cipher_set_auth_data(VALUE self, VALUE data)
  *  call-seq:
  *     cipher.auth_tag(tag_len = 16) -> String
  *
- *  Gets the authentication tag generated by Authenticated Encryption Cipher
- *  modes (GCM for example). This tag may be stored along with the ciphertext,
- *  then set on the decryption cipher to authenticate the contents of the
- *  ciphertext against changes. If the optional integer parameter _tag_len_ is
- *  given, the returned tag will be _tag_len_ bytes long. If the parameter is
- *  omitted, the default length of 16 bytes or the length previously set by
- *  #auth_tag_len= will be used. For maximum security, the longest possible
- *  should be chosen.
+ *  Gets the generated authentication tag. This method is available for AEAD
+ *  ciphers, and should be called after encryption has been finalized by calling
+ *  #final.
  *
- *  The tag may only be retrieved after calling Cipher#final.
+ *  The returned tag will be _tag_len_ bytes long. Some cipher modes require
+ *  the desired length in advance using a separate call to #auth_tag_len=,
+ *  before starting encryption.
+ *
+ *  See also the "AEAD Interface" section of the man page EVP_EncryptInit(3).
+ *  This method internally calls EVP_CIPHER_CTX_ctrl() with
+ *  EVP_CTRL_AEAD_GET_TAG.
  */
 static VALUE
 ossl_cipher_get_auth_tag(int argc, VALUE *argv, VALUE self)
@@ -615,16 +625,24 @@ ossl_cipher_get_auth_tag(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     cipher.auth_tag = string -> string
+ *     cipher.auth_tag = string
  *
  *  Sets the authentication tag to verify the integrity of the ciphertext.
- *  This can be called only when the cipher supports AE. The tag must be set
- *  after calling Cipher#decrypt, Cipher#key= and Cipher#iv=, but before
- *  calling Cipher#final. After all decryption is performed, the tag is
- *  verified automatically in the call to Cipher#final.
  *
- *  For OCB mode, the tag length must be supplied with #auth_tag_len=
- *  beforehand.
+ *  The authentication tag must be set before #final is called. The tag is
+ *  verified during the #final call.
+ *
+ *  Note that, for CCM mode and OCB mode, the expected length of the tag must
+ *  be set before starting decryption by a separate call to #auth_tag_len=.
+ *  The content of the tag can be provided at any time before #final is called.
+ *
+ *  *NOTE*: The caller must ensure that the String passed to this method has
+ *  the desired length. Some cipher modes support variable tag lengths, and
+ *  this method may accept a truncated tag without raising an exception.
+ *
+ *  See also the "AEAD Interface" section of the man page EVP_EncryptInit(3).
+ *  This method internally calls EVP_CIPHER_CTX_ctrl() with
+ *  EVP_CTRL_AEAD_SET_TAG.
  */
 static VALUE
 ossl_cipher_set_auth_tag(VALUE self, VALUE vtag)
@@ -649,14 +667,17 @@ ossl_cipher_set_auth_tag(VALUE self, VALUE vtag)
 
 /*
  *  call-seq:
- *     cipher.auth_tag_len = Integer -> Integer
+ *     cipher.auth_tag_len = integer
  *
- *  Sets the length of the authentication tag to be generated or to be given for
- *  AEAD ciphers that requires it as in input parameter. Note that not all AEAD
- *  ciphers support this method.
+ *  Sets the length of the expected authentication tag for this Cipher. This
+ *  method is available for some of AEAD ciphers that require the length to be
+ *  set before starting encryption or decryption, such as CCM mode or OCB mode.
  *
- *  In OCB mode, the length must be supplied both when encrypting and when
- *  decrypting, and must be before specifying an IV.
+ *  For CCM mode and OCB mode, the tag length must be set before #iv= is set.
+ *
+ *  See also the "AEAD Interface" section of the man page EVP_EncryptInit(3).
+ *  This method internally calls EVP_CIPHER_CTX_ctrl() with
+ *  EVP_CTRL_AEAD_SET_TAG and a NULL buffer.
  */
 static VALUE
 ossl_cipher_set_auth_tag_len(VALUE self, VALUE vlen)
@@ -679,11 +700,16 @@ ossl_cipher_set_auth_tag_len(VALUE self, VALUE vlen)
 
 /*
  * call-seq:
- *   cipher.iv_len = integer -> integer
+ *    cipher.iv_len = integer
  *
- * Sets the IV/nonce length of the Cipher. Normally block ciphers don't allow
- * changing the IV length, but some make use of IV for 'nonce'. You may need
- * this for interoperability with other applications.
+ * Sets the IV/nonce length for this Cipher. This method is available for AEAD
+ * ciphers that support variable IV lengths. This method can be called if a
+ * different IV length than OpenSSL's default is desired, prior to calling
+ * #iv=.
+ *
+ * See also the "AEAD Interface" section of the man page EVP_EncryptInit(3).
+ * This method internally calls EVP_CIPHER_CTX_ctrl() with
+ * EVP_CTRL_AEAD_SET_IVLEN.
  */
 static VALUE
 ossl_cipher_set_iv_length(VALUE self, VALUE iv_length)
@@ -709,13 +735,14 @@ ossl_cipher_set_iv_length(VALUE self, VALUE iv_length)
 
 /*
  *  call-seq:
- *     cipher.key_len = integer -> integer
+ *     cipher.key_len = integer
  *
  *  Sets the key length of the cipher.  If the cipher is a fixed length cipher
  *  then attempting to set the key length to any value other than the fixed
  *  value is an error.
  *
- *  Under normal circumstances you do not need to call this method (and probably shouldn't).
+ *  Under normal circumstances you do not need to call this method (and
+ *  probably shouldn't).
  *
  *  See EVP_CIPHER_CTX_set_key_length for further information.
  */
@@ -732,13 +759,16 @@ ossl_cipher_set_key_length(VALUE self, VALUE key_length)
     return key_length;
 }
 
+// TODO: Should #padding= take a boolean value instead?
 /*
  *  call-seq:
- *     cipher.padding = integer -> integer
+ *     cipher.padding = 1 or 0
  *
- *  Enables or disables padding. By default encryption operations are padded using standard block padding and the
- *  padding is checked and removed when decrypting. If the pad parameter is zero then no padding is performed, the
- *  total amount of data encrypted or decrypted must then be a multiple of the block size or an error will occur.
+ *  Enables or disables padding. By default encryption operations are padded
+ *  using standard block padding and the padding is checked and removed when
+ *  decrypting. If the pad parameter is zero then no padding is performed, the
+ *  total amount of data encrypted or decrypted must then be a multiple of the
+ *  block size or an error will occur.
  *
  *  See EVP_CIPHER_CTX_set_padding for further information.
  */
@@ -809,13 +839,17 @@ ossl_cipher_block_size(VALUE self)
 
 /*
  *  call-seq:
- *     cipher.ccm_data_len = integer -> integer
+ *     cipher.ccm_data_len = integer
  *
- *  Sets the length of the plaintext / ciphertext message that will be
- *  processed in CCM mode. Make sure to call this method after #key= and
- *  #iv= have been set, and before #auth_data=.
+ *  Sets the total length of the plaintext / ciphertext message that will be
+ *  processed by #update in CCM mode.
  *
- *  Only call this method after calling Cipher#encrypt or Cipher#decrypt.
+ *  Make sure to call this method after #key= and #iv= have been set, and
+ *  before #auth_data= or #update are called.
+ *
+ *  This method is only available for CCM mode ciphers.
+ *
+ *  See also the "AEAD Interface" section of the man page EVP_EncryptInit(3).
  */
 static VALUE
 ossl_cipher_set_ccm_data_len(VALUE self, VALUE data_len)
@@ -998,16 +1032,20 @@ Init_ossl_cipher(void)
      * could otherwise be exploited to modify ciphertexts in ways beneficial to
      * potential attackers.
      *
-     * An associated data is used where there is additional information, such as
+     * Associated data, also called additional authenticated data (AAD), is
+     * optionally used where there is additional information, such as
      * headers or some metadata, that must be also authenticated but not
-     * necessarily need to be encrypted. If no associated data is needed for
-     * encryption and later decryption, the OpenSSL library still requires a
-     * value to be set - "" may be used in case none is available.
+     * necessarily need to be encrypted.
      *
      * An example using the GCM (Galois/Counter Mode). You have 16 bytes _key_,
      * 12 bytes (96 bits) _nonce_ and the associated data _auth_data_. Be sure
      * not to reuse the _key_ and _nonce_ pair. Reusing an nonce ruins the
      * security guarantees of GCM mode.
+     *
+     *   key = OpenSSL::Random.random_bytes(16)
+     *   nonce = OpenSSL::Random.random_bytes(12)
+     *   auth_data = "authenticated but unencrypted data"
+     *   data = "encrypted data"
      *
      *   cipher = OpenSSL::Cipher.new('aes-128-gcm').encrypt
      *   cipher.key = key
@@ -1015,7 +1053,7 @@ Init_ossl_cipher(void)
      *   cipher.auth_data = auth_data
      *
      *   encrypted = cipher.update(data) + cipher.final
-     *   tag = cipher.auth_tag # produces 16 bytes tag by default
+     *   tag = cipher.auth_tag(16)
      *
      * Now you are the receiver. You know the _key_ and have received _nonce_,
      * _auth_data_, _encrypted_ and _tag_ through an untrusted network. Note
@@ -1028,12 +1066,17 @@ Init_ossl_cipher(void)
      *   decipher = OpenSSL::Cipher.new('aes-128-gcm').decrypt
      *   decipher.key = key
      *   decipher.iv = nonce
-     *   decipher.auth_tag = tag
+     *   decipher.auth_tag = tag # could be called at any time before #final
      *   decipher.auth_data = auth_data
      *
      *   decrypted = decipher.update(encrypted) + decipher.final
      *
      *   puts data == decrypted #=> true
+     *
+     * Note that other AEAD ciphers may require additional steps, such as
+     * setting the expected tag length (#auth_tag_len=) or the total data
+     * length (#ccm_data_len=) in advance. Make sure to read the relevant man
+     * page for details.
      */
     cCipher = rb_define_class_under(mOSSL, "Cipher", rb_cObject);
     eCipherError = rb_define_class_under(cCipher, "CipherError", eOSSLError);
