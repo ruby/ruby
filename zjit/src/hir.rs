@@ -1649,7 +1649,7 @@ impl Function {
     }
 
     /// Check if the type of `insn` is a subtype of `ty`.
-    fn is_a(&self, insn: InsnId, ty: Type) -> bool {
+    pub fn is_a(&self, insn: InsnId, ty: Type) -> bool {
         self.type_of(insn).is_subtype(ty)
     }
 
@@ -13329,6 +13329,89 @@ mod opt_tests {
           v13:BasicObject = SendWithoutBlock v10, :succ, v11
           CheckInterrupts
           Return v13
+        ");
+    }
+
+    #[test]
+    fn test_optimize_is_a_true() {
+        eval(r#"
+            def test(o) = o.is_a?(String)
+            test("foo")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, String)
+          v24:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(String@0x1008, is_a?@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(String@0x1008)
+          v28:StringExact = GuardType v9, StringExact
+          v29:TrueClass = Const Value(true)
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_optimize_is_a_false() {
+        eval(r#"
+            def test(o) = o.is_a?(Integer)
+            test("foo")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Integer)
+          v24:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(String@0x1010, is_a?@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(String@0x1010)
+          v28:StringExact = GuardType v9, StringExact
+          v29:FalseClass = Const Value(false)
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_optimize_is_a_unknown() {
+        eval(r#"
+            def test(o) = 1.is_a?(1)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:Fixnum[1] = Const Value(1)
+          v14:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1000, is_a?@0x1008, cme:0x1010)
+          v24:BasicObject = CCallWithFrame is_a?@0x1038, v13, v14
+          CheckInterrupts
+          Return v24
         ");
     }
 }
