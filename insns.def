@@ -1553,6 +1553,7 @@ opt_length
 (CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_length(recv, BOP_LENGTH);
 
@@ -1567,6 +1568,7 @@ opt_size
 (CALL_DATA cd)
 (VALUE recv)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_length(recv, BOP_SIZE);
 
@@ -1626,6 +1628,7 @@ opt_regexpmatch2
 (VALUE obj2, VALUE obj1)
 (VALUE val)
 // attr bool leaf = false; /* match_at() has rb_thread_check_ints() */
+// attr bool zjit_profile = true;
 {
     val = vm_opt_regexpmatch2(obj2, obj1);
 
