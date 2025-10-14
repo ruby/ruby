@@ -4957,7 +4957,7 @@ mod tests {
     }
 
     #[track_caller]
-    fn assert_contains_opcode(method: &str, opcode: u32) {
+    pub fn assert_contains_opcode(method: &str, opcode: u32) {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         assert!(iseq_contains_opcode(iseq, opcode), "iseq {method} does not contain {}", insn_name(opcode as usize));
@@ -7999,6 +7999,7 @@ mod opt_tests {
     use super::*;
     use crate::{hir_strings, options::*};
     use insta::assert_snapshot;
+    use super::tests::assert_contains_opcode;
 
     #[track_caller]
     fn hir_string(method: &str) -> String {
@@ -12872,6 +12873,88 @@ mod opt_tests {
           PatchPoint NoSingletonClass(Array@0x1000)
           v26:ArrayExact = GuardType v9, ArrayExact
           v27:BasicObject = CCallWithFrame <<@0x1038, v26, v13
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_optimize_array_length() {
+        eval("
+            def test(arr) = arr.length
+            test([])
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_length);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v25:ArrayExact = GuardType v9, ArrayExact
+          v26:Fixnum = CCall length@0x1038, v25
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn test_optimize_array_size() {
+        eval("
+            def test(arr) = arr.size
+            test([])
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_size);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v25:ArrayExact = GuardType v9, ArrayExact
+          v26:Fixnum = CCall size@0x1038, v25
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn test_optimize_regexpmatch2() {
+        eval(r#"
+            def test(s) = s =~ /a/
+            test("foo")
+        "#);
+        assert_contains_opcode("test", YARVINSN_opt_regexpmatch2);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:RegexpExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint MethodRedefined(String@0x1008, =~@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(String@0x1008)
+          v26:StringExact = GuardType v9, StringExact
+          v27:BasicObject = CCallWithFrame =~@0x1040, v26, v13
           CheckInterrupts
           Return v27
         ");
