@@ -198,6 +198,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cArray, "reverse", types::ArrayExact, leaf, elidable);
     annotate!(rb_cArray, "join", types::StringExact);
     annotate!(rb_cArray, "[]", inline_array_aref);
+    annotate!(rb_cHash, "[]", inline_hash_aref);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cNilClass, "nil?", types::TrueClass, no_gc, leaf, elidable);
     annotate!(rb_mKernel, "nil?", types::FalseClass, no_gc, leaf, elidable);
@@ -245,6 +246,14 @@ fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             let result = fun.push_insn(block, hir::Insn::ArrayArefFixnum { array: recv, index });
             return Some(result);
         }
+    }
+    None
+}
+
+fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    if let &[key] = args  {
+        let result = fun.push_insn(block, hir::Insn::HashAref { hash: recv, key, state });
+        return Some(result);
     }
     None
 }
