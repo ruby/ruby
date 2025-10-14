@@ -3,6 +3,7 @@
 use std::{ffi::{CStr, CString}, ptr::null};
 use std::os::raw::{c_char, c_int, c_uint};
 use crate::cruby::*;
+use crate::stats::Counter;
 use std::collections::HashSet;
 
 /// Default --zjit-num-profiles
@@ -72,7 +73,7 @@ pub struct Options {
     pub dump_disasm: bool,
 
     /// Trace and write side exit source maps to /tmp for stackprof.
-    pub trace_side_exits: bool,
+    pub trace_side_exits: Option<TraceExits>,
 
     /// Frequency of tracing side exits.
     pub trace_side_exits_sample_interval: usize,
@@ -102,7 +103,7 @@ impl Default for Options {
             dump_hir_graphviz: None,
             dump_lir: false,
             dump_disasm: false,
-            trace_side_exits: false,
+            trace_side_exits: None,
             trace_side_exits_sample_interval: 0,
             perf: false,
             allowed_iseqs: None,
@@ -125,11 +126,19 @@ pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
     ("--zjit-perf",  "Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf."),
     ("--zjit-log-compiled-iseqs=path",
                      "Log compiled ISEQs to the file. The file will be truncated."),
-    ("--zjit-trace-exits",
-                     "Record Ruby source location when side-exiting."),
-    ("--zjit-trace-exits-sample-rate",
+    ("--zjit-trace-exits[=counter]",
+                     "Record source on side-exit. `Counter` picks specific counter."),
+    ("--zjit-trace-exits-sample-rate=num",
                      "Frequency at which to record side exits. Must be `usize`.")
 ];
+
+#[derive(Copy, Clone, Debug)]
+pub enum TraceExits {
+    // Trace all exits
+    All,
+    // Trace exits for a specific `Counter`
+    Counter(Counter),
+}
 
 #[derive(Clone, Copy, Debug)]
 pub enum DumpHIR {
@@ -249,13 +258,18 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             options.print_stats = false;
         }
 
-        ("trace-exits", "") => {
-            options.trace_side_exits = true;
+        ("trace-exits", exits) => {
+            options.trace_side_exits = match exits {
+                "" => Some(TraceExits::All),
+                name => Counter::get(name).map(TraceExits::Counter),
+            }
         }
 
         ("trace-exits-sample-rate", sample_interval) => {
-            // Even if `trace_side_exits` is already set, set it.
-            options.trace_side_exits = true;
+            // If not already set, then set it to `TraceExits::All` by default.
+            if options.trace_side_exits.is_none() {
+                options.trace_side_exits = Some(TraceExits::All);
+            }
             // `sample_interval ` must provide a string that can be validly parsed to a `usize`.
             options.trace_side_exits_sample_interval = sample_interval.parse::<usize>().ok()?;
         }

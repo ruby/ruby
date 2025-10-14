@@ -82,7 +82,7 @@ impl ZJITState {
         let exit_trampoline = gen_exit_trampoline(&mut cb).unwrap();
         let function_stub_hit_trampoline = gen_function_stub_hit_trampoline(&mut cb).unwrap();
 
-        let exit_locations = if get_option!(trace_side_exits) {
+        let exit_locations = if get_option!(trace_side_exits).is_some() {
             Some(SideExitLocations::default())
         } else {
             None
@@ -369,7 +369,7 @@ fn try_increment_existing_stack(
 /// Record a backtrace with ZJIT side exits
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_record_exit_stack(exit_pc: *const VALUE) {
-    if !zjit_enabled_p() || !get_option!(trace_side_exits) {
+    if !zjit_enabled_p() || get_option!(trace_side_exits).is_none() {
         return;
     }
 
@@ -425,7 +425,7 @@ pub extern "C" fn rb_zjit_record_exit_stack(exit_pc: *const VALUE) {
 /// Mark `raw_samples` so they can be used by rb_zjit_add_frame.
 pub fn gc_mark_raw_samples() {
     // Return if ZJIT is not enabled
-    if !zjit_enabled_p() || !get_option!(trace_side_exits) {
+    if !zjit_enabled_p() || get_option!(trace_side_exits).is_none() {
         return;
     }
 

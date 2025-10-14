@@ -4,9 +4,9 @@ use std::mem::take;
 use crate::codegen::local_size_and_idx_to_ep_offset;
 use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::SideExitReason;
-use crate::options::{debug, get_option};
+use crate::options::{debug, get_option, TraceExits};
 use crate::cruby::VALUE;
-use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, CompileError};
+use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
 use crate::state::rb_zjit_record_exit_stack;
@@ -1644,8 +1644,22 @@ impl Assembler
                     }
                 }
 
-                if get_option!(trace_side_exits) {
-                    asm_ccall!(self, rb_zjit_record_exit_stack, Opnd::const_ptr(pc as *const u8));
+                if get_option!(trace_side_exits).is_some() {
+                    // Get the corresponding `Counter` for the current `SideExitReason`.
+                    let side_exit_counter = side_exit_counter(reason);
+
+                    // Only record the exit if `trace_side_exits` is defined and the counter is either the one specified
+                    let should_record_exit = get_option!(trace_side_exits)
+                        .map(|trace| match trace {
+                            TraceExits::All => true,
+                            TraceExits::Counter(counter) if counter == side_exit_counter => true,
+                            _ => false,
+                        })
+                        .unwrap_or(false);
+
+                    if should_record_exit {
+                        asm_ccall!(self, rb_zjit_record_exit_stack, Opnd::const_ptr(pc as *const u8));
+                    }
                 }
 
                 asm_comment!(self, "exit to the interpreter");
