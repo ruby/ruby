@@ -1602,7 +1602,7 @@ impl Assembler
                 if c_args.len() > 0 {
                     // Resolve C argument dependencies
                     let c_args_len = c_args.len() as isize;
-                    let moves = Self::reorder_reg_moves(&c_args.drain(..).collect());
+                    let moves = Self::reorder_reg_moves(&std::mem::take(&mut c_args));
                     shift_live_ranges(&mut shifted_live_ranges, asm.insns.len(), moves.len() as isize - c_args_len);
 
                     // Push batched C arguments
