@@ -165,6 +165,7 @@ pub fn init() -> Annotations {
             $(
                 props.$properties = true;
             )*
+            #[allow(unused_unsafe)]
             annotate_c_method(cfuncs, unsafe { $module }, $method_name, props);
         }
     }
@@ -204,6 +205,8 @@ pub fn init() -> Annotations {
     annotate!(rb_cBasicObject, "!", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "initialize", types::NilClass, no_gc, leaf, elidable);
     annotate!(rb_cString, "to_s", inline_string_to_s);
+    let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
+    annotate!(thread_singleton, "current", types::BasicObject, no_gc, leaf);
 
     annotate_builtin!(rb_mKernel, "Float", types::Float);
     annotate_builtin!(rb_mKernel, "Integer", types::Integer);
