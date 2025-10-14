@@ -12,6 +12,7 @@ use crate::cruby::*;
 use std::collections::HashMap;
 use std::ffi::c_void;
 use crate::hir_type::{types, Type};
+use crate::hir;
 
 pub struct Annotations {
     cfuncs: HashMap<*mut c_void, FnProperties>,
@@ -29,6 +30,7 @@ pub struct FnProperties {
     pub return_type: Type,
     /// Whether it's legal to remove the call if the result is unused
     pub elidable: bool,
+    pub inline: fn(&mut hir::Function, hir::BlockId, hir::InsnId, &[hir::InsnId], hir::InsnId) -> Option<hir::InsnId>,
 }
 
 /// A safe default for un-annotated Ruby methods: we can't optimize them or their returned values.
@@ -39,6 +41,7 @@ impl Default for FnProperties {
             leaf: false,
             return_type: types::BasicObject,
             elidable: false,
+            inline: no_inline,
         }
     }
 }
@@ -152,9 +155,13 @@ pub fn init() -> Annotations {
     let builtin_funcs = &mut HashMap::new();
 
     macro_rules! annotate {
+        ($module:ident, $method_name:literal, $inline:ident) => {
+            let props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: types::BasicObject, inline: $inline };
+            annotate_c_method(cfuncs, unsafe { $module }, $method_name, props);
+        };
         ($module:ident, $method_name:literal, $return_type:expr $(, $properties:ident)*) => {
             #[allow(unused_mut)]
-            let mut props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: $return_type };
+            let mut props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: $return_type, inline: no_inline };
             $(
                 props.$properties = true;
             )*
@@ -171,14 +178,15 @@ pub fn init() -> Annotations {
                 no_gc: false,
                 leaf: false,
                 elidable: false,
-                return_type: $return_type
+                return_type: $return_type,
+                inline: no_inline,
             };
             $(props.$properties = true;)+
             annotate_builtin_method(builtin_funcs, unsafe { $module }, $method_name, props);
         }
     }
 
-    annotate!(rb_mKernel, "itself", types::BasicObject, no_gc, leaf, elidable);
+    annotate!(rb_mKernel, "itself", inline_kernel_itself);
     annotate!(rb_cString, "bytesize", types::Fixnum, no_gc, leaf);
     annotate!(rb_cString, "to_s", types::StringExact);
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
@@ -188,12 +196,14 @@ pub fn init() -> Annotations {
     annotate!(rb_cArray, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cArray, "reverse", types::ArrayExact, leaf, elidable);
     annotate!(rb_cArray, "join", types::StringExact);
+    annotate!(rb_cArray, "[]", inline_array_aref);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cNilClass, "nil?", types::TrueClass, no_gc, leaf, elidable);
     annotate!(rb_mKernel, "nil?", types::FalseClass, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "==", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "initialize", types::NilClass, no_gc, leaf, elidable);
+    annotate!(rb_cString, "to_s", inline_string_to_s);
 
     annotate_builtin!(rb_mKernel, "Float", types::Float);
     annotate_builtin!(rb_mKernel, "Integer", types::Integer);
@@ -203,4 +213,35 @@ pub fn init() -> Annotations {
         cfuncs: std::mem::take(cfuncs),
         builtin_funcs: std::mem::take(builtin_funcs),
     }
+}
+
+fn no_inline(_fun: &mut hir::Function, _block: hir::BlockId, _recv: hir::InsnId, _args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    None
+}
+
+fn inline_string_to_s(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    if args.len() == 0 && fun.likely_a(recv, types::StringExact, state) {
+        let recv = fun.coerce_to(block, recv, types::StringExact, state);
+        return Some(recv);
+    }
+    None
+}
+
+fn inline_kernel_itself(_fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    if args.len() == 0 {
+        // No need to coerce the receiver; that is done by the SendWithoutBlock rewriting.
+        return Some(recv);
+    }
+    None
+}
+
+fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    if let &[index] = args {
+        if fun.likely_a(index, types::Fixnum, state) {
+            let index = fun.coerce_to(block, index, types::Fixnum, state);
+            let result = fun.push_insn(block, hir::Insn::ArrayArefFixnum { array: recv, index });
+            return Some(result);
+        }
+    }
+    None
 }
