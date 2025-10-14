@@ -2398,7 +2398,7 @@ impl Function {
                     if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
                         // Copy contents of tmp_block to block
                         assert_ne!(block, tmp_block);
-                        let insns = fun.blocks[tmp_block.0].insns.drain(..).collect::<Vec<_>>();
+                        let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
                         fun.blocks[block.0].insns.extend(insns);
                         fun.make_equal_to(send_insn_id, replacement);
                         fun.remove_block(tmp_block);
@@ -2453,7 +2453,7 @@ impl Function {
                         if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
                             // Copy contents of tmp_block to block
                             assert_ne!(block, tmp_block);
-                            let insns = fun.blocks[tmp_block.0].insns.drain(..).collect::<Vec<_>>();
+                            let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
                             fun.blocks[block.0].insns.extend(insns);
                             fun.make_equal_to(send_insn_id, replacement);
                             fun.remove_block(tmp_block);
