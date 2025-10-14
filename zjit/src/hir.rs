@@ -12790,4 +12790,31 @@ mod opt_tests {
           Return v30
         ");
     }
+
+    #[test]
+    fn test_optimize_thread_current() {
+        eval("
+            def test = Thread.current
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Thread)
+          v21:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Class@0x1010, current@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(Class@0x1010)
+          v25:BasicObject = CCall current@0x1048, v21
+          CheckInterrupts
+          Return v25
+        ");
+    }
 }
