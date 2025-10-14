@@ -2427,7 +2427,7 @@ impl<'a> JITState<'a> {
         // SAFETY: allocated with Box above
         unsafe { ptr::write(blockref, block) };
 
-        // Block is initialized now. Note that MaybeUnint<T> has the same layout as T.
+        // Block is initialized now. Note that MaybeUninit<T> has the same layout as T.
         let blockref = NonNull::new(blockref as *mut Block).expect("no null from Box");
 
         // Track all the assumptions the block makes as invariants
@@ -3797,7 +3797,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let mut asm = Assembler::new_without_iseq();
 
     // For `branch_stub_hit(branch_ptr, target_idx, ec)`,
-    // `branch_ptr` and `target_idx` is different for each stub,
+    // `branch_ptr` and `target_idx` are different for each stub,
     // but the call and what's after is the same. This trampoline
     // is the unchanging part.
     // Since this trampoline is static, it allows code GC inside
