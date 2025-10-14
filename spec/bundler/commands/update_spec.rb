@@ -1571,12 +1571,12 @@ RSpec.describe "bundle update --bundler" do
   end
 
   it "does not claim to update to Bundler version to a wrong version when cached gems are present" do
-    pristine_system_gems "bundler-2.99.0"
+    pristine_system_gems "bundler-4.99.0"
 
     build_repo4 do
       build_gem "myrack", "3.0.9.1"
 
-      build_bundler "2.99.0"
+      build_bundler "4.99.0"
     end
 
     gemfile <<~G
