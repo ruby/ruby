@@ -999,7 +999,7 @@ rb_gvar_set_entry(struct rb_global_entry *entry, VALUE val)
 }
 
 #define USE_NAMESPACE_GVAR_TBL(ns,entry) \
-    (NAMESPACE_OPTIONAL_P(ns) && \
+    (NAMESPACE_USER_P(ns) && \
      (!entry || !entry->var->namespace_ready || entry->var->setter != rb_gvar_readonly_setter))
 
 VALUE
@@ -1012,7 +1012,6 @@ rb_gvar_set(ID id, VALUE val)
     RB_VM_LOCKING() {
         entry = rb_global_entry(id);
 
-        // TODO: consider root/main namespaces
         if (USE_NAMESPACE_GVAR_TBL(ns, entry)) {
             rb_hash_aset(ns->gvar_tbl, rb_id2sym(entry->id), val);
             retval = val;
