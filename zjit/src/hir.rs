@@ -2431,9 +2431,6 @@ impl Function {
                     // func(int argc, VALUE *argv, VALUE recv)
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
                     if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
-                        if get_option!(stats) {
-                            count_not_inlined_cfunc(fun, block, method);
-                        }
                         gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
 
                         if recv_class.instance_can_have_singleton_class() {
@@ -2464,6 +2461,9 @@ impl Function {
                         }
 
                         // No inlining; emit a call
+                        if get_option!(stats) {
+                            count_not_inlined_cfunc(fun, block, method);
+                        }
                         let return_type = props.return_type;
                         let elidable = props.elidable;
                         let ccall = fun.push_insn(block, Insn::CCallVariadic {
