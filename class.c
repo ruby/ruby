@@ -480,7 +480,7 @@ rb_module_add_to_subclasses_list(VALUE module, VALUE iclass)
 }
 
 void
-rb_class_remove_subclass_head(VALUE klass) // TODO: check this is still used and required
+rb_class_remove_subclass_head(VALUE klass)
 {
     rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
     rb_class_classext_free_subclasses(ext, klass);
