@@ -204,7 +204,7 @@ put_situation(scanner)
 
 ## Target Substring
 
-The target substring is the the part of the [stored string][1]
+The target substring is the part of the [stored string][1]
 that extends from the current [byte position][2] to the end of the stored string;
 it is always either:
 
