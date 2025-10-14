@@ -351,20 +351,6 @@ rb_namespace_s_current(VALUE recv)
 
 /*
  *  call-seq:
- *    Namespace.is_builtin?(klass) -> true or false
- *
- *  Returns +true+ if +klass+ is only in a user namespace.
- */
-static VALUE
-rb_namespace_s_is_builtin_p(VALUE recv, VALUE klass)
-{
-    if (RCLASS_PRIME_CLASSEXT_READABLE_P(klass) && !RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass))
-        return Qtrue;
-    return Qfalse;
-}
-
-/*
- *  call-seq:
  *    load_path -> array
  *
  *  Returns namespace local load path.
@@ -1056,7 +1042,6 @@ Init_Namespace(void)
 
     rb_define_singleton_method(rb_cNamespace, "enabled?", rb_namespace_s_getenabled, 0);
     rb_define_singleton_method(rb_cNamespace, "current", rb_namespace_s_current, 0);
-    rb_define_singleton_method(rb_cNamespace, "is_builtin?", rb_namespace_s_is_builtin_p, 1);
 
     rb_define_method(rb_cNamespace, "load_path", rb_namespace_load_path, 0);
     rb_define_method(rb_cNamespace, "load", rb_namespace_load, -1);
