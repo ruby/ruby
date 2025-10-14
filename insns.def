@@ -1470,6 +1470,7 @@ opt_ltlt
  * string.  Then what happens if that codepoint does not exist in the
  * string's encoding?  Of course an exception.  That's not a leaf. */
 // attr bool leaf = false; /* has "invalid codepoint" exception */
+// attr bool zjit_profile = true;
 {
     val = vm_opt_ltlt(recv, obj);
 
@@ -1537,6 +1538,7 @@ opt_aset
 /* This is another story than opt_aref.  When vm_opt_aset() resorts
  * to rb_hash_aset(), which should call #hash for `obj`. */
 // attr bool leaf = false; /* has rb_funcall() */ /* calls #hash */
+// attr bool zjit_profile = true;
 {
     val = vm_opt_aset(recv, obj, set);
 
