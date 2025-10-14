@@ -13356,6 +13356,7 @@ mod opt_tests {
           PatchPoint NoSingletonClass(String@0x1008)
           v28:StringExact = GuardType v9, StringExact
           v29:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v29
         ");
@@ -13384,7 +13385,7 @@ mod opt_tests {
           PatchPoint MethodRedefined(String@0x1010, is_a?@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(String@0x1010)
           v28:StringExact = GuardType v9, StringExact
-          v29:FalseClass = Const Value(false)
+          v29:BasicObject = CCallWithFrame is_a?@0x1048, v28, v24
           CheckInterrupts
           Return v29
         ");

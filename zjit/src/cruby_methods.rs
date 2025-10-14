@@ -290,14 +290,14 @@ fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, 
     Some(result)
 }
 
-fn inline_kernel_is_a_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_kernel_is_a_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[rhs] = args else { return None; };
     if !fun.is_a(rhs, types::Class) { return None; }
     let rhs_class = fun.type_of(rhs).ruby_object()?;
-    let result = if fun.is_a(recv, Type::from_class(rhs_class)) {
-        fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qtrue) })
+    if fun.is_a(recv, Type::from_class(rhs_class)) {
+        Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qtrue) }))
     } else {
-        fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) })
-    };
-    Some(result)
+        // TODO(max): Handle other cases
+        return None
+    }
 }
