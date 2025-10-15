@@ -11587,6 +11587,8 @@ mod opt_tests {
           CheckInterrupts
           Return v28
         ");
+       // TODO(max): Check the result of `S[0] = 5; test` using `inspect` to make sure that we
+       // actually do the load at run-time.
     }
 
     #[test]
