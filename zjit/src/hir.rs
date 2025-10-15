@@ -13193,4 +13193,80 @@ mod opt_tests {
           Return v20
         ");
     }
+
+    #[test]
+    fn test_inline_integer_succ_with_fixnum() {
+        eval("
+            def test(x) = x.succ
+            test(4)
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_succ);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, succ@0x1008, cme:0x1010)
+          v24:Fixnum = GuardType v9, Fixnum
+          v25:Fixnum[1] = Const Value(1)
+          v26:Fixnum = FixnumAdd v24, v25
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn test_dont_inline_integer_succ_with_bignum() {
+        eval("
+            def test(x) = x.succ
+            test(4 << 70)
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_succ);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, succ@0x1008, cme:0x1010)
+          v24:Integer = GuardType v9, Integer
+          v25:BasicObject = CCallWithFrame succ@0x1038, v24
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_dont_inline_integer_succ_with_args() {
+        eval("
+            def test = 4.succ 1
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[4] = Const Value(4)
+          v11:Fixnum[1] = Const Value(1)
+          v13:BasicObject = SendWithoutBlock v10, :succ, v11
+          CheckInterrupts
+          Return v13
+        ");
+    }
 }
