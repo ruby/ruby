@@ -496,6 +496,13 @@ class_get_subclasses_for_ns(struct st_table *tbl, VALUE ns_id)
     return NULL;
 }
 
+static int
+remove_class_from_subclasses_replace_first_entry(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+{
+    *value = arg;
+    return ST_CONTINUE;
+}
+
 static void
 remove_class_from_subclasses(struct st_table *tbl, VALUE ns_id, VALUE klass)
 {
@@ -516,7 +523,7 @@ remove_class_from_subclasses(struct st_table *tbl, VALUE ns_id, VALUE klass)
 
             if (first_entry) {
                 if (next) {
-                    st_insert(tbl, ns_id, (st_data_t)next);
+                    st_update(tbl, ns_id, remove_class_from_subclasses_replace_first_entry, (st_data_t)next);
                 }
                 else {
                     // no subclass entries in this ns
