@@ -2630,9 +2630,13 @@ impl Function {
                     Insn::ArrayArefFixnum { array, index } if self.type_of(array).ruby_object_known()
                                                            && self.type_of(index).ruby_object_known() => {
                         let array_obj = self.type_of(array).ruby_object().unwrap();
-                        let index = self.type_of(index).fixnum_value().unwrap();
-                        let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
-                        self.new_insn(Insn::Const { val: Const::Value(val) })
+                        if array_obj.is_frozen() {
+                            let index = self.type_of(index).fixnum_value().unwrap();
+                            let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
+                            self.new_insn(Insn::Const { val: Const::Value(val) })
+                        } else {
+                            insn_id
+                        }
                     }
                     Insn::Test { val } if self.type_of(val).is_known_falsy() => {
                         self.new_insn(Insn::Const { val: Const::CBool(false) })
@@ -11554,6 +11558,37 @@ mod opt_tests {
           CheckInterrupts
           Return v13
         ");
+    }
+
+    #[test]
+    fn test_dont_eliminate_load_from_non_frozen_array() {
+        eval(r##"
+            S = [4,5,6]
+            def test = S[0]
+            test
+        "##);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, S)
+          v24:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v12:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Array@0x1010, []@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(Array@0x1010)
+          v28:BasicObject = ArrayArefFixnum v24, v12
+          CheckInterrupts
+          Return v28
+        ");
+       // TODO(max): Check the result of `S[0] = 5; test` using `inspect` to make sure that we
+       // actually do the load at run-time.
     }
 
     #[test]
