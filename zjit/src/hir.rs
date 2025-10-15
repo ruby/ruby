@@ -526,6 +526,16 @@ impl std::fmt::Display for SideExitReason {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum ParamType {
+    Rest,
+    Optional,
+    Keyword,
+    KeywordRest,
+    Block,
+    Forwardable,
+}
+
 /// Reason why a send-ish instruction cannot be optimized from a fallback instruction
 #[derive(Debug, Clone, Copy)]
 pub enum SendFallbackReason {
@@ -534,6 +544,7 @@ pub enum SendFallbackReason {
     SendWithoutBlockCfuncNotVariadic,
     SendWithoutBlockCfuncArrayVariadic,
     SendWithoutBlockNotOptimizedMethodType(MethodType),
+    SendWithoutBlockIseqNotOptimizedParamType(ParamType),
     SendWithoutBlockDirectTooManyArgs,
     SendPolymorphic,
     SendNoProfiles,
@@ -1300,14 +1311,14 @@ pub enum ValidationError {
     DuplicateInstruction(BlockId, InsnId),
 }
 
-fn can_direct_send(iseq: *const rb_iseq_t) -> bool {
-    if unsafe { rb_get_iseq_flags_has_rest(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_opt(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_kw(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_kwrest(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_block(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_forwardable(iseq) } { false }
-    else { true }
+fn unsupported_parameter_type(iseq: *const rb_iseq_t) -> Option<ParamType> {
+    if unsafe { rb_get_iseq_flags_has_rest(iseq) } { return Some(ParamType::Rest); }
+    if unsafe { rb_get_iseq_flags_has_opt(iseq) } { return Some(ParamType::Optional); }
+    if unsafe { rb_get_iseq_flags_has_kw(iseq) } { return Some(ParamType::Keyword); }
+    if unsafe { rb_get_iseq_flags_has_kwrest(iseq) } { return Some(ParamType::KeywordRest); }
+    if unsafe { rb_get_iseq_flags_has_block(iseq) } { return Some(ParamType::Block); }
+    if unsafe { rb_get_iseq_flags_forwardable(iseq) } { return Some(ParamType::Forwardable); }
+    None
 }
 
 /// A [`Function`], which is analogous to a Ruby ISeq, is a control-flow graph of [`Block`]s
@@ -2059,8 +2070,8 @@ impl Function {
                             // Only specialize positional-positional calls
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            if !can_direct_send(iseq) {
-                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Iseq));
+                            if let Some(param_type) = unsupported_parameter_type(iseq) {
+                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockIseqNotOptimizedParamType(param_type));
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });

@@ -158,6 +158,12 @@ make_counters! {
         send_fallback_send_without_block_cfunc_not_variadic,
         send_fallback_send_without_block_cfunc_array_variadic,
         send_fallback_send_without_block_not_optimized_method_type,
+        send_fallback_send_without_block_not_optimized_param_rest,
+        send_fallback_send_without_block_not_optimized_param_optional,
+        send_fallback_send_without_block_not_optimized_param_keyword,
+        send_fallback_send_without_block_not_optimized_param_keyword_rest,
+        send_fallback_send_without_block_not_optimized_param_block,
+        send_fallback_send_without_block_not_optimized_param_forwardable,
         send_fallback_send_without_block_direct_too_many_args,
         send_fallback_send_polymorphic,
         send_fallback_send_no_profiles,
@@ -346,12 +352,19 @@ pub fn exit_counter_ptr(reason: crate::hir::SideExitReason) -> *mut u64 {
 pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter {
     use crate::hir::SendFallbackReason::*;
     use crate::stats::Counter::*;
+    use crate::hir::ParamType;
     match reason {
         SendWithoutBlockPolymorphic               => send_fallback_send_without_block_polymorphic,
         SendWithoutBlockNoProfiles                => send_fallback_send_without_block_no_profiles,
         SendWithoutBlockCfuncNotVariadic          => send_fallback_send_without_block_cfunc_not_variadic,
         SendWithoutBlockCfuncArrayVariadic        => send_fallback_send_without_block_cfunc_array_variadic,
         SendWithoutBlockNotOptimizedMethodType(_) => send_fallback_send_without_block_not_optimized_method_type,
+        SendWithoutBlockIseqNotOptimizedParamType(ParamType::Rest) => send_fallback_send_without_block_not_optimized_param_rest,
+        SendWithoutBlockIseqNotOptimizedParamType(ParamType::Optional) => send_fallback_send_without_block_not_optimized_param_optional,
+        SendWithoutBlockIseqNotOptimizedParamType(ParamType::Keyword) => send_fallback_send_without_block_not_optimized_param_keyword,
+        SendWithoutBlockIseqNotOptimizedParamType(ParamType::KeywordRest) => send_fallback_send_without_block_not_optimized_param_keyword_rest,
+        SendWithoutBlockIseqNotOptimizedParamType(ParamType::Block) => send_fallback_send_without_block_not_optimized_param_block,
+        SendWithoutBlockIseqNotOptimizedParamType(ParamType::Forwardable) => send_fallback_send_without_block_not_optimized_param_forwardable,
         SendWithoutBlockDirectTooManyArgs         => send_fallback_send_without_block_direct_too_many_args,
         SendPolymorphic                           => send_fallback_send_polymorphic,
         SendNoProfiles                            => send_fallback_send_no_profiles,
