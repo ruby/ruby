@@ -90,7 +90,7 @@
 
 use std::convert::From;
 use std::ffi::{c_void, CString, CStr};
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::os::raw::{c_char, c_int, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
 
@@ -400,10 +400,27 @@ pub enum ClassRelationship {
     NoRelation,
 }
 
+/// A print adapator for debug info about a [VALUE]. Includes info
+/// the GC knows about the handle. Example: `println!("{}", value.obj_info());`.
+pub struct ObjInfoPrinter(VALUE);
+
+impl Display for ObjInfoPrinter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        use std::mem::MaybeUninit;
+        const BUFFER_SIZE: usize = 0x100;
+        let mut buffer: MaybeUninit<[c_char; BUFFER_SIZE]> = MaybeUninit::uninit();
+        let info = unsafe {
+            rb_raw_obj_info(buffer.as_mut_ptr().cast(), BUFFER_SIZE, self.0);
+            CStr::from_ptr(buffer.as_ptr().cast()).to_string_lossy()
+        };
+        write!(f, "{info}")
+    }
+}
+
 impl VALUE {
-    /// Dump info about the value to the console similarly to rp(VALUE)
-    pub fn dump_info(self) {
-        unsafe { rb_obj_info_dump(self) }
+    /// Get a printer for raw debug info from `rb_obj_info()` about the value.
+    pub fn obj_info(self) -> ObjInfoPrinter {
+        ObjInfoPrinter(self)
     }
 
     /// Return whether the value is truthy or falsy in Ruby -- only nil and false are falsy.
@@ -507,8 +524,11 @@ impl VALUE {
     pub fn class_of(self) -> VALUE {
         if !self.special_const_p() {
             let builtin_type = self.builtin_type();
-            assert_ne!(builtin_type, RUBY_T_NONE, "ZJIT should only see live objects");
-            assert_ne!(builtin_type, RUBY_T_MOVED, "ZJIT should only see live objects");
+            assert!(
+                builtin_type != RUBY_T_NONE && builtin_type != RUBY_T_MOVED,
+                "ZJIT saw a dead object. T_type={builtin_type}, {}",
+                self.obj_info()
+            );
         }
 
         unsafe { rb_yarv_class_of(self) }

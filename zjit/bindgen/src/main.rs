@@ -82,7 +82,7 @@ fn main() {
         .allowlist_type("ruby_rstring_flags")
 
         // This function prints info about a value and is useful for debugging
-        .allowlist_function("rb_obj_info_dump")
+        .allowlist_function("rb_raw_obj_info")
 
         .allowlist_function("ruby_init")
         .allowlist_function("ruby_init_stack")
