@@ -4,7 +4,7 @@
 .SH "NAME"
 \fBbundle\-exec\fR \- Execute a command in the context of the bundle
 .SH "SYNOPSIS"
-\fBbundle exec\fR [\-\-keep\-file\-descriptors] [\-\-gemfile=GEMFILE] \fIcommand\fR
+\fBbundle exec\fR [\-\-gemfile=GEMFILE] \fIcommand\fR
 .SH "DESCRIPTION"
 This command executes the command, making all gems specified in the [\fBGemfile(5)\fR][Gemfile(5)] available to \fBrequire\fR in Ruby programs\.
 .P
@@ -12,9 +12,6 @@ Essentially, if you would normally have run something like \fBrspec spec/my_spec
 .P
 Note that \fBbundle exec\fR does not require that an executable is available on your shell's \fB$PATH\fR\.
 .SH "OPTIONS"
-.TP
-\fB\-\-keep\-file\-descriptors\fR
-Passes all file descriptors to the new processes\. Default is true from bundler version 2\.2\.26\. Setting it to false is now deprecated\.
 .TP
 \fB\-\-gemfile=GEMFILE\fR
 Use the specified gemfile instead of [\fBGemfile(5)\fR][Gemfile(5)]\.
