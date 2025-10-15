@@ -552,7 +552,7 @@ class TestNamespace < Test::Unit::TestCase
 
       # No additional warnings except for experimental warnings
       assert_includes error.join("\n"), EXPERIMENTAL_WARNINGS
-      assert_equal error.size, 2
+      assert_equal 2, error.size
 
       assert_includes output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
       assert_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
@@ -574,7 +574,7 @@ class TestNamespace < Test::Unit::TestCase
       end;
 
       assert_includes error.join("\n"), EXPERIMENTAL_WARNINGS
-      assert_equal error.size, 2
+      assert_equal 2, error.size
 
       refute_includes output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
       refute_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
