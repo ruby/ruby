@@ -692,10 +692,10 @@ impl Assembler {
     /// need to be split with registers after `alloc_regs`, e.g. for `compile_side_exits`, so this
     /// splits them and uses scratch registers for it.
     fn arm64_split_with_scratch_reg(mut self) -> Assembler {
-        let mut iterator = self.insns.into_iter().enumerate().peekable();
+        let iterator = self.insns.into_iter().enumerate().peekable();
         let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.live_ranges.len(), true);
 
-        while let Some((_, mut insn)) = iterator.next() {
+        for (_, mut insn) in iterator {
             match &mut insn {
                 // For compile_side_exits, support splitting simple C arguments here
                 Insn::CCall { opnds, .. } if !opnds.is_empty() => {
