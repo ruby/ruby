@@ -69,12 +69,6 @@ STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 // The "_yjit_" part is for trying to be informative. We might want different
 // suffixes for symbols meant for Rust and symbols meant for broader CRuby.
 
-long
-rb_yjit_array_len(VALUE a)
-{
-    return rb_array_len(a);
-}
-
 # define PTR2NUM(x)   (rb_int2inum((intptr_t)(void *)(x)))
 
 // For a given raw_sample (frame), set the hash with the caller's
