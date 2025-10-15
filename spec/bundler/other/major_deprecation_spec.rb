@@ -605,6 +605,21 @@ RSpec.describe "major deprecations" do
     end
   end
 
+  context "with a global path source" do
+    before do
+      build_lib "foo"
+
+      install_gemfile <<-G, raise_on_error: false
+        path "#{lib_path("foo-1.0")}"
+        gem 'foo'
+      G
+    end
+
+    it "shows an error" do
+      expect(err).to include("You can no longer specify a path source by itself")
+    end
+  end
+
   context "when Bundler.setup is run in a ruby script" do
     before do
       create_file "gems.rb", "source 'https://gem.repo1'"
