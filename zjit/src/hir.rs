@@ -4455,7 +4455,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let array = fun.push_insn(block, Insn::GuardType { val, guard_type: types::ArrayExact, state: exit_id, });
                     let length = fun.push_insn(block, Insn::ArrayLength { array });
                     fun.push_insn(block, Insn::GuardBitEquals { val: length, expected: Const::CInt64(num as i64), state: exit_id });
-                    for i in 0..num {
+                    for i in (0..num).rev() {
                         // TODO(max): Add a short-cut path for long indices into an array where the
                         // index is known to be in-bounds
                         let index = fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(i.try_into().unwrap())) });
@@ -7976,9 +7976,9 @@ mod tests {
           v20:ArrayExact = GuardType v13, ArrayExact
           v21:CInt64 = ArrayLength v20
           v22:CInt64[2] = GuardBitEquals v21, CInt64(2)
-          v23:Fixnum[0] = Const Value(0)
+          v23:Fixnum[1] = Const Value(1)
           v24:BasicObject = ArrayArefFixnum v20, v23
-          v25:Fixnum[1] = Const Value(1)
+          v25:Fixnum[0] = Const Value(0)
           v26:BasicObject = ArrayArefFixnum v20, v25
           PatchPoint NoEPEscape(test)
           CheckInterrupts
