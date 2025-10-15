@@ -423,7 +423,9 @@ module Prism
 
     # Return the value that should be dumped for the version option.
     def dump_options_version(version)
-      case version
+      current = version == "current"
+
+      case current ? RUBY_VERSION : version
       when nil, "latest"
         0 # Handled in pm_parser_init
       when /\A3\.3(\.\d+)?\z/
@@ -433,7 +435,11 @@ module Prism
       when /\A3\.5(\.\d+)?\z/
         3
       else
-        raise ArgumentError, "invalid version: #{version}"
+        if current
+          raise CurrentVersionError, RUBY_VERSION
+        else
+          raise ArgumentError, "invalid version: #{version}"
+        end
       end
     end
 

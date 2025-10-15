@@ -25,6 +25,7 @@ VALUE rb_cPrismLexResult;
 VALUE rb_cPrismParseLexResult;
 VALUE rb_cPrismStringQuery;
 VALUE rb_cPrismScope;
+VALUE rb_cPrismCurrentVersionError;
 
 VALUE rb_cPrismDebugEncoding;
 
@@ -199,7 +200,13 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
         if (!NIL_P(value)) {
             const char *version = check_string(value);
 
-            if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {
+            if (RSTRING_LEN(value) == 7 && strncmp(version, "current", 7) == 0) {
+                VALUE current_ruby_value = rb_const_get(rb_cObject, rb_intern("RUBY_VERSION"));
+                const char *current_version = RSTRING_PTR(current_ruby_value);
+                if (!pm_options_version_set(options, current_version, 3)) {
+                    rb_exc_raise(rb_exc_new_str(rb_cPrismCurrentVersionError, current_ruby_value));
+                }
+            } else if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {
                 rb_raise(rb_eArgError, "invalid version: %" PRIsVALUE, value);
             }
         }
@@ -888,7 +895,7 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  *       version of Ruby syntax (which you can trigger with `nil` or
  *       `"latest"`). You may also restrict the syntax to a specific version of
  *       Ruby, e.g., with `"3.3.0"`. To parse with the same syntax version that
- *       the current Ruby is running use `version: RUBY_VERSION`. Raises
+ *       the current Ruby is running use `version: "current"`. Raises
  *       ArgumentError if the version is not currently supported by Prism.
  */
 static VALUE
@@ -1363,6 +1370,8 @@ Init_prism(void) {
     rb_cPrismParseLexResult = rb_define_class_under(rb_cPrism, "ParseLexResult", rb_cPrismResult);
     rb_cPrismStringQuery = rb_define_class_under(rb_cPrism, "StringQuery", rb_cObject);
     rb_cPrismScope = rb_define_class_under(rb_cPrism, "Scope", rb_cObject);
+
+    rb_cPrismCurrentVersionError = rb_const_get(rb_cPrism, rb_intern("CurrentVersionError"));
 
     // Intern all of the IDs eagerly that we support so that we don't have to do
     // it every time we parse.

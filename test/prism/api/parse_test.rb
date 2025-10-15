@@ -140,6 +140,25 @@ module Prism
       end
     end
 
+    def test_version_current
+      if RUBY_VERSION >= "3.3"
+        assert Prism.parse_success?("1 + 1", version: "current")
+      else
+        assert_raise(CurrentVersionError) { Prism.parse_success?("1 + 1", version: "current") }
+      end
+
+      version = RUBY_VERSION.split(".").tap { |segments| segments[0] = segments[0].succ }.join(".")
+      stub_ruby_version(version) do
+        error = assert_raise(CurrentVersionError) { Prism.parse("1 + 1", version: "current") }
+        assert_includes error.message, "unknown"
+      end
+
+      stub_ruby_version("2.7.0") do
+        error = assert_raise(CurrentVersionError) { Prism.parse("1 + 1", version: "current") }
+        assert_includes error.message, "minimum"
+      end
+    end
+
     def test_scopes
       assert_kind_of Prism::CallNode, Prism.parse_statement("foo")
       assert_kind_of Prism::LocalVariableReadNode, Prism.parse_statement("foo", scopes: [[:foo]])
@@ -166,6 +185,17 @@ module Prism
         return node if node.is_a?(SourceFileNode)
         queue.concat(node.compact_child_nodes)
       end
+    end
+
+    def stub_ruby_version(version)
+      old_version = RUBY_VERSION
+
+      Object.send(:remove_const, :RUBY_VERSION)
+      Object.const_set(:RUBY_VERSION, version)
+      yield
+    ensure
+      Object.send(:remove_const, :RUBY_VERSION)
+      Object.const_set(:RUBY_VERSION, old_version)
     end
   end
 end

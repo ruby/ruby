@@ -37,6 +37,27 @@ module Prism
   private_constant :LexCompat
   private_constant :LexRipper
 
+  # Raised when requested to parse as the currently running Ruby version but Prism has no support for it.
+  class CurrentVersionError < ArgumentError
+    # Initialize a new exception for the given ruby version string.
+    def initialize(version)
+      message = +"invalid version: Requested to parse as `version: 'current'`; "
+      gem_version =
+        begin
+          Gem::Version.new(version)
+        rescue ArgumentError
+        end
+
+      if gem_version && gem_version < Gem::Version.new("3.3.0")
+        message << " #{version} is below the minimum supported syntax."
+      else
+        message << " #{version} is unknown. Please update the `prism` gem."
+      end
+
+      super(message)
+    end
+  end
+
   # :call-seq:
   #   Prism::lex_compat(source, **options) -> LexCompat::Result
   #
