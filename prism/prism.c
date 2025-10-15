@@ -8648,7 +8648,7 @@ static const uint32_t context_terminators[] = {
 
 static inline bool
 context_terminator(pm_context_t context, pm_token_t *token) {
-    return token->type < 32 && (context_terminators[context] & (1 << token->type));
+    return token->type < 32 && (context_terminators[context] & (1U << token->type));
 }
 
 /**
