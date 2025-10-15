@@ -745,6 +745,7 @@ unsafe extern "C" {
     pub fn rb_gc_mark(obj: VALUE);
     pub fn rb_gc_mark_movable(obj: VALUE);
     pub fn rb_gc_location(obj: VALUE) -> VALUE;
+    pub fn rb_gc_enable() -> VALUE;
     pub fn rb_gc_writebarrier(old: VALUE, young: VALUE);
     pub fn rb_class_get_superclass(klass: VALUE) -> VALUE;
     pub static mut rb_cObject: VALUE;
@@ -876,6 +877,7 @@ unsafe extern "C" {
         buff_size: usize,
         obj: VALUE,
     ) -> *const ::std::os::raw::c_char;
+    pub fn rb_gc_disable_no_rest() -> VALUE;
     pub fn rb_ec_stack_check(ec: *mut rb_execution_context_struct) -> ::std::os::raw::c_int;
     pub fn rb_gc_writebarrier_remember(obj: VALUE);
     pub fn rb_shape_id_offset() -> i32;

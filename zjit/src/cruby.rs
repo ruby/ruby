@@ -890,6 +890,14 @@ where
     let mut recursive_lock_level: c_uint = 0;
 
     unsafe { rb_jit_vm_lock_then_barrier(&mut recursive_lock_level, file, line) };
+    // Ensure GC is off while we have the VM lock because:
+    //   1. We create many transient Rust collections that hold VALUEs during compilation.
+    //      It's extremely tricky to properly marked and reference update these, not to
+    //      mention the overhead and ergonomics issues.
+    //   2. If we yield to the GC while compiling, it re-enters our mark and update functions.
+    //      This breaks `&mut` exclusivity since mark functions derive fresh `&mut` from statics
+    //      while there is a stack frame below it that has an overlapping `&mut`. That's UB.
+    let gc_disabled_pre_call = unsafe { rb_gc_disable_no_rest() }.test();
 
     let ret = match catch_unwind(func) {
         Ok(result) => result,
@@ -909,7 +917,12 @@ where
         }
     };
 
-    unsafe { rb_jit_vm_unlock(&mut recursive_lock_level, file, line) };
+    unsafe {
+        if !gc_disabled_pre_call {
+            rb_gc_enable();
+        }
+        rb_jit_vm_unlock(&mut recursive_lock_level, file, line);
+    };
 
     ret
 }
