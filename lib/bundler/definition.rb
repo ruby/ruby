@@ -372,7 +372,7 @@ module Bundler
 
         msg = "`Definition#lock` was passed a target file argument. #{suggestion}"
 
-        Bundler::SharedHelpers.major_deprecation 2, msg
+        Bundler::SharedHelpers.feature_removed! msg
       end
 
       write_lock(target_lockfile, preserve_unknown_sections)

@@ -447,9 +447,8 @@ module Bundler
     D
     def exec(*args)
       if ARGV.include?("--no-keep-file-descriptors")
-        message = "The `--no-keep-file-descriptors` has been deprecated. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to"
         removed_message = "The `--no-keep-file-descriptors` has been removed. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to"
-        SharedHelpers.major_deprecation(2, message, removed_message: removed_message)
+        raise InvalidOption, removed_message
       end
 
       require_relative "cli/exec"

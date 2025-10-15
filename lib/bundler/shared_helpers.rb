@@ -125,28 +125,13 @@ module Bundler
       raise GenericSystemCallError.new(e, "There was an error #{[:create, :write].include?(action) ? "creating" : "accessing"} `#{path}`.")
     end
 
-    def major_deprecation(major_version, message, removed_message: nil, print_caller_location: false)
-      if print_caller_location
-        caller_location = caller_locations(2, 2).first
-        suffix = " (called at #{caller_location.path}:#{caller_location.lineno})"
-        message += suffix
-      end
+    def feature_deprecated!(message)
+      return unless prints_major_deprecations?
 
-      require_relative "../bundler"
-
-      feature_flag = Bundler.feature_flag
-
-      if feature_flag.removed_major?(major_version)
-        feature_removed!(removed_message || message)
-      end
-
-      return unless feature_flag.deprecated_major?(major_version) && prints_major_deprecations?
       Bundler.ui.warn("[DEPRECATED] #{message}")
     end
 
     def feature_removed!(message)
-      require_relative "../bundler"
-
       require_relative "errors"
       raise RemovedError, "[REMOVED] #{message}"
     end

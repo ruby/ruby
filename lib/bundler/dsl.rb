@@ -483,14 +483,10 @@ module Bundler
     def normalize_source(source)
       case source
       when :gemcutter, :rubygems, :rubyforge
-        message =
-          "The source :#{source} is deprecated because HTTP requests are insecure.\n" \
-          "Please change your source to 'https://rubygems.org' if possible, or 'http://rubygems.org' if not."
         removed_message =
           "The source :#{source} is disallowed because HTTP requests are insecure.\n" \
           "Please change your source to 'https://rubygems.org' if possible, or 'http://rubygems.org' if not."
-        Bundler::SharedHelpers.major_deprecation 2, message, removed_message: removed_message
-        "http://rubygems.org"
+        Bundler::SharedHelpers.feature_removed! removed_message
       when String
         source
       else
@@ -509,7 +505,7 @@ module Bundler
               "      gem 'rails'\n" \
               "    end\n\n"
 
-      SharedHelpers.major_deprecation(2, msg.strip)
+      SharedHelpers.feature_removed! msg.strip
     end
 
     def check_rubygems_source_safety
