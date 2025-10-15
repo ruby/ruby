@@ -2321,6 +2321,56 @@ impl Function {
                         self.set_dynamic_send_reason(insn_id, SendNotOptimizedMethodType(MethodType::from(def_type)));
                         self.push_insn_id(block, insn_id); continue;
                     }
+                    Insn::InvokeSuper { recv, cd, blockiseq, args, state, reason } if blockiseq.is_null() => {
+                        let frame_state = self.frame_state(state);
+                        let (klass, profiled_type) = if let Some(klass) = self.type_of(recv).runtime_exact_ruby_class() {
+                            // If we know the class statically, use it to fold the lookup at compile-time.
+                            (klass, None)
+                        } else {
+                            // If we know that self is reasonably monomorphic from profile information, guard and use it to fold the lookup at compile-time.
+                            let Some(recv_type) = self.profiled_type_of_at(recv, frame_state.insn_idx) else {
+                                if get_option!(stats) {
+                                    match self.is_polymorphic_at(recv, frame_state.insn_idx) {
+                                        Some(true) => self.set_dynamic_send_reason(insn_id, SendWithoutBlockPolymorphic),
+                                        // If the class isn't known statically, then it should not also be monomorphic
+                                        Some(false) => panic!("Should not have monomorphic profile at this point in this branch"),
+                                        None => self.set_dynamic_send_reason(insn_id, SendWithoutBlockNoProfiles),
+                                    }
+                                }
+                                self.push_insn_id(block, insn_id); continue;
+                            };
+                            (recv_type.class(), Some(recv_type))
+                        };
+                        // FIXME: We should track and invalidate this block when this cme is invalidated
+                        let current_class = unsafe { (*me).defined_class };
+                        let mid = unsafe { get_def_original_id((*me).def) };
+                        // vm_search_normal_superclass
+                        let rbasic_ptr: *const RBasic = current_class.as_ptr();
+                        if current_class.builtin_type() == RUBY_T_ICLASS
+                            && unsafe { RB_TYPE_P((*rbasic_ptr).klass, RUBY_T_MODULE) }
+                            && unsafe { FL_TEST_RAW((*rbasic_ptr).klass, VALUE(RMODULE_IS_REFINEMENT.as_usize())) } != VALUE(0)
+                        {
+                            gen_counter_incr(jit, asm, Counter::invokesuper_refinement);
+                            return None;
+                        }
+                        let current_superclass =
+                            unsafe { rb_class_get_superclass(RCLASS_ORIGIN(current_class)) };
+                        let ci = unsafe { get_call_data_ci(cd) };
+                        let argc: i32 = unsafe { vm_ci_argc(ci) }.try_into().unwrap();
+                        let ci_flags = unsafe { vm_ci_flag(ci) };
+                        if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
+                            return None;
+                        }
+                        if ci_flags & VM_CALL_KWARG != 0 {
+                            return None;
+                        }
+                        if ci_flags & VM_CALL_KW_SPLAT != 0 {
+                            return None;
+                        }
+                        if ci_flags & VM_CALL_FORWARDING != 0 {
+                            return None;
+                        }
+                    }
                     Insn::GetConstantPath { ic, state, .. } => {
                         let idlist: *const ID = unsafe { (*ic).segments };
                         let ice = unsafe { (*ic).entry };

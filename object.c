@@ -969,7 +969,12 @@ VALUE
 rb_obj_is_kind_of(VALUE obj, VALUE c)
 {
     VALUE cl = CLASS_OF(obj);
+    return rb_obj_class_is_kind_of(cl, c);
+}
 
+VALUE
+rb_obj_class_is_kind_of(VALUE cl, VALUE c)
+{
     RUBY_ASSERT(RB_TYPE_P(cl, T_CLASS));
 
     // Fastest path: If the object's class is an exact match we know `c` is a
