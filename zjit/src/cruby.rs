@@ -897,7 +897,7 @@ where
     //   2. If we yield to the GC while compiling, it re-enters our mark and update functions.
     //      This breaks `&mut` exclusivity since mark functions derive fresh `&mut` from statics
     //      while there is a stack frame below it that has an overlapping `&mut`. That's UB.
-    let gc_disabled_pre_call = unsafe { rb_gc_disable_no_rest() }.test();
+    let gc_disabled_pre_call = unsafe { rb_gc_disable() }.test();
 
     let ret = match catch_unwind(func) {
         Ok(result) => result,
