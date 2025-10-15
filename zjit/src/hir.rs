@@ -468,6 +468,7 @@ pub enum SideExitReason {
     BlockParamProxyModified,
     BlockParamProxyNotIseqOrIfunc,
     StackOverflow,
+    FixnumModByZero,
 }
 
 #[derive(Debug, Clone, Copy)]
