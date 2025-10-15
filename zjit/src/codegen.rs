@@ -2111,6 +2111,7 @@ fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>
 }
 
 fn gen_string_getbyte_fixnum(asm: &mut Assembler, string: Opnd, index: Opnd) -> Opnd {
+    // TODO(max): Open-code rb_str_getbyte to avoid a call
     asm_ccall!(asm, rb_str_getbyte, string, index)
 }
 

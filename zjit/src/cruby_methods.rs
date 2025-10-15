@@ -262,6 +262,8 @@ fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
 fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[index] = args else { return None; };
     if fun.likely_a(index, types::Fixnum, state) {
+        // String#getbyte with a Fixnum is leaf and nogc; otherwise it may run arbitrary Ruby code
+        // when converting the index to a C integer.
         let index = fun.coerce_to(block, index, types::Fixnum, state);
         let result = fun.push_insn(block, hir::Insn::StringGetbyteFixnum { string: recv, index });
         return Some(result);
