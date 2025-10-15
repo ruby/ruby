@@ -4377,7 +4377,7 @@ gc_grey(rb_objspace_t *objspace, VALUE obj)
 static inline void
 gc_mark_check_t_none(rb_objspace_t *objspace, VALUE obj)
 {
-    if (RB_UNLIKELY(RB_TYPE_P(obj, T_NONE))) {
+    if (RB_UNLIKELY(BUILTIN_TYPE(obj) == T_NONE)) {
         enum {info_size = 256};
         char obj_info_buf[info_size];
         rb_raw_obj_info(obj_info_buf, info_size, obj);
