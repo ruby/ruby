@@ -3460,6 +3460,16 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
     short slot_bits = slot_size / BASE_SLOT_SIZE;
     GC_ASSERT(slot_bits > 0);
 
+    // Clear unprotected bits all at once
+    {
+        VALUE vp = (VALUE)p;
+        GC_ASSERT(BITMAP_OFFSET(vp) == 0);
+
+        if ((GET_HEAP_WB_UNPROTECTED_BITS(vp)[BITMAP_INDEX(vp)] & bitset) != 0) {
+            GET_HEAP_WB_UNPROTECTED_BITS(vp)[BITMAP_INDEX(vp)] &= ~bitset;
+        }
+    }
+
     do {
         VALUE vp = (VALUE)p;
         GC_ASSERT(vp % BASE_SLOT_SIZE == 0);
@@ -3475,8 +3485,6 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                     if (RVALUE_REMEMBERED(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
                 }
 #endif
-
-                if (RVALUE_WB_UNPROTECTED(objspace, vp)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(vp), vp);
 
 #if RGENGC_CHECK_MODE
 #define CHECK(x) if (x(objspace, vp) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", rb_obj_info(vp))
@@ -3565,12 +3573,14 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
                   bitmap_plane_count == HEAP_PAGE_BITMAP_LIMIT);
 
     // Skip out of range slots at the head of the page
+    int num_in_page = NUM_IN_PAGE(p);
+    p -= (num_in_page * BASE_SLOT_SIZE);
     bitset = ~bits[0];
-    bitset >>= NUM_IN_PAGE(p);
+    bitset &= ~(((bits_t)1 << num_in_page) - 1);
     if (bitset) {
         gc_sweep_plane(objspace, heap, p, bitset, ctx);
     }
-    p += (BITS_BITLENGTH - NUM_IN_PAGE(p)) * BASE_SLOT_SIZE;
+    p += BITS_BITLENGTH * BASE_SLOT_SIZE;
 
     for (int i = 1; i < bitmap_plane_count; i++) {
         bitset = ~bits[i];
