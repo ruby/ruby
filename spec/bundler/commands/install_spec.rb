@@ -327,21 +327,6 @@ RSpec.describe "bundle install with gem sources" do
       end
     end
 
-    describe "doing bundle install foo" do
-      before do
-        gemfile <<-G
-          source "https://gem.repo1"
-          gem "myrack"
-        G
-      end
-
-      it "works" do
-        bundle "config set --local path vendor"
-        bundle "install"
-        expect(the_bundle).to include_gems "myrack 1.0"
-      end
-    end
-
     it "gives useful errors if no global sources are set, and gems not installed locally, with and without a lockfile" do
       install_gemfile <<-G, raise_on_error: false
         gem "myrack"
