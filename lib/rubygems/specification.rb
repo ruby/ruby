@@ -488,8 +488,6 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     @platform = @new_platform.to_s
-
-    invalidate_memoized_attributes
   end
 
   ##
@@ -1620,14 +1618,14 @@ class Gem::Specification < Gem::BasicSpecification
   # spec's cached gem.
 
   def cache_dir
-    @cache_dir ||= File.join base_dir, "cache"
+    File.join base_dir, "cache"
   end
 
   ##
   # Returns the full path to the cached gem for this spec.
 
   def cache_file
-    @cache_file ||= File.join cache_dir, "#{full_name}.gem"
+    File.join cache_dir, "#{full_name}.gem"
   end
 
   ##
@@ -1903,10 +1901,6 @@ class Gem::Specification < Gem::BasicSpecification
     spec
   end
 
-  def full_name
-    @full_name ||= super
-  end
-
   ##
   # Work around old bundler versions removing my methods
   # Can be removed once RubyGems can no longer install Bundler 2.5
@@ -2044,17 +2038,6 @@ class Gem::Specification < Gem::BasicSpecification
     end
   end
 
-  ##
-  # Expire memoized instance variables that can incorrectly generate, replace
-  # or miss files due changes in certain attributes used to compute them.
-
-  def invalidate_memoized_attributes
-    @full_name = nil
-    @cache_file = nil
-  end
-
-  private :invalidate_memoized_attributes
-
   def inspect # :nodoc:
     if $DEBUG
       super
@@ -2093,8 +2076,6 @@ class Gem::Specification < Gem::BasicSpecification
   def internal_init # :nodoc:
     super
     @bin_dir       = nil
-    @cache_dir     = nil
-    @cache_file    = nil
     @doc_dir       = nil
     @ri_dir        = nil
     @spec_dir      = nil
@@ -2606,9 +2587,6 @@ class Gem::Specification < Gem::BasicSpecification
 
   def version=(version)
     @version = Gem::Version.create(version)
-    return if @version.nil?
-
-    invalidate_memoized_attributes
   end
 
   def stubbed?
