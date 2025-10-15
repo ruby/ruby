@@ -356,6 +356,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::ArrayArefFixnum { array, index, .. } => gen_aref_fixnum(asm, opnd!(array), opnd!(index)),
+        Insn::ArrayLength { array } => gen_array_length(asm, opnd!(array)),
         Insn::ObjectAlloc { val, state } => gen_object_alloc(jit, asm, opnd!(val), &function.frame_state(*state)),
         &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(asm, class, &function.frame_state(state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
@@ -1256,6 +1257,10 @@ fn gen_aref_fixnum(
 ) -> lir::Opnd {
     let unboxed_idx = asm.rshift(index, Opnd::UImm(1));
     asm_ccall!(asm, rb_ary_entry, array, unboxed_idx)
+}
+
+fn gen_array_length(asm: &mut Assembler, array: Opnd) -> lir::Opnd {
+    asm_ccall!(asm, rb_jit_array_len, array)
 }
 
 /// Compile a new hash instruction

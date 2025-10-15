@@ -583,6 +583,8 @@ pub enum Insn {
     /// Push `val` onto `array`, where `array` is already `Array`.
     ArrayPush { array: InsnId, val: InsnId, state: InsnId },
     ArrayArefFixnum { array: InsnId, index: InsnId },
+    /// Return the length of the array as a C `long` ([`types::CInt64`])
+    ArrayLength { array: InsnId },
 
     HashAref { hash: InsnId, key: InsnId, state: InsnId },
     HashDup { val: InsnId, state: InsnId },
@@ -898,6 +900,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ArrayArefFixnum { array, index, .. } => {
                 write!(f, "ArrayArefFixnum {array}, {index}")
+            }
+            Insn::ArrayLength { array } => {
+                write!(f, "ArrayLength {array}")
             }
             Insn::NewHash { elements, .. } => {
                 write!(f, "NewHash")?;
@@ -1604,6 +1609,7 @@ impl Function {
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
             &NewRangeFixnum { low, high, flag, state } => NewRangeFixnum { low: find!(low), high: find!(high), flag, state: find!(state) },
             &ArrayArefFixnum { array, index } => ArrayArefFixnum { array: find!(array), index: find!(index) },
+            &ArrayLength { array } => ArrayLength { array: find!(array) },
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
@@ -1691,6 +1697,7 @@ impl Function {
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
             Insn::ArrayArefFixnum { .. } => types::BasicObject,
+            Insn::ArrayLength { .. } => types::CInt64,
             Insn::HashAref { .. } => types::BasicObject,
             Insn::NewHash { .. } => types::HashExact,
             Insn::HashDup { .. } => types::HashExact,
@@ -2802,6 +2809,9 @@ impl Function {
             &Insn::ArrayArefFixnum { array, index } => {
                 worklist.push_back(array);
                 worklist.push_back(index);
+            }
+            &Insn::ArrayLength { array } => {
+                worklist.push_back(array);
             }
             &Insn::HashAref { hash, key, state } => {
                 worklist.push_back(hash);
@@ -4426,6 +4436,31 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // Handle number backrefs like $1, $2, $3
                         let result = fun.push_insn(block, Insn::GetSpecialNumber { nth: svar, state: exit_id });
                         state.stack_push(result);
+                    }
+                }
+                YARVINSN_expandarray => {
+                    let num = get_arg(pc, 0).as_u64();
+                    let flag = get_arg(pc, 1).as_u64();
+                    if flag != 0 {
+                        // We don't (yet) handle 0x01 (rest args), 0x02 (post args), or 0x04
+                        // (reverse?)
+                        //
+                        // Unhandled opcode; side-exit into the interpreter
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledYARVInsn(opcode) });
+                        break;  // End the block
+                    }
+                    let val = state.stack_pop()?;
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let array = fun.push_insn(block, Insn::GuardType { val, guard_type: types::ArrayExact, state: exit_id, });
+                    let length = fun.push_insn(block, Insn::ArrayLength { array });
+                    fun.push_insn(block, Insn::GuardBitEquals { val: length, expected: Const::CInt64(num as i64), state: exit_id });
+                    for i in 0..num {
+                        // TODO(max): Add a short-cut path for long indices into an array where the
+                        // index is known to be in-bounds
+                        let index = fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(i.try_into().unwrap())) });
+                        let element = fun.push_insn(block, Insn::ArrayArefFixnum { array, index });
+                        state.stack_push(element);
                     }
                 }
                 _ => {
@@ -7912,6 +7947,98 @@ mod tests {
           v17:BasicObject = InvokeBlock, v11, v12
           CheckInterrupts
           Return v17
+        ");
+    }
+
+    #[test]
+    fn test_expandarray_no_splat() {
+        eval(r#"
+            def test(o)
+              a, b = o
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_expandarray);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@6
+          v3:NilClass = Const Value(nil)
+          v4:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          v9:NilClass = Const Value(nil)
+          v10:NilClass = Const Value(nil)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:BasicObject, v14:NilClass, v15:NilClass):
+          v20:ArrayExact = GuardType v13, ArrayExact
+          v21:CInt64 = ArrayLength v20
+          v22:CInt64[2] = GuardBitEquals v21, CInt64(2)
+          v23:Fixnum[0] = Const Value(0)
+          v24:BasicObject = ArrayArefFixnum v20, v23
+          v25:Fixnum[1] = Const Value(1)
+          v26:BasicObject = ArrayArefFixnum v20, v25
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
+    fn test_expandarray_splat() {
+        eval(r#"
+            def test(o)
+              a, *b = o
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_expandarray);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@6
+          v3:NilClass = Const Value(nil)
+          v4:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4)
+        bb1(v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          v9:NilClass = Const Value(nil)
+          v10:NilClass = Const Value(nil)
+          Jump bb2(v7, v8, v9, v10)
+        bb2(v12:BasicObject, v13:BasicObject, v14:NilClass, v15:NilClass):
+          SideExit UnhandledYARVInsn(expandarray)
+        ");
+    }
+
+    #[test]
+    fn test_expandarray_splat_post() {
+        eval(r#"
+            def test(o)
+              a, *b, c = o
+            end
+        "#);
+        assert_contains_opcode("test", YARVINSN_expandarray);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@7
+          v3:NilClass = Const Value(nil)
+          v4:NilClass = Const Value(nil)
+          v5:NilClass = Const Value(nil)
+          Jump bb2(v1, v2, v3, v4, v5)
+        bb1(v8:BasicObject, v9:BasicObject):
+          EntryPoint JIT(0)
+          v10:NilClass = Const Value(nil)
+          v11:NilClass = Const Value(nil)
+          v12:NilClass = Const Value(nil)
+          Jump bb2(v8, v9, v10, v11, v12)
+        bb2(v14:BasicObject, v15:BasicObject, v16:NilClass, v17:NilClass, v18:NilClass):
+          SideExit UnhandledYARVInsn(expandarray)
         ");
     }
 }
