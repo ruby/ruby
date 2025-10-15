@@ -57,6 +57,17 @@ macro_rules! make_counters {
                     $( Counter::$counter_name => stringify!($counter_name), )+
                 }
             }
+
+            pub fn get(name: &str) -> Option<Counter> {
+                match name {
+                    $( stringify!($default_counter_name) => Some(Counter::$default_counter_name), )+
+                    $( stringify!($exit_counter_name) => Some(Counter::$exit_counter_name), )+
+                    $( stringify!($dynamic_send_counter_name) => Some(Counter::$dynamic_send_counter_name), )+
+                    $( stringify!($optimized_send_counter_name) => Some(Counter::$optimized_send_counter_name), )+
+                    $( stringify!($counter_name) => Some(Counter::$counter_name), )+
+                    _ => None,
+                }
+            }
         }
 
         /// Map a counter to a pointer
@@ -298,11 +309,11 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
     }
 }
 
-pub fn exit_counter_ptr(reason: crate::hir::SideExitReason) -> *mut u64 {
+pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
     use crate::hir::SideExitReason::*;
     use crate::hir::CallType::*;
     use crate::stats::Counter::*;
-    let counter = match reason {
+    match reason {
         UnknownNewarraySend(_)        => exit_unknown_newarray_send,
         UnhandledCallType(Tailcall)   => exit_unhandled_tailcall,
         UnhandledCallType(Splat)      => exit_unhandled_splat,
@@ -324,7 +335,11 @@ pub fn exit_counter_ptr(reason: crate::hir::SideExitReason) -> *mut u64 {
         StackOverflow                 => exit_stackoverflow,
         BlockParamProxyModified       => exit_block_param_proxy_modified,
         BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
-    };
+    }
+}
+
+pub fn exit_counter_ptr(reason: crate::hir::SideExitReason) -> *mut u64 {
+    let counter = side_exit_counter(reason);
     counter_ptr(counter)
 }
 
@@ -563,7 +578,7 @@ pub struct SideExitLocations {
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
     // Builtin zjit.rb calls this even if ZJIT is disabled, so OPTIONS may not be set.
-    if unsafe { OPTIONS.as_ref() }.is_some_and(|opts| opts.trace_side_exits) {
+    if unsafe { OPTIONS.as_ref() }.is_some_and(|opts| opts.trace_side_exits.is_some()) {
         Qtrue
     } else {
         Qfalse
@@ -574,7 +589,7 @@ pub extern "C" fn rb_zjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self:
 /// into raw, lines, and frames hash for RubyVM::YJIT.exit_locations.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    if !zjit_enabled_p() || !get_option!(trace_side_exits) {
+    if !zjit_enabled_p() || get_option!(trace_side_exits).is_none() {
         return Qnil;
     }
 
