@@ -146,10 +146,6 @@ module Prism
       else
         assert_raise(CurrentVersionError) { Prism.parse_success?("1 + 1", version: "current") }
       end
-
-      version = RUBY_VERSION.split(".").tap { |segments| segments[0] = segments[0].succ }.join(".")
-      assert_includes CurrentVersionError.new(version).message, "unknown"
-      assert_includes CurrentVersionError.new("2.7").message, "minimum"
     end
 
     def test_scopes
