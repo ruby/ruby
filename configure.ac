@@ -4304,6 +4304,24 @@ AS_IF([test "${ARCH_FLAG}"], [
     CXXFLAGS=`echo "$CXXFLAGS" | sed "s| *$archflagpat"'||'`
     LDFLAGS=`echo "$LDFLAGS" | sed "s| *$archflagpat"'||'`
 ])
+AS_CASE([" $rb_cv_warnflags "], [*" -Wshorten-64-to-32 "*|*" -Werror=shorten-64-to-32 "*], [
+    voidp_ll=
+    AS_CASE([$ac_cv_sizeof_voidp],
+    [SIZEOF_LONG_LONG], [voidp_ll=true],
+    [@<:@0-9@:>@*], [
+        AS_IF([test $ac_cv_sizeof_voidp -gt $ac_cv_sizeof_long], [voidp_ll=true])
+    ])
+    AS_IF([test "$voidp_ll"], [
+        # Disable the shorten-64-to-32 warning for now, because it currently
+        # generates a lot of warnings on platforms where `sizeof(void*)` is
+        # larger than `sizeof(long)`.
+        #
+        # TODO: Replace `long` with `ptrdiff_t` or something in the all sources.
+        rb_cv_warnflags=`echo "$rb_cv_warnflags" |
+           sed -e 's/ -W\(shorten-64-to-32 \)/ -Wno-\1/' \
+               -e 's/ -Werror=\(shorten-64-to-32 \)/ -Wno-\1/'`
+    ])
+])
 rb_cv_warnflags=`echo "$rb_cv_warnflags" | sed 's/^ *//;s/ *$//'`
 warnflags="$rb_cv_warnflags"
 AC_SUBST(cppflags)dnl
