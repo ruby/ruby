@@ -245,11 +245,14 @@ class Gem::RemoteFetcher
   def fetch_path(uri, mtime = nil, head = false)
     uri = Gem::Uri.new uri
 
-    unless uri.scheme
-      raise ArgumentError, "uri scheme is invalid: #{uri.scheme.inspect}"
-    end
+    method = {
+      "http" => "fetch_http",
+      "https" => "fetch_http",
+      "s3" => "fetch_s3",
+      "file" => "fetch_file",
+    }.fetch(uri.scheme) { raise ArgumentError, "uri scheme is invalid: #{uri.scheme.inspect}" }
 
-    data = send "fetch_#{uri.scheme}", uri, mtime, head
+    data = send method, uri, mtime, head
 
     if data && !head && uri.to_s.end_with?(".gz")
       begin
