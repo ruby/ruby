@@ -2506,12 +2506,22 @@ impl Function {
             Err(())
         }
 
+        fn qualified_method_name(class: VALUE, method_id: ID) -> String {
+            let method_name = method_id.contents_lossy();
+            // rb_zjit_singleton_class_p also checks if it's a class
+            if unsafe { rb_zjit_singleton_class_p(class) } {
+                let class_name = get_class_name(unsafe { rb_class_attached_object(class) });
+                format!("{}.{}", class_name, method_name)
+            } else {
+                let class_name = get_class_name(class);
+                format!("{}#{}", class_name, method_name)
+            }
+        }
+
         fn count_not_inlined_cfunc(fun: &mut Function, block: BlockId, cme: *const rb_callable_method_entry_t) {
             let owner = unsafe { (*cme).owner };
             let called_id = unsafe { (*cme).called_id };
-            let class_name = get_class_name(owner);
-            let method_name = called_id.contents_lossy();
-            let qualified_method_name = format!("{}#{}", class_name, method_name);
+            let qualified_method_name = qualified_method_name(owner, called_id);
             let not_inlined_cfunc_counter_pointers = ZJITState::get_not_inlined_cfunc_counter_pointers();
             let counter_ptr = not_inlined_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
             let counter_ptr = &mut **counter_ptr as *mut u64;
@@ -2522,9 +2532,7 @@ impl Function {
         fn count_not_annotated_cfunc(fun: &mut Function, block: BlockId, cme: *const rb_callable_method_entry_t) {
             let owner = unsafe { (*cme).owner };
             let called_id = unsafe { (*cme).called_id };
-            let class_name = get_class_name(owner);
-            let method_name = called_id.contents_lossy();
-            let qualified_method_name = format!("{}#{}", class_name, method_name);
+            let qualified_method_name = qualified_method_name(owner, called_id);
             let not_annotated_cfunc_counter_pointers = ZJITState::get_not_annotated_cfunc_counter_pointers();
             let counter_ptr = not_annotated_cfunc_counter_pointers.entry(qualified_method_name.clone()).or_insert_with(|| Box::new(0));
             let counter_ptr = &mut **counter_ptr as *mut u64;
