@@ -126,12 +126,6 @@ typedef unsigned int uintptr_t;
 #define O_SHARE_DELETE 0x20000000 /* for rb_w32_open(), rb_w32_wopen() */
 
 typedef int clockid_t;
-#if defined(__MINGW32__)
-/* I don't know why but these return some strange values. */
-#undef CLOCK_PROCESS_CPUTIME_ID
-#undef CLOCK_THREAD_CPUTIME_ID
-#undef CLOCK_REALTIME_COARSE
-#endif
 
 /* defined in win32/win32.c for old versions */
 #if !defined(__MINGW32__) || !defined(HAVE_CLOCK_GETTIME)
@@ -147,6 +141,15 @@ typedef int clockid_t;
 #endif
 #ifndef CLOCK_MONOTONIC
 #  define CLOCK_MONOTONIC 1
+#endif
+#ifndef CLOCK_PROCESS_CPUTIME_ID
+#  define CLOCK_PROCESS_CPUTIME_ID 2
+#endif
+#ifndef CLOCK_THREAD_CPUTIME_ID
+#  define CLOCK_THREAD_CPUTIME_ID 3
+#endif
+#ifndef CLOCK_REALTIME_COARSE
+#  define CLOCK_REALTIME_COARSE 4
 #endif
 
 #undef utime
