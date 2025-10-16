@@ -364,6 +364,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::StringConcat { strings, state, .. } if strings.is_empty() => return Err(*state),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, opnds!(strings), &function.frame_state(*state)),
         &Insn::StringGetbyteFixnum { string, index } => gen_string_getbyte_fixnum(asm, opnd!(string), opnd!(index)),
+        Insn::StringAppend { recv, other } => gen_string_append(asm, opnd!(recv), opnd!(other)),
         Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state)),
         Insn::ToRegexp { opt, values, state } => gen_toregexp(jit, asm, *opt, opnds!(values), &function.frame_state(*state)),
         Insn::Param { idx } => unreachable!("block.insns should not have Insn::Param({idx})"),
@@ -2112,6 +2113,10 @@ fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>
 fn gen_string_getbyte_fixnum(asm: &mut Assembler, string: Opnd, index: Opnd) -> Opnd {
     // TODO(max): Open-code rb_str_getbyte to avoid a call
     asm_ccall!(asm, rb_str_getbyte, string, index)
+}
+
+fn gen_string_append(asm: &mut Assembler, string: Opnd, val: Opnd) -> Opnd {
+    asm_ccall!(asm, rb_str_buf_append, string, val)
 }
 
 /// Generate a JIT entry that just increments exit_compilation_failure and exits
