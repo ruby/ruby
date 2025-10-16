@@ -201,10 +201,9 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
             const char *version = check_string(value);
 
             if (RSTRING_LEN(value) == 7 && strncmp(version, "current", 7) == 0) {
-                VALUE current_ruby_value = rb_const_get(rb_cObject, rb_intern("RUBY_VERSION"));
-                const char *current_version = RSTRING_PTR(current_ruby_value);
+                const char *current_version = RSTRING_PTR(rb_const_get(rb_cObject, rb_intern("RUBY_VERSION")));
                 if (!pm_options_version_set(options, current_version, 3)) {
-                    rb_exc_raise(rb_exc_new_str(rb_cPrismCurrentVersionError, current_ruby_value));
+                    rb_exc_raise(rb_exc_new_cstr(rb_cPrismCurrentVersionError, current_version));
                 }
             } else if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {
                 rb_raise(rb_eArgError, "invalid version: %" PRIsVALUE, value);
