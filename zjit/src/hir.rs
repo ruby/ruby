@@ -560,6 +560,7 @@ pub enum Insn {
     StringConcat { strings: Vec<InsnId>, state: InsnId },
     /// Call rb_str_getbyte with known-Fixnum index
     StringGetbyteFixnum { string: InsnId, index: InsnId },
+    StringAppend { recv: InsnId, other: InsnId, state: InsnId },
 
     /// Combine count stack values into a regexp
     ToRegexp { opt: usize, values: Vec<InsnId>, state: InsnId },
@@ -955,6 +956,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::StringGetbyteFixnum { string, index, .. } => {
                 write!(f, "StringGetbyteFixnum {string}, {index}")
+            }
+            Insn::StringAppend { recv, other, .. } => {
+                write!(f, "StringAppend {recv}, {other}")
             }
             Insn::ToRegexp { values, opt, .. } => {
                 write!(f, "ToRegexp")?;
@@ -1518,6 +1522,7 @@ impl Function {
             &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
             &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
             &StringGetbyteFixnum { string, index } => StringGetbyteFixnum { string: find!(string), index: find!(index) },
+            &StringAppend { recv, other, state } => StringAppend { recv: find!(recv), other: find!(other), state: find!(state) },
             &ToRegexp { opt, ref values, state } => ToRegexp { opt, values: find_vec!(values), state },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
@@ -1712,6 +1717,7 @@ impl Function {
             Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
             Insn::StringGetbyteFixnum { .. } => types::Fixnum.union(types::NilClass),
+            Insn::StringAppend { .. } => types::StringExact,
             Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
@@ -2924,6 +2930,11 @@ impl Function {
             &Insn::StringGetbyteFixnum { string, index } => {
                 worklist.push_back(string);
                 worklist.push_back(index);
+            }
+            &Insn::StringAppend { recv, other, state } => {
+                worklist.push_back(recv);
+                worklist.push_back(other);
+                worklist.push_back(state);
             }
             &Insn::ToRegexp { ref values, state, .. } => {
                 worklist.extend(values);
@@ -13916,6 +13927,122 @@ mod opt_tests {
           v25:BasicObject = CCallWithFrame succ@0x1038, v24
           CheckInterrupts
           Return v25
+        ");
+    }
+
+    #[test]
+    fn test_optimize_string_append() {
+        eval(r#"
+            def test(x, y) = x << y
+            test("iron", "fish")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, <<@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v28:StringExact = GuardType v11, StringExact
+          v29:String = GuardType v12, String
+          v30:StringExact = StringAppend v28, v29
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    // TODO: This should be inlined just as in the interpreter
+    #[test]
+    fn test_optimize_string_append_non_string() {
+        eval(r#"
+            def test(x, y) = x << y
+            test("iron", 4)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, <<@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v28:StringExact = GuardType v11, StringExact
+          v29:BasicObject = CCallWithFrame <<@0x1038, v28, v12
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    // TODO: Should be optimized, but is waiting on String#== inlining
+    #[test]
+    fn test_optimize_string_append_string_subclass() {
+        eval(r#"
+            class MyString < String
+            end
+            def test(x, y) = x << y
+            test("iron", MyString.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, <<@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v28:StringExact = GuardType v11, StringExact
+          v29:BasicObject = CCallWithFrame <<@0x1038, v28, v12
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_do_not_optimize_string_subclass_append_string() {
+        eval(r#"
+            class MyString < String
+            end
+            def test(x, y) = x << y
+            test(MyString.new, "iron")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(MyString@0x1000, <<@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(MyString@0x1000)
+          v28:HeapObject[class_exact:MyString] = GuardType v11, HeapObject[class_exact:MyString]
+          v29:BasicObject = CCallWithFrame <<@0x1038, v28, v12
+          CheckInterrupts
+          Return v29
         ");
     }
 
