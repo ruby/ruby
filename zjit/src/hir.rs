@@ -13255,7 +13255,8 @@ mod opt_tests {
         ");
     }
 
-    fn test_string_empty() {
+    #[test]
+    fn test_specialize_string_empty() {
         eval(r#"
             def test(s)
               s.empty?
@@ -13281,6 +13282,36 @@ mod opt_tests {
           Return v26
       ");
   }
+
+    #[test]
+    fn test_eliminate_string_empty() {
+        eval(r#"
+            def test(s)
+              s.empty?
+              69
+            end
+            test("we do glass half empty around here")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, empty?@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v28:StringExact = GuardType v9, StringExact
+          v19:Fixnum[69] = Const Value(69)
+          CheckInterrupts
+          Return v19
+        ");
+  }
+
     #[test]
     fn test_inline_integer_succ_with_fixnum() {
         eval("
