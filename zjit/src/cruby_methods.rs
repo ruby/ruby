@@ -294,7 +294,8 @@ fn inline_kernel_is_a_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir:
     let &[rhs] = args else { return None; };
     if !fun.is_a(rhs, types::Class) { return None; }
     let rhs_class = fun.type_of(rhs).ruby_object()?;
-    if fun.is_a(recv, Type::from_class(rhs_class)) {
+    let expected = Type::from_class(rhs_class);
+    if fun.is_a(recv, expected) {
         let result = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qtrue) });
         return Some(result);
     }
