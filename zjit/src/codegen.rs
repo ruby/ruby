@@ -711,7 +711,6 @@ fn gen_ccall_with_frame(jit: &mut JITState, asm: &mut Assembler, cfunc: *const u
 /// Lowering for [`Insn::CCall`]. This is a low-level raw call that doesn't know
 /// anything about the callee, so handling for e.g. GC safety is dealt with elsewhere.
 fn gen_ccall(asm: &mut Assembler, cfunc: *const u8, args: Vec<Opnd>) -> lir::Opnd {
-    gen_incr_counter(asm, Counter::inline_cfunc_optimized_send_count);
     asm.ccall(cfunc, args)
 }
 
