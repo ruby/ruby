@@ -141,7 +141,13 @@ make_counters! {
         exit_guard_type_not_failure,
         exit_guard_bit_equals_failure,
         exit_guard_shape_failure,
-        exit_patchpoint,
+        exit_patchpoint_bop_redefined,
+        exit_patchpoint_method_redefined,
+        exit_patchpoint_stable_constant_names,
+        exit_patchpoint_no_tracepoint,
+        exit_patchpoint_no_ep_escape,
+        exit_patchpoint_single_ractor_mode,
+        exit_patchpoint_no_singleton_class,
         exit_callee_side_exit,
         exit_obj_to_string_fallback,
         exit_interrupt,
@@ -312,6 +318,7 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
 pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
     use crate::hir::SideExitReason::*;
     use crate::hir::CallType::*;
+    use crate::hir::Invariant;
     use crate::stats::Counter::*;
     match reason {
         UnknownNewarraySend(_)        => exit_unknown_newarray_send,
@@ -328,13 +335,26 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         GuardTypeNot(_)               => exit_guard_type_not_failure,
         GuardBitEquals(_)             => exit_guard_bit_equals_failure,
         GuardShape(_)                 => exit_guard_shape_failure,
-        PatchPoint(_)                 => exit_patchpoint,
         CalleeSideExit                => exit_callee_side_exit,
         ObjToStringFallback           => exit_obj_to_string_fallback,
         Interrupt                     => exit_interrupt,
         StackOverflow                 => exit_stackoverflow,
         BlockParamProxyModified       => exit_block_param_proxy_modified,
         BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
+        PatchPoint(Invariant::BOPRedefined { .. })
+                                      => exit_patchpoint_bop_redefined,
+        PatchPoint(Invariant::MethodRedefined { .. })
+                                      => exit_patchpoint_method_redefined,
+        PatchPoint(Invariant::StableConstantNames { .. })
+                                      => exit_patchpoint_stable_constant_names,
+        PatchPoint(Invariant::NoTracePoint)
+                                      => exit_patchpoint_no_tracepoint,
+        PatchPoint(Invariant::NoEPEscape(_))
+                                      => exit_patchpoint_no_ep_escape,
+        PatchPoint(Invariant::SingleRactorMode)
+                                      => exit_patchpoint_single_ractor_mode,
+        PatchPoint(Invariant::NoSingletonClass { .. })
+                                      => exit_patchpoint_no_singleton_class,
     }
 }
 
