@@ -41,8 +41,8 @@ cargo install cargo-binstall
 Make sure to add `--enable-zjit=dev` when you run `configure`, then install the following tools:
 
 ```bash
-cargo binstall cargo-nextest
-cargo binstall cargo-insta
+cargo binstall --secure cargo-nextest
+cargo binstall --secure cargo-insta
 ```
 
 `cargo-insta` is used for updating snapshots. `cargo-nextest` runs each test in its own process, which is valuable since CRuby only supports booting once per process, and most APIs are not thread safe.
