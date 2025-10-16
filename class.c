@@ -305,6 +305,8 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
     RCLASSEXT_SUPER(ext) = RCLASSEXT_SUPER(orig);
 
     RCLASSEXT_M_TBL(ext) = duplicate_classext_m_tbl(RCLASSEXT_M_TBL(orig), klass, dup_iclass);
+    RCLASSEXT_ICLASS_IS_ORIGIN(ext) = true;
+    RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) = false;
 
     if (orig->fields_obj) {
         RB_OBJ_WRITE(klass, &ext->fields_obj, rb_imemo_fields_clone(orig->fields_obj));
