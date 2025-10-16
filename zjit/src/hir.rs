@@ -13277,10 +13277,11 @@ mod opt_tests {
           PatchPoint MethodRedefined(String@0x1000, empty?@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(String@0x1000)
           v25:StringExact = GuardType v9, StringExact
-          v26:BoolExact = CCall empty?@0x1038, v25
+          IncrCounter inline_cfunc_optimized_send_count
+          v27:BoolExact = CCall empty?@0x1038, v25
           CheckInterrupts
-          Return v26
-      ");
+          Return v27
+        ");
   }
 
     #[test]
@@ -13306,6 +13307,7 @@ mod opt_tests {
           PatchPoint MethodRedefined(String@0x1000, empty?@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(String@0x1000)
           v28:StringExact = GuardType v9, StringExact
+          IncrCounter inline_cfunc_optimized_send_count
           v19:Fixnum[69] = Const Value(69)
           CheckInterrupts
           Return v19
