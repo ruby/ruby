@@ -47,7 +47,7 @@ module Prism
           version.split(".").map(&:to_i)
         end
 
-      if segments && (segments[0] < 3) || (segments[0] == 3 && segments[1] < 3)
+      if segments && ((segments[0] < 3) || (segments[0] == 3 && segments[1] < 3))
         message << " #{version} is below the minimum supported syntax."
       else
         message << " #{version} is unknown. Please update the `prism` gem."
