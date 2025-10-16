@@ -42,13 +42,12 @@ module Prism
     # Initialize a new exception for the given ruby version string.
     def initialize(version)
       message = +"invalid version: Requested to parse as `version: 'current'`; "
-      gem_version =
-        begin
-          Gem::Version.new(version)
-        rescue ArgumentError
+      segments =
+        if version.match?(/\A\d+\.\d+.\d+\z/)
+          version.split(".").map(&:to_i)
         end
 
-      if gem_version && gem_version < Gem::Version.new("3.3.0")
+      if segments && (segments[0] < 3) || (segments[0] == 3 && segments[1] < 3)
         message << " #{version} is below the minimum supported syntax."
       else
         message << " #{version} is unknown. Please update the `prism` gem."
