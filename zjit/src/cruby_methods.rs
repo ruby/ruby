@@ -190,6 +190,7 @@ pub fn init() -> Annotations {
     annotate!(rb_mKernel, "itself", inline_kernel_itself);
     annotate!(rb_cString, "bytesize", types::Fixnum, no_gc, leaf);
     annotate!(rb_cString, "to_s", types::StringExact);
+    annotate!(rb_cString, "getbyte", inline_string_getbyte);
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", types::Fixnum, no_gc, leaf, elidable);
@@ -253,6 +254,18 @@ fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
 fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if let &[key] = args  {
         let result = fun.push_insn(block, hir::Insn::HashAref { hash: recv, key, state });
+        return Some(result);
+    }
+    None
+}
+
+fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[index] = args else { return None; };
+    if fun.likely_a(index, types::Fixnum, state) {
+        // String#getbyte with a Fixnum is leaf and nogc; otherwise it may run arbitrary Ruby code
+        // when converting the index to a C integer.
+        let index = fun.coerce_to(block, index, types::Fixnum, state);
+        let result = fun.push_insn(block, hir::Insn::StringGetbyteFixnum { string: recv, index });
         return Some(result);
     }
     None

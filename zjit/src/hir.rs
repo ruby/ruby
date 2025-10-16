@@ -557,6 +557,8 @@ pub enum Insn {
     StringCopy { val: InsnId, chilled: bool, state: InsnId },
     StringIntern { val: InsnId, state: InsnId },
     StringConcat { strings: Vec<InsnId>, state: InsnId },
+    /// Call rb_str_getbyte with known-Fixnum index
+    StringGetbyteFixnum { string: InsnId, index: InsnId },
 
     /// Combine count stack values into a regexp
     ToRegexp { opt: usize, values: Vec<InsnId>, state: InsnId },
@@ -860,6 +862,7 @@ impl Insn {
             // but we don't have type information here in `impl Insn`. See rb_range_new().
             Insn::NewRange { .. } => true,
             Insn::NewRangeFixnum { .. } => false,
+            Insn::StringGetbyteFixnum { .. } => false,
             _ => true,
         }
     }
@@ -940,6 +943,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
 
                 Ok(())
+            }
+            Insn::StringGetbyteFixnum { string, index, .. } => {
+                write!(f, "StringGetbyteFixnum {string}, {index}")
             }
             Insn::ToRegexp { values, opt, .. } => {
                 write!(f, "ToRegexp")?;
@@ -1498,6 +1504,7 @@ impl Function {
             &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
             &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
             &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
+            &StringGetbyteFixnum { string, index } => StringGetbyteFixnum { string: find!(string), index: find!(index) },
             &ToRegexp { opt, ref values, state } => ToRegexp { opt, values: find_vec!(values), state },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
@@ -1679,6 +1686,7 @@ impl Function {
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
+            Insn::StringGetbyteFixnum { .. } => types::Fixnum.union(types::NilClass),
             Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
@@ -2711,6 +2719,10 @@ impl Function {
             &Insn::StringConcat { ref strings, state, .. } => {
                 worklist.extend(strings);
                 worklist.push_back(state);
+            }
+            &Insn::StringGetbyteFixnum { string, index } => {
+                worklist.push_back(string);
+                worklist.push_back(index);
             }
             &Insn::ToRegexp { ref values, state, .. } => {
                 worklist.extend(values);
@@ -13120,6 +13132,65 @@ mod opt_tests {
           v27:BasicObject = CCallWithFrame =~@0x1040, v26, v13
           CheckInterrupts
           Return v27
+        ");
+    }
+
+    #[test]
+    fn test_optimize_string_getbyte_fixnum() {
+        eval(r#"
+            def test(s, i) = s.getbyte(i)
+            test("foo", 0)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, getbyte@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v26:StringExact = GuardType v11, StringExact
+          v27:Fixnum = GuardType v12, Fixnum
+          v28:NilClass|Fixnum = StringGetbyteFixnum v26, v27
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
+    fn test_elide_string_getbyte_fixnum() {
+        eval(r#"
+            def test(s, i)
+              s.getbyte(i)
+              5
+            end
+            test("foo", 0)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, getbyte@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v29:StringExact = GuardType v11, StringExact
+          v30:Fixnum = GuardType v12, Fixnum
+          v20:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v20
         ");
     }
 }
