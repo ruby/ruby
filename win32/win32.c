@@ -4763,18 +4763,38 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
 
 #ifdef NEED_CLOCK_GETTIME
 /* License: Ruby's */
+static FILETIME
+filetimes_plus(FILETIME t1, FILETIME t2)
+{
+    ULARGE_INTEGER i1 = {.u = {.LowPart = t1.dwLowDateTime, .HighPart = t1.dwHighDateTime}};
+    ULARGE_INTEGER i2 = {.u = {.LowPart = t2.dwLowDateTime, .HighPart = t2.dwHighDateTime}};
+    ULARGE_INTEGER i = {.QuadPart = i1.QuadPart + i2.QuadPart};
+    return (FILETIME){.dwLowDateTime = i.LowPart, .dwHighDateTime = i.HighPart};
+}
+
+static void
+filetime_to_timespec(FILETIME ft, struct timespec *sp)
+{
+    long subsec;
+    sp->tv_sec = filetime_split(&ft, &subsec);
+    sp->tv_nsec = subsec * 100;
+}
+
+/* License: Ruby's */
+static const secs_in_ns = 1000000000;
+
+/* License: Ruby's */
 int
 clock_gettime(clockid_t clock_id, struct timespec *sp)
 {
     switch (clock_id) {
       case CLOCK_REALTIME:
+      case CLOCK_REALTIME_COARSE:
         {
             FILETIME ft;
-            long subsec;
 
             GetSystemTimePreciseAsFileTime(&ft);
-            sp->tv_sec = filetime_split(&ft, &subsec);
-            sp->tv_nsec = subsec * 100;
+            filetime_to_timespec(ft, sp);
             return 0;
         }
       case CLOCK_MONOTONIC:
@@ -4790,10 +4810,28 @@ clock_gettime(clockid_t clock_id, struct timespec *sp)
                 return -1;
             }
             sp->tv_sec = count.QuadPart / freq.QuadPart;
-            if (freq.QuadPart < 1000000000)
-                sp->tv_nsec = (count.QuadPart % freq.QuadPart) * 1000000000 / freq.QuadPart;
+            if (freq.QuadPart < secs_in_ns)
+                sp->tv_nsec = (count.QuadPart % freq.QuadPart) * secs_in_ns / freq.QuadPart;
             else
-                sp->tv_nsec = (long)((count.QuadPart % freq.QuadPart) * (1000000000.0 / freq.QuadPart));
+                sp->tv_nsec = (long)((count.QuadPart % freq.QuadPart) * ((double)secs_in_ns / freq.QuadPart));
+            return 0;
+        }
+      case CLOCK_PROCESS_CPUTIME_ID:
+      case CLOCK_THREAD_CPUTIME_ID:
+        {
+            FILETIME ct, et, kt, ut;
+            BOOL ok;
+            if (clock_id == CLOCK_PROCESS_CPUTIME_ID) {
+                ok = GetProcessTimes(GetCurrentProcess(), &ct, &et, &kt, &ut);
+            }
+            else {
+                ok = GetThreadTimes(GetCurrentThread(), &ct, &et, &kt, &ut);
+            }
+            if (!ok) {
+                errno = map_errno(GetLastError());
+                return -1;
+            }
+            filetime_to_timespec(filetimes_plus(kt, ut), sp);
             return 0;
         }
       default:
@@ -4810,6 +4848,7 @@ clock_getres(clockid_t clock_id, struct timespec *sp)
 {
     switch (clock_id) {
       case CLOCK_REALTIME:
+      case CLOCK_REALTIME_COARSE:
         {
             sp->tv_sec = 0;
             sp->tv_nsec = 1000;
@@ -4823,7 +4862,15 @@ clock_getres(clockid_t clock_id, struct timespec *sp)
                 return -1;
             }
             sp->tv_sec = 0;
-            sp->tv_nsec = (long)(1000000000.0 / freq.QuadPart);
+            sp->tv_nsec = (long)((double)secs_in_ns / freq.QuadPart);
+            return 0;
+        }
+      case CLOCK_PROCESS_CPUTIME_ID:
+      case CLOCK_THREAD_CPUTIME_ID:
+        {
+            const int frames_in_sec = 60;
+            sp->tv_sec = 0;
+            sp->tv_nsec = (long)(secs_in_ns / frames_in_sec);
             return 0;
         }
       default:
