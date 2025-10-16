@@ -1,0 +1,3 @@
+src/hir.rs merge=union
+src/cruby_methods.rs merge=union
+src/codegen.rs merge=union
