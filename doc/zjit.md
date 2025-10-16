@@ -32,11 +32,17 @@ Note that tests link against CRuby, so directly calling `cargo test`, or `cargo 
 
 First, ensure you have `cargo` installed. If you do not already have it, you can use [rustup.rs](https://rustup.rs/).
 
+Also install cargo-binstall with:
+
+```bash
+cargo install cargo-binstall
+```
+
 Make sure to add `--enable-zjit=dev` when you run `configure`, then install the following tools:
 
 ```bash
-cargo install cargo-nextest
-cargo install cargo-insta
+cargo binstall cargo-nextest
+cargo binstall cargo-insta
 ```
 
 `cargo-insta` is used for updating snapshots. `cargo-nextest` runs each test in its own process, which is valuable since CRuby only supports booting once per process, and most APIs are not thread safe.
