@@ -10626,7 +10626,7 @@ mod opt_tests {
           v43:HeapObject[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
           PatchPoint MethodRedefined(C@0x1008, initialize@0x1040, cme:0x1048)
           PatchPoint NoSingletonClass(C@0x1008)
-          v47:NilClass = CCall initialize@0x1070, v43
+          v47:NilClass = Const Value(nil)
           CheckInterrupts
           CheckInterrupts
           Return v43
@@ -10694,7 +10694,7 @@ mod opt_tests {
           v43:ObjectExact = ObjectAllocClass Object:VALUE(0x1008)
           PatchPoint MethodRedefined(Object@0x1008, initialize@0x1040, cme:0x1048)
           PatchPoint NoSingletonClass(Object@0x1008)
-          v47:NilClass = CCall initialize@0x1070, v43
+          v47:NilClass = Const Value(nil)
           CheckInterrupts
           CheckInterrupts
           Return v43
@@ -10725,7 +10725,7 @@ mod opt_tests {
           v43:BasicObjectExact = ObjectAllocClass BasicObject:VALUE(0x1008)
           PatchPoint MethodRedefined(BasicObject@0x1008, initialize@0x1040, cme:0x1048)
           PatchPoint NoSingletonClass(BasicObject@0x1008)
-          v47:NilClass = CCall initialize@0x1070, v43
+          v47:NilClass = Const Value(nil)
           CheckInterrupts
           CheckInterrupts
           Return v43

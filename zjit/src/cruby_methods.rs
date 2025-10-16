@@ -205,7 +205,7 @@ pub fn init() -> Annotations {
     annotate!(rb_mKernel, "nil?", types::FalseClass, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "==", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!", types::BoolExact, no_gc, leaf, elidable);
-    annotate!(rb_cBasicObject, "initialize", types::NilClass, no_gc, leaf, elidable);
+    annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
     annotate!(rb_cInteger, "succ", inline_integer_succ);
     annotate!(rb_cString, "to_s", inline_string_to_s);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
@@ -281,4 +281,10 @@ fn inline_integer_succ(fun: &mut hir::Function, block: hir::BlockId, recv: hir::
         return Some(result);
     }
     None
+}
+
+fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    if !args.is_empty() { return None; }
+    let result = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qnil) });
+    Some(result)
 }
