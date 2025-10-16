@@ -272,6 +272,8 @@ AS_CASE(["${build_os}"],
 ])
 AS_CASE(["${target_os}"],
 [cygwin*|msys*|mingw*|darwin*], [
+    ac_ct_OBJCOPY=":"
+    ac_cv_prog_OBJCOPY=":"
     ac_cv_prog_ac_ct_OBJCOPY=":"
 ])
 
