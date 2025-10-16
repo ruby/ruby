@@ -290,12 +290,13 @@ fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, 
     Some(result)
 }
 
-fn inline_kernel_is_a_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_kernel_is_a_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[rhs] = args else { return None; };
     if !fun.is_a(rhs, types::Class) { return None; }
     let rhs_class = fun.type_of(rhs).ruby_object()?;
     let expected = Type::from_class(rhs_class);
-    if fun.is_a(recv, expected) {
+    if fun.likely_a(recv, expected, state) {
+        fun.coerce_to(block, recv, expected, state);
         let result = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qtrue) });
         return Some(result);
     }
