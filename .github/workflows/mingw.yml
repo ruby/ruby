@@ -30,16 +30,30 @@ permissions:
 #
 jobs:
   make:
-    runs-on: windows-2022
+    runs-on: windows-${{ matrix.os }}
 
     name: ${{ github.workflow }} (${{ matrix.msystem }})
 
     env:
       MSYSTEM: ${{ matrix.msystem }}
-      MSYS2_ARCH: x86_64
-      CHOST: 'x86_64-w64-mingw32'
-      CFLAGS: '-march=x86-64 -mtune=generic -O3 -pipe'
-      CXXFLAGS: '-march=x86-64 -mtune=generic -O3 -pipe'
+      MSYS2_ARCH: >-
+        ${{
+        contains(matrix.msystem, 'arm64') && 'aarch64' ||
+        contains(matrix.msystem, '64') && 'x86_64' || 'i686'
+        }}
+      MINGW_PACKAGE_PREFIX: >-
+        mingw-w${{
+        endsWith(matrix.msystem, '64') && '64' || '32'
+        }}-${{
+        startsWith(matrix.msystem, 'clang') && 'clang' ||
+        startsWith(matrix.msystem, 'ucrt') && 'ucrt' ||
+        'mingw'
+        }}-${{
+        contains(matrix.msystem, 'arm64') && 'aarch64' ||
+        endsWith(matrix.msystem, '64') && 'x86_64' || 'i686'
+        }}
+      CFLAGS: '-mtune=generic -O3 -pipe'
+      CXXFLAGS: '-mtune=generic -O3 -pipe'
       CPPFLAGS: '-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048'
       LDFLAGS: '-pipe'
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
@@ -50,8 +64,12 @@ jobs:
           # To mitigate flakiness of MinGW CI, we test only one runtime that newer MSYS2 uses.
           # Ruby 3.2 is the first Windows Ruby to use OpenSSL 3.x
           - msystem: 'UCRT64'
+            os: 2022
             test_task: 'check'
             test-all-opts: '--name=!/TestObjSpace#test_reachable_objects_during_iteration/'
+          - msystem: 'CLANGARM64'
+            os: 11-arm
+            test_task: 'test'
       fail-fast: false
 
     if: >-
@@ -66,25 +84,26 @@ jobs:
       - uses: msys2/setup-msys2@fb197b72ce45fb24f17bf3f807a388985654d1f2 # v2.29.0
         id: msys2
         with:
-          msystem: UCRT64
+          msystem: ${{ matrix.msystem }}
           update: true
           install: >-
             git
             make
             ruby
             autoconf
-            mingw-w64-ucrt-x86_64-gcc
-            mingw-w64-ucrt-x86_64-ragel
-            mingw-w64-ucrt-x86_64-openssl
-            mingw-w64-ucrt-x86_64-libyaml
-            mingw-w64-ucrt-x86_64-libffi
+            ${{ env.MINGW_PACKAGE_PREFIX }}-gcc
+            ${{ env.MINGW_PACKAGE_PREFIX }}-ragel
+            ${{ env.MINGW_PACKAGE_PREFIX }}-openssl
+            ${{ env.MINGW_PACKAGE_PREFIX }}-libyaml
+            ${{ env.MINGW_PACKAGE_PREFIX }}-libffi
 
       - name: Set up env
         id: setup-env
         working-directory:
         run: |
           $msys2 = ${env:MSYS2_LOCATION}
-          echo $msys2\usr\bin $msys2\ucrt64\bin |
+          $msystem = ${env:MSYSTEM}.ToLower()
+          echo $msys2\usr\bin $msys2\$msystem\bin |
             Tee-Object ${env:GITHUB_PATH} -Append -Encoding utf-8
 
           # Use the fast device for the temporary directory.
@@ -96,6 +115,7 @@ jobs:
         shell: pwsh             # cmd.exe does not strip spaces before `|`.
         env:
           MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+          MSYSTEM: ${{ matrix.msystem }}
 
       - name: Remove Strawberry Perl pkg-config
         working-directory:
@@ -140,7 +160,7 @@ jobs:
           I libssl-3-x64.dll
 
           group Packages
-          pacman -Qs mingw-w64-ucrt-x86_64-* | /bin/sed -n "s,local/mingw-w64-ucrt-x86_64-,,p"
+          pacman -Qs $MINGW_PACKAGE_PREFIX-* | /bin/sed -n "s,local/$MINGW_PACKAGE_PREFIX-,,p"
           endgroup
 
           [ ${#failed[@]} -eq 0 ]
@@ -164,6 +184,8 @@ jobs:
           ../src/configure --disable-install-doc --prefix=/.
           --build=$CHOST --host=$CHOST --target=$CHOST
         shell: sh
+        env:
+          CHOST: ${{ env.MSYS2_ARCH }}-w64-mingw32
 
       - name: make all
         timeout-minutes: 30
