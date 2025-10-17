@@ -200,6 +200,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cArray, "join", types::StringExact);
     annotate!(rb_cArray, "[]", inline_array_aref);
     annotate!(rb_cHash, "[]", inline_hash_aref);
+    annotate!(rb_cHash, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cNilClass, "nil?", types::TrueClass, no_gc, leaf, elidable);
     annotate!(rb_mKernel, "nil?", types::FalseClass, no_gc, leaf, elidable);

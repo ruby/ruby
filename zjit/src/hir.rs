@@ -13331,4 +13331,61 @@ mod opt_tests {
           Return v13
         ");
     }
+
+    #[test]
+    fn test_specialize_hash_size() {
+        eval("
+            def test(hash) = hash.size
+            test({:foo => 3, :bar => 1, :baz => 4})
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Hash@0x1000, size@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          v25:HashExact = GuardType v9, HashExact
+          IncrCounter inline_cfunc_optimized_send_count
+          v27:Fixnum = CCall size@0x1038, v25
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_eliminate_hash_size() {
+        eval("
+            def test(hash)
+                hash.size
+                5
+            end
+            test({:foo => 3, :bar => 1, :baz => 4})
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Hash@0x1000, size@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          v28:HashExact = GuardType v9, HashExact
+          IncrCounter inline_cfunc_optimized_send_count
+          v19:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v19
+        ");
+    }
 }
