@@ -450,6 +450,7 @@ impl PtrPrintMap {
 #[derive(Debug, Clone, Copy)]
 pub enum SideExitReason {
     UnknownNewarraySend(vm_opt_newarray_send_type),
+    UnknownDuparraySend(u64),
     UnknownSpecialVariable(u64),
     UnhandledHIRInsn(InsnId),
     UnhandledYARVInsn(u32),
@@ -517,6 +518,7 @@ impl std::fmt::Display for SideExitReason {
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_PACK) => write!(f, "UnknownNewarraySend(PACK)"),
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_PACK_BUFFER) => write!(f, "UnknownNewarraySend(PACK_BUFFER)"),
             SideExitReason::UnknownNewarraySend(VM_OPT_NEWARRAY_SEND_INCLUDE_P) => write!(f, "UnknownNewarraySend(INCLUDE_P)"),
+            SideExitReason::UnknownDuparraySend(method_id) => write!(f, "UnknownDuparraySend({})", method_id),
             SideExitReason::GuardType(guard_type) => write!(f, "GuardType({guard_type})"),
             SideExitReason::GuardTypeNot(guard_type) => write!(f, "GuardTypeNot({guard_type})"),
             SideExitReason::GuardBitEquals(value) => write!(f, "GuardBitEquals({})", value.print(&PtrPrintMap::identity())),
@@ -578,6 +580,8 @@ pub enum Insn {
     NewRangeFixnum { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
     ArrayMax { elements: Vec<InsnId>, state: InsnId },
+    ArrayInclude { elements: Vec<InsnId>, target: InsnId, state: InsnId },
+    DupArrayInclude { ary: VALUE, target: InsnId, state: InsnId },
     /// Extend `left` with the elements from `right`. `left` and `right` must both be `Array`.
     ArrayExtend { left: InsnId, right: InsnId, state: InsnId },
     /// Push `val` onto `array`, where `array` is already `Array`.
@@ -929,6 +933,18 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     prefix = ", ";
                 }
                 Ok(())
+            }
+            Insn::ArrayInclude { elements, target, .. } => {
+                write!(f, "ArrayInclude")?;
+                let mut prefix = " ";
+                for element in elements {
+                    write!(f, "{prefix}{element}")?;
+                    prefix = ", ";
+                }
+                write!(f, " | {target}")
+            }
+            Insn::DupArrayInclude { ary, target, .. } => {
+                write!(f, "DupArrayInclude {} | {}", ary.print(self.ptr_map), target)
             }
             Insn::ArrayDup { val, .. } => { write!(f, "ArrayDup {val}") }
             Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
@@ -1611,6 +1627,8 @@ impl Function {
             &ArrayArefFixnum { array, index } => ArrayArefFixnum { array: find!(array), index: find!(index) },
             &ArrayLength { array } => ArrayLength { array: find!(array) },
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
+            &ArrayInclude { ref elements, target, state } => ArrayInclude { elements: find_vec!(elements), target: find!(target), state: find!(state) },
+            &DupArrayInclude { ary, target, state } => DupArrayInclude { ary, target: find!(target), state: find!(state) },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
             &LoadIvarEmbedded { self_val, id, index } => LoadIvarEmbedded { self_val: find!(self_val), id, index },
@@ -1737,6 +1755,8 @@ impl Function {
             Insn::DefinedIvar { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::GetConstantPath { .. } => types::BasicObject,
             Insn::ArrayMax { .. } => types::BasicObject,
+            Insn::ArrayInclude { .. } => types::BoolExact,
+            Insn::DupArrayInclude { .. } => types::BoolExact,
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
             Insn::LoadPC => types::CPtr,
@@ -2727,6 +2747,15 @@ impl Function {
             | &Insn::NewHash { ref elements, state }
             | &Insn::NewArray { ref elements, state } => {
                 worklist.extend(elements);
+                worklist.push_back(state);
+            }
+            &Insn::ArrayInclude { ref elements, target, state } => {
+                worklist.extend(elements);
+                worklist.push_back(target);
+                worklist.push_back(state);
+            }
+            &Insn::DupArrayInclude { target, state, .. } => {
+                worklist.push_back(target);
                 worklist.push_back(state);
             }
             &Insn::NewRange { low, high, state, .. }
@@ -3779,6 +3808,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let (bop, insn) = match method {
                         VM_OPT_NEWARRAY_SEND_MAX => (BOP_MAX, Insn::ArrayMax { elements, state: exit_id }),
+                        VM_OPT_NEWARRAY_SEND_INCLUDE_P => {
+                            let target = elements[elements.len() - 1];
+                            let array_elements = elements[..elements.len() - 1].to_vec();
+                            (BOP_INCLUDE_P, Insn::ArrayInclude { elements: array_elements, target, state: exit_id })
+                        },
                         _ => {
                             // Unknown opcode; side-exit into the interpreter
                             fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownNewarraySend(method) });
@@ -3797,6 +3831,30 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let insn_id = fun.push_insn(block, Insn::ArrayDup { val, state: exit_id });
+                    state.stack_push(insn_id);
+                }
+                YARVINSN_opt_duparray_send => {
+                    let ary = get_arg(pc, 0);
+                    let method_id = get_arg(pc, 1).as_u64();
+                    let argc = get_arg(pc, 2).as_usize();
+                    if argc != 1 {
+                        break;
+                    }
+                    let target = state.stack_pop()?;
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let bop = match method_id {
+                        x if x == ID!(include_p).0 => BOP_INCLUDE_P,
+                        _ => {
+                            fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnknownDuparraySend(method_id) });
+                            break;
+                        },
+                    };
+                    if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, ARRAY_REDEFINED_OP_FLAG) } {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }) });
+                        break;
+                    }
+                    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }, state: exit_id });
+                    let insn_id = fun.push_insn(block, Insn::DupArrayInclude { ary, target, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_newhash => {
@@ -6977,7 +7035,70 @@ mod tests {
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
           v25:BasicObject = SendWithoutBlock v15, :+, v16
-          SideExit UnknownNewarraySend(INCLUDE_P)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, 33)
+          v30:BoolExact = ArrayInclude v15, v16 | v16
+          PatchPoint NoEPEscape(test)
+          v35:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v37:ArrayExact = ArrayDup v35
+          v39:BasicObject = SendWithoutBlock v14, :puts, v37
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
+    fn test_opt_duparray_send_include_p() {
+        eval("
+            def test(x)
+              [:a, :b].include?(x)
+            end
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_duparray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, 33)
+          v15:BoolExact = DupArrayInclude VALUE(0x1000) | v9
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
+    fn test_opt_duparray_send_include_p_redefined() {
+        eval("
+            class Array
+              alias_method :old_include?, :include?
+              def include?(x)
+                old_include?(x)
+              end
+            end
+            def test(x)
+              [:a, :b].include?(x)
+            end
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_duparray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:9:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, 33))
         ");
     }
 
