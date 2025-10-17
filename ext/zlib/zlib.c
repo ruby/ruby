@@ -2444,16 +2444,15 @@ struct gzfile {
 
 #define GZFILE_READ_SIZE  2048
 
+enum { read_raw_arg_len, read_raw_arg_buf, read_raw_arg__count};
 struct read_raw_arg {
     VALUE io;
-    union {
-	const VALUE argv[2]; /* for rb_funcallv */
-	struct {
-	    VALUE len;
-	    VALUE buf;
-	} in;
-    } as;
+    const VALUE argv[read_raw_arg__count]; /* for rb_funcallv */
 };
+
+#define read_raw_arg_argc(ra) \
+    ((int)read_raw_arg__count - NIL_P((ra)->argv[read_raw_arg__count - 1]))
+#define read_raw_arg_init(io, len, buf) { io, { len, buf } }
 
 static void
 gzfile_mark(void *p)
@@ -2580,9 +2579,9 @@ gzfile_read_raw_partial(VALUE arg)
 {
     struct read_raw_arg *ra = (struct read_raw_arg *)arg;
     VALUE str;
-    int argc = NIL_P(ra->as.argv[1]) ? 1 : 2;
+    int argc = read_raw_arg_argc(ra);
 
-    str = rb_funcallv(ra->io, id_readpartial, argc, ra->as.argv);
+    str = rb_funcallv(ra->io, id_readpartial, argc, ra->argv);
     Check_Type(str, T_STRING);
     return str;
 }
@@ -2593,8 +2592,8 @@ gzfile_read_raw_rescue(VALUE arg, VALUE _)
     struct read_raw_arg *ra = (struct read_raw_arg *)arg;
     VALUE str = Qnil;
     if (rb_obj_is_kind_of(rb_errinfo(), rb_eNoMethodError)) {
-	int argc = NIL_P(ra->as.argv[1]) ? 1 : 2;
-	str = rb_funcallv(ra->io, id_read, argc, ra->as.argv);
+	int argc = read_raw_arg_argc(ra);
+	str = rb_funcallv(ra->io, id_read, argc, ra->argv);
         if (!NIL_P(str)) {
             Check_Type(str, T_STRING);
         }
@@ -2605,11 +2604,8 @@ gzfile_read_raw_rescue(VALUE arg, VALUE _)
 static VALUE
 gzfile_read_raw(struct gzfile *gz, VALUE outbuf)
 {
-    struct read_raw_arg ra;
-
-    ra.io = gz->io;
-    ra.as.in.len = INT2FIX(GZFILE_READ_SIZE);
-    ra.as.in.buf = outbuf;
+    struct read_raw_arg ra =
+	read_raw_arg_init(gz->io, INT2FIX(GZFILE_READ_SIZE), outbuf);
 
     return rb_rescue2(gzfile_read_raw_partial, (VALUE)&ra,
                       gzfile_read_raw_rescue, (VALUE)&ra,
