@@ -4546,7 +4546,7 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId) -> (Ins
     let mut entry_state = FrameState::new(iseq);
     for local_idx in 0..num_locals(iseq) {
         if local_idx < param_size {
-            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Param)); // +1 for self
+            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Param));
         } else {
             entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) }));
         }
