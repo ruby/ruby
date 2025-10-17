@@ -52,7 +52,7 @@ have commit right, others don't.
 
 * Eric Hodel ([drbrain])
 * Hiroshi SHIBATA ([hsbt])
-* https://github.com/rubygems/rubygems
+* https://github.com/ruby/rubygems
 
 #### lib/unicode_normalize.rb, lib/unicode_normalize/*
 
@@ -104,7 +104,7 @@ have commit right, others don't.
 #### lib/bundler.rb, lib/bundler/*
 
 * Hiroshi SHIBATA ([hsbt])
-* https://github.com/rubygems/rubygems
+* https://github.com/ruby/rubygems
 * https://rubygems.org/gems/bundler
 
 #### lib/cgi/escape.rb
