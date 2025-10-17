@@ -13282,16 +13282,16 @@ mod opt_tests {
           CheckInterrupts
           Return v27
         ");
-  }
+    }
 
     #[test]
     fn test_eliminate_string_empty() {
         eval(r#"
             def test(s)
               s.empty?
-              69
+              4
             end
-            test("we do glass half empty around here")
+            test("this should get removed")
         "#);
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:3:
@@ -13308,11 +13308,11 @@ mod opt_tests {
           PatchPoint NoSingletonClass(String@0x1000)
           v28:StringExact = GuardType v9, StringExact
           IncrCounter inline_cfunc_optimized_send_count
-          v19:Fixnum[69] = Const Value(69)
+          v19:Fixnum[4] = Const Value(4)
           CheckInterrupts
           Return v19
         ");
-  }
+    }
 
     #[test]
     fn test_inline_integer_succ_with_fixnum() {
