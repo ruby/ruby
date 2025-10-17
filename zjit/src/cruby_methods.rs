@@ -188,6 +188,7 @@ pub fn init() -> Annotations {
     }
 
     annotate!(rb_mKernel, "itself", inline_kernel_itself);
+    annotate!(rb_mKernel, "is_a?", inline_kernel_is_a_p);
     annotate!(rb_cString, "bytesize", types::Fixnum, no_gc, leaf);
     annotate!(rb_cString, "to_s", types::StringExact);
     annotate!(rb_cString, "getbyte", inline_string_getbyte);
@@ -287,4 +288,18 @@ fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, 
     if !args.is_empty() { return None; }
     let result = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qnil) });
     Some(result)
+}
+
+fn inline_kernel_is_a_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[rhs] = args else { return None; };
+    if !fun.is_a(rhs, types::Class) { return None; }
+    let rhs_class = fun.type_of(rhs).ruby_object()?;
+    let expected = Type::from_class(rhs_class);
+    if fun.likely_a(recv, expected, state) {
+        fun.coerce_to(block, recv, expected, state);
+        let result = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qtrue) });
+        return Some(result);
+    }
+    // TODO(max): Handle other cases
+    return None
 }

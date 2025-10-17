@@ -7,3 +7,4 @@ tool/update-deps diff=ruby
 tool/make-snapshot diff=ruby
 tool/format-release diff=ruby
 tool/leaked-globals diff=ruby
+zjit/src/hir.rs merge=union
