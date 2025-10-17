@@ -529,8 +529,11 @@ impl std::fmt::Display for SideExitReason {
 /// Reason why a send-ish instruction cannot be optimized from a fallback instruction
 #[derive(Debug, Clone, Copy)]
 pub enum SendFallbackReason {
-    SendWithoutBlockPolymorphic,
     SendWithoutBlockNoProfiles,
+    SendWithoutBlockPolymorphic,
+    SendWithoutBlockMegamorphic,
+    SendWithoutBlockSkewedMegamorphic,
+    SendWithoutBlockProfilingDisabled,
     SendWithoutBlockCfuncNotVariadic,
     SendWithoutBlockCfuncArrayVariadic,
     SendWithoutBlockNotOptimizedMethodType(MethodType),
@@ -1879,23 +1882,17 @@ impl Function {
         None
     }
 
-    /// Return whether a given HIR instruction as profiled by the interpreter is polymorphic or
-    /// whether it lacks a profile entirely.
+    /// Return whether a given HIR instruction as profiled by the interpreter is empty,
+    /// monomorphic, polymorphic, ... or whether it lacks a profile entirely.
     ///
-    /// * `Some(true)` if polymorphic
-    /// * `Some(false)` if monomorphic
-    /// * `None` if no profiled information so far
-    fn is_polymorphic_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<bool> {
+    /// Only returns `None` if the opcode that produced this instruction does not have `zjit_profile=true`.
+    fn profile_kind_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<crate::distribution::DistributionKind> {
         let profiles = self.profiles.as_ref()?;
         let entries = profiles.types.get(&iseq_insn_idx)?;
         let insn = self.chase_insn(insn);
         for (entry_insn, entry_type_summary) in entries {
             if self.union_find.borrow().find_const(*entry_insn) == insn {
-                if !entry_type_summary.is_monomorphic() && !entry_type_summary.is_skewed_polymorphic() {
-                    return Some(true);
-                } else {
-                    return Some(false);
-                }
+                return Some(entry_type_summary.kind());
             }
         }
         None
@@ -2043,11 +2040,16 @@ impl Function {
                             // TODO(max): Figure out how to handle top self?
                             let Some(recv_type) = self.profiled_type_of_at(recv, frame_state.insn_idx) else {
                                 if get_option!(stats) {
-                                    match self.is_polymorphic_at(recv, frame_state.insn_idx) {
-                                        Some(true) => self.set_dynamic_send_reason(insn_id, SendWithoutBlockPolymorphic),
-                                        // If the class isn't known statically, then it should not also be monomorphic
-                                        Some(false) => panic!("Should not have monomorphic profile at this point in this branch"),
-                                        None => self.set_dynamic_send_reason(insn_id, SendWithoutBlockNoProfiles),
+                                    use crate::distribution::DistributionKind;
+                                    match self.profile_kind_at(recv, frame_state.insn_idx) {
+                                        Some(DistributionKind::Empty) => self.set_dynamic_send_reason(insn_id, SendWithoutBlockNoProfiles),
+                                        // If the class isn't known statically, then it should not also be monomorphic / skewed polymorphic.
+                                        Some(DistributionKind::Monomorphic) => panic!("Should not have monomorphic profile at this point in this branch"),
+                                        Some(DistributionKind::SkewedPolymorphic) => panic!("Should not have skewed polymorphic profile at this point in this branch"),
+                                        Some(DistributionKind::Polymorphic) => self.set_dynamic_send_reason(insn_id, SendWithoutBlockPolymorphic),
+                                        Some(DistributionKind::Megamorphic) => self.set_dynamic_send_reason(insn_id, SendWithoutBlockMegamorphic),
+                                        Some(DistributionKind::SkewedMegamorphic) => self.set_dynamic_send_reason(insn_id, SendWithoutBlockSkewedMegamorphic),
+                                        None => self.set_dynamic_send_reason(insn_id, SendWithoutBlockProfilingDisabled),
                                     }
                                 }
                                 self.push_insn_id(block, insn_id); continue;
@@ -2136,11 +2138,16 @@ impl Function {
                         } else {
                             let Some(recv_type) = self.profiled_type_of_at(recv, frame_state.insn_idx) else {
                                 if get_option!(stats) {
-                                    match self.is_polymorphic_at(recv, frame_state.insn_idx) {
-                                        Some(true) => self.set_dynamic_send_reason(insn_id, SendPolymorphic),
-                                        // If the class isn't known statically, then it should not also be monomorphic
-                                        Some(false) => panic!("Should not have monomorphic profile at this point in this branch"),
-                                        None => self.set_dynamic_send_reason(insn_id, SendNoProfiles),
+                                    use crate::distribution::DistributionKind;
+                                    match self.profile_kind_at(recv, frame_state.insn_idx) {
+                                        Some(DistributionKind::Empty) => self.set_dynamic_send_reason(insn_id, SendWithoutBlockNoProfiles),
+                                        // If the class isn't known statically, then it should not also be monomorphic / skewed polymorphic.
+                                        Some(DistributionKind::Monomorphic) => panic!("Should not have monomorphic profile at this point in this branch"),
+                                        Some(DistributionKind::SkewedPolymorphic) => panic!("Should not have skewed polymorphic profile at this point in this branch"),
+                                        Some(DistributionKind::Polymorphic) => self.set_dynamic_send_reason(insn_id, SendWithoutBlockPolymorphic),
+                                        Some(DistributionKind::Megamorphic) => self.set_dynamic_send_reason(insn_id, SendWithoutBlockMegamorphic),
+                                        Some(DistributionKind::SkewedMegamorphic) => self.set_dynamic_send_reason(insn_id, SendWithoutBlockSkewedMegamorphic),
+                                        None => self.set_dynamic_send_reason(insn_id, SendWithoutBlockProfilingDisabled),
                                     }
                                 }
                                 self.push_insn_id(block, insn_id); continue;

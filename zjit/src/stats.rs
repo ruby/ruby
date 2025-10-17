@@ -159,8 +159,11 @@ make_counters! {
     // Send fallback counters that are summed as dynamic_send_count
     dynamic_send {
         // send_fallback_: Fallback reasons for send-ish instructions
-        send_fallback_send_without_block_polymorphic,
         send_fallback_send_without_block_no_profiles,
+        send_fallback_send_without_block_polymorphic,
+        send_fallback_send_without_block_megamorphic,
+        send_fallback_send_without_block_skewed_megamorphic,
+        send_fallback_send_without_block_profiling_disabled,
         send_fallback_send_without_block_cfunc_not_variadic,
         send_fallback_send_without_block_cfunc_array_variadic,
         send_fallback_send_without_block_not_optimized_method_type,
@@ -367,8 +370,11 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
     use crate::hir::SendFallbackReason::*;
     use crate::stats::Counter::*;
     match reason {
-        SendWithoutBlockPolymorphic               => send_fallback_send_without_block_polymorphic,
         SendWithoutBlockNoProfiles                => send_fallback_send_without_block_no_profiles,
+        SendWithoutBlockPolymorphic               => send_fallback_send_without_block_polymorphic,
+        SendWithoutBlockMegamorphic               => send_fallback_send_without_block_megamorphic,
+        SendWithoutBlockSkewedMegamorphic         => send_fallback_send_without_block_skewed_megamorphic,
+        SendWithoutBlockProfilingDisabled         => send_fallback_send_without_block_profiling_disabled,
         SendWithoutBlockCfuncNotVariadic          => send_fallback_send_without_block_cfunc_not_variadic,
         SendWithoutBlockCfuncArrayVariadic        => send_fallback_send_without_block_cfunc_array_variadic,
         SendWithoutBlockNotOptimizedMethodType(_) => send_fallback_send_without_block_not_optimized_method_type,
