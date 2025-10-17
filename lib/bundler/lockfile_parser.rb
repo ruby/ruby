@@ -142,7 +142,7 @@ module Bundler
       end
 
       if @platforms.include?(Gem::Platform::X64_MINGW_LEGACY)
-        SharedHelpers.feature_removed!("Found x64-mingw32 in lockfile, which is no longer supported as of Bundler 4.0.")
+        SharedHelpers.feature_deprecated!("Found x64-mingw32 in lockfile, which is deprecated and will be removed in the future.")
       end
 
       @most_specific_locked_platform = @platforms.min_by do |bundle_platform|

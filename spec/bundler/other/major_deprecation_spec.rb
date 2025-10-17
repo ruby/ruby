@@ -601,7 +601,7 @@ RSpec.describe "major deprecations" do
     it "raises a helpful error" do
       bundle "install", raise_on_error: false
 
-      expect(err).to include("Found x64-mingw32 in lockfile, which is no longer supported as of Bundler 4.0.")
+      expect(err).to include("Found x64-mingw32 in lockfile, which is deprecated and will be removed in the future.")
     end
   end
 
