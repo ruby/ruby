@@ -838,6 +838,9 @@ eom
             rescue
               # Constants may be defined but not implemented, e.g., mingw.
             else
+              unless Process.clock_getres(clk) < 1.0e-03
+                next # needs msec precision
+              end
               PERFORMANCE_CLOCK = clk
             end
           end
