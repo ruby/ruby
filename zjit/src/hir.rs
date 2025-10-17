@@ -1649,7 +1649,7 @@ impl Function {
     }
 
     /// Check if the type of `insn` is a subtype of `ty`.
-    fn is_a(&self, insn: InsnId, ty: Type) -> bool {
+    pub fn is_a(&self, insn: InsnId, ty: Type) -> bool {
         self.type_of(insn).is_subtype(ty)
     }
 
@@ -13225,39 +13225,6 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_optimize_respond_to_p_true() {
-        eval(r#"
-            class C
-              def foo; end
-            end
-            def test(o) = o.respond_to?(:foo)
-            test(C.new)
-        "#);
-        assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:5:
-        bb0():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal l0, SP@4
-          Jump bb2(v1, v2)
-        bb1(v5:BasicObject, v6:BasicObject):
-          EntryPoint JIT(0)
-          Jump bb2(v5, v6)
-        bb2(v8:BasicObject, v9:BasicObject):
-          v13:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
-          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
-          PatchPoint NoSingletonClass(C@0x1008)
-          v24:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
-          PatchPoint NoSingletonClass(C@0x1008)
-          v28:TrueClass = Const Value(true)
-          IncrCounter inline_cfunc_optimized_send_count
-          CheckInterrupts
-          Return v28
-        ");
-    }
-
-    #[test]
     fn test_elide_string_getbyte_fixnum() {
         eval(r#"
             def test(s, i)
@@ -13403,7 +13370,6 @@ mod opt_tests {
     }
 
     #[test]
-
     fn test_dont_inline_integer_succ_with_args() {
         eval("
             def test = 4.succ 1
@@ -13484,6 +13450,39 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_optimize_respond_to_p_true() {
+        eval(r#"
+            class C
+              def foo; end
+            end
+            def test(o) = o.respond_to?(:foo)
+            test(C.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
+          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(C@0x1008)
+          v24:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
+          PatchPoint NoSingletonClass(C@0x1008)
+          v28:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
     fn test_optimize_respond_to_p_false_no_method() {
         eval(r#"
             class C
@@ -13506,14 +13505,18 @@ mod opt_tests {
           PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(C@0x1008)
           v24:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v25:BasicObject = CCallVariadic respond_to?@0x1040, v24, v13
+          PatchPoint MethodRedefined(C@0x1008, respond_to_missing?@0x1040, cme:0x1048)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1070, cme:0x1078)
+          PatchPoint NoSingletonClass(C@0x1008)
+          v30:FalseClass = Const Value(false)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v25
+          Return v30
         ");
     }
 
     #[test]
-    fn test_optimize_respond_to_p_false_private() {
+    fn test_optimize_respond_to_p_false_default_private() {
         eval(r#"
             class C
                 private
@@ -13537,23 +13540,97 @@ mod opt_tests {
           PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(C@0x1008)
           v24:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v25:BasicObject = CCallVariadic respond_to?@0x1040, v24, v13
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
+          PatchPoint NoSingletonClass(C@0x1008)
+          v28:FalseClass = Const Value(false)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v25
+          Return v28
         ");
     }
 
     #[test]
-    fn test_optimize_respond_to_p_two_args() {
+    fn test_optimize_respond_to_p_false_private() {
         eval(r#"
             class C
-              def foo; end
+                private
+                def foo; end
+            end
+            def test(o) = o.respond_to?(:foo, false)
+            test(C.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:6:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
+          v14:FalseClass = Const Value(false)
+          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(C@0x1008)
+          v25:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
+          PatchPoint NoSingletonClass(C@0x1008)
+          v29:FalseClass = Const Value(false)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_optimize_respond_to_p_falsy_private() {
+        eval(r#"
+            class C
+                private
+                def foo; end
+            end
+            def test(o) = o.respond_to?(:foo, nil)
+            test(C.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:6:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
+          v14:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(C@0x1008)
+          v25:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
+          PatchPoint NoSingletonClass(C@0x1008)
+          v29:FalseClass = Const Value(false)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_optimize_respond_to_p_true_private() {
+        eval(r#"
+            class C
+                private
+                def foo; end
             end
             def test(o) = o.respond_to?(:foo, true)
             test(C.new)
         "#);
         assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:5:
+        fn test@<compiled>:6:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
@@ -13568,9 +13645,145 @@ mod opt_tests {
           PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(C@0x1008)
           v25:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
-          v26:BasicObject = CCallVariadic respond_to?@0x1040, v25, v13, v14
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
+          PatchPoint NoSingletonClass(C@0x1008)
+          v29:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v26
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_optimize_respond_to_p_truthy() {
+        eval(r#"
+            class C
+              def foo; end
+            end
+            def test(o) = o.respond_to?(:foo, 4)
+            test(C.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
+          v14:Fixnum[4] = Const Value(4)
+          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(C@0x1008)
+          v25:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
+          PatchPoint NoSingletonClass(C@0x1008)
+          v29:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_optimize_respond_to_p_falsy() {
+        eval(r#"
+            class C
+              def foo; end
+            end
+            def test(o) = o.respond_to?(:foo, nil)
+            test(C.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
+          v14:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(C@0x1008)
+          v25:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1040, cme:0x1048)
+          PatchPoint NoSingletonClass(C@0x1008)
+          v29:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_optimize_respond_to_missing() {
+        eval(r#"
+            class C
+            end
+            def test(o) = o.respond_to?(:foo)
+            test(C.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
+          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(C@0x1008)
+          v24:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1008, respond_to_missing?@0x1040, cme:0x1048)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1070, cme:0x1078)
+          PatchPoint NoSingletonClass(C@0x1008)
+          v30:FalseClass = Const Value(false)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
+    fn test_do_not_optimize_redefined_respond_to_missing() {
+        eval(r#"
+            class C
+                def respond_to_missing?(method, include_private = false)
+                    true
+                end
+            end
+            def test(o) = o.respond_to?(:foo)
+            test(C.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:7:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
+          PatchPoint MethodRedefined(C@0x1008, respond_to?@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(C@0x1008)
+          v24:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          v25:BasicObject = CCallVariadic respond_to?@0x1040, v24, v13
+          CheckInterrupts
+          Return v25
         ");
     }
 }

@@ -292,26 +292,91 @@ fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, 
     Some(result)
 }
 
-fn inline_kernel_respond_to_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
-    // TODO(max): Handle the second argument (include_all=false)
-    let &[method_name] = args else { return None; };
+fn inline_kernel_respond_to_p(
+    fun: &mut hir::Function,
+    block: hir::BlockId,
+    recv: hir::InsnId,
+    args: &[hir::InsnId],
+    state: hir::InsnId,
+) -> Option<hir::InsnId> {
+    // Parse arguments: respond_to?(method_name, allow_priv = false)
+    let (method_name, allow_priv) = match *args {
+        [method_name] => (method_name, false),
+        [method_name, arg] => match fun.type_of(arg) {
+            t if t.is_known_truthy() => (method_name, true),
+            t if t.is_known_falsy() => (method_name, false),
+            // Unknown type; bail out
+            _ => return None,
+        },
+        // Unknown args; bail out
+        _ => return None,
+    };
+
+    // Method name must be a static symbol
     let method_name = fun.type_of(method_name).ruby_object()?;
-    if !method_name.static_sym_p() { return None; }
-    let mid = unsafe { rb_sym2id(method_name) };
+    if !method_name.static_sym_p() {
+        return None;
+    }
+
+    // The receiver must have a known class to call `respond_to?` on
+    // TODO: This is technically overly strict. This would also work if all of the
+    // observed objects at this point agree on `respond_to?` and we can add many patchpoints.
     let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
+
+    // Get the method ID and its corresponding callable method entry
+    let mid = unsafe { rb_sym2id(method_name) };
     let target_cme = unsafe { rb_callable_method_entry_or_negative(recv_class, mid) };
-    // Should never be null, as in that case we will be returned a "negative CME"
-    assert!(!target_cme.is_null(), "Saw null CME");
+    assert!(
+        !target_cme.is_null(),
+        "Should never be null, as in that case we will be returned a \"negative CME\""
+    );
+
     let cme_def_type = unsafe { get_cme_def_type(target_cme) };
-    if cme_def_type == VM_METHOD_TYPE_REFINED { return None; }
-    let visibility =
-        if cme_def_type == VM_METHOD_TYPE_UNDEF { METHOD_VISI_UNDEF }
-        else { unsafe { METHOD_ENTRY_VISI(target_cme) } };
-    let allow_priv = Some(false); // TODO(max): handle the second argument
+
+    // Cannot inline a refined method, since their refinement depends on lexical scope
+    if cme_def_type == VM_METHOD_TYPE_REFINED {
+        return None;
+    }
+
+    let visibility = match cme_def_type {
+        VM_METHOD_TYPE_UNDEF => METHOD_VISI_UNDEF,
+        _ => unsafe { METHOD_ENTRY_VISI(target_cme) },
+    };
+
     let result = match (visibility, allow_priv) {
-        (METHOD_VISI_PUBLIC, _) | // Public method => fine regardless of include_all
-        (_, Some(true)) => { // include_all => all visibility are acceptable
-            // Method exists and has acceptable visibility
+        // Method undefined; check `respond_to_missing?`
+        (METHOD_VISI_UNDEF, _) => {
+            let respond_to_missing = ID!(respond_to_missing);
+            if unsafe { rb_method_basic_definition_p(recv_class, respond_to_missing) } == 0 {
+                return None; // Custom definition of respond_to_missing?, so cannot inline
+            }
+            let respond_to_missing_cme =
+                unsafe { rb_callable_method_entry(recv_class, respond_to_missing) };
+            // Protect against redefinition of `respond_to_missing?`
+            fun.push_insn(
+                block,
+                hir::Insn::PatchPoint {
+                    invariant: hir::Invariant::NoTracePoint,
+                    state,
+                },
+            );
+            fun.push_insn(
+                block,
+                hir::Insn::PatchPoint {
+                    invariant: hir::Invariant::MethodRedefined {
+                        klass: recv_class,
+                        method: respond_to_missing,
+                        cme: respond_to_missing_cme,
+                    },
+                    state,
+                },
+            );
+            Qfalse
+        }
+        // Private method with allow priv=false, so `respond_to?` returns false
+        (METHOD_VISI_PRIVATE, false) => Qfalse,
+        // Public method or allow_priv=true: check if implemented
+        (METHOD_VISI_PUBLIC, _) | (_, true) => {
             if cme_def_type == VM_METHOD_TYPE_NOTIMPLEMENTED {
                 // C method with rb_f_notimplement(). `respond_to?` returns false
                 // without consulting `respond_to_missing?`. See also: rb_add_method_cfunc()
@@ -320,12 +385,20 @@ fn inline_kernel_respond_to_p(fun: &mut hir::Function, block: hir::BlockId, recv
                 Qtrue
             }
         }
-        (_, _) => return None // not public and include_all not known, can't compile
+        (_, _) => return None, // not public and include_all not known, can't compile
     };
     fun.push_insn(block, hir::Insn::PatchPoint { invariant: hir::Invariant::NoTracePoint, state });
-    fun.push_insn(block, hir::Insn::PatchPoint { invariant: hir::Invariant::MethodRedefined { klass: recv_class, method: mid, cme: target_cme }, state });
+    fun.push_insn(block, hir::Insn::PatchPoint {
+        invariant: hir::Invariant::MethodRedefined {
+            klass: recv_class,
+            method: mid,
+            cme: target_cme
+        }, state
+    });
     if recv_class.instance_can_have_singleton_class() {
-        fun.push_insn(block, hir::Insn::PatchPoint { invariant: hir::Invariant::NoSingletonClass { klass: recv_class }, state });
+        fun.push_insn(block, hir::Insn::PatchPoint {
+            invariant: hir::Invariant::NoSingletonClass { klass: recv_class }, state
+        });
     }
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(result) }))
 }
