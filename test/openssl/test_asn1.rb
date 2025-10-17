@@ -6,7 +6,7 @@ if defined?(OpenSSL)
 class  OpenSSL::TestASN1 < OpenSSL::TestCase
   def test_decode_x509_certificate
     subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCA")
-    key = Fixtures.pkey("rsa1024")
+    key = Fixtures.pkey("rsa-1")
     now = Time.at(Time.now.to_i) # suppress usec
     s = 0xdeadbeafdeadbeafdeadbeafdeadbeaf
     exts = [
