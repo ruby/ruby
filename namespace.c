@@ -510,6 +510,10 @@ copy_ext_file_error(char *message, size_t size, int copy_retvalue, char *src_pat
         snprintf(message, size, "failed to read the extension path: %s", src_path);
       case 4:
         snprintf(message, size, "failed to write the extension path: %s", dst_path);
+      case 5:
+        snprintf(message, size, "failed to stat the extension path to copy permissions: %s", src_path);
+      case 6:
+        snprintf(message, size, "failed to set permissions to the copied extension path: %s", dst_path);
       default:
         rb_bug("unknown return value of copy_ext_file: %d", copy_retvalue);
     }
@@ -585,6 +589,19 @@ copy_ext_file(char *src_path, char *dst_path)
     }
     fclose(src);
     fclose(dst);
+#if defined(__CYGWIN__)
+    // On Cygwin, CopyFile-like operations may strip executable bits.
+    // Explicitly match destination file permissions to source.
+    if (retvalue == 0) {
+        struct stat st;
+        if (stat(src_path, &st) != 0) {
+            retvalue = 5;
+        }
+        else if (chmod(dst_path, st.st_mode & 0777) != 0) {
+            retvalue = 6;
+        }
+    }
+#endif
     return retvalue;
 #endif
 }
