@@ -957,6 +957,24 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_new], call_threshold: 2
   end
 
+  def test_opt_newarray_send_include_p
+    assert_compiles '[true, false]', %q{
+      def test(x)
+        [:y, 1, Object.new].include?(x)
+      end
+      [test(1), test("n")]
+    }, insns: [:opt_newarray_send], call_threshold: 1
+  end
+
+  def test_opt_duparray_send_include_p
+    assert_compiles '[true, false]', %q{
+      def test(x)
+        [:y, 1].include?(x)
+      end
+      [test(1), test("n")]
+    }, insns: [:opt_duparray_send], call_threshold: 1
+  end
+
   def test_new_hash_empty
     assert_compiles '{}', %q{
       def test = {}

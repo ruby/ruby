@@ -2023,7 +2023,70 @@ pub mod hir_build_tests {
           Jump bb2(v8, v9, v10, v11, v12)
         bb2(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass):
           v25:BasicObject = SendWithoutBlock v15, :+, v16
-          SideExit UnknownNewarraySend(INCLUDE_P)
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, 33)
+          v30:BoolExact = ArrayInclude v15, v16 | v16
+          PatchPoint NoEPEscape(test)
+          v35:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v37:ArrayExact = ArrayDup v35
+          v39:BasicObject = SendWithoutBlock v14, :puts, v37
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
+    fn test_opt_duparray_send_include_p() {
+        eval("
+            def test(x)
+              [:a, :b].include?(x)
+            end
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_duparray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, 33)
+          v15:BoolExact = DupArrayInclude VALUE(0x1000) | v9
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
+    fn test_opt_duparray_send_include_p_redefined() {
+        eval("
+            class Array
+              alias_method :old_include?, :include?
+              def include?(x)
+                old_include?(x)
+              end
+            end
+            def test(x)
+              [:a, :b].include?(x)
+            end
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_duparray_send);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:9:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, 33))
         ");
     }
 
