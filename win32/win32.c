@@ -4781,7 +4781,7 @@ filetime_to_timespec(FILETIME ft, struct timespec *sp)
 }
 
 /* License: Ruby's */
-static const secs_in_ns = 1000000000;
+static const long secs_in_ns = 1000000000;
 
 /* License: Ruby's */
 int
