@@ -2345,6 +2345,104 @@ impl Function {
             fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme: method }, state });
         }
 
+        struct SendContext {
+            recv: InsnId,
+            recv_class: VALUE,
+            method: *const rb_callable_method_entry_struct,
+            method_id: ID,
+            ci_flags: u32,
+            argc: u32,
+            cfunc: *const rb_method_cfunc_t,
+            cfunc_argc: i32,
+            profiled_type: Option<ProfiledType>,
+        }
+
+        impl SendContext {
+            fn arg_count_matches(&self) -> bool {
+                self.argc == self.cfunc_argc as u32
+            }
+
+            fn cfunc_ptr(&self) -> *const u8 {
+                unsafe { get_mct_func(self.cfunc) }.cast()
+            }
+        }
+
+        fn create_send_context(
+            fun: &mut Function,
+            self_type: Type,
+            recv: InsnId,
+            state: InsnId,
+            cd: *const rb_call_data,
+        ) -> Result<SendContext, ()> {
+            let call_info = unsafe { (*cd).ci };
+            let argc = unsafe { vm_ci_argc(call_info) };
+            let method_id = unsafe { rb_vm_ci_mid(call_info) };
+
+            let (recv_class, profiled_type) = if let Some(class) = self_type.runtime_exact_ruby_class() {
+                (class, None)
+            } else {
+                let iseq_insn_idx = fun.frame_state(state).insn_idx;
+                let Some(recv_type) = fun.profiled_type_of_at(recv, iseq_insn_idx) else {
+                    return Err(());
+                };
+                (recv_type.class(), Some(recv_type))
+            };
+
+            let method: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
+            if method.is_null() {
+                return Err(());
+            }
+
+            let def_type = unsafe { get_cme_def_type(method) };
+            if def_type != VM_METHOD_TYPE_CFUNC {
+                return Err(());
+            }
+
+            let cfunc = unsafe { get_cme_def_body_cfunc(method) } as *const rb_method_cfunc_t;
+            let cfunc_argc = unsafe { get_mct_argc(cfunc) };
+            let ci_flags = unsafe { vm_ci_flag(call_info) };
+
+            Ok(SendContext {
+                recv,
+                recv_class,
+                method,
+                method_id,
+                ci_flags,
+                argc,
+                cfunc,
+                cfunc_argc,
+                profiled_type,
+            })
+        }
+
+        fn add_patch_points_for_cfunc(
+            fun: &mut Function,
+            block: BlockId,
+            send_context: &SendContext,
+            state: InsnId,
+        ) {
+            gen_patch_points_for_optimized_ccall(fun, block, send_context.recv_class, send_context.method_id, send_context.method, state);
+            if send_context.recv_class.instance_can_have_singleton_class() {
+                fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: send_context.recv_class }, state });
+            }
+        }
+
+        fn guard_recv_if_profiled(
+            fun: &mut Function,
+            block: BlockId,
+            send_context: &SendContext,
+            state: InsnId,
+            recv: InsnId,
+        ) -> InsnId {
+            if let Some(profiled_type) = send_context.profiled_type {
+                let guarded = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                fun.insn_types[guarded.0] = fun.infer_type(guarded);
+                guarded
+            } else {
+                recv
+            }
+        }
+
         // Try to reduce a Send insn to a CCallWithFrame
         fn reduce_send_to_ccall(
             fun: &mut Function,
@@ -2353,98 +2451,54 @@ impl Function {
             send: Insn,
             send_insn_id: InsnId,
         ) -> Result<(), ()> {
-            let Insn::Send { mut recv, cd, blockiseq, mut args, state, .. } = send else {
+            let Insn::Send { recv, cd, blockiseq, mut args, state, .. } = send else {
                 return Err(());
             };
 
-            let call_info = unsafe { (*cd).ci };
-            let argc = unsafe { vm_ci_argc(call_info) };
-            let method_id = unsafe { rb_vm_ci_mid(call_info) };
-
-            // If we have info about the class of the receiver
-            let (recv_class, profiled_type) = if let Some(class) = self_type.runtime_exact_ruby_class() {
-                (class, None)
-            } else {
-                let iseq_insn_idx = fun.frame_state(state).insn_idx;
-                let Some(recv_type) = fun.profiled_type_of_at(recv, iseq_insn_idx) else { return Err(()) };
-                (recv_type.class(), Some(recv_type))
-            };
-
-            // Do method lookup
-            let method: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
-            if method.is_null() {
-                return Err(());
-            }
-
-            // Filter for C methods
-            let def_type = unsafe { get_cme_def_type(method) };
-            if def_type != VM_METHOD_TYPE_CFUNC {
-                return Err(());
-            }
-
-            // Find the `argc` (arity) of the C method, which describes the parameters it expects
-            let cfunc = unsafe { get_cme_def_body_cfunc(method) };
-            let cfunc_argc = unsafe { get_mct_argc(cfunc) };
-            match cfunc_argc {
+            let send_context = create_send_context(fun, self_type, recv, state, cd)?;
+            match send_context.cfunc_argc {
                 0.. => {
-                    // (self, arg0, arg1, ..., argc) form
-                    //
-                    // Bail on argc mismatch
-                    if argc != cfunc_argc as u32 {
+                    if !send_context.arg_count_matches() {
                         return Err(());
                     }
-
-                    let ci_flags = unsafe { vm_ci_flag(call_info) };
 
                     // When seeing &block argument, fall back to dynamic dispatch for now
                     // TODO: Support block forwarding
-                    if ci_flags & VM_CALL_ARGS_BLOCKARG != 0 {
+                    if send_context.ci_flags & VM_CALL_ARGS_BLOCKARG != 0 {
                         return Err(());
                     }
 
-                    // Commit to the replacement. Put PatchPoint.
-                    gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
-                    if recv_class.instance_can_have_singleton_class() {
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
-                    }
-
-                    if let Some(profiled_type) = profiled_type {
-                        // Guard receiver class
-                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                        fun.insn_types[recv.0] = fun.infer_type(recv);
-                    }
-
+                    add_patch_points_for_cfunc(fun, block, &send_context, state);
+                    let recv = guard_recv_if_profiled(fun, block, &send_context, state, send_context.recv);
                     let blockiseq = if blockiseq.is_null() { None } else { Some(blockiseq) };
 
-                    // Emit a call
-                    let cfunc = unsafe { get_mct_func(cfunc) }.cast();
                     let mut cfunc_args = vec![recv];
                     cfunc_args.append(&mut args);
 
                     let ccall = fun.push_insn(block, Insn::CCallWithFrame {
                         cd,
-                        cfunc,
+                        cfunc: send_context.cfunc_ptr(),
                         args: cfunc_args,
-                        cme: method,
-                        name: method_id,
+                        cme: send_context.method,
+                        name: send_context.method_id,
                         state,
                         return_type: types::BasicObject,
                         elidable: false,
                         blockiseq,
                     });
                     fun.make_equal_to(send_insn_id, ccall);
-                    return Ok(());
+                    Ok(())
                 }
                 // Variadic method
                 -1 => {
                     // func(int argc, VALUE *argv, VALUE recv)
-                    return Err(());
+                    Err(())
                 }
                 -2 => {
                     // (self, args_ruby_array)
-                    return Err(());
+                    Err(())
                 }
-                _ => unreachable!("unknown cfunc kind: argc={argc}")
+                _ => unreachable!("unknown cfunc kind: argc={}", send_context.cfunc_argc)
             }
         }
         // Try to reduce a SendWithoutBlock insn to a CCall/CCallWithFrame
@@ -2455,71 +2509,31 @@ impl Function {
             send: Insn,
             send_insn_id: InsnId,
         ) -> Result<(), ()> {
-            let Insn::SendWithoutBlock { mut recv, cd, mut args, state, .. } = send else {
+            let Insn::SendWithoutBlock { recv, cd, mut args, state, .. } = send else {
                 return Err(());
             };
 
-            let call_info = unsafe { (*cd).ci };
-            let argc = unsafe { vm_ci_argc(call_info) };
-            let method_id = unsafe { rb_vm_ci_mid(call_info) };
+            let send_context = create_send_context(fun, self_type, recv, state, cd)?;
 
-            // If we have info about the class of the receiver
-            let (recv_class, profiled_type) = if let Some(class) = self_type.runtime_exact_ruby_class() {
-                (class, None)
-            } else {
-                let iseq_insn_idx = fun.frame_state(state).insn_idx;
-                let Some(recv_type) = fun.profiled_type_of_at(recv, iseq_insn_idx) else { return Err(()) };
-                (recv_type.class(), Some(recv_type))
-            };
-
-            // Do method lookup
-            let method: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
-            if method.is_null() {
-                return Err(());
-            }
-
-            // Filter for C methods
-            let def_type = unsafe { get_cme_def_type(method) };
-            if def_type != VM_METHOD_TYPE_CFUNC {
-                return Err(());
-            }
-
-            // Find the `argc` (arity) of the C method, which describes the parameters it expects
-            let cfunc = unsafe { get_cme_def_body_cfunc(method) };
-            let cfunc_argc = unsafe { get_mct_argc(cfunc) };
-            match cfunc_argc {
+            match send_context.cfunc_argc {
                 0.. => {
-                    // (self, arg0, arg1, ..., argc) form
-                    //
-                    // Bail on argc mismatch
-                    if argc != cfunc_argc as u32 {
+                    if !send_context.arg_count_matches() {
                         return Err(());
                     }
-
-                    let ci_flags = unsafe { vm_ci_flag(call_info) };
 
                     // Filter for simple call sites (i.e. no splats etc.)
-                    if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
+                    if send_context.ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
                         return Err(());
                     }
 
-                    // Commit to the replacement. Put PatchPoint.
-                    gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
-                    if recv_class.instance_can_have_singleton_class() {
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
-                    }
+                    add_patch_points_for_cfunc(fun, block, &send_context, state);
 
-                    let props = ZJITState::get_method_annotations().get_cfunc_properties(method);
+                    let props = ZJITState::get_method_annotations().get_cfunc_properties(send_context.method);
                     if props.is_none() && get_option!(stats) {
-                        count_not_annotated_cfunc(fun, block, method);
+                        count_not_annotated_cfunc(fun, block, send_context.method);
                     }
                     let props = props.unwrap_or_default();
-
-                    if let Some(profiled_type) = profiled_type {
-                        // Guard receiver class
-                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                        fun.insn_types[recv.0] = fun.infer_type(recv);
-                    }
+                    let recv = guard_recv_if_profiled(fun, block, &send_context, state, send_context.recv);
 
                     // Try inlining the cfunc into HIR
                     let tmp_block = fun.new_block(u32::MAX);
@@ -2535,7 +2549,7 @@ impl Function {
                     }
 
                     // No inlining; emit a call
-                    let cfunc = unsafe { get_mct_func(cfunc) }.cast();
+                    let cfunc = send_context.cfunc_ptr();
                     let mut cfunc_args = vec![recv];
                     cfunc_args.append(&mut args);
                     let return_type = props.return_type;
@@ -2543,18 +2557,18 @@ impl Function {
                     // Filter for a leaf and GC free function
                     if props.leaf && props.no_gc {
                         fun.push_insn(block, Insn::IncrCounter(Counter::inline_cfunc_optimized_send_count));
-                        let ccall = fun.push_insn(block, Insn::CCall { cfunc, args: cfunc_args, name: method_id, return_type, elidable });
+                        let ccall = fun.push_insn(block, Insn::CCall { cfunc, args: cfunc_args, name: send_context.method_id, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
                     } else {
                         if get_option!(stats) {
-                            count_not_inlined_cfunc(fun, block, method);
+                            count_not_inlined_cfunc(fun, block, send_context.method);
                         }
                         let ccall = fun.push_insn(block, Insn::CCallWithFrame {
                             cd,
                             cfunc,
                             args: cfunc_args,
-                            cme: method,
-                            name: method_id,
+                            cme: send_context.method,
+                            name: send_context.method_id,
                             state,
                             return_type,
                             elidable,
@@ -2569,22 +2583,14 @@ impl Function {
                 -1 => {
                     // The method gets a pointer to the first argument
                     // func(int argc, VALUE *argv, VALUE recv)
-                    let ci_flags = unsafe { vm_ci_flag(call_info) };
-                    if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
-                        gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
+                    if send_context.ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
+                        add_patch_points_for_cfunc(fun, block, &send_context, state);
+                        let recv = guard_recv_if_profiled(fun, block, &send_context, state, send_context.recv);
 
-                        if recv_class.instance_can_have_singleton_class() {
-                            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
-                        }
-                        if let Some(profiled_type) = profiled_type {
-                            // Guard receiver class
-                            recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                        }
-
-                        let cfunc = unsafe { get_mct_func(cfunc) }.cast();
-                        let props = ZJITState::get_method_annotations().get_cfunc_properties(method);
+                        let cfunc = unsafe { get_mct_func(send_context.cfunc) }.cast();
+                        let props = ZJITState::get_method_annotations().get_cfunc_properties(send_context.method);
                         if props.is_none() && get_option!(stats) {
-                            count_not_annotated_cfunc(fun, block, method);
+                            count_not_annotated_cfunc(fun, block, send_context.method);
                         }
                         let props = props.unwrap_or_default();
 
@@ -2603,7 +2609,7 @@ impl Function {
 
                         // No inlining; emit a call
                         if get_option!(stats) {
-                            count_not_inlined_cfunc(fun, block, method);
+                            count_not_inlined_cfunc(fun, block, send_context.method);
                         }
                         let return_type = props.return_type;
                         let elidable = props.elidable;
@@ -2611,8 +2617,8 @@ impl Function {
                             cfunc,
                             recv,
                             args,
-                            cme: method,
-                            name: method_id,
+                            cme: send_context.method,
+                            name: send_context.method_id,
                             state,
                             return_type,
                             elidable,
@@ -2629,7 +2635,7 @@ impl Function {
                     // Falling through for now
                     fun.set_dynamic_send_reason(send_insn_id, SendWithoutBlockCfuncArrayVariadic);
                 }
-                _ => unreachable!("unknown cfunc kind: argc={argc}")
+                _ => unreachable!("unknown cfunc kind: argc={}", send_context.cfunc_argc)
             }
 
             Err(())
