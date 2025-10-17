@@ -18,24 +18,24 @@ module Prism
       "whitequark/multiple_pattern_matches.txt"
     ]
 
-    Fixture.each(except: except) do |fixture|
-      define_method(fixture.test_name) { assert_snippets(fixture) }
+    Fixture.each_with_version(except: except) do |fixture, version|
+      define_method(fixture.test_name(version)) { assert_snippets(fixture, version) }
     end
 
     private
 
     # We test every snippet (separated by \n\n) in isolation to ensure the
     # parser does not try to read bytes further than the end of each snippet.
-    def assert_snippets(fixture)
+    def assert_snippets(fixture, version)
       fixture.read.split(/(?<=\S)\n\n(?=\S)/).each do |snippet|
         snippet = snippet.rstrip
 
-        result = Prism.parse(snippet, filepath: fixture.path)
+        result = Prism.parse(snippet, filepath: fixture.path, version: version)
         assert result.success?
 
         if !ENV["PRISM_BUILD_MINIMAL"]
-          dumped = Prism.dump(snippet, filepath: fixture.path)
-          assert_equal_nodes(result.value, Prism.load(snippet, dumped).value)
+          dumped = Prism.dump(snippet, filepath: fixture.path, version: version)
+          assert_equal_nodes(result.value, Prism.load(snippet, dumped, version: version).value)
         end
       end
     end

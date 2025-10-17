@@ -65,11 +65,14 @@ module Prism
       # 1.. && 2
       "ranges.txt",
 
+      # https://bugs.ruby-lang.org/issues/20478
+      "3.4/circular_parameters.txt",
+
       # Cannot yet handling leading logical operators.
-      "leading_logical.txt",
+      "3.5/leading_logical.txt",
 
       # Ruby >= 3.5 specific syntax
-      "endless_methods_command_call.txt",
+      "3.5/endless_methods_command_call.txt",
 
       # https://bugs.ruby-lang.org/issues/21168#note-5
       "command_method_call_2.txt",
@@ -165,9 +168,9 @@ module Prism
 
     if RUBY_VERSION >= "3.3"
       def test_current_parser_for_current_ruby
-        major, minor, _patch = Gem::Version.new(RUBY_VERSION).segments
+        major, minor = current_major_minor.split(".")
         # Let's just hope there never is a Ruby 3.10 or similar
-        expected = major * 10 + minor
+        expected = major.to_i * 10 + minor.to_i
         assert_equal(expected, Translation::ParserCurrent.new.version)
       end
     end
@@ -189,7 +192,7 @@ module Prism
     end
 
     def test_it_block_parameter_syntax
-      it_fixture_path = Pathname(__dir__).join("../../../test/prism/fixtures/it.txt")
+      it_fixture_path = Pathname(__dir__).join("../../../test/prism/fixtures/3.4/it.txt")
 
       buffer = Parser::Source::Buffer.new(it_fixture_path)
       buffer.source = it_fixture_path.read

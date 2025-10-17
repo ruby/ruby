@@ -39,7 +39,6 @@ module Prism
       "dos_endings.txt",
       "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
-      "leading_logical.txt",
       "method_calls.txt",
       "methods.txt",
       "multi_write.txt",
@@ -77,8 +76,15 @@ module Prism
       "whitequark/ruby_bug_19281.txt",
       "whitequark/slash_newline_in_heredocs.txt",
 
-      # Ruby >= 3.5 specific syntax
-      "endless_methods_command_call.txt",
+      "3.3-3.3/block_args_in_array_assignment.txt",
+      "3.3-3.3/it_with_ordinary_parameter.txt",
+      "3.3-3.3/keyword_args_in_array_assignment.txt",
+      "3.3-3.3/return_in_sclass.txt",
+
+      "3.4/circular_parameters.txt",
+
+      "3.5/endless_methods_command_call.txt",
+      "3.5/leading_logical.txt",
 
       # https://bugs.ruby-lang.org/issues/21168#note-5
       "command_method_call_2.txt",

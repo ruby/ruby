@@ -58,14 +58,26 @@ module Prism
         File.join(File.expand_path("../..", __dir__), "snapshots", path)
       end
 
-      def test_name
-        :"test_#{path}"
+      def test_name(version = nil)
+        if version
+          :"test_#{version}_#{path}"
+        else
+          :"test_#{path}"
+        end
       end
 
       def self.each(except: [], &block)
         glob_pattern = ENV.fetch("FOCUS") { custom_base_path? ? File.join("**", "*.rb") : File.join("**", "*.txt") }
         paths = Dir[glob_pattern, base: BASE] - except
         paths.each { |path| yield Fixture.new(path) }
+      end
+
+      def self.each_with_version(except: [], &block)
+        each(except: except) do |fixture|
+          TestCase.ruby_versions_for(fixture.path).each do |version|
+            yield fixture, version
+          end
+        end
       end
 
       def self.custom_base_path?
@@ -215,6 +227,37 @@ module Prism
     # True if the current platform is Windows.
     def self.windows?
       RbConfig::CONFIG["host_os"].match?(/bccwin|cygwin|djgpp|mingw|mswin|wince/i)
+    end
+
+    # All versions that prism can parse
+    SYNTAX_VERSIONS = %w[3.3 3.4 3.5]
+
+    # Returns an array of ruby versions that a given filepath should test against:
+    # test.txt         # => all available versions
+    # 3.4/test.txt     # => versions since 3.4 (inclusive)
+    # 3.4-4.2/test.txt # => verisions since 3.4 (inclusive) up to 4.2 (inclusive)
+    def self.ruby_versions_for(filepath)
+      return [ENV['SYNTAX_VERSION']] if ENV['SYNTAX_VERSION']
+
+      parts = filepath.split("/")
+      return SYNTAX_VERSIONS if parts.size == 1
+
+      version_start, version_stop = parts[0].split("-")
+      if version_stop
+        SYNTAX_VERSIONS[SYNTAX_VERSIONS.index(version_start)..SYNTAX_VERSIONS.index(version_stop)]
+      else
+        SYNTAX_VERSIONS[SYNTAX_VERSIONS.index(version_start)..]
+      end
+    end
+
+    def current_major_minor
+      RUBY_VERSION.split(".")[0, 2].join(".")
+    end
+
+    if RUBY_VERSION >= "3.3.0"
+      def test_all_syntax_versions_present
+        assert_include(SYNTAX_VERSIONS, current_major_minor)
+      end
     end
 
     private

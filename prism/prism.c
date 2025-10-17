@@ -15764,7 +15764,7 @@ parse_return(pm_parser_t *parser, pm_node_t *node) {
                 break;
         }
     }
-    if (in_sclass) {
+    if (in_sclass && parser->version >= PM_OPTIONS_VERSION_CRUBY_3_4) {
         pm_parser_err_node(parser, node, PM_ERR_RETURN_INVALID);
     }
 }

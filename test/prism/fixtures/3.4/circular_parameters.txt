@@ -1,0 +1,4 @@
+def foo(bar = bar) = 42
+def foo(bar: bar) = 42
+proc { |foo = foo| }
+proc { |foo: foo| }

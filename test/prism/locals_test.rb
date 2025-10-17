@@ -32,8 +32,8 @@ module Prism
       "whitequark/ruby_bug_10653.txt",
 
       # Leaving these out until they are supported by parse.y.
-      "leading_logical.txt",
-      "endless_methods_command_call.txt",
+      "3.5/leading_logical.txt",
+      "3.5/endless_methods_command_call.txt",
       "command_method_call_2.txt"
     ]
 

@@ -43,16 +43,16 @@ module Prism
     end
 
     # https://bugs.ruby-lang.org/issues/20925
-    except << "leading_logical.txt"
+    except << "3.5/leading_logical.txt"
 
     # https://bugs.ruby-lang.org/issues/17398#note-12
-    except << "endless_methods_command_call.txt"
+    except << "3.5/endless_methods_command_call.txt"
 
     # https://bugs.ruby-lang.org/issues/21168#note-5
     except << "command_method_call_2.txt"
 
-    Fixture.each(except: except) do |fixture|
-      define_method(fixture.test_name) { assert_lex(fixture) }
+    Fixture.each_with_version(except: except) do |fixture, version|
+      define_method(fixture.test_name(version)) { assert_lex(fixture, version) }
     end
 
     def test_lex_file
@@ -97,10 +97,12 @@ module Prism
 
     private
 
-    def assert_lex(fixture)
+    def assert_lex(fixture, version)
+      return unless current_major_minor == version
+
       source = fixture.read
 
-      result = Prism.lex_compat(source)
+      result = Prism.lex_compat(source, version: version)
       assert_equal [], result.errors
 
       Prism.lex_ripper(source).zip(result.value).each do |(ripper, prism)|
