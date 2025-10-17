@@ -13395,7 +13395,7 @@ mod opt_tests {
     fn test_specialize_hash_size() {
         eval("
             def test(hash) = hash.size
-            test({:foo => 3, :bar => 1, :baz => 4})
+            test({foo: 3, bar: 1, baz: 4})
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
