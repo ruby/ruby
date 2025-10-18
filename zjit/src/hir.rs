@@ -2084,6 +2084,42 @@ impl Function {
                             }
                             let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args, state });
                             self.make_equal_to(insn_id, send_direct);
+                        } else if def_type == VM_METHOD_TYPE_BMETHOD {
+                            let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
+                            let proc = unsafe { rb_jit_get_proc_ptr(procv) };
+                            let proc_block = unsafe { &(*proc).block };
+                            if proc_block.type_ != block_type_iseq {
+                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Bmethod));
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+                            let capture = unsafe { proc_block.as_.captured.as_ref() };
+                            let iseq = unsafe { *capture.code.iseq.as_ref() };
+                            // Filter for sends we can handle
+                            if can_direct_send(iseq) {
+                                // fallthrough and  optimize
+                            } else if (unsafe { rb_vm_ci_flag(ci) } & VM_CALL_ARGS_BLOCKARG) == 0 {
+                                // fallthrough and optimize
+                            } else {
+                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Bmethod));
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+
+                            // Patch points:
+                            // Check for "defined with an un-shareable Proc in a different Ractor"
+                            if !procv.shareable_p() {
+                                // TODO(alan): Turn this into a ractor belonging guard to work better in multi ractor mode.
+                                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
+                            }
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            if klass.instance_can_have_singleton_class() {
+                                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
+                            }
+
+                            if let Some(profiled_type) = profiled_type {
+                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                            }
+                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args, state });
+                            self.make_equal_to(insn_id, send_direct);
                         } else if def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             if klass.instance_can_have_singleton_class() {
@@ -11850,6 +11886,40 @@ mod opt_tests {
           v10:RegexpExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           CheckInterrupts
           Return v10
+        ");
+    }
+
+    #[test]
+    fn test_bmethod_send_direct() {
+        eval("
+            define_method(:zero) { :b }
+            define_method(:one) { |arg| arg }
+
+            def test = one(zero)
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint MethodRedefined(Object@0x1000, zero@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v22:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v23:BasicObject = SendWithoutBlockDirect v22, :zero (0x1038)
+          PatchPoint SingleRactorMode
+          PatchPoint MethodRedefined(Object@0x1000, one@0x1040, cme:0x1048)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v27:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v28:BasicObject = SendWithoutBlockDirect v27, :one (0x1038), v23
+          CheckInterrupts
+          Return v28
         ");
     }
 
