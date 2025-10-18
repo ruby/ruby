@@ -384,8 +384,8 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
     VM_ASSERT(vm->ractor.cnt > 1);
     VM_ASSERT(cr->threads.cnt == 1);
 
-    RB_VM_LOCK();
-    {
+    // We can't join a barrier because our thread isn't contributing to `running_cnt`.
+    RB_VM_LOCKING_NO_BARRIER() {
         RUBY_DEBUG_LOG("ractor.cnt:%u-- terminate_waiting:%d",
                        vm->ractor.cnt,  vm->ractor.sync.terminate_waiting);
 
@@ -402,7 +402,6 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
 
         ractor_status_set(cr, ractor_terminated);
     }
-    RB_VM_UNLOCK();
 }
 
 static VALUE
@@ -694,7 +693,7 @@ ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const c
         // change ractor status: running -> blocking
         rb_vm_t *vm = GET_VM();
 
-        RB_VM_LOCKING() {
+        RB_VM_LOCKING_NO_BARRIER() {
             rb_vm_ractor_blocking_cnt_inc(vm, cr, file, line);
         }
     }
@@ -702,6 +701,7 @@ ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const c
 
 void rb_threadptr_remove(rb_thread_t *th);
 
+// NOTE: make sure not to join a barrier anywhere in this function
 void
 rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
 {
