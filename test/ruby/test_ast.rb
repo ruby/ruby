@@ -1527,6 +1527,20 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 18], [1, 0, 1, 3], [1, 6, 1, 8], [1, 11, 1, 13], [1, 15, 1, 18]])
     end
 
+    def test_hash_locations
+      node = ast_parse("{a: 1, b: 2}")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 12], [1, 0, 1, 1], [1, 11, 1, 12]])
+
+      node = ast_parse("{}")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 2], [1, 0, 1, 1], [1, 1, 1, 2]])
+
+      node = ast_parse("foo(a: 1, b: 2)")
+      assert_locations(node.children[-1].children[-1].children[0].locations, [[1, 4, 1, 14], nil, nil])
+
+      node = ast_parse("[1, 2, a: 3, b: 4]")
+      assert_locations(node.children[-1].children[-2].locations, [[1, 7, 1, 17], nil, nil])
+    end
+
     def test_lambda_locations
       node = ast_parse("-> (a, b) { foo }")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 17], [1, 0, 1, 2], [1, 10, 1, 11], [1, 16, 1, 17]])
