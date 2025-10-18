@@ -216,6 +216,10 @@ namespace_root_free(void *ptr)
         st_free_table(ns->loading_table);
         ns->loading_table = 0;
     }
+
+    if (ns->loaded_features_index) {
+        st_free_table(ns->loaded_features_index);
+    }
 }
 
 static void
