@@ -2106,6 +2106,45 @@ impl Function {
                             }
                             let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args, state });
                             self.make_equal_to(insn_id, send_direct);
+                        } else if def_type == VM_METHOD_TYPE_BMETHOD {
+                            let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
+                            let proc = unsafe { rb_jit_get_proc_ptr(procv) };
+                            let proc_block = unsafe { &(*proc).block };
+                            // Target ISEQ bmethods. Can't handle for example, `define_method(:foo, &:foo)`
+                            // which makes a `block_type_symbol` bmethod.
+                            if proc_block.type_ != block_type_iseq {
+                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Bmethod));
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+                            let capture = unsafe { proc_block.as_.captured.as_ref() };
+                            let iseq = unsafe { *capture.code.iseq.as_ref() };
+
+                            if !can_direct_send(iseq) {
+                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Bmethod));
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+                            // Can't pass a block to a block for now
+                            if (unsafe { rb_vm_ci_flag(ci) } & VM_CALL_ARGS_BLOCKARG) != 0 {
+                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Bmethod));
+                                self.push_insn_id(block, insn_id); continue;
+                            }
+
+                            // Patch points:
+                            // Check for "defined with an un-shareable Proc in a different Ractor"
+                            if !procv.shareable_p() {
+                                // TODO(alan): Turn this into a ractor belonging guard to work better in multi ractor mode.
+                                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state });
+                            }
+                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            if klass.instance_can_have_singleton_class() {
+                                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
+                            }
+
+                            if let Some(profiled_type) = profiled_type {
+                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                            }
+                            let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { recv, cd, cme, iseq, args, state });
+                            self.make_equal_to(insn_id, send_direct);
                         } else if def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             if klass.instance_can_have_singleton_class() {
@@ -12113,6 +12152,120 @@ mod opt_tests {
           v10:RegexpExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           CheckInterrupts
           Return v10
+        ");
+    }
+
+    #[test]
+    fn test_bmethod_send_direct() {
+        eval("
+            define_method(:zero) { :b }
+            define_method(:one) { |arg| arg }
+
+            def test = one(zero)
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint MethodRedefined(Object@0x1000, zero@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v22:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v23:BasicObject = SendWithoutBlockDirect v22, :zero (0x1038)
+          PatchPoint SingleRactorMode
+          PatchPoint MethodRedefined(Object@0x1000, one@0x1040, cme:0x1048)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v27:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v28:BasicObject = SendWithoutBlockDirect v27, :one (0x1038), v23
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
+    fn test_symbol_block_bmethod() {
+        eval("
+            define_method(:identity, &:itself)
+            def test = identity(100)
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[100] = Const Value(100)
+          v12:BasicObject = SendWithoutBlock v6, :identity, v10
+          CheckInterrupts
+          Return v12
+        ");
+    }
+
+    #[test]
+    fn test_call_bmethod_with_block() {
+        eval("
+            define_method(:bmethod) { :b }
+            def test = (bmethod {})
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:BasicObject = Send v6, 0x1000, :bmethod
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_call_shareable_bmethod() {
+        eval("
+            class Foo
+              class << self
+                define_method(:identity, &(Ractor.make_shareable ->(val){val}))
+              end
+            end
+            def test = Foo.identity(100)
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:7:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Foo)
+          v22:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v12:Fixnum[100] = Const Value(100)
+          PatchPoint MethodRedefined(Class@0x1010, identity@0x1018, cme:0x1020)
+          PatchPoint NoSingletonClass(Class@0x1010)
+          v25:BasicObject = SendWithoutBlockDirect v22, :identity (0x1048), v12
+          CheckInterrupts
+          Return v25
         ");
     }
 

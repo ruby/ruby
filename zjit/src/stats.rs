@@ -187,6 +187,7 @@ make_counters! {
     compile_error_iseq_stack_too_large,
     compile_error_exception_handler,
     compile_error_out_of_memory,
+    compile_error_jit_to_jit_optional,
     compile_error_register_spill_on_ccall,
     compile_error_register_spill_on_alloc,
     compile_error_parse_stack_underflow,
@@ -286,6 +287,7 @@ pub enum CompileError {
     RegisterSpillOnAlloc,
     RegisterSpillOnCCall,
     ParseError(ParseError),
+    JitToJitOptional,
 }
 
 /// Return a raw pointer to the exit counter for a given CompileError
@@ -300,6 +302,7 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
         OutOfMemory           => compile_error_out_of_memory,
         RegisterSpillOnAlloc  => compile_error_register_spill_on_alloc,
         RegisterSpillOnCCall  => compile_error_register_spill_on_ccall,
+        JitToJitOptional      => compile_error_jit_to_jit_optional,
         ParseError(parse_error) => match parse_error {
             StackUnderflow(_)       => compile_error_parse_stack_underflow,
             MalformedIseq(_)        => compile_error_parse_malformed_iseq,
