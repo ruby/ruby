@@ -560,6 +560,8 @@ class TestRubyOptions < Test::Unit::TestCase
 
     assert_in_out_err(%w(- -#=foo), "#!ruby -s\n", [],
                       /invalid name for global variable - -# \(NameError\)/)
+
+    assert_in_out_err(['-s', '-e', 'GC.start; p $DEBUG', '--', '-DEBUG=x'], "", ['"x"'])
   end
 
   def test_assignment_in_conditional

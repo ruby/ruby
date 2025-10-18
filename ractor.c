@@ -216,6 +216,8 @@ ractor_mark(void *ptr)
     rb_gc_mark(r->r_stdin);
     rb_gc_mark(r->r_stdout);
     rb_gc_mark(r->r_stderr);
+    rb_gc_mark(r->verbose);
+    rb_gc_mark(r->debug);
     rb_hook_list_mark(&r->pub.hooks);
 
     if (r->threads.cnt > 0) {
