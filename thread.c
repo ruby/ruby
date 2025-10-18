@@ -221,7 +221,18 @@ vm_check_ints_blocking(rb_execution_context_t *ec)
         th->pending_interrupt_queue_checked = 0;
         RUBY_VM_SET_INTERRUPT(ec);
     }
-    return rb_threadptr_execute_interrupts(th, 1);
+
+    int result = rb_threadptr_execute_interrupts(th, 1);
+
+    // When a signal is received, we yield to the scheduler as soon as possible:
+    if (result || RUBY_VM_INTERRUPTED(ec)) {
+        VALUE scheduler = rb_fiber_scheduler_current();
+        if (scheduler != Qnil) {
+            rb_fiber_scheduler_yield(scheduler);
+        }
+    }
+
+    return result;
 }
 
 int
