@@ -82,7 +82,7 @@ jobs:
         run: |
           # show where
           result=true
-          for e in gcc.exe ragel.exe make.exe libcrypto-1_1-x64.dll libssl-1_1-x64.dll; do
+          for e in gcc.exe ragel.exe make.exe; do
             echo ::group::$'\033[93m'$e$'\033[m'
             where $e || result=false
             echo ::endgroup::
