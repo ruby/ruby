@@ -450,6 +450,11 @@ impl VALUE {
         !self.special_const_p()
     }
 
+    /// Shareability between ractors. `RB_OBJ_SHAREABLE_P()`.
+    pub fn shareable_p(self) -> bool {
+        (self.builtin_flags() & RUBY_FL_SHAREABLE as usize) != 0
+    }
+
     /// Return true if the value is a Ruby Fixnum (immediate-size integer)
     pub fn fixnum_p(self) -> bool {
         let VALUE(cval) = self;
