@@ -186,35 +186,33 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_string_inspect_encoding
-    [
-      Encoding::UTF_8,
-      Encoding::EUC_JP,
-      Encoding::Windows_31J,
-      Encoding::GB18030,
-    ].each do |e|
-      EnvUtil.with_default_external(e) do
-        str = "\x81\x30\x81\x30".force_encoding('GB18030')
-        assert_equal(Encoding::GB18030 == e ? %{"#{str}"} : '"\x{81308130}"', str.inspect)
-        str = e("\xa1\x8f\xa1\xa1")
-        expected = "\"\\xA1\x8F\xA1\xA1\"".force_encoding("EUC-JP")
-        assert_equal(Encoding::EUC_JP == e ? expected : "\"\\xA1\\x{8FA1A1}\"", str.inspect)
-        str = s("\x81@")
-        assert_equal(Encoding::Windows_31J == e ? %{"#{str}"} : '"\x{8140}"', str.inspect)
-        str = "\u3042\u{10FFFD}"
-        assert_equal(Encoding::UTF_8 == e ? %{"#{str}"} : '"\u3042\u{10FFFD}"', str.inspect)
-      end
-    end
-
-    EnvUtil.with_default_external(Encoding::UTF_8) do
-      [
-        Encoding::UTF_16BE,
-        Encoding::UTF_16LE,
-        Encoding::UTF_32BE,
-        Encoding::UTF_32LE,
-        Encoding::UTF8_SOFTBANK
-      ].each do |e|
-        str = "abc".encode(e)
-        assert_equal('"abc"', str.inspect)
+    EnvUtil.suppress_warning do
+      begin
+        orig_int = Encoding.default_internal
+        orig_ext = Encoding.default_external
+        Encoding.default_internal = nil
+        [Encoding::UTF_8, Encoding::EUC_JP, Encoding::Windows_31J, Encoding::GB18030].
+          each do |e|
+          Encoding.default_external = e
+          str = "\x81\x30\x81\x30".force_encoding('GB18030')
+          assert_equal(Encoding::GB18030 == e ? %{"#{str}"} : '"\x{81308130}"', str.inspect)
+          str = e("\xa1\x8f\xa1\xa1")
+          expected = "\"\\xA1\x8F\xA1\xA1\"".force_encoding("EUC-JP")
+          assert_equal(Encoding::EUC_JP == e ? expected : "\"\\xA1\\x{8FA1A1}\"", str.inspect)
+          str = s("\x81@")
+          assert_equal(Encoding::Windows_31J == e ? %{"#{str}"} : '"\x{8140}"', str.inspect)
+          str = "\u3042\u{10FFFD}"
+          assert_equal(Encoding::UTF_8 == e ? %{"#{str}"} : '"\u3042\u{10FFFD}"', str.inspect)
+          end
+        Encoding.default_external = Encoding::UTF_8
+        [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE,
+          Encoding::UTF8_SOFTBANK].each do |e|
+          str = "abc".encode(e)
+          assert_equal('"abc"', str.inspect)
+          end
+      ensure
+        Encoding.default_internal = orig_int
+        Encoding.default_external = orig_ext
       end
     end
   end
@@ -248,11 +246,20 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_object_utf16_32_inspect
-    EnvUtil.with_default_external(Encoding::UTF_8) do
-      o = Object.new
-      [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].each do |e|
-        o.instance_eval "undef inspect;def inspect;'abc'.encode('#{e}');end"
-        assert_equal '[abc]', [o].inspect
+    EnvUtil.suppress_warning do
+      begin
+        orig_int = Encoding.default_internal
+        orig_ext = Encoding.default_external
+        Encoding.default_internal = nil
+        Encoding.default_external = Encoding::UTF_8
+        o = Object.new
+        [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].each do |e|
+          o.instance_eval "undef inspect;def inspect;'abc'.encode('#{e}');end"
+          assert_equal '[abc]', [o].inspect
+        end
+      ensure
+        Encoding.default_internal = orig_int
+        Encoding.default_external = orig_ext
       end
     end
   end
