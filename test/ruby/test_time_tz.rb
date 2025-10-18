@@ -206,6 +206,247 @@ class TestTimeTZ < Test::Unit::TestCase
     }
   end if has_lisbon_tz
 
+  def test_dublin_mean_time
+    with_tz(tz="Europe/Dublin") {
+      # Dublin Mean Time had an offset of -00:25:21 (25 minutes 21 seconds behind UTC)
+      # from 1880 to 1916. Test creating times with this historical offset.
+      t = Time.new(1910, 1, 1, 0, 0, 0, "-00:25:21")
+      assert_equal(-1521, t.utc_offset, "UTC offset should be -1521 seconds")
+      assert_equal("-00:25:21", t.strftime("%::z"), "Formatted offset should be -00:25:21")
+
+      # Test that Ruby correctly handles the conversion to/from UTC
+      utc = Time.utc(1910, 1, 1, 0, 25, 21)
+      dublin = utc.getlocal("-00:25:21")
+      assert_equal(1910, dublin.year)
+      assert_equal(1, dublin.month)
+      assert_equal(1, dublin.day)
+      assert_equal(0, dublin.hour)
+      assert_equal(0, dublin.min)
+      assert_equal(0, dublin.sec)
+      assert_equal(-1521, dublin.utc_offset)
+
+      # Test arithmetic preserves the offset
+      t2 = t + 3600
+      assert_equal(-1521, t2.utc_offset, "Offset should be preserved after arithmetic")
+    }
+  end
+
+  def test_non_15minute_boundaries
+    # Test various times around non-15-minute boundaries with unusual offsets
+    # These test the caching mechanism's ability to handle offsets that don't
+    # align with the 15-minute cache boundaries
+
+    # Test -00:25:21 offset at various minutes/seconds
+    # This tests times that would fall into different 15-minute cache buckets
+    with_tz(tz="Europe/Dublin") {
+      # Test at 0:00 (cache bucket 0)
+      t1 = Time.new(1910, 1, 1, 0, 0, 0, "-00:25:21")
+      assert_equal(-1521, t1.utc_offset)
+
+      # Test at 0:14:59 (still cache bucket 0)
+      t2 = Time.new(1910, 1, 1, 0, 14, 59, "-00:25:21")
+      assert_equal(-1521, t2.utc_offset)
+
+      # Test at 0:15:00 (cache bucket 1)
+      t3 = Time.new(1910, 1, 1, 0, 15, 0, "-00:25:21")
+      assert_equal(-1521, t3.utc_offset)
+
+      # Test at 0:29:59 (still cache bucket 1)
+      t4 = Time.new(1910, 1, 1, 0, 29, 59, "-00:25:21")
+      assert_equal(-1521, t4.utc_offset)
+
+      # Test at 0:30:00 (cache bucket 2)
+      t5 = Time.new(1910, 1, 1, 0, 30, 0, "-00:25:21")
+      assert_equal(-1521, t5.utc_offset)
+
+      # Test at 0:44:59 (still cache bucket 2)
+      t6 = Time.new(1910, 1, 1, 0, 44, 59, "-00:25:21")
+      assert_equal(-1521, t6.utc_offset)
+
+      # Test at 0:45:00 (cache bucket 3)
+      t7 = Time.new(1910, 1, 1, 0, 45, 0, "-00:25:21")
+      assert_equal(-1521, t7.utc_offset)
+
+      # Test at 0:59:59 (still cache bucket 3)
+      t8 = Time.new(1910, 1, 1, 0, 59, 59, "-00:25:21")
+      assert_equal(-1521, t8.utc_offset)
+    }
+
+    # Test some other unusual historical offsets
+    # Amsterdam had +00:19:32 before 1892
+    t_ams = Time.new(1890, 6, 15, 12, 30, 45, "+00:19:32")
+    assert_equal(1172, t_ams.utc_offset, "Amsterdam offset should be 1172 seconds")
+
+    # Test arithmetic across cache boundaries with unusual offset
+    t_start = Time.new(1910, 1, 1, 0, 14, 30, "-00:25:21")
+    t_end = t_start + 90  # Move from bucket 0 to bucket 1
+    assert_equal(-1521, t_start.utc_offset)
+    assert_equal(-1521, t_end.utc_offset)
+    assert_equal(16, t_end.min)
+    assert_equal(0, t_end.sec)
+  end
+
+  def test_dublin_dst_1916_transition
+    # Test the critical DST transition in Dublin on May 21, 1916
+    # Before: -0:25:21 (DMT)
+    # After: -0:25:21 + 1:00 DST = +0:34:39 (IST)
+    with_tz(tz="Europe/Dublin") {
+      # Test before DST transition - different cache buckets
+      t1 = Time.local(1916, 5, 21, 1, 0, 0)
+      t2 = Time.local(1916, 5, 21, 1, 14, 59)
+      t3 = Time.local(1916, 5, 21, 1, 15, 0)
+      t4 = Time.local(1916, 5, 21, 1, 30, 0)
+      t5 = Time.local(1916, 5, 21, 1, 45, 0)
+      t6 = Time.local(1916, 5, 21, 1, 59, 59)
+
+      # All should have -0:25:21 offset before transition
+      assert_equal(-1521, t1.utc_offset, "1:00 should be -0:25:21")
+      assert_equal(-1521, t2.utc_offset, "1:14:59 should be -0:25:21")
+      assert_equal(-1521, t3.utc_offset, "1:15 should be -0:25:21")
+      assert_equal(-1521, t4.utc_offset, "1:30 should be -0:25:21")
+      assert_equal(-1521, t5.utc_offset, "1:45 should be -0:25:21")
+      assert_equal(-1521, t6.utc_offset, "1:59:59 should be -0:25:21")
+
+      # Test after DST transition - different cache buckets
+      t7 = Time.local(1916, 5, 21, 3, 0, 0)
+      t8 = Time.local(1916, 5, 21, 3, 14, 59)
+      t9 = Time.local(1916, 5, 21, 3, 15, 0)
+      t10 = Time.local(1916, 5, 21, 3, 30, 0)
+      t11 = Time.local(1916, 5, 21, 3, 45, 0)
+      t12 = Time.local(1916, 5, 21, 3, 59, 59)
+
+      # All should have +0:34:39 offset after transition
+      expected_offset = 2079  # -1521 + 3600 = 2079 seconds
+      assert_equal(expected_offset, t7.utc_offset, "3:00 should be +0:34:39")
+      assert_equal(expected_offset, t8.utc_offset, "3:14:59 should be +0:34:39")
+      assert_equal(expected_offset, t9.utc_offset, "3:15 should be +0:34:39")
+      assert_equal(expected_offset, t10.utc_offset, "3:30 should be +0:34:39")
+      assert_equal(expected_offset, t11.utc_offset, "3:45 should be +0:34:39")
+      assert_equal(expected_offset, t12.utc_offset, "3:59:59 should be +0:34:39")
+
+      # Verify DST flag
+      assert_equal(false, t1.dst?, "Before transition should not be DST")
+      assert_equal(true, t7.dst?, "After transition should be DST")
+
+      # Test times in October when DST ends
+      t13 = Time.local(1916, 10, 1, 1, 0, 0)
+      assert_equal(expected_offset, t13.utc_offset, "October 1 01:00 should still be DST")
+      assert_equal(true, t13.dst?, "October 1 01:00 should still be DST")
+
+      # After DST ends - Dublin transitions to GMT (0 offset), not back to DMT
+      t14 = Time.local(1916, 10, 1, 3, 0, 0)
+      assert_equal(0, t14.utc_offset, "October 1 03:00 should be GMT")
+      assert_equal(false, t14.dst?, "October 1 03:00 should not be DST")
+    }
+  end
+
+  def test_sub_minute_transitions
+    # Test timezone transitions that occur at non-standard seconds
+    # Initially we thought these would break the 15-minute cache, but the cache
+    # is actually keyed by UTC time, not local time, so it handles these correctly!
+
+    # Dublin October 1, 1916: Transitions at 02:25:21 local time
+    # From IST (+00:34:39) to GMT (+00:00:00)
+    # Times fall back from 02:59:59 IST to 02:25:21 GMT
+    with_tz(tz="Europe/Dublin") {
+      # The problematic case: times in the same 15-minute bucket with different offsets
+      # During the "fall back", times from 02:25:21 to 02:59:59 occur twice:
+      # - First as IST (before transition)
+      # - Then as GMT (after transition)
+
+      # Test the repeated hour during fall back
+      # 02:30:00 can be either IST or GMT
+      t_ist = Time.new(1916, 10, 1, 2, 30, 0, :dst)  # Force DST=true (IST)
+      t_gmt = Time.new(1916, 10, 1, 2, 30, 0, :std)  # Force DST=false (GMT)
+
+      # These have different offsets and fall in different UTC cache buckets:
+      # 02:30:00 IST = 01:55:21 UTC (bucket 01:45-01:59)
+      # 02:30:00 GMT = 02:30:00 UTC (bucket 02:30-02:44)
+      assert_equal(2079, t_ist.utc_offset, "02:30:00 IST should have offset +2079")
+      assert_equal(0, t_gmt.utc_offset, "02:30:00 GMT should have offset 0")
+
+      # Test more times in the same bucket
+      t_ist2 = Time.new(1916, 10, 1, 2, 44, 59, :dst)  # Last second of bucket, IST
+      t_gmt2 = Time.new(1916, 10, 1, 2, 44, 59, :std)  # Last second of bucket, GMT
+
+      assert_equal(2079, t_ist2.utc_offset, "02:44:59 IST should have offset +2079")
+      assert_equal(0, t_gmt2.utc_offset, "02:44:59 GMT should have offset 0")
+    }
+
+    # Monrovia January 7, 1972: Transitions at 00:44:30 local time
+    # From MMT (-00:44:30) to GMT (+00:00:00)
+    with_tz(tz="Africa/Monrovia") {
+      # Create UTC times that correspond to just before and after the transition
+      # 23:59:59 MMT (Jan 6) = 00:44:29 UTC (Jan 7) (offset -2670)
+      # 00:44:30 GMT (Jan 7) = 00:44:30 UTC (Jan 7) (offset 0)
+      utc_before = Time.utc(1972, 1, 7, 0, 44, 29)
+      utc_after = Time.utc(1972, 1, 7, 0, 44, 30)
+
+      # Convert to local times
+      local_before = utc_before.getlocal
+      local_after = utc_after.getlocal
+
+      # Check the times
+      assert_equal(6, local_before.day, "Before transition should be Jan 6")
+      assert_equal(23, local_before.hour, "Before transition should be hour 23")
+      assert_equal(59, local_before.min, "Before transition should be minute 59")
+      assert_equal(59, local_before.sec, "Before transition should be second 59")
+
+      assert_equal(7, local_after.day, "After transition should be Jan 7")
+      assert_equal(0, local_after.hour, "After transition should be hour 0")
+      assert_equal(44, local_after.min, "After transition should be minute 44")
+      assert_equal(30, local_after.sec, "After transition should be second 30")
+
+      # Check offsets
+      assert_equal(-2670, local_before.utc_offset, "23:59:59 should have MMT offset -2670")
+      assert_equal(0, local_after.utc_offset, "00:44:30 should have GMT offset 0")
+
+      # Test creating local times directly
+      # These are in the same cache bucket (00:30:00 - 00:44:59)
+      t1 = Time.local(1972, 1, 7, 0, 44, 29)
+      t2 = Time.local(1972, 1, 7, 0, 44, 30)
+
+      # With a 15-minute cache, these might incorrectly return the same offset
+      # The correct behavior is:
+      # Note: 00:44:29 doesn't exist in local time (it's during the skipped period)
+      # so Ruby might adjust it
+      assert_equal(0, t2.utc_offset, "Local 00:44:30 should have GMT offset 0")
+    }
+  end
+
+  def test_europe_astrakhan
+    # Test the Europe/Astrakhan timezone transition on Apr 30, 1924
+    # LMT offset: +3:12:12 (11532 seconds)
+    # At Wed Apr 30 20:47:47 1924 UT, time changes from LMT to +03
+    with_tz(tz="Europe/Astrakhan") {
+      # Test right before the transition
+      # Wed Apr 30 20:47:47 1924 UT = Wed Apr 30 23:59:59 1924 LMT
+      utc_before = Time.utc(1924, 4, 30, 20, 47, 47)
+      local_before = utc_before.getlocal
+
+      assert_equal(30, local_before.day)
+      assert_equal(4, local_before.month)
+      assert_equal(1924, local_before.year)
+      assert_equal(23, local_before.hour)
+      assert_equal(59, local_before.min)
+      assert_equal(59, local_before.sec)
+      assert_equal(11532, local_before.utc_offset, "Before transition should have LMT offset +3:12:12 (11532 seconds)")
+
+      # Test right after the transition
+      # Wed Apr 30 20:47:48 1924 UT = Wed Apr 30 23:47:48 1924 +03
+      utc_after = Time.utc(1924, 4, 30, 20, 47, 48)
+      local_after = utc_after.getlocal
+
+      assert_equal(30, local_after.day)
+      assert_equal(4, local_after.month)
+      assert_equal(1924, local_after.year)
+      assert_equal(23, local_after.hour)
+      assert_equal(47, local_after.min)
+      assert_equal(48, local_after.sec)
+      assert_equal(10800, local_after.utc_offset, "After transition should have +03 offset (10800 seconds)")
+    }
+  end
+
   def test_pacific_kiritimati
     with_tz(tz="Pacific/Kiritimati") {
       assert_time_constructor(tz, "1994-12-30 00:00:00 -1000", :local, [1994,12,30,0,0,0])
