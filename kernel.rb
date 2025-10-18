@@ -141,6 +141,7 @@ module Kernel
   #    loop do
   #      print "Input: "
   #      line = gets
+  #      # break if q, Q is entered or EOF signal (Ctrl-D on Unix, Ctrl-Z on windows) is sent
   #      break if !line or line =~ /^q/i
   #      # ...
   #    end
