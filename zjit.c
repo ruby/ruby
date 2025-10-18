@@ -305,6 +305,12 @@ rb_zjit_class_has_default_allocator(VALUE klass)
     return alloc == rb_class_allocate_instance;
 }
 
+VALUE
+rb_zjit_fix_mod_fix(VALUE recv, VALUE obj)
+{
+    return rb_fix_mod_fix(recv, obj);
+}
+
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
 VALUE rb_zjit_stats(rb_execution_context_t *ec, VALUE self, VALUE target_key);
