@@ -1714,6 +1714,36 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 1, insns: [:opt_getconstant_path]
   end
 
+  def test_expandarray_no_splat
+    assert_compiles '[3, 4]', %q{
+      def test(o)
+        a, b = o
+        [a, b]
+      end
+      test [3, 4]
+    }, call_threshold: 1, insns: [:expandarray]
+  end
+
+  def test_expandarray_splat
+    assert_compiles '[3, [4]]', %q{
+      def test(o)
+        a, *b = o
+        [a, b]
+      end
+      test [3, 4]
+    }, call_threshold: 1, insns: [:expandarray]
+  end
+
+  def test_expandarray_splat_post
+    assert_compiles '[3, [4], 5]', %q{
+      def test(o)
+        a, *b, c = o
+        [a, b, c]
+      end
+      test [3, 4, 5]
+    }, call_threshold: 1, insns: [:expandarray]
+  end
+
   def test_getconstant_path_autoload
     # A constant-referencing expression can run arbitrary code through Kernel#autoload.
     Dir.mktmpdir('autoload') do |tmpdir|

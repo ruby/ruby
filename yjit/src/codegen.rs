@@ -2305,7 +2305,7 @@ fn gen_expandarray(
     }
 
     // Get the compile-time array length
-    let comptime_len = unsafe { rb_yjit_array_len(comptime_recv) as u32 };
+    let comptime_len = unsafe { rb_jit_array_len(comptime_recv) as u32 };
 
     // Move the array from the stack and check that it's an array.
     guard_object_is_array(
@@ -7603,7 +7603,7 @@ fn gen_send_iseq(
             gen_counter_incr(jit, asm, Counter::send_iseq_splat_not_array);
             return None;
         } else {
-            unsafe { rb_yjit_array_len(array) as u32}
+            unsafe { rb_jit_array_len(array) as u32}
         };
 
         // Arity check accounting for size of the splat. When callee has rest parameters, we insert

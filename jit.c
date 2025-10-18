@@ -450,6 +450,12 @@ rb_yarv_ary_entry_internal(VALUE ary, long offset)
     return rb_ary_entry_internal(ary, offset);
 }
 
+long
+rb_jit_array_len(VALUE a)
+{
+    return rb_array_len(a);
+}
+
 void
 rb_set_cfp_pc(struct rb_control_frame_struct *cfp, const VALUE *pc)
 {
