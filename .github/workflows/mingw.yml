@@ -81,8 +81,6 @@ jobs:
       - name: where check
         run: |
           # show where
-          mv /c/Windows/System32/libcrypto-1_1-x64.dll /c/Windows/System32/libcrypto-1_1-x64.dll_
-          mv /c/Windows/System32/libssl-1_1-x64.dll    /c/Windows/System32/libssl-1_1-x64.dll_
           result=true
           for e in gcc.exe ragel.exe make.exe libcrypto-1_1-x64.dll libssl-1_1-x64.dll; do
             echo ::group::$'\033[93m'$e$'\033[m'
