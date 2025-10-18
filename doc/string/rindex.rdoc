@@ -1,0 +1,52 @@
+Returns the integer position of the _last_ substring that matches the given argument +pattern+,
+or +nil+ if none found.
+
+When +pattern+ is a string, returns the index of the last matching substring in self:
+
+  'foo'.rindex('f')       # => 0
+  'foo'.rindex('o')       # => 2
+  'foo'.rindex('oo'       # => 1
+  'foo'.rindex('ooo')     # => nil
+  'тест'.rindex('т')      # => 3
+  'こんにちは'.rindex('ち') # => 3
+
+When +pattern+ is a Regexp, returns the index of the last match in self:
+
+  'foo'.rindex(/f/)   # => 0
+  'foo'.rindex(/o/)   # => 2
+  'foo'.rindex(/oo/)  # => 1
+  'foo'.rindex(/ooo/) # => nil
+
+When +offset+ is non-negative, it specifies the maximum starting position in the
+string to end the search:
+
+  'foo'.rindex('o', 0) # => nil
+  'foo'.rindex('o', 1) # => 1
+  'foo'.rindex('o', 2) # => 2
+  'foo'.rindex('o', 3) # => 2
+
+With negative integer argument +offset+,
+selects the search position by counting backward from the end of +self+:
+
+  'foo'.rindex('o', -1) # => 2
+  'foo'.rindex('o', -2) # => 1
+  'foo'.rindex('o', -3) # => nil
+  'foo'.rindex('o', -4) # => nil
+
+The last match means starting at the possible last position, not
+the last of longest matches:
+
+  'foo'.rindex(/o+/) # => 2
+  $~                 # => #<MatchData "o">
+
+To get the last longest match, combine with negative lookbehind:
+
+  'foo'.rindex(/(?<!o)o+/) # => 1
+  $~                       # => #<MatchData "oo">
+
+Or String#index with negative lookforward.
+
+  'foo'.index(/o+(?!.*o)/) # => 1
+  $~                       # => #<MatchData "oo">
+
+Related: see {Querying}[rdoc-ref:String@Querying].

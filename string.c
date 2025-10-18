@@ -4770,59 +4770,10 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
 
 /*
  *  call-seq:
- *    rindex(substring, offset = self.length) -> integer or nil
- *    rindex(regexp, offset = self.length) -> integer or nil
+ *    rindex(pattern, offset = self.length) -> integer or nil
  *
- *  Returns the Integer index of the _last_ occurrence of the given +substring+,
- *  or +nil+ if none found:
+ *  :include:doc/string/rindex.rdoc
  *
- *    'foo'.rindex('f') # => 0
- *    'foo'.rindex('o') # => 2
- *    'foo'.rindex('oo') # => 1
- *    'foo'.rindex('ooo') # => nil
- *
- *  Returns the Integer index of the _last_ match for the given Regexp +regexp+,
- *  or +nil+ if none found:
- *
- *    'foo'.rindex(/f/) # => 0
- *    'foo'.rindex(/o/) # => 2
- *    'foo'.rindex(/oo/) # => 1
- *    'foo'.rindex(/ooo/) # => nil
- *
- *  The _last_ match means starting at the possible last position, not
- *  the last of longest matches.
- *
- *    'foo'.rindex(/o+/) # => 2
- *    $~ #=> #<MatchData "o">
- *
- *  To get the last longest match, needs to combine with negative
- *  lookbehind.
- *
- *    'foo'.rindex(/(?<!o)o+/) # => 1
- *    $~ #=> #<MatchData "oo">
- *
- *  Or String#index with negative lookforward.
- *
- *    'foo'.index(/o+(?!.*o)/) # => 1
- *    $~ #=> #<MatchData "oo">
- *
- *  Integer argument +offset+, if given and non-negative, specifies the maximum starting position in the
- *  string to _end_ the search:
- *
- *    'foo'.rindex('o', 0) # => nil
- *    'foo'.rindex('o', 1) # => 1
- *    'foo'.rindex('o', 2) # => 2
- *    'foo'.rindex('o', 3) # => 2
- *
- *  If +offset+ is a negative Integer, the maximum starting position in the
- *  string to _end_ the search is the sum of the string's length and +offset+:
- *
- *    'foo'.rindex('o', -1) # => 2
- *    'foo'.rindex('o', -2) # => 1
- *    'foo'.rindex('o', -3) # => nil
- *    'foo'.rindex('o', -4) # => nil
- *
- *  Related: String#index.
  */
 
 static VALUE

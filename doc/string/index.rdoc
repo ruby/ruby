@@ -11,7 +11,7 @@ returns the index of the first matching substring in +self+:
   'тест'.index('с')        # => 2  # Characters, not bytes.
   'こんにちは'.index('ち')  # => 3
 
-When +pattern is a Regexp, returns the index of the first match in +self+:
+When +pattern+ is a Regexp, returns the index of the first match in +self+:
 
   'foo'.index(/o./) # => 1
   'foo'.index(/.o/) # => 0
