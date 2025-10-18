@@ -659,6 +659,7 @@ get_event_name(rb_event_flag_t event)
       case RUBY_EVENT_C_CALL:	return "c-call";
       case RUBY_EVENT_C_RETURN:	return "c-return";
       case RUBY_EVENT_RAISE:	return "raise";
+      case RUBY_EVENT_GVAR_SET: return "gvar-set";
       default:
         return "unknown";
     }
@@ -685,6 +686,7 @@ get_event_id(rb_event_flag_t event)
         C(thread_end, THREAD_END);
         C(fiber_switch, FIBER_SWITCH);
         C(script_compiled, SCRIPT_COMPILED);
+        C(gvar_set, GVAR_SET);
         C(rescue, RESCUE);
 #undef C
       default:
@@ -827,6 +829,7 @@ symbol2event_flag(VALUE v)
     C(fiber_switch, FIBER_SWITCH);
     C(script_compiled, SCRIPT_COMPILED);
     C(rescue, RESCUE);
+    C(gvar_set, GVAR_SET);
 
     /* joke */
     C(a_call, A_CALL);
@@ -950,9 +953,20 @@ rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
       case RUBY_EVENT_CLASS:
       case RUBY_EVENT_END:
       case RUBY_EVENT_SCRIPT_COMPILED:
+      case RUBY_EVENT_GVAR_SET:
       case RUBY_EVENT_RESCUE:
         rb_raise(rb_eRuntimeError, "not supported by this event");
         break;
+    }
+    return Qnil;
+}
+
+VALUE
+rb_tracearg_gvar_name(rb_trace_arg_t *trace_arg)
+{
+    if (trace_arg->event == RUBY_EVENT_GVAR_SET) {
+        VALUE pair = trace_arg->data;
+        return RARRAY_AREF(pair, 0);
     }
     return Qnil;
 }
@@ -1008,6 +1022,10 @@ rb_tracearg_return_value(rb_trace_arg_t *trace_arg)
 {
     if (trace_arg->event & (RUBY_EVENT_RETURN | RUBY_EVENT_C_RETURN | RUBY_EVENT_B_RETURN)) {
         /* ok */
+    }
+    else if (trace_arg->event == RUBY_EVENT_GVAR_SET) {
+        VALUE pair = trace_arg->data;
+        return RARRAY_AREF(pair, 1);
     }
     else {
         rb_raise(rb_eRuntimeError, "not supported by this event");
@@ -1132,6 +1150,12 @@ static VALUE
 tracepoint_attr_callee_id(rb_execution_context_t *ec, VALUE tpval)
 {
     return rb_tracearg_callee_id(get_trace_arg());
+}
+
+static VALUE
+tracepoint_attr_gvar_name(rb_execution_context_t *ex, VALUE tpval)
+{
+    return rb_tracearg_gvar_name(get_trace_arg());
 }
 
 static VALUE

@@ -10917,7 +10917,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case NODE_GASGN:{
         CHECK(COMPILE(ret, "lvalue", RNODE_GASGN(node)->nd_value));
-
+        ADD_TRACE(ret, RUBY_EVENT_GVAR_SET);
         if (!popped) {
             ADD_INSN(ret, node, dup);
         }

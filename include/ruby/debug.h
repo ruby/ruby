@@ -530,6 +530,15 @@ RBIMPL_ATTR_NONNULL((1))
  */
 VALUE rb_tracearg_parameters(rb_trace_arg_t *trace_arg);
 
+/**
+ * Queries the name of the global variable that is set.
+ *
+ * @param[in]  trace_arg  A trace instance.
+ * @retval     RUBY_Qnil  There is no gvar.
+ * @retval     otherwise  Its gvar name, in Ruby level Symbol.
+ */
+VALUE rb_tracearg_gvar_name(rb_trace_arg_t *trace_arg);
+
 RBIMPL_ATTR_NONNULL((1))
 /**
  * Queries the method name of the point where the trace is at.
