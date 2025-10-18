@@ -3533,12 +3533,21 @@ rb_const_remove(VALUE mod, ID id)
     rb_check_frozen(mod);
 
     ce = rb_const_lookup(mod, id);
-    if (!ce || !rb_id_table_delete(RCLASS_WRITABLE_CONST_TBL(mod), id)) {
+
+    if (!ce) {
         if (rb_const_defined_at(mod, id)) {
             rb_name_err_raise("cannot remove %2$s::%1$s", mod, ID2SYM(id));
         }
 
         undefined_constant(mod, ID2SYM(id));
+    }
+
+    VALUE writable_ce = 0;
+    if (rb_id_table_lookup(RCLASS_WRITABLE_CONST_TBL(mod), id, &writable_ce)) {
+        rb_id_table_delete(RCLASS_WRITABLE_CONST_TBL(mod), id);
+        if ((rb_const_entry_t *)writable_ce != ce) {
+            xfree((rb_const_entry_t *)writable_ce);
+        }
     }
 
     rb_const_warn_if_deprecated(ce, mod, id);
