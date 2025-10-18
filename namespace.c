@@ -238,6 +238,17 @@ const rb_data_type_t rb_namespace_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY // TODO: enable RUBY_TYPED_WB_PROTECTED when inserting write barriers
 };
 
+const rb_data_type_t rb_root_namespace_data_type = {
+    "Namespace::Root",
+    {
+        rb_namespace_entry_mark,
+        namespace_entry_free,
+        namespace_entry_memsize,
+        rb_namespace_gc_update_references,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY // TODO: enable RUBY_TYPED_WB_PROTECTED when inserting write barriers
+};
+
 VALUE
 rb_namespace_entry_alloc(VALUE klass)
 {
@@ -708,7 +719,7 @@ initialize_root_namespace(void)
         root->ns_id = namespace_generate_id();
         root->ns_object = root_namespace;
 
-        entry = TypedData_Wrap_Struct(rb_cNamespaceEntry, &rb_namespace_data_type, root);
+        entry = TypedData_Wrap_Struct(rb_cNamespaceEntry, &rb_root_namespace_data_type, root);
         rb_ivar_set(root_namespace, id_namespace_entry, entry);
     }
     else {
