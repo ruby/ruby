@@ -208,7 +208,7 @@ free_loading_table_entry(st_data_t key, st_data_t value, st_data_t arg)
 }
 
 static void
-namespace_entry_free(void *ptr)
+namespace_root_free(void *ptr)
 {
     rb_namespace_t *ns = (rb_namespace_t *)ptr;
     if (ns->loading_table) {
@@ -216,6 +216,13 @@ namespace_entry_free(void *ptr)
         st_free_table(ns->loading_table);
         ns->loading_table = 0;
     }
+}
+
+static void
+namespace_entry_free(void *ptr)
+{
+    namespace_root_free(ptr);
+    xfree(ptr);
 }
 
 static size_t
@@ -242,7 +249,7 @@ const rb_data_type_t rb_root_namespace_data_type = {
     "Namespace::Root",
     {
         rb_namespace_entry_mark,
-        namespace_entry_free,
+        namespace_root_free,
         namespace_entry_memsize,
         rb_namespace_gc_update_references,
     },
