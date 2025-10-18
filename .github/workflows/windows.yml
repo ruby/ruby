@@ -149,14 +149,6 @@ jobs:
           for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
             if not %%~nI == readline mklink %%~nxI %%I
           )
-      # We use OpenSSL instealled by vcpkg instead
-      - name: disable system OpenSSL
-        run: |
-          for %%I in (libcrypto-1_1-x64 libssl-1_1-x64) do (
-            ren c:\Windows\System32\%%I.dll %%I.dll_
-          )
-        # windows-2019 image doesn't have OpenSSL as of 2023/9/14
-        if: ${{ matrix.vs != 2019 }}
 
       - name: Configure
         run: >-
