@@ -22,6 +22,11 @@ enum robject_offsets {
     ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary),
 };
 
+// Manually bound in rust since this is out-of-range of `int`,
+// so this can't be in a `enum`, and we avoid `static const`
+// to avoid allocating storage for the constant.
+const shape_id_t rb_invalid_shape_id = INVALID_SHAPE_ID;
+
 unsigned int
 rb_iseq_encoded_size(const rb_iseq_t *iseq)
 {
