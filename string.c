@@ -10441,7 +10441,7 @@ rb_str_rstrip_bang(VALUE str)
  *  call-seq:
  *    rstrip -> new_string
  *
- *  Returns a copy of the receiver with trailing whitespace removed;
+ *  Returns a copy of +self+ with leading whitespace removed;
  *  see {Whitespace in Strings}[rdoc-ref:String@Whitespace+in+Strings]:
  *
  *    whitespace = "\x00\t\n\v\f\r "
@@ -10449,7 +10449,7 @@ rb_str_rstrip_bang(VALUE str)
  *    s        # => "\u0000\t\n\v\f\r abc\u0000\t\n\v\f\r "
  *    s.rstrip # => "\u0000\t\n\v\f\r abc"
  *
- *  Related: String#lstrip, String#strip.
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
