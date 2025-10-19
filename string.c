@@ -10409,10 +10409,12 @@ rstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
  *  call-seq:
  *    rstrip! -> self or nil
  *
- *  Like String#rstrip, except that any modifications are made in +self+;
- *  returns +self+ if any modification are made, +nil+ otherwise.
+ *  Like String#rstrip, except that:
  *
- *  Related: String#lstrip!, String#strip!.
+ *  - Performs stripping in +self+ (not in a copy of +self+).
+ *  - Returns +self+ if any characters are stripped, +nil+ otherwise.
+ *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
