@@ -43,7 +43,7 @@ module SyncDefaultGems
     prism: ["ruby/prism", "main"],
     psych: 'ruby/psych',
     resolv: "ruby/resolv",
-    rubygems: 'rubygems/rubygems',
+    rubygems: 'ruby/rubygems',
     securerandom: "ruby/securerandom",
     shellwords: "ruby/shellwords",
     singleton: "ruby/singleton",
