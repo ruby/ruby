@@ -36,6 +36,7 @@ class TestRange < Test::Unit::TestCase
     assert_equal(["a"], ("a" ... "b").to_a)
     assert_equal(["a", "b"], ("a" .. "b").to_a)
     assert_equal([*"a".."z", "aa"], ("a"..).take(27))
+    assert_equal([*"a".."z"], eval("('a' || 'b')..'z'").to_a)
   end
 
   def test_range_numeric_string
