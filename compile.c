@@ -3132,6 +3132,25 @@ is_frozen_putstring(INSN *insn, VALUE *op)
 }
 
 static int
+insn_has_label_before(LINK_ELEMENT *elem)
+{
+    LINK_ELEMENT *prev = elem->prev;
+    while (prev) {
+        if (prev->type == ISEQ_ELEMENT_LABEL) {
+            LABEL *label = (LABEL *)prev;
+            if (label->refcnt > 0) {
+                return 1;
+            }
+        }
+        else if (prev->type == ISEQ_ELEMENT_INSN) {
+            break;
+        }
+        prev = prev->prev;
+    }
+    return 0;
+}
+
+static int
 optimize_checktype(rb_iseq_t *iseq, INSN *iobj)
 {
     /*
@@ -3376,7 +3395,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         if ((end = (INSN *)get_prev_insn(range)) != 0 &&
                 is_frozen_putstring(end, &str_end) &&
                 (beg = (INSN *)get_prev_insn(end)) != 0 &&
-                is_frozen_putstring(beg, &str_beg)) {
+                is_frozen_putstring(beg, &str_beg) &&
+                !(insn_has_label_before(&beg->link) || insn_has_label_before(&end->link))) {
             int excl = FIX2INT(OPERAND_AT(range, 0));
             VALUE lit_range = rb_range_new(str_beg, str_end, excl);
 
