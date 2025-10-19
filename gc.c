@@ -1160,13 +1160,6 @@ rb_objspace_data_type_name(VALUE obj)
     }
 }
 
-static enum rb_id_table_iterator_result
-cvar_table_free_i(VALUE value, void *ctx)
-{
-    xfree((void *)value);
-    return ID_TABLE_CONTINUE;
-}
-
 static void
 io_fptr_finalize(void *fptr)
 {
@@ -1233,26 +1226,9 @@ struct classext_foreach_args {
 static void
 classext_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
 {
-    struct rb_id_table *tbl;
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
 
-    rb_id_table_free(RCLASSEXT_M_TBL(ext));
-
-    if (!RCLASSEXT_SHARED_CONST_TBL(ext) && (tbl = RCLASSEXT_CONST_TBL(ext)) != NULL) {
-        rb_free_const_table(tbl);
-    }
-    if ((tbl = RCLASSEXT_CVC_TBL(ext)) != NULL) {
-        rb_id_table_foreach_values(tbl, cvar_table_free_i, NULL);
-        rb_id_table_free(tbl);
-    }
-    rb_class_classext_free_subclasses(ext, args->klass);
-    if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext)) {
-        RUBY_ASSERT(is_prime); // superclasses should only be used on prime
-        xfree(RCLASSEXT_SUPERCLASSES(ext));
-    }
-    if (!is_prime) { // the prime classext will be freed with RClass
-        xfree(ext);
-    }
+    rb_class_classext_free(args->klass, ext, is_prime);
 }
 
 static void
@@ -1260,19 +1236,7 @@ classext_iclass_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *a
 {
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
 
-    if (RCLASSEXT_ICLASS_IS_ORIGIN(ext) && !RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext)) {
-        /* Method table is not shared for origin iclasses of classes */
-        rb_id_table_free(RCLASSEXT_M_TBL(ext));
-    }
-    if (RCLASSEXT_CALLABLE_M_TBL(ext) != NULL) {
-        rb_id_table_free(RCLASSEXT_CALLABLE_M_TBL(ext));
-    }
-
-    rb_class_classext_free_subclasses(ext, args->klass);
-
-    if (!is_prime) { // the prime classext will be freed with RClass
-        xfree(ext);
-    }
+    rb_iclass_classext_free(args->klass, ext, is_prime);
 }
 
 bool

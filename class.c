@@ -79,6 +79,60 @@
 #define METACLASS_OF(k) RBASIC(k)->klass
 #define SET_METACLASS_OF(k, cls) RBASIC_SET_CLASS(k, cls)
 
+static enum rb_id_table_iterator_result
+cvar_table_free_i(VALUE value, void *ctx)
+{
+    xfree((void *)value);
+    return ID_TABLE_CONTINUE;
+}
+
+void
+rb_class_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime)
+{
+    struct rb_id_table *tbl;
+
+    rb_id_table_free(RCLASSEXT_M_TBL(ext));
+
+    if (!RCLASSEXT_SHARED_CONST_TBL(ext) && (tbl = RCLASSEXT_CONST_TBL(ext)) != NULL) {
+        rb_free_const_table(tbl);
+    }
+
+    if ((tbl = RCLASSEXT_CVC_TBL(ext)) != NULL) {
+        rb_id_table_foreach_values(tbl, cvar_table_free_i, NULL);
+        rb_id_table_free(tbl);
+    }
+
+    rb_class_classext_free_subclasses(ext, klass);
+
+    if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext)) {
+        RUBY_ASSERT(is_prime); // superclasses should only be used on prime
+        xfree(RCLASSEXT_SUPERCLASSES(ext));
+    }
+
+    if (!is_prime) { // the prime classext will be freed with RClass
+        xfree(ext);
+    }
+}
+
+void
+rb_iclass_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime)
+{
+    if (RCLASSEXT_ICLASS_IS_ORIGIN(ext) && !RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext)) {
+        /* Method table is not shared for origin iclasses of classes */
+        rb_id_table_free(RCLASSEXT_M_TBL(ext));
+    }
+
+    if (RCLASSEXT_CALLABLE_M_TBL(ext) != NULL) {
+        rb_id_table_free(RCLASSEXT_CALLABLE_M_TBL(ext));
+    }
+
+    rb_class_classext_free_subclasses(ext, klass);
+
+    if (!is_prime) { // the prime classext will be freed with RClass
+        xfree(ext);
+    }
+}
+
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 
 struct duplicate_id_tbl_data {

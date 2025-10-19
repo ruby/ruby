@@ -317,6 +317,9 @@ RCLASS_SET_CLASSEXT_TBL(VALUE klass, st_table *tbl)
 rb_classext_t * rb_class_duplicate_classext(rb_classext_t *orig, VALUE obj, const rb_namespace_t *ns);
 void rb_class_ensure_writable(VALUE obj);
 
+void rb_class_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime);
+void rb_iclass_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime);
+
 static inline int
 RCLASS_SET_NAMESPACE_CLASSEXT(VALUE obj, const rb_namespace_t *ns, rb_classext_t *ext)
 {
