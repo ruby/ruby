@@ -273,7 +273,7 @@ pub type IseqPtr = *const rb_iseq_t;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ShapeId(pub u32);
 
-pub const INVALID_SHAPE_ID: ShapeId = ShapeId(RB_INVALID_SHAPE_ID);
+pub const INVALID_SHAPE_ID: ShapeId = ShapeId(rb_invalid_shape_id);
 
 impl ShapeId {
     pub fn is_valid(self) -> bool {

@@ -235,10 +235,6 @@ rb_zjit_print_exception(void)
     rb_warn("Ruby error: %"PRIsVALUE"", rb_funcall(exception, rb_intern("full_message"), 0));
 }
 
-enum zjit_exported_constants {
-    RB_INVALID_SHAPE_ID = INVALID_SHAPE_ID,
-};
-
 bool
 rb_zjit_singleton_class_p(VALUE klass)
 {
