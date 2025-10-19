@@ -11196,7 +11196,7 @@ rb_str_partition(VALUE str, VALUE sep)
 
 /*
  *  call-seq:
- *    rpartition(sep) -> [head, match, tail]
+ *    rpartition(pattern) -> [pre_match, last_match, post_match]
  *
  *  :include: doc/string/rpartition.rdoc
  *
