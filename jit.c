@@ -14,6 +14,7 @@
 #include "iseq.h"
 #include "internal/gc.h"
 #include "vm_sync.h"
+#include "internal/fixnum.h"
 
 // Field offsets for the RObject struct
 enum robject_offsets {
