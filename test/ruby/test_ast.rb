@@ -1572,6 +1572,14 @@ dummy
       assert_locations(node.children[-1].children[1].locations, [[1, 8, 1, 16], [1, 8, 1, 10], [1, 12, 1, 13], nil])
     end
 
+    def test_iter_locations
+      node = ast_parse("[1, 2, 3].each do |x| puts x end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 32], [1, 18, 1, 19], [1, 20, 1, 21]])
+
+      node = ast_parse("{a: 1}.each { |k, v| k }")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 24], [1, 14, 1, 15], [1, 19, 1, 20]])
+    end
+
     def test_next_locations
       node = ast_parse("loop { next 1 }")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 13], [1, 7, 1, 11]])
@@ -1735,6 +1743,7 @@ dummy
     end
 
     private
+
     def ast_parse(src, **options)
       begin
         verbose_bak, $VERBOSE = $VERBOSE, nil
