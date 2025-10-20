@@ -1589,8 +1589,13 @@ fn gen_guard_type_not(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, g
 }
 
 /// Compile an identity check with a side exit
-fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected: VALUE, state: &FrameState) -> lir::Opnd {
-    asm.cmp(val, Opnd::Value(expected));
+fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected: crate::hir::Const, state: &FrameState) -> lir::Opnd {
+    match expected {
+        crate::hir::Const::Value(v) => {
+            asm.cmp(val, Opnd::Value(v));
+        }
+        _ => panic!("gen_guard_bit_equals: unexpected hir::Const {:?}", expected),
+    }
     asm.jnz(side_exit(jit, state, GuardBitEquals(expected)));
     val
 }

@@ -270,7 +270,7 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub enum Const {
     Value(VALUE),
     CBool(bool),
@@ -460,7 +460,7 @@ pub enum SideExitReason {
     GuardType(Type),
     GuardTypeNot(Type),
     GuardShape(ShapeId),
-    GuardBitEquals(VALUE),
+    GuardBitEquals(Const),
     PatchPoint(Invariant),
     CalleeSideExit,
     ObjToStringFallback,
@@ -768,8 +768,8 @@ pub enum Insn {
     /// Side-exit if val doesn't have the expected type.
     GuardType { val: InsnId, guard_type: Type, state: InsnId },
     GuardTypeNot { val: InsnId, guard_type: Type, state: InsnId },
-    /// Side-exit if val is not the expected VALUE.
-    GuardBitEquals { val: InsnId, expected: VALUE, state: InsnId },
+    /// Side-exit if val is not the expected Const.
+    GuardBitEquals { val: InsnId, expected: Const, state: InsnId },
     /// Side-exit if val doesn't have the expected shape.
     GuardShape { val: InsnId, shape: ShapeId, state: InsnId },
     /// Side-exit if the block param has been modified or the block handler for the frame
@@ -1703,7 +1703,7 @@ impl Function {
             &Insn::CCallVariadic { return_type, .. } => return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::GuardTypeNot { .. } => types::BasicObject,
-            Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_value(*expected)),
+            Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
             Insn::GuardShape { val, .. } => self.type_of(*val),
             Insn::FixnumAdd  { .. } => types::Fixnum,
             Insn::FixnumSub  { .. } => types::Fixnum,
