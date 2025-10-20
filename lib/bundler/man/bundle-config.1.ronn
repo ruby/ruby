@@ -360,7 +360,7 @@ Or you can set the credentials as an environment variable like this:
 
 For gems with a git source with HTTP(S) URL you can specify credentials like so:
 
-    bundle config set --global https://github.com/rubygems/rubygems.git username:password
+    bundle config set --global https://github.com/ruby/rubygems.git username:password
 
 Or you can set the credentials as an environment variable like so:
 
