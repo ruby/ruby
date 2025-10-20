@@ -1442,7 +1442,7 @@ fn gen_fixnum_or(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir:
 }
 
 fn gen_fixnum_mod(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> lir::Opnd {
-    // Check for arg0 % 0
+    // Check for left % 0, which raises ZeroDivisionError
     asm.cmp(right, Opnd::from(VALUE::fixnum_from_usize(0)));
     asm.je(side_exit(jit, state, FixnumModByZero));
     asm_ccall!(asm, rb_fix_mod_fix, left, right)
