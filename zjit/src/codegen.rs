@@ -398,6 +398,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FixnumGe { left, right } => gen_fixnum_ge(asm, opnd!(left), opnd!(right)),
         Insn::FixnumAnd { left, right } => gen_fixnum_and(asm, opnd!(left), opnd!(right)),
         Insn::FixnumOr { left, right } => gen_fixnum_or(asm, opnd!(left), opnd!(right)),
+        &Insn::FixnumMod { left, right, state } => gen_fixnum_mod(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::IsNil { val } => gen_isnil(asm, opnd!(val)),
         &Insn::IsMethodCfunc { val, cd, cfunc, state: _ } => gen_is_method_cfunc(jit, asm, opnd!(val), cd, cfunc),
         &Insn::IsBitEqual { left, right } => gen_is_bit_equal(asm, opnd!(left), opnd!(right)),
@@ -447,7 +448,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::LoadIvarExtended { self_val, id, index } => gen_load_ivar_extended(asm, opnd!(self_val), id, index),
         &Insn::ArrayMax { state, .. }
         | &Insn::FixnumDiv { state, .. }
-        | &Insn::FixnumMod { state, .. }
         | &Insn::Throw { state, .. }
         => return Err(state),
     };
@@ -1458,6 +1458,13 @@ fn gen_fixnum_and(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir
 /// Compile Fixnum | Fixnum
 fn gen_fixnum_or(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
     asm.or(left, right)
+}
+
+fn gen_fixnum_mod(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> lir::Opnd {
+    // Check for left % 0, which raises ZeroDivisionError
+    asm.cmp(right, Opnd::from(VALUE::fixnum_from_usize(0)));
+    asm.je(side_exit(jit, state, FixnumModByZero));
+    asm_ccall!(asm, rb_fix_mod_fix, left, right)
 }
 
 // Compile val == nil

@@ -1142,7 +1142,6 @@ extern "C" {
     pub fn rb_ary_unshift_m(argc: ::std::os::raw::c_int, argv: *mut VALUE, ary: VALUE) -> VALUE;
     pub fn rb_yjit_rb_ary_subseq_length(ary: VALUE, beg: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_yjit_fix_div_fix(recv: VALUE, obj: VALUE) -> VALUE;
-    pub fn rb_yjit_fix_mod_fix(recv: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_yjit_ruby2_keywords_splat_p(obj: VALUE) -> usize;
     pub fn rb_yjit_splat_varg_checks(
         sp: *mut VALUE,
@@ -1275,4 +1274,5 @@ extern "C" {
         start: *mut ::std::os::raw::c_void,
         end: *mut ::std::os::raw::c_void,
     );
+    pub fn rb_jit_fix_mod_fix(recv: VALUE, obj: VALUE) -> VALUE;
 }

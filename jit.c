@@ -14,6 +14,7 @@
 #include "iseq.h"
 #include "internal/gc.h"
 #include "vm_sync.h"
+#include "internal/fixnum.h"
 
 // Field offsets for the RObject struct
 enum robject_offsets {
@@ -719,4 +720,10 @@ rb_jit_icache_invalidate(void *start, void *end)
 #elif defined(__aarch64__)
 #error No instruction cache clear available with this compiler on Aarch64!
 #endif
+}
+
+VALUE
+rb_jit_fix_mod_fix(VALUE recv, VALUE obj)
+{
+    return rb_fix_mod_fix(recv, obj);
 }
