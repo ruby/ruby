@@ -193,6 +193,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "getbyte", inline_string_getbyte);
     annotate!(rb_cString, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cString, "<<", inline_string_append);
+    annotate!(rb_cString, "==", inline_string_eq);
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", types::Fixnum, no_gc, leaf, elidable);
@@ -289,6 +290,26 @@ fn inline_string_append(fun: &mut hir::Function, block: hir::BlockId, recv: hir:
     } else {
         None
     }
+}
+
+fn inline_string_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    if fun.likely_a(recv, types::String, state) && fun.likely_a(other, types::String, state) {
+        let recv = fun.coerce_to(block, recv, types::String, state);
+        let other = fun.coerce_to(block, other, types::String, state);
+        let return_type = types::BoolExact;
+        let elidable = true;
+        // TODO(max): Make StringEqual its own opcode so that we can later constant-fold StringEqual(a, a) => true
+        let result = fun.push_insn(block, hir::Insn::CCall {
+            cfunc: rb_yarv_str_eql_internal as *const u8,
+            args: vec![recv, other],
+            name: ID!(string_eq),
+            return_type,
+            elidable,
+        });
+        return Some(result);
+    }
+    None
 }
 
 fn inline_integer_succ(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {

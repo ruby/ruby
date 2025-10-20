@@ -283,14 +283,6 @@ rb_yjit_str_simple_append(VALUE str1, VALUE str2)
 
 extern VALUE *rb_vm_base_ptr(struct rb_control_frame_struct *cfp);
 
-// YJIT needs this function to never allocate and never raise
-VALUE
-rb_yarv_str_eql_internal(VALUE str1, VALUE str2)
-{
-    // We wrap this since it's static inline
-    return rb_str_eql_internal(str1, str2);
-}
-
 VALUE
 rb_str_neq_internal(VALUE str1, VALUE str2)
 {
