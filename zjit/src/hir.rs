@@ -668,6 +668,7 @@ pub enum Insn {
         state: InsnId,
         return_type: Type,
         elidable: bool,
+        blockiseq: Option<IseqPtr>,
     },
 
     /// Call a variadic C function with signature: func(int argc, VALUE *argv, VALUE recv)
@@ -1063,10 +1064,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             },
-            Insn::CCallWithFrame { cfunc, args, name, .. } => {
+            Insn::CCallWithFrame { cfunc, args, name, blockiseq, .. } => {
                 write!(f, "CCallWithFrame {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
+                }
+                if let Some(blockiseq) = blockiseq {
+                    write!(f, ", block={:p}", self.ptr_map.map_ptr(blockiseq))?;
                 }
                 Ok(())
             },
@@ -1598,7 +1602,17 @@ impl Function {
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
             &CCall { cfunc, ref args, name, return_type, elidable } => CCall { cfunc, args: find_vec!(args), name, return_type, elidable },
-            &CCallWithFrame { cd, cfunc, ref args, cme, name, state, return_type, elidable } => CCallWithFrame { cd, cfunc, args: find_vec!(args), cme, name, state: find!(state), return_type, elidable },
+            &CCallWithFrame { cd, cfunc, ref args, cme, name, state, return_type, elidable, blockiseq } => CCallWithFrame {
+                cd,
+                cfunc,
+                args: find_vec!(args),
+                cme,
+                name,
+                state: find!(state),
+                return_type,
+                elidable,
+                blockiseq,
+            },
             &CCallVariadic { cfunc, recv, ref args, cme, name, state, return_type, elidable } => CCallVariadic {
                 cfunc, recv: find!(recv), args: find_vec!(args), cme, name, state, return_type, elidable
             },
@@ -2134,7 +2148,7 @@ impl Function {
                         }
                     }
                     // This doesn't actually optimize Send yet, just replaces the fallback reason to be more precise.
-                    // TODO: Optimize Send
+                    // The actual optimization is done in reduce_send_to_ccall.
                     Insn::Send { recv, cd, state, .. } => {
                         let frame_state = self.frame_state(state);
                         let klass = if let Some(klass) = self.type_of(recv).runtime_exact_ruby_class() {
@@ -2338,8 +2352,111 @@ impl Function {
             fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme: method }, state });
         }
 
-        // Try to reduce one SendWithoutBlock to a CCall
-        fn reduce_to_ccall(
+        // Try to reduce a Send insn to a CCallWithFrame
+        fn reduce_send_to_ccall(
+            fun: &mut Function,
+            block: BlockId,
+            self_type: Type,
+            send: Insn,
+            send_insn_id: InsnId,
+        ) -> Result<(), ()> {
+            let Insn::Send { mut recv, cd, blockiseq, mut args, state, .. } = send else {
+                return Err(());
+            };
+
+            let call_info = unsafe { (*cd).ci };
+            let argc = unsafe { vm_ci_argc(call_info) };
+            let method_id = unsafe { rb_vm_ci_mid(call_info) };
+
+            // If we have info about the class of the receiver
+            let (recv_class, profiled_type) = if let Some(class) = self_type.runtime_exact_ruby_class() {
+                (class, None)
+            } else {
+                let iseq_insn_idx = fun.frame_state(state).insn_idx;
+                let Some(recv_type) = fun.profiled_type_of_at(recv, iseq_insn_idx) else { return Err(()) };
+                (recv_type.class(), Some(recv_type))
+            };
+
+            // Do method lookup
+            let method: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
+            if method.is_null() {
+                return Err(());
+            }
+
+            // Filter for C methods
+            let def_type = unsafe { get_cme_def_type(method) };
+            if def_type != VM_METHOD_TYPE_CFUNC {
+                return Err(());
+            }
+
+            // Find the `argc` (arity) of the C method, which describes the parameters it expects
+            let cfunc = unsafe { get_cme_def_body_cfunc(method) };
+            let cfunc_argc = unsafe { get_mct_argc(cfunc) };
+            match cfunc_argc {
+                0.. => {
+                    // (self, arg0, arg1, ..., argc) form
+                    //
+                    // Bail on argc mismatch
+                    if argc != cfunc_argc as u32 {
+                        return Err(());
+                    }
+
+                    let ci_flags = unsafe { vm_ci_flag(call_info) };
+
+                    // When seeing &block argument, fall back to dynamic dispatch for now
+                    // TODO: Support block forwarding
+                    if ci_flags & VM_CALL_ARGS_BLOCKARG != 0 {
+                        return Err(());
+                    }
+
+                    // Commit to the replacement. Put PatchPoint.
+                    gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
+                    if recv_class.instance_can_have_singleton_class() {
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
+                    }
+
+                    if let Some(profiled_type) = profiled_type {
+                        // Guard receiver class
+                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                        fun.insn_types[recv.0] = fun.infer_type(recv);
+                    }
+
+                    let blockiseq = if blockiseq.is_null() { None } else { Some(blockiseq) };
+
+                    // Emit a call
+                    let cfunc = unsafe { get_mct_func(cfunc) }.cast();
+                    let mut cfunc_args = vec![recv];
+                    cfunc_args.append(&mut args);
+
+                    let ccall = fun.push_insn(block, Insn::CCallWithFrame {
+                        cd,
+                        cfunc,
+                        args: cfunc_args,
+                        cme: method,
+                        name: method_id,
+                        state,
+                        return_type: types::BasicObject,
+                        elidable: false,
+                        blockiseq,
+                    });
+                    fun.make_equal_to(send_insn_id, ccall);
+                    return Ok(());
+                }
+                // Variadic method
+                -1 => {
+                    // func(int argc, VALUE *argv, VALUE recv)
+                    return Err(());
+                }
+                -2 => {
+                    // (self, args_ruby_array)
+                    return Err(());
+                }
+                _ => unreachable!("unknown cfunc kind: argc={argc}")
+            }
+        }
+
+        // Try to reduce a SendWithoutBlock insn to a CCall/CCallWithFrame
+        fn reduce_send_without_block_to_ccall(
             fun: &mut Function,
             block: BlockId,
             self_type: Type,
@@ -2440,7 +2557,17 @@ impl Function {
                         if get_option!(stats) {
                             count_not_inlined_cfunc(fun, block, method);
                         }
-                        let ccall = fun.push_insn(block, Insn::CCallWithFrame { cd, cfunc, args: cfunc_args, cme: method, name: method_id, state, return_type, elidable });
+                        let ccall = fun.push_insn(block, Insn::CCallWithFrame {
+                            cd,
+                            cfunc,
+                            args: cfunc_args,
+                            cme: method,
+                            name: method_id,
+                            state,
+                            return_type,
+                            elidable,
+                            blockiseq: None,
+                        });
                         fun.make_equal_to(send_insn_id, ccall);
                     }
 
@@ -2555,11 +2682,21 @@ impl Function {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
-                if let send @ Insn::SendWithoutBlock { recv, .. } = self.find(insn_id) {
-                    let recv_type = self.type_of(recv);
-                    if reduce_to_ccall(self, block, recv_type, send, insn_id).is_ok() {
-                        continue;
+                let send = self.find(insn_id);
+                match send {
+                    send @ Insn::SendWithoutBlock { recv, .. } => {
+                        let recv_type = self.type_of(recv);
+                        if reduce_send_without_block_to_ccall(self, block, recv_type, send, insn_id).is_ok() {
+                            continue;
+                        }
                     }
+                    send @ Insn::Send { recv, .. } => {
+                        let recv_type = self.type_of(recv);
+                        if reduce_send_to_ccall(self, block, recv_type, send, insn_id).is_ok() {
+                            continue;
+                        }
+                    }
+                    _ => {}
                 }
                 self.push_insn_id(block, insn_id);
             }
@@ -12580,6 +12717,108 @@ mod opt_tests {
           v14:BasicObject = SendWithoutBlock v9, :foo
           CheckInterrupts
           Return v14
+        ");
+    }
+
+    #[test]
+    fn test_optimize_send_with_block() {
+        eval(r#"
+            def test = [1, 2, 3].map { |x| x * 2 }
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:ArrayExact = ArrayDup v10
+          PatchPoint MethodRedefined(Array@0x1008, map@0x1010, cme:0x1018)
+          PatchPoint NoSingletonClass(Array@0x1008)
+          v23:BasicObject = CCallWithFrame map@0x1040, v12, block=0x1048
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_do_not_optimize_send_variadic_with_block() {
+        eval(r#"
+            def test = [1, 2, 3].index { |x| x == 2 }
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:ArrayExact = ArrayDup v10
+          v14:BasicObject = Send v12, 0x1008, :index
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
+    fn test_do_not_optimize_send_with_block_forwarding() {
+        eval(r#"
+            def test(&block) = [].map(&block)
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:ArrayExact = NewArray
+          GuardBlockParamProxy l0
+          v17:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          v19:BasicObject = Send v14, 0x1008, :map, v17
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_do_not_optimize_send_to_iseq_method_with_block() {
+        eval(r#"
+            def foo
+              yield 1
+            end
+
+            def test = foo {}
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:6:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:BasicObject = Send v6, 0x1000, :foo
+          CheckInterrupts
+          Return v11
         ");
     }
 

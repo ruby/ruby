@@ -846,6 +846,7 @@ send
 (CALL_DATA cd, ISEQ blockiseq)
 (...)
 (VALUE val)
+// attr bool zjit_profile = true;
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
 {

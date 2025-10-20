@@ -83,7 +83,7 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
         YARVINSN_opt_length    => profile_operands(profiler, profile, 1),
         YARVINSN_opt_size      => profile_operands(profiler, profile, 1),
         YARVINSN_opt_succ      => profile_operands(profiler, profile, 1),
-        YARVINSN_opt_send_without_block => {
+        YARVINSN_opt_send_without_block | YARVINSN_send => {
             let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
             let argc = unsafe { vm_ci_argc((*cd).ci) };
             // Profile all the arguments and self (+1).
