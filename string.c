@@ -10594,40 +10594,10 @@ scan_once(VALUE str, VALUE pat, long *start, int set_backref_str)
 
 /*
  *  call-seq:
- *    scan(string_or_regexp) -> array
- *    scan(string_or_regexp) {|matches| ... } -> self
+ *    scan(pattern) -> array_of_results
+ *    scan(pattern) {|result| ... } -> self
  *
- *  Matches a pattern against +self+; the pattern is:
- *
- *  - +string_or_regexp+ itself, if it is a Regexp.
- *  - <tt>Regexp.quote(string_or_regexp)</tt>, if +string_or_regexp+ is a string.
- *
- *  Iterates through +self+, generating a collection of matching results:
- *
- *  - If the pattern contains no groups, each result is the
- *    matched string, <code>$&</code>.
- *  - If the pattern contains groups, each result is an array
- *    containing one entry per group.
- *
- *  With no block given, returns an array of the results:
- *
- *    s = 'cruel world'
- *    s.scan(/\w+/)      # => ["cruel", "world"]
- *    s.scan(/.../)      # => ["cru", "el ", "wor"]
- *    s.scan(/(...)/)    # => [["cru"], ["el "], ["wor"]]
- *    s.scan(/(..)(..)/) # => [["cr", "ue"], ["l ", "wo"]]
- *
- *  With a block given, calls the block with each result; returns +self+:
- *
- *    s.scan(/\w+/) {|w| print "<<#{w}>> " }
- *    print "\n"
- *    s.scan(/(.)(.)/) {|x,y| print y, x }
- *    print "\n"
- *
- *  Output:
- *
- *     <<cruel>> <<world>>
- *     rceu lowlr
+ *  :include: doc/string/scan.rdoc
  *
  */
 
