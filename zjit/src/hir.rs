@@ -552,7 +552,7 @@ pub enum SendFallbackReason {
 pub enum Insn {
     Const { val: Const },
     /// SSA block parameter. Also used for function parameters in the function's entry block.
-    Param { idx: usize },
+    Param,
 
     StringCopy { val: InsnId, chilled: bool, state: InsnId },
     StringIntern { val: InsnId, state: InsnId },
@@ -888,7 +888,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self.inner {
             Insn::Const { val } => { write!(f, "Const {}", val.print(self.ptr_map)) }
-            Insn::Param { idx } => { write!(f, "Param {idx}") }
+            Insn::Param => { write!(f, "Param") }
             Insn::NewArray { elements, .. } => {
                 write!(f, "NewArray")?;
                 let mut prefix = " ";
@@ -3661,18 +3661,15 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         }
 
         // Load basic block params first
-        let self_param = fun.push_insn(block, Insn::Param { idx: SELF_PARAM_IDX });
+        let self_param = fun.push_insn(block, Insn::Param);
         let mut state = {
             let mut result = FrameState::new(iseq);
-            let mut idx = 1;
             let local_size = if insn_idx == 0 { num_locals(iseq) } else { incoming_state.locals.len() };
             for _ in 0..local_size {
-                result.locals.push(fun.push_insn(block, Insn::Param { idx }));
-                idx += 1;
+                result.locals.push(fun.push_insn(block, Insn::Param));
             }
             for _ in incoming_state.stack {
-                result.stack.push(fun.push_insn(block, Insn::Param { idx }));
-                idx += 1;
+                result.stack.push(fun.push_insn(block, Insn::Param));
             }
             result
         };
@@ -4581,11 +4578,11 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId) -> (Ins
     let iseq = fun.iseq;
     let param_size = unsafe { get_iseq_body_param_size(iseq) }.as_usize();
 
-    let self_param = fun.push_insn(jit_entry_block, Insn::Param { idx: SELF_PARAM_IDX });
+    let self_param = fun.push_insn(jit_entry_block, Insn::Param);
     let mut entry_state = FrameState::new(iseq);
     for local_idx in 0..num_locals(iseq) {
         if local_idx < param_size {
-            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Param { idx: local_idx + 1 })); // +1 for self
+            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Param));
         } else {
             entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) }));
         }
@@ -4935,7 +4932,7 @@ mod infer_tests {
         function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![] } });
         let v1 = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(4)) });
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![v1] }));
-        let param = function.push_insn(exit, Insn::Param { idx: 0 });
+        let param = function.push_insn(exit, Insn::Param);
         crate::cruby::with_rubyvm(|| {
             function.infer_types();
         });
@@ -4954,7 +4951,7 @@ mod infer_tests {
         function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![] } });
         let v1 = function.push_insn(entry, Insn::Const { val: Const::Value(Qfalse) });
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![v1] }));
-        let param = function.push_insn(exit, Insn::Param { idx: 0 });
+        let param = function.push_insn(exit, Insn::Param);
         crate::cruby::with_rubyvm(|| {
             function.infer_types();
             assert_bit_equal(function.type_of(param), types::TrueClass.union(types::FalseClass));
