@@ -720,3 +720,9 @@ rb_jit_icache_invalidate(void *start, void *end)
 #error No instruction cache clear available with this compiler on Aarch64!
 #endif
 }
+
+VALUE
+rb_jit_fix_mod_fix(VALUE recv, VALUE obj)
+{
+    return rb_fix_mod_fix(recv, obj);
+}

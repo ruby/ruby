@@ -332,12 +332,6 @@ rb_yjit_fix_div_fix(VALUE recv, VALUE obj)
     return rb_fix_div_fix(recv, obj);
 }
 
-VALUE
-rb_yjit_fix_mod_fix(VALUE recv, VALUE obj)
-{
-    return rb_fix_mod_fix(recv, obj);
-}
-
 // Return non-zero when `obj` is an array and its last item is a
 // `ruby2_keywords` hash. We don't support this kind of splat.
 size_t
