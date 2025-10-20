@@ -7393,6 +7393,7 @@ jit.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 jit.$(OBJEXT): $(top_srcdir)/internal/serial.h
 jit.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 jit.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+jit.$(OBJEXT): $(top_srcdir)/internal/string.h
 jit.$(OBJEXT): $(top_srcdir)/internal/variable.h
 jit.$(OBJEXT): $(top_srcdir)/internal/vm.h
 jit.$(OBJEXT): $(top_srcdir)/internal/warnings.h

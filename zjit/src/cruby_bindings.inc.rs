@@ -1437,4 +1437,5 @@ unsafe extern "C" {
         start: *mut ::std::os::raw::c_void,
         end: *mut ::std::os::raw::c_void,
     );
+    pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
 }

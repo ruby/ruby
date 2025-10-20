@@ -1134,7 +1134,6 @@ extern "C" {
     pub fn rb_yjit_builtin_function(iseq: *const rb_iseq_t) -> *const rb_builtin_function;
     pub fn rb_yjit_str_simple_append(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
-    pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_str_neq_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_ary_unshift_m(argc: ::std::os::raw::c_int, argv: *mut VALUE, ary: VALUE) -> VALUE;
     pub fn rb_yjit_rb_ary_subseq_length(ary: VALUE, beg: ::std::os::raw::c_long) -> VALUE;
@@ -1274,4 +1273,5 @@ extern "C" {
         end: *mut ::std::os::raw::c_void,
     );
     pub fn rb_jit_fix_mod_fix(recv: VALUE, obj: VALUE) -> VALUE;
+    pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
 }

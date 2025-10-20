@@ -1342,6 +1342,7 @@ pub(crate) mod ids {
         name: NULL               content: b""
         name: respond_to_missing content: b"respond_to_missing?"
         name: eq                 content: b"=="
+        name: string_eq          content: b"String#=="
         name: include_p          content: b"include?"
         name: to_ary
         name: to_s
