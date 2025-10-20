@@ -47,9 +47,9 @@ enum shape_id_fl_type {
 #undef RBIMPL_SHAPE_ID_FL
 };
 
-// This masks allows to check if a shape_id contains any ivar.
-// It rely on ROOT_SHAPE_WITH_OBJ_ID==1.
-enum {
+// This mask allows to check if a shape_id contains any ivar.
+// It relies on ROOT_SHAPE_WITH_OBJ_ID==1.
+enum shape_id_mask {
     SHAPE_ID_HAS_IVAR_MASK = SHAPE_ID_FL_TOO_COMPLEX | (SHAPE_ID_OFFSET_MASK - 1),
 };
 

@@ -38,11 +38,6 @@
 
 #include <errno.h>
 
-// Field offsets for the RString struct
-enum rstring_offsets {
-    RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len)
-};
-
 // We need size_t to have a known size to simplify code generation and FFI.
 // TODO(alan): check this in configure.ac to fail fast on 32 bit platforms.
 STATIC_ASSERT(64b_size_t, SIZE_MAX == UINT64_MAX);
@@ -234,27 +229,12 @@ rb_iseq_set_yjit_payload(const rb_iseq_t *iseq, void *payload)
     iseq->body->yjit_payload = payload;
 }
 
-rb_proc_t *
-rb_yjit_get_proc_ptr(VALUE procv)
-{
-    rb_proc_t *proc;
-    GetProcPtr(procv, proc);
-    return proc;
-}
-
 // This is defined only as a named struct inside rb_iseq_constant_body.
 // By giving it a separate typedef, we make it nameable by rust-bindgen.
 // Bindgen's temp/anon name isn't guaranteed stable.
 typedef struct rb_iseq_param_keyword rb_seq_param_keyword_struct;
 
 ID rb_get_symbol_id(VALUE namep);
-
-VALUE
-rb_get_def_bmethod_proc(rb_method_definition_t *def)
-{
-    RUBY_ASSERT(def->type == VM_METHOD_TYPE_BMETHOD);
-    return def->body.bmethod.proc;
-}
 
 VALUE
 rb_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
