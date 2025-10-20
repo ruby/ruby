@@ -238,6 +238,23 @@ impl Type {
         }
     }
 
+    pub fn from_const(val: Const) -> Type {
+        match val {
+            Const::Value(v) => Self::from_value(v),
+            Const::CBool(v) => Self::from_cbool(v),
+            Const::CInt8(v) => Self::from_cint(types::CInt8, v as i64),
+            Const::CInt16(v) => Self::from_cint(types::CInt16, v as i64),
+            Const::CInt32(v) => Self::from_cint(types::CInt32, v as i64),
+            Const::CInt64(v) => Self::from_cint(types::CInt64, v as i64),
+            Const::CUInt8(v) => Self::from_cint(types::CUInt8, v as i64),
+            Const::CUInt16(v) => Self::from_cint(types::CUInt16, v as i64),
+            Const::CUInt32(v) => Self::from_cint(types::CUInt32, v as i64),
+            Const::CUInt64(v) => Self::from_cint(types::CUInt64, v as i64),
+            Const::CPtr(v) => Self::from_cptr(v),
+            Const::CDouble(v) => Self::from_double(v),
+        }
+    }
+
     pub fn from_profiled_type(val: ProfiledType) -> Type {
         if val.is_fixnum() { types::Fixnum }
         else if val.is_flonum() { types::Flonum }

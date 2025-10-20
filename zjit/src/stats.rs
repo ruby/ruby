@@ -140,6 +140,7 @@ make_counters! {
         exit_guard_type_failure,
         exit_guard_type_not_failure,
         exit_guard_bit_equals_failure,
+        exit_guard_int_equals_failure,
         exit_guard_shape_failure,
         exit_patchpoint_bop_redefined,
         exit_patchpoint_method_redefined,
