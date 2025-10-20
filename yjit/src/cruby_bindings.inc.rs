@@ -634,8 +634,8 @@ pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
 pub type attr_index_t = u16;
 pub type shape_id_t = u32;
-pub const SHAPE_ID_HAS_IVAR_MASK: _bindgen_ty_37 = 134742014;
-pub type _bindgen_ty_37 = u32;
+pub const SHAPE_ID_HAS_IVAR_MASK: shape_id_mask = 134742014;
+pub type shape_id_mask = u32;
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
     pub index: u32,
@@ -941,12 +941,11 @@ pub const DEFINED_REF: defined_type = 15;
 pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
-pub const RUBY_OFFSET_RSTRING_LEN: rstring_offsets = 16;
-pub type rstring_offsets = u32;
 pub type rb_seq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
-pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: robject_offsets = 16;
-pub const ROBJECT_OFFSET_AS_ARY: robject_offsets = 16;
-pub type robject_offsets = u32;
+pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
+pub const ROBJECT_OFFSET_AS_ARY: jit_bindgen_constants = 16;
+pub const RUBY_OFFSET_RSTRING_LEN: jit_bindgen_constants = 16;
+pub type jit_bindgen_constants = u32;
 pub type rb_iseq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
 extern "C" {
     pub fn ruby_xfree(ptr: *mut ::std::os::raw::c_void);
@@ -1122,9 +1121,7 @@ extern "C" {
     pub fn rb_full_cfunc_return(ec: *mut rb_execution_context_t, return_value: VALUE);
     pub fn rb_iseq_get_yjit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
     pub fn rb_iseq_set_yjit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
-    pub fn rb_yjit_get_proc_ptr(procv: VALUE) -> *mut rb_proc_t;
     pub fn rb_get_symbol_id(namep: VALUE) -> ID;
-    pub fn rb_get_def_bmethod_proc(def: *mut rb_method_definition_t) -> VALUE;
     pub fn rb_optimized_call(
         recv: *mut VALUE,
         ec: *mut rb_execution_context_t,
@@ -1200,6 +1197,8 @@ extern "C" {
     ) -> *mut rb_method_cfunc_t;
     pub fn rb_get_def_method_serial(def: *const rb_method_definition_t) -> usize;
     pub fn rb_get_def_original_id(def: *const rb_method_definition_t) -> ID;
+    pub fn rb_get_def_bmethod_proc(def: *mut rb_method_definition_t) -> VALUE;
+    pub fn rb_jit_get_proc_ptr(procv: VALUE) -> *mut rb_proc_t;
     pub fn rb_get_mct_argc(mct: *const rb_method_cfunc_t) -> ::std::os::raw::c_int;
     pub fn rb_get_mct_func(mct: *const rb_method_cfunc_t) -> *mut ::std::os::raw::c_void;
     pub fn rb_get_def_iseq_ptr(def: *mut rb_method_definition_t) -> *const rb_iseq_t;

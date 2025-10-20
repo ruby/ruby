@@ -91,7 +91,7 @@ fn main() {
         .allowlist_function("rb_yjit_shape_capacity")
         .allowlist_function("rb_yjit_shape_index")
         .allowlist_var("SHAPE_ID_NUM_BITS")
-        .allowlist_var("SHAPE_ID_HAS_IVAR_MASK")
+        .allowlist_type("shape_id_mask")
         .allowlist_function("rb_funcall")
         .allowlist_function("rb_obj_is_kind_of")
         .allowlist_function("rb_obj_frozen_p")
@@ -265,7 +265,7 @@ fn main() {
         .allowlist_function("rb_RSTRING_PTR")
         .allowlist_function("rb_RSTRING_LEN")
         .allowlist_function("rb_ENCODING_GET")
-        .allowlist_function("rb_yjit_get_proc_ptr")
+        .allowlist_function("rb_jit_get_proc_ptr")
         .allowlist_function("rb_yjit_exit_locations_dict")
         .allowlist_function("rb_jit_icache_invalidate")
         .allowlist_function("rb_optimized_call")
@@ -280,7 +280,7 @@ fn main() {
         .allowlist_function("rb_jit_vm_lock_then_barrier")
         .allowlist_function("rb_jit_vm_unlock")
         .allowlist_function("rb_jit_for_each_iseq")
-        .allowlist_type("robject_offsets")
+        .allowlist_type("jit_bindgen_constants")
         .allowlist_function("rb_vm_barrier")
 
         // Not sure why it's picking these up, but don't.

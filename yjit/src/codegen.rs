@@ -7367,7 +7367,7 @@ fn gen_send_bmethod(
 ) -> Option<CodegenStatus> {
     let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
 
-    let proc = unsafe { rb_yjit_get_proc_ptr(procv) };
+    let proc = unsafe { rb_jit_get_proc_ptr(procv) };
     let proc_block = unsafe { &(*proc).block };
 
     if proc_block.type_ != block_type_iseq {

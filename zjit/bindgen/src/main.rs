@@ -294,8 +294,7 @@ fn main() {
         .allowlist_function("rb_zjit_singleton_class_p")
         .allowlist_function("rb_zjit_defined_ivar")
         .allowlist_function("rb_zjit_insn_leaf")
-        .allowlist_type("robject_offsets")
-        .allowlist_type("rstring_offsets")
+        .allowlist_type("jit_bindgen_constants")
         .allowlist_function("rb_assert_holding_vm_lock")
         .allowlist_function("rb_jit_shape_too_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")
@@ -303,7 +302,6 @@ fn main() {
         .allowlist_function("rb_jit_vm_unlock")
         .allowlist_function("rb_jit_for_each_iseq")
         .allowlist_function("rb_iseq_reset_jit_func")
-        .allowlist_type("robject_offsets")
         .allowlist_function("rb_vm_barrier")
 
         // Not sure why it's picking these up, but don't.
@@ -367,6 +365,7 @@ fn main() {
         .allowlist_function("rb_get_mct_func")
         .allowlist_function("rb_get_def_iseq_ptr")
         .allowlist_function("rb_get_def_bmethod_proc")
+        .allowlist_function("rb_jit_get_proc_ptr")
         .allowlist_function("rb_iseq_encoded_size")
         .allowlist_function("rb_get_iseq_body_total_calls")
         .allowlist_function("rb_get_iseq_body_local_iseq")
