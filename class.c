@@ -133,6 +133,41 @@ rb_iclass_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime)
     }
 }
 
+struct rb_class_set_namespace_classext_args {
+    VALUE obj;
+    rb_classext_t *ext;
+};
+
+static int
+rb_class_set_namespace_classext_update(st_data_t *key_ptr, st_data_t *val_ptr, st_data_t a, int existing)
+{
+    struct rb_class_set_namespace_classext_args *args = (struct rb_class_set_namespace_classext_args *)a;
+
+    if (existing) {
+        if (BUILTIN_TYPE(args->obj) == T_ICLASS) {
+            rb_iclass_classext_free(args->obj, (rb_classext_t *)*val_ptr, false);
+        }
+        else {
+            rb_class_classext_free(args->obj, (rb_classext_t *)*val_ptr, false);
+        }
+    }
+
+    *val_ptr = (st_data_t)args->ext;
+
+    return ST_CONTINUE;
+}
+
+void
+rb_class_set_namespace_classext(VALUE obj, const rb_namespace_t *ns, rb_classext_t *ext)
+{
+    struct rb_class_set_namespace_classext_args args = {
+        .obj = obj,
+        .ext = ext,
+    };
+
+    st_update(RCLASS_CLASSEXT_TBL(obj), (st_data_t)ns->ns_object, rb_class_set_namespace_classext_update, (st_data_t)&args);
+}
+
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 
 struct duplicate_id_tbl_data {

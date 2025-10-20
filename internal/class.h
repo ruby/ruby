@@ -317,8 +317,7 @@ RCLASS_SET_CLASSEXT_TBL(VALUE klass, st_table *tbl)
 rb_classext_t * rb_class_duplicate_classext(rb_classext_t *orig, VALUE obj, const rb_namespace_t *ns);
 void rb_class_ensure_writable(VALUE obj);
 
-void rb_class_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime);
-void rb_iclass_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime);
+void rb_class_set_namespace_classext(VALUE obj, const rb_namespace_t *ns, rb_classext_t *ext);
 
 static inline int
 RCLASS_SET_NAMESPACE_CLASSEXT(VALUE obj, const rb_namespace_t *ns, rb_classext_t *ext)
@@ -335,7 +334,9 @@ RCLASS_SET_NAMESPACE_CLASSEXT(VALUE obj, const rb_namespace_t *ns, rb_classext_t
     if (rb_st_table_size(tbl) == 0) {
         first_set = 1;
     }
-    rb_st_insert(tbl, (st_data_t)ns->ns_object, (st_data_t)ext);
+
+    rb_class_set_namespace_classext(obj, ns, ext);
+
     return first_set;
 }
 
@@ -517,6 +518,9 @@ VALUE rb_singleton_class_get(VALUE obj);
 void rb_undef_methods_from(VALUE klass, VALUE super);
 VALUE rb_class_inherited(VALUE, VALUE);
 VALUE rb_keyword_error_new(const char *, VALUE);
+
+void rb_class_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime);
+void rb_iclass_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
