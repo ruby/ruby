@@ -7382,8 +7382,10 @@ jit.$(OBJEXT): $(CCAN_DIR)/str/str.h
 jit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 jit.$(OBJEXT): $(top_srcdir)/internal/array.h
 jit.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+jit.$(OBJEXT): $(top_srcdir)/internal/bits.h
 jit.$(OBJEXT): $(top_srcdir)/internal/class.h
 jit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+jit.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 jit.$(OBJEXT): $(top_srcdir)/internal/gc.h
 jit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 jit.$(OBJEXT): $(top_srcdir)/internal/namespace.h
