@@ -52,10 +52,10 @@ RSpec.describe Bundler do
         s.description = "Bundler manages an application's dependencies through its entire life, across many machines, systematically and repeatably"
         s.email = ["team@bundler.io"]
         s.homepage = "https://bundler.io"
-        s.metadata = { "bug_tracker_uri" => "https://github.com/rubygems/rubygems/issues?q=is%3Aopen+is%3Aissue+label%3ABundler",
-                       "changelog_uri" => "https://github.com/rubygems/rubygems/blob/master/bundler/CHANGELOG.md",
+        s.metadata = { "bug_tracker_uri" => "https://github.com/ruby/rubygems/issues?q=is%3Aopen+is%3Aissue+label%3ABundler",
+                       "changelog_uri" => "https://github.com/ruby/rubygems/blob/master/bundler/CHANGELOG.md",
                        "homepage_uri" => "https://bundler.io/",
-                       "source_code_uri" => "https://github.com/rubygems/rubygems/tree/master/bundler" }
+                       "source_code_uri" => "https://github.com/ruby/rubygems/tree/master/bundler" }
         s.require_paths = ["lib"]
         s.required_ruby_version = Gem::Requirement.new([">= 2.6.0"])
         s.required_rubygems_version = Gem::Requirement.new([">= 3.0.1"])

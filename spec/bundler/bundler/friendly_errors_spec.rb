@@ -197,7 +197,7 @@ RSpec.describe Bundler, "friendly errors" do
     it "generates a search URL for the exception message" do
       exception = Exception.new("Exception message")
 
-      expect(Bundler::FriendlyErrors.issues_url(exception)).to eq("https://github.com/rubygems/rubygems/search?q=Exception+message&type=Issues")
+      expect(Bundler::FriendlyErrors.issues_url(exception)).to eq("https://github.com/ruby/rubygems/search?q=Exception+message&type=Issues")
     end
 
     it "generates a search URL for only the first line of a multi-line exception message" do
@@ -206,7 +206,7 @@ First line of the exception message
 Second line of the exception message
 END
 
-      expect(Bundler::FriendlyErrors.issues_url(exception)).to eq("https://github.com/rubygems/rubygems/search?q=First+line+of+the+exception+message&type=Issues")
+      expect(Bundler::FriendlyErrors.issues_url(exception)).to eq("https://github.com/ruby/rubygems/search?q=First+line+of+the+exception+message&type=Issues")
     end
 
     it "generates the url without colons" do
@@ -215,7 +215,7 @@ Exception ::: with ::: colons :::
 END
       issues_url = Bundler::FriendlyErrors.issues_url(exception)
       expect(issues_url).not_to include("%3A")
-      expect(issues_url).to eq("https://github.com/rubygems/rubygems/search?q=#{CGI.escape("Exception     with     colons    ")}&type=Issues")
+      expect(issues_url).to eq("https://github.com/ruby/rubygems/search?q=#{CGI.escape("Exception     with     colons    ")}&type=Issues")
     end
 
     it "removes information after - for Errono::EACCES" do
@@ -225,7 +225,7 @@ END
       allow(exception).to receive(:is_a?).with(Errno).and_return(true)
       issues_url = Bundler::FriendlyErrors.issues_url(exception)
       expect(issues_url).not_to include("/Users/foo/bar")
-      expect(issues_url).to eq("https://github.com/rubygems/rubygems/search?q=#{CGI.escape("Errno  EACCES  Permission denied @ dir_s_mkdir ")}&type=Issues")
+      expect(issues_url).to eq("https://github.com/ruby/rubygems/search?q=#{CGI.escape("Errno  EACCES  Permission denied @ dir_s_mkdir ")}&type=Issues")
     end
   end
 end

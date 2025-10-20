@@ -7,7 +7,7 @@ class TestGemExtCmakeBuilder < Gem::TestCase
   def setup
     super
 
-    # Details: https://github.com/rubygems/rubygems/issues/1270#issuecomment-177368340
+    # Details: https://github.com/ruby/rubygems/issues/1270#issuecomment-177368340
     pend "CmakeBuilder doesn't work on Windows." if Gem.win_platform?
 
     require "open3"

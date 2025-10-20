@@ -37,7 +37,7 @@ require_relative "rubygems/win_platform"
 # Further RubyGems documentation can be found at:
 #
 # * {RubyGems Guides}[https://guides.rubygems.org]
-# * {RubyGems API}[https://www.rubydoc.info/github/rubygems/rubygems] (also available from
+# * {RubyGems API}[https://www.rubydoc.info/github/ruby/rubygems] (also available from
 #   <tt>gem server</tt>)
 #
 # == RubyGems Plugins
@@ -69,7 +69,7 @@ require_relative "rubygems/win_platform"
 # == Bugs
 #
 # You can submit bugs to the
-# {RubyGems bug tracker}[https://github.com/rubygems/rubygems/issues]
+# {RubyGems bug tracker}[https://github.com/ruby/rubygems/issues]
 # on GitHub
 #
 # == Credits
@@ -105,7 +105,7 @@ require_relative "rubygems/win_platform"
 #
 # == License
 #
-# See {LICENSE.txt}[https://github.com/rubygems/rubygems/blob/master/LICENSE.txt] for permissions.
+# See {LICENSE.txt}[https://github.com/ruby/rubygems/blob/master/LICENSE.txt] for permissions.
 #
 # Thanks!
 #

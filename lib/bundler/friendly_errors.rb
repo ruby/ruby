@@ -104,12 +104,12 @@ module Bundler
       message = message.split("-").first if exception.is_a?(Errno)
       require "cgi/escape"
       require "cgi/util" unless defined?(CGI::EscapeExt)
-      "https://github.com/rubygems/rubygems/search?q=" \
+      "https://github.com/ruby/rubygems/search?q=" \
         "#{CGI.escape(message)}&type=Issues"
     end
 
     def new_issue_url
-      "https://github.com/rubygems/rubygems/issues/new?labels=Bundler&template=bundler-related-issue.md"
+      "https://github.com/ruby/rubygems/issues/new?labels=Bundler&template=bundler-related-issue.md"
     end
   end
 

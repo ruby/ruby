@@ -16,7 +16,7 @@ module Bundler
         def initialize(command)
           msg = String.new
           msg << "Bundler is trying to run `#{command}` at runtime. You probably need to run `bundle install`. However, "
-          msg << "this error message could probably be more useful. Please submit a ticket at https://github.com/rubygems/rubygems/issues/new?labels=Bundler&template=bundler-related-issue.md "
+          msg << "this error message could probably be more useful. Please submit a ticket at https://github.com/ruby/rubygems/issues/new?labels=Bundler&template=bundler-related-issue.md "
           msg << "with steps to reproduce as well as the following\n\nCALLER: #{caller.join("\n")}"
           super msg
         end
