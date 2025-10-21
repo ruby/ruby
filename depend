@@ -9302,6 +9302,7 @@ namespace.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 namespace.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 namespace.$(OBJEXT): {$(VPATH)}config.h
 namespace.$(OBJEXT): {$(VPATH)}constant.h
+namespace.$(OBJEXT): {$(VPATH)}darray.h
 namespace.$(OBJEXT): {$(VPATH)}debug_counter.h
 namespace.$(OBJEXT): {$(VPATH)}defines.h
 namespace.$(OBJEXT): {$(VPATH)}encoding.h
