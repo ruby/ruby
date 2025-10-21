@@ -21,6 +21,8 @@
     EVP_PKEY *_pkey; \
     GetPKeyRSA((obj), _pkey); \
     (rsa) = EVP_PKEY_get0_RSA(_pkey); \
+    if ((rsa) == NULL) \
+        ossl_raise(eRSAError, "failed to get RSA from EVP_PKEY"); \
 } while (0)
 
 static inline int
