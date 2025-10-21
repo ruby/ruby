@@ -12,4 +12,7 @@ pub use x86_64 as current;
 #[cfg(target_arch = "aarch64")]
 pub use arm64 as current;
 
+#[cfg(test)]
+mod tests;
+
 pub mod lir;

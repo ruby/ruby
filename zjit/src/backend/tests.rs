@@ -1,19 +1,21 @@
 #![cfg(test)]
 use crate::asm::CodeBlock;
-use crate::backend::*;
+use crate::backend::lir::*;
 use crate::cruby::*;
-use crate::utils::c_callable;
+use crate::codegen::c_callable;
+use crate::options::rb_zjit_prepare_options;
 
 #[test]
 fn test_add() {
-    let mut asm = Assembler::new(0);
+    let mut asm = Assembler::new();
     let out = asm.add(SP, Opnd::UImm(1));
     let _ = asm.add(out, Opnd::UImm(2));
 }
 
 #[test]
 fn test_alloc_regs() {
-    let mut asm = Assembler::new(0);
+    rb_zjit_prepare_options(); // for asm.alloc_regs
+    let mut asm = Assembler::new();
 
     // Get the first output that we're going to reuse later.
     let out1 = asm.add(EC, Opnd::UImm(1));
@@ -36,7 +38,7 @@ fn test_alloc_regs() {
     let _ = asm.add(out3, Opnd::UImm(6));
 
     // Here we're going to allocate the registers.
-    let result = asm.alloc_regs(Assembler::get_alloc_regs());
+    let result = asm.alloc_regs(Assembler::get_alloc_regs()).unwrap();
 
     // Now we're going to verify that the out field has been appropriately
     // updated for each of the instructions that needs it.
@@ -62,8 +64,8 @@ fn test_alloc_regs() {
 
 fn setup_asm() -> (Assembler, CodeBlock) {
     return (
-        Assembler::new(0),
-        CodeBlock::new_dummy(1024)
+        Assembler::new(),
+        CodeBlock::new_dummy()
     );
 }
 
@@ -86,6 +88,7 @@ fn test_compile()
 fn test_mov_mem2mem()
 {
     let (mut asm, mut cb) = setup_asm();
+    rb_zjit_prepare_options(); // for asm_comment
 
     asm_comment!(asm, "check that comments work too");
     asm.mov(Opnd::mem(64, SP, 0), Opnd::mem(64, SP, 8));
@@ -163,11 +166,10 @@ fn test_base_insn_out()
     );
 
     // Load the pointer into a register
-    let ptr_reg = asm.load(Opnd::const_ptr(4351776248 as *const u8));
-    let counter_opnd = Opnd::mem(64, ptr_reg, 0);
+    let ptr_opnd = Opnd::const_ptr(4351776248 as *const u8);
 
     // Increment and store the updated value
-    asm.incr_counter(counter_opnd, 1.into());
+    asm.incr_counter(ptr_opnd, 1.into());
 
     asm.compile_with_num_regs(&mut cb, 2);
 }
@@ -180,6 +182,7 @@ fn test_c_call()
     }
 
     let (mut asm, mut cb) = setup_asm();
+    rb_zjit_prepare_options(); // for asm.compile
 
     let ret_val = asm.ccall(
         dummy_c_fun as *const u8,
@@ -189,17 +192,17 @@ fn test_c_call()
     // Make sure that the call's return value is usable
     asm.mov(Opnd::mem(64, SP, 0), ret_val);
 
-    asm.compile_with_num_regs(&mut cb, 1);
+    asm.compile(&mut cb).unwrap();
 }
 
 #[test]
 fn test_alloc_ccall_regs() {
-    let mut asm = Assembler::new(0);
+    let mut asm = Assembler::new();
     let out1 = asm.ccall(0 as *const u8, vec![]);
     let out2 = asm.ccall(0 as *const u8, vec![out1]);
     asm.mov(EC, out2);
-    let mut cb = CodeBlock::new_dummy(1024);
-    asm.compile_with_regs(&mut cb, None, Assembler::get_alloc_regs());
+    let mut cb = CodeBlock::new_dummy();
+    asm.compile_with_regs(&mut cb, Assembler::get_alloc_regs()).unwrap();
 }
 
 #[test]
@@ -220,7 +223,7 @@ fn test_jcc_label()
 
     let label = asm.new_label("foo");
     asm.cmp(EC, EC);
-    asm.je(label);
+    asm.je(label.clone());
     asm.write_label(label);
 
     asm.compile_with_num_regs(&mut cb, 1);
@@ -282,30 +285,10 @@ fn test_bake_string() {
 }
 
 #[test]
-fn test_draining_iterator() {
-    let mut asm = Assembler::new(0);
-
-    let _ = asm.load(Opnd::None);
-    asm.store(Opnd::None, Opnd::None);
-    let _ = asm.add(Opnd::None, Opnd::None);
-
-    let mut iter = asm.into_draining_iter();
-
-    while let Some((index, insn)) = iter.next_unmapped() {
-        match index {
-            0 => assert!(matches!(insn, Insn::Load { .. })),
-            1 => assert!(matches!(insn, Insn::Store { .. })),
-            2 => assert!(matches!(insn, Insn::Add { .. })),
-            _ => panic!("Unexpected instruction index"),
-        };
-    }
-}
-
-#[test]
 fn test_cmp_8_bit() {
     let (mut asm, mut cb) = setup_asm();
     let reg = Assembler::get_alloc_regs()[0];
-    asm.cmp(Opnd::Reg(reg).with_num_bits(8).unwrap(), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
+    asm.cmp(Opnd::Reg(reg).with_num_bits(8), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
 
     asm.compile_with_num_regs(&mut cb, 1);
 }
@@ -314,7 +297,8 @@ fn test_cmp_8_bit() {
 fn test_no_pos_marker_callback_when_compile_fails() {
     // When compilation fails (e.g. when out of memory), the code written out is malformed.
     // We don't want to invoke the pos_marker callbacks with positions of malformed code.
-    let mut asm = Assembler::new(0);
+    let mut asm = Assembler::new();
+    rb_zjit_prepare_options(); // for asm.compile
 
     // Markers around code to exhaust memory limit
     let fail_if_called = |_code_ptr, _cb: &_| panic!("pos_marker callback should not be called");
@@ -324,6 +308,6 @@ fn test_no_pos_marker_callback_when_compile_fails() {
     asm.store(Opnd::mem(64, SP, 8), sum);
     asm.pos_marker(fail_if_called);
 
-    let cb = &mut CodeBlock::new_dummy(8);
-    assert!(asm.compile(cb, None).is_none(), "should fail due to tiny size limit");
+    let cb = &mut CodeBlock::new_dummy_sized(8);
+    assert!(asm.compile(cb).is_err(), "should fail due to tiny size limit");
 }

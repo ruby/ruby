@@ -835,10 +835,8 @@ impl Assembler {
         }
 
         /// Emit a CBZ or CBNZ which branches when a register is zero or non-zero
-        fn emit_cmp_zero_jump(_cb: &mut CodeBlock, _reg: A64Opnd, _branch_if_zero: bool, target: Target) {
-            if let Target::Label(_) = target {
-                unimplemented!("this should be re-implemented with Label for side exits");
-                /*
+        fn emit_cmp_zero_jump(cb: &mut CodeBlock, reg: A64Opnd, branch_if_zero: bool, target: Target) {
+            if let Target::CodePtr(dst_ptr) = target {
                 let dst_addr = dst_ptr.as_offset();
                 let src_addr = cb.get_write_ptr().as_offset();
 
@@ -869,7 +867,6 @@ impl Assembler {
                     emit_load_value(cb, Assembler::EMIT0_OPND, dst_addr);
                     br(cb, Assembler::EMIT0_OPND);
                 }
-                */
             } else {
                 unreachable!("We should only generate Joz/Jonz with side-exit targets");
             }
