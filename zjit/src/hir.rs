@@ -1794,7 +1794,7 @@ impl Function {
             Insn::HashDup { .. } => types::HashExact,
             Insn::NewRange { .. } => types::RangeExact,
             Insn::NewRangeFixnum { .. } => types::RangeExact,
-            Insn::ObjectAlloc { .. } => types::HeapObject,
+            Insn::ObjectAlloc { .. } => types::HeapBasicObject,
             Insn::ObjectAllocClass { class, .. } => Type::from_class(*class),
             &Insn::CCallWithFrame { return_type, .. } => return_type,
             Insn::CCall { return_type, .. } => *return_type,
@@ -2474,7 +2474,7 @@ impl Function {
                             // too-complex shapes can't use index access
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapObject, state });
+                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state });
                         let self_val = self.push_insn(block, Insn::GuardShape { val: self_val, shape: recv_type.shape(), state });
                         let mut ivar_index: u16 = 0;
                         let replacement = if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
@@ -7089,7 +7089,7 @@ mod tests {
           v12:NilClass = Const Value(nil)
           v14:CBool = IsMethodCFunc v11, :new
           IfFalse v14, bb3(v6, v12, v11)
-          v16:HeapObject = ObjectAlloc v11
+          v16:HeapBasicObject = ObjectAlloc v11
           v18:BasicObject = SendWithoutBlock v16, :initialize
           CheckInterrupts
           Jump bb4(v6, v16, v18)
@@ -10608,7 +10608,7 @@ mod opt_tests {
         bb2(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, MY_MODULE)
-          v19:HeapObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v19:ModuleSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           CheckInterrupts
           Return v19
         ");
@@ -11283,7 +11283,7 @@ mod opt_tests {
           v40:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v12:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Set@0x1008, new@0x1010, cme:0x1018)
-          v16:HeapObject = ObjectAlloc v40
+          v16:HeapBasicObject = ObjectAlloc v40
           PatchPoint MethodRedefined(Set@0x1008, initialize@0x1040, cme:0x1048)
           PatchPoint NoSingletonClass(Set@0x1008)
           v46:SetExact = GuardType v16, SetExact
@@ -13556,7 +13556,7 @@ mod opt_tests {
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint MethodRedefined(C@0x1000, []@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(C@0x1000)
-          v28:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
+          v28:ArraySubclass[class_exact:C] = GuardType v11, ArraySubclass[class_exact:C]
           v29:Fixnum = GuardType v12, Fixnum
           v30:BasicObject = ArrayArefFixnum v28, v29
           IncrCounter inline_cfunc_optimized_send_count
@@ -13650,7 +13650,7 @@ mod opt_tests {
         bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
           PatchPoint MethodRedefined(C@0x1000, []@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(C@0x1000)
-          v28:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
+          v28:HashSubclass[class_exact:C] = GuardType v11, HashSubclass[class_exact:C]
           v29:BasicObject = HashAref v28, v12
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts

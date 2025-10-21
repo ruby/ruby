@@ -37,8 +37,9 @@ mod bits {
   pub const Hash: u64 = HashExact | HashSubclass;
   pub const HashExact: u64 = 1u64 << 23;
   pub const HashSubclass: u64 = 1u64 << 24;
+  pub const HeapBasicObject: u64 = BasicObject & !Immediate;
   pub const HeapFloat: u64 = 1u64 << 25;
-  pub const HeapObject: u64 = BasicObject & !Immediate;
+  pub const HeapObject: u64 = Object & !Immediate;
   pub const Immediate: u64 = FalseClass | Fixnum | Flonum | NilClass | StaticSymbol | TrueClass | Undef;
   pub const Integer: u64 = Bignum | Fixnum;
   pub const Module: u64 = Class | ModuleExact | ModuleSubclass;
@@ -69,7 +70,7 @@ mod bits {
   pub const Symbol: u64 = DynamicSymbol | StaticSymbol;
   pub const TrueClass: u64 = 1u64 << 42;
   pub const Undef: u64 = 1u64 << 43;
-  pub const AllBitPatterns: [(&'static str, u64); 69] = [
+  pub const AllBitPatterns: [(&'static str, u64); 70] = [
     ("Any", Any),
     ("RubyValue", RubyValue),
     ("Immediate", Immediate),
@@ -79,6 +80,7 @@ mod bits {
     ("BuiltinExact", BuiltinExact),
     ("BoolExact", BoolExact),
     ("TrueClass", TrueClass),
+    ("HeapBasicObject", HeapBasicObject),
     ("HeapObject", HeapObject),
     ("String", String),
     ("Subclass", Subclass),
@@ -181,6 +183,7 @@ pub mod types {
   pub const Hash: Type = Type::from_bits(bits::Hash);
   pub const HashExact: Type = Type::from_bits(bits::HashExact);
   pub const HashSubclass: Type = Type::from_bits(bits::HashSubclass);
+  pub const HeapBasicObject: Type = Type::from_bits(bits::HeapBasicObject);
   pub const HeapFloat: Type = Type::from_bits(bits::HeapFloat);
   pub const HeapObject: Type = Type::from_bits(bits::HeapObject);
   pub const Immediate: Type = Type::from_bits(bits::Immediate);
@@ -231,5 +234,17 @@ pub mod types {
     (bits::NilClass, &raw const crate::cruby::rb_cNilClass),
     (bits::TrueClass, &raw const crate::cruby::rb_cTrueClass),
     (bits::FalseClass, &raw const crate::cruby::rb_cFalseClass),
+  ];
+  pub const InexactBitsAndClass: [(u64, *const VALUE); 10] = [
+    (bits::ArraySubclass, &raw const crate::cruby::rb_cArray),
+    (bits::HashSubclass, &raw const crate::cruby::rb_cHash),
+    (bits::ModuleSubclass, &raw const crate::cruby::rb_cModule),
+    (bits::NumericSubclass, &raw const crate::cruby::rb_cNumeric),
+    (bits::RangeSubclass, &raw const crate::cruby::rb_cRange),
+    (bits::RegexpSubclass, &raw const crate::cruby::rb_cRegexp),
+    (bits::SetSubclass, &raw const crate::cruby::rb_cSet),
+    (bits::StringSubclass, &raw const crate::cruby::rb_cString),
+    (bits::Object, &raw const crate::cruby::rb_cObject),
+    (bits::BasicObject, &raw const crate::cruby::rb_cBasicObject),
   ];
 }
