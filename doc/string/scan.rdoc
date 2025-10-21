@@ -1,0 +1,36 @@
+Matches a pattern against +self+:
+
+- If +pattern+ is a Regexp, the pattern used is +pattern+ itself.
+- If +pattern+ is a string, the pattern used is <tt>Regexp.quote(pattern)</tt>.
+
+Generates a collection of matching results
+and updates {regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
+
+- If the pattern contains no groups, each result is a matched substring.
+- If the pattern contains groups, each result is an array
+  containing a matched substring for each group.
+
+With no block given, returns an array of the results:
+
+  'cruel world'.scan(/\w+/)      # => ["cruel", "world"]
+  'cruel world'.scan(/.../)      # => ["cru", "el ", "wor"]
+  'cruel world'.scan(/(...)/)    # => [["cru"], ["el "], ["wor"]]
+  'cruel world'.scan(/(..)(..)/) # => [["cr", "ue"], ["l ", "wo"]]
+  'тест'.scan(/../)              # => ["те", "ст"]
+  'こんにちは'.scan(/../)         # => ["こん", "にち"]
+  'abracadabra'.scan('ab')       # => ["ab", "ab"]
+  'abracadabra'.scan('nosuch')   # => []
+
+With a block given, calls the block with each result; returns +self+:
+
+  'cruel world'.scan(/\w+/) {|w| p w }
+  # => "cruel"
+  # => "world"
+  'cruel world'.scan(/(.)(.)/) {|x, y| p [x, y] }
+  # => ["c", "r"]
+  # => ["u", "e"]
+  # => ["l", " "]
+  # => ["w", "o"]
+  # => ["r", "l"]
+
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
