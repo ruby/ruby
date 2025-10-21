@@ -878,7 +878,9 @@ impl Assembler {
         /// Do the address calculation of `out_reg = base_reg + disp`
         fn load_effective_address(cb: &mut CodeBlock, out: A64Opnd, base_reg_no: u8, disp: i32) {
             let base_reg = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: base_reg_no });
-            assert_ne!(31, out.unwrap_reg().reg_no, "Lea sp, [sp, #imm] not always encodable. Use add/sub instead.");
+            let out_reg_no = out.unwrap_reg().reg_no;
+            assert_ne!(31, out_reg_no, "Lea sp, [sp, #imm] not always encodable. Use add/sub instead.");
+            assert_ne!(base_reg_no, out_reg_no, "large displacement need a scratch register");
 
             if ShiftedImmediate::try_from(disp.unsigned_abs() as u64).is_ok() {
                 // Use ADD/SUB if the displacement fits
@@ -1203,7 +1205,27 @@ impl Assembler {
                     let &Opnd::Mem(Mem { num_bits: _, base: MemBase::Reg(base_reg_no), disp }) = opnd else {
                         panic!("Unexpected Insn::Lea operand in arm64_emit: {opnd:?}");
                     };
-                    load_effective_address(cb, out.into(), base_reg_no, disp);
+                    let out_reg_no = out.unwrap_reg().reg_no;
+                    assert_ne!(31, out_reg_no, "Lea sp, [sp, #imm] not always encodable. Use add/sub instead.");
+
+                    let out = A64Opnd::from(out);
+                    let base_reg = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: base_reg_no });
+                    if ShiftedImmediate::try_from(disp.unsigned_abs() as u64).is_ok() {
+                        // Use ADD/SUB if the displacement fits
+                        add(cb, out, base_reg, A64Opnd::new_imm(disp.into()));
+                    } else {
+                        // Use a scratch reg for `out += displacement`
+                        let disp_reg = if out_reg_no == base_reg_no {
+                            Self::EMIT0_OPND
+                        } else {
+                            out
+                        };
+                        // Use add_extended() to interpret reg_no=31 as sp
+                        // since the base register is never the zero register.
+                        // Careful! Only the first two operands can refer to sp.
+                        emit_load_value(cb, disp_reg, disp as u64);
+                        add_extended(cb, out, base_reg, disp_reg);
+                    }
                 }
                 Insn::LeaJumpTarget { out, target, .. } => {
                     if let Target::Label(label_idx) = target {
@@ -1804,6 +1826,25 @@ mod tests {
             0x44: add x0, sp, x0
         ");
         assert_snapshot!(cb.hexdump(), @"e07b40b2e063208b000180d22000a0f2e063208b000083d2e063208be0230891e02308d1e0ff8292e063208b00ff9fd2c0ffbff2e0ffdff2e0fffff2e063208be08361b2e063208b");
+    }
+
+    #[test]
+    fn test_load_larg_disp_mem() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let extended_ivars = asm.load(Opnd::mem(64, NATIVE_STACK_PTR, 0));
+        let result = asm.load(Opnd::mem(VALUE_BITS, extended_ivars, 1000 * SIZEOF_VALUE_I32));
+        asm.store(Opnd::mem(VALUE_BITS, NATIVE_STACK_PTR, 0), result);
+
+        asm.compile_with_num_regs(&mut cb, 1);
+        assert_disasm_snapshot!(cb.disasm(), @r"
+        0x0: ldur x0, [sp]
+        0x4: mov x16, #0x1f40
+        0x8: add x0, x0, x16, uxtx
+        0xc: ldur x0, [x0]
+        0x10: stur x0, [sp]
+        ");
+        assert_snapshot!(cb.hexdump(), @"e00340f810e883d20060308b000040f8e00300f8");
     }
 
     #[test]
