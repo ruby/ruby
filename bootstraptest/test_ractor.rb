@@ -1381,18 +1381,17 @@ assert_equal "#{n}#{n}", %Q{
   }.map{|r| r.value}.join
 }
 
-# NameError
-assert_equal "ok", %q{
+# Now NoMethodError is copyable
+assert_equal "NoMethodError", %q{
   obj = "".freeze # NameError refers the receiver indirectly
   begin
     obj.bar
   rescue => err
   end
-  begin
-    Ractor.new{} << err
-  rescue TypeError
-    'ok'
-  end
+
+  r = Ractor.new{ Ractor.receive }
+  r << err
+  r.value.class
 }
 
 assert_equal "ok", %q{
