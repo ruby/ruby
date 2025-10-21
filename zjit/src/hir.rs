@@ -693,6 +693,7 @@ pub enum Insn {
         state: InsnId,
         return_type: Type,
         elidable: bool,
+        blockiseq: Option<IseqPtr>,
     },
 
     /// Un-optimized fallback implementation (dynamic dispatch) for send-ish instructions
@@ -1706,8 +1707,8 @@ impl Function {
                 elidable,
                 blockiseq,
             },
-            &CCallVariadic { cfunc, recv, ref args, cme, name, state, return_type, elidable } => CCallVariadic {
-                cfunc, recv: find!(recv), args: find_vec!(args), cme, name, state, return_type, elidable
+            &CCallVariadic { cfunc, recv, ref args, cme, name, state, return_type, elidable, blockiseq } => CCallVariadic {
+                cfunc, recv: find!(recv), args: find_vec!(args), cme, name, state, return_type, elidable, blockiseq
             },
             &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
@@ -2545,6 +2546,13 @@ impl Function {
             let call_info = unsafe { (*cd).ci };
             let argc = unsafe { vm_ci_argc(call_info) };
             let method_id = unsafe { rb_vm_ci_mid(call_info) };
+            let ci_flags = unsafe { vm_ci_flag(call_info) };
+
+            // When seeing &block argument, fall back to dynamic dispatch for now
+            // TODO: Support block forwarding
+            if ci_flags & VM_CALL_ARGS_BLOCKARG != 0 {
+                return Err(());
+            }
 
             // If we have info about the class of the receiver
             let (recv_class, profiled_type) = if let Some(class) = self_type.runtime_exact_ruby_class() {
@@ -2567,23 +2575,20 @@ impl Function {
                 return Err(());
             }
 
-            // Find the `argc` (arity) of the C method, which describes the parameters it expects
+
+            let blockiseq = if blockiseq.is_null() { None } else { Some(blockiseq) };
+
             let cfunc = unsafe { get_cme_def_body_cfunc(method) };
+            // Find the `argc` (arity) of the C method, which describes the parameters it expects
             let cfunc_argc = unsafe { get_mct_argc(cfunc) };
+            let cfunc_ptr = unsafe { get_mct_func(cfunc) }.cast();
+
             match cfunc_argc {
                 0.. => {
                     // (self, arg0, arg1, ..., argc) form
                     //
                     // Bail on argc mismatch
                     if argc != cfunc_argc as u32 {
-                        return Err(());
-                    }
-
-                    let ci_flags = unsafe { vm_ci_flag(call_info) };
-
-                    // When seeing &block argument, fall back to dynamic dispatch for now
-                    // TODO: Support block forwarding
-                    if ci_flags & VM_CALL_ARGS_BLOCKARG != 0 {
                         return Err(());
                     }
 
@@ -2599,16 +2604,13 @@ impl Function {
                         fun.insn_types[recv.0] = fun.infer_type(recv);
                     }
 
-                    let blockiseq = if blockiseq.is_null() { None } else { Some(blockiseq) };
-
                     // Emit a call
-                    let cfunc = unsafe { get_mct_func(cfunc) }.cast();
                     let mut cfunc_args = vec![recv];
                     cfunc_args.append(&mut args);
 
                     let ccall = fun.push_insn(block, Insn::CCallWithFrame {
                         cd,
-                        cfunc,
+                        cfunc: cfunc_ptr,
                         args: cfunc_args,
                         cme: method,
                         name: method_id,
@@ -2618,16 +2620,45 @@ impl Function {
                         blockiseq,
                     });
                     fun.make_equal_to(send_insn_id, ccall);
-                    return Ok(());
+                    Ok(())
                 }
                 // Variadic method
                 -1 => {
+                    // The method gets a pointer to the first argument
                     // func(int argc, VALUE *argv, VALUE recv)
-                    return Err(());
+                    gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
+
+                    if recv_class.instance_can_have_singleton_class() {
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
+                    }
+                    if let Some(profiled_type) = profiled_type {
+                        // Guard receiver class
+                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                        fun.insn_types[recv.0] = fun.infer_type(recv);
+                    }
+
+                    if get_option!(stats) {
+                        count_not_inlined_cfunc(fun, block, method);
+                    }
+
+                    let ccall = fun.push_insn(block, Insn::CCallVariadic {
+                        cfunc: cfunc_ptr,
+                        recv,
+                        args,
+                        cme: method,
+                        name: method_id,
+                        state,
+                        return_type: types::BasicObject,
+                        elidable: false,
+                        blockiseq
+                    });
+
+                    fun.make_equal_to(send_insn_id, ccall);
+                    Ok(())
                 }
                 -2 => {
                     // (self, args_ruby_array)
-                    return Err(());
+                    Err(())
                 }
                 _ => unreachable!("unknown cfunc kind: argc={argc}")
             }
@@ -2803,6 +2834,7 @@ impl Function {
                             state,
                             return_type,
                             elidable,
+                            blockiseq: None,
                         });
 
                         fun.make_equal_to(send_insn_id, ccall);
@@ -13287,26 +13319,46 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_do_not_optimize_send_variadic_with_block() {
+    fn test_optimize_send_variadic_with_block() {
         eval(r#"
-            def test = [1, 2, 3].index { |x| x == 2 }
+            A = [1, 2, 3]
+            B = ["a", "b", "c"]
+
+            def test
+            result = []
+            A.zip(B) { |x, y| result << [x, y] }
+            result
+            end
+
             test; test
         "#);
         assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:2:
+        fn test@<compiled>:6:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
+          v2:NilClass = Const Value(nil)
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject):
           EntryPoint JIT(0)
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v10:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v12:ArrayExact = ArrayDup v10
-          v14:BasicObject = Send v12, 0x1008, :index
+          v6:NilClass = Const Value(nil)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:NilClass):
+          v14:ArrayExact = NewArray
+          SetLocal l0, EP@3, v14
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, A)
+          v35:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1010, B)
+          v38:ArrayExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          PatchPoint MethodRedefined(Array@0x1020, zip@0x1028, cme:0x1030)
+          PatchPoint NoSingletonClass(Array@0x1020)
+          v42:BasicObject = CCallVariadic zip@0x1058, v35, v38
+          v24:BasicObject = GetLocal l0, EP@3
+          v27:BasicObject = GetLocal l0, EP@3
           CheckInterrupts
-          Return v14
+          Return v27
         ");
     }
 
@@ -13333,6 +13385,33 @@ mod opt_tests {
           v19:BasicObject = Send v14, 0x1008, :map, v17
           CheckInterrupts
           Return v19
+        ");
+    }
+
+    #[test]
+    fn test_do_not_optimize_send_variadic_with_block_forwarding() {
+        eval(r#"
+            def test(&block) = [].zip([], &block)
+            test; test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v14:ArrayExact = NewArray
+          v16:ArrayExact = NewArray
+          GuardBlockParamProxy l0
+          v19:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          v21:BasicObject = Send v14, 0x1008, :zip, v16, v19
+          CheckInterrupts
+          Return v21
         ");
     }
 
