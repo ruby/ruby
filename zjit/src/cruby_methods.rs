@@ -190,6 +190,9 @@ pub fn init() -> Annotations {
     annotate!(rb_mKernel, "itself", inline_kernel_itself);
     annotate!(rb_mKernel, "block_given?", inline_kernel_block_given_p);
     annotate!(rb_cString, "bytesize", types::Fixnum, no_gc, leaf);
+    annotate!(rb_cString, "bytesize", types::Fixnum, no_gc, leaf, elidable);
+    annotate!(rb_cString, "size", types::Fixnum, no_gc, leaf, elidable);
+    annotate!(rb_cString, "length", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cString, "to_s", types::StringExact);
     annotate!(rb_cString, "getbyte", inline_string_getbyte);
     annotate!(rb_cString, "empty?", types::BoolExact, no_gc, leaf, elidable);
