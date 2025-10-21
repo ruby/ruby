@@ -11939,7 +11939,7 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
 
 /*
  *  call-seq:
- *    scrub(replacement_string = default_replacement) -> new_string
+ *    scrub(replacement_string = default_replacement_string) -> new_string
  *    scrub{|bytes| ... } -> new_string
  *
  *  :include: doc/string/scrub.rdoc
