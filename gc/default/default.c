@@ -1464,12 +1464,6 @@ rb_gc_impl_checking_shareable(void *objspace_ptr)
 }
 
 bool
-rb_gc_checking_shareable(void)
-{
-    return rb_gc_impl_checking_shareable(rb_gc_get_objspace());
-}
-
-bool
 rb_gc_impl_gc_enabled_p(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
@@ -4981,11 +4975,11 @@ check_shareable_i(const VALUE child, void *ptr)
 {
     struct verify_internal_consistency_struct *data = (struct verify_internal_consistency_struct *)ptr;
 
-    if (!RB_OBJ_SHAREABLE_P(child)) {
+    if (!rb_gc_obj_shareable_p(child)) {
         fprintf(stderr, "(a) ");
-        rp(data->parent);
+        rb_gc_rp(data->parent);
         fprintf(stderr, "(b) ");
-        rp(child);
+        rb_gc_rp(child);
         fprintf(stderr, "check_shareable_i: shareable (a) -> unshareable (b)\n");
 
         data->err_count++;
@@ -4999,11 +4993,14 @@ gc_verify_shareable(rb_objspace_t *objspace, VALUE obj, void *data)
     // while objspace->flags.check_shareable is true,
     // other Ractors should not run the GC, until the flag is not local.
     // TODO: remove VM locking if the flag is Ractor local
-    RB_VM_LOCKING() {
+
+    unsigned int lev = RB_GC_VM_LOCK();
+    {
         objspace->flags.check_shareable = true;
         rb_objspace_reachable_objects_from(obj, check_shareable_i, (void *)data);
         objspace->flags.check_shareable = false;
     }
+    RB_GC_VM_UNLOCK(lev);
 }
 
 // TODO: only one level (non-recursive)
@@ -5053,7 +5050,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                     rb_objspace_reachable_objects_from(obj, check_generation_i, (void *)data);
                 }
 
-                if (!is_marking(objspace) && RB_OBJ_SHAREABLE_P(obj)) {
+                if (!is_marking(objspace) && rb_gc_obj_shareable_p(obj)) {
                     gc_verify_shareable(objspace, obj, data);
                 }
 
