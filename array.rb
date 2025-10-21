@@ -46,6 +46,10 @@ class Array
     Primitive.rb_ary_shuffle(random)
   end
 
+  def lbound(x) = bsearch { _1 >= x }
+
+  def lbound_index(x) = bsearch_index { _1 >= x }
+
   # call-seq:
   #   sample(random: Random) -> object
   #   sample(count, random: Random) -> new_ary
