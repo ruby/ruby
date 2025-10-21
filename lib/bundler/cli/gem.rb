@@ -178,12 +178,8 @@ module Bundler
 
       if ask_and_set(:coc, "Do you want to include a code of conduct in gems you generate?",
         "Codes of conduct can increase contributions to your project by contributors who " \
-        "prefer collaborative, safe spaces. You can read more about the code of conduct at " \
-        "contributor-covenant.org. Having a code of conduct means agreeing to the responsibility " \
-        "of enforcing it, so be sure that you are prepared to do that. Be sure that your email " \
-        "address is specified as a contact in the generated code of conduct so that people know " \
-        "who to contact in case of a violation. For suggestions about " \
-        "how to enforce codes of conduct, see https://bit.ly/coc-enforcement.")
+        "prefer safe, respectful, productive, and collaborative spaces. \n" \
+        "See https://github.com/ruby/rubygems/blob/master/CODE_OF_CONDUCT.md")
         config[:coc] = true
         Bundler.ui.info "Code of conduct enabled in config"
         templates.merge!("CODE_OF_CONDUCT.md.tt" => "CODE_OF_CONDUCT.md")
