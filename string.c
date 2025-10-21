@@ -6667,13 +6667,14 @@ rb_str_getbyte(VALUE str, VALUE index)
  *  call-seq:
  *    setbyte(index, integer) -> integer
  *
- *  Sets the byte at zero-based +index+ to +integer+; returns +integer+:
+ *  Sets the byte at zero-based offset +index+ to the value of the given +integer+;
+ *  returns +integer+:
  *
- *    s = 'abcde'      # => "abcde"
- *    s.setbyte(0, 98) # => 98
- *    s                # => "bbcde"
+ *    s = 'xyzzy'
+ *    s.setbyte(2, 129) # => 129
+ *    s                 # => "xy\x81zy"
  *
- *  Related: String#getbyte.
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 VALUE
 rb_str_setbyte(VALUE str, VALUE index, VALUE value)
