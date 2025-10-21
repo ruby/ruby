@@ -10441,7 +10441,7 @@ rb_str_rstrip_bang(VALUE str)
  *  call-seq:
  *    rstrip -> new_string
  *
- *  Returns a copy of +self+ with leading whitespace removed;
+ *  Returns a copy of +self+ with trailing whitespace removed;
  *  see {Whitespace in Strings}[rdoc-ref:String@Whitespace+in+Strings]:
  *
  *    whitespace = "\x00\t\n\v\f\r "
