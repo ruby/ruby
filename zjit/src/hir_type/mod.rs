@@ -185,6 +185,14 @@ impl Type {
             .map(|&(bits, _)| bits)
     }
 
+    fn bits_from_subclass(class: VALUE) -> Option<u64> {
+        types::InexactBitsAndClass
+            .iter()
+            .find(|&(_, class_object)| class.is_subclass_of(unsafe { **class_object }) == ClassRelationship::Subclass)
+            // Can't be an immediate if it's a subclass.
+            .map(|&(bits, _)| bits & !bits::Immediate)
+    }
+
     fn from_heap_object(val: VALUE) -> Type {
         assert!(!val.special_const_p(), "val should be a heap object");
         let bits =
@@ -199,12 +207,11 @@ impl Type {
             else if val.class_of() == unsafe { rb_cInteger } { bits::Bignum }
             else if val.class_of() == unsafe { rb_cFloat } { bits::HeapFloat }
             else if val.class_of() == unsafe { rb_cSymbol } { bits::DynamicSymbol }
+            else if let Some(bits) = Self::bits_from_exact_class(val.class_of()) { bits }
+            else if let Some(bits) = Self::bits_from_subclass(val.class_of()) { bits }
             else {
-                Self::bits_from_exact_class(val.class_of()).unwrap_or({
-                    // We don't have a specific built-in bit pattern for this class, so generalize
-                    // as HeapObject with object specialization.
-                    bits::HeapObject
-                })
+                unreachable!("Class {} is not a subclass of BasicObject! Don't know what to do.",
+                             get_class_name(val.class_of()))
             };
         let spec = Specialization::Object(val);
         Type { bits, spec }
@@ -266,14 +273,14 @@ impl Type {
     }
 
     pub fn from_class(class: VALUE) -> Type {
-        match Self::bits_from_exact_class(class) {
-            Some(bits) => Type::from_bits(bits),
-            None => {
-                // We don't have a specific built-in bit pattern for this class, so generalize
-                // as HeapObject with object specialization.
-                Type { bits: bits::HeapObject, spec: Specialization::TypeExact(class) }
-            }
+        if let Some(bits) = Self::bits_from_exact_class(class) {
+            return Type::from_bits(bits);
         }
+        if let Some(bits) = Self::bits_from_subclass(class) {
+            return Type { bits, spec: Specialization::TypeExact(class) }
+        }
+        unreachable!("Class {} is not a subclass of BasicObject! Don't know what to do.",
+                     get_class_name(class))
     }
 
     /// Private. Only for creating type globals.
@@ -614,6 +621,32 @@ mod tests {
     }
 
     #[test]
+    fn heap_basic_object() {
+        assert_not_subtype(Type::fixnum(123), types::HeapBasicObject);
+        assert_not_subtype(types::Fixnum, types::HeapBasicObject);
+        assert_subtype(types::Bignum, types::HeapBasicObject);
+        assert_not_subtype(types::Integer, types::HeapBasicObject);
+        assert_not_subtype(types::NilClass, types::HeapBasicObject);
+        assert_not_subtype(types::TrueClass, types::HeapBasicObject);
+        assert_not_subtype(types::FalseClass, types::HeapBasicObject);
+        assert_not_subtype(types::StaticSymbol, types::HeapBasicObject);
+        assert_subtype(types::DynamicSymbol, types::HeapBasicObject);
+        assert_not_subtype(types::Flonum, types::HeapBasicObject);
+        assert_subtype(types::HeapFloat, types::HeapBasicObject);
+        assert_not_subtype(types::BasicObject, types::HeapBasicObject);
+        assert_not_subtype(types::Object, types::HeapBasicObject);
+        assert_not_subtype(types::Immediate, types::HeapBasicObject);
+        assert_not_subtype(types::HeapBasicObject, types::Immediate);
+        crate::cruby::with_rubyvm(|| {
+            let left = Type::from_value(rust_str_to_ruby("hello"));
+            let right = Type::from_value(rust_str_to_ruby("world"));
+            assert_subtype(left, types::HeapBasicObject);
+            assert_subtype(right, types::HeapBasicObject);
+            assert_subtype(left.union(right), types::HeapBasicObject);
+        });
+    }
+
+    #[test]
     fn heap_object() {
         assert_not_subtype(Type::fixnum(123), types::HeapObject);
         assert_not_subtype(types::Fixnum, types::HeapObject);
@@ -842,6 +875,18 @@ mod tests {
             let ty = Type::from_value(cme_value);
             assert_subtype(ty, types::CallableMethodEntry);
             assert!(ty.ruby_object_known());
+        });
+    }
+
+    #[test]
+    fn string_subclass_is_string_subtype() {
+        use crate::cruby::{rb_callable_method_entry, ID};
+        crate::cruby::with_rubyvm(|| {
+            assert_subtype(types::StringExact, types::String);
+            assert_subtype(Type::from_class(unsafe { rb_cString }), types::String);
+            assert_subtype(Type::from_class(unsafe { rb_cString }), types::StringExact);
+            let c_class = define_class("C", unsafe { rb_cString });
+            assert_subtype(Type::from_class(c_class), types::String);
         });
     }
 

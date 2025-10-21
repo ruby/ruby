@@ -58,9 +58,14 @@ object_subclass = $object.subtype "ObjectSubclass"
 $subclass = [basic_object_subclass.name, object_subclass.name]
 $builtin_exact = [basic_object_exact.name, object_exact.name]
 
-$c_names = {
+$exact_c_names = {
   "ObjectExact" => "rb_cObject",
   "BasicObjectExact" => "rb_cBasicObject",
+}
+
+$inexact_c_names = {
+  "Object" => "rb_cObject",
+  "BasicObject" => "rb_cBasicObject",
 }
 
 # Define a new type that can be subclassed (most of them).
@@ -68,10 +73,11 @@ $c_names = {
 def base_type name, c_name: nil
   type = $object.subtype name
   exact = type.subtype(name+"Exact")
-  if c_name
-    $c_names[exact.name] = c_name
-  end
   subclass = type.subtype(name+"Subclass")
+  if c_name
+    $exact_c_names[exact.name] = c_name
+    $inexact_c_names[subclass.name] = c_name
+  end
   $builtin_exact << exact.name
   $subclass << subclass.name
   [type, exact]
@@ -81,7 +87,7 @@ end
 # If c_name is given, mark the rb_cXYZ object as equivalent to this type.
 def final_type name, base: $object, c_name: nil
   if c_name
-    $c_names[name] = c_name
+    $exact_c_names[name] = c_name
   end
   type = base.subtype name
   $builtin_exact << type.name
@@ -171,8 +177,10 @@ add_union "BuiltinExact", $builtin_exact
 add_union "Subclass", $subclass
 add_union "BoolExact", [true_exact.name, false_exact.name]
 add_union "Immediate", [fixnum.name, flonum.name, static_sym.name, nil_exact.name, true_exact.name, false_exact.name, undef_.name]
-$bits["HeapObject"] = ["BasicObject & !Immediate"]
-$numeric_bits["HeapObject"] = $numeric_bits["BasicObject"] & ~$numeric_bits["Immediate"]
+$bits["HeapBasicObject"] = ["BasicObject & !Immediate"]
+$numeric_bits["HeapBasicObject"] = $numeric_bits["BasicObject"] & ~$numeric_bits["Immediate"]
+$bits["HeapObject"] = ["Object & !Immediate"]
+$numeric_bits["HeapObject"] = $numeric_bits["Object"] & ~$numeric_bits["Immediate"]
 
 # ===== Finished generating the DAG; write Rust code =====
 
@@ -198,8 +206,14 @@ puts "pub mod types {
 $bits.keys.sort.map {|type_name|
     puts "  pub const #{type_name}: Type = Type::from_bits(bits::#{type_name});"
 }
-puts "  pub const ExactBitsAndClass: [(u64, *const VALUE); #{$c_names.size}] = ["
-$c_names.each {|type_name, c_name|
+puts "  pub const ExactBitsAndClass: [(u64, *const VALUE); #{$exact_c_names.size}] = ["
+$exact_c_names.each {|type_name, c_name|
+  puts "    (bits::#{type_name}, &raw const crate::cruby::#{c_name}),"
+}
+puts "  ];"
+$inexact_c_names = $inexact_c_names.to_a.sort_by {|name, _| $bits[name]}.to_h
+puts "  pub const InexactBitsAndClass: [(u64, *const VALUE); #{$inexact_c_names.size}] = ["
+$inexact_c_names.each {|type_name, c_name|
   puts "    (bits::#{type_name}, &raw const crate::cruby::#{c_name}),"
 }
 puts "  ];"

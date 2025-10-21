@@ -1611,7 +1611,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         let tag   = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
         asm.cmp(tag, Opnd::UImm(RUBY_T_STRING as u64));
         asm.jne(side);
-    } else if guard_type.bit_equal(types::HeapObject) {
+    } else if guard_type.bit_equal(types::HeapBasicObject) {
         let side_exit = side_exit(jit, state, GuardType(guard_type));
         asm.cmp(val, Opnd::Value(Qfalse));
         asm.je(side_exit.clone());
