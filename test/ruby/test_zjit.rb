@@ -829,6 +829,28 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_or]
   end
 
+  def test_fixnum_xor
+    assert_compiles '[6, -8, 3]', %q{
+      def test(a, b) = a ^ b
+      [
+        test(5, 3),
+        test(-5, 3),
+        test(1, 2)
+      ]
+    }, call_threshold: 2
+  end
+
+  def test_fixnum_xor_side_exit
+    assert_compiles '[6, 6, true]', %q{
+      def test(a, b) = a ^ b
+      [
+        test(5, 3),
+        test(5, 3),
+        test(true, false)
+      ]
+    }, call_threshold: 2
+  end
+
   def test_fixnum_mul
     assert_compiles '12', %q{
       C = 3

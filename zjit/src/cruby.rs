@@ -1359,6 +1359,7 @@ pub(crate) mod ids {
         name: ge                 content: b">="
         name: and                content: b"&"
         name: or                 content: b"|"
+        name: xor                content: b"^"
         name: freeze
         name: minusat            content: b"-@"
         name: aref               content: b"[]"

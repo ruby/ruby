@@ -750,7 +750,7 @@ pub enum Insn {
     /// Non-local control flow. See the throw YARV instruction
     Throw { throw_state: u32, val: InsnId, state: InsnId },
 
-    /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=, &, |
+    /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=, &, |, ^
     FixnumAdd  { left: InsnId, right: InsnId, state: InsnId },
     FixnumSub  { left: InsnId, right: InsnId, state: InsnId },
     FixnumMult { left: InsnId, right: InsnId, state: InsnId },
@@ -764,6 +764,7 @@ pub enum Insn {
     FixnumGe   { left: InsnId, right: InsnId },
     FixnumAnd  { left: InsnId, right: InsnId },
     FixnumOr   { left: InsnId, right: InsnId },
+    FixnumXor  { left: InsnId, right: InsnId },
 
     // Distinct from `SendWithoutBlock` with `mid:to_s` because does not have a patch point for String to_s being redefined
     ObjToString { val: InsnId, cd: *const rb_call_data, state: InsnId },
@@ -853,6 +854,7 @@ impl Insn {
             Insn::FixnumGe   { .. } => false,
             Insn::FixnumAnd  { .. } => false,
             Insn::FixnumOr   { .. } => false,
+            Insn::FixnumXor  { .. } => false,
             Insn::GetLocal   { .. } => false,
             Insn::IsNil      { .. } => false,
             Insn::LoadPC => false,
@@ -1051,6 +1053,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumGe   { left, right, .. } => { write!(f, "FixnumGe {left}, {right}") },
             Insn::FixnumAnd  { left, right, .. } => { write!(f, "FixnumAnd {left}, {right}") },
             Insn::FixnumOr   { left, right, .. } => { write!(f, "FixnumOr {left}, {right}") },
+            Insn::FixnumXor  { left, right, .. } => { write!(f, "FixnumXor {left}, {right}") },
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardTypeNot { val, guard_type, .. } => { write!(f, "GuardTypeNot {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
@@ -1541,6 +1544,7 @@ impl Function {
             &FixnumLe { left, right } => FixnumLe { left: find!(left), right: find!(right) },
             &FixnumAnd { left, right } => FixnumAnd { left: find!(left), right: find!(right) },
             &FixnumOr { left, right } => FixnumOr { left: find!(left), right: find!(right) },
+            &FixnumXor { left, right } => FixnumXor { left: find!(left), right: find!(right) },
             &ObjToString { val, cd, state } => ObjToString {
                 val: find!(val),
                 cd,
@@ -1740,6 +1744,7 @@ impl Function {
             Insn::FixnumGe   { .. } => types::BoolExact,
             Insn::FixnumAnd  { .. } => types::Fixnum,
             Insn::FixnumOr   { .. } => types::Fixnum,
+            Insn::FixnumXor  { .. } => types::Fixnum,
             Insn::PutSpecialObject { .. } => types::BasicObject,
             Insn::SendWithoutBlock { .. } => types::BasicObject,
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
@@ -2967,6 +2972,7 @@ impl Function {
             | &Insn::FixnumNeq { left, right }
             | &Insn::FixnumAnd { left, right }
             | &Insn::FixnumOr { left, right }
+            | &Insn::FixnumXor { left, right }
             | &Insn::IsBitEqual { left, right }
             => {
                 worklist.push_back(left);
@@ -13906,6 +13912,160 @@ mod opt_tests {
           v13:BasicObject = SendWithoutBlock v10, :succ, v11
           CheckInterrupts
           Return v13
+        ");
+    }
+
+    #[test]
+    fn test_inline_integer_xor_with_fixnum() {
+        eval("
+            def test(x, y) = x ^ y
+            test(1, 2)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, ^@0x1008, cme:0x1010)
+          v25:Fixnum = GuardType v11, Fixnum
+          v26:Fixnum = GuardType v12, Fixnum
+          v27:Fixnum = FixnumXor v25, v26
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_eliminate_integer_xor() {
+        eval(r#"
+            def test(x, y)
+              x ^ y
+              42
+            end
+            test(1, 2)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, ^@0x1008, cme:0x1010)
+          v28:Fixnum = GuardType v11, Fixnum
+          v29:Fixnum = GuardType v12, Fixnum
+          IncrCounter inline_cfunc_optimized_send_count
+          v20:Fixnum[42] = Const Value(42)
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
+    fn test_dont_inline_integer_xor_with_bignum_or_boolean() {
+        eval("
+            def test(x, y) = x ^ y
+            test(4 << 70, 1)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, ^@0x1008, cme:0x1010)
+          v25:Integer = GuardType v11, Integer
+          v26:BasicObject = CCallWithFrame ^@0x1038, v25, v12
+          CheckInterrupts
+          Return v26
+        ");
+
+        eval("
+            def test(x, y) = x ^ y
+            test(1, 4 << 70)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, ^@0x1008, cme:0x1010)
+          v25:Fixnum = GuardType v11, Fixnum
+          v26:BasicObject = CCallWithFrame ^@0x1038, v25, v12
+          CheckInterrupts
+          Return v26
+        ");
+
+        eval("
+            def test(x, y) = x ^ y
+            test(true, 0)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(TrueClass@0x1000, ^@0x1008, cme:0x1010)
+          v25:TrueClass = GuardType v11, TrueClass
+          v26:BasicObject = CCallWithFrame ^@0x1038, v25, v12
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn test_dont_inline_integer_xor_with_args() {
+        eval("
+            def test(x, y) = x.^()
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          v17:BasicObject = SendWithoutBlock v11, :^
+          CheckInterrupts
+          Return v17
         ");
     }
 
