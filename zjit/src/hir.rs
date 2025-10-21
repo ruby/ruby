@@ -1359,7 +1359,6 @@ enum IseqReturn {
 
 unsafe extern "C" {
     fn rb_simple_iseq_p(iseq: IseqPtr) -> bool;
-    fn rb_iseq_only_kwparam_p(iseq: IseqPtr) -> bool;
 }
 
 /// Return the ISEQ's return value if it consists of one simple instruction and leave.
@@ -1401,14 +1400,9 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
 
             if unsafe { rb_simple_iseq_p(iseq) } {
                 return Some(IseqReturn::LocalVariable(local_idx.try_into().unwrap()));
-            } else if unsafe { rb_iseq_only_kwparam_p(iseq) } {
-                // Inline if only positional parameters are used
-                if let Ok(i) = i32::try_from(local_idx) {
-                    if i < unsafe { rb_get_iseq_body_param_lead_num(iseq) } {
-                        return Some(IseqReturn::LocalVariable(local_idx.try_into().unwrap()));
-                    }
-                }
             }
+
+            // TODO(max): Support only_kwparam case where the local_idx is a positional parameter
 
             return None;
         }
@@ -2371,7 +2365,7 @@ impl Function {
             for insn_id in old_insns {
                 match self.find(insn_id) {
                     // Reject block ISEQs to avoid autosplat and other block parameter complications.
-                    Insn::SendWithoutBlockDirect { recv, iseq, cd, .. } => {
+                    Insn::SendWithoutBlockDirect { recv, iseq, cd, args, .. } => {
                         let call_info = unsafe { (*cd).ci };
                         let ci_flags = unsafe { vm_ci_flag(call_info) };
                         // .send call is not currently supported for builtins
@@ -2383,8 +2377,7 @@ impl Function {
                         };
                         match value {
                             IseqReturn::LocalVariable(idx) => {
-                                // TODO(max): Handle locals
-                                self.push_insn_id(block, insn_id); continue;
+                                self.make_equal_to(insn_id, args[idx as usize]);
                             }
                             IseqReturn::Value(value) => {
                                 let replacement = self.push_insn(block, Insn::Const { val: Const::Value(value) });
@@ -14252,6 +14245,136 @@ mod opt_tests {
           v25:BasicObject = CCallVariadic respond_to?@0x1040, v24, v13
           CheckInterrupts
           Return v25
+        ");
+    }
+
+    #[test]
+    fn test_inline_send_without_block_direct_putself() {
+        eval(r#"
+            def callee = self
+            def test = callee
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_inline_send_without_block_direct_putobject() {
+        eval(r#"
+            # frozen_string_literal: true
+            def callee = "abc"
+            def test = callee
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v21:StringExact[VALUE(0x1038)] = Const Value(VALUE(0x1038))
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_inline_send_without_block_direct_putobject_zero() {
+        eval(r#"
+            def callee = 0
+            def test = callee
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v21:Fixnum[0] = Const Value(0)
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_inline_send_without_block_direct_putobject_one() {
+        eval(r#"
+            def callee = 1
+            def test = callee
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v21:Fixnum[1] = Const Value(1)
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_inline_send_without_block_direct_parameter() {
+        eval(r#"
+            def callee(x) = x
+            def test = callee 3
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[3] = Const Value(3)
+          PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          CheckInterrupts
+          Return v10
         ");
     }
 }
