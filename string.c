@@ -11927,11 +11927,15 @@ str_scrub(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    scrub! -> self
- *    scrub!(replacement_string = default_replacement) -> self
- *    scrub!{|bytes| ... } -> self
+ *    scrub!(replacement_string = default_replacement_string) -> self
+ *    scrub!{|sequence| ... } -> self
  *
- *  Like String#scrub, except that any replacements are made in +self+.
+ *  Like String#scrub, except that:
+ *
+ *  - Any replacements are made in +self+.
+ *  - Returns +self+.
+ *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  *
  */
 static VALUE
