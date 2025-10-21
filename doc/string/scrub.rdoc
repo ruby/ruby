@@ -9,9 +9,14 @@ with the given +default_replacement_string+
   "foo\x81\x81bar".force_encoding('US-ASCII').scrub # => "foo??bar"
   "foo\x81\x81bar".scrub('xyzzy')                   # => "fooxyzzyxyzzybar"
 
-With a block given, replaces each invalid sequence with the value
-of the block:
+With a block given, calls the block with each invalid sequence,
+and replaces that sequence with the return value of the block:
 
-  "foo\x81\x81bar".scrub {|bytes| 'XYZZY' } # => "fooXYZZYXYZZYbar"
+  "foo\x81\x81bar".scrub {|sequence| p sequence; 'XYZZY' } # => "fooXYZZYXYZZYbar"
+
+Output :
+
+  "\x81"
+  "\x81"
 
 Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
