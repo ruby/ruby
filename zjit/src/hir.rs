@@ -14429,4 +14429,52 @@ mod opt_tests {
           Return v10
         ");
     }
+
+    #[test]
+    fn test_inline_symbol_to_sym() {
+        eval(r#"
+            def test(o) = o.to_sym
+            test :foo
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Symbol@0x1000, to_sym@0x1008, cme:0x1010)
+          v21:StaticSymbol = GuardType v9, StaticSymbol
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_inline_integer_to_i() {
+        eval(r#"
+            def test(o) = o.to_i
+            test 5
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1000, to_i@0x1008, cme:0x1010)
+          v21:Fixnum = GuardType v9, Fixnum
+          CheckInterrupts
+          Return v21
+        ");
+    }
 }
