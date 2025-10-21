@@ -2377,13 +2377,16 @@ impl Function {
                         };
                         match value {
                             IseqReturn::LocalVariable(idx) => {
+                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
                                 self.make_equal_to(insn_id, args[idx as usize]);
                             }
                             IseqReturn::Value(value) => {
+                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
                                 let replacement = self.push_insn(block, Insn::Const { val: Const::Value(value) });
                                 self.make_equal_to(insn_id, replacement);
                             }
                             IseqReturn::Receiver => {
+                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
                                 self.make_equal_to(insn_id, recv);
                             }
                         }
@@ -12697,9 +12700,10 @@ mod opt_tests {
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Object@0x1000)
           v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v21:NilClass = Const Value(nil)
+          IncrCounter inline_iseq_optimized_send_count
+          v22:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -14268,6 +14272,7 @@ mod opt_tests {
           PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Object@0x1000)
           v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          IncrCounter inline_iseq_optimized_send_count
           CheckInterrupts
           Return v19
         ");
@@ -14294,9 +14299,10 @@ mod opt_tests {
           PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Object@0x1000)
           v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v21:StringExact[VALUE(0x1038)] = Const Value(VALUE(0x1038))
+          IncrCounter inline_iseq_optimized_send_count
+          v22:StringExact[VALUE(0x1038)] = Const Value(VALUE(0x1038))
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -14320,9 +14326,10 @@ mod opt_tests {
           PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Object@0x1000)
           v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v21:NilClass = Const Value(nil)
+          IncrCounter inline_iseq_optimized_send_count
+          v22:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -14346,9 +14353,10 @@ mod opt_tests {
           PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Object@0x1000)
           v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v21:TrueClass = Const Value(true)
+          IncrCounter inline_iseq_optimized_send_count
+          v22:TrueClass = Const Value(true)
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -14372,9 +14380,10 @@ mod opt_tests {
           PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Object@0x1000)
           v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v21:Fixnum[0] = Const Value(0)
+          IncrCounter inline_iseq_optimized_send_count
+          v22:Fixnum[0] = Const Value(0)
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -14398,9 +14407,10 @@ mod opt_tests {
           PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Object@0x1000)
           v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v21:FalseClass = Const Value(false)
+          IncrCounter inline_iseq_optimized_send_count
+          v22:FalseClass = Const Value(false)
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -14424,9 +14434,10 @@ mod opt_tests {
           PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Object@0x1000)
           v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v21:Fixnum[1] = Const Value(1)
+          IncrCounter inline_iseq_optimized_send_count
+          v22:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -14451,6 +14462,7 @@ mod opt_tests {
           PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Object@0x1000)
           v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          IncrCounter inline_iseq_optimized_send_count
           CheckInterrupts
           Return v10
         ");
@@ -14475,6 +14487,7 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Symbol@0x1000, to_sym@0x1008, cme:0x1010)
           v21:StaticSymbol = GuardType v9, StaticSymbol
+          IncrCounter inline_iseq_optimized_send_count
           CheckInterrupts
           Return v21
         ");
@@ -14499,6 +14512,7 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, to_i@0x1008, cme:0x1010)
           v21:Fixnum = GuardType v9, Fixnum
+          IncrCounter inline_iseq_optimized_send_count
           CheckInterrupts
           Return v21
         ");
