@@ -7219,6 +7219,33 @@ mod tests {
     }
 
     #[test]
+    fn test_set_ivar_rescue_frozen() {
+        let result = eval("
+            class Foo
+              attr_accessor :bar
+              def initialize
+                @bar = 1
+                freeze
+              end
+            end
+
+            def test(foo)
+              begin
+                foo.bar = 2
+              rescue FrozenError
+              end
+            end
+
+            foo = Foo.new
+            test(foo)
+            test(foo)
+
+            foo.bar
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(1), result);
+    }
+
+    #[test]
     fn test_setglobal() {
         eval("
             def test = $foo = 1
