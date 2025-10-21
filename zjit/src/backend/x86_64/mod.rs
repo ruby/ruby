@@ -499,9 +499,9 @@ impl Assembler {
                     };
 
                     // If a load attempt fails due to register spill, load into a scratch register first.
-                    if matches!(out, Opnd::Mem(_)) {
-                        asm.load_into(SCRATCH_OPND, opnd);
-                        asm.store(out, SCRATCH_OPND);
+                    if let Opnd::Mem(Mem { num_bits, .. }) = out {
+                        asm.load_into(SCRATCH_OPND.with_num_bits(num_bits), opnd);
+                        asm.store(out, SCRATCH_OPND.with_num_bits(num_bits));
                     } else {
                         asm.push_insn(insn);
                     }
