@@ -2806,6 +2806,13 @@ mark_m_tbl(void *objspace, struct rb_id_table *tbl)
 
 bool rb_gc_impl_checking_shareable(void *objspace_ptr); // in defaut/deafult.c
 
+bool
+rb_gc_checking_shareable(void)
+{
+    return rb_gc_impl_checking_shareable(rb_gc_get_objspace());
+}
+
+
 static enum rb_id_table_iterator_result
 mark_const_entry_i(VALUE value, void *objspace)
 {
@@ -5418,6 +5425,18 @@ void
 rb_gc_after_fork(rb_pid_t pid)
 {
     rb_gc_impl_after_fork(rb_gc_get_objspace(), pid);
+}
+
+bool
+rb_gc_obj_shareable_p(VALUE obj)
+{
+    return RB_OBJ_SHAREABLE_P(obj);
+}
+
+void
+rb_gc_rp(VALUE obj)
+{
+    rp(obj);
 }
 
 /*

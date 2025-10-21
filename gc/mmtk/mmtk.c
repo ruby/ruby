@@ -1260,6 +1260,12 @@ rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj)
     rb_gc_impl_copy_finalizer(objspace_ptr, dest, obj);
 }
 
+bool
+rb_gc_impl_checking_shareable(void *ptr)
+{
+    return false;
+}
+
 // GC Identification
 
 const char *
