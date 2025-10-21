@@ -14274,7 +14274,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_inline_send_without_block_direct_putobject() {
+    fn test_inline_send_without_block_direct_putobject_string() {
         eval(r#"
             # frozen_string_literal: true
             def callee = "abc"
@@ -14301,6 +14301,32 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_inline_send_without_block_direct_putobject_true() {
+        eval(r#"
+            def callee = true
+            def test = callee
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v21:TrueClass = Const Value(true)
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
     fn test_inline_send_without_block_direct_putobject_zero() {
         eval(r#"
             def callee = 0
@@ -14321,6 +14347,32 @@ mod opt_tests {
           PatchPoint NoSingletonClass(Object@0x1000)
           v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
           v21:Fixnum[0] = Const Value(0)
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_inline_send_without_block_direct_putobject_false() {
+        eval(r#"
+            def callee = false
+            def test = callee
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          v21:FalseClass = Const Value(false)
           CheckInterrupts
           Return v21
         ");
