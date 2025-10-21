@@ -16,6 +16,7 @@
 #include "ruby/internal/globals.h"
 #include "ruby/util.h"
 #include "vm_core.h"
+#include "darray.h"
 
 #include <stdio.h>
 
@@ -207,6 +208,15 @@ free_loading_table_entry(st_data_t key, st_data_t value, st_data_t arg)
     return ST_DELETE;
 }
 
+static int
+free_loaded_feature_index_i(st_data_t key, st_data_t value, st_data_t arg)
+{
+    if (!FIXNUM_P(value)) {
+        rb_darray_free((void *)value);
+    }
+    return ST_CONTINUE;
+}
+
 static void
 namespace_root_free(void *ptr)
 {
@@ -218,6 +228,7 @@ namespace_root_free(void *ptr)
     }
 
     if (ns->loaded_features_index) {
+        st_foreach(ns->loaded_features_index, free_loaded_feature_index_i, 0);
         st_free_table(ns->loaded_features_index);
     }
 }
