@@ -412,12 +412,15 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 #endif
         }
         else {
+            // TODO: check jit payload
+            if (!rb_gc_checking_shareable()) {
 #if USE_YJIT
-            rb_yjit_iseq_mark(body->yjit_payload);
+                rb_yjit_iseq_mark(body->yjit_payload);
 #endif
 #if USE_ZJIT
-            rb_zjit_iseq_mark(body->zjit_payload);
+                rb_zjit_iseq_mark(body->zjit_payload);
 #endif
+            }
         }
     }
 
