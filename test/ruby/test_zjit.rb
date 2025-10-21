@@ -794,38 +794,46 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_fixnum_and
-    assert_compiles '1', %q{
+    assert_compiles '[1, 2, 4]', %q{
       def test(a, b) = a & b
-      test(2, 2)
-      test(2, 2)
-      test(5, 3)
+      [
+        test(5, 3),
+        test(0b011, 0b110),
+        test(-0b011, 0b110)
+      ]
     }, call_threshold: 2, insns: [:opt_and]
   end
 
   def test_fixnum_and_side_exit
-    assert_compiles 'false', %q{
+    assert_compiles '[2, 2, false]', %q{
       def test(a, b) = a & b
-      test(2, 2)
-      test(2, 2)
-      test(true, false)
+      [
+        test(2, 2),
+        test(0b011, 0b110),
+        test(true, false)
+      ]
     }, call_threshold: 2, insns: [:opt_and]
   end
 
   def test_fixnum_or
-    assert_compiles '3', %q{
+    assert_compiles '[7, 3, -3]', %q{
       def test(a, b) = a | b
-      test(5, 3)
-      test(5, 3)
-      test(1, 2)
+      [
+        test(5, 3),
+        test(1, 2),
+        test(1, -4)
+      ]
     }, call_threshold: 2, insns: [:opt_or]
   end
 
   def test_fixnum_or_side_exit
-    assert_compiles 'true', %q{
+    assert_compiles '[3, 2, true]', %q{
       def test(a, b) = a | b
-      test(2, 2)
-      test(2, 2)
-      test(true, false)
+      [
+        test(1, 2),
+        test(2, 2),
+        test(true, false)
+      ]
     }, call_threshold: 2, insns: [:opt_or]
   end
 
