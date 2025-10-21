@@ -426,7 +426,7 @@ Init_ossl_config(void)
      * configuration. See the value of OpenSSL::Config::DEFAULT_CONFIG_FILE for
      * the location of the file for your host.
      *
-     * See also http://www.openssl.org/docs/apps/config.html
+     * See also https://docs.openssl.org/master/man5/config/
      */
     cConfig = rb_define_class_under(mOSSL, "Config", rb_cObject);
 
