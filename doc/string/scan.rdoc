@@ -24,13 +24,13 @@ With no block given, returns an array of the results:
 With a block given, calls the block with each result; returns +self+:
 
   'cruel world'.scan(/\w+/) {|w| p w }
-  "cruel"
-  "world"
+  # => "cruel"
+  # => "world"
   'cruel world'.scan(/(.)(.)/) {|x, y| p [x, y] }
-  ["c", "r"]
-  ["u", "e"]
-  ["l", " "]
-  ["w", "o"]
-  ["r", "l"]
+  # => ["c", "r"]
+  # => ["u", "e"]
+  # => ["l", " "]
+  # => ["w", "o"]
+  # => ["r", "l"]
 
 Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
