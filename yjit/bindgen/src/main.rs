@@ -249,7 +249,7 @@ fn main() {
         .allowlist_function("rb_jit_mark_executable")
         .allowlist_function("rb_jit_mark_unused")
         .allowlist_function("rb_jit_get_page_size")
-        .allowlist_function("rb_yjit_iseq_builtin_attrs")
+        .allowlist_function("rb_jit_iseq_builtin_attrs")
         .allowlist_function("rb_yjit_iseq_inspect")
         .allowlist_function("rb_yjit_builtin_function")
         .allowlist_function("rb_set_cfp_(pc|sp)")

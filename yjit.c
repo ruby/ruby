@@ -244,12 +244,6 @@ rb_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv
     return rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, block_handler);
 }
 
-unsigned int
-rb_yjit_iseq_builtin_attrs(const rb_iseq_t *iseq)
-{
-    return iseq->body->builtin_attrs;
-}
-
 // If true, the iseq has only opt_invokebuiltin_delegate(_leave) and leave insns.
 static bool
 invokebuiltin_delegate_leave_p(const rb_iseq_t *iseq)
