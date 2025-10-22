@@ -10719,10 +10719,10 @@ mod opt_tests {
     #[test]
     fn test_inline_kernel_block_given_p_in_block() {
         eval("
-            def test = proc { block_given? }
-            test.call
+            TEST = proc { block_given? }
+            TEST.call
         ");
-        assert_snapshot!(hir_string_proc("test"), @r"
+        assert_snapshot!(hir_string_proc("TEST"), @r"
         fn block in test@<compiled>:2:
         bb0():
           EntryPoint interpreter
