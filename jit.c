@@ -181,6 +181,12 @@ rb_jit_get_proc_ptr(VALUE procv)
     return proc;
 }
 
+unsigned int
+rb_jit_iseq_builtin_attrs(const rb_iseq_t *iseq)
+{
+    return iseq->body->builtin_attrs;
+}
+
 int
 rb_get_mct_argc(const rb_method_cfunc_t *mct)
 {

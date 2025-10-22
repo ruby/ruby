@@ -1175,6 +1175,11 @@ pub mod test_utils {
         get_proc_iseq(&format!("{}.method(:{})", recv, name))
     }
 
+    /// Get IseqPtr for a specified instance method
+    pub fn get_instance_method_iseq(recv: &str, name: &str) -> *const rb_iseq_t {
+        get_proc_iseq(&format!("{}.instance_method(:{})", recv, name))
+    }
+
     /// Get IseqPtr for a specified Proc object
     pub fn get_proc_iseq(obj: &str) -> *const rb_iseq_t {
         let wrapped_iseq = eval(&format!("RubyVM::InstructionSequence.of({obj})"));

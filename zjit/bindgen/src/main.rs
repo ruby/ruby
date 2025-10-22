@@ -274,7 +274,7 @@ fn main() {
         .allowlist_function("rb_jit_mark_unused")
         .allowlist_function("rb_jit_get_page_size")
         .allowlist_function("rb_jit_array_len")
-        .allowlist_function("rb_zjit_iseq_builtin_attrs")
+        .allowlist_function("rb_jit_iseq_builtin_attrs")
         .allowlist_function("rb_zjit_iseq_inspect")
         .allowlist_function("rb_zjit_iseq_insn_set")
         .allowlist_function("rb_zjit_local_id")

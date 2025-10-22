@@ -745,6 +745,7 @@ pub enum Insn {
         bf: rb_builtin_function,
         args: Vec<InsnId>,
         state: InsnId,
+        leaf: bool,
         return_type: Option<Type>,  // None for unannotated builtins
     },
 
@@ -1039,8 +1040,10 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            Insn::InvokeBuiltin { bf, args, .. } => {
-                write!(f, "InvokeBuiltin {}", unsafe { CStr::from_ptr(bf.name) }.to_str().unwrap())?;
+            Insn::InvokeBuiltin { bf, args, leaf, .. } => {
+                write!(f, "InvokeBuiltin{} {}",
+                           if *leaf { " leaf" } else { "" },
+                           unsafe { CStr::from_ptr(bf.name) }.to_str().unwrap())?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1678,7 +1681,7 @@ impl Function {
                 state,
                 reason,
             },
-            &InvokeBuiltin { bf, ref args, state, return_type } => InvokeBuiltin { bf, args: find_vec!(args), state, return_type },
+            &InvokeBuiltin { bf, ref args, state, leaf, return_type } => InvokeBuiltin { bf, args: find_vec!(args), state, leaf, return_type },
             &ArrayDup { val, state } => ArrayDup { val: find!(val), state },
             &HashDup { val, state } => HashDup { val: find!(val), state },
             &HashAref { hash, key, state } => HashAref { hash: find!(hash), key: find!(key), state },
@@ -4671,10 +4674,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         .get_builtin_properties(&bf)
                         .map(|props| props.return_type);
 
+                    let builtin_attrs = unsafe { rb_jit_iseq_builtin_attrs(iseq) };
+                    let leaf = builtin_attrs & BUILTIN_ATTR_LEAF != 0;
+
                     let insn_id = fun.push_insn(block, Insn::InvokeBuiltin {
                         bf,
                         args,
                         state: exit_id,
+                        leaf,
                         return_type,
                     });
                     state.stack_push(insn_id);
@@ -4697,10 +4704,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         .get_builtin_properties(&bf)
                         .map(|props| props.return_type);
 
+                    let builtin_attrs = unsafe { rb_jit_iseq_builtin_attrs(iseq) };
+                    let leaf = builtin_attrs & BUILTIN_ATTR_LEAF != 0;
+
                     let insn_id = fun.push_insn(block, Insn::InvokeBuiltin {
                         bf,
                         args,
                         state: exit_id,
+                        leaf,
                         return_type,
                     });
                     state.stack_push(insn_id);
@@ -7928,7 +7939,7 @@ mod tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:Class = InvokeBuiltin _bi20, v6
+          v11:Class = InvokeBuiltin leaf _bi20, v6
           Jump bb3(v6, v11)
         bb3(v13:BasicObject, v14:Class):
           CheckInterrupts
@@ -8023,6 +8034,50 @@ mod tests {
           v24:BasicObject = InvokeBuiltin gc_start_internal, v14, v15, v16, v17, v22
           CheckInterrupts
           Return v24
+        ");
+    }
+
+    #[test]
+    fn test_invoke_leaf_builtin_symbol_name() {
+        let iseq = crate::cruby::with_rubyvm(|| get_instance_method_iseq("Symbol", "name"));
+        let function = iseq_to_hir(iseq).unwrap();
+        assert_snapshot!(hir_string_function(&function), @r"
+        fn name@<internal:symbol>:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:BasicObject = InvokeBuiltin leaf _bi28, v6
+          Jump bb3(v6, v11)
+        bb3(v13:BasicObject, v14:BasicObject):
+          CheckInterrupts
+          Return v14
+        ");
+    }
+
+    #[test]
+    fn test_invoke_leaf_builtin_symbol_to_s() {
+        let iseq = crate::cruby::with_rubyvm(|| get_instance_method_iseq("Symbol", "to_s"));
+        let function = iseq_to_hir(iseq).unwrap();
+        assert_snapshot!(hir_string_function(&function), @r"
+        fn to_s@<internal:symbol>:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v11:BasicObject = InvokeBuiltin leaf _bi12, v6
+          Jump bb3(v6, v11)
+        bb3(v13:BasicObject, v14:BasicObject):
+          CheckInterrupts
+          Return v14
         ");
     }
 
