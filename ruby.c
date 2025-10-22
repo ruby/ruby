@@ -916,7 +916,9 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     argc = RSTRING_LEN(argary) / sizeof(ap);
     ap = 0;
     rb_str_cat(argary, (char *)&ap, sizeof(ap));
-    argv = ptr = ALLOC_N(char *, argc);
+
+    VALUE ptr_obj;
+    argv = ptr = RB_ALLOCV_N(char *, ptr_obj, argc);
     MEMMOVE(argv, RSTRING_PTR(argary), char *, argc);
 
     while ((i = proc_options(argc, argv, opt, envopt)) > 1 && envopt && (argc -= i) > 0) {
@@ -948,7 +950,8 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
         opt->crash_report = crash_report;
     }
 
-    ruby_xfree(ptr);
+    RB_ALLOCV_END(ptr_obj);
+
     /* get rid of GC */
     rb_str_resize(argary, 0);
     rb_str_resize(argstr, 0);
