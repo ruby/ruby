@@ -261,7 +261,7 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("trace-exits", exits) => {
             options.trace_side_exits = match exits {
                 "" => Some(TraceExits::All),
-                name => Counter::get(name).map(TraceExits::Counter),
+                name => Some(Counter::get(name).map(TraceExits::Counter)?),
             }
         }
 
