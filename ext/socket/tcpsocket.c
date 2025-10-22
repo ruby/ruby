@@ -12,7 +12,7 @@
 
 /*
  * call-seq:
- *    TCPSocket.new(remote_host, remote_port, local_host=nil, local_port=nil, resolv_timeout: nil, connect_timeout: nil, fast_fallback: true)
+ *    TCPSocket.new(remote_host, remote_port, local_host=nil, local_port=nil, resolv_timeout: nil, connect_timeout: nil, open_timeout: nil, fast_fallback: true)
  *
  * Opens a TCP connection to +remote_host+ on +remote_port+.  If +local_host+
  * and +local_port+ are specified, then those parameters are used on the local
