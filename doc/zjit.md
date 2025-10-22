@@ -162,6 +162,16 @@ A file called `zjit_exits_{pid}.dump` will be created in the same directory as `
 stackprof path/to/zjit_exits_{pid}.dump
 ```
 
+### Printing ZJIT Errors
+
+`--zjit-debug` prints ZJIT compilation errors and other diagnostics:
+
+```bash
+./miniruby --zjit-debug script.rb
+```
+
+As you might guess from the name, this option is intended mostly for ZJIT developers.
+
 ## Useful dev commands
 
 To view YARV output for code snippets:
