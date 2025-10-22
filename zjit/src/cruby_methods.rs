@@ -192,6 +192,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "to_s", types::StringExact);
     annotate!(rb_cString, "getbyte", inline_string_getbyte);
     annotate!(rb_cString, "empty?", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cString, "<<", inline_string_append);
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", types::Fixnum, no_gc, leaf, elidable);
@@ -274,6 +275,20 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         return Some(result);
     }
     None
+}
+
+fn inline_string_append(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    // Inline only StringExact << String, which matches original type check from
+    // `vm_opt_ltlt`, which checks `RB_TYPE_P(obj, T_STRING)`.
+    if fun.likely_a(recv, types::StringExact, state) && fun.likely_a(other, types::String, state) {
+        let recv = fun.coerce_to(block, recv, types::StringExact, state);
+        let other = fun.coerce_to(block, other, types::String, state);
+        let _ = fun.push_insn(block, hir::Insn::StringAppend { recv, other, state });
+        Some(recv)
+    } else {
+        None
+    }
 }
 
 fn inline_integer_succ(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
