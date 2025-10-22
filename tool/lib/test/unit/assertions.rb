@@ -799,7 +799,7 @@ EOT
 
       def assert_cpu_usage_low(msg = nil, pct: 0.05, wait: 1.0, stop: nil)
         wait = EnvUtil.apply_timeout_scale(wait)
-        if wait < 0.1 # TIME_QUANTUM_USEC in thread_pthread.c
+        if wait < 0.1 # THREAD_TIMER_INTERVAL_USEC in thread.h
           warn "test #{msg || 'assert_cpu_usage_low'} too short to be accurate"
         end
 
