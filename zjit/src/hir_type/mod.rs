@@ -880,7 +880,6 @@ mod tests {
 
     #[test]
     fn string_subclass_is_string_subtype() {
-        use crate::cruby::{rb_callable_method_entry, ID};
         crate::cruby::with_rubyvm(|| {
             assert_subtype(types::StringExact, types::String);
             assert_subtype(Type::from_class(unsafe { rb_cString }), types::String);
