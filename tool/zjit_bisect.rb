@@ -152,6 +152,7 @@ File.open("jitlist.txt", "w") do |file|
   file.puts(result)
 end
 puts "Run:"
-puts add_zjit_options([RUBY, "--zjit-allowed-iseqs=jitlist.txt", *OPTIONS]).shelljoin
+jitlist_path = File.expand_path("jitlist.txt")
+puts add_zjit_options([RUBY, "--zjit-allowed-iseqs=#{jitlist_path}", *OPTIONS]).shelljoin
 puts "Reduced JIT list (available in jitlist.txt):"
 puts result
