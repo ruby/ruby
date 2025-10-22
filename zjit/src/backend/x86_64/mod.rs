@@ -466,22 +466,37 @@ impl Assembler {
                     asm.push_insn(insn);
                 }
                 Insn::Cmp { left, right } => {
-                    let num_bits = match right {
-                        Opnd::Imm(value) => Some(imm_num_bits(*value)),
-                        Opnd::UImm(value) => Some(uimm_num_bits(*value)),
-                        _ => None
-                    };
+                    *left = split_stack_base(&mut asm, *left, SCRATCH0_OPND, &stack_allocator);
 
-                    // If the immediate is less than 64 bits (like 32, 16, 8), and the operand
-                    // sizes match, then we can represent it as an immediate in the instruction
-                    // without moving it to a register first.
-                    // IOW, 64 bit immediates must always be moved to a register
-                    // before comparisons, where other sizes may be encoded
-                    // directly in the instruction.
-                    let use_imm = num_bits.is_some() && left.num_bits() == num_bits && num_bits.unwrap() < 64;
-                    if !use_imm {
-                        *right = split_64bit_immediate(&mut asm, *right);
+                    match &right {
+                        Opnd::Mem(_) => {
+                            *right = split_stack_base(&mut asm, *right, SCRATCH1_OPND, &stack_allocator);
+                            if matches!(left, Opnd::Mem(_)) {
+                                asm.load_into(SCRATCH1_OPND, *right);
+                                *right = SCRATCH1_OPND;
+                            }
+                        }
+                        Opnd::UImm(_) | Opnd::Imm(_) => {
+                            let num_bits = match right {
+                                Opnd::Imm(value) => imm_num_bits(*value),
+                                Opnd::UImm(value) => uimm_num_bits(*value),
+                                _ => unreachable!(),
+                            };
+
+                            // If the immediate is less than 64 bits (like 32, 16, 8), and the operand
+                            // sizes match, then we can represent it as an immediate in the instruction
+                            // without moving it to a register first.
+                            // IOW, 64 bit immediates must always be moved to a register
+                            // before comparisons, where other sizes may be encoded
+                            // directly in the instruction.
+                            let use_imm = left.num_bits() == Some(num_bits) && num_bits < 64;
+                            if !use_imm {
+                                *right = split_64bit_immediate(&mut asm, *right);
+                            }
+                        }
+                        _ => {}
                     }
+
                     asm.push_insn(insn);
                 }
                 // For compile_side_exits, support splitting simple C arguments here
