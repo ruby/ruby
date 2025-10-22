@@ -549,7 +549,12 @@ impl Assembler {
                 Insn::ParallelMov { moves } => {
                     for (dst, src) in Self::resolve_parallel_moves(&moves, Some(SCRATCH0_OPND)).unwrap() {
                         if matches!(dst, Opnd::Mem(_)) {
-                            asm.store(dst, src);
+                            if matches!(src, Opnd::Mem(_)) {
+                                asm.load_into(SCRATCH0_OPND, src);
+                                asm.store(dst, SCRATCH0_OPND);
+                            } else {
+                                asm.store(dst, src);
+                            }
                         } else {
                             asm.load_into(dst, src);
                         }
