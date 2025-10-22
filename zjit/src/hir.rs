@@ -10723,7 +10723,7 @@ mod opt_tests {
             TEST.call
         ");
         assert_snapshot!(hir_string_proc("TEST"), @r"
-        fn block in test@<compiled>:2:
+        fn block in <compiled>@<compiled>:2:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
