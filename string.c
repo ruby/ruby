@@ -8886,7 +8886,6 @@ rb_str_delete(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    squeeze!(*selectors) -> self or nil
  *
- *
  *  Like String#squeeze, except that:
  *
  *  - Characters are squeezed in +self+ (not in a copy of +self+).
