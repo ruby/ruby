@@ -532,9 +532,6 @@ impl Assembler {
 
                     // If a load attempt fails due to register spill, load into a scratch register first.
                     if let Opnd::Mem(Mem { num_bits, .. }) = *out {
-                        if let Opnd::Mem(Mem { base: MemBase::Stack { .. }, .. }) = opnd {
-                            panic!("this is it");
-                        }
                         asm.load_into(SCRATCH0_OPND.with_num_bits(num_bits), *opnd);
                         asm.store(*out, SCRATCH0_OPND.with_num_bits(num_bits));
                     } else {
@@ -551,7 +548,11 @@ impl Assembler {
                 // Resolve ParallelMov that couldn't be handled without a scratch register.
                 Insn::ParallelMov { moves } => {
                     for (dst, src) in Self::resolve_parallel_moves(&moves, Some(SCRATCH0_OPND)).unwrap() {
-                        asm.load_into(dst, src);
+                        if matches!(dst, Opnd::Mem(_)) {
+                            asm.store(dst, src);
+                        } else {
+                            asm.load_into(dst, src);
+                        }
                     }
                 }
                 // Handle various operand combinations for spills on compile_side_exits.
