@@ -444,25 +444,29 @@ impl Assembler {
 
         while let Some((_, mut insn)) = iterator.next() {
             match &mut insn {
-                Insn::Add { right, .. } |
-                Insn::Sub { right, .. } |
-                Insn::Mul { right, .. } |
-                Insn::And { right, .. } |
-                Insn::Or { right, .. } |
-                Insn::Xor { right, .. } => {
-                    *right = split_64bit_immediate(&mut asm, *right);
-                    asm.push_insn(insn);
-                }
+                Insn::Add { left, right, .. } |
+                Insn::Sub { left, right, .. } |
+                Insn::Mul { left, right, .. } |
+                Insn::And { left, right, .. } |
+                Insn::Or { left, right, .. } |
+                Insn::Xor { left, right, .. } |
                 Insn::Test { left, right } => {
-                    match (&left, &right) {
-                        (Opnd::Mem(_), Opnd::Mem(Mem { num_bits, .. })) => {
-                            asm.load_into(SCRATCH0_OPND.with_num_bits(*num_bits), *right);
-                            *right = SCRATCH0_OPND.with_num_bits(*num_bits);
+                    *left = split_stack_base(&mut asm, *left, SCRATCH0_OPND, &stack_allocator);
+
+                    match &right {
+                        Opnd::Mem(_) => {
+                            *right = split_stack_base(&mut asm, *right, SCRATCH1_OPND, &stack_allocator);
+                            if matches!(left, Opnd::Mem(_)) {
+                                asm.load_into(SCRATCH1_OPND.with_num_bits(right.rm_num_bits()), *right);
+                                *right = SCRATCH1_OPND.with_num_bits(right.rm_num_bits());
+                            }
                         }
-                        _ => {
+                        Opnd::UImm(_) | Opnd::Imm(_) => {
                             *right = split_64bit_immediate(&mut asm, *right);
                         }
+                        _ => {}
                     }
+
                     asm.push_insn(insn);
                 }
                 Insn::Cmp { left, right } => {
