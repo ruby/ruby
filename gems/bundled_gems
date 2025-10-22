@@ -37,7 +37,7 @@ csv                 3.3.5   https://github.com/ruby/csv
 repl_type_completor 0.1.11  https://github.com/ruby/repl_type_completor 25108aa8d69ddaba0b5da3feff1c0035371524b2
 ostruct             0.6.3   https://github.com/ruby/ostruct
 pstore              0.2.0   https://github.com/ruby/pstore
-benchmark           0.4.1   https://github.com/ruby/benchmark
+benchmark           0.5.0   https://github.com/ruby/benchmark
 logger              1.7.0   https://github.com/ruby/logger
 rdoc                6.15.0  https://github.com/ruby/rdoc ac2a6fbf62b584a8325a665a9e7b368388bc7df6
 win32ole            1.9.2   https://github.com/ruby/win32ole
