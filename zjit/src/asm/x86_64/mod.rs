@@ -1334,7 +1334,7 @@ pub fn test(cb: &mut CodeBlock, rm_opnd: X86Opnd, test_opnd: X86Opnd) {
                 write_rm(cb, rm_num_bits == 16, rm_num_bits == 64, test_opnd, rm_opnd, None, &[0x85]);
             }
         },
-        _ => unreachable!()
+        _ => unreachable!("unexpected operands for test: {rm_opnd:?}, {test_opnd:?}")
     };
 }
 

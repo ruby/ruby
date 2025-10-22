@@ -433,9 +433,20 @@ impl Assembler {
                 Insn::Mul { right, .. } |
                 Insn::And { right, .. } |
                 Insn::Or { right, .. } |
-                Insn::Xor { right, .. } |
-                Insn::Test { right, .. } => {
+                Insn::Xor { right, .. } => {
                     *right = split_64bit_immediate(&mut asm, *right);
+                    asm.push_insn(insn);
+                }
+                Insn::Test { left, right } => {
+                    match (&left, &right) {
+                        (Opnd::Mem(_), Opnd::Mem(Mem { num_bits, .. })) => {
+                            asm.load_into(SCRATCH_OPND.with_num_bits(*num_bits), *right);
+                            *right = SCRATCH_OPND.with_num_bits(*num_bits);
+                        }
+                        _ => {
+                            *right = split_64bit_immediate(&mut asm, *right);
+                        }
+                    }
                     asm.push_insn(insn);
                 }
                 Insn::Cmp { left, right } => {
@@ -560,6 +571,23 @@ impl Assembler {
                         src @ (Opnd::None | Opnd::VReg { .. }) => panic!("Unexpected source operand during x86_split_with_scratch_reg: {src:?}"),
                     };
                     asm.store(dest, src);
+                }
+                Insn::CSelZ { out, .. } |
+                Insn::CSelNZ { out, .. } |
+                Insn::CSelE { out, .. } |
+                Insn::CSelNE { out, .. } |
+                Insn::CSelL { out, .. } |
+                Insn::CSelLE { out, .. } |
+                Insn::CSelG { out, .. } |
+                Insn::CSelGE { out, .. } => {
+                    if let Opnd::Mem(_) = out {
+                        let mem_out = out.clone();
+                        *out = SCRATCH_OPND.with_num_bits(out.rm_num_bits());
+                        asm.push_insn(insn);
+                        asm.store(mem_out, SCRATCH_OPND.with_num_bits(mem_out.rm_num_bits()))
+                    } else {
+                        asm.push_insn(insn);
+                    }
                 }
                 _ => {
                     asm.push_insn(insn);
