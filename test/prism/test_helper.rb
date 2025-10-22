@@ -66,15 +66,22 @@ module Prism
         end
       end
 
-      def self.each(except: [], &block)
+      def self.each(except: [], common_only: true, &block)
         glob_pattern = ENV.fetch("FOCUS") { custom_base_path? ? File.join("**", "*.rb") : File.join("**", "*.txt") }
         paths = Dir[glob_pattern, base: BASE] - except
-        paths.each { |path| yield Fixture.new(path) }
+        paths.each do |path|
+          fixture = Fixture.new(path)
+          # Tests in ruby/ruby are run with parse.y. We only want to test against common syntax in that case.
+          versions = TestCase.ruby_versions_for(fixture.path)
+          next if common_only && versions != SYNTAX_VERSIONS
+
+          yield fixture, versions
+        end
       end
 
       def self.each_with_version(except: [], &block)
-        each(except: except) do |fixture|
-          TestCase.ruby_versions_for(fixture.path).each do |version|
+        each(except: except, common_only: false) do |fixture, versions|
+          versions.each do |version|
             yield fixture, version
           end
         end
