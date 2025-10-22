@@ -8970,16 +8970,7 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    squeeze(*selectors) -> new_string
  *
- *  Returns a copy of +self+ with characters specified by +selectors+ "squeezed"
- *  (see {Multiple Character Selectors}[rdoc-ref:character_selectors.rdoc@Multiple+Character+Selectors]):
- *
- *  "Squeezed" means that each multiple-character run of a selected character
- *  is squeezed down to a single character;
- *  with no arguments given, squeezes all characters:
- *
- *     "yellow moon".squeeze                  #=> "yelow mon"
- *     "  now   is  the".squeeze(" ")         #=> " now is the"
- *     "putters shoot balls".squeeze("m-z")   #=> "puters shot balls"
+ *  :include: doc/string/squeeze.rdoc
  *
  */
 
