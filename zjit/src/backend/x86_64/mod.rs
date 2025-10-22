@@ -420,6 +420,22 @@ impl Assembler {
             }
         }
 
+        /// If a given operand is Opnd::Mem and it uses MemBase::Stack,
+        /// lower it to MemBase::Reg using a scratch regsiter.
+        fn split_stack_base(asm: &mut Assembler, opnd: Opnd, scratch_opnd: Opnd, stack_allocator: &StackAllocator) -> Opnd {
+            if let Opnd::Mem(Mem { base: MemBase::Stack { stack_idx, num_bits: stack_num_bits }, disp, num_bits }) = opnd {
+                // Convert MemBase::Stack to the original Opnd::Mem
+                let stack_disp = stack_allocator.stack_idx_to_disp(stack_idx);
+                let base_mem = Opnd::Mem(Mem { base: MemBase::Reg(NATIVE_BASE_PTR_REG_NO), disp: stack_disp, num_bits: stack_num_bits });
+
+                // Lower MemBase::Stack to MemBase::Reg using a scratch register
+                asm.load_into(scratch_opnd, base_mem);
+                Opnd::Mem(Mem { base: MemBase::Reg(scratch_opnd.unwrap_reg().reg_no), disp, num_bits })
+            } else {
+                opnd
+            }
+        }
+
         // Prepare StackAllocator to calculate stack_idx_to_disp
         let stack_allocator = StackAllocator::new(self.stack_base_idx);
 
@@ -494,25 +510,18 @@ impl Assembler {
                         asm.mov(*out, SCRATCH0_OPND);
                     }
                 }
-                &mut Insn::Load { out, opnd } |
-                &mut Insn::LoadInto { dest: out, opnd } => {
+                Insn::Load { out, opnd } |
+                Insn::LoadInto { dest: out, opnd } => {
                     // If the load target has MemBase::Stack, lower it to Stack::Reg.
-                    let opnd = if let Opnd::Mem(Mem { base: MemBase::Stack { stack_idx, num_bits: stack_num_bits }, disp, num_bits }) = opnd {
-                        // Convert MemBase::Stack to the original Opnd::Mem
-                        let stack_disp = stack_allocator.stack_idx_to_disp(stack_idx);
-                        let base_mem = Opnd::Mem(Mem { base: MemBase::Reg(NATIVE_BASE_PTR_REG_NO), disp: stack_disp, num_bits: stack_num_bits });
-
-                        // Lower MemBase::Stack to MemBase::Reg using a scratch register
-                        asm.load_into(SCRATCH0_OPND, base_mem);
-                        Opnd::Mem(Mem { base: MemBase::Reg(SCRATCH0_OPND.unwrap_reg().reg_no), disp, num_bits })
-                    } else {
-                        opnd
-                    };
+                    *opnd = split_stack_base(&mut asm, *opnd, SCRATCH0_OPND, &stack_allocator);
 
                     // If a load attempt fails due to register spill, load into a scratch register first.
-                    if let Opnd::Mem(Mem { num_bits, .. }) = out {
-                        asm.load_into(SCRATCH0_OPND.with_num_bits(num_bits), opnd);
-                        asm.store(out, SCRATCH0_OPND.with_num_bits(num_bits));
+                    if let Opnd::Mem(Mem { num_bits, .. }) = *out {
+                        if let Opnd::Mem(Mem { base: MemBase::Stack { .. }, .. }) = opnd {
+                            panic!("this is it");
+                        }
+                        asm.load_into(SCRATCH0_OPND.with_num_bits(num_bits), *opnd);
+                        asm.store(*out, SCRATCH0_OPND.with_num_bits(num_bits));
                     } else {
                         asm.push_insn(insn);
                     }
@@ -532,9 +541,8 @@ impl Assembler {
                 }
                 // Handle various operand combinations for spills on compile_side_exits.
                 &mut Insn::Store { dest, src } => {
-                    let Opnd::Mem(Mem { num_bits, .. }) = dest else {
-                        panic!("Unexpected Insn::Store destination in x86_split_with_scratch_reg: {dest:?}");
-                    };
+                    let num_bits = dest.rm_num_bits();
+                    let dest = split_stack_base(&mut asm, dest, SCRATCH1_OPND, &stack_allocator);
 
                     let src = match src {
                         Opnd::Reg(_) => src,
