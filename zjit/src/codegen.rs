@@ -449,6 +449,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::LoadSelf => gen_load_self(),
         &Insn::LoadIvarEmbedded { self_val, id, index } => gen_load_ivar_embedded(asm, opnd!(self_val), id, index),
         &Insn::LoadIvarExtended { self_val, id, index } => gen_load_ivar_extended(asm, opnd!(self_val), id, index),
+        &Insn::IsBlockGiven => gen_is_block_given(jit, asm),
         &Insn::ArrayMax { state, .. }
         | &Insn::FixnumDiv { state, .. }
         | &Insn::Throw { state, .. }
@@ -525,6 +526,8 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, 
             // `yield` goes to the block handler stowed in the "local" iseq which is
             // the current iseq or a parent. Only the "method" iseq type can be passed a
             // block handler. (e.g. `yield` in the top level script is a syntax error.)
+            //
+            // Similar to gen_is_block_given
             let local_iseq = unsafe { rb_get_iseq_body_local_iseq(jit.iseq) };
             if unsafe { rb_get_iseq_body_type(local_iseq) } == ISEQ_TYPE_METHOD {
                 let lep = gen_get_lep(jit, asm);
@@ -547,6 +550,19 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, 
             asm.cmp(def_result.with_num_bits(8), 0.into());
             asm.csel_ne(pushval.into(), Qnil.into())
         }
+    }
+}
+
+/// Similar to gen_defined for DEFINED_YIELD
+fn gen_is_block_given(jit: &JITState, asm: &mut Assembler) -> Opnd {
+    let local_iseq = unsafe { rb_get_iseq_body_local_iseq(jit.iseq) };
+    if unsafe { rb_get_iseq_body_type(local_iseq) } == ISEQ_TYPE_METHOD {
+        let lep = gen_get_lep(jit, asm);
+        let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
+        asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
+        asm.csel_e(Qfalse.into(), Qtrue.into())
+    } else {
+        Qfalse.into()
     }
 }
 

@@ -1962,6 +1962,27 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_block_given_p
+    assert_compiles "false", "block_given?"
+    assert_compiles '[false, false, true]', %q{
+      def test = block_given?
+      [test, test, test{}]
+    }, call_threshold: 2, insns: [:opt_send_without_block]
+  end
+
+  def test_block_given_p_from_block
+    # This will do some EP hopping to find the local EP,
+    # so it's slightly different than doing it outside of a block.
+
+    assert_compiles '[false, false, true]', %q{
+      def test
+        yield_self { yield_self { block_given? } }
+      end
+
+      [test, test, test{}]
+    }, call_threshold: 2
+  end
+
   def test_invokeblock_without_block_after_jit_call
     assert_compiles '"no block given (yield)"', %q{
       def test(*arr, &b)

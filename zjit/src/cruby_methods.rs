@@ -188,6 +188,7 @@ pub fn init() -> Annotations {
     }
 
     annotate!(rb_mKernel, "itself", inline_kernel_itself);
+    annotate!(rb_mKernel, "block_given?", inline_kernel_block_given_p);
     annotate!(rb_cString, "bytesize", types::Fixnum, no_gc, leaf);
     annotate!(rb_cString, "to_s", types::StringExact);
     annotate!(rb_cString, "getbyte", inline_string_getbyte);
@@ -245,6 +246,13 @@ fn inline_kernel_itself(_fun: &mut hir::Function, _block: hir::BlockId, recv: hi
         return Some(recv);
     }
     None
+}
+
+fn inline_kernel_block_given_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    // TODO(max): In local iseq types that are not ISEQ_TYPE_METHOD, rewrite to Constant false.
+    let result = fun.push_insn(block, hir::Insn::IsBlockGiven);
+    return Some(result);
 }
 
 fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
