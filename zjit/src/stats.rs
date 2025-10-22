@@ -179,6 +179,7 @@ make_counters! {
     optimized_send {
         iseq_optimized_send_count,
         inline_cfunc_optimized_send_count,
+        inline_iseq_optimized_send_count,
         non_variadic_cfunc_optimized_send_count,
         variadic_cfunc_optimized_send_count,
     }
