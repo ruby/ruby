@@ -4725,6 +4725,13 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 #include <sys/timeb.h>
 
 /* License: Ruby's */
+#define filetime_unit (10UL * 1000 * 1000)
+#define filetime_diff_days ((1970-1601)*3652425UL/10000)
+#define filetime_diff_secs (filetime_diff_days * (24ULL * 60 * 60))
+#define unix_to_filetime(sec) (((sec) + filetime_diff_secs) * filetime_unit)
+#define filetime_unix_offset unix_to_filetime(0ULL)
+
+/* License: Ruby's */
 typedef union {
     /* FILETIME and ULARGE_INTEGER::u are the same layout */
     FILETIME ft;
@@ -4736,7 +4743,6 @@ typedef union {
 static time_t
 filetime_split(const FILETIME* ft, long *subsec)
 {
-    const unsigned LONG_LONG subsec_unit = (unsigned LONG_LONG)10 * 1000 * 1000;
     FILETIME_INTEGER fi = {.ft = *ft};
     ULONGLONG lt = fi.i.QuadPart;
 
@@ -4744,10 +4750,10 @@ filetime_split(const FILETIME* ft, long *subsec)
        convert it into UNIX time (since 1970/01/01 00:00:00 UTC).
        the first leap second is at 1972/06/30, so we doesn't need to think
        about it. */
-    lt -= (ULONGLONG)((1970-1601)*365.2425) * 24 * 60 * 60 * subsec_unit;
+    lt -= unix_to_filetime(0);
 
-    *subsec = (long)(lt % subsec_unit);
-    return (time_t)(lt / subsec_unit);
+    *subsec = (long)(lt % filetime_unit);
+    return (time_t)(lt / filetime_unit);
 }
 
 /* License: Ruby's */
@@ -7593,7 +7599,7 @@ unixtime_to_filetime(time_t time, FILETIME *ft)
 {
     ULARGE_INTEGER tmp;
 
-    tmp.QuadPart = ((LONG_LONG)time + (LONG_LONG)((1970-1601)*365.2425) * 24 * 60 * 60) * 10 * 1000 * 1000;
+    tmp.QuadPart = unix_to_filetime((ULONGLONG)time);
     ft->dwLowDateTime = tmp.LowPart;
     ft->dwHighDateTime = tmp.HighPart;
     return 0;
@@ -7606,7 +7612,7 @@ timespec_to_filetime(const struct timespec *ts, FILETIME *ft)
 {
     ULARGE_INTEGER tmp;
 
-    tmp.QuadPart = ((LONG_LONG)ts->tv_sec + (LONG_LONG)((1970-1601)*365.2425) * 24 * 60 * 60) * 10 * 1000 * 1000;
+    tmp.QuadPart = unix_to_filetime((ULONGLONG)ts->tv_sec);
     tmp.QuadPart += ts->tv_nsec / 100;
     ft->dwLowDateTime = tmp.LowPart;
     ft->dwHighDateTime = tmp.HighPart;
