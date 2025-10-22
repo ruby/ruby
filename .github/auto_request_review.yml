@@ -11,6 +11,7 @@ files:
   'doc/zjit*': [team:jit]
   'test/ruby/test_zjit*': [team:jit]
   'defs/jit.mk': [team:jit]
+  'tool/zjit_bisect.rb': [team:jit]
   # Skip github workflow files because the team don't necessarily need to review dependabot updates for GitHub Actions. It's noisy in notifications, and they're auto-merged anyway.
 options:
   ignore_draft: true
