@@ -438,7 +438,7 @@ impl<'a> JITState<'a> {
     fn flush_perf_symbols(&self, cb: &CodeBlock) {
         assert_eq!(0, self.perf_stack.len());
         let path = format!("/tmp/perf-{}.map", std::process::id());
-        let mut f = std::fs::File::options().create(true).append(true).open(path).unwrap();
+        let mut f = std::io::BufWriter::new(std::fs::File::options().create(true).append(true).open(path).unwrap());
         for sym in self.perf_map.borrow().iter() {
             if let (start, Some(end), name) = sym {
                 // In case the code straddles two pages, part of it belongs to the symbol.
