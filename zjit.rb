@@ -103,9 +103,6 @@ class << RubyVM::ZJIT
     # These values are mandatory to include for stackprof, but we don't use them.
     results[:missed_samples] = 0
     results[:gc_samples] = 0
-
-    results[:frames].reject! { |k, v| v[:samples] == 0 }
-
     results
   end
 
