@@ -153,7 +153,8 @@ class << RubyVM::ZJIT
 
     # Show counters independent from exit_* or dynamic_send_*
     print_counters_with_prefix(prefix: 'not_inlined_cfuncs_', prompt: 'not inlined C methods', buf:, stats:, limit: 20)
-    print_counters_with_prefix(prefix: 'not_annotated_cfuncs_', prompt: 'not annotated C methods', buf:, stats:, limit: 20)
+    # Don't show not_annotated_cfuncs right now because it mostly duplicates not_inlined_cfuncs
+    # print_counters_with_prefix(prefix: 'not_annotated_cfuncs_', prompt: 'not annotated C methods', buf:, stats:, limit: 20)
 
     # Show fallback counters, ordered by the typical amount of fallbacks for the prefix at the time
     print_counters_with_prefix(prefix: 'unspecialized_send_def_type_', prompt: 'not optimized method types for send', buf:, stats:, limit: 20)
