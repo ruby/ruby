@@ -3747,6 +3747,34 @@ CODE
     Warning[:deprecated] = deprecated
   end
 
+  def test_encode_fallback_raise_memory_leak
+    {
+      "hash" => <<~RUBY,
+        fallback = Hash.new { raise }
+      RUBY
+      "proc" => <<~RUBY,
+        fallback = proc { raise }
+      RUBY
+      "method" => <<~RUBY,
+        def my_method = raise
+        fallback = method(:my_method)
+      RUBY
+      "aref" => <<~RUBY,
+        fallback = Object.new
+        def fallback.[] = raise
+      RUBY
+    }.each do |type, code|
+      assert_no_memory_leak([], '', <<~RUBY, "fallback type is #{type}", rss: true)
+        #{code}
+
+        100_000.times do |i|
+          "\\ufffd".encode(Encoding::US_ASCII, fallback:)
+        rescue
+        end
+      RUBY
+    end
+  end
+
   private
 
   def assert_bytesplice_result(expected, s, *args)

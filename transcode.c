@@ -2349,6 +2349,20 @@ aref_fallback(VALUE fallback, VALUE c)
     return rb_funcallv_public(fallback, idAREF, 1, &c);
 }
 
+struct transcode_loop_fallback_args {
+    VALUE (*fallback_func)(VALUE, VALUE);
+    VALUE fallback;
+    VALUE rep;
+};
+
+static VALUE
+transcode_loop_fallback_try(VALUE a)
+{
+    struct transcode_loop_fallback_args *args = (struct transcode_loop_fallback_args *)a;
+
+    return args->fallback_func(args->fallback, args->rep);
+}
+
 static void
 transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                const unsigned char *in_stop, unsigned char *out_stop,
@@ -2398,7 +2412,21 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 (const char *)ec->last_error.error_bytes_start,
                 ec->last_error.error_bytes_len,
                 rb_enc_find(ec->last_error.source_encoding));
-        rep = (*fallback_func)(fallback, rep);
+
+
+        struct transcode_loop_fallback_args args = {
+            .fallback_func = fallback_func,
+            .fallback = fallback,
+            .rep = rep,
+        };
+
+        int state;
+        rep = rb_protect(transcode_loop_fallback_try, (VALUE)&args, &state);
+        if (state) {
+            rb_econv_close(ec);
+            rb_jump_tag(state);
+        }
+
         if (!UNDEF_P(rep) && !NIL_P(rep)) {
             StringValue(rep);
             ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(rep),
