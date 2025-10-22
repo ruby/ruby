@@ -248,7 +248,7 @@ class TestGemRequest < Gem::TestCase
 
     auth_header = conn.payload["Authorization"]
     assert_equal "Basic #{base64_encode64("{DEScede}pass:x-oauth-basic")}".strip, auth_header
-    assert_includes @ui.output, "GET https://REDACTED:x-oauth-basic@example.rubygems/specs.#{Gem.marshal_version}"
+    assert_includes @ui.output, "GET https://REDACTED@example.rubygems/specs.#{Gem.marshal_version}"
   end
 
   def test_fetch_head
