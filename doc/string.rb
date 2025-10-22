@@ -326,6 +326,7 @@
 #   and all escaped characters unescaped.
 # - #sub: Returns a copy of +self+ with the first substring matching a given pattern
 #   replaced with a given replacement string.
+# - #shellescape: Returns a copy of +self+, escaped for the Bourne shell.
 # - #gsub: Returns a copy of +self+ with each substring that matches a given pattern
 #   replaced with a given replacement string.
 # - #succ (aliased as #next): Returns the string that is the successor to +self+.
@@ -384,6 +385,7 @@
 #   a given substring or regexp.
 # - #rpartition: Returns a 3-element array determined by the last substring that matches
 #   a given substring or regexp.
+# - #shellsplit: Returns an array of substrings, split from +self+ as in the Bourne shell.
 # - #split: Returns an array of substrings determined by a given delimiter -- regexp or string --
 #   or, if a block is given, passes those substrings to the block.
 #

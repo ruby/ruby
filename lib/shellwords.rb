@@ -218,23 +218,27 @@ end
 
 class String
   # call-seq:
-  #   str.shellsplit => array
+  #   shellsplit -> array_of_substrings
   #
-  # Splits +str+ into an array of tokens in the same way the UNIX
-  # Bourne shell does.
+  # Convenience method: shorthand for <tt>Shellwords.split(self)</tt>.
   #
-  # See Shellwords.shellsplit for details.
+  # Returns an array of substrings, split from +self+
+  # in the same way the UNIX Bourne shell splits a command line.
+  #
+  # Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
   def shellsplit
     Shellwords.split(self)
   end
 
   # call-seq:
-  #   str.shellescape => string
+  #   shellescape -> new_string
   #
-  # Escapes +str+ so that it can be safely used in a Bourne shell
-  # command line.
+  # Convenience method: shorthand for <tt>Shellwords.escape(self)</tt>.
   #
-  # See Shellwords.shellescape for details.
+  # Returns a copy of +self+, escaped so that it can be used safely
+  # in a Bourne shell command line.
+  #
+  # Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
   def shellescape
     Shellwords.escape(self)
   end
