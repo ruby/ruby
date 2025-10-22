@@ -72,7 +72,31 @@ def run_bisect(command, items)
   bisect_impl(command, [], items)
 end
 
+def add_zjit_options cmd
+  if RUBY == "make"
+    # Automatically detect that we're running a make command instead of a Ruby
+    # one. Pass the bisection options via RUN_OPTS/SPECOPTS instead.
+    zjit_opts = cmd.select { |arg| arg.start_with?("--zjit") }
+    run_opts_index = cmd.find_index { |arg| arg.start_with?("RUN_OPTS=") }
+    specopts_index = cmd.find_index { |arg| arg.start_with?("SPECOPTS=") }
+    if run_opts_index
+      run_opts = Shellwords.split(cmd[run_opts_index].delete_prefix("RUN_OPTS="))
+      run_opts.concat(zjit_opts)
+      cmd[run_opts_index] = "RUN_OPTS=#{run_opts.shelljoin}"
+    elsif specopts_index
+      specopts = Shellwords.split(cmd[specopts_index].delete_prefix("SPECOPTS="))
+      specopts.concat(zjit_opts)
+      cmd[specopts_index] = "SPECOPTS=#{specopts.shelljoin}"
+    else
+      raise "Expected RUN_OPTS or SPECOPTS to be present in make command"
+    end
+    cmd = cmd - zjit_opts
+  end
+  cmd
+end
+
 def run_ruby *cmd
+  cmd = add_zjit_options(cmd)
   pid = Process.spawn(*cmd, {
     in: :close,
     out: [File::NULL, File::RDWR],
@@ -128,7 +152,7 @@ File.open("jitlist.txt", "w") do |file|
   file.puts(result)
 end
 puts "Run:"
-command = [RUBY, "--zjit-allowed-iseqs=jitlist.txt", *OPTIONS].shelljoin
-puts command
+jitlist_path = File.expand_path("jitlist.txt")
+puts add_zjit_options([RUBY, "--zjit-allowed-iseqs=#{jitlist_path}", *OPTIONS]).shelljoin
 puts "Reduced JIT list (available in jitlist.txt):"
 puts result
