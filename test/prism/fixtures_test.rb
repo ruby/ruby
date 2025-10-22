@@ -28,6 +28,12 @@ module Prism
       except << "3.4/circular_parameters.txt"
     end
 
+    # Valid only on Ruby 3.3
+    except << "3.3-3.3/block_args_in_array_assignment.txt"
+    except << "3.3-3.3/it_with_ordinary_parameter.txt"
+    except << "3.3-3.3/keyword_args_in_array_assignment.txt"
+    except << "3.3-3.3/return_in_sclass.txt"
+
     # Leaving these out until they are supported by parse.y.
     except << "3.5/leading_logical.txt"
     except << "3.5/endless_methods_command_call.txt"
