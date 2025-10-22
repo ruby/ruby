@@ -4725,23 +4725,26 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 #include <sys/timeb.h>
 
 /* License: Ruby's */
+typedef union {
+    /* FILETIME and ULARGE_INTEGER::u are the same layout */
+    FILETIME ft;
+    ULARGE_INTEGER i;
+} FILETIME_INTEGER;
+
+/* License: Ruby's */
 /* split FILETIME value into UNIX time and sub-seconds in NT ticks */
 static time_t
 filetime_split(const FILETIME* ft, long *subsec)
 {
-    ULARGE_INTEGER tmp;
-    unsigned LONG_LONG lt;
     const unsigned LONG_LONG subsec_unit = (unsigned LONG_LONG)10 * 1000 * 1000;
-
-    tmp.LowPart = ft->dwLowDateTime;
-    tmp.HighPart = ft->dwHighDateTime;
-    lt = tmp.QuadPart;
+    FILETIME_INTEGER fi = {.ft = *ft};
+    ULONGLONG lt = fi.i.QuadPart;
 
     /* lt is now 100-nanosec intervals since 1601/01/01 00:00:00 UTC,
        convert it into UNIX time (since 1970/01/01 00:00:00 UTC).
        the first leap second is at 1972/06/30, so we doesn't need to think
        about it. */
-    lt -= (LONG_LONG)((1970-1601)*365.2425) * 24 * 60 * 60 * subsec_unit;
+    lt -= (ULONGLONG)((1970-1601)*365.2425) * 24 * 60 * 60 * subsec_unit;
 
     *subsec = (long)(lt % subsec_unit);
     return (time_t)(lt / subsec_unit);
@@ -4762,15 +4765,6 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
 }
 
 /* License: Ruby's */
-static FILETIME
-filetimes_plus(FILETIME t1, FILETIME t2)
-{
-    ULARGE_INTEGER i1 = {.u = {.LowPart = t1.dwLowDateTime, .HighPart = t1.dwHighDateTime}};
-    ULARGE_INTEGER i2 = {.u = {.LowPart = t2.dwLowDateTime, .HighPart = t2.dwHighDateTime}};
-    ULARGE_INTEGER i = {.QuadPart = i1.QuadPart + i2.QuadPart};
-    return (FILETIME){.dwLowDateTime = i.LowPart, .dwHighDateTime = i.HighPart};
-}
-
 static void
 filetime_to_timespec(FILETIME ft, struct timespec *sp)
 {
@@ -4800,11 +4794,11 @@ clock_gettime(clockid_t clock_id, struct timespec *sp)
         {
             LARGE_INTEGER freq;
             LARGE_INTEGER count;
-            if (!QueryPerformanceFrequency(&freq)) {
+            if (UNLIKELY(!QueryPerformanceFrequency(&freq))) {
                 errno = map_errno(GetLastError());
                 return -1;
             }
-            if (!QueryPerformanceCounter(&count)) {
+            if (UNLIKELY(!QueryPerformanceCounter(&count))) {
                 errno = map_errno(GetLastError());
                 return -1;
             }
@@ -4818,19 +4812,20 @@ clock_gettime(clockid_t clock_id, struct timespec *sp)
       case CLOCK_PROCESS_CPUTIME_ID:
       case CLOCK_THREAD_CPUTIME_ID:
         {
-            FILETIME ct, et, kt, ut;
+            FILETIME_INTEGER c, e, k, u, total;
             BOOL ok;
             if (clock_id == CLOCK_PROCESS_CPUTIME_ID) {
-                ok = GetProcessTimes(GetCurrentProcess(), &ct, &et, &kt, &ut);
+                ok = GetProcessTimes(GetCurrentProcess(), &c.ft, &e.ft, &k.ft, &u.ft);
             }
             else {
-                ok = GetThreadTimes(GetCurrentThread(), &ct, &et, &kt, &ut);
+                ok = GetThreadTimes(GetCurrentThread(), &c.ft, &e.ft, &k.ft, &u.ft);
             }
-            if (!ok) {
+            if (UNLIKELY(!ok)) {
                 errno = map_errno(GetLastError());
                 return -1;
             }
-            filetime_to_timespec(filetimes_plus(kt, ut), sp);
+            total.i.QuadPart = k.i.QuadPart + u.i.QuadPart;
+            filetime_to_timespec(total.ft, sp);
             return 0;
         }
       default:
