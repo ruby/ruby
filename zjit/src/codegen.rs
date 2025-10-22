@@ -156,10 +156,11 @@ fn gen_iseq_call(cb: &mut CodeBlock, caller_iseq: IseqPtr, iseq_call: &IseqCallR
 fn register_with_perf(iseq_name: String, start_ptr: usize, code_size: usize) {
     use std::io::Write;
     let perf_map = format!("/tmp/perf-{}.map", std::process::id());
-    let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(&perf_map) else {
+    let Ok(file) = std::fs::OpenOptions::new().create(true).append(true).open(&perf_map) else {
         debug!("Failed to open perf map file: {perf_map}");
         return;
     };
+    let mut file = std::io::BufWriter::new(file);
     let Ok(_) = writeln!(file, "{:#x} {:#x} zjit::{}", start_ptr, code_size, iseq_name) else {
         debug!("Failed to write {iseq_name} to perf map file: {perf_map}");
         return;
