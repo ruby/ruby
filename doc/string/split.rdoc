@@ -1,99 +1,103 @@
-Returns an array of substrings of +self+
-that are the result of splitting +self+
+Creates an array of substrings by splitting +self+
 at each occurrence of the given field separator +field_sep+.
 
-When +field_sep+ is <tt>$;</tt>:
+With no arguments given,
+splits using the field separator <tt>$;</tt>,
+whose default value is +nil+.
 
-- If <tt>$;</tt> is +nil+ (its default value),
-  the split occurs just as if +field_sep+ were given as a space character
-  (see below).
+With no block given, returns the array of substrings:
 
-- If <tt>$;</tt> is a string,
-  the split occurs just as if +field_sep+ were given as that string
-  (see below).
+  'abracadabra'.split('a') # => ["", "br", "c", "d", "br"]
 
-When +field_sep+ is <tt>' '</tt> and +limit+ is +0+ (its default value),
-the split occurs at each sequence of whitespace:
+When +field_sep+ is +nil+ or <tt>' '</tt> (a single space),
+splits at each sequence of whitespace:
 
-  'abc def ghi'.split(' ')          # => ["abc", "def", "ghi"]
-  "abc \n\tdef\t\n  ghi".split(' ') # => ["abc", "def", "ghi"]
-  'abc  def   ghi'.split(' ')       # => ["abc", "def", "ghi"]
+  'foo bar baz'.split(nil)          # => ["foo", "bar", "baz"]
+  'foo bar baz'.split(' ')          # => ["foo", "bar", "baz"]
+  "foo \n\tbar\t\n  baz".split(' ') # => ["foo", "bar", "baz"]
+  'foo  bar   baz'.split(' ')       # => ["foo", "bar", "baz"]
   ''.split(' ')                     # => []
 
-When +field_sep+ is a string different from <tt>' '</tt>
-and +limit+ is +0+,
-the split occurs at each occurrence of +field_sep+;
-trailing empty substrings are not returned:
+When +field_sep+ is an empty string,
+splits at every character:
 
-  'abracadabra'.split('ab')   # => ["", "racad", "ra"]
-  'aaabcdaaa'.split('a')      # => ["", "", "", "bcd"]
-  ''.split('a')               # => []
-  '3.14159'.split('1')        # => ["3.", "4", "59"]
-  '!@#$%^$&*($)_+'.split('$') # => ["!@#", "%^", "&*(", ")_+"]
-  'тест'.split('т')           # => ["", "ес"]
-  'こんにちは'.split('に')      # => ["こん", "ちは"]
+  'abracadabra'.split('') # => ["a", "b", "r", "a", "c", "a", "d", "a", "b", "r", "a"]
+  ''.split('')            # => []
+  'тест'.split('')        # => ["т", "е", "с", "т"]
+  'こんにちは'.split('')   # => ["こ", "ん", "に", "ち", "は"]
 
-When +field_sep+ is a Regexp and +limit+ is +0+,
-the split occurs at each occurrence of a match;
-trailing empty substrings are not returned:
+When +field_sep+ is a non-empty string and different from <tt>' '</tt> (a single space),
+uses that string as the separator:
+
+  'abracadabra'.split('a')  # => ["", "br", "c", "d", "br"]
+  'abracadabra'.split('ab') # => ["", "racad", "ra"]
+  ''.split('a')             # => []
+  'тест'.split('т')         # => ["", "ес"]
+  'こんにちは'.split('に')    # => ["こん", "ちは"]
+
+When +field_sep+ is a Regexp,
+splits at each occurrence of a matching substring:
 
   'abracadabra'.split(/ab/) # => ["", "racad", "ra"]
-  'aaabcdaaa'.split(/a/)    # => ["", "", "", "bcd"]
-  'aaabcdaaa'.split(//)     # => ["a", "a", "a", "b", "c", "d", "a", "a", "a"]
   '1 + 1 == 2'.split(/\W+/) # => ["1", "1", "2"]
+  'abracadabra'.split(//)   # => ["a", "b", "r", "a", "c", "a", "d", "a", "b", "r", "a"]
 
-If the \Regexp contains groups, their matches are also included
+If the \Regexp contains groups, their matches are included
 in the returned array:
 
   '1:2:3'.split(/(:)()()/, 2) # => ["1", ":", "", "", "2:3"]
 
-As seen above, if +limit+ is +0+,
-trailing empty substrings are not returned:
+Argument +limit+ sets a limit on the size of the returned array;
+it also determines whether trailing empty strings are included in the returned array.
 
-  'aaabcdaaa'.split('a')    # => ["", "", "", "bcd"]
+When +limit+ is zero,
+there is no limit on the size of the array,
+but trailing empty strings are omitted:
 
-If +limit+ is positive integer +n+, no more than <tt>n - 1-</tt>
-splits occur, so that at most +n+ substrings are returned,
-and trailing empty substrings are included:
+  'abracadabra'.split('', 0)  # => ["a", "b", "r", "a", "c", "a", "d", "a", "b", "r", "a"]
+  'abracadabra'.split('a', 0) # => ["", "br", "c", "d", "br"]  # Empty string after last 'a' omitted.
 
-  'aaabcdaaa'.split('a', 1) # => ["aaabcdaaa"]
-  'aaabcdaaa'.split('a', 2) # => ["", "aabcdaaa"]
-  'aaabcdaaa'.split('a', 5) # => ["", "", "", "bcd", "aa"]
-  'aaabcdaaa'.split('a', 7) # => ["", "", "", "bcd", "", "", ""]
-  'aaabcdaaa'.split('a', 8) # => ["", "", "", "bcd", "", "", ""]
+When +limit+ is a positive integer,
+there is a limit on the size of the array (no more than <tt>n - 1</tt> splits occur),
+and trailing empty strings are included:
 
-Note that if +field_sep+ is a \Regexp containing groups,
-their matches are in the returned array, but do not count toward the limit.
+  'abracadabra'.split('', 3)   # => ["a", "b", "racadabra"]
+  'abracadabra'.split('a', 3)  # => ["", "br", "cadabra"]
+  'abracadabra'.split('', 30)  # => ["a", "b", "r", "a", "c", "a", "d", "a", "b", "r", "a", ""]
+  'abracadabra'.split('a', 30) # => ["", "br", "c", "d", "br", ""]
+  'abracadabra'.split('', 1)   # => ["abracadabra"]
+  'abracadabra'.split('a', 1)  # => ["abracadabra"]
 
-If +limit+ is negative, it behaves the same as if +limit+ was zero,
-meaning that there is no limit,
-and trailing empty substrings are included:
+When +limit+ is negative,
+there is no limit on the size of the array,
+and trailing empty strings are omitted:
 
-  'aaabcdaaa'.split('a', -1) # => ["", "", "", "bcd", "", "", ""]
+  'abracadabra'.split('', -1)  # => ["a", "b", "r", "a", "c", "a", "d", "a", "b", "r", "a", ""]
+  'abracadabra'.split('a', -1) # => ["", "br", "c", "d", "br", ""]
 
 If a block is given, it is called with each substring and returns +self+:
 
-  'abc def ghi'.split(' ') {|substring| p substring }
+  'foo bar baz'.split(' ') {|substring| p substring }
 
-Output:
+Output :
 
-  "abc"
-  "def"
-  "ghi"
-  => "abc def ghi"
+  "foo"
+  "bar"
+  "baz"
 
-Note that the above example is functionally the same as calling +#each+ after
-+#split+ and giving the same block. However, the above example has better
-performance because it avoids the creation of an intermediate array. Also,
-note the different return values.
+Note that the above example is functionally equivalent to:
 
-  'abc def ghi'.split(' ').each {|substring| p substring }
+   'foo bar baz'.split(' ').each {|substring| p substring }
 
-Output:
+Output :
 
-  "abc"
-  "def"
-  "ghi"
-  => ["abc", "def", "ghi"]
+  "foo"
+  "bar"
+  "baz"
 
-Related: String#partition, String#rpartition.
+But the latter:
+
+- Has poorer performance because it creates an intermediate array.
+- Returns an array (instead of +self+).
+
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
