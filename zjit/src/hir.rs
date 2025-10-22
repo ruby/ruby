@@ -12323,14 +12323,15 @@ mod opt_tests {
           PatchPoint MethodRedefined(Object@0x1000, zero@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Object@0x1000)
           v22:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v23:BasicObject = SendWithoutBlockDirect v22, :zero (0x1038)
+          IncrCounter inline_iseq_optimized_send_count
+          v30:StaticSymbol[:b] = Const Value(VALUE(0x1038))
           PatchPoint SingleRactorMode
           PatchPoint MethodRedefined(Object@0x1000, one@0x1040, cme:0x1048)
           PatchPoint NoSingletonClass(Object@0x1000)
           v27:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
-          v28:BasicObject = SendWithoutBlockDirect v27, :one (0x1038), v23
+          IncrCounter inline_iseq_optimized_send_count
           CheckInterrupts
-          Return v28
+          Return v30
         ");
     }
 
@@ -12408,9 +12409,9 @@ mod opt_tests {
           v12:Fixnum[100] = Const Value(100)
           PatchPoint MethodRedefined(Class@0x1010, identity@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(Class@0x1010)
-          v25:BasicObject = SendWithoutBlockDirect v22, :identity (0x1048), v12
+          IncrCounter inline_iseq_optimized_send_count
           CheckInterrupts
-          Return v25
+          Return v12
         ");
     }
 
