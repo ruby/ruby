@@ -1826,6 +1826,8 @@ fn param_opnd(idx: usize) -> Opnd {
     if idx < ALLOC_REGS.len() {
         Opnd::Reg(ALLOC_REGS[idx])
     } else {
+        // With FrameSetup, the address that NATIVE_BASE_PTR points to stores an old value in the register.
+        // To avoid clobbering it, we need to start from the next slot, hence `+ 1` for the index.
         Opnd::mem(64, NATIVE_BASE_PTR, (idx - ALLOC_REGS.len() + 1) as i32 * -SIZEOF_VALUE_I32)
     }
 }

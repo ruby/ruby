@@ -103,7 +103,7 @@ const SCRATCH_OPND: Opnd = Opnd::Reg(R11_REG);
 impl Assembler {
     /// Return an Assembler with scratch registers disabled in the backend, and a scratch register.
     pub fn new_with_scratch_reg() -> (Self, Opnd) {
-        (Self::new_with_label_names(Vec::default(), 0, true), SCRATCH_OPND)
+        (Self::new_with_label_names(Vec::default(), 0, true, 0), SCRATCH_OPND)
     }
 
     /// Return true if opnd contains a scratch reg
@@ -140,7 +140,7 @@ impl Assembler {
     {
         let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
         let mut iterator = self.insns.into_iter().enumerate().peekable();
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), live_ranges.len(), self.accept_scratch_reg);
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), live_ranges.len(), self.accept_scratch_reg, self.stack_base_idx);
 
         while let Some((index, mut insn)) = iterator.next() {
             let is_load = matches!(insn, Insn::Load { .. } | Insn::LoadInto { .. });
@@ -424,7 +424,7 @@ impl Assembler {
         let stack_allocator = StackAllocator::new(self.stack_base_idx);
 
         let mut iterator = self.insns.into_iter().enumerate().peekable();
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.live_ranges.len(), true);
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.live_ranges.len(), true, self.stack_base_idx);
 
         while let Some((_, mut insn)) = iterator.next() {
             match &mut insn {
