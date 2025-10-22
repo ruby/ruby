@@ -84,7 +84,7 @@ def run_ruby *cmd
       run_opts.concat(zjit_opts)
       cmd[run_opts_index] = "RUN_OPTS=#{run_opts.shelljoin}"
     elsif specopts_index
-      specopts = Shellwords.split(cmd[specopts_index].sub("RUN_OPTS=", ""))
+      specopts = Shellwords.split(cmd[specopts_index].sub("SPECOPTS=", ""))
       specopts.concat(zjit_opts)
       cmd[specopts_index] = "SPECOPTS=#{specopts.shelljoin}"
     else
