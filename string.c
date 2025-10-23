@@ -8903,8 +8903,12 @@ rb_str_delete(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    squeeze!(*selectors) -> self or nil
  *
- *  Like String#squeeze, but modifies +self+ in place.
- *  Returns +self+ if any changes were made, +nil+ otherwise.
+ *  Like String#squeeze, except that:
+ *
+ *  - Characters are squeezed in +self+ (not in a copy of +self+).
+ *  - Returns +self+ if any changes are made, +nil+ otherwise.
+ *
+ *  Related: See {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
