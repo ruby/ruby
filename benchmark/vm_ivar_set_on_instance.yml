@@ -91,4 +91,4 @@ benchmark:
     gen_obj.set_value_loop
   vm_ivar_set_on_class: |
     SomeClass.set_value_loop
-loop_count: 100
+loop_count: 1000
