@@ -86,7 +86,7 @@ impl CodePtr {
 
     /// Get the address of the code pointer.
     pub fn raw_addr(self, base: &impl CodePtrBase) -> usize {
-        self.raw_ptr(base) as usize
+        self.raw_ptr(base).addr()
     }
 
     /// Get the offset component for the code pointer. Useful finding the distance between two
