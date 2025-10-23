@@ -426,6 +426,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GetLocal { ep_offset, level, use_sp, .. } => gen_getlocal(asm, ep_offset, level, use_sp),
         &Insn::SetLocal { val, ep_offset, level } => no_output!(gen_setlocal(asm, opnd!(val), function.type_of(val), ep_offset, level)),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, *ic, &function.frame_state(*state)),
+        Insn::GetClassVar { id, ic, state } => gen_getclassvar(jit, asm, *id, *ic, &function.frame_state(*state)),
+        Insn::SetClassVar { id, val, ic, state } => no_output!(gen_setclassvar(jit, asm, *id, opnd!(val), *ic, &function.frame_state(*state))),
         Insn::SetIvar { self_val, id, val, state } => no_output!(gen_setivar(jit, asm, opnd!(self_val), *id, opnd!(val), &function.frame_state(*state))),
         Insn::SideExit { state, reason } => no_output!(gen_side_exit(jit, asm, reason, &function.frame_state(*state))),
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
@@ -830,6 +832,20 @@ fn gen_setivar(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, id: ID, val:
     // Setting an ivar can raise FrozenError, so we need proper frame state for exception handling.
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_ccall!(asm, rb_ivar_set, recv, id.0.into(), val);
+}
+
+fn gen_getclassvar(jit: &mut JITState, asm: &mut Assembler, id: ID, ic: *const iseq_inline_cvar_cache_entry, state: &FrameState) -> Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    let iseq = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ));
+    asm_ccall!(asm, rb_vm_getclassvariable, iseq, CFP, id.0.into(), Opnd::const_ptr(ic))
+}
+
+fn gen_setclassvar(jit: &mut JITState, asm: &mut Assembler, id: ID, val: Opnd, ic: *const iseq_inline_cvar_cache_entry, state: &FrameState) {
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    let iseq = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ));
+    asm_ccall!(asm, rb_vm_setclassvariable, iseq, CFP, id.0.into(), val, Opnd::const_ptr(ic));
 }
 
 /// Look up global variables
