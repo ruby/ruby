@@ -497,8 +497,9 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
             rb_raise(rb_eArgError, "ASCII incompatible encoding (%s)",
                  rb_enc_name(enc));
         }
-        name = rb_str_new_frozen(name);
+        name = RB_OBJ_SET_SHAREABLE(rb_str_new_frozen(name));
     }
+
     if (!SPECIAL_CONST_P(loc)) RB_OBJ_SET_SHAREABLE(loc);
     r->loc = loc;
     r->name = name;
