@@ -69,7 +69,7 @@ jobs:
             test-all-opts: '--name=!/TestObjSpace#test_reachable_objects_during_iteration/'
           - msystem: 'CLANGARM64'
             os: 11-arm
-            test_task: 'test'
+            test_task: 'check'
       fail-fast: false
 
     if: >-
