@@ -10472,10 +10472,12 @@ rb_str_rstrip(VALUE str)
  *  call-seq:
  *    strip! -> self or nil
  *
- *  Like String#strip, except that any modifications are made in +self+;
- *  returns +self+ if any modification are made, +nil+ otherwise.
+ *  Like String#strip, except that:
  *
- *  Related: String#lstrip!, String#strip!.
+ *  - Any modifications are made to +self+.
+ *  - Returns +self+ if any modification are made, +nil+ otherwise.
+ *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
