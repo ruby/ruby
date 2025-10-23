@@ -203,6 +203,8 @@ pub fn init() -> Annotations {
     annotate!(rb_cArray, "reverse", types::ArrayExact, leaf, elidable);
     annotate!(rb_cArray, "join", types::StringExact);
     annotate!(rb_cArray, "[]", inline_array_aref);
+    annotate!(rb_cArray, "<<", inline_array_push);
+    annotate!(rb_cArray, "push", inline_array_push);
     annotate!(rb_cHash, "[]", inline_hash_aref);
     annotate!(rb_cHash, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
@@ -262,6 +264,15 @@ fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             let result = fun.push_insn(block, hir::Insn::ArrayArefFixnum { array: recv, index });
             return Some(result);
         }
+    }
+    None
+}
+
+fn inline_array_push(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    // Inline only the case of `<<` or `push` when called with a single argument.
+    if let &[val] = args {
+        let _ = fun.push_insn(block, hir::Insn::ArrayPush { array: recv, val, state });
+        return Some(recv);
     }
     None
 }
