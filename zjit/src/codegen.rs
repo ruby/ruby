@@ -506,12 +506,9 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
 
 fn gen_objtostring(jit: &mut JITState, asm: &mut Assembler, val: Opnd, cd: *const rb_call_data, state: &FrameState) -> Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
-
-    let iseq_opnd = Opnd::Value(jit.iseq.into());
-
     // TODO: Specialize for immediate types
     // Call rb_vm_objtostring(iseq, recv, cd)
-    let ret = asm_ccall!(asm, rb_vm_objtostring, iseq_opnd, val, (cd as usize).into());
+    let ret = asm_ccall!(asm, rb_vm_objtostring, VALUE(jit.iseq as usize).into(), val, (cd as usize).into());
 
     // TODO: Call `to_s` on the receiver if rb_vm_objtostring returns Qundef
     // Need to replicate what CALL_SIMPLE_METHOD does
@@ -836,16 +833,12 @@ fn gen_setivar(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, id: ID, val:
 
 fn gen_getclassvar(jit: &mut JITState, asm: &mut Assembler, id: ID, ic: *const iseq_inline_cvar_cache_entry, state: &FrameState) -> Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
-
-    let iseq = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ));
-    asm_ccall!(asm, rb_vm_getclassvariable, iseq, CFP, id.0.into(), Opnd::const_ptr(ic))
+    asm_ccall!(asm, rb_vm_getclassvariable, VALUE(jit.iseq as usize).into(), CFP, id.0.into(), Opnd::const_ptr(ic))
 }
 
 fn gen_setclassvar(jit: &mut JITState, asm: &mut Assembler, id: ID, val: Opnd, ic: *const iseq_inline_cvar_cache_entry, state: &FrameState) {
     gen_prepare_non_leaf_call(jit, asm, state);
-
-    let iseq = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ));
-    asm_ccall!(asm, rb_vm_setclassvariable, iseq, CFP, id.0.into(), val, Opnd::const_ptr(ic));
+    asm_ccall!(asm, rb_vm_setclassvariable, VALUE(jit.iseq as usize).into(), CFP, id.0.into(), val, Opnd::const_ptr(ic));
 }
 
 /// Look up global variables
