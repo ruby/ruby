@@ -370,23 +370,20 @@ strio_finalize(VALUE self)
 
 /*
  * call-seq:
- *   StringIO.open(string = '', mode = 'r+') {|strio| ... }
+ *   StringIO.open(string = '', mode = 'r+') -> new_stringio
+ *   StringIO.open(string = '', mode = 'r+') {|strio| ... } -> object
  *
- * Note that +mode+ defaults to <tt>'r'</tt> if +string+ is frozen.
+ * Creates new \StringIO instance by calling <tt>StringIO.new(string, mode)</tt>.
  *
- * Creates a new \StringIO instance formed from +string+ and +mode+;
- * see {Access Modes}[rdoc-ref:File@Access+Modes].
- *
- * With no block, returns the new instance:
+ * With no block given, returns the new instance:
  *
  *   strio = StringIO.open # => #<StringIO>
  *
- * With a block, calls the block with the new instance
+ * With a block given, calls the block with the new instance
  * and returns the block's value;
- * closes the instance on block exit.
+ * closes the instance on block exit:
  *
- *   StringIO.open {|strio| p strio }
- *   # => #<StringIO>
+ *   StringIO.open('foo') {|strio| strio.string.upcase } # => "FOO"
  *
  * Related: StringIO.new.
  */
