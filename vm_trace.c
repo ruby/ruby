@@ -74,11 +74,15 @@ rb_hook_list_mark(rb_hook_list_t *hooks)
 void
 rb_hook_list_mark_and_move(rb_hook_list_t *hooks)
 {
-    rb_event_hook_t *hook = hooks->hooks;
+    if (!rb_gc_checking_shareable()) {
+        // hooks can be unshareable
 
-    while (hook) {
-        rb_gc_mark_and_move(&hook->data);
-        hook = hook->next;
+        rb_event_hook_t *hook = hooks->hooks;
+
+        while (hook) {
+            rb_gc_mark_and_move(&hook->data);
+            hook = hook->next;
+        }
     }
 }
 
