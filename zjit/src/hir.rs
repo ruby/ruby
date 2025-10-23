@@ -1873,7 +1873,7 @@ impl Function {
     /// Set self.param_types. They are copied to the param types of jit_entry_blocks.
     fn set_param_types(&mut self) {
         let iseq = self.iseq;
-        let param_size = unsafe { get_iseq_body_param_size(iseq) }.as_usize();
+        let param_size = unsafe { get_iseq_body_param_size(iseq) }.to_usize();
         let rest_param_idx = iseq_rest_param_idx(iseq);
 
         self.param_types.push(types::BasicObject); // self
@@ -3885,7 +3885,7 @@ pub enum ParseError {
 
 /// Return the number of locals in the current ISEQ (includes parameters)
 fn num_locals(iseq: *const rb_iseq_t) -> usize {
-    (unsafe { get_iseq_body_local_table_size(iseq) }).as_usize()
+    (unsafe { get_iseq_body_local_table_size(iseq) }).to_usize()
 }
 
 /// If we can't handle the type of send (yet), bail out.
@@ -4896,7 +4896,7 @@ fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32]) {
 /// Compile initial locals for an entry_block for the interpreter
 fn compile_entry_state(fun: &mut Function, entry_block: BlockId) -> (InsnId, FrameState) {
     let iseq = fun.iseq;
-    let param_size = unsafe { get_iseq_body_param_size(iseq) }.as_usize();
+    let param_size = unsafe { get_iseq_body_param_size(iseq) }.to_usize();
     let rest_param_idx = iseq_rest_param_idx(iseq);
 
     let self_param = fun.push_insn(entry_block, Insn::LoadSelf);
@@ -4929,7 +4929,7 @@ fn compile_jit_entry_block(fun: &mut Function, jit_entry_idx: usize, target_bloc
 /// Compile params and initial locals for a jit_entry_block
 fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId) -> (InsnId, FrameState) {
     let iseq = fun.iseq;
-    let param_size = unsafe { get_iseq_body_param_size(iseq) }.as_usize();
+    let param_size = unsafe { get_iseq_body_param_size(iseq) }.to_usize();
 
     let self_param = fun.push_insn(jit_entry_block, Insn::Param);
     let mut entry_state = FrameState::new(iseq);
