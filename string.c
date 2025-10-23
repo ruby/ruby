@@ -6361,13 +6361,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *    sub(pattern, replacement)   -> new_string
  *    sub(pattern) {|match| ... } -> new_string
  *
- *  Returns a copy of +self+ with only the first occurrence
- *  (not all occurrences) of the given +pattern+ replaced.
- *
- *  See {Substitution Methods}[rdoc-ref:String@Substitution+Methods].
- *
- *  Related: String#sub!, String#gsub, String#gsub!.
- *
+ *  :include: doc/string/sub.rdoc
  */
 
 static VALUE
