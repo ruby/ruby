@@ -209,9 +209,6 @@ ractor_mark(void *ptr)
     rb_ractor_t *r = (rb_ractor_t *)ptr;
     bool checking_shareable = rb_gc_checking_shareable();
 
-    // mark received messages
-    ractor_sync_mark(r);
-
     rb_gc_mark(r->loc);
     rb_gc_mark(r->name);
 
@@ -222,6 +219,9 @@ ractor_mark(void *ptr)
         rb_gc_mark(r->r_stderr);
         rb_gc_mark(r->verbose);
         rb_gc_mark(r->debug);
+
+        // mark received messages
+        ractor_sync_mark(r);
 
         rb_hook_list_mark(&r->pub.hooks);
 
