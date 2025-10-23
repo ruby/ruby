@@ -736,7 +736,7 @@ fn gen_ccall_with_frame(
     });
 
     asm_comment!(asm, "switch to new SP register");
-    let sp_offset = (caller_stack_size + VM_ENV_DATA_SIZE.as_usize()) * SIZEOF_VALUE;
+    let sp_offset = (caller_stack_size + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
     let new_sp = asm.add(SP, sp_offset.into());
     asm.mov(SP, new_sp);
 
@@ -792,7 +792,7 @@ fn gen_ccall_variadic(
     });
 
     asm_comment!(asm, "switch to new SP register");
-    let sp_offset = (state.stack().len() - args.len() + VM_ENV_DATA_SIZE.as_usize()) * SIZEOF_VALUE;
+    let sp_offset = (state.stack().len() - args.len() + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
     let new_sp = asm.add(SP, sp_offset.into());
     asm.mov(SP, new_sp);
 
@@ -975,7 +975,7 @@ fn gen_load_ivar_embedded(asm: &mut Assembler, self_val: Opnd, id: ID, index: u1
     // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
 
     asm_comment!(asm, "Load embedded ivar id={} index={}", id.contents_lossy(), index);
-    let offs = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * index.as_usize()) as i32;
+    let offs = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * index.to_usize()) as i32;
     let self_val = asm.load(self_val);
     let ivar_opnd = Opnd::mem(64, self_val, offs);
     asm.load(ivar_opnd)
@@ -990,7 +990,7 @@ fn gen_load_ivar_extended(asm: &mut Assembler, self_val: Opnd, id: ID, index: u1
     let tbl_opnd = asm.load(Opnd::mem(64, self_val, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
 
     // Read the ivar from the extended table
-    let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * index.as_usize()) as i32);
+    let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * index.to_usize()) as i32);
     asm.load(ivar_opnd)
 }
 
@@ -1174,8 +1174,8 @@ fn gen_send_without_block_direct(
 ) -> lir::Opnd {
     gen_incr_counter(asm, Counter::iseq_optimized_send_count);
 
-    let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.as_usize();
-    let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.as_usize();
+    let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize();
+    let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.to_usize();
     gen_stack_overflow_check(jit, asm, state, stack_growth);
 
     // Save cfp->pc and cfp->sp for the caller frame
@@ -1211,7 +1211,7 @@ fn gen_send_without_block_direct(
     });
 
     asm_comment!(asm, "switch to new SP register");
-    let sp_offset = (state.stack().len() + local_size - args.len() + VM_ENV_DATA_SIZE.as_usize()) * SIZEOF_VALUE;
+    let sp_offset = (state.stack().len() + local_size - args.len() + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
     let new_sp = asm.add(SP, sp_offset.into());
     asm.mov(SP, new_sp);
 
@@ -1889,7 +1889,7 @@ fn param_opnd(idx: usize) -> Opnd {
 /// Inverse of ep_offset_to_local_idx(). See ep_offset_to_local_idx() for details.
 pub fn local_idx_to_ep_offset(iseq: IseqPtr, local_idx: usize) -> i32 {
     let local_size = unsafe { get_iseq_body_local_table_size(iseq) };
-    local_size_and_idx_to_ep_offset(local_size.as_usize(), local_idx)
+    local_size_and_idx_to_ep_offset(local_size.to_usize(), local_idx)
 }
 
 /// Convert the number of locals and a local index to an offset from the EP
@@ -2005,8 +2005,8 @@ c_callable! {
                     rb_set_cfp_sp(cfp, sp);
 
                     // Fill nils to uninitialized (non-argument) locals
-                    let local_size = get_iseq_body_local_table_size(iseq).as_usize();
-                    let num_params = get_iseq_body_param_size(iseq).as_usize();
+                    let local_size = get_iseq_body_local_table_size(iseq).to_usize();
+                    let num_params = get_iseq_body_param_size(iseq).to_usize();
                     let base = sp.offset(-local_size_and_idx_to_bp_offset(local_size, num_params) as isize);
                     slice::from_raw_parts_mut(base, local_size - num_params).fill(Qnil);
                 }

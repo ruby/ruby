@@ -16,19 +16,19 @@
 /// the method `into()` also causes a name conflict.
 pub(crate) trait IntoUsize {
     /// Convert to usize. Implementation conditional on width of [usize].
-    fn as_usize(self) -> usize;
+    fn to_usize(self) -> usize;
 }
 
 #[cfg(target_pointer_width = "64")]
 impl IntoUsize for u64 {
-    fn as_usize(self) -> usize {
+    fn to_usize(self) -> usize {
         self as usize
     }
 }
 
 #[cfg(target_pointer_width = "64")]
 impl IntoUsize for u32 {
-    fn as_usize(self) -> usize {
+    fn to_usize(self) -> usize {
         self as usize
     }
 }
@@ -36,7 +36,7 @@ impl IntoUsize for u32 {
 impl IntoUsize for u16 {
     /// Alias for `.into()`. For convenience so you could use the trait for
     /// all unsgined types.
-    fn as_usize(self) -> usize {
+    fn to_usize(self) -> usize {
         self.into()
     }
 }
@@ -44,7 +44,7 @@ impl IntoUsize for u16 {
 impl IntoUsize for u8 {
     /// Alias for `.into()`. For convenience so you could use the trait for
     /// all unsgined types.
-    fn as_usize(self) -> usize {
+    fn to_usize(self) -> usize {
         self.into()
     }
 }
