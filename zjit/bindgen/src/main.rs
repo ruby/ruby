@@ -124,6 +124,7 @@ fn main() {
         .allowlist_function("rb_ary_clear")
         .allowlist_function("rb_ary_dup")
         .allowlist_function("rb_ary_push")
+        .allowlist_function("rb_ary_pop")
         .allowlist_function("rb_ary_unshift_m")
         .allowlist_function("rb_ec_ary_new_from_values")
         .allowlist_function("rb_ary_tmp_new_from_values")
