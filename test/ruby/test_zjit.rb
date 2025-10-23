@@ -1675,6 +1675,20 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_getclassvariable_raises
+    assert_compiles '"uninitialized class variable @@x in Foo"', %q{
+      class Foo
+        def self.test = @@x
+      end
+
+      begin
+        Foo.test
+      rescue NameError => e
+        e.message
+      end
+    }
+  end
+
   def test_setclassvariable
     assert_compiles '42', %q{
       class Foo
@@ -1683,6 +1697,21 @@ class TestZJIT < Test::Unit::TestCase
 
       Foo.test()
       Foo.class_variable_get(:@@x)
+    }
+  end
+
+  def test_setclassvariable_raises
+    assert_compiles '"can\'t modify frozen #<Class:Foo>: Foo"', %q{
+      class Foo
+        def self.test = @@x = 42
+        freeze
+      end
+
+      begin
+        Foo.test
+      rescue FrozenError => e
+        e.message
+      end
     }
   end
 
