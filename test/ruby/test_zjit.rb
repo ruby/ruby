@@ -1191,6 +1191,27 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2, insns: [:opt_aref]
   end
 
+  def test_empty_array_pop
+    assert_compiles 'nil', %q{
+      def test(arr) = arr.pop
+      test([])
+    }, call_threshold: 2
+  end
+
+  def test_array_pop_no_arg
+    assert_compiles '42', %q{
+      def test(arr) = arr.pop
+      test([32, 33, 42])
+    }, call_threshold: 2
+  end
+
+  def test_array_pop_arg
+    assert_compiles '[33, 42]', %q{
+      def test(arr) = arr.pop(2)
+      test([32, 33, 42])
+    }, call_threshold: 2
+  end
+
   def test_new_range_inclusive
     assert_compiles '1..5', %q{
       def test(a, b) = a..b

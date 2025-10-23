@@ -212,6 +212,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cArray, "[]", inline_array_aref);
     annotate!(rb_cArray, "<<", inline_array_push);
     annotate!(rb_cArray, "push", inline_array_push);
+    annotate!(rb_cArray, "pop", inline_array_pop);
     annotate!(rb_cHash, "[]", inline_hash_aref);
     annotate!(rb_cHash, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
@@ -285,6 +286,12 @@ fn inline_array_push(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
         return Some(recv);
     }
     None
+}
+
+fn inline_array_pop(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    // Only inline the case of no arguments.
+    let &[] = args else { return None; };
+    Some(fun.push_insn(block, hir::Insn::ArrayPop { array: recv, state }))
 }
 
 fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
