@@ -1,0 +1,33 @@
+Returns a copy of self, possibly with a substring replaced.
+
+Argument +pattern+ may be a string or a Regexp;
+argument +replacement+ may be a string or a Hash.
+
+Varying types for the argument values makes this method very versatile.
+
+Below are some simple examples; for many more examples,
+see {Substitution Methods}[rdoc-ref:String@Substitution+Methods].
+
+With arguments +pattern+ and string +replacement+ given,
+replaces the first matching substring with the given replacement string:
+
+  s = 'abracadabra'       # => "abracadabra"
+  s.sub('bra', 'xyzzy')   # => "axyzzycadabra"
+  s.sub(/bra/, 'xyzzy')   # => "axyzzycadabra"
+  s.sub('nope', 'xyzzy')  # => "abracadabra"
+
+With arguments +pattern+ and hash +replacement+ given,
+replaces the first matching substring with a value from the given replacement hash, or removes it:
+
+  h = {'a' => 'A', 'b' => 'B', 'c' => 'C'}
+  s.sub('b', h)  # => "aBracadabra"
+  s.sub(/b/, h)  # => "aBracadabra"
+  s.sub(/d/, h)  # => "abracaabra"  # 'd' removed.
+
+With argument +pattern+ and a block given,
+calls the block with each matching substring;
+replaces that substring with the block’s return value:
+
+  s.sub('b') {|match| match.upcase } # => "aBracadabra"
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
