@@ -10525,15 +10525,15 @@ rb_str_strip_bang(VALUE str)
  *  call-seq:
  *    strip -> new_string
  *
- *  Returns a copy of the receiver with leading and trailing whitespace removed;
+ *  Returns a copy of +self+ with leading and trailing whitespace removed;
  *  see {Whitespace in Strings}[rdoc-ref:String@Whitespace+in+Strings]:
  *
  *    whitespace = "\x00\t\n\v\f\r "
  *    s = whitespace + 'abc' + whitespace
- *    s       # => "\u0000\t\n\v\f\r abc\u0000\t\n\v\f\r "
+ *    # => "\u0000\t\n\v\f\r abc\u0000\t\n\v\f\r "
  *    s.strip # => "abc"
  *
- *  Related: String#lstrip, String#rstrip.
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
