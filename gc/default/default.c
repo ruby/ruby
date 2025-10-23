@@ -985,6 +985,9 @@ total_final_slots_count(rb_objspace_t *objspace)
 #define GC_INCREMENTAL_SWEEP_SLOT_COUNT 2048
 #define GC_INCREMENTAL_SWEEP_POOL_SLOT_COUNT 1024
 #define is_lazy_sweeping(objspace)           (GC_ENABLE_LAZY_SWEEP && has_sweeping_pages(objspace))
+/* In lazy sweeping or the previous incremental marking finished and did not yield a free page. */
+#define needs_continue_sweeping(objspace, heap) \
+    ((heap)->free_pages == NULL && is_lazy_sweeping(objspace))
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
 # define obj_id_to_ref(objid) ((objid) ^ FIXNUM_FLAG) /* unset FIXNUM_FLAG */
@@ -2022,7 +2025,10 @@ static void
 gc_continue(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     unsigned int lock_lev;
-    gc_enter(objspace, gc_enter_event_continue, &lock_lev);
+    bool needs_gc = is_incremental_marking(objspace) || needs_continue_sweeping(objspace, heap);
+    if (!needs_gc) return;
+
+    gc_enter(objspace, gc_enter_event_continue, &lock_lev); // takes vm barrier, try to avoid
 
     /* Continue marking if in incremental marking. */
     if (is_incremental_marking(objspace)) {
@@ -2031,9 +2037,7 @@ gc_continue(rb_objspace_t *objspace, rb_heap_t *heap)
         }
     }
 
-    /* Continue sweeping if in lazy sweeping or the previous incremental
-     * marking finished and did not yield a free page. */
-    if (heap->free_pages == NULL && is_lazy_sweeping(objspace)) {
+    if (needs_continue_sweeping(objspace, heap)) {
         gc_sweep_continue(objspace, heap);
     }
 
