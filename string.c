@@ -11234,7 +11234,7 @@ rb_str_rpartition(VALUE str, VALUE sep)
 
 /*
  *  call-seq:
- *    start_with?(*string_or_regexp) -> true or false
+ *    start_with?(*patterns) -> true or false
  *
  *  :include: doc/string/start_with_p.rdoc
  *

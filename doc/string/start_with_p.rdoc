@@ -1,10 +1,9 @@
-Returns whether +self+ starts with any of the given +string_or_regexp+.
+Returns whether +self+ starts with any of the given +patterns+.
 
-Matches patterns against the beginning of +self+.
-For each given +string_or_regexp+, the pattern is:
+For each argument, the pattern used is:
 
-- +string_or_regexp+ itself, if it is a Regexp.
-- <tt>Regexp.quote(string_or_regexp)</tt>, if +string_or_regexp+ is a string.
+- The pattern itself, if it is a Regexp.
+- <tt>Regexp.quote(pattern)</tt>, if it is a string.
 
 Returns +true+ if any pattern matches the beginning, +false+ otherwise:
 
@@ -15,4 +14,4 @@ Returns +true+ if any pattern matches the beginning, +false+ otherwise:
   'тест'.start_with?('т')                   # => true
   'こんにちは'.start_with?('こ')              # => true
 
-Related: String#end_with?.
+Related: see {Querying}[rdoc-ref:String@Querying].
