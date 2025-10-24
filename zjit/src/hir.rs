@@ -461,6 +461,8 @@ pub enum SideExitReason {
     GuardTypeNot(Type),
     GuardShape(ShapeId),
     GuardBitEquals(Const),
+    GuardLess,
+    GuardGreaterEq,
     PatchPoint(Invariant),
     CalleeSideExit,
     ObjToStringFallback,
@@ -562,6 +564,7 @@ pub enum Insn {
     StringGetbyteFixnum { string: InsnId, index: InsnId },
     StringSetbyteFixnum { string: InsnId, index: InsnId, value: InsnId },
     StringAppend { recv: InsnId, other: InsnId, state: InsnId },
+    StringLength { recv: InsnId, state: InsnId },
 
     /// Combine count stack values into a regexp
     ToRegexp { opt: usize, values: Vec<InsnId>, state: InsnId },
@@ -792,6 +795,10 @@ pub enum Insn {
     /// Side-exit if the block param has been modified or the block handler for the frame
     /// is neither ISEQ nor ifunc, which makes it incompatible with rb_block_param_proxy.
     GuardBlockParamProxy { level: u32, state: InsnId },
+    /// Side-exit if left is not greater than or equal to right (both operands are C long).
+    GuardGreaterEq { left: InsnId, right: InsnId, state: InsnId },
+    /// Side-exit if left is not less than right (both operands are C long).
+    GuardLess { left: InsnId, right: InsnId, state: InsnId },
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
@@ -975,6 +982,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::StringAppend { recv, other, .. } => {
                 write!(f, "StringAppend {recv}, {other}")
             }
+            Insn::StringLength { recv, .. } => {
+                write!(f, "StringLength {recv}")
+            }
             Insn::ToRegexp { values, opt, .. } => {
                 write!(f, "ToRegexp")?;
                 let mut prefix = " ";
@@ -1080,6 +1090,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
             &Insn::GuardShape { val, shape, .. } => { write!(f, "GuardShape {val}, {:p}", self.ptr_map.map_shape(shape)) },
             Insn::GuardBlockParamProxy { level, .. } => write!(f, "GuardBlockParamProxy l{level}"),
+            Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
+            Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::IsBlockGiven => { write!(f, "IsBlockGiven") },
@@ -1611,6 +1623,7 @@ impl Function {
             &StringGetbyteFixnum { string, index } => StringGetbyteFixnum { string: find!(string), index: find!(index) },
             &StringSetbyteFixnum { string, index, value } => StringSetbyteFixnum { string: find!(string), index: find!(index), value: find!(value) },
             &StringAppend { recv, other, state } => StringAppend { recv: find!(recv), other: find!(other), state: find!(state) },
+            &StringLength { recv, state } => StringLength { recv: find!(recv), state: find!(state) },
             &ToRegexp { opt, ref values, state } => ToRegexp { opt, values: find_vec!(values), state },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
@@ -1624,6 +1637,8 @@ impl Function {
             &GuardBitEquals { val, expected, state } => GuardBitEquals { val: find!(val), expected, state },
             &GuardShape { val, shape, state } => GuardShape { val: find!(val), shape, state },
             &GuardBlockParamProxy { level, state } => GuardBlockParamProxy { level, state: find!(state) },
+            &GuardGreaterEq { left, right, state } => GuardGreaterEq { left: find!(left), right: find!(right), state },
+            &GuardLess { left, right, state } => GuardLess { left: find!(left), right: find!(right), state },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
             &FixnumSub { left, right, state } => FixnumSub { left: find!(left), right: find!(right), state },
             &FixnumMult { left, right, state } => FixnumMult { left: find!(left), right: find!(right), state },
@@ -1809,6 +1824,7 @@ impl Function {
             Insn::StringGetbyteFixnum { .. } => types::Fixnum.union(types::NilClass),
             Insn::StringSetbyteFixnum { .. } => types::Fixnum,
             Insn::StringAppend { .. } => types::StringExact,
+            Insn::StringLength { .. } => types::CUInt64,
             Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
@@ -1828,6 +1844,8 @@ impl Function {
             Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
             Insn::GuardShape { val, .. } => self.type_of(*val),
+            Insn::GuardLess { left, .. } => self.type_of(*left),
+            Insn::GuardGreaterEq { left, .. } => self.type_of(*left),
             Insn::FixnumAdd  { .. } => types::Fixnum,
             Insn::FixnumSub  { .. } => types::Fixnum,
             Insn::FixnumMult { .. } => types::Fixnum,
@@ -3075,6 +3093,10 @@ impl Function {
                 worklist.push_back(other);
                 worklist.push_back(state);
             }
+            &Insn::StringLength { recv, state } => {
+                worklist.push_back(recv);
+                worklist.push_back(state);
+            }
             &Insn::ToRegexp { ref values, state, .. } => {
                 worklist.extend(values);
                 worklist.push_back(state);
@@ -3097,6 +3119,16 @@ impl Function {
             | &Insn::IsMethodCfunc { val, state, .. }
             | &Insn::ToNewArray { val, state } => {
                 worklist.push_back(val);
+                worklist.push_back(state);
+            }
+            &Insn::GuardGreaterEq { left, right, state } => {
+                worklist.push_back(left);
+                worklist.push_back(right);
+                worklist.push_back(state);
+            }
+            &Insn::GuardLess { left, right, state } => {
+                worklist.push_back(left);
+                worklist.push_back(right);
                 worklist.push_back(state);
             }
             Insn::Snapshot { state } => {
@@ -14258,10 +14290,14 @@ mod opt_tests {
           v29:StringExact = GuardType v13, StringExact
           v30:Fixnum = GuardType v14, Fixnum
           v31:Fixnum = GuardType v15, Fixnum
-          v32:Fixnum = StringSetbyteFixnum v29, v30, v31
+          v32:CUInt64 = StringLength v31
+          v33:Fixnum = GuardLess v30, v32
+          v34:Fixnum[0] = Const Value(0)
+          v35:Fixnum = GuardGreaterEq v30, v34
+          v36:Fixnum = StringSetbyteFixnum v29, v30, v31
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v32
+          Return v36
         ");
     }
 
