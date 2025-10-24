@@ -261,12 +261,6 @@ consensus on ruby-core/ruby-dev.
 * https://github.com/ruby/timeout
 * https://rubygems.org/gems/timeout
 
-#### lib/thwait.rb
-
-* Keiju ISHITSUKA ([keiju])
-* https://github.com/ruby/thwait
-* https://rubygems.org/gems/thwait
-
 #### lib/tmpdir.rb
 
 * *No maintainer*
