@@ -28,6 +28,10 @@ not have authority to change/add a feature on his/her part. They need
 consensus on ruby-core/ruby-dev before changing/adding. Some of submaintainers
 have commit right, others don't.
 
+No maintainer means that there is no specific maintainer for the part now.
+The member of ruby core team can fix issues at anytime. But major changes need
+consensus on ruby-core/ruby-dev.
+
 ### Language core features including security
 
 * Yukihiro Matsumoto ([matz])
@@ -46,7 +50,7 @@ have commit right, others don't.
 
 #### lib/mkmf.rb
 
-* *unmaintained*
+* *No maintainer*
 
 #### lib/rubygems.rb, lib/rubygems/*
 
@@ -78,15 +82,15 @@ have commit right, others don't.
 
 #### ext/objspace
 
-* *unmaintained*
+* *No maintainer*
 
 #### ext/pty
 
-* *unmaintained*
+* *No maintainer*
 
 #### ext/ripper
 
-* *unmaintained*
+* *No maintainer*
 
 #### ext/socket
 
@@ -109,17 +113,17 @@ have commit right, others don't.
 
 #### lib/cgi/escape.rb
 
-* *unmaintained*
+* *No maintainer*
 
 #### lib/English.rb
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/English
 * https://rubygems.org/gems/English
 
 #### lib/delegate.rb
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/delegate
 * https://rubygems.org/gems/delegate
 
@@ -150,7 +154,7 @@ have commit right, others don't.
 
 #### lib/fileutils.rb
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/fileutils
 * https://rubygems.org/gems/fileutils
 
@@ -185,13 +189,13 @@ have commit right, others don't.
 
 #### lib/net/protocol.rb
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/net-protocol
 * https://rubygems.org/gems/net-protocol
 
 #### lib/open3.rb
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/open3
 * https://rubygems.org/gems/open3
 
@@ -246,7 +250,7 @@ have commit right, others don't.
 
 #### lib/tempfile.rb
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/tempfile
 * https://rubygems.org/gems/tempfile
 
@@ -270,7 +274,7 @@ have commit right, others don't.
 
 #### lib/tmpdir.rb
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/tmpdir
 * https://rubygems.org/gems/tmpdir
 
@@ -301,7 +305,7 @@ have commit right, others don't.
 
 #### lib/weakref.rb
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/weakref
 * https://rubygems.org/gems/weakref
 
@@ -313,19 +317,19 @@ have commit right, others don't.
 
 #### ext/date
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/date
 * https://rubygems.org/gems/date
 
 #### ext/etc
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/etc
 * https://rubygems.org/gems/etc
 
 #### ext/fcntl
 
-* *unmaintained*
+* *No maintainer*
 * https://github.com/ruby/fcntl
 * https://rubygems.org/gems/fcntl
 
@@ -619,7 +623,7 @@ have commit right, others don't.
 
 ### cygwin, ...
 
-* none. (Maintainer WANTED)
+* **No maintainer**
 
 ### WebAssembly/WASI
 
