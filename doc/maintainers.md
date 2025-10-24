@@ -396,34 +396,42 @@ have commit right, others don't.
 
 ### minitest
 
+* Ryan Davis ([zenspider])
 * https://github.com/minitest/minitest
 
 ### power_assert
 
+* Tsujimoto Kenta ([k-tsj])
 * https://github.com/ruby/power_assert
 
 ### rake
 
+* Hiroshi SHIBATA ([hsbt])
 * https://github.com/ruby/rake
 
 ### test-unit
 
+* Kouhei Sutou ([kou])
 * https://github.com/test-unit/test-unit
 
 ### rexml
 
+* Kouhei Sutou ([kou])
 * https://github.com/ruby/rexml
 
 ### rss
 
+* Kouhei Sutou ([kou])
 * https://github.com/ruby/rss
 
 ### net-ftp
 
+* Shugo Maeda ([shugo])
 * https://github.com/ruby/net-ftp
 
 ### net-imap
 
+* Nicholas A. Evans ([nevans])
 * https://github.com/ruby/net-imap
 
 ### net-pop
@@ -432,10 +440,12 @@ have commit right, others don't.
 
 ### net-smtp
 
+* TOMITA Masahiro ([tmtm])
 * https://github.com/ruby/net-smtp
 
 ### matrix
 
+* Marc-André Lafortune ([marcandre])
 * https://github.com/ruby/matrix
 
 ### prime
@@ -444,18 +454,22 @@ have commit right, others don't.
 
 ### rbs
 
+* Soutaro Matsumoto ([soutaro])
 * https://github.com/ruby/rbs
 
 ### typeprof
 
+* Yusuke Endoh ([mame])
 * https://github.com/ruby/typeprof
 
 ### debug
 
+* Koichi Sasada ([ko1])
 * https://github.com/ruby/debug
 
 ### racc
 
+* Yuichi Kaneko ([yui-knk])
 * https://github.com/ruby/racc
 
 #### mutex_m
@@ -468,10 +482,12 @@ have commit right, others don't.
 
 #### base64
 
+* Yusuke Endoh ([mame])
 * https://github.com/ruby/base64
 
 #### bigdecimal
 
+* Kenta Murata ([mrkn])
 * https://github.com/ruby/bigdecimal
 
 #### observer
@@ -480,34 +496,42 @@ have commit right, others don't.
 
 #### abbrev
 
+* Akinori MUSHA ([knu])
 * https://github.com/ruby/abbrev
 
 #### resolv-replace
 
+* Akira TANAKA ([akr])
 * https://github.com/ruby/resolv-replace
 
 #### rinda
 
+* Masatoshi SEKI ([seki])
 * https://github.com/ruby/rinda
 
 #### drb
 
+* Masatoshi SEKI ([seki])
 * https://github.com/ruby/drb
 
 #### nkf
 
+* Naruse Yusuke ([nurse])
 * https://github.com/ruby/nkf
 
 #### syslog
 
+* Akinori Musha ([knu])
 * https://github.com/ruby/syslog
 
 #### csv
 
+* Kouhei Sutou ([kou])
 * https://github.com/ruby/csv
 
 #### ostruct
 
+* Marc-André Lafortune ([marcandre])
 * https://github.com/ruby/ostruct
 
 #### pstore
@@ -520,22 +544,34 @@ have commit right, others don't.
 
 #### logger
 
+* Naotoshi Seo ([sonots])
 * https://github.com/ruby/logger
 
 #### rdoc
 
+* Stan Lo ([st0012])
+* Nobuyoshi Nakada ([nobu])
 * https://github.com/ruby/rdoc
 
 #### win32ole
 
+* Masaki Suketa ([suketa])
 * https://github.com/ruby/win32ole
 
 #### irb
 
+* Tomoya Ishida ([tompng])
+* Stan Lo ([st0012])
+* Mari Imaizumi ([ima1zumi])
+* HASUMI Hitoshi ([hasumikin])
 * https://github.com/ruby/irb
 
 #### reline
 
+* Tomoya Ishida ([tompng])
+* Stan Lo ([st0012])
+* Mari Imaizumi ([ima1zumi])
+* HASUMI Hitoshi ([hasumikin])
 * https://github.com/ruby/reline
 
 #### readline
@@ -544,6 +580,7 @@ have commit right, others don't.
 
 #### fiddle
 
+* Kouhei Sutou ([kou])
 * https://github.com/ruby/fiddle
 
 ## Platform Maintainers
@@ -625,3 +662,12 @@ have commit right, others don't.
 [tompng]: https://github.com/tompng
 [unak]: https://github.com/unak
 [yuki24]: https://github.com/yuki24
+[zenspider]: https://github.com/zenspider
+[k-tsj]: https://github.com/k-tsj
+[nevans]: https://github.com/nevans
+[tmtm]: https://github.com/tmtm
+[shugo]: https://github.com/shugo
+[soutaro]: https://github.com/soutaro
+[yui-knk]: https://github.com/yui-knk
+[hasumikin]: https://github.com/hasumikin
+[suketa]: https://github.com/suketa
