@@ -1860,14 +1860,14 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_EP), ep);
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
 
-    if cfg!(debug_assertions) {
-        // Assert that SP < CFP after pushing the frame.
-        // This should catch callers of gen_push_frame() that miss the stack overflow check.
-        unsafe extern "C" {
-            fn rb_zjit_assert_no_stack_overflow(sp: *mut VALUE, cfp: *mut rb_control_frame_t);
-        }
-        asm.ccall(rb_zjit_assert_no_stack_overflow as *const u8, vec![SP, CFP]);
+    // if cfg!(debug_assertions) {
+    // Assert that SP < CFP after pushing the frame.
+    // This should catch callers of gen_push_frame() that miss the stack overflow check.
+    unsafe extern "C" {
+        fn rb_zjit_assert_no_stack_overflow(sp: *mut VALUE, cfp: *mut rb_control_frame_t);
     }
+    asm.ccall(rb_zjit_assert_no_stack_overflow as *const u8, vec![SP, CFP]);
+    // }
 }
 
 /// Stack overflow check: fails if CFP<=SP at any point in the callee.
