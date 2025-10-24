@@ -15320,6 +15320,32 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_inline_kernel_frozen_p() {
+        eval(r#"
+            def test(o) = o.frozen?
+            test :foo
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Symbol@0x1000, frozen?@0x1008, cme:0x1010)
+          v21:StaticSymbol = GuardType v9, StaticSymbol
+          IncrCounter inline_iseq_optimized_send_count
+          v24:BoolExact = InvokeBuiltin leaf _bi69, v21
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
     fn test_inline_integer_to_i() {
         eval(r#"
             def test(o) = o.to_i
