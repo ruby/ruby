@@ -197,8 +197,8 @@ fn test_c_call()
 #[test]
 fn test_alloc_ccall_regs() {
     let mut asm = Assembler::new();
-    let out1 = asm.ccall(0 as *const u8, vec![]);
-    let out2 = asm.ccall(0 as *const u8, vec![out1]);
+    let out1 = asm.ccall(std::ptr::null::<u8>(), vec![]);
+    let out2 = asm.ccall(std::ptr::null::<u8>(), vec![out1]);
     asm.mov(EC, out2);
     let mut cb = CodeBlock::new_dummy();
     asm.compile_with_regs(&mut cb, Assembler::get_alloc_regs()).unwrap();
