@@ -52,7 +52,6 @@ consensus on ruby-core/ruby-dev.
 
 #### lib/rubygems.rb, lib/rubygems/*
 
-* Eric Hodel ([drbrain])
 * Hiroshi SHIBATA ([hsbt])
 * https://github.com/ruby/rubygems
 
