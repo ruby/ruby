@@ -705,6 +705,7 @@ fn gen_ccall_with_frame(
     blockiseq: Option<IseqPtr>,
     state: &FrameState,
 ) -> lir::Opnd {
+    gen_stack_overflow_check(jit, asm, state, state.stack_size());
     gen_incr_counter(asm, Counter::non_variadic_cfunc_optimized_send_count);
 
     let caller_stack_size = state.stack_size() - args.len();
