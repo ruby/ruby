@@ -63,10 +63,10 @@ fn test_alloc_regs() {
 }
 
 fn setup_asm() -> (Assembler, CodeBlock) {
-    return (
+    (
         Assembler::new(),
         CodeBlock::new_dummy()
-    );
+    )
 }
 
 // Test full codegen pipeline
