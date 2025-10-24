@@ -8,6 +8,7 @@ or, if no alphanumerics, the rightmost character:
   '<<koala>>'.succ # => "<<koalb>>"
   '***'.succ       # => '**+'
   'тест'.succ      # => "тесу"
+  'こんにちは'.succ  # => "こんにちば"
 
 The successor to a digit is another digit, "carrying" to the next-left
 character for a "rollover" from 9 to 0, and prepending another digit
@@ -44,12 +45,6 @@ Carrying can occur between and among mixtures of alphanumeric characters:
   s.succ         # => "aaa00aa00"
   s = '99zz99zz' # => "99zz99zz"
   s.succ         # => "100aa00aa"
-
-Some character sets do not have successors:
-
-  s = 'こんにちは' # => "こんにちは"
-  s.succ         # => "こんにちば"
-  s.succ == s    # => false
 
 The successor to an empty +String+ is a new empty +String+:
 
