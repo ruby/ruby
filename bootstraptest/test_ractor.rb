@@ -754,6 +754,37 @@ assert_equal 'ArgumentError', %q{
   end
 }
 
+# eval with outer locals in a Ractor raises SyntaxError
+# [Bug #21522]
+assert_equal 'SyntaxError', %q{
+  outer = 42
+  r = Ractor.new do
+    eval("outer")
+  end
+  begin
+    r.value
+  rescue Ractor::RemoteError => e
+    e.cause.class
+  end
+}
+
+# eval of an undefined name in a Ractor raises NameError
+assert_equal 'NameError', %q{
+  r = Ractor.new do
+    eval("totally_undefined_name")
+  end
+  begin
+    r.value
+  rescue Ractor::RemoteError => e
+    e.cause.class
+  end
+}
+
+# eval of a local defined inside the Ractor works
+assert_equal '99', %q{
+  Ractor.new { inner = 99; eval("inner").to_s }.value
+}
+
 # ivar in shareable-objects are not allowed to access from non-main Ractor
 assert_equal "can not get unshareable values from instance variables of classes/modules from non-main Ractors", <<~'RUBY', frozen_string_literal: false
   class C

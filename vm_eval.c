@@ -1669,6 +1669,24 @@ get_eval_default_path(void)
     return eval_default_path;
 }
 
+static inline int
+compute_isolated_depth_from_ep(const VALUE *ep)
+{
+    int depth = 1;
+    while (1) {
+        if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ISOLATED)) return depth;
+        if (VM_ENV_LOCAL_P(ep)) return 0;
+        ep = VM_ENV_PREV_EP(ep);
+        depth++;
+    }
+}
+
+static inline int
+compute_isolated_depth_from_block(const struct rb_block *blk)
+{
+    return compute_isolated_depth_from_ep(vm_block_ep(blk));
+}
+
 static const rb_iseq_t *
 pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         const struct rb_block *base_block)
@@ -1677,8 +1695,8 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     const rb_iseq_t *iseq = parent;
     VALUE name = rb_fstring_lit("<compiled>");
 
-    // Conditionally enable coverage depending on the current mode:
     int coverage_enabled = ((rb_get_coverage_mode() & COVERAGE_TARGET_EVAL) != 0) ? 1 : 0;
+    int isolated_depth = compute_isolated_depth_from_block(base_block);
 
     if (!fname) {
         fname = rb_source_location(&line);
@@ -1872,7 +1890,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 #undef FORWARDING_ALL_STR
 
     int error_state;
-    iseq = pm_iseq_new_eval(&result.node, name, fname, Qnil, line, parent, 0, &error_state);
+    iseq = pm_iseq_new_eval(&result.node, name, fname, Qnil, line, parent, isolated_depth, &error_state);
 
     pm_scope_node_t *prev = result.node.previous;
     while (prev) {
@@ -1908,27 +1926,9 @@ eval_make_iseq(VALUE src, VALUE fname, int line,
     rb_iseq_t *iseq = NULL;
     VALUE ast_value;
     rb_ast_t *ast;
-    int isolated_depth = 0;
 
-    // Conditionally enable coverage depending on the current mode:
     int coverage_enabled = (rb_get_coverage_mode() & COVERAGE_TARGET_EVAL) != 0;
-
-    {
-        int depth = 1;
-        const VALUE *ep = vm_block_ep(base_block);
-
-        while (1) {
-            if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ISOLATED)) {
-                isolated_depth = depth;
-                break;
-            }
-            else if (VM_ENV_LOCAL_P(ep)) {
-                break;
-            }
-            ep = VM_ENV_PREV_EP(ep);
-            depth++;
-        }
-    }
+    int isolated_depth = compute_isolated_depth_from_block(base_block);
 
     if (!fname) {
         fname = rb_source_location(&line);
