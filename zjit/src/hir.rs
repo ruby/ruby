@@ -1428,7 +1428,7 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
 
             // TODO(max): Support only_kwparam case where the local_idx is a positional parameter
 
-            return None;
+            None
         }
         YARVINSN_putnil => Some(IseqReturn::Value(Qnil)),
         YARVINSN_putobject => Some(IseqReturn::Value(unsafe { *rb_iseq_pc_at_idx(iseq, 1) })),
@@ -2618,16 +2618,16 @@ impl Function {
                         blockiseq,
                     });
                     fun.make_equal_to(send_insn_id, ccall);
-                    return Ok(());
+                    Ok(())
                 }
                 // Variadic method
                 -1 => {
                     // func(int argc, VALUE *argv, VALUE recv)
-                    return Err(());
+                    Err(())
                 }
                 -2 => {
                     // (self, args_ruby_array)
-                    return Err(());
+                    Err(())
                 }
                 _ => unreachable!("unknown cfunc kind: argc={argc}")
             }
