@@ -6236,13 +6236,12 @@ rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
  *    sub!(pattern, replacement)   -> self or nil
  *    sub!(pattern) {|match| ... } -> self or nil
  *
- *  Replaces the first occurrence (not all occurrences) of the given +pattern+
- *  on +self+; returns +self+ if a replacement occurred, +nil+ otherwise.
+ *  Like String#sub, except that:
  *
- *  See {Substitution Methods}[rdoc-ref:String@Substitution+Methods].
+ *  - Changed are made to +self+, not to copy of +self+.
+ *  - Returns +self+ if any changes are made, +nil+ otherwise.
  *
- *  Related: String#sub, String#gsub, String#gsub!.
- *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
