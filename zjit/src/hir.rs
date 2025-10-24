@@ -8158,9 +8158,9 @@ mod tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = InvokeBuiltin leaf _bi28, v6
+          v11:StringExact = InvokeBuiltin leaf _bi28, v6
           Jump bb3(v6, v11)
-        bb3(v13:BasicObject, v14:BasicObject):
+        bb3(v13:BasicObject, v14:StringExact):
           CheckInterrupts
           Return v14
         ");
@@ -8180,9 +8180,9 @@ mod tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = InvokeBuiltin leaf _bi12, v6
+          v11:StringExact = InvokeBuiltin leaf _bi12, v6
           Jump bb3(v6, v11)
-        bb3(v13:BasicObject, v14:BasicObject):
+        bb3(v13:BasicObject, v14:StringExact):
           CheckInterrupts
           Return v14
         ");
@@ -15364,7 +15364,7 @@ mod opt_tests {
           PatchPoint MethodRedefined(Symbol@0x1000, to_s@0x1008, cme:0x1010)
           v21:StaticSymbol = GuardType v9, StaticSymbol
           IncrCounter inline_iseq_optimized_send_count
-          v24:BasicObject = InvokeBuiltin leaf _bi12, v21
+          v24:StringExact = InvokeBuiltin leaf _bi12, v21
           CheckInterrupts
           Return v24
         ");
@@ -15390,7 +15390,7 @@ mod opt_tests {
           PatchPoint MethodRedefined(Symbol@0x1000, to_s@0x1008, cme:0x1010)
           v21:StaticSymbol = GuardType v9, StaticSymbol
           IncrCounter inline_iseq_optimized_send_count
-          v24:BasicObject = InvokeBuiltin leaf _bi12, v21
+          v24:StringExact = InvokeBuiltin leaf _bi12, v21
           CheckInterrupts
           Return v24
         ");
