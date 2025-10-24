@@ -15530,7 +15530,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn eliminate_string_size() {
+    fn test_elide_string_size() {
          eval(r#"
             def test(s)
               s.size
@@ -15589,7 +15589,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn eliminate_string_bytesize() {
+    fn test_elide_string_bytesize() {
         eval(r#"
             def test(s)
               s.bytesize
@@ -15648,7 +15648,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn eliminate_string_length() {
+    fn test_elide_string_length() {
         eval(r#"
             def test(s)
               s.length
