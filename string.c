@@ -5420,7 +5420,9 @@ str_succ(VALUE str)
  *  call-seq:
  *    succ! -> self
  *
- *  Equivalent to String#succ, but modifies +self+ in place; returns +self+.
+ *  Like String#succ, but modifies +self+ in place; returns +self+.
+ *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
