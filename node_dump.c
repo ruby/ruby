@@ -491,6 +491,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
             LAST_NODE;
             F_NODE(nd_value, RNODE_LASGN, "rvalue");
         }
+        F_LOC(name_loc, RNODE_LASGN);
+        LAST_NODE;
+        F_LOC(operator_loc, RNODE_LASGN);
         return;
       case NODE_DASGN:
         ANN("dynamic variable assignment");
