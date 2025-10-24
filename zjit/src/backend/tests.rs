@@ -1,4 +1,3 @@
-#![cfg(test)]
 use crate::asm::CodeBlock;
 use crate::backend::lir::*;
 use crate::cruby::*;
