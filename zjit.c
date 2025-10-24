@@ -148,6 +148,26 @@ rb_zjit_compile_iseq(const rb_iseq_t *iseq, bool jit_exception)
 
 extern VALUE *rb_vm_base_ptr(struct rb_control_frame_struct *cfp);
 
+// Assert that SP < CFP with safety margin, catching stack overflow before it corrupts memory.
+void
+rb_zjit_assert_no_stack_overflow(VALUE *sp, rb_control_frame_t *cfp, ptrdiff_t sp_growth_bytes)
+{
+    VALUE *new_sp = (VALUE *)((char *)sp + sp_growth_bytes);
+    rb_control_frame_t *new_cfp = cfp - 1;
+
+    // Check if new SP will collide with new CFP
+    if ((void *)new_sp >= (void *)new_cfp) {
+        ptrdiff_t available = (char *)new_cfp - (char *)sp;
+        ptrdiff_t needed = sizeof(rb_control_frame_t) + sp_growth_bytes;
+
+        fprintf(stderr, "\nZJIT: VM stack overflow! Not enough space to push a new call frame.\n");
+        fprintf(stderr, "Available: %td bytes, Need: %td bytes (CFP + SP growth), Short by: %td bytes\n",
+                available, needed, needed - available);
+        fprintf(stderr, "This usually indicates a bug in overflow checking.\n");
+        abort();
+    }
+}
+
 bool
 rb_zjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
 {

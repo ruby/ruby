@@ -28,6 +28,7 @@ void rb_zjit_iseq_free(const rb_iseq_t *iseq);
 void rb_zjit_before_ractor_spawn(void);
 void rb_zjit_tracing_invalidate_all(void);
 void rb_zjit_invalidate_no_singleton_class(VALUE klass);
+void rb_zjit_assert_no_stack_overflow(VALUE *sp, rb_control_frame_t *cfp, ptrdiff_t sp_growth_bytes);
 #else
 #define rb_zjit_enabled_p false
 static inline void rb_zjit_compile_iseq(const rb_iseq_t *iseq, bool jit_exception) {}
