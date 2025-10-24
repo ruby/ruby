@@ -15499,4 +15499,181 @@ mod opt_tests {
           Return v28
         ");
     }
+
+    #[test]
+    fn test_specialize_string_size() {
+        eval(r#"
+            def test(s)
+              s.size
+            end
+            test("asdf")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, size@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v25:StringExact = GuardType v9, StringExact
+          IncrCounter inline_cfunc_optimized_send_count
+          v27:Fixnum = CCall size@0x1038, v25
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_elide_string_size() {
+         eval(r#"
+            def test(s)
+              s.size
+              5
+            end
+            test("asdf")
+        "#);
+       assert_snapshot!(hir_string("test"), @r"
+       fn test@<compiled>:3:
+       bb0():
+         EntryPoint interpreter
+         v1:BasicObject = LoadSelf
+         v2:BasicObject = GetLocal l0, SP@4
+         Jump bb2(v1, v2)
+       bb1(v5:BasicObject, v6:BasicObject):
+         EntryPoint JIT(0)
+         Jump bb2(v5, v6)
+       bb2(v8:BasicObject, v9:BasicObject):
+         PatchPoint MethodRedefined(String@0x1000, size@0x1008, cme:0x1010)
+         PatchPoint NoSingletonClass(String@0x1000)
+         v28:StringExact = GuardType v9, StringExact
+         IncrCounter inline_cfunc_optimized_send_count
+         v19:Fixnum[5] = Const Value(5)
+         CheckInterrupts
+         Return v19
+       ");
+    }
+
+    #[test]
+    fn test_specialize_string_bytesize() {
+        eval(r#"
+            def test(s)
+              s.bytesize
+            end
+            test("asdf")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, bytesize@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v23:StringExact = GuardType v9, StringExact
+          IncrCounter inline_cfunc_optimized_send_count
+          v25:Fixnum = CCall bytesize@0x1038, v23
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_elide_string_bytesize() {
+        eval(r#"
+            def test(s)
+              s.bytesize
+              5
+            end
+            test("asdf")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, bytesize@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v26:StringExact = GuardType v9, StringExact
+          IncrCounter inline_cfunc_optimized_send_count
+          v17:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v17
+        ");
+    }
+
+    #[test]
+    fn test_specialize_string_length() {
+        eval(r#"
+            def test(s)
+              s.length
+            end
+            test("asdf")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, length@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v25:StringExact = GuardType v9, StringExact
+          IncrCounter inline_cfunc_optimized_send_count
+          v27:Fixnum = CCall length@0x1038, v25
+          CheckInterrupts
+          Return v27
+        ");
+    }
+
+    #[test]
+    fn test_elide_string_length() {
+        eval(r#"
+            def test(s)
+              s.length
+              4
+            end
+            test("this should get removed")
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(String@0x1000, length@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(String@0x1000)
+          v28:StringExact = GuardType v9, StringExact
+          IncrCounter inline_cfunc_optimized_send_count
+          v19:Fixnum[4] = Const Value(4)
+          CheckInterrupts
+          Return v19
+        ");
+    }
 }
