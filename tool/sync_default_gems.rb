@@ -316,28 +316,35 @@ module SyncDefaultGems
       cp_r("#{upstream}/spec", "spec/syntax_suggest")
       cp_r("#{upstream}/exe/syntax_suggest", "libexec/syntax_suggest")
     when "prism"
-      rm_rf(%w[test/prism prism])
+      rm_rf(%w[test/prism prism lib/prism])
 
-      cp_r("#{upstream}/ext/prism", "prism")
-      cp_r("#{upstream}/lib/.", "lib")
-      cp_r("#{upstream}/test/prism", "test")
-      cp_r("#{upstream}/src/.", "prism")
+      ignore = ignore_file_pattern_for(gem)
+      sync = ->(src, dest) {
+        if File.directory?(src)
+          cp_r(src, dest)
 
-      cp_r("#{upstream}/prism.gemspec", "lib/prism")
-      cp_r("#{upstream}/include/prism/.", "prism")
-      cp_r("#{upstream}/include/prism.h", "prism")
+          Dir[File.join(src, "**", "*")].each do |filepath|
+            if ignore.match?(filepath.delete_prefix("#{upstream}/"))
+              rm_rf(filepath.sub(src, dest))
+            end
+          end
+        else
+          cp(src, dest)
+        end
+      }
 
-      cp_r("#{upstream}/config.yml", "prism/")
-      cp_r("#{upstream}/templates", "prism/")
-      rm_rf("prism/templates/javascript")
-      rm_rf("prism/templates/java")
-      rm_rf("prism/templates/rbi")
-      rm_rf("prism/templates/sig")
+      sync["#{upstream}/ext/prism", "prism"]
+      sync["#{upstream}/lib/.", "lib"]
+      sync["#{upstream}/test/prism", "test/prism"]
+      sync["#{upstream}/src/.", "prism"]
 
-      rm("test/prism/snapshots_test.rb")
-      rm_rf("test/prism/snapshots")
+      sync["#{upstream}/prism.gemspec", "lib/prism"]
+      sync["#{upstream}/include/prism/.", "prism"]
+      sync["#{upstream}/include/prism.h", "prism"]
 
-      rm("prism/extconf.rb")
+      sync["#{upstream}/config.yml", "prism/"]
+      sync["#{upstream}/templates", "prism/templates"]
+
       `git checkout prism/srcs.mk*`
     when "resolv"
       rm_rf(%w[lib/resolv.* ext/win32/resolv test/resolv ext/win32/lib/win32/resolv.rb])
@@ -410,6 +417,24 @@ module SyncDefaultGems
     # Gem-specific patterns
     case gem
     when nil
+    when "prism"
+      %r[\A(?:
+        cpp/.*
+        |doc/.*
+        |docs/.*
+        |ext/prism/extconf\.rb
+        |fuzz/.*
+        |gemfiles/.*
+        |java/.*
+        |javascript/.*
+        |rust/.*
+        |sig/.*
+        |snapshots/.*
+        |sorbet/.*
+        |suppressions/.*
+        |templates/(?:javascript|java|rbi|sig).*
+        |test/prism/snapshots_test\.rb
+      )\z]mx
     end&.tap do |pattern|
       patterns << pattern
     end
