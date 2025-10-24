@@ -9803,6 +9803,87 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_specialize_basic_object_neq() {
+        eval("
+            def test(x)
+                BasicObject.new != x
+            end
+            test(4)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, BasicObject)
+          v51:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v15:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(BasicObject@0x1008, new@0x1010, cme:0x1018)
+          v54:BasicObjectExact = ObjectAllocClass BasicObject:VALUE(0x1008)
+          PatchPoint MethodRedefined(BasicObject@0x1008, initialize@0x1040, cme:0x1048)
+          PatchPoint NoSingletonClass(BasicObject@0x1008)
+          v58:NilClass = Const Value(nil)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          PatchPoint NoEPEscape(test)
+          PatchPoint MethodRedefined(BasicObject@0x1008, !=@0x1070, cme:0x1078)
+          PatchPoint NoSingletonClass(BasicObject@0x1008)
+          IncrCounter inline_cfunc_optimized_send_count
+          v64:BoolExact = CCall !=@0x10a0, v54, v9
+          CheckInterrupts
+          Return v64
+        ");
+    }
+
+    #[test]
+    fn test_elide_basic_object_neq() {
+        eval("
+            def test(x)
+                BasicObject.new != x
+                5
+            end
+            test(4)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, BasicObject)
+          v54:Class[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v15:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(BasicObject@0x1008, new@0x1010, cme:0x1018)
+          v57:BasicObjectExact = ObjectAllocClass BasicObject:VALUE(0x1008)
+          PatchPoint MethodRedefined(BasicObject@0x1008, initialize@0x1040, cme:0x1048)
+          PatchPoint NoSingletonClass(BasicObject@0x1008)
+          v61:NilClass = Const Value(nil)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          PatchPoint NoEPEscape(test)
+          PatchPoint MethodRedefined(BasicObject@0x1008, !=@0x1070, cme:0x1078)
+          PatchPoint NoSingletonClass(BasicObject@0x1008)
+          IncrCounter inline_cfunc_optimized_send_count
+          v46:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v46
+        ");
+    }
+
+    #[test]
     fn test_eliminate_new_array() {
         eval("
             def test()

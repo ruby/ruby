@@ -215,6 +215,7 @@ pub fn init() -> Annotations {
     annotate!(rb_mKernel, "nil?", types::FalseClass, no_gc, leaf, elidable);
     annotate!(rb_mKernel, "respond_to?", inline_kernel_respond_to_p);
     annotate!(rb_cBasicObject, "==", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cBasicObject, "!=", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
     annotate!(rb_cInteger, "succ", inline_integer_succ);
