@@ -1379,7 +1379,8 @@ enum IseqReturn {
     Value(VALUE),
     LocalVariable(u32),
     Receiver,
-    InvokeLeafBuiltin(rb_builtin_function),
+    // Builtin descriptor and return type (if known)
+    InvokeLeafBuiltin(rb_builtin_function, Option<Type>),
 }
 
 unsafe extern "C" {
@@ -1441,7 +1442,11 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
             let builtin_attrs = unsafe { rb_jit_iseq_builtin_attrs(iseq) };
             let leaf = builtin_attrs & BUILTIN_ATTR_LEAF != 0;
             if !leaf { return None; }
-            Some(IseqReturn::InvokeLeafBuiltin(bf))
+            // Check if this builtin is annotated
+            let return_type = ZJITState::get_method_annotations()
+                .get_builtin_properties(&bf)
+                .map(|props| props.return_type);
+            Some(IseqReturn::InvokeLeafBuiltin(bf, return_type))
         }
         _ => None,
     }
@@ -2468,14 +2473,14 @@ impl Function {
                                 self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
                                 self.make_equal_to(insn_id, recv);
                             }
-                            IseqReturn::InvokeLeafBuiltin(bf) => {
+                            IseqReturn::InvokeLeafBuiltin(bf, return_type) => {
                                 self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
                                 let replacement = self.push_insn(block, Insn::InvokeBuiltin {
                                     bf,
                                     args: vec![recv],
                                     state,
                                     leaf: true,
-                                    return_type: None,
+                                    return_type,
                                 });
                                 self.make_equal_to(insn_id, replacement);
                             }
@@ -11036,7 +11041,7 @@ mod opt_tests {
           PatchPoint MethodRedefined(Module@0x1010, class@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(Module@0x1010)
           IncrCounter inline_iseq_optimized_send_count
-          v26:BasicObject = InvokeBuiltin leaf _bi20, v21
+          v26:Class = InvokeBuiltin leaf _bi20, v21
           CheckInterrupts
           Return v26
         ");
