@@ -1379,6 +1379,7 @@ enum IseqReturn {
     Value(VALUE),
     LocalVariable(u32),
     Receiver,
+    InvokeLeafBuiltin(rb_builtin_function),
 }
 
 unsafe extern "C" {
@@ -1390,10 +1391,6 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
     // Expect only two instructions and one possible operand
     // NOTE: If an ISEQ has an optional keyword parameter with a default value that requires
     // computation, the ISEQ will always have more than two instructions and won't be inlined.
-    let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
-    if !(2..=3).contains(&iseq_size) {
-        return None;
-    }
 
     // Get the first two instructions
     let first_insn = iseq_opcode_at_idx(iseq, 0);
@@ -1436,6 +1433,16 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
         YARVINSN_putobject_INT2FIX_1_ => Some(IseqReturn::Value(VALUE::fixnum_from_usize(1))),
         // We don't support invokeblock for now. Such ISEQs are likely not used by blocks anyway.
         YARVINSN_putself if captured_opnd.is_none() => Some(IseqReturn::Receiver),
+        YARVINSN_opt_invokebuiltin_delegate_leave => {
+            let pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
+            let bf: rb_builtin_function = unsafe { *get_arg(pc, 0).as_ptr() };
+            let argc = bf.argc as usize;
+            if argc != 0 { return None; }
+            let builtin_attrs = unsafe { rb_jit_iseq_builtin_attrs(iseq) };
+            let leaf = builtin_attrs & BUILTIN_ATTR_LEAF != 0;
+            if !leaf { return None; }
+            Some(IseqReturn::InvokeLeafBuiltin(bf))
+        }
         _ => None,
     }
 }
@@ -2437,7 +2444,7 @@ impl Function {
             for insn_id in old_insns {
                 match self.find(insn_id) {
                     // Reject block ISEQs to avoid autosplat and other block parameter complications.
-                    Insn::SendWithoutBlockDirect { recv, iseq, cd, args, .. } => {
+                    Insn::SendWithoutBlockDirect { recv, iseq, cd, args, state, .. } => {
                         let call_info = unsafe { (*cd).ci };
                         let ci_flags = unsafe { vm_ci_flag(call_info) };
                         // .send call is not currently supported for builtins
@@ -2460,6 +2467,17 @@ impl Function {
                             IseqReturn::Receiver => {
                                 self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
                                 self.make_equal_to(insn_id, recv);
+                            }
+                            IseqReturn::InvokeLeafBuiltin(bf) => {
+                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                                let replacement = self.push_insn(block, Insn::InvokeBuiltin {
+                                    bf,
+                                    args: vec![recv],
+                                    state,
+                                    leaf: true,
+                                    return_type: None,
+                                });
+                                self.make_equal_to(insn_id, replacement);
                             }
                         }
                     }
@@ -10955,9 +10973,10 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, zero?@0x1008, cme:0x1010)
-          v22:BasicObject = SendWithoutBlockDirect v13, :zero? (0x1038)
+          IncrCounter inline_iseq_optimized_send_count
+          v24:BasicObject = InvokeBuiltin leaf _bi285, v13
           CheckInterrupts
-          Return v22
+          Return v24
         ");
     }
 
@@ -10986,9 +11005,10 @@ mod opt_tests {
           v18:ArrayExact = ArrayDup v16
           PatchPoint MethodRedefined(Array@0x1008, first@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(Array@0x1008)
-          v30:BasicObject = SendWithoutBlockDirect v18, :first (0x1040)
+          IncrCounter inline_iseq_optimized_send_count
+          v32:BasicObject = InvokeBuiltin leaf _bi132, v18
           CheckInterrupts
-          Return v30
+          Return v32
         ");
     }
 
@@ -11015,9 +11035,10 @@ mod opt_tests {
           v21:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(Module@0x1010, class@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(Module@0x1010)
-          v24:BasicObject = SendWithoutBlockDirect v21, :class (0x1048)
+          IncrCounter inline_iseq_optimized_send_count
+          v26:BasicObject = InvokeBuiltin leaf _bi20, v21
           CheckInterrupts
-          Return v24
+          Return v26
         ");
     }
 
@@ -15342,6 +15363,58 @@ mod opt_tests {
           IncrCounter inline_iseq_optimized_send_count
           CheckInterrupts
           Return v21
+        ");
+    }
+
+    #[test]
+    fn test_inline_symbol_name() {
+        eval("
+        def test(x) = x.to_s
+        test(:foo)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Symbol@0x1000, to_s@0x1008, cme:0x1010)
+          v21:StaticSymbol = GuardType v9, StaticSymbol
+          IncrCounter inline_iseq_optimized_send_count
+          v24:BasicObject = InvokeBuiltin leaf _bi12, v21
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_inline_symbol_to_s() {
+        eval("
+        def test(x) = x.to_s
+        test(:foo)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Symbol@0x1000, to_s@0x1008, cme:0x1010)
+          v21:StaticSymbol = GuardType v9, StaticSymbol
+          IncrCounter inline_iseq_optimized_send_count
+          v24:BasicObject = InvokeBuiltin leaf _bi12, v21
+          CheckInterrupts
+          Return v24
         ");
     }
 
