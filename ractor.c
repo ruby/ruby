@@ -3,9 +3,9 @@
 #include "ruby/ruby.h"
 #include "ruby/thread.h"
 #include "ruby/ractor.h"
+#include "ruby/re.h"
 #include "ruby/thread_native.h"
 #include "vm_core.h"
-#include "eval_intern.h"
 #include "vm_sync.h"
 #include "ractor_core.h"
 #include "internal/complex.h"
@@ -1276,7 +1276,6 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
       case T_REGEXP:
       case T_FILE:
       case T_SYMBOL:
-      case T_MATCH:
         break;
 
       case T_OBJECT:
@@ -1316,6 +1315,10 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
                 if (obj_traverse_i(ptr[i], data)) return 1;
             }
         }
+        break;
+
+      case T_MATCH:
+        if (obj_traverse_i(RMATCH(obj)->str, data)) return 1;
         break;
 
       case T_RATIONAL:
@@ -1769,7 +1772,6 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
       case T_REGEXP:
       case T_FILE:
       case T_SYMBOL:
-      case T_MATCH:
         break;
       case T_STRING:
         rb_str_make_independent(obj);
@@ -1852,6 +1854,10 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                 CHECK_AND_REPLACE(obj, ptr[i]);
             }
         }
+        break;
+
+      case T_MATCH:
+        CHECK_AND_REPLACE(obj, RMATCH(obj)->str);
         break;
 
       case T_RATIONAL:
