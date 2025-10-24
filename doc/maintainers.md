@@ -394,6 +394,12 @@ consensus on ruby-core/ruby-dev.
 
 ## Bundled gems upstream repositories and maintainers
 
+The maintanance policy of bundled gems is different from Module Maintainers above.
+Please check the policies for each repository.
+
+The ruby core team tries to maintain the repositories with no maintainers.
+It may needs to make consensus on ruby-core/ruby-dev before making major changes.
+
 ### minitest
 
 * Ryan Davis ([zenspider])
