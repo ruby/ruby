@@ -841,7 +841,7 @@ impl Insn {
     fn has_effects(&self) -> bool {
         match self {
             Insn::Const { .. } => false,
-            Insn::Param { .. } => false,
+            Insn::Param => false,
             Insn::StringCopy { .. } => false,
             Insn::NewArray { .. } => false,
             // NewHash's operands may be hashed and compared for equality, which could have
@@ -1469,7 +1469,7 @@ impl Function {
 
     // Add an instruction to an SSA block
     pub fn push_insn(&mut self, block: BlockId, insn: Insn) -> InsnId {
-        let is_param = matches!(insn, Insn::Param { .. });
+        let is_param = matches!(insn, Insn::Param);
         let id = self.new_insn(insn);
         if is_param {
             self.blocks[block.0].params.push(id);
@@ -1576,7 +1576,7 @@ impl Function {
         use Insn::*;
         match &self.insns[insn_id.0] {
             result@(Const {..}
-                    | Param {..}
+                    | Param
                     | GetConstantPath {..}
                     | IsBlockGiven
                     | PatchPoint {..}
@@ -1771,7 +1771,7 @@ impl Function {
     fn infer_type(&self, insn: InsnId) -> Type {
         assert!(self.insns[insn.0].has_output());
         match &self.insns[insn.0] {
-            Insn::Param { .. } => unimplemented!("params should not be present in block.insns"),
+            Insn::Param => unimplemented!("params should not be present in block.insns"),
             Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::EntryPoint { .. }
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
@@ -1847,7 +1847,7 @@ impl Function {
             Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::DefinedIvar { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::GetConstantPath { .. } => types::BasicObject,
-            Insn::IsBlockGiven { .. } => types::BoolExact,
+            Insn::IsBlockGiven => types::BoolExact,
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
@@ -3024,7 +3024,7 @@ impl Function {
     fn worklist_traverse_single_insn(&self, insn: &Insn, worklist: &mut VecDeque<InsnId>) {
         match insn {
             &Insn::Const { .. }
-            | &Insn::Param { .. }
+            | &Insn::Param
             | &Insn::EntryPoint { .. }
             | &Insn::LoadPC
             | &Insn::LoadSelf
