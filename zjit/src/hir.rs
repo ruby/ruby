@@ -2026,7 +2026,7 @@ impl Function {
             return true;
         }
         let frame_state = self.frame_state(state);
-        let iseq_insn_idx = frame_state.insn_idx as usize;
+        let iseq_insn_idx = frame_state.insn_idx;
         let Some(profiled_type) = self.profiled_type_of_at(val, iseq_insn_idx) else {
             return false;
         };
