@@ -44,9 +44,7 @@ consensus on ruby-core/ruby-dev.
 
 * Yukihiro Matsumoto ([matz])
 
-## Standard Library Maintainers
-
-### Libraries
+### Standard Library Maintainers
 
 #### lib/mkmf.rb
 
@@ -62,7 +60,7 @@ consensus on ruby-core/ruby-dev.
 
 * Martin J. Dürst ([duerst])
 
-### Extensions
+### Standard Library(Extensions) Maintainers
 
 #### ext/continuation
 
@@ -101,9 +99,7 @@ consensus on ruby-core/ruby-dev.
 
 * NAKAMURA Usaku ([unak])
 
-## Default gems Maintainers
-
-### Libraries
+### Default gems(Libraries) Maintainers
 
 #### lib/bundler.rb, lib/bundler/*
 
@@ -309,7 +305,7 @@ consensus on ruby-core/ruby-dev.
 * https://github.com/ruby/weakref
 * https://rubygems.org/gems/weakref
 
-### Extensions
+### Default gems(Extensions) Maintainers
 
 #### ext/cgi
 
@@ -396,7 +392,7 @@ consensus on ruby-core/ruby-dev.
 * https://github.com/ruby/zlib
 * https://rubygems.org/gems/zlib
 
-## Bundled gems upstream repositories
+## Bundled gems upstream repositories and maintainers
 
 ### minitest
 
