@@ -12671,10 +12671,10 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
+          v22:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
-          v23:TrueClass = CCall nil?@0x1038, v10
           CheckInterrupts
-          Return v23
+          Return v22
         ");
     }
 
@@ -12722,10 +12722,10 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
+          v22:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v23:FalseClass = CCall nil?@0x1038, v10
           CheckInterrupts
-          Return v23
+          Return v22
         ");
     }
 
@@ -12776,10 +12776,10 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
           v24:NilClass = GuardType v9, NilClass
+          v25:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:TrueClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -12803,10 +12803,10 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(FalseClass@0x1000, nil?@0x1008, cme:0x1010)
           v24:FalseClass = GuardType v9, FalseClass
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -12830,10 +12830,10 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(TrueClass@0x1000, nil?@0x1008, cme:0x1010)
           v24:TrueClass = GuardType v9, TrueClass
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -12857,10 +12857,10 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Symbol@0x1000, nil?@0x1008, cme:0x1010)
           v24:StaticSymbol = GuardType v9, StaticSymbol
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -12884,10 +12884,10 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
           v24:Fixnum = GuardType v9, Fixnum
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -12911,10 +12911,10 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Float@0x1000, nil?@0x1008, cme:0x1010)
           v24:Flonum = GuardType v9, Flonum
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -12939,10 +12939,10 @@ mod opt_tests {
           PatchPoint MethodRedefined(String@0x1000, nil?@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(String@0x1000)
           v25:StringExact = GuardType v9, StringExact
+          v26:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v27:FalseClass = CCall nil?@0x1038, v25
           CheckInterrupts
-          Return v27
+          Return v26
         ");
     }
 
