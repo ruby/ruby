@@ -174,7 +174,7 @@ pub const RIP: X86Opnd = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::
 // 64-bit GP registers
 const RAX_REG_NO: u8 = 0;
 const RSP_REG_NO: u8 = 4;
-const RBP_REG_NO: u8 = 5;
+pub const RBP_REG_NO: u8 = 5;
 const R12_REG_NO: u8 = 12;
 const R13_REG_NO: u8 = 13;
 
@@ -509,7 +509,7 @@ fn write_rm_unary(cb: &mut CodeBlock, op_mem_reg_8: u8, op_mem_reg_pref: u8, op_
 
 // Encode an add-like RM instruction with multiple possible encodings
 fn write_rm_multi(cb: &mut CodeBlock, op_mem_reg8: u8, op_mem_reg_pref: u8, op_reg_mem8: u8, op_reg_mem_pref: u8, op_mem_imm8: u8, op_mem_imm_sml: u8, op_mem_imm_lrg: u8, op_ext_imm: Option<u8>, opnd0: X86Opnd, opnd1: X86Opnd) {
-    assert!(matches!(opnd0, X86Opnd::Reg(_) | X86Opnd::Mem(_)));
+    assert!(matches!(opnd0, X86Opnd::Reg(_) | X86Opnd::Mem(_)), "unexpected opnd0: {opnd0:?}, {opnd1:?}");
 
     // Check the size of opnd0
     let opnd_size = opnd0.num_bits();
@@ -1334,7 +1334,7 @@ pub fn test(cb: &mut CodeBlock, rm_opnd: X86Opnd, test_opnd: X86Opnd) {
                 write_rm(cb, rm_num_bits == 16, rm_num_bits == 64, test_opnd, rm_opnd, None, &[0x85]);
             }
         },
-        _ => unreachable!()
+        _ => unreachable!("unexpected operands for test: {rm_opnd:?}, {test_opnd:?}")
     };
 }
 

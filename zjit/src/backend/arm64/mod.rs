@@ -1145,6 +1145,7 @@ impl Assembler {
                 },
                 Insn::Load { opnd, out } |
                 Insn::LoadInto { opnd, dest: out } => {
+                    assert!(matches!(out, Opnd::Reg(_)), "load destination must be a register: {insn:?}");
                     match *opnd {
                         Opnd::Reg(_) | Opnd::VReg { .. } => {
                             mov(cb, out.into(), opnd.into());
