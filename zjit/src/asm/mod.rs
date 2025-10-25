@@ -19,6 +19,9 @@ pub mod arm64;
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Label(pub usize);
 
+/// The object that knows how to encode the branch instruction.
+type BranchEncoder = Box<dyn Fn(&mut CodeBlock, i64, i64)>;
+
 /// Reference to an ASM label
 pub struct LabelRef {
     // Position in the code block where the label reference exists
@@ -33,7 +36,7 @@ pub struct LabelRef {
     num_bytes: usize,
 
     /// The object that knows how to encode the branch instruction.
-    encode: Box<dyn Fn(&mut CodeBlock, i64, i64)>,
+    encode: BranchEncoder,
 }
 
 /// Block of memory into which instructions can be assembled
