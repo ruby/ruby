@@ -66,4 +66,14 @@ class JSONCoderTest < Test::Unit::TestCase
     end
     assert_include error.message, "NaN not allowed in JSON"
   end
+
+  def test_nesting_recovery
+    coder = JSON::Coder.new
+    ary = []
+    ary << ary
+    assert_raise JSON::NestingError do
+      coder.dump(ary)
+    end
+    assert_equal '{"a":1}', coder.dump({ a: 1 })
+  end
 end

@@ -1124,7 +1124,7 @@ static inline long increase_depth(struct generate_json_data *data)
     JSON_Generator_State *state = data->state;
     long depth = ++state->depth;
     if (RB_UNLIKELY(depth > state->max_nesting && state->max_nesting)) {
-        rb_raise(eNestingError, "nesting of %ld is too deep", --state->depth);
+        rb_raise(eNestingError, "nesting of %ld is too deep. Did you try to serialize objects with circular references?", --state->depth);
     }
     return depth;
 }
@@ -1491,10 +1491,39 @@ static VALUE cState_generate(int argc, VALUE *argv, VALUE self)
     rb_check_arity(argc, 1, 2);
     VALUE obj = argv[0];
     VALUE io = argc > 1 ? argv[1] : Qnil;
-    VALUE result = cState_partial_generate(self, obj, generate_json, io);
+    return cState_partial_generate(self, obj, generate_json, io);
+}
+
+static VALUE cState_generate_new(int argc, VALUE *argv, VALUE self)
+{
+    rb_check_arity(argc, 1, 2);
+    VALUE obj = argv[0];
+    VALUE io = argc > 1 ? argv[1] : Qnil;
+
     GET_STATE(self);
-    (void)state;
-    return result;
+
+    JSON_Generator_State new_state;
+    MEMCPY(&new_state, state, JSON_Generator_State, 1);
+
+    // FIXME: depth shouldn't be part of JSON_Generator_State, as that prevents it from being used concurrently.
+    new_state.depth = 0;
+
+    char stack_buffer[FBUFFER_STACK_SIZE];
+    FBuffer buffer = {
+        .io = RTEST(io) ? io : Qfalse,
+    };
+    fbuffer_stack_init(&buffer, state->buffer_initial_length, stack_buffer, FBUFFER_STACK_SIZE);
+
+    struct generate_json_data data = {
+        .buffer = &buffer,
+        .vstate = Qfalse,
+        .state = &new_state,
+        .obj = obj,
+        .func = generate_json
+    };
+    rb_rescue(generate_json_try, (VALUE)&data, generate_json_rescue, (VALUE)&data);
+
+    return fbuffer_finalize(&buffer);
 }
 
 static VALUE cState_initialize(int argc, VALUE *argv, VALUE self)
@@ -2072,7 +2101,7 @@ void Init_generator(void)
     rb_define_method(cState, "buffer_initial_length", cState_buffer_initial_length, 0);
     rb_define_method(cState, "buffer_initial_length=", cState_buffer_initial_length_set, 1);
     rb_define_method(cState, "generate", cState_generate, -1);
-    rb_define_alias(cState, "generate_new", "generate"); // :nodoc:
+    rb_define_method(cState, "generate_new", cState_generate_new, -1); // :nodoc:
 
     rb_define_private_method(cState, "allow_duplicate_key?", cState_allow_duplicate_key_p, 0);
 
