@@ -2037,6 +2037,21 @@ impl Function {
         None
     }
 
+    pub fn assume_expected_cfunc(&mut self, block: BlockId, class: VALUE, method_id: ID, cfunc: *mut c_void, state: InsnId) -> bool {
+        let cme = unsafe { rb_callable_method_entry(class, method_id) };
+        if cme.is_null() { return false; }
+        let def_type = unsafe { get_cme_def_type(cme) };
+        if def_type != VM_METHOD_TYPE_CFUNC { return false; }
+        if unsafe { get_mct_func(get_cme_def_body_cfunc(cme)) } != cfunc {
+            return false;
+        }
+        self.gen_patch_points_for_optimized_ccall(block, class, method_id, cme, state);
+        if class.instance_can_have_singleton_class() {
+            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: class }, state });
+        }
+        true
+    }
+
     pub fn likely_a(&self, val: InsnId, ty: Type, state: InsnId) -> bool {
         if self.type_of(val).is_subtype(ty) {
             return true;
@@ -2545,16 +2560,16 @@ impl Function {
         self.infer_types();
     }
 
+    fn gen_patch_points_for_optimized_ccall(&mut self, block: BlockId, recv_class: VALUE, method_id: ID, method: *const rb_callable_method_entry_struct, state: InsnId) {
+        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoTracePoint, state });
+        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme: method }, state });
+    }
+
     /// Optimize SendWithoutBlock that land in a C method to a direct CCall without
     /// runtime lookup.
     fn optimize_c_calls(&mut self) {
         if unsafe { rb_zjit_method_tracing_currently_enabled() } {
             return;
-        }
-
-        fn gen_patch_points_for_optimized_ccall(fun: &mut Function, block: BlockId, recv_class: VALUE, method_id: ID, method: *const rb_callable_method_entry_struct, state: InsnId) {
-            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoTracePoint, state });
-            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme: method }, state });
         }
 
         // Try to reduce a Send insn to a CCallWithFrame
@@ -2615,7 +2630,7 @@ impl Function {
                     }
 
                     // Commit to the replacement. Put PatchPoint.
-                    gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
+                    fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, method, state);
                     if recv_class.instance_can_have_singleton_class() {
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
                     }
@@ -2717,7 +2732,7 @@ impl Function {
                     }
 
                     // Commit to the replacement. Put PatchPoint.
-                    gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
+                    fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, method, state);
                     if recv_class.instance_can_have_singleton_class() {
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
                     }
@@ -2784,7 +2799,7 @@ impl Function {
                     // func(int argc, VALUE *argv, VALUE recv)
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
                     if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
-                        gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
+                        fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, method, state);
 
                         if recv_class.instance_can_have_singleton_class() {
                             fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
@@ -13174,6 +13189,93 @@ mod opt_tests {
           PatchPoint MethodRedefined(NilClass@0x1000, ==@0x1008, cme:0x1010)
           v27:NilClass = GuardType v11, NilClass
           v28:CBool = IsBitEqual v27, v12
+          v29:BoolExact = BoxBool v28
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_specialize_nil_eqq() {
+        eval("
+            def test(a, b) = a === b
+            test(nil, 5)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(NilClass@0x1000, ===@0x1008, cme:0x1010)
+          v25:NilClass = GuardType v11, NilClass
+          PatchPoint MethodRedefined(NilClass@0x1000, ==@0x1038, cme:0x1040)
+          v28:CBool = IsBitEqual v25, v12
+          v29:BoolExact = BoxBool v28
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_specialize_true_eqq() {
+        eval("
+            def test(a, b) = a === b
+            test(true, 5)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(TrueClass@0x1000, ===@0x1008, cme:0x1010)
+          v25:TrueClass = GuardType v11, TrueClass
+          PatchPoint MethodRedefined(TrueClass@0x1000, ==@0x1038, cme:0x1040)
+          v28:CBool = IsBitEqual v25, v12
+          v29:BoolExact = BoxBool v28
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_specialize_false_eqq() {
+        eval("
+            def test(a, b) = a === b
+            test(true, 5)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(TrueClass@0x1000, ===@0x1008, cme:0x1010)
+          v25:TrueClass = GuardType v11, TrueClass
+          PatchPoint MethodRedefined(TrueClass@0x1000, ==@0x1038, cme:0x1040)
+          v28:CBool = IsBitEqual v25, v12
           v29:BoolExact = BoxBool v28
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts

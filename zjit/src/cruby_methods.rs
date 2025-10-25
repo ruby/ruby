@@ -194,6 +194,7 @@ pub fn init() -> Annotations {
 
     annotate!(rb_mKernel, "itself", inline_kernel_itself);
     annotate!(rb_mKernel, "block_given?", inline_kernel_block_given_p);
+    annotate!(rb_mKernel, "===", inline_eqq);
     annotate!(rb_cString, "bytesize", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cString, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cString, "length", types::Fixnum, no_gc, leaf, elidable);
@@ -377,6 +378,17 @@ fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, 
 fn inline_nilclass_nil_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     if !args.is_empty() { return None; }
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qtrue) }))
+}
+
+fn inline_eqq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
+    if !fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_obj_equal as _, state) {
+        return None;
+    }
+    let c_result = fun.push_insn(block, hir::Insn::IsBitEqual { left: recv, right: other });
+    let result = fun.push_insn(block, hir::Insn::BoxBool { val: c_result });
+    Some(result)
 }
 
 fn inline_kernel_nil_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
