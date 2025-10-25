@@ -613,17 +613,18 @@ remove_class_from_subclasses(struct st_table *tbl, VALUE ns_id, VALUE klass)
                 next->prev = prev;
             }
 
-            xfree(entry);
-
             if (first_entry) {
                 if (next) {
                     st_update(tbl, ns_id, remove_class_from_subclasses_replace_first_entry, (st_data_t)next);
                 }
                 else {
-                    // no subclass entries in this ns
+                    // no subclass entries in this ns after the deletion
                     st_delete(tbl, &ns_id, NULL);
                 }
             }
+
+            xfree(entry);
+
             break;
         }
         else if (first_entry) {
