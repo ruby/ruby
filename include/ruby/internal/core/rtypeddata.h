@@ -543,11 +543,10 @@ RTYPEDDATA_GET_DATA(VALUE obj)
     }
 #endif
 
-    /* We reuse the data pointer in embedded TypedData. We can't use offsetof
-     * since RTypedData a non-POD type in C++. */
-    const size_t embedded_typed_data_size = sizeof(struct RTypedData) - sizeof(void *);
-
-    return RTYPEDDATA_EMBEDDED_P(obj) ? (char *)obj + embedded_typed_data_size : RTYPEDDATA(obj)->data;
+    /* We reuse the data pointer in embedded TypedData. */
+    return RTYPEDDATA_EMBEDDED_P(obj) ?
+        RBIMPL_CAST((void *)&(RTYPEDDATA(obj)->data)) :
+        RTYPEDDATA(obj)->data;
 }
 
 RBIMPL_ATTR_PURE()
