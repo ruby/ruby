@@ -159,6 +159,14 @@ pub fn init() -> Annotations {
             let props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: types::BasicObject, inline: $inline };
             annotate_c_method(cfuncs, unsafe { $module }, $method_name, props);
         };
+        ($module:ident, $method_name:literal, $inline:ident, $return_type:expr $(, $properties:ident)*) => {
+            #[allow(unused_mut)]
+            let mut props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: $return_type, inline: $inline };
+            $(
+                props.$properties = true;
+            )*
+            annotate_c_method(cfuncs, unsafe { $module }, $method_name, props);
+        };
         ($module:ident, $method_name:literal, $return_type:expr $(, $properties:ident)*) => {
             #[allow(unused_mut)]
             let mut props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: $return_type, inline: no_inline };
@@ -217,7 +225,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
     annotate!(rb_cInteger, "succ", inline_integer_succ);
     annotate!(rb_cInteger, "^", inline_integer_xor);
-    annotate!(rb_cString, "to_s", inline_string_to_s);
+    annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
     annotate!(thread_singleton, "current", types::BasicObject, no_gc, leaf);
 

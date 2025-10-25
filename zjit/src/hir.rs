@@ -13712,6 +13712,33 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_string_subclass_to_s_returns_string_exact() {
+        eval(r#"
+            class C < String; end
+            def test(o) = o.to_s
+            test(C.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, to_s@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v23:StringSubclass[class_exact:C] = GuardType v9, StringSubclass[class_exact:C]
+          v24:StringExact = CCallWithFrame to_s@0x1038, v23
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
     fn test_inline_string_literal_to_s() {
         eval(r#"
             def test = "foo".to_s
