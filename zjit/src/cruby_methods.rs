@@ -210,8 +210,8 @@ pub fn init() -> Annotations {
     annotate!(rb_cHash, "[]", inline_hash_aref);
     annotate!(rb_cHash, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cHash, "empty?", types::BoolExact, no_gc, leaf, elidable);
-    annotate!(rb_cNilClass, "nil?", types::TrueClass, no_gc, leaf, elidable);
-    annotate!(rb_mKernel, "nil?", types::FalseClass, no_gc, leaf, elidable);
+    annotate!(rb_cNilClass, "nil?", inline_nilclass_nil_p);
+    annotate!(rb_mKernel, "nil?", inline_kernel_nil_p);
     annotate!(rb_mKernel, "respond_to?", inline_kernel_respond_to_p);
     annotate!(rb_cBasicObject, "==", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!", types::BoolExact, no_gc, leaf, elidable);
@@ -361,6 +361,16 @@ fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, 
     if !args.is_empty() { return None; }
     let result = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qnil) });
     Some(result)
+}
+
+fn inline_nilclass_nil_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    if !args.is_empty() { return None; }
+    Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qtrue) }))
+}
+
+fn inline_kernel_nil_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    if !args.is_empty() { return None; }
+    Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }))
 }
 
 fn inline_kernel_respond_to_p(
