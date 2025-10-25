@@ -102,7 +102,7 @@ rb_class_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime)
         rb_id_table_free(tbl);
     }
 
-    rb_class_classext_free_subclasses(ext, klass);
+    rb_class_classext_free_subclasses(ext, klass, false);
 
     if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext)) {
         RUBY_ASSERT(is_prime); // superclasses should only be used on prime
@@ -126,11 +126,28 @@ rb_iclass_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime)
         rb_id_table_free(RCLASSEXT_CALLABLE_M_TBL(ext));
     }
 
-    rb_class_classext_free_subclasses(ext, klass);
+    rb_class_classext_free_subclasses(ext, klass, false);
 
     if (!is_prime) { // the prime classext will be freed with RClass
         xfree(ext);
     }
+}
+
+static void
+iclass_free_orphan_classext(VALUE klass, rb_classext_t *ext)
+{
+    if (RCLASSEXT_ICLASS_IS_ORIGIN(ext) && !RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext)) {
+        /* Method table is not shared for origin iclasses of classes */
+        rb_id_table_free(RCLASSEXT_M_TBL(ext));
+    }
+
+    if (RCLASSEXT_CALLABLE_M_TBL(ext) != NULL) {
+        rb_id_table_free(RCLASSEXT_CALLABLE_M_TBL(ext));
+    }
+
+    rb_class_classext_free_subclasses(ext, klass, true); // replacing this classext with a newer one
+
+    xfree(ext);
 }
 
 struct rb_class_set_namespace_classext_args {
@@ -145,7 +162,7 @@ rb_class_set_namespace_classext_update(st_data_t *key_ptr, st_data_t *val_ptr, s
 
     if (existing) {
         if (LIKELY(BUILTIN_TYPE(args->obj) == T_ICLASS)) {
-            rb_iclass_classext_free(args->obj, (rb_classext_t *)*val_ptr, false);
+            iclass_free_orphan_classext(args->obj, (rb_classext_t *)*val_ptr);
         }
         else {
             rb_bug("Updating existing classext for non-iclass never happen");
@@ -577,7 +594,7 @@ void
 rb_class_remove_subclass_head(VALUE klass)
 {
     rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
-    rb_class_classext_free_subclasses(ext, klass);
+    rb_class_classext_free_subclasses(ext, klass, false);
 }
 
 static struct rb_subclass_entry *
@@ -659,7 +676,7 @@ rb_class_remove_from_module_subclasses(VALUE klass)
 }
 
 void
-rb_class_classext_free_subclasses(rb_classext_t *ext, VALUE klass)
+rb_class_classext_free_subclasses(rb_classext_t *ext, VALUE klass, bool replacing)
 {
     rb_subclass_anchor_t *anchor = RCLASSEXT_SUBCLASSES(ext);
     struct st_table *tbl = anchor->ns_subclasses->tbl;
@@ -678,12 +695,12 @@ rb_class_classext_free_subclasses(rb_classext_t *ext, VALUE klass)
     rb_ns_subclasses_ref_dec(anchor->ns_subclasses);
     xfree(anchor);
 
-    if (RCLASSEXT_NS_SUPER_SUBCLASSES(ext)) {
+    if (!replacing && RCLASSEXT_NS_SUPER_SUBCLASSES(ext)) {
         rb_ns_subclasses_t *ns_sub = RCLASSEXT_NS_SUPER_SUBCLASSES(ext);
         remove_class_from_subclasses(ns_sub->tbl, ns_id, klass);
         rb_ns_subclasses_ref_dec(ns_sub);
     }
-    if (RCLASSEXT_NS_MODULE_SUBCLASSES(ext)) {
+    if (!replacing && RCLASSEXT_NS_MODULE_SUBCLASSES(ext)) {
         rb_ns_subclasses_t *ns_sub = RCLASSEXT_NS_MODULE_SUBCLASSES(ext);
         remove_class_from_subclasses(ns_sub->tbl, ns_id, klass);
         rb_ns_subclasses_ref_dec(ns_sub);
