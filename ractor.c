@@ -1940,8 +1940,10 @@ move_enter(VALUE obj, struct obj_traverse_replace_data *data)
     }
     else {
         VALUE type = RB_BUILTIN_TYPE(obj);
+        size_t slot_size = rb_gc_obj_slot_size(obj);
         type |= wb_protected_types[type] ? FL_WB_PROTECTED : 0;
-        NEWOBJ_OF(moved, struct RBasic, 0, type, rb_gc_obj_slot_size(obj), 0);
+        NEWOBJ_OF(moved, struct RBasic, 0, type, slot_size, 0);
+        MEMZERO(&moved[1], char, slot_size - sizeof(*moved));
         data->replacement = (VALUE)moved;
         return traverse_cont;
     }
