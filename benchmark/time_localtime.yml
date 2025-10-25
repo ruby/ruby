@@ -1,0 +1,33 @@
+prelude: |
+  # frozen_string_literal: true
+  # Benchmark for localtime cache performance
+  # Tests various access patterns that benefit from caching
+
+  # Sequential timestamps (common in log processing)
+  sequential_times = Array.new(100) { |i| Time.at(1609459200 + i) }
+
+  # Random timestamps (common in zip file processing)
+  random_times = Array.new(100) { |i| Time.at(1609459200 + (i * 1103515245 + 12345) % 86400) }
+
+  # Repeated timestamp (common in batch processing)
+  repeated_time = Time.at(1609459200)
+
+benchmark:
+  # Sequential access pattern - benefits from cache
+  sequential: |
+    sequential_times.each { |t| t.localtime }
+
+  # Random access pattern - tests cache distribution
+  random: |
+    random_times.each { |t| t.localtime }
+
+  # Repeated access - maximum cache benefit
+  repeated: |
+    100.times { repeated_time.localtime }
+
+  # Mixed pattern - realistic workload
+  mixed: |
+    50.times do |i|
+      Time.at(1609459200 + i).localtime
+      Time.at(1609459200 + i * 3600).localtime
+    end
