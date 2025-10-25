@@ -610,6 +610,9 @@ pub enum Insn {
     IsMethodCfunc { val: InsnId, cd: *const rb_call_data, cfunc: *const u8, state: InsnId },
     /// Return C `true` if left == right
     IsBitEqual { left: InsnId, right: InsnId },
+    /// Return C `true` if left != right
+    IsBitNotEqual { left: InsnId, right: InsnId },
+    /// Convert a C `bool` to a Ruby `Qtrue`/`Qfalse`. Same as `RBOOL` macro.
     BoxBool { val: InsnId },
     // TODO(max): In iseq body types that are not ISEQ_TYPE_METHOD, rewrite to Constant false.
     Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId, state: InsnId },
@@ -998,6 +1001,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::IsNil { val } => { write!(f, "IsNil {val}") }
             Insn::IsMethodCfunc { val, cd, .. } => { write!(f, "IsMethodCFunc {val}, :{}", ruby_call_method_name(*cd)) }
             Insn::IsBitEqual { left, right } => write!(f, "IsBitEqual {left}, {right}"),
+            Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
             Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
@@ -1625,6 +1629,7 @@ impl Function {
             &IsNil { val } => IsNil { val: find!(val) },
             &IsMethodCfunc { val, cd, cfunc, state } => IsMethodCfunc { val: find!(val), cd, cfunc, state },
             &IsBitEqual { left, right } => IsBitEqual { left: find!(left), right: find!(right) },
+            &IsBitNotEqual { left, right } => IsBitNotEqual { left: find!(left), right: find!(right) },
             &BoxBool { val } => BoxBool { val: find!(val) },
             Jump(target) => Jump(find_branch_edge!(target)),
             &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
@@ -1813,6 +1818,7 @@ impl Function {
             Insn::IsNil { .. } => types::CBool,
             Insn::IsMethodCfunc { .. } => types::CBool,
             Insn::IsBitEqual { .. } => types::CBool,
+            Insn::IsBitNotEqual { .. } => types::CBool,
             Insn::BoxBool { .. } => types::BoolExact,
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
@@ -3156,6 +3162,7 @@ impl Function {
             | &Insn::FixnumOr { left, right }
             | &Insn::FixnumXor { left, right }
             | &Insn::IsBitEqual { left, right }
+            | &Insn::IsBitNotEqual { left, right }
             => {
                 worklist.push_back(left);
                 worklist.push_back(right);
@@ -10553,6 +10560,38 @@ mod opt_tests {
           v22:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v22
+        ");
+    }
+
+    #[test]
+    fn test_specialize_basic_object_neq() {
+        eval("
+            class C; end
+            def test(a, b) = a != b
+            test(C.new, 5)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, !=@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v28:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1000, ==@0x1038, cme:0x1040)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v32:CBool = IsBitNotEqual v28, v12
+          v33:BoolExact = BoxBool v32
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v33
         ");
     }
 
