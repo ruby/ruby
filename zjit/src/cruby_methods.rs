@@ -156,20 +156,22 @@ pub fn init() -> Annotations {
 
     macro_rules! annotate {
         ($module:ident, $method_name:literal, $inline:ident) => {
-            let props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: types::BasicObject, inline: $inline };
+            let mut props = FnProperties::default();
+            props.inline = $inline;
             annotate_c_method(cfuncs, unsafe { $module }, $method_name, props);
         };
         ($module:ident, $method_name:literal, $inline:ident, $return_type:expr $(, $properties:ident)*) => {
-            #[allow(unused_mut)]
-            let mut props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: $return_type, inline: $inline };
+            let mut props = FnProperties::default();
+            props.return_type = $return_type;
+            props.inline = $inline;
             $(
                 props.$properties = true;
             )*
             annotate_c_method(cfuncs, unsafe { $module }, $method_name, props);
         };
         ($module:ident, $method_name:literal, $return_type:expr $(, $properties:ident)*) => {
-            #[allow(unused_mut)]
-            let mut props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: $return_type, inline: no_inline };
+            let mut props = FnProperties::default();
+            props.return_type = $return_type;
             $(
                 props.$properties = true;
             )*
@@ -183,13 +185,8 @@ pub fn init() -> Annotations {
             annotate_builtin!($module, $method_name, $return_type, no_gc, leaf, elidable)
         };
         ($module:ident, $method_name:literal, $return_type:expr, $($properties:ident),+) => {
-            let mut props = FnProperties {
-                no_gc: false,
-                leaf: false,
-                elidable: false,
-                return_type: $return_type,
-                inline: no_inline,
-            };
+            let mut props = FnProperties::default();
+            props.return_type = $return_type;
             $(props.$properties = true;)+
             annotate_builtin_method(builtin_funcs, unsafe { $module }, $method_name, props);
         }
