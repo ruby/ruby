@@ -144,11 +144,11 @@ rb_class_set_namespace_classext_update(st_data_t *key_ptr, st_data_t *val_ptr, s
     struct rb_class_set_namespace_classext_args *args = (struct rb_class_set_namespace_classext_args *)a;
 
     if (existing) {
-        if (BUILTIN_TYPE(args->obj) == T_ICLASS) {
+        if (LIKELY(BUILTIN_TYPE(args->obj) == T_ICLASS)) {
             rb_iclass_classext_free(args->obj, (rb_classext_t *)*val_ptr, false);
         }
         else {
-            rb_class_classext_free(args->obj, (rb_classext_t *)*val_ptr, false);
+            rb_bug("Updating existing classext for non-iclass never happen");
         }
     }
 
@@ -375,6 +375,8 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_n
 
     RCLASSEXT_SET_INCLUDER(ext, iclass, RCLASSEXT_INCLUDER(src));
 
+    VM_ASSERT(FL_TEST_RAW(iclass, RCLASS_NAMESPACEABLE));
+
     first_set = RCLASS_SET_NAMESPACE_CLASSEXT(iclass, ns, ext);
     if (first_set) {
         RCLASS_SET_PRIME_CLASSEXT_WRITABLE(iclass, false);
@@ -454,6 +456,7 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
                 if (RBASIC_CLASS(iclass) == klass) {
                     // Is the subclass an ICLASS including this module into another class
                     // If so we need to re-associate it under our namespace with the new ext
+                    VM_ASSERT(FL_TEST_RAW(iclass, RCLASS_NAMESPACEABLE));
                     class_duplicate_iclass_classext(iclass, ext, ns);
                 }
             }
