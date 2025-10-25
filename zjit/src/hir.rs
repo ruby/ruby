@@ -610,6 +610,9 @@ pub enum Insn {
     IsMethodCfunc { val: InsnId, cd: *const rb_call_data, cfunc: *const u8, state: InsnId },
     /// Return C `true` if left == right
     IsBitEqual { left: InsnId, right: InsnId },
+    /// Return C `true` if left != right
+    IsBitNotEqual { left: InsnId, right: InsnId },
+    BoxBool { val: InsnId },
     // TODO(max): In iseq body types that are not ISEQ_TYPE_METHOD, rewrite to Constant false.
     Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId, state: InsnId },
     GetConstantPath { ic: *const iseq_inline_constant_cache, state: InsnId },
@@ -997,6 +1000,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::IsNil { val } => { write!(f, "IsNil {val}") }
             Insn::IsMethodCfunc { val, cd, .. } => { write!(f, "IsMethodCFunc {val}, :{}", ruby_call_method_name(*cd)) }
             Insn::IsBitEqual { left, right } => write!(f, "IsBitEqual {left}, {right}"),
+            Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
+            Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
             Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}") }
@@ -1611,6 +1616,8 @@ impl Function {
             &IsNil { val } => IsNil { val: find!(val) },
             &IsMethodCfunc { val, cd, cfunc, state } => IsMethodCfunc { val: find!(val), cd, cfunc, state },
             &IsBitEqual { left, right } => IsBitEqual { left: find!(left), right: find!(right) },
+            &IsBitNotEqual { left, right } => IsBitNotEqual { left: find!(left), right: find!(right) },
+            &BoxBool { val } => BoxBool { val: find!(val) },
             Jump(target) => Jump(find_branch_edge!(target)),
             &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
             &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
@@ -1798,6 +1805,8 @@ impl Function {
             Insn::IsNil { .. } => types::CBool,
             Insn::IsMethodCfunc { .. } => types::CBool,
             Insn::IsBitEqual { .. } => types::CBool,
+            Insn::IsBitNotEqual { .. } => types::CBool,
+            Insn::BoxBool { .. } => types::BoolExact,
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
@@ -2019,6 +2028,21 @@ impl Function {
             }
         }
         None
+    }
+
+    pub fn assume_expected_cfunc(&mut self, block: BlockId, class: VALUE, method_id: ID, cfunc: *mut c_void, state: InsnId) -> bool {
+        let cme = unsafe { rb_callable_method_entry(class, method_id) };
+        if cme.is_null() { return false; }
+        let def_type = unsafe { get_cme_def_type(cme) };
+        if def_type != VM_METHOD_TYPE_CFUNC { return false; }
+        if unsafe { get_mct_func(get_cme_def_body_cfunc(cme)) } != cfunc {
+            return false;
+        }
+        self.gen_patch_points_for_optimized_ccall(block, class, method_id, cme, state);
+        if class.instance_can_have_singleton_class() {
+            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: class }, state });
+        }
+        true
     }
 
     pub fn likely_a(&self, val: InsnId, ty: Type, state: InsnId) -> bool {
@@ -2518,16 +2542,17 @@ impl Function {
         self.infer_types();
     }
 
+    fn gen_patch_points_for_optimized_ccall(&mut self, block: BlockId, recv_class: VALUE, method_id: ID, method: *const rb_callable_method_entry_struct, state: InsnId) {
+        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoTracePoint, state });
+        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme: method }, state });
+    }
+
+
     /// Optimize SendWithoutBlock that land in a C method to a direct CCall without
     /// runtime lookup.
     fn optimize_c_calls(&mut self) {
         if unsafe { rb_zjit_method_tracing_currently_enabled() } {
             return;
-        }
-
-        fn gen_patch_points_for_optimized_ccall(fun: &mut Function, block: BlockId, recv_class: VALUE, method_id: ID, method: *const rb_callable_method_entry_struct, state: InsnId) {
-            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoTracePoint, state });
-            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme: method }, state });
         }
 
         // Try to reduce a Send insn to a CCallWithFrame
@@ -2588,7 +2613,7 @@ impl Function {
                     }
 
                     // Commit to the replacement. Put PatchPoint.
-                    gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
+                    fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, method, state);
                     if recv_class.instance_can_have_singleton_class() {
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
                     }
@@ -2690,7 +2715,7 @@ impl Function {
                     }
 
                     // Commit to the replacement. Put PatchPoint.
-                    gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
+                    fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, method, state);
                     if recv_class.instance_can_have_singleton_class() {
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
                     }
@@ -2757,7 +2782,7 @@ impl Function {
                     // func(int argc, VALUE *argv, VALUE recv)
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
                     if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
-                        gen_patch_points_for_optimized_ccall(fun, block, recv_class, method_id, method, state);
+                        fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, method, state);
 
                         if recv_class.instance_can_have_singleton_class() {
                             fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
@@ -3071,6 +3096,7 @@ impl Function {
             | &Insn::Return { val }
             | &Insn::Test { val }
             | &Insn::SetLocal { val, .. }
+            | &Insn::BoxBool { val }
             | &Insn::IsNil { val } =>
                 worklist.push_back(val),
             &Insn::SetGlobal { val, state, .. }
@@ -3113,6 +3139,7 @@ impl Function {
             | &Insn::FixnumOr { left, right }
             | &Insn::FixnumXor { left, right }
             | &Insn::IsBitEqual { left, right }
+            | &Insn::IsBitNotEqual { left, right }
             => {
                 worklist.push_back(left);
                 worklist.push_back(right);
@@ -10487,6 +10514,38 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_specialize_basic_object_neq() {
+        eval("
+            class C; end
+            def test(a, b) = a != b
+            test(C.new, 5)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, !=@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v28:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1000, ==@0x1038, cme:0x1040)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v32:CBool = IsBitNotEqual v28, v12
+          v33:BoolExact = BoxBool v32
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v33
+        ");
+    }
+
+    #[test]
     fn test_do_not_eliminate_get_constant_path() {
         eval("
             def test()
@@ -12671,10 +12730,10 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
+          v22:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
-          v23:TrueClass = CCall nil?@0x1038, v10
           CheckInterrupts
-          Return v23
+          Return v22
         ");
     }
 
@@ -12722,10 +12781,10 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
+          v22:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v23:FalseClass = CCall nil?@0x1038, v10
           CheckInterrupts
-          Return v23
+          Return v22
         ");
     }
 
@@ -12776,10 +12835,10 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
           v24:NilClass = GuardType v9, NilClass
+          v25:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:TrueClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -12803,10 +12862,10 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(FalseClass@0x1000, nil?@0x1008, cme:0x1010)
           v24:FalseClass = GuardType v9, FalseClass
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -12830,10 +12889,10 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(TrueClass@0x1000, nil?@0x1008, cme:0x1010)
           v24:TrueClass = GuardType v9, TrueClass
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -12857,10 +12916,10 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Symbol@0x1000, nil?@0x1008, cme:0x1010)
           v24:StaticSymbol = GuardType v9, StaticSymbol
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -12884,10 +12943,10 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
           v24:Fixnum = GuardType v9, Fixnum
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -12911,10 +12970,10 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Float@0x1000, nil?@0x1008, cme:0x1010)
           v24:Flonum = GuardType v9, Flonum
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -12939,10 +12998,10 @@ mod opt_tests {
           PatchPoint MethodRedefined(String@0x1000, nil?@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(String@0x1000)
           v25:StringExact = GuardType v9, StringExact
+          v26:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v27:FalseClass = CCall nil?@0x1038, v25
           CheckInterrupts
-          Return v27
+          Return v26
         ");
     }
 
@@ -13031,7 +13090,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_specialize_basic_object_eq_to_ccall() {
+    fn test_specialize_basic_object_eq() {
         eval("
             class C; end
             def test(a, b) = a == b
@@ -13053,10 +13112,160 @@ mod opt_tests {
           PatchPoint MethodRedefined(C@0x1000, ==@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(C@0x1000)
           v28:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
+          v29:CBool = IsBitEqual v28, v12
+          v30:BoolExact = BoxBool v29
           IncrCounter inline_cfunc_optimized_send_count
-          v30:BoolExact = CCall ==@0x1038, v28, v12
           CheckInterrupts
           Return v30
+        ");
+    }
+
+    #[test]
+    fn test_specialize_basic_object_eqq() {
+        eval("
+            class C; end
+            def test(a, b) = a === b
+
+            test(C.new, C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, ===@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v26:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
+          PatchPoint MethodRedefined(C@0x1000, ==@0x1038, cme:0x1040)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v30:CBool = IsBitEqual v26, v12
+          v31:BoolExact = BoxBool v30
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v31
+        ");
+    }
+
+    #[test]
+    fn test_specialize_nil_eq() {
+        eval("
+            def test(a, b) = a == b
+
+            test(nil, 5)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(NilClass@0x1000, ==@0x1008, cme:0x1010)
+          v27:NilClass = GuardType v11, NilClass
+          v28:CBool = IsBitEqual v27, v12
+          v29:BoolExact = BoxBool v28
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_specialize_nil_eqq() {
+        eval("
+            def test(a, b) = a === b
+            test(nil, 5)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(NilClass@0x1000, ===@0x1008, cme:0x1010)
+          v25:NilClass = GuardType v11, NilClass
+          PatchPoint MethodRedefined(NilClass@0x1000, ==@0x1038, cme:0x1040)
+          v28:CBool = IsBitEqual v25, v12
+          v29:BoolExact = BoxBool v28
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_specialize_true_eqq() {
+        eval("
+            def test(a, b) = a === b
+            test(true, 5)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(TrueClass@0x1000, ===@0x1008, cme:0x1010)
+          v25:TrueClass = GuardType v11, TrueClass
+          PatchPoint MethodRedefined(TrueClass@0x1000, ==@0x1038, cme:0x1040)
+          v28:CBool = IsBitEqual v25, v12
+          v29:BoolExact = BoxBool v28
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_specialize_false_eqq() {
+        eval("
+            def test(a, b) = a === b
+            test(true, 5)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(TrueClass@0x1000, ===@0x1008, cme:0x1010)
+          v25:TrueClass = GuardType v11, TrueClass
+          PatchPoint MethodRedefined(TrueClass@0x1000, ==@0x1038, cme:0x1040)
+          v28:CBool = IsBitEqual v25, v12
+          v29:BoolExact = BoxBool v28
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v29
         ");
     }
 
@@ -13655,6 +13864,33 @@ mod opt_tests {
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v12
+        ");
+    }
+
+    #[test]
+    fn test_string_subclass_to_s_returns_string_exact() {
+        eval(r#"
+            class C < String; end
+            def test(o) = o.to_s
+            test(C.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, to_s@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v23:StringSubclass[class_exact:C] = GuardType v9, StringSubclass[class_exact:C]
+          v24:StringExact = CCallWithFrame to_s@0x1038, v23
+          CheckInterrupts
+          Return v24
         ");
     }
 
