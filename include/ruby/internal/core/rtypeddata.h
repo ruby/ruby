@@ -360,8 +360,7 @@ struct RTypedData {
     /**
      * This is a `const rb_data_type_t *const` value, with the low bits set:
      *
-     * 1: Always set, to differentiate RTypedData from RData.
-     * 2: Set if object is embedded.
+     * 1: Set if object is embedded.
      *
      * This field  stores various  information about how  Ruby should  handle a
      * data.   This roughly  resembles a  Ruby level  class (apart  from method
