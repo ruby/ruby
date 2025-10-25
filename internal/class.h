@@ -490,7 +490,7 @@ void rb_class_classext_foreach(VALUE klass, rb_class_classext_foreach_callback_f
 void rb_class_subclass_add(VALUE super, VALUE klass);
 void rb_class_remove_from_super_subclasses(VALUE);
 void rb_class_remove_from_module_subclasses(VALUE);
-void rb_class_classext_free_subclasses(rb_classext_t *, VALUE);
+void rb_class_classext_free_subclasses(rb_classext_t *, VALUE, bool);
 void rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE);
 void rb_class_detach_subclasses(VALUE);
 void rb_class_detach_module_subclasses(VALUE);
