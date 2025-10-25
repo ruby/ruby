@@ -538,51 +538,6 @@ class TestNamespace < Test::Unit::TestCase
     assert !$LOADED_FEATURES.include?(File.join(namespace_dir, 'blank2.rb'))
   end
 
-  def test_prelude_gems_and_loaded_features
-    assert_in_out_err([ENV_ENABLE_NAMESPACE, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
-      begin;
-        puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/bundled_gems.rb") }&.first].join
-        puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
-
-        require "error_highlight"
-
-        puts ["after:", $LOADED_FEATURES.select{ it.end_with?("/bundled_gems.rb") }&.first].join
-        puts ["after:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
-      end;
-
-      # No additional warnings except for experimental warnings
-      assert_includes error.join("\n"), EXPERIMENTAL_WARNINGS
-      assert_equal 2, error.size
-
-      assert_includes output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
-      assert_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
-      assert_includes output.grep(/^after:/).join("\n"), '/bundled_gems.rb'
-      assert_includes output.grep(/^after:/).join("\n"), '/error_highlight.rb'
-    end
-  end
-
-  def test_prelude_gems_and_loaded_features_with_disable_gems
-    assert_in_out_err([ENV_ENABLE_NAMESPACE, "--disable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
-      begin;
-        puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/bundled_gems.rb") }&.first].join
-        puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
-
-        require "error_highlight"
-
-        puts ["after:", $LOADED_FEATURES.select{ it.end_with?("/bundled_gems.rb") }&.first].join
-        puts ["after:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
-      end;
-
-      assert_includes error.join("\n"), EXPERIMENTAL_WARNINGS
-      assert_equal 2, error.size
-
-      refute_includes output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
-      refute_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
-      refute_includes output.grep(/^after:/).join("\n"), '/bundled_gems.rb'
-      assert_includes output.grep(/^after:/).join("\n"), '/error_highlight.rb'
-    end
-  end
-
   def test_eval_basic
     pend unless Namespace.enabled?
 
@@ -663,5 +618,77 @@ class TestNamespace < Test::Unit::TestCase
       result = @n.eval("2 + 2")
       assert_equal 4, result
     end
+  end
+
+  # Tests which run always (w/o RUBY_NAMESPACE=1 globally)
+
+  def test_prelude_gems_and_loaded_features
+    assert_in_out_err([ENV_ENABLE_NAMESPACE, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/bundled_gems.rb") }&.first].join
+        puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
+
+        require "error_highlight"
+
+        puts ["after:", $LOADED_FEATURES.select{ it.end_with?("/bundled_gems.rb") }&.first].join
+        puts ["after:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
+      end;
+
+      # No additional warnings except for experimental warnings
+      assert_includes error.join("\n"), EXPERIMENTAL_WARNINGS
+      assert_equal 2, error.size
+
+      assert_includes output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
+      assert_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
+      assert_includes output.grep(/^after:/).join("\n"), '/bundled_gems.rb'
+      assert_includes output.grep(/^after:/).join("\n"), '/error_highlight.rb'
+    end
+  end
+
+  def test_prelude_gems_and_loaded_features_with_disable_gems
+    assert_in_out_err([ENV_ENABLE_NAMESPACE, "--disable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/bundled_gems.rb") }&.first].join
+        puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
+
+        require "error_highlight"
+
+        puts ["after:", $LOADED_FEATURES.select{ it.end_with?("/bundled_gems.rb") }&.first].join
+        puts ["after:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
+      end;
+
+      assert_includes error.join("\n"), EXPERIMENTAL_WARNINGS
+      assert_equal 2, error.size
+
+      refute_includes output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
+      refute_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
+      refute_includes output.grep(/^after:/).join("\n"), '/bundled_gems.rb'
+      assert_includes output.grep(/^after:/).join("\n"), '/error_highlight.rb'
+    end
+  end
+
+  def test_root_and_main_methods
+    assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      pend unless Namespace.respond_to?(:root) and Namespace.respond_to?(:main) # for RUBY_DEBUG > 0
+
+      assert Namespace.root.respond_to?(:root?)
+      assert Namespace.main.respond_to?(:main?)
+
+      assert Namespace.root.root?
+      assert Namespace.main.main?
+      assert_equal Namespace.main, Namespace.current
+
+      $a = 1
+      $LOADED_FEATURES.push("/tmp/foobar")
+
+      assert_equal 2, Namespace.root.eval('$a = 2; $a')
+      assert !Namespace.root.eval('$LOADED_FEATURES.push("/tmp/barbaz"); $LOADED_FEATURES.include?("/tmp/foobar")')
+      assert "FooClass", Namespace.root.eval('class FooClass; end; Object.const_get(:FooClass).to_s')
+
+      assert_equal 1, $a
+      assert !$LOADED_FEATURES.include?("/tmp/barbaz")
+      assert !Object.const_defined?(:FooClass)
+    end;
   end
 end
