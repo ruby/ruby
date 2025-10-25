@@ -217,7 +217,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cNilClass, "nil?", inline_nilclass_nil_p);
     annotate!(rb_mKernel, "nil?", inline_kernel_nil_p);
     annotate!(rb_mKernel, "respond_to?", inline_kernel_respond_to_p);
-    annotate!(rb_cBasicObject, "==", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cBasicObject, "==", inline_basic_object_eq, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
     annotate!(rb_cInteger, "succ", inline_integer_succ);
@@ -359,6 +359,13 @@ fn inline_integer_xor(fun: &mut hir::Function, block: hir::BlockId, recv: hir::I
         return Some(result);
     }
     None
+}
+
+fn inline_basic_object_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    let c_result = fun.push_insn(block, hir::Insn::IsBitEqual { left: recv, right: other });
+    let result = fun.push_insn(block, hir::Insn::BoxBool { val: c_result });
+    Some(result)
 }
 
 fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
