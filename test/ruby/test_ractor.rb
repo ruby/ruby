@@ -99,6 +99,19 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_move_nested_hash_during_gc_with_yjit
+    original_gc_stress = GC.stress
+    assert_ractor(<<~'RUBY', args: [{ "RUBY_YJIT_ENABLE" => "1" }])
+      GC.stress = true
+      hash = { foo: { bar: "hello" }, baz: { qux: "there" } }
+      result = Ractor.new { Ractor.receive }.send(hash, move: true).value
+      assert_equal "hello", result[:foo][:bar]
+      assert_equal "there", result[:baz][:qux]
+    RUBY
+  ensure
+    GC.stress = original_gc_stress
+  end
+
   def test_fork_raise_isolation_error
     assert_ractor(<<~'RUBY')
       ractor = Ractor.new do
