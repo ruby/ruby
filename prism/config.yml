@@ -1515,6 +1515,16 @@ nodes:
 
               foo(bar)
                      ^
+      - name: equal_loc
+        type: location?
+        comment: |
+          Represents the location of the equal sign, in the case that this is an attribute write.
+
+              foo.bar = value
+                      ^
+
+              foo[bar] = value
+                       ^
       - name: block
         type: node?
         kind:

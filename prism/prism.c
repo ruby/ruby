@@ -2650,6 +2650,7 @@ pm_call_node_create(pm_parser_t *parser, pm_node_flags_t flags) {
         .opening_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .arguments = NULL,
         .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .equal_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .block = NULL,
         .name = 0
     };
@@ -13810,6 +13811,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
 
                     pm_arguments_node_arguments_append(arguments, value);
                     call->base.location.end = arguments->base.location.end;
+                    call->equal_loc = PM_LOCATION_TOKEN_VALUE(operator);
 
                     parse_write_name(parser, &call->name);
                     pm_node_flag_set((pm_node_t *) call, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE | pm_implicit_array_write_flags(value, PM_CALL_NODE_FLAGS_IMPLICIT_ARRAY));
@@ -13831,6 +13833,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
 
                 // Replace the name with "[]=".
                 call->name = pm_parser_constant_id_constant(parser, "[]=", 3);
+                call->equal_loc = PM_LOCATION_TOKEN_VALUE(operator);
 
                 // Ensure that the arguments for []= don't contain keywords
                 pm_index_arguments_check(parser, call->arguments, call->block);
