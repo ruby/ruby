@@ -3756,12 +3756,12 @@ CODE
         fallback = proc { raise }
       RUBY
       "method" => <<~RUBY,
-        def my_method = raise
+        def my_method(_str) = raise
         fallback = method(:my_method)
       RUBY
       "aref" => <<~RUBY,
         fallback = Object.new
-        def fallback.[] = raise
+        def fallback.[](_str) = raise
       RUBY
     }.each do |type, code|
       assert_no_memory_leak([], '', <<~RUBY, "fallback type is #{type}", rss: true)
