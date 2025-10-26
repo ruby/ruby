@@ -1,5 +1,6 @@
 #include "ruby.h"
 #include "ruby/encoding.h"
+#include "../vendor/ryu.h"
 
 /* shims */
 /* This is the fallback definition from Ruby 3.4 */
@@ -18,6 +19,16 @@ typedef unsigned char _Bool;
 # define false ((_Bool)+0)
 # define __bool_true_false_are_defined
 #endif
+#endif
+
+#if SIZEOF_UINT64_T == SIZEOF_LONG_LONG
+# define INT64T2NUM(x) LL2NUM(x)
+# define UINT64T2NUM(x) ULL2NUM(x)
+#elif SIZEOF_UINT64_T == SIZEOF_LONG
+# define INT64T2NUM(x) LONG2NUM(x)
+# define UINT64T2NUM(x) ULONG2NUM(x)
+#else
+# error No uint64_t conversion
 #endif
 
 #include "../simd/simd.h"
@@ -755,26 +766,6 @@ static VALUE json_string_unescape(JSON_ParserState *state, const char *string, c
 }
 
 #define MAX_FAST_INTEGER_SIZE 18
-static inline VALUE fast_decode_integer(const char *p, const char *pe)
-{
-    bool negative = false;
-    if (*p == '-') {
-        negative = true;
-        p++;
-    }
-
-    long long memo = 0;
-    while (p < pe) {
-        memo *= 10;
-        memo += *p - '0';
-        p++;
-    }
-
-    if (negative) {
-        memo = -memo;
-    }
-    return LL2NUM(memo);
-}
 
 static VALUE json_decode_large_integer(const char *start, long len)
 {
@@ -788,17 +779,27 @@ static VALUE json_decode_large_integer(const char *start, long len)
 }
 
 static inline VALUE
-json_decode_integer(const char *start, const char *end)
+json_decode_integer(uint64_t mantissa, int mantissa_digits, bool negative, const char *start, const char *end)
 {
-    long len = end - start;
-    if (RB_LIKELY(len < MAX_FAST_INTEGER_SIZE)) {
-        return fast_decode_integer(start, end);
+    if (RB_LIKELY(mantissa_digits < MAX_FAST_INTEGER_SIZE)) {
+        if (negative) {
+            return INT64T2NUM(-((int64_t)mantissa));
+        }
+        return UINT64T2NUM(mantissa);
     }
-    return json_decode_large_integer(start, len);
+
+    return json_decode_large_integer(start, end - start);
 }
 
 static VALUE json_decode_large_float(const char *start, long len)
 {
+    if (RB_LIKELY(len < 64)) {
+        char buffer[64];
+        MEMCPY(buffer, start, char, len);
+        buffer[len] = '\0';
+        return DBL2NUM(rb_cstr_to_dbl(buffer, 1));
+    }
+
     VALUE buffer_v;
     char *buffer = RB_ALLOCV_N(char, buffer_v, len + 1);
     MEMCPY(buffer, start, char, len);
@@ -808,21 +809,24 @@ static VALUE json_decode_large_float(const char *start, long len)
     return number;
 }
 
-static VALUE json_decode_float(JSON_ParserConfig *config, const char *start, const char *end)
+/* Ruby JSON optimized float decoder using vendored Ryu algorithm
+ * Accepts pre-extracted mantissa and exponent from first-pass validation
+ */
+static inline VALUE json_decode_float(JSON_ParserConfig *config, uint64_t mantissa, int mantissa_digits, int32_t exponent, bool negative,
+                                          const char *start, const char *end)
 {
-    long len = end - start;
-
     if (RB_UNLIKELY(config->decimal_class)) {
-        VALUE text = rb_str_new(start, len);
+        VALUE text = rb_str_new(start, end - start);
         return rb_funcallv(config->decimal_class, config->decimal_method_id, 1, &text);
-    } else if (RB_LIKELY(len < 64)) {
-        char buffer[64];
-        MEMCPY(buffer, start, char, len);
-        buffer[len] = '\0';
-        return DBL2NUM(rb_cstr_to_dbl(buffer, 1));
-    } else {
-        return json_decode_large_float(start, len);
     }
+
+    // Fall back to rb_cstr_to_dbl for potential subnormals (rare edge case)
+    // Ryu has rounding issues with subnormals around 1e-310 (< 2.225e-308)
+    if (RB_UNLIKELY(mantissa_digits > 17 || mantissa_digits + exponent < -307)) {
+        return json_decode_large_float(start, end - start);
+    }
+
+    return DBL2NUM(ryu_s2d_from_parts(mantissa, mantissa_digits, exponent, negative));
 }
 
 static inline VALUE json_decode_array(JSON_ParserState *state, JSON_ParserConfig *config, long count)
@@ -1082,57 +1086,90 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
         case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9': {
             bool integer = true;
 
+            // Variables for Ryu optimization - extract digits during parsing
+            uint64_t mantissa = 0;
+            int mantissa_digits = 0;
+            int32_t exponent = 0;
+            bool negative = false;
+            int decimal_point_pos = -1;
+
             // /\A-?(0|[1-9]\d*)(\.\d+)?([Ee][-+]?\d+)?/
             const char *start = state->cursor;
-            state->cursor++;
 
-            while ((state->cursor < state->end) && (*state->cursor >= '0') && (*state->cursor <= '9')) {
+            // Handle optional negative sign
+            if (*state->cursor == '-') {
+                negative = true;
+                state->cursor++;
+                if (state->cursor >= state->end || !rb_isdigit(*state->cursor)) {
+                    raise_parse_error_at("invalid number: %s", state, start);
+                }
+            }
+
+            // Parse integer part and extract mantissa digits
+            while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
+                mantissa = mantissa * 10 + (*state->cursor - '0');
+                mantissa_digits++;
                 state->cursor++;
             }
 
-            long integer_length = state->cursor - start;
-
-            if (RB_UNLIKELY(start[0] == '0' && integer_length > 1)) {
+            if (RB_UNLIKELY(start[0] == '0' && mantissa_digits > 1)) {
                 raise_parse_error_at("invalid number: %s", state, start);
-            } else if (RB_UNLIKELY(integer_length > 2 && start[0] == '-' && start[1] == '0')) {
-                raise_parse_error_at("invalid number: %s", state, start);
-            } else if (RB_UNLIKELY(integer_length == 1 && start[0] == '-')) {
+            } else if (RB_UNLIKELY(mantissa_digits > 1 && negative && start[1] == '0')) {
                 raise_parse_error_at("invalid number: %s", state, start);
             }
 
+            // Parse fractional part
             if ((state->cursor < state->end) && (*state->cursor == '.')) {
                 integer = false;
+                decimal_point_pos = mantissa_digits;  // Remember position of decimal point
                 state->cursor++;
 
-                if (state->cursor == state->end || *state->cursor < '0' || *state->cursor > '9') {
-                    raise_parse_error("invalid number: %s", state);
+                if (state->cursor == state->end || !rb_isdigit(*state->cursor)) {
+                    raise_parse_error_at("invalid number: %s", state, start);
                 }
 
-                while ((state->cursor < state->end) && (*state->cursor >= '0') && (*state->cursor <= '9')) {
+                while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
+                    mantissa = mantissa * 10 + (*state->cursor - '0');
+                    mantissa_digits++;
                     state->cursor++;
                 }
             }
 
+            // Parse exponent
             if ((state->cursor < state->end) && ((*state->cursor == 'e') || (*state->cursor == 'E'))) {
                 integer = false;
                 state->cursor++;
-                if ((state->cursor < state->end) && ((*state->cursor == '+') || (*state->cursor == '-'))) {
+
+                bool negative_exponent = false;
+                if ((state->cursor < state->end) && ((*state->cursor == '-') || (*state->cursor == '+'))) {
+                    negative_exponent = (*state->cursor == '-');
                     state->cursor++;
                 }
 
-                if (state->cursor == state->end || *state->cursor < '0' || *state->cursor > '9') {
-                    raise_parse_error("invalid number: %s", state);
+                if (state->cursor == state->end || !rb_isdigit(*state->cursor)) {
+                    raise_parse_error_at("invalid number: %s", state, start);
                 }
 
-                while ((state->cursor < state->end) && (*state->cursor >= '0') && (*state->cursor <= '9')) {
+                while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
+                    exponent = exponent * 10 + (*state->cursor - '0');
                     state->cursor++;
+                }
+
+                if (negative_exponent) {
+                    exponent = -exponent;
                 }
             }
 
             if (integer) {
-                return json_push_value(state, config, json_decode_integer(start, state->cursor));
+                return json_push_value(state, config, json_decode_integer(mantissa, mantissa_digits, negative, start, state->cursor));
             }
-            return json_push_value(state, config, json_decode_float(config, start, state->cursor));
+
+            // Adjust exponent based on decimal point position
+            if (decimal_point_pos >= 0) {
+                exponent -= (mantissa_digits - decimal_point_pos);
+            }
+
+            return json_push_value(state, config, json_decode_float(config, mantissa, mantissa_digits, exponent, negative, start, state->cursor));
         }
         case '"': {
             // %r{\A"[^"\\\t\n\x00]*(?:\\[bfnrtu\\/"][^"\\]*)*"}
