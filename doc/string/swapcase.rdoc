@@ -1,0 +1,19 @@
+Returns a string containing the characters in +self+, with cases reversed:
+
+- Each uppercase character is downcased.
+- Each lowercase character is upcased.
+
+Examples:
+
+  'Hello World!'.swapcase # => "hELLO wORLD!"
+  'тест'.swapcase         # => "ТЕСТ"
+
+Some characters (and even character sets) do not have casing:
+
+  '12345'.swapcase    # => "12345"
+  'こんにちは'.swapcase # => "こんにちは"
+
+The casing may be affected by the given +mapping+;
+see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

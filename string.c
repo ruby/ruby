@@ -8232,19 +8232,9 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    swapcase(mapping) -> string
+ *    swapcase(mapping) -> new_string
  *
- *  Returns a string containing the characters in +self+, with cases reversed;
- *  each uppercase character is downcased;
- *  each lowercase character is upcased:
- *
- *     s = 'Hello World!' # => "Hello World!"
- *     s.swapcase         # => "hELLO wORLD!"
- *
- *  The casing may be affected by the given +mapping+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
- *
- *  Related: String#swapcase!.
+ *  :include: doc/string/swapcase.rdoc
  *
  */
 
