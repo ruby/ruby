@@ -34,7 +34,7 @@ in the underlying character set's collating sequence,
 carrying to the next-left character for a rollover,
 and prepending another character if necessary:
 
-  s = 0.chr 3   # => "\x00\x00\x00"
+  s = 0.chr * 3   # => "\x00\x00\x00"
   s.succ        # => "\x00\x00\x01"
   s = 255.chr 3 # => "\xFF\xFF\xFF"
   s.succ        # => "\x01\x00\x00\x00"
