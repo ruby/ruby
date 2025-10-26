@@ -15,6 +15,8 @@ class Pathname    # * Find *
   # Iterates over the directory tree in a depth first manner, yielding a
   # Pathname for each file under "this" directory.
   #
+  # Note that you need to require 'pathname' to use this method.
+  #
   # Returns an Enumerator if no block is given.
   #
   # Since it is implemented by the standard library module Find, Find.prune can
@@ -40,6 +42,8 @@ end
 class Pathname    # * FileUtils *
   # Recursively deletes a directory, including all directories beneath it.
   #
+  # Note that you need to require 'pathname' to use this method.
+  #
   # See FileUtils.rm_rf
   def rmtree(noop: nil, verbose: nil, secure: nil)
     # The name "rmtree" is borrowed from File::Path of Perl.
@@ -52,6 +56,8 @@ end
 
 class Pathname    # * tmpdir *
   # Creates a tmp directory and wraps the returned path in a Pathname object.
+  #
+  # Note that you need to require 'pathname' to use this method.
   #
   # See Dir.mktmpdir
   def self.mktmpdir
