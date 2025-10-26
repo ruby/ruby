@@ -2229,10 +2229,25 @@ string_to_c_strict(VALUE self, int raise)
  * call-seq:
  *   to_c -> complex
  *
- * Returns +self+ interpreted as a Complex object;
- * leading whitespace and trailing garbage are ignored:
+ * Returns a Complex object:
+ * the result of interpreting the leading substring of +self+ as a complex number:
  *
- *   '9'.to_c                 # => (9+0i)
+ *   '1'.to_c    # => (1+0i)
+ *
+ * Trailing characters that cannot be thus interpreted are ignored:
+ *
+ *   '1foo'.to_c # => (1+0i)
+ *
+ * Leading and trailing whitespace are ignored;
+ *
+ *   ' 1 '.to_c  # => (1+0i)
+ *
+ * Returns \Complex zero if there is no such leading substring:
+ *
+ *   'x1'.to_c   # => (0+0i)
+ *
+ * More examples:
+ *
  *   '2.5'.to_c               # => (2.5+0i)
  *   '2.5/1'.to_c             # => ((5/2)+0i)
  *   '-3/2'.to_c              # => ((-3/2)+0i)
@@ -2246,11 +2261,7 @@ string_to_c_strict(VALUE self, int raise)
  *   "1.0@#{Math::PI/2}".to_c # => (0.0+1i)
  *   "1.0@#{Math::PI}".to_c   # => (-1+0.0i)
  *
- * Returns \Complex zero if the string cannot be converted:
- *
- *   'ruby'.to_c        # => (0+0i)
- *
- * See Kernel#Complex.
+ * See {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
  */
 static VALUE
 string_to_c(VALUE self)
