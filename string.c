@@ -6190,7 +6190,7 @@ rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
  *
  *  Like String#sub, except that:
  *
- *  - Changed are made to +self+, not to copy of +self+.
+ *  - Changes are made to +self+, not to copy of +self+.
  *  - Returns +self+ if any changes are made, +nil+ otherwise.
  *
  *  Related: see {Modifying}[rdoc-ref:String@Modifying].
@@ -8203,20 +8203,12 @@ rb_str_capitalize(int argc, VALUE *argv, VALUE str)
  *  call-seq:
  *    swapcase!(mapping) -> self or nil
  *
- *  Upcases each lowercase character in +self+;
- *  downcases uppercase character;
- *  returns +self+ if any changes were made, +nil+ otherwise:
+ *  Like String#swapcase, except that:
  *
- *    s = 'Hello World!' # => "Hello World!"
- *    s.swapcase!        # => "hELLO wORLD!"
- *    s                  # => "hELLO wORLD!"
- *    ''.swapcase!       # => nil
+ *  - Changes are made to +self+, not to copy of +self+.
+ *  - Returns +self+ if any changes are made, +nil+ otherwise.
  *
- *  The casing may be affected by the given +mapping+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
- *
- *  Related: String#swapcase.
- *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
