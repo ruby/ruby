@@ -728,11 +728,16 @@ fn gen_ccall_with_frame(
         VM_BLOCK_HANDLER_NONE.into()
     };
 
-    gen_push_frame(asm, args.len(), state, ControlFrame {
+   gen_push_frame(asm, args.len(), state, ControlFrame {
         recv: args[0],
         iseq: None,
         cme,
         frame_type: VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL,
+        pc: if cfg!(feature = "runtime_checks") {
+            Some(!0usize as *const VALUE) // Poison
+        } else {
+            None
+        },
         specval: block_handler_specval,
     });
 
@@ -1213,6 +1218,7 @@ fn gen_send_without_block_direct(
         iseq: Some(iseq),
         cme,
         frame_type,
+        pc: None,
         specval,
     });
 
