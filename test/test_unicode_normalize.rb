@@ -215,6 +215,10 @@ class TestUnicodeNormalize
     assert_equal str.unicode_normalize(:nfd), str.unicode_normalize(:nfc).unicode_normalize(:nfd)
   end
 
+  def test_gurung_khema
+    assert_equal "\u{16121 16121 16121 16121 16121 1611E}", "\u{1611E 16121 16121 16121 16121 16121}".unicode_normalize
+  end
+
   def test_canonical_ordering
     a = "\u03B1\u0313\u0300\u0345"
     a_unordered1 = "\u03B1\u0345\u0313\u0300"
