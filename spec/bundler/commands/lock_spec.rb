@@ -313,14 +313,14 @@ RSpec.describe "bundle lock" do
 
   it "updates a specific gem and write to a custom location" do
     build_repo4 do
-      build_gem "uri", %w[1.0.2 1.0.3]
+      build_gem "foo", %w[1.0.2 1.0.3]
       build_gem "warning", %w[1.4.0 1.5.0]
     end
 
     gemfile <<~G
       source "https://gem.repo4"
 
-      gem "uri"
+      gem "foo"
       gem "warning"
     G
 
@@ -328,7 +328,7 @@ RSpec.describe "bundle lock" do
       GEM
         remote: https://gem.repo4
         specs:
-          uri (1.0.2)
+          foo (1.0.2)
           warning (1.4.0)
 
       PLATFORMS
@@ -342,10 +342,10 @@ RSpec.describe "bundle lock" do
          #{Bundler::VERSION}
     L
 
-    bundle "lock --update uri --lockfile=lock"
+    bundle "lock --update foo --lockfile=lock"
 
     lockfile_content = read_lockfile("lock")
-    expect(lockfile_content).to include("uri (1.0.3)")
+    expect(lockfile_content).to include("foo (1.0.3)")
     expect(lockfile_content).to include("warning (1.4.0)")
   end
 
