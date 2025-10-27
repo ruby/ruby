@@ -645,6 +645,28 @@ RUBY_WERROR_FLAG([
     cd .. && rm -fr tmp.$$.try_link
 ])
 
+
+: "charset to UTF-8" && {
+    AC_CACHE_CHECK([flag to compile in UTF-8], rb_cv_compile_utf8_flag, [
+        mv confdefs.h confdefs.h-save
+        cp confdefs.h-save confdefs.h
+        echo 'const char s@<:@@:>@ = "EBBXX";' | tr 'EBX' '\343\203\134' >> confdefs.h
+
+         # check the default source code charset
+        rb_cv_compile_utf8_flag=no
+        for opt in -finput-charset=utf-8 -utf-8; do
+            _RUBY_TRY_CFLAGS($opt, [rb_cv_compile_utf8_flag=$opt; break;])
+        done
+        mv confdefs.h-save confdefs.h
+    ])
+    AS_IF([test "${rb_cv_compile_utf8_flag}"  = no],
+        [AC_MSG_ERROR([cannot compile source code in UTF-8])],
+        [
+            RUBY_APPEND_OPTIONS(CC, ${rb_cv_compile_utf8_flag})
+            RUBY_APPEND_OPTIONS(CXX, ${rb_cv_compile_utf8_flag})
+        ])
+}
+
 : "rpath" && {
     AC_CACHE_CHECK(whether ELF binaries are produced, rb_cv_binary_elf,
         [AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[
