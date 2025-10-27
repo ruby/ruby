@@ -408,11 +408,7 @@ module Bundler
         def capture3_args_for(cmd, dir)
           return ["git", *cmd] unless dir
 
-          if Bundler.feature_flag.bundler_4_mode? || supports_minus_c?
-            ["git", "-C", dir.to_s, *cmd]
-          else
-            ["git", *cmd, { chdir: dir.to_s }]
-          end
+          ["git", "-C", dir.to_s, *cmd]
         end
 
         def extra_clone_args
@@ -449,10 +445,6 @@ module Bundler
 
         def full_clone?
           depth.nil?
-        end
-
-        def supports_minus_c?
-          @supports_minus_c ||= Gem::Version.new(version) >= Gem::Version.new("1.8.5")
         end
 
         def needs_allow_any_sha1_in_want?
