@@ -600,11 +600,16 @@ strio_close_read(VALUE self)
  * call-seq:
  *   close_write -> nil
  *
- * Closes +self+ for writing; closed-read setting remains unchanged.
+ * Closes +self+ for writing; closed-read setting remains unchanged; returns +nil+:
  *
- * Raises IOError if writing is attempted.
+ *   strio = StringIO.new
+ *   strio.closed_write? # => false
+ *   strio.close_write   # => nil
+ *   strio.closed_write? # => true
+ *   strio.closed_read?  # => false
+ *   strio.write('foo')  # Raises IOError: not opened for writing
  *
- * Related: StringIO#close, StringIO#close_read.
+ * Related: StringIO#close, StringIO#close_read, StringIO#closed_write?.
  */
 static VALUE
 strio_close_write(VALUE self)
