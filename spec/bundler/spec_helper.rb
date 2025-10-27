@@ -19,6 +19,10 @@ ENV["VISUAL"] = nil
 ENV["BUNDLER_EDITOR"] = nil
 require "bundler"
 
+# If we use shared GEM_HOME and install multiple versions, it may cause
+# unexpected test failures.
+gem "diff-lcs"
+
 require "rspec/core"
 require "rspec/expectations"
 require "rspec/mocks"
