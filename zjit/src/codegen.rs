@@ -25,6 +25,13 @@ use crate::hir_type::{types, Type};
 use crate::options::get_option;
 use crate::cast::IntoUsize;
 
+/// Sentinel program counter stored in C frames when runtime checks are enabled.
+const PC_POISON: Option<*const VALUE> = if cfg!(feature = "runtime_checks") {
+    Some(usize::MAX as *const VALUE)
+} else {
+    None
+};
+
 /// Ephemeral code generation state
 struct JITState {
     /// Instruction sequence for the method being compiled
@@ -733,11 +740,7 @@ fn gen_ccall_with_frame(
         iseq: None,
         cme,
         frame_type: VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL,
-        pc: if cfg!(feature = "runtime_checks") {
-            Some(!0usize as *const VALUE) // Poison
-        } else {
-            None
-        },
+        pc: PC_POISON,
         specval: block_handler_specval,
     });
 
@@ -795,11 +798,7 @@ fn gen_ccall_variadic(
         cme,
         frame_type: VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL,
         specval: VM_BLOCK_HANDLER_NONE.into(),
-        pc: if cfg!(feature = "runtime_checks") {
-            Some(!0usize as *const VALUE) // Poison value
-        } else {
-            None
-        },
+        pc: PC_POISON,
     });
 
     asm_comment!(asm, "switch to new SP register");
@@ -1861,6 +1860,8 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
         // cfp_opnd(RUBY_OFFSET_CFP_SP): written by the callee frame on side-exits or non-leaf calls
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), VALUE::from(iseq).into());
     } else {
+        // C frames don't have a PC and ISEQ in normal operation.
+        // When runtime checks are enabled we poison the PC so accidental reads stand out.
         match frame.pc {
             Some(pc) => asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc)),
             None => asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), 0.into()),
