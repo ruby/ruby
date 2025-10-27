@@ -332,6 +332,7 @@ fn main() {
         .allowlist_function("rb_class_new_instance_pass_kw")
         .allowlist_function("rb_obj_alloc")
         .allowlist_function("rb_obj_info")
+        .allowlist_function("rb_obj_frozen_p")
         // From include/ruby/debug.h
         .allowlist_function("rb_profile_frames")
         .allowlist_function("ruby_xfree")
