@@ -637,7 +637,14 @@ strio_closed(VALUE self)
  * call-seq:
  *   closed_read? -> true or false
  *
- * Returns +true+ if +self+ is closed for reading, +false+ otherwise.
+ * Returns whether +self+ is closed for reading:
+ *
+ *   strio = StringIO.new
+ *   strio.closed_read?   # => false
+ *   strio.close_read
+ *   strio.closed_read?   # => true
+ *
+ * Related: StringIO#closed?, StringIO#closed_write?, StringIO#close_read.
  */
 static VALUE
 strio_closed_read(VALUE self)
