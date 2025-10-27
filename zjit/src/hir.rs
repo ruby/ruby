@@ -5384,48 +5384,6 @@ mod infer_tests {
 }
 
 #[cfg(test)]
-mod snapshot_tests {
-    use super::*;
-    use insta::assert_snapshot;
-
-    #[track_caller]
-    fn hir_string(method: &str) -> String {
-        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
-        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-        let function = iseq_to_hir(iseq).unwrap();
-        format!("{}", FunctionPrinter::with_snapshot(&function))
-    }
-
-    #[test]
-    fn test_new_array_with_elements() {
-        eval("def test(a, b) = [a, b]");
-        assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:1:
-        bb0():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          v2:BasicObject = GetLocal l0, SP@5
-          v3:BasicObject = GetLocal l0, SP@4
-          Jump bb2(v1, v2, v3)
-        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
-          EntryPoint JIT(0)
-          Jump bb2(v6, v7, v8)
-        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
-          v13:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [a=v11, b=v12] }
-          v14:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [a=v11, b=v12] }
-          PatchPoint NoTracePoint
-          v16:Any = Snapshot FrameState { pc: 0x1010, stack: [v11, v12], locals: [a=v11, b=v12] }
-          v17:ArrayExact = NewArray v11, v12
-          v18:Any = Snapshot FrameState { pc: 0x1018, stack: [v17], locals: [a=v11, b=v12] }
-          PatchPoint NoTracePoint
-          v20:Any = Snapshot FrameState { pc: 0x1018, stack: [v17], locals: [a=v11, b=v12] }
-          CheckInterrupts
-          Return v17
-        ");
-    }
-}
-
-#[cfg(test)]
 mod tests {
     use super::*;
     use insta::assert_snapshot;
