@@ -190,7 +190,7 @@ $bits.keys.sort.map {|type_name|
   subtypes = $bits[type_name].join(" | ")
   puts "  pub const #{type_name}: u64 = #{subtypes};"
 }
-puts "  pub const AllBitPatterns: [(&'static str, u64); #{$bits.size}] = ["
+puts "  pub const AllBitPatterns: [(&str, u64); #{$bits.size}] = ["
 # Sort the bit patterns by decreasing value so that we can print the densest
 # possible to-string representation of a Type. For example, CSigned instead of
 # CInt8|CInt16|...
