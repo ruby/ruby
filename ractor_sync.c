@@ -49,7 +49,7 @@ static const rb_data_type_t ractor_port_data_type = {
         ractor_port_memsize,
         NULL, // update
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 static st_data_t
@@ -72,6 +72,7 @@ ractor_port_alloc(VALUE klass)
 {
     struct ractor_port *rp;
     VALUE rpv = TypedData_Make_Struct(klass, struct ractor_port, &ractor_port_data_type, rp);
+    rb_obj_freeze(rpv);
     return rpv;
 }
 
