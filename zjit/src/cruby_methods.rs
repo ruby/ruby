@@ -291,7 +291,8 @@ fn inline_array_push(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
 fn inline_array_pop(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     // Only inline the case of no arguments.
     let &[] = args else { return None; };
-    Some(fun.push_insn(block, hir::Insn::ArrayPop { array: recv, state }))
+    let arr = fun.push_insn(block, hir::Insn::GuardNotFrozen { val: recv, state });
+    Some(fun.push_insn(block, hir::Insn::ArrayPop { array: arr, state }))
 }
 
 fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {

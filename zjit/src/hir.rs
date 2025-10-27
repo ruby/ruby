@@ -14458,10 +14458,11 @@ mod opt_tests {
           PatchPoint MethodRedefined(Array@0x1000, pop@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
           v23:ArrayExact = GuardType v9, ArrayExact
-          v24:NilClass|Array = ArrayPop v23
+          v24:ArrayExact = GuardNotFrozen v23
+          v25:NilClass|Array = ArrayPop v24
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -14470,6 +14471,34 @@ mod opt_tests {
         eval("
             def test(arr) = arr.pop(4)
             test([1])
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:Fixnum[4] = Const Value(4)
+          PatchPoint MethodRedefined(Array@0x1000, pop@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v24:ArrayExact = GuardType v9, ArrayExact
+          v25:BasicObject = CCallVariadic pop@0x1038, v24, v13
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_guard_array_pop_frozen() {
+        eval("
+            def test(arr) = arr.pop
+            arr = [1].freeze
+            test(arr)
         ");
         assert_snapshot!(hir_string("test"), @r"
         fn test@<compiled>:2:
