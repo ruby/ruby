@@ -2071,7 +2071,7 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
 
     // We currently don't support JIT-to-JIT calls for ISEQs with optional arguments.
     // So we only need to use jit_entry_ptrs[0] for now. TODO(Shopify/ruby#817): Support optional arguments.
-    let Some(&jit_entry_ptr) = jit_entry_ptrs.get(0) else {
+    let Some(&jit_entry_ptr) = jit_entry_ptrs.first() else {
         return Err(CompileError::JitToJitOptional)
     };
 

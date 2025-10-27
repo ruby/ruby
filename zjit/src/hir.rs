@@ -841,7 +841,7 @@ impl Insn {
     fn has_effects(&self) -> bool {
         match self {
             Insn::Const { .. } => false,
-            Insn::Param { .. } => false,
+            Insn::Param => false,
             Insn::StringCopy { .. } => false,
             Insn::NewArray { .. } => false,
             // NewHash's operands may be hashed and compared for equality, which could have
@@ -1379,6 +1379,8 @@ enum IseqReturn {
     Value(VALUE),
     LocalVariable(u32),
     Receiver,
+    // Builtin descriptor and return type (if known)
+    InvokeLeafBuiltin(rb_builtin_function, Option<Type>),
 }
 
 unsafe extern "C" {
@@ -1390,10 +1392,6 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
     // Expect only two instructions and one possible operand
     // NOTE: If an ISEQ has an optional keyword parameter with a default value that requires
     // computation, the ISEQ will always have more than two instructions and won't be inlined.
-    let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
-    if !(2..=3).contains(&iseq_size) {
-        return None;
-    }
 
     // Get the first two instructions
     let first_insn = iseq_opcode_at_idx(iseq, 0);
@@ -1428,7 +1426,7 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
 
             // TODO(max): Support only_kwparam case where the local_idx is a positional parameter
 
-            return None;
+            None
         }
         YARVINSN_putnil => Some(IseqReturn::Value(Qnil)),
         YARVINSN_putobject => Some(IseqReturn::Value(unsafe { *rb_iseq_pc_at_idx(iseq, 1) })),
@@ -1436,6 +1434,20 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
         YARVINSN_putobject_INT2FIX_1_ => Some(IseqReturn::Value(VALUE::fixnum_from_usize(1))),
         // We don't support invokeblock for now. Such ISEQs are likely not used by blocks anyway.
         YARVINSN_putself if captured_opnd.is_none() => Some(IseqReturn::Receiver),
+        YARVINSN_opt_invokebuiltin_delegate_leave => {
+            let pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
+            let bf: rb_builtin_function = unsafe { *get_arg(pc, 0).as_ptr() };
+            let argc = bf.argc as usize;
+            if argc != 0 { return None; }
+            let builtin_attrs = unsafe { rb_jit_iseq_builtin_attrs(iseq) };
+            let leaf = builtin_attrs & BUILTIN_ATTR_LEAF != 0;
+            if !leaf { return None; }
+            // Check if this builtin is annotated
+            let return_type = ZJITState::get_method_annotations()
+                .get_builtin_properties(&bf)
+                .map(|props| props.return_type);
+            Some(IseqReturn::InvokeLeafBuiltin(bf, return_type))
+        }
         _ => None,
     }
 }
@@ -1469,7 +1481,7 @@ impl Function {
 
     // Add an instruction to an SSA block
     pub fn push_insn(&mut self, block: BlockId, insn: Insn) -> InsnId {
-        let is_param = matches!(insn, Insn::Param { .. });
+        let is_param = matches!(insn, Insn::Param);
         let id = self.new_insn(insn);
         if is_param {
             self.blocks[block.0].params.push(id);
@@ -1576,7 +1588,7 @@ impl Function {
         use Insn::*;
         match &self.insns[insn_id.0] {
             result@(Const {..}
-                    | Param {..}
+                    | Param
                     | GetConstantPath {..}
                     | IsBlockGiven
                     | PatchPoint {..}
@@ -1771,7 +1783,7 @@ impl Function {
     fn infer_type(&self, insn: InsnId) -> Type {
         assert!(self.insns[insn.0].has_output());
         match &self.insns[insn.0] {
-            Insn::Param { .. } => unimplemented!("params should not be present in block.insns"),
+            Insn::Param => unimplemented!("params should not be present in block.insns"),
             Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::EntryPoint { .. }
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
@@ -1847,7 +1859,7 @@ impl Function {
             Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::DefinedIvar { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::GetConstantPath { .. } => types::BasicObject,
-            Insn::IsBlockGiven { .. } => types::BoolExact,
+            Insn::IsBlockGiven => types::BoolExact,
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
@@ -2026,7 +2038,7 @@ impl Function {
             return true;
         }
         let frame_state = self.frame_state(state);
-        let iseq_insn_idx = frame_state.insn_idx as usize;
+        let iseq_insn_idx = frame_state.insn_idx;
         let Some(profiled_type) = self.profiled_type_of_at(val, iseq_insn_idx) else {
             return false;
         };
@@ -2437,7 +2449,7 @@ impl Function {
             for insn_id in old_insns {
                 match self.find(insn_id) {
                     // Reject block ISEQs to avoid autosplat and other block parameter complications.
-                    Insn::SendWithoutBlockDirect { recv, iseq, cd, args, .. } => {
+                    Insn::SendWithoutBlockDirect { recv, iseq, cd, args, state, .. } => {
                         let call_info = unsafe { (*cd).ci };
                         let ci_flags = unsafe { vm_ci_flag(call_info) };
                         // .send call is not currently supported for builtins
@@ -2460,6 +2472,17 @@ impl Function {
                             IseqReturn::Receiver => {
                                 self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
                                 self.make_equal_to(insn_id, recv);
+                            }
+                            IseqReturn::InvokeLeafBuiltin(bf, return_type) => {
+                                self.push_insn(block, Insn::IncrCounter(Counter::inline_iseq_optimized_send_count));
+                                let replacement = self.push_insn(block, Insn::InvokeBuiltin {
+                                    bf,
+                                    args: vec![recv],
+                                    state,
+                                    leaf: true,
+                                    return_type,
+                                });
+                                self.make_equal_to(insn_id, replacement);
                             }
                         }
                     }
@@ -2618,16 +2641,16 @@ impl Function {
                         blockiseq,
                     });
                     fun.make_equal_to(send_insn_id, ccall);
-                    return Ok(());
+                    Ok(())
                 }
                 // Variadic method
                 -1 => {
                     // func(int argc, VALUE *argv, VALUE recv)
-                    return Err(());
+                    Err(())
                 }
                 -2 => {
                     // (self, args_ruby_array)
-                    return Err(());
+                    Err(())
                 }
                 _ => unreachable!("unknown cfunc kind: argc={argc}")
             }
@@ -3024,7 +3047,7 @@ impl Function {
     fn worklist_traverse_single_insn(&self, insn: &Insn, worklist: &mut VecDeque<InsnId>) {
         match insn {
             &Insn::Const { .. }
-            | &Insn::Param { .. }
+            | &Insn::Param
             | &Insn::EntryPoint { .. }
             | &Insn::LoadPC
             | &Insn::LoadSelf
@@ -4021,7 +4044,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 .try_into()
                 .unwrap();
 
-            if opcode == YARVINSN_getinstancevariable {
+            // If TracePoint has been enabled after we have collected profiles, we'll see
+            // trace_getinstancevariable in the ISEQ. We have to treat it like getinstancevariable
+            // for profiling purposes: there is no operand on the stack to look up; we have
+            // profiled cfp->self.
+            if opcode == YARVINSN_getinstancevariable || opcode == YARVINSN_trace_getinstancevariable {
                 profiles.profile_self(&exit_state, self_param);
             } else {
                 profiles.profile_stack(&exit_state);
@@ -7409,6 +7436,29 @@ mod tests {
     }
 
     #[test]
+    fn test_trace_getinstancevariable() {
+        eval("
+            def test = @foo
+            test
+            trace = TracePoint.trace(:call) { |tp| }
+            trace.enable { test }
+        ");
+        assert_contains_opcode("test", YARVINSN_trace_getinstancevariable);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          SideExit UnhandledYARVInsn(trace_getinstancevariable)
+        ");
+    }
+
+    #[test]
     fn test_setinstancevariable() {
         eval("
             def test = @foo = 1
@@ -8135,9 +8185,9 @@ mod tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = InvokeBuiltin leaf _bi28, v6
+          v11:StringExact = InvokeBuiltin leaf _bi28, v6
           Jump bb3(v6, v11)
-        bb3(v13:BasicObject, v14:BasicObject):
+        bb3(v13:BasicObject, v14:StringExact):
           CheckInterrupts
           Return v14
         ");
@@ -8157,9 +8207,9 @@ mod tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = InvokeBuiltin leaf _bi12, v6
+          v11:StringExact = InvokeBuiltin leaf _bi12, v6
           Jump bb3(v6, v11)
-        bb3(v13:BasicObject, v14:BasicObject):
+        bb3(v13:BasicObject, v14:StringExact):
           CheckInterrupts
           Return v14
         ");
@@ -10928,9 +10978,10 @@ mod opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, zero?@0x1008, cme:0x1010)
-          v22:BasicObject = SendWithoutBlockDirect v13, :zero? (0x1038)
+          IncrCounter inline_iseq_optimized_send_count
+          v24:BasicObject = InvokeBuiltin leaf _bi285, v13
           CheckInterrupts
-          Return v22
+          Return v24
         ");
     }
 
@@ -10959,9 +11010,10 @@ mod opt_tests {
           v18:ArrayExact = ArrayDup v16
           PatchPoint MethodRedefined(Array@0x1008, first@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(Array@0x1008)
-          v30:BasicObject = SendWithoutBlockDirect v18, :first (0x1040)
+          IncrCounter inline_iseq_optimized_send_count
+          v32:BasicObject = InvokeBuiltin leaf _bi132, v18
           CheckInterrupts
-          Return v30
+          Return v32
         ");
     }
 
@@ -10988,9 +11040,10 @@ mod opt_tests {
           v21:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(Module@0x1010, class@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(Module@0x1010)
-          v24:BasicObject = SendWithoutBlockDirect v21, :class (0x1048)
+          IncrCounter inline_iseq_optimized_send_count
+          v26:Class = InvokeBuiltin leaf _bi20, v21
           CheckInterrupts
-          Return v24
+          Return v26
         ");
     }
 
@@ -15294,6 +15347,32 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_inline_kernel_frozen_p() {
+        eval(r#"
+            def test(o) = o.frozen?
+            test :foo
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Symbol@0x1000, frozen?@0x1008, cme:0x1010)
+          v21:StaticSymbol = GuardType v9, StaticSymbol
+          IncrCounter inline_iseq_optimized_send_count
+          v24:BoolExact = InvokeBuiltin leaf _bi69, v21
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
     fn test_inline_integer_to_i() {
         eval(r#"
             def test(o) = o.to_i
@@ -15315,6 +15394,58 @@ mod opt_tests {
           IncrCounter inline_iseq_optimized_send_count
           CheckInterrupts
           Return v21
+        ");
+    }
+
+    #[test]
+    fn test_inline_symbol_name() {
+        eval("
+        def test(x) = x.to_s
+        test(:foo)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Symbol@0x1000, to_s@0x1008, cme:0x1010)
+          v21:StaticSymbol = GuardType v9, StaticSymbol
+          IncrCounter inline_iseq_optimized_send_count
+          v24:StringExact = InvokeBuiltin leaf _bi12, v21
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_inline_symbol_to_s() {
+        eval("
+        def test(x) = x.to_s
+        test(:foo)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Symbol@0x1000, to_s@0x1008, cme:0x1010)
+          v21:StaticSymbol = GuardType v9, StaticSymbol
+          IncrCounter inline_iseq_optimized_send_count
+          v24:StringExact = InvokeBuiltin leaf _bi12, v21
+          CheckInterrupts
+          Return v24
         ");
     }
 

@@ -5338,8 +5338,7 @@ pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *c
       case PM_INSTANCE_VARIABLE_TARGET_NODE:
       case PM_CONSTANT_PATH_TARGET_NODE:
       case PM_CALL_TARGET_NODE:
-      case PM_INDEX_TARGET_NODE:
-      case PM_SPLAT_NODE: {
+      case PM_INDEX_TARGET_NODE: {
         // For other targets, we need to potentially compile the parent or
         // owning expression of this target, then retrieve the value, expand it,
         // and then compile the necessary writes.
@@ -5359,6 +5358,7 @@ pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *c
         pm_multi_target_state_update(&state);
         break;
       }
+      case PM_SPLAT_NODE:
       case PM_MULTI_TARGET_NODE: {
         DECL_ANCHOR(writes);
         DECL_ANCHOR(cleanup);
@@ -5394,6 +5394,12 @@ pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *c
         PUSH_INSN(ret, location, pop);
 
         PUSH_LABEL(ret, not_single);
+
+        if (PM_NODE_TYPE_P(node, PM_SPLAT_NODE)) {
+            const pm_splat_node_t *cast = (const pm_splat_node_t *) node;
+            PUSH_INSN2(ret, location, expandarray, INT2FIX(0), INT2FIX(cast->expression == NULL ? 0 : 1));
+        }
+
         PUSH_SEQ(ret, writes);
         PUSH_SEQ(ret, cleanup);
         break;

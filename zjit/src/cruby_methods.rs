@@ -189,7 +189,6 @@ pub fn init() -> Annotations {
 
     annotate!(rb_mKernel, "itself", inline_kernel_itself);
     annotate!(rb_mKernel, "block_given?", inline_kernel_block_given_p);
-    annotate!(rb_cString, "bytesize", types::Fixnum, no_gc, leaf);
     annotate!(rb_cString, "bytesize", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cString, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cString, "length", types::Fixnum, no_gc, leaf, elidable);
@@ -226,6 +225,9 @@ pub fn init() -> Annotations {
     annotate_builtin!(rb_mKernel, "Float", types::Float);
     annotate_builtin!(rb_mKernel, "Integer", types::Integer);
     annotate_builtin!(rb_mKernel, "class", types::Class, leaf);
+    annotate_builtin!(rb_mKernel, "frozen?", types::BoolExact);
+    annotate_builtin!(rb_cSymbol, "name", types::StringExact);
+    annotate_builtin!(rb_cSymbol, "to_s", types::StringExact);
 
     Annotations {
         cfuncs: std::mem::take(cfuncs),
@@ -238,7 +240,7 @@ fn no_inline(_fun: &mut hir::Function, _block: hir::BlockId, _recv: hir::InsnId,
 }
 
 fn inline_string_to_s(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
-    if args.len() == 0 && fun.likely_a(recv, types::StringExact, state) {
+    if args.is_empty() && fun.likely_a(recv, types::StringExact, state) {
         let recv = fun.coerce_to(block, recv, types::StringExact, state);
         return Some(recv);
     }
@@ -246,7 +248,7 @@ fn inline_string_to_s(fun: &mut hir::Function, block: hir::BlockId, recv: hir::I
 }
 
 fn inline_kernel_itself(_fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
-    if args.len() == 0 {
+    if args.is_empty() {
         // No need to coerce the receiver; that is done by the SendWithoutBlock rewriting.
         return Some(recv);
     }
@@ -256,8 +258,7 @@ fn inline_kernel_itself(_fun: &mut hir::Function, _block: hir::BlockId, recv: hi
 fn inline_kernel_block_given_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     // TODO(max): In local iseq types that are not ISEQ_TYPE_METHOD, rewrite to Constant false.
-    let result = fun.push_insn(block, hir::Insn::IsBlockGiven);
-    return Some(result);
+    Some(fun.push_insn(block, hir::Insn::IsBlockGiven))
 }
 
 fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
