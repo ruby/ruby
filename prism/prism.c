@@ -2721,6 +2721,8 @@ pm_call_node_binary_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t 
     return node;
 }
 
+static const uint8_t * parse_operator_symbol_name(const pm_token_t *);
+
 /**
  * Allocate and initialize a new CallNode node from a call expression.
  */
@@ -2749,7 +2751,11 @@ pm_call_node_call_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t *o
         pm_node_flag_set((pm_node_t *)node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION);
     }
 
-    node->name = pm_parser_constant_id_token(parser, message);
+    /**
+    * If the final character is `@` as is the case for `foo.~@`,
+    * we should ignore the @ in the same way we do for symbols.
+    */
+    node->name = pm_parser_constant_id_location(parser, message->start, parse_operator_symbol_name(message));
     return node;
 }
 
@@ -19702,7 +19708,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_parser_scope_pop(parser);
 
             /**
-             * If the final character is @. As is the case when defining
+             * If the final character is `@` as is the case when defining
              * methods to override the unary operators, we should ignore
              * the @ in the same way we do for symbols.
              */

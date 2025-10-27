@@ -109,6 +109,9 @@ module Prism
       # Regex with \c escape
       "unescaping.txt",
       "seattlerb/regexp_esc_C_slash.txt",
+
+      # https://github.com/whitequark/parser/issues/1084
+      "unary_method_calls.txt",
     ]
 
     # These files are failing to translate their lexer output into the lexer

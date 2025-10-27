@@ -57,6 +57,7 @@ module Prism
       "spanning_heredoc.txt",
       "symbols.txt",
       "tilde_heredocs.txt",
+      "unary_method_calls.txt",
       "unparser/corpus/literal/literal.txt",
       "while.txt",
       "whitequark/cond_eflipflop.txt",
