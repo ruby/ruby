@@ -790,11 +790,11 @@ static VALUE json_decode_large_integer(const char *start, long len)
 static inline VALUE
 json_decode_integer(const char *start, const char *end)
 {
-        long len = end - start;
-        if (RB_LIKELY(len < MAX_FAST_INTEGER_SIZE)) {
-            return fast_decode_integer(start, end);
-        }
-        return json_decode_large_integer(start, len);
+    long len = end - start;
+    if (RB_LIKELY(len < MAX_FAST_INTEGER_SIZE)) {
+        return fast_decode_integer(start, end);
+    }
+    return json_decode_large_integer(start, len);
 }
 
 static VALUE json_decode_large_float(const char *start, long len)
