@@ -18,6 +18,7 @@ use crate::stats::Counter;
 use SendFallbackReason::*;
 
 mod tests;
+mod opt_tests;
 
 /// An index of an [`Insn`] in a [`Function`]. This is a popular
 /// type since this effectively acts as a pointer to an [`Insn`].
@@ -5382,5 +5383,120 @@ mod infer_tests {
             function.infer_types();
             assert_bit_equal(function.type_of(param), types::TrueClass.union(types::FalseClass));
         });
+    }
+}
+
+#[cfg(test)]
+mod graphviz_tests {
+    use super::*;
+    use insta::assert_snapshot;
+
+    #[track_caller]
+    fn hir_string(method: &str) -> String {
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+        let mut function = iseq_to_hir(iseq).unwrap();
+        function.optimize();
+        function.validate().unwrap();
+        format!("{}", FunctionGraphvizPrinter::new(&function))
+    }
+
+    #[test]
+    fn test_guard_fixnum_or_fixnum() {
+        eval(r#"
+            def test(x, y) = x | y
+
+            test(1, 2)
+        "#);
+        assert_snapshot!(hir_string("test"), @r#"
+        digraph G { # test@&lt;compiled&gt;:2
+        node [shape=plaintext];
+        mode=hier; overlap=false; splines=true;
+          bb0 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0()&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v0">EntryPoint interpreter&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v1">v1:BasicObject = LoadSelf&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v2">v2:BasicObject = GetLocal l0, SP@5&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v3">v3:BasicObject = GetLocal l0, SP@4&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v4">Jump bb2(v1, v2, v3)&nbsp;</TD></TR>
+        </TABLE>>];
+          bb0:v4 -> bb2:params:n;
+          bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v5">EntryPoint JIT(0)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v9">Jump bb2(v6, v7, v8)&nbsp;</TD></TR>
+        </TABLE>>];
+          bb1:v9 -> bb2:params:n;
+          bb2 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v15">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v17">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v25">PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, 29)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v26">v26:Fixnum = GuardType v11, Fixnum&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v27">v27:Fixnum = GuardType v12, Fixnum&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v28">v28:Fixnum = FixnumOr v26, v27&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v21">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v23">CheckInterrupts&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v24">Return v28&nbsp;</TD></TR>
+        </TABLE>>];
+        }
+        "#);
+    }
+
+    #[test]
+    fn test_multiple_blocks() {
+        eval(r#"
+            def test(c)
+              if c
+                3
+              else
+                4
+              end
+            end
+
+            test(1)
+            test("x")
+        "#);
+        assert_snapshot!(hir_string("test"), @r#"
+        digraph G { # test@&lt;compiled&gt;:3
+        node [shape=plaintext];
+        mode=hier; overlap=false; splines=true;
+          bb0 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb0()&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v0">EntryPoint interpreter&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v1">v1:BasicObject = LoadSelf&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v2">v2:BasicObject = GetLocal l0, SP@4&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v3">Jump bb2(v1, v2)&nbsp;</TD></TR>
+        </TABLE>>];
+          bb0:v3 -> bb2:params:n;
+          bb1 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb1(v5:BasicObject, v6:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v4">EntryPoint JIT(0)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v7">Jump bb2(v5, v6)&nbsp;</TD></TR>
+        </TABLE>>];
+          bb1:v7 -> bb2:params:n;
+          bb2 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb2(v8:BasicObject, v9:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v12">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v14">CheckInterrupts&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v15">v15:CBool = Test v9&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v16">IfFalse v15, bb3(v8, v9)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v18">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v19">v19:Fixnum[3] = Const Value(3)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v21">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v23">CheckInterrupts&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v24">Return v19&nbsp;</TD></TR>
+        </TABLE>>];
+          bb2:v16 -> bb3:params:n;
+          bb3 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD ALIGN="LEFT" PORT="params" BGCOLOR="gray">bb3(v25:BasicObject, v26:BasicObject)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v29">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v30">v30:Fixnum[4] = Const Value(4)&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v32">PatchPoint NoTracePoint&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v34">CheckInterrupts&nbsp;</TD></TR>
+        <TR><TD ALIGN="left" PORT="v35">Return v30&nbsp;</TD></TR>
+        </TABLE>>];
+        }
+        "#);
     }
 }
