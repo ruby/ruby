@@ -210,6 +210,11 @@ class TestUnicodeNormalize
     assert_equal true, ascii_string.unicode_normalized?(:nfkd)
   end
 
+  def test_bug_21559
+    str = "s\u{1611e}\u{323}\u{1611e}\u{307}\u{1611f}"
+    assert_equal str.unicode_normalize(:nfd), str.unicode_normalize(:nfc).unicode_normalize(:nfd)
+  end
+
   def test_canonical_ordering
     a = "\u03B1\u0313\u0300\u0345"
     a_unordered1 = "\u03B1\u0345\u0313\u0300"
