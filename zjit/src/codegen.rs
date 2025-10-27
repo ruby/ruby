@@ -790,6 +790,11 @@ fn gen_ccall_variadic(
         cme,
         frame_type: VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL,
         specval: VM_BLOCK_HANDLER_NONE.into(),
+        pc: if cfg!(feature = "runtime_checks") {
+            Some(!0usize as *const VALUE) // Poison value
+        } else {
+            None
+        },
     });
 
     asm_comment!(asm, "switch to new SP register");
@@ -1815,6 +1820,7 @@ struct ControlFrame {
     /// The [`VM_ENV_DATA_INDEX_SPECVAL`] slot of the frame.
     /// For the type of frames we push, block handler or the parent EP.
     specval: lir::Opnd,
+    pc: Option<*const VALUE>,
 }
 
 /// Compile an interpreter frame
@@ -1849,8 +1855,10 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
         // cfp_opnd(RUBY_OFFSET_CFP_SP): written by the callee frame on side-exits or non-leaf calls
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), VALUE::from(iseq).into());
     } else {
-        // C frames don't have a PC and ISEQ
-        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), 0.into());
+        match frame.pc {
+            Some(pc) => asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc)),
+            None =>    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), 0.into()),
+        }
         let new_sp = asm.lea(Opnd::mem(64, SP, (ep_offset + 1) * SIZEOF_VALUE_I32));
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), new_sp);
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), 0.into());
