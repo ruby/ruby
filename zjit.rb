@@ -284,6 +284,6 @@ class << RubyVM::ZJIT
     n_bytes = dump_exit_locations(filename)
 
     absolute_filename = File.expand_path(filename)
-    $stderr.puts("#{n_bytes} bytes written to #{absolute_filename}.")
+    $stderr.puts("#{n_bytes} bytes written to #{absolute_filename}")
   end
 end
