@@ -492,7 +492,7 @@ module Bundler
         build_info = " (#{BuildMetadata.timestamp} commit #{BuildMetadata.git_commit_sha})"
       end
 
-      if !cli_help && Bundler.feature_flag.bundler_4_mode?
+      if !cli_help
         Bundler.ui.info "#{Bundler.verbose_version}#{build_info}"
       else
         Bundler.ui.info "Bundler version #{Bundler.verbose_version}#{build_info}"
