@@ -4021,7 +4021,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 .try_into()
                 .unwrap();
 
-            if opcode == YARVINSN_getinstancevariable {
+            // If TracePoint has been enabled after we have collected profiles, we'll see
+            // trace_getinstancevariable in the ISEQ. We have to treat it like getinstancevariable
+            // for profiling purposes: there is no operand on the stack to look up; we have
+            // profiled cfp->self.
+            if opcode == YARVINSN_getinstancevariable || opcode == YARVINSN_trace_getinstancevariable {
                 profiles.profile_self(&exit_state, self_param);
             } else {
                 profiles.profile_stack(&exit_state);
@@ -7405,6 +7409,29 @@ mod tests {
           v12:BasicObject = GetIvar v6, :@foo
           CheckInterrupts
           Return v12
+        ");
+    }
+
+    #[test]
+    fn test_trace_getinstancevariable() {
+        eval("
+            def test = @foo
+            test
+            trace = TracePoint.trace(:call) { |tp| }
+            trace.enable { test }
+        ");
+        assert_contains_opcode("test", YARVINSN_trace_getinstancevariable);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          SideExit UnhandledYARVInsn(trace_getinstancevariable)
         ");
     }
 
