@@ -728,7 +728,7 @@ fn gen_ccall_with_frame(
         VM_BLOCK_HANDLER_NONE.into()
     };
 
-   gen_push_frame(asm, args.len(), state, ControlFrame {
+    gen_push_frame(asm, args.len(), state, ControlFrame {
         recv: args[0],
         iseq: None,
         cme,
