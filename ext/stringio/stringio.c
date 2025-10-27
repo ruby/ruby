@@ -2133,33 +2133,7 @@ strio_set_encoding_by_bom(VALUE self)
 /*
  * :markup: markdown
  *
- * \IO streams for strings, with access similar to
- * {IO}[rdoc-ref:IO];
- * see {IO}[rdoc-ref:IO].
- *
- * ### About the Examples
- *
- * Examples on this page assume that \StringIO has been required:
- *
- * ```
- * require 'stringio'
- * ```
- *
- * And that these constants have been defined:
- *
- * ```
- * TEXT = <<EOT
- * First line
- * Second line
- *
- * Fourth line
- * Fifth line
- * EOT
- *
- * RUSSIAN = 'тест'
- * DATA = "\u9990\u9991\u9992\u9993\u9994"
- * ```
- *
+ * :include: stringio/stringio.md
  */
 void
 Init_stringio(void)
