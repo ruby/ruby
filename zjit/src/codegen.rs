@@ -1863,7 +1863,7 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
     } else {
         match frame.pc {
             Some(pc) => asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc)),
-            None =>    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), 0.into()),
+            None => asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), 0.into()),
         }
         let new_sp = asm.lea(Opnd::mem(64, SP, (ep_offset + 1) * SIZEOF_VALUE_I32));
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), new_sp);
