@@ -634,8 +634,8 @@ fn gen_guard_block_param_proxy(jit: &JITState, asm: &mut Assembler, level: u32, 
 
 fn gen_guard_not_frozen(jit: &JITState, asm: &mut Assembler, val: Opnd, state: &FrameState) {
     let ret = asm_ccall!(asm, rb_obj_frozen_p, val);
-    asm_comment!(asm, "side-exit if rb_obj_frozen_p returns Qfalse");
-    asm.cmp(ret, Qfalse.into());
+    asm_comment!(asm, "side-exit if rb_obj_frozen_p returns Qtrue");
+    asm.cmp(ret, Qtrue.into());
     asm.je(side_exit(jit, state, GuardNotFrozen));
 }
 
