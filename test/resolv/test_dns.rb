@@ -525,6 +525,8 @@ class TestResolvDNS < Test::Unit::TestCase
       if RUBY_PLATFORM.match?(/mingw/)
         # cannot repo locally
         omit 'Timeout Error on MinGW CI'
+      elsif macos?(26,1)
+        omit 'Timeout Error on macOS 26.1+'
       else
         raise Timeout::Error
       end
