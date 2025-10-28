@@ -212,13 +212,7 @@ impl Assembler {
 
     /// Return true if opnd contains a scratch reg
     pub fn has_scratch_reg(opnd: Opnd) -> bool {
-        match opnd {
-            Opnd::Reg(_) => opnd == SCRATCH_OPND,
-            Opnd::Mem(Mem { base: MemBase::Reg(reg_no), .. }) => {
-                reg_no == SCRATCH_OPND.unwrap_reg().reg_no
-            }
-            _ => false,
-        }
+        Self::has_reg(opnd, SCRATCH_OPND.unwrap_reg())
     }
 
     /// Get the list of registers from which we will allocate on this platform
@@ -492,7 +486,7 @@ impl Assembler {
                     // Note: the iteration order is reversed to avoid corrupting x0,
                     // which is both the return value and first argument register
                     if !opnds.is_empty() {
-                        let mut args: Vec<(Reg, Opnd)> = vec![];
+                        let mut args: Vec<(Opnd, Opnd)> = vec![];
                         for (idx, opnd) in opnds.iter_mut().enumerate().rev() {
                             // If the value that we're sending is 0, then we can use
                             // the zero register, so in this case we'll just send
@@ -502,7 +496,7 @@ impl Assembler {
                                 Opnd::Mem(_) => split_memory_address(asm, *opnd),
                                 _ => *opnd
                             };
-                            args.push((C_ARG_OPNDS[idx].unwrap_reg(), value));
+                            args.push((C_ARG_OPNDS[idx], value));
                         }
                         asm.parallel_mov(args);
                     }
@@ -725,10 +719,21 @@ impl Assembler {
                     asm.lea_into(SCRATCH_OPND, Opnd::mem(64, SCRATCH_OPND, 0));
                     asm.incr_counter(SCRATCH_OPND, value);
                 }
+                &mut Insn::Mov { dest, src } => {
+                    match dest {
+                        Opnd::Reg(_) => asm.load_into(dest, src),
+                        Opnd::Mem(_) => asm.store(dest, src),
+                        _ => asm.push_insn(insn),
+                    }
+                }
                 // Resolve ParallelMov that couldn't be handled without a scratch register.
                 Insn::ParallelMov { moves } => {
-                    for (reg, opnd) in Self::resolve_parallel_moves(moves, Some(SCRATCH_OPND)).unwrap() {
-                        asm.load_into(Opnd::Reg(reg), opnd);
+                    for (dst, src) in Self::resolve_parallel_moves(moves, Some(SCRATCH_OPND)).unwrap() {
+                        match dst {
+                            Opnd::Reg(_) => asm.load_into(dst, src),
+                            Opnd::Mem(_) => asm.store(dst, src),
+                            _ => asm.mov(dst, src),
+                        }
                     }
                 }
                 _ => {
@@ -2385,7 +2390,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reorder_c_args_no_cycle() {
+    fn test_ccall_resolve_parallel_moves_no_cycle() {
         crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
@@ -2403,7 +2408,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reorder_c_args_single_cycle() {
+    fn test_ccall_resolve_parallel_moves_single_cycle() {
         crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
@@ -2426,7 +2431,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reorder_c_args_two_cycles() {
+    fn test_ccall_resolve_parallel_moves_two_cycles() {
         crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
@@ -2453,7 +2458,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reorder_c_args_large_cycle() {
+    fn test_ccall_resolve_parallel_moves_large_cycle() {
         crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
