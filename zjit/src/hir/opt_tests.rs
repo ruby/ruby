@@ -5831,10 +5831,11 @@ mod hir_opt_tests {
           v33:Fixnum = GuardLess v30, v32
           v34:Fixnum[0] = Const Value(0)
           v35:Fixnum = GuardGreaterEq v30, v34
-          v36:Fixnum = StringSetbyteFixnum v29, v30, v31
+          v36:StringExact = GuardNotFrozen v29
+          v37:Fixnum = StringSetbyteFixnum v36, v30, v31
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
-          Return v36
+          Return v37
         ");
     }
 
