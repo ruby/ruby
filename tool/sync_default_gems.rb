@@ -626,8 +626,9 @@ module SyncDefaultGems
     # If the cherry-pick attempt failed, try to resolve conflicts.
     # Skip the commit, if it contains unresolved conflicts or no files to pick up.
     unless picked or resolve_conflicts(gem, sha, edit)
-      `git reset` && `git checkout .` && `git clean -fd`
-      return picked || nil      # Fail unless cherry-picked
+      system(*%w"git --no-pager diff") if !picked && !edit # If failed, show `git diff` unless editing
+      `git reset` && `git checkout .` && `git clean -fd` # Clean up un-committed diffs
+      return picked || nil # Fail unless cherry-picked
     end
 
     # Commit cherry-picked commit
