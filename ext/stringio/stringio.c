@@ -1218,10 +1218,44 @@ strio_each_char(VALUE self)
  * call-seq:
  *   each_codepoint {|codepoint| ... } -> self
  *
- * With a block given, calls the block with each remaining codepoint in the stream;
- * see {Codepoint IO}[rdoc-ref:IO@Codepoint+IO].
+ * With a block given, calls the block with each successive codepoint from self;
+ * sets the position to end-of-stream;
+ * returns +self+.
  *
- * With no block given, returns an enumerator.
+ * Each codepoint is the integer value for a character; returns self:
+ *
+ *   codepoints = []
+ *   strio = StringIO.new('hello')
+ *   strio.each_codepoint {|codepoint| codepoints.push(codepoint) }
+ *   strio.eof? # => true
+ *   codepoints # => [104, 101, 108, 108, 111]
+ *   codepoints = []
+ *   strio = StringIO.new('тест')
+ *   strio.each_codepoint {|codepoint| codepoints.push(codepoint) }
+ *   codepoints # => [1090, 1077, 1089, 1090]
+ *   codepoints = []
+ *   strio = StringIO.new('こんにちは')
+ *   strio.each_codepoint {|codepoint| codepoints.push(codepoint) }
+ *   codepoints # => [12371, 12435, 12395, 12385, 12399]
+ *
+ * Position in the stream matters:
+ *
+ *   codepoints = []
+ *   strio = StringIO.new('こんにちは')
+ *   strio.getc # => "こ"
+ *   strio.pos  # => 3
+ *   strio.each_codepoint {|codepoint| codepoints.push(codepoint) }
+ *   codepoints # => [12435, 12395, 12385, 12399]
+ *
+ * When at end-of-stream, the block is not called:
+ *
+ *   strio.eof? # => true
+ *   strio.each_codepoint {|codepoint| fail 'Boo!' }
+ *   strio.eof? # => true
+ *
+ * With no block given, returns a new {Enumerator}[rdoc-ref:Enumerator].
+ *
+ * Related: StringIO#each_byte, StringIO#each_char, StringIO#each_line.
  */
 static VALUE
 strio_each_codepoint(VALUE self)
