@@ -633,6 +633,8 @@ pub enum Insn {
     GetIvar { self_val: InsnId, id: ID, state: InsnId },
     /// Set `self_val`'s instance variable `id` to `val`
     SetIvar { self_val: InsnId, id: ID, val: InsnId, state: InsnId },
+    /// Set `self_val`'s instance variable `id` to `val` using the interpreter inline cache
+    SetIvarIc { self_val: InsnId, id: ID, ic: *const iseq_inline_constant_cache, val: InsnId, state: InsnId },
     /// Check whether an instance variable exists on `self_val`
     DefinedIvar { self_val: InsnId, id: ID, pushval: VALUE, state: InsnId },
 
@@ -827,7 +829,7 @@ impl Insn {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } => false,
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::SetIvarIc { .. } => false,
             _ => true,
         }
     }
@@ -1142,6 +1144,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             &Insn::LoadIvarEmbedded { self_val, id, index } => write!(f, "LoadIvarEmbedded {self_val}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_index(index as u64)),
             &Insn::LoadIvarExtended { self_val, id, index } => write!(f, "LoadIvarExtended {self_val}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_index(index as u64)),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy()),
+            Insn::SetIvarIc { self_val, id, val, .. } => write!(f, "SetIvarIc {self_val}, :{}, {val}", id.contents_lossy()),
             Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy()),
             Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy()),
             &Insn::GetLocal { level, ep_offset, use_sp: true, rest_param } => write!(f, "GetLocal l{level}, SP@{}{}", ep_offset + 1, if rest_param { ", *" } else { "" }),
@@ -1753,6 +1756,7 @@ impl Function {
             &LoadIvarEmbedded { self_val, id, index } => LoadIvarEmbedded { self_val: find!(self_val), id, index },
             &LoadIvarExtended { self_val, id, index } => LoadIvarExtended { self_val: find!(self_val), id, index },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val: find!(val), state },
+            &SetIvarIc { self_val, id, ic, val, state } => SetIvarIc { self_val: find!(self_val), id, ic, val: find!(val), state },
             &GetClassVar { id, ic, state } => GetClassVar { id, ic, state },
             &SetClassVar { id, val, ic, state } => SetClassVar { id, val: find!(val), ic, state },
             &SetLocal { val, ep_offset, level } => SetLocal { val: find!(val), ep_offset, level },
@@ -1806,7 +1810,8 @@ impl Function {
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } | Insn::IncrCounter(_)
-            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrCounterPtr { .. } =>
+            | Insn::CheckInterrupts { .. } | Insn::GuardBlockParamProxy { .. } | Insn::IncrCounterPtr { .. }
+            | Insn::SetIvarIc { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -3228,7 +3233,8 @@ impl Function {
                 worklist.push_back(self_val);
                 worklist.push_back(state);
             }
-            &Insn::SetIvar { self_val, val, state, .. } => {
+            &Insn::SetIvar { self_val, val, state, .. }
+            | &Insn::SetIvarIc { self_val, val, state, .. } => {
                 worklist.push_back(self_val);
                 worklist.push_back(val);
                 worklist.push_back(state);
@@ -4719,13 +4725,13 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_setinstancevariable => {
                     let id = ID(get_arg(pc, 0).as_u64());
-                    // ic is in arg 1
+                    let ic = get_arg(pc, 1).as_ptr();
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     // Assume single-Ractor mode to omit gen_prepare_non_leaf_call on gen_setivar
                     // TODO: We only really need this if self_val is a class/module
                     fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::SingleRactorMode, state: exit_id });
                     let val = state.stack_pop()?;
-                    fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, val, state: exit_id });
+                    fun.push_insn(block, Insn::SetIvarIc { self_val: self_param, id, ic, val, state: exit_id });
                 }
                 YARVINSN_getclassvariable => {
                     let id = ID(get_arg(pc, 0).as_u64());
@@ -7521,7 +7527,7 @@ mod tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
-          SetIvar v6, :@foo, v10
+          SetIvarIc v6, :@foo, v10
           CheckInterrupts
           Return v10
         ");
@@ -11841,7 +11847,7 @@ mod opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
-          SetIvar v6, :@foo, v10
+          SetIvarIc v6, :@foo, v10
           CheckInterrupts
           Return v10
         ");
