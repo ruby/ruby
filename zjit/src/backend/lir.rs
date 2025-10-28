@@ -1034,6 +1034,9 @@ impl fmt::Debug for Insn {
 
         // Print list of operands
         let mut opnd_iter = self.opnd_iter();
+        if let Insn::FrameSetup { slot_count, .. } = self {
+            write!(fmt, "{slot_count}")?;
+        }
         if let Some(first_opnd) = opnd_iter.next() {
             write!(fmt, "{first_opnd:?}")?;
         }
@@ -1176,6 +1179,11 @@ pub struct Assembler {
     /// On `compile`, it also disables the backend's use of them.
     pub(super) accept_scratch_reg: bool,
 
+    /// The Assembler can use NATIVE_BASE_PTR + stack_base_idx as the
+    /// first stack slot in case it needs to allocate memory. This is
+    /// equal to the number of spilled basic block arguments.
+    pub(super) stack_base_idx: usize,
+
     /// If Some, the next ccall should verify its leafness
     leaf_ccall_stack_size: Option<usize>
 }
@@ -1189,8 +1197,14 @@ impl Assembler
             live_ranges: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
             label_names: Vec::default(),
             accept_scratch_reg: false,
+            stack_base_idx: 0,
             leaf_ccall_stack_size: None,
         }
+    }
+
+    /// Create an Assembler, reserving a specified number of stack slots
+    pub fn new_with_stack_slots(stack_base_idx: usize) -> Self {
+        Self { stack_base_idx, ..Self::new() }
     }
 
     /// Create an Assembler that allows the use of scratch registers.
@@ -1205,6 +1219,7 @@ impl Assembler
         let mut asm = Self {
             label_names: old_asm.label_names.clone(),
             accept_scratch_reg: old_asm.accept_scratch_reg,
+            stack_base_idx: old_asm.stack_base_idx,
             ..Self::new()
         };
         // Bump the initial VReg index to allow the use of the VRegs for the old Assembler
@@ -1841,7 +1856,8 @@ impl Assembler {
         out
     }
 
-    pub fn frame_setup(&mut self, preserved_regs: &'static [Opnd], slot_count: usize) {
+    pub fn frame_setup(&mut self, preserved_regs: &'static [Opnd]) {
+        let slot_count = self.stack_base_idx;
         self.push_insn(Insn::FrameSetup { preserved: preserved_regs, slot_count });
     }
 

@@ -1665,7 +1665,7 @@ mod tests {
     fn test_emit_frame() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.frame_setup(&[], 0);
+        asm.frame_setup(&[]);
         asm.frame_teardown(&[]);
         asm.compile_with_num_regs(&mut cb, 0);
 
@@ -1684,7 +1684,8 @@ mod tests {
         // Test 3 preserved regs (odd), odd slot_count
         let cb1 = {
             let (mut asm, mut cb) = setup_asm();
-            asm.frame_setup(THREE_REGS, 3);
+            asm.stack_base_idx = 3;
+            asm.frame_setup(THREE_REGS);
             asm.frame_teardown(THREE_REGS);
             asm.compile_with_num_regs(&mut cb, 0);
             cb
@@ -1693,7 +1694,8 @@ mod tests {
         // Test 3 preserved regs (odd), even slot_count
         let cb2 = {
             let (mut asm, mut cb) = setup_asm();
-            asm.frame_setup(THREE_REGS, 4);
+            asm.stack_base_idx = 4;
+            asm.frame_setup(THREE_REGS);
             asm.frame_teardown(THREE_REGS);
             asm.compile_with_num_regs(&mut cb, 0);
             cb
@@ -1703,7 +1705,8 @@ mod tests {
         let cb3 = {
             static FOUR_REGS: &[Opnd] = &[Opnd::Reg(X19_REG), Opnd::Reg(X20_REG), Opnd::Reg(X21_REG), Opnd::Reg(X22_REG)];
             let (mut asm, mut cb) = setup_asm();
-            asm.frame_setup(FOUR_REGS, 3);
+            asm.stack_base_idx = 3;
+            asm.frame_setup(FOUR_REGS);
             asm.frame_teardown(FOUR_REGS);
             asm.compile_with_num_regs(&mut cb, 0);
             cb
