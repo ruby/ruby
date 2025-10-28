@@ -96,6 +96,10 @@ describe "Symbol#inspect" do
     :"foo "    => ":\"foo \"",
     :" foo"    => ":\" foo\"",
     :" "       => ":\" \"",
+
+    :"ê"       => ":ê",
+    :"测"      => ":测",
+    :"🦊"      => ":🦊",
   }
 
   symbols.each do |input, expected|
