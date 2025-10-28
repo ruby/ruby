@@ -8,7 +8,7 @@ use std::ffi::{c_int, c_long, c_void};
 use std::slice;
 
 use crate::asm::Label;
-use crate::backend::current::{Reg, ALLOC_REGS};
+use crate::backend::current::ALLOC_REGS;
 use crate::invariants::{
     track_bop_assumption, track_cme_assumption, track_no_ep_escape_assumption, track_no_trace_point_assumption,
     track_single_ractor_assumption, track_stable_constant_names_assumption, track_no_singleton_class_assumption
@@ -1024,20 +1024,9 @@ fn gen_branch_params(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdg
     }
 
     asm_comment!(asm, "set branch params: {}", branch.args.len());
-    let mut moves: Vec<(Reg, Opnd)> = vec![];
-    for (idx, &arg) in branch.args.iter().enumerate() {
-        match param_opnd(idx) {
-            Opnd::Reg(reg) => {
-                // If a parameter is a register, we need to parallel-move it
-                moves.push((reg, jit.get_opnd(arg)));
-            },
-            param => {
-                // If a parameter is memory, we set it beforehand
-                asm.mov(param, jit.get_opnd(arg));
-            }
-        }
-    }
-    asm.parallel_mov(moves);
+    asm.parallel_mov(branch.args.iter().enumerate().map(|(idx, &arg)|
+        (param_opnd(idx), jit.get_opnd(arg))
+    ).collect());
 }
 
 /// Compile a constant

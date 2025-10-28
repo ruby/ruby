@@ -454,9 +454,9 @@ pub enum Insn {
     /// Shift a value left by a certain amount.
     LShift { opnd: Opnd, shift: Opnd, out: Opnd },
 
-    /// A set of parallel moves into registers.
+    /// A set of parallel moves into registers or memory.
     /// The backend breaks cycles if there are any cycles between moves.
-    ParallelMov { moves: Vec<(Reg, Opnd)> },
+    ParallelMov { moves: Vec<(Opnd, Opnd)> },
 
     // A low-level mov instruction. It accepts two operands.
     Mov { dest: Opnd, src: Opnd },
@@ -1227,6 +1227,15 @@ impl Assembler
         asm
     }
 
+    /// Return true if `opnd` is or depends on `reg`
+    pub fn has_reg(opnd: Opnd, reg: Reg) -> bool {
+        match opnd {
+            Opnd::Reg(_) => opnd == Opnd::Reg(reg),
+            Opnd::Mem(Mem { base: MemBase::Reg(reg_no), .. }) => reg_no == reg.reg_no,
+            _ => false,
+        }
+    }
+
     pub fn expect_leaf_ccall(&mut self, stack_size: usize) {
         self.leaf_ccall_stack_size = Some(stack_size);
     }
@@ -1307,17 +1316,22 @@ impl Assembler
 
     // Shuffle register moves, sometimes adding extra moves using scratch_reg,
     // so that they will not rewrite each other before they are used.
-    pub fn resolve_parallel_moves(old_moves: &[(Reg, Opnd)], scratch_reg: Option<Opnd>) -> Option<Vec<(Reg, Opnd)>> {
+    pub fn resolve_parallel_moves(old_moves: &[(Opnd, Opnd)], scratch_reg: Option<Opnd>) -> Option<Vec<(Opnd, Opnd)>> {
         // Return the index of a move whose destination is not used as a source if any.
-        fn find_safe_move(moves: &[(Reg, Opnd)]) -> Option<usize> {
-            moves.iter().enumerate().find(|&(_, &(dest_reg, _))| {
-                moves.iter().all(|&(_, src_opnd)| src_opnd != Opnd::Reg(dest_reg))
+        fn find_safe_move(moves: &[(Opnd, Opnd)]) -> Option<usize> {
+            moves.iter().enumerate().find(|&(_, &(dst, _))| {
+                moves.iter().all(|&(_, src)|
+                    match dst {
+                        Opnd::Reg(reg) => !Assembler::has_reg(src, reg),
+                        _ => src != dst,
+                    }
+                )
             }).map(|(index, _)| index)
         }
 
         // Remove moves whose source and destination are the same
-        let mut old_moves: Vec<(Reg, Opnd)> = old_moves.iter().copied()
-            .filter(|&(reg, opnd)| Opnd::Reg(reg) != opnd).collect();
+        let mut old_moves: Vec<(Opnd, Opnd)> = old_moves.iter().copied()
+            .filter(|&(dst, src)| dst != src).collect();
 
         let mut new_moves = vec![];
         while !old_moves.is_empty() {
@@ -1330,14 +1344,14 @@ impl Assembler
             // then load scratch_reg into the destination when it's safe.
             if !old_moves.is_empty() {
                 // If scratch_reg is None, return None and leave it to *_split_with_scratch_regs to resolve it.
-                let scratch_reg = scratch_reg?.unwrap_reg();
+                let scratch_reg = scratch_reg?;
                 // Make sure it's safe to use scratch_reg
-                assert!(old_moves.iter().all(|&(_, opnd)| opnd != Opnd::Reg(scratch_reg)));
+                assert!(old_moves.iter().all(|&(_, src)| !Self::has_reg(src, scratch_reg.unwrap_reg())));
 
-                // Move scratch_reg <- opnd, and delay reg <- scratch_reg
-                let (reg, opnd) = old_moves.remove(0);
-                new_moves.push((scratch_reg, opnd));
-                old_moves.push((reg, Opnd::Reg(scratch_reg)));
+                // Move scratch_reg <- src, and delay dst <- scratch_reg
+                let (dst, src) = old_moves.remove(0);
+                new_moves.push((scratch_reg, src));
+                old_moves.push((dst, scratch_reg));
             }
         }
         Some(new_moves)
@@ -1551,8 +1565,8 @@ impl Assembler
                 Insn::ParallelMov { moves } => {
                     // For trampolines that use scratch registers, attempt to lower ParallelMov without scratch_reg.
                     if let Some(moves) = Self::resolve_parallel_moves(&moves, None) {
-                        for (reg, opnd) in moves {
-                            asm.load_into(Opnd::Reg(reg), opnd);
+                        for (dst, src) in moves {
+                            asm.mov(dst, src);
                         }
                     } else {
                         // If it needs a scratch_reg, leave it to *_split_with_scratch_regs to handle it.
@@ -1980,7 +1994,7 @@ impl Assembler {
         out
     }
 
-    pub fn parallel_mov(&mut self, moves: Vec<(Reg, Opnd)>) {
+    pub fn parallel_mov(&mut self, moves: Vec<(Opnd, Opnd)>) {
         self.push_insn(Insn::ParallelMov { moves });
     }
 

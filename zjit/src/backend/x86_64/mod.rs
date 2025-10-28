@@ -107,13 +107,7 @@ impl Assembler {
 
     /// Return true if opnd contains a scratch reg
     pub fn has_scratch_reg(opnd: Opnd) -> bool {
-        match opnd {
-            Opnd::Reg(_) => opnd == SCRATCH_OPND,
-            Opnd::Mem(Mem { base: MemBase::Reg(reg_no), .. }) => {
-                reg_no == SCRATCH_OPND.unwrap_reg().reg_no
-            }
-            _ => false,
-        }
+        Self::has_reg(opnd, SCRATCH_OPND.unwrap_reg())
     }
 
     /// Get the list of registers from which we can allocate on this platform
@@ -354,9 +348,9 @@ impl Assembler {
 
                     // Load each operand into the corresponding argument register.
                     if !opnds.is_empty() {
-                        let mut args: Vec<(Reg, Opnd)> = vec![];
+                        let mut args: Vec<(Opnd, Opnd)> = vec![];
                         for (idx, opnd) in opnds.iter_mut().enumerate() {
-                            args.push((C_ARG_OPNDS[idx].unwrap_reg(), *opnd));
+                            args.push((C_ARG_OPNDS[idx], *opnd));
                         }
                         asm.parallel_mov(args);
                     }
@@ -489,8 +483,8 @@ impl Assembler {
                 }
                 // Resolve ParallelMov that couldn't be handled without a scratch register.
                 Insn::ParallelMov { moves } => {
-                    for (reg, opnd) in Self::resolve_parallel_moves(&moves, Some(SCRATCH_OPND)).unwrap() {
-                        asm.load_into(Opnd::Reg(reg), opnd);
+                    for (dst, src) in Self::resolve_parallel_moves(&moves, Some(SCRATCH_OPND)).unwrap() {
+                        asm.mov(dst, src)
                     }
                 }
                 // Handle various operand combinations for spills on compile_side_exits.
