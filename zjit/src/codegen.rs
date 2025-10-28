@@ -802,7 +802,7 @@ fn gen_ccall_variadic(
     asm.mov(CFP, new_cfp);
     asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
-    let argv_ptr = gen_push_opnds(jit, asm, &args);
+    let argv_ptr = gen_push_opnds(asm, &args);
     let result = asm.ccall(cfunc, vec![args.len().into(), argv_ptr, recv]);
     gen_pop_opnds(asm, &args);
 
@@ -1355,7 +1355,7 @@ fn gen_new_hash(
     let new_hash = asm_ccall!(asm, rb_hash_new_with_size, lir::Opnd::Imm(cap));
 
     if !elements.is_empty() {
-        let argv = gen_push_opnds(jit, asm, &elements);
+        let argv = gen_push_opnds(asm, &elements);
         asm_ccall!(asm, rb_hash_bulk_insert, elements.len().into(), argv, new_hash);
 
         gen_pop_opnds(asm, &elements);
@@ -2156,15 +2156,11 @@ pub fn gen_exit_trampoline_with_counter(cb: &mut CodeBlock, exit_trampoline: Cod
     })
 }
 
-fn gen_push_opnds(jit: &mut JITState, asm: &mut Assembler, opnds: &[Opnd]) -> lir::Opnd {
+fn gen_push_opnds(asm: &mut Assembler, opnds: &[Opnd]) -> lir::Opnd {
     let n = opnds.len();
-
-    // Calculate the compile-time NATIVE_STACK_PTR offset from NATIVE_BASE_PTR
-    // At this point, frame_setup(&[], jit.c_stack_slots) has been called,
-    // which allocated aligned_stack_bytes(jit.c_stack_slots) on the stack
-    let frame_size = aligned_stack_bytes(jit.c_stack_slots);
     let allocation_size = aligned_stack_bytes(n);
 
+    // Bump the stack pointer to reserve the space for opnds
     if n != 0 {
         asm_comment!(asm, "allocate {} bytes on C stack for {} values", allocation_size, n);
         asm.sub_into(NATIVE_STACK_PTR, allocation_size.into());
@@ -2172,18 +2168,14 @@ fn gen_push_opnds(jit: &mut JITState, asm: &mut Assembler, opnds: &[Opnd]) -> li
         asm_comment!(asm, "no opnds to allocate");
     }
 
-    // Calculate the total offset from NATIVE_BASE_PTR to our buffer
-    let total_offset_from_base = (frame_size + allocation_size) as i32;
-
+    // Load NATIVE_STACK_PTR to get the address of a returned array
+    // to allow the backend to move it for its own use.
+    let argv = asm.load(NATIVE_STACK_PTR);
     for (idx, &opnd) in opnds.iter().enumerate() {
-        let slot_offset = -total_offset_from_base + (idx as i32 * SIZEOF_VALUE_I32);
-        asm.mov(
-            Opnd::mem(VALUE_BITS, NATIVE_BASE_PTR, slot_offset),
-            opnd
-        );
+        asm.mov(Opnd::mem(VALUE_BITS, argv, idx as i32 * SIZEOF_VALUE_I32), opnd);
     }
 
-    asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, -total_offset_from_base))
+    argv
 }
 
 fn gen_pop_opnds(asm: &mut Assembler, opnds: &[Opnd]) {
@@ -2200,7 +2192,7 @@ fn gen_pop_opnds(asm: &mut Assembler, opnds: &[Opnd]) {
 fn gen_toregexp(jit: &mut JITState, asm: &mut Assembler, opt: usize, values: Vec<Opnd>, state: &FrameState) -> Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
 
-    let first_opnd_ptr = gen_push_opnds(jit, asm, &values);
+    let first_opnd_ptr = gen_push_opnds(asm, &values);
 
     let tmp_ary = asm_ccall!(asm, rb_ary_tmp_new_from_values, Opnd::Imm(0), values.len().into(), first_opnd_ptr);
     let result = asm_ccall!(asm, rb_reg_new_ary, tmp_ary, opt.into());
@@ -2214,7 +2206,7 @@ fn gen_toregexp(jit: &mut JITState, asm: &mut Assembler, opt: usize, values: Vec
 fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>, state: &FrameState) -> Opnd {
     gen_prepare_non_leaf_call(jit, asm, state);
 
-    let first_string_ptr = gen_push_opnds(jit, asm, &strings);
+    let first_string_ptr = gen_push_opnds(asm, &strings);
     let result = asm_ccall!(asm, rb_str_concat_literals, strings.len().into(), first_string_ptr);
     gen_pop_opnds(asm, &strings);
 
