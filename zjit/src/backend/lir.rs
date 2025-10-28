@@ -1316,11 +1316,11 @@ impl Assembler
 
     // Shuffle register moves, sometimes adding extra moves using scratch_reg,
     // so that they will not rewrite each other before they are used.
-    pub fn resolve_parallel_moves(old_moves: &[(Opnd, Opnd)], scratch_reg: Option<Opnd>) -> Option<Vec<(Opnd, Opnd)>> {
+    pub fn resolve_parallel_moves(old_moves: &[(Opnd, Opnd)], scratch_opnd: Option<Opnd>) -> Option<Vec<(Opnd, Opnd)>> {
         // Return the index of a move whose destination is not used as a source if any.
         fn find_safe_move(moves: &[(Opnd, Opnd)]) -> Option<usize> {
             moves.iter().enumerate().find(|&(_, &(dst, src))| {
-                // Check if `dst` is used in other moves.
+                // Check if `dst` is used in other moves. If `dst` is not used elsewhere, it's safe to write into `dst` now.
                 moves.iter().filter(|&&other_move| other_move != (dst, src)).all(|&(other_dst, other_src)|
                     match dst {
                         Opnd::Reg(reg) => !Assembler::has_reg(other_dst, reg) && !Assembler::has_reg(other_src, reg),
@@ -1341,18 +1341,19 @@ impl Assembler
                 new_moves.push(old_moves.remove(index));
             }
 
-            // No safe move. Load the source of one move into scratch_reg, and
-            // then load scratch_reg into the destination when it's safe.
+            // No safe move. Load the source of one move into scratch_opnd, and
+            // then load scratch_opnd into the destination when it's safe.
             if !old_moves.is_empty() {
-                // If scratch_reg is None, return None and leave it to *_split_with_scratch_regs to resolve it.
-                let scratch_reg = scratch_reg?;
+                // If scratch_opnd is None, return None and leave it to *_split_with_scratch_regs to resolve it.
+                let scratch_opnd = scratch_opnd?;
+                let scratch_reg = scratch_opnd.unwrap_reg();
                 // Make sure it's safe to use scratch_reg
-                assert!(old_moves.iter().all(|&(_, src)| !Self::has_reg(src, scratch_reg.unwrap_reg())));
+                assert!(old_moves.iter().all(|&(dst, src)| !Self::has_reg(dst, scratch_reg) && !Self::has_reg(src, scratch_reg)));
 
-                // Move scratch_reg <- src, and delay dst <- scratch_reg
+                // Move scratch_opnd <- src, and delay dst <- scratch_opnd
                 let (dst, src) = old_moves.remove(0);
-                new_moves.push((scratch_reg, src));
-                old_moves.push((dst, scratch_reg));
+                new_moves.push((scratch_opnd, src));
+                old_moves.push((dst, scratch_opnd));
             }
         }
         Some(new_moves)
@@ -2111,6 +2112,10 @@ pub(crate) use asm_ccall;
 mod tests {
     use super::*;
 
+    fn scratch_reg() -> Opnd {
+        Assembler::new_with_scratch_reg().1
+    }
+
     #[test]
     fn test_opnd_iter() {
         let insn = Insn::Add { left: Opnd::None, right: Opnd::None, out: Opnd::None };
@@ -2139,5 +2144,100 @@ mod tests {
         let mut asm = Assembler::new();
         let mem = Opnd::mem(64, SP, 0);
         asm.load_into(mem, mem);
+    }
+
+    #[test]
+    fn test_resolve_parallel_moves_reorder_registers() {
+        let result = Assembler::resolve_parallel_moves(&[
+            (C_ARG_OPNDS[0], SP),
+            (C_ARG_OPNDS[1], C_ARG_OPNDS[0]),
+        ], None);
+        assert_eq!(result, Some(vec![
+            (C_ARG_OPNDS[1], C_ARG_OPNDS[0]),
+            (C_ARG_OPNDS[0], SP),
+        ]));
+    }
+
+    #[test]
+    fn test_resolve_parallel_moves_give_up_register_cycle() {
+        // If scratch_opnd is not given, it cannot break cycles.
+        let result = Assembler::resolve_parallel_moves(&[
+            (C_ARG_OPNDS[0], C_ARG_OPNDS[1]),
+            (C_ARG_OPNDS[1], C_ARG_OPNDS[0]),
+        ], None);
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_resolve_parallel_moves_break_register_cycle() {
+        let scratch_reg = scratch_reg();
+        let result = Assembler::resolve_parallel_moves(&[
+            (C_ARG_OPNDS[0], C_ARG_OPNDS[1]),
+            (C_ARG_OPNDS[1], C_ARG_OPNDS[0]),
+        ], Some(scratch_reg));
+        assert_eq!(result, Some(vec![
+            (scratch_reg, C_ARG_OPNDS[1]),
+            (C_ARG_OPNDS[1], C_ARG_OPNDS[0]),
+            (C_ARG_OPNDS[0], scratch_reg),
+        ]));
+    }
+
+    #[test]
+    fn test_resolve_parallel_moves_break_memory_memory_cycle() {
+        let scratch_reg = scratch_reg();
+        let result = Assembler::resolve_parallel_moves(&[
+            (Opnd::mem(64, C_ARG_OPNDS[0], 0), C_ARG_OPNDS[1]),
+            (C_ARG_OPNDS[1], Opnd::mem(64, C_ARG_OPNDS[0], 0)),
+        ], Some(scratch_reg));
+        assert_eq!(result, Some(vec![
+            (scratch_reg, C_ARG_OPNDS[1]),
+            (C_ARG_OPNDS[1], Opnd::mem(64, C_ARG_OPNDS[0], 0)),
+            (Opnd::mem(64, C_ARG_OPNDS[0], 0), scratch_reg),
+        ]));
+    }
+
+    #[test]
+    fn test_resolve_parallel_moves_break_register_memory_cycle() {
+        let scratch_reg = scratch_reg();
+        let result = Assembler::resolve_parallel_moves(&[
+            (C_ARG_OPNDS[0], C_ARG_OPNDS[1]),
+            (C_ARG_OPNDS[1], Opnd::mem(64, C_ARG_OPNDS[0], 0)),
+        ], Some(scratch_reg));
+        assert_eq!(result, Some(vec![
+            (scratch_reg, C_ARG_OPNDS[1]),
+            (C_ARG_OPNDS[1], Opnd::mem(64, C_ARG_OPNDS[0], 0)),
+            (C_ARG_OPNDS[0], scratch_reg),
+        ]));
+    }
+
+    #[test]
+    fn test_resolve_parallel_moves_reorder_memory_destination() {
+        let scratch_reg = scratch_reg();
+        let result = Assembler::resolve_parallel_moves(&[
+            (C_ARG_OPNDS[0], SP),
+            (Opnd::mem(64, C_ARG_OPNDS[0], 0), CFP),
+        ], Some(scratch_reg));
+        assert_eq!(result, Some(vec![
+            (Opnd::mem(64, C_ARG_OPNDS[0], 0), CFP),
+            (C_ARG_OPNDS[0], SP),
+        ]));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_resolve_parallel_moves_into_same_register() {
+        Assembler::resolve_parallel_moves(&[
+            (C_ARG_OPNDS[0], SP),
+            (C_ARG_OPNDS[0], CFP),
+        ], Some(scratch_reg()));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_resolve_parallel_moves_into_same_memory() {
+        Assembler::resolve_parallel_moves(&[
+            (Opnd::mem(64, C_ARG_OPNDS[0], 0), SP),
+            (Opnd::mem(64, C_ARG_OPNDS[0], 0), CFP),
+        ], Some(scratch_reg()));
     }
 }

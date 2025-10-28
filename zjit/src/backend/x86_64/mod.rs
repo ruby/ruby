@@ -1362,7 +1362,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reorder_c_args_no_cycle() {
+    fn test_ccall_resolve_parallel_moves_no_cycle() {
         crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
@@ -1380,7 +1380,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reorder_c_args_single_cycle() {
+    fn test_ccall_resolve_parallel_moves_single_cycle() {
         crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
@@ -1403,7 +1403,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reorder_c_args_two_cycles() {
+    fn test_ccall_resolve_parallel_moves_two_cycles() {
         crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
@@ -1430,7 +1430,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reorder_c_args_large_cycle() {
+    fn test_ccall_resolve_parallel_moves_large_cycle() {
         crate::options::rb_zjit_prepare_options();
         let (mut asm, mut cb) = setup_asm();
 
@@ -1455,7 +1455,7 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn test_reorder_c_args_with_insn_out() {
+    fn test_ccall_resolve_parallel_moves_with_insn_out() {
         let (mut asm, mut cb) = setup_asm();
 
         let rax = asm.load(Opnd::UImm(1));
