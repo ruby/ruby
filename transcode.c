@@ -2432,6 +2432,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
             ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(rep),
                     RSTRING_LEN(rep), rb_enc_name(rb_enc_get(rep)));
             if ((int)ret == -1) {
+                rb_econv_close(ec);
                 rb_raise(rb_eArgError, "too big fallback string");
             }
             goto resume;
