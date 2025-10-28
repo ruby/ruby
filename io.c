@@ -9785,7 +9785,7 @@ io_wait_readable(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr;
 
     RB_IO_POINTER(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_char_readable(fptr);
 
     if (rb_io_read_pending(fptr)) return Qtrue;
 
@@ -9832,7 +9832,7 @@ io_wait_priority(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr = NULL;
 
     RB_IO_POINTER(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_char_readable(fptr);
 
     if (rb_io_read_pending(fptr)) return Qtrue;
 

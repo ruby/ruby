@@ -84,7 +84,7 @@ io_nread(VALUE io)
     ioctl_arg n;
 
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_char_readable(fptr);
     len = rb_io_read_pending(fptr);
     if (len > 0) return INT2FIX(len);
 
@@ -143,7 +143,7 @@ io_ready_p(VALUE io)
 #endif
 
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_char_readable(fptr);
     if (rb_io_read_pending(fptr)) return Qtrue;
 
 #ifndef HAVE_RB_IO_WAIT
@@ -178,7 +178,7 @@ io_wait_readable(int argc, VALUE *argv, VALUE io)
 #endif
 
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_char_readable(fptr);
 
 #ifndef HAVE_RB_IO_WAIT
     tv = get_timeout(argc, argv, &timerec);
@@ -252,7 +252,7 @@ io_wait_priority(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr = NULL;
 
     RB_IO_POINTER(io, fptr);
-    rb_io_check_readable(fptr);
+    rb_io_check_char_readable(fptr);
 
     if (rb_io_read_pending(fptr)) return Qtrue;
 
