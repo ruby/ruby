@@ -196,6 +196,7 @@ fn main() {
         .allowlist_function("rb_obj_as_string_result")
         .allowlist_function("rb_str_byte_substr")
         .allowlist_function("rb_str_substr_two_fixnums")
+        .allowlist_function("rb_str_length")
         .allowlist_function("rb_backref_get")
         .allowlist_function("rb_reg_last_match")
         .allowlist_function("rb_reg_match_pre")
