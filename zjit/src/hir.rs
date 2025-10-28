@@ -461,6 +461,7 @@ pub enum SideExitReason {
     GuardTypeNot(Type),
     GuardShape(ShapeId),
     GuardBitEquals(Const),
+    GuardNotFrozen,
     PatchPoint(Invariant),
     CalleeSideExit,
     ObjToStringFallback,
@@ -585,6 +586,7 @@ pub enum Insn {
     /// Push `val` onto `array`, where `array` is already `Array`.
     ArrayPush { array: InsnId, val: InsnId, state: InsnId },
     ArrayArefFixnum { array: InsnId, index: InsnId },
+    ArrayPop { array: InsnId, state: InsnId },
     /// Return the length of the array as a C `long` ([`types::CInt64`])
     ArrayLength { array: InsnId },
 
@@ -795,6 +797,8 @@ pub enum Insn {
     /// Side-exit if the block param has been modified or the block handler for the frame
     /// is neither ISEQ nor ifunc, which makes it incompatible with rb_block_param_proxy.
     GuardBlockParamProxy { level: u32, state: InsnId },
+    /// Side-exit if val is frozen.
+    GuardNotFrozen { val: InsnId, state: InsnId },
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
@@ -920,6 +924,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ArrayArefFixnum { array, index, .. } => {
                 write!(f, "ArrayArefFixnum {array}, {index}")
+            }
+            Insn::ArrayPop { array, .. } => {
+                write!(f, "ArrayPop {array}")
             }
             Insn::ArrayLength { array } => {
                 write!(f, "ArrayLength {array}")
@@ -1082,6 +1089,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
             &Insn::GuardShape { val, shape, .. } => { write!(f, "GuardShape {val}, {:p}", self.ptr_map.map_shape(shape)) },
             Insn::GuardBlockParamProxy { level, .. } => write!(f, "GuardBlockParamProxy l{level}"),
+            Insn::GuardNotFrozen { val, .. } => write!(f, "GuardNotFrozen {val}"),
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::IsBlockGiven => { write!(f, "IsBlockGiven") },
@@ -1639,6 +1647,7 @@ impl Function {
             &GuardBitEquals { val, expected, state } => GuardBitEquals { val: find!(val), expected, state },
             &GuardShape { val, shape, state } => GuardShape { val: find!(val), shape, state },
             &GuardBlockParamProxy { level, state } => GuardBlockParamProxy { level, state: find!(state) },
+            &GuardNotFrozen { val, state } => GuardNotFrozen { val: find!(val), state },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
             &FixnumSub { left, right, state } => FixnumSub { left: find!(left), right: find!(right), state },
             &FixnumMult { left, right, state } => FixnumMult { left: find!(left), right: find!(right), state },
@@ -1736,6 +1745,7 @@ impl Function {
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
             &NewRangeFixnum { low, high, flag, state } => NewRangeFixnum { low: find!(low), high: find!(high), flag, state: find!(state) },
             &ArrayArefFixnum { array, index } => ArrayArefFixnum { array: find!(array), index: find!(index) },
+            &ArrayPop { array, state } => ArrayPop { array: find!(array), state: find!(state) },
             &ArrayLength { array } => ArrayLength { array: find!(array) },
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
@@ -1829,6 +1839,7 @@ impl Function {
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
             Insn::ArrayArefFixnum { .. } => types::BasicObject,
+            Insn::ArrayPop { .. } => types::BasicObject,
             Insn::ArrayLength { .. } => types::CInt64,
             Insn::HashAref { .. } => types::BasicObject,
             Insn::NewHash { .. } => types::HashExact,
@@ -1844,6 +1855,7 @@ impl Function {
             Insn::GuardTypeNot { .. } => types::BasicObject,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
             Insn::GuardShape { val, .. } => self.type_of(*val),
+            Insn::GuardNotFrozen { val, .. } => self.type_of(*val),
             Insn::FixnumAdd  { .. } => types::Fixnum,
             Insn::FixnumSub  { .. } => types::Fixnum,
             Insn::FixnumMult { .. } => types::Fixnum,
@@ -3131,6 +3143,7 @@ impl Function {
             | &Insn::GuardTypeNot { val, state, .. }
             | &Insn::GuardBitEquals { val, state, .. }
             | &Insn::GuardShape { val, state, .. }
+            | &Insn::GuardNotFrozen { val, state }
             | &Insn::ToArray { val, state }
             | &Insn::IsMethodCfunc { val, state, .. }
             | &Insn::ToNewArray { val, state } => {
@@ -3181,6 +3194,10 @@ impl Function {
             &Insn::ArrayArefFixnum { array, index } => {
                 worklist.push_back(array);
                 worklist.push_back(index);
+            }
+            &Insn::ArrayPop { array, state } => {
+                worklist.push_back(array);
+                worklist.push_back(state);
             }
             &Insn::ArrayLength { array } => {
                 worklist.push_back(array);
@@ -14418,6 +14435,94 @@ mod opt_tests {
           v27:Fixnum = CCall size@0x1038, v25
           CheckInterrupts
           Return v27
+        ");
+    }
+
+    #[test]
+    fn test_optimize_array_pop_no_arg() {
+        eval("
+            def test(arr) = arr.pop
+            test([1])
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1000, pop@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v23:ArrayExact = GuardType v9, ArrayExact
+          v24:ArrayExact = GuardNotFrozen v23
+          v25:BasicObject = ArrayPop v24
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_do_not_optimize_array_pop_arg() {
+        eval("
+            def test(arr) = arr.pop(4)
+            test([1])
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:Fixnum[4] = Const Value(4)
+          PatchPoint MethodRedefined(Array@0x1000, pop@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v24:ArrayExact = GuardType v9, ArrayExact
+          v25:BasicObject = CCallVariadic pop@0x1038, v24, v13
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_guard_array_pop_frozen() {
+        eval("
+            def test(arr)
+                arr.pop
+            rescue FrozenError
+                nil
+            end
+            arr = [1].freeze
+            test(arr)
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1000, pop@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Array@0x1000)
+          v23:ArrayExact = GuardType v9, ArrayExact
+          v24:ArrayExact = GuardNotFrozen v23
+          v25:BasicObject = ArrayPop v24
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v25
         ");
     }
 

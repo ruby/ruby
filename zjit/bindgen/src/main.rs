@@ -124,6 +124,7 @@ fn main() {
         .allowlist_function("rb_ary_clear")
         .allowlist_function("rb_ary_dup")
         .allowlist_function("rb_ary_push")
+        .allowlist_function("rb_ary_pop")
         .allowlist_function("rb_ary_unshift_m")
         .allowlist_function("rb_ec_ary_new_from_values")
         .allowlist_function("rb_ary_tmp_new_from_values")
@@ -331,6 +332,7 @@ fn main() {
         .allowlist_function("rb_class_new_instance_pass_kw")
         .allowlist_function("rb_obj_alloc")
         .allowlist_function("rb_obj_info")
+        .allowlist_function("rb_obj_frozen_p")
         // From include/ruby/debug.h
         .allowlist_function("rb_profile_frames")
         .allowlist_function("ruby_xfree")
