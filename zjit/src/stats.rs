@@ -343,7 +343,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         GuardTypeNot(_)               => exit_guard_type_not_failure,
         GuardBitEquals(_)             => exit_guard_bit_equals_failure,
         GuardShape(_)                 => exit_guard_shape_failure,
-        GuardNotFrozen                   => exit_guard_not_frozen_failure,
+        GuardNotFrozen                => exit_guard_not_frozen_failure,
         CalleeSideExit                => exit_callee_side_exit,
         ObjToStringFallback           => exit_obj_to_string_fallback,
         Interrupt                     => exit_interrupt,
