@@ -1230,7 +1230,7 @@ impl Assembler
     /// Return true if `opnd` is or depends on `reg`
     pub fn has_reg(opnd: Opnd, reg: Reg) -> bool {
         match opnd {
-            Opnd::Reg(_) => opnd == Opnd::Reg(reg),
+            Opnd::Reg(opnd_reg) => opnd_reg == reg,
             Opnd::Mem(Mem { base: MemBase::Reg(reg_no), .. }) => reg_no == reg.reg_no,
             _ => false,
         }
