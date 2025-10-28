@@ -1211,6 +1211,7 @@ class TestZJIT < Test::Unit::TestCase
     assert_compiles '[33, 42]', %q{
       def test(arr) = arr.pop(2)
       test([32, 33, 42])
+      test([32, 33, 42])
     }, call_threshold: 2
   end
 
