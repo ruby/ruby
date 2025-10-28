@@ -1195,12 +1195,14 @@ class TestZJIT < Test::Unit::TestCase
     assert_compiles 'nil', %q{
       def test(arr) = arr.pop
       test([])
+      test([])
     }, call_threshold: 2
   end
 
   def test_array_pop_no_arg
     assert_compiles '42', %q{
       def test(arr) = arr.pop
+      test([32, 33, 42])
       test([32, 33, 42])
     }, call_threshold: 2
   end
