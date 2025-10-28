@@ -2008,6 +2008,7 @@ macro_rules! c_callable {
         extern "C" fn $f $args $(-> $ret)? $body
     };
 }
+#[cfg(test)]
 pub(crate) use c_callable;
 
 c_callable! {

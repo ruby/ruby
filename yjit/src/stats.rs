@@ -318,7 +318,6 @@ macro_rules! ptr_to_counter {
         }
     };
 }
-pub(crate) use ptr_to_counter;
 
 // Declare all the counters we track
 make_counters! {
