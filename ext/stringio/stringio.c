@@ -1162,12 +1162,44 @@ strio_readbyte(VALUE self)
 
 /*
  * call-seq:
- *   each_char {|c| ... } -> self
+ *   each_char {|char| ... } -> self
  *
  * With a block given, calls the block with each remaining character in the stream;
- * see {Character IO}[rdoc-ref:IO@Character+IO].
+ * positions the stream at end-of-file;
+ * returns +self+:
  *
- * With no block given, returns an enumerator.
+ *   chars = []
+ *   strio = StringIO.new('hello')
+ *   strio.each_char {|char| chars.push(char) }
+ *   strio.eof? # => true
+ *   chars      # => ["h", "e", "l", "l", "o"]
+ *   chars = []
+ *   strio = StringIO.new('тест')
+ *   strio.each_char {|char| chars.push(char) }
+ *   chars      # => ["т", "е", "с", "т"]
+ *   chars = []
+ *   strio = StringIO.new('こんにちは')
+ *   strio.each_char {|char| chars.push(char) }
+ *   chars      # => ["こ", "ん", "に", "ち", "は"]
+ *
+ * Stream position matters:
+ *
+ *  chars = []
+ *  strio = StringIO.new('こんにちは')
+ *  strio.getc # => "こ"
+ *  strio.pos  # => 3  # 3-byte character was read.
+ *  strio.each_char {|char| chars.push(char) }
+ *  chars      # => ["ん", "に", "ち", "は"]
+ *
+ * When at end-of-stream does not call the block:
+ *
+ *   strio.eof? # => true
+ *   strio.each_char {|char| fail 'Boo!' }
+ *   strio.eof? # => true
+ *
+ * With no block given, returns a new {Enumerator}[rdoc-ref:Enumerator].
+ *
+ * Related: StringIO#each_byte, StringIO#each_codepoint, StringIO#each_line.
  */
 static VALUE
 strio_each_char(VALUE self)
