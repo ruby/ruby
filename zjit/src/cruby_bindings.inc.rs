@@ -1203,6 +1203,7 @@ unsafe extern "C" {
     pub fn rb_str_buf_append(dst: VALUE, src: VALUE) -> VALUE;
     pub fn rb_str_dup(str_: VALUE) -> VALUE;
     pub fn rb_str_intern(str_: VALUE) -> VALUE;
+    pub fn rb_str_length(arg1: VALUE) -> VALUE;
     pub fn rb_mod_name(mod_: VALUE) -> VALUE;
     pub fn rb_ivar_get(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_ivar_set(obj: VALUE, name: ID, val: VALUE) -> VALUE;

@@ -199,6 +199,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cString, "length", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cString, "getbyte", inline_string_getbyte);
+    annotate!(rb_cString, "setbyte", inline_string_setbyte);
     annotate!(rb_cString, "empty?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cString, "<<", inline_string_append);
     annotate!(rb_cString, "==", inline_string_eq);
@@ -333,6 +334,21 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         // when converting the index to a C integer.
         let index = fun.coerce_to(block, index, types::Fixnum, state);
         let result = fun.push_insn(block, hir::Insn::StringGetbyteFixnum { string: recv, index });
+        return Some(result);
+    }
+    None
+}
+
+fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[index, value] = args else { return None; };
+    if fun.likely_a(index, types::Fixnum, state) && fun.likely_a(value, types::Fixnum, state) {
+        let index = fun.coerce_to(block, index, types::Fixnum, state);
+        let value = fun.coerce_to(block, value, types::Fixnum, state);
+        let len = fun.push_insn(block, hir::Insn::StringLength { recv: value, state });
+        let _ = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: len, state });
+        let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(0)) });
+        let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, state });
+        let result = fun.push_insn(block, hir::Insn::StringSetbyteFixnum { string: recv, index, value });
         return Some(result);
     }
     None

@@ -365,8 +365,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::StringConcat { strings, state, .. } if strings.is_empty() => return Err(*state),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, opnds!(strings), &function.frame_state(*state)),
         &Insn::StringGetbyteFixnum { string, index } => gen_string_getbyte_fixnum(asm, opnd!(string), opnd!(index)),
+        Insn::StringSetbyteFixnum { string, index, value } => gen_string_setbyte_fixnum(asm, opnd!(string), opnd!(index), opnd!(value)),
         Insn::StringAppend { recv, other, state } => gen_string_append(jit, asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
         Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state)),
+        Insn::StringLength { recv, state } => gen_string_length(asm, opnd!(recv), &function.frame_state(*state)),
         Insn::ToRegexp { opt, values, state } => gen_toregexp(jit, asm, *opt, opnds!(values), &function.frame_state(*state)),
         Insn::Param => unreachable!("block.insns should not have Insn::Param"),
         Insn::Snapshot { .. } => return Ok(()), // we don't need to do anything for this instruction at the moment
@@ -413,6 +415,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(jit, asm, opnd!(val), *expected, &function.frame_state(*state)),
         &Insn::GuardBlockParamProxy { level, state } => no_output!(gen_guard_block_param_proxy(jit, asm, level, &function.frame_state(state))),
         Insn::GuardNotFrozen { val, state } => gen_guard_not_frozen(jit, asm, opnd!(val), &function.frame_state(*state)),
+        &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
+        &Insn::GuardGreaterEq { left, right, state } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfunc, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, opnds!(args)),
         // Give up CCallWithFrame for 7+ args since asm.ccall() doesn't support it.
@@ -640,6 +644,18 @@ fn gen_guard_not_frozen(jit: &JITState, asm: &mut Assembler, val: Opnd, state: &
     asm.cmp(ret, Qtrue.into());
     asm.je(side_exit(jit, state, GuardNotFrozen));
     val
+}
+
+fn gen_guard_less(jit: &JITState, asm: &mut Assembler, left: Opnd, right: Opnd, state: &FrameState) -> Opnd {
+    asm.cmp(left, right);
+    asm.jl(side_exit(jit, state, SideExitReason::GuardLess));
+    left
+}
+
+fn gen_guard_greater_eq(jit: &JITState, asm: &mut Assembler, left: Opnd, right: Opnd, state: &FrameState) -> Opnd {
+    asm.cmp(left, right);
+    asm.jge(side_exit(jit, state, SideExitReason::GuardGreaterEq));
+    left
 }
 
 fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, ic: *const iseq_inline_constant_cache, state: &FrameState) -> Opnd {
@@ -886,6 +902,11 @@ fn gen_intern(asm: &mut Assembler, val: Opnd, state: &FrameState) -> Opnd {
     gen_prepare_leaf_call_with_gc(asm, state);
 
     asm_ccall!(asm, rb_str_intern, val)
+}
+
+fn gen_string_length(asm: &mut Assembler, recv: Opnd, state: &FrameState) -> Opnd {
+    gen_prepare_leaf_call_with_gc(asm, state);
+    asm_ccall!(asm, rb_str_length, recv)
 }
 
 /// Set global variables
@@ -2300,6 +2321,10 @@ fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>
 fn gen_string_getbyte_fixnum(asm: &mut Assembler, string: Opnd, index: Opnd) -> Opnd {
     // TODO(max): Open-code rb_str_getbyte to avoid a call
     asm_ccall!(asm, rb_str_getbyte, string, index)
+}
+
+fn gen_string_setbyte_fixnum(asm: &mut Assembler, string: Opnd, index: Opnd, value: Opnd) -> Opnd {
+    asm_ccall!(asm, rb_str_setbyte, string, index, value)
 }
 
 fn gen_string_append(jit: &mut JITState, asm: &mut Assembler, string: Opnd, val: Opnd, state: &FrameState) -> Opnd {
