@@ -3708,6 +3708,10 @@ impl Function {
             }
             Insn::GuardShape { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::GuardNotFrozen { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
+            Insn::StringGetbyteFixnum { string, index } => {
+                self.assert_subtype(insn_id, string, types::String)?;
+                self.assert_subtype(insn_id, index, types::Fixnum)
+            }
             _ => Ok(()),
         }
     }
