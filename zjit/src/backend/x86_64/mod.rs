@@ -69,7 +69,7 @@ impl From<Opnd> for X86Opnd {
                 "Attempted to lower an Opnd::None. This often happens when an out operand was not allocated for an instruction because the output of the instruction was not used. Please ensure you are using the output."
             ),
 
-            _ => panic!("unsupported x86 operand type")
+            _ => panic!("unsupported x86 operand type: {opnd:?}")
         }
     }
 }
