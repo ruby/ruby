@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require 'test/unit'
+require 'io/wait'
 
 # test uncommon device types to check portability problems
 # We may optimize IO#wait_*able for non-Linux kernels in the future
@@ -73,5 +74,34 @@ class TestIOWaitUncommon < Test::Unit::TestCase
 
   def test_wait_writable_null
     check_dev(IO::NULL, :wait_writable)
+  end
+
+  def test_after_ungetc_ready?
+    check_dev(IO::NULL, mode: "r") {|fp|
+      assert_respond_to fp, :ready?
+      fp.ungetc(?a)
+      assert_predicate fp, :ready?
+    }
+  end
+
+  def test_after_ungetc_wait_readable
+    check_dev(IO::NULL, mode: "r") {|fp|
+      fp.ungetc(?a)
+      assert_predicate fp, :wait_readable
+    }
+  end
+
+  def test_after_ungetc_in_text_ready?
+    check_dev(IO::NULL, mode: "rt") {|fp|
+      fp.ungetc(?a)
+      assert_predicate fp, :ready?
+    }
+  end
+
+  def test_after_ungetc_in_text_wait_readable
+    check_dev(IO::NULL, mode: "rt") {|fp|
+      fp.ungetc(?a)
+      assert_predicate fp, :wait_readable
+    }
   end
 end
