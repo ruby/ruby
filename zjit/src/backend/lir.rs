@@ -1182,24 +1182,34 @@ pub struct Assembler {
 
 impl Assembler
 {
-    /// Create an Assembler
+    /// Create an Assembler with defaults
     pub fn new() -> Self {
-        Self::new_with_label_names(Vec::default(), 0, false)
-    }
-
-    /// Create an Assembler with parameters that are populated by another Assembler instance.
-    /// This API is used for copying an Assembler for the next compiler pass.
-    pub fn new_with_label_names(label_names: Vec<String>, num_vregs: usize, accept_scratch_reg: bool) -> Self {
-        let mut live_ranges = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
-        live_ranges.resize(num_vregs, LiveRange { start: None, end: None });
-
         Self {
             insns: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
-            live_ranges,
-            label_names,
-            accept_scratch_reg,
+            live_ranges: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
+            label_names: Vec::default(),
+            accept_scratch_reg: false,
             leaf_ccall_stack_size: None,
         }
+    }
+
+    /// Create an Assembler that allows the use of scratch registers.
+    /// This should be called only through [`Self::new_with_scratch_reg`].
+    pub(super) fn new_with_accept_scratch_reg(accept_scratch_reg: bool) -> Self {
+        Self { accept_scratch_reg, ..Self::new() }
+    }
+
+    /// Create an Assembler with parameters of another Assembler and empty instructions.
+    /// Compiler passes build a next Assembler with this API and insert new instructions to it.
+    pub(super) fn new_with_asm(old_asm: &Assembler) -> Self {
+        let mut asm = Self {
+            label_names: old_asm.label_names.clone(),
+            accept_scratch_reg: old_asm.accept_scratch_reg,
+            ..Self::new()
+        };
+        // Bump the initial VReg index to allow the use of the VRegs for the old Assembler
+        asm.live_ranges.resize(old_asm.live_ranges.len(), LiveRange { start: None, end: None });
+        asm
     }
 
     pub fn expect_leaf_ccall(&mut self, stack_size: usize) {
@@ -1357,9 +1367,9 @@ impl Assembler
         let mut saved_regs: Vec<(Reg, usize)> = vec![];
 
         // live_ranges is indexed by original `index` given by the iterator.
+        let mut asm = Assembler::new_with_asm(&self);
         let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
         let mut iterator = self.insns.into_iter().enumerate().peekable();
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), live_ranges.len(), self.accept_scratch_reg);
 
         while let Some((index, mut insn)) = iterator.next() {
             let before_ccall = match (&insn, iterator.peek().map(|(_, insn)| insn)) {
