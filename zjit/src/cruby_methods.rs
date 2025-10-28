@@ -344,7 +344,7 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
     if fun.likely_a(index, types::Fixnum, state) && fun.likely_a(value, types::Fixnum, state) {
         let index = fun.coerce_to(block, index, types::Fixnum, state);
         let value = fun.coerce_to(block, value, types::Fixnum, state);
-        let len = fun.push_insn(block, hir::Insn::StringLength { recv: value, state });
+        let len = fun.push_insn(block, hir::Insn::StringBytesize { recv: value, state });
         let _ = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: len, state });
         let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(0)) });
         let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, state });

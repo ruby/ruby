@@ -368,7 +368,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::StringSetbyteFixnum { string, index, value } => gen_string_setbyte_fixnum(asm, opnd!(string), opnd!(index), opnd!(value)),
         Insn::StringAppend { recv, other, state } => gen_string_append(jit, asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
         Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state)),
-        Insn::StringLength { recv, state } => gen_string_length(asm, opnd!(recv), &function.frame_state(*state)),
+        Insn::StringBytesize { recv, state } => gen_string_bytesize(asm, opnd!(recv), &function.frame_state(*state)),
         Insn::ToRegexp { opt, values, state } => gen_toregexp(jit, asm, *opt, opnds!(values), &function.frame_state(*state)),
         Insn::Param => unreachable!("block.insns should not have Insn::Param"),
         Insn::Snapshot { .. } => return Ok(()), // we don't need to do anything for this instruction at the moment
@@ -904,9 +904,9 @@ fn gen_intern(asm: &mut Assembler, val: Opnd, state: &FrameState) -> Opnd {
     asm_ccall!(asm, rb_str_intern, val)
 }
 
-fn gen_string_length(asm: &mut Assembler, recv: Opnd, state: &FrameState) -> Opnd {
+fn gen_string_bytesize(asm: &mut Assembler, recv: Opnd, state: &FrameState) -> Opnd {
     gen_prepare_leaf_call_with_gc(asm, state);
-    asm_ccall!(asm, rb_str_length, recv)
+    asm_ccall!(asm, rb_RSTRING_LEN, recv)
 }
 
 /// Set global variables

@@ -604,7 +604,7 @@ pub enum Insn {
     StringGetbyteFixnum { string: InsnId, index: InsnId },
     StringSetbyteFixnum { string: InsnId, index: InsnId, value: InsnId },
     StringAppend { recv: InsnId, other: InsnId, state: InsnId },
-    StringLength { recv: InsnId, state: InsnId },
+    StringBytesize { recv: InsnId, state: InsnId },
 
     /// Combine count stack values into a regexp
     ToRegexp { opt: usize, values: Vec<InsnId>, state: InsnId },
@@ -1050,7 +1050,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::StringAppend { recv, other, .. } => {
                 write!(f, "StringAppend {recv}, {other}")
             }
-            Insn::StringLength { recv, .. } => {
+            Insn::StringBytesize { recv, .. } => {
                 write!(f, "StringLength {recv}")
             }
             Insn::ToRegexp { values, opt, .. } => {
@@ -1720,7 +1720,7 @@ impl Function {
             &StringGetbyteFixnum { string, index } => StringGetbyteFixnum { string: find!(string), index: find!(index) },
             &StringSetbyteFixnum { string, index, value } => StringSetbyteFixnum { string: find!(string), index: find!(index), value: find!(value) },
             &StringAppend { recv, other, state } => StringAppend { recv: find!(recv), other: find!(other), state: find!(state) },
-            &StringLength { recv, state } => StringLength { recv: find!(recv), state: find!(state) },
+            &StringBytesize { recv, state } => StringBytesize { recv: find!(recv), state: find!(state) },
             &ToRegexp { opt, ref values, state } => ToRegexp { opt, values: find_vec!(values), state },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
@@ -1932,7 +1932,7 @@ impl Function {
             Insn::StringGetbyteFixnum { .. } => types::Fixnum.union(types::NilClass),
             Insn::StringSetbyteFixnum { .. } => types::Fixnum,
             Insn::StringAppend { .. } => types::StringExact,
-            Insn::StringLength { .. } => types::CUInt64,
+            Insn::StringBytesize { .. } => types::CUInt64,
             Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
@@ -3318,7 +3318,7 @@ impl Function {
                 worklist.push_back(other);
                 worklist.push_back(state);
             }
-            &Insn::StringLength { recv, state } => {
+            &Insn::StringBytesize { recv, state } => {
                 worklist.push_back(recv);
                 worklist.push_back(state);
             }
