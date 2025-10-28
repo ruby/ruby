@@ -202,6 +202,7 @@ make_counters! {
     compile_error_validation_jump_target_not_in_rpo,
     compile_error_validation_operand_not_defined,
     compile_error_validation_duplicate_instruction,
+    compile_error_validation_type_check_failure,
 
     // The number of times YARV instructions are executed on JIT code
     zjit_insn_count,
@@ -320,6 +321,8 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
                 JumpTargetNotInRPO(_)         => compile_error_validation_jump_target_not_in_rpo,
                 OperandNotDefined(_, _, _)    => compile_error_validation_operand_not_defined,
                 DuplicateInstruction(_, _)    => compile_error_validation_duplicate_instruction,
+                MismatchedOperandType(..)     => compile_error_validation_type_check_failure,
+                MiscValidationError(..)       => compile_error_validation_type_check_failure,
             },
         }
     }
