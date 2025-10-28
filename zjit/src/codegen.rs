@@ -41,21 +41,17 @@ struct JITState {
 
     /// ISEQ calls that need to be compiled later
     iseq_calls: Vec<IseqCallRef>,
-
-    /// The number of bytes allocated for basic block arguments spilled onto the C stack
-    c_stack_slots: usize,
 }
 
 impl JITState {
     /// Create a new JITState instance
-    fn new(iseq: IseqPtr, num_insns: usize, num_blocks: usize, c_stack_slots: usize) -> Self {
+    fn new(iseq: IseqPtr, num_insns: usize, num_blocks: usize) -> Self {
         JITState {
             iseq,
             opnds: vec![None; num_insns],
             labels: vec![None; num_blocks],
             jit_entries: Vec::default(),
             iseq_calls: Vec::default(),
-            c_stack_slots,
         }
     }
 
@@ -246,9 +242,9 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>,
 
 /// Compile a function
 fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Result<(IseqCodePtrs, Vec<CodePtr>, Vec<IseqCallRef>), CompileError> {
-    let c_stack_slots = max_num_params(function).saturating_sub(ALLOC_REGS.len());
-    let mut jit = JITState::new(iseq, function.num_insns(), function.num_blocks(), c_stack_slots);
-    let mut asm = Assembler::new();
+    let num_spilled_params = max_num_params(function).saturating_sub(ALLOC_REGS.len());
+    let mut jit = JITState::new(iseq, function.num_insns(), function.num_blocks());
+    let mut asm = Assembler::new_with_stack_slots(num_spilled_params);
 
     // Compile each basic block
     let reverse_post_order = function.rpo();
@@ -999,7 +995,7 @@ fn gen_load_ivar_extended(asm: &mut Assembler, self_val: Opnd, id: ID, index: u1
 fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
     asm_comment!(asm, "ZJIT entry point: {}", iseq_get_location(iseq, 0));
     // Save the registers we'll use for CFP, EP, SP
-    asm.frame_setup(lir::JIT_PRESERVED_REGS, 0);
+    asm.frame_setup(lir::JIT_PRESERVED_REGS);
 
     // EC and CFP are passed as arguments
     asm.mov(EC, C_ARG_OPNDS[0]);
@@ -1422,7 +1418,7 @@ fn gen_entry_point(jit: &mut JITState, asm: &mut Assembler, jit_entry_idx: Optio
             jit_entry.borrow_mut().start_addr.set(Some(code_ptr));
         });
     }
-    asm.frame_setup(&[], jit.c_stack_slots);
+    asm.frame_setup(&[]);
 }
 
 /// Compile code that exits from JIT code with a return value
@@ -1883,6 +1879,8 @@ fn param_opnd(idx: usize) -> Opnd {
     if idx < ALLOC_REGS.len() {
         Opnd::Reg(ALLOC_REGS[idx])
     } else {
+        // With FrameSetup, the address that NATIVE_BASE_PTR points to stores an old value in the register.
+        // To avoid clobbering it, we need to start from the next slot, hence `+ 1` for the index.
         Opnd::mem(64, NATIVE_BASE_PTR, (idx - ALLOC_REGS.len() + 1) as i32 * -SIZEOF_VALUE_I32)
     }
 }
@@ -2094,7 +2092,7 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
     asm_comment!(asm, "function_stub_hit trampoline");
 
     // Maintain alignment for x86_64, and set up a frame for arm64 properly
-    asm.frame_setup(&[], 0);
+    asm.frame_setup(&[]);
 
     asm_comment!(asm, "preserve argument registers");
     for &reg in ALLOC_REGS.iter() {
