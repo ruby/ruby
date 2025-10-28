@@ -1319,11 +1319,12 @@ impl Assembler
     pub fn resolve_parallel_moves(old_moves: &[(Opnd, Opnd)], scratch_reg: Option<Opnd>) -> Option<Vec<(Opnd, Opnd)>> {
         // Return the index of a move whose destination is not used as a source if any.
         fn find_safe_move(moves: &[(Opnd, Opnd)]) -> Option<usize> {
-            moves.iter().enumerate().find(|&(_, &(dst, _))| {
-                moves.iter().all(|&(_, src)|
+            moves.iter().enumerate().find(|&(_, &(dst, src))| {
+                // Check if `dst` is used in other moves.
+                moves.iter().filter(|&&other_move| other_move != (dst, src)).all(|&(other_dst, other_src)|
                     match dst {
-                        Opnd::Reg(reg) => !Assembler::has_reg(src, reg),
-                        _ => src != dst,
+                        Opnd::Reg(reg) => !Assembler::has_reg(other_dst, reg) && !Assembler::has_reg(other_src, reg),
+                        _ => other_dst != dst && other_src != dst,
                     }
                 )
             }).map(|(index, _)| index)
