@@ -648,13 +648,13 @@ fn gen_guard_not_frozen(jit: &JITState, asm: &mut Assembler, val: Opnd, state: &
 
 fn gen_guard_less(jit: &JITState, asm: &mut Assembler, left: Opnd, right: Opnd, state: &FrameState) -> Opnd {
     asm.cmp(left, right);
-    asm.jl(side_exit(jit, state, SideExitReason::GuardLess));
+    asm.jge(side_exit(jit, state, SideExitReason::GuardLess));
     left
 }
 
 fn gen_guard_greater_eq(jit: &JITState, asm: &mut Assembler, left: Opnd, right: Opnd, state: &FrameState) -> Opnd {
     asm.cmp(left, right);
-    asm.jge(side_exit(jit, state, SideExitReason::GuardGreaterEq));
+    asm.jl(side_exit(jit, state, SideExitReason::GuardGreaterEq));
     left
 }
 
