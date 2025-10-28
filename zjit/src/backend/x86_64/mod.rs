@@ -986,9 +986,7 @@ impl Assembler {
 #[cfg(test)]
 mod tests {
     use insta::assert_snapshot;
-    #[cfg(feature = "disasm")]
-    use crate::disasms_with;
-    use crate::{assert_disasm_snapshot, hexdumps};
+    use crate::assert_disasm_snapshot;
     use super::*;
 
     fn setup_asm() -> (Assembler, CodeBlock) {
@@ -1554,43 +1552,46 @@ mod tests {
     }
 
     #[test]
-    fn frame_setup_teardown() {
-        let (mut asm, mut cb1) = setup_asm();
+    fn frame_setup_teardown_preserved_regs() {
+        let (mut asm, mut cb) = setup_asm();
         asm.frame_setup(JIT_PRESERVED_REGS);
         asm.frame_teardown(JIT_PRESERVED_REGS);
         asm.cret(C_RET_OPND);
-        asm.compile_with_num_regs(&mut cb1, 0);
+        asm.compile_with_num_regs(&mut cb, 0);
 
-        let (mut asm, mut cb2) = setup_asm();
+        assert_disasm_snapshot!(cb.disasm(), @r"
+        0x0: push rbp
+        0x1: mov rbp, rsp
+        0x4: push r13
+        0x6: push rbx
+        0x7: push r12
+        0x9: sub rsp, 8
+        0xd: mov r13, qword ptr [rbp - 8]
+        0x11: mov rbx, qword ptr [rbp - 0x10]
+        0x15: mov r12, qword ptr [rbp - 0x18]
+        0x19: mov rsp, rbp
+        0x1c: pop rbp
+        0x1d: ret
+        ");
+        assert_snapshot!(cb.hexdump(), @"554889e541555341544883ec084c8b6df8488b5df04c8b65e84889ec5dc3");
+    }
+
+    #[test]
+    fn frame_setup_teardown_stack_base_idx() {
+        let (mut asm, mut cb) = setup_asm();
         asm.stack_base_idx = 5;
         asm.frame_setup(&[]);
         asm.frame_teardown(&[]);
-        asm.compile_with_num_regs(&mut cb2, 0);
+        asm.compile_with_num_regs(&mut cb, 0);
 
-        assert_disasm_snapshot!(disasms_with!("\n", cb1, cb2), @r"
-            0x0: push rbp
-            0x1: mov rbp, rsp
-            0x4: push r13
-            0x6: push rbx
-            0x7: push r12
-            0x9: sub rsp, 8
-            0xd: mov r13, qword ptr [rbp - 8]
-            0x11: mov rbx, qword ptr [rbp - 0x10]
-            0x15: mov r12, qword ptr [rbp - 0x18]
-            0x19: mov rsp, rbp
-            0x1c: pop rbp
-            0x1d: ret
-
-            0x0: push rbp
-            0x1: mov rbp, rsp
-            0x4: sub rsp, 0x30
-            0x8: mov rsp, rbp
-            0xb: pop rbp
+        assert_disasm_snapshot!(cb.disasm(), @r"
+        0x0: push rbp
+        0x1: mov rbp, rsp
+        0x4: sub rsp, 0x30
+        0x8: mov rsp, rbp
+        0xb: pop rbp
         ");
-        assert_snapshot!(hexdumps!(cb1, cb2), @r"
-        554889e541555341544883ec084c8b6df8488b5df04c8b65e84889ec5dc3
-        554889e54883ec304889ec5d
-        ");
+        assert_snapshot!(cb.hexdump(), @"554889e54883ec304889ec5d");
     }
 
     #[test]
