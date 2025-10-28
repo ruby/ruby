@@ -19,14 +19,8 @@ module Test_SyncDefaultGems
         expected.concat(trailers.map {_1+"\n"})
       end
 
-      out, err = capture_output do
-        SyncDefaultGems.message_filter(repo, sha, input: StringIO.new(input, "r"))
-      end
-
-      all_assertions do |a|
-        a.for("error") {assert_empty err}
-        a.for("result") {assert_pattern_list(expected, out)}
-      end
+      out = SyncDefaultGems.message_filter(repo, sha, input)
+      assert_pattern_list(expected, out)
     end
 
     def test_subject_only
