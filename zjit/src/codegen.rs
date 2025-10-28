@@ -2100,13 +2100,18 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
     for &reg in ALLOC_REGS.iter() {
         asm.cpush(Opnd::Reg(reg));
     }
-    const { assert!(ALLOC_REGS.len() % 2 == 0, "x86_64 would need to push one more if we push an odd number of regs"); }
+    if cfg!(target_arch = "x86_64") && ALLOC_REGS.len() % 2 == 1 {
+        asm.cpush(Opnd::Reg(ALLOC_REGS[0])); // maintain alignment for x86_64
+    }
 
     // Compile the stubbed ISEQ
     let jump_addr = asm_ccall!(asm, function_stub_hit, scratch_reg, CFP, SP);
     asm.mov(scratch_reg, jump_addr);
 
     asm_comment!(asm, "restore argument registers");
+    if cfg!(target_arch = "x86_64") && ALLOC_REGS.len() % 2 == 1 {
+        asm.cpop_into(Opnd::Reg(ALLOC_REGS[0]));
+    }
     for &reg in ALLOC_REGS.iter().rev() {
         asm.cpop_into(Opnd::Reg(reg));
     }
