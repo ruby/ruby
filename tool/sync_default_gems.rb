@@ -424,7 +424,7 @@ module SyncDefaultGems
     puts "#{gem}-#{spec.version} is not latest version of rubygems.org" if spec.version.to_s != latest_version
   end
 
-  def message_filter(repo, sha, log)
+  def message_filter(repo, sha, log, context: nil)
     unless repo.count("/") == 1 and /\A\S+\z/ =~ repo
       raise ArgumentError, "invalid repository: #{repo}"
     end
@@ -458,14 +458,15 @@ module SyncDefaultGems
       end
     end
     commit_url = "#{repo_url}/commit/#{sha[0,10]}\n"
+    sync_note = context ? "#{commit_url}\n#{context}" : commit_url
     if log and !log.empty?
       log.sub!(/(?<=\n)\n+\z/, '') # drop empty lines at the last
       conv[log]
       log.sub!(/(?:(\A\s*)|\s*\n)(?=((?i:^Co-authored-by:.*\n?)+)?\Z)/) {
-        ($~.begin(1) ? "" : "\n\n") + commit_url + ($~.begin(2) ? "\n" : "")
+        ($~.begin(1) ? "" : "\n\n") + sync_note + ($~.begin(2) ? "\n" : "")
       }
     else
-      log = commit_url
+      log = sync_note
     end
     "#{subject}\n\n#{log}"
   end
@@ -475,25 +476,49 @@ module SyncDefaultGems
       log --no-show-signature --format=#{format}] + args, "rb", &block)
   end
 
-  # Returns commit list as array of [commit_hash, subject].
-  def commits_in_ranges(gem, repo, default_branch, ranges)
-    # If -a is given, discover all commits since the last picked commit
-    if ranges == true
-      pattern = "https://github\.com/#{Regexp.quote(repo)}/commit/([0-9a-f]+)$"
-      log = log_format('%B', %W"-E --grep=#{pattern} -n1 --", &:read)
-      ranges = ["#{log[%r[#{pattern}\n\s*(?i:co-authored-by:.*)*\s*\Z], 1]}..#{gem}/#{default_branch}"]
-    end
+  def commits_in_range(upto, exclude, toplevel:)
+    args = [upto, *exclude.map {|s|"^#{s}"}]
+    log_format('%H,%P,%s', %W"--first-parent" + args) do |f|
+      f.read.split("\n").reverse.flat_map {|commit|
+        hash, parents, subject = commit.split(',', 3)
+        parents = parents.split
 
-    # Parse a given range with git log
+        # Non-merge commit
+        if parents.size <= 1
+          puts "#{hash} #{subject}"
+          next [[hash, subject]]
+        end
+
+        # Clean 2-parent merge commit: follow the other parent as long as it
+        # contains no potentially-non-clean merges
+        if parents.size == 2 &&
+            IO.popen(%W"git diff-tree --remerge-diff #{hash}", "rb", &:read).empty?
+          puts "\e[2mChecking the other parent of #{hash} #{subject}\e[0m"
+          ret = catch(:quit) {
+            commits_in_range(parents[1], exclude + [parents[0]], toplevel: false)
+          }
+          next ret if ret
+        end
+
+        unless toplevel
+          puts "\e[1mMerge commit with possible conflict resolution #{hash} #{subject}\e[0m"
+          throw :quit
+        end
+
+        puts "#{hash} #{subject} " \
+          "\e[1m[merge commit with possible conflicts, will do a squash merge]\e[0m"
+        [[hash, subject]]
+      }
+    end
+  end
+
+  # Returns commit list as array of [commit_hash, subject, sync_note].
+  def commits_in_ranges(ranges)
     ranges.flat_map do |range|
-      unless range.include?("..")
-        range = "#{range}~1..#{range}"
-      end
-
-      log_format('%H,%s', %W"#{range} --") do |f|
-        f.read.split("\n").reverse.map{|commit| commit.split(',', 2)}
-      end
-    end
+      exclude, upto = range.include?("..") ? range.split("..", 2) : ["#{range}~1", range]
+      puts "Looking for commits in range #{exclude}..#{upto}"
+      commits_in_range(upto, exclude.empty? ? [] : [exclude], toplevel: true)
+    end.uniq
   end
 
   #--
@@ -558,7 +583,12 @@ module SyncDefaultGems
       "GIT_AUTHOR_EMAIL" => author_email,
       "GIT_AUTHOR_DATE" => author_date,
     }
-    message = message_filter(config.upstream, sha, orig)
+    context = nil
+    if /^parent (?<first_parent>.{40})\nparent .{40}$/ =~ headers
+      # Squashing a merge commit: keep authorship information
+      context = IO.popen(%W"git shortlog #{first_parent}..#{sha} --", "rb", &:read)
+    end
+    message = message_filter(config.upstream, sha, orig, context: context)
     [author, message]
   end
 
@@ -683,9 +713,8 @@ module SyncDefaultGems
     return true
   end
 
-  # NOTE: This method is also used by GitHub ruby/git.ruby-lang.org's bin/update-default-gem.sh
   # @param gem [String] A gem name, also used as a git remote name. REPOSITORIES converts it to the appropriate GitHub repository.
-  # @param ranges [Array<String>] "before..after". Note that it will NOT sync "before" (but commits after that).
+  # @param ranges [Array<String>, true] "commit", "before..after", or true. Note that it will NOT sync "before" (but commits after that).
   # @param edit [TrueClass] Set true if you want to resolve conflicts. Obviously, update-default-gem.sh doesn't use this.
   def sync_default_gems_with_commits(gem, ranges, edit: nil)
     config = REPOSITORIES[gem]
@@ -700,20 +729,17 @@ module SyncDefaultGems
     end
     system(*%W"git fetch --no-tags --depth=#{FETCH_DEPTH} #{gem} #{default_branch}")
 
-    commits = commits_in_ranges(gem, repo, default_branch, ranges)
-
-    # Ignore Merge commits and already-merged commits.
-    commits.delete_if do |sha, subject|
-      subject.start_with?("Merge", "Auto Merge")
+    # If -a is given, discover all commits since the last picked commit
+    if ranges == true
+      pattern = "https://github\.com/#{Regexp.quote(repo)}/commit/([0-9a-f]+)$"
+      log = log_format('%B', %W"-E --grep=#{pattern} -n1 --", &:read)
+      ranges = ["#{log[%r[#{pattern}\n\s*(?i:co-authored-by:.*)*\s*\Z], 1]}..#{gem}/#{default_branch}"]
     end
-
+    commits = commits_in_ranges(ranges)
     if commits.empty?
       puts "No commits to pick"
       return true
     end
-
-    puts "Try to pick these commits:"
-    puts commits.map{|commit| commit.join(": ")}
 
     failed_commits = []
     commits.each do |sha, subject|
