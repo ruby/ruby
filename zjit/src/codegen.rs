@@ -1862,9 +1862,8 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
     } else {
         // C frames don't have a PC and ISEQ in normal operation.
         // When runtime checks are enabled we poison the PC so accidental reads stand out.
-        match frame.pc {
-            Some(pc) => asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc)),
-            None => (),
+        if let Some(pc) = frame.pc {
+            asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc));
         }
         let new_sp = asm.lea(Opnd::mem(64, SP, (ep_offset + 1) * SIZEOF_VALUE_I32));
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), new_sp);
