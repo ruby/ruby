@@ -2782,9 +2782,9 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = InvokeBuiltin leaf _bi28, v6
+          v11:StringExact = InvokeBuiltin leaf _bi28, v6
           Jump bb3(v6, v11)
-        bb3(v13:BasicObject, v14:BasicObject):
+        bb3(v13:BasicObject, v14:StringExact):
           CheckInterrupts
           Return v14
         ");
@@ -2804,9 +2804,9 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:BasicObject = InvokeBuiltin leaf _bi12, v6
+          v11:StringExact = InvokeBuiltin leaf _bi12, v6
           Jump bb3(v6, v11)
-        bb3(v13:BasicObject, v14:BasicObject):
+        bb3(v13:BasicObject, v14:StringExact):
           CheckInterrupts
           Return v14
         ");

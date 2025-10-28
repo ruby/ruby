@@ -2295,9 +2295,10 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, zero?@0x1008, cme:0x1010)
-          v22:BasicObject = SendWithoutBlockDirect v13, :zero? (0x1038)
+          IncrCounter inline_iseq_optimized_send_count
+          v24:BasicObject = InvokeBuiltin leaf _bi285, v13
           CheckInterrupts
-          Return v22
+          Return v24
         ");
     }
 
@@ -2326,9 +2327,10 @@ mod hir_opt_tests {
           v18:ArrayExact = ArrayDup v16
           PatchPoint MethodRedefined(Array@0x1008, first@0x1010, cme:0x1018)
           PatchPoint NoSingletonClass(Array@0x1008)
-          v30:BasicObject = SendWithoutBlockDirect v18, :first (0x1040)
+          IncrCounter inline_iseq_optimized_send_count
+          v32:BasicObject = InvokeBuiltin leaf _bi132, v18
           CheckInterrupts
-          Return v30
+          Return v32
         ");
     }
 
@@ -2355,9 +2357,10 @@ mod hir_opt_tests {
           v21:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint MethodRedefined(Module@0x1010, class@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(Module@0x1010)
-          v24:BasicObject = SendWithoutBlockDirect v21, :class (0x1048)
+          IncrCounter inline_iseq_optimized_send_count
+          v26:Class = InvokeBuiltin leaf _bi20, v21
           CheckInterrupts
-          Return v24
+          Return v26
         ");
     }
 
@@ -4038,10 +4041,10 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
+          v22:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
-          v23:TrueClass = CCall nil?@0x1038, v10
           CheckInterrupts
-          Return v23
+          Return v22
         ");
     }
 
@@ -4089,10 +4092,10 @@ mod hir_opt_tests {
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
+          v22:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v23:FalseClass = CCall nil?@0x1038, v10
           CheckInterrupts
-          Return v23
+          Return v22
         ");
     }
 
@@ -4143,10 +4146,10 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008, cme:0x1010)
           v24:NilClass = GuardType v9, NilClass
+          v25:TrueClass = Const Value(true)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:TrueClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -4170,10 +4173,10 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(FalseClass@0x1000, nil?@0x1008, cme:0x1010)
           v24:FalseClass = GuardType v9, FalseClass
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -4197,10 +4200,10 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(TrueClass@0x1000, nil?@0x1008, cme:0x1010)
           v24:TrueClass = GuardType v9, TrueClass
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -4224,10 +4227,10 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Symbol@0x1000, nil?@0x1008, cme:0x1010)
           v24:StaticSymbol = GuardType v9, StaticSymbol
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -4251,10 +4254,10 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008, cme:0x1010)
           v24:Fixnum = GuardType v9, Fixnum
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -4278,10 +4281,10 @@ mod hir_opt_tests {
         bb2(v8:BasicObject, v9:BasicObject):
           PatchPoint MethodRedefined(Float@0x1000, nil?@0x1008, cme:0x1010)
           v24:Flonum = GuardType v9, Flonum
+          v25:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v26:FalseClass = CCall nil?@0x1038, v24
           CheckInterrupts
-          Return v26
+          Return v25
         ");
     }
 
@@ -4306,10 +4309,10 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1000, nil?@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(String@0x1000)
           v25:StringExact = GuardType v9, StringExact
+          v26:FalseClass = Const Value(false)
           IncrCounter inline_cfunc_optimized_send_count
-          v27:FalseClass = CCall nil?@0x1038, v25
           CheckInterrupts
-          Return v27
+          Return v26
         ");
     }
 
@@ -4420,8 +4423,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(C@0x1000, ==@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(C@0x1000)
           v28:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
+          v29:CBool = IsBitEqual v28, v12
+          v30:BoolExact = BoxBool v29
           IncrCounter inline_cfunc_optimized_send_count
-          v30:BoolExact = CCall ==@0x1038, v28, v12
           CheckInterrupts
           Return v30
         ");
