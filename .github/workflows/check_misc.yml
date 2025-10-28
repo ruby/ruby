@@ -103,7 +103,7 @@ jobs:
           }}
 
       - name: Upload docs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           path: html
           name: ${{ steps.docs.outputs.htmlout }}
