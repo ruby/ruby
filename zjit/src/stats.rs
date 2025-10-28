@@ -249,6 +249,9 @@ make_counters! {
     vm_read_from_parent_iseq_local_count,
     // TODO(max): Implement
     // vm_reify_stack_count,
+
+    // The number of times we ran a dynamic check
+    guard_type_count,
 }
 
 /// Increase a counter by a specified amount

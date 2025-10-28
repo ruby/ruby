@@ -1595,6 +1595,7 @@ fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
 
 /// Compile a type check with a side exit
 fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard_type: Type, state: &FrameState) -> lir::Opnd {
+    gen_incr_counter(asm, Counter::guard_type_count);
     if guard_type.is_subtype(types::Fixnum) {
         asm.test(val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
         asm.jz(side_exit(jit, state, GuardType(guard_type)));
