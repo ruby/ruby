@@ -14459,7 +14459,7 @@ mod opt_tests {
           PatchPoint NoSingletonClass(Array@0x1000)
           v23:ArrayExact = GuardType v9, ArrayExact
           v24:ArrayExact = GuardNotFrozen v23
-          v25:NilClass|Array = ArrayPop v24
+          v25:BasicObject = ArrayPop v24
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v25
@@ -14519,7 +14519,7 @@ mod opt_tests {
           PatchPoint NoSingletonClass(Array@0x1000)
           v23:ArrayExact = GuardType v9, ArrayExact
           v24:ArrayExact = GuardNotFrozen v23
-          v25:NilClass|Array = ArrayPop v24
+          v25:BasicObject = ArrayPop v24
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v25
