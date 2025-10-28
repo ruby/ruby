@@ -93,7 +93,7 @@ describe 'Assignments' do
       end
 
       ruby_version_is "3.4" do
-        it "raies SyntaxError when given keyword arguments in index assignments" do
+        it "raises SyntaxError when given keyword arguments in index assignments" do
           a = @klass.new
           -> { eval "a[1, 2, 3, b: 4] = 5" }.should raise_error(SyntaxError,
             /keywords are not allowed in index assignment expressions|keyword arg given in index assignment/) # prism|parse.y
@@ -236,7 +236,7 @@ describe 'Assignments' do
         end
 
         ruby_version_is "3.4" do
-          it "raies SyntaxError when given keyword arguments in index assignments" do
+          it "raises SyntaxError when given keyword arguments in index assignments" do
             a = @klass.new
             -> { eval "a[1, 2, 3, b: 4] += 5" }.should raise_error(SyntaxError,
               /keywords are not allowed in index assignment expressions|keyword arg given in index assignment/) # prism|parse.y
