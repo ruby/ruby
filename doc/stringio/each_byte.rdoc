@@ -1,0 +1,34 @@
+With a block given, calls the block with each remaining byte in the stream;
+positions the stream at end-of-file;
+returns +self+:
+
+  bytes = []
+  strio = StringIO.new('hello')     #  Five 1-byte characters.
+  strio.each_byte {|byte| bytes.push(byte) }
+  strio.eof? # => true
+  bytes # => [104, 101, 108, 108, 111]
+  bytes = []
+  strio = StringIO.new('тест')      # Four 2-byte characters.
+  strio.each_byte {|byte| bytes.push(byte) }
+  bytes # => [209, 130, 208, 181, 209, 129, 209, 130]
+  bytes = []
+  strio = StringIO.new('こんにちは')  # Five 3-byte characters.
+  strio.each_byte {|byte| bytes.push(byte) }
+  bytes # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
+
+The position in the stream matters:
+
+  bytes = []
+  strio = StringIO.new('こんにちは')
+  strio.getc # => "こ"
+  strio.pos  # => 3  # 3-byte character was read.
+  strio.each_byte {|byte| bytes.push(byte) }
+  bytes      # => [227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
+
+If at end-of-file, does not call the block:
+
+  strio.eof? # => true
+  strio.each_byte {|byte| fail 'Boo!' }
+  strio.eof? # => true
+
+With no block given, returns a new {Enumerator}[rdoc-ref:Enumerator].

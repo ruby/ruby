@@ -936,40 +936,7 @@ strio_get_sync(VALUE self)
  * call-seq:
  *   each_byte {|byte| ... } -> self
  *
- * With a block given, calls the block with each remaining byte in the stream;
- * positions the stream at end-of-file;
- * returns +self+:
- *
- *   bytes = []
- *   strio = StringIO.new('hello')     #  Five 1-byte characters.
- *   strio.each_byte {|byte| bytes.push(byte) }
- *   strio.eof? # => true
- *   bytes # => [104, 101, 108, 108, 111]
- *   bytes = []
- *   strio = StringIO.new('тест')      # Four 2-byte characters.
- *   strio.each_byte {|byte| bytes.push(byte) }
- *   bytes # => [209, 130, 208, 181, 209, 129, 209, 130]
- *   bytes = []
- *   strio = StringIO.new('こんにちは')  # Five 3-byte characters.
- *   strio.each_byte {|byte| bytes.push(byte) }
- *   bytes # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
- *
- * The position in the stream matters:
- *
- *   bytes = []
- *   strio = StringIO.new('こんにちは')
- *   strio.getc # => "こ"
- *   strio.pos  # => 3  # 3-byte character was read.
- *   strio.each_byte {|byte| bytes.push(byte) }
- *   bytes      # => [227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
- *
- * If at end-of-file, does not call the block:
- *
- *   strio.eof? # => true
- *   strio.each_byte {|byte| fail 'Boo!' }
- *   strio.eof? # => true
- *
- * With no block given, returns a new {Enumerator}[rdoc-ref:Enumerator].
+ * :include: stringio/each_byte.rdoc
  *
  * Related: StringIO#each_char, StringIO#each_codepoint, StringIO#each_line.
  */
@@ -1196,40 +1163,7 @@ strio_readbyte(VALUE self)
  * call-seq:
  *   each_char {|char| ... } -> self
  *
- * With a block given, calls the block with each remaining character in the stream;
- * positions the stream at end-of-file;
- * returns +self+:
- *
- *   chars = []
- *   strio = StringIO.new('hello')
- *   strio.each_char {|char| chars.push(char) }
- *   strio.eof? # => true
- *   chars      # => ["h", "e", "l", "l", "o"]
- *   chars = []
- *   strio = StringIO.new('тест')
- *   strio.each_char {|char| chars.push(char) }
- *   chars      # => ["т", "е", "с", "т"]
- *   chars = []
- *   strio = StringIO.new('こんにちは')
- *   strio.each_char {|char| chars.push(char) }
- *   chars      # => ["こ", "ん", "に", "ち", "は"]
- *
- * Stream position matters:
- *
- *  chars = []
- *  strio = StringIO.new('こんにちは')
- *  strio.getc # => "こ"
- *  strio.pos  # => 3  # 3-byte character was read.
- *  strio.each_char {|char| chars.push(char) }
- *  chars      # => ["ん", "に", "ち", "は"]
- *
- * When at end-of-stream does not call the block:
- *
- *   strio.eof? # => true
- *   strio.each_char {|char| fail 'Boo!' }
- *   strio.eof? # => true
- *
- * With no block given, returns a new {Enumerator}[rdoc-ref:Enumerator].
+ * :include: stringio/each_char.rdoc
  *
  * Related: StringIO#each_byte, StringIO#each_codepoint, StringIO#each_line.
  */
@@ -1250,42 +1184,7 @@ strio_each_char(VALUE self)
  * call-seq:
  *   each_codepoint {|codepoint| ... } -> self
  *
- * With a block given, calls the block with each successive codepoint from self;
- * sets the position to end-of-stream;
- * returns +self+.
- *
- * Each codepoint is the integer value for a character; returns self:
- *
- *   codepoints = []
- *   strio = StringIO.new('hello')
- *   strio.each_codepoint {|codepoint| codepoints.push(codepoint) }
- *   strio.eof? # => true
- *   codepoints # => [104, 101, 108, 108, 111]
- *   codepoints = []
- *   strio = StringIO.new('тест')
- *   strio.each_codepoint {|codepoint| codepoints.push(codepoint) }
- *   codepoints # => [1090, 1077, 1089, 1090]
- *   codepoints = []
- *   strio = StringIO.new('こんにちは')
- *   strio.each_codepoint {|codepoint| codepoints.push(codepoint) }
- *   codepoints # => [12371, 12435, 12395, 12385, 12399]
- *
- * Position in the stream matters:
- *
- *   codepoints = []
- *   strio = StringIO.new('こんにちは')
- *   strio.getc # => "こ"
- *   strio.pos  # => 3
- *   strio.each_codepoint {|codepoint| codepoints.push(codepoint) }
- *   codepoints # => [12435, 12395, 12385, 12399]
- *
- * When at end-of-stream, the block is not called:
- *
- *   strio.eof? # => true
- *   strio.each_codepoint {|codepoint| fail 'Boo!' }
- *   strio.eof? # => true
- *
- * With no block given, returns a new {Enumerator}[rdoc-ref:Enumerator].
+ * :include: stringio/each_codepoint.rdoc
  *
  * Related: StringIO#each_byte, StringIO#each_char, StringIO#each_line.
  */
