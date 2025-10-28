@@ -709,6 +709,77 @@ module RbInstall
   end
 
   class UnpackedInstaller < Gem::Installer
+    # This method is mostly copied from old version of Gem::Installer#install
+    def install_with_default_gem
+      verify_gem_home
+
+      # The name and require_paths must be verified first, since it could contain
+      # ruby code that would be eval'ed in #ensure_loadable_spec
+      verify_spec
+
+      ensure_loadable_spec
+
+      if options[:install_as_default]
+        Gem.ensure_default_gem_subdirectories gem_home
+      else
+        Gem.ensure_gem_subdirectories gem_home
+      end
+
+      return true if @force
+
+      ensure_dependencies_met unless @ignore_dependencies
+
+      run_pre_install_hooks
+
+      # Set loaded_from to ensure extension_dir is correct
+      if @options[:install_as_default]
+        spec.loaded_from = default_spec_file
+      else
+        spec.loaded_from = spec_file
+      end
+
+      # Completely remove any previous gem files
+      FileUtils.rm_rf gem_dir
+      FileUtils.rm_rf spec.extension_dir
+
+      dir_mode = options[:dir_mode]
+      FileUtils.mkdir_p gem_dir, mode: dir_mode && 0o755
+
+      if @options[:install_as_default]
+        extract_bin
+        write_default_spec
+      else
+        extract_files
+
+        build_extensions
+        write_build_info_file
+        run_post_build_hooks
+      end
+
+      generate_bin
+      generate_plugins
+
+      unless @options[:install_as_default]
+        write_spec
+        write_cache_file
+      end
+
+      File.chmod(dir_mode, gem_dir) if dir_mode
+
+      say spec.post_install_message if options[:post_install_message] && !spec.post_install_message.nil?
+
+      Gem::Specification.add_spec(spec) unless @install_dir
+
+      load_plugin
+
+      run_post_install_hooks
+
+      spec
+    rescue Errno::EACCES => e
+      # Permission denied - /path/to/foo
+      raise Gem::FilePermissionError, e.message.split(" - ").last
+    end
+
     def write_cache_file
     end
 
@@ -754,7 +825,7 @@ module RbInstall
     def install
       spec.post_install_message = nil
       dir_creating(without_destdir(gem_dir))
-      RbInstall.no_write(options) {super}
+      RbInstall.no_write(options) { install_with_default_gem }
     end
 
     # Now build-ext builds all extensions including bundled gems.
