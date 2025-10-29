@@ -6,7 +6,7 @@ describe "Symbol#inspect" do
     :fred?     => ":fred?",
     :fred!     => ":fred!",
     :BAD!      => ":BAD!",
-    :_BAD!      => ":_BAD!",
+    :_BAD!     => ":_BAD!",
     :$ruby     => ":$ruby",
     :@ruby     => ":@ruby",
     :@@ruby    => ":@@ruby",
@@ -66,9 +66,9 @@ describe "Symbol#inspect" do
     :~         => ":~",
     :|         => ":|",
 
-    :"!"       => [":\"!\"",  ":!" ],
-    :"!="      => [":\"!=\"", ":!="],
-    :"!~"      => [":\"!~\"", ":!~"],
+    :"!"       => ":!",
+    :"!="      => ":!=",
+    :"!~"      => ":!~",
     :"\$"      => ":\"$\"", # for justice!
     :"&&"      => ":\"&&\"",
     :"'"       => ":\"\'\"",
@@ -103,7 +103,6 @@ describe "Symbol#inspect" do
   }
 
   symbols.each do |input, expected|
-    expected = expected[1] if expected.is_a?(Array)
     it "returns self as a symbol literal for #{expected}" do
       input.inspect.should == expected
     end
