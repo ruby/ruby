@@ -1527,7 +1527,9 @@ pub mod hir_build_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:ArrayExact = ToArray v9
-          SideExit UnhandledCallType(Splat)
+          v16:BasicObject = SendFallback :foo
+          CheckInterrupts
+          Return v16
         ");
     }
 
@@ -1570,7 +1572,9 @@ pub mod hir_build_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
-          SideExit UnhandledCallType(Kwarg)
+          v15:BasicObject = SendFallback :foo
+          CheckInterrupts
+          Return v15
         ");
     }
 
@@ -1590,7 +1594,9 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          SideExit UnhandledCallType(KwSplat)
+          v14:BasicObject = SendFallback :foo
+          CheckInterrupts
+          Return v14
         ");
     }
 
@@ -1726,7 +1732,9 @@ pub mod hir_build_tests {
           v21:StaticSymbol[:b] = Const Value(VALUE(0x1008))
           v22:Fixnum[1] = Const Value(1)
           v24:BasicObject = SendWithoutBlock v20, :core#hash_merge_ptr, v19, v21, v22
-          SideExit UnhandledCallType(KwSplat)
+          v26:BasicObject = SendFallback :foo
+          CheckInterrupts
+          Return v26
         ");
     }
 
@@ -1749,7 +1757,9 @@ pub mod hir_build_tests {
           v14:ArrayExact = ToNewArray v9
           v15:Fixnum[1] = Const Value(1)
           ArrayPush v14, v15
-          SideExit UnhandledCallType(Splat)
+          v19:BasicObject = SendFallback :foo
+          CheckInterrupts
+          Return v19
         ");
     }
 

@@ -721,6 +721,10 @@ pub enum Insn {
         state: InsnId,
         reason: SendFallbackReason,
     },
+    SendFallback {
+        cd: *const rb_call_data,
+        state: InsnId,
+    },
     SendForward {
         recv: InsnId,
         cd: *const rb_call_data,
@@ -1039,6 +1043,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
+            }
+            &Insn::SendFallback { cd, .. } => {
+                write!(f, "SendFallback :{}", ruby_call_method_name(cd))
             }
             Insn::SendForward { cd, args, blockiseq, .. } => {
                 write!(f, "SendForward {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
@@ -1701,6 +1708,10 @@ impl Function {
                 state,
                 reason,
             },
+            &SendFallback { cd, state } => SendFallback {
+                cd,
+                state,
+            },
             &SendForward { recv, cd, blockiseq, ref args, state, reason } => SendForward {
                 recv: find!(recv),
                 cd,
@@ -1880,6 +1891,7 @@ impl Function {
             Insn::SendWithoutBlock { .. } => types::BasicObject,
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
+            Insn::SendFallback { .. } => types::BasicObject,
             Insn::SendForward { .. } => types::BasicObject,
             Insn::InvokeSuper { .. } => types::BasicObject,
             Insn::InvokeBlock { .. } => types::BasicObject,
@@ -3223,6 +3235,9 @@ impl Function {
                 worklist.extend(args);
                 worklist.push_back(state);
             }
+            &Insn::SendFallback { state, .. } => {
+                worklist.push_back(state);
+            }
             &Insn::CCallWithFrame { ref args, state, .. }
             | &Insn::InvokeBuiltin { ref args, state, .. }
             | &Insn::InvokeBlock { ref args, state, .. } => {
@@ -3939,6 +3954,10 @@ impl FrameState {
     /// Push a stack operand
     fn stack_push(&mut self, opnd: InsnId) {
         self.stack.push(opnd);
+    }
+
+    fn stack_is_empty(&self) -> bool {
+        self.stack.is_empty()
     }
 
     /// Pop a stack operand
@@ -4702,6 +4721,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     fun.push_insn(block, Insn::Return { val: state.stack_pop()? });
+                    assert!(state.stack_is_empty(), "stack should be empty at leave");
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_throw => {
@@ -4739,20 +4759,26 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_send_without_block => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let flags = unsafe { rb_vm_ci_flag(call_info) };
-                    if let Err(call_type) = unhandled_call_type(flags) {
+                    if (flags & VM_CALL_TAILCALL) != 0 {
                         // Can't handle tailcall; side-exit into the interpreter
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(CallType::Tailcall) });
                         break;  // End the block
                     }
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
-
-                    let args = state.stack_pop_n(argc as usize)?;
-                    let recv = state.stack_pop()?;
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
-                    state.stack_push(send);
+                    if let Err(call_type) = unhandled_call_type(flags) {
+                        // Can't handle other flags; reify stack and use fallback
+                        let result = fun.push_insn(block, Insn::SendFallback { cd, state: exit_id });
+                        let sp_pops = unsafe { rb_jit_sendish_sp_pops(call_info) } as usize;
+                        state.stack_pop_n(sp_pops)?;
+                        state.stack_push(result);
+                    } else {
+                        let argc = unsafe { vm_ci_argc((*cd).ci) };
+                        let args = state.stack_pop_n(argc as usize)?;
+                        let recv = state.stack_pop()?;
+                        let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
+                        state.stack_push(send);
+                    }
                 }
                 YARVINSN_send => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
