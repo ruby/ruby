@@ -97,12 +97,14 @@ describe "Symbol#inspect" do
     :" foo"    => ":\" foo\"",
     :" "       => ":\" \"",
 
-    :"ê"       => ":ê",
-    :"测"      => ":测",
-    :"🦊"      => ":🦊",
+    :"ê"       => [":ê", ":\"\\u00EA\""],
+    :"测"      => [":测", ":\"\\u6D4B\""],
+    :"🦊"      => [":🦊", ":\"\\u{1F98A}\""],
   }
 
+  expected_by_encoding = Encoding::default_external == Encoding::UTF_8 ? 0 : 1
   symbols.each do |input, expected|
+    expected = expected[expected_by_encoding] if expected.is_a?(Array)
     it "returns self as a symbol literal for #{expected}" do
       input.inspect.should == expected
     end
