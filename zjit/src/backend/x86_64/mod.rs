@@ -590,11 +590,14 @@ impl Assembler {
         // The write_pos for the last Insn::PatchPoint, if any
         let mut last_patch_pos: Option<usize> = None;
 
+        // Install a panic hook to dump Assembler with insn_idx on dev builds
+        let (_hook, mut hook_insn_idx) = AssemblerPanicHook::new(self, 0);
+
         // For each instruction
         let mut insn_idx: usize = 0;
         while let Some(insn) = self.insns.get(insn_idx) {
-            // Dump Assembler with insn_idx if --zjit-dump-lir=panic is given
-            let _hook = AssemblerPanicHook::new(self, insn_idx);
+            // Update insn_idx that is shown on panic
+            hook_insn_idx.as_mut().map(|idx| idx.lock().map(|mut idx| *idx = insn_idx).unwrap());
 
             match insn {
                 Insn::Comment(text) => {

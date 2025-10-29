@@ -3,7 +3,7 @@ use std::fmt;
 use std::mem::take;
 use std::panic;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use crate::codegen::local_size_and_idx_to_ep_offset;
 use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::SideExitReason;
@@ -2283,29 +2283,38 @@ pub struct AssemblerPanicHook {
 }
 
 impl AssemblerPanicHook {
-    pub fn new(asm: &Assembler, insn_idx: usize) -> Option<Arc<Self>> {
-        // Install a panic hook if --zjit-dump-lir=panic is specified.
+    /// Install a panic hook to dump Assembler with insn_idx on dev builds.
+    /// This returns shared references to the previous hook and insn_idx.
+    /// It takes insn_idx as an argument so that you can manually use it
+    /// on non-emit passes that keep mutating the Assembler to be dumped.
+    pub fn new(asm: &Assembler, insn_idx: usize) -> (Option<Arc<Self>>, Option<Arc<Mutex<usize>>>) {
         if dump_lir_option!(panic) {
             // Wrap prev_hook with Arc to share it among the new hook and Self to be dropped.
             let prev_hook = panic::take_hook();
             let panic_hook_ref = Arc::new(Self { prev_hook });
             let weak_hook = Arc::downgrade(&panic_hook_ref);
 
+            // Wrap insn_idx with Arc to share it among the new hook and the caller mutating it.
+            let insn_idx = Arc::new(Mutex::new(insn_idx));
+            let insn_idx_ref = insn_idx.clone();
+
             // Install a new hook to dump Assembler with insn_idx
             let asm = asm.clone();
             panic::set_hook(Box::new(move |panic_info| {
                 if let Some(panic_hook) = weak_hook.upgrade() {
-                    // Dump Assembler, highlighting the insn_idx line
-                    Self::dump_asm(&asm, insn_idx);
+                    if let Ok(insn_idx) = insn_idx_ref.lock() {
+                        // Dump Assembler, highlighting the insn_idx line
+                        Self::dump_asm(&asm, *insn_idx);
+                    }
 
                     // Call the previous panic hook
                     (panic_hook.prev_hook)(panic_info);
                 }
             }));
 
-            Some(panic_hook_ref)
+            (Some(panic_hook_ref), Some(insn_idx))
         } else {
-            None
+            (None, None)
         }
     }
 
