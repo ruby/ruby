@@ -568,6 +568,11 @@ pub enum SendFallbackReason {
     SendNotOptimizedMethodType(MethodType),
     CCallWithFrameTooManyArgs,
     ObjToStringNotString,
+    /// The Proc object for a BMETHOD is not defined by an ISEQ. (See `enum rb_block_type`.)
+    BmethodNonIseqProc,
+    /// The call has at least one feature on the caller or callee side that the optimizer does not
+    /// support.
+    FancyFeatureUse,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
     NotOptimizedInstruction(ruby_vminsn_type),
@@ -1384,14 +1389,22 @@ pub enum ValidationError {
     MiscValidationError(InsnId, String),
 }
 
-fn can_direct_send(iseq: *const rb_iseq_t) -> bool {
-    if unsafe { rb_get_iseq_flags_has_rest(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_opt(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_kw(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_kwrest(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_block(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_forwardable(iseq) } { false }
-    else { true }
+fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t) -> bool {
+    let mut can_send = true;
+    let mut count_failure = |counter| {
+        can_send = false;
+        function.push_insn(block, Insn::IncrCounter(counter));
+    };
+
+    use Counter::*;
+    if unsafe { rb_get_iseq_flags_has_rest(iseq) }    { count_failure(fancy_arg_pass_param_rest) }
+    if unsafe { rb_get_iseq_flags_has_opt(iseq) }     { count_failure(fancy_arg_pass_param_opt) }
+    if unsafe { rb_get_iseq_flags_has_kw(iseq) }      { count_failure(fancy_arg_pass_param_kw) }
+    if unsafe { rb_get_iseq_flags_has_kwrest(iseq) }  { count_failure(fancy_arg_pass_param_kwrest) }
+    if unsafe { rb_get_iseq_flags_has_block(iseq) }   { count_failure(fancy_arg_pass_param_block) }
+    if unsafe { rb_get_iseq_flags_forwardable(iseq) } { count_failure(fancy_arg_pass_param_forwardable) }
+
+    can_send
 }
 
 /// A [`Function`], which is analogous to a Ruby ISeq, is a control-flow graph of [`Block`]s
@@ -2277,8 +2290,8 @@ impl Function {
                             // Only specialize positional-positional calls
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            if !can_direct_send(iseq) {
-                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Iseq));
+                            if !can_direct_send(self, block, iseq) {
+                                self.set_dynamic_send_reason(insn_id, FancyFeatureUse);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
@@ -2297,21 +2310,18 @@ impl Function {
                             // Target ISEQ bmethods. Can't handle for example, `define_method(:foo, &:foo)`
                             // which makes a `block_type_symbol` bmethod.
                             if proc_block.type_ != block_type_iseq {
-                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Bmethod));
+                                self.set_dynamic_send_reason(insn_id, BmethodNonIseqProc);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             let capture = unsafe { proc_block.as_.captured.as_ref() };
                             let iseq = unsafe { *capture.code.iseq.as_ref() };
 
-                            if !can_direct_send(iseq) {
-                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Bmethod));
+                            if !can_direct_send(self, block, iseq) {
+                                self.set_dynamic_send_reason(insn_id, FancyFeatureUse);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             // Can't pass a block to a block for now
-                            if (unsafe { rb_vm_ci_flag(ci) } & VM_CALL_ARGS_BLOCKARG) != 0 {
-                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Bmethod));
-                                self.push_insn_id(block, insn_id); continue;
-                            }
+                            assert!((unsafe { rb_vm_ci_flag(ci) } & VM_CALL_ARGS_BLOCKARG) == 0, "SendWithoutBlock but has a block arg");
 
                             // Patch points:
                             // Check for "defined with an un-shareable Proc in a different Ractor"

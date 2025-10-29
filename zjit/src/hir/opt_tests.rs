@@ -2416,6 +2416,7 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
+          IncrCounter fancy_arg_pass_param_opt
           v12:BasicObject = SendWithoutBlock v6, :foo, v10
           CheckInterrupts
           Return v12
@@ -2499,6 +2500,7 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
+          IncrCounter fancy_arg_pass_param_rest
           v12:BasicObject = SendWithoutBlock v6, :foo, v10
           CheckInterrupts
           Return v12
@@ -2833,6 +2835,9 @@ mod hir_opt_tests {
           v12:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Hash@0x1008, new@0x1010, cme:0x1018)
           v43:HashExact = ObjectAllocClass Hash:VALUE(0x1008)
+          IncrCounter fancy_arg_pass_param_opt
+          IncrCounter fancy_arg_pass_param_kw
+          IncrCounter fancy_arg_pass_param_block
           v18:BasicObject = SendWithoutBlock v43, :initialize
           CheckInterrupts
           CheckInterrupts
@@ -7018,6 +7023,58 @@ mod hir_opt_tests {
           v27:Fixnum = CCall length@0x1038, v25
           CheckInterrupts
           Return v27
+        ");
+    }
+
+    #[test]
+    fn counting_fancy_feature_use_for_fallback() {
+        eval("
+            define_method(:fancy) { |_a, *_b, kw: 100, **kw_rest, &block| }
+            def test = fancy(1)
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          v10:Fixnum[1] = Const Value(1)
+          IncrCounter fancy_arg_pass_param_rest
+          IncrCounter fancy_arg_pass_param_kw
+          IncrCounter fancy_arg_pass_param_kwrest
+          IncrCounter fancy_arg_pass_param_block
+          v12:BasicObject = SendWithoutBlock v6, :fancy, v10
+          CheckInterrupts
+          Return v12
+        ");
+    }
+
+    #[test]
+    fn call_method_forwardable_param() {
+        eval("
+           def forwardable(...) = itself(...)
+           def call_forwardable = forwardable
+           call_forwardable
+        ");
+        assert_snapshot!(hir_string("call_forwardable"), @r"
+        fn call_forwardable@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          IncrCounter fancy_arg_pass_param_forwardable
+          v11:BasicObject = SendWithoutBlock v6, :forwardable
+          CheckInterrupts
+          Return v11
         ");
     }
 
