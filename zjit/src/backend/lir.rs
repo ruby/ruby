@@ -1702,6 +1702,10 @@ impl Assembler
 
     /// Compile Target::SideExit and convert it into Target::CodePtr for all instructions
     pub fn compile_side_exits(&mut self) {
+        fn join_opnds(opnds: &Vec<Opnd>, delimiter: &str) -> String {
+            opnds.iter().map(|opnd| format!("{opnd}")).collect::<Vec<_>>().join(delimiter)
+        }
+
         let mut targets = HashMap::new();
         for (idx, insn) in self.insns.iter().enumerate() {
             if let Some(target @ Target::SideExit { .. }) = insn.target() {
@@ -1723,12 +1727,12 @@ impl Assembler
 
                 // Restore the PC and the stack for regular side exits. We don't do this for
                 // side exits right after JIT-to-JIT calls, which restore them before the call.
-                asm_comment!(self, "write stack slots: {stack:?}");
+                asm_comment!(self, "write stack slots: {}", join_opnds(&stack, ", "));
                 for (idx, &opnd) in stack.iter().enumerate() {
                     self.store(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), opnd);
                 }
 
-                asm_comment!(self, "write locals: {locals:?}");
+                asm_comment!(self, "write locals: {}", join_opnds(&locals, ", "));
                 for (idx, &opnd) in locals.iter().enumerate() {
                     self.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
                 }
