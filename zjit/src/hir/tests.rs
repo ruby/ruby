@@ -1511,7 +1511,7 @@ pub mod hir_build_tests {
     }
 
     #[test]
-    fn test_cant_compile_splat() {
+    fn test_fallback_with_splat() {
         eval("
             def test(a) = foo(*a)
         ");
@@ -1556,7 +1556,7 @@ pub mod hir_build_tests {
     }
 
     #[test]
-    fn test_cant_compile_kwarg() {
+    fn test_fallback_with_kwarg() {
         eval("
             def test(a) = foo(a: 1)
         ");
@@ -1579,7 +1579,7 @@ pub mod hir_build_tests {
     }
 
     #[test]
-    fn test_cant_compile_kw_splat() {
+    fn test_fallback_with_kw_splat() {
         eval("
             def test(a) = foo(**a)
         ");
@@ -1709,7 +1709,7 @@ pub mod hir_build_tests {
     // TODO(max): Figure out how to generate a call with OPT_SEND flag
 
     #[test]
-    fn test_cant_compile_kw_splat_mut() {
+    fn test_fallback_with_kw_splat_mut() {
         eval("
             def test(a) = foo **a, b: 1
         ");
@@ -1739,7 +1739,7 @@ pub mod hir_build_tests {
     }
 
     #[test]
-    fn test_cant_compile_splat_mut() {
+    fn test_fallback_with_splat_mut() {
         eval("
             def test(*) = foo *, 1
         ");
@@ -1764,7 +1764,7 @@ pub mod hir_build_tests {
     }
 
     #[test]
-    fn test_cant_compile_splat_with_block() {
+    fn test_fallback_with_splat_with_block() {
         eval("
             def test(a) = foo(*a) {}
         ");
@@ -1789,7 +1789,7 @@ pub mod hir_build_tests {
     }
 
     #[test]
-    fn test_cant_compile_kwarg_with_block() {
+    fn test_fallback_with_kwarg_with_block() {
         eval("
             def test(a) = foo(a: 1) {}
         ");
@@ -1813,7 +1813,7 @@ pub mod hir_build_tests {
     }
 
     #[test]
-    fn test_cant_compile_kw_splat_with_block() {
+    fn test_fallback_with_kw_splat_with_block() {
         eval("
             def test(a) = foo(**a) {}
         ");
@@ -1838,7 +1838,7 @@ pub mod hir_build_tests {
 
 
     #[test]
-    fn test_cant_compile_kw_splat_mut_with_block() {
+    fn test_fallback_with_kw_splat_mut_with_block() {
         eval("
             def test(a) = foo(**a, b: 1) {}
         ");
@@ -1869,7 +1869,7 @@ pub mod hir_build_tests {
     }
 
     #[test]
-    fn test_cant_compile_splat_mut_with_block() {
+    fn test_fallback_with_splat_mut_with_block() {
         eval("
             def test(*) = foo(*, 1) {}
         ");
