@@ -9,7 +9,7 @@ use crate::{
     cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, gc::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState
 };
 use std::{
-    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
+    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
 };
 use crate::hir_type::{Type, types};
 use crate::bitset::BitSet;
@@ -2146,6 +2146,18 @@ impl Function {
         self.likely_is_fixnum(left, left_profiled_type) && self.likely_is_fixnum(right, right_profiled_type)
     }
 
+    fn count_fancy_call_features(&mut self, block: BlockId, ci_flags: c_uint) {
+        use Counter::*;
+        if 0 != ci_flags & VM_CALL_ARGS_SPLAT     { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_splat));      }
+        if 0 != ci_flags & VM_CALL_ARGS_BLOCKARG  { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_blockarg));   }
+        if 0 != ci_flags & VM_CALL_KWARG          { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_kwarg));      }
+        if 0 != ci_flags & VM_CALL_KW_SPLAT       { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_kw_splat));   }
+        if 0 != ci_flags & VM_CALL_TAILCALL       { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_tailcall));   }
+        if 0 != ci_flags & VM_CALL_SUPER          { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_super));      }
+        if 0 != ci_flags & VM_CALL_ZSUPER         { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_zsuper));     }
+        if 0 != ci_flags & VM_CALL_FORWARDING     { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_forwarding)); }
+    }
+
     fn try_rewrite_fixnum_op(&mut self, block: BlockId, orig_insn_id: InsnId, f: &dyn Fn(InsnId, InsnId) -> Insn, bop: u32, left: InsnId, right: InsnId, state: InsnId) {
         if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, INTEGER_REDEFINED_OP_FLAG) } {
             // If the basic operation is already redefined, we cannot optimize it.
@@ -2797,6 +2809,7 @@ impl Function {
 
                     // Filter for simple call sites (i.e. no splats etc.)
                     if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
+                        fun.count_fancy_call_features(block, ci_flags);
                         return Err(());
                     }
 
@@ -2867,7 +2880,9 @@ impl Function {
                     // The method gets a pointer to the first argument
                     // func(int argc, VALUE *argv, VALUE recv)
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
-                    if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
+                    if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
+                        fun.count_fancy_call_features(block, ci_flags);
+                    } else {
                         fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, method, state);
 
                         if recv_class.instance_can_have_singleton_class() {

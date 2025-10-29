@@ -262,6 +262,16 @@ make_counters! {
     fancy_arg_pass_param_block,
     fancy_arg_pass_param_forwardable,
 
+    // Unsupported caller side features
+    fancy_arg_pass_caller_splat,
+    fancy_arg_pass_caller_blockarg,
+    fancy_arg_pass_caller_kwarg,
+    fancy_arg_pass_caller_kw_splat,
+    fancy_arg_pass_caller_tailcall,
+    fancy_arg_pass_caller_super,
+    fancy_arg_pass_caller_zsuper,
+    fancy_arg_pass_caller_forwarding,
+
     // Writes to the VM frame
     vm_write_pc_count,
     vm_write_sp_count,
