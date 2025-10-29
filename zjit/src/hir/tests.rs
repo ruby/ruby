@@ -1590,9 +1590,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v14:BasicObject = SendWithoutBlock v8, :foo, v9
-          CheckInterrupts
-          Return v14
+          SideExit UnhandledCallType(KwSplat)
         ");
     }
 
@@ -1728,9 +1726,7 @@ pub mod hir_build_tests {
           v21:StaticSymbol[:b] = Const Value(VALUE(0x1008))
           v22:Fixnum[1] = Const Value(1)
           v24:BasicObject = SendWithoutBlock v20, :core#hash_merge_ptr, v19, v21, v22
-          v26:BasicObject = SendWithoutBlock v8, :foo, v24
-          CheckInterrupts
-          Return v26
+          SideExit UnhandledCallType(KwSplat)
         ");
     }
 

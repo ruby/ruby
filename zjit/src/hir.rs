@@ -4103,6 +4103,8 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeI
 pub enum CallType {
     Splat,
     Kwarg,
+    KwSplat,
+    KwSplatMut,
     Tailcall,
 }
 
@@ -4124,6 +4126,8 @@ fn num_locals(iseq: *const rb_iseq_t) -> usize {
 fn unhandled_call_type(flags: u32) -> Result<(), CallType> {
     if (flags & VM_CALL_ARGS_SPLAT) != 0 { return Err(CallType::Splat); }
     if (flags & VM_CALL_KWARG) != 0 { return Err(CallType::Kwarg); }
+    if (flags & VM_CALL_KW_SPLAT) != 0 { return Err(CallType::KwSplat); }
+    if (flags & VM_CALL_KW_SPLAT_MUT) != 0 { return Err(CallType::KwSplatMut); }
     if (flags & VM_CALL_TAILCALL) != 0 { return Err(CallType::Tailcall); }
     Ok(())
 }
