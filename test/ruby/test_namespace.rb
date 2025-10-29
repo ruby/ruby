@@ -668,7 +668,9 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_root_and_main_methods
-    assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    tmp = Dir.mktmpdir("namespace_so")
+
+    assert_separately([{"TMPDIR"=>tmp, **ENV_ENABLE_NAMESPACE}], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
       pend unless Namespace.respond_to?(:root) and Namespace.respond_to?(:main) # for RUBY_DEBUG > 0
 
@@ -690,5 +692,8 @@ class TestNamespace < Test::Unit::TestCase
       assert !$LOADED_FEATURES.include?("/tmp/barbaz")
       assert !Object.const_defined?(:FooClass)
     end;
+  ensure
+    File.unlink(*Dir.glob("_ruby_ns_*."+RbConfig::CONFIG["DLEXT"], base: tmp).map {|so| "#{tmp}/#{so}"})
+    Dir.rmdir(tmp)
   end
 end
