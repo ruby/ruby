@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use crate::codegen::local_size_and_idx_to_ep_offset;
 use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::SideExitReason;
-use crate::options::{TraceExits, debug, dump_lir_option, get_option};
+use crate::options::{TraceExits, debug, get_option};
 use crate::cruby::VALUE;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
@@ -2288,7 +2288,7 @@ impl AssemblerPanicHook {
     /// It takes insn_idx as an argument so that you can manually use it
     /// on non-emit passes that keep mutating the Assembler to be dumped.
     pub fn new(asm: &Assembler, insn_idx: usize) -> (Option<Arc<Self>>, Option<Arc<Mutex<usize>>>) {
-        if dump_lir_option!(panic) {
+        if cfg!(debug_assertions) {
             // Wrap prev_hook with Arc to share it among the new hook and Self to be dropped.
             let prev_hook = panic::take_hook();
             let panic_hook_ref = Arc::new(Self { prev_hook });
