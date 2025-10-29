@@ -20,7 +20,7 @@
 
 module Timeout
   # The version
-  VERSION = "0.4.3"
+  VERSION = "0.4.4"
 
   # Internal error raised to when a timeout is triggered.
   class ExitException < Exception
