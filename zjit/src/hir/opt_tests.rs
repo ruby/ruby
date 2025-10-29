@@ -4554,10 +4554,13 @@ mod hir_opt_tests {
 
     #[test]
     fn test_optimize_getivar_extended() {
-        eval("
+        eval(r#"
             class C
               attr_reader :foo
               def initialize
+                1000.times do |i|
+                  instance_variable_set("@v#{i}", i)
+                end
                 @foo = 42
               end
             end
@@ -4566,9 +4569,9 @@ mod hir_opt_tests {
             def test(o) = o.foo
             test O
             test O
-        ");
+        "#);
         assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:10:
+        fn test@<compiled>:13:
         bb0():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
@@ -4582,7 +4585,7 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1000)
           v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
           v25:HeapObject[class_exact:C] = GuardShape v22, 0x1038
-          v26:BasicObject = LoadIvarEmbedded v25, :@foo@0x1039
+          v26:BasicObject = LoadIvarExtended v25, :@foo@0x1039
           CheckInterrupts
           Return v26
         ");
