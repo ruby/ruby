@@ -1025,9 +1025,11 @@ mod tests {
         asm.store(Opnd::mem(64, SP, 0x10), val64);
         let side_exit = Target::SideExit { reason: SideExitReason::Interrupt, pc: 0 as _, stack: vec![], locals: vec![], label: None };
         asm.push_insn(Insn::Joz(val64, side_exit));
+        asm.parallel_mov(vec![(C_ARG_OPNDS[0], C_RET_OPND.with_num_bits(32)), (C_ARG_OPNDS[1], Opnd::mem(64, SP, -8))]);
 
         let val32 = asm.sub(Opnd::Value(Qtrue), Opnd::Imm(1));
         asm.store(Opnd::mem(64, EC, 0x10).with_num_bits(32), val32.with_num_bits(32));
+        asm.je(label);
         asm.cret(val64);
 
         asm.frame_teardown(JIT_PRESERVED_REGS);
@@ -1038,8 +1040,10 @@ mod tests {
           v0 = Add r13, 0x40
           Store [rbx + 0x10], v0
           Joz Exit(Interrupt), v0
+          ParallelMov rdi <- eax, rsi <- [rbx - 8]
           v1 = Sub Value(0x14), Imm(1)
           Store Mem32[r12 + 0x10], VReg32(v1)
+          Je bb0
           CRet v0
           FrameTeardown r13, rbx, r12
         ");
