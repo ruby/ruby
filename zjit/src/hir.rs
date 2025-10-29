@@ -1051,7 +1051,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, "StringAppend {recv}, {other}")
             }
             Insn::StringBytesize { recv, .. } => {
-                write!(f, "StringLength {recv}")
+                write!(f, "StringBytesize {recv}")
             }
             Insn::ToRegexp { values, opt, .. } => {
                 write!(f, "ToRegexp")?;

@@ -5827,12 +5827,12 @@ mod hir_opt_tests {
           v29:StringExact = GuardType v13, StringExact
           v30:Fixnum = GuardType v14, Fixnum
           v31:Fixnum = GuardType v15, Fixnum
-          v32:CUInt64 = StringLength v31
+          v32:CUInt64 = StringBytesize v31
           v33:Fixnum = GuardLess v30, v32
           v34:Fixnum[0] = Const Value(0)
-          v35:Fixnum = GuardGreaterEq v30, v34
+          v35:Fixnum = GuardGreaterEq v33, v34
           v36:StringExact = GuardNotFrozen v29
-          v37:Fixnum = StringSetbyteFixnum v36, v30, v31
+          v37:Fixnum = StringSetbyteFixnum v36, v35, v31
           IncrCounter inline_cfunc_optimized_send_count
           CheckInterrupts
           Return v37
