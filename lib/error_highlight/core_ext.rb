@@ -3,7 +3,7 @@ require_relative "formatter"
 module ErrorHighlight
   module CoreExt
     private def generate_snippet
-      if ArgumentError === self && message =~ /\A(?:wrong number of arguments|missing keyword|unknown keyword|no keywords accepted)\b/
+      if ArgumentError === self && message =~ /\A(?:wrong number of arguments|missing keyword[s]?|unknown keyword[s]?|no keywords accepted)\b/
         locs = self.backtrace_locations
         return "" if locs.size < 2
         callee_loc, caller_loc = locs

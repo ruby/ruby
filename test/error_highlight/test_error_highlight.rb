@@ -44,7 +44,7 @@ class ErrorHighlightTest < Test::Unit::TestCase
     def assert_error_message(klass, expected_msg, &blk)
       omit unless klass < ErrorHighlight::CoreExt
       err = assert_raise(klass, &blk)
-      unless klass == ArgumentError && err.message =~ /\A(?:wrong number of arguments|missing keyword|unknown keyword|no keywords accepted)\b/
+      unless klass == ArgumentError && err.message =~ /\A(?:wrong number of arguments|missing keyword[s]?|unknown keyword[s]?|no keywords accepted)\b/
         spot = ErrorHighlight.spot(err)
         if spot
           assert_kind_of(Integer, spot[:first_lineno])
@@ -1502,6 +1502,27 @@ missing keyword: :kw3 (ArgumentError)
     end
   end
 
+  def test_missing_keywords # multiple missing keywords
+    lineno = __LINE__
+    assert_error_message(ArgumentError, <<~END) do
+missing keywords: :kw2, :kw3 (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 16 }
+    |       keyword_test(kw1: 1)
+            ^^^^^^^^^^^^
+    callee: #{ __FILE__ }:#{ KEYWORD_TEST_LINENO }
+    #{
+      MethodDefLocationSupported ?
+   "|   def keyword_test(kw1:, kw2:, kw3:)
+            ^^^^^^^^^^^^" :
+   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   }
+    END
+
+      keyword_test(kw1: 1)
+    end
+  end
+
   def test_unknown_keyword
     lineno = __LINE__
     assert_error_message(ArgumentError, <<~END) do
@@ -1520,6 +1541,27 @@ unknown keyword: :kw4 (ArgumentError)
     END
 
       keyword_test(kw1: 1, kw2: 2, kw3: 3, kw4: 4)
+    end
+  end
+
+  def test_unknown_keywords
+    lineno = __LINE__
+    assert_error_message(ArgumentError, <<~END) do
+unknown keywords: :kw4, :kw5 (ArgumentError)
+
+    caller: #{ __FILE__ }:#{ lineno + 16 }
+    |       keyword_test(kw1: 1, kw2: 2, kw3: 3, kw4: 4, kw5: 5)
+            ^^^^^^^^^^^^
+    callee: #{ __FILE__ }:#{ KEYWORD_TEST_LINENO }
+    #{
+      MethodDefLocationSupported ?
+   "|   def keyword_test(kw1:, kw2:, kw3:)
+            ^^^^^^^^^^^^" :
+   "(cannot highlight method definition; try Ruby 3.5 or later)"
+   }
+    END
+
+      keyword_test(kw1: 1, kw2: 2, kw3: 3, kw4: 4, kw5: 5)
     end
   end
 
