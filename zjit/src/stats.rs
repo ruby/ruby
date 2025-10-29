@@ -173,6 +173,10 @@ make_counters! {
         send_fallback_send_no_profiles,
         send_fallback_send_not_optimized_method_type,
         send_fallback_ccall_with_frame_too_many_args,
+        // The call has at least one feature on the caller or callee side
+        // that the optimizer does not support.
+        send_fallback_fancy_call_feature,
+        send_fallback_bmethod_non_iseq_proc,
         send_fallback_obj_to_string_not_string,
         send_fallback_not_optimized_instruction,
     }
@@ -249,6 +253,14 @@ make_counters! {
     unspecialized_send_def_type_missing,
     unspecialized_send_def_type_refined,
     unspecialized_send_def_type_null,
+
+    // Unsupported parameter features
+    fancy_arg_pass_param_rest,
+    fancy_arg_pass_param_opt,
+    fancy_arg_pass_param_kw,
+    fancy_arg_pass_param_kwrest,
+    fancy_arg_pass_param_block,
+    fancy_arg_pass_param_forwardable,
 
     // Writes to the VM frame
     vm_write_pc_count,
@@ -401,6 +413,8 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendWithoutBlockDirectTooManyArgs         => send_fallback_send_without_block_direct_too_many_args,
         SendPolymorphic                           => send_fallback_send_polymorphic,
         SendNoProfiles                            => send_fallback_send_no_profiles,
+        FancyFeatureUse                           => send_fallback_fancy_call_feature,
+        BmethodNonIseqProc                        => send_fallback_bmethod_non_iseq_proc,
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
         CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
