@@ -1808,6 +1808,7 @@ impl fmt::Display for Assembler {
                         write!(f, "{out} = ")?;
                     }
 
+                    // Print the instruction name
                     write!(f, "{}", insn.op())?;
 
                     // Show slot_count for FrameSetup
@@ -1841,21 +1842,9 @@ impl fmt::Display for Assembler {
                         }
                     } else if let Insn::ParallelMov { moves } = insn {
                         // Print operands with a special syntax for ParallelMov
-                        let mut moves_iter = moves.iter();
-                        if let Some((first_dst, first_src)) = moves_iter.next() {
-                            write!(f, " {first_dst} <- {first_src}")?;
-                        }
-                        for (dst, src) in moves_iter {
-                            write!(f, ", {dst} <- {src}")?;
-                        }
-                    } else {
-                        let mut opnd_iter = insn.opnd_iter();
-                        if let Some(first_opnd) = opnd_iter.next() {
-                            write!(f, " {first_opnd}")?;
-                        }
-                        for opnd in opnd_iter {
-                            write!(f, ", {opnd}")?;
-                        }
+                        moves.iter().try_fold(" ", |prefix, (dst, src)| write!(f, "{prefix}{dst} <- {src}").and(Ok(", ")))?;
+                    } else if insn.opnd_iter().count() > 0 {
+                        insn.opnd_iter().try_fold(" ", |prefix, opnd| write!(f, "{prefix}{opnd}").and(Ok(", ")))?;
                     }
 
                     write!(f, "\n")?;
