@@ -379,7 +379,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::IfTrue { val, target } => no_output!(gen_if_true(jit, asm, opnd!(val), target)),
         Insn::IfFalse { val, target } => no_output!(gen_if_false(jit, asm, opnd!(val), target)),
         &Insn::Send { cd, blockiseq, state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
-        &Insn::SendFallback { cd, state, .. } => gen_send_fallback(jit, asm, cd, &function.frame_state(state)),
+        &Insn::SendFallback { cd, state, reason } => gen_send_fallback(jit, asm, cd, &function.frame_state(state), reason),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendWithoutBlock { cd, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
         // Give up SendWithoutBlockDirect for 6+ args since asm.ccall() doesn't support it.
@@ -1131,7 +1131,9 @@ fn gen_send_fallback(
     asm: &mut Assembler,
     cd: *const rb_call_data,
     state: &FrameState,
+    reason: SendFallbackReason,
 ) -> lir::Opnd {
+    gen_incr_send_fallback_counter(asm, reason);
     assert_eq!(unsafe { vm_ci_flag((*cd).ci) } & VM_CALL_TAILCALL, 0, "tail call sends should side-exit");
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));

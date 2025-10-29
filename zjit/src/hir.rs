@@ -543,6 +543,7 @@ pub enum SendFallbackReason {
     SendPolymorphic,
     SendNoProfiles,
     SendNotOptimizedMethodType(MethodType),
+    SendUnhandledCallType,
     CCallWithFrameTooManyArgs,
     ObjToStringNotString,
     /// Initial fallback reason for every instruction, which should be mutated to
@@ -724,6 +725,7 @@ pub enum Insn {
     SendFallback {
         cd: *const rb_call_data,
         state: InsnId,
+        reason: SendFallbackReason,
     },
     SendForward {
         recv: InsnId,
@@ -1708,9 +1710,10 @@ impl Function {
                 state,
                 reason,
             },
-            &SendFallback { cd, state } => SendFallback {
+            &SendFallback { cd, state, reason } => SendFallback {
                 cd,
                 state,
+                reason,
             },
             &SendForward { recv, cd, blockiseq, ref args, state, reason } => SendForward {
                 recv: find!(recv),
@@ -4766,9 +4769,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(CallType::Tailcall) });
                         break;  // End the block
                     }
-                    if let Err(call_type) = unhandled_call_type(flags) {
+                    if let Err(_) = unhandled_call_type(flags) {
                         // Can't handle other flags; reify stack and use fallback
-                        let result = fun.push_insn(block, Insn::SendFallback { cd, state: exit_id });
+                        let result = fun.push_insn(block, Insn::SendFallback { cd, state: exit_id, reason: SendFallbackReason::SendUnhandledCallType });
                         let sp_pops = unsafe { rb_jit_sendish_sp_pops(call_info) } as usize;
                         state.stack_pop_n(sp_pops)?;
                         state.stack_push(result);
