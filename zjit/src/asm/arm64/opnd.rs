@@ -1,4 +1,4 @@
-
+use std::fmt;
 
 /// This operand represents a register.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -18,7 +18,7 @@ impl A64Reg {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct A64Mem
 {
     // Size in bits
@@ -42,7 +42,7 @@ impl A64Mem {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum A64Opnd
 {
     // Dummy operand
@@ -196,3 +196,75 @@ pub const W31: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 32, reg_no: 31 });
 // C argument registers
 pub const C_ARG_REGS: [A64Opnd; 4] = [X0, X1, X2, X3];
 pub const C_ARG_REGREGS: [A64Reg; 4] = [X0_REG, X1_REG, X2_REG, X3_REG];
+
+impl fmt::Display for A64Reg {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match A64Opnd::Reg(*self) {
+            X0  => write!(f, "x0"),
+            X1  => write!(f, "x1"),
+            X2  => write!(f, "x2"),
+            X3  => write!(f, "x3"),
+            X4  => write!(f, "x4"),
+            X5  => write!(f, "x5"),
+            X6  => write!(f, "x6"),
+            X7  => write!(f, "x7"),
+            X8  => write!(f, "x8"),
+            X9  => write!(f, "x9"),
+            X10 => write!(f, "x10"),
+            X11 => write!(f, "x11"),
+            X12 => write!(f, "x12"),
+            X13 => write!(f, "x13"),
+            X14 => write!(f, "x14"),
+            X15 => write!(f, "x15"),
+            X16 => write!(f, "x16"),
+            X17 => write!(f, "x17"),
+            X18 => write!(f, "x18"),
+            X19 => write!(f, "x19"),
+            X20 => write!(f, "x20"),
+            X21 => write!(f, "x21"),
+            X22 => write!(f, "x22"),
+            X23 => write!(f, "x23"),
+            X24 => write!(f, "x24"),
+            X25 => write!(f, "x25"),
+            X26 => write!(f, "x26"),
+            X27 => write!(f, "x27"),
+            X28 => write!(f, "x28"),
+            X29 => write!(f, "x29"),
+            X30 => write!(f, "x30"),
+            X31 => write!(f, "x31"),
+            W0  => write!(f, "w0"),
+            W1  => write!(f, "w1"),
+            W2  => write!(f, "w2"),
+            W3  => write!(f, "w3"),
+            W4  => write!(f, "w4"),
+            W5  => write!(f, "w5"),
+            W6  => write!(f, "w6"),
+            W7  => write!(f, "w7"),
+            W8  => write!(f, "w8"),
+            W9  => write!(f, "w9"),
+            W10 => write!(f, "w10"),
+            W11 => write!(f, "w11"),
+            W12 => write!(f, "w12"),
+            W13 => write!(f, "w13"),
+            W14 => write!(f, "w14"),
+            W15 => write!(f, "w15"),
+            W16 => write!(f, "w16"),
+            W17 => write!(f, "w17"),
+            W18 => write!(f, "w18"),
+            W19 => write!(f, "w19"),
+            W20 => write!(f, "w20"),
+            W21 => write!(f, "w21"),
+            W22 => write!(f, "w22"),
+            W23 => write!(f, "w23"),
+            W24 => write!(f, "w24"),
+            W25 => write!(f, "w25"),
+            W26 => write!(f, "w26"),
+            W27 => write!(f, "w27"),
+            W28 => write!(f, "w28"),
+            W29 => write!(f, "w29"),
+            W30 => write!(f, "w30"),
+            W31 => write!(f, "w31"),
+            _ => write!(f, "{self:?}"),
+        }
+    }
+}

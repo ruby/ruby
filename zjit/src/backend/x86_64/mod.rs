@@ -7,9 +7,15 @@ use crate::virtualmem::CodePtr;
 use crate::cruby::*;
 use crate::backend::lir::*;
 use crate::cast::*;
+use crate::options::asm_dump;
 
 // Use the x86 register type for this platform
 pub type Reg = X86Reg;
+
+/// Convert reg_no for MemBase::Reg into Reg, assuming it's a 64-bit GP register
+pub fn mem_base_reg(reg_no: u8) -> Reg {
+    Reg { num_bits: 64, reg_type: RegType::GP, reg_no }
+}
 
 // Callee-saved registers
 pub const CFP: Opnd = Opnd::Reg(R13_REG);
@@ -96,7 +102,7 @@ pub const ALLOC_REGS: &[Reg] = &[
 ];
 
 /// Special scratch register for intermediate processing. It should be used only by
-/// [`Assembler::x86_split_with_scratch_reg`] or [`Assembler::new_with_scratch_reg`].
+/// [`Assembler::x86_scratch_split`] or [`Assembler::new_with_scratch_reg`].
 const SCRATCH0_OPND: Opnd = Opnd::Reg(R11_REG);
 
 impl Assembler {
@@ -384,7 +390,7 @@ impl Assembler {
     /// for VRegs, most splits should happen in [`Self::x86_split`]. However, some instructions
     /// need to be split with registers after `alloc_regs`, e.g. for `compile_side_exits`, so
     /// this splits them and uses scratch registers for it.
-    pub fn x86_split_with_scratch_reg(self) -> Assembler {
+    pub fn x86_scratch_split(self) -> Assembler {
         /// For some instructions, we want to be able to lower a 64-bit operand
         /// without requiring more registers to be available in the register
         /// allocator. So we just use the SCRATCH0_OPND register temporarily to hold
@@ -490,7 +496,7 @@ impl Assembler {
                 // Handle various operand combinations for spills on compile_side_exits.
                 &mut Insn::Store { dest, src } => {
                     let Opnd::Mem(Mem { num_bits, .. }) = dest else {
-                        panic!("Unexpected Insn::Store destination in x86_split_with_scratch_reg: {dest:?}");
+                        panic!("Unexpected Insn::Store destination in x86_scratch_split: {dest:?}");
                     };
 
                     let src = match src {
@@ -525,7 +531,7 @@ impl Assembler {
                             asm.load_into(SCRATCH0_OPND, src);
                             SCRATCH0_OPND
                         }
-                        src @ (Opnd::None | Opnd::VReg { .. }) => panic!("Unexpected source operand during x86_split_with_scratch_reg: {src:?}"),
+                        src @ (Opnd::None | Opnd::VReg { .. }) => panic!("Unexpected source operand during x86_scratch_split: {src:?}"),
                     };
                     asm.store(dest, src);
                 }
@@ -587,6 +593,9 @@ impl Assembler {
         // For each instruction
         let mut insn_idx: usize = 0;
         while let Some(insn) = self.insns.get(insn_idx) {
+            // Dump Assembler with insn_idx if --zjit-dump-lir=panic is given
+            let _hook = AssemblerPanicHook::new(self, insn_idx);
+
             match insn {
                 Insn::Comment(text) => {
                     cb.add_comment(text);
@@ -949,13 +958,21 @@ impl Assembler {
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         // The backend is allowed to use scratch registers only if it has not accepted them so far.
         let use_scratch_regs = !self.accept_scratch_reg;
+        asm_dump!(self, init);
 
         let asm = self.x86_split();
+        asm_dump!(asm, split);
+
         let mut asm = asm.alloc_regs(regs)?;
+        asm_dump!(asm, alloc_regs);
+
         // We put compile_side_exits after alloc_regs to avoid extending live ranges for VRegs spilled on side exits.
         asm.compile_side_exits();
+        asm_dump!(asm, compile_side_exits);
+
         if use_scratch_regs {
-            asm = asm.x86_split_with_scratch_reg();
+            asm = asm.x86_scratch_split();
+            asm_dump!(asm, scratch_split);
         }
 
         // Create label instances in the code block
@@ -981,10 +998,51 @@ impl Assembler {
 mod tests {
     use insta::assert_snapshot;
     use crate::assert_disasm_snapshot;
+    use crate::options::rb_zjit_prepare_options;
     use super::*;
 
+    const BOLD_BEGIN: &str = "\x1b[1m";
+    const BOLD_END: &str = "\x1b[22m";
+
     fn setup_asm() -> (Assembler, CodeBlock) {
+        rb_zjit_prepare_options(); // for get_option! on asm.compile
         (Assembler::new(), CodeBlock::new_dummy())
+    }
+
+    #[test]
+    fn test_lir_string() {
+        use crate::hir::SideExitReason;
+
+        let mut asm = Assembler::new();
+        asm.stack_base_idx = 1;
+
+        let label = asm.new_label("bb0");
+        asm.write_label(label.clone());
+        asm.push_insn(Insn::Comment("bb0(): foo@/tmp/a.rb:1".into()));
+        asm.frame_setup(JIT_PRESERVED_REGS);
+
+        let val64 = asm.add(CFP, Opnd::UImm(64));
+        asm.store(Opnd::mem(64, SP, 0x10), val64);
+        let side_exit = Target::SideExit { reason: SideExitReason::Interrupt, pc: 0 as _, stack: vec![], locals: vec![], label: None };
+        asm.push_insn(Insn::Joz(val64, side_exit));
+
+        let val32 = asm.sub(Opnd::Value(Qtrue), Opnd::Imm(1));
+        asm.store(Opnd::mem(64, EC, 0x10).with_num_bits(32), val32.with_num_bits(32));
+        asm.cret(val64);
+
+        asm.frame_teardown(JIT_PRESERVED_REGS);
+        assert_disasm_snapshot!(lir_string(&mut asm), @r"
+        bb0:
+          # bb0(): foo@/tmp/a.rb:1
+          FrameSetup 1, r13, rbx, r12
+          v0 = Add r13, 0x40
+          Store [rbx + 0x10], v0
+          Joz Exit(Interrupt), v0
+          v1 = Sub Value(0x14), Imm(1)
+          Store Mem32[r12 + 0x10], VReg32(v1)
+          CRet v0
+          FrameTeardown r13, rbx, r12
+        ");
     }
 
     #[test]
@@ -1596,7 +1654,7 @@ mod tests {
         assert!(imitation_heap_value.heap_object_p());
         asm.store(Opnd::mem(VALUE_BITS, SP, 0), imitation_heap_value.into());
 
-        asm = asm.x86_split_with_scratch_reg();
+        asm = asm.x86_scratch_split();
         let gc_offsets = asm.x86_emit(&mut cb).unwrap();
         assert_eq!(1, gc_offsets.len(), "VALUE source operand should be reported as gc offset");
 
