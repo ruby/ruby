@@ -724,6 +724,7 @@ pub enum Insn {
     },
     SendFallback {
         cd: *const rb_call_data,
+        blockiseq: Option<IseqPtr>,
         state: InsnId,
         reason: SendFallbackReason,
     },
@@ -1710,8 +1711,9 @@ impl Function {
                 state,
                 reason,
             },
-            &SendFallback { cd, state, reason } => SendFallback {
+            &SendFallback { cd, blockiseq, state, reason } => SendFallback {
                 cd,
+                blockiseq,
                 state,
                 reason,
             },
@@ -4771,7 +4773,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     if let Err(_) = unhandled_call_type(flags) {
                         // Can't handle other flags; reify stack and use fallback
-                        let result = fun.push_insn(block, Insn::SendFallback { cd, state: exit_id, reason: SendFallbackReason::SendUnhandledCallType });
+                        let blockiseq = None;
+                        let result = fun.push_insn(block, Insn::SendFallback { cd, blockiseq, state: exit_id, reason: SendFallbackReason::SendUnhandledCallType });
                         let sp_pops = unsafe { rb_jit_sendish_sp_pops(call_info) } as usize;
                         state.stack_pop_n(sp_pops)?;
                         state.stack_push(result);
@@ -4787,21 +4790,28 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let flags = unsafe { rb_vm_ci_flag(call_info) };
-                    if let Err(call_type) = unhandled_call_type(flags) {
+                    if (flags & VM_CALL_TAILCALL) != 0 {
                         // Can't handle tailcall; side-exit into the interpreter
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(CallType::Tailcall) });
                         break;  // End the block
                     }
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
-                    let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
-
-                    let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
-                    let recv = state.stack_pop()?;
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
-                    state.stack_push(send);
+                    if let Err(_) = unhandled_call_type(flags) {
+                        // Can't handle other flags; reify stack and use fallback
+                        let blockiseq = if blockiseq.is_null() { None } else { Some(blockiseq) };
+                        let result = fun.push_insn(block, Insn::SendFallback { cd, blockiseq, state: exit_id, reason: SendFallbackReason::SendUnhandledCallType });
+                        let sp_pops = unsafe { rb_jit_sendish_sp_pops(call_info) } as usize;
+                        state.stack_pop_n(sp_pops)?;
+                        state.stack_push(result);
+                    } else {
+                        let argc = unsafe { vm_ci_argc((*cd).ci) };
+                        let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
+                        let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
+                        let recv = state.stack_pop()?;
+                        let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
+                        state.stack_push(send);
+                    }
 
                     if !blockiseq.is_null() {
                         // Reload locals that may have been modified by the blockiseq.

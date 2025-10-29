@@ -379,7 +379,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::IfTrue { val, target } => no_output!(gen_if_true(jit, asm, opnd!(val), target)),
         Insn::IfFalse { val, target } => no_output!(gen_if_false(jit, asm, opnd!(val), target)),
         &Insn::Send { cd, blockiseq, state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
-        &Insn::SendFallback { cd, state, reason } => gen_send_fallback(jit, asm, cd, &function.frame_state(state), reason),
+        &Insn::SendFallback { cd, blockiseq, state, reason } => gen_send_fallback(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::SendWithoutBlock { cd, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
         // Give up SendWithoutBlockDirect for 6+ args since asm.ccall() doesn't support it.
@@ -1130,6 +1130,7 @@ fn gen_send_fallback(
     jit: &mut JITState,
     asm: &mut Assembler,
     cd: *const rb_call_data,
+    blockiseq: Option<IseqPtr>,
     state: &FrameState,
     reason: SendFallbackReason,
 ) -> lir::Opnd {
@@ -1137,10 +1138,17 @@ fn gen_send_fallback(
     assert_eq!(unsafe { vm_ci_flag((*cd).ci) } & VM_CALL_TAILCALL, 0, "tail call sends should side-exit");
     gen_prepare_non_leaf_call(jit, asm, state);
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
-    unsafe extern "C" {
-        fn rb_vm_opt_send_without_block(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
+    if let Some(blockiseq) = blockiseq {
+        unsafe extern "C" {
+            fn rb_vm_send(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
+        }
+        asm_ccall!(asm, rb_vm_send, EC, CFP, Opnd::const_ptr(cd), VALUE(blockiseq as usize).into())
+    } else {
+        unsafe extern "C" {
+            fn rb_vm_opt_send_without_block(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
+        }
+        asm_ccall!(asm, rb_vm_opt_send_without_block, EC, CFP, Opnd::const_ptr(cd))
     }
-    asm_ccall!(asm, rb_vm_opt_send_without_block, EC, CFP, Opnd::const_ptr(cd))
 }
 
 /// Compile a dynamic dispatch with `...`
