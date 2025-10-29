@@ -622,6 +622,12 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 * https://github.com/ruby/fiddle
 * https://rubygems.org/gems/fiddle
 
+#### repl_type_completor
+
+* Tomoya Ishida ([tompng])
+* https://github.com/ruby/repl_type_completor
+* https://rubygems.org/gems/repl_type_completor
+
 ## Platform Maintainers
 
 ### mswin64 (Microsoft Windows)
