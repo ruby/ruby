@@ -1701,7 +1701,7 @@ impl Assembler
     }
 
     /// Compile Target::SideExit and convert it into Target::CodePtr for all instructions
-    pub fn compile_side_exits(&mut self) {
+    pub fn compile_exits(&mut self) {
         fn join_opnds(opnds: &Vec<Opnd>, delimiter: &str) -> String {
             opnds.iter().map(|opnd| format!("{opnd}")).collect::<Vec<_>>().join(delimiter)
         }

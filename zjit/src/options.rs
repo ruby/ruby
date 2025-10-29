@@ -160,8 +160,8 @@ pub enum DumpLIR {
     split,
     /// Dump LIR after alloc_regs
     alloc_regs,
-    /// Dump LIR after compile_side_exits
-    compile_side_exits,
+    /// Dump LIR after compile_exits
+    compile_exits,
     /// Dump LIR after {arch}_scratch_split
     scratch_split,
 }
@@ -171,7 +171,7 @@ const DUMP_LIR_ALL: &[DumpLIR] = &[
     DumpLIR::init,
     DumpLIR::split,
     DumpLIR::alloc_regs,
-    DumpLIR::compile_side_exits,
+    DumpLIR::compile_exits,
     DumpLIR::scratch_split,
 ];
 
@@ -352,7 +352,7 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                     "init" => DumpLIR::init,
                     "split" => DumpLIR::split,
                     "alloc_regs" => DumpLIR::alloc_regs,
-                    "compile_side_exits" => DumpLIR::compile_side_exits,
+                    "compile_exits" => DumpLIR::compile_exits,
                     "scratch_split" => DumpLIR::scratch_split,
                     _ => {
                         let valid_options = DUMP_LIR_ALL.iter().map(|opt| format!("{opt:?}")).collect::<Vec<_>>().join(", ");
