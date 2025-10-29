@@ -175,6 +175,7 @@ consensus on ruby-core/ruby-dev.
 
 * Nobuyuki Nakada ([nobu])
 * https://github.com/ruby/optparse
+* https://rubygems.org/gems/optparse
 
 #### lib/net/http.rb, lib/net/https.rb
 
@@ -198,6 +199,7 @@ consensus on ruby-core/ruby-dev.
 
 * Tanaka Akira ([akr])
 * https://github.com/ruby/open-uri
+* https://rubygems.org/gems/open-uri
 
 #### lib/pp.rb
 
@@ -397,165 +399,199 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 
 * Ryan Davis ([zenspider])
 * https://github.com/minitest/minitest
+* https://rubygems.org/gems/minitest
 
 ### power_assert
 
 * Tsujimoto Kenta ([k-tsj])
 * https://github.com/ruby/power_assert
+* https://rubygems.org/gems/power_assert
 
 ### rake
 
 * Hiroshi SHIBATA ([hsbt])
 * https://github.com/ruby/rake
+* https://rubygems.org/gems/rake
 
 ### test-unit
 
 * Kouhei Sutou ([kou])
 * https://github.com/test-unit/test-unit
+* https://rubygems.org/gems/test-unit
 
 ### rexml
 
 * Kouhei Sutou ([kou])
 * https://github.com/ruby/rexml
+* https://rubygems.org/gems/rexml
 
 ### rss
 
 * Kouhei Sutou ([kou])
 * https://github.com/ruby/rss
+* https://rubygems.org/gems/rss
 
 ### net-ftp
 
 * Shugo Maeda ([shugo])
 * https://github.com/ruby/net-ftp
+* https://rubygems.org/gems/net-ftp
 
 ### net-imap
 
 * Nicholas A. Evans ([nevans])
 * https://github.com/ruby/net-imap
+* https://rubygems.org/gems/net-imap
 
 ### net-pop
 
 * https://github.com/ruby/net-pop
+* https://rubygems.org/gems/net-pop
 
 ### net-smtp
 
 * TOMITA Masahiro ([tmtm])
 * https://github.com/ruby/net-smtp
+* https://rubygems.org/gems/net-smtp
 
 ### matrix
 
 * Marc-André Lafortune ([marcandre])
 * https://github.com/ruby/matrix
+* https://rubygems.org/gems/matrix
 
 ### prime
 
 * https://github.com/ruby/prime
+* https://rubygems.org/gems/prime
 
 ### rbs
 
 * Soutaro Matsumoto ([soutaro])
 * https://github.com/ruby/rbs
+* https://rubygems.org/gems/rbs
 
 ### typeprof
 
 * Yusuke Endoh ([mame])
 * https://github.com/ruby/typeprof
+* https://rubygems.org/gems/typeprof
 
 ### debug
 
 * Koichi Sasada ([ko1])
 * https://github.com/ruby/debug
+* https://rubygems.org/gems/debug
 
 ### racc
 
 * Yuichi Kaneko ([yui-knk])
 * https://github.com/ruby/racc
+* https://rubygems.org/gems/racc
 
 #### mutex_m
 
 * https://github.com/ruby/mutex_m
+* https://rubygems.org/gems/mutex_m
 
 #### getoptlong
 
 * https://github.com/ruby/getoptlong
+* https://rubygems.org/gems/getoptlong
 
 #### base64
 
 * Yusuke Endoh ([mame])
 * https://github.com/ruby/base64
+* https://rubygems.org/gems/base64
 
 #### bigdecimal
 
 * Kenta Murata ([mrkn])
 * https://github.com/ruby/bigdecimal
+* https://rubygems.org/gems/bigdecimal
 
 #### observer
 
 * https://github.com/ruby/observer
+* https://rubygems.org/gems/observer
 
 #### abbrev
 
 * Akinori MUSHA ([knu])
 * https://github.com/ruby/abbrev
+* https://rubygems.org/gems/abbrev
 
 #### resolv-replace
 
 * Akira TANAKA ([akr])
 * https://github.com/ruby/resolv-replace
+* https://rubygems.org/gems/resolv-replace
 
 #### rinda
 
 * Masatoshi SEKI ([seki])
 * https://github.com/ruby/rinda
+* https://rubygems.org/gems/rinda
 
 #### drb
 
 * Masatoshi SEKI ([seki])
 * https://github.com/ruby/drb
+* https://rubygems.org/gems/drb
 
 #### nkf
 
 * Naruse Yusuke ([nurse])
 * https://github.com/ruby/nkf
+* https://rubygems.org/gems/nkf
 
 #### syslog
 
 * Akinori Musha ([knu])
 * https://github.com/ruby/syslog
+* https://rubygems.org/gems/syslog
 
 #### csv
 
 * Kouhei Sutou ([kou])
 * https://github.com/ruby/csv
+* https://rubygems.org/gems/csv
 
 #### ostruct
 
 * Marc-André Lafortune ([marcandre])
 * https://github.com/ruby/ostruct
+* https://rubygems.org/gems/ostruct
 
 #### pstore
 
 * https://github.com/ruby/pstore
+* https://rubygems.org/gems/pstore
 
 #### benchmark
 
 * https://github.com/ruby/benchmark
+* https://rubygems.org/gems/benchmark
 
 #### logger
 
 * Naotoshi Seo ([sonots])
 * https://github.com/ruby/logger
+* https://rubygems.org/gems/logger
 
 #### rdoc
 
 * Stan Lo ([st0012])
 * Nobuyoshi Nakada ([nobu])
 * https://github.com/ruby/rdoc
+* https://rubygems.org/gems/rdoc
 
 #### win32ole
 
 * Masaki Suketa ([suketa])
 * https://github.com/ruby/win32ole
+* https://rubygems.org/gems/win32ole
 
 #### irb
 
@@ -564,6 +600,7 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 * Mari Imaizumi ([ima1zumi])
 * HASUMI Hitoshi ([hasumikin])
 * https://github.com/ruby/irb
+* https://rubygems.org/gems/irb
 
 #### reline
 
@@ -572,15 +609,18 @@ It may needs to make consensus on ruby-core/ruby-dev before making major changes
 * Mari Imaizumi ([ima1zumi])
 * HASUMI Hitoshi ([hasumikin])
 * https://github.com/ruby/reline
+* https://rubygems.org/gems/reline
 
 #### readline
 
 * https://github.com/ruby/readline
+* https://rubygems.org/gems/readline
 
 #### fiddle
 
 * Kouhei Sutou ([kou])
 * https://github.com/ruby/fiddle
+* https://rubygems.org/gems/fiddle
 
 ## Platform Maintainers
 
