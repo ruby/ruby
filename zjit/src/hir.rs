@@ -869,6 +869,8 @@ pub enum Insn {
     /// Equivalent of RUBY_VM_CHECK_INTS. Automatically inserted by the compiler before jumps and
     /// return instructions.
     CheckInterrupts { state: InsnId },
+
+    UnboxFixnum { val: InsnId },
 }
 
 impl Insn {
@@ -1256,6 +1258,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::IncrCounter(counter) => write!(f, "IncrCounter {counter:?}"),
             Insn::CheckInterrupts { .. } => write!(f, "CheckInterrupts"),
+            Insn::UnboxFixnum { val } => write!(f, "UnboxFixnum {val}"),
         }
     }
 }
@@ -1857,6 +1860,7 @@ impl Function {
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
             &ArrayPush { array, val, state } => ArrayPush { array: find!(array), val: find!(val), state },
             &CheckInterrupts { state } => CheckInterrupts { state },
+            &UnboxFixnum { val } => UnboxFixnum { val: find!(val) },
         }
     }
 
@@ -1932,7 +1936,7 @@ impl Function {
             Insn::StringGetbyteFixnum { .. } => types::Fixnum.union(types::NilClass),
             Insn::StringSetbyteFixnum { .. } => types::Fixnum,
             Insn::StringAppend { .. } => types::StringExact,
-            Insn::StringBytesize { .. } => types::CUInt64,
+            Insn::StringBytesize { .. } => types::CInt64,
             Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
@@ -2003,6 +2007,7 @@ impl Function {
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
+            Insn::UnboxFixnum { .. } => types::CInt64,
         }
     }
 
@@ -3473,6 +3478,7 @@ impl Function {
             &Insn::GetSpecialNumber { state, .. } |
             &Insn::ObjectAllocClass { state, .. } |
             &Insn::SideExit { state, .. } => worklist.push_back(state),
+            &Insn::UnboxFixnum { val } => worklist.push_back(val),
         }
     }
 
@@ -3910,6 +3916,10 @@ impl Function {
             }
             Insn::GuardShape { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::GuardNotFrozen { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
+            Insn::GuardLess { left, right, .. } | Insn::GuardGreaterEq { left, right, .. } => {
+                self.assert_subtype(insn_id, left, types::CInt64)?;
+                self.assert_subtype(insn_id, right, types::CInt64)
+            },
             Insn::StringGetbyteFixnum { string, index } => {
                 self.assert_subtype(insn_id, string, types::String)?;
                 self.assert_subtype(insn_id, index, types::Fixnum)

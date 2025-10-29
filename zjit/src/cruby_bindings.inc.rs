@@ -1203,7 +1203,6 @@ unsafe extern "C" {
     pub fn rb_str_buf_append(dst: VALUE, src: VALUE) -> VALUE;
     pub fn rb_str_dup(str_: VALUE) -> VALUE;
     pub fn rb_str_intern(str_: VALUE) -> VALUE;
-    pub fn rb_str_length(arg1: VALUE) -> VALUE;
     pub fn rb_mod_name(mod_: VALUE) -> VALUE;
     pub fn rb_ivar_get(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_ivar_set(obj: VALUE, name: ID, val: VALUE) -> VALUE;
@@ -1302,6 +1301,7 @@ unsafe extern "C" {
         lines: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
     pub fn rb_jit_cont_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
+    pub fn rb_zjit_string_bytesize(s: VALUE) -> ::std::os::raw::c_long;
     pub fn rb_zjit_exit_locations_dict(
         zjit_raw_samples: *mut VALUE,
         zjit_line_samples: *mut ::std::os::raw::c_int,

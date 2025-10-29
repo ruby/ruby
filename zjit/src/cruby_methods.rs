@@ -342,17 +342,23 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
 fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[index, value] = args else { return None; };
     if fun.likely_a(index, types::Fixnum, state) && fun.likely_a(value, types::Fixnum, state) {
+        // Guard types as fixnum
         let index = fun.coerce_to(block, index, types::Fixnum, state);
         let value = fun.coerce_to(block, value, types::Fixnum, state);
-        let len = fun.push_insn(block, hir::Insn::StringBytesize { recv: value, state });
+
+        let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
+        let value = fun.push_insn(block, hir::Insn::UnboxFixnum { val: value });
+
+        let len = fun.push_insn(block, hir::Insn::StringBytesize { recv, state });
         let index = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: len, state });
-        let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(0)) });
+        let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
         let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, state });
         let recv = fun.push_insn(block, hir::Insn::GuardNotFrozen { val: recv, state });
         let result = fun.push_insn(block, hir::Insn::StringSetbyteFixnum { string: recv, index, value });
-        return Some(result);
+        Some(result)
+    } else {
+        None
     }
-    None
 }
 
 fn inline_string_append(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {

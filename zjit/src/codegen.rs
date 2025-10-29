@@ -462,6 +462,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::IsBlockGiven => gen_is_block_given(jit, asm),
         Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, opnds!(elements), opnd!(target), &function.frame_state(*state)),
         &Insn::DupArrayInclude { ary, target, state } => gen_dup_array_include(jit, asm, ary, opnd!(target), &function.frame_state(state)),
+        &Insn::UnboxFixnum { val } => gen_unbox_fixnum(asm, opnd!(val)),
         &Insn::ArrayMax { state, .. }
         | &Insn::FixnumDiv { state, .. }
         | &Insn::Throw { state, .. }
@@ -573,6 +574,10 @@ fn gen_is_block_given(jit: &JITState, asm: &mut Assembler) -> Opnd {
     } else {
         Qfalse.into()
     }
+}
+
+fn gen_unbox_fixnum(asm: &mut Assembler, val: Opnd) -> Opnd {
+    asm.rshift(val, Opnd::UImm(1))
 }
 
 /// Get a local variable from a higher scope or the heap. `local_ep_offset` is in number of VALUEs.
@@ -906,7 +911,7 @@ fn gen_intern(asm: &mut Assembler, val: Opnd, state: &FrameState) -> Opnd {
 
 fn gen_string_bytesize(asm: &mut Assembler, recv: Opnd, state: &FrameState) -> Opnd {
     gen_prepare_leaf_call_with_gc(asm, state);
-    asm_ccall!(asm, rb_RSTRING_LEN, recv)
+    asm_ccall!(asm, rb_zjit_string_bytesize, recv)
 }
 
 /// Set global variables
