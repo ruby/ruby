@@ -1793,6 +1793,24 @@ pub fn lir_string(asm: &Assembler) -> String {
 
 impl fmt::Display for Assembler {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Count the number of duplicated label names to disambiguate them if needed
+        let mut label_counts: HashMap<&String, usize> = HashMap::new();
+        for label_name in self.label_names.iter() {
+            let counter = label_counts.entry(label_name).or_insert(0);
+            *counter += 1;
+        }
+
+        /// Return a label name String. Suffix "_{label_idx}" if the label name is used multiple times.
+        fn label_name(asm: &Assembler, label_idx: usize, label_counts: &HashMap<&String, usize>) -> String {
+            let label_name = &asm.label_names[label_idx];
+            let label_count = label_counts.get(&label_name).unwrap_or(&0);
+            if *label_count > 1 {
+                format!("{label_name}_{label_idx}")
+            } else {
+                label_name.to_string()
+            }
+        }
+
         for insn in self.insns.iter() {
             match insn {
                 Insn::Comment(comment) => {
@@ -1802,7 +1820,7 @@ impl fmt::Display for Assembler {
                     let &Target::Label(Label(label_idx)) = target else {
                         panic!("unexpected target for Insn::Label: {target:?}");
                     };
-                    writeln!(f, "  {}:", self.label_names[label_idx])?;
+                    writeln!(f, "  {}:", label_name(self, label_idx, &label_counts))?;
                 }
                 _ => {
                     write!(f, "    ")?;
@@ -1827,7 +1845,7 @@ impl fmt::Display for Assembler {
                     if let Some(target) = insn.target() {
                         match target {
                             Target::CodePtr(code_ptr) => write!(f, " {code_ptr:?}")?,
-                            Target::Label(Label(label_idx)) => write!(f, " {}", self.label_names[*label_idx])?,
+                            Target::Label(Label(label_idx)) => write!(f, " {}", label_name(self, *label_idx, &label_counts))?,
                             Target::SideExit { reason, .. } => write!(f, " Exit({reason})")?,
                         }
                     }
