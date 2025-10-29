@@ -29,6 +29,12 @@ class TestCommitEmail < Test::Unit::TestCase
     @commit_email = File.expand_path('../../tool/commit-email.rb', __dir__)
   end
 
+  def teardown
+    File.unlink(@sendmail)
+    Dir.rmdir(File.dirname(@sendmail))
+    FileUtils.rm_rf(@ruby)
+  end
+
   def test_sendmail_encoding
     omit 'the sendmail script does not work on windows' if windows?
 
