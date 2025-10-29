@@ -62,10 +62,8 @@ fn test_alloc_regs() {
 }
 
 fn setup_asm() -> (Assembler, CodeBlock) {
-    (
-        Assembler::new(),
-        CodeBlock::new_dummy()
-    )
+    rb_zjit_prepare_options(); // for get_option! on asm.compile
+    (Assembler::new(), CodeBlock::new_dummy())
 }
 
 // Test full codegen pipeline
@@ -87,7 +85,6 @@ fn test_compile()
 fn test_mov_mem2mem()
 {
     let (mut asm, mut cb) = setup_asm();
-    rb_zjit_prepare_options(); // for asm_comment
 
     asm_comment!(asm, "check that comments work too");
     asm.mov(Opnd::mem(64, SP, 0), Opnd::mem(64, SP, 8));
@@ -181,7 +178,6 @@ fn test_c_call()
     }
 
     let (mut asm, mut cb) = setup_asm();
-    rb_zjit_prepare_options(); // for asm.compile
 
     let ret_val = asm.ccall(
         dummy_c_fun as *const u8,
@@ -196,11 +192,10 @@ fn test_c_call()
 
 #[test]
 fn test_alloc_ccall_regs() {
-    let mut asm = Assembler::new();
+    let (mut asm, mut cb) = setup_asm();
     let out1 = asm.ccall(std::ptr::null::<u8>(), vec![]);
     let out2 = asm.ccall(std::ptr::null::<u8>(), vec![out1]);
     asm.mov(EC, out2);
-    let mut cb = CodeBlock::new_dummy();
     asm.compile_with_regs(&mut cb, Assembler::get_alloc_regs()).unwrap();
 }
 

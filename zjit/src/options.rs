@@ -67,7 +67,7 @@ pub struct Options {
     pub dump_hir_graphviz: Option<std::path::PathBuf>,
 
     /// Dump low-level IR
-    pub dump_lir: bool,
+    pub dump_lir: Option<HashSet<DumpLIR>>,
 
     /// Dump all compiled machine code.
     pub dump_disasm: bool,
@@ -101,7 +101,7 @@ impl Default for Options {
             dump_hir_init: None,
             dump_hir_opt: None,
             dump_hir_graphviz: None,
-            dump_lir: false,
+            dump_lir: None,
             dump_disasm: false,
             trace_side_exits: None,
             trace_side_exits_sample_interval: 0,
@@ -149,6 +149,55 @@ pub enum DumpHIR {
     // Pretty-print bare High-level IR structs
     Debug,
 }
+
+/// --zjit-dump-lir values. Using snake_case to stringify the exact filter value.
+#[allow(non_camel_case_types)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+pub enum DumpLIR {
+    /// Dump the initial LIR
+    init,
+    /// Dump LIR after {arch}_split
+    split,
+    /// Dump LIR after alloc_regs
+    alloc_regs,
+    /// Dump LIR after compile_side_exits
+    compile_side_exits,
+    /// Dump LIR after {arch}_scratch_split
+    scratch_split,
+    /// Dump LIR at panic on {arch}_emit
+    panic,
+}
+
+/// All compiler stages for --zjit-dump-lir=all. This does NOT include DumpLIR::panic.
+const DUMP_LIR_ALL: &[DumpLIR] = &[
+    DumpLIR::init,
+    DumpLIR::split,
+    DumpLIR::alloc_regs,
+    DumpLIR::compile_side_exits,
+    DumpLIR::scratch_split,
+];
+
+/// Macro to dump LIR if --zjit-dump-lir is specified
+macro_rules! asm_dump {
+    ($asm:expr, $target:ident) => {
+        if crate::options::dump_lir_option!($target) {
+            println!("LIR {}:\n{}", stringify!($target), $asm);
+        }
+    };
+}
+pub(crate) use asm_dump;
+
+/// Macro to check if a particular dump_lir option is enabled
+macro_rules! dump_lir_option {
+    ($target:ident) => {
+        if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
+            dump_lirs.contains(&crate::options::DumpLIR::$target)
+        } else {
+            false
+        }
+    };
+}
+pub(crate) use dump_lir_option;
 
 /// Macro to get an option value by name
 macro_rules! get_option {
@@ -301,7 +350,34 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             options.dump_hir_graphviz = Some(opt_val);
         }
 
-        ("dump-lir", "") => options.dump_lir = true,
+        ("dump-lir", "") => options.dump_lir = Some(HashSet::from([DumpLIR::init])),
+        ("dump-lir", filters) => {
+            let mut dump_lirs = HashSet::new();
+            for filter in filters.split(',') {
+                let dump_lir = match filter {
+                    "all" => {
+                        for &dump_lir in DUMP_LIR_ALL {
+                            dump_lirs.insert(dump_lir);
+                        }
+                        continue;
+                    }
+                    "init" => DumpLIR::init,
+                    "split" => DumpLIR::split,
+                    "alloc_regs" => DumpLIR::alloc_regs,
+                    "compile_side_exits" => DumpLIR::compile_side_exits,
+                    "scratch_split" => DumpLIR::scratch_split,
+                    "panic" => DumpLIR::panic,
+                    _ => {
+                        let valid_options = DUMP_LIR_ALL.iter().map(|opt| format!("{opt:?}")).collect::<Vec<_>>().join(", ");
+                        eprintln!("invalid --zjit-dump-lir option: '{filter}'");
+                        eprintln!("valid --zjit-dump-lir options: all, {}, panic", valid_options);
+                        return None;
+                    }
+                };
+                dump_lirs.insert(dump_lir);
+            }
+            options.dump_lir = Some(dump_lirs);
+        }
 
         ("dump-disasm", "") => options.dump_disasm = true,
 

@@ -184,10 +184,6 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function_ptr: CodePtr) -> Result
     asm.frame_teardown(lir::JIT_PRESERVED_REGS);
     asm.cret(C_RET_OPND);
 
-    if get_option!(dump_lir) {
-        println!("LIR:\nJIT entry for {}:\n{:?}", iseq_name(iseq), asm);
-    }
-
     let (code_ptr, gc_offsets) = asm.compile(cb)?;
     assert!(gc_offsets.is_empty());
     if get_option!(perf) {
@@ -256,16 +252,16 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Resul
     // Compile each basic block
     let reverse_post_order = function.rpo();
     for &block_id in reverse_post_order.iter() {
+        // Write a label to jump to the basic block
+        let label = jit.get_label(&mut asm, block_id);
+        asm.write_label(label);
+
         let block = function.block(block_id);
         asm_comment!(
             asm, "{block_id}({}): {}",
             block.params().map(|param| format!("{param}")).collect::<Vec<_>>().join(", "),
             iseq_get_location(iseq, block.insn_idx),
         );
-
-        // Write a label to jump to the basic block
-        let label = jit.get_label(&mut asm, block_id);
-        asm.write_label(label);
 
         // Compile all parameters
         for (idx, &insn_id) in block.params().enumerate() {
@@ -291,10 +287,6 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Resul
         }
         // Make sure the last patch point has enough space to insert a jump
         asm.pad_patch_point();
-    }
-
-    if get_option!(dump_lir) {
-        println!("LIR:\nfn {}:\n{:?}", iseq_name(iseq), asm);
     }
 
     // Generate code if everything can be compiled

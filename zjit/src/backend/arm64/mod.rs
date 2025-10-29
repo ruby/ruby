@@ -4,12 +4,18 @@ use crate::asm::{CodeBlock, Label};
 use crate::asm::arm64::*;
 use crate::cruby::*;
 use crate::backend::lir::*;
+use crate::options::asm_dump;
 use crate::stats::CompileError;
 use crate::virtualmem::CodePtr;
 use crate::cast::*;
 
 // Use the arm64 register type for this platform
 pub type Reg = A64Reg;
+
+/// Convert reg_no for MemBase::Reg into Reg, assuming it's a 64-bit register
+pub fn mem_base_reg(reg_no: u8) -> Reg {
+    Reg { num_bits: 64, reg_no }
+}
 
 // Callee-saved registers
 pub const CFP: Opnd = Opnd::Reg(X19_REG);
@@ -194,7 +200,7 @@ pub const ALLOC_REGS: &[Reg] = &[
 ];
 
 /// Special scratch registers for intermediate processing. They should be used only by
-/// [`Assembler::arm64_split_with_scratch_reg`] or [`Assembler::new_with_scratch_reg`].
+/// [`Assembler::arm64_scratch_split`] or [`Assembler::new_with_scratch_reg`].
 const SCRATCH0_OPND: Opnd = Opnd::Reg(X15_REG);
 const SCRATCH1_OPND: Opnd = Opnd::Reg(X17_REG);
 
@@ -683,7 +689,7 @@ impl Assembler {
     /// VRegs, most splits should happen in [`Self::arm64_split`]. However, some instructions
     /// need to be split with registers after `alloc_regs`, e.g. for `compile_side_exits`, so this
     /// splits them and uses scratch registers for it.
-    fn arm64_split_with_scratch_reg(self) -> Assembler {
+    fn arm64_scratch_split(self) -> Assembler {
         let mut asm = Assembler::new_with_asm(&self);
         asm.accept_scratch_reg = true;
         let mut iterator = self.insns.into_iter().enumerate().peekable();
@@ -971,6 +977,9 @@ impl Assembler {
         // For each instruction
         let mut insn_idx: usize = 0;
         while let Some(insn) = self.insns.get(insn_idx) {
+            // Dump Assembler with insn_idx if --zjit-dump-lir=panic is given
+            let _hook = AssemblerPanicHook::new(self, insn_idx);
+
             match insn {
                 Insn::Comment(text) => {
                     cb.add_comment(text);
@@ -1070,7 +1079,7 @@ impl Assembler {
                     }
                 },
                 Insn::Mul { left, right, out } => {
-                    // If the next instruction is JoMul with RShift created by arm64_split_with_scratch_reg
+                    // If the next instruction is JoMul with RShift created by arm64_scratch_split
                     match (self.insns.get(insn_idx + 1), self.insns.get(insn_idx + 2)) {
                         (Some(Insn::RShift { out: out_sign, opnd: out_opnd, shift: out_shift }), Some(Insn::JoMul(_))) => {
                             // Compute the high 64 bits
@@ -1081,7 +1090,7 @@ impl Assembler {
                             // so we do it after smulh
                             mul(cb, out.into(), left.into(), right.into());
 
-                            // Insert the shift instruction created by arm64_split_with_scratch_reg
+                            // Insert the shift instruction created by arm64_scratch_split
                             // to prepare the register that has the sign bit of the high 64 bits after mul.
                             asr(cb, out_sign.into(), out_opnd.into(), out_shift.into());
                             insn_idx += 1; // skip the next Insn::RShift
@@ -1382,12 +1391,12 @@ impl Assembler {
                     last_patch_pos = Some(cb.get_write_pos());
                 },
                 Insn::IncrCounter { mem, value } => {
-                    // Get the status register allocated by arm64_split_with_scratch_reg
+                    // Get the status register allocated by arm64_scratch_split
                     let Some(Insn::Cmp {
                         left: status_reg @ Opnd::Reg(_),
                         right: Opnd::UImm(_) | Opnd::Imm(_),
                     }) = self.insns.get(insn_idx + 1) else {
-                        panic!("arm64_split_with_scratch_reg should add Cmp after IncrCounter: {:?}", self.insns.get(insn_idx + 1));
+                        panic!("arm64_scratch_split should add Cmp after IncrCounter: {:?}", self.insns.get(insn_idx + 1));
                     };
 
                     // Attempt to increment a counter
@@ -1451,13 +1460,21 @@ impl Assembler {
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         // The backend is allowed to use scratch registers only if it has not accepted them so far.
         let use_scratch_reg = !self.accept_scratch_reg;
+        asm_dump!(self, init);
 
         let asm = self.arm64_split();
+        asm_dump!(asm, split);
+
         let mut asm = asm.alloc_regs(regs)?;
+        asm_dump!(asm, alloc_regs);
+
         // We put compile_side_exits after alloc_regs to avoid extending live ranges for VRegs spilled on side exits.
         asm.compile_side_exits();
+        asm_dump!(asm, compile_side_exits);
+
         if use_scratch_reg {
-            asm = asm.arm64_split_with_scratch_reg();
+            asm = asm.arm64_scratch_split();
+            asm_dump!(asm, scratch_split);
         }
 
         // Create label instances in the code block
@@ -1526,6 +1543,42 @@ mod tests {
 
     fn setup_asm() -> (Assembler, CodeBlock) {
         (Assembler::new(), CodeBlock::new_dummy())
+    }
+
+    #[test]
+    fn test_lir_string() {
+        use crate::hir::SideExitReason;
+
+        let mut asm = Assembler::new();
+        asm.stack_base_idx = 1;
+
+        let label = asm.new_label("bb0");
+        asm.write_label(label.clone());
+        asm.push_insn(Insn::Comment("bb0(): foo@/tmp/a.rb:1".into()));
+        asm.frame_setup(JIT_PRESERVED_REGS);
+
+        let val64 = asm.add(CFP, Opnd::UImm(64));
+        asm.store(Opnd::mem(64, SP, 0x10), val64);
+        let side_exit = Target::SideExit { reason: SideExitReason::Interrupt, pc: 0 as _, stack: vec![], locals: vec![], label: None };
+        asm.push_insn(Insn::Joz(val64, side_exit));
+
+        let val32 = asm.sub(Opnd::Value(Qtrue), Opnd::Imm(1));
+        asm.store(Opnd::mem(64, EC, 0x10).with_num_bits(32), val32.with_num_bits(32));
+        asm.cret(val64);
+
+        asm.frame_teardown(JIT_PRESERVED_REGS);
+        assert_disasm_snapshot!(lir_string(&mut asm), @r"
+        bb0:
+          # bb0(): foo@/tmp/a.rb:1
+          FrameSetup 1, x19, x21, x20
+          v0 = Add x19, 0x40
+          Store [x21 + 0x10], v0
+          Joz Exit(Interrupt), v0
+          v1 = Sub Value(0x14), Imm(1)
+          Store Mem32[x20 + 0x10], VReg32(v1)
+          CRet v0
+          FrameTeardown x19, x21, x20
+        ");
     }
 
     #[test]

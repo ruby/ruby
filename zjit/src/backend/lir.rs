@@ -1,10 +1,13 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::mem::take;
+use std::panic;
+use std::rc::Rc;
+use std::sync::Arc;
 use crate::codegen::local_size_and_idx_to_ep_offset;
 use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::SideExitReason;
-use crate::options::{debug, get_option, TraceExits};
+use crate::options::{TraceExits, debug, dump_lir_option, get_option};
 use crate::cruby::VALUE;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
@@ -12,6 +15,7 @@ use crate::asm::{CodeBlock, Label};
 use crate::state::rb_zjit_record_exit_stack;
 
 pub use crate::backend::current::{
+    mem_base_reg,
     Reg,
     EC, CFP, SP,
     NATIVE_STACK_PTR, NATIVE_BASE_PTR,
@@ -40,6 +44,28 @@ pub struct Mem
 
     // Size in bits
     pub num_bits: u8,
+}
+
+impl fmt::Display for Mem {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.num_bits != 64 {
+            write!(f, "Mem{}", self.num_bits)?;
+        }
+        write!(f, "[")?;
+        match self.base {
+            MemBase::Reg(reg_no) => write!(f, "{}", mem_base_reg(reg_no))?,
+            MemBase::VReg(idx) => write!(f, "v{idx}")?,
+        }
+        if self.disp != 0 {
+            let sign = if self.disp > 0 { '+' } else { '-' };
+            write!(f, " {sign} ")?;
+            if self.disp.abs() >= 10 {
+                write!(f, "0x")?;
+            }
+            write!(f, "{:x}", self.disp.abs())?;
+        }
+        write!(f, "]")
+    }
 }
 
 impl fmt::Debug for Mem {
@@ -71,6 +97,25 @@ pub enum Opnd
     UImm(u64),          // Raw unsigned immediate
     Mem(Mem),           // Memory location
     Reg(Reg),           // Machine register
+}
+
+impl fmt::Display for Opnd {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Opnd::*;
+        match self {
+            None => write!(f, "None"),
+            Value(VALUE(value)) if *value < 10 => write!(f, "Value({value:x})"),
+            Value(VALUE(value)) => write!(f, "Value(0x{value:x})"),
+            VReg { idx, num_bits } if *num_bits == 64 => write!(f, "v{idx}"),
+            VReg { idx, num_bits } => write!(f, "VReg{num_bits}(v{idx})"),
+            Imm(value) if value.abs() < 10 => write!(f, "Imm({value:x})"),
+            Imm(value) => write!(f, "Imm(0x{value:x})"),
+            UImm(value) if *value < 10 => write!(f, "{value:x}"),
+            UImm(value) => write!(f, "0x{value:x}"),
+            Mem(mem) => write!(f, "{mem}"),
+            Reg(reg) => write!(f, "{reg}"),
+        }
+    }
 }
 
 impl fmt::Debug for Opnd {
@@ -291,9 +336,10 @@ impl From<CodePtr> for Target {
     }
 }
 
-type PosMarkerFn = Box<dyn Fn(CodePtr, &CodeBlock)>;
+type PosMarkerFn = Rc<dyn Fn(CodePtr, &CodeBlock)>;
 
 /// ZJIT Low-level IR instruction
+#[derive(Clone)]
 pub enum Insn {
     /// Add two operands together, and return the result as a new operand.
     Add { left: Opnd, right: Opnd, out: Opnd },
@@ -793,8 +839,6 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::CPop { .. } |
             Insn::CPopAll |
             Insn::CPushAll |
-            Insn::FrameSetup { .. } |
-            Insn::FrameTeardown { .. } |
             Insn::PadPatchPoint |
             Insn::PosMarker(_) => None,
 
@@ -860,14 +904,29 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
                 }
             },
             Insn::ParallelMov { moves } => {
-                if self.idx < moves.len() {
-                    let opnd = &moves[self.idx].1;
+                if self.idx < moves.len() * 2 {
+                    let move_idx = self.idx / 2;
+                    let opnd = if self.idx % 2 == 0 {
+                        &moves[move_idx].0
+                    } else {
+                        &moves[move_idx].1
+                    };
                     self.idx += 1;
                     Some(opnd)
                 } else {
                     None
                 }
             },
+            Insn::FrameSetup { preserved, .. } |
+            Insn::FrameTeardown { preserved } => {
+                if self.idx < preserved.len() {
+                    let opnd = &preserved[self.idx];
+                    self.idx += 1;
+                    Some(opnd)
+                } else {
+                    None
+                }
+            }
         }
     }
 }
@@ -1016,8 +1075,13 @@ impl<'a> InsnOpndMutIterator<'a> {
                 }
             },
             Insn::ParallelMov { moves } => {
-                if self.idx < moves.len() {
-                    let opnd = &mut moves[self.idx].1;
+                if self.idx < moves.len() * 2 {
+                    let move_idx = self.idx / 2;
+                    let opnd = if self.idx % 2 == 0 {
+                        &mut moves[move_idx].0
+                    } else {
+                        &mut moves[move_idx].1
+                    };
                     self.idx += 1;
                     Some(opnd)
                 } else {
@@ -1166,6 +1230,7 @@ const ASSEMBLER_INSNS_CAPACITY: usize = 256;
 
 /// Object into which we assemble instructions to be
 /// optimized and lowered
+#[derive(Clone)]
 pub struct Assembler {
     pub(super) insns: Vec<Insn>,
 
@@ -1714,6 +1779,84 @@ impl Assembler
     }
 }
 
+const BOLD_BEGIN: &str = "\x1b[1m";
+const BOLD_END: &str = "\x1b[22m";
+
+/// Return a result of fmt::Display for Assembler without escape sequence
+pub fn lir_string(asm: &Assembler) -> String {
+    format!("{asm}").replace(BOLD_BEGIN, "").replace(BOLD_END, "")
+}
+
+impl fmt::Display for Assembler {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for insn in self.insns.iter() {
+            match insn {
+                Insn::Comment(comment) => {
+                    writeln!(f, "    {BOLD_BEGIN}# {comment}{BOLD_END}")?;
+                }
+                Insn::Label(target) => {
+                    let &Target::Label(Label(label_idx)) = target else {
+                        panic!("unexpected target for Insn::Label: {target:?}");
+                    };
+                    writeln!(f, "  {}:", self.label_names[label_idx])?;
+                }
+                _ => {
+                    write!(f, "    ")?;
+
+                    // Print output operand if any
+                    if let Some(out) = insn.out_opnd() {
+                        write!(f, "{out} = ")?;
+                    }
+
+                    write!(f, "{}", insn.op())?;
+
+                    // Show slot_count for FrameSetup
+                    if let Insn::FrameSetup { slot_count, preserved } = insn {
+                        write!(f, " {slot_count}")?;
+                        if !preserved.is_empty() {
+                            write!(f, ",")?;
+                        }
+                    }
+
+                    // Print target
+                    if let Some(target) = insn.target() {
+                        match target {
+                            Target::CodePtr(code_ptr) => write!(f, " {code_ptr:?}")?,
+                            Target::Label(Label(label_idx)) => write!(f, " {}", self.label_names[*label_idx])?,
+                            Target::SideExit { reason, .. } => write!(f, " Exit({reason})")?,
+                        }
+                    }
+
+                    // Print list of operands
+                    if let Some(Target::SideExit { .. }) = insn.target() {
+                        // If the instruction has a SideExit, avoid using opnd_iter(), which has stack/locals.
+                        // Here, only handle instructions that have both Opnd and Target.
+                        match insn {
+                            Insn::Joz(opnd, _) |
+                            Insn::Jonz(opnd, _) |
+                            Insn::LeaJumpTarget { out: opnd, target: _ } => {
+                                write!(f, ", {opnd}")?;
+                            }
+                            _ => {}
+                        }
+                    } else {
+                        let mut opnd_iter = insn.opnd_iter();
+                        if let Some(first_opnd) = opnd_iter.next() {
+                            write!(f, " {first_opnd}")?;
+                        }
+                        for opnd in opnd_iter {
+                            write!(f, ", {opnd}")?;
+                        }
+                    }
+
+                    write!(f, "\n")?;
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
 impl fmt::Debug for Assembler {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         writeln!(fmt, "Assembler")?;
@@ -1777,8 +1920,8 @@ impl Assembler {
         self.push_insn(Insn::CCall {
             fptr,
             opnds,
-            start_marker: Some(Box::new(start_marker)),
-            end_marker: Some(Box::new(end_marker)),
+            start_marker: Some(Rc::new(start_marker)),
+            end_marker: Some(Rc::new(end_marker)),
             out,
         });
         out
@@ -2028,7 +2171,7 @@ impl Assembler {
     }
 
     pub fn pos_marker(&mut self, marker_fn: impl Fn(CodePtr, &CodeBlock) + 'static) {
-        self.push_insn(Insn::PosMarker(Box::new(marker_fn)));
+        self.push_insn(Insn::PosMarker(Rc::new(marker_fn)));
     }
 
     #[must_use]
@@ -2092,7 +2235,7 @@ impl Assembler {
 /// when not dumping disassembly.
 macro_rules! asm_comment {
     ($asm:expr, $($fmt:tt)*) => {
-        if $crate::options::get_option!(dump_disasm) {
+        if $crate::options::get_option!(dump_disasm) || $crate::options::get_option!(dump_lir).is_some() {
             $asm.push_insn(crate::backend::lir::Insn::Comment(format!($($fmt)*)));
         }
     };
@@ -2107,6 +2250,64 @@ macro_rules! asm_ccall {
     }};
 }
 pub(crate) use asm_ccall;
+
+// Allow moving Assembler to panic hooks. Since we take the VM lock on compilation,
+// no other threads should reference the same Assembler instance.
+unsafe impl Send for Insn {}
+unsafe impl Sync for Insn {}
+
+/// Dump Assembler with insn_idx on panic. Restore the original panic hook on drop.
+pub struct AssemblerPanicHook {
+    /// Original panic hook before AssemblerPanicHook is installed.
+    prev_hook: Box<dyn Fn(&panic::PanicHookInfo<'_>) + Sync + Send + 'static>,
+}
+
+impl AssemblerPanicHook {
+    pub fn new(asm: &Assembler, insn_idx: usize) -> Option<Arc<Self>> {
+        // Install a panic hook if --zjit-dump-lir=panic is specified.
+        if dump_lir_option!(panic) {
+            // Wrap prev_hook with Arc to share it among the new hook and Self to be dropped.
+            let prev_hook = panic::take_hook();
+            let panic_hook_ref = Arc::new(Self { prev_hook });
+            let weak_hook = Arc::downgrade(&panic_hook_ref);
+
+            // Install a new hook to dump Assembler with insn_idx
+            let asm = asm.clone();
+            panic::set_hook(Box::new(move |panic_info| {
+                if let Some(panic_hook) = weak_hook.upgrade() {
+                    // Dump Assembler, highlighting the insn_idx line
+                    Self::dump_asm(&asm, insn_idx);
+
+                    // Call the previous panic hook
+                    (panic_hook.prev_hook)(panic_info);
+                }
+            }));
+
+            Some(panic_hook_ref)
+        } else {
+            None
+        }
+    }
+
+    /// Dump Assembler, highlighting the insn_idx line
+    fn dump_asm(asm: &Assembler, insn_idx: usize) {
+        println!("Failed to compile LIR at insn_idx={insn_idx}:");
+        for (idx, line) in lir_string(asm).split('\n').enumerate() {
+            if idx == insn_idx && line.starts_with("  ") {
+                println!("{BOLD_BEGIN}=>{}{BOLD_END}", &line["  ".len()..]);
+            } else {
+                println!("{line}");
+            }
+        }
+    }
+}
+
+impl Drop for AssemblerPanicHook {
+    fn drop(&mut self) {
+        // Restore the original hook
+        panic::set_hook(std::mem::replace(&mut self.prev_hook, Box::new(|_| {})));
+    }
+}
 
 #[cfg(test)]
 mod tests {
