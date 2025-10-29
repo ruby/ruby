@@ -1839,6 +1839,15 @@ impl fmt::Display for Assembler {
                             }
                             _ => {}
                         }
+                    } else if let Insn::ParallelMov { moves } = insn {
+                        // Print operands with a special syntax for ParallelMov
+                        let mut moves_iter = moves.iter();
+                        if let Some((first_dst, first_src)) = moves_iter.next() {
+                            write!(f, " {first_dst} <- {first_src}")?;
+                        }
+                        for (dst, src) in moves_iter {
+                            write!(f, ", {dst} <- {src}")?;
+                        }
                     } else {
                         let mut opnd_iter = insn.opnd_iter();
                         if let Some(first_opnd) = opnd_iter.next() {
