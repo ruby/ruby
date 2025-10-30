@@ -58,7 +58,7 @@ module Win32
         end
       end
       using SZ
-    rescue LoadError
+    rescue LoadError, Gem::LoadError
       require "open3"
     end
 
