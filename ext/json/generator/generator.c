@@ -996,13 +996,12 @@ static inline VALUE vstate_get(struct generate_json_data *data)
     return data->vstate;
 }
 
-struct hash_foreach_arg {
-    VALUE hash;
-    struct generate_json_data *data;
-    int first_key_type;
-    bool first;
-    bool mixed_keys_encountered;
-};
+static VALUE
+json_call_as_json(JSON_Generator_State *state, VALUE object, VALUE is_key)
+{
+    VALUE proc_args[2] = {object, is_key};
+    return rb_proc_call_with_block(state->as_json, 2, proc_args, Qnil);
+}
 
 static VALUE
 convert_string_subclass(VALUE key)
@@ -1019,6 +1018,129 @@ convert_string_subclass(VALUE key)
     return key_to_s;
 }
 
+static bool enc_utf8_compatible_p(int enc_idx)
+{
+    if (enc_idx == usascii_encindex) return true;
+    if (enc_idx == utf8_encindex) return true;
+    return false;
+}
+
+static VALUE encode_json_string_try(VALUE str)
+{
+    return rb_funcall(str, i_encode, 1, Encoding_UTF_8);
+}
+
+static VALUE encode_json_string_rescue(VALUE str, VALUE exception)
+{
+    raise_generator_error_str(str, rb_funcall(exception, rb_intern("message"), 0));
+    return Qundef;
+}
+
+static inline bool valid_json_string_p(VALUE str)
+{
+    int coderange = rb_enc_str_coderange(str);
+
+    if (RB_LIKELY(coderange == ENC_CODERANGE_7BIT)) {
+        return true;
+    }
+
+    if (RB_LIKELY(coderange == ENC_CODERANGE_VALID)) {
+        return enc_utf8_compatible_p(RB_ENCODING_GET_INLINED(str));
+    }
+
+    return false;
+}
+
+static inline VALUE ensure_valid_encoding(struct generate_json_data *data, VALUE str, bool as_json_called, bool is_key)
+{
+    if (RB_LIKELY(valid_json_string_p(str))) {
+        return str;
+    }
+
+    if (!as_json_called && data->state->strict && RTEST(data->state->as_json)) {
+        VALUE coerced_str = json_call_as_json(data->state, str, Qfalse);
+        if (coerced_str != str) {
+            if (RB_TYPE_P(coerced_str, T_STRING)) {
+                if (!valid_json_string_p(coerced_str)) {
+                    raise_generator_error(str, "source sequence is illegal/malformed utf-8");
+                }
+            } else {
+                // as_json could return another type than T_STRING
+                if (is_key) {
+                    raise_generator_error(coerced_str, "%"PRIsVALUE" not allowed as object key in JSON", CLASS_OF(coerced_str));
+                }
+            }
+
+            return coerced_str;
+        }
+    }
+
+    if (RB_ENCODING_GET_INLINED(str) == binary_encindex) {
+        VALUE utf8_string = rb_enc_associate_index(rb_str_dup(str), utf8_encindex);
+        switch (rb_enc_str_coderange(utf8_string)) {
+            case ENC_CODERANGE_7BIT:
+                return utf8_string;
+            case ENC_CODERANGE_VALID:
+                // For historical reason, we silently reinterpret binary strings as UTF-8 if it would work.
+                // TODO: Raise in 3.0.0
+                rb_warn("JSON.generate: UTF-8 string passed as BINARY, this will raise an encoding error in json 3.0");
+                return utf8_string;
+                break;
+        }
+    }
+
+    return rb_rescue(encode_json_string_try, str, encode_json_string_rescue, str);
+}
+
+static void raw_generate_json_string(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
+{
+    fbuffer_append_char(buffer, '"');
+
+    long len;
+    search_state search;
+    search.buffer = buffer;
+    RSTRING_GETMEM(obj, search.ptr, len);
+    search.cursor = search.ptr;
+    search.end = search.ptr + len;
+
+#ifdef HAVE_SIMD
+    search.matches_mask = 0;
+    search.has_matches = false;
+    search.chunk_base = NULL;
+#endif /* HAVE_SIMD */
+
+    switch (rb_enc_str_coderange(obj)) {
+        case ENC_CODERANGE_7BIT:
+        case ENC_CODERANGE_VALID:
+            if (RB_UNLIKELY(data->state->ascii_only)) {
+                convert_UTF8_to_ASCII_only_JSON(&search, data->state->script_safe ? script_safe_escape_table : ascii_only_escape_table);
+            } else if (RB_UNLIKELY(data->state->script_safe)) {
+                convert_UTF8_to_script_safe_JSON(&search);
+            } else {
+                convert_UTF8_to_JSON(&search);
+            }
+            break;
+        default:
+            raise_generator_error(obj, "source sequence is illegal/malformed utf-8");
+            break;
+    }
+    fbuffer_append_char(buffer, '"');
+}
+
+static void generate_json_string(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
+{
+    obj = ensure_valid_encoding(data, obj, false, false);
+    raw_generate_json_string(buffer, data, obj);
+}
+
+struct hash_foreach_arg {
+    VALUE hash;
+    struct generate_json_data *data;
+    int first_key_type;
+    bool first;
+    bool mixed_keys_encountered;
+};
+
 NOINLINE()
 static void
 json_inspect_hash_with_mixed_keys(struct hash_foreach_arg *arg)
@@ -1033,13 +1155,6 @@ json_inspect_hash_with_mixed_keys(struct hash_foreach_arg *arg)
         VALUE do_raise = state->on_duplicate_key == JSON_RAISE ? Qtrue : Qfalse;
         rb_funcall(mJSON, rb_intern("on_mixed_keys_hash"), 2, arg->hash, do_raise);
     }
-}
-
-static VALUE
-json_call_as_json(JSON_Generator_State *state, VALUE object, VALUE is_key)
-{
-    VALUE proc_args[2] = {object, is_key};
-    return rb_proc_call_with_block(state->as_json, 2, proc_args, Qnil);
 }
 
 static int
@@ -1107,8 +1222,10 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
             break;
     }
 
+    key_to_s = ensure_valid_encoding(data, key_to_s, as_json_called, true);
+
     if (RB_LIKELY(RBASIC_CLASS(key_to_s) == rb_cString)) {
-        generate_json_string(buffer, data, key_to_s);
+        raw_generate_json_string(buffer, data, key_to_s);
     } else {
         generate_json(buffer, data, key_to_s);
     }
@@ -1189,85 +1306,6 @@ static void generate_json_array(FBuffer *buffer, struct generate_json_data *data
         }
     }
     fbuffer_append_char(buffer, ']');
-}
-
-static inline int enc_utf8_compatible_p(int enc_idx)
-{
-    if (enc_idx == usascii_encindex) return 1;
-    if (enc_idx == utf8_encindex) return 1;
-    return 0;
-}
-
-static VALUE encode_json_string_try(VALUE str)
-{
-    return rb_funcall(str, i_encode, 1, Encoding_UTF_8);
-}
-
-static VALUE encode_json_string_rescue(VALUE str, VALUE exception)
-{
-    raise_generator_error_str(str, rb_funcall(exception, rb_intern("message"), 0));
-    return Qundef;
-}
-
-static inline VALUE ensure_valid_encoding(VALUE str)
-{
-    int encindex = RB_ENCODING_GET(str);
-    VALUE utf8_string;
-    if (RB_UNLIKELY(!enc_utf8_compatible_p(encindex))) {
-        if (encindex == binary_encindex) {
-            utf8_string = rb_enc_associate_index(rb_str_dup(str), utf8_encindex);
-            switch (rb_enc_str_coderange(utf8_string)) {
-                case ENC_CODERANGE_7BIT:
-                    return utf8_string;
-                case ENC_CODERANGE_VALID:
-                    // For historical reason, we silently reinterpret binary strings as UTF-8 if it would work.
-                    // TODO: Raise in 3.0.0
-                    rb_warn("JSON.generate: UTF-8 string passed as BINARY, this will raise an encoding error in json 3.0");
-                    return utf8_string;
-                    break;
-            }
-        }
-
-        str = rb_rescue(encode_json_string_try, str, encode_json_string_rescue, str);
-    }
-    return str;
-}
-
-static void generate_json_string(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
-{
-    obj = ensure_valid_encoding(obj);
-
-    fbuffer_append_char(buffer, '"');
-
-    long len;
-    search_state search;
-    search.buffer = buffer;
-    RSTRING_GETMEM(obj, search.ptr, len);
-    search.cursor = search.ptr;
-    search.end = search.ptr + len;
-
-#ifdef HAVE_SIMD
-    search.matches_mask = 0;
-    search.has_matches = false;
-    search.chunk_base = NULL;
-#endif /* HAVE_SIMD */
-
-    switch (rb_enc_str_coderange(obj)) {
-        case ENC_CODERANGE_7BIT:
-        case ENC_CODERANGE_VALID:
-            if (RB_UNLIKELY(data->state->ascii_only)) {
-                convert_UTF8_to_ASCII_only_JSON(&search, data->state->script_safe ? script_safe_escape_table : ascii_only_escape_table);
-            } else if (RB_UNLIKELY(data->state->script_safe)) {
-                convert_UTF8_to_script_safe_JSON(&search);
-            } else {
-                convert_UTF8_to_JSON(&search);
-            }
-            break;
-        default:
-            raise_generator_error(obj, "source sequence is illegal/malformed utf-8");
-            break;
-    }
-    fbuffer_append_char(buffer, '"');
 }
 
 static void generate_json_fallback(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
@@ -1408,7 +1446,16 @@ start:
                 break;
             case T_STRING:
                 if (klass != rb_cString) goto general;
-                generate_json_string(buffer, data, obj);
+
+                if (RB_LIKELY(valid_json_string_p(obj))) {
+                    raw_generate_json_string(buffer, data, obj);
+                } else if (as_json_called) {
+                    raise_generator_error(obj, "source sequence is illegal/malformed utf-8");
+                } else {
+                    obj = ensure_valid_encoding(data, obj, false, false);
+                    as_json_called = true;
+                    goto start;
+                }
                 break;
             case T_SYMBOL:
                 generate_json_symbol(buffer, data, obj);
