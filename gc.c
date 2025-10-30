@@ -620,6 +620,7 @@ typedef struct gc_function_map {
     void (*config_set)(void *objspace_ptr, VALUE hash);
     void (*stress_set)(void *objspace_ptr, VALUE flag);
     VALUE (*stress_get)(void *objspace_ptr);
+    bool (*checking_shareable)(void *objspace_ptr);
     // Object allocation
     VALUE (*new_obj)(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size);
     size_t (*obj_slot_size)(VALUE obj);
@@ -794,6 +795,7 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(config_get);
     load_modular_gc_func(stress_set);
     load_modular_gc_func(stress_get);
+    load_modular_gc_func(checking_shareable);
     // Object allocation
     load_modular_gc_func(new_obj);
     load_modular_gc_func(obj_slot_size);
@@ -874,6 +876,7 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_config_set rb_gc_functions.config_set
 # define rb_gc_impl_stress_set rb_gc_functions.stress_set
 # define rb_gc_impl_stress_get rb_gc_functions.stress_get
+# define rb_gc_impl_checking_shareable rb_gc_functions.checking_shareable
 // Object allocation
 # define rb_gc_impl_new_obj rb_gc_functions.new_obj
 # define rb_gc_impl_obj_slot_size rb_gc_functions.obj_slot_size
@@ -2803,8 +2806,6 @@ mark_m_tbl(void *objspace, struct rb_id_table *tbl)
         rb_id_table_foreach_values(tbl, mark_method_entry_i, objspace);
     }
 }
-
-bool rb_gc_impl_checking_shareable(void *objspace_ptr); // in defaut/deafult.c
 
 bool
 rb_gc_checking_shareable(void)
