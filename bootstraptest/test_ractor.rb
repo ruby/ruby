@@ -2413,3 +2413,28 @@ assert_equal 'ok', <<~'RUBY'
     :ok
   end
 RUBY
+
+# When creating bmethods in Ractors, they should only be usable from their
+# defining ractor, even if it is GC'd
+assert_equal 'ok', <<~'RUBY'
+CLASSES = 1000.times.map do
+  Ractor.new do
+    Class.new do
+      define_method(:foo) {}
+    end
+  end
+end.map(&:value).freeze
+
+any = 1000.times.map do
+  Ractor.new do
+    CLASSES.any? do |klass|
+      begin
+        klass.new.foo
+        true
+      rescue RuntimeError
+        false
+      end
+    end
+  end
+end.map(&:value).none? && :ok
+RUBY
