@@ -449,8 +449,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::LoadPC => gen_load_pc(asm),
         Insn::LoadSelf => gen_load_self(),
         &Insn::LoadField { recv, id, offset, return_type: _ } => gen_load_field(asm, opnd!(recv), id, offset),
-        &Insn::LoadIvarEmbedded { self_val, id, index } => gen_load_ivar_embedded(asm, opnd!(self_val), id, index),
-        &Insn::LoadIvarExtended { self_val, id, index } => gen_load_ivar_extended(asm, opnd!(self_val), id, index),
         &Insn::IsBlockGiven => gen_is_block_given(jit, asm),
         &Insn::ArrayMax { state, .. }
         | &Insn::FixnumDiv { state, .. }
@@ -986,29 +984,6 @@ fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32) -> Opnd 
     asm_comment!(asm, "Load field id={} offset={}", id.contents_lossy(), offset);
     let recv = asm.load(recv);
     asm.load(Opnd::mem(64, recv, offset))
-}
-
-fn gen_load_ivar_embedded(asm: &mut Assembler, self_val: Opnd, id: ID, index: u16) -> Opnd {
-    // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-
-    asm_comment!(asm, "Load embedded ivar id={} index={}", id.contents_lossy(), index);
-    let offs = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * index.to_usize()) as i32;
-    let self_val = asm.load(self_val);
-    let ivar_opnd = Opnd::mem(64, self_val, offs);
-    asm.load(ivar_opnd)
-}
-
-fn gen_load_ivar_extended(asm: &mut Assembler, self_val: Opnd, id: ID, index: u16) -> Opnd {
-    asm_comment!(asm, "Load extended ivar id={} index={}", id.contents_lossy(), index);
-    // Compile time value is *not* embedded.
-
-    // Get a pointer to the extended table
-    let self_val = asm.load(self_val);
-    let tbl_opnd = asm.load(Opnd::mem(64, self_val, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
-
-    // Read the ivar from the extended table
-    let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * index.to_usize()) as i32);
-    asm.load(ivar_opnd)
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ

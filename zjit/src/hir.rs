@@ -676,10 +676,6 @@ pub enum Insn {
     /// Load cfp->self
     LoadSelf,
     LoadField { recv: InsnId, id: ID, offset: i32, return_type: Type },
-    /// Read an instance variable at the given index, embedded in the object
-    LoadIvarEmbedded { self_val: InsnId, id: ID, index: u16 },
-    /// Read an instance variable at the given index, from the extended table
-    LoadIvarExtended { self_val: InsnId, id: ID, index: u16 },
 
     /// Get a local variable from a higher scope or the heap.
     /// If `use_sp` is true, it uses the SP register to optimize the read.
@@ -915,8 +911,6 @@ impl Insn {
             Insn::LoadPC => false,
             Insn::LoadSelf => false,
             Insn::LoadField { .. } => false,
-            Insn::LoadIvarEmbedded { .. } => false,
-            Insn::LoadIvarExtended { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
             Insn::CCallWithFrame { elidable, .. } => !elidable,
             Insn::ObjectAllocClass { .. } => false,
@@ -1177,8 +1171,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::LoadPC => write!(f, "LoadPC"),
             Insn::LoadSelf => write!(f, "LoadSelf"),
             &Insn::LoadField { recv, id, offset, return_type: _ } => write!(f, "LoadField {recv}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
-            &Insn::LoadIvarEmbedded { self_val, id, index } => write!(f, "LoadIvarEmbedded {self_val}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_index(index as u64)),
-            &Insn::LoadIvarExtended { self_val, id, index } => write!(f, "LoadIvarExtended {self_val}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_index(index as u64)),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy()),
             Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy()),
             Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy()),
@@ -1800,8 +1792,6 @@ impl Function {
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
             &LoadField { recv, id, offset, return_type } => LoadField { recv: find!(recv), id, offset, return_type },
-            &LoadIvarEmbedded { self_val, id, index } => LoadIvarEmbedded { self_val: find!(self_val), id, index },
-            &LoadIvarExtended { self_val, id, index } => LoadIvarExtended { self_val: find!(self_val), id, index },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val: find!(val), state },
             &GetClassVar { id, ic, state } => GetClassVar { id, ic, state },
             &SetClassVar { id, val, ic, state } => SetClassVar { id, val: find!(val), ic, state },
@@ -1938,8 +1928,6 @@ impl Function {
             Insn::LoadPC => types::CPtr,
             Insn::LoadSelf => types::BasicObject,
             &Insn::LoadField { return_type, .. } => return_type,
-            Insn::LoadIvarEmbedded { .. } => types::BasicObject,
-            Insn::LoadIvarExtended { .. } => types::BasicObject,
             Insn::GetSpecialSymbol { .. } => types::BasicObject,
             Insn::GetSpecialNumber { .. } => types::BasicObject,
             Insn::GetClassVar { .. } => types::BasicObject,
@@ -2678,13 +2666,17 @@ impl Function {
                             // If there is no IVAR index, then the ivar was undefined when we
                             // entered the compiler.  That means we can just return nil for this
                             // shape + iv name
-                            Insn::Const { val: Const::Value(Qnil) }
+                            self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
                         } else if recv_type.flags().is_embedded() {
-                            Insn::LoadIvarEmbedded { self_val, id, index: ivar_index }
+                            // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+                            let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+                            self.push_insn(block, Insn::LoadField { recv: self_val, id, offset, return_type: types::BasicObject })
                         } else {
-                            Insn::LoadIvarExtended { self_val, id, index: ivar_index }
+                            let as_heap =  self.push_insn(block, Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
+
+                            let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
+                            self.push_insn(block, Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
                         };
-                        let replacement = self.push_insn(block, replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
                     _ => { self.push_insn_id(block, insn_id); }
@@ -3376,10 +3368,6 @@ impl Function {
             &Insn::LoadField { recv, .. } => {
                 worklist.push_back(recv);
             }
-            &Insn::LoadIvarEmbedded { self_val, .. }
-            | &Insn::LoadIvarExtended { self_val, .. } => {
-                worklist.push_back(self_val);
-            }
             &Insn::GuardBlockParamProxy { state, .. } |
             &Insn::GetGlobal { state, .. } |
             &Insn::GetSpecialSymbol { state, .. } |
@@ -3754,8 +3742,6 @@ impl Function {
                 self.assert_subtype(insn_id, val, types::BasicObject)
             }
             Insn::DefinedIvar { self_val, .. } => self.assert_subtype(insn_id, self_val, types::BasicObject),
-            Insn::LoadIvarEmbedded { self_val, .. } => self.assert_subtype(insn_id, self_val, types::HeapBasicObject),
-            Insn::LoadIvarExtended { self_val, .. } => self.assert_subtype(insn_id, self_val, types::HeapBasicObject),
             Insn::SetLocal { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::SetClassVar { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::IfTrue { val, .. } | Insn::IfFalse { val, .. } => self.assert_subtype(insn_id, val, types::CBool),
