@@ -830,8 +830,8 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
 
                 verify_waiting_list();
 
-                // update timeout seconds
-                timer_thread_wakeup();
+                // update timeout seconds; force wake so timer thread notices short deadlines
+                timer_thread_wakeup_force();
             }
         }
         else {

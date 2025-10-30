@@ -2854,24 +2854,29 @@ timer_thread_set_timeout(rb_vm_t *vm)
     }
     ractor_sched_unlock(vm, NULL);
 
-    if (vm->ractor.sched.timeslice_wait_inf) {
-        rb_native_mutex_lock(&timer_th.waiting_lock);
-        {
-            struct rb_thread_sched_waiting *w = ccan_list_top(&timer_th.waiting, struct rb_thread_sched_waiting, node);
-            rb_thread_t *th = thread_sched_waiting_thread(w);
+    // Always check waiting threads to find minimum timeout
+    // even when scheduler has work (grq_cnt > 0)
+    rb_native_mutex_lock(&timer_th.waiting_lock);
+    {
+        struct rb_thread_sched_waiting *w = ccan_list_top(&timer_th.waiting, struct rb_thread_sched_waiting, node);
+        rb_thread_t *th = thread_sched_waiting_thread(w);
 
-            if (th && (th->sched.waiting_reason.flags & thread_sched_waiting_timeout)) {
-                rb_hrtime_t now = rb_hrtime_now();
-                rb_hrtime_t hrrel = rb_hrtime_sub(th->sched.waiting_reason.data.timeout, now);
+        if (th && (th->sched.waiting_reason.flags & thread_sched_waiting_timeout)) {
+            rb_hrtime_t now = rb_hrtime_now();
+            rb_hrtime_t hrrel = rb_hrtime_sub(th->sched.waiting_reason.data.timeout, now);
 
-                RUBY_DEBUG_LOG("th:%u now:%lu rel:%lu", rb_th_serial(th), (unsigned long)now, (unsigned long)hrrel);
+            RUBY_DEBUG_LOG("th:%u now:%lu rel:%lu", rb_th_serial(th), (unsigned long)now, (unsigned long)hrrel);
 
-                // TODO: overflow?
-                timeout = (int)((hrrel + RB_HRTIME_PER_MSEC - 1) / RB_HRTIME_PER_MSEC); // ms
+            // TODO: overflow?
+            int thread_timeout = (int)((hrrel + RB_HRTIME_PER_MSEC - 1) / RB_HRTIME_PER_MSEC); // ms
+
+            // Use minimum of scheduler timeout and thread sleep timeout
+            if (timeout < 0 || thread_timeout < timeout) {
+                timeout = thread_timeout;
             }
         }
-        rb_native_mutex_unlock(&timer_th.waiting_lock);
     }
+    rb_native_mutex_unlock(&timer_th.waiting_lock);
 
     RUBY_DEBUG_LOG("timeout:%d inf:%d", timeout, (int)vm->ractor.sched.timeslice_wait_inf);
 
