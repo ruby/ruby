@@ -5,6 +5,7 @@
 require 'fileutils'
 require "rbconfig"
 require "find"
+require "tempfile"
 
 module SyncDefaultGems
   include FileUtils
@@ -331,6 +332,10 @@ module SyncDefaultGems
     result.inject(false) {|changed, file| changed | replace_rdoc_ref(file)}
   end
 
+  def replace_rdoc_ref_all_full
+    Dir.glob("**/*.{c,rb,rdoc}").inject(false) {|changed, file| changed | replace_rdoc_ref(file)}
+  end
+
   def rubygems_do_fixup
     gemspec_content = File.readlines("lib/bundler/bundler.gemspec").map do |line|
       next if line =~ /LICENSE\.md/
@@ -419,30 +424,6 @@ module SyncDefaultGems
     puts "#{gem}-#{spec.version} is not latest version of rubygems.org" if spec.version.to_s != latest_version
   end
 
-  def ignore_file_pattern_for(gem)
-    patterns = []
-
-    # Common patterns
-    patterns << %r[\A(?:
-      [^/]+ # top-level entries
-      |\.git.*
-      |bin/.*
-      |ext/.*\.java
-      |rakelib/.*
-      |test/(?:lib|fixtures)/.*
-      |tool/(?!bundler/).*
-    )\z]mx
-
-    # Gem-specific patterns
-    case gem
-    when nil
-    end&.tap do |pattern|
-      patterns << pattern
-    end
-
-    Regexp.union(*patterns)
-  end
-
   def message_filter(repo, sha, log)
     unless repo.count("/") == 1 and /\A\S+\z/ =~ repo
       raise ArgumentError, "invalid repository: #{repo}"
@@ -523,28 +504,9 @@ module SyncDefaultGems
   #++
 
   def resolve_conflicts(gem, sha, edit)
-    # Skip this commit if everything has been removed as `ignored_paths`.
+    # Discover unmerged files: any unstaged changes
     changes = porcelain_status()
-    if changes.empty?
-      puts "Skip empty commit #{sha}"
-      return false
-    end
-
-    # We want to skip
-    # DD: deleted by both
-    # DU: deleted by us
-    deleted = changes.grep(/^D[DU] /) {$'}
-    system(*%W"git rm -f --", *deleted) unless deleted.empty?
-
-    # Import UA: added by them
-    added = changes.grep(/^UA /) {$'}
-    system(*%W"git add --", *added) unless added.empty?
-
-    # Discover unmerged files
-    # AU: unmerged, added by us
-    # UU: unmerged, both modified
-    # AA: unmerged, both added
-    conflict = changes.grep(/\A(?:A[AU]|UU) /) {$'}
+    conflict = changes.grep(/\A(?:.[^ ?]) /) {$'}
     # If -e option is given, open each conflicted file with an editor
     unless conflict.empty?
       if edit
@@ -565,134 +527,159 @@ module SyncDefaultGems
     return true
   end
 
-  def preexisting?(base, file)
-    system(*%w"git cat-file -e", "#{base}:#{file}", err: File::NULL)
+  def collect_cacheinfo(tree)
+    cacheinfo = pipe_readlines(%W"git ls-tree -r -t -z #{tree}").filter_map do |line|
+      fields, path = line.split("\t", 2)
+      mode, type, object = fields.split(" ", 3)
+      next unless type == "blob"
+      [mode, type, object, path]
+    end
   end
 
-  def filter_pickup_files(changed, ignore_file_pattern, base)
-    toplevels = {}
-    remove = []
-    ignore = []
-    changed = changed.reject do |f|
-      case
-      when toplevels.fetch(top = f[%r[\A[^/]+(?=/|\z)]m]) {
-             remove << top if toplevels[top] = !preexisting?(base, top)
-           }
-        # Remove any new top-level directories.
-        true
-      when ignore_file_pattern.match?(f)
-        # Forcibly reset any changes matching ignore_file_pattern.
-        (preexisting?(base, f) ? ignore : remove) << f
-      end
+  def rewrite_cacheinfo(gem, blobs)
+    config = REPOSITORIES[gem]
+    rewritten = []
+    ignored = blobs.dup
+    ignored.delete_if do |mode, type, object, path|
+      newpath = config.rewrite_for_ruby(path)
+      next unless newpath
+      rewritten << [mode, type, object, newpath]
     end
-    return changed, remove, ignore
+    [rewritten, ignored]
   end
 
-  def pickup_files(gem, changed, picked)
-    # Forcibly remove any files that we don't want to copy to this
-    # repository.
+  def make_commit_info(gem, sha)
+    config = REPOSITORIES[gem]
+    headers, orig = IO.popen(%W[git cat-file commit #{sha}], "rb", &:read).split("\n\n", 2)
+    /^author (?<author_name>.+?) <(?<author_email>.*?)> (?<author_date>.+?)$/ =~ headers or
+      raise "unable to parse author info for commit #{sha}"
+    author = {
+      "GIT_AUTHOR_NAME" => author_name,
+      "GIT_AUTHOR_EMAIL" => author_email,
+      "GIT_AUTHOR_DATE" => author_date,
+    }
+    message = message_filter(config.upstream, sha, orig)
+    [author, message]
+  end
 
-    ignore_file_pattern = ignore_file_pattern_for(gem)
+  def fixup_commit(gem, commit)
+    wt = File.join("tmp", "sync_default_gems-fixup-worktree")
+    if File.directory?(wt)
+      IO.popen(%W"git -C #{wt} clean -xdf", "rb", &:read)
+      IO.popen(%W"git -C #{wt} reset --hard #{commit}", "rb", &:read)
+    else
+      IO.popen(%W"git worktree remove --force #{wt}", "rb", err: File::NULL, &:read)
+      IO.popen(%W"git worktree add --detach #{wt} #{commit}", "rb", &:read)
+    end
+    raise "git worktree prepare failed for commit #{commit}" unless $?.success?
 
-    base = picked ? "HEAD~" : "HEAD"
-    changed, remove, ignore = filter_pickup_files(changed, ignore_file_pattern, base)
-
-    unless remove.empty?
-      puts "Remove added files: #{remove.join(', ')}"
-      system(*%w"git rm -fr --", *remove)
-      if picked
-        system(*%w"git commit --amend --no-edit --", *remove, %i[out err] => File::NULL)
+    Dir.chdir(wt) do
+      if gem == "rubygems"
+        rubygems_do_fixup
       end
+      replace_rdoc_ref_all_full
     end
 
-    unless ignore.empty?
-      puts "Reset ignored files: #{ignore.join(', ')}"
-      system(*%W"git rm -r --", *ignore)
-      ignore.each {|f| system(*%W"git checkout -f", base, "--", f)}
+    IO.popen(%W"git -C #{wt} add -u", "rb", &:read)
+    IO.popen(%W"git -C #{wt} commit --amend --no-edit", "rb", &:read)
+    IO.popen(%W"git -C #{wt} rev-parse HEAD", "rb", &:read).chomp
+  end
+
+  def make_and_fixup_commit(gem, original_commit, cacheinfo, parent: nil, message: nil, author: nil)
+    tree = Tempfile.create("sync_default_gems-#{gem}-index") do |f|
+      File.unlink(f.path)
+      IO.popen({"GIT_INDEX_FILE" => f.path},
+               %W"git update-index --index-info", "wb", out: IO::NULL) do |io|
+        cacheinfo.each do |mode, type, object, path|
+          io.puts("#{mode} #{type} #{object}\t#{path}")
+        end
+      end
+      raise "git update-index failed" unless $?.success?
+
+      IO.popen({"GIT_INDEX_FILE" => f.path}, %W"git write-tree --missing-ok", "rb", &:read).chomp
     end
 
-    if changed.empty?
-      return nil
+    args = ["-m", message || "Rewriten commit for #{original_commit}"]
+    args += ["-p", parent] if parent
+    commit = IO.popen({**author}, %W"git commit-tree #{tree}" + args, "rb", &:read).chomp
+
+    # Apply changes that require a working tree
+    commit = fixup_commit(gem, commit)
+
+    commit
+  end
+
+  def rewrite_commit(gem, sha)
+    config = REPOSITORIES[gem]
+    author, message = make_commit_info(gem, sha)
+    new_blobs = collect_cacheinfo("#{sha}")
+    new_rewritten, new_ignored = rewrite_cacheinfo(gem, new_blobs)
+
+    headers, orig_message = IO.popen(%W[git cat-file commit #{sha}], "rb", &:read).split("\n\n", 2)
+    first_parent = headers[/^parent (.{40})$/, 1]
+    unless first_parent
+      # Root commit, first time to sync this repo
+      return make_and_fixup_commit(gem, sha, new_rewritten, message: message, author: author)
     end
 
-    return changed
+    old_blobs = collect_cacheinfo(first_parent)
+    old_rewritten, old_ignored = rewrite_cacheinfo(gem, old_blobs)
+    if old_ignored != new_ignored
+      paths = (old_ignored + new_ignored - (old_ignored & new_ignored))
+        .map {|*_, path| path}.uniq
+      puts "\e\[1mIgnoring file changes not in mappings: #{paths.join(" ")}\e\[0m"
+    end
+    changed_paths = (old_rewritten + new_rewritten - (old_rewritten & new_rewritten))
+      .map {|*_, path| path}.uniq
+    if changed_paths.empty?
+      puts "Skip commit only for tools or toplevel"
+      return false
+    end
+
+    # Build commit objects from "cacheinfo"
+    new_parent = make_and_fixup_commit(gem, first_parent, old_rewritten)
+    new_commit = make_and_fixup_commit(gem, sha, new_rewritten, parent: new_parent, message: message, author: author)
+    puts "Created a temporary commit for cherry-pick: #{new_commit}"
+    new_commit
   end
 
   def pickup_commit(gem, sha, edit)
-    # Attempt to cherry-pick a commit
-    result = IO.popen(%W"git cherry-pick #{sha}", "rb", &:read)
-    picked = $?.success?
-    if result =~ /nothing\ to\ commit/
-      `git reset`
-      puts "Skip empty commit #{sha}"
-      return false
-    end
-
-    # Skip empty commits
-    if result.empty?
-      return false
-    end
-
-    if picked
-      changed = pipe_readlines(%w"git diff-tree --name-only -r -z HEAD~..HEAD --")
-    else
-      changed = pipe_readlines(%w"git diff --name-only -r -z HEAD --")
-    end
-
-    # Pick up files to merge.
-    unless changed = pickup_files(gem, changed, picked)
-      puts "Skip commit #{sha} only for tools or toplevel"
-      if picked
-        `git reset --hard HEAD~`
-      else
-        `git cherry-pick --abort`
-      end
-      return false
-    end
-
-    # If the cherry-pick attempt failed, try to resolve conflicts.
-    # Skip the commit, if it contains unresolved conflicts or no files to pick up.
-    unless picked or resolve_conflicts(gem, sha, edit)
-      system(*%w"git --no-pager diff") if !picked && !edit # If failed, show `git diff` unless editing
-      `git reset` && `git checkout .` && `git clean -fd` # Clean up un-committed diffs
-      return picked || nil # Fail unless cherry-picked
-    end
-
-    # Commit cherry-picked commit
-    if picked
-      system(*%w"git commit --amend --no-edit")
-    elsif porcelain_status().empty?
-      system(*%w"git cherry-pick --skip")
-      return false
-    else
-      system(*%w"git cherry-pick --continue --no-edit")
-    end or return nil
-
-    # Amend the commit if RDoc references need to be replaced
-    head = log_format('%H', %W"-1 HEAD", &:read).chomp
-    system(*%w"git reset --quiet HEAD~ --")
-    amend = replace_rdoc_ref_all
-    system(*%W"git reset --quiet #{head} --")
-    if amend
-      `git commit --amend --no-edit --all`
-    end
-
-
-    # Update commit message to include links to the original commit
-    puts "Update commit message: #{sha}"
     config = REPOSITORIES[gem]
-    headers, orig = IO.popen(%W[git cat-file commit #{sha}], "rb", &:read).split("\n\n", 2)
-    message = message_filter(config.upstream, sha, orig)
-    IO.popen(%W[git commit --amend --no-edit -F -], "r+b") {|io|
-      io.write(message)
-      io.close_write
-      io.read
-    }
+
+    rewritten = rewrite_commit(gem, sha)
+
+    # No changes remaining after rewriting
+    return false unless rewritten
+
+    # Attempt to cherry-pick a commit
+    result = IO.popen(%W"git cherry-pick #{rewritten}", "rb", err: [:child, :out], &:read)
     unless $?.success?
-      puts "Failed to modify commit message of #{sha}"
-      return nil
+      if result =~ /The previous cherry-pick is now empty/
+        system(*%w"git cherry-pick --skip")
+        puts "Skip empty commit #{sha}"
+        return false
+      end
+
+      # If the cherry-pick attempt failed, try to resolve conflicts.
+      # Skip the commit, if it contains unresolved conflicts or no files to pick up.
+      unless resolve_conflicts(gem, sha, edit)
+        system(*%w"git --no-pager diff") if !edit # If failed, show `git diff` unless editing
+        `git reset` && `git checkout .` && `git clean -fd` # Clean up un-committed diffs
+        return nil # Fail unless cherry-picked
+      end
+
+      # Commit cherry-picked commit
+      if porcelain_status().empty?
+        system(*%w"git cherry-pick --skip")
+        return false
+      else
+        system(*%w"git cherry-pick --continue --no-edit")
+        return nil unless $?.success?
+      end
     end
 
+    new_head = IO.popen(%W"git rev-parse HEAD", "rb", &:read).chomp
+    puts "Committed cherry-pick as #{new_head}"
     return true
   end
 
@@ -727,22 +714,24 @@ module SyncDefaultGems
 
     puts "Try to pick these commits:"
     puts commits.map{|commit| commit.join(": ")}
-    puts "----"
 
     failed_commits = []
     commits.each do |sha, subject|
-      puts "Pick #{sha} from #{repo}."
+      puts "----"
+      puts "Pick #{sha} #{subject}"
       case pickup_commit(gem, sha, edit)
       when false
         # skipped
       when nil
-        failed_commits << sha
+        failed_commits << [sha, subject]
       end
     end
 
     unless failed_commits.empty?
       puts "---- failed commits ----"
-      puts failed_commits
+      failed_commits.each do |sha, subject|
+        puts "#{sha} #{subject}"
+      end
       return false
     end
     return true
