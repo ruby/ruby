@@ -512,6 +512,28 @@ impl From<u32> for MethodType {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum OptimizedMethodType {
+    Send,
+    Call,
+    BlockCall,
+    StructAref,
+    StructAset,
+}
+
+impl From<u32> for OptimizedMethodType {
+    fn from(value: u32) -> Self {
+        match value {
+            OPTIMIZED_METHOD_TYPE_SEND => OptimizedMethodType::Send,
+            OPTIMIZED_METHOD_TYPE_CALL => OptimizedMethodType::Call,
+            OPTIMIZED_METHOD_TYPE_BLOCK_CALL => OptimizedMethodType::BlockCall,
+            OPTIMIZED_METHOD_TYPE_STRUCT_AREF => OptimizedMethodType::StructAref,
+            OPTIMIZED_METHOD_TYPE_STRUCT_ASET => OptimizedMethodType::StructAset,
+            _ => unreachable!("unknown send_without_block optimized method type: {}", value),
+        }
+    }
+}
+
 impl std::fmt::Display for SideExitReason {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
@@ -539,6 +561,7 @@ pub enum SendFallbackReason {
     SendWithoutBlockCfuncNotVariadic,
     SendWithoutBlockCfuncArrayVariadic,
     SendWithoutBlockNotOptimizedMethodType(MethodType),
+    SendWithoutBlockNotOptimizedOptimizedMethodType(OptimizedMethodType),
     SendWithoutBlockDirectTooManyArgs,
     SendPolymorphic,
     SendNoProfiles,
@@ -2335,6 +2358,10 @@ impl Function {
                             }
                             self.push_insn(block, Insn::SetIvar { self_val: recv, id, val, state });
                             self.make_equal_to(insn_id, val);
+                        } else if def_type == VM_METHOD_TYPE_OPTIMIZED {
+                            let opt_type = unsafe { get_cme_def_body_optimized_type(cme) };
+                            self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedOptimizedMethodType(OptimizedMethodType::from(opt_type)));
+                            self.push_insn_id(block, insn_id); continue;
                         } else {
                             self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)));
                             self.push_insn_id(block, insn_id); continue;

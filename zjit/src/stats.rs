@@ -167,6 +167,7 @@ make_counters! {
         send_fallback_send_without_block_cfunc_not_variadic,
         send_fallback_send_without_block_cfunc_array_variadic,
         send_fallback_send_without_block_not_optimized_method_type,
+        send_fallback_send_without_block_not_optimized_optimized_method_type,
         send_fallback_send_without_block_direct_too_many_args,
         send_fallback_send_polymorphic,
         send_fallback_send_no_profiles,
@@ -226,6 +227,13 @@ make_counters! {
     unspecialized_send_without_block_def_type_missing,
     unspecialized_send_without_block_def_type_refined,
     unspecialized_send_without_block_def_type_null,
+
+    // Method call optimized_type related to send without block fallback to dynamic dispatch
+    unspecialized_send_without_block_def_type_optimized_send,
+    unspecialized_send_without_block_def_type_optimized_call,
+    unspecialized_send_without_block_def_type_optimized_block_call,
+    unspecialized_send_without_block_def_type_optimized_struct_aref,
+    unspecialized_send_without_block_def_type_optimized_struct_aset,
 
     // Method call def_type related to send fallback to dynamic dispatch
     unspecialized_send_def_type_iseq,
@@ -388,6 +396,8 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendWithoutBlockCfuncNotVariadic          => send_fallback_send_without_block_cfunc_not_variadic,
         SendWithoutBlockCfuncArrayVariadic        => send_fallback_send_without_block_cfunc_array_variadic,
         SendWithoutBlockNotOptimizedMethodType(_) => send_fallback_send_without_block_not_optimized_method_type,
+        SendWithoutBlockNotOptimizedOptimizedMethodType(_)
+                                                  => send_fallback_send_without_block_not_optimized_optimized_method_type,
         SendWithoutBlockDirectTooManyArgs         => send_fallback_send_without_block_direct_too_many_args,
         SendPolymorphic                           => send_fallback_send_polymorphic,
         SendNoProfiles                            => send_fallback_send_no_profiles,
@@ -416,6 +426,19 @@ pub fn send_without_block_fallback_counter_for_method_type(method_type: crate::h
         Missing => unspecialized_send_without_block_def_type_missing,
         Refined => unspecialized_send_without_block_def_type_refined,
         Null => unspecialized_send_without_block_def_type_null,
+    }
+}
+
+pub fn send_without_block_fallback_counter_for_optimized_method_type(method_type: crate::hir::OptimizedMethodType) -> Counter {
+    use crate::hir::OptimizedMethodType::*;
+    use crate::stats::Counter::*;
+
+    match method_type {
+        Send => unspecialized_send_without_block_def_type_optimized_send,
+        Call => unspecialized_send_without_block_def_type_optimized_call,
+        BlockCall => unspecialized_send_without_block_def_type_optimized_block_call,
+        StructAref => unspecialized_send_without_block_def_type_optimized_struct_aref,
+        StructAset => unspecialized_send_without_block_def_type_optimized_struct_aset,
     }
 }
 
