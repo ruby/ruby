@@ -189,6 +189,33 @@ To run code snippets with ZJIT:
 You can also try https://www.rubyexplorer.xyz/ to view Ruby YARV disasm output with syntax highlighting
 in a way that can be easily shared with other team members.
 
+## Understanding Ruby Stacks
+
+Ruby execution involves three distinct stacks and understanding them will help you understand ZJIT's implementation:
+
+### 1. Native Stack
+
+- **Purpose**: Return addresses and saved registers. ZJIT also uses it for some C functions' argument arrays
+- **Management**: OS-managed, one per native thread
+- **Growth**: Downward from high addresses
+- **Constants**: `NATIVE_STACK_PTR`, `NATIVE_BASE_PTR`
+
+### 2. Ruby VM Stack
+
+The Ruby VM uses a single contiguous memory region (`ec->vm_stack`) containing two sub-stacks that grow toward each other. When they meet, stack overflow occurs.
+
+**Control Frame Stack:**
+
+- **Stores**: Frame metadata (`rb_control_frame_t` structures)
+- **Growth**: Downward from `vm_stack + size` (high addresses)
+- **Constants**: `CFP`
+
+**Value Stack:**
+
+- **Stores**: YARV bytecode operands (self, arguments, locals, temporaries)
+- **Growth**: Upward from `vm_stack` (low addresses)
+- **Constants**: `SP`
+
 ## ZJIT Glossary
 
 This glossary contains terms that are helpful for understanding ZJIT.
