@@ -3807,6 +3807,36 @@ CODE
     end
   end
 
+  def test_encode_fallback_not_string_memory_leak
+    {
+      "hash" => <<~RUBY,
+        fallback = Hash.new { Object.new }
+      RUBY
+      "proc" => <<~RUBY,
+        fallback = proc { Object.new }
+      RUBY
+      "method" => <<~RUBY,
+        def my_method(_str) = Object.new
+        fallback = method(:my_method)
+      RUBY
+      "aref" => <<~RUBY,
+        fallback = Object.new
+        def fallback.[](_str) = Object.new
+      RUBY
+    }.each do |type, code|
+      assert_no_memory_leak([], '', <<~RUBY, "fallback type is #{type}", rss: true)
+        class MyError < StandardError; end
+
+        #{code}
+
+        100_000.times do |i|
+          "\\ufffd".encode(Encoding::US_ASCII, fallback:)
+        rescue TypeError
+        end
+      RUBY
+    end
+  end
+
   private
 
   def assert_bytesplice_result(expected, s, *args)

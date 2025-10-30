@@ -2360,7 +2360,13 @@ transcode_loop_fallback_try(VALUE a)
 {
     struct transcode_loop_fallback_args *args = (struct transcode_loop_fallback_args *)a;
 
-    return args->fallback_func(args->fallback, args->rep);
+    VALUE ret = args->fallback_func(args->fallback, args->rep);
+
+    if (!UNDEF_P(ret) && !NIL_P(ret)) {
+        StringValue(ret);
+    }
+
+    return ret;
 }
 
 static void
@@ -2428,7 +2434,6 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         }
 
         if (!UNDEF_P(rep) && !NIL_P(rep)) {
-            StringValue(rep);
             ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(rep),
                     RSTRING_LEN(rep), rb_enc_name(rb_enc_get(rep)));
             if ((int)ret == -1) {
