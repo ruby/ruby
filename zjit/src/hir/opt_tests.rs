@@ -2358,7 +2358,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Module@0x1010, class@0x1018, cme:0x1020)
           PatchPoint NoSingletonClass(Module@0x1010)
           IncrCounter inline_iseq_optimized_send_count
-          v26:Class = InvokeBuiltin leaf _bi20, v21
+          v26:HeapObject = InvokeBuiltin leaf _bi20, v21
           CheckInterrupts
           Return v26
         ");
@@ -7048,6 +7048,57 @@ mod hir_opt_tests {
           v19:Fixnum[4] = Const Value(4)
           CheckInterrupts
           Return v19
+        ");
+    }
+
+    #[test]
+    fn test_fold_self_class_respond_to_true() {
+        eval(r#"
+            class C
+              class << self
+                attr_accessor :_lex_actions
+                private :_lex_actions, :_lex_actions=
+              end
+              self._lex_actions = [1, 2, 3]
+              def initialize
+                if self.class.respond_to?(:_lex_actions, true)
+                  :CORRECT
+                else
+                  :oh_no_wrong
+                end
+              end
+            end
+            C.new  # warm up
+            TEST = C.instance_method(:initialize)
+        "#);
+        assert_snapshot!(hir_string_proc("TEST"), @r"
+        fn initialize@<compiled>:9:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, class@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v40:HeapObject[class_exact:C] = GuardType v6, HeapObject[class_exact:C]
+          IncrCounter inline_iseq_optimized_send_count
+          v43:HeapObject = InvokeBuiltin leaf _bi20, v40
+          v12:StaticSymbol[:_lex_actions] = Const Value(VALUE(0x1038))
+          v13:TrueClass = Const Value(true)
+          PatchPoint MethodRedefined(Class@0x1040, respond_to?@0x1048, cme:0x1050)
+          PatchPoint NoSingletonClass(Class@0x1040)
+          v47:ModuleSubclass[class_exact*:Class@VALUE(0x1040)] = GuardType v43, ModuleSubclass[class_exact*:Class@VALUE(0x1040)]
+          PatchPoint MethodRedefined(Class@0x1040, _lex_actions@0x1078, cme:0x1080)
+          PatchPoint NoSingletonClass(Class@0x1040)
+          v51:TrueClass = Const Value(true)
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          v22:StaticSymbol[:CORRECT] = Const Value(VALUE(0x10a8))
+          CheckInterrupts
+          Return v22
         ");
     }
 }
