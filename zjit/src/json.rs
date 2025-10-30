@@ -1,3 +1,5 @@
+//! Single file JSON serializer for iongraph output of ZJIT HIR.
+
 use std::io::{self, Write};
 
 pub trait Serializable {
@@ -8,6 +10,9 @@ pub struct Serializer<W: Write> {
     writer: W,
     needs_comma: bool,
 }
+
+/// JSON's native null type.
+pub struct Null;
 
 impl<W: Write> Serializer<W> {
     pub fn new(writer: W) -> Self {
@@ -120,3 +125,8 @@ impl Serializable for bool {
     }
 }
 
+impl Serializable for Null {
+    fn serialize<W: Write>(&self, serializer: &mut Serializer<W>) -> io::Result<()> {
+        write!(serializer.writer, "null")
+    }
+}
