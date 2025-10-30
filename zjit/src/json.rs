@@ -28,8 +28,11 @@ impl<W: Write> Serializer<W> {
 
     pub fn write_str(&mut self, s: &str) -> io::Result<()> {
         self.writer.write_all(b"\"")?;
-        // todo: need to escape things I think
-        self.writer.write_all(s.as_bytes())?;
+
+        for ch in s.escape_debug() {
+            write!(self.writer, "{}", ch)?;
+        }
+
         self.writer.write_all(b"\"")?;
         Ok(())
     }
@@ -99,26 +102,55 @@ impl<S: Serializable> Serializable for Vec<S> {
     }
 }
 
+impl<S: Serializable> Serializable for [S] {
+    fn serialize<W: Write>(&self, serializer: &mut Serializer<W>) -> io::Result<()> {
+        serializer.write_array(self)
+    }
+}
+
+impl<S: Serializable, const N: usize> Serializable for [S; N] {
+    fn serialize<W: Write>(&self, serializer: &mut Serializer<W>) -> io::Result<()> {
+        serializer.write_array(self)
+    }
+}
+
 impl Serializable for &str {
     fn serialize<W: Write>(&self, serializer: &mut Serializer<W>) -> io::Result<()> {
         serializer.write_str(self)
     }
 }
 
-impl Serializable for i32 {
-    fn serialize<W: Write>(&self, serializer: &mut Serializer<W>) -> io::Result<()> {
-        write!(serializer.writer, "{}", self)
-    }
+macro_rules! impl_serializable_int {
+    ($($ty:ty),* $(,)?) => {
+        $(
+            impl Serializable for $ty {
+                fn serialize<W: Write>(&self, serializer: &mut Serializer<W>) -> io::Result<()> {
+                    write!(serializer.writer, "{}", self)
+                }
+            }
+        )*
+    };
 }
 
-impl Serializable for u32 {
-    fn serialize<W: Write>(&self, serializer: &mut Serializer<W>) -> io::Result<()> {
-        write!(serializer.writer, "{}", self)
-    }
+impl_serializable_int! {
+    i8, i16, i32, i64, i128, isize,
+    u8, u16, u32, u64, u128, usize,
 }
 
 impl Serializable for f64 {
     fn serialize<W: Write>(&self, serializer: &mut Serializer<W>) -> io::Result<()> {
+        if matches!(self, &f64::INFINITY | &f64::NEG_INFINITY) || self.is_nan() {
+            panic!("JSON does not support inf, negative inf, or NaN.")
+        }
+        write!(serializer.writer, "{}", self)
+    }
+}
+
+impl Serializable for f32 {
+    fn serialize<W: Write>(&self, serializer: &mut Serializer<W>) -> io::Result<()> {
+        if matches!(self, &f32::INFINITY | &f32::NEG_INFINITY) || self.is_nan() {
+            panic!("JSON does not support inf, negative inf, or NaN.")
+        }
         write!(serializer.writer, "{}", self)
     }
 }
