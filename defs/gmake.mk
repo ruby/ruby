@@ -539,13 +539,19 @@ ruby.pc: $(filter-out ruby.pc,$(ruby_pc))
 
 matz: up
 	$(eval OLD := $(MAJOR).$(MINOR).0)
+ifdef NEW
+	$(eval MAJOR := $(word 1,$(subst ., ,$(NEW))))
+	$(eval MINOR := $(word 2,$(subst ., ,$(NEW))))
+else
 	$(eval MINOR := $(shell expr $(MINOR) + 1))
-	$(eval NEW := $(MAJOR).$(MINOR).0)
+endif
+	$(eval override NEW := $(MAJOR).$(MINOR).0)
 	$(eval message := Development of $(NEW) started.)
 	$(eval files := include/ruby/version.h include/ruby/internal/abi.h)
 	$(GIT_IN_SRC) mv -f NEWS.md doc/NEWS/NEWS-$(OLD).md
 	$(GIT_IN_SRC) commit -m "[DOC] Flush NEWS.md"
 	sed -i~ \
+	-e "s/^\(#define RUBY_API_VERSION_MAJOR\) .*/\1 $(MAJOR)/" \
 	-e "s/^\(#define RUBY_API_VERSION_MINOR\) .*/\1 $(MINOR)/" \
 	-e "s/^\(#define RUBY_ABI_VERSION\) .*/\1 0/" \
 	 $(files:%=$(srcdir)/%)
