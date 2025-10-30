@@ -7101,4 +7101,37 @@ mod hir_opt_tests {
           Return v22
         ");
     }
+
+    #[test]
+    fn test_fold_self_class_name() {
+        eval(r#"
+            class C; end
+            def test(o) = o.class.name
+            test(C.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, class@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v24:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
+          IncrCounter inline_iseq_optimized_send_count
+          v27:HeapObject = InvokeBuiltin leaf _bi20, v24
+          PatchPoint MethodRedefined(Class@0x1038, name@0x1040, cme:0x1048)
+          PatchPoint NoSingletonClass(Class@0x1038)
+          v31:ModuleSubclass[class_exact*:Class@VALUE(0x1038)] = GuardType v27, ModuleSubclass[class_exact*:Class@VALUE(0x1038)]
+          IncrCounter inline_cfunc_optimized_send_count
+          v33:StringExact|NilClass = CCall name@0x1070, v31
+          CheckInterrupts
+          Return v33
+        ");
+    }
 }
