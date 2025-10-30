@@ -1159,7 +1159,6 @@ extern "C" {
     pub fn rb_yjit_shape_obj_too_complex_p(obj: VALUE) -> bool;
     pub fn rb_yjit_shape_capacity(shape_id: shape_id_t) -> attr_index_t;
     pub fn rb_yjit_shape_index(shape_id: shape_id_t) -> attr_index_t;
-    pub fn rb_yjit_sendish_sp_pops(ci: *const rb_callinfo) -> usize;
     pub fn rb_yjit_invokeblock_sp_pops(ci: *const rb_callinfo) -> usize;
     pub fn rb_yjit_set_exception_return(
         cfp: *mut rb_control_frame_t,
@@ -1273,5 +1272,6 @@ extern "C" {
         end: *mut ::std::os::raw::c_void,
     );
     pub fn rb_jit_fix_mod_fix(recv: VALUE, obj: VALUE) -> VALUE;
+    pub fn rb_jit_sendish_sp_pops(ci: *const rb_callinfo) -> usize;
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
 }

@@ -1511,7 +1511,7 @@ pub mod hir_build_tests {
     }
 
     #[test]
-    fn test_cant_compile_splat() {
+    fn test_fallback_with_splat() {
         eval("
             def test(a) = foo(*a)
         ");
@@ -1527,7 +1527,9 @@ pub mod hir_build_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:ArrayExact = ToArray v9
-          SideExit UnhandledCallType(Splat)
+          v16:BasicObject = SendFallback :foo
+          CheckInterrupts
+          Return v16
         ");
     }
 
@@ -1554,7 +1556,7 @@ pub mod hir_build_tests {
     }
 
     #[test]
-    fn test_cant_compile_kwarg() {
+    fn test_fallback_with_kwarg() {
         eval("
             def test(a) = foo(a: 1)
         ");
@@ -1570,12 +1572,14 @@ pub mod hir_build_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
-          SideExit UnhandledCallType(Kwarg)
+          v15:BasicObject = SendFallback :foo
+          CheckInterrupts
+          Return v15
         ");
     }
 
     #[test]
-    fn test_cant_compile_kw_splat() {
+    fn test_fallback_with_kw_splat() {
         eval("
             def test(a) = foo(**a)
         ");
@@ -1590,7 +1594,7 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
-          v14:BasicObject = SendWithoutBlock v8, :foo, v9
+          v14:BasicObject = SendFallback :foo
           CheckInterrupts
           Return v14
         ");
@@ -1705,7 +1709,7 @@ pub mod hir_build_tests {
     // TODO(max): Figure out how to generate a call with OPT_SEND flag
 
     #[test]
-    fn test_cant_compile_kw_splat_mut() {
+    fn test_fallback_with_kw_splat_mut() {
         eval("
             def test(a) = foo **a, b: 1
         ");
@@ -1728,14 +1732,14 @@ pub mod hir_build_tests {
           v21:StaticSymbol[:b] = Const Value(VALUE(0x1008))
           v22:Fixnum[1] = Const Value(1)
           v24:BasicObject = SendWithoutBlock v20, :core#hash_merge_ptr, v19, v21, v22
-          v26:BasicObject = SendWithoutBlock v8, :foo, v24
+          v26:BasicObject = SendFallback :foo
           CheckInterrupts
           Return v26
         ");
     }
 
     #[test]
-    fn test_cant_compile_splat_mut() {
+    fn test_fallback_with_splat_mut() {
         eval("
             def test(*) = foo *, 1
         ");
@@ -1753,7 +1757,141 @@ pub mod hir_build_tests {
           v14:ArrayExact = ToNewArray v9
           v15:Fixnum[1] = Const Value(1)
           ArrayPush v14, v15
-          SideExit UnhandledCallType(Splat)
+          v19:BasicObject = SendFallback :foo
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn test_fallback_with_splat_with_block() {
+        eval("
+            def test(a) = foo(*a) {}
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:BasicObject = GetLocal l0, EP@3
+          v15:ArrayExact = ToArray v13
+          v17:BasicObject = SendFallback :foo
+          v18:BasicObject = GetLocal l0, EP@3
+          CheckInterrupts
+          Return v17
+        ");
+    }
+
+    #[test]
+    fn test_fallback_with_kwarg_with_block() {
+        eval("
+            def test(a) = foo(a: 1) {}
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:Fixnum[1] = Const Value(1)
+          v15:BasicObject = SendFallback :foo
+          v16:BasicObject = GetLocal l0, EP@3
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
+    fn test_fallback_with_kw_splat_with_block() {
+        eval("
+            def test(a) = foo(**a) {}
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:BasicObject = GetLocal l0, EP@3
+          v15:BasicObject = SendFallback :foo
+          v16:BasicObject = GetLocal l0, EP@3
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+
+    #[test]
+    fn test_fallback_with_kw_splat_mut_with_block() {
+        eval("
+            def test(a) = foo(**a, b: 1) {}
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
+          v15:HashExact = NewHash
+          v16:BasicObject = GetLocal l0, EP@3
+          v18:BasicObject = SendWithoutBlock v13, :core#hash_merge_kwd, v15, v16
+          v19:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
+          v20:StaticSymbol[:b] = Const Value(VALUE(0x1008))
+          v21:Fixnum[1] = Const Value(1)
+          v23:BasicObject = SendWithoutBlock v19, :core#hash_merge_ptr, v18, v20, v21
+          v25:BasicObject = SendFallback :foo
+          v26:BasicObject = GetLocal l0, EP@3
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_fallback_with_splat_mut_with_block() {
+        eval("
+            def test(*) = foo(*, 1) {}
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:2:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:ArrayExact = GetLocal l0, SP@4, *
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:ArrayExact):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:ArrayExact):
+          v13:BasicObject = GetLocal l0, EP@3
+          v15:ArrayExact = ToNewArray v13
+          v16:Fixnum[1] = Const Value(1)
+          ArrayPush v15, v16
+          v20:BasicObject = SendFallback :foo
+          v21:BasicObject = GetLocal l0, EP@3
+          CheckInterrupts
+          Return v20
         ");
     }
 

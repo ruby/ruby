@@ -9505,7 +9505,7 @@ fn gen_opt_send_without_block(
     }
 
     // Otherwise, fallback to dynamic dispatch using the interpreter's implementation of send
-    gen_send_dynamic(jit, asm, cd, unsafe { rb_yjit_sendish_sp_pops((*cd).ci) }, |asm| {
+    gen_send_dynamic(jit, asm, cd, unsafe { rb_jit_sendish_sp_pops((*cd).ci) }, |asm| {
         extern "C" {
             fn rb_vm_opt_send_without_block(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
         }
@@ -9529,7 +9529,7 @@ fn gen_send(
 
     // Otherwise, fallback to dynamic dispatch using the interpreter's implementation of send
     let blockiseq = jit.get_arg(1).as_iseq();
-    gen_send_dynamic(jit, asm, cd, unsafe { rb_yjit_sendish_sp_pops((*cd).ci) }, |asm| {
+    gen_send_dynamic(jit, asm, cd, unsafe { rb_jit_sendish_sp_pops((*cd).ci) }, |asm| {
         extern "C" {
             fn rb_vm_send(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
         }
@@ -9553,7 +9553,7 @@ fn gen_sendforward(
 
     // Otherwise, fallback to dynamic dispatch using the interpreter's implementation of sendforward
     let blockiseq = jit.get_arg(1).as_iseq();
-    gen_send_dynamic(jit, asm, cd, unsafe { rb_yjit_sendish_sp_pops((*cd).ci) }, |asm| {
+    gen_send_dynamic(jit, asm, cd, unsafe { rb_jit_sendish_sp_pops((*cd).ci) }, |asm| {
         extern "C" {
             fn rb_vm_sendforward(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
         }
@@ -9728,7 +9728,7 @@ fn gen_invokesuper(
 
     // Otherwise, fallback to dynamic dispatch using the interpreter's implementation of invokesuper
     let blockiseq = jit.get_arg(1).as_iseq();
-    gen_send_dynamic(jit, asm, cd, unsafe { rb_yjit_sendish_sp_pops((*cd).ci) }, |asm| {
+    gen_send_dynamic(jit, asm, cd, unsafe { rb_jit_sendish_sp_pops((*cd).ci) }, |asm| {
         extern "C" {
             fn rb_vm_invokesuper(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
         }
@@ -9751,7 +9751,7 @@ fn gen_invokesuperforward(
 
     // Otherwise, fallback to dynamic dispatch using the interpreter's implementation of invokesuperforward
     let blockiseq = jit.get_arg(1).as_iseq();
-    gen_send_dynamic(jit, asm, cd, unsafe { rb_yjit_sendish_sp_pops((*cd).ci) }, |asm| {
+    gen_send_dynamic(jit, asm, cd, unsafe { rb_jit_sendish_sp_pops((*cd).ci) }, |asm| {
         extern "C" {
             fn rb_vm_invokesuperforward(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
         }

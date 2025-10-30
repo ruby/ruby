@@ -566,6 +566,7 @@ pub enum SendFallbackReason {
     SendPolymorphic,
     SendNoProfiles,
     SendNotOptimizedMethodType(MethodType),
+    SendUnhandledCallType,
     CCallWithFrameTooManyArgs,
     ObjToStringNotString,
     /// Initial fallback reason for every instruction, which should be mutated to
@@ -741,6 +742,12 @@ pub enum Insn {
         cd: *const rb_call_data,
         blockiseq: IseqPtr,
         args: Vec<InsnId>,
+        state: InsnId,
+        reason: SendFallbackReason,
+    },
+    SendFallback {
+        cd: *const rb_call_data,
+        blockiseq: Option<IseqPtr>,
         state: InsnId,
         reason: SendFallbackReason,
     },
@@ -1062,6 +1069,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
+            }
+            &Insn::SendFallback { cd, .. } => {
+                write!(f, "SendFallback :{}", ruby_call_method_name(cd))
             }
             Insn::SendForward { cd, args, blockiseq, .. } => {
                 write!(f, "SendForward {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
@@ -1724,6 +1734,12 @@ impl Function {
                 state,
                 reason,
             },
+            &SendFallback { cd, blockiseq, state, reason } => SendFallback {
+                cd,
+                blockiseq,
+                state,
+                reason,
+            },
             &SendForward { recv, cd, blockiseq, ref args, state, reason } => SendForward {
                 recv: find!(recv),
                 cd,
@@ -1903,6 +1919,7 @@ impl Function {
             Insn::SendWithoutBlock { .. } => types::BasicObject,
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
+            Insn::SendFallback { .. } => types::BasicObject,
             Insn::SendForward { .. } => types::BasicObject,
             Insn::InvokeSuper { .. } => types::BasicObject,
             Insn::InvokeBlock { .. } => types::BasicObject,
@@ -3250,6 +3267,9 @@ impl Function {
                 worklist.extend(args);
                 worklist.push_back(state);
             }
+            &Insn::SendFallback { state, .. } => {
+                worklist.push_back(state);
+            }
             &Insn::CCallWithFrame { ref args, state, .. }
             | &Insn::InvokeBuiltin { ref args, state, .. }
             | &Insn::InvokeBlock { ref args, state, .. } => {
@@ -3968,6 +3988,10 @@ impl FrameState {
         self.stack.push(opnd);
     }
 
+    fn stack_is_empty(&self) -> bool {
+        self.stack.is_empty()
+    }
+
     /// Pop a stack operand
     fn stack_pop(&mut self) -> Result<InsnId, ParseError> {
         self.stack.pop().ok_or_else(|| ParseError::StackUnderflow(self.clone()))
@@ -4130,6 +4154,8 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeI
 pub enum CallType {
     Splat,
     Kwarg,
+    KwSplat,
+    KwSplatMut,
     Tailcall,
 }
 
@@ -4151,6 +4177,8 @@ fn num_locals(iseq: *const rb_iseq_t) -> usize {
 fn unhandled_call_type(flags: u32) -> Result<(), CallType> {
     if (flags & VM_CALL_ARGS_SPLAT) != 0 { return Err(CallType::Splat); }
     if (flags & VM_CALL_KWARG) != 0 { return Err(CallType::Kwarg); }
+    if (flags & VM_CALL_KW_SPLAT) != 0 { return Err(CallType::KwSplat); }
+    if (flags & VM_CALL_KW_SPLAT_MUT) != 0 { return Err(CallType::KwSplatMut); }
     if (flags & VM_CALL_TAILCALL) != 0 { return Err(CallType::Tailcall); }
     Ok(())
 }
@@ -4725,6 +4753,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     fun.push_insn(block, Insn::Return { val: state.stack_pop()? });
+                    assert!(state.stack_is_empty(), "stack should be empty at leave");
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_throw => {
@@ -4762,40 +4791,54 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_send_without_block => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let flags = unsafe { rb_vm_ci_flag(call_info) };
-                    if let Err(call_type) = unhandled_call_type(flags) {
+                    if (flags & VM_CALL_TAILCALL) != 0 {
                         // Can't handle tailcall; side-exit into the interpreter
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(CallType::Tailcall) });
                         break;  // End the block
                     }
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
-
-                    let args = state.stack_pop_n(argc as usize)?;
-                    let recv = state.stack_pop()?;
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
-                    state.stack_push(send);
+                    if let Err(_) = unhandled_call_type(flags) {
+                        // Can't handle other flags; reify stack and use fallback
+                        let blockiseq = None;
+                        let result = fun.push_insn(block, Insn::SendFallback { cd, blockiseq, state: exit_id, reason: SendFallbackReason::SendUnhandledCallType });
+                        let sp_pops = unsafe { rb_jit_sendish_sp_pops(call_info) } as usize;
+                        state.stack_pop_n(sp_pops)?;
+                        state.stack_push(result);
+                    } else {
+                        let argc = unsafe { vm_ci_argc((*cd).ci) };
+                        let args = state.stack_pop_n(argc as usize)?;
+                        let recv = state.stack_pop()?;
+                        let send = fun.push_insn(block, Insn::SendWithoutBlock { recv, cd, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
+                        state.stack_push(send);
+                    }
                 }
                 YARVINSN_send => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let flags = unsafe { rb_vm_ci_flag(call_info) };
-                    if let Err(call_type) = unhandled_call_type(flags) {
+                    if (flags & VM_CALL_TAILCALL) != 0 {
                         // Can't handle tailcall; side-exit into the interpreter
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type) });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(CallType::Tailcall) });
                         break;  // End the block
                     }
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
-                    let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
-
-                    let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
-                    let recv = state.stack_pop()?;
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
-                    state.stack_push(send);
+                    if let Err(_) = unhandled_call_type(flags) {
+                        // Can't handle other flags; reify stack and use fallback
+                        let blockiseq = if blockiseq.is_null() { None } else { Some(blockiseq) };
+                        let result = fun.push_insn(block, Insn::SendFallback { cd, blockiseq, state: exit_id, reason: SendFallbackReason::SendUnhandledCallType });
+                        let sp_pops = unsafe { rb_jit_sendish_sp_pops(call_info) } as usize;
+                        state.stack_pop_n(sp_pops)?;
+                        state.stack_push(result);
+                    } else {
+                        let argc = unsafe { vm_ci_argc((*cd).ci) };
+                        let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
+                        let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
+                        let recv = state.stack_pop()?;
+                        let send = fun.push_insn(block, Insn::Send { recv, cd, blockiseq, args, state: exit_id, reason: NotOptimizedInstruction(opcode) });
+                        state.stack_push(send);
+                    }
 
                     if !blockiseq.is_null() {
                         // Reload locals that may have been modified by the blockiseq.

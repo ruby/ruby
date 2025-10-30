@@ -2524,7 +2524,9 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          SideExit UnhandledCallType(Kwarg)
+          v12:BasicObject = SendFallback :foo
+          CheckInterrupts
+          Return v12
         ");
     }
 
@@ -2547,7 +2549,9 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          SideExit UnhandledCallType(Kwarg)
+          v12:BasicObject = SendFallback :foo
+          CheckInterrupts
+          Return v12
         ");
     }
 

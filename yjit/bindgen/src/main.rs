@@ -269,7 +269,7 @@ fn main() {
         .allowlist_function("rb_yjit_exit_locations_dict")
         .allowlist_function("rb_jit_icache_invalidate")
         .allowlist_function("rb_optimized_call")
-        .allowlist_function("rb_yjit_sendish_sp_pops")
+        .allowlist_function("rb_jit_sendish_sp_pops")
         .allowlist_function("rb_yjit_invokeblock_sp_pops")
         .allowlist_function("rb_yjit_set_exception_return")
         .allowlist_function("rb_yjit_str_concat_codepoint")

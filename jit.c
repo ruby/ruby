@@ -758,6 +758,13 @@ rb_jit_fix_mod_fix(VALUE recv, VALUE obj)
     return rb_fix_mod_fix(recv, obj);
 }
 
+// The number of stack slots that vm_sendish() pops for send and invokesuper.
+size_t
+rb_jit_sendish_sp_pops(const struct rb_callinfo *ci)
+{
+    return 1 - sp_inc_of_sendish(ci); // + 1 to ignore return value push
+}
+
 // YJIT/ZJIT need this function to never allocate and never raise
 VALUE
 rb_yarv_str_eql_internal(VALUE str1, VALUE str2)
