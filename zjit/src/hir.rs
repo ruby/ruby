@@ -2253,6 +2253,14 @@ impl Function {
                             (recv_type.class(), Some(recv_type))
                         };
                         let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
+
+                        // If the call site info indicates that the `Function` has `VM_CALL_ARGS_SPLAT` set, then
+                        // do not optimize into a `SendWithoutBlockDirect`.
+                        let flags = unsafe { rb_vm_ci_flag(ci) };
+                        if unspecializable_call_type(flags) {
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+
                         let mid = unsafe { vm_ci_mid(ci) };
                         // Do method lookup
                         let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
@@ -2676,7 +2684,7 @@ impl Function {
 
                     // When seeing &block argument, fall back to dynamic dispatch for now
                     // TODO: Support block forwarding
-                    if ci_flags & VM_CALL_ARGS_BLOCKARG != 0 {
+                    if unspecializable_call_type(ci_flags) {
                         return Err(());
                     }
 
@@ -4149,10 +4157,15 @@ fn num_locals(iseq: *const rb_iseq_t) -> usize {
 
 /// If we can't handle the type of send (yet), bail out.
 fn unhandled_call_type(flags: u32) -> Result<(), CallType> {
-    if (flags & VM_CALL_ARGS_SPLAT) != 0 { return Err(CallType::Splat); }
     if (flags & VM_CALL_KWARG) != 0 { return Err(CallType::Kwarg); }
     if (flags & VM_CALL_TAILCALL) != 0 { return Err(CallType::Tailcall); }
     Ok(())
+}
+
+/// If a given call uses splatting or block arguments, then we won't specialize.
+fn unspecializable_call_type(flags: u32) -> bool {
+    ((flags & VM_CALL_ARGS_SPLAT) != 0) ||
+    ((flags & VM_CALL_ARGS_BLOCKARG) != 0)
 }
 
 /// We have IseqPayload, which keeps track of HIR Types in the interpreter, but this is not useful
