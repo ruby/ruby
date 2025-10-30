@@ -2289,6 +2289,26 @@ class TestArray < Test::Unit::TestCase
     assert_equal(orig, ary, "must not be modified once frozen")
   end
 
+  def test_duplicates
+    assert_equal(false, [].duplicates?)
+    assert_equal(false, [1].duplicates?)
+    assert_equal(false, [1, 2].duplicates?)
+    assert_equal(true, [1, 2, 1].duplicates?)
+    assert_equal(true, ['a', 'a'].duplicates?)
+    assert_equal(false, ['a', 'A'].duplicates?)
+    assert_equal(false, [{a: 'a'}, {a: 'A'}].duplicates?)
+    assert_equal(true, [{a: 'A'}, {a: 'A'}].duplicates?)
+  end
+
+  def test_duplicates_with_block
+    assert_equal(false, [].duplicates? {|v| v % 3 })
+    assert_equal(false, [1].duplicates? {|v| v % 3 })
+    assert_equal(false, [1, 2, 3].duplicates? {|v| v % 3 })
+    assert_equal(true, [1, 2, 3].duplicates? {|v| 3 })
+    assert_equal(true, ['a', 'A'].duplicates? {|v| v.downcase })
+    assert_equal(true, [{a: 'a'}, {a: 'A'}].duplicates? {|v| v[:a].downcase })
+  end
+
   def test_unshift
     a = @cls[]
     assert_equal(@cls['cat'], a.unshift('cat'))
