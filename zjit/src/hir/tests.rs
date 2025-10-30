@@ -1527,7 +1527,9 @@ pub mod hir_build_tests {
           Jump bb2(v5, v6)
         bb2(v8:BasicObject, v9:BasicObject):
           v14:ArrayExact = ToArray v9
-          SideExit UnhandledCallType(Splat)
+          v16:BasicObject = SendWithoutBlock v8, :foo, v14
+          CheckInterrupts
+          Return v16
         ");
     }
 
@@ -1753,7 +1755,9 @@ pub mod hir_build_tests {
           v14:ArrayExact = ToNewArray v9
           v15:Fixnum[1] = Const Value(1)
           ArrayPush v14, v15
-          SideExit UnhandledCallType(Splat)
+          v19:BasicObject = SendWithoutBlock v8, :foo, v14
+          CheckInterrupts
+          Return v19
         ");
     }
 
