@@ -4,6 +4,7 @@
 
 require 'fileutils'
 require "rbconfig"
+require "find"
 
 module SyncDefaultGems
   include FileUtils
@@ -11,75 +12,288 @@ module SyncDefaultGems
 
   module_function
 
-  REPOSITORIES = {
-    "io-console": 'ruby/io-console',
-    "io-nonblock": 'ruby/io-nonblock',
-    "io-wait": 'ruby/io-wait',
-    "net-http": "ruby/net-http",
-    "net-protocol": "ruby/net-protocol",
-    "open-uri": "ruby/open-uri",
-    "win32-registry": "ruby/win32-registry",
-    English: "ruby/English",
-    cgi: "ruby/cgi",
-    date: 'ruby/date',
-    delegate: "ruby/delegate",
-    did_you_mean: "ruby/did_you_mean",
-    digest: "ruby/digest",
-    erb: "ruby/erb",
-    error_highlight: "ruby/error_highlight",
-    etc: 'ruby/etc',
-    fcntl: 'ruby/fcntl',
-    fileutils: 'ruby/fileutils',
-    find: "ruby/find",
-    forwardable: "ruby/forwardable",
-    ipaddr: 'ruby/ipaddr',
-    json: 'ruby/json',
-    mmtk: ['ruby/mmtk', "main"],
-    open3: "ruby/open3",
-    openssl: "ruby/openssl",
-    optparse: "ruby/optparse",
-    pp: "ruby/pp",
-    prettyprint: "ruby/prettyprint",
-    prism: ["ruby/prism", "main"],
-    psych: 'ruby/psych',
-    resolv: "ruby/resolv",
-    rubygems: 'ruby/rubygems',
-    securerandom: "ruby/securerandom",
-    shellwords: "ruby/shellwords",
-    singleton: "ruby/singleton",
-    stringio: 'ruby/stringio',
-    strscan: 'ruby/strscan',
-    syntax_suggest: ["ruby/syntax_suggest", "main"],
-    tempfile: "ruby/tempfile",
-    time: "ruby/time",
-    timeout: "ruby/timeout",
-    tmpdir: "ruby/tmpdir",
-    tsort: "ruby/tsort",
-    un: "ruby/un",
-    uri: "ruby/uri",
-    weakref: "ruby/weakref",
-    yaml: "ruby/yaml",
-    zlib: 'ruby/zlib',
-  }.transform_keys(&:to_s)
+  # upstream: "owner/repo"
+  # branch: "branch_name"
+  # mappings: [ ["path_in_upstream", "path_in_ruby"], ... ]
+  #   NOTE: path_in_ruby is assumed to be "owned" by this gem, and the contents
+  #   will be removed before sync
+  # exclude: [ "fnmatch_pattern_after_mapping", ... ]
+  Repository = Data.define(:upstream, :branch, :mappings, :exclude) do
+    def excluded?(newpath)
+      p = newpath
+      until p == "."
+        return true if exclude.any? {|pat| File.fnmatch?(pat, p, File::FNM_PATHNAME|File::FNM_EXTGLOB)}
+        p = File.dirname(p)
+      end
+      false
+    end
+
+    def rewrite_for_ruby(path)
+      newpath = mappings.find do |src, dst|
+        if path == src || path.start_with?(src + "/")
+          break path.sub(src, dst)
+        end
+      end
+      return nil unless newpath
+      return nil if excluded?(newpath)
+      newpath
+    end
+  end
 
   CLASSICAL_DEFAULT_BRANCH = "master"
+
+  def repo((upstream, branch), mappings, exclude: [])
+    branch ||= CLASSICAL_DEFAULT_BRANCH
+    exclude += ["ext/**/depend"]
+    Repository.new(upstream:, branch:, mappings:, exclude:)
+  end
+
+  def lib((upstream, branch), gemspec_in_subdir: false)
+    _org, name = upstream.split("/")
+    gemspec_dst = gemspec_in_subdir ? "lib/#{name}/#{name}.gemspec" : "lib/#{name}.gemspec"
+    repo([upstream, branch], [
+      ["lib/#{name}.rb", "lib/#{name}.rb"],
+      ["lib/#{name}", "lib/#{name}"],
+      ["test/test_#{name}.rb", "test/test_#{name}.rb"],
+      ["test/#{name}", "test/#{name}"],
+      ["#{name}.gemspec", gemspec_dst],
+    ])
+  end
+
+  REPOSITORIES = {
+    "io-console": repo("ruby/io-console", [
+      ["ext/io/console", "ext/io/console"],
+      ["test/io/console", "test/io/console"],
+      ["lib/io/console", "ext/io/console/lib/console"],
+      ["io-console.gemspec", "ext/io/console/io-console.gemspec"],
+    ]),
+    "io-nonblock": repo("ruby/io-nonblock", [
+      ["ext/io/nonblock", "ext/io/nonblock"],
+      ["test/io/nonblock", "test/io/nonblock"],
+      ["io-nonblock.gemspec", "ext/io/nonblock/io-nonblock.gemspec"],
+    ]),
+    "io-wait": repo("ruby/io-wait", [
+      ["ext/io/wait", "ext/io/wait"],
+      ["test/io/wait", "test/io/wait"],
+      ["io-wait.gemspec", "ext/io/wait/io-wait.gemspec"],
+    ]),
+    "net-http": repo("ruby/net-http", [
+      ["lib/net/http.rb", "lib/net/http.rb"],
+      ["lib/net/http", "lib/net/http"],
+      ["test/net/http", "test/net/http"],
+      ["net-http.gemspec", "lib/net/http/net-http.gemspec"],
+    ]),
+    "net-protocol": repo("ruby/net-protocol", [
+      ["lib/net/protocol.rb", "lib/net/protocol.rb"],
+      ["test/net/protocol", "test/net/protocol"],
+      ["net-protocol.gemspec", "lib/net/net-protocol.gemspec"],
+    ]),
+    "open-uri": lib("ruby/open-uri"),
+    "win32-registry": repo("ruby/win32-registry", [
+      ["lib/win32/registry.rb", "ext/win32/lib/win32/registry.rb"],
+      ["test/win32/test_registry.rb", "test/win32/test_registry.rb"],
+      ["win32-registry.gemspec", "ext/win32/win32-registry.gemspec"],
+    ]),
+    English: lib("ruby/English"),
+    cgi: repo("ruby/cgi", [
+      ["ext/cgi", "ext/cgi"],
+      ["lib/cgi/escape.rb", "lib/cgi/escape.rb"],
+      ["test/cgi/test_cgi_escape.rb", "test/cgi/test_cgi_escape.rb"],
+      ["test/cgi/update_env.rb", "test/cgi/update_env.rb"],
+    ]),
+    date: repo("ruby/date", [
+      ["doc/date", "doc/date"],
+      ["ext/date", "ext/date"],
+      ["lib", "ext/date/lib"],
+      ["test/date", "test/date"],
+      ["date.gemspec", "ext/date/date.gemspec"],
+    ], exclude: [
+      "ext/date/lib/date_core.bundle",
+    ]),
+    delegate: lib("ruby/delegate"),
+    did_you_mean: repo("ruby/did_you_mean", [
+      ["lib/did_you_mean.rb", "lib/did_you_mean.rb"],
+      ["lib/did_you_mean", "lib/did_you_mean"],
+      ["test", "test/did_you_mean"],
+      ["did_you_mean.gemspec", "lib/did_you_mean/did_you_mean.gemspec"],
+    ], exclude: [
+      "test/did_you_mean/lib",
+      "test/did_you_mean/tree_spell/test_explore.rb",
+    ]),
+    digest: repo("ruby/digest", [
+      ["ext/digest/lib/digest/sha2", "ext/digest/sha2/lib/sha2"],
+      ["ext/digest", "ext/digest"],
+      ["lib/digest.rb", "ext/digest/lib/digest.rb"],
+      ["lib/digest/version.rb", "ext/digest/lib/digest/version.rb"],
+      ["lib/digest/sha2.rb", "ext/digest/sha2/lib/sha2.rb"],
+      ["test/digest", "test/digest"],
+      ["digest.gemspec", "ext/digest/digest.gemspec"],
+    ]),
+    erb: repo("ruby/erb", [
+      ["ext/erb", "ext/erb"],
+      ["lib/erb", "lib/erb"],
+      ["lib/erb.rb", "lib/erb.rb"],
+      ["test/erb", "test/erb"],
+      ["erb.gemspec", "lib/erb/erb.gemspec"],
+      ["libexec/erb", "libexec/erb"],
+    ]),
+    error_highlight: repo("ruby/error_highlight", [
+      ["lib/error_highlight.rb", "lib/error_highlight.rb"],
+      ["lib/error_highlight", "lib/error_highlight"],
+      ["test", "test/error_highlight"],
+      ["error_highlight.gemspec", "lib/error_highlight/error_highlight.gemspec"],
+    ]),
+    etc: repo("ruby/etc", [
+      ["ext/etc", "ext/etc"],
+      ["test/etc", "test/etc"],
+      ["etc.gemspec", "ext/etc/etc.gemspec"],
+    ]),
+    fcntl: repo("ruby/fcntl", [
+      ["ext/fcntl", "ext/fcntl"],
+      ["fcntl.gemspec", "ext/fcntl/fcntl.gemspec"],
+    ]),
+    fileutils: lib("ruby/fileutils"),
+    find: lib("ruby/find"),
+    forwardable: lib("ruby/forwardable", gemspec_in_subdir: true),
+    ipaddr: lib("ruby/ipaddr"),
+    json: repo("ruby/json", [
+      ["ext/json/ext", "ext/json"],
+      ["test/json", "test/json"],
+      ["lib", "ext/json/lib"],
+      ["json.gemspec", "ext/json/json.gemspec"],
+    ], exclude: [
+      "ext/json/lib/json/ext/.keep",
+      "ext/json/lib/json/pure.rb",
+      "ext/json/lib/json/pure",
+      "ext/json/lib/json/truffle_ruby",
+      "test/json/lib",
+      "ext/json/extconf.rb",
+    ]),
+    mmtk: repo(["ruby/mmtk", "main"], [
+      ["gc/mmtk", "gc/mmtk"],
+    ]),
+    open3: lib("ruby/open3", gemspec_in_subdir: true).tap {
+      it.exclude << "lib/open3/jruby_windows.rb"
+    },
+    openssl: repo("ruby/openssl", [
+      ["ext/openssl", "ext/openssl"],
+      ["lib", "ext/openssl/lib"],
+      ["test/openssl", "test/openssl"],
+      ["sample", "sample/openssl"],
+      ["openssl.gemspec", "ext/openssl/openssl.gemspec"],
+      ["History.md", "ext/openssl/History.md"],
+    ], exclude: [
+      "test/openssl/envutil.rb",
+      "ext/openssl/depend",
+    ]),
+    optparse: lib("ruby/optparse", gemspec_in_subdir: true).tap {
+      it.mappings << ["doc/optparse", "doc/optparse"]
+    },
+    pp: lib("ruby/pp"),
+    prettyprint: lib("ruby/prettyprint"),
+    prism: repo(["ruby/prism", "main"], [
+      ["ext/prism", "prism"],
+      ["lib/prism.rb", "lib/prism.rb"],
+      ["lib/prism", "lib/prism"],
+      ["test/prism", "test/prism"],
+      ["src", "prism"],
+      ["prism.gemspec", "lib/prism/prism.gemspec"],
+      ["include/prism", "prism"],
+      ["include/prism.h", "prism/prism.h"],
+      ["config.yml", "prism/config.yml"],
+      ["templates", "prism/templates"],
+    ], exclude: [
+      "prism/templates/{javascript,java,rbi,sig}",
+      "test/prism/snapshots_test.rb",
+      "test/prism/snapshots",
+      "prism/extconf.rb",
+      "prism/srcs.mk*",
+    ]),
+    psych: repo("ruby/psych", [
+      ["ext/psych", "ext/psych"],
+      ["lib", "ext/psych/lib"],
+      ["test/psych", "test/psych"],
+      ["psych.gemspec", "ext/psych/psych.gemspec"],
+    ], exclude: [
+      "ext/psych/lib/org",
+      "ext/psych/lib/psych.jar",
+      "ext/psych/lib/psych_jars.rb",
+      "ext/psych/lib/psych.{bundle,so}",
+      "ext/psych/lib/2.*",
+      "ext/psych/yaml/LICENSE",
+      "ext/psych/.gitignore",
+    ]),
+    resolv: repo("ruby/resolv", [
+      ["lib/resolv.rb", "lib/resolv.rb"],
+      ["test/resolv", "test/resolv"],
+      ["resolv.gemspec", "lib/resolv.gemspec"],
+      ["ext/win32/resolv/lib/resolv.rb", "ext/win32/lib/win32/resolv.rb"],
+      ["ext/win32/resolv", "ext/win32/resolv"],
+    ]),
+    rubygems: repo("ruby/rubygems", [
+      ["lib/rubygems.rb", "lib/rubygems.rb"],
+      ["lib/rubygems", "lib/rubygems"],
+      ["test/rubygems", "test/rubygems"],
+      ["bundler/lib/bundler.rb", "lib/bundler.rb"],
+      ["bundler/lib/bundler", "lib/bundler"],
+      ["bundler/exe/bundle", "libexec/bundle"],
+      ["bundler/exe/bundler", "libexec/bundler"],
+      ["bundler/bundler.gemspec", "lib/bundler/bundler.gemspec"],
+      ["bundler/spec", "spec/bundler"],
+      *["bundle", "parallel_rspec", "rspec"].map {|binstub|
+        ["bundler/bin/#{binstub}", "spec/bin/#{binstub}"]
+      },
+      *%w[dev_gems test_gems rubocop_gems standard_gems].flat_map {|gemfile|
+        ["rb.lock", "rb"].map do |ext|
+          ["tool/bundler/#{gemfile}.#{ext}", "tool/bundler/#{gemfile}.#{ext}"]
+        end
+      },
+    ], exclude: [
+      "spec/bundler/bin",
+      "spec/bundler/support/artifice/vcr_cassettes",
+      "spec/bundler/support/artifice/used_cassettes.txt",
+      "lib/{bundler,rubygems}/**/{COPYING,LICENSE,README}{,.{md,txt,rdoc}}",
+    ]),
+    securerandom: lib("ruby/securerandom"),
+    shellwords: lib("ruby/shellwords"),
+    singleton: lib("ruby/singleton"),
+    stringio: repo("ruby/stringio", [
+      ["ext/stringio", "ext/stringio"],
+      ["test/stringio", "test/stringio"],
+      ["stringio.gemspec", "ext/stringio/stringio.gemspec"],
+    ], exclude: [
+      "ext/stringio/README.md",
+    ]),
+    strscan: repo("ruby/strscan", [
+      ["ext/strscan", "ext/strscan"],
+      ["lib", "ext/strscan/lib"],
+      ["test/strscan", "test/strscan"],
+      ["strscan.gemspec", "ext/strscan/strscan.gemspec"],
+      ["doc/strscan", "doc/strscan"],
+    ], exclude: [
+      "ext/strscan/regenc.h",
+      "ext/strscan/regint.h",
+    ]),
+    syntax_suggest: lib(["ruby/syntax_suggest", "main"], gemspec_in_subdir: true),
+    tempfile: lib("ruby/tempfile"),
+    time: lib("ruby/time"),
+    timeout: lib("ruby/timeout"),
+    tmpdir: lib("ruby/tmpdir"),
+    tsort: lib("ruby/tsort"),
+    un: lib("ruby/un"),
+    uri: lib("ruby/uri", gemspec_in_subdir: true),
+    weakref: lib("ruby/weakref"),
+    yaml: lib("ruby/yaml", gemspec_in_subdir: true),
+    zlib: repo("ruby/zlib", [
+      ["ext/zlib", "ext/zlib"],
+      ["test/zlib", "test/zlib"],
+      ["zlib.gemspec", "ext/zlib/zlib.gemspec"],
+    ]),
+  }.transform_keys(&:to_s)
 
   # Allow synchronizing commits up to this FETCH_DEPTH. We've historically merged PRs
   # with about 250 commits to ruby/ruby, so we use this depth for ruby/ruby in general.
   FETCH_DEPTH = 500
-
-  class << REPOSITORIES
-    def [](gem)
-      repo, branch = super(gem)
-      return repo, branch || CLASSICAL_DEFAULT_BRANCH
-    end
-
-    def each_pair
-      super do |gem, (repo, branch)|
-        yield gem, [repo, branch || CLASSICAL_DEFAULT_BRANCH]
-      end
-    end
-  end
 
   def pipe_readlines(args, rs: "\0", chomp: true)
     IO.popen(args) do |f|
@@ -88,7 +302,7 @@ module SyncDefaultGems
   end
 
   def porcelain_status(*pattern)
-    pipe_readlines(%W"git status --porcelain -z --" + pattern)
+    pipe_readlines(%W"git status --porcelain --no-renames -z --" + pattern)
   end
 
   def replace_rdoc_ref(file)
@@ -117,247 +331,61 @@ module SyncDefaultGems
     result.inject(false) {|changed, file| changed | replace_rdoc_ref(file)}
   end
 
+  def rubygems_do_fixup
+    gemspec_content = File.readlines("lib/bundler/bundler.gemspec").map do |line|
+      next if line =~ /LICENSE\.md/
+
+      line.gsub("bundler.gemspec", "lib/bundler/bundler.gemspec")
+    end.compact.join
+    File.write("lib/bundler/bundler.gemspec", gemspec_content)
+
+    ["bundle", "parallel_rspec", "rspec"].each do |binstub|
+      path = "spec/bin/#{binstub}"
+      next unless File.exist?(path)
+      content = File.read(path).gsub("../spec", "../bundler")
+      File.write(path, content)
+      chmod("+x", path)
+    end
+  end
+
   # We usually don't use this. Please consider using #sync_default_gems_with_commits instead.
   def sync_default_gems(gem)
-    repo, = REPOSITORIES[gem]
-    puts "Sync #{repo}"
+    config = REPOSITORIES[gem]
+    puts "Sync #{config.upstream}"
 
-    upstream = File.join("..", "..", repo)
+    upstream = File.join("..", "..", config.upstream)
 
-    case gem
-    when "rubygems"
-      rm_rf(%w[lib/rubygems lib/rubygems.rb test/rubygems])
-      cp_r(Dir.glob("#{upstream}/lib/rubygems*"), "lib")
-      cp_r("#{upstream}/test/rubygems", "test")
-      rm_rf(%w[lib/bundler lib/bundler.rb libexec/bundler libexec/bundle spec/bundler tool/bundler/*])
-      cp_r(Dir.glob("#{upstream}/bundler/lib/bundler*"), "lib")
-      cp_r(Dir.glob("#{upstream}/bundler/exe/bundle*"), "libexec")
+    config.mappings.each do |src, dst|
+      rm_rf(dst)
+    end
 
-      gemspec_content = File.readlines("#{upstream}/bundler/bundler.gemspec").map do |line|
-        next if line =~ /LICENSE\.md/
-
-        line.gsub("bundler.gemspec", "lib/bundler/bundler.gemspec")
-      end.compact.join
-      File.write("lib/bundler/bundler.gemspec", gemspec_content)
-
-      cp_r("#{upstream}/bundler/spec", "spec/bundler")
-      rm_rf("spec/bundler/bin")
-
-      ["bundle", "parallel_rspec", "rspec"].each do |binstub|
-        content = File.read("#{upstream}/bundler/bin/#{binstub}").gsub("../spec", "../bundler")
-        File.write("spec/bin/#{binstub}", content)
-        chmod("+x", "spec/bin/#{binstub}")
-      end
-
-      %w[dev_gems test_gems rubocop_gems standard_gems].each do |gemfile|
-        ["rb.lock", "rb"].each do |ext|
-          cp_r("#{upstream}/tool/bundler/#{gemfile}.#{ext}", "tool/bundler")
+    copied = Set.new
+    config.mappings.each do |src, dst|
+      prefix = File.join(upstream, src)
+      # Maybe mapping needs to be updated?
+      next unless File.exist?(prefix)
+      Find.find(prefix) do |path|
+        next if File.directory?(path)
+        if copied.add?(path)
+          newpath = config.rewrite_for_ruby(path.sub(%r{\A#{Regexp.escape(upstream)}/}, ""))
+          next unless newpath
+          mkdir_p(File.dirname(newpath))
+          cp(path, newpath)
         end
       end
-      rm_rf Dir.glob("spec/bundler/support/artifice/{vcr_cassettes,used_cassettes.txt}")
-      rm_rf Dir.glob("lib/{bundler,rubygems}/**/{COPYING,LICENSE,README}{,.{md,txt,rdoc}}")
-    when "json"
-      rm_rf(%w[ext/json lib/json test/json])
-      cp_r("#{upstream}/ext/json/ext", "ext/json")
-      cp_r("#{upstream}/test/json", "test/json")
-      rm_rf("test/json/lib")
-      cp_r("#{upstream}/lib", "ext/json")
-      cp_r("#{upstream}/json.gemspec", "ext/json")
-      rm_rf(%w[ext/json/lib/json/pure.rb ext/json/lib/json/pure ext/json/lib/json/truffle_ruby/])
-      json_files = Dir.glob("ext/json/lib/json/ext/**/*", File::FNM_DOTMATCH).select { |f| File.file?(f) }
-      rm_rf(json_files - Dir.glob("ext/json/lib/json/ext/**/*.rb") - Dir.glob("ext/json/lib/json/ext/**/depend"))
-      `git checkout ext/json/extconf.rb ext/json/generator/depend ext/json/parser/depend ext/json/depend benchmark/`
-    when "psych"
-      rm_rf(%w[ext/psych test/psych])
-      cp_r("#{upstream}/ext/psych", "ext")
-      cp_r("#{upstream}/lib", "ext/psych")
-      cp_r("#{upstream}/test/psych", "test")
-      rm_rf(%w[ext/psych/lib/org ext/psych/lib/psych.jar ext/psych/lib/psych_jars.rb])
-      rm_rf(%w[ext/psych/lib/psych.{bundle,so} ext/psych/lib/2.*])
-      rm_rf(["ext/psych/yaml/LICENSE"])
-      cp_r("#{upstream}/psych.gemspec", "ext/psych")
-      `git checkout ext/psych/depend ext/psych/.gitignore`
-    when "stringio"
-      rm_rf(%w[ext/stringio test/stringio])
-      cp_r("#{upstream}/ext/stringio", "ext")
-      cp_r("#{upstream}/test/stringio", "test")
-      cp_r("#{upstream}/stringio.gemspec", "ext/stringio")
-      `git checkout ext/stringio/depend ext/stringio/README.md`
-    when "io-console"
-      rm_rf(%w[ext/io/console test/io/console])
-      cp_r("#{upstream}/ext/io/console", "ext/io")
-      cp_r("#{upstream}/test/io/console", "test/io")
-      mkdir_p("ext/io/console/lib")
-      cp_r("#{upstream}/lib/io/console", "ext/io/console/lib")
-      rm_rf("ext/io/console/lib/console/ffi")
-      cp_r("#{upstream}/io-console.gemspec", "ext/io/console")
-      `git checkout ext/io/console/depend`
-    when "io-nonblock"
-      rm_rf(%w[ext/io/nonblock test/io/nonblock])
-      cp_r("#{upstream}/ext/io/nonblock", "ext/io")
-      cp_r("#{upstream}/test/io/nonblock", "test/io")
-      cp_r("#{upstream}/io-nonblock.gemspec", "ext/io/nonblock")
-      `git checkout ext/io/nonblock/depend`
-    when "io-wait"
-      rm_rf(%w[ext/io/wait test/io/wait])
-      cp_r("#{upstream}/ext/io/wait", "ext/io")
-      cp_r("#{upstream}/test/io/wait", "test/io")
-      cp_r("#{upstream}/io-wait.gemspec", "ext/io/wait")
-      `git checkout ext/io/wait/depend`
-    when "etc"
-      rm_rf(%w[ext/etc test/etc])
-      cp_r("#{upstream}/ext/etc", "ext")
-      cp_r("#{upstream}/test/etc", "test")
-      cp_r("#{upstream}/etc.gemspec", "ext/etc")
-      `git checkout ext/etc/depend`
-    when "date"
-      rm_rf(%w[ext/date test/date])
-      cp_r("#{upstream}/doc/date", "doc")
-      cp_r("#{upstream}/ext/date", "ext")
-      cp_r("#{upstream}/lib", "ext/date")
-      cp_r("#{upstream}/test/date", "test")
-      cp_r("#{upstream}/date.gemspec", "ext/date")
-      `git checkout ext/date/depend`
-      rm_rf(["ext/date/lib/date_core.bundle"])
-    when "zlib"
-      rm_rf(%w[ext/zlib test/zlib])
-      cp_r("#{upstream}/ext/zlib", "ext")
-      cp_r("#{upstream}/test/zlib", "test")
-      cp_r("#{upstream}/zlib.gemspec", "ext/zlib")
-      `git checkout ext/zlib/depend`
-    when "fcntl"
-      rm_rf(%w[ext/fcntl])
-      cp_r("#{upstream}/ext/fcntl", "ext")
-      cp_r("#{upstream}/fcntl.gemspec", "ext/fcntl")
-      `git checkout ext/fcntl/depend`
-    when "strscan"
-      rm_rf(%w[ext/strscan test/strscan])
-      cp_r("#{upstream}/ext/strscan", "ext")
-      cp_r("#{upstream}/lib", "ext/strscan")
-      cp_r("#{upstream}/test/strscan", "test")
-      cp_r("#{upstream}/strscan.gemspec", "ext/strscan")
-      begin
-        cp_r("#{upstream}/doc/strscan", "doc")
-      rescue Errno::ENOENT
+    end
+
+    porcelain_status().each do |line|
+      /\A(?<x>.)(?<y>.) (?<path>.*)\z/ =~ line or raise
+      if config.excluded?(path)
+        puts "Restoring excluded file: #{path}"
+        IO.popen(%W"git checkout --" + [path], "rb", &:read)
       end
-      rm_rf(%w["ext/strscan/regenc.h ext/strscan/regint.h"])
-      `git checkout ext/strscan/depend`
-    when "cgi"
-      rm_rf(%w[lib/cgi.rb lib/cgi ext/cgi test/cgi])
-      cp_r("#{upstream}/ext/cgi", "ext")
-      mkdir_p("lib/cgi")
-      cp_r("#{upstream}/lib/cgi/escape.rb", "lib/cgi")
-      mkdir_p("test/cgi")
-      cp_r("#{upstream}/test/cgi/test_cgi_escape.rb", "test/cgi")
-      cp_r("#{upstream}/test/cgi/update_env.rb", "test/cgi")
-      rm_rf("lib/cgi/escape.jar")
-      `git checkout lib/cgi.rb lib/cgi/util.rb ext/cgi/escape/depend`
-    when "openssl"
-      rm_rf(%w[ext/openssl test/openssl])
-      cp_r("#{upstream}/ext/openssl", "ext")
-      cp_r("#{upstream}/lib", "ext/openssl")
-      cp_r("#{upstream}/test/openssl", "test")
-      rm_rf("test/openssl/envutil.rb")
-      cp_r("#{upstream}/openssl.gemspec", "ext/openssl")
-      cp_r("#{upstream}/History.md", "ext/openssl")
-      `git checkout ext/openssl/depend`
-    when "net-protocol"
-      rm_rf(%w[lib/net/protocol.rb lib/net/net-protocol.gemspec test/net/protocol])
-      cp_r("#{upstream}/lib/net/protocol.rb", "lib/net")
-      cp_r("#{upstream}/test/net/protocol", "test/net")
-      cp_r("#{upstream}/net-protocol.gemspec", "lib/net")
-    when "net-http"
-      rm_rf(%w[lib/net/http.rb lib/net/http test/net/http])
-      cp_r("#{upstream}/lib/net/http.rb", "lib/net")
-      cp_r("#{upstream}/lib/net/http", "lib/net")
-      cp_r("#{upstream}/test/net/http", "test/net")
-      cp_r("#{upstream}/net-http.gemspec", "lib/net/http")
-    when "did_you_mean"
-      rm_rf(%w[lib/did_you_mean lib/did_you_mean.rb test/did_you_mean])
-      cp_r(Dir.glob("#{upstream}/lib/did_you_mean*"), "lib")
-      cp_r("#{upstream}/did_you_mean.gemspec", "lib/did_you_mean")
-      cp_r("#{upstream}/test", "test/did_you_mean")
-      rm_rf("test/did_you_mean/lib")
-      rm_rf(%w[test/did_you_mean/tree_spell/test_explore.rb])
-    when "erb"
-      rm_rf(%w[lib/erb* test/erb libexec/erb])
-      cp_r("#{upstream}/lib/erb.rb", "lib")
-      cp_r("#{upstream}/test/erb", "test")
-      cp_r("#{upstream}/erb.gemspec", "lib/erb")
-      cp_r("#{upstream}/libexec/erb", "libexec")
-    when "digest"
-      rm_rf(%w[ext/digest test/digest])
-      cp_r("#{upstream}/ext/digest", "ext")
-      mkdir_p("ext/digest/lib/digest")
-      cp_r("#{upstream}/lib/digest.rb", "ext/digest/lib/")
-      cp_r("#{upstream}/lib/digest/version.rb", "ext/digest/lib/digest/")
-      mkdir_p("ext/digest/sha2/lib")
-      cp_r("#{upstream}/lib/digest/sha2.rb", "ext/digest/sha2/lib")
-      move("ext/digest/lib/digest/sha2", "ext/digest/sha2/lib")
-      cp_r("#{upstream}/test/digest", "test")
-      cp_r("#{upstream}/digest.gemspec", "ext/digest")
-      `git checkout ext/digest/depend ext/digest/*/depend`
-    when "optparse"
-      sync_lib gem, upstream
-      rm_rf(%w[doc/optparse])
-      mkdir_p("doc/optparse")
-      cp_r("#{upstream}/doc/optparse", "doc")
-    when "error_highlight"
-      rm_rf(%w[lib/error_highlight lib/error_highlight.rb test/error_highlight])
-      cp_r(Dir.glob("#{upstream}/lib/error_highlight*"), "lib")
-      cp_r("#{upstream}/error_highlight.gemspec", "lib/error_highlight")
-      cp_r("#{upstream}/test", "test/error_highlight")
-    when "open3"
-      sync_lib gem, upstream
-      rm_rf("lib/open3/jruby_windows.rb")
-    when "syntax_suggest"
-      sync_lib gem, upstream
-      rm_rf(%w[spec/syntax_suggest libexec/syntax_suggest])
-      cp_r("#{upstream}/spec", "spec/syntax_suggest")
-      cp_r("#{upstream}/exe/syntax_suggest", "libexec/syntax_suggest")
-    when "prism"
-      rm_rf(%w[test/prism prism])
+    end
 
-      cp_r("#{upstream}/ext/prism", "prism")
-      cp_r("#{upstream}/lib/.", "lib")
-      cp_r("#{upstream}/test/prism", "test")
-      cp_r("#{upstream}/src/.", "prism")
-
-      cp_r("#{upstream}/prism.gemspec", "lib/prism")
-      cp_r("#{upstream}/include/prism/.", "prism")
-      cp_r("#{upstream}/include/prism.h", "prism")
-
-      cp_r("#{upstream}/config.yml", "prism/")
-      cp_r("#{upstream}/templates", "prism/")
-      rm_rf("prism/templates/javascript")
-      rm_rf("prism/templates/java")
-      rm_rf("prism/templates/rbi")
-      rm_rf("prism/templates/sig")
-
-      rm("test/prism/snapshots_test.rb")
-      rm_rf("test/prism/snapshots")
-
-      rm("prism/extconf.rb")
-      `git checkout prism/srcs.mk*`
-    when "resolv"
-      rm_rf(%w[lib/resolv.* ext/win32/resolv test/resolv ext/win32/lib/win32/resolv.rb])
-      cp_r("#{upstream}/lib/resolv.rb", "lib")
-      cp_r("#{upstream}/resolv.gemspec", "lib")
-      cp_r("#{upstream}/ext/win32/resolv", "ext/win32")
-      move("ext/win32/resolv/lib/resolv.rb", "ext/win32/lib/win32")
-      rm_rf("ext/win32/resolv/lib") # Clean up empty directory
-      cp_r("#{upstream}/test/resolv", "test")
-      `git checkout ext/win32/resolv/depend`
-    when "win32-registry"
-      rm_rf(%w[ext/win32/lib/win32/registry.rb test/win32/test_registry.rb])
-      cp_r("#{upstream}/lib/win32/registry.rb", "ext/win32/lib/win32")
-      cp_r("#{upstream}/test/win32/test_registry.rb", "test/win32")
-      cp_r("#{upstream}/win32-registry.gemspec", "ext/win32")
-    when "mmtk"
-      rm_rf("gc/mmtk")
-      cp_r("#{upstream}/gc/mmtk", "gc")
-    else
-      sync_lib gem, upstream
+    # RubyGems/Bundler needs special care
+    if gem == "rubygems"
+      rubygems_do_fixup
     end
 
     check_prerelease_version(gem)
@@ -649,11 +677,12 @@ module SyncDefaultGems
       `git commit --amend --no-edit --all`
     end
 
+
     # Update commit message to include links to the original commit
     puts "Update commit message: #{sha}"
-    repo, = REPOSITORIES[gem]
+    config = REPOSITORIES[gem]
     headers, orig = IO.popen(%W[git cat-file commit #{sha}], "rb", &:read).split("\n\n", 2)
-    message = message_filter(repo, sha, orig)
+    message = message_filter(config.upstream, sha, orig)
     IO.popen(%W[git commit --amend --no-edit -F -], "r+b") {|io|
       io.write(message)
       io.close_write
@@ -672,7 +701,8 @@ module SyncDefaultGems
   # @param ranges [Array<String>] "before..after". Note that it will NOT sync "before" (but commits after that).
   # @param edit [TrueClass] Set true if you want to resolve conflicts. Obviously, update-default-gem.sh doesn't use this.
   def sync_default_gems_with_commits(gem, ranges, edit: nil)
-    repo, default_branch = REPOSITORIES[gem]
+    config = REPOSITORIES[gem]
+    repo, default_branch = config.upstream, config.branch
     puts "Sync #{repo} with commit history."
 
     # Fetch the repository to be synchronized
@@ -739,9 +769,9 @@ module SyncDefaultGems
   end
 
   def update_default_gems(gem, release: false)
-
-    repository, default_branch = REPOSITORIES[gem]
-    author, repository = repository.split('/')
+    config = REPOSITORIES[gem]
+    author, repository = config.upstream.split('/')
+    default_branch = config.branch
 
     puts "Update #{author}/#{repository}"
 
@@ -792,9 +822,9 @@ module SyncDefaultGems
   when "list"
     ARGV.shift
     pattern = Regexp.new(ARGV.join('|'))
-    REPOSITORIES.each_pair do |name, (gem)|
-      next unless pattern =~ name or pattern =~ gem
-      printf "%-15s https://github.com/%s\n", name, gem
+    REPOSITORIES.each do |gem, config|
+      next unless pattern =~ gem or pattern =~ config.upstream
+      printf "%-15s https://github.com/%s\n", gem, config.upstream
     end
   when "rdoc-ref"
     ARGV.shift
