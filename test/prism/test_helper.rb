@@ -230,7 +230,7 @@ module Prism
     end
 
     # All versions that prism can parse
-    SYNTAX_VERSIONS = %w[3.3 3.4 3.5]
+    SYNTAX_VERSIONS = %w[3.3 3.4 3.5 4.0]
 
     # Returns an array of ruby versions that a given filepath should test against:
     # test.txt         # => all available versions
