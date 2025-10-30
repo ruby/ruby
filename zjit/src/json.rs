@@ -1,4 +1,8 @@
 //! Single file JSON serializer for iongraph output of ZJIT HIR.
+//!
+//! While not mandatory, it may be useful to wrap the sink that implements Write
+//! with a BufWriter to avoid many calls to write(2). This is otherwise known as
+//! unbuffered writing.
 
 use std::io::{self, Write};
 
