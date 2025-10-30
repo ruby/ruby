@@ -210,9 +210,10 @@ The following bundled gems are added.
 The following bundled gems are updated.
 
 * minitest 5.26.0
-* rake 13.3.0
+* rake 13.3.1
 * test-unit 3.7.0
 * rexml 3.4.4
+* net-ftp 0.3.9
 * net-imap 0.5.12
 * net-smtp 0.5.1
 * matrix 0.4.3
