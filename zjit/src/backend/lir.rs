@@ -2255,7 +2255,12 @@ impl Assembler {
 /// when not dumping disassembly.
 macro_rules! asm_comment {
     ($asm:expr, $($fmt:tt)*) => {
-        if $crate::options::get_option!(dump_disasm) || $crate::options::get_option!(dump_lir).is_some() {
+        // If --zjit-dump-disasm or --zjit-dump-lir is given, enrich them with comments.
+        // Also allow --zjit-debug on dev builds to enable comments since dev builds dump LIR on panic.
+        let enable_comment = $crate::options::get_option!(dump_disasm) ||
+            $crate::options::get_option!(dump_lir).is_some() ||
+            (cfg!(debug_assertions) && $crate::options::get_option!(debug));
+        if enable_comment {
             $asm.push_insn(crate::backend::lir::Insn::Comment(format!($($fmt)*)));
         }
     };
