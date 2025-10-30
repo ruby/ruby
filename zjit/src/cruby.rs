@@ -584,6 +584,13 @@ impl VALUE {
         }
     }
 
+    pub fn struct_embedded_p(self) -> bool {
+        unsafe {
+            RB_TYPE_P(self, RUBY_T_STRUCT) &&
+            FL_TEST_RAW(self, VALUE(RSTRUCT_EMBED_LEN_MASK)) != VALUE(0)
+        }
+    }
+
     pub fn as_fixnum(self) -> i64 {
         assert!(self.fixnum_p());
         (self.0 as i64) >> 1
@@ -1369,6 +1376,7 @@ pub(crate) mod ids {
         name: freeze
         name: minusat            content: b"-@"
         name: aref               content: b"[]"
+        name: _as_heap
     }
 
     /// Get an CRuby `ID` to an interned string, e.g. a particular method name.

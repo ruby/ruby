@@ -145,6 +145,8 @@ impl Flags {
     const IS_EMBEDDED: u32 = 1 << 1;
     /// Object is a T_OBJECT
     const IS_T_OBJECT: u32 = 1 << 2;
+    /// Object is a struct with embedded fields
+    const IS_STRUCT_EMBEDDED: u32 = 1 << 3;
 
     pub fn none() -> Self { Self(Self::NONE) }
 
@@ -152,6 +154,7 @@ impl Flags {
     pub fn is_immediate(self) -> bool { (self.0 & Self::IS_IMMEDIATE) != 0 }
     pub fn is_embedded(self) -> bool { (self.0 & Self::IS_EMBEDDED) != 0 }
     pub fn is_t_object(self) -> bool { (self.0 & Self::IS_T_OBJECT) != 0 }
+    pub fn is_struct_embedded(self) -> bool { (self.0 & Self::IS_STRUCT_EMBEDDED) != 0 }
 }
 
 /// opt_send_without_block/opt_plus/... should store:
@@ -213,6 +216,9 @@ impl ProfiledType {
         let mut flags = Flags::none();
         if obj.embedded_p() {
             flags.0 |= Flags::IS_EMBEDDED;
+        }
+        if obj.struct_embedded_p() {
+            flags.0 |= Flags::IS_STRUCT_EMBEDDED;
         }
         if unsafe { RB_TYPE_P(obj, RUBY_T_OBJECT) } {
             flags.0 |= Flags::IS_T_OBJECT;

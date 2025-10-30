@@ -444,6 +444,10 @@ impl PtrPrintMap {
         self.map_ptr(id as *const c_void)
     }
 
+    fn map_offset(&self, id: i32) -> *const c_void {
+        self.map_ptr(id as *const c_void)
+    }
+
     /// Map shape ID into a pointer for printing
     fn map_shape(&self, id: ShapeId) -> *const c_void {
         self.map_ptr(id.0 as *const c_void)
@@ -671,6 +675,7 @@ pub enum Insn {
     LoadPC,
     /// Load cfp->self
     LoadSelf,
+    LoadField { recv: InsnId, id: ID, offset: i32, return_type: Type },
     /// Read an instance variable at the given index, embedded in the object
     LoadIvarEmbedded { self_val: InsnId, id: ID, index: u16 },
     /// Read an instance variable at the given index, from the extended table
@@ -909,6 +914,7 @@ impl Insn {
             Insn::IsNil      { .. } => false,
             Insn::LoadPC => false,
             Insn::LoadSelf => false,
+            Insn::LoadField { .. } => false,
             Insn::LoadIvarEmbedded { .. } => false,
             Insn::LoadIvarExtended { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
@@ -1170,6 +1176,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy()),
             Insn::LoadPC => write!(f, "LoadPC"),
             Insn::LoadSelf => write!(f, "LoadSelf"),
+            &Insn::LoadField { recv, id, offset, return_type: _ } => write!(f, "LoadField {recv}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
             &Insn::LoadIvarEmbedded { self_val, id, index } => write!(f, "LoadIvarEmbedded {self_val}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_index(index as u64)),
             &Insn::LoadIvarExtended { self_val, id, index } => write!(f, "LoadIvarExtended {self_val}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_index(index as u64)),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy()),
@@ -1792,6 +1799,7 @@ impl Function {
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
+            &LoadField { recv, id, offset, return_type } => LoadField { recv: find!(recv), id, offset, return_type },
             &LoadIvarEmbedded { self_val, id, index } => LoadIvarEmbedded { self_val: find!(self_val), id, index },
             &LoadIvarExtended { self_val, id, index } => LoadIvarExtended { self_val: find!(self_val), id, index },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val: find!(val), state },
@@ -1929,6 +1937,7 @@ impl Function {
             Insn::GetIvar { .. } => types::BasicObject,
             Insn::LoadPC => types::CPtr,
             Insn::LoadSelf => types::BasicObject,
+            &Insn::LoadField { return_type, .. } => return_type,
             Insn::LoadIvarEmbedded { .. } => types::BasicObject,
             Insn::LoadIvarExtended { .. } => types::BasicObject,
             Insn::GetSpecialSymbol { .. } => types::BasicObject,
@@ -2390,8 +2399,52 @@ impl Function {
                             self.make_equal_to(insn_id, val);
                         } else if def_type == VM_METHOD_TYPE_OPTIMIZED {
                             let opt_type = unsafe { get_cme_def_body_optimized_type(cme) };
-                            self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedOptimizedMethodType(OptimizedMethodType::from(opt_type)));
-                            self.push_insn_id(block, insn_id); continue;
+                            if opt_type == OPTIMIZED_METHOD_TYPE_STRUCT_AREF {
+                                if unsafe { vm_ci_argc(ci) } != 0 {
+                                    self.push_insn_id(block, insn_id); continue;
+                                }
+                                let index: i32 = unsafe { get_cme_def_body_optimized_index(cme) }
+                                                .try_into()
+                                                .unwrap();
+                                // We are going to use an encoding that takes a 4-byte immediate which
+                                // limits the offset to INT32_MAX.
+                                {
+                                    let native_index = (index as i64) * (SIZEOF_VALUE as i64);
+                                    if native_index > (i32::MAX as i64) {
+                                        self.push_insn_id(block, insn_id); continue;
+                                    }
+                                }
+                                // Get the profiled type to check if the fields is embedded or heap allocated.
+                                let Some(is_embedded) = self.profiled_type_of_at(recv, frame_state.insn_idx).map(|t| t.flags().is_struct_embedded()) else {
+                                    // No (monomorphic) profile info
+                                    self.push_insn_id(block, insn_id); continue;
+                                };
+                                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                                if klass.instance_can_have_singleton_class() {
+                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
+                                }
+                                if let Some(profiled_type) = profiled_type {
+                                    recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                                }
+                                // All structs from the same Struct class should have the same
+                                // length. So if our recv is embedded all runtime
+                                // structs of the same class should be as well, and the same is
+                                // true of the converse.
+                                //
+                                // No need for a GuardShape.
+                                let replacement = if is_embedded {
+                                    let offset = RUBY_OFFSET_RSTRUCT_AS_ARY + (SIZEOF_VALUE_I32 * index);
+                                    self.push_insn(block, Insn::LoadField { recv, id: mid, offset, return_type: types::BasicObject })
+                                } else {
+                                    let as_heap = self.push_insn(block, Insn::LoadField { recv, id: ID!(_as_heap), offset: RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR, return_type: types::CPtr });
+                                    let offset = SIZEOF_VALUE_I32 * index;
+                                    self.push_insn(block, Insn::LoadField { recv: as_heap, id: mid, offset, return_type: types::BasicObject })
+                                };
+                                self.make_equal_to(insn_id, replacement);
+                            } else {
+                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedOptimizedMethodType(OptimizedMethodType::from(opt_type)));
+                                self.push_insn_id(block, insn_id); continue;
+                            }
                         } else {
                             self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)));
                             self.push_insn_id(block, insn_id); continue;
@@ -3319,6 +3372,9 @@ impl Function {
                 worklist.push_back(val);
                 worklist.push_back(str);
                 worklist.push_back(state);
+            }
+            &Insn::LoadField { recv, .. } => {
+                worklist.push_back(recv);
             }
             &Insn::LoadIvarEmbedded { self_val, .. }
             | &Insn::LoadIvarExtended { self_val, .. } => {
