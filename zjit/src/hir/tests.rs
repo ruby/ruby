@@ -2712,9 +2712,9 @@ pub mod hir_build_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          v11:Class = InvokeBuiltin leaf _bi20, v6
+          v11:HeapObject = InvokeBuiltin leaf _bi20, v6
           Jump bb3(v6, v11)
-        bb3(v13:BasicObject, v14:Class):
+        bb3(v13:BasicObject, v14:HeapObject):
           CheckInterrupts
           Return v14
         ");
