@@ -4546,7 +4546,7 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1000)
           v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
           v25:HeapObject[class_exact:C] = GuardShape v22, 0x1038
-          v26:BasicObject = LoadIvarEmbedded v25, :@foo@0x1039
+          v26:BasicObject = LoadField v25, :@foo@0x1039
           CheckInterrupts
           Return v26
         ");
@@ -4585,9 +4585,10 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1000)
           v22:HeapObject[class_exact:C] = GuardType v9, HeapObject[class_exact:C]
           v25:HeapObject[class_exact:C] = GuardShape v22, 0x1038
-          v26:BasicObject = LoadIvarExtended v25, :@foo@0x1039
+          v26:CPtr = LoadField v25, :_as_heap@0x1039
+          v27:BasicObject = LoadField v26, :@foo@0x103a
           CheckInterrupts
-          Return v26
+          Return v27
         ");
     }
 
