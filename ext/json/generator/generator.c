@@ -90,6 +90,7 @@ RBIMPL_ATTR_NORETURN()
 #endif
 static void raise_generator_error_str(VALUE invalid_object, VALUE str)
 {
+    rb_enc_associate_index(str, utf8_encindex);
     VALUE exc = rb_exc_new_str(eGeneratorError, str);
     rb_ivar_set(exc, rb_intern("@invalid_object"), invalid_object);
     rb_exc_raise(exc);
