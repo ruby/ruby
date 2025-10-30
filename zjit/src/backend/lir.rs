@@ -2288,6 +2288,10 @@ pub struct AssemblerPanicHook {
 }
 
 impl AssemblerPanicHook {
+    /// Maximum number of lines [`Self::dump_asm`] is allowed to dump by default.
+    /// When --zjit-dump-lir is given, this limit is ignored.
+    const MAX_DUMP_LINES: usize = 40;
+
     /// Install a panic hook to dump Assembler with insn_idx on dev builds.
     /// This returns shared references to the previous hook and insn_idx.
     /// It takes insn_idx as an argument so that you can manually use it
@@ -2325,8 +2329,19 @@ impl AssemblerPanicHook {
 
     /// Dump Assembler, highlighting the insn_idx line
     fn dump_asm(asm: &Assembler, insn_idx: usize) {
+        let lir_string = lir_string(asm);
+        let lines: Vec<&str> = lir_string.split('\n').collect();
+
+        // By default, dump only MAX_DUMP_LINES lines.
+        // Ignore it if --zjit-dump-lir is given.
+        let (min_idx, max_idx) = if get_option!(dump_lir).is_some() {
+            (0, lines.len())
+        } else {
+            (insn_idx.saturating_sub(Self::MAX_DUMP_LINES / 2), insn_idx.saturating_add(Self::MAX_DUMP_LINES / 2))
+        };
+
         println!("Failed to compile LIR at insn_idx={insn_idx}:");
-        for (idx, line) in lir_string(asm).split('\n').enumerate() {
+        for (idx, line) in lines.iter().enumerate().filter(|(idx, _)| (min_idx..=max_idx).contains(idx)) {
             if idx == insn_idx && line.starts_with("  ") {
                 println!("{BOLD_BEGIN}=>{}{BOLD_END}", &line["  ".len()..]);
             } else {
