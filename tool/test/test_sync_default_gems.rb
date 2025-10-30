@@ -109,7 +109,16 @@ module Test_SyncDefaultGems
         git(*%W"config --global log.showSignature true")
       end
       @target = "sync-test"
-      SyncDefaultGems::REPOSITORIES[@target] = ["ruby/#{@target}", "default"]
+      SyncDefaultGems::REPOSITORIES[@target] = SyncDefaultGems.repo(
+        ["ruby/#{@target}", "default"],
+        [
+          ["lib", "lib"],
+          ["test", "test"],
+        ],
+        exclude: [
+          "test/fixtures/*",
+        ],
+      )
       @sha = {}
       @origdir = Dir.pwd
       Dir.chdir(@testdir)
