@@ -168,76 +168,78 @@ describe "IO.read" do
   end
 end
 
-describe "IO.read from a pipe" do
-  it "runs the rest as a subprocess and returns the standard output" do
-    cmd = "|sh -c 'echo hello'"
-    platform_is :windows do
-      cmd = "|cmd.exe /C echo hello"
-    end
+ruby_version_is ""..."4.0" do
+  describe "IO.read from a pipe" do
+    it "runs the rest as a subprocess and returns the standard output" do
+      cmd = "|sh -c 'echo hello'"
+      platform_is :windows do
+        cmd = "|cmd.exe /C echo hello"
+      end
 
-    suppress_warning do # https://bugs.ruby-lang.org/issues/19630
-      IO.read(cmd).should == "hello\n"
-    end
-  end
-
-  platform_is_not :windows do
-    it "opens a pipe to a fork if the rest is -" do
-      str = nil
       suppress_warning do # https://bugs.ruby-lang.org/issues/19630
-        str = IO.read("|-")
-      end
-
-      if str # parent
-        str.should == "hello from child\n"
-      else #child
-        puts "hello from child"
-        exit!
+        IO.read(cmd).should == "hello\n"
       end
     end
-  end
 
-  it "reads only the specified number of bytes requested" do
-    cmd = "|sh -c 'echo hello'"
-    platform_is :windows do
-      cmd = "|cmd.exe /C echo hello"
-    end
-
-    suppress_warning do # https://bugs.ruby-lang.org/issues/19630
-      IO.read(cmd, 1).should == "h"
-    end
-  end
-
-  platform_is_not :windows do
-    it "raises Errno::ESPIPE if passed an offset" do
-      -> {
+    platform_is_not :windows do
+      it "opens a pipe to a fork if the rest is -" do
+        str = nil
         suppress_warning do # https://bugs.ruby-lang.org/issues/19630
-          IO.read("|sh -c 'echo hello'", 1, 1)
+          str = IO.read("|-")
         end
-      }.should raise_error(Errno::ESPIPE)
-    end
-  end
 
-  quarantine! do # The process tried to write to a nonexistent pipe.
-    platform_is :windows do
-      # TODO: It should raise Errno::ESPIPE on Windows as well
-      # once https://bugs.ruby-lang.org/issues/12230 is fixed.
-      it "raises Errno::EINVAL if passed an offset" do
+        if str # parent
+          str.should == "hello from child\n"
+        else #child
+          puts "hello from child"
+          exit!
+        end
+      end
+    end
+
+    it "reads only the specified number of bytes requested" do
+      cmd = "|sh -c 'echo hello'"
+      platform_is :windows do
+        cmd = "|cmd.exe /C echo hello"
+      end
+
+      suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+        IO.read(cmd, 1).should == "h"
+      end
+    end
+
+    platform_is_not :windows do
+      it "raises Errno::ESPIPE if passed an offset" do
         -> {
           suppress_warning do # https://bugs.ruby-lang.org/issues/19630
-            IO.read("|cmd.exe /C echo hello", 1, 1)
+            IO.read("|sh -c 'echo hello'", 1, 1)
           end
-        }.should raise_error(Errno::EINVAL)
+        }.should raise_error(Errno::ESPIPE)
       end
     end
-  end
 
-  ruby_version_is "3.3" do
-    # https://bugs.ruby-lang.org/issues/19630
-    it "warns about deprecation given a path with a pipe" do
-      cmd = "|echo ok"
-      -> {
-        IO.read(cmd)
-      }.should complain(/IO process creation with a leading '\|'/)
+    quarantine! do # The process tried to write to a nonexistent pipe.
+      platform_is :windows do
+        # TODO: It should raise Errno::ESPIPE on Windows as well
+        # once https://bugs.ruby-lang.org/issues/12230 is fixed.
+        it "raises Errno::EINVAL if passed an offset" do
+          -> {
+            suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+              IO.read("|cmd.exe /C echo hello", 1, 1)
+            end
+          }.should raise_error(Errno::EINVAL)
+        end
+      end
+    end
+
+    ruby_version_is "3.3" do
+      # https://bugs.ruby-lang.org/issues/19630
+      it "warns about deprecation" do
+        cmd = "|echo ok"
+        -> {
+          IO.read(cmd)
+        }.should complain(/IO process creation with a leading '\|'/)
+      end
     end
   end
 end
