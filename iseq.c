@@ -356,8 +356,6 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 
         rb_iseq_mark_and_move_each_body_value(iseq, reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL);
 
-        rb_gc_mark_and_move(&body->variable.coverage);
-        rb_gc_mark_and_move(&body->variable.pc2branchindex);
         rb_gc_mark_and_move(&body->variable.script_lines);
         rb_gc_mark_and_move(&body->location.label);
         rb_gc_mark_and_move(&body->location.base_label);
@@ -422,10 +420,18 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 #endif
             }
         }
+
+        // TODO: ractor aware coverage
+        if (!rb_gc_checking_shareable()) {
+            rb_gc_mark_and_move(&body->variable.coverage);
+            rb_gc_mark_and_move(&body->variable.pc2branchindex);
+        }
     }
 
     if (FL_TEST_RAW((VALUE)iseq, ISEQ_NOT_LOADED_YET)) {
-        rb_gc_mark_and_move(&iseq->aux.loader.obj);
+        if (!rb_gc_checking_shareable()) {
+            rb_gc_mark_and_move(&iseq->aux.loader.obj);
+        }
     }
     else if (FL_TEST_RAW((VALUE)iseq, ISEQ_USE_COMPILE_DATA)) {
         if (!rb_gc_checking_shareable()) {
