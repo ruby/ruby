@@ -114,7 +114,6 @@ jobs:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}
 
-
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
