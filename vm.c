@@ -503,7 +503,7 @@ rb_yjit_threshold_hit(const rb_iseq_t *iseq, uint64_t entry_calls)
 #define rb_yjit_threshold_hit(iseq, entry_calls) false
 #endif
 
-#if USE_YJIT || USE_ZJIT
+#if USE_YJIT
 // Generate JIT code that supports the following kinds of ISEQ entries:
 //   * The first ISEQ on vm_exec (e.g. <main>, or Ruby methods/blocks
 //     called by a C method). The current frame has VM_FRAME_FLAG_FINISH.
@@ -513,13 +513,32 @@ rb_yjit_threshold_hit(const rb_iseq_t *iseq, uint64_t entry_calls)
 //     The current frame doesn't have VM_FRAME_FLAG_FINISH. The current
 //     vm_exec does NOT stop whether JIT code returns Qundef or not.
 static inline rb_jit_func_t
-jit_compile(rb_execution_context_t *ec)
+yjit_compile(rb_execution_context_t *ec)
 {
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
+    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
+    if (body->jit_entry == NULL) {
+        body->jit_entry_calls++;
+        if (rb_yjit_threshold_hit(iseq, body->jit_entry_calls)) {
+            rb_yjit_compile_iseq(iseq, ec, false);
+        }
+    }
+    return body->jit_entry;
+}
+#else
+# define yjit_compile(ec) ((rb_jit_func_t)0)
+#endif
+
 #if USE_ZJIT
-    if (body->jit_entry == NULL && rb_zjit_enabled_p) {
+static inline rb_jit_func_t
+zjit_compile(rb_execution_context_t *ec)
+{
+    const rb_iseq_t *iseq = ec->cfp->iseq;
+    struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+
+    if (body->jit_entry == NULL) {
         body->jit_entry_calls++;
 
         // At profile-threshold, rewrite some of the YARV instructions
@@ -533,37 +552,37 @@ jit_compile(rb_execution_context_t *ec)
             rb_zjit_compile_iseq(iseq, false);
         }
     }
-#endif
-
-#if USE_YJIT
-    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
-    if (body->jit_entry == NULL && rb_yjit_enabled_p) {
-        body->jit_entry_calls++;
-        if (rb_yjit_threshold_hit(iseq, body->jit_entry_calls)) {
-            rb_yjit_compile_iseq(iseq, ec, false);
-        }
-    }
-#endif
     return body->jit_entry;
 }
+#else
+# define zjit_compile(ec) ((rb_jit_func_t)0)
+#endif
 
-// Execute JIT code compiled by jit_compile()
+// Execute JIT code compiled by yjit_compile() or zjit_compile()
 static inline VALUE
 jit_exec(rb_execution_context_t *ec)
 {
-    rb_jit_func_t func = jit_compile(ec);
-    if (func) {
-        // Call the JIT code
-        return func(ec, ec->cfp);
-    }
-    else {
+#if USE_YJIT
+    if (rb_yjit_enabled_p) {
+        rb_jit_func_t func = yjit_compile(ec);
+        if (func) {
+            return func(ec, ec->cfp);
+        }
         return Qundef;
     }
-}
-#else
-# define jit_compile(ec) ((rb_jit_func_t)0)
-# define jit_exec(ec) Qundef
 #endif
+
+#if USE_ZJIT
+    rb_zjit_func_t zjit_entry = (rb_zjit_func_t)rb_zjit_entry;
+    if (zjit_entry) {
+        rb_jit_func_t func = zjit_compile(ec);
+        if (func) {
+            return zjit_entry(ec, ec->cfp, func);
+        }
+    }
+#endif
+    return Qundef;
+}
 
 #if USE_YJIT
 // Generate JIT code that supports the following kind of ISEQ entry:

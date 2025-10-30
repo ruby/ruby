@@ -398,6 +398,7 @@ enum rb_builtin_attr {
 };
 
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
+typedef VALUE (*rb_zjit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *, rb_jit_func_t);
 
 struct rb_iseq_constant_body {
     enum rb_iseq_type type;

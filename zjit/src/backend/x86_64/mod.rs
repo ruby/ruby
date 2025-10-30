@@ -863,7 +863,15 @@ impl Assembler {
 
                 // C function call
                 Insn::CCall { fptr, .. } => {
-                    call_ptr(cb, RAX, *fptr);
+                    match fptr {
+                        Opnd::UImm(fptr) => {
+                            call_ptr(cb, RAX, *fptr as *const u8);
+                        }
+                        Opnd::Reg(_) => {
+                            call(cb, fptr.into());
+                        }
+                        _ => unreachable!("unsupported ccall fptr: {fptr:?}")
+                    }
                 },
 
                 Insn::CRet(opnd) => {
