@@ -370,13 +370,11 @@ module SyncDefaultGems
   def check_prerelease_version(gem)
     return if ["rubygems", "mmtk", "cgi"].include?(gem)
 
-    gem = gem.downcase
-
     require "net/https"
     require "json"
     require "uri"
 
-    uri = URI("https://rubygems.org/api/v1/versions/#{gem}/latest.json")
+    uri = URI("https://rubygems.org/api/v1/versions/#{gem.downcase}/latest.json")
     response = Net::HTTP.get(uri)
     latest_version = JSON.parse(response)["version"]
 
