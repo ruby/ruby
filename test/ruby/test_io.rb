@@ -2619,36 +2619,15 @@ class TestIO < Test::Unit::TestCase
     assert_equal({:a=>1}, open(o, {a: 1}))
   end
 
-  def test_open_pipe
-    assert_deprecated_warning(/Kernel#open with a leading '\|'/) do # https://bugs.ruby-lang.org/issues/19630
-      open("|" + EnvUtil.rubybin, "r+") do |f|
-        f.puts "puts 'foo'"
-        f.close_write
-        assert_equal("foo\n", f.read)
-      end
-    end
-  end
+  def test_path_with_pipe
+    mkcdtmpdir do
+      cmd = "|echo foo"
+      assert_file.not_exist?(cmd)
 
-  def test_read_command
-    assert_deprecated_warning(/IO process creation with a leading '\|'/) do # https://bugs.ruby-lang.org/issues/19630
-      assert_equal("foo\n", IO.read("|echo foo"))
-    end
-    assert_raise(Errno::ENOENT, Errno::EINVAL) do
-      File.read("|#{EnvUtil.rubybin} -e puts")
-    end
-    assert_raise(Errno::ENOENT, Errno::EINVAL) do
-      File.binread("|#{EnvUtil.rubybin} -e puts")
-    end
-    assert_raise(Errno::ENOENT, Errno::EINVAL) do
-      Class.new(IO).read("|#{EnvUtil.rubybin} -e puts")
-    end
-    assert_raise(Errno::ENOENT, Errno::EINVAL) do
-      Class.new(IO).binread("|#{EnvUtil.rubybin} -e puts")
-    end
-    assert_raise(Errno::ESPIPE) do
-      assert_deprecated_warning(/IO process creation with a leading '\|'/) do # https://bugs.ruby-lang.org/issues/19630
-        IO.read("|#{EnvUtil.rubybin} -e 'puts :foo'", 1, 1)
-      end
+      pipe_errors = [Errno::ENOENT, Errno::EINVAL, Errno::EACCES, Errno::EPERM]
+      assert_raise(*pipe_errors) { open(cmd, "r+") }
+      assert_raise(*pipe_errors) { IO.read(cmd) }
+      assert_raise(*pipe_errors) { IO.foreach(cmd) {|x| assert false } }
     end
   end
 
@@ -2853,19 +2832,6 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_foreach
-    a = []
-
-    assert_deprecated_warning(/IO process creation with a leading '\|'/) do # https://bugs.ruby-lang.org/issues/19630
-      IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :foo; puts :bar; puts :baz'") {|x| a << x }
-    end
-    assert_equal(["foo\n", "bar\n", "baz\n"], a)
-
-    a = []
-    assert_deprecated_warning(/IO process creation with a leading '\|'/) do # https://bugs.ruby-lang.org/issues/19630
-      IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :zot'", :open_args => ["r"]) {|x| a << x }
-    end
-    assert_equal(["zot\n"], a)
-
     make_tempfile {|t|
       a = []
       IO.foreach(t.path) {|x| a << x }

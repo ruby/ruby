@@ -1395,30 +1395,6 @@ EOT
     }
   end
 
-  def test_open_pipe_r_enc
-    EnvUtil.suppress_warning do # https://bugs.ruby-lang.org/issues/19630
-      open("|#{EnvUtil.rubybin} -e 'putc 255'", "r:ascii-8bit") {|f|
-        assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
-        assert_equal(nil, f.internal_encoding)
-        s = f.read
-        assert_equal(Encoding::ASCII_8BIT, s.encoding)
-        assert_equal("\xff".force_encoding("ascii-8bit"), s)
-      }
-    end
-  end
-
-  def test_open_pipe_r_enc2
-    EnvUtil.suppress_warning do # https://bugs.ruby-lang.org/issues/19630
-      open("|#{EnvUtil.rubybin} -e 'putc \"\\u3042\"'", "r:UTF-8") {|f|
-        assert_equal(Encoding::UTF_8, f.external_encoding)
-        assert_equal(nil, f.internal_encoding)
-        s = f.read
-        assert_equal(Encoding::UTF_8, s.encoding)
-        assert_equal("\u3042", s)
-      }
-    end
-  end
-
   def test_s_foreach_enc
     with_tmpdir {
       generate_file("t", "\xff")

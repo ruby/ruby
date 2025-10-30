@@ -8223,21 +8223,6 @@ rb_io_s_sysopen(int argc, VALUE *argv, VALUE _)
     return INT2NUM(fd);
 }
 
-static VALUE
-check_pipe_command(VALUE filename_or_command)
-{
-    char *s = RSTRING_PTR(filename_or_command);
-    long l = RSTRING_LEN(filename_or_command);
-    char *e = s + l;
-    int chlen;
-
-    if (rb_enc_ascget(s, e, &chlen, rb_enc_get(filename_or_command)) == '|') {
-        VALUE cmd = rb_str_new(s+chlen, l-chlen);
-        return cmd;
-    }
-    return Qnil;
-}
-
 /*
  *  call-seq:
  *    open(path, mode = 'r', perm = 0666, **opts)             -> io or nil
@@ -8283,13 +8268,7 @@ rb_f_open(int argc, VALUE *argv, VALUE _)
                 redirect = TRUE;
             }
             else {
-                VALUE cmd = check_pipe_command(tmp);
-                if (!NIL_P(cmd)) {
-                    // TODO: when removed in 4.0, update command_injection.rdoc
-                    rb_warn_deprecated_to_remove_at(4.0, "Calling Kernel#open with a leading '|'", "IO.popen");
-                    argv[0] = cmd;
-                    return rb_io_s_popen(argc, argv, rb_cIO);
-                }
+                argv[0] = tmp;
             }
         }
     }
@@ -8308,16 +8287,8 @@ static VALUE
 rb_io_open_generic(VALUE klass, VALUE filename, int oflags, enum rb_io_mode fmode,
                    const struct rb_io_encoding *convconfig, mode_t perm)
 {
-    VALUE cmd;
-    if (klass == rb_cIO && !NIL_P(cmd = check_pipe_command(filename))) {
-        // TODO: when removed in 4.0, update command_injection.rdoc
-        rb_warn_deprecated_to_remove_at(4.0, "IO process creation with a leading '|'", "IO.popen");
-        return pipe_open_s(cmd, rb_io_oflags_modestr(oflags), fmode, convconfig);
-    }
-    else {
-        return rb_file_open_generic(io_alloc(klass), filename,
-                                    oflags, fmode, convconfig, perm);
-    }
+    return rb_file_open_generic(io_alloc(klass), filename,
+                                oflags, fmode, convconfig, perm);
 }
 
 static VALUE
