@@ -4649,7 +4649,7 @@ rb_hash_compact_bang(VALUE hash)
  *  returns +self+:
  *
  *  By default, two keys are considered to be the same key
- *  if and only if they are _equal_ objects (per method #==):
+ *  if and only if they are _equal_ objects (per method #eql?):
  *
  *    h = {}
  *    h['x'] = 0
