@@ -2677,9 +2677,9 @@ impl Function {
         self.infer_types();
     }
 
-    fn gen_patch_points_for_optimized_ccall(&mut self, block: BlockId, recv_class: VALUE, method_id: ID, method: *const rb_callable_method_entry_struct, state: InsnId) {
+    fn gen_patch_points_for_optimized_ccall(&mut self, block: BlockId, recv_class: VALUE, method_id: ID, cme: *const rb_callable_method_entry_struct, state: InsnId) {
         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoTracePoint, state });
-        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme: method }, state });
+        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme }, state });
     }
 
     /// Optimize SendWithoutBlock that land in a C method to a direct CCall without
@@ -2715,19 +2715,19 @@ impl Function {
             };
 
             // Do method lookup
-            let method: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
-            if method.is_null() {
+            let cme: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
+            if cme.is_null() {
                 return Err(());
             }
 
             // Filter for C methods
-            let def_type = unsafe { get_cme_def_type(method) };
+            let def_type = unsafe { get_cme_def_type(cme) };
             if def_type != VM_METHOD_TYPE_CFUNC {
                 return Err(());
             }
 
             // Find the `argc` (arity) of the C method, which describes the parameters it expects
-            let cfunc = unsafe { get_cme_def_body_cfunc(method) };
+            let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
             let cfunc_argc = unsafe { get_mct_argc(cfunc) };
             match cfunc_argc {
                 0.. => {
@@ -2747,7 +2747,7 @@ impl Function {
                     }
 
                     // Commit to the replacement. Put PatchPoint.
-                    fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, method, state);
+                    fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
                     if recv_class.instance_can_have_singleton_class() {
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
                     }
@@ -2769,7 +2769,7 @@ impl Function {
                         cd,
                         cfunc,
                         args: cfunc_args,
-                        cme: method,
+                        cme,
                         name: method_id,
                         state,
                         return_type: types::BasicObject,
@@ -2818,23 +2818,23 @@ impl Function {
             };
 
             // Do method lookup
-            let mut method: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
-            if method.is_null() {
+            let mut cme: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
+            if cme.is_null() {
                 return Err(());
             }
 
             // Filter for C methods
-            let mut def_type = unsafe { get_cme_def_type(method) };
+            let mut def_type = unsafe { get_cme_def_type(cme) };
             while def_type == VM_METHOD_TYPE_ALIAS {
-                method = unsafe { rb_aliased_callable_method_entry(method) };
-                def_type = unsafe { get_cme_def_type(method) };
+                cme = unsafe { rb_aliased_callable_method_entry(cme) };
+                def_type = unsafe { get_cme_def_type(cme) };
             }
             if def_type != VM_METHOD_TYPE_CFUNC {
                 return Err(());
             }
 
             // Find the `argc` (arity) of the C method, which describes the parameters it expects
-            let cfunc = unsafe { get_cme_def_body_cfunc(method) };
+            let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
             let cfunc_argc = unsafe { get_mct_argc(cfunc) };
             match cfunc_argc {
                 0.. => {
@@ -2854,14 +2854,14 @@ impl Function {
                     }
 
                     // Commit to the replacement. Put PatchPoint.
-                    fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, method, state);
+                    fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
                     if recv_class.instance_can_have_singleton_class() {
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
                     }
 
-                    let props = ZJITState::get_method_annotations().get_cfunc_properties(method);
+                    let props = ZJITState::get_method_annotations().get_cfunc_properties(cme);
                     if props.is_none() && get_option!(stats) {
-                        count_not_annotated_cfunc(fun, block, method);
+                        count_not_annotated_cfunc(fun, block, cme);
                     }
                     let props = props.unwrap_or_default();
 
@@ -2897,13 +2897,13 @@ impl Function {
                         fun.make_equal_to(send_insn_id, ccall);
                     } else {
                         if get_option!(stats) {
-                            count_not_inlined_cfunc(fun, block, method);
+                            count_not_inlined_cfunc(fun, block, cme);
                         }
                         let ccall = fun.push_insn(block, Insn::CCallWithFrame {
                             cd,
                             cfunc,
                             args: cfunc_args,
-                            cme: method,
+                            cme,
                             name: method_id,
                             state,
                             return_type,
@@ -2923,7 +2923,7 @@ impl Function {
                     if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
                         fun.count_fancy_call_features(block, ci_flags);
                     } else {
-                        fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, method, state);
+                        fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
 
                         if recv_class.instance_can_have_singleton_class() {
                             fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_class }, state });
@@ -2935,9 +2935,9 @@ impl Function {
                         }
 
                         let cfunc = unsafe { get_mct_func(cfunc) }.cast();
-                        let props = ZJITState::get_method_annotations().get_cfunc_properties(method);
+                        let props = ZJITState::get_method_annotations().get_cfunc_properties(cme);
                         if props.is_none() && get_option!(stats) {
-                            count_not_annotated_cfunc(fun, block, method);
+                            count_not_annotated_cfunc(fun, block, cme);
                         }
                         let props = props.unwrap_or_default();
 
@@ -2956,7 +2956,7 @@ impl Function {
 
                         // No inlining; emit a call
                         if get_option!(stats) {
-                            count_not_inlined_cfunc(fun, block, method);
+                            count_not_inlined_cfunc(fun, block, cme);
                         }
                         let return_type = props.return_type;
                         let elidable = props.elidable;
@@ -2964,7 +2964,7 @@ impl Function {
                             cfunc,
                             recv,
                             args,
-                            cme: method,
+                            cme,
                             name: method_id,
                             state,
                             return_type,
