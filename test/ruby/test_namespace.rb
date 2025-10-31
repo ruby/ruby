@@ -711,12 +711,26 @@ class TestNamespace < Test::Unit::TestCase
         def self.ns5 = NS2
         def self.ns6 = Namespace.current
         def self.ns6_proc = ->(){ Namespace.current }
+        def self.ns7
+          res = []
+          [1,2].chunk{ it.even? }.each do |bool, members|
+            res << Namespace.current.object_id.to_s + ":" + bool.to_s + ":" + members.map(&:to_s).join(",")
+          end
+          res
+        end
 
         def self.yield_block = yield
         def self.call_block(&b) = b.call
       end
       FOO_NAME = Foo.name
-      NS9 = Foo.new.ns4
+
+      module Kernel
+        def foo_namespace = Namespace.current
+        module_function :foo_namespace
+      end
+
+      NS_X = Foo.new.ns4
+      NS_Y = foo_namespace
       EOC
       ns.eval(code)
       outer = Namespace.current
@@ -729,9 +743,14 @@ class TestNamespace < Test::Unit::TestCase
       assert_equal ns, ns::Foo.ns6     # singleton method -> the current
       assert_equal ns, ns::Foo.ns6_proc.call # method returns a proc -> the current
 
+      # a block after CFUNC/IFUNC in a method -> the current
+      assert_equal ["#{ns.object_id}:false:1", "#{ns.object_id}:true:2"], ns::Foo.ns7
+
       assert_equal outer, ns::Foo.yield_block{ Namespace.current } # method yields
       assert_equal outer, ns::Foo.call_block{ Namespace.current }  # method calls a block
-      assert_equal ns, ns::NS9 # on TOP frame, referring a class in the current
+
+      assert_equal ns, ns::NS_X # on TOP frame, referring a class in the current
+      assert_equal ns, ns::NS_Y # on TOP frame, referring Kernel method defined by a CFUNC method
 
       assert_equal "Foo", ns::FOO_NAME
       assert_equal "Foo", ns::Foo.name

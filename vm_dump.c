@@ -421,39 +421,42 @@ rb_vmdebug_namespace_env_dump_raw(const rb_execution_context_t *ec, const rb_con
     // See VM_EP_RUBY_LEP for the original logic
     const VALUE *ep = current_cfp->ep;
     const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
-    const rb_control_frame_t *cfp = NULL, *checkpoint_cfp = current_cfp;
+    const rb_control_frame_t *cfp = current_cfp, *checkpoint_cfp = current_cfp;
 
     kprintf("-- Namespace detection information "
             "-----------------------------------------\n");
 
     namespace_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
 
-    while (!VM_ENV_LOCAL_P(ep) || VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
+    if (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_IFUNC)) {
         while (!VM_ENV_LOCAL_P(ep)) {
             ep = VM_ENV_PREV_EP(ep);
             namespace_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
         }
-        while (VM_ENV_FLAGS(ep, VM_FRAME_FLAG_CFRAME) != 0) {
-            if (!cfp) {
-                cfp = vmdebug_search_cf_from_ep(ec, checkpoint_cfp, ep);
-            }
-            if (!cfp) {
-                goto stop;
-            }
-            cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-            if (cfp >= eocfp) {
-                kprintf("[PREVIOUS CONTROL FRAME IS OUT OF BOUND]\n");
-                goto stop;
-            }
-            ep = cfp->ep;
-            namespace_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
-            if (!ep) {
-                goto stop;
-            }
-        }
-        checkpoint_cfp = cfp;
-        cfp = NULL;
+        goto stop;
     }
+
+    while (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
+        cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+        if (!cfp) {
+            goto stop;
+        }
+        if (cfp >= eocfp) {
+            kprintf("[PREVIOUS CONTROL FRAME IS OUT OF BOUND]\n");
+            goto stop;
+        }
+        ep = cfp->ep;
+        namespace_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
+        if (!ep) {
+            goto stop;
+        }
+    }
+
+    while (!VM_ENV_LOCAL_P(ep)) {
+        ep = VM_ENV_PREV_EP(ep);
+        namespace_env_dump_unchecked(ec, ep, checkpoint_cfp, errout);
+    }
+
   stop:
     kprintf("\n");
     return true;
