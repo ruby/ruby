@@ -16,6 +16,9 @@ pub struct Serializer<W: Write> {
 /// JSON's native null type.
 pub struct JsonNull;
 
+/// A typed, serializable constant for an empty JSON array.
+pub const EMPTY_ARRAY: &[JsonNull] = &[];
+
 /// Convenience type for a result in JSON serialization.
 pub type JsonResult<W> = std::result::Result<W, JsonError>;
 
