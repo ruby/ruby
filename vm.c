@@ -113,39 +113,62 @@ VM_EP_RUBY_LEP(const rb_execution_context_t *ec, const rb_control_frame_t *curre
     // rb_vmdebug_namespace_env_dump_raw() simulates this function
     const VALUE *ep = current_cfp->ep;
     const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
-    const rb_control_frame_t *cfp = NULL, *checkpoint_cfp = current_cfp;
+    const rb_control_frame_t *cfp = current_cfp;
 
-    while (!VM_ENV_LOCAL_P(ep) || VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
-        while (!VM_ENV_LOCAL_P(ep)) {
-            ep = VM_ENV_PREV_EP(ep);
-        }
-        while (VM_ENV_FLAGS(ep, VM_FRAME_FLAG_CFRAME) != 0) {
-            if (!cfp) {
-                cfp = rb_vm_search_cf_from_ep(ec, checkpoint_cfp, ep);
-                VM_NAMESPACE_ASSERT(cfp, "Failed to search cfp from ep");
-                VM_NAMESPACE_ASSERT(cfp->ep == ep, "Searched cfp's ep is not equal to ep");
-            }
-            if (!cfp) {
-                return NULL;
-            }
-            VM_NAMESPACE_ASSERT(cfp->ep, "cfp->ep == NULL");
-            VM_NAMESPACE_ASSERT(cfp->ep == ep, "cfp->ep != ep");
-
-            VM_NAMESPACE_ASSERT(!VM_FRAME_FINISHED_P(cfp), "CFUNC frame should not FINISHED");
-
-            cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-            if (cfp >= eocfp) {
-                return NULL;
-            }
-            VM_NAMESPACE_ASSERT(cfp, "CFUNC should have a valid previous control frame");
-            ep = cfp->ep;
-            if (!ep) {
-                return NULL;
-            }
-        }
-        checkpoint_cfp = cfp;
-        cfp = NULL;
+    if (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_IFUNC)) {
+        ep = VM_EP_LEP(current_cfp->ep);
+        /**
+         * Returns CFUNC frame only in this case.
+         *
+         * Usually CFUNC frame doesn't represent the current namespace and it should operate
+         * the caller namespace. See the example:
+         *
+         * # in the main namespace
+         * module Kernel
+         *   def foo = "foo"
+         *   module_function :foo
+         * end
+         *
+         * In the case above, `module_function` is defined in the root namespace.
+         * If `module_function` worked in the root namespace, `Kernel#foo` is invisible
+         * from it and it causes NameError: undefined method `foo` for module `Kernel`.
+         *
+         * But in cases of IFUNC (blocks written in C), IFUNC doesn't have its own namespace
+         * and its local env frame will be CFUNC frame.
+         * For example, `Enumerator#chunk` calls IFUNC blocks, written as `chunk_i` function.
+         *
+         * [1].chunk{ it.even? }.each{ ... }
+         *
+         * Before calling the Ruby block `{ it.even? }`, `#chunk` calls `chunk_i` as IFUNC
+         * to iterate the array's members (it's just like `#each`).
+         * We expect that `chunk_i` works as expected by the implementation of `#chunk`
+         * without any overwritten definitions from namespaces.
+         * So the definitions on IFUNC frames should be equal to the caller CFUNC.
+         */
+        VM_ASSERT(VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC));
+        return ep;
     }
+
+    while (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
+        cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+
+        VM_NAMESPACE_ASSERT(cfp, "CFUNC should have a valid previous control frame");
+        VM_NAMESPACE_ASSERT(cfp < eocfp, "CFUNC should have a valid caller frame");
+        if (!cfp || cfp >= eocfp) {
+            return NULL;
+        }
+
+        VM_NAMESPACE_ASSERT(cfp->ep, "CFUNC should have a valid caller frame with env");
+        ep = cfp->ep;
+        if (!ep) {
+            return NULL;
+        }
+    }
+
+    while (!VM_ENV_LOCAL_P(ep)) {
+        ep = VM_ENV_PREV_EP(ep);
+    }
+
     return ep;
 }
 
@@ -3096,7 +3119,7 @@ current_namespace_on_cfp(const rb_execution_context_t *ec, const rb_control_fram
     VM_NAMESPACE_ASSERT(lep, "lep should be valid");
     VM_NAMESPACE_ASSERT(rb_namespace_available(), "namespace should be available here");
 
-    if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_METHOD)) {
+    if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_METHOD) || VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_CFUNC)) {
         cme = check_method_entry(lep[VM_ENV_DATA_INDEX_ME_CREF], TRUE);
         VM_NAMESPACE_ASSERT(cme, "cme should be valid");
         VM_NAMESPACE_ASSERT(cme->def, "cme->def shold be valid");
