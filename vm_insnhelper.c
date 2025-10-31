@@ -2156,17 +2156,7 @@ vm_populate_cc(VALUE klass, const struct rb_callinfo * const ci, ID mid)
 
     RB_DEBUG_COUNTER_INC(cc_not_found_in_ccs);
 
-    const rb_callable_method_entry_t *cme;
-
-    if (ccs) {
-        cme = ccs->cme;
-        cme = UNDEFINED_METHOD_ENTRY_P(cme) ? NULL : cme;
-
-        VM_ASSERT(cme == rb_callable_method_entry(klass, mid));
-    }
-    else {
-        cme = rb_callable_method_entry(klass, mid);
-    }
+    const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, mid);
 
     VM_ASSERT(cme == NULL || IMEMO_TYPE_P(cme, imemo_ment));
 
@@ -2180,9 +2170,9 @@ vm_populate_cc(VALUE klass, const struct rb_callinfo * const ci, ID mid)
 
     METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
 
-    if (ccs == NULL) {
-        VM_ASSERT(cc_tbl);
+    VM_ASSERT(cc_tbl);
 
+    {
         VALUE ccs_obj;
         if (UNLIKELY(rb_managed_id_table_lookup(cc_tbl, mid, &ccs_obj))) {
             ccs = (struct rb_class_cc_entries *)ccs_obj;
