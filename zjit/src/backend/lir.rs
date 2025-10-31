@@ -2340,7 +2340,7 @@ impl AssemblerPanicHook {
             (insn_idx.saturating_sub(Self::MAX_DUMP_LINES / 2), insn_idx.saturating_add(Self::MAX_DUMP_LINES / 2))
         };
 
-        println!("Failed to compile LIR at insn_idx={insn_idx}:");
+        eprintln!("Failed to compile LIR at insn_idx={insn_idx}:");
         for (idx, line) in lines.iter().enumerate().filter(|(idx, _)| (min_idx..=max_idx).contains(idx)) {
             if idx == insn_idx && line.starts_with("  ") {
                 eprintln!("{BOLD_BEGIN}=>{}{BOLD_END}", &line["  ".len()..]);
