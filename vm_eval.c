@@ -199,6 +199,8 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
     const struct rb_callcache *cc = calling->cc;
     VALUE ret;
 
+    ASSERT_vm_unlocking();
+
   retry:
 
     switch (vm_cc_cme(cc)->def->type) {

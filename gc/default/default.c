@@ -2763,20 +2763,23 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
 
     if (st_lookup(finalizer_table, obj, &data)) {
         table = (VALUE)data;
+        VALUE dup_table = rb_ary_dup(table);
 
+        RB_GC_VM_UNLOCK(lev);
         /* avoid duplicate block, table is usually small */
         {
             long len = RARRAY_LEN(table);
             long i;
 
             for (i = 0; i < len; i++) {
-                VALUE recv = RARRAY_AREF(table, i);
-                if (rb_equal(recv, block)) {
-                    RB_GC_VM_UNLOCK(lev);
+                VALUE recv = RARRAY_AREF(dup_table, i);
+                if (rb_equal(recv, block)) { // can't be called with VM lock held
                     return recv;
                 }
             }
         }
+        lev = RB_GC_VM_LOCK();
+        RB_GC_GUARD(dup_table);
 
         rb_ary_push(table, block);
     }
@@ -2837,8 +2840,8 @@ get_final(long i, void *data)
     return RARRAY_AREF(table, i + 1);
 }
 
-static void
-run_final(rb_objspace_t *objspace, VALUE zombie)
+static int
+run_final(rb_objspace_t *objspace, VALUE zombie, unsigned int lev)
 {
     if (RZOMBIE(zombie)->dfree) {
         RZOMBIE(zombie)->dfree(RZOMBIE(zombie)->data);
@@ -2849,7 +2852,9 @@ run_final(rb_objspace_t *objspace, VALUE zombie)
         FL_UNSET(zombie, FL_FINALIZE);
         st_data_t table;
         if (st_delete(finalizer_table, &key, &table)) {
+            RB_GC_VM_UNLOCK(lev);
             rb_gc_run_obj_finalizer(RARRAY_AREF(table, 0), RARRAY_LEN(table) - 1, get_final, (void *)table);
+            lev = RB_GC_VM_LOCK();
         }
         else {
             rb_bug("FL_FINALIZE flag is set, but finalizers are not found");
@@ -2858,6 +2863,7 @@ run_final(rb_objspace_t *objspace, VALUE zombie)
     else {
         GC_ASSERT(!st_lookup(finalizer_table, key, NULL));
     }
+    return lev;
 }
 
 static void
@@ -2872,7 +2878,7 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
 
         int lev = RB_GC_VM_LOCK();
 
-        run_final(objspace, zombie);
+        lev = run_final(objspace, zombie, lev);
         {
             GC_ASSERT(BUILTIN_TYPE(zombie) == T_ZOMBIE);
             GC_ASSERT(page->heap->final_slots_count > 0);

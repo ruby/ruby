@@ -42,6 +42,7 @@
 
 #include "dln.h"
 #include "eval_intern.h"
+#include "vm_sync.h"
 #include "internal.h"
 #include "internal/cmdlineopt.h"
 #include "internal/cont.h"
