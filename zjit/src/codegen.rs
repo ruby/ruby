@@ -1206,7 +1206,7 @@ fn gen_send_without_block_direct(
     let mut c_args = vec![recv];
     c_args.extend(&args);
 
-    let insn_idx = if unsafe { get_iseq_flags_has_opt(iseq) } {
+    let num_optionals_passed = if unsafe { get_iseq_flags_has_opt(iseq) } {
         // See vm_call_iseq_setup_normal_opt_start in vm_inshelper.c
         let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) } as u32;
         let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) } as u32;
@@ -1218,7 +1218,7 @@ fn gen_send_without_block_direct(
     };
 
     // Make a method call. The target address will be rewritten once compiled.
-    let iseq_call = IseqCall::new(iseq, insn_idx);
+    let iseq_call = IseqCall::new(iseq, num_optionals_passed);
     let dummy_ptr = cb.get_write_ptr().raw_ptr(cb);
     jit.iseq_calls.push(iseq_call.clone());
     let ret = asm.ccall_with_iseq_call(dummy_ptr, c_args, &iseq_call);
@@ -2013,7 +2013,7 @@ c_callable! {
             // function_stub_hit_body() may allocate and call gc_validate_pc(), so we always set PC.
             let iseq_call = unsafe { Rc::from_raw(iseq_call_ptr as *const IseqCall) };
             let iseq = iseq_call.iseq.get();
-            let pc = unsafe { rb_iseq_pc_at_idx(iseq, iseq_call.insn_idx) };
+            let pc = unsafe { rb_iseq_pc_at_idx(iseq, iseq_call.num_optionals_passed) };
             unsafe { rb_set_cfp_pc(cfp, pc) };
 
             // JIT-to-JIT calls don't set SP or fill nils to uninitialized (non-argument) locals.
@@ -2074,7 +2074,7 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
     })?;
 
     // Update the stub to call the code pointer
-    let jit_entry_ptr = jit_entry_ptrs[iseq_call.insn_idx as usize];
+    let jit_entry_ptr = jit_entry_ptrs[iseq_call.num_optionals_passed as usize];
     let code_addr = jit_entry_ptr.raw_ptr(cb);
     let iseq = iseq_call.iseq.get();
     iseq_call.regenerate(cb, |asm| {
@@ -2304,7 +2304,7 @@ pub struct IseqCall {
     pub iseq: Cell<IseqPtr>,
 
     /// Index into jit_entry_ptrs of the callee ISEQ
-    insn_idx: u32,
+    num_optionals_passed: u32,
 
     /// Position where the call instruction starts
     start_addr: Cell<Option<CodePtr>>,
@@ -2317,12 +2317,12 @@ pub type IseqCallRef = Rc<IseqCall>;
 
 impl IseqCall {
     /// Allocate a new IseqCall
-    fn new(iseq: IseqPtr, insn_idx: u32) -> IseqCallRef {
+    fn new(iseq: IseqPtr, num_optionals_passed: u32) -> IseqCallRef {
         let iseq_call = IseqCall {
             iseq: Cell::new(iseq),
             start_addr: Cell::new(None),
             end_addr: Cell::new(None),
-            insn_idx,
+            num_optionals_passed,
         };
         Rc::new(iseq_call)
     }
