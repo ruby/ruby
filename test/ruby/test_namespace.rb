@@ -183,7 +183,7 @@ class TestNamespace < Test::Unit::TestCase
     pend unless Namespace.enabled?
 
     # require_relative dosn't work well in assert_separately even with __FILE__ and __LINE__
-    assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}")
+    assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
       ns1 = Namespace.new
       ns1.require(File.join("#{here}", 'namespace/proc_callee'))
