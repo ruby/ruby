@@ -2014,7 +2014,7 @@ c_callable! {
             let iseq_call = unsafe { Rc::from_raw(iseq_call_ptr as *const IseqCall) };
             let iseq = iseq_call.iseq.get();
             let opt_table = unsafe { get_iseq_body_param_opt_table(iseq) };
-            let insn_idx = unsafe { opt_table.offset(iseq_call.num_optionals_passed as usize).read().as_u32() };
+            let insn_idx = unsafe { opt_table.offset(iseq_call.num_optionals_passed as isize).read().as_u32() };
             let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
             unsafe { rb_set_cfp_pc(cfp, pc) };
 
