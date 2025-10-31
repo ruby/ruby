@@ -319,4 +319,24 @@ mod tests {
         let result = String::from_utf8(buffer).unwrap();
         assert_snapshot!(result, @r#"{"key1": "value1", "key2": 42}"#);
     }
+
+    #[test]
+    fn test_serialize_nested_objects() {
+        let mut buffer = Vec::new();
+        {
+            let mut serializer = Serializer::new(BufWriter::new(&mut buffer));
+            serializer.write_object(|s| {
+                s.field("key1", &"value1")?;
+                s.field_object("key2", |f| {
+                    f.field("foo", &"bar")?;
+                    f.field("third", &EMPTY_ARRAY)?;
+                    Ok(())
+                })?;
+                Ok(())
+            }).unwrap();
+            serializer.writer.flush().unwrap();
+        }
+        let result = String::from_utf8(buffer).unwrap();
+        assert_snapshot!(result, @r#"{"key1": "value1", "key2": 42}"#);
+    }
 }
