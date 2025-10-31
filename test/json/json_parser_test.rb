@@ -131,6 +131,12 @@ class JSONParserTest < Test::Unit::TestCase
     capture_output { assert_equal(Float::INFINITY, parse("23456789012E666")) }
   end
 
+  def test_parse_bignum
+    bignum = Integer('1234567890' * 10)
+    assert_equal(bignum, JSON.parse(bignum.to_s))
+    assert_equal(bignum.to_f, JSON.parse(bignum.to_s + ".0"))
+  end
+
   def test_parse_bigdecimals
     assert_equal(BigDecimal,                             JSON.parse('{"foo": 9.01234567890123456789}', decimal_class: BigDecimal)["foo"].class)
     assert_equal(BigDecimal("0.901234567890123456789E1"),JSON.parse('{"foo": 9.01234567890123456789}', decimal_class: BigDecimal)["foo"]      )
