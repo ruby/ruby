@@ -576,7 +576,7 @@ pub enum SendFallbackReason {
     BmethodNonIseqProc,
     /// The call has at least one feature on the caller or callee side that the optimizer does not
     /// support.
-    FancyFeatureUse,
+    FancyArgPass,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
     NotOptimizedInstruction(ruby_vminsn_type),
@@ -2300,7 +2300,7 @@ impl Function {
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                             if !can_direct_send(self, block, iseq) {
-                                self.set_dynamic_send_reason(insn_id, FancyFeatureUse);
+                                self.set_dynamic_send_reason(insn_id, FancyArgPass);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
@@ -2326,7 +2326,7 @@ impl Function {
                             let iseq = unsafe { *capture.code.iseq.as_ref() };
 
                             if !can_direct_send(self, block, iseq) {
-                                self.set_dynamic_send_reason(insn_id, FancyFeatureUse);
+                                self.set_dynamic_send_reason(insn_id, FancyArgPass);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             // Can't pass a block to a block for now
