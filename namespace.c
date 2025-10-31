@@ -876,7 +876,7 @@ Init_enable_namespace(void)
     }
 }
 
-#ifdef RUBY_DEBUG
+#if RUBY_DEBUG > 0
 
 /* :nodoc: */
 static VALUE
