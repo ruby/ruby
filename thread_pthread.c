@@ -2337,7 +2337,8 @@ rb_threadptr_remove(rb_thread_t *th)
         rb_vm_t *vm = th->vm;
         th->sched.finished = false;
 
-        RB_VM_LOCKING() {
+        // We can't join a barrier because this thread no longer contributes to `running_cnt`.
+        RB_VM_LOCKING_NO_BARRIER() {
             ccan_list_add(&vm->ractor.sched.zombie_threads, &th->sched.node.zombie_threads);
         }
     }
