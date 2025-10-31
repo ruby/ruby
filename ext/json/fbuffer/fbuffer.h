@@ -283,13 +283,10 @@ static VALUE fbuffer_finalize(FBuffer *fb)
 {
     if (fb->io) {
         fbuffer_flush(fb);
-        fbuffer_free(fb);
         rb_io_flush(fb->io);
         return fb->io;
     } else {
-        VALUE result = rb_utf8_str_new(FBUFFER_PTR(fb), FBUFFER_LEN(fb));
-        fbuffer_free(fb);
-        return result;
+        return rb_utf8_str_new(FBUFFER_PTR(fb), FBUFFER_LEN(fb));
     }
 }
 

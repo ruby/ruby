@@ -1444,15 +1444,13 @@ static VALUE generate_json_try(VALUE d)
 
     data->func(data->buffer, data, data->obj);
 
-    return Qnil;
+    return fbuffer_finalize(data->buffer);
 }
 
-static VALUE generate_json_rescue(VALUE d, VALUE exc)
+static VALUE generate_json_ensure(VALUE d)
 {
     struct generate_json_data *data = (struct generate_json_data *)d;
     fbuffer_free(data->buffer);
-
-    rb_exc_raise(exc);
 
     return Qundef;
 }
@@ -1474,9 +1472,7 @@ static VALUE cState_partial_generate(VALUE self, VALUE obj, generator_func func,
         .obj = obj,
         .func = func
     };
-    rb_rescue(generate_json_try, (VALUE)&data, generate_json_rescue, (VALUE)&data);
-
-    return fbuffer_finalize(&buffer);
+    return rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure, (VALUE)&data);
 }
 
 /* call-seq:
@@ -1522,9 +1518,7 @@ static VALUE cState_generate_new(int argc, VALUE *argv, VALUE self)
         .obj = obj,
         .func = generate_json
     };
-    rb_rescue(generate_json_try, (VALUE)&data, generate_json_rescue, (VALUE)&data);
-
-    return fbuffer_finalize(&buffer);
+    return rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure, (VALUE)&data);
 }
 
 static VALUE cState_initialize(int argc, VALUE *argv, VALUE self)
@@ -2030,9 +2024,7 @@ static VALUE cState_m_generate(VALUE klass, VALUE obj, VALUE opts, VALUE io)
         .obj = obj,
         .func = generate_json,
     };
-    rb_rescue(generate_json_try, (VALUE)&data, generate_json_rescue, (VALUE)&data);
-
-    return fbuffer_finalize(&buffer);
+    return rb_ensure(generate_json_try, (VALUE)&data, generate_json_ensure, (VALUE)&data);
 }
 
 /*
