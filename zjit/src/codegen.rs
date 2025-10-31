@@ -1212,8 +1212,7 @@ fn gen_send_without_block_direct(
         let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
         assert!(args.len() as i32 <= lead_num + opt_num);
         let num_optionals_passed = args.len() as i32 - lead_num;
-        let opt_table = unsafe { get_iseq_body_param_opt_table(iseq) };
-        unsafe { opt_table.offset(num_optionals_passed.try_into().unwrap()).read().as_u32() }
+        unsafe { num_optionals_passed as u32 }
     } else {
         0
     };
