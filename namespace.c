@@ -1084,14 +1084,13 @@ Init_Namespace(void)
     if (rb_namespace_available()) {
         rb_include_module(rb_cObject, rb_mNamespaceLoader);
 
-#if RUBY_DEBUG
         rb_define_singleton_method(rb_cNamespace, "root", rb_namespace_s_root, 0);
         rb_define_singleton_method(rb_cNamespace, "main", rb_namespace_s_main, 0);
-        rb_define_global_function("dump_classext", rb_f_dump_classext, 1);
-
         rb_define_method(rb_cNamespace, "root?", rb_namespace_root_p, 0);
         rb_define_method(rb_cNamespace, "main?", rb_namespace_main_p, 0);
-        rb_define_method(rb_cNamespace, "user?", rb_namespace_user_p, 0);
+
+#if RUBY_DEBUG
+        rb_define_global_function("dump_classext", rb_f_dump_classext, 1);
 #endif
     }
 
