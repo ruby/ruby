@@ -2143,17 +2143,6 @@ vm_populate_cc(VALUE klass, const struct rb_callinfo * const ci, ID mid)
 {
     ASSERT_vm_locking();
 
-    VALUE cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
-    const VALUE original_cc_table = cc_tbl;
-    struct rb_class_cc_entries *ccs = NULL;
-
-    if (!cc_tbl) {
-        cc_tbl = rb_vm_cc_table_create(1);
-    }
-    else if (rb_multi_ractor_p()) {
-        cc_tbl = rb_vm_cc_table_dup(cc_tbl);
-    }
-
     RB_DEBUG_COUNTER_INC(cc_not_found_in_ccs);
 
     const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, mid);
@@ -2166,12 +2155,23 @@ vm_populate_cc(VALUE klass, const struct rb_callinfo * const ci, ID mid)
         return &vm_empty_cc;
     }
 
+    VALUE cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
+    const VALUE original_cc_table = cc_tbl;
+    if (!cc_tbl) {
+        // Is this possible after rb_callable_method_entry ?
+        cc_tbl = rb_vm_cc_table_create(1);
+    }
+    else if (rb_multi_ractor_p()) {
+        cc_tbl = rb_vm_cc_table_dup(cc_tbl);
+    }
+
     VM_ASSERT(cme == rb_callable_method_entry(klass, mid));
 
     METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
 
     VM_ASSERT(cc_tbl);
 
+    struct rb_class_cc_entries *ccs = NULL;
     {
         VALUE ccs_obj;
         if (UNLIKELY(rb_managed_id_table_lookup(cc_tbl, mid, &ccs_obj))) {
