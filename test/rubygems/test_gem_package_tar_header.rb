@@ -26,6 +26,25 @@ class TestGemPackageTarHeader < Gem::Package::TarTestCase
     @tar_header = Gem::Package::TarHeader.new header
   end
 
+  def test_decode_in_ractor
+    new_header = Ractor.new(@tar_header.to_s) do |str|
+      Gem::Package::TarHeader.from StringIO.new str
+    end.value
+
+    assert_headers_equal @tar_header, new_header
+  end if defined?(Ractor) && Ractor.instance_methods.include?(:value)
+
+  def test_encode_in_ractor
+    header_bytes = @tar_header.to_s
+
+    new_header = Ractor.new(header_bytes) do |str|
+      header = Gem::Package::TarHeader.from StringIO.new str
+      header.to_s
+    end.value
+
+    assert_headers_equal header_bytes, new_header
+  end if defined?(Ractor) && Ractor.instance_methods.include?(:value)
+
   def test_self_from
     io = TempIO.new @tar_header.to_s
 
