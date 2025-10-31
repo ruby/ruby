@@ -183,6 +183,7 @@ The following default gems are updated.
 * RubyGems 4.0.0.dev
 * bundler 4.0.0.dev
 * date 3.5.0
+* english 0.8.1
 * erb 5.1.3
 * etc 1.4.6
 * fcntl 1.3.0
