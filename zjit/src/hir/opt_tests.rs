@@ -639,6 +639,93 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_send_without_block_to_aliased_iseq() {
+        eval("
+            def foo = 1
+            alias bar foo
+            alias baz bar
+            def test = baz
+            test; test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, baz@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v19:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          IncrCounter inline_iseq_optimized_send_count
+          v22:Fixnum[1] = Const Value(1)
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_optimize_send_without_block_to_aliased_cfunc() {
+        eval("
+            alias bar itself
+            alias baz bar
+            def test = baz
+            test; test
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:4:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb2(v1)
+        bb1(v4:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v4)
+        bb2(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, baz@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(Object@0x1000)
+          v20:HeapObject[class_exact*:Object@VALUE(0x1000)] = GuardType v6, HeapObject[class_exact*:Object@VALUE(0x1000)]
+          IncrCounter inline_cfunc_optimized_send_count
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
+    fn test_optimize_send_to_aliased_cfunc() {
+        eval("
+            class C < Array
+              alias fun_new_map map
+            end
+            def test(o) = o.fun_new_map {|e| e }
+            test C.new; test C.new
+        ");
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:5:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          v13:BasicObject = GetLocal l0, EP@3
+          PatchPoint MethodRedefined(C@0x1000, fun_new_map@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v25:ArraySubclass[class_exact:C] = GuardType v13, ArraySubclass[class_exact:C]
+          v26:BasicObject = CCallWithFrame fun_new_map@0x1038, v25, block=0x1040
+          v16:BasicObject = GetLocal l0, EP@3
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
     fn test_optimize_nonexistent_top_level_call() {
         eval("
             def foo
