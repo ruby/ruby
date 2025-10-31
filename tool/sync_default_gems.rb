@@ -823,7 +823,13 @@ module SyncDefaultGems
     puts <<-HELP
 \e[1mSync with upstream code of default libraries\e[0m
 
-\e[1mImport a default library through `git clone` and `cp -rf` (git commits are lost)\e[0m
+\e[1mImport all default gems through `git clone` and `cp -rf` (git commits are lost)\e[0m
+  ruby #$0 all
+
+\e[1mImport all released version of default gems\e[0m
+  ruby #$0 all release
+
+\e[1mImport a default gem with specific gem same as all command\e[0m
   ruby #$0 rubygems
 
 \e[1mPick a single commit from the upstream repository\e[0m
@@ -834,6 +840,9 @@ module SyncDefaultGems
 
 \e[1mPick all commits since the last picked commit\e[0m
   ruby #$0 -a rubygems
+
+\e[1mUpdate repositories of default gems\e[0m
+  ruby #$0 up
 
 \e[1mList known libraries\e[0m
   ruby #$0 list

@@ -9,7 +9,7 @@ use crate::{
     cast::IntoUsize, codegen::local_idx_to_ep_offset, cruby::*, gc::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState
 };
 use std::{
-    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
+    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter
 };
 use crate::hir_type::{Type, types};
 use crate::bitset::BitSet;
@@ -444,6 +444,10 @@ impl PtrPrintMap {
         self.map_ptr(id as *const c_void)
     }
 
+    fn map_offset(&self, id: i32) -> *const c_void {
+        self.map_ptr(id as *const c_void)
+    }
+
     /// Map shape ID into a pointer for printing
     fn map_shape(&self, id: ShapeId) -> *const c_void {
         self.map_ptr(id.0 as *const c_void)
@@ -512,6 +516,28 @@ impl From<u32> for MethodType {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum OptimizedMethodType {
+    Send,
+    Call,
+    BlockCall,
+    StructAref,
+    StructAset,
+}
+
+impl From<u32> for OptimizedMethodType {
+    fn from(value: u32) -> Self {
+        match value {
+            OPTIMIZED_METHOD_TYPE_SEND => OptimizedMethodType::Send,
+            OPTIMIZED_METHOD_TYPE_CALL => OptimizedMethodType::Call,
+            OPTIMIZED_METHOD_TYPE_BLOCK_CALL => OptimizedMethodType::BlockCall,
+            OPTIMIZED_METHOD_TYPE_STRUCT_AREF => OptimizedMethodType::StructAref,
+            OPTIMIZED_METHOD_TYPE_STRUCT_ASET => OptimizedMethodType::StructAset,
+            _ => unreachable!("unknown send_without_block optimized method type: {}", value),
+        }
+    }
+}
+
 impl std::fmt::Display for SideExitReason {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
@@ -539,12 +565,18 @@ pub enum SendFallbackReason {
     SendWithoutBlockCfuncNotVariadic,
     SendWithoutBlockCfuncArrayVariadic,
     SendWithoutBlockNotOptimizedMethodType(MethodType),
+    SendWithoutBlockNotOptimizedOptimizedMethodType(OptimizedMethodType),
     SendWithoutBlockDirectTooManyArgs,
     SendPolymorphic,
     SendNoProfiles,
     SendNotOptimizedMethodType(MethodType),
     CCallWithFrameTooManyArgs,
     ObjToStringNotString,
+    /// The Proc object for a BMETHOD is not defined by an ISEQ. (See `enum rb_block_type`.)
+    BmethodNonIseqProc,
+    /// The call has at least one feature on the caller or callee side that the optimizer does not
+    /// support.
+    FancyFeatureUse,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
     NotOptimizedInstruction(ruby_vminsn_type),
@@ -643,10 +675,7 @@ pub enum Insn {
     LoadPC,
     /// Load cfp->self
     LoadSelf,
-    /// Read an instance variable at the given index, embedded in the object
-    LoadIvarEmbedded { self_val: InsnId, id: ID, index: u16 },
-    /// Read an instance variable at the given index, from the extended table
-    LoadIvarExtended { self_val: InsnId, id: ID, index: u16 },
+    LoadField { recv: InsnId, id: ID, offset: i32, return_type: Type },
 
     /// Get a local variable from a higher scope or the heap.
     /// If `use_sp` is true, it uses the SP register to optimize the read.
@@ -881,8 +910,7 @@ impl Insn {
             Insn::IsNil      { .. } => false,
             Insn::LoadPC => false,
             Insn::LoadSelf => false,
-            Insn::LoadIvarEmbedded { .. } => false,
-            Insn::LoadIvarExtended { .. } => false,
+            Insn::LoadField { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
             Insn::CCallWithFrame { elidable, .. } => !elidable,
             Insn::ObjectAllocClass { .. } => false,
@@ -1142,8 +1170,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy()),
             Insn::LoadPC => write!(f, "LoadPC"),
             Insn::LoadSelf => write!(f, "LoadSelf"),
-            &Insn::LoadIvarEmbedded { self_val, id, index } => write!(f, "LoadIvarEmbedded {self_val}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_index(index as u64)),
-            &Insn::LoadIvarExtended { self_val, id, index } => write!(f, "LoadIvarExtended {self_val}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_index(index as u64)),
+            &Insn::LoadField { recv, id, offset, return_type: _ } => write!(f, "LoadField {recv}, :{}@{:p}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy()),
             Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy()),
             Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy()),
@@ -1361,14 +1388,22 @@ pub enum ValidationError {
     MiscValidationError(InsnId, String),
 }
 
-fn can_direct_send(iseq: *const rb_iseq_t) -> bool {
-    if unsafe { rb_get_iseq_flags_has_rest(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_opt(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_kw(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_kwrest(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_has_block(iseq) } { false }
-    else if unsafe { rb_get_iseq_flags_forwardable(iseq) } { false }
-    else { true }
+fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq_t) -> bool {
+    let mut can_send = true;
+    let mut count_failure = |counter| {
+        can_send = false;
+        function.push_insn(block, Insn::IncrCounter(counter));
+    };
+
+    use Counter::*;
+    if unsafe { rb_get_iseq_flags_has_rest(iseq) }    { count_failure(fancy_arg_pass_param_rest) }
+    if unsafe { rb_get_iseq_flags_has_opt(iseq) }     { count_failure(fancy_arg_pass_param_opt) }
+    if unsafe { rb_get_iseq_flags_has_kw(iseq) }      { count_failure(fancy_arg_pass_param_kw) }
+    if unsafe { rb_get_iseq_flags_has_kwrest(iseq) }  { count_failure(fancy_arg_pass_param_kwrest) }
+    if unsafe { rb_get_iseq_flags_has_block(iseq) }   { count_failure(fancy_arg_pass_param_block) }
+    if unsafe { rb_get_iseq_flags_forwardable(iseq) } { count_failure(fancy_arg_pass_param_forwardable) }
+
+    can_send
 }
 
 /// A [`Function`], which is analogous to a Ruby ISeq, is a control-flow graph of [`Block`]s
@@ -1756,8 +1791,7 @@ impl Function {
             &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
-            &LoadIvarEmbedded { self_val, id, index } => LoadIvarEmbedded { self_val: find!(self_val), id, index },
-            &LoadIvarExtended { self_val, id, index } => LoadIvarExtended { self_val: find!(self_val), id, index },
+            &LoadField { recv, id, offset, return_type } => LoadField { recv: find!(recv), id, offset, return_type },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val: find!(val), state },
             &GetClassVar { id, ic, state } => GetClassVar { id, ic, state },
             &SetClassVar { id, val, ic, state } => SetClassVar { id, val: find!(val), ic, state },
@@ -1893,8 +1927,7 @@ impl Function {
             Insn::GetIvar { .. } => types::BasicObject,
             Insn::LoadPC => types::CPtr,
             Insn::LoadSelf => types::BasicObject,
-            Insn::LoadIvarEmbedded { .. } => types::BasicObject,
-            Insn::LoadIvarExtended { .. } => types::BasicObject,
+            &Insn::LoadField { return_type, .. } => return_type,
             Insn::GetSpecialSymbol { .. } => types::BasicObject,
             Insn::GetSpecialNumber { .. } => types::BasicObject,
             Insn::GetClassVar { .. } => types::BasicObject,
@@ -2110,6 +2143,18 @@ impl Function {
         self.likely_is_fixnum(left, left_profiled_type) && self.likely_is_fixnum(right, right_profiled_type)
     }
 
+    fn count_fancy_call_features(&mut self, block: BlockId, ci_flags: c_uint) {
+        use Counter::*;
+        if 0 != ci_flags & VM_CALL_ARGS_SPLAT     { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_splat));      }
+        if 0 != ci_flags & VM_CALL_ARGS_BLOCKARG  { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_blockarg));   }
+        if 0 != ci_flags & VM_CALL_KWARG          { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_kwarg));      }
+        if 0 != ci_flags & VM_CALL_KW_SPLAT       { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_kw_splat));   }
+        if 0 != ci_flags & VM_CALL_TAILCALL       { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_tailcall));   }
+        if 0 != ci_flags & VM_CALL_SUPER          { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_super));      }
+        if 0 != ci_flags & VM_CALL_ZSUPER         { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_zsuper));     }
+        if 0 != ci_flags & VM_CALL_FORWARDING     { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_forwarding)); }
+    }
+
     fn try_rewrite_fixnum_op(&mut self, block: BlockId, orig_insn_id: InsnId, f: &dyn Fn(InsnId, InsnId) -> Insn, bop: u32, left: InsnId, right: InsnId, state: InsnId) {
         if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, INTEGER_REDEFINED_OP_FLAG) } {
             // If the basic operation is already redefined, we cannot optimize it.
@@ -2230,6 +2275,14 @@ impl Function {
                             (recv_type.class(), Some(recv_type))
                         };
                         let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
+
+                        // If the call site info indicates that the `Function` has `VM_CALL_ARGS_SPLAT` set, then
+                        // do not optimize into a `SendWithoutBlockDirect`.
+                        let flags = unsafe { rb_vm_ci_flag(ci) };
+                        if unspecializable_call_type(flags) {
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+
                         let mid = unsafe { vm_ci_mid(ci) };
                         // Do method lookup
                         let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
@@ -2246,8 +2299,8 @@ impl Function {
                             // Only specialize positional-positional calls
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            if !can_direct_send(iseq) {
-                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Iseq));
+                            if !can_direct_send(self, block, iseq) {
+                                self.set_dynamic_send_reason(insn_id, FancyFeatureUse);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
@@ -2266,21 +2319,18 @@ impl Function {
                             // Target ISEQ bmethods. Can't handle for example, `define_method(:foo, &:foo)`
                             // which makes a `block_type_symbol` bmethod.
                             if proc_block.type_ != block_type_iseq {
-                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Bmethod));
+                                self.set_dynamic_send_reason(insn_id, BmethodNonIseqProc);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             let capture = unsafe { proc_block.as_.captured.as_ref() };
                             let iseq = unsafe { *capture.code.iseq.as_ref() };
 
-                            if !can_direct_send(iseq) {
-                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Bmethod));
+                            if !can_direct_send(self, block, iseq) {
+                                self.set_dynamic_send_reason(insn_id, FancyFeatureUse);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             // Can't pass a block to a block for now
-                            if (unsafe { rb_vm_ci_flag(ci) } & VM_CALL_ARGS_BLOCKARG) != 0 {
-                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::Bmethod));
-                                self.push_insn_id(block, insn_id); continue;
-                            }
+                            assert!((unsafe { rb_vm_ci_flag(ci) } & VM_CALL_ARGS_BLOCKARG) == 0, "SendWithoutBlock but has a block arg");
 
                             // Patch points:
                             // Check for "defined with an un-shareable Proc in a different Ractor"
@@ -2335,6 +2385,54 @@ impl Function {
                             }
                             self.push_insn(block, Insn::SetIvar { self_val: recv, id, val, state });
                             self.make_equal_to(insn_id, val);
+                        } else if def_type == VM_METHOD_TYPE_OPTIMIZED {
+                            let opt_type = unsafe { get_cme_def_body_optimized_type(cme) };
+                            if opt_type == OPTIMIZED_METHOD_TYPE_STRUCT_AREF {
+                                if unsafe { vm_ci_argc(ci) } != 0 {
+                                    self.push_insn_id(block, insn_id); continue;
+                                }
+                                let index: i32 = unsafe { get_cme_def_body_optimized_index(cme) }
+                                                .try_into()
+                                                .unwrap();
+                                // We are going to use an encoding that takes a 4-byte immediate which
+                                // limits the offset to INT32_MAX.
+                                {
+                                    let native_index = (index as i64) * (SIZEOF_VALUE as i64);
+                                    if native_index > (i32::MAX as i64) {
+                                        self.push_insn_id(block, insn_id); continue;
+                                    }
+                                }
+                                // Get the profiled type to check if the fields is embedded or heap allocated.
+                                let Some(is_embedded) = self.profiled_type_of_at(recv, frame_state.insn_idx).map(|t| t.flags().is_struct_embedded()) else {
+                                    // No (monomorphic) profile info
+                                    self.push_insn_id(block, insn_id); continue;
+                                };
+                                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                                if klass.instance_can_have_singleton_class() {
+                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
+                                }
+                                if let Some(profiled_type) = profiled_type {
+                                    recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                                }
+                                // All structs from the same Struct class should have the same
+                                // length. So if our recv is embedded all runtime
+                                // structs of the same class should be as well, and the same is
+                                // true of the converse.
+                                //
+                                // No need for a GuardShape.
+                                let replacement = if is_embedded {
+                                    let offset = RUBY_OFFSET_RSTRUCT_AS_ARY + (SIZEOF_VALUE_I32 * index);
+                                    self.push_insn(block, Insn::LoadField { recv, id: mid, offset, return_type: types::BasicObject })
+                                } else {
+                                    let as_heap = self.push_insn(block, Insn::LoadField { recv, id: ID!(_as_heap), offset: RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR, return_type: types::CPtr });
+                                    let offset = SIZEOF_VALUE_I32 * index;
+                                    self.push_insn(block, Insn::LoadField { recv: as_heap, id: mid, offset, return_type: types::BasicObject })
+                                };
+                                self.make_equal_to(insn_id, replacement);
+                            } else {
+                                self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedOptimizedMethodType(OptimizedMethodType::from(opt_type)));
+                                self.push_insn_id(block, insn_id); continue;
+                            }
                         } else {
                             self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)));
                             self.push_insn_id(block, insn_id); continue;
@@ -2568,13 +2666,17 @@ impl Function {
                             // If there is no IVAR index, then the ivar was undefined when we
                             // entered the compiler.  That means we can just return nil for this
                             // shape + iv name
-                            Insn::Const { val: Const::Value(Qnil) }
+                            self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
                         } else if recv_type.flags().is_embedded() {
-                            Insn::LoadIvarEmbedded { self_val, id, index: ivar_index }
+                            // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+                            let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+                            self.push_insn(block, Insn::LoadField { recv: self_val, id, offset, return_type: types::BasicObject })
                         } else {
-                            Insn::LoadIvarExtended { self_val, id, index: ivar_index }
+                            let as_heap =  self.push_insn(block, Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
+
+                            let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
+                            self.push_insn(block, Insn::LoadField { recv: as_heap, id, offset, return_type: types::BasicObject })
                         };
-                        let replacement = self.push_insn(block, replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
                     _ => { self.push_insn_id(block, insn_id); }
@@ -2649,7 +2751,7 @@ impl Function {
 
                     // When seeing &block argument, fall back to dynamic dispatch for now
                     // TODO: Support block forwarding
-                    if ci_flags & VM_CALL_ARGS_BLOCKARG != 0 {
+                    if unspecializable_call_type(ci_flags) {
                         return Err(());
                     }
 
@@ -2752,6 +2854,7 @@ impl Function {
 
                     // Filter for simple call sites (i.e. no splats etc.)
                     if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
+                        fun.count_fancy_call_features(block, ci_flags);
                         return Err(());
                     }
 
@@ -2822,7 +2925,9 @@ impl Function {
                     // The method gets a pointer to the first argument
                     // func(int argc, VALUE *argv, VALUE recv)
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
-                    if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
+                    if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
+                        fun.count_fancy_call_features(block, ci_flags);
+                    } else {
                         fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, method, state);
 
                         if recv_class.instance_can_have_singleton_class() {
@@ -3260,9 +3365,8 @@ impl Function {
                 worklist.push_back(str);
                 worklist.push_back(state);
             }
-            &Insn::LoadIvarEmbedded { self_val, .. }
-            | &Insn::LoadIvarExtended { self_val, .. } => {
-                worklist.push_back(self_val);
+            &Insn::LoadField { recv, .. } => {
+                worklist.push_back(recv);
             }
             &Insn::GuardBlockParamProxy { state, .. } |
             &Insn::GetGlobal { state, .. } |
@@ -3638,8 +3742,6 @@ impl Function {
                 self.assert_subtype(insn_id, val, types::BasicObject)
             }
             Insn::DefinedIvar { self_val, .. } => self.assert_subtype(insn_id, self_val, types::BasicObject),
-            Insn::LoadIvarEmbedded { self_val, .. } => self.assert_subtype(insn_id, self_val, types::HeapBasicObject),
-            Insn::LoadIvarExtended { self_val, .. } => self.assert_subtype(insn_id, self_val, types::HeapBasicObject),
             Insn::SetLocal { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::SetClassVar { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::IfTrue { val, .. } | Insn::IfFalse { val, .. } => self.assert_subtype(insn_id, val, types::CBool),
@@ -4122,10 +4224,15 @@ fn num_locals(iseq: *const rb_iseq_t) -> usize {
 
 /// If we can't handle the type of send (yet), bail out.
 fn unhandled_call_type(flags: u32) -> Result<(), CallType> {
-    if (flags & VM_CALL_ARGS_SPLAT) != 0 { return Err(CallType::Splat); }
     if (flags & VM_CALL_KWARG) != 0 { return Err(CallType::Kwarg); }
     if (flags & VM_CALL_TAILCALL) != 0 { return Err(CallType::Tailcall); }
     Ok(())
+}
+
+/// If a given call uses splatting or block arguments, then we won't specialize.
+fn unspecializable_call_type(flags: u32) -> bool {
+    ((flags & VM_CALL_ARGS_SPLAT) != 0) ||
+    ((flags & VM_CALL_ARGS_BLOCKARG) != 0)
 }
 
 /// We have IseqPayload, which keeps track of HIR Types in the interpreter, but this is not useful

@@ -15,7 +15,7 @@ use crate::invariants::{
 };
 use crate::gc::{append_gc_offsets, get_or_create_iseq_payload, get_or_create_iseq_payload_ptr, IseqCodePtrs, IseqPayload, IseqStatus};
 use crate::state::ZJITState;
-use crate::stats::{send_fallback_counter, exit_counter_for_compile_error, incr_counter, incr_counter_by, send_fallback_counter_for_method_type, send_without_block_fallback_counter_for_method_type, send_fallback_counter_ptr_for_opcode, CompileError};
+use crate::stats::{send_fallback_counter, exit_counter_for_compile_error, incr_counter, incr_counter_by, send_fallback_counter_for_method_type, send_without_block_fallback_counter_for_method_type, send_without_block_fallback_counter_for_optimized_method_type, send_fallback_counter_ptr_for_opcode, CompileError};
 use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SP};
@@ -448,8 +448,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardShape { val, shape, state } => gen_guard_shape(jit, asm, opnd!(val), shape, &function.frame_state(state)),
         Insn::LoadPC => gen_load_pc(asm),
         Insn::LoadSelf => gen_load_self(),
-        &Insn::LoadIvarEmbedded { self_val, id, index } => gen_load_ivar_embedded(asm, opnd!(self_val), id, index),
-        &Insn::LoadIvarExtended { self_val, id, index } => gen_load_ivar_extended(asm, opnd!(self_val), id, index),
+        &Insn::LoadField { recv, id, offset, return_type: _ } => gen_load_field(asm, opnd!(recv), id, offset),
         &Insn::IsBlockGiven => gen_is_block_given(jit, asm),
         &Insn::ArrayMax { state, .. }
         | &Insn::FixnumDiv { state, .. }
@@ -981,27 +980,10 @@ fn gen_load_self() -> Opnd {
     Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)
 }
 
-fn gen_load_ivar_embedded(asm: &mut Assembler, self_val: Opnd, id: ID, index: u16) -> Opnd {
-    // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-
-    asm_comment!(asm, "Load embedded ivar id={} index={}", id.contents_lossy(), index);
-    let offs = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * index.to_usize()) as i32;
-    let self_val = asm.load(self_val);
-    let ivar_opnd = Opnd::mem(64, self_val, offs);
-    asm.load(ivar_opnd)
-}
-
-fn gen_load_ivar_extended(asm: &mut Assembler, self_val: Opnd, id: ID, index: u16) -> Opnd {
-    asm_comment!(asm, "Load extended ivar id={} index={}", id.contents_lossy(), index);
-    // Compile time value is *not* embedded.
-
-    // Get a pointer to the extended table
-    let self_val = asm.load(self_val);
-    let tbl_opnd = asm.load(Opnd::mem(64, self_val, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
-
-    // Read the ivar from the extended table
-    let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * index.to_usize()) as i32);
-    asm.load(ivar_opnd)
+fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32) -> Opnd {
+    asm_comment!(asm, "Load field id={} offset={}", id.contents_lossy(), offset);
+    let recv = asm.load(recv);
+    asm.load(Opnd::mem(64, recv, offset))
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
@@ -1740,6 +1722,9 @@ fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReaso
         }
         SendWithoutBlockNotOptimizedMethodType(method_type) => {
             gen_incr_counter(asm, send_without_block_fallback_counter_for_method_type(method_type));
+        }
+        SendWithoutBlockNotOptimizedOptimizedMethodType(method_type) => {
+            gen_incr_counter(asm, send_without_block_fallback_counter_for_optimized_method_type(method_type));
         }
         SendNotOptimizedMethodType(method_type) => {
             gen_incr_counter(asm, send_fallback_counter_for_method_type(method_type));

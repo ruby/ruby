@@ -2803,14 +2803,11 @@ get_head_value_node(Node* node, int exact, regex_t* reg)
   case NT_STR:
     {
       StrNode* sn = NSTR(node);
-
       if (sn->end <= sn->s)
         break;
 
-      if (exact != 0 &&
-          !NSTRING_IS_RAW(node) && IS_IGNORECASE(reg->options)) {
-      }
-      else {
+      if (exact == 0 ||
+          NSTRING_IS_RAW(node) || !IS_IGNORECASE(reg->options)) {
         n = node;
       }
     }
@@ -3301,6 +3298,14 @@ setup_subexp_call(Node* node, ScanEnv* env)
 }
 #endif
 
+#define IN_ALT          (1<<0)
+#define IN_NOT          (1<<1)
+#define IN_REPEAT       (1<<2)
+#define IN_VAR_REPEAT   (1<<3)
+#define IN_CALL         (1<<4)
+#define IN_RECCALL      (1<<5)
+#define IN_LOOK_BEHIND  (1<<6)
+
 /* divide different length alternatives in look-behind.
   (?<=A|B) ==> (?<=A)|(?<=B)
   (?<!A|B) ==> (?<!A)(?<!B)
@@ -3597,23 +3602,28 @@ expand_case_fold_string_alt(int item_num, OnigCaseFoldCodeItem items[],
   return ONIGERR_MEMORY;
 }
 
-static int
-expand_case_fold_string(Node* node, regex_t* reg)
-{
 #define THRESHOLD_CASE_FOLD_ALT_FOR_EXPANSION  8
 
+static int
+expand_case_fold_string(Node* node, regex_t* reg, int state)
+{
   int r, n, len, alt_num;
   int varlen = 0;
+  int is_in_look_behind;
   UChar *start, *end, *p;
   Node *top_root, *root, *snode, *prev_node;
   OnigCaseFoldCodeItem items[ONIGENC_GET_CASE_FOLD_CODES_MAX_NUM];
-  StrNode* sn = NSTR(node);
+  StrNode* sn;
 
   if (NSTRING_IS_AMBIG(node)) return 0;
+
+  sn = NSTR(node);
 
   start = sn->s;
   end   = sn->end;
   if (start >= end) return 0;
+
+  is_in_look_behind = (state & IN_LOOK_BEHIND) != 0;
 
   r = 0;
   top_root = root = prev_node = snode = NULL_NODE;
@@ -3630,7 +3640,7 @@ expand_case_fold_string(Node* node, regex_t* reg)
     len = enclen(reg->enc, p, end);
 
     varlen = is_case_fold_variable_len(n, items, len);
-    if (n == 0 || varlen == 0) {
+    if (n == 0 || varlen == 0 || is_in_look_behind) {
       if (IS_NULL(snode)) {
         if (IS_NULL(root) && IS_NOT_NULL(prev_node)) {
           onig_node_free(top_root);
@@ -3889,13 +3899,6 @@ setup_comb_exp_check(Node* node, int state, ScanEnv* env)
 }
 #endif
 
-#define IN_ALT        (1<<0)
-#define IN_NOT        (1<<1)
-#define IN_REPEAT     (1<<2)
-#define IN_VAR_REPEAT (1<<3)
-#define IN_CALL       (1<<4)
-#define IN_RECCALL    (1<<5)
-
 /* setup_tree does the following work.
  1. check empty loop. (set qn->target_empty_info)
  2. expand ignore-case in char class.
@@ -3937,7 +3940,7 @@ restart:
 
   case NT_STR:
     if (IS_IGNORECASE(reg->options) && !NSTRING_IS_RAW(node)) {
-      r = expand_case_fold_string(node, reg);
+      r = expand_case_fold_string(node, reg, state);
     }
     break;
 
@@ -4180,7 +4183,7 @@ restart:
           if (r < 0) return r;
           if (r > 0) return ONIGERR_INVALID_LOOK_BEHIND_PATTERN;
           if (NTYPE(node) != NT_ANCHOR) goto restart;
-          r = setup_tree(an->target, reg, state, env);
+          r = setup_tree(an->target, reg, (state | IN_LOOK_BEHIND), env);
           if (r != 0) return r;
           r = setup_look_behind(node, reg, env);
         }
@@ -4193,7 +4196,8 @@ restart:
           if (r < 0) return r;
           if (r > 0) return ONIGERR_INVALID_LOOK_BEHIND_PATTERN;
           if (NTYPE(node) != NT_ANCHOR) goto restart;
-          r = setup_tree(an->target, reg, (state | IN_NOT), env);
+          r = setup_tree(an->target, reg, (state | IN_NOT | IN_LOOK_BEHIND),
+                         env);
           if (r != 0) return r;
           r = setup_look_behind(node, reg, env);
         }
@@ -4209,89 +4213,6 @@ restart:
   return r;
 }
 
-#ifndef USE_SUNDAY_QUICK_SEARCH
-/* set skip map for Boyer-Moore search */
-static int
-set_bm_skip(UChar* s, UChar* end, regex_t* reg,
-            UChar skip[], int** int_skip, int ignore_case)
-{
-  OnigDistance i, len;
-  int clen, flen, n, j, k;
-  UChar *p, buf[ONIGENC_GET_CASE_FOLD_CODES_MAX_NUM][ONIGENC_MBC_CASE_FOLD_MAXLEN];
-  OnigCaseFoldCodeItem items[ONIGENC_GET_CASE_FOLD_CODES_MAX_NUM];
-  OnigEncoding enc = reg->enc;
-
-  len = end - s;
-  if (len < ONIG_CHAR_TABLE_SIZE) {
-    for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++) skip[i] = (UChar )len;
-
-    n = 0;
-    for (i = 0; i < len - 1; i += clen) {
-      p = s + i;
-      if (ignore_case)
-        n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
-                                               p, end, items);
-      clen = enclen(enc, p, end);
-      if (p + clen > end)
-        clen = (int )(end - p);
-
-      for (j = 0; j < n; j++) {
-        if ((items[j].code_len != 1) || (items[j].byte_len != clen))
-          return 1;  /* different length isn't supported. */
-        flen = ONIGENC_CODE_TO_MBC(enc, items[j].code[0], buf[j]);
-        if (flen != clen)
-          return 1;  /* different length isn't supported. */
-      }
-      for (j = 0; j < clen; j++) {
-        skip[s[i + j]] = (UChar )(len - 1 - i - j);
-        for (k = 0; k < n; k++) {
-          skip[buf[k][j]] = (UChar )(len - 1 - i - j);
-        }
-      }
-    }
-  }
-  else {
-# if OPT_EXACT_MAXLEN < ONIG_CHAR_TABLE_SIZE
-    /* This should not happen. */
-    return ONIGERR_TYPE_BUG;
-# else
-    if (IS_NULL(*int_skip)) {
-      *int_skip = (int* )xmalloc(sizeof(int) * ONIG_CHAR_TABLE_SIZE);
-      if (IS_NULL(*int_skip)) return ONIGERR_MEMORY;
-    }
-    for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++) (*int_skip)[i] = (int )len;
-
-    n = 0;
-    for (i = 0; i < len - 1; i += clen) {
-      p = s + i;
-      if (ignore_case)
-        n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
-                                               p, end, items);
-      clen = enclen(enc, p, end);
-      if (p + clen > end)
-        clen = (int )(end - p);
-
-      for (j = 0; j < n; j++) {
-        if ((items[j].code_len != 1) || (items[j].byte_len != clen))
-          return 1;  /* different length isn't supported. */
-        flen = ONIGENC_CODE_TO_MBC(enc, items[j].code[0], buf[j]);
-        if (flen != clen)
-          return 1;  /* different length isn't supported. */
-      }
-      for (j = 0; j < clen; j++) {
-        (*int_skip)[s[i + j]] = (int )(len - 1 - i - j);
-        for (k = 0; k < n; k++) {
-          (*int_skip)[buf[k][j]] = (int )(len - 1 - i - j);
-        }
-      }
-    }
-# endif
-  }
-  return 0;
-}
-
-#else /* USE_SUNDAY_QUICK_SEARCH */
-
 /* set skip map for Sunday's quick search */
 static int
 set_bm_skip(UChar* s, UChar* end, regex_t* reg,
@@ -4299,14 +4220,42 @@ set_bm_skip(UChar* s, UChar* end, regex_t* reg,
 {
   OnigDistance i, len;
   int clen, flen, n, j, k;
-  UChar *p, buf[ONIGENC_GET_CASE_FOLD_CODES_MAX_NUM][ONIGENC_MBC_CASE_FOLD_MAXLEN];
+  UChar *p, buf[ONIGENC_MBC_CASE_FOLD_MAXLEN];
   OnigCaseFoldCodeItem items[ONIGENC_GET_CASE_FOLD_CODES_MAX_NUM];
   OnigEncoding enc = reg->enc;
 
   len = end - s;
   if (len < ONIG_CHAR_TABLE_SIZE) {
-    for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++) skip[i] = (UChar )(len + 1);
+    if (ignore_case) {
+      for (i = 0; i < len; i += clen) {
+        p = s + i;
+        n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
+            p, end, items);
+        clen = enclen(enc, p, end);
+        if (p + clen > end)
+          clen = (int )(end - p);
 
+        for (j = 0; j < n; j++) {
+          if ((items[j].code_len != 1) || (items[j].byte_len != clen)) {
+            /* Different length isn't supported. Stop optimization at here. */
+            end = p;
+            goto endcheck;
+          }
+          flen = ONIGENC_CODE_TO_MBC(enc, items[j].code[0], buf);
+          if (flen != clen) {
+            /* Different length isn't supported. Stop optimization at here. */
+            end = p;
+            goto endcheck;
+          }
+        }
+      }
+endcheck:
+      ;
+    }
+
+    len = end - s;
+    for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++)
+      skip[i] = (UChar )(len + 1);
     n = 0;
     for (i = 0; i < len; i += clen) {
       p = s + i;
@@ -4317,17 +4266,11 @@ set_bm_skip(UChar* s, UChar* end, regex_t* reg,
       if (p + clen > end)
         clen = (int )(end - p);
 
-      for (j = 0; j < n; j++) {
-        if ((items[j].code_len != 1) || (items[j].byte_len != clen))
-          return 1;  /* different length isn't supported. */
-        flen = ONIGENC_CODE_TO_MBC(enc, items[j].code[0], buf[j]);
-        if (flen != clen)
-          return 1;  /* different length isn't supported. */
-      }
       for (j = 0; j < clen; j++) {
         skip[s[i + j]] = (UChar )(len - i - j);
         for (k = 0; k < n; k++) {
-          skip[buf[k][j]] = (UChar )(len - i - j);
+          ONIGENC_CODE_TO_MBC(enc, items[k].code[0], buf);
+          skip[buf[j]] = (UChar )(len - i - j);
         }
       }
     }
@@ -4369,9 +4312,8 @@ set_bm_skip(UChar* s, UChar* end, regex_t* reg,
     }
 # endif
   }
-  return 0;
+  return (int)len;
 }
-#endif /* USE_SUNDAY_QUICK_SEARCH */
 
 typedef struct {
   OnigDistance min;  /* min byte length */
@@ -5049,7 +4991,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
 
         if (NSTRING_IS_DONT_GET_OPT_INFO(node)) {
           int n = onigenc_strlen(env->enc, sn->s, sn->end);
-          max = ONIGENC_MBC_MAXLEN_DIST(env->enc) * (OnigDistance)n;
+          max = (OnigDistance )ONIGENC_MBC_MAXLEN_DIST(env->enc) * (OnigDistance)n;
         }
         else {
           concat_opt_exact_info_str(&opt->exb, sn->s, sn->end,
@@ -5232,7 +5174,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
       r = optimize_node_left(qn->target, &nopt, env);
       if (r) break;
 
-      if (/*qn->lower == 0 &&*/ IS_REPEAT_INFINITE(qn->upper)) {
+      if (qn->lower == 0 && IS_REPEAT_INFINITE(qn->upper)) {
         if (env->mmd.max == 0 &&
             NTYPE(qn->target) == NT_CANY && qn->greedy) {
           if (IS_MULTILINE(env->options))
@@ -5342,7 +5284,6 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
 static int
 set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
 {
-  int r;
   int allow_reverse;
 
   if (e->len == 0) return 0;
@@ -5357,15 +5298,18 @@ set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
 
   if (e->ignore_case > 0) {
     if (e->len >= 3 || (e->len >= 2 && allow_reverse)) {
-      r = set_bm_skip(reg->exact, reg->exact_end, reg,
+      e->len = set_bm_skip(reg->exact, reg->exact_end, reg,
                       reg->map, &(reg->int_map), 1);
-      if (r == 0) {
+      reg->exact_end = reg->exact + e->len;
+      if (e->len >= 3) {
         reg->optimize = (allow_reverse != 0
                          ? ONIG_OPTIMIZE_EXACT_BM_IC : ONIG_OPTIMIZE_EXACT_BM_NOT_REV_IC);
       }
-      else {
+      else if (e->len > 0) {
         reg->optimize = ONIG_OPTIMIZE_EXACT_IC;
       }
+      else
+        return 0;
     }
     else {
       reg->optimize = ONIG_OPTIMIZE_EXACT_IC;
@@ -5373,15 +5317,10 @@ set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
   }
   else {
     if (e->len >= 3 || (e->len >= 2 && allow_reverse)) {
-      r = set_bm_skip(reg->exact, reg->exact_end, reg,
-                      reg->map, &(reg->int_map), 0);
-      if (r == 0) {
-        reg->optimize = (allow_reverse != 0
-                       ? ONIG_OPTIMIZE_EXACT_BM : ONIG_OPTIMIZE_EXACT_BM_NOT_REV);
-      }
-      else {
-        reg->optimize = ONIG_OPTIMIZE_EXACT;
-      }
+      set_bm_skip(reg->exact, reg->exact_end, reg,
+                  reg->map, &(reg->int_map), 0);
+      reg->optimize = (allow_reverse != 0
+                     ? ONIG_OPTIMIZE_EXACT_BM : ONIG_OPTIMIZE_EXACT_BM_NOT_REV);
     }
     else {
       reg->optimize = ONIG_OPTIMIZE_EXACT;

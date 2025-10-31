@@ -176,13 +176,15 @@ releases.
 
 The following default gem is added.
 
-* win32-registry 0.1.0
+* win32-registry 0.1.1
 
 The following default gems are updated.
 
 * RubyGems 4.0.0.dev
 * bundler 4.0.0.dev
 * date 3.5.0
+* digest 3.2.1
+* english 0.8.1
 * erb 5.1.3
 * etc 1.4.6
 * fcntl 1.3.0
@@ -191,16 +193,17 @@ The following default gems are updated.
 * io-nonblock 0.3.2
 * io-wait 0.3.2
 * json 2.15.2
+* net-http 0.7.0
 * openssl 4.0.0.pre
-* optparse 0.7.0.dev.2
+* optparse 0.8.0
 * pp 0.6.3
 * prism 1.6.0
 * psych 5.2.6
-* resolv 0.6.2
+* resolv 0.6.3
 * stringio 3.1.8.dev
 * strscan 3.1.6.dev
 * timeout 0.4.4
-* uri 1.0.4
+* uri 1.1.0
 * weakref 0.1.4
 * zlib 3.2.2
 
