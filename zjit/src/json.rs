@@ -352,4 +352,58 @@ mod tests {
         let result = String::from_utf8(buffer).unwrap();
         assert_snapshot!(result, @r#"{"key1": "value1", "key2": {"foo": "bar", "third": []}}"#);
     }
+
+    #[test]
+    fn test_serialize_str_with_backslash() {
+        let value: &str = "path\\to\\file";
+        assert_snapshot!(json(&value).unwrap(), @r#""path\\to\\file""#);
+    }
+
+    #[test]
+    fn test_serialize_str_with_forward_slash() {
+        let value: &str = "path/to/file";
+        assert_snapshot!(json(&value).unwrap(), @r#""path\/to\/file""#);
+    }
+
+    #[test]
+    fn test_serialize_str_with_backspace() {
+        let value: &str = "hello\x08world";
+        assert_snapshot!(json(&value).unwrap(), @r#""hello\bworld""#);
+    }
+
+    #[test]
+    fn test_serialize_str_with_form_feed() {
+        let value: &str = "hello\x0Cworld";
+        assert_snapshot!(json(&value).unwrap(), @r#""hello\fworld""#);
+    }
+
+    #[test]
+    fn test_serialize_str_with_carriage_return() {
+        let value: &str = "hello\rworld";
+        assert_snapshot!(json(&value).unwrap(), @r#""hello\rworld""#);
+    }
+
+    #[test]
+    fn test_serialize_str_with_null_byte() {
+        let value: &str = "hello\x00world";
+        assert_snapshot!(json(&value).unwrap(), @r#""hello\u0000world""#);
+    }
+
+    #[test]
+    fn test_serialize_str_with_control_characters() {
+        let value: &str = "test\x01\x02\x03end";
+        assert_snapshot!(json(&value).unwrap(), @r#""test\u0001\u0002\u0003end""#);
+    }
+
+    #[test]
+    fn test_serialize_str_with_all_canonical_escapes() {
+        let value: &str = "\"\\\n\r\t\x08\x0C";
+        assert_snapshot!(json(&value).unwrap(), @r#""\"\\\n\r\t\b\f""#);
+    }
+
+    #[test]
+    fn test_serialize_str_with_mixed_escapes() {
+        let value: &str = "Line 1\nLine 2\tTabbed\rReturn\x00Null\x1FControl";
+        assert_snapshot!(json(&value).unwrap(), @r#""Line 1\nLine 2\tTabbed\rReturn\u0000Null\u001FControl""#);
+    }
 }
