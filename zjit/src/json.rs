@@ -230,3 +230,90 @@ impl<S: Serializable> Serializable for Option<S> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use insta::assert_snapshot;
+
+    #[track_caller]
+    fn json(obj: &impl Serializable) -> Result<String, JsonError> {
+        let mut buffer = Vec::new();
+        {
+            let mut serializer = Serializer::new(&mut buffer);
+            obj.serialize(&mut serializer)?;
+            serializer.writer.flush()?;
+        }
+        String::from_utf8(buffer).map_err(|e| JsonError::IoError(io::Error::new(io::ErrorKind::InvalidData, e)))
+    }
+
+    #[test]
+    fn test_serialize_i8() {
+        let value: i8 = -42;
+        assert_snapshot!(json(&value).unwrap(), @"-42");
+    }
+
+    #[test]
+    fn test_serialize_i16() {
+        let value: i16 = -42;
+        assert_snapshot!(json(&value).unwrap(), @"-42");
+    }
+
+    #[test]
+    fn test_serialize_i32() {
+        let value: i32 = -42;
+        assert_snapshot!(json(&value).unwrap(), @"-42");
+    }
+
+    #[test]
+    fn test_serialize_i64() {
+        let value: i64 = -42;
+        assert_snapshot!(json(&value).unwrap(), @"-42");
+    }
+
+    #[test]
+    fn test_serialize_vec() {
+        let value: Vec<i32> = vec![-1, 0, 1];
+        assert_snapshot!(json(&value).unwrap(), @"[-1, 0, 1]");
+    }
+
+    #[test]
+    fn test_serialize_str() {
+        let value: &str = "hello";
+        assert_snapshot!(json(&value).unwrap(), @r#""hello""#);
+    }
+
+    #[test]
+    fn test_serialize_str_with_quotes() {
+        let value: &str = "hello \"world\"";
+        assert_snapshot!(json(&value).unwrap(), @r#""hello \"world\"""#);
+    }
+
+    #[test]
+    fn test_serialize_str_with_whitespace() {
+        let value: &str = "hello\n\tworld";
+        assert_snapshot!(json(&value).unwrap(), @r#""hello\n\tworld""#);
+    }
+
+    #[test]
+    fn test_serialize_str_with_unicode() {
+        let value: &str = "𝕳𝖊𝖑𝖑𝖔";
+        assert_snapshot!(json(&value).unwrap(), @r#""𝕳𝖊𝖑𝖑𝖔""#);
+    }
+
+    #[test]
+    fn test_serialize_object() {
+        let mut buffer = Vec::new();
+        {
+            let mut serializer = Serializer::new(BufWriter::new(&mut buffer));
+            serializer.write_object(|s| {
+                s.field("key1", &"value1")?;
+                s.field("key2", &42)?;
+                Ok(())
+            }).unwrap();
+            serializer.writer.flush().unwrap();
+        }
+        let result = String::from_utf8(buffer).unwrap();
+        assert_snapshot!(result, @r#"{"key1": "value1", "key2": 42}"#);
+    }
+}
