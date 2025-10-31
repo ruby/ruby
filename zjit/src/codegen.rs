@@ -2013,7 +2013,8 @@ c_callable! {
             // function_stub_hit_body() may allocate and call gc_validate_pc(), so we always set PC.
             let iseq_call = unsafe { Rc::from_raw(iseq_call_ptr as *const IseqCall) };
             let iseq = iseq_call.iseq.get();
-            let pc = unsafe { rb_iseq_pc_at_idx(iseq, iseq_call.num_optionals_passed) };
+            let insn_idx = jit_entry_insns(iseq)[iseq_call.num_optionals_passed];
+            let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
             unsafe { rb_set_cfp_pc(cfp, pc) };
 
             // JIT-to-JIT calls don't set SP or fill nils to uninitialized (non-argument) locals.
