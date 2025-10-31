@@ -2855,6 +2855,7 @@ impl Function {
                     // Filter for simple call sites (i.e. no splats etc.)
                     if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
                         fun.count_fancy_call_features(block, ci_flags);
+                        fun.set_dynamic_send_reason(send_insn_id, FancyArgPass);
                         return Err(());
                     }
 
