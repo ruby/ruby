@@ -503,6 +503,52 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn neq_with_side_effect_not_elided () {
+        let result = eval("
+            class CustomEq
+              attr_reader :count
+
+              def ==(o)
+                @count = @count.to_i + 1
+                self.equal?(o)
+              end
+            end
+
+            def test(object)
+              # intentionally unused, but also can't assign to underscore
+              object != object
+              nil
+            end
+
+            custom = CustomEq.new
+            test(custom)
+            test(custom)
+
+            custom.count
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(2), result);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:13:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2)
+        bb1(v5:BasicObject, v6:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v5, v6)
+        bb2(v8:BasicObject, v9:BasicObject):
+          PatchPoint MethodRedefined(CustomEq@0x1000, !=@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(CustomEq@0x1000)
+          v28:HeapObject[class_exact:CustomEq] = GuardType v9, HeapObject[class_exact:CustomEq]
+          v29:BoolExact = CCallWithFrame !=@0x1038, v28, v9
+          v19:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v19
+        ");
+    }
+
+    #[test]
     fn test_replace_guard_if_known_fixnum() {
         eval("
             def test(a)
