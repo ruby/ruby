@@ -350,6 +350,6 @@ mod tests {
             serializer.writer.flush().unwrap();
         }
         let result = String::from_utf8(buffer).unwrap();
-        assert_snapshot!(result, @r#"{"key1": "value1", "key2": 42}"#);
+        assert_snapshot!(result, @r#"{"key1": "value1", "key2": {"foo": "bar", "third": []}}"#);
     }
 }
