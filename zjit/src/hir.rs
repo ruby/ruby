@@ -2280,6 +2280,8 @@ impl Function {
                         // do not optimize into a `SendWithoutBlockDirect`.
                         let flags = unsafe { rb_vm_ci_flag(ci) };
                         if unspecializable_call_type(flags) {
+                            self.count_fancy_call_features(block, flags);
+                            self.set_dynamic_send_reason(insn_id, FancyArgPass);
                             self.push_insn_id(block, insn_id); continue;
                         }
 
@@ -2752,6 +2754,8 @@ impl Function {
                     // When seeing &block argument, fall back to dynamic dispatch for now
                     // TODO: Support block forwarding
                     if unspecializable_call_type(ci_flags) {
+                        fun.count_fancy_call_features(block, ci_flags);
+                        fun.set_dynamic_send_reason(send_insn_id, FancyArgPass);
                         return Err(());
                     }
 
