@@ -2276,7 +2276,11 @@ impl Function {
                         // Load an overloaded cme if applicable. See vm_search_cc().
                         // It allows you to use a faster ISEQ if possible.
                         cme = unsafe { rb_check_overloaded_cme(cme, ci) };
-                        let def_type = unsafe { get_cme_def_type(cme) };
+                        let mut def_type = unsafe { get_cme_def_type(cme) };
+                        while def_type == VM_METHOD_TYPE_ALIAS {
+                            cme = unsafe { rb_aliased_callable_method_entry(cme) };
+                            def_type = unsafe { get_cme_def_type(cme) };
+                        }
                         if def_type == VM_METHOD_TYPE_ISEQ {
                             // TODO(max): Allow non-iseq; cache cme
                             // Only specialize positional-positional calls
