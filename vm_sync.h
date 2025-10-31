@@ -16,6 +16,19 @@
 #define APPEND_LOCATION_PARAMS
 #endif
 
+#if RUBY_DEBUG > 0
+void RUBY_ASSERT_vm_locking(void);
+void RUBY_ASSERT_vm_locking_with_barrier(void);
+void RUBY_ASSERT_vm_unlocking(void);
+#define ASSERT_vm_locking() RUBY_ASSERT_vm_locking()
+#define ASSERT_vm_locking_with_barrier() RUBY_ASSERT_vm_locking_with_barrier()
+#define ASSERT_vm_unlocking() RUBY_ASSERT_vm_unlocking()
+#else
+#define ASSERT_vm_locking()
+#define ASSERT_vm_locking_with_barrier()
+#define ASSERT_vm_unlocking()
+#endif
+
 bool rb_vm_locked_p(void);
 void rb_vm_lock_body(LOCATION_ARGS);
 void rb_vm_unlock_body(LOCATION_ARGS);
@@ -225,18 +238,6 @@ rb_vm_relock_all(unsigned int lev, const char *file, int line)
     for (unsigned int vm_locking_level, vm_locking_do = (RB_VM_LOCK_ENTER_LEV_NB(&vm_locking_level), 1); \
          vm_locking_do; RB_VM_LOCK_LEAVE_LEV_NB(&vm_locking_level), vm_locking_do = 0)
 
-#if RUBY_DEBUG > 0
-void RUBY_ASSERT_vm_locking(void);
-void RUBY_ASSERT_vm_locking_with_barrier(void);
-void RUBY_ASSERT_vm_unlocking(void);
-#define ASSERT_vm_locking() RUBY_ASSERT_vm_locking()
-#define ASSERT_vm_locking_with_barrier() RUBY_ASSERT_vm_locking_with_barrier()
-#define ASSERT_vm_unlocking() RUBY_ASSERT_vm_unlocking()
-#else
-#define ASSERT_vm_locking()
-#define ASSERT_vm_locking_with_barrier()
-#define ASSERT_vm_unlocking()
-#endif
 #define RB_VM_UNLOCK_ALL() (RB_VM_LOCKED_P() ? rb_vm_unlock_all(__FILE__, __LINE__) : 0)
 #define RB_VM_RELOCK_ALL(lev) rb_vm_relock_all(lev, __FILE__, __LINE__)
 
