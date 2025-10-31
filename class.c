@@ -1605,13 +1605,8 @@ VALUE
 rb_define_class(const char *name, VALUE super)
 {
     VALUE klass;
-    ID id;
-    const rb_namespace_t *ns = rb_current_namespace();
+    ID id = rb_intern(name);
 
-    id = rb_intern(name);
-    if (NAMESPACE_OPTIONAL_P(ns)) {
-        return rb_define_class_id_under(ns->ns_object, id, super);
-    }
     if (rb_const_defined(rb_cObject, id)) {
         klass = rb_const_get(rb_cObject, id);
         if (!RB_TYPE_P(klass, T_CLASS)) {
@@ -1723,13 +1718,8 @@ VALUE
 rb_define_module(const char *name)
 {
     VALUE module;
-    ID id;
-    const rb_namespace_t *ns = rb_current_namespace();
+    ID id = rb_intern(name);
 
-    id = rb_intern(name);
-    if (NAMESPACE_OPTIONAL_P(ns)) {
-        return rb_define_module_id_under(ns->ns_object, id);
-    }
     if (rb_const_defined(rb_cObject, id)) {
         module = rb_const_get(rb_cObject, id);
         if (!RB_TYPE_P(module, T_MODULE)) {
