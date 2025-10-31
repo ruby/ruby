@@ -164,8 +164,9 @@ macro_rules! impl_serializable_int {
     ($($ty:ty),* $(,)?) => {
         $(
             impl Serializable for $ty {
-                fn serialize<W: Write>(&self, serializer: &mut Serializer<W>) -> Result<()> {
-                    write!(serializer.writer, "{}", self).map_err(|e| JsonError::IoError(e.into()))
+                fn serialize<W: Write>(&self, serializer: &mut Serializer<W>) -> JsonResult<()> {
+                    write!(serializer.writer, "{}", self)?;
+                    Ok(())
                 }
             }
         )*
