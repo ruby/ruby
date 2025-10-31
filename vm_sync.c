@@ -20,7 +20,7 @@ void
 RUBY_ASSERT_vm_locking(void)
 {
     rb_vm_t *vm = GET_VM();
-    VM_ASSERT(vm_locked(vm));
+    if (vm->running) VM_ASSERT(vm_locked(vm));
 }
 
 void
@@ -41,7 +41,7 @@ void
 RUBY_ASSERT_vm_unlocking(void)
 {
     rb_vm_t *vm = GET_VM();
-    if (vm_locked(vm)) {
+    if (vm->running && vm_locked(vm)) {
         const char *file = vm->ractor.sync.lock_file;
         int line = vm->ractor.sync.lock_line;
         if (file) {

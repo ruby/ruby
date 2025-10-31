@@ -59,7 +59,7 @@ rb_vm_lock(const char *file, int line)
     }
     else {
 #if VM_CHECK_MODE > 0
-        if (rb_current_execution_context(false)) {
+        if (GET_VM()->running) {
             rb_vm_lock_body(LOCATION_PARAMS);
         }
 #endif
@@ -74,7 +74,7 @@ rb_vm_unlock(const char *file, int line)
     }
     else {
 #if VM_CHECK_MODE > 0
-        if (rb_current_execution_context(false)) {
+        if (GET_VM()->running) {
             rb_vm_unlock_body(LOCATION_PARAMS);
         }
 #endif
@@ -91,7 +91,7 @@ rb_vm_lock_enter(unsigned int *lev, const char *file, int line)
     }
     else {
 #if VM_CHECK_MODE > 0
-        if (rb_current_execution_context(false)) {
+        if (GET_VM()->running) {
             rb_vm_lock_enter_body(lev APPEND_LOCATION_PARAMS);
         }
 #endif
@@ -108,7 +108,7 @@ rb_vm_lock_enter_nb(unsigned int *lev, const char *file, int line)
     }
     else {
 #if VM_CHECK_MODE > 0
-        if (rb_current_execution_context(false)) {
+        if (GET_VM()->running) {
             rb_vm_lock_enter_body_nb(lev APPEND_LOCATION_PARAMS);
         }
 #endif
@@ -123,7 +123,7 @@ rb_vm_lock_leave_nb(unsigned int *lev, const char *file, int line)
     }
     else {
 #if VM_CHECK_MODE > 0
-        if (rb_current_execution_context(false)) {
+        if (GET_VM()->running) {
             rb_vm_lock_leave_body_nb(lev APPEND_LOCATION_PARAMS);
         }
 #endif
@@ -138,7 +138,7 @@ rb_vm_lock_leave(unsigned int *lev, const char *file, int line)
     }
     else {
 #if VM_CHECK_MODE > 0
-        if (rb_current_execution_context(false)) {
+        if (GET_VM()->running) {
             rb_vm_lock_leave_body(lev APPEND_LOCATION_PARAMS);
         }
 #endif
