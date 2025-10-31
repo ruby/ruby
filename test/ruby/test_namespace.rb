@@ -715,6 +715,7 @@ class TestNamespace < Test::Unit::TestCase
         def self.yield_block = yield
         def self.call_block(&b) = b.call
       end
+      FOO_NAME = Foo.name
       NS9 = Foo.new.ns4
       EOC
       ns.eval(code)
@@ -731,6 +732,9 @@ class TestNamespace < Test::Unit::TestCase
       assert_equal outer, ns::Foo.yield_block{ Namespace.current } # method yields
       assert_equal outer, ns::Foo.call_block{ Namespace.current }  # method calls a block
       assert_equal ns, ns::NS9 # on TOP frame, referring a class in the current
+
+      assert_equal "Foo", ns::FOO_NAME
+      assert_equal "Foo", ns::Foo.name
     end;
   end
 
