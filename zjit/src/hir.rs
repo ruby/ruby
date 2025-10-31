@@ -462,6 +462,7 @@ pub enum SideExitReason {
     UnhandledHIRInsn(InsnId),
     UnhandledYARVInsn(u32),
     UnhandledCallType(CallType),
+    TooManyKeywordParameters,
     FixnumAddOverflow,
     FixnumSubOverflow,
     FixnumMultOverflow,
@@ -664,6 +665,7 @@ pub enum Insn {
     /// Kernel#block_given? but without pushing a frame. Similar to [`Insn::Defined`] with
     /// `DEFINED_YIELD`
     IsBlockGiven,
+    FixnumBitCheck { val: InsnId, index: u8 },
 
     /// Get a global variable named `id`
     GetGlobal { id: ID, state: InsnId },
@@ -1147,6 +1149,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::IsBlockGiven => { write!(f, "IsBlockGiven") },
+            Insn::FixnumBitCheck {val, index} => { write!(f, "FixnumBitCheck {val}, {index}") },
             Insn::CCall { cfunc, args, name, return_type: _, elidable: _ } => {
                 write!(f, "CCall {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfunc))?;
                 for arg in args {
@@ -1691,6 +1694,7 @@ impl Function {
                     }
                 },
             &Return { val } => Return { val: find!(val) },
+            &FixnumBitCheck { val, index } => FixnumBitCheck { val: find!(val), index },
             &Throw { throw_state, val, state } => Throw { throw_state, val: find!(val), state },
             &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
             &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
@@ -1952,6 +1956,7 @@ impl Function {
             Insn::DefinedIvar { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::GetConstantPath { .. } => types::BasicObject,
             Insn::IsBlockGiven => types::BoolExact,
+            Insn::FixnumBitCheck { .. } => types::BoolExact,
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::ArrayInclude { .. } => types::BoolExact,
             Insn::DupArrayInclude { .. } => types::BoolExact,
@@ -3244,6 +3249,9 @@ impl Function {
             | &Insn::CheckInterrupts { state }
             | &Insn::GetConstantPath { ic: _, state } => {
                 worklist.push_back(state);
+            }
+            &Insn::FixnumBitCheck { val, index: _ } => {
+                worklist.push_back(val)
             }
             &Insn::ArrayMax { ref elements, state }
             | &Insn::NewHash { ref elements, state }
@@ -4647,6 +4655,21 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let pushval = get_arg(pc, 2);
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     state.stack_push(fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id }));
+                }
+                YARVINSN_checkkeyword => {
+                    // When a keyword is unspecified past index 32, a hash will be used instead.
+                    // This can only happen in iseqs taking more than 32 keywords.
+                    // This seems unlikely so we side exit to the interpreter.
+                    if unsafe {(*rb_get_iseq_body_param_keyword(iseq)).num >= 32} {
+                        let exit_id = fun.push_insn(block, Insn::Snapshot {state: exit_state});
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::TooManyKeywordParameters });
+                        break;
+                    }
+                    let ep_offset = get_arg(pc, 0).as_u32();
+                    let index = get_arg(pc, 1).as_u64();
+                    let index: u8 = index.try_into().map_err(|_| ParseError::MalformedIseq(insn_idx))?;
+                    let val = fun.push_insn(block, Insn::GetLocal { ep_offset, level: 0, use_sp: false, rest_param: false });
+                    state.stack_push(fun.push_insn(block, Insn::FixnumBitCheck { val, index }));
                 }
                 YARVINSN_opt_getconstant_path => {
                     let ic = get_arg(pc, 0).as_ptr();
