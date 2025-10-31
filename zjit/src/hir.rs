@@ -2126,23 +2126,6 @@ impl Function {
         self.push_insn(block, Insn::GuardType { val, guard_type, state })
     }
 
-    fn likely_is_fixnum(&self, val: InsnId, profiled_type: ProfiledType) -> bool {
-        self.is_a(val, types::Fixnum) || profiled_type.is_fixnum()
-    }
-
-    fn coerce_to_fixnum(&mut self, block: BlockId, val: InsnId, state: InsnId) -> InsnId {
-        if self.is_a(val, types::Fixnum) { return val; }
-        self.push_insn(block, Insn::GuardType { val, guard_type: types::Fixnum, state })
-    }
-
-    fn arguments_likely_fixnums(&mut self, left: InsnId, right: InsnId, state: InsnId) -> bool {
-        let frame_state = self.frame_state(state);
-        let iseq_insn_idx = frame_state.insn_idx;
-        let left_profiled_type = self.profiled_type_of_at(left, iseq_insn_idx).unwrap_or_default();
-        let right_profiled_type = self.profiled_type_of_at(right, iseq_insn_idx).unwrap_or_default();
-        self.likely_is_fixnum(left, left_profiled_type) && self.likely_is_fixnum(right, right_profiled_type)
-    }
-
     fn count_fancy_call_features(&mut self, block: BlockId, ci_flags: c_uint) {
         use Counter::*;
         if 0 != ci_flags & VM_CALL_ARGS_SPLAT     { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_splat));      }
@@ -2161,14 +2144,14 @@ impl Function {
             self.push_insn_id(block, orig_insn_id);
             return;
         }
-        if self.arguments_likely_fixnums(left, right, state) {
+        if self.likely_a(left, types::Fixnum, state) && self.likely_a(right, types::Fixnum, state) {
             if bop == BOP_NEQ {
                 // For opt_neq, the interpreter checks that both neq and eq are unchanged.
                 self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }, state });
             }
             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop }, state });
-            let left = self.coerce_to_fixnum(block, left, state);
-            let right = self.coerce_to_fixnum(block, right, state);
+            let left = self.coerce_to(block, left, types::Fixnum, state);
+            let right = self.coerce_to(block, right, types::Fixnum, state);
             let result = self.push_insn(block, f(left, right));
             self.make_equal_to(orig_insn_id, result);
             self.insn_types[result.0] = self.infer_type(result);
@@ -2567,8 +2550,8 @@ impl Function {
                         let high_is_fix = self.is_a(high, types::Fixnum);
 
                         if low_is_fix || high_is_fix {
-                            let low_fix = self.coerce_to_fixnum(block, low, state);
-                            let high_fix = self.coerce_to_fixnum(block, high, state);
+                            let low_fix = self.coerce_to(block, low, types::Fixnum, state);
+                            let high_fix = self.coerce_to(block, high, types::Fixnum, state);
                             let replacement = self.push_insn(block, Insn::NewRangeFixnum { low: low_fix, high: high_fix, flag, state });
                             self.make_equal_to(insn_id, replacement);
                             self.insn_types[replacement.0] = self.infer_type(replacement);
