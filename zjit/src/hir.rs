@@ -4129,7 +4129,7 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
 }
 
 /// List of insn_idx that starts a JIT entry block
-fn jit_entry_insns(iseq: IseqPtr) -> Vec<u32> {
+pub fn jit_entry_insns(iseq: IseqPtr) -> Vec<u32> {
     let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
     if opt_num > 0 {
         let mut result = vec![];
