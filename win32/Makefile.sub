@@ -362,7 +362,7 @@ LDSHARED_0 = @if exist $(@).manifest $(MINIRUBY) -run -e wait_writable -- -n 10 
 LDSHARED_1 = @if exist $(@).manifest $(MANIFESTTOOL) -manifest $(@).manifest -outputresource:$(@);2
 LDSHARED_2 = @if exist $(@).manifest @$(RM) $(@:/=\).manifest
 !endif
-CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
+CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS) -utf-8
 !if "$(USE_RUBYGEMS)" == "no"
 CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
 !endif
