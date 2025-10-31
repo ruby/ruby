@@ -69,6 +69,8 @@ impl<W: Write> Serializer<W> {
     pub fn write_str(&mut self, s: &str) -> JsonResult<()> {
         self.writer.write_all(b"\"")?;
 
+        // todo: `escape_debug` I think is not JSON compliant but seems to be close.
+        // In the future, this should be replaced with a more accurate method.
         for ch in s.escape_debug() {
             write!(self.writer, "{}", ch)?;
         }
