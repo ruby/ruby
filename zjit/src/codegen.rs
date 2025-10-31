@@ -1208,11 +1208,11 @@ fn gen_send_without_block_direct(
 
     let insn_idx = if unsafe { get_iseq_flags_has_opt(iseq) } {
         // See vm_call_iseq_setup_normal_opt_start in vm_inshelper.c
-        let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
-        let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
-        assert!(args.len() as i32 <= lead_num + opt_num);
-        let num_optionals_passed = args.len() as i32 - lead_num;
-        unsafe { num_optionals_passed as u32 }
+        let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) } as u32;
+        let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) } as u32;
+        assert!(args.len() as u32 <= lead_num + opt_num);
+        let num_optionals_passed = args.len() as u32 - lead_num;
+        num_optionals_passed
     } else {
         0
     };
