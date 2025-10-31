@@ -1212,17 +1212,19 @@ load_ext(VALUE path, VALUE fname)
     return (VALUE)dln_load_feature(RSTRING_PTR(loaded), RSTRING_PTR(fname));
 }
 
-static bool
-run_static_ext_init(rb_vm_t *vm, const char *feature)
+static VALUE
+run_static_ext_init(VALUE vm_ptr, VALUE feature_value)
 {
+    rb_vm_t *vm = (rb_vm_t *)vm_ptr;
+    const char *feature = RSTRING_PTR(feature_value);
     st_data_t key = (st_data_t)feature;
     st_data_t init_func;
 
     if (vm->static_ext_inits && st_delete(vm->static_ext_inits, &key, &init_func)) {
         ((void (*)(void))init_func)();
-        return true;
+        return Qtrue;
     }
-    return false;
+    return Qfalse;
 }
 
 static int
@@ -1331,7 +1333,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
             else if (!*ftptr) {
                 result = TAG_RETURN;
             }
-            else if (found == 's' && run_static_ext_init(th->vm, RSTRING_PTR(path))) {
+            else if (found == 's' && RTEST(rb_vm_call_cfunc_in_namespace(Qnil, run_static_ext_init, (VALUE)th->vm, path, path, ns))) {
                 result = TAG_RETURN;
             }
             else if (RTEST(rb_hash_aref(realpaths,
