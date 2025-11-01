@@ -557,14 +557,6 @@ static uint32_t unescape_unicode(JSON_ParserState *state, const unsigned char *p
 
 static const rb_data_type_t JSON_ParserConfig_type;
 
-static const bool whitespace[256] = {
-    [' '] = 1,
-    ['\t'] = 1,
-    ['\n'] = 1,
-    ['\r'] = 1,
-    ['/'] = 1,
-};
-
 static void
 json_eat_comments(JSON_ParserState *state)
 {
@@ -607,12 +599,38 @@ json_eat_comments(JSON_ParserState *state)
 static inline void
 json_eat_whitespace(JSON_ParserState *state)
 {
-    unsigned char cursor;
-    while (RB_UNLIKELY(whitespace[cursor = (unsigned char)peek(state)])) {
-        if (RB_UNLIKELY(cursor == '/')) {
-            json_eat_comments(state);
-        } else {
-            state->cursor++;
+    while (true) {
+        switch (peek(state)) {
+            case ' ':
+                state->cursor++;
+                break;
+            case '\n':
+                state->cursor++;
+
+                // Heuristic: if we see a newline, there is likely consecutive spaces after it.
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+                while (rest(state) > 8) {
+                    uint64_t chunk;
+                    memcpy(&chunk, state->cursor, sizeof(uint64_t));
+                    size_t consecutive_spaces = trailing_zeros64(chunk ^ 0x2020202020202020) / CHAR_BIT;
+
+                    state->cursor += consecutive_spaces;
+                    if (consecutive_spaces != 8) {
+                        break;
+                    }
+                }
+#endif
+                break;
+            case '\t':
+            case '\r':
+                state->cursor++;
+                break;
+            case '/':
+                json_eat_comments(state);
+                break;
+
+            default:
+                return;
         }
     }
 }
