@@ -1022,6 +1022,95 @@ static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig
     return Qfalse;
 }
 
+static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig *config, bool negative, const char *start)
+{
+    bool integer = true;
+
+    // Variables for Ryu optimization - extract digits during parsing
+    uint64_t mantissa = 0;
+    int mantissa_digits = 0;
+    int32_t exponent = 0;
+    int decimal_point_pos = -1;
+
+    const char first_digit = *state->cursor;
+
+    // Parse integer part and extract mantissa digits
+    while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
+        mantissa = mantissa * 10 + (*state->cursor - '0');
+        mantissa_digits++;
+        state->cursor++;
+    }
+
+    if (RB_UNLIKELY(first_digit == '0' && mantissa_digits > 1 || negative && mantissa_digits == 0)) {
+        raise_parse_error_at("invalid number: %s", state, start);
+    }
+
+    // Parse fractional part
+    if ((state->cursor < state->end) && (*state->cursor == '.')) {
+        integer = false;
+        decimal_point_pos = mantissa_digits;  // Remember position of decimal point
+        state->cursor++;
+
+        if (state->cursor == state->end || !rb_isdigit(*state->cursor)) {
+            raise_parse_error_at("invalid number: %s", state, start);
+        }
+
+        while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
+            mantissa = mantissa * 10 + (*state->cursor - '0');
+            mantissa_digits++;
+            state->cursor++;
+        }
+    }
+
+    // Parse exponent
+    if ((state->cursor < state->end) && ((*state->cursor == 'e') || (*state->cursor == 'E'))) {
+        integer = false;
+        state->cursor++;
+
+        bool negative_exponent = false;
+        if ((state->cursor < state->end) && ((*state->cursor == '-') || (*state->cursor == '+'))) {
+            negative_exponent = (*state->cursor == '-');
+            state->cursor++;
+        }
+
+        if (state->cursor == state->end || !rb_isdigit(*state->cursor)) {
+            raise_parse_error_at("invalid number: %s", state, start);
+        }
+
+        while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
+            exponent = exponent * 10 + (*state->cursor - '0');
+            state->cursor++;
+        }
+
+        if (negative_exponent) {
+            exponent = -exponent;
+        }
+    }
+
+    if (integer) {
+        return json_decode_integer(mantissa, mantissa_digits, negative, start, state->cursor);
+    }
+
+    // Adjust exponent based on decimal point position
+    if (decimal_point_pos >= 0) {
+        exponent -= (mantissa_digits - decimal_point_pos);
+    }
+
+    return json_decode_float(config, mantissa, mantissa_digits, exponent, negative, start, state->cursor);
+}
+
+static inline VALUE json_parse_positive_number(JSON_ParserState *state, JSON_ParserConfig *config)
+{
+    return json_parse_number(state, config, false, state->cursor);
+}
+
+static inline VALUE json_parse_negative_number(JSON_ParserState *state, JSON_ParserConfig *config)
+{
+    const char *start = state->cursor;
+    state->cursor++;
+    return json_parse_number(state, config, true, start);
+}
+
 static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 {
     json_eat_whitespace(state);
@@ -1072,7 +1161,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 
             raise_parse_error("unexpected token %s", state);
             break;
-        case '-':
+        case '-': {
             // Note: memcmp with a small power of two compile to an integer comparison
             if ((state->end - state->cursor >= 9) && (memcmp(state->cursor + 1, "Infinity", 8) == 0)) {
                 if (config->allow_nan) {
@@ -1082,95 +1171,12 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                     raise_parse_error("unexpected token %s", state);
                 }
             }
-            // Fallthrough
-        case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9': {
-            bool integer = true;
-
-            // Variables for Ryu optimization - extract digits during parsing
-            uint64_t mantissa = 0;
-            int mantissa_digits = 0;
-            int32_t exponent = 0;
-            bool negative = false;
-            int decimal_point_pos = -1;
-
-            // /\A-?(0|[1-9]\d*)(\.\d+)?([Ee][-+]?\d+)?/
-            const char *start = state->cursor;
-
-            // Handle optional negative sign
-            if (*state->cursor == '-') {
-                negative = true;
-                state->cursor++;
-                if (state->cursor >= state->end || !rb_isdigit(*state->cursor)) {
-                    raise_parse_error_at("invalid number: %s", state, start);
-                }
-            }
-
-            // Parse integer part and extract mantissa digits
-            while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
-                mantissa = mantissa * 10 + (*state->cursor - '0');
-                mantissa_digits++;
-                state->cursor++;
-            }
-
-            if (RB_UNLIKELY(start[0] == '0' && mantissa_digits > 1)) {
-                raise_parse_error_at("invalid number: %s", state, start);
-            } else if (RB_UNLIKELY(mantissa_digits > 1 && negative && start[1] == '0')) {
-                raise_parse_error_at("invalid number: %s", state, start);
-            }
-
-            // Parse fractional part
-            if ((state->cursor < state->end) && (*state->cursor == '.')) {
-                integer = false;
-                decimal_point_pos = mantissa_digits;  // Remember position of decimal point
-                state->cursor++;
-
-                if (state->cursor == state->end || !rb_isdigit(*state->cursor)) {
-                    raise_parse_error_at("invalid number: %s", state, start);
-                }
-
-                while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
-                    mantissa = mantissa * 10 + (*state->cursor - '0');
-                    mantissa_digits++;
-                    state->cursor++;
-                }
-            }
-
-            // Parse exponent
-            if ((state->cursor < state->end) && ((*state->cursor == 'e') || (*state->cursor == 'E'))) {
-                integer = false;
-                state->cursor++;
-
-                bool negative_exponent = false;
-                if ((state->cursor < state->end) && ((*state->cursor == '-') || (*state->cursor == '+'))) {
-                    negative_exponent = (*state->cursor == '-');
-                    state->cursor++;
-                }
-
-                if (state->cursor == state->end || !rb_isdigit(*state->cursor)) {
-                    raise_parse_error_at("invalid number: %s", state, start);
-                }
-
-                while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
-                    exponent = exponent * 10 + (*state->cursor - '0');
-                    state->cursor++;
-                }
-
-                if (negative_exponent) {
-                    exponent = -exponent;
-                }
-            }
-
-            if (integer) {
-                return json_push_value(state, config, json_decode_integer(mantissa, mantissa_digits, negative, start, state->cursor));
-            }
-
-            // Adjust exponent based on decimal point position
-            if (decimal_point_pos >= 0) {
-                exponent -= (mantissa_digits - decimal_point_pos);
-            }
-
-            return json_push_value(state, config, json_decode_float(config, mantissa, mantissa_digits, exponent, negative, start, state->cursor));
+            return json_push_value(state, config, json_parse_negative_number(state, config));
+            break;
         }
+        case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
+            return json_push_value(state, config, json_parse_positive_number(state, config));
+            break;
         case '"': {
             // %r{\A"[^"\\\t\n\x00]*(?:\\[bfnrtu\\/"][^"\\]*)*"}
             return json_parse_string(state, config, false);
