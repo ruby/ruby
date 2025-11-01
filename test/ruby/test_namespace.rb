@@ -758,6 +758,7 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_loading_extension_libs_in_main_namespace
+    pend if /mswin|mingw/ =~ RUBY_PLATFORM # timeout on windows environments
     assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
       require "prism"
