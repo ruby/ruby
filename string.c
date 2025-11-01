@@ -242,7 +242,9 @@ rb_str_reembeddable_p(VALUE str)
 static inline size_t
 rb_str_embed_size(long capa)
 {
-    return offsetof(struct RString, as.embed.ary) + capa;
+    size_t size = offsetof(struct RString, as.embed.ary) + capa;
+    if (size < sizeof(struct RString)) size = sizeof(struct RString);
+    return size;
 }
 
 size_t
