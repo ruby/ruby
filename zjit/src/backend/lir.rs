@@ -18,9 +18,12 @@ pub use crate::backend::current::{
     mem_base_reg,
     Reg,
     EC, CFP, SP,
-    NATIVE_STACK_PTR, NATIVE_BASE_PTR,
+    NATIVE_STACK_PTR, NATIVE_BASE_PTR_REG,
     C_ARG_OPNDS, C_RET_REG, C_RET_OPND,
 };
+
+pub const NATIVE_BASE_PTR: Opnd = Opnd::Reg(NATIVE_BASE_PTR_REG);
+const NATIVE_BASE_PTR_REG_NO: u8 = NATIVE_BASE_PTR_REG.reg_no;
 
 pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
 
@@ -28,8 +31,12 @@ pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum MemBase
 {
-    Reg(u8),
+    /// Virtual register: Lowered to MemBase::Reg or MemBase::Stack in alloc_regs.
     VReg(usize),
+    /// Stack slot: Lowered to MemBase::Reg in split_with_scratch_reg.
+    Stack { stack_idx: usize, num_bits: u8 },
+    /// Register: Every Opnd::Mem should have this MemBase as of emit.
+    Reg(u8),
 }
 
 // Memory location
@@ -55,6 +62,8 @@ impl fmt::Display for Mem {
         match self.base {
             MemBase::Reg(reg_no) => write!(f, "{}", mem_base_reg(reg_no))?,
             MemBase::VReg(idx) => write!(f, "v{idx}")?,
+            MemBase::Stack { stack_idx, num_bits } if num_bits == 64 => write!(f, "Stack[{stack_idx}]")?,
+            MemBase::Stack { stack_idx, num_bits } => write!(f, "Stack{num_bits}[{stack_idx}]")?,
         }
         if self.disp != 0 {
             let sign = if self.disp > 0 { '+' } else { '-' };
@@ -207,7 +216,9 @@ impl Opnd
 
     /// Get the size in bits for register/memory operands.
     pub fn rm_num_bits(&self) -> u8 {
-        self.num_bits().unwrap()
+        self.num_bits().unwrap_or_else(|| {
+            panic!("invalid Opnd for rm_num_bits: {self:?}")
+        })
     }
 
     /// Maps the indices from a previous list of instructions to a new list of
@@ -1143,6 +1154,59 @@ impl LiveRange {
     }
 }
 
+/// StackState manages which stack slots are used by which VReg
+pub struct StackState {
+    /// The maximum number of spilled VRegs at a time
+    stack_size: usize,
+    /// Map from index at the C stack for spilled VRegs to Some(vreg_idx) if allocated
+    stack_slots: Vec<Option<usize>>,
+    /// Copy of Assembler::stack_base_idx. Used for calculating stack slot offsets.
+    stack_base_idx: usize,
+}
+
+impl StackState {
+    /// Initialize a stack allocator
+    pub fn new(stack_base_idx: usize) -> Self {
+        StackState {
+            stack_size: 0,
+            stack_slots: vec![],
+            stack_base_idx,
+        }
+    }
+
+    /// Allocate a stack slot for a given vreg_idx
+    fn alloc_stack(&mut self, vreg_idx: usize) -> Opnd {
+        for stack_idx in 0..self.stack_size {
+            if self.stack_slots[stack_idx].is_none() {
+                self.stack_slots[stack_idx] = Some(vreg_idx);
+                return Opnd::mem(64, NATIVE_BASE_PTR, self.stack_idx_to_disp(stack_idx));
+            }
+        }
+        // Every stack slot is in use. Allocate a new stack slot.
+        self.stack_size += 1;
+        self.stack_slots.push(Some(vreg_idx));
+        Opnd::mem(64, NATIVE_BASE_PTR, self.stack_idx_to_disp(self.stack_slots.len() - 1))
+    }
+
+    /// Deallocate a stack slot for a given disp
+    fn dealloc_stack(&mut self, disp: i32) {
+        let stack_idx = self.disp_to_stack_idx(disp);
+        if self.stack_slots[stack_idx].is_some() {
+            self.stack_slots[stack_idx] = None;
+        }
+    }
+
+    /// Convert the `disp` of a stack slot operand to the stack index
+    fn disp_to_stack_idx(&self, disp: i32) -> usize {
+        (-disp / SIZEOF_VALUE_I32) as usize - self.stack_base_idx - 1
+    }
+
+    /// Convert a stack index to the `disp` of the stack slot
+    pub fn stack_idx_to_disp(&self, stack_idx: usize) -> i32 {
+        (self.stack_base_idx + stack_idx + 1) as i32 * -SIZEOF_VALUE_I32
+    }
+}
+
 /// RegisterPool manages which registers are used by which VReg
 struct RegisterPool {
     /// List of registers that can be allocated
@@ -1155,50 +1219,62 @@ struct RegisterPool {
     /// The number of live registers.
     /// Provides a quick way to query `pool.filter(|r| r.is_some()).count()`
     live_regs: usize,
+
+    /// Fallback to let StackState allocate stack slots when RegisterPool runs out of registers.
+    stack_state: StackState,
 }
 
 impl RegisterPool {
     /// Initialize a register pool
-    fn new(regs: Vec<Reg>) -> Self {
+    fn new(regs: Vec<Reg>, stack_base_idx: usize) -> Self {
         let pool = vec![None; regs.len()];
         RegisterPool {
             regs,
             pool,
             live_regs: 0,
+            stack_state: StackState::new(stack_base_idx),
         }
     }
 
     /// Mutate the pool to indicate that the register at the index
     /// has been allocated and is live.
-    fn alloc_reg(&mut self, vreg_idx: usize) -> Option<Reg> {
+    fn alloc_opnd(&mut self, vreg_idx: usize) -> Opnd {
         for (reg_idx, reg) in self.regs.iter().enumerate() {
             if self.pool[reg_idx].is_none() {
                 self.pool[reg_idx] = Some(vreg_idx);
                 self.live_regs += 1;
-                return Some(*reg);
+                return Opnd::Reg(*reg);
             }
         }
-        None
+        self.stack_state.alloc_stack(vreg_idx)
     }
 
     /// Allocate a specific register
-    fn take_reg(&mut self, reg: &Reg, vreg_idx: usize) -> Reg {
+    fn take_reg(&mut self, reg: &Reg, vreg_idx: usize) -> Opnd {
         let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no)
             .unwrap_or_else(|| panic!("Unable to find register: {}", reg.reg_no));
         assert_eq!(self.pool[reg_idx], None, "register already allocated for VReg({:?})", self.pool[reg_idx]);
         self.pool[reg_idx] = Some(vreg_idx);
         self.live_regs += 1;
-        *reg
+        Opnd::Reg(*reg)
     }
 
     // Mutate the pool to indicate that the given register is being returned
     // as it is no longer used by the instruction that previously held it.
-    fn dealloc_reg(&mut self, reg: &Reg) {
-        let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no)
-            .unwrap_or_else(|| panic!("Unable to find register: {}", reg.reg_no));
-        if self.pool[reg_idx].is_some() {
-            self.pool[reg_idx] = None;
-            self.live_regs -= 1;
+    fn dealloc_opnd(&mut self, opnd: &Opnd) {
+        match *opnd {
+            Opnd::Reg(reg) => {
+                let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no)
+                    .unwrap_or_else(|| panic!("Unable to find register: {}", reg.reg_no));
+                if self.pool[reg_idx].is_some() {
+                    self.pool[reg_idx] = None;
+                    self.live_regs -= 1;
+                }
+            }
+            Opnd::Mem(Mem { disp, .. }) => {
+                self.stack_state.dealloc_stack(disp);
+            }
+            _ => unreachable!(),
         }
     }
 
@@ -1452,15 +1528,18 @@ impl Assembler
             }
         }
 
-        // First, create the pool of registers.
-        let mut pool = RegisterPool::new(regs.clone());
+        // Initialize a register allocator
+        let mut pool = RegisterPool::new(regs.clone(), self.stack_base_idx);
 
-        // Mapping between VReg and allocated VReg for each VReg index.
-        // None if no register has been allocated for the VReg.
-        let mut reg_mapping: Vec<Option<Reg>> = vec![None; self.live_ranges.len()];
+        // Mapping from VReg to register or stack slot; allocated Opnd for each vreg_idx.
+        // None if a register or a stack slot has not been allocated for the VReg.
+        let mut vreg_mapping: Vec<Option<Opnd>> = vec![None; self.live_ranges.len()];
 
         // List of registers saved before a C call, paired with the VReg index.
         let mut saved_regs: Vec<(Reg, usize)> = vec![];
+
+        // Remember the indexes of Insn::FrameSetup to update the stack size later
+        let mut frame_setup_idxs: Vec<usize> = vec![];
 
         // live_ranges is indexed by original `index` given by the iterator.
         let mut asm = Assembler::new_with_asm(&self);
@@ -1468,21 +1547,21 @@ impl Assembler
         let mut iterator = self.insns.into_iter().enumerate().peekable();
 
         while let Some((index, mut insn)) = iterator.next() {
+            // Remember the index of FrameSetup to bump slot_count when we know the max number of spilled VRegs.
+            if let Insn::FrameSetup { .. } = insn {
+                frame_setup_idxs.push(asm.insns.len());
+            }
+
             let before_ccall = match (&insn, iterator.peek().map(|(_, insn)| insn)) {
                 (Insn::ParallelMov { .. }, Some(Insn::CCall { .. })) |
                 (Insn::CCall { .. }, _) if !pool.is_empty() => {
                     // If C_RET_REG is in use, move it to another register.
                     // This must happen before last-use registers are deallocated.
                     if let Some(vreg_idx) = pool.vreg_for(&C_RET_REG) {
-                        let new_reg = if let Some(new_reg) = pool.alloc_reg(vreg_idx) {
-                            new_reg
-                        } else {
-                            debug!("spilling VReg is not implemented yet, can't evacuate C_RET_REG on CCall");
-                            return Err(CompileError::RegisterSpillOnCCall);
-                        };
-                        asm.mov(Opnd::Reg(new_reg), C_RET_OPND);
-                        pool.dealloc_reg(&C_RET_REG);
-                        reg_mapping[vreg_idx] = Some(new_reg);
+                        let new_reg = pool.alloc_opnd(vreg_idx);
+                        asm.mov(new_reg, C_RET_OPND);
+                        pool.dealloc_opnd(&Opnd::Reg(C_RET_REG));
+                        vreg_mapping[vreg_idx] = Some(new_reg);
                     }
 
                     true
@@ -1501,8 +1580,8 @@ impl Assembler
                         // uses this operand. If it is, we can return the allocated
                         // register to the pool.
                         if live_ranges[idx].end() == index {
-                            if let Some(reg) = reg_mapping[idx] {
-                                pool.dealloc_reg(&reg);
+                            if let Some(reg) = vreg_mapping[idx] {
+                                pool.dealloc_opnd(&reg);
                             } else {
                                 unreachable!("no register allocated for insn {:?}", insn);
                             }
@@ -1520,7 +1599,7 @@ impl Assembler
                 // Save live registers
                 for &(reg, _) in saved_regs.iter() {
                     asm.cpush(Opnd::Reg(reg));
-                    pool.dealloc_reg(&reg);
+                    pool.dealloc_opnd(&Opnd::Reg(reg));
                 }
                 // On x86_64, maintain 16-byte stack alignment
                 if cfg!(target_arch = "x86_64") && saved_regs.len() % 2 == 1 {
@@ -1560,7 +1639,7 @@ impl Assembler
 
                     if let Some(Opnd::VReg{ idx, .. }) = opnd_iter.next() {
                         if live_ranges[*idx].end() == index {
-                            if let Some(reg) = reg_mapping[*idx] {
+                            if let Some(Opnd::Reg(reg)) = vreg_mapping[*idx] {
                                 out_reg = Some(pool.take_reg(&reg, vreg_idx));
                             }
                         }
@@ -1569,23 +1648,7 @@ impl Assembler
 
                 // Allocate a new register for this instruction if one is not
                 // already allocated.
-                if out_reg.is_none() {
-                    out_reg = match pool.alloc_reg(vreg_idx) {
-                        Some(reg) => Some(reg),
-                        None => {
-                            if get_option!(debug) {
-                                let mut insns = asm.insns;
-                                insns.push(insn);
-                                for (_, insn) in iterator.by_ref() {
-                                    insns.push(insn);
-                                }
-                                dump_live_regs(insns, live_ranges, regs.len(), index);
-                            }
-                            debug!("Register spill not supported");
-                            return Err(CompileError::RegisterSpillOnAlloc);
-                        }
-                    };
-                }
+                let out_reg = out_reg.unwrap_or_else(|| pool.alloc_opnd(vreg_idx));
 
                 // Set the output operand on the instruction
                 let out_num_bits = Opnd::match_num_bits_iter(insn.opnd_iter());
@@ -1594,9 +1657,9 @@ impl Assembler
                 // output operand on this instruction because the live range
                 // extends beyond the index of the instruction.
                 let out = insn.out_opnd_mut().unwrap();
-                let reg = out_reg.unwrap().with_num_bits(out_num_bits);
-                reg_mapping[out.vreg_idx()] = Some(reg);
-                *out = Opnd::Reg(reg);
+                let reg = out_reg.with_num_bits(out_num_bits);
+                vreg_mapping[out.vreg_idx()] = Some(reg);
+                *out = reg;
             }
 
             // Replace VReg and Param operands by their corresponding register
@@ -1604,11 +1667,20 @@ impl Assembler
             while let Some(opnd) = opnd_iter.next() {
                 match *opnd {
                     Opnd::VReg { idx, num_bits } => {
-                        *opnd = Opnd::Reg(reg_mapping[idx].unwrap()).with_num_bits(num_bits);
+                        *opnd = vreg_mapping[idx].unwrap().with_num_bits(num_bits);
                     },
                     Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
-                        let base = MemBase::Reg(reg_mapping[idx].unwrap().reg_no);
-                        *opnd = Opnd::Mem(Mem { base, disp, num_bits });
+                        match vreg_mapping[idx].unwrap() {
+                            Opnd::Reg(reg) => {
+                                *opnd = Opnd::Mem(Mem { base: MemBase::Reg(reg.reg_no), disp, num_bits });
+                            }
+                            // If the MemBase is a spilled VReg, let scratch_split lower it to MemBase::Reg.
+                            Opnd::Mem(Mem { base: MemBase::Reg(NATIVE_BASE_PTR_REG_NO), disp: stack_disp, num_bits: stack_num_bits }) => {
+                                let stack_idx = pool.stack_state.disp_to_stack_idx(stack_disp);
+                                *opnd = Opnd::Mem(Mem { base: MemBase::Stack { stack_idx, num_bits: stack_num_bits }, disp, num_bits });
+                            }
+                            _ => unreachable!(),
+                        }
                     }
                     _ => {},
                 }
@@ -1618,8 +1690,8 @@ impl Assembler
             // register
             if let Some(idx) = vreg_idx {
                 if live_ranges[idx].end() == index {
-                    if let Some(reg) = reg_mapping[idx] {
-                        pool.dealloc_reg(&reg);
+                    if let Some(reg) = vreg_mapping[idx] {
+                        pool.dealloc_opnd(&reg);
                     } else {
                         unreachable!("no register allocated for insn {:?}", insn);
                     }
@@ -1668,6 +1740,16 @@ impl Assembler
                     pool.take_reg(&reg, vreg_idx);
                 }
                 saved_regs.clear();
+            }
+        }
+
+        // Extend the stack space for spilled operands
+        for frame_setup_idx in frame_setup_idxs {
+            match &mut asm.insns[frame_setup_idx] {
+                Insn::FrameSetup { slot_count, .. } => {
+                    *slot_count += pool.stack_state.stack_size;
+                }
+                _ => unreachable!(),
             }
         }
 
