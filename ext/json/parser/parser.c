@@ -1022,24 +1022,28 @@ static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig
     return Qfalse;
 }
 
+static inline int json_parse_digits(JSON_ParserState *state, uint64_t *accumulator)
+{
+    const char *start = state->cursor;
+    while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
+        *accumulator = *accumulator * 10 + (*state->cursor - '0');
+        state->cursor++;
+    }
+    return (int)(state->cursor - start);
+}
+
 static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig *config, bool negative, const char *start)
 {
     bool integer = true;
-
-    // Variables for Ryu optimization - extract digits during parsing
-    uint64_t mantissa = 0;
-    int mantissa_digits = 0;
-    int32_t exponent = 0;
-    int decimal_point_pos = -1;
-
     const char first_digit = *state->cursor;
 
+    // Variables for Ryu optimization - extract digits during parsing
+    int32_t exponent = 0;
+    int decimal_point_pos = -1;
+    uint64_t mantissa = 0;
+
     // Parse integer part and extract mantissa digits
-    while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
-        mantissa = mantissa * 10 + (*state->cursor - '0');
-        mantissa_digits++;
-        state->cursor++;
-    }
+    int mantissa_digits = json_parse_digits(state, &mantissa);
 
     if (RB_UNLIKELY(first_digit == '0' && mantissa_digits > 1 || negative && mantissa_digits == 0)) {
         raise_parse_error_at("invalid number: %s", state, start);
@@ -1051,19 +1055,16 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
         decimal_point_pos = mantissa_digits;  // Remember position of decimal point
         state->cursor++;
 
-        if (state->cursor == state->end || !rb_isdigit(*state->cursor)) {
-            raise_parse_error_at("invalid number: %s", state, start);
-        }
+        int fractional_digits = json_parse_digits(state, &mantissa);
+        mantissa_digits += fractional_digits;
 
-        while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
-            mantissa = mantissa * 10 + (*state->cursor - '0');
-            mantissa_digits++;
-            state->cursor++;
+        if (RB_UNLIKELY(!fractional_digits)) {
+            raise_parse_error_at("invalid number: %s", state, start);
         }
     }
 
     // Parse exponent
-    if ((state->cursor < state->end) && ((*state->cursor == 'e') || (*state->cursor == 'E'))) {
+    if ((state->cursor < state->end) && ((rb_tolower(*state->cursor) == 'e'))) {
         integer = false;
         state->cursor++;
 
@@ -1073,18 +1074,14 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
             state->cursor++;
         }
 
-        if (state->cursor == state->end || !rb_isdigit(*state->cursor)) {
+        uint64_t abs_exponent = 0;
+        int exponent_digits = json_parse_digits(state, &abs_exponent);
+
+        if (RB_UNLIKELY(!exponent_digits)) {
             raise_parse_error_at("invalid number: %s", state, start);
         }
 
-        while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
-            exponent = exponent * 10 + (*state->cursor - '0');
-            state->cursor++;
-        }
-
-        if (negative_exponent) {
-            exponent = -exponent;
-        }
+        exponent = negative_exponent ? -((int32_t)abs_exponent) : ((int32_t)abs_exponent);
     }
 
     if (integer) {
