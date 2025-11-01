@@ -406,6 +406,10 @@ typedef struct JSON_ParserStateStruct {
     int current_nesting;
 } JSON_ParserState;
 
+static inline ssize_t rest(JSON_ParserState *state) {
+    return state->end - state->cursor;
+}
+
 static inline bool eos(JSON_ParserState *state) {
     return state->cursor >= state->end;
 }
@@ -564,39 +568,39 @@ static const bool whitespace[256] = {
 static void
 json_eat_comments(JSON_ParserState *state)
 {
-    if (state->cursor + 1 < state->end) {
-        switch (state->cursor[1]) {
-            case '/': {
-                state->cursor = memchr(state->cursor, '\n', state->end - state->cursor);
-                if (!state->cursor) {
-                    state->cursor = state->end;
-                } else {
-                    state->cursor++;
-                }
-                break;
+    const char *start = state->cursor;
+    state->cursor++;
+
+    switch (peek(state)) {
+        case '/': {
+            state->cursor = memchr(state->cursor, '\n', state->end - state->cursor);
+            if (!state->cursor) {
+                state->cursor = state->end;
+            } else {
+                state->cursor++;
             }
-            case '*': {
-                state->cursor += 2;
-                while (true) {
-                    state->cursor = memchr(state->cursor, '*', state->end - state->cursor);
-                    if (!state->cursor) {
-                        raise_parse_error_at("unexpected end of input, expected closing '*/'", state, state->end);
-                    } else {
-                        state->cursor++;
-                        if (peek(state) == '/') {
-                            state->cursor++;
-                            break;
-                        }
-                    }
-                }
-                break;
-            }
-            default:
-                raise_parse_error("unexpected token %s", state);
-                break;
+            break;
         }
-    } else {
-        raise_parse_error("unexpected token %s", state);
+        case '*': {
+            state->cursor++;
+
+            while (true) {
+                const char *next_match = memchr(state->cursor, '*', state->end - state->cursor);
+                if (!next_match) {
+                    raise_parse_error_at("unterminated comment, expected closing '*/'", state, start);
+                }
+
+                state->cursor = next_match + 1;
+                if (peek(state) == '/') {
+                    state->cursor++;
+                    break;
+                }
+            }
+            break;
+        }
+        default:
+            raise_parse_error_at("unexpected token %s", state, start);
+            break;
     }
 }
 
@@ -1130,7 +1134,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 
     switch (peek(state)) {
         case 'n':
-            if ((state->end - state->cursor >= 4) && (memcmp(state->cursor, "null", 4) == 0)) {
+            if (rest(state) >= 4 && (memcmp(state->cursor, "null", 4) == 0)) {
                 state->cursor += 4;
                 return json_push_value(state, config, Qnil);
             }
@@ -1138,7 +1142,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             raise_parse_error("unexpected token %s", state);
             break;
         case 't':
-            if ((state->end - state->cursor >= 4) && (memcmp(state->cursor, "true", 4) == 0)) {
+            if (rest(state) >= 4 && (memcmp(state->cursor, "true", 4) == 0)) {
                 state->cursor += 4;
                 return json_push_value(state, config, Qtrue);
             }
@@ -1147,7 +1151,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             break;
         case 'f':
             // Note: memcmp with a small power of two compile to an integer comparison
-            if ((state->end - state->cursor >= 5) && (memcmp(state->cursor + 1, "alse", 4) == 0)) {
+            if (rest(state) >= 5 && (memcmp(state->cursor + 1, "alse", 4) == 0)) {
                 state->cursor += 5;
                 return json_push_value(state, config, Qfalse);
             }
@@ -1156,7 +1160,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             break;
         case 'N':
             // Note: memcmp with a small power of two compile to an integer comparison
-            if (config->allow_nan && (state->end - state->cursor >= 3) && (memcmp(state->cursor + 1, "aN", 2) == 0)) {
+            if (config->allow_nan && rest(state) >= 3 && (memcmp(state->cursor + 1, "aN", 2) == 0)) {
                 state->cursor += 3;
                 return json_push_value(state, config, CNaN);
             }
@@ -1164,7 +1168,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             raise_parse_error("unexpected token %s", state);
             break;
         case 'I':
-            if (config->allow_nan && (state->end - state->cursor >= 8) && (memcmp(state->cursor, "Infinity", 8) == 0)) {
+            if (config->allow_nan && rest(state) >= 8 && (memcmp(state->cursor, "Infinity", 8) == 0)) {
                 state->cursor += 8;
                 return json_push_value(state, config, CInfinity);
             }
@@ -1173,7 +1177,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             break;
         case '-': {
             // Note: memcmp with a small power of two compile to an integer comparison
-            if ((state->end - state->cursor >= 9) && (memcmp(state->cursor + 1, "Infinity", 8) == 0)) {
+            if (rest(state) >= 9 && (memcmp(state->cursor + 1, "Infinity", 8) == 0)) {
                 if (config->allow_nan) {
                     state->cursor += 9;
                     return json_push_value(state, config, CMinusInfinity);
