@@ -876,8 +876,6 @@ Init_enable_namespace(void)
     }
 }
 
-#if RUBY_DEBUG > 0
-
 /* :nodoc: */
 static VALUE
 rb_namespace_s_root(VALUE recv)
@@ -891,6 +889,24 @@ rb_namespace_s_main(VALUE recv)
 {
     return main_namespace->ns_object;
 }
+
+/* :nodoc: */
+static VALUE
+rb_namespace_root_p(VALUE namespace)
+{
+    const rb_namespace_t *ns = (const rb_namespace_t *)rb_get_namespace_t(namespace);
+    return RBOOL(NAMESPACE_ROOT_P(ns));
+}
+
+/* :nodoc: */
+static VALUE
+rb_namespace_main_p(VALUE namespace)
+{
+    const rb_namespace_t *ns = (const rb_namespace_t *)rb_get_namespace_t(namespace);
+    return RBOOL(NAMESPACE_MAIN_P(ns));
+}
+
+#if RUBY_DEBUG
 
 static const char *
 classname(VALUE klass)
@@ -1027,30 +1043,6 @@ rb_f_dump_classext(VALUE recv, VALUE klass)
     return res;
 }
 
-/* :nodoc: */
-static VALUE
-rb_namespace_root_p(VALUE namespace)
-{
-    const rb_namespace_t *ns = (const rb_namespace_t *)rb_get_namespace_t(namespace);
-    return RBOOL(NAMESPACE_ROOT_P(ns));
-}
-
-/* :nodoc: */
-static VALUE
-rb_namespace_main_p(VALUE namespace)
-{
-    const rb_namespace_t *ns = (const rb_namespace_t *)rb_get_namespace_t(namespace);
-    return RBOOL(NAMESPACE_MAIN_P(ns));
-}
-
-/* :nodoc: */
-static VALUE
-rb_namespace_user_p(VALUE namespace)
-{
-    const rb_namespace_t *ns = (const rb_namespace_t *)rb_get_namespace_t(namespace);
-    return RBOOL(NAMESPACE_USER_P(ns));
-}
-
 #endif /* RUBY_DEBUG */
 
 /*
@@ -1084,14 +1076,13 @@ Init_Namespace(void)
     if (rb_namespace_available()) {
         rb_include_module(rb_cObject, rb_mNamespaceLoader);
 
-#if RUBY_DEBUG > 0
         rb_define_singleton_method(rb_cNamespace, "root", rb_namespace_s_root, 0);
         rb_define_singleton_method(rb_cNamespace, "main", rb_namespace_s_main, 0);
-        rb_define_global_function("dump_classext", rb_f_dump_classext, 1);
-
         rb_define_method(rb_cNamespace, "root?", rb_namespace_root_p, 0);
         rb_define_method(rb_cNamespace, "main?", rb_namespace_main_p, 0);
-        rb_define_method(rb_cNamespace, "user?", rb_namespace_user_p, 0);
+
+#if RUBY_DEBUG
+        rb_define_global_function("dump_classext", rb_f_dump_classext, 1);
 #endif
     }
 

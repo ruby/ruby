@@ -183,7 +183,7 @@ class TestNamespace < Test::Unit::TestCase
     pend unless Namespace.enabled?
 
     # require_relative dosn't work well in assert_separately even with __FILE__ and __LINE__
-    assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}")
+    assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
       ns1 = Namespace.new
       ns1.require(File.join("#{here}", 'namespace/proc_callee'))
@@ -694,5 +694,101 @@ class TestNamespace < Test::Unit::TestCase
     tmp = ENV["TMPDIR"] || ENV["TMP"] || Etc.systmpdir || "/tmp"
     pat = "_ruby_ns_*."+RbConfig::CONFIG["DLEXT"]
     File.unlink(*Dir.glob(pat, base: tmp).map {|so| "#{tmp}/#{so}"})
+  end
+
+  def test_basic_namespace_detections
+    assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      ns = Namespace.new
+      code = <<~EOC
+      NS1 = Namespace.current
+      class Foo
+        NS2 = Namespace.current
+        NS2_proc = ->(){ NS2 }
+        NS3_proc = ->(){ Namespace.current }
+
+        def ns4 = Namespace.current
+        def self.ns5 = NS2
+        def self.ns6 = Namespace.current
+        def self.ns6_proc = ->(){ Namespace.current }
+        def self.ns7
+          res = []
+          [1,2].chunk{ it.even? }.each do |bool, members|
+            res << Namespace.current.object_id.to_s + ":" + bool.to_s + ":" + members.map(&:to_s).join(",")
+          end
+          res
+        end
+
+        def self.yield_block = yield
+        def self.call_block(&b) = b.call
+      end
+      FOO_NAME = Foo.name
+
+      module Kernel
+        def foo_namespace = Namespace.current
+        module_function :foo_namespace
+      end
+
+      NS_X = Foo.new.ns4
+      NS_Y = foo_namespace
+      EOC
+      ns.eval(code)
+      outer = Namespace.current
+      assert_equal ns, ns::NS1 # on TOP frame
+      assert_equal ns, ns::Foo::NS2 # on CLASS frame
+      assert_equal ns, ns::Foo::NS2_proc.call # proc -> a const on CLASS
+      assert_equal ns, ns::Foo::NS3_proc.call # proc -> the current
+      assert_equal ns, ns::Foo.new.ns4 # instance method  -> the current
+      assert_equal ns, ns::Foo.ns5     # singleton method -> a const on CLASS
+      assert_equal ns, ns::Foo.ns6     # singleton method -> the current
+      assert_equal ns, ns::Foo.ns6_proc.call # method returns a proc -> the current
+
+      # a block after CFUNC/IFUNC in a method -> the current
+      assert_equal ["#{ns.object_id}:false:1", "#{ns.object_id}:true:2"], ns::Foo.ns7
+
+      assert_equal outer, ns::Foo.yield_block{ Namespace.current } # method yields
+      assert_equal outer, ns::Foo.call_block{ Namespace.current }  # method calls a block
+
+      assert_equal ns, ns::NS_X # on TOP frame, referring a class in the current
+      assert_equal ns, ns::NS_Y # on TOP frame, referring Kernel method defined by a CFUNC method
+
+      assert_equal "Foo", ns::FOO_NAME
+      assert_equal "Foo", ns::Foo.name
+    end;
+  end
+
+  def test_loading_extension_libs_in_main_namespace
+    pend if /mswin|mingw/ =~ RUBY_PLATFORM # timeout on windows environments
+    assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      require "prism"
+      require "optparse"
+      require "date"
+      require "time"
+      require "delegate"
+      require "singleton"
+      require "pp"
+      require "fileutils"
+      require "tempfile"
+      require "tmpdir"
+      require "json"
+      require "psych"
+      require "yaml"
+      require "zlib"
+      require "open3"
+      require "ipaddr"
+      require "net/http"
+      require "openssl"
+      require "socket"
+      require "uri"
+      require "digest"
+      require "erb"
+      require "stringio"
+      require "monitor"
+      require "timeout"
+      require "securerandom"
+      expected = 1
+      assert_equal expected, 1
+    end;
   end
 end
