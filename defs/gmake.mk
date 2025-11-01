@@ -537,8 +537,13 @@ spec/%/ spec/%_spec.rb: programs exts PHONY
 
 ruby.pc: $(filter-out ruby.pc,$(ruby_pc))
 
-matz: up
+# `make matz`: bump up the MINOR;
+#    Copying NEWS.md to doc/NEWS/, and empty the details in NEWS.md.
+#
+# `make matz NEW=x.y`: bump up to x.y.0;
+#    Just update the version in the title of NEWS.md.
 
+matz: up
 matz: OLD := $(MAJOR).$(MINOR).0
 ifdef NEW
 matz: MAJOR := $(word 1,$(subst ., ,$(NEW)))
