@@ -612,12 +612,14 @@ json_eat_whitespace(JSON_ParserState *state)
                 while (rest(state) > 8) {
                     uint64_t chunk;
                     memcpy(&chunk, state->cursor, sizeof(uint64_t));
-                    size_t consecutive_spaces = trailing_zeros64(chunk ^ 0x2020202020202020) / CHAR_BIT;
-
-                    state->cursor += consecutive_spaces;
-                    if (consecutive_spaces != 8) {
-                        break;
+                    if (chunk == 0x2020202020202020) {
+                        state->cursor += 8;
+                        continue;
                     }
+
+                    uint32_t consecutive_spaces = trailing_zeros64(chunk ^ 0x2020202020202020) / CHAR_BIT;
+                    state->cursor += consecutive_spaces;
+                    break;
                 }
 #endif
                 break;
@@ -1101,13 +1103,21 @@ static inline int json_parse_digits(JSON_ParserState *state, uint64_t *accumulat
             continue;
         }
 
-        if ((match & 0xFFFFFFFF) == 0x33333333) { // 4 consecutive digits
+        uint32_t consecutive_digits = trailing_zeros64(match ^ 0x3333333333333333) / CHAR_BIT;
+
+        if (consecutive_digits >= 4) {
             *accumulator = (*accumulator * 10000) + decode_4digits_unrolled((uint32_t)next_8bytes);
             state->cursor += 4;
-            break;
+            consecutive_digits -= 4;
         }
 
-        break;
+        while (consecutive_digits) {
+            *accumulator = *accumulator * 10 + (*state->cursor - '0');
+            consecutive_digits--;
+            state->cursor++;
+        }
+
+        return (int)(state->cursor - start);
     }
 #endif
 

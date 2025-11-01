@@ -804,6 +804,10 @@ class JSONParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_parse_whitespace_after_newline
+    assert_equal [], JSON.parse("[\n#{' ' * (8 + 8 + 4 + 3)}]")
+  end
+
   private
 
   def assert_equal_float(expected, actual, delta = 1e-2)
