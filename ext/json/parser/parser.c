@@ -1039,11 +1039,61 @@ static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig
     return Qfalse;
 }
 
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+// From: https://lemire.me/blog/2022/01/21/swar-explained-parsing-eight-digits/
+// Additional References:
+// https://johnnylee-sde.github.io/Fast-numeric-string-to-int/
+// http://0x80.pl/notesen/2014-10-12-parsing-decimal-numbers-part-1-swar.html
+static inline uint64_t decode_8digits_unrolled(uint64_t val) {
+    const uint64_t mask = 0x000000FF000000FF;
+    const uint64_t mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
+    const uint64_t mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
+    val -= 0x3030303030303030;
+    val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
+    val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
+    return val;
+}
+
+static inline uint64_t decode_4digits_unrolled(uint32_t val) {
+    const uint32_t mask = 0x000000FF;
+    const uint32_t mul1 = 100;
+    val -= 0x30303030;
+    val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
+    val = ((val & mask) * mul1) + (((val >> 16) & mask));
+    return val;
+}
+#endif
+
 static inline int json_parse_digits(JSON_ParserState *state, uint64_t *accumulator)
 {
     const char *start = state->cursor;
-    char next_char;
 
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    while (rest(state) >= 8) {
+        uint64_t next_8bytes;
+        memcpy(&next_8bytes, state->cursor, sizeof(uint64_t));
+
+        // From: https://github.com/simdjson/simdjson/blob/32b301893c13d058095a07d9868edaaa42ee07aa/include/simdjson/generic/numberparsing.h#L333
+        // Branchless version of: http://0x80.pl/articles/swar-digits-validate.html
+        uint64_t match = (next_8bytes & 0xF0F0F0F0F0F0F0F0) | (((next_8bytes + 0x0606060606060606) & 0xF0F0F0F0F0F0F0F0) >> 4);
+
+        if (match == 0x3333333333333333) { // 8 consecutive digits
+            *accumulator = (*accumulator * 100000000) + decode_8digits_unrolled(next_8bytes);
+            state->cursor += 8;
+            continue;
+        }
+
+        if ((match & 0xFFFFFFFF) == 0x33333333) { // 4 consecutive digits
+            *accumulator = (*accumulator * 10000) + decode_4digits_unrolled((uint32_t)next_8bytes);
+            state->cursor += 4;
+            break;
+        }
+
+        break;
+    }
+#endif
+
+    char next_char;
     while (rb_isdigit(next_char = peek(state))) {
         *accumulator = *accumulator * 10 + (next_char - '0');
         state->cursor++;
