@@ -399,6 +399,7 @@
 # - #hex: Returns the integer value of the leading characters, interpreted as hexadecimal digits.
 # - #oct: Returns the integer value of the leading characters, interpreted as octal digits.
 # - #ord: Returns the integer ordinal of the first character in +self+.
+# - #to_c: Returns the complex value of leading characters, interpreted as a complex number.
 # - #to_i: Returns the integer value of leading characters, interpreted as an integer.
 # - #to_f: Returns the floating-point value of leading characters, interpreted as a floating-point number.
 #
