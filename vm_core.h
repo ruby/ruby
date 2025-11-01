@@ -680,6 +680,10 @@ typedef struct rb_vm_struct {
             rb_nativethread_lock_t lock;
             struct rb_ractor_struct *lock_owner;
             unsigned int lock_rec;
+#if VM_CHECK_MODE > 0
+            const char *lock_file;
+            int lock_line;
+#endif
 
             // join at exit
             rb_nativethread_cond_t terminate_cond;
@@ -692,7 +696,7 @@ typedef struct rb_vm_struct {
             rb_nativethread_cond_t barrier_complete_cond;
             rb_nativethread_cond_t barrier_release_cond;
 #endif
-        } sync;
+        } sync; // VM lock
 
 #ifdef RUBY_THREAD_PTHREAD_H
         // ractor scheduling

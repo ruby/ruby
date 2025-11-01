@@ -19,10 +19,8 @@ vm_locked(rb_vm_t *vm)
 void
 RUBY_ASSERT_vm_locking(void)
 {
-    if (rb_multi_ractor_p()) {
-        rb_vm_t *vm = GET_VM();
-        VM_ASSERT(vm_locked(vm));
-    }
+    rb_vm_t *vm = GET_VM();
+    if (vm->running) VM_ASSERT(vm_locked(vm));
 }
 
 void
@@ -42,8 +40,13 @@ RUBY_ASSERT_vm_locking_with_barrier(void)
 void
 RUBY_ASSERT_vm_unlocking(void)
 {
-    if (rb_multi_ractor_p()) {
-        rb_vm_t *vm = GET_VM();
+    rb_vm_t *vm = GET_VM();
+    if (vm->running && vm_locked(vm)) {
+        const char *file = vm->ractor.sync.lock_file;
+        int line = vm->ractor.sync.lock_line;
+        if (file) {
+            fprintf(stderr, "Last locked at %s:%d\n", file, line);
+        }
         VM_ASSERT(!vm_locked(vm));
     }
 }
@@ -92,6 +95,11 @@ vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsign
         rb_native_mutex_lock(&vm->ractor.sync.lock);
         VM_ASSERT(vm->ractor.sync.lock_owner == NULL);
         VM_ASSERT(vm->ractor.sync.lock_rec == 0);
+
+#if VM_CHECK_MODE > 0
+        vm->ractor.sync.lock_file = file;
+        vm->ractor.sync.lock_line = line;
+#endif
 
         // barrier
         if (vm_need_barrier(no_barrier, cr, vm)) {

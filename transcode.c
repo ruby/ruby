@@ -21,6 +21,7 @@
 #include "internal/transcode.h"
 #include "internal/encoding.h"
 #include "ruby/encoding.h"
+#include "vm_core.h"
 #include "vm_sync.h"
 
 #include "transcode_data.h"
@@ -412,9 +413,10 @@ int rb_require_internal_silent(VALUE fname);
 static const rb_transcoder *
 load_transcoder_entry(transcoder_entry_t *entry)
 {
-    ASSERT_vm_unlocking();
     if (entry->transcoder)
         return entry->transcoder;
+
+    ASSERT_vm_unlocking();
 
     if (entry->lib) {
         const char *const lib = entry->lib;
@@ -1854,7 +1856,9 @@ rb_econv_asciicompat_encoding(const char *ascii_incompat_name)
                     RB_VM_LOCK_ENTER_LEV(&lev);
                 }
                 else {
+                    RB_VM_LOCK_LEAVE_LEV(&lev);
                     st_foreach(table2, asciicompat_encoding_i, (st_data_t)&data);
+                    RB_VM_LOCK_ENTER_LEV(&lev);
                 }
             }
 

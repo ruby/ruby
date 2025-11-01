@@ -598,6 +598,7 @@ rb_find_global_entry(ID id)
     }
 
     if (UNLIKELY(!rb_ractor_main_p()) && (!entry || !entry->ractor_local)) {
+        if (RB_VM_LOCKED_P()) RB_VM_UNLOCK_ALL();
         rb_raise(rb_eRactorIsolationError, "can not access global variable %s from non-main Ractor", rb_id2name(id));
     }
 
@@ -1010,18 +1011,21 @@ rb_gvar_set(ID id, VALUE val)
     VALUE retval;
     struct rb_global_entry *entry;
     const rb_namespace_t *ns = rb_current_namespace();
+    bool use_namespace_tbl = false;
 
     RB_VM_LOCKING() {
         entry = rb_global_entry(id);
 
         if (USE_NAMESPACE_GVAR_TBL(ns, entry)) {
+            use_namespace_tbl = true;
             rb_hash_aset(ns->gvar_tbl, rb_id2sym(entry->id), val);
             retval = val;
             // TODO: think about trace
         }
-        else {
-            retval = rb_gvar_set_entry(entry, val);
-        }
+    }
+
+    if (!use_namespace_tbl) {
+        retval = rb_gvar_set_entry(entry, val);
     }
     return retval;
 }
@@ -1037,28 +1041,36 @@ rb_gvar_get(ID id)
 {
     VALUE retval, gvars, key;
     const rb_namespace_t *ns = rb_current_namespace();
+    bool use_namespace_tbl = false;
+    struct rb_global_entry *entry;
+    struct rb_global_variable *var;
     // TODO: use lock-free rb_id_table when it's available for use (doesn't yet exist)
     RB_VM_LOCKING() {
-        struct rb_global_entry *entry = rb_global_entry(id);
-        struct rb_global_variable *var = entry->var;
+        entry = rb_global_entry(id);
+        var = entry->var;
 
         if (USE_NAMESPACE_GVAR_TBL(ns, entry)) {
+            use_namespace_tbl = true;
             gvars = ns->gvar_tbl;
             key = rb_id2sym(entry->id);
             if (RTEST(rb_hash_has_key(gvars, key))) { // this gvar is already cached
                 retval = rb_hash_aref(gvars, key);
             }
             else {
-                retval = (*var->getter)(entry->id, var->data);
-                if (rb_obj_respond_to(retval, rb_intern("clone"), 1)) {
-                    retval = rb_funcall(retval, rb_intern("clone"), 0);
+                RB_VM_UNLOCK();
+                {
+                    retval = (*var->getter)(entry->id, var->data);
+                    if (rb_obj_respond_to(retval, rb_intern("clone"), 1)) {
+                        retval = rb_funcall(retval, rb_intern("clone"), 0);
+                    }
                 }
+                RB_VM_LOCK();
                 rb_hash_aset(gvars, key, retval);
             }
         }
-        else {
-            retval = (*var->getter)(entry->id, var->data);
-        }
+    }
+    if (!use_namespace_tbl) {
+        retval = (*var->getter)(entry->id, var->data);
     }
     return retval;
 }
@@ -1159,6 +1171,7 @@ rb_alias_variable(ID name1, ID name2)
         else if ((entry1 = (struct rb_global_entry *)data1)->var != entry2->var) {
             struct rb_global_variable *var = entry1->var;
             if (var->block_trace) {
+                RB_VM_UNLOCK();
                 rb_raise(rb_eRuntimeError, "can't alias in tracer");
             }
             var->counter--;
@@ -3920,6 +3933,12 @@ const_tbl_update(struct autoload_const *ac, int autoload_force)
     struct rb_id_table *tbl = RCLASS_CONST_TBL(klass);
     rb_const_flag_t visibility = ac->flag;
     rb_const_entry_t *ce;
+    VALUE name;
+    VALUE saved_file_location = Qnil;
+    int saved_line_location = 0;
+    bool needs_warn = false;
+
+    ASSERT_vm_locking();
 
     if (rb_id_table_lookup(tbl, id, &value)) {
         ce = (rb_const_entry_t *)value;
@@ -3947,20 +3966,31 @@ const_tbl_update(struct autoload_const *ac, int autoload_force)
             return;
         }
         else {
-            VALUE name = QUOTE_ID(id);
+            needs_warn = true;
+            saved_file_location = ce->file;
+            saved_line_location = ce->line;
+            name = QUOTE_ID(id);
             visibility = ce->flag;
-            if (klass == rb_cObject)
-                rb_warn("already initialized constant %"PRIsVALUE"", name);
-            else
-                rb_warn("already initialized constant %"PRIsVALUE"::%"PRIsVALUE"",
-                        rb_class_name(klass), name);
-            if (!NIL_P(ce->file) && ce->line) {
-                rb_compile_warn(RSTRING_PTR(ce->file), ce->line,
-                                "previous definition of %"PRIsVALUE" was here", name);
-            }
         }
         rb_clear_constant_cache_for_id(id);
         setup_const_entry(ce, klass, val, visibility);
+        if (needs_warn) {
+            RB_VM_UNLOCK();
+            {
+                if (klass == rb_cObject) {
+                    rb_warn("already initialized constant %"PRIsVALUE"", name);
+                }
+                else {
+                    rb_warn("already initialized constant %"PRIsVALUE"::%"PRIsVALUE"",
+                            rb_class_name(klass), name);
+                }
+                if (!(NIL_P(saved_file_location)) && saved_line_location) {
+                    rb_compile_warn(RSTRING_PTR(saved_file_location), saved_line_location,
+                                    "previous definition of %"PRIsVALUE" was here", name);
+                }
+            }
+            RB_VM_LOCK();
+        }
     }
     else {
         tbl = RCLASS_WRITABLE_CONST_TBL(klass);

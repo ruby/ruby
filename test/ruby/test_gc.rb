@@ -914,4 +914,25 @@ class TestGc < Test::Unit::TestCase
       assert_include ObjectSpace.dump(young_obj), '"old":true'
     end
   end
+
+  def test_finalizer_not_run_with_vm_lock
+    assert_ractor(<<~'RUBY')
+      Thread.new do
+        loop do
+          Encoding.list.each do |enc|
+            enc.names
+          end
+        end
+      end
+
+      o = Object.new
+      ObjectSpace.define_finalizer(o, proc do
+        sleep 0.5 # finalizer shouldn't be run with VM lock, otherwise this context switch will crash
+      end)
+      o = nil
+      4.times do
+        GC.start
+      end
+    RUBY
+  end
 end
