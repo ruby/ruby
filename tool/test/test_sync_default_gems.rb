@@ -19,14 +19,8 @@ module Test_SyncDefaultGems
         expected.concat(trailers.map {_1+"\n"})
       end
 
-      out, err = capture_output do
-        SyncDefaultGems.message_filter(repo, sha, input: StringIO.new(input, "r"))
-      end
-
-      all_assertions do |a|
-        a.for("error") {assert_empty err}
-        a.for("result") {assert_pattern_list(expected, out)}
-      end
+      out = SyncDefaultGems.message_filter(repo, sha, input)
+      assert_pattern_list(expected, out)
     end
 
     def test_subject_only
@@ -115,7 +109,16 @@ module Test_SyncDefaultGems
         git(*%W"config --global log.showSignature true")
       end
       @target = "sync-test"
-      SyncDefaultGems::REPOSITORIES[@target] = ["ruby/#{@target}", "default"]
+      SyncDefaultGems::REPOSITORIES[@target] = SyncDefaultGems.repo(
+        ["ruby/#{@target}", "default"],
+        [
+          ["lib", "lib"],
+          ["test", "test"],
+        ],
+        exclude: [
+          "test/fixtures/*",
+        ],
+      )
       @sha = {}
       @origdir = Dir.pwd
       Dir.chdir(@testdir)
@@ -313,6 +316,35 @@ module Test_SyncDefaultGems
       assert_not_equal(head, top_commit("src"))
       assert_equal(":ok\n""Should.be_merged\n", File.read("src/lib/common.rb"), out)
       assert_not_operator(File, :exist?, "src/lib/bad.rb", out)
+    end
+
+    def test_squash_merge
+      #   2---.   <- branch
+      #  /     \
+      # 1---3---3'<- merge commit with conflict resolution
+      File.write("#@target/lib/conflict.rb", "# 1\n")
+      git(*%W"add lib/conflict.rb", chdir: @target)
+      git(*%W"commit -q -m", "Add conflict.rb", chdir: @target)
+
+      git(*%W"checkout -q -b branch", chdir: @target)
+      File.write("#@target/lib/conflict.rb", "# 2\n")
+      File.write("#@target/lib/new.rb", "# new\n")
+      git(*%W"add lib/conflict.rb lib/new.rb", chdir: @target)
+      git(*%W"commit -q -m", "Commit in branch", chdir: @target)
+
+      git(*%W"checkout -q default", chdir: @target)
+      File.write("#@target/lib/conflict.rb", "# 3\n")
+      git(*%W"add lib/conflict.rb", chdir: @target)
+      git(*%W"commit -q -m", "Commit in default", chdir: @target)
+
+      # How can I suppress "Auto-merging ..." message from git merge?
+      git(*%W"merge -X ours -m", "Merge commit", "branch", chdir: @target, out: IO::NULL)
+
+      out = assert_sync()
+      assert_equal("# 3\n", File.read("src/lib/conflict.rb"), out)
+      subject, body = top_commit("src", format: "%B").split("\n\n", 2)
+      assert_equal("[ruby/#@target] Merge commit", subject, out)
+      assert_includes(body, "Commit in branch", out)
     end
   end if /darwin|linux/ =~ RUBY_PLATFORM
 end
