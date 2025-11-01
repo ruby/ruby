@@ -1188,15 +1188,15 @@ assert_equal 'true', %q{
 }
 
 # Ractor.make_shareable(a_proc) requires a shareable receiver
-assert_equal '[:ok, :error]', %q{
+assert_equal '[:ok, "Proc\'s self is not shareable:"]', %q{
   pr1 = nil.instance_exec { Proc.new{} }
   pr2 = Proc.new{}
 
   [pr1, pr2].map do |pr|
     begin
       Ractor.make_shareable(pr)
-    rescue Ractor::Error
-      :error
+    rescue Ractor::Error => e
+      e.message[/^.+?:/]
     else
       :ok
     end
