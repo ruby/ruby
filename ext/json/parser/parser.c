@@ -406,6 +406,22 @@ typedef struct JSON_ParserStateStruct {
     int current_nesting;
 } JSON_ParserState;
 
+static inline ssize_t rest(JSON_ParserState *state) {
+    return state->end - state->cursor;
+}
+
+static inline bool eos(JSON_ParserState *state) {
+    return state->cursor >= state->end;
+}
+
+static inline char peek(JSON_ParserState *state)
+{
+    if (RB_UNLIKELY(eos(state))) {
+        return 0;
+    }
+    return *state->cursor;
+}
+
 static void cursor_position(JSON_ParserState *state, long *line_out, long *column_out)
 {
     const char *cursor = state->cursor;
@@ -541,61 +557,80 @@ static uint32_t unescape_unicode(JSON_ParserState *state, const unsigned char *p
 
 static const rb_data_type_t JSON_ParserConfig_type;
 
-static const bool whitespace[256] = {
-    [' '] = 1,
-    ['\t'] = 1,
-    ['\n'] = 1,
-    ['\r'] = 1,
-    ['/'] = 1,
-};
-
 static void
 json_eat_comments(JSON_ParserState *state)
 {
-    if (state->cursor + 1 < state->end) {
-        switch (state->cursor[1]) {
-            case '/': {
-                state->cursor = memchr(state->cursor, '\n', state->end - state->cursor);
-                if (!state->cursor) {
-                    state->cursor = state->end;
-                } else {
-                    state->cursor++;
-                }
-                break;
+    const char *start = state->cursor;
+    state->cursor++;
+
+    switch (peek(state)) {
+        case '/': {
+            state->cursor = memchr(state->cursor, '\n', state->end - state->cursor);
+            if (!state->cursor) {
+                state->cursor = state->end;
+            } else {
+                state->cursor++;
             }
-            case '*': {
-                state->cursor += 2;
-                while (true) {
-                    state->cursor = memchr(state->cursor, '*', state->end - state->cursor);
-                    if (!state->cursor) {
-                        raise_parse_error_at("unexpected end of input, expected closing '*/'", state, state->end);
-                    } else {
-                        state->cursor++;
-                        if (state->cursor < state->end && *state->cursor == '/') {
-                            state->cursor++;
-                            break;
-                        }
-                    }
-                }
-                break;
-            }
-            default:
-                raise_parse_error("unexpected token %s", state);
-                break;
+            break;
         }
-    } else {
-        raise_parse_error("unexpected token %s", state);
+        case '*': {
+            state->cursor++;
+
+            while (true) {
+                const char *next_match = memchr(state->cursor, '*', state->end - state->cursor);
+                if (!next_match) {
+                    raise_parse_error_at("unterminated comment, expected closing '*/'", state, start);
+                }
+
+                state->cursor = next_match + 1;
+                if (peek(state) == '/') {
+                    state->cursor++;
+                    break;
+                }
+            }
+            break;
+        }
+        default:
+            raise_parse_error_at("unexpected token %s", state, start);
+            break;
     }
 }
 
 static inline void
 json_eat_whitespace(JSON_ParserState *state)
 {
-    while (state->cursor < state->end && RB_UNLIKELY(whitespace[(unsigned char)*state->cursor])) {
-        if (RB_LIKELY(*state->cursor != '/')) {
-            state->cursor++;
-        } else {
-            json_eat_comments(state);
+    while (true) {
+        switch (peek(state)) {
+            case ' ':
+                state->cursor++;
+                break;
+            case '\n':
+                state->cursor++;
+
+                // Heuristic: if we see a newline, there is likely consecutive spaces after it.
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+                while (rest(state) > 8) {
+                    uint64_t chunk;
+                    memcpy(&chunk, state->cursor, sizeof(uint64_t));
+                    size_t consecutive_spaces = trailing_zeros64(chunk ^ 0x2020202020202020) / CHAR_BIT;
+
+                    state->cursor += consecutive_spaces;
+                    if (consecutive_spaces != 8) {
+                        break;
+                    }
+                }
+#endif
+                break;
+            case '\t':
+            case '\r':
+                state->cursor++;
+                break;
+            case '/':
+                json_eat_comments(state);
+                break;
+
+            default:
+                return;
         }
     }
 }
@@ -980,7 +1015,7 @@ static inline bool FORCE_INLINE string_scan(JSON_ParserState *state)
 #endif /* HAVE_SIMD_NEON or HAVE_SIMD_SSE2 */
 #endif /* HAVE_SIMD */
 
-    while (state->cursor < state->end) {
+    while (!eos(state)) {
         if (RB_UNLIKELY(string_scan_table[(unsigned char)*state->cursor])) {
             return 1;
         }
@@ -1022,16 +1057,152 @@ static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig
     return Qfalse;
 }
 
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+// From: https://lemire.me/blog/2022/01/21/swar-explained-parsing-eight-digits/
+// Additional References:
+// https://johnnylee-sde.github.io/Fast-numeric-string-to-int/
+// http://0x80.pl/notesen/2014-10-12-parsing-decimal-numbers-part-1-swar.html
+static inline uint64_t decode_8digits_unrolled(uint64_t val) {
+    const uint64_t mask = 0x000000FF000000FF;
+    const uint64_t mul1 = 0x000F424000000064; // 100 + (1000000ULL << 32)
+    const uint64_t mul2 = 0x0000271000000001; // 1 + (10000ULL << 32)
+    val -= 0x3030303030303030;
+    val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
+    val = (((val & mask) * mul1) + (((val >> 16) & mask) * mul2)) >> 32;
+    return val;
+}
+
+static inline uint64_t decode_4digits_unrolled(uint32_t val) {
+    const uint32_t mask = 0x000000FF;
+    const uint32_t mul1 = 100;
+    val -= 0x30303030;
+    val = (val * 10) + (val >> 8); // val = (val * 2561) >> 8;
+    val = ((val & mask) * mul1) + (((val >> 16) & mask));
+    return val;
+}
+#endif
+
+static inline int json_parse_digits(JSON_ParserState *state, uint64_t *accumulator)
+{
+    const char *start = state->cursor;
+
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    while (rest(state) >= 8) {
+        uint64_t next_8bytes;
+        memcpy(&next_8bytes, state->cursor, sizeof(uint64_t));
+
+        // From: https://github.com/simdjson/simdjson/blob/32b301893c13d058095a07d9868edaaa42ee07aa/include/simdjson/generic/numberparsing.h#L333
+        // Branchless version of: http://0x80.pl/articles/swar-digits-validate.html
+        uint64_t match = (next_8bytes & 0xF0F0F0F0F0F0F0F0) | (((next_8bytes + 0x0606060606060606) & 0xF0F0F0F0F0F0F0F0) >> 4);
+
+        if (match == 0x3333333333333333) { // 8 consecutive digits
+            *accumulator = (*accumulator * 100000000) + decode_8digits_unrolled(next_8bytes);
+            state->cursor += 8;
+            continue;
+        }
+
+        if ((match & 0xFFFFFFFF) == 0x33333333) { // 4 consecutive digits
+            *accumulator = (*accumulator * 10000) + decode_4digits_unrolled((uint32_t)next_8bytes);
+            state->cursor += 4;
+            break;
+        }
+
+        break;
+    }
+#endif
+
+    char next_char;
+    while (rb_isdigit(next_char = peek(state))) {
+        *accumulator = *accumulator * 10 + (next_char - '0');
+        state->cursor++;
+    }
+    return (int)(state->cursor - start);
+}
+
+static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig *config, bool negative, const char *start)
+{
+    bool integer = true;
+    const char first_digit = *state->cursor;
+
+    // Variables for Ryu optimization - extract digits during parsing
+    int32_t exponent = 0;
+    int decimal_point_pos = -1;
+    uint64_t mantissa = 0;
+
+    // Parse integer part and extract mantissa digits
+    int mantissa_digits = json_parse_digits(state, &mantissa);
+
+    if (RB_UNLIKELY((first_digit == '0' && mantissa_digits > 1) || (negative && mantissa_digits == 0))) {
+        raise_parse_error_at("invalid number: %s", state, start);
+    }
+
+    // Parse fractional part
+    if (peek(state) == '.') {
+        integer = false;
+        decimal_point_pos = mantissa_digits;  // Remember position of decimal point
+        state->cursor++;
+
+        int fractional_digits = json_parse_digits(state, &mantissa);
+        mantissa_digits += fractional_digits;
+
+        if (RB_UNLIKELY(!fractional_digits)) {
+            raise_parse_error_at("invalid number: %s", state, start);
+        }
+    }
+
+    // Parse exponent
+    if (rb_tolower(peek(state)) == 'e') {
+        integer = false;
+        state->cursor++;
+
+        bool negative_exponent = false;
+        const char next_char = peek(state);
+        if (next_char == '-' || next_char == '+') {
+            negative_exponent = next_char == '-';
+            state->cursor++;
+        }
+
+        uint64_t abs_exponent = 0;
+        int exponent_digits = json_parse_digits(state, &abs_exponent);
+
+        if (RB_UNLIKELY(!exponent_digits)) {
+            raise_parse_error_at("invalid number: %s", state, start);
+        }
+
+        exponent = negative_exponent ? -((int32_t)abs_exponent) : ((int32_t)abs_exponent);
+    }
+
+    if (integer) {
+        return json_decode_integer(mantissa, mantissa_digits, negative, start, state->cursor);
+    }
+
+    // Adjust exponent based on decimal point position
+    if (decimal_point_pos >= 0) {
+        exponent -= (mantissa_digits - decimal_point_pos);
+    }
+
+    return json_decode_float(config, mantissa, mantissa_digits, exponent, negative, start, state->cursor);
+}
+
+static inline VALUE json_parse_positive_number(JSON_ParserState *state, JSON_ParserConfig *config)
+{
+    return json_parse_number(state, config, false, state->cursor);
+}
+
+static inline VALUE json_parse_negative_number(JSON_ParserState *state, JSON_ParserConfig *config)
+{
+    const char *start = state->cursor;
+    state->cursor++;
+    return json_parse_number(state, config, true, start);
+}
+
 static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 {
     json_eat_whitespace(state);
-    if (state->cursor >= state->end) {
-        raise_parse_error("unexpected end of input", state);
-    }
 
-    switch (*state->cursor) {
+    switch (peek(state)) {
         case 'n':
-            if ((state->end - state->cursor >= 4) && (memcmp(state->cursor, "null", 4) == 0)) {
+            if (rest(state) >= 4 && (memcmp(state->cursor, "null", 4) == 0)) {
                 state->cursor += 4;
                 return json_push_value(state, config, Qnil);
             }
@@ -1039,7 +1210,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             raise_parse_error("unexpected token %s", state);
             break;
         case 't':
-            if ((state->end - state->cursor >= 4) && (memcmp(state->cursor, "true", 4) == 0)) {
+            if (rest(state) >= 4 && (memcmp(state->cursor, "true", 4) == 0)) {
                 state->cursor += 4;
                 return json_push_value(state, config, Qtrue);
             }
@@ -1048,7 +1219,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             break;
         case 'f':
             // Note: memcmp with a small power of two compile to an integer comparison
-            if ((state->end - state->cursor >= 5) && (memcmp(state->cursor + 1, "alse", 4) == 0)) {
+            if (rest(state) >= 5 && (memcmp(state->cursor + 1, "alse", 4) == 0)) {
                 state->cursor += 5;
                 return json_push_value(state, config, Qfalse);
             }
@@ -1057,7 +1228,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             break;
         case 'N':
             // Note: memcmp with a small power of two compile to an integer comparison
-            if (config->allow_nan && (state->end - state->cursor >= 3) && (memcmp(state->cursor + 1, "aN", 2) == 0)) {
+            if (config->allow_nan && rest(state) >= 3 && (memcmp(state->cursor + 1, "aN", 2) == 0)) {
                 state->cursor += 3;
                 return json_push_value(state, config, CNaN);
             }
@@ -1065,16 +1236,16 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             raise_parse_error("unexpected token %s", state);
             break;
         case 'I':
-            if (config->allow_nan && (state->end - state->cursor >= 8) && (memcmp(state->cursor, "Infinity", 8) == 0)) {
+            if (config->allow_nan && rest(state) >= 8 && (memcmp(state->cursor, "Infinity", 8) == 0)) {
                 state->cursor += 8;
                 return json_push_value(state, config, CInfinity);
             }
 
             raise_parse_error("unexpected token %s", state);
             break;
-        case '-':
+        case '-': {
             // Note: memcmp with a small power of two compile to an integer comparison
-            if ((state->end - state->cursor >= 9) && (memcmp(state->cursor + 1, "Infinity", 8) == 0)) {
+            if (rest(state) >= 9 && (memcmp(state->cursor + 1, "Infinity", 8) == 0)) {
                 if (config->allow_nan) {
                     state->cursor += 9;
                     return json_push_value(state, config, CMinusInfinity);
@@ -1082,95 +1253,12 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                     raise_parse_error("unexpected token %s", state);
                 }
             }
-            // Fallthrough
-        case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9': {
-            bool integer = true;
-
-            // Variables for Ryu optimization - extract digits during parsing
-            uint64_t mantissa = 0;
-            int mantissa_digits = 0;
-            int32_t exponent = 0;
-            bool negative = false;
-            int decimal_point_pos = -1;
-
-            // /\A-?(0|[1-9]\d*)(\.\d+)?([Ee][-+]?\d+)?/
-            const char *start = state->cursor;
-
-            // Handle optional negative sign
-            if (*state->cursor == '-') {
-                negative = true;
-                state->cursor++;
-                if (state->cursor >= state->end || !rb_isdigit(*state->cursor)) {
-                    raise_parse_error_at("invalid number: %s", state, start);
-                }
-            }
-
-            // Parse integer part and extract mantissa digits
-            while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
-                mantissa = mantissa * 10 + (*state->cursor - '0');
-                mantissa_digits++;
-                state->cursor++;
-            }
-
-            if (RB_UNLIKELY(start[0] == '0' && mantissa_digits > 1)) {
-                raise_parse_error_at("invalid number: %s", state, start);
-            } else if (RB_UNLIKELY(mantissa_digits > 1 && negative && start[1] == '0')) {
-                raise_parse_error_at("invalid number: %s", state, start);
-            }
-
-            // Parse fractional part
-            if ((state->cursor < state->end) && (*state->cursor == '.')) {
-                integer = false;
-                decimal_point_pos = mantissa_digits;  // Remember position of decimal point
-                state->cursor++;
-
-                if (state->cursor == state->end || !rb_isdigit(*state->cursor)) {
-                    raise_parse_error_at("invalid number: %s", state, start);
-                }
-
-                while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
-                    mantissa = mantissa * 10 + (*state->cursor - '0');
-                    mantissa_digits++;
-                    state->cursor++;
-                }
-            }
-
-            // Parse exponent
-            if ((state->cursor < state->end) && ((*state->cursor == 'e') || (*state->cursor == 'E'))) {
-                integer = false;
-                state->cursor++;
-
-                bool negative_exponent = false;
-                if ((state->cursor < state->end) && ((*state->cursor == '-') || (*state->cursor == '+'))) {
-                    negative_exponent = (*state->cursor == '-');
-                    state->cursor++;
-                }
-
-                if (state->cursor == state->end || !rb_isdigit(*state->cursor)) {
-                    raise_parse_error_at("invalid number: %s", state, start);
-                }
-
-                while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
-                    exponent = exponent * 10 + (*state->cursor - '0');
-                    state->cursor++;
-                }
-
-                if (negative_exponent) {
-                    exponent = -exponent;
-                }
-            }
-
-            if (integer) {
-                return json_push_value(state, config, json_decode_integer(mantissa, mantissa_digits, negative, start, state->cursor));
-            }
-
-            // Adjust exponent based on decimal point position
-            if (decimal_point_pos >= 0) {
-                exponent -= (mantissa_digits - decimal_point_pos);
-            }
-
-            return json_push_value(state, config, json_decode_float(config, mantissa, mantissa_digits, exponent, negative, start, state->cursor));
+            return json_push_value(state, config, json_parse_negative_number(state, config));
+            break;
         }
+        case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
+            return json_push_value(state, config, json_parse_positive_number(state, config));
+            break;
         case '"': {
             // %r{\A"[^"\\\t\n\x00]*(?:\\[bfnrtu\\/"][^"\\]*)*"}
             return json_parse_string(state, config, false);
@@ -1181,7 +1269,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             json_eat_whitespace(state);
             long stack_head = state->stack->head;
 
-            if ((state->cursor < state->end) && (*state->cursor == ']')) {
+            if (peek(state) == ']') {
                 state->cursor++;
                 return json_push_value(state, config, json_decode_array(state, config, 0));
             } else {
@@ -1196,26 +1284,26 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             while (true) {
                 json_eat_whitespace(state);
 
-                if (state->cursor < state->end) {
-                    if (*state->cursor == ']') {
-                        state->cursor++;
-                        long count = state->stack->head - stack_head;
-                        state->current_nesting--;
-                        state->in_array--;
-                        return json_push_value(state, config, json_decode_array(state, config, count));
-                    }
+                const char next_char = peek(state);
 
-                    if (*state->cursor == ',') {
-                        state->cursor++;
-                        if (config->allow_trailing_comma) {
-                            json_eat_whitespace(state);
-                            if ((state->cursor < state->end) && (*state->cursor == ']')) {
-                                continue;
-                            }
+                if (RB_LIKELY(next_char == ',')) {
+                    state->cursor++;
+                    if (config->allow_trailing_comma) {
+                        json_eat_whitespace(state);
+                        if (peek(state) == ']') {
+                            continue;
                         }
-                        json_parse_any(state, config);
-                        continue;
                     }
+                    json_parse_any(state, config);
+                    continue;
+                }
+
+                if (next_char == ']') {
+                    state->cursor++;
+                    long count = state->stack->head - stack_head;
+                    state->current_nesting--;
+                    state->in_array--;
+                    return json_push_value(state, config, json_decode_array(state, config, count));
                 }
 
                 raise_parse_error("expected ',' or ']' after array value", state);
@@ -1229,7 +1317,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             json_eat_whitespace(state);
             long stack_head = state->stack->head;
 
-            if ((state->cursor < state->end) && (*state->cursor == '}')) {
+            if (peek(state) == '}') {
                 state->cursor++;
                 return json_push_value(state, config, json_decode_object(state, config, 0));
             } else {
@@ -1238,13 +1326,13 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                     rb_raise(eNestingError, "nesting of %d is too deep", state->current_nesting);
                 }
 
-                if (*state->cursor != '"') {
+                if (peek(state) != '"') {
                     raise_parse_error("expected object key, got %s", state);
                 }
                 json_parse_string(state, config, true);
 
                 json_eat_whitespace(state);
-                if ((state->cursor >= state->end) || (*state->cursor != ':')) {
+                if (peek(state) != ':') {
                     raise_parse_error("expected ':' after object key", state);
                 }
                 state->cursor++;
@@ -1255,52 +1343,55 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             while (true) {
                 json_eat_whitespace(state);
 
-                if (state->cursor < state->end) {
-                    if (*state->cursor == '}') {
-                        state->cursor++;
-                        state->current_nesting--;
-                        size_t count = state->stack->head - stack_head;
+                const char next_char = peek(state);
+                if (next_char == '}') {
+                    state->cursor++;
+                    state->current_nesting--;
+                    size_t count = state->stack->head - stack_head;
 
-                        // Temporary rewind cursor in case an error is raised
-                        const char *final_cursor = state->cursor;
-                        state->cursor = object_start_cursor;
-                        VALUE object = json_decode_object(state, config, count);
-                        state->cursor = final_cursor;
+                    // Temporary rewind cursor in case an error is raised
+                    const char *final_cursor = state->cursor;
+                    state->cursor = object_start_cursor;
+                    VALUE object = json_decode_object(state, config, count);
+                    state->cursor = final_cursor;
 
-                        return json_push_value(state, config, object);
+                    return json_push_value(state, config, object);
+                }
+
+                if (next_char == ',') {
+                    state->cursor++;
+                    json_eat_whitespace(state);
+
+                    if (config->allow_trailing_comma) {
+                        if (peek(state) == '}') {
+                            continue;
+                        }
                     }
 
-                    if (*state->cursor == ',') {
-                        state->cursor++;
-                        json_eat_whitespace(state);
-
-                        if (config->allow_trailing_comma) {
-                            if ((state->cursor < state->end) && (*state->cursor == '}')) {
-                                continue;
-                            }
-                        }
-
-                        if (*state->cursor != '"') {
-                            raise_parse_error("expected object key, got: %s", state);
-                        }
-                        json_parse_string(state, config, true);
-
-                        json_eat_whitespace(state);
-                        if ((state->cursor >= state->end) || (*state->cursor != ':')) {
-                            raise_parse_error("expected ':' after object key, got: %s", state);
-                        }
-                        state->cursor++;
-
-                        json_parse_any(state, config);
-
-                        continue;
+                    if (RB_UNLIKELY(peek(state) != '"')) {
+                        raise_parse_error("expected object key, got: %s", state);
                     }
+                    json_parse_string(state, config, true);
+
+                    json_eat_whitespace(state);
+                    if (RB_UNLIKELY(peek(state) != ':')) {
+                        raise_parse_error("expected ':' after object key, got: %s", state);
+                    }
+                    state->cursor++;
+
+                    json_parse_any(state, config);
+
+                    continue;
                 }
 
                 raise_parse_error("expected ',' or '}' after object value, got: %s", state);
             }
             break;
         }
+
+        case 0:
+            raise_parse_error("unexpected end of input", state);
+            break;
 
         default:
             raise_parse_error("unexpected character: %s", state);
@@ -1313,7 +1404,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 static void json_ensure_eof(JSON_ParserState *state)
 {
     json_eat_whitespace(state);
-    if (state->cursor != state->end) {
+    if (!eos(state)) {
         raise_parse_error("unexpected token at end of stream %s", state);
     }
 }

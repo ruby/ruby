@@ -118,6 +118,7 @@ concurrent_set_try_resize_without_locking(VALUE old_set_obj, VALUE *set_obj_ptr)
     // GC may also happen between now and the set being rebuilt
     int expected_size = rbimpl_atomic_load(&old_set->size, RBIMPL_ATOMIC_RELAXED) - old_set->deleted_entries;
 
+    // NOTE: new capacity must make sense with load factor, don't change one without checking the other.
     struct concurrent_set_entry *old_entries = old_set->entries;
     int old_capacity = old_set->capacity;
     int new_capacity = old_capacity * 2;
@@ -287,7 +288,10 @@ rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data)
 
             rb_atomic_t prev_size = rbimpl_atomic_fetch_add(&set->size, 1, RBIMPL_ATOMIC_RELAXED);
 
-            if (UNLIKELY(prev_size > set->capacity / 2)) {
+            // Load_factor reached at 75% full. ex: prev_size: 32, capacity: 64, load_factor: 50%.
+            bool load_factor_reached = (uint64_t)(prev_size * 4) >= (uint64_t)(set->capacity * 3);
+
+            if (UNLIKELY(load_factor_reached)) {
                 concurrent_set_try_resize(set_obj, set_obj_ptr);
 
                 goto retry;

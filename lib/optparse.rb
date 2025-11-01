@@ -426,7 +426,8 @@ require 'set' unless defined?(Set)
 #
 class OptionParser
   # The version string
-  OptionParser::Version = "0.7.0.dev.2"
+  VERSION = "0.8.0"
+  Version = VERSION # for compatibility
 
   # :stopdoc:
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze

@@ -221,7 +221,7 @@ pub fn init() -> Annotations {
     annotate!(rb_mKernel, "respond_to?", inline_kernel_respond_to_p);
     annotate!(rb_cBasicObject, "==", inline_basic_object_eq, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!", types::BoolExact, no_gc, leaf, elidable);
-    annotate!(rb_cBasicObject, "!=", inline_basic_object_neq, types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cBasicObject, "!=", inline_basic_object_neq, types::BoolExact);
     annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
     annotate!(rb_cInteger, "succ", inline_integer_succ);
     annotate!(rb_cInteger, "^", inline_integer_xor);
@@ -231,7 +231,9 @@ pub fn init() -> Annotations {
 
     annotate_builtin!(rb_mKernel, "Float", types::Float);
     annotate_builtin!(rb_mKernel, "Integer", types::Integer);
-    annotate_builtin!(rb_mKernel, "class", types::Class, leaf);
+    // TODO(max): Annotate rb_mKernel#class as returning types::Class. Right now there is a subtle
+    // type system bug that causes an issue if we make it return types::Class.
+    annotate_builtin!(rb_mKernel, "class", types::HeapObject, leaf);
     annotate_builtin!(rb_mKernel, "frozen?", types::BoolExact);
     annotate_builtin!(rb_cSymbol, "name", types::StringExact);
     annotate_builtin!(rb_cSymbol, "to_s", types::StringExact);

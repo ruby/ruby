@@ -164,6 +164,11 @@ class << RubyVM::ZJIT
     print_counters_with_prefix(prefix: 'not_optimized_yarv_insn_', prompt: 'not optimized instructions', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'send_fallback_', prompt: 'send fallback reasons', buf:, stats:, limit: 20)
 
+    # Show most popular unsupported call features. Because each call can
+    # use multiple fancy features, a decrease in this number does not
+    # necessarily mean an increase in number of optimized calls.
+    print_counters_with_prefix(prefix: 'fancy_arg_pass_', prompt: 'popular unsupported argument-parameter features', buf:, stats:, limit: 10)
+
     # Show exit counters, ordered by the typical amount of exits for the prefix at the time
     print_counters_with_prefix(prefix: 'unhandled_yarv_insn_', prompt: 'unhandled YARV insns', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'compile_error_', prompt: 'compile error reasons', buf:, stats:, limit: 20)

@@ -167,11 +167,16 @@ make_counters! {
         send_fallback_send_without_block_cfunc_not_variadic,
         send_fallback_send_without_block_cfunc_array_variadic,
         send_fallback_send_without_block_not_optimized_method_type,
+        send_fallback_send_without_block_not_optimized_optimized_method_type,
         send_fallback_send_without_block_direct_too_many_args,
         send_fallback_send_polymorphic,
         send_fallback_send_no_profiles,
         send_fallback_send_not_optimized_method_type,
         send_fallback_ccall_with_frame_too_many_args,
+        // The call has at least one feature on the caller or callee side
+        // that the optimizer does not support.
+        send_fallback_fancy_call_feature,
+        send_fallback_bmethod_non_iseq_proc,
         send_fallback_obj_to_string_not_string,
         send_fallback_not_optimized_instruction,
     }
@@ -227,6 +232,13 @@ make_counters! {
     unspecialized_send_without_block_def_type_refined,
     unspecialized_send_without_block_def_type_null,
 
+    // Method call optimized_type related to send without block fallback to dynamic dispatch
+    unspecialized_send_without_block_def_type_optimized_send,
+    unspecialized_send_without_block_def_type_optimized_call,
+    unspecialized_send_without_block_def_type_optimized_block_call,
+    unspecialized_send_without_block_def_type_optimized_struct_aref,
+    unspecialized_send_without_block_def_type_optimized_struct_aset,
+
     // Method call def_type related to send fallback to dynamic dispatch
     unspecialized_send_def_type_iseq,
     unspecialized_send_def_type_cfunc,
@@ -241,6 +253,24 @@ make_counters! {
     unspecialized_send_def_type_missing,
     unspecialized_send_def_type_refined,
     unspecialized_send_def_type_null,
+
+    // Unsupported parameter features
+    fancy_arg_pass_param_rest,
+    fancy_arg_pass_param_opt,
+    fancy_arg_pass_param_kw,
+    fancy_arg_pass_param_kwrest,
+    fancy_arg_pass_param_block,
+    fancy_arg_pass_param_forwardable,
+
+    // Unsupported caller side features
+    fancy_arg_pass_caller_splat,
+    fancy_arg_pass_caller_blockarg,
+    fancy_arg_pass_caller_kwarg,
+    fancy_arg_pass_caller_kw_splat,
+    fancy_arg_pass_caller_tailcall,
+    fancy_arg_pass_caller_super,
+    fancy_arg_pass_caller_zsuper,
+    fancy_arg_pass_caller_forwarding,
 
     // Writes to the VM frame
     vm_write_pc_count,
@@ -388,9 +418,13 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendWithoutBlockCfuncNotVariadic          => send_fallback_send_without_block_cfunc_not_variadic,
         SendWithoutBlockCfuncArrayVariadic        => send_fallback_send_without_block_cfunc_array_variadic,
         SendWithoutBlockNotOptimizedMethodType(_) => send_fallback_send_without_block_not_optimized_method_type,
+        SendWithoutBlockNotOptimizedOptimizedMethodType(_)
+                                                  => send_fallback_send_without_block_not_optimized_optimized_method_type,
         SendWithoutBlockDirectTooManyArgs         => send_fallback_send_without_block_direct_too_many_args,
         SendPolymorphic                           => send_fallback_send_polymorphic,
         SendNoProfiles                            => send_fallback_send_no_profiles,
+        FancyFeatureUse                           => send_fallback_fancy_call_feature,
+        BmethodNonIseqProc                        => send_fallback_bmethod_non_iseq_proc,
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
         CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
@@ -416,6 +450,19 @@ pub fn send_without_block_fallback_counter_for_method_type(method_type: crate::h
         Missing => unspecialized_send_without_block_def_type_missing,
         Refined => unspecialized_send_without_block_def_type_refined,
         Null => unspecialized_send_without_block_def_type_null,
+    }
+}
+
+pub fn send_without_block_fallback_counter_for_optimized_method_type(method_type: crate::hir::OptimizedMethodType) -> Counter {
+    use crate::hir::OptimizedMethodType::*;
+    use crate::stats::Counter::*;
+
+    match method_type {
+        Send => unspecialized_send_without_block_def_type_optimized_send,
+        Call => unspecialized_send_without_block_def_type_optimized_call,
+        BlockCall => unspecialized_send_without_block_def_type_optimized_block_call,
+        StructAref => unspecialized_send_without_block_def_type_optimized_struct_aref,
+        StructAset => unspecialized_send_without_block_def_type_optimized_struct_aset,
     }
 }
 

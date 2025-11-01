@@ -682,15 +682,13 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
     *pp += codepoint_length;
 
     if (code <= 'z') { /* ASCII comes first */
-      if (code >= 'a' && code <= 'z') {
+      if (code >= 'a' /*&& code <= 'z'*/) {
 	if (flags & ONIGENC_CASE_UPCASE) {
 	  MODIFIED;
 	  if (flags & ONIGENC_CASE_FOLD_TURKISH_AZERI && code == 'i')
 	    code = I_WITH_DOT_ABOVE;
-          else {
-            code -= 'a';
-            code += 'A';
-          }
+          else
+            code -= 'a' - 'A';
 	}
       }
       else if (code >= 'A' && code <= 'Z') {
