@@ -19,4 +19,10 @@ module FileSpecs
 
     obj.close_exception = exc
   end
+
+  def self.missing_path(name = "i_dont_exist")
+    path = tmp(name)
+    rm_r path
+    path
+  end
 end

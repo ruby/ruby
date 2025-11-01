@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "File.readlink" do
   # symlink/readlink are not supported on Windows
@@ -25,8 +26,8 @@ describe "File.readlink" do
       end
 
       it "raises an Errno::ENOENT if there is no such file" do
-        # TODO: missing_file
-        -> { File.readlink("/this/surely/does/not/exist") }.should raise_error(Errno::ENOENT)
+        missing = FileSpecs.missing_path("file_readlink_missing")
+        -> { File.readlink(missing) }.should raise_error(Errno::ENOENT)
       end
 
       it "raises an Errno::EINVAL if called with a normal file" do

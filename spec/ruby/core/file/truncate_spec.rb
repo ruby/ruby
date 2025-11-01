@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "File.truncate" do
   before :each do
@@ -47,11 +48,7 @@ describe "File.truncate" do
   end
 
   it "raises an Errno::ENOENT if the file does not exist" do
-    # TODO: missing_file
-    not_existing_file = tmp("file-does-not-exist-for-sure.txt")
-
-    # make sure it doesn't exist for real
-    rm_r not_existing_file
+    not_existing_file = FileSpecs.missing_path("file-does-not-exist-for-sure.txt")
 
     begin
       -> { File.truncate(not_existing_file, 5) }.should raise_error(Errno::ENOENT)
