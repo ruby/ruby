@@ -10,6 +10,7 @@
 #include "internal/error.h"
 #include "internal/hash.h"
 #include "internal/proc.h"
+#include "internal/range.h"
 #include "internal/sanitizers.h"
 #include "internal/set_table.h"
 #include "internal/symbol.h"
@@ -509,12 +510,8 @@ set_i_initialize(int argc, VALUE *argv, VALUE set)
             }
         }
         else {
-            ID id_size = rb_intern("size");
-            if (rb_obj_is_kind_of(other, rb_mEnumerable) && rb_respond_to(other, id_size)) {
-                VALUE size = rb_funcall(other, id_size, 0);
-                if (RB_TYPE_P(size, T_FLOAT) && RFLOAT_VALUE(size) == INFINITY) {
-                    rb_raise(rb_eArgError, "cannot initialize Set from an object with infinite size");
-                }
+            if (rb_obj_is_kind_of(other, rb_cRange) && NIL_P(RANGE_END(other))) {
+                rb_raise(rb_eArgError, "cannot initialize Set from an endless range");
             }
 
             rb_block_call(other, enum_method_id(other), 0, 0,

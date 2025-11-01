@@ -6,6 +6,21 @@ class TC_Set < Test::Unit::TestCase
   class Set2 < Set
   end
 
+  class NoSize
+    def size
+      raise
+    end
+
+    def each
+      yield "hello"
+    end
+  end
+
+  def test_size_only_called_on_ranges
+    set = Set.new(NoSize.new)
+    assert(set.include?("hello"))
+  end
+
   def test_marshal
     set = Set[1, 2, 3]
     mset = Marshal.load(Marshal.dump(set))
@@ -55,6 +70,7 @@ class TC_Set < Test::Unit::TestCase
       Set.new([])
       Set.new([1,2])
       Set.new('a'..'c')
+      Set.new(NoSize.new)
     }
     assert_raise(ArgumentError) {
       Set.new(false)
@@ -87,9 +103,6 @@ class TC_Set < Test::Unit::TestCase
     }
     assert_raise(ArgumentError) {
       Set.new((1..), &:succ)
-    }
-    assert_raise(ArgumentError) {
-      Set.new(1.upto(Float::INFINITY))
     }
 
     assert_raise(ArgumentError) {
