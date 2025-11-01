@@ -194,7 +194,9 @@ ary_embed_capa(VALUE ary)
 static size_t
 ary_embed_size(long capa)
 {
-    return offsetof(struct RArray, as.ary) + (sizeof(VALUE) * capa);
+    size_t size = offsetof(struct RArray, as.ary) + (sizeof(VALUE) * capa);
+    if (size < sizeof(struct RArray)) size = sizeof(struct RArray);
+    return size;
 }
 
 static bool
