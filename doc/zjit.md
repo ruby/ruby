@@ -204,6 +204,8 @@ Ruby execution involves three distinct stacks and understanding them will help y
 
 The Ruby VM uses a single contiguous memory region (`ec->vm_stack`) containing two sub-stacks that grow toward each other. When they meet, stack overflow occurs.
 
+See [doc/contributing/vm_stack_and_frames.md](contributing/vm_stack_and_frames.md) for detailed architecture and frame layout.
+
 **Control Frame Stack:**
 
 - **Stores**: Frame metadata (`rb_control_frame_t` structures)
