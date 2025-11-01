@@ -1297,7 +1297,7 @@ assert_equal '[:ok, :ok]', %q{
       s = 'str'
       trap(:INT){p s}
     }.join
-  rescue => Ractor::RemoteError
+  rescue Ractor::RemoteError
     a << :ok
   end
 }
