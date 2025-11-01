@@ -1397,7 +1397,7 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
 
     use Counter::*;
     if unsafe { rb_get_iseq_flags_has_rest(iseq) }    { count_failure(fancy_arg_pass_param_rest) }
-    if unsafe { rb_get_iseq_flags_has_opt(iseq) }     { count_failure(fancy_arg_pass_param_opt) }
+    // if unsafe { rb_get_iseq_flags_has_opt(iseq) }     { count_failure(fancy_arg_pass_param_opt) }
     if unsafe { rb_get_iseq_flags_has_kw(iseq) }      { count_failure(fancy_arg_pass_param_kw) }
     if unsafe { rb_get_iseq_flags_has_kwrest(iseq) }  { count_failure(fancy_arg_pass_param_kwrest) }
     if unsafe { rb_get_iseq_flags_has_block(iseq) }   { count_failure(fancy_arg_pass_param_block) }

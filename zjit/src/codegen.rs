@@ -1204,10 +1204,21 @@ fn gen_send_without_block_direct(
 
     // Set up arguments
     let mut c_args = vec![recv];
-    c_args.extend(args);
+    c_args.extend(&args);
+
+    let num_optionals_passed = if unsafe { get_iseq_flags_has_opt(iseq) } {
+        // See vm_call_iseq_setup_normal_opt_start in vm_inshelper.c
+        let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) } as u32;
+        let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) } as u32;
+        assert!(args.len() as u32 <= lead_num + opt_num);
+        let num_optionals_passed = args.len() as u32 - lead_num;
+        num_optionals_passed
+    } else {
+        0
+    };
 
     // Make a method call. The target address will be rewritten once compiled.
-    let iseq_call = IseqCall::new(iseq);
+    let iseq_call = IseqCall::new(iseq, num_optionals_passed);
     let dummy_ptr = cb.get_write_ptr().raw_ptr(cb);
     jit.iseq_calls.push(iseq_call.clone());
     let ret = asm.ccall_with_iseq_call(dummy_ptr, c_args, &iseq_call);
@@ -2002,7 +2013,9 @@ c_callable! {
             // function_stub_hit_body() may allocate and call gc_validate_pc(), so we always set PC.
             let iseq_call = unsafe { Rc::from_raw(iseq_call_ptr as *const IseqCall) };
             let iseq = iseq_call.iseq.get();
-            let pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) }; // TODO: handle opt_pc once supported
+            let opt_table = unsafe { get_iseq_body_param_opt_table(iseq) };
+            let insn_idx = unsafe { opt_table.offset(iseq_call.num_optionals_passed as isize).read().as_u32() };
+            let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
             unsafe { rb_set_cfp_pc(cfp, pc) };
 
             // JIT-to-JIT calls don't set SP or fill nils to uninitialized (non-argument) locals.
@@ -2062,13 +2075,8 @@ fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result
         debug!("{err:?}: gen_iseq failed: {}", iseq_get_location(iseq_call.iseq.get(), 0));
     })?;
 
-    // We currently don't support JIT-to-JIT calls for ISEQs with optional arguments.
-    // So we only need to use jit_entry_ptrs[0] for now. TODO(Shopify/ruby#817): Support optional arguments.
-    let Some(&jit_entry_ptr) = jit_entry_ptrs.first() else {
-        return Err(CompileError::JitToJitOptional)
-    };
-
     // Update the stub to call the code pointer
+    let jit_entry_ptr = jit_entry_ptrs[iseq_call.num_optionals_passed as usize];
     let code_addr = jit_entry_ptr.raw_ptr(cb);
     let iseq = iseq_call.iseq.get();
     iseq_call.regenerate(cb, |asm| {
@@ -2297,6 +2305,9 @@ pub struct IseqCall {
     /// Callee ISEQ that start_addr jumps to
     pub iseq: Cell<IseqPtr>,
 
+    /// Index into jit_entry_ptrs of the callee ISEQ
+    num_optionals_passed: u32,
+
     /// Position where the call instruction starts
     start_addr: Cell<Option<CodePtr>>,
 
@@ -2308,11 +2319,12 @@ pub type IseqCallRef = Rc<IseqCall>;
 
 impl IseqCall {
     /// Allocate a new IseqCall
-    fn new(iseq: IseqPtr) -> IseqCallRef {
+    fn new(iseq: IseqPtr, num_optionals_passed: u32) -> IseqCallRef {
         let iseq_call = IseqCall {
             iseq: Cell::new(iseq),
             start_addr: Cell::new(None),
             end_addr: Cell::new(None),
+            num_optionals_passed,
         };
         Rc::new(iseq_call)
     }
