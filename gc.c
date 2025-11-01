@@ -2496,7 +2496,10 @@ count_objects(int argc, VALUE *argv, VALUE os)
     VALUE total = ID2SYM(rb_intern("TOTAL"));
     VALUE free = ID2SYM(rb_intern("FREE"));
 
-    rb_gc_impl_each_object(rb_gc_get_objspace(), count_objects_i, &data);
+    RB_VM_LOCKING() {
+        rb_gc_vm_barrier();
+        rb_gc_impl_each_object(rb_gc_get_objspace(), count_objects_i, &data);
+    }
 
     if (NIL_P(hash)) {
         hash = rb_hash_new();
@@ -3528,7 +3531,10 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
 void
 rb_objspace_each_objects(int (*callback)(void *, void *, size_t, void *), void *data)
 {
-    rb_gc_impl_each_objects(rb_gc_get_objspace(), callback, data);
+    RB_VM_LOCKING() {
+        rb_gc_vm_barrier();
+        rb_gc_impl_each_objects(rb_gc_get_objspace(), callback, data);
+    }
 }
 
 static void
@@ -4542,23 +4548,27 @@ rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE,
 {
     if (rb_gc_impl_during_gc_p(rb_gc_get_objspace())) rb_bug("rb_gc_impl_objspace_reachable_objects_from_root() is not supported while during GC");
 
-    rb_vm_t *vm = GET_VM();
+    RB_VM_LOCKING() {
+        rb_gc_vm_barrier();
 
-    struct root_objects_data data = {
-        .func = func,
-        .data = passing_data,
-    };
+        rb_vm_t *vm = GET_VM();
 
-    struct gc_mark_func_data_struct *prev_mfd = vm->gc.mark_func_data;
-    struct gc_mark_func_data_struct mfd = {
-        .mark_func = root_objects_from,
-        .data = &data,
-    };
+        struct root_objects_data data = {
+            .func = func,
+            .data = passing_data,
+        };
 
-    vm->gc.mark_func_data = &mfd;
-    rb_gc_save_machine_context();
-    rb_gc_mark_roots(vm->gc.objspace, &data.category);
-    vm->gc.mark_func_data = prev_mfd;
+        struct gc_mark_func_data_struct *prev_mfd = vm->gc.mark_func_data;
+        struct gc_mark_func_data_struct mfd = {
+            .mark_func = root_objects_from,
+            .data = &data,
+        };
+
+        vm->gc.mark_func_data = &mfd;
+        rb_gc_save_machine_context();
+        rb_gc_mark_roots(vm->gc.objspace, &data.category);
+        vm->gc.mark_func_data = prev_mfd;
+    }
 }
 
 /*
