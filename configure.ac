@@ -679,6 +679,10 @@ RUBY_WERROR_FLAG([
     AS_CASE([${RPATHFLAG}],[*'%1$'*],[: ${LIBPATHFLAG='-L%1$-s'}],[: ${LIBPATHFLAG='-L%s'}])
 }
 
+RUBY_TRY_CPPFLAGS(-finput-charset=utf-8, [finput_charset_utf8=yes], [finput_charset_utf8=no])
+AS_IF([test "$finput_charset_utf8" yes], [
+    RUBY_APPEND_OPTIONS(CPPFLAGS, -finput-charset=utf-8)
+])
 RUBY_TRY_LDFLAGS(-fdeclspec, [fdeclspec=yes], [fdeclspec=no])
 AS_IF([test "$fdeclspec" = yes], [
     RUBY_APPEND_OPTIONS(CFLAGS, -fdeclspec)
