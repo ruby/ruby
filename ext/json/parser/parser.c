@@ -1132,7 +1132,7 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
     // Parse integer part and extract mantissa digits
     int mantissa_digits = json_parse_digits(state, &mantissa);
 
-    if (RB_UNLIKELY(first_digit == '0' && mantissa_digits > 1 || negative && mantissa_digits == 0)) {
+    if (RB_UNLIKELY((first_digit == '0' && mantissa_digits > 1) || (negative && mantissa_digits == 0))) {
         raise_parse_error_at("invalid number: %s", state, start);
     }
 
