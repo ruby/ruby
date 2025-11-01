@@ -563,6 +563,22 @@ impl std::fmt::Display for SideExitReason {
     }
 }
 
+/// Result of resolving the receiver type for method dispatch optimization.
+/// Represents whether we know the receiver's class statically at compile-time,
+/// have profiled type information, or know nothing about it.
+pub enum ReceiverTypeResolution {
+    /// The receiver's class is statically known at JIT compile-time (no guard needed)
+    StaticallyKnown { class: VALUE },
+    /// The receiver has a monomorphic profile (single type observed, guard needed)
+    Monomorphic { class: VALUE, profiled_type: ProfiledType },
+    /// The receiver has a skewed polymorphic profile (dominant type with some other types, guard needed)
+    SkewedPolymorphic { class: VALUE, profiled_type: ProfiledType },
+    /// The receiver is polymorphic (multiple types, none dominant)
+    Polymorphic,
+    /// No profile information available for the receiver
+    NoProfile,
+}
+
 /// Reason why a send-ish instruction cannot be optimized from a fallback instruction
 #[derive(Debug, Clone, Copy)]
 pub enum SendFallbackReason {
@@ -2133,26 +2149,49 @@ impl Function {
         None
     }
 
-    /// Return whether a given HIR instruction as profiled by the interpreter is polymorphic or
-    /// whether it lacks a profile entirely.
+    /// Resolve the receiver type for method dispatch optimization.
     ///
-    /// * `Some(true)` if polymorphic
-    /// * `Some(false)` if monomorphic
-    /// * `None` if no profiled information so far
-    fn is_polymorphic_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<bool> {
-        let profiles = self.profiles.as_ref()?;
-        let entries = profiles.types.get(&iseq_insn_idx)?;
-        let insn = self.chase_insn(insn);
+    /// Takes the receiver's Type, receiver HIR instruction, and ISEQ instruction index.
+    /// Performs a single iteration through profile data to determine the receiver type.
+    ///
+    /// Returns:
+    /// - `StaticallyKnown` if the receiver's exact class is known at compile-time
+    /// - `Monomorphic`/`SkewedPolymorphic` if we have usable profile data
+    /// - `Polymorphic` if the receiver has multiple types
+    /// - `NoProfile` if we have no type information
+    fn resolve_receiver_type(&self, recv: InsnId, recv_type: Type, insn_idx: usize) -> ReceiverTypeResolution {
+        if let Some(class) = recv_type.runtime_exact_ruby_class() {
+            return ReceiverTypeResolution::StaticallyKnown { class };
+        }
+        let Some(profiles) = self.profiles.as_ref() else {
+            return ReceiverTypeResolution::NoProfile;
+        };
+        let Some(entries) = profiles.types.get(&insn_idx) else {
+            return ReceiverTypeResolution::NoProfile;
+        };
+        let recv = self.chase_insn(recv);
+
         for (entry_insn, entry_type_summary) in entries {
-            if self.union_find.borrow().find_const(*entry_insn) == insn {
-                if !entry_type_summary.is_monomorphic() && !entry_type_summary.is_skewed_polymorphic() {
-                    return Some(true);
-                } else {
-                    return Some(false);
+            if self.union_find.borrow().find_const(*entry_insn) == recv {
+                if entry_type_summary.is_monomorphic() {
+                    let profiled_type = entry_type_summary.bucket(0);
+                    return ReceiverTypeResolution::Monomorphic {
+                        class: profiled_type.class(),
+                        profiled_type,
+                    };
+                } else if entry_type_summary.is_skewed_polymorphic() {
+                    let profiled_type = entry_type_summary.bucket(0);
+                    return ReceiverTypeResolution::SkewedPolymorphic {
+                        class: profiled_type.class(),
+                        profiled_type,
+                    };
+                } else if entry_type_summary.is_polymorphic() {
+                    return ReceiverTypeResolution::Polymorphic;
                 }
             }
         }
-        None
+
+        ReceiverTypeResolution::NoProfile
     }
 
     pub fn assume_expected_cfunc(&mut self, block: BlockId, class: VALUE, method_id: ID, cfunc: *mut c_void, state: InsnId) -> bool {
@@ -2299,24 +2338,24 @@ impl Function {
                         self.try_rewrite_uminus(block, insn_id, recv, state),
                     Insn::SendWithoutBlock { mut recv, cd, args, state, .. } => {
                         let frame_state = self.frame_state(state);
-                        let (klass, profiled_type) = if let Some(klass) = self.type_of(recv).runtime_exact_ruby_class() {
-                            // If we know the class statically, use it to fold the lookup at compile-time.
-                            (klass, None)
-                        } else {
-                            // If we know that self is reasonably monomorphic from profile information, guard and use it to fold the lookup at compile-time.
-                            // TODO(max): Figure out how to handle top self?
-                            let Some(recv_type) = self.profiled_type_of_at(recv, frame_state.insn_idx) else {
+                        let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), frame_state.insn_idx) {
+                            ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
+                            ReceiverTypeResolution::Monomorphic { class, profiled_type }
+                            | ReceiverTypeResolution::SkewedPolymorphic { class, profiled_type } => (class, Some(profiled_type)),
+                            ReceiverTypeResolution::Polymorphic => {
                                 if get_option!(stats) {
-                                    match self.is_polymorphic_at(recv, frame_state.insn_idx) {
-                                        Some(true) => self.set_dynamic_send_reason(insn_id, SendWithoutBlockPolymorphic),
-                                        // If the class isn't known statically, then it should not also be monomorphic
-                                        Some(false) => panic!("Should not have monomorphic profile at this point in this branch"),
-                                        None => self.set_dynamic_send_reason(insn_id, SendWithoutBlockNoProfiles),
-                                    }
+                                    self.set_dynamic_send_reason(insn_id, SendWithoutBlockPolymorphic);
                                 }
-                                self.push_insn_id(block, insn_id); continue;
-                            };
-                            (recv_type.class(), Some(recv_type))
+                                self.push_insn_id(block, insn_id);
+                                continue;
+                            }
+                            ReceiverTypeResolution::NoProfile => {
+                                if get_option!(stats) {
+                                    self.set_dynamic_send_reason(insn_id, SendWithoutBlockNoProfiles);
+                                }
+                                self.push_insn_id(block, insn_id);
+                                continue;
+                            }
                         };
                         let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
 
@@ -2492,22 +2531,24 @@ impl Function {
                     // The actual optimization is done in reduce_send_to_ccall.
                     Insn::Send { recv, cd, state, .. } => {
                         let frame_state = self.frame_state(state);
-                        let klass = if let Some(klass) = self.type_of(recv).runtime_exact_ruby_class() {
-                            // If we know the class statically, use it to fold the lookup at compile-time.
-                            klass
-                        } else {
-                            let Some(recv_type) = self.profiled_type_of_at(recv, frame_state.insn_idx) else {
+                        let klass = match self.resolve_receiver_type(recv, self.type_of(recv), frame_state.insn_idx) {
+                            ReceiverTypeResolution::StaticallyKnown { class } => class,
+                            ReceiverTypeResolution::Monomorphic { class, .. }
+                            | ReceiverTypeResolution::SkewedPolymorphic { class, .. } => class,
+                            ReceiverTypeResolution::Polymorphic => {
                                 if get_option!(stats) {
-                                    match self.is_polymorphic_at(recv, frame_state.insn_idx) {
-                                        Some(true) => self.set_dynamic_send_reason(insn_id, SendPolymorphic),
-                                        // If the class isn't known statically, then it should not also be monomorphic
-                                        Some(false) => panic!("Should not have monomorphic profile at this point in this branch"),
-                                        None => self.set_dynamic_send_reason(insn_id, SendNoProfiles),
-                                    }
+                                    self.set_dynamic_send_reason(insn_id, SendPolymorphic);
                                 }
-                                self.push_insn_id(block, insn_id); continue;
-                            };
-                            recv_type.class()
+                                self.push_insn_id(block, insn_id);
+                                continue;
+                            }
+                            ReceiverTypeResolution::NoProfile => {
+                                if get_option!(stats) {
+                                    self.set_dynamic_send_reason(insn_id, SendNoProfiles);
+                                }
+                                self.push_insn_id(block, insn_id);
+                                continue;
+                            }
                         };
                         let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
                         let mid = unsafe { vm_ci_mid(ci) };
@@ -2769,12 +2810,12 @@ impl Function {
             let method_id = unsafe { rb_vm_ci_mid(call_info) };
 
             // If we have info about the class of the receiver
-            let (recv_class, profiled_type) = if let Some(class) = self_type.runtime_exact_ruby_class() {
-                (class, None)
-            } else {
-                let iseq_insn_idx = fun.frame_state(state).insn_idx;
-                let Some(recv_type) = fun.profiled_type_of_at(recv, iseq_insn_idx) else { return Err(()) };
-                (recv_type.class(), Some(recv_type))
+            let iseq_insn_idx = fun.frame_state(state).insn_idx;
+            let (recv_class, profiled_type) = match fun.resolve_receiver_type(recv, self_type, iseq_insn_idx) {
+                ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
+                ReceiverTypeResolution::Monomorphic { class, profiled_type }
+                | ReceiverTypeResolution::SkewedPolymorphic { class, profiled_type } => (class, Some(profiled_type)),
+                ReceiverTypeResolution::Polymorphic | ReceiverTypeResolution::NoProfile => return Err(()),
             };
 
             // Do method lookup
@@ -2874,12 +2915,12 @@ impl Function {
             let method_id = unsafe { rb_vm_ci_mid(call_info) };
 
             // If we have info about the class of the receiver
-            let (recv_class, profiled_type) = if let Some(class) = self_type.runtime_exact_ruby_class() {
-                (class, None)
-            } else {
-                let iseq_insn_idx = fun.frame_state(state).insn_idx;
-                let Some(recv_type) = fun.profiled_type_of_at(recv, iseq_insn_idx) else { return Err(()) };
-                (recv_type.class(), Some(recv_type))
+            let iseq_insn_idx = fun.frame_state(state).insn_idx;
+            let (recv_class, profiled_type) = match fun.resolve_receiver_type(recv, self_type, iseq_insn_idx) {
+                ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
+                ReceiverTypeResolution::Monomorphic { class, profiled_type }
+                | ReceiverTypeResolution::SkewedPolymorphic { class, profiled_type } => (class, Some(profiled_type)),
+                ReceiverTypeResolution::Polymorphic | ReceiverTypeResolution::NoProfile => return Err(()),
             };
 
             // Do method lookup
