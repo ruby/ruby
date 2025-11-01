@@ -406,6 +406,18 @@ typedef struct JSON_ParserStateStruct {
     int current_nesting;
 } JSON_ParserState;
 
+static inline bool eos(JSON_ParserState *state) {
+    return state->cursor >= state->end;
+}
+
+static inline char peek(JSON_ParserState *state)
+{
+    if (RB_UNLIKELY(eos(state))) {
+        return 0;
+    }
+    return *state->cursor;
+}
+
 static void cursor_position(JSON_ParserState *state, long *line_out, long *column_out)
 {
     const char *cursor = state->cursor;
@@ -571,7 +583,7 @@ json_eat_comments(JSON_ParserState *state)
                         raise_parse_error_at("unexpected end of input, expected closing '*/'", state, state->end);
                     } else {
                         state->cursor++;
-                        if (state->cursor < state->end && *state->cursor == '/') {
+                        if (peek(state) == '/') {
                             state->cursor++;
                             break;
                         }
@@ -591,11 +603,12 @@ json_eat_comments(JSON_ParserState *state)
 static inline void
 json_eat_whitespace(JSON_ParserState *state)
 {
-    while (state->cursor < state->end && RB_UNLIKELY(whitespace[(unsigned char)*state->cursor])) {
-        if (RB_LIKELY(*state->cursor != '/')) {
-            state->cursor++;
-        } else {
+    unsigned char cursor;
+    while (RB_UNLIKELY(whitespace[cursor = (unsigned char)peek(state)])) {
+        if (RB_UNLIKELY(cursor == '/')) {
             json_eat_comments(state);
+        } else {
+            state->cursor++;
         }
     }
 }
@@ -980,7 +993,7 @@ static inline bool FORCE_INLINE string_scan(JSON_ParserState *state)
 #endif /* HAVE_SIMD_NEON or HAVE_SIMD_SSE2 */
 #endif /* HAVE_SIMD */
 
-    while (state->cursor < state->end) {
+    while (!eos(state)) {
         if (RB_UNLIKELY(string_scan_table[(unsigned char)*state->cursor])) {
             return 1;
         }
@@ -1025,8 +1038,10 @@ static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig
 static inline int json_parse_digits(JSON_ParserState *state, uint64_t *accumulator)
 {
     const char *start = state->cursor;
-    while ((state->cursor < state->end) && rb_isdigit(*state->cursor)) {
-        *accumulator = *accumulator * 10 + (*state->cursor - '0');
+    char next_char;
+
+    while (rb_isdigit(next_char = peek(state))) {
+        *accumulator = *accumulator * 10 + (next_char - '0');
         state->cursor++;
     }
     return (int)(state->cursor - start);
@@ -1050,7 +1065,7 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
     }
 
     // Parse fractional part
-    if ((state->cursor < state->end) && (*state->cursor == '.')) {
+    if (peek(state) == '.') {
         integer = false;
         decimal_point_pos = mantissa_digits;  // Remember position of decimal point
         state->cursor++;
@@ -1064,13 +1079,14 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
     }
 
     // Parse exponent
-    if ((state->cursor < state->end) && ((rb_tolower(*state->cursor) == 'e'))) {
+    if (rb_tolower(peek(state)) == 'e') {
         integer = false;
         state->cursor++;
 
         bool negative_exponent = false;
-        if ((state->cursor < state->end) && ((*state->cursor == '-') || (*state->cursor == '+'))) {
-            negative_exponent = (*state->cursor == '-');
+        const char next_char = peek(state);
+        if (next_char == '-' || next_char == '+') {
+            negative_exponent = next_char == '-';
             state->cursor++;
         }
 
@@ -1111,11 +1127,8 @@ static inline VALUE json_parse_negative_number(JSON_ParserState *state, JSON_Par
 static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 {
     json_eat_whitespace(state);
-    if (state->cursor >= state->end) {
-        raise_parse_error("unexpected end of input", state);
-    }
 
-    switch (*state->cursor) {
+    switch (peek(state)) {
         case 'n':
             if ((state->end - state->cursor >= 4) && (memcmp(state->cursor, "null", 4) == 0)) {
                 state->cursor += 4;
@@ -1184,7 +1197,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             json_eat_whitespace(state);
             long stack_head = state->stack->head;
 
-            if ((state->cursor < state->end) && (*state->cursor == ']')) {
+            if (peek(state) == ']') {
                 state->cursor++;
                 return json_push_value(state, config, json_decode_array(state, config, 0));
             } else {
@@ -1199,26 +1212,26 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             while (true) {
                 json_eat_whitespace(state);
 
-                if (state->cursor < state->end) {
-                    if (*state->cursor == ']') {
-                        state->cursor++;
-                        long count = state->stack->head - stack_head;
-                        state->current_nesting--;
-                        state->in_array--;
-                        return json_push_value(state, config, json_decode_array(state, config, count));
-                    }
+                const char next_char = peek(state);
 
-                    if (*state->cursor == ',') {
-                        state->cursor++;
-                        if (config->allow_trailing_comma) {
-                            json_eat_whitespace(state);
-                            if ((state->cursor < state->end) && (*state->cursor == ']')) {
-                                continue;
-                            }
+                if (RB_LIKELY(next_char == ',')) {
+                    state->cursor++;
+                    if (config->allow_trailing_comma) {
+                        json_eat_whitespace(state);
+                        if (peek(state) == ']') {
+                            continue;
                         }
-                        json_parse_any(state, config);
-                        continue;
                     }
+                    json_parse_any(state, config);
+                    continue;
+                }
+
+                if (next_char == ']') {
+                    state->cursor++;
+                    long count = state->stack->head - stack_head;
+                    state->current_nesting--;
+                    state->in_array--;
+                    return json_push_value(state, config, json_decode_array(state, config, count));
                 }
 
                 raise_parse_error("expected ',' or ']' after array value", state);
@@ -1232,7 +1245,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             json_eat_whitespace(state);
             long stack_head = state->stack->head;
 
-            if ((state->cursor < state->end) && (*state->cursor == '}')) {
+            if (peek(state) == '}') {
                 state->cursor++;
                 return json_push_value(state, config, json_decode_object(state, config, 0));
             } else {
@@ -1241,13 +1254,13 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                     rb_raise(eNestingError, "nesting of %d is too deep", state->current_nesting);
                 }
 
-                if (*state->cursor != '"') {
+                if (peek(state) != '"') {
                     raise_parse_error("expected object key, got %s", state);
                 }
                 json_parse_string(state, config, true);
 
                 json_eat_whitespace(state);
-                if ((state->cursor >= state->end) || (*state->cursor != ':')) {
+                if (peek(state) != ':') {
                     raise_parse_error("expected ':' after object key", state);
                 }
                 state->cursor++;
@@ -1258,52 +1271,55 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             while (true) {
                 json_eat_whitespace(state);
 
-                if (state->cursor < state->end) {
-                    if (*state->cursor == '}') {
-                        state->cursor++;
-                        state->current_nesting--;
-                        size_t count = state->stack->head - stack_head;
+                const char next_char = peek(state);
+                if (next_char == '}') {
+                    state->cursor++;
+                    state->current_nesting--;
+                    size_t count = state->stack->head - stack_head;
 
-                        // Temporary rewind cursor in case an error is raised
-                        const char *final_cursor = state->cursor;
-                        state->cursor = object_start_cursor;
-                        VALUE object = json_decode_object(state, config, count);
-                        state->cursor = final_cursor;
+                    // Temporary rewind cursor in case an error is raised
+                    const char *final_cursor = state->cursor;
+                    state->cursor = object_start_cursor;
+                    VALUE object = json_decode_object(state, config, count);
+                    state->cursor = final_cursor;
 
-                        return json_push_value(state, config, object);
+                    return json_push_value(state, config, object);
+                }
+
+                if (next_char == ',') {
+                    state->cursor++;
+                    json_eat_whitespace(state);
+
+                    if (config->allow_trailing_comma) {
+                        if (peek(state) == '}') {
+                            continue;
+                        }
                     }
 
-                    if (*state->cursor == ',') {
-                        state->cursor++;
-                        json_eat_whitespace(state);
-
-                        if (config->allow_trailing_comma) {
-                            if ((state->cursor < state->end) && (*state->cursor == '}')) {
-                                continue;
-                            }
-                        }
-
-                        if (*state->cursor != '"') {
-                            raise_parse_error("expected object key, got: %s", state);
-                        }
-                        json_parse_string(state, config, true);
-
-                        json_eat_whitespace(state);
-                        if ((state->cursor >= state->end) || (*state->cursor != ':')) {
-                            raise_parse_error("expected ':' after object key, got: %s", state);
-                        }
-                        state->cursor++;
-
-                        json_parse_any(state, config);
-
-                        continue;
+                    if (RB_UNLIKELY(peek(state) != '"')) {
+                        raise_parse_error("expected object key, got: %s", state);
                     }
+                    json_parse_string(state, config, true);
+
+                    json_eat_whitespace(state);
+                    if (RB_UNLIKELY(peek(state) != ':')) {
+                        raise_parse_error("expected ':' after object key, got: %s", state);
+                    }
+                    state->cursor++;
+
+                    json_parse_any(state, config);
+
+                    continue;
                 }
 
                 raise_parse_error("expected ',' or '}' after object value, got: %s", state);
             }
             break;
         }
+
+        case 0:
+            raise_parse_error("unexpected end of input", state);
+            break;
 
         default:
             raise_parse_error("unexpected character: %s", state);
@@ -1316,7 +1332,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 static void json_ensure_eof(JSON_ParserState *state)
 {
     json_eat_whitespace(state);
-    if (state->cursor != state->end) {
+    if (!eos(state)) {
         raise_parse_error("unexpected token at end of stream %s", state);
     }
 }
