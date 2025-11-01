@@ -576,7 +576,7 @@ pub enum SendFallbackReason {
     BmethodNonIseqProc,
     /// The call has at least one feature on the caller or callee side that the optimizer does not
     /// support.
-    FancyFeatureUse,
+    FancyArgPass,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
     NotOptimizedInstruction(ruby_vminsn_type),
@@ -2263,6 +2263,8 @@ impl Function {
                         // do not optimize into a `SendWithoutBlockDirect`.
                         let flags = unsafe { rb_vm_ci_flag(ci) };
                         if unspecializable_call_type(flags) {
+                            self.count_fancy_call_features(block, flags);
+                            self.set_dynamic_send_reason(insn_id, FancyArgPass);
                             self.push_insn_id(block, insn_id); continue;
                         }
 
@@ -2287,7 +2289,7 @@ impl Function {
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                             if !can_direct_send(self, block, iseq) {
-                                self.set_dynamic_send_reason(insn_id, FancyFeatureUse);
+                                self.set_dynamic_send_reason(insn_id, FancyArgPass);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
@@ -2313,7 +2315,7 @@ impl Function {
                             let iseq = unsafe { *capture.code.iseq.as_ref() };
 
                             if !can_direct_send(self, block, iseq) {
-                                self.set_dynamic_send_reason(insn_id, FancyFeatureUse);
+                                self.set_dynamic_send_reason(insn_id, FancyArgPass);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             // Can't pass a block to a block for now
@@ -2743,6 +2745,8 @@ impl Function {
                     // When seeing &block argument, fall back to dynamic dispatch for now
                     // TODO: Support block forwarding
                     if unspecializable_call_type(ci_flags) {
+                        fun.count_fancy_call_features(block, ci_flags);
+                        fun.set_dynamic_send_reason(send_insn_id, FancyArgPass);
                         return Err(());
                     }
 
@@ -2850,6 +2854,7 @@ impl Function {
                     // Filter for simple call sites (i.e. no splats etc.)
                     if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
                         fun.count_fancy_call_features(block, ci_flags);
+                        fun.set_dynamic_send_reason(send_insn_id, FancyArgPass);
                         return Err(());
                     }
 

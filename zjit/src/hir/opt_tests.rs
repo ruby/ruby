@@ -4843,6 +4843,7 @@ mod hir_opt_tests {
           v14:ArrayExact = NewArray
           GuardBlockParamProxy l0
           v17:HeapObject[BlockParamProxy] = Const Value(VALUE(0x1000))
+          IncrCounter fancy_arg_pass_caller_blockarg
           v19:BasicObject = Send v14, 0x1008, :map, v17
           CheckInterrupts
           Return v19
