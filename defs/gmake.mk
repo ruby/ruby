@@ -538,34 +538,53 @@ spec/%/ spec/%_spec.rb: programs exts PHONY
 ruby.pc: $(filter-out ruby.pc,$(ruby_pc))
 
 matz: up
-	$(eval OLD := $(MAJOR).$(MINOR).0)
+
+matz: OLD := $(MAJOR).$(MINOR).0
 ifdef NEW
-	$(eval MAJOR := $(word 1,$(subst ., ,$(NEW))))
-	$(eval MINOR := $(word 2,$(subst ., ,$(NEW))))
+matz: MAJOR := $(word 1,$(subst ., ,$(NEW)))
+matz: MINOR := $(word 2,$(subst ., ,$(NEW)))
+matz: .WAIT bump_news
 else
-	$(eval MINOR := $(shell expr $(MINOR) + 1))
+matz: MINOR := $(shell expr $(MINOR) + 1)
+matz: .WAIT reset_news
 endif
-	$(eval override NEW := $(MAJOR).$(MINOR).0)
-	$(eval message := Development of $(NEW) started.)
-	$(eval files := include/ruby/version.h include/ruby/internal/abi.h)
+
+matz: .WAIT bump_headers
+matz: override NEW := $(MAJOR).$(MINOR).0
+matz: files := include/ruby/version.h include/ruby/internal/abi.h
+matz: message := Development of $(NEW) started.
+
+flush_news:
 	$(GIT_IN_SRC) mv -f NEWS.md doc/NEWS/NEWS-$(OLD).md
 	$(GIT_IN_SRC) commit -m "[DOC] Flush NEWS.md"
+
+.PHONY: flush_news reset_news bump_news bump_headers
+
+bump_headers:
 	sed -i~ \
 	-e "s/^\(#define RUBY_API_VERSION_MAJOR\) .*/\1 $(MAJOR)/" \
 	-e "s/^\(#define RUBY_API_VERSION_MINOR\) .*/\1 $(MINOR)/" \
 	-e "s/^\(#define RUBY_ABI_VERSION\) .*/\1 0/" \
 	 $(files:%=$(srcdir)/%)
-	$(GIT_IN_SRC) add $(files)
+
+reset_news: flush_news
 	$(BASERUBY) -C $(srcdir) -p -00 \
-	-e 'BEGIN {old, new = ARGV.shift(2); STDOUT.reopen("NEWS.md")}' \
+	-e 'BEGIN {old, new = ARGV.shift(2); STDOUT.reopen(ARGV.shift)}' \
 	-e 'case $$.' \
 	-e 'when 1; $$_.sub!(/Ruby \K[0-9.]+/, new)' \
 	-e 'when 2; $$_.sub!(/\*\*\K[0-9.]+(?=\*\*)/, old)' \
 	-e 'end' \
 	-e 'next if /^[\[ *]/ =~ $$_' \
 	-e '$$_.sub!(/\n{2,}\z/, "\n\n")' \
-	$(OLD) $(NEW) doc/NEWS/NEWS-$(OLD).md
-	$(GIT_IN_SRC) add NEWS.md
+	$(OLD) $(NEW) NEWS.md doc/NEWS/NEWS-$(OLD).md
+
+bump_news:
+	$(BASERUBY) -C $(srcdir) -p -i \
+	-e 'BEGIN {new = ARGV.shift; print gets("").sub(/Ruby \K[0-9.]+/, new)}' \
+	$(NEW) NEWS.md
+
+matz:
+	$(GIT_IN_SRC) add NEWS.md $(files)
 	$(GIT_IN_SRC) commit -m "$(message)"
 
 tags:
