@@ -52,6 +52,19 @@ jobs:
         # Skip 'push' events because post_push.yml fixes them on push
         if: ${{ github.repository == 'ruby/ruby' && startsWith(github.event_name, 'pull') }}
 
+      - name: Check if C-sources are UTF-8
+        run: |
+          #!ruby
+          ok = true
+          Dir.glob("*.{[chyS],asm}") do |f|
+            unless File.binread(f).force_encoding(Encoding::UTF_8).valid_encoding?
+              ok = false
+              puts f
+            end
+          end
+          exit ok
+        shell: ruby {0}
+
       - name: Check if date in man pages is up-to-date
         run: |
           git fetch origin --depth=1 "${GITHUB_OLD_SHA}"
