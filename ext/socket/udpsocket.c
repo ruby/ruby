@@ -175,6 +175,7 @@ udp_send_internal(VALUE v)
 }
 
 /*
+ * Document-method: send
  * call-seq:
  *   udpsocket.send(mesg, flags, host, port)  => numbytes_sent
  *   udpsocket.send(mesg, flags, sockaddr_to) => numbytes_sent
@@ -182,7 +183,17 @@ udp_send_internal(VALUE v)
  *
  * Sends _mesg_ via _udpsocket_.
  *
- * _flags_ should be a bitwise OR of Socket::MSG_* constants.
+ * === Parameters
+ * * +mesg+ a string containing the data to be transmitted through the socket.
+ * * +flags+ should be a bitwise OR of Socket::MSG_* constants.
+ * * +port+ and +host+ as an AF_INET/AF_INET6 sockaddr string.
+ * * +sockaddr_to+ is a destination socket address.
+ *   It should be a sockaddr such as a result of Socket.sockaddr_in.
+ *   An Addrinfo object can be used too.
+ *
+ * The return value, _numbytes_sent_ is an integer which is the number of bytes sent.
+ *
+ * === Examples
  *
  *   u1 = UDPSocket.new
  *   u1.bind("127.0.0.1", 4913)
