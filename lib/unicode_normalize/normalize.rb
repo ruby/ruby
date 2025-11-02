@@ -117,7 +117,7 @@ module UnicodeNormalize  # :nodoc:
       if last_class<accent_class and composite = COMPOSITION_TABLE[start+accent]
         start = composite
       elsif accent_class == 0
-        result += start+accents
+        result << start << accents
         start = accent
         accents = ''
         last_class = -1
