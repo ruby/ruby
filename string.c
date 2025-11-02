@@ -7071,7 +7071,7 @@ rb_str_to_i(int argc, VALUE *argv, VALUE str)
  *    '3.14159'.to_f  # => 3.14159
  *    '1.234e-2'.to_f # => 0.01234
  *
- *  Characters past a leading valid number (in the given +base+) are ignored:
+ *  Characters past a leading valid number are ignored:
  *
  *    '3.14 (pi to two places)'.to_f # => 3.14
  *
@@ -7079,6 +7079,7 @@ rb_str_to_i(int argc, VALUE *argv, VALUE str)
  *
  *    'abcdef'.to_f # => 0.0
  *
+ * See {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
  */
 
 static VALUE
