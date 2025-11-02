@@ -2256,10 +2256,10 @@ string_to_c_strict(VALUE self, int raise)
  *   '2.5/1'.to_c.rect     # => [(5/2), 0]     # Rational.
  *
  *   # Some things are ignored.
-     'foo1'.to_c.rect      # => [0, 0]         # Unparsed entire substring.
+ *   'foo1'.to_c.rect      # => [0, 0]         # Unparsed entire substring.
  *   '1foo'.to_c.rect      # => [1, 0]         # Unparsed trailing substring.
-     ' 1 '.to_c.rect       # => [1, 0]         # Leading and trailing whitespace.
-     *
+ *   ' 1 '.to_c.rect       # => [1, 0]         # Leading and trailing whitespace.
+ *   *
  *   # Imaginary only: trailing 'i' required; real part is zero.
  *   '9i'.to_c.rect        # => [0, 9]
  *   '-9i'.to_c.rect       # => [0, -9]
@@ -2274,16 +2274,14 @@ string_to_c_strict(VALUE self, int raise)
  *   '2.5+3/2i'.to_c.rect  # => [2.5, (3/2)]
  *
  *   # Polar coordinates; '@' separator; magnitude required.
- *
- *   '1.0@0'.to_c.polar             # => [1.0, 0.0]
+s *   '1.0@0'.to_c.polar             # => [1.0, 0.0]
  *   '1.0@'.to_c.polar              # => [1.0, 0.0]
  *   "1.0@#{Math::PI}".to_c.polar   # => [1.0, 3.141592653589793]
  *   "1.0@#{Math::PI/2}".to_c.polar # => [1.0, 1.5707963267948966]
  *
  * <b>Parsed Values</b>
  *
- * The parsing may be thought of as searching
- * for {numeric literals}[rdoc-ref:syntax/literals.rdoc@Numeric+Literals]
+ * The parsing may be thought of as searching for numeric literals
  * embedded in the substring.
  *
  * This section shows how the method parses numeric values from leading substrings.
@@ -2295,7 +2293,7 @@ string_to_c_strict(VALUE self, int raise)
  *   'x1'.to_c   # => (0+0i)      # Finds no leading numeric.
  *
  *   # Integer literal embedded in the substring.
- *   '1'.to_c       # => (1+0i)            #
+ *   '1'.to_c       # => (1+0i)
  *   '-1'.to_c      # => (-1+0i)
  *   '1i'.to_c      # => (0+1i)
  *
@@ -2376,7 +2374,7 @@ string_to_c_strict(VALUE self, int raise)
  *
  *   '1.0@0'.to_c             # => (1+0.0i)
  *
- * Note that in all cases, the suffixed character <tt>'o'</tt>
+ * Note that in all cases, the suffixed character <tt>'i'</tt>
  * may instead be one of <tt>'I'</tt>, <tt>'j'</tt>, <tt>'J'</tt>,
  * with the same effect.
  *
