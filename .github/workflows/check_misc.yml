@@ -38,9 +38,18 @@ jobs:
         # Skip 'push' events because post_push.yml fixes them on push
         if: ${{ github.repository == 'ruby/ruby' && startsWith(github.event_name, 'pull') }}
 
-      # - name: Check if C-sources are UTF-8
-      #   run: |
-      #     grep -r -n --exclude-dir=vendor --include='*.[chyS]' --include='*.asm' $'[^\t-~]' -- . && exit 1 || :
+      - name: Check if C-sources are UTF-8
+        run: |
+          #!ruby
+          ok = true
+          Dir.glob("*.{[chyS],asm}") do |f|
+            unless File.binread(f).force_encoding(Encoding::UTF_8).valid_encoding?
+              ok = false
+              puts f
+            end
+          end
+          exit ok
+        shell: ruby {0}
 
       - name: Check for bash specific substitution in configure.ac
         run: |
