@@ -163,7 +163,7 @@ The following bundled gems are promoted from default gems.
 * logger 1.7.0
 * rdoc 6.15.1
 * win32ole 1.9.2
-* irb 1.15.2
+* irb 1.15.3
 * reline 0.6.2
 * readline 0.0.4
 * fiddle 1.1.8
@@ -228,7 +228,7 @@ The following bundled gems are updated.
 * drb 2.2.3
 * syslog 0.3.0
 * csv 3.3.5
-* repl_type_completor 0.1.11
+* repl_type_completor 0.1.12
 
 ## Supported platforms
 
