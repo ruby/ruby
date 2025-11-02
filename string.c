@@ -7019,12 +7019,13 @@ rb_str_include(VALUE str, VALUE arg)
  *    to_i(base = 10) -> integer
  *
  *  Returns the result of interpreting leading characters in +self+
- *  as an integer in the given +base+ (which must be in (0, 2..36)):
+ *  as an integer in the given +base+,
+ *  which must be either +0+ or in range <tt>(2..36)</tt>:
  *
  *    '123456'.to_i     # => 123456
  *    '123def'.to_i(16) # => 1195503
  *
- *  With +base+ zero, string +object+ may contain leading characters
+ *  With +base+ zero given, string +object+ may contain leading characters
  *  to specify the actual base:
  *
  *    '123def'.to_i(0)   # => 123
@@ -7044,6 +7045,7 @@ rb_str_include(VALUE str, VALUE arg)
  *    'abcdef'.to_i # => 0
  *    '2'.to_i(2)   # => 0
  *
+ *  Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
  */
 
 static VALUE
