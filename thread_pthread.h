@@ -17,6 +17,31 @@
 #define RB_NATIVETHREAD_LOCK_INIT PTHREAD_MUTEX_INITIALIZER
 #define RB_NATIVETHREAD_COND_INIT PTHREAD_COND_INITIALIZER
 
+// this data should be protected by timer_th.waiting_lock
+struct rb_thread_sched_waiting {
+    enum thread_sched_waiting_flag {
+        thread_sched_waiting_none     = 0x00,
+        thread_sched_waiting_timeout  = 0x01,
+        thread_sched_waiting_io_read  = 0x02,
+        thread_sched_waiting_io_write = 0x08,
+        thread_sched_waiting_io_force = 0x40, // ignore readable
+    } flags;
+
+    struct {
+        // should be compat with hrtime.h
+#ifdef MY_RUBY_BUILD_MAY_TIME_TRAVEL
+        int128_t timeout;
+#else
+        uint64_t timeout;
+#endif
+        int fd; // -1 for timeout only
+        int result;
+    } data;
+
+    // connected to timer_th.waiting
+    struct ccan_list_node node;
+};
+
 // per-Thead scheduler helper data
 struct rb_thread_sched_item {
     struct {
@@ -38,30 +63,7 @@ struct rb_thread_sched_item {
         struct ccan_list_node zombie_threads;
     } node;
 
-    // this data should be protected by timer_th.waiting_lock
-    struct {
-        enum thread_sched_waiting_flag {
-            thread_sched_waiting_none     = 0x00,
-            thread_sched_waiting_timeout  = 0x01,
-            thread_sched_waiting_io_read  = 0x02,
-            thread_sched_waiting_io_write = 0x08,
-            thread_sched_waiting_io_force = 0x40, // ignore readable
-        } flags;
-
-        struct {
-            // should be compat with hrtime.h
-#ifdef MY_RUBY_BUILD_MAY_TIME_TRAVEL
-            int128_t timeout;
-#else
-            uint64_t timeout;
-#endif
-            int fd; // -1 for timeout only
-            int result;
-        } data;
-
-        // connected to timer_th.waiting
-        struct ccan_list_node node;
-    } waiting_reason;
+    struct rb_thread_sched_waiting waiting_reason;
 
     bool finished;
     bool malloc_stack;
