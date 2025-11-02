@@ -2274,7 +2274,7 @@ string_to_c_strict(VALUE self, int raise)
  *   '2.5+3/2i'.to_c.rect  # => [2.5, (3/2)]
  *
  *   # Polar coordinates; '@' separator; magnitude required.
-s *   '1.0@0'.to_c.polar             # => [1.0, 0.0]
+ *   '1.0@0'.to_c.polar             # => [1.0, 0.0]
  *   '1.0@'.to_c.polar              # => [1.0, 0.0]
  *   "1.0@#{Math::PI}".to_c.polar   # => [1.0, 3.141592653589793]
  *   "1.0@#{Math::PI/2}".to_c.polar # => [1.0, 1.5707963267948966]
@@ -2369,8 +2369,8 @@ s *   '1.0@0'.to_c.polar             # => [1.0, 0.0]
  *   "1.0@#{Math::PI/2}".to_c # => (0.0+1i)
  *   "1.0@#{Math::PI}".to_c   # => (-1+0.0i)
  *   # Magnitude not given: defaults to zero.
- *   '@'.to_c.polar   # => [0, 0.0]    # Magnitude not given: defaults to zero.
- *   '@1'.to_c.polar  # => [0, 0.0]    # Magnitude not given: defaults to zero.
+ *   '@'.to_c.polar   # => [0, 0.0]
+ *   '@1'.to_c.polar  # => [0, 0.0]
  *
  *   '1.0@0'.to_c             # => (1+0.0i)
  *
