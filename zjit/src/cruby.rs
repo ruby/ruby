@@ -1376,6 +1376,7 @@ pub(crate) mod ids {
         name: freeze
         name: minusat            content: b"-@"
         name: aref               content: b"[]"
+        name: len
         name: _as_heap
     }
 

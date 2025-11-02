@@ -2550,6 +2550,16 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_string_bytesize_multibyte
+    assert_compiles '4', %q{
+      def test(s)
+        s.bytesize
+      end
+
+      test("💎")
+    }, call_threshold: 2
+  end
+
   def test_nil_value_nil_opt_with_guard
     assert_compiles 'true', %q{
       def test(val) = val.nil?
