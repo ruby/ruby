@@ -213,6 +213,7 @@ The following bundled gems are added.
 The following bundled gems are updated.
 
 * minitest 5.26.0
+* power_assert 3.0.0
 * rake 13.3.1
 * test-unit 3.7.0
 * rexml 3.4.4
