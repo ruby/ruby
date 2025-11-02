@@ -467,7 +467,7 @@ require 'erb/util'
 # ```
 #
 # You can give `trim_mode: '>'` to suppress the trailing newline
-# for each line that ends with `'%<'` (regardless of its beginning):
+# for each line that ends with `'%>'` (regardless of its beginning):
 #
 # ```
 # ERB.new(template, trim_mode: '>').result.lines.each {|line| puts line.inspect }
