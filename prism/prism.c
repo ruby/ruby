@@ -8606,6 +8606,7 @@ static const uint32_t context_terminators[] = {
     [PM_CONTEXT_BLOCK_KEYWORDS] = (1U << PM_TOKEN_KEYWORD_END) | (1U << PM_TOKEN_KEYWORD_RESCUE) | (1U << PM_TOKEN_KEYWORD_ENSURE),
     [PM_CONTEXT_BLOCK_ENSURE] = (1U << PM_TOKEN_KEYWORD_END),
     [PM_CONTEXT_BLOCK_ELSE] = (1U << PM_TOKEN_KEYWORD_ENSURE) | (1U << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_BLOCK_PARAMETERS] = (1U << PM_TOKEN_PIPE),
     [PM_CONTEXT_BLOCK_RESCUE] = (1U << PM_TOKEN_KEYWORD_ENSURE) | (1U << PM_TOKEN_KEYWORD_RESCUE) | (1U << PM_TOKEN_KEYWORD_ELSE) | (1U << PM_TOKEN_KEYWORD_END),
     [PM_CONTEXT_CASE_WHEN] = (1U << PM_TOKEN_KEYWORD_WHEN) | (1U << PM_TOKEN_KEYWORD_END) | (1U << PM_TOKEN_KEYWORD_ELSE),
     [PM_CONTEXT_CASE_IN] = (1U << PM_TOKEN_KEYWORD_IN) | (1U << PM_TOKEN_KEYWORD_END) | (1U << PM_TOKEN_KEYWORD_ELSE),
@@ -8756,6 +8757,7 @@ context_human(pm_context_t context) {
         case PM_CONTEXT_BEGIN: return "begin statement";
         case PM_CONTEXT_BLOCK_BRACES: return "'{'..'}' block";
         case PM_CONTEXT_BLOCK_KEYWORDS: return "'do'..'end' block";
+        case PM_CONTEXT_BLOCK_PARAMETERS: return "'|'..'|' block parameter";
         case PM_CONTEXT_CASE_WHEN: return "'when' clause";
         case PM_CONTEXT_CASE_IN: return "'in' clause";
         case PM_CONTEXT_CLASS: return "class definition";
@@ -15357,6 +15359,9 @@ parse_block_parameters(
 ) {
     pm_parameters_node_t *parameters = NULL;
     if (!match1(parser, PM_TOKEN_SEMICOLON)) {
+        if (!is_lambda_literal) {
+            context_push(parser, PM_CONTEXT_BLOCK_PARAMETERS);
+        }
         parameters = parse_parameters(
             parser,
             is_lambda_literal ? PM_BINDING_POWER_DEFINED : PM_BINDING_POWER_INDEX,
@@ -15367,6 +15372,9 @@ parse_block_parameters(
             true,
             (uint16_t) (depth + 1)
         );
+        if (!is_lambda_literal) {
+            context_pop(parser);
+        }
     }
 
     pm_block_parameters_node_t *block_parameters = pm_block_parameters_node_create(parser, parameters, opening);
@@ -15722,6 +15730,7 @@ parse_return(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_BLOCK_ENSURE:
             case PM_CONTEXT_BLOCK_KEYWORDS:
             case PM_CONTEXT_BLOCK_RESCUE:
+            case PM_CONTEXT_BLOCK_PARAMETERS:
             case PM_CONTEXT_DEF_ELSE:
             case PM_CONTEXT_DEF_ENSURE:
             case PM_CONTEXT_DEF_PARAMS:
@@ -15758,6 +15767,7 @@ parse_block_exit(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_BLOCK_KEYWORDS:
             case PM_CONTEXT_BLOCK_ELSE:
             case PM_CONTEXT_BLOCK_ENSURE:
+            case PM_CONTEXT_BLOCK_PARAMETERS:
             case PM_CONTEXT_BLOCK_RESCUE:
             case PM_CONTEXT_DEFINED:
             case PM_CONTEXT_FOR:
@@ -17992,6 +18002,7 @@ parse_retry(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_BEGIN:
             case PM_CONTEXT_BLOCK_BRACES:
             case PM_CONTEXT_BLOCK_KEYWORDS:
+            case PM_CONTEXT_BLOCK_PARAMETERS:
             case PM_CONTEXT_CASE_IN:
             case PM_CONTEXT_CASE_WHEN:
             case PM_CONTEXT_DEFAULT_PARAMS:
@@ -18072,6 +18083,7 @@ parse_yield(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_BLOCK_KEYWORDS:
             case PM_CONTEXT_BLOCK_ELSE:
             case PM_CONTEXT_BLOCK_ENSURE:
+            case PM_CONTEXT_BLOCK_PARAMETERS:
             case PM_CONTEXT_BLOCK_RESCUE:
             case PM_CONTEXT_CASE_IN:
             case PM_CONTEXT_CASE_WHEN:
@@ -19634,6 +19646,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 }
                 if (!accept_endless_def) {
                     pm_parser_err_previous(parser, PM_ERR_DEF_ENDLESS_PARAMETERS);
+                }
+                if (
+                    parser->current_context->context == PM_CONTEXT_DEFAULT_PARAMS &&
+                    parser->current_context->prev->context == PM_CONTEXT_BLOCK_PARAMETERS
+                ) {
+                    PM_PARSER_ERR_FORMAT(parser, def_keyword.start, parser->previous.end, PM_ERR_UNEXPECTED_PARAMETER_DEFAULT_VALUE, "endless method definition");
                 }
                 equal = parser->previous;
 
