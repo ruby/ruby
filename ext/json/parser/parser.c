@@ -105,17 +105,15 @@ static VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const lon
 
     int low = 0;
     int high = cache->length - 1;
-    int mid = 0;
-    int last_cmp = 0;
 
     while (low <= high) {
-        mid = (high + low) >> 1;
+        int mid = (high + low) >> 1;
         VALUE entry = cache->entries[mid];
-        last_cmp = rstring_cache_cmp(str, length, entry);
+        int cmp = rstring_cache_cmp(str, length, entry);
 
-        if (last_cmp == 0) {
+        if (cmp == 0) {
             return entry;
-        } else if (last_cmp > 0) {
+        } else if (cmp > 0) {
             low = mid + 1;
         } else {
             high = mid - 1;
@@ -125,11 +123,7 @@ static VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const lon
     VALUE rstring = build_interned_string(str, length);
 
     if (cache->length < JSON_RVALUE_CACHE_CAPA) {
-        if (last_cmp > 0) {
-            mid += 1;
-        }
-
-        rvalue_cache_insert_at(cache, mid, rstring);
+        rvalue_cache_insert_at(cache, low, rstring);
     }
     return rstring;
 }
@@ -151,17 +145,15 @@ static VALUE rsymbol_cache_fetch(rvalue_cache *cache, const char *str, const lon
 
     int low = 0;
     int high = cache->length - 1;
-    int mid = 0;
-    int last_cmp = 0;
 
     while (low <= high) {
-        mid = (high + low) >> 1;
+        int mid = (high + low) >> 1;
         VALUE entry = cache->entries[mid];
-        last_cmp = rstring_cache_cmp(str, length, rb_sym2str(entry));
+        int cmp = rstring_cache_cmp(str, length, rb_sym2str(entry));
 
-        if (last_cmp == 0) {
+        if (cmp == 0) {
             return entry;
-        } else if (last_cmp > 0) {
+        } else if (cmp > 0) {
             low = mid + 1;
         } else {
             high = mid - 1;
@@ -171,11 +163,7 @@ static VALUE rsymbol_cache_fetch(rvalue_cache *cache, const char *str, const lon
     VALUE rsymbol = build_symbol(str, length);
 
     if (cache->length < JSON_RVALUE_CACHE_CAPA) {
-        if (last_cmp > 0) {
-            mid += 1;
-        }
-
-        rvalue_cache_insert_at(cache, mid, rsymbol);
+        rvalue_cache_insert_at(cache, low, rsymbol);
     }
     return rsymbol;
 }
