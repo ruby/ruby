@@ -513,7 +513,7 @@ json_eat_comments(JSON_ParserState *state)
     }
 }
 
-static inline void
+static ALWAYS_INLINE() void
 json_eat_whitespace(JSON_ParserState *state)
 {
     while (true) {
