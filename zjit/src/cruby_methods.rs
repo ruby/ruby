@@ -195,7 +195,7 @@ pub fn init() -> Annotations {
     annotate!(rb_mKernel, "itself", inline_kernel_itself);
     annotate!(rb_mKernel, "block_given?", inline_kernel_block_given_p);
     annotate!(rb_mKernel, "===", inline_eqq);
-    annotate!(rb_cString, "bytesize", types::Fixnum, no_gc, leaf, elidable);
+    annotate!(rb_cString, "bytesize", inline_string_bytesize);
     annotate!(rb_cString, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cString, "length", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cString, "getbyte", inline_string_getbyte);
@@ -300,6 +300,27 @@ fn inline_array_pop(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
 fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if let &[key] = args  {
         let result = fun.push_insn(block, hir::Insn::HashAref { hash: recv, key, state });
+        return Some(result);
+    }
+    None
+}
+
+
+fn inline_string_bytesize(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    if args.is_empty() && fun.likely_a(recv, types::String, state) {
+        let recv = fun.coerce_to(block, recv, types::String, state);
+        let len = fun.push_insn(block, hir::Insn::LoadField {
+            recv,
+            id: ID!(len),
+            offset: RUBY_OFFSET_RSTRING_LEN as i32,
+            return_type: types::CInt64,
+        });
+
+        let result = fun.push_insn(block, hir::Insn::BoxFixnum {
+            val: len,
+            state,
+        });
+
         return Some(result);
     }
     None

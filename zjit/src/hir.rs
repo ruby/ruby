@@ -478,6 +478,7 @@ pub enum SideExitReason {
     BlockParamProxyNotIseqOrIfunc,
     StackOverflow,
     FixnumModByZero,
+    BoxFixnumOverflow,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -655,6 +656,8 @@ pub enum Insn {
     IsBitNotEqual { left: InsnId, right: InsnId },
     /// Convert a C `bool` to a Ruby `Qtrue`/`Qfalse`. Same as `RBOOL` macro.
     BoxBool { val: InsnId },
+    /// Convert a C `long` to a Ruby `Fixnum`. Side exit on overflow.
+    BoxFixnum { val: InsnId, state: InsnId },
     // TODO(max): In iseq body types that are not ISEQ_TYPE_METHOD, rewrite to Constant false.
     Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId, state: InsnId },
     GetConstantPath { ic: *const iseq_inline_constant_cache, state: InsnId },
@@ -924,6 +927,7 @@ impl Insn {
             Insn::NewRangeFixnum { .. } => false,
             Insn::StringGetbyteFixnum { .. } => false,
             Insn::IsBlockGiven => false,
+            Insn::BoxFixnum { .. } => false,
             _ => true,
         }
     }
@@ -1057,6 +1061,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::IsBitEqual { left, right } => write!(f, "IsBitEqual {left}, {right}"),
             Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
             Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
+            Insn::BoxFixnum { val, .. } => write!(f, "BoxFixnum {val}"),
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
             Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}") }
@@ -1696,6 +1701,7 @@ impl Function {
             &IsBitEqual { left, right } => IsBitEqual { left: find!(left), right: find!(right) },
             &IsBitNotEqual { left, right } => IsBitNotEqual { left: find!(left), right: find!(right) },
             &BoxBool { val } => BoxBool { val: find!(val) },
+            &BoxFixnum { val, state } => BoxFixnum { val: find!(val), state: find!(state) },
             Jump(target) => Jump(find_branch_edge!(target)),
             &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
             &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
@@ -1888,6 +1894,7 @@ impl Function {
             Insn::IsBitEqual { .. } => types::CBool,
             Insn::IsBitNotEqual { .. } => types::CBool,
             Insn::BoxBool { .. } => types::BoolExact,
+            Insn::BoxFixnum { .. } => types::Fixnum,
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
@@ -3281,7 +3288,8 @@ impl Function {
             | &Insn::GuardNotFrozen { val, state }
             | &Insn::ToArray { val, state }
             | &Insn::IsMethodCfunc { val, state, .. }
-            | &Insn::ToNewArray { val, state } => {
+            | &Insn::ToNewArray { val, state }
+            | &Insn::BoxFixnum { val, state } => {
                 worklist.push_back(val);
                 worklist.push_back(state);
             }
@@ -3759,6 +3767,7 @@ impl Function {
                 }
             }
             Insn::BoxBool { val } => self.assert_subtype(insn_id, val, types::CBool),
+            Insn::BoxFixnum { val, .. } => self.assert_subtype(insn_id, val, types::CInt64),
             Insn::SetGlobal { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::GetIvar { self_val, .. } => self.assert_subtype(insn_id, self_val, types::BasicObject),
             Insn::SetIvar { self_val, val, .. } => {

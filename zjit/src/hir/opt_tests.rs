@@ -2687,34 +2687,6 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn string_bytesize_simple() {
-        eval("
-            def test = 'abc'.bytesize
-            test
-            test
-        ");
-        assert_snapshot!(hir_string("test"), @r"
-        fn test@<compiled>:2:
-        bb0():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          Jump bb2(v1)
-        bb1(v4:BasicObject):
-          EntryPoint JIT(0)
-          Jump bb2(v4)
-        bb2(v6:BasicObject):
-          v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v12:StringExact = StringCopy v10
-          PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010, cme:0x1018)
-          PatchPoint NoSingletonClass(String@0x1008)
-          IncrCounter inline_cfunc_optimized_send_count
-          v24:Fixnum = CCall bytesize@0x1040, v12
-          CheckInterrupts
-          Return v24
-        ");
-    }
-
-    #[test]
     fn dont_replace_get_constant_path_with_empty_ic() {
         eval("
             def test = Kernel
@@ -7161,7 +7133,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_specialize_string_bytesize() {
+    fn test_inline_string_bytesize() {
         eval(r#"
             def test(s)
               s.bytesize
@@ -7182,8 +7154,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1000, bytesize@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(String@0x1000)
           v23:StringExact = GuardType v9, StringExact
+          v24:CInt64 = LoadField v23, :len@0x1038
+          v25:Fixnum = BoxFixnum v24
           IncrCounter inline_cfunc_optimized_send_count
-          v25:Fixnum = CCall bytesize@0x1038, v23
           CheckInterrupts
           Return v25
         ");
