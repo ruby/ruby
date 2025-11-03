@@ -4659,7 +4659,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_checkkeyword => {
                     // When a keyword is unspecified past index 32, a hash will be used instead.
                     // This can only happen in iseqs taking more than 32 keywords.
-                    // This seems unlikely so we side exit to the interpreter.
+                    // In this case, we side exit to the interpreter.
                     if unsafe {(*rb_get_iseq_body_param_keyword(iseq)).num >= 32} {
                         let exit_id = fun.push_insn(block, Insn::Snapshot {state: exit_state});
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::TooManyKeywordParameters });
