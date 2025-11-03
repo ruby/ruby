@@ -418,7 +418,7 @@ static ALWAYS_INLINE() unsigned char sse2_next_match(search_state *search)
 #define TARGET_SSE2
 #endif
 
-static inline TARGET_SSE2 ALWAYS_INLINE() unsigned char search_escape_basic_sse2(search_state *search)
+static TARGET_SSE2 ALWAYS_INLINE() unsigned char search_escape_basic_sse2(search_state *search)
 {
     if (RB_UNLIKELY(search->has_matches)) {
         // There are more matches if search->matches_mask > 0.

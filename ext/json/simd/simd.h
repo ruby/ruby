@@ -136,7 +136,7 @@ static inline uint8x16x4_t load_uint8x16_4(const unsigned char *table)
 #define _mm_cmpgt_epu8(a, b) _mm_xor_si128(_mm_cmple_epu8(a, b), _mm_set1_epi8(-1))
 #define _mm_cmplt_epu8(a, b) _mm_cmpgt_epu8(b, a)
 
-static inline TARGET_SSE2 ALWAYS_INLINE() int compute_chunk_mask_sse2(const char *ptr)
+static TARGET_SSE2 ALWAYS_INLINE() int compute_chunk_mask_sse2(const char *ptr)
 {
     __m128i chunk         = _mm_loadu_si128((__m128i const*)ptr);
     // Trick: c < 32 || c == 34 can be factored as c ^ 2 < 33
@@ -147,7 +147,7 @@ static inline TARGET_SSE2 ALWAYS_INLINE() int compute_chunk_mask_sse2(const char
     return _mm_movemask_epi8(needs_escape);
 }
 
-static inline TARGET_SSE2 ALWAYS_INLINE() int string_scan_simd_sse2(const char **ptr, const char *end, int *mask)
+static TARGET_SSE2 ALWAYS_INLINE() int string_scan_simd_sse2(const char **ptr, const char *end, int *mask)
 {
     while (*ptr + sizeof(__m128i) <= end) {
         int chunk_mask = compute_chunk_mask_sse2(*ptr);
