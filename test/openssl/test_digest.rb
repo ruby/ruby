@@ -10,6 +10,12 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
     @d2 = OpenSSL::Digest::MD5.new
   end
 
+  def test_initialize
+    assert_raise(OpenSSL::Digest::DigestError) {
+      OpenSSL::Digest.new("no such algorithm")
+    }
+  end
+
   def test_digest
     null_hex = "d41d8cd98f00b204e9800998ecf8427e"
     null_bin = [null_hex].pack("H*")
