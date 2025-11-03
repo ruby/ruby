@@ -128,6 +128,7 @@ make_counters! {
         // exit_: Side exits reasons
         exit_compile_error,
         exit_unknown_newarray_send,
+        exit_unknown_duparray_send,
         exit_unhandled_tailcall,
         exit_unhandled_splat,
         exit_unhandled_kwarg,
@@ -366,6 +367,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
     use crate::stats::Counter::*;
     match reason {
         UnknownNewarraySend(_)        => exit_unknown_newarray_send,
+        UnknownDuparraySend(_)        => exit_unknown_duparray_send,
         UnhandledCallType(Tailcall)   => exit_unhandled_tailcall,
         UnhandledCallType(Splat)      => exit_unhandled_splat,
         UnhandledCallType(Kwarg)      => exit_unhandled_kwarg,

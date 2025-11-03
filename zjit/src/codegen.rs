@@ -450,6 +450,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::LoadSelf => gen_load_self(),
         &Insn::LoadField { recv, id, offset, return_type: _ } => gen_load_field(asm, opnd!(recv), id, offset),
         &Insn::IsBlockGiven => gen_is_block_given(jit, asm),
+        Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, opnds!(elements), opnd!(target), &function.frame_state(*state)),
+        &Insn::DupArrayInclude { ary, target, state } => gen_dup_array_include(jit, asm, ary, opnd!(target), &function.frame_state(state)),
         &Insn::ArrayMax { state, .. }
         | &Insn::FixnumDiv { state, .. }
         | &Insn::Throw { state, .. }
@@ -1326,6 +1328,50 @@ fn gen_array_pop(asm: &mut Assembler, array: Opnd, state: &FrameState) -> lir::O
 
 fn gen_array_length(asm: &mut Assembler, array: Opnd) -> lir::Opnd {
     asm_ccall!(asm, rb_jit_array_len, array)
+}
+
+fn gen_array_include(
+    jit: &JITState,
+    asm: &mut Assembler,
+    elements: Vec<Opnd>,
+    target: Opnd,
+    state: &FrameState,
+) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    let num: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+
+    // After gen_prepare_non_leaf_call, the elements are spilled to the Ruby stack.
+    // The elements are at the bottom of the virtual stack, followed by the target.
+    // Get a pointer to the first element on the Ruby stack.
+    let stack_bottom = state.stack().len() - elements.len() - 1;
+    let elements_ptr = asm.lea(Opnd::mem(64, SP, stack_bottom as i32 * SIZEOF_VALUE_I32));
+
+    unsafe extern "C" {
+        fn rb_vm_opt_newarray_include_p(ec: EcPtr, num: c_long, elts: *const VALUE, target: VALUE) -> VALUE;
+    }
+    asm.ccall(
+        rb_vm_opt_newarray_include_p as *const u8,
+        vec![EC, num.into(), elements_ptr, target],
+    )
+}
+
+fn gen_dup_array_include(
+    jit: &JITState,
+    asm: &mut Assembler,
+    ary: VALUE,
+    target: Opnd,
+    state: &FrameState,
+) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    unsafe extern "C" {
+        fn rb_vm_opt_duparray_include_p(ec: EcPtr, ary: VALUE, target: VALUE) -> VALUE;
+    }
+    asm.ccall(
+        rb_vm_opt_duparray_include_p as *const u8,
+        vec![EC, ary.into(), target],
+    )
 }
 
 /// Compile a new hash instruction
