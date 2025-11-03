@@ -98,7 +98,7 @@ class PP < PrettyPrint
     q.guard_inspect_key {q.pp obj}
     q.flush
     #$pp = q
-    out << "\n"
+    q.output << "\n"
   end
 
   # Outputs +obj+ to +out+ like PP.pp but with no indent and
