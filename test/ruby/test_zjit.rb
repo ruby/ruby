@@ -3154,6 +3154,37 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_regression_cfp_sp_set_correctly_before_leaf_gc_call
+    omit 'reproduction for known, unresolved ZJIT bug'
+
+    assert_compiles ':ok', %q{
+      def check(l, r)
+        return 1 unless l
+        1 + check(*l) + check(*r)
+      end
+
+      def tree(depth)
+        # This duparray is our leaf-gc target.
+        return [nil, nil] unless depth > 0
+
+        # Modify the local and pass it to the following calls.
+        depth -= 1
+        [tree(depth), tree(depth)]
+      end
+
+      def test
+        GC.stress = true
+        2.times do
+          t = tree(11)
+          check(*t)
+        end
+        :ok
+      end
+
+      test
+    }, call_threshold: 14, num_profiles: 5
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
