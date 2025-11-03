@@ -16,7 +16,7 @@ static int utf8_encindex;
 
 #ifndef HAVE_RB_HASH_BULK_INSERT
 // For TruffleRuby
-void
+static void
 rb_hash_bulk_insert(long count, const VALUE *pairs, VALUE hash)
 {
     long index = 0;
@@ -33,6 +33,12 @@ rb_hash_bulk_insert(long count, const VALUE *pairs, VALUE hash)
 #define rb_hash_new_capa(n) rb_hash_new()
 #endif
 
+#ifndef HAVE_RB_STR_TO_INTERNED_STR
+static VALUE rb_str_to_interned_str(VALUE str)
+{
+    return rb_funcall(rb_str_freeze(str), i_uminus, 0);
+}
+#endif
 
 /* name cache */
 
@@ -703,7 +709,7 @@ static VALUE json_string_unescape(JSON_ParserState *state, const char *string, c
     if (symbolize) {
         result = rb_str_intern(result);
     } else if (intern) {
-        result = rb_funcall(rb_str_freeze(result), i_uminus, 0);
+        result = rb_str_to_interned_str(result);
     }
 
     return result;
@@ -1310,6 +1316,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
     }
 
     raise_parse_error("unreachable: %s", state);
+    return Qundef;
 }
 
 static void json_ensure_eof(JSON_ParserState *state)
