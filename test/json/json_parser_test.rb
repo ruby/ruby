@@ -344,6 +344,18 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal orig, parse(json5)
   end
 
+  def test_parse_escaped_key
+    doc = {
+      "test\r1" => 1,
+      "entries" => [
+        "test\t2" => 2,
+        "test\n3" => 3,
+      ]
+    }
+
+    assert_equal doc, parse(JSON.generate(doc))
+  end
+
   def test_parse_duplicate_key
     expected = {"a" => 2}
     expected_sym = {a: 2}

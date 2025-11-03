@@ -122,12 +122,6 @@ static VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const lon
         }
     }
 
-    if (RB_UNLIKELY(memchr(str, '\\', length))) {
-        // We assume the overwhelming majority of names don't need to be escaped.
-        // But if they do, we have to fallback to the slow path.
-        return Qfalse;
-    }
-
     VALUE rstring = build_interned_string(str, length);
 
     if (cache->length < JSON_RVALUE_CACHE_CAPA) {
@@ -172,12 +166,6 @@ static VALUE rsymbol_cache_fetch(rvalue_cache *cache, const char *str, const lon
         } else {
             high = mid - 1;
         }
-    }
-
-    if (RB_UNLIKELY(memchr(str, '\\', length))) {
-        // We assume the overwhelming majority of names don't need to be escaped.
-        // But if they do, we have to fallback to the slow path.
-        return Qfalse;
     }
 
     VALUE rsymbol = build_symbol(str, length);
@@ -651,19 +639,6 @@ static VALUE json_string_unescape(JSON_ParserState *state, const char *string, c
     char *buffer;
     int unescape_len;
     char buf[4];
-
-    if (is_name && state->in_array) {
-        VALUE cached_key;
-        if (RB_UNLIKELY(symbolize)) {
-            cached_key = rsymbol_cache_fetch(&state->name_cache, string, bufferSize);
-        } else {
-            cached_key = rstring_cache_fetch(&state->name_cache, string, bufferSize);
-        }
-
-        if (RB_LIKELY(cached_key)) {
-            return cached_key;
-        }
-    }
 
     VALUE result = rb_str_buf_new(bufferSize);
     rb_enc_associate_index(result, utf8_encindex);
