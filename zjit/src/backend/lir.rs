@@ -28,7 +28,7 @@ pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum MemBase
 {
-    /// Register: Every Opnd::Mem should have this MemBase as of emit.
+    /// Register: Every Opnd::Mem should have MemBase::Reg as of emit.
     Reg(u8),
     /// Virtual register: Lowered to MemBase::Reg or MemBase::Stack in alloc_regs.
     VReg(usize),
