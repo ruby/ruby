@@ -1,0 +1,93 @@
+# Run ruby-bench as a test suite for ZJIT.
+# This is separated from other zjit-*.yml workflows to
+#   1) avoid making it a required status check for now, and
+#   2) share the ruby-bench logic among Ubuntu and macOS
+name: ZJIT ruby-bench
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ startsWith(matrix.os, 'ubuntu') && 'Ubuntu' || 'macOS' }}
+
+    strategy:
+      matrix:
+        os:
+          - ubuntu-24.04
+          - macos-14
+        # Test --call-threshold=2 with 2 iterations in total.
+        ruby_opts: ['--zjit-call-threshold=2']
+        bench_opts: ['--warmup=1 --bench=1']
+        configure: ['--enable-zjit=dev_nodebug'] # --enable-zjit=dev is too slow
+
+    runs-on: ${{ matrix.os }}
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - uses: ./.github/actions/setup/ubuntu
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+
+      - uses: ./.github/actions/setup/macos
+        if: ${{ startsWith(matrix.os, 'macos') }}
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+
+      - name: Run configure
+        run: ../src/configure -C --disable-install-doc --prefix="$(pwd)/install" ${{ matrix.configure }}
+
+      - run: make install
+
+      - name: Checkout ruby-bench
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          repository: ruby/ruby-bench
+          path: ruby-bench
+
+      - name: Run ruby-bench
+        run: ruby run_benchmarks.rb -e "zjit::../build/install/bin/ruby ${{ matrix.ruby_opts }}" ${{ matrix.bench_opts }}
+        working-directory: ruby-bench
+
+      - uses: ./.github/actions/slack
+        with:
+          label: ${{ startsWith(matrix.os, 'ubuntu') && 'Ubuntu' || 'macOS' }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}
+
+defaults:
+  run:
+    working-directory: build
