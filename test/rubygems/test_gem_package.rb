@@ -1247,71 +1247,25 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   # end #verify tests
 
-  def test_verify_entry
-    entry = Object.new
-    def entry.full_name
-      raise ArgumentError, "whatever"
-    end
+  def test_missing_metadata
+    invalid_metadata = ["metadataxgz", "foobar\nmetadata", "metadata\nfoobar"]
+    invalid_metadata.each do |fname|
+      tar = StringIO.new
 
-    package = Gem::Package.new @gem
-
-    _, err = use_ui @ui do
-      e = nil
-
-      out_err = capture_output do
-        e = assert_raise ArgumentError do
-          package.verify_entry entry
+      Gem::Package::TarWriter.new(tar) do |gem_tar|
+        gem_tar.add_file fname, 0o444 do |io|
+          gz_io = Zlib::GzipWriter.new io, Zlib::BEST_COMPRESSION
+          gz_io.write "bad metadata"
+          gz_io.close
         end
       end
 
-      assert_equal "whatever", e.message
-      assert_equal "full_name", e.backtrace_locations.first.label
+      tar.rewind
 
-      out_err
-    end
-
-    assert_equal "Exception while verifying #{@gem}\n", err
-
-    valid_metadata = ["metadata", "metadata.gz"]
-    valid_metadata.each do |vm|
-      $spec_loaded = false
-      $good_name = vm
-
-      entry = Object.new
-      def entry.full_name
-        $good_name
+      package = Gem::Package.new(Gem::Package::IOSource.new(tar))
+      assert_raise Gem::Package::FormatError do
+        package.verify
       end
-
-      package = Gem::Package.new(@gem)
-      package.instance_variable_set(:@files, [])
-      def package.load_spec(entry)
-        $spec_loaded = true
-      end
-
-      package.verify_entry(entry)
-
-      assert $spec_loaded
-    end
-
-    invalid_metadata = ["metadataxgz", "foobar\nmetadata", "metadata\nfoobar"]
-    invalid_metadata.each do |vm|
-      $spec_loaded = false
-      $bad_name = vm
-
-      entry = Object.new
-      def entry.full_name
-        $bad_name
-      end
-
-      package = Gem::Package.new(@gem)
-      package.instance_variable_set(:@files, [])
-      def package.load_spec(entry)
-        $spec_loaded = true
-      end
-
-      package.verify_entry(entry)
-
-      refute $spec_loaded
     end
   end
 
