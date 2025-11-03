@@ -90,19 +90,6 @@ static inline int rstring_cache_cmp(const char *str, const long length, VALUE rs
 
 static VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const long length)
 {
-    if (RB_UNLIKELY(length > JSON_RVALUE_CACHE_MAX_ENTRY_LENGTH)) {
-        // Common names aren't likely to be very long. So we just don't
-        // cache names above an arbitrary threshold.
-        return Qfalse;
-    }
-
-    if (RB_UNLIKELY(!rb_isalpha((unsigned char)str[0]))) {
-        // Simple heuristic, if the first character isn't a letter,
-        // we're much less likely to see this string again.
-        // We mostly want to cache strings that are likely to be repeated.
-        return Qfalse;
-    }
-
     int low = 0;
     int high = cache->length - 1;
 
@@ -130,19 +117,6 @@ static VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const lon
 
 static VALUE rsymbol_cache_fetch(rvalue_cache *cache, const char *str, const long length)
 {
-    if (RB_UNLIKELY(length > JSON_RVALUE_CACHE_MAX_ENTRY_LENGTH)) {
-        // Common names aren't likely to be very long. So we just don't
-        // cache names above an arbitrary threshold.
-        return Qfalse;
-    }
-
-    if (RB_UNLIKELY(!rb_isalpha((unsigned char)str[0]))) {
-        // Simple heuristic, if the first character isn't a letter,
-        // we're much less likely to see this string again.
-        // We mostly want to cache strings that are likely to be repeated.
-        return Qfalse;
-    }
-
     int low = 0;
     int high = cache->length - 1;
 
@@ -600,11 +574,20 @@ static inline VALUE build_string(const char *start, const char *end, bool intern
     return result;
 }
 
+static inline bool json_string_cacheable_p(const char *string, size_t length)
+{
+    //  We mostly want to cache strings that are likely to be repeated.
+    // Simple heuristics:
+    //  - Common names aren't likely to be very long. So we just don't cache names above an arbitrary threshold.
+    //  - If the first character isn't a letter, we're much less likely to see this string again.
+    return length <= JSON_RVALUE_CACHE_MAX_ENTRY_LENGTH && rb_isalpha(string[0]);
+}
+
 static inline VALUE json_string_fastpath(JSON_ParserState *state, const char *string, const char *stringEnd, bool is_name, bool intern, bool symbolize)
 {
     size_t bufferSize = stringEnd - string;
 
-    if (is_name && state->in_array) {
+    if (is_name && state->in_array && RB_LIKELY(json_string_cacheable_p(string, bufferSize))) {
         VALUE cached_key;
         if (RB_UNLIKELY(symbolize)) {
             cached_key = rsymbol_cache_fetch(&state->name_cache, string, bufferSize);
