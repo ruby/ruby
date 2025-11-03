@@ -2467,31 +2467,26 @@ string_to_r_strict(VALUE self, int raise)
 
 /*
  * call-seq:
- *    str.to_r  ->  rational
+ *    str.to_r -> rational
  *
- * Returns the result of interpreting leading characters in +str+
- * as a rational.  Leading whitespace and extraneous characters
- * past the end of a valid number are ignored.
- * Digit sequences can be separated by an underscore.
- * If there is not a valid number at the start of +str+,
- * zero is returned.  This method never raises an exception.
+ * Returns the result of interpreting leading characters in +self+ as a numeric literal:
  *
- *    '  2  '.to_r       #=> (2/1)
- *    '300/2'.to_r       #=> (150/1)
- *    '-9.2'.to_r        #=> (-46/5)
- *    '-9.2e2'.to_r      #=> (-920/1)
- *    '1_234_567'.to_r   #=> (1234567/1)
- *    '21 June 09'.to_r  #=> (21/1)
- *    '21/06/09'.to_r    #=> (7/2)
- *    'BWV 1079'.to_r    #=> (0/1)
+ *   '123'.to_r       # => (123/1)   # Integer literal.
+ *   '300/2'.to_r     # => (150/1)   # Rational literal.
+ *   '-9.2'.to_r      # => (-46/5)   # Float literal.
+ *   '-9.2e2'.to_r    # => (-920/1)  # Float literal.
+ *   ' 2 '.to_r       # => (2/1)     # Ignores leading and trailing whitespace.
+ *   '21-Jun-09'.to_r # => (21/1)    # Ignores non-numeric characters ('-' and following).
+ *   'BWV 1079'.to_r  # => (0/1)     # Returns zero if no leading numeric characters.
  *
- * NOTE: "0.3".to_r isn't the same as 0.3.to_r.  The former is
- * equivalent to "3/10".to_r, but the latter isn't so.
+ * NOTE: <tt>'0.3'.to_r</tt> is equivalent to <tt>3/10r</tt>,
+ * but is different from <tt>0.3.to_r</tt>:
  *
- *    "0.3".to_r == 3/10r  #=> true
- *    0.3.to_r   == 3/10r  #=> false
+ *   '0.3'.to_r # => (3/10)
+ *   3/10r      # => (3/10)
+ *   0.3.to_r   # => (5404319552844595/18014398509481984)
  *
- * See also Kernel#Rational.
+ * Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
  */
 static VALUE
 string_to_r(VALUE self)
