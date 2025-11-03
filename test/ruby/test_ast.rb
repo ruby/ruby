@@ -116,49 +116,53 @@ class TestAst < Test::Unit::TestCase
   SRCDIR = File.expand_path("../../..", __FILE__)
 
   Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
-    define_method("test_ranges:#{path}") do
-      helper = Helper.new("#{SRCDIR}/#{path}")
-      helper.validate_range
-
-      assert_equal([], helper.errors)
-    end
+    class_eval <<-RUBY
+    def #{"test_ranges_#{path}".gsub(/[^\w]/, '_')}
+        helper = Helper.new("#{SRCDIR}/#{path}")
+        helper.validate_range
+        assert_equal([], helper.errors)
+      end
+    RUBY
   end
 
   Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
-    define_method("test_not_cared:#{path}") do
-      helper = Helper.new("#{SRCDIR}/#{path}")
-      helper.validate_not_cared
-
-      assert_equal([], helper.errors)
-    end
+    class_eval <<-RUBY
+    def #{"test_not_cared:#{path}".gsub(/[^\w]/, '_')}
+        helper = Helper.new("#{SRCDIR}/#{path}")
+        helper.validate_not_cared
+        assert_equal([], helper.errors)
+      end
+    RUBY
   end
 
   Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
-    define_method("test_all_tokens:#{path}") do
-      node = EnvUtil.suppress_warning { RubyVM::AbstractSyntaxTree.parse_file("#{SRCDIR}/#{path}", keep_tokens: true) }
-      tokens = node.all_tokens.sort_by { [_1.last[0], _1.last[1]] }
-      tokens_bytes = tokens.map { _1[2]}.join.bytes
-      source_bytes = File.read("#{SRCDIR}/#{path}").bytes
+    class_eval <<-RUBY
+    def #{"test_all_tokens:#{path}".gsub(/[^\w]/, '_')}
+        node = RubyVM::AbstractSyntaxTree.parse_file("#{SRCDIR}/#{path}", keep_tokens: true)
+        tokens = node.all_tokens.sort_by { [_1.last[0], _1.last[1]] }
+        tokens_bytes = tokens.map { _1[2]}.join.bytes
+        source_bytes = File.read("#{SRCDIR}/#{path}").bytes
 
-      assert_equal(source_bytes, tokens_bytes)
+        assert_equal(source_bytes, tokens_bytes)
 
-      (tokens.count - 1).times do |i|
-        token_0 = tokens[i]
-        token_1 = tokens[i + 1]
-        end_pos = token_0.last[2..3]
-        beg_pos = token_1.last[0..1]
+        (tokens.count - 1).times do |i|
+          token_0 = tokens[i]
+          token_1 = tokens[i + 1]
+          end_pos = token_0.last[2..3]
+          beg_pos = token_1.last[0..1]
 
-        if end_pos[0] == beg_pos[0]
-          # When both tokens are same line, column should be consecutives
-          assert_equal(beg_pos[1], end_pos[1], "#{token_0}. #{token_1}")
-        else
-          # Line should be next
-          assert_equal(beg_pos[0], end_pos[0] + 1, "#{token_0}. #{token_1}")
-          # It should be on the beginning of the line
-          assert_equal(0, beg_pos[1], "#{token_0}. #{token_1}")
+          if end_pos[0] == beg_pos[0]
+            # When both tokens are same line, column should be consecutives
+            assert_equal(beg_pos[1], end_pos[1], "\#{token_0}. \#{token_1}")
+          else
+            # Line should be next
+            assert_equal(beg_pos[0], end_pos[0] + 1, "\#{token_0}. \#{token_1}")
+            # It should be on the beginning of the line
+            assert_equal(0, beg_pos[1], "\#{token_0}. \#{token_1}")
+          end
         end
       end
-    end
+    RUBY
   end
 
   private def parse(src)

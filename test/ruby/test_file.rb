@@ -250,14 +250,20 @@ class TestFile < Test::Unit::TestCase
       tst = realdir + (File::SEPARATOR*3 + ".")
       assert_equal(realdir, File.realpath(tst))
       assert_equal(realdir, File.realpath(".", tst))
-      assert_equal(realdir, Dir.chdir(realdir) {File.realpath(".")})
-      realpath = File.join(realdir, "test")
-      File.write(realpath, "")
-      assert_equal(realpath, Dir.chdir(realdir) {File.realpath("test")})
       if File::ALT_SEPARATOR
         bug2961 = '[ruby-core:28653]'
         assert_equal(realdir, File.realpath(realdir.tr(File::SEPARATOR, File::ALT_SEPARATOR)), bug2961)
       end
+    }
+  end
+
+  def test_realpath_ractor_unsafe
+    Dir.mktmpdir('rubytest-realpath') {|tmpdir|
+      realdir = File.realpath(tmpdir)
+      assert_equal(realdir, Dir.chdir(realdir) {File.realpath(".")})
+      realpath = File.join(realdir, "test")
+      File.write(realpath, "")
+      assert_equal(realpath, Dir.chdir(realdir) {File.realpath("test")})
     }
   end
 
@@ -300,8 +306,6 @@ class TestFile < Test::Unit::TestCase
       assert_equal(realdir, File.realdirpath(tst))
       assert_equal(realdir, File.realdirpath(".", tst))
       assert_equal(File.join(realdir, "foo"), File.realdirpath("foo", tst))
-      assert_equal(realdir, Dir.chdir(realdir) {File.realdirpath(".")})
-      assert_equal(File.join(realdir, "foo"), Dir.chdir(realdir) {File.realdirpath("foo")})
     }
     begin
       result = File.realdirpath("bar", "//:/foo")
@@ -311,6 +315,14 @@ class TestFile < Test::Unit::TestCase
         assert_equal("//:/foo/bar", result)
       end
     end
+  end
+
+  def test_realdirpath_ractor_unsafe
+    Dir.mktmpdir('rubytest-realdirpath') {|tmpdir|
+      realdir = File.realpath(tmpdir)
+      assert_equal(realdir, Dir.chdir(realdir) {File.realdirpath(".")})
+      assert_equal(File.join(realdir, "foo"), Dir.chdir(realdir) {File.realdirpath("foo")})
+    }
   end
 
   def test_realdirpath_junction

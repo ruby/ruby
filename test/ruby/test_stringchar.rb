@@ -41,10 +41,6 @@ END
     assert_match(/foo(?=(bar)|(baz))/, "foobar")
     assert_match(/foo(?=(bar)|(baz))/, "foobaz")
 
-    $foo = "abc"
-    assert_equal("abc = abc", "#$foo = abc")
-    assert_equal("abc = abc", "#{$foo} = abc")
-
     foo = "abc"
     assert_equal("abc = abc", "#{foo} = abc")
 
@@ -63,6 +59,12 @@ END
     assert_equal("", x.sub(/.*\.([^\.]+)$/, '\2'))
     assert_equal("ab", x.sub(/.*\.([^\.]+)$/, 'a\2b'))
     assert_equal("<a.gif>", x.sub(/.*\.([^\.]+)$/, '<\&>'))
+  end
+
+  def test_string_ractor_unsafe
+    $foo = "abc"
+    assert_equal("abc = abc", "#$foo = abc")
+    assert_equal("abc = abc", "#{$foo} = abc")
   end
 
   def test_char

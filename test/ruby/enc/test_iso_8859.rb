@@ -2,7 +2,7 @@
 require 'test/unit'
 
 class TestISO8859 < Test::Unit::TestCase
-  ASSERTS = %q(
+  ASSERTS = Ractor.make_shareable(%q(
     assert_match(/^(\xdf)\1$/i, "\xdf\xdf")
     assert_match(/^(\xdf)\1$/i, "ssss")
     # assert_match(/^(\xdf)\1$/i, "\xdfss") # this must be bug...
@@ -18,7 +18,7 @@ class TestISO8859 < Test::Unit::TestCase
       assert_match(/^[#{ c2 }]+$/i, c1 + c2)
     end
     assert_match(/^\xff$/i, "\xff")
-  )
+  ))
 
   def test_iso_8859_1
     eval("# encoding: iso8859-1\n" + ASSERTS.gsub(/ENCODING/m, "iso8859-1"))
