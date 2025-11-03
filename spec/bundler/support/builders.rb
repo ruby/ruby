@@ -2,6 +2,8 @@
 
 require "bundler/shared_helpers"
 require "shellwords"
+require "fileutils"
+require "rubygems/package"
 
 require_relative "build_metadata"
 
@@ -423,21 +425,30 @@ module Spec
     end
 
     class BundlerBuilder
-      attr_writer :required_ruby_version
+      SPEC_FILE = File.join File.dirname(__FILE__), "..", "..", "bundler.gemspec"
+      SPEC = Gem::Specification.load(SPEC_FILE)
 
       def initialize(context, name, version)
         raise "can only build bundler" unless name == "bundler"
 
         @context = context
-        @version = version || Bundler::VERSION
+        @spec = SPEC.dup
+        @spec.version = version || Bundler::VERSION
+      end
+
+      def required_ruby_version
+        @spec.required_ruby_version
+      end
+
+      def required_ruby_version=(x)
+        @spec.required_ruby_version = x
       end
 
       def _build(options = {})
-        full_name = "bundler-#{@version}"
+        full_name = "bundler-#{@spec.version}"
         build_path = (options[:build_path] || @context.tmp) + full_name
         bundler_path = build_path + "#{full_name}.gem"
 
-        require "fileutils"
         FileUtils.mkdir_p build_path
 
         @context.shipped_files.each do |shipped_file|
@@ -449,13 +460,14 @@ module Spec
           FileUtils.cp File.expand_path(shipped_file, @context.source_root), target_shipped_file, preserve: true
         end
 
-        @context.replace_version_file(@version, dir: build_path)
-        @context.replace_changelog(@version, dir: build_path) if options[:released]
-        @context.replace_required_ruby_version(@required_ruby_version, dir: build_path) if @required_ruby_version
+        @context.replace_version_file(@spec.version, dir: build_path)
+        @context.replace_changelog(@spec.version, dir: build_path) if options[:released]
 
-        Spec::BuildMetadata.write_build_metadata(dir: build_path, version: @version)
+        Spec::BuildMetadata.write_build_metadata(dir: build_path, version: @spec.version.to_s)
 
-        @context.gem_command "build #{@context.relative_gemspec}", dir: build_path
+        Dir.chdir build_path do
+          Gem::Package.build(@spec)
+        end
 
         if block_given?
           yield(bundler_path)
@@ -659,7 +671,7 @@ module Spec
         elsif opts[:skip_validation]
           @context.gem_command "build --force #{@spec.name}", dir: lib_path
         else
-          @context.gem_command "build #{@spec.name}", dir: lib_path, allowed_warning: opts[:allowed_warning]
+          Dir.chdir(lib_path) { Gem::Package.build(@spec) }
         end
 
         gem_path = File.expand_path("#{@spec.full_name}.gem", lib_path)
