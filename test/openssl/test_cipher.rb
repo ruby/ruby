@@ -112,6 +112,9 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     cipher = OpenSSL::Cipher.new("DES-EDE3-CBC")
     assert_raise(RuntimeError) { cipher.__send__(:initialize, "DES-EDE3-CBC") }
     assert_raise(RuntimeError) { OpenSSL::Cipher.allocate.final }
+    assert_raise(OpenSSL::Cipher::CipherError) {
+      OpenSSL::Cipher.new("no such algorithm")
+    }
   end
 
   def test_ctr_if_exists
@@ -368,7 +371,7 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
 
     begin
       cipher = OpenSSL::Cipher.new("id-aes192-wrap-pad").encrypt
-    rescue OpenSSL::Cipher::CipherError, RuntimeError
+    rescue OpenSSL::Cipher::CipherError
       omit "id-aes192-wrap-pad is not supported: #$!"
     end
     cipher.key = kek

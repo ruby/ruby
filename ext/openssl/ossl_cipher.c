@@ -65,8 +65,8 @@ ossl_evp_get_cipherbyname(VALUE obj)
 	StringValueCStr(obj);
 	cipher = EVP_get_cipherbyname(RSTRING_PTR(obj));
 	if (!cipher)
-	    ossl_raise(rb_eArgError,
-		       "unsupported cipher algorithm: %"PRIsVALUE, obj);
+	    ossl_raise(eCipherError, "unsupported cipher algorithm: %"PRIsVALUE,
+                       obj);
 
 	return cipher;
     }
@@ -114,17 +114,13 @@ ossl_cipher_initialize(VALUE self, VALUE str)
 {
     EVP_CIPHER_CTX *ctx;
     const EVP_CIPHER *cipher;
-    char *name;
 
-    name = StringValueCStr(str);
     GetCipherInit(self, ctx);
     if (ctx) {
 	ossl_raise(rb_eRuntimeError, "Cipher already initialized!");
     }
+    cipher = ossl_evp_get_cipherbyname(str);
     AllocCipher(self, ctx);
-    if (!(cipher = EVP_get_cipherbyname(name))) {
-	ossl_raise(rb_eRuntimeError, "unsupported cipher algorithm (%"PRIsVALUE")", str);
-    }
     if (EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, -1) != 1)
 	ossl_raise(eCipherError, NULL);
 
