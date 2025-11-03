@@ -1,45 +1,6 @@
-#include "ruby.h"
-#include "ruby/encoding.h"
+#include "../json.h"
 #include "../vendor/ryu.h"
-
-/* shims */
-/* This is the fallback definition from Ruby 3.4 */
-
-#ifndef RBIMPL_STDBOOL_H
-#if defined(__cplusplus)
-# if defined(HAVE_STDBOOL_H) && (__cplusplus >= 201103L)
-#  include <cstdbool>
-# endif
-#elif defined(HAVE_STDBOOL_H)
-# include <stdbool.h>
-#elif !defined(HAVE__BOOL)
-typedef unsigned char _Bool;
-# define bool  _Bool
-# define true  ((_Bool)+1)
-# define false ((_Bool)+0)
-# define __bool_true_false_are_defined
-#endif
-#endif
-
-#if SIZEOF_UINT64_T == SIZEOF_LONG_LONG
-# define INT64T2NUM(x) LL2NUM(x)
-# define UINT64T2NUM(x) ULL2NUM(x)
-#elif SIZEOF_UINT64_T == SIZEOF_LONG
-# define INT64T2NUM(x) LONG2NUM(x)
-# define UINT64T2NUM(x) ULONG2NUM(x)
-#else
-# error No uint64_t conversion
-#endif
-
 #include "../simd/simd.h"
-
-#ifndef RB_UNLIKELY
-#define RB_UNLIKELY(expr) expr
-#endif
-
-#ifndef RB_LIKELY
-#define RB_LIKELY(expr) expr
-#endif
 
 static VALUE mJSON, eNestingError, Encoding_UTF_8;
 static VALUE CNaN, CInfinity, CMinusInfinity;
@@ -985,17 +946,11 @@ static const bool string_scan_table[256] = {
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 
-#if (defined(__GNUC__ ) || defined(__clang__))
-#define FORCE_INLINE __attribute__((always_inline))
-#else
-#define FORCE_INLINE
-#endif
-
 #ifdef HAVE_SIMD
 static SIMD_Implementation simd_impl = SIMD_NONE;
 #endif /* HAVE_SIMD */
 
-static inline bool FORCE_INLINE string_scan(JSON_ParserState *state)
+static ALWAYS_INLINE() bool string_scan(JSON_ParserState *state)
 {
 #ifdef HAVE_SIMD
 #if defined(HAVE_SIMD_NEON)

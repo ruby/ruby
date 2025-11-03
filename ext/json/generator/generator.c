@@ -1,4 +1,4 @@
-#include "ruby.h"
+#include "../json.h"
 #include "../fbuffer/fbuffer.h"
 #include "../vendor/fpconv.c"
 
@@ -35,10 +35,6 @@ typedef struct JSON_Generator_StateStruct {
     bool script_safe;
     bool strict;
 } JSON_Generator_State;
-
-#ifndef RB_UNLIKELY
-#define RB_UNLIKELY(cond) (cond)
-#endif
 
 static VALUE mJSON, cState, cFragment, eGeneratorError, eNestingError, Encoding_UTF_8;
 
@@ -85,10 +81,7 @@ static void generate_json_fragment(FBuffer *buffer, struct generate_json_data *d
 
 static int usascii_encindex, utf8_encindex, binary_encindex;
 
-#ifdef RBIMPL_ATTR_NORETURN
-RBIMPL_ATTR_NORETURN()
-#endif
-static void raise_generator_error_str(VALUE invalid_object, VALUE str)
+NORETURN(static void) raise_generator_error_str(VALUE invalid_object, VALUE str)
 {
     rb_enc_associate_index(str, utf8_encindex);
     VALUE exc = rb_exc_new_str(eGeneratorError, str);
@@ -96,13 +89,10 @@ static void raise_generator_error_str(VALUE invalid_object, VALUE str)
     rb_exc_raise(exc);
 }
 
-#ifdef RBIMPL_ATTR_NORETURN
-RBIMPL_ATTR_NORETURN()
-#endif
 #ifdef RBIMPL_ATTR_FORMAT
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
 #endif
-static void raise_generator_error(VALUE invalid_object, const char *fmt, ...)
+NORETURN(static void) raise_generator_error(VALUE invalid_object, const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
@@ -137,13 +127,7 @@ typedef struct _search_state {
 #endif /* HAVE_SIMD */
 } search_state;
 
-#if (defined(__GNUC__ ) || defined(__clang__))
-#define FORCE_INLINE __attribute__((always_inline))
-#else
-#define FORCE_INLINE
-#endif
-
-static inline FORCE_INLINE void search_flush(search_state *search)
+static ALWAYS_INLINE() void search_flush(search_state *search)
 {
     // Do not remove this conditional without profiling, specifically escape-heavy text.
     // escape_UTF8_char_basic will advance search->ptr and search->cursor (effectively a search_flush).
@@ -186,7 +170,7 @@ static inline unsigned char search_escape_basic(search_state *search)
     return 0;
 }
 
-static inline FORCE_INLINE void escape_UTF8_char_basic(search_state *search)
+static ALWAYS_INLINE() void escape_UTF8_char_basic(search_state *search)
 {
     const unsigned char ch = (unsigned char)*search->ptr;
     switch (ch) {
@@ -273,7 +257,7 @@ static inline void escape_UTF8_char(search_state *search, unsigned char ch_len)
 
 #ifdef HAVE_SIMD
 
-static inline FORCE_INLINE char *copy_remaining_bytes(search_state *search, unsigned long vec_len, unsigned long len)
+static ALWAYS_INLINE() char *copy_remaining_bytes(search_state *search, unsigned long vec_len, unsigned long len)
 {
     // Flush the buffer so everything up until the last 'len' characters are unflushed.
     search_flush(search);
@@ -296,7 +280,7 @@ static inline FORCE_INLINE char *copy_remaining_bytes(search_state *search, unsi
 
 #ifdef HAVE_SIMD_NEON
 
-static inline FORCE_INLINE unsigned char neon_next_match(search_state *search)
+static ALWAYS_INLINE() unsigned char neon_next_match(search_state *search)
 {
     uint64_t mask = search->matches_mask;
     uint32_t index = trailing_zeros64(mask) >> 2;
@@ -410,7 +394,7 @@ static inline unsigned char search_escape_basic_neon(search_state *search)
 
 #ifdef HAVE_SIMD_SSE2
 
-static inline FORCE_INLINE unsigned char sse2_next_match(search_state *search)
+static ALWAYS_INLINE() unsigned char sse2_next_match(search_state *search)
 {
     int mask = search->matches_mask;
     int index = trailing_zeros(mask);
@@ -434,7 +418,7 @@ static inline FORCE_INLINE unsigned char sse2_next_match(search_state *search)
 #define TARGET_SSE2
 #endif
 
-static inline TARGET_SSE2 FORCE_INLINE unsigned char search_escape_basic_sse2(search_state *search)
+static inline TARGET_SSE2 ALWAYS_INLINE() unsigned char search_escape_basic_sse2(search_state *search)
 {
     if (RB_UNLIKELY(search->has_matches)) {
         // There are more matches if search->matches_mask > 0.
