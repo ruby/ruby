@@ -3048,7 +3048,7 @@ rb_big_realloc(VALUE big, size_t len)
             if (BIGNUM_LEN(big) == 0) {
                 RBIGNUM(big)->as.heap.digits = ALLOC_N(BDIGIT, len);
             }
-            else {
+            else if (BIGNUM_LEN(big) < len) {
                 REALLOC_N(RBIGNUM(big)->as.heap.digits, BDIGIT, len);
             }
         }
