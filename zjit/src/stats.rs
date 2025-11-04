@@ -287,6 +287,13 @@ make_counters! {
     // The number of times we ran a dynamic check
     guard_type_count,
     guard_shape_count,
+
+    invokeblock_handler_monomorphic_iseq,
+    invokeblock_handler_monomorphic_ifunc,
+    invokeblock_handler_monomorphic_other,
+    invokeblock_handler_polymorphic,
+    invokeblock_handler_megamorphic,
+    invokeblock_handler_no_profiles,
 }
 
 /// Increase a counter by a specified amount

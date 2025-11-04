@@ -4407,6 +4407,34 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             // profiled cfp->self.
             if opcode == YARVINSN_getinstancevariable || opcode == YARVINSN_trace_getinstancevariable {
                 profiles.profile_self(&exit_state, self_param);
+            } else if opcode == YARVINSN_invokeblock || opcode == YARVINSN_trace_invokeblock {
+                if get_option!(stats) {
+                    let iseq_insn_idx = exit_state.insn_idx;
+                    if let Some(operand_types) = profiles.payload.profile.get_operand_types(iseq_insn_idx) {
+                        if let [self_type_distribution] = &operand_types[..] {
+                            let summary = TypeDistributionSummary::new(&self_type_distribution);
+                            if summary.is_monomorphic() {
+                                let obj = summary.bucket(0).class();
+                                let bh_type = unsafe { rb_yarv_vm_block_handler_type(obj) };
+                                if bh_type == block_handler_type_iseq {
+                                    fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_monomorphic_iseq));
+                                } else if bh_type == block_handler_type_ifunc {
+                                    fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_monomorphic_ifunc));
+                                } else {
+                                    fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_monomorphic_other));
+                                }
+                            } else if summary.is_skewed_polymorphic() || summary.is_polymorphic() {
+                                fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_polymorphic));
+                            } else if summary.is_skewed_megamorphic() || summary.is_megamorphic() {
+                                fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_megamorphic));
+                            } else {
+                                fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_no_profiles));
+                            }
+                        } else {
+                            fun.push_insn(block, Insn::IncrCounter(Counter::invokeblock_handler_no_profiles));
+                        }
+                    }
+                }
             } else {
                 profiles.profile_stack(&exit_state);
             }

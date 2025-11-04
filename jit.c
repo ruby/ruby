@@ -765,3 +765,6 @@ rb_yarv_str_eql_internal(VALUE str1, VALUE str2)
     // We wrap this since it's static inline
     return rb_str_eql_internal(str1, str2);
 }
+
+VALUE rb_yarv_get_block_handler(rb_control_frame_t *reg_cfp);
+enum rb_block_handler_type rb_yarv_vm_block_handler_type(VALUE block_handler);

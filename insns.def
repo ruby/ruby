@@ -1137,6 +1137,7 @@ invokeblock
 // attr bool handles_sp = true;
 // attr rb_snum_t sp_inc = sp_inc_of_invokeblock(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_invokeblock(ci);
+// attr bool zjit_profile = true;
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_invokeblock);
