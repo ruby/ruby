@@ -5336,6 +5336,71 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_struct_aset_embedded() {
+        eval(r#"
+            C = Struct.new(:foo)
+            def test(o, v) = o.foo = v
+            value = Object.new
+            test C.new, value
+            test C.new, value
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v29:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
+          v30:HeapObject[class_exact:C] = GuardNotFrozen v29
+          StoreField v29, :foo=@0x1038, v12
+          WriteBarrier v29, v12
+          CheckInterrupts
+          Return v12
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_aset_heap() {
+        eval(r#"
+            C = Struct.new(*(0..1000).map {|i| :"a#{i}"}, :foo)
+            def test(o, v) = o.foo = v
+            value = Object.new
+            test C.new, value
+            test C.new, value
+        "#);
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:3:
+        bb0():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:BasicObject = GetLocal l0, SP@5
+          v3:BasicObject = GetLocal l0, SP@4
+          Jump bb2(v1, v2, v3)
+        bb1(v6:BasicObject, v7:BasicObject, v8:BasicObject):
+          EntryPoint JIT(0)
+          Jump bb2(v6, v7, v8)
+        bb2(v10:BasicObject, v11:BasicObject, v12:BasicObject):
+          PatchPoint MethodRedefined(C@0x1000, foo=@0x1008, cme:0x1010)
+          PatchPoint NoSingletonClass(C@0x1000)
+          v29:HeapObject[class_exact:C] = GuardType v11, HeapObject[class_exact:C]
+          v30:CPtr = LoadField v29, :_as_heap@0x1038
+          v31:HeapObject[class_exact:C] = GuardNotFrozen v29
+          StoreField v30, :foo=@0x1039, v12
+          WriteBarrier v29, v12
+          CheckInterrupts
+          Return v12
+        ");
+    }
+
+    #[test]
     fn test_array_reverse_returns_array() {
         eval(r#"
             def test = [].reverse
