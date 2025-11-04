@@ -2047,12 +2047,20 @@ strio_truncate(VALUE self, VALUE len)
 }
 
 /*
- *  call-seq:
- *     strio.external_encoding   => encoding
+ * call-seq:
+ *   external_encoding -> encoding or nil
  *
- *  Returns the Encoding object that represents the encoding of the file.
- *  If the stream is write mode and no encoding is specified, returns
- *  +nil+.
+ * Returns an Encoding object that represents the encoding of the string;
+ * see {Encoding}[rdoc-ref:Encoding]:
+ *
+ *   strio = StringIO.new('foo')
+ *   strio.external_encoding # => #<Encoding:UTF-8>
+ *
+ * Returns +nil+ if +self+ has no string and is in write mode:
+ *
+ *   strio = StringIO.new(nil, 'w+')
+ *   strio.external_encoding # => nil
+ *
  */
 
 static VALUE
