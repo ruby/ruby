@@ -3,6 +3,7 @@
 
 #include "ruby.h"
 #include "ruby/encoding.h"
+#include <stdint.h>
 
 #if defined(RUBY_DEBUG) && RUBY_DEBUG
 # define JSON_ASSERT RUBY_ASSERT
@@ -80,6 +81,12 @@ typedef unsigned char _Bool;
 #ifndef JSON_DEBUG
 #define JSON_DEBUG RUBY_DEBUG
 #endif
+#endif
+
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && INTPTR_MAX == INT64_MAX
+#define JSON_CPU_LITTLE_ENDIAN_64BITS 1
+#else
+#define JSON_CPU_LITTLE_ENDIAN_64BITS 0
 #endif
 
 #endif // _JSON_H_

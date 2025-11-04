@@ -323,7 +323,7 @@ typedef struct JSON_ParserStateStruct {
     int current_nesting;
 } JSON_ParserState;
 
-static inline ssize_t rest(JSON_ParserState *state) {
+static inline size_t rest(JSON_ParserState *state) {
     return state->end - state->cursor;
 }
 
@@ -525,7 +525,7 @@ json_eat_whitespace(JSON_ParserState *state)
                 state->cursor++;
 
                 // Heuristic: if we see a newline, there is likely consecutive spaces after it.
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#if JSON_CPU_LITTLE_ENDIAN_64BITS
                 while (rest(state) > 8) {
                     uint64_t chunk;
                     memcpy(&chunk, state->cursor, sizeof(uint64_t));
@@ -966,7 +966,7 @@ static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig
     return Qfalse;
 }
 
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#if JSON_CPU_LITTLE_ENDIAN_64BITS
 // From: https://lemire.me/blog/2022/01/21/swar-explained-parsing-eight-digits/
 // Additional References:
 // https://johnnylee-sde.github.io/Fast-numeric-string-to-int/
@@ -995,8 +995,8 @@ static inline int json_parse_digits(JSON_ParserState *state, uint64_t *accumulat
 {
     const char *start = state->cursor;
 
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    while (rest(state) >= 8) {
+#if JSON_CPU_LITTLE_ENDIAN_64BITS
+    while (rest(state) >= sizeof(uint64_t)) {
         uint64_t next_8bytes;
         memcpy(&next_8bytes, state->cursor, sizeof(uint64_t));
 
