@@ -2919,6 +2919,25 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_struct_set
+    assert_compiles '[42, 42, :frozen_error]', %q{
+      C = Struct.new(:foo).new(1)
+
+      def test
+        C.foo = Object.new
+        42
+      end
+
+      r = [test, test]
+      C.freeze
+      r << begin
+        test
+      rescue FrozenError
+        :frozen_error
+      end
+    }, call_threshold: 2
+  end
+
   def test_global_tracepoint
     assert_compiles 'true', %q{
       def foo = 1

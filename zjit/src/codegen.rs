@@ -460,6 +460,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::LoadPC => gen_load_pc(asm),
         Insn::LoadSelf => gen_load_self(),
         &Insn::LoadField { recv, id, offset, return_type: _ } => gen_load_field(asm, opnd!(recv), id, offset),
+        &Insn::StoreField { recv, id, offset, val } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val))),
+        &Insn::WriteBarrier { recv, val } => no_output!(gen_write_barrier(asm, opnd!(recv), opnd!(val), function.type_of(val))),
         &Insn::IsBlockGiven => gen_is_block_given(jit, asm),
         Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, opnds!(elements), opnd!(target), &function.frame_state(*state)),
         &Insn::DupArrayInclude { ary, target, state } => gen_dup_array_include(jit, asm, ary, opnd!(target), &function.frame_state(state)),
@@ -1040,6 +1042,21 @@ fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32) -> Opnd 
     asm_comment!(asm, "Load field id={} offset={}", id.contents_lossy(), offset);
     let recv = asm.load(recv);
     asm.load(Opnd::mem(64, recv, offset))
+}
+
+fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, val: Opnd) {
+    asm_comment!(asm, "Store field id={} offset={}", id.contents_lossy(), offset);
+    let recv = asm.load(recv);
+    asm.store(Opnd::mem(64, recv, offset), val);
+}
+
+fn gen_write_barrier(asm: &mut Assembler, recv: Opnd, val: Opnd, val_type: Type) {
+    // See RB_OBJ_WRITE/rb_obj_write: it's just assignment and rb_obj_written()->rb_gc_writebarrier()
+    if !val_type.is_immediate() {
+        asm_comment!(asm, "Write barrier");
+        let recv = asm.load(recv);
+        asm_ccall!(asm, rb_gc_writebarrier, recv, val);
+    }
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
