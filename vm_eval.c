@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  vm_eval.c -
+  vm_eval.c - Included into vm.c.
 
   $Author$
   created at: Sat May 24 16:02:32 JST 2008
