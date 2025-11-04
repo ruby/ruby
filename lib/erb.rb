@@ -60,7 +60,7 @@ require 'erb/util'
 # \ERB supports tags of three kinds:
 #
 # - [Expression tags][expression tags]:
-#   each begins with `'<%'`, ends with `'%>'`; contains a Ruby expression;
+#   each begins with `'<%='`, ends with `'%>'`; contains a Ruby expression;
 #   in the result, the value of the expression replaces the entire tag:
 #
 #         template = 'The magic word is <%= magic_word %>.'
@@ -77,7 +77,7 @@ require 'erb/util'
 #         ERB.new('Today is <%= Date::DAYNAMES[Date.today.wday] %>.').result # => "Today is Monday."
 #
 # - [Execution tags][execution tags]:
-#   each begins with `'<%='`, ends with `'%>'`; contains Ruby code to be executed:
+#   each begins with `'<%'`, ends with `'%>'`; contains Ruby code to be executed:
 #
 #          template = '<% File.write("t.txt", "Some stuff.") %>'
 #          ERB.new(template).result
