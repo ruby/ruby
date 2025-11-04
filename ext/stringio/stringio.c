@@ -1428,9 +1428,8 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
  *   gets(limit, chomp: false) -> string or nil
  *   gets(sep, limit, chomp: false) -> string or nil
  *
- * Reads and returns a line from the stream;
- * assigns the return value to <tt>$_</tt>;
- * see {Line IO}[rdoc-ref:IO@Line+IO].
+ * :include: stringio/gets.rdoc
+ *
  */
 static VALUE
 strio_gets(int argc, VALUE *argv, VALUE self)
