@@ -84,7 +84,11 @@ static void rvalue_cache_insert_at(rvalue_cache *cache, int index, VALUE rstring
     cache->entries[index] = rstring;
 }
 
-#if JSON_CPU_LITTLE_ENDIAN_64BITS && defined(__has_builtin) && __has_builtin(__builtin_bswap64)
+#define rstring_cache_memcmp memcmp
+
+#if JSON_CPU_LITTLE_ENDIAN_64BITS
+#if __has_builtin(__builtin_bswap64)
+#undef rstring_cache_memcmp
 static ALWAYS_INLINE() int rstring_cache_memcmp(const char *str, const char *rptr, const long length)
 {
     // The libc memcmp has numerous complex optimizations, but in this particular case,
@@ -111,8 +115,7 @@ static ALWAYS_INLINE() int rstring_cache_memcmp(const char *str, const char *rpt
 
     return 0;
 }
-#else
-#define rstring_cache_memcmp memcmp
+#endif
 #endif
 
 static ALWAYS_INLINE() int rstring_cache_cmp(const char *str, const long length, VALUE rstring)
