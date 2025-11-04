@@ -84,17 +84,52 @@ static void rvalue_cache_insert_at(rvalue_cache *cache, int index, VALUE rstring
     cache->entries[index] = rstring;
 }
 
-static inline int rstring_cache_cmp(const char *str, const long length, VALUE rstring)
+#if JSON_CPU_LITTLE_ENDIAN_64BITS && defined(__has_builtin) && __has_builtin(__builtin_bswap64)
+static ALWAYS_INLINE() int rstring_cache_memcmp(const char *str, const char *rptr, const long length)
 {
-    long rstring_length = RSTRING_LEN(rstring);
+    // The libc memcmp has numerous complex optimizations, but in this particular case,
+    // we know the string is small (JSON_RVALUE_CACHE_MAX_ENTRY_LENGTH), so being able to
+    // inline a simpler memcmp outperforms calling the libc version.
+    long i = 0;
+
+    for (; i + 8 <= length; i += 8) {
+        uint64_t a, b;
+        memcpy(&a, str + i, 8);
+        memcpy(&b, rptr + i, 8);
+        if (a != b) {
+            a = __builtin_bswap64(a);
+            b = __builtin_bswap64(b);
+            return (a < b) ? -1 : 1;
+        }
+    }
+
+    for (; i < length; i++) {
+        if (str[i] != rptr[i]) {
+            return (str[i] < rptr[i]) ? -1 : 1;
+        }
+    }
+
+    return 0;
+}
+#else
+#define rstring_cache_memcmp memcmp
+#endif
+
+static ALWAYS_INLINE() int rstring_cache_cmp(const char *str, const long length, VALUE rstring)
+{
+    const char *rstring_ptr;
+    long rstring_length;
+
+    RSTRING_GETMEM(rstring, rstring_ptr, rstring_length);
+
     if (length == rstring_length) {
-        return memcmp(str, RSTRING_PTR(rstring), length);
+        return rstring_cache_memcmp(str, rstring_ptr, length);
     } else {
         return (int)(length - rstring_length);
     }
 }
 
-static VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const long length)
+static ALWAYS_INLINE() VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const long length)
 {
     int low = 0;
     int high = cache->length - 1;
