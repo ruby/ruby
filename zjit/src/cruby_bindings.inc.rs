@@ -1238,7 +1238,6 @@ unsafe extern "C" {
     pub static mut rb_mRubyVMFrozenCore: VALUE;
     pub static mut rb_block_param_proxy: VALUE;
     pub fn rb_vm_ep_local_ep(ep: *const VALUE) -> *const VALUE;
-    pub fn rb_yarv_vm_block_handler_type(block_handler: VALUE) -> rb_block_handler_type;
     pub fn rb_iseq_path(iseq: *const rb_iseq_t) -> VALUE;
     pub fn rb_vm_env_write(ep: *const VALUE, index: ::std::os::raw::c_int, v: VALUE);
     pub fn rb_vm_bh_to_procval(ec: *const rb_execution_context_t, block_handler: VALUE) -> VALUE;
@@ -1448,4 +1447,5 @@ unsafe extern "C" {
     );
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_yarv_get_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
+    pub fn rb_yarv_vm_block_handler_type(block_handler: VALUE) -> rb_block_handler_type;
 }
