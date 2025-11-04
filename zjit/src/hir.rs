@@ -2446,6 +2446,48 @@ impl Function {
                                     self.push_insn(block, Insn::LoadField { recv: as_heap, id: mid, offset, return_type: types::BasicObject })
                                 };
                                 self.make_equal_to(insn_id, replacement);
+                            } else if let (OPTIMIZED_METHOD_TYPE_STRUCT_ASET, &[val]) = (opt_type, args.as_slice()) {
+                                if unsafe { vm_ci_argc(ci) } != 1 {
+                                    self.push_insn_id(block, insn_id); continue;
+                                }
+                                let index: i32 = unsafe { get_cme_def_body_optimized_index(cme) }
+                                                .try_into()
+                                                .unwrap();
+                                // We are going to use an encoding that takes a 4-byte immediate which
+                                // limits the offset to INT32_MAX.
+                                {
+                                    let native_index = (index as i64) * (SIZEOF_VALUE as i64);
+                                    if native_index > (i32::MAX as i64) {
+                                        self.push_insn_id(block, insn_id); continue;
+                                    }
+                                }
+                                // Get the profiled type to check if the fields is embedded or heap allocated.
+                                let Some(is_embedded) = self.profiled_type_of_at(recv, frame_state.insn_idx).map(|t| t.flags().is_struct_embedded()) else {
+                                    // No (monomorphic) profile info
+                                    self.push_insn_id(block, insn_id); continue;
+                                };
+                                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                                if klass.instance_can_have_singleton_class() {
+                                    self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass }, state });
+                                }
+                                if let Some(profiled_type) = profiled_type {
+                                    recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                                }
+                                // All structs from the same Struct class should have the same
+                                // length. So if our recv is embedded all runtime
+                                // structs of the same class should be as well, and the same is
+                                // true of the converse.
+                                //
+                                // No need for a GuardShape.
+                                let replacement = if is_embedded {
+                                    let offset = RUBY_OFFSET_RSTRUCT_AS_ARY + (SIZEOF_VALUE_I32 * index);
+                                    self.push_insn(block, Insn::StoreField { recv, id: mid, offset, val })
+                                } else {
+                                    let as_heap = self.push_insn(block, Insn::LoadField { recv, id: ID!(_as_heap), offset: RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR, return_type: types::CPtr });
+                                    let offset = SIZEOF_VALUE_I32 * index;
+                                    self.push_insn(block, Insn::StoreField { recv: as_heap, id: mid, offset, val })
+                                };
+                                self.make_equal_to(insn_id, replacement);
                             } else {
                                 self.set_dynamic_send_reason(insn_id, SendWithoutBlockNotOptimizedOptimizedMethodType(OptimizedMethodType::from(opt_type)));
                                 self.push_insn_id(block, insn_id); continue;
