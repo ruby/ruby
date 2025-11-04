@@ -290,6 +290,7 @@ rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void 
     saved.finished = 0;
     saved.final = Qundef;
 
+    ASSERT_vm_unlocking();
     rb_ractor_ignore_belonging(true);
     EC_PUSH_TAG(ec);
     enum ruby_tag_type state = EC_EXEC_TAG();
