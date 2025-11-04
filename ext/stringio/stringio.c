@@ -990,10 +990,10 @@ strio_getc(VALUE self)
 
 /*
  * call-seq:
- *   getbyte -> byte or nil
+ *   getbyte -> integer or nil
  *
- * Reads and returns the next 8-bit byte from the stream;
- * see {Byte IO}[rdoc-ref:IO@Byte+IO].
+ * :include: stringio/getbyte.rdoc
+ *
  */
 static VALUE
 strio_getbyte(VALUE self)
