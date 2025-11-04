@@ -122,6 +122,7 @@ static VALUE strscan_scan_base10_integer _((VALUE self));
 static VALUE strscan_unscan _((VALUE self));
 static VALUE strscan_bol_p _((VALUE self));
 static VALUE strscan_eos_p _((VALUE self));
+static VALUE strscan_rest_p _((VALUE self));
 static VALUE strscan_matched_p _((VALUE self));
 static VALUE strscan_matched _((VALUE self));
 static VALUE strscan_matched_size _((VALUE self));
@@ -1472,6 +1473,29 @@ strscan_eos_p(VALUE self)
 }
 
 /*
+ * call-seq:
+ *   rest?
+ *
+ * Returns true if and only if there is more data in the string.  See #eos?.
+ * This method is obsolete; use #eos? instead.
+ *
+ *   s = StringScanner.new('test string')
+ *   # These two are opposites
+ *   s.eos? # => false
+ *   s.rest? # => true
+ */
+
+ /* :nodoc: */
+static VALUE
+strscan_rest_p(VALUE self)
+{
+    struct strscanner *p;
+
+    GET_SCANNER(self, p);
+    return EOS_P(p) ? Qfalse : Qtrue;
+}
+
+/*
  * :markup: markdown
  * :include: strscan/link_refs.txt
  *
@@ -2237,6 +2261,7 @@ Init_strscan(void)
     rb_define_method(StringScanner, "beginning_of_line?", strscan_bol_p, 0);
     rb_alias(StringScanner, rb_intern("bol?"), rb_intern("beginning_of_line?"));
     rb_define_method(StringScanner, "eos?",        strscan_eos_p,       0);
+    rb_define_method(StringScanner, "rest?",       strscan_rest_p,      0);
 
     rb_define_method(StringScanner, "matched?",    strscan_matched_p,   0);
     rb_define_method(StringScanner, "matched",     strscan_matched,     0);
