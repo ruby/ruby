@@ -30,7 +30,6 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 static VALUE StringScanner;
 static VALUE ScanError;
-static ID id_byteslice;
 
 static int usascii_encindex, utf8_encindex, binary_encindex;
 
@@ -2286,8 +2285,6 @@ Init_strscan(void)
 #undef rb_intern
     ID id_scanerr = rb_intern("ScanError");
     VALUE tmp;
-
-    id_byteslice = rb_intern("byteslice");
 
     usascii_encindex = rb_usascii_encindex();
     utf8_encindex = rb_utf8_encindex();
