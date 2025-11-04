@@ -573,11 +573,11 @@ jit_exec(rb_execution_context_t *ec)
 #endif
 
 #if USE_ZJIT
-    rb_zjit_func_t zjit_entry = (rb_zjit_func_t)rb_zjit_entry;
+    void *zjit_entry = rb_zjit_entry;
     if (zjit_entry) {
         rb_jit_func_t func = zjit_compile(ec);
         if (func) {
-            return zjit_entry(ec, ec->cfp, func);
+            return ((rb_zjit_func_t)zjit_entry)(ec, ec->cfp, func);
         }
     }
 #endif
