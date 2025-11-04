@@ -699,10 +699,18 @@ strio_to_read(VALUE self)
  * call-seq:
  *   eof? -> true or false
  *
- * Returns +true+ if positioned at end-of-stream, +false+ otherwise;
- * see {Position}[rdoc-ref:IO@Position].
+ * Returns whether +self+ is positioned at end-of-stream:
  *
- * Raises IOError if the stream is not opened for reading.
+ *   strio = StringIO.new('foo')
+ *   strio.pos  # => 0
+ *   strio.eof? # => false
+ *   strio.read # => "foo"
+ *   strio.pos  # => 3
+ *   strio.eof? # => true
+ *   strio.close_read
+ *   strio.eof? # Raises IOError: not opened for reading
+ *
+ * Related: StringIO#pos.
  */
 static VALUE
 strio_eof(VALUE self)
