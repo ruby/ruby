@@ -1390,6 +1390,8 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
 static const rb_env_t *
 env_copy(const VALUE *src_ep, VALUE read_only_variables)
 {
+    ASSERT_vm_unlocking();
+
     const rb_env_t *src_env = (rb_env_t *)VM_ENV_ENVVAL(src_ep);
     VM_ASSERT(src_env->ep == src_ep);
 
@@ -2337,12 +2339,16 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
         if (st_lookup(vm_opt_method_def_table, (st_data_t)me->def, &bop)) {
             int flag = vm_redefinition_check_flag(klass);
             if (flag != 0) {
-                rb_category_warn(
-                    RB_WARN_CATEGORY_PERFORMANCE,
-                    "Redefining '%s#%s' disables interpreter and JIT optimizations",
-                    rb_class2name(me->owner),
-                    rb_id2name(me->called_id)
-                );
+                unsigned int lev = RB_VM_UNLOCK_ALL();
+                {
+                    rb_category_warn(
+                        RB_WARN_CATEGORY_PERFORMANCE,
+                        "Redefining '%s#%s' disables interpreter and JIT optimizations",
+                        rb_class2name(me->owner),
+                        rb_id2name(me->called_id)
+                    );
+                }
+                RB_VM_RELOCK_ALL(lev);
                 rb_yjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 rb_zjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 ruby_vm_redefined_flag[bop] |= flag;

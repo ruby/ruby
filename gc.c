@@ -5108,19 +5108,12 @@ rb_memerror(void)
     rb_execution_context_t *ec = GET_EC();
     VALUE exc = GET_VM()->special_exceptions[ruby_error_nomemory];
 
-    if (!exc ||
-        rb_ec_raised_p(ec, RAISED_NOMEMORY) ||
-        rb_ec_vm_lock_rec(ec) != ec->tag->lock_rec) {
+    if (!exc || rb_ec_raised_p(ec, RAISED_NOMEMORY)) {
         fprintf(stderr, "[FATAL] failed to allocate memory\n");
         exit(EXIT_FAILURE);
     }
-    if (rb_ec_raised_p(ec, RAISED_NOMEMORY)) {
-        rb_ec_raised_clear(ec);
-    }
-    else {
-        rb_ec_raised_set(ec, RAISED_NOMEMORY);
-        exc = ruby_vm_special_exception_copy(exc);
-    }
+    rb_ec_raised_set(ec, RAISED_NOMEMORY);
+    exc = ruby_vm_special_exception_copy(exc);
     ec->errinfo = exc;
     EC_JUMP_TAG(ec, TAG_RAISE);
 }

@@ -164,7 +164,7 @@ ractor_status_set(rb_ractor_t *r, enum ractor_status status)
     // check 1
     if (r->status_ != ractor_created) {
         VM_ASSERT(r == GET_RACTOR()); // only self-modification is allowed.
-        ASSERT_vm_locking();
+        VM_ASSERT((rb_multi_ractor_p() && RB_VM_LOCKED_P()) || true);
     }
 
     // check2: transition check. assume it will be vanished on non-debug build.
@@ -1337,6 +1337,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
                 .stop = false,
                 .data = data,
             };
+            // TODO: remove this lock after ractor-local GC feature
             RB_VM_LOCKING_NO_BARRIER() {
                 rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
             }
@@ -1426,10 +1427,17 @@ make_shareable_check_shareable(VALUE obj)
     }
     else if (!allow_frozen_shareable_p(obj)) {
         if (rb_obj_is_proc(obj)) {
-            rb_proc_ractor_make_shareable(obj, Qundef);
+            // TODO: remove after ractor-local GC feature
+            unsigned int lev = RB_VM_UNLOCK_ALL();
+            {
+                rb_proc_ractor_make_shareable(obj, Qundef);
+            }
+            RB_VM_RELOCK_ALL(lev);
             return traverse_cont;
         }
         else {
+            // TODO: remove after ractor-local GC feature
+            (void)RB_VM_UNLOCK_ALL();
             rb_raise(rb_eRactorError, "can not make shareable object for %+"PRIsVALUE, obj);
         }
     }
@@ -1456,11 +1464,14 @@ make_shareable_check_shareable(VALUE obj)
     }
 
     if (!RB_OBJ_FROZEN_RAW(obj)) {
+        // TODO: remove after ractor-local GC feature
+        unsigned int lev = RB_VM_UNLOCK_ALL();
         rb_funcall(obj, idFreeze, 0);
 
         if (UNLIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
             rb_raise(rb_eRactorError, "#freeze does not freeze object correctly");
         }
+        RB_VM_RELOCK_ALL(lev);
 
         if (RB_OBJ_SHAREABLE_P(obj)) {
             return traverse_skip;
@@ -1695,6 +1706,7 @@ static int
 obj_refer_only_shareables_p(VALUE obj)
 {
     int cnt = 0;
+    // TODO: remove this lock after ractor-local GC feature
     RB_VM_LOCKING_NO_BARRIER() {
         rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
     }

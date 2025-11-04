@@ -390,7 +390,9 @@ rb_free_global_symbol_table_i(VALUE *sym_ptr, void *data)
 void
 rb_free_global_symbol_table(void)
 {
-    rb_concurrent_set_foreach_with_replace(ruby_global_symbols.sym_set, rb_free_global_symbol_table_i, NULL);
+    RB_VM_LOCKING() {
+        rb_concurrent_set_foreach_with_replace(ruby_global_symbols.sym_set, rb_free_global_symbol_table_i, NULL);
+    }
 }
 
 WARN_UNUSED_RESULT(static ID lookup_str_id(VALUE str));

@@ -1296,6 +1296,14 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     st_data_t data;
     int make_refined = 0;
     VALUE orig_klass;
+    rb_method_definition_t *old_def = NULL;
+    const rb_iseq_t *iseq = 0;
+    bool warn_redef_iseq = false;
+    bool warn_redef_non_iseq = false;
+    bool warn_infinite_loop = false;
+    bool warn_serious_problems = false;
+
+    ASSERT_vm_unlocking();
 
     if (NIL_P(klass)) {
         klass = rb_cObject;
@@ -1323,100 +1331,120 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
         VALUE refined_class = rb_refinement_module_get_refined_class(klass);
         rb_add_refined_method_entry(refined_class, mid);
     }
-    if (type == VM_METHOD_TYPE_REFINED) {
-        rb_method_entry_t *old_me = lookup_method_table(RCLASS_ORIGIN(klass), mid);
-        if (old_me) rb_vm_check_redefinition_opt_method(old_me, klass);
-    }
-    else {
-        klass = RCLASS_ORIGIN(klass);
-        if (klass != orig_klass) {
-            rb_clear_method_cache(orig_klass, mid);
+
+    RB_VM_LOCKING() {
+
+        if (type == VM_METHOD_TYPE_REFINED) {
+            rb_method_entry_t *old_me = lookup_method_table(RCLASS_ORIGIN(klass), mid);
+            if (old_me) rb_vm_check_redefinition_opt_method(old_me, klass);
         }
-    }
-    mtbl = RCLASS_WRITABLE_M_TBL(klass);
-
-    /* check re-definition */
-    if (rb_id_table_lookup(mtbl, mid, &data)) {
-        rb_method_entry_t *old_me = (rb_method_entry_t *)data;
-        rb_method_definition_t *old_def = old_me->def;
-
-        if (rb_method_definition_eq(old_def, def)) return old_me;
-        rb_vm_check_redefinition_opt_method(old_me, klass);
-
-        if (old_def->type == VM_METHOD_TYPE_REFINED) make_refined = 1;
-
-        if (RTEST(ruby_verbose) &&
-            type != VM_METHOD_TYPE_UNDEF &&
-            (old_def->aliased == false) &&
-            (!old_def->no_redef_warning) &&
-            !make_refined &&
-            old_def->type != VM_METHOD_TYPE_UNDEF &&
-            old_def->type != VM_METHOD_TYPE_ZSUPER &&
-            old_def->type != VM_METHOD_TYPE_ALIAS) {
-            const rb_iseq_t *iseq = 0;
-
-            switch (old_def->type) {
-              case VM_METHOD_TYPE_ISEQ:
-                iseq = def_iseq_ptr(old_def);
-                break;
-              case VM_METHOD_TYPE_BMETHOD:
-                iseq = rb_proc_get_iseq(old_def->body.bmethod.proc, 0);
-                break;
-              default:
-                break;
-            }
-            if (iseq) {
-                rb_warning(
-                    "method redefined; discarding old %"PRIsVALUE"\n%s:%d: warning: previous definition of %"PRIsVALUE" was here",
-                    rb_id2str(mid),
-                    RSTRING_PTR(rb_iseq_path(iseq)),
-                    ISEQ_BODY(iseq)->location.first_lineno,
-                    rb_id2str(old_def->original_id)
-                );
-            }
-            else {
-                rb_warning("method redefined; discarding old %"PRIsVALUE, rb_id2str(mid));
+        else {
+            klass = RCLASS_ORIGIN(klass);
+            if (klass != orig_klass) {
+                rb_clear_method_cache(orig_klass, mid);
             }
         }
-    }
+        mtbl = RCLASS_WRITABLE_M_TBL(klass);
 
-    /* create method entry */
-    me = rb_method_entry_create(mid, defined_class, visi, NULL);
-    if (def == NULL) {
-        def = rb_method_definition_create(type, original_id);
-    }
-    rb_method_definition_set(me, def, opts);
+        /* check re-definition */
+        if (rb_id_table_lookup(mtbl, mid, &data)) {
+            rb_method_entry_t *old_me = (rb_method_entry_t *)data;
+            old_def = old_me->def;
 
-    rb_clear_method_cache(klass, mid);
+            if (rb_method_definition_eq(old_def, def)) {
+                RB_VM_UNLOCK();
+                return old_me;
+            }
+            rb_vm_check_redefinition_opt_method(old_me, klass);
 
-    /* check mid */
-    if (klass == rb_cObject) {
-        switch (mid) {
-          case idInitialize:
-          case idRespond_to_missing:
-          case idMethodMissing:
-          case idRespond_to:
-            rb_warn("redefining Object#%s may cause infinite loop", rb_id2name(mid));
+            if (old_def->type == VM_METHOD_TYPE_REFINED) make_refined = 1;
+
+            if (RTEST(ruby_verbose) &&
+                type != VM_METHOD_TYPE_UNDEF &&
+                (old_def->aliased == false) &&
+                (!old_def->no_redef_warning) &&
+                !make_refined &&
+                old_def->type != VM_METHOD_TYPE_UNDEF &&
+                old_def->type != VM_METHOD_TYPE_ZSUPER &&
+                old_def->type != VM_METHOD_TYPE_ALIAS) {
+
+                switch (old_def->type) {
+                case VM_METHOD_TYPE_ISEQ:
+                    iseq = def_iseq_ptr(old_def);
+                    break;
+                case VM_METHOD_TYPE_BMETHOD:
+                    iseq = rb_proc_get_iseq(old_def->body.bmethod.proc, 0);
+                    break;
+                default:
+                    break;
+                }
+                if (iseq) {
+                    warn_redef_iseq = true;
+                }
+                else {
+                    warn_redef_non_iseq = true;
+                }
+            }
         }
-    }
-    /* check mid */
-    if (mid == object_id || mid == id__id__ || mid == id__send__) {
-        if (type != VM_METHOD_TYPE_CFUNC && search_method(klass, mid, 0)) {
-            rb_warn("redefining '%s' may cause serious problems", rb_id2name(mid));
+
+        /* create method entry */
+        me = rb_method_entry_create(mid, defined_class, visi, NULL);
+        if (def == NULL) {
+            def = rb_method_definition_create(type, original_id);
         }
+        rb_method_definition_set(me, def, opts);
+
+        rb_clear_method_cache(klass, mid);
+
+        /* check mid */
+        if (klass == rb_cObject) {
+            switch (mid) {
+            case idInitialize:
+            case idRespond_to_missing:
+            case idMethodMissing:
+            case idRespond_to:
+                warn_infinite_loop = true;
+            }
+        }
+        /* check mid */
+        if (mid == object_id || mid == id__id__ || mid == id__send__) {
+            if (type != VM_METHOD_TYPE_CFUNC && search_method(klass, mid, 0)) {
+                warn_serious_problems = true;
+            }
+        }
+
+        if (make_refined) {
+            make_method_entry_refined(klass, me);
+        }
+
+        rb_method_table_insert(klass, mtbl, mid, me);
+
+        VM_ASSERT(me->def != NULL);
+
+        /* check optimized method override by a prepended module */
+        if (RB_TYPE_P(orig_klass, T_MODULE)) {
+            check_override_opt_method(klass, (VALUE)mid);
+        }
+
     }
 
-    if (make_refined) {
-        make_method_entry_refined(klass, me);
+    if (warn_redef_iseq) {
+        rb_warning(
+            "method redefined; discarding old %"PRIsVALUE"\n%s:%d: warning: previous definition of %"PRIsVALUE" was here",
+            rb_id2str(mid),
+            RSTRING_PTR(rb_iseq_path(iseq)),
+            ISEQ_BODY(iseq)->location.first_lineno,
+            rb_id2str(old_def->original_id)
+        );
     }
-
-    rb_method_table_insert(klass, mtbl, mid, me);
-
-    VM_ASSERT(me->def != NULL);
-
-    /* check optimized method override by a prepended module */
-    if (RB_TYPE_P(orig_klass, T_MODULE)) {
-        check_override_opt_method(klass, (VALUE)mid);
+    if (warn_redef_non_iseq) {
+        rb_warning("method redefined; discarding old %"PRIsVALUE, rb_id2str(mid));
+    }
+    if (warn_infinite_loop) {
+        rb_warn("redefining Object#%s may cause infinite loop", rb_id2name(mid));
+    }
+    if (warn_serious_problems) {
+        rb_warn("redefining '%s' may cause serious problems", rb_id2name(mid));
     }
 
     return me;
@@ -1530,10 +1558,11 @@ rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_c
         (int)vm_ci_argc(ci) == ISEQ_BODY(method_entry_iseqptr(cme))->param.lead_num) {
         VM_ASSERT(cme->def->type == VM_METHOD_TYPE_ISEQ, "type: %d", cme->def->type); // iseq_overload is marked only on ISEQ methods
 
-        cme = get_overloaded_cme(cme);
-
-        VM_ASSERT(cme != NULL);
-        METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
+        RB_VM_LOCKING() {
+            cme = get_overloaded_cme(cme);
+            VM_ASSERT(cme != NULL);
+            METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
+        }
     }
 
     return cme;
@@ -1561,9 +1590,7 @@ method_added(VALUE klass, ID mid)
 void
 rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_visibility_t visi)
 {
-    RB_VM_LOCKING() {
-        rb_method_entry_make(klass, mid, klass, visi, type, NULL, mid, opts);
-    }
+    rb_method_entry_make(klass, mid, klass, visi, type, NULL, mid, opts);
 
     if (type != VM_METHOD_TYPE_UNDEF && type != VM_METHOD_TYPE_REFINED) {
         method_added(klass, mid);
@@ -1589,13 +1616,11 @@ method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
                  rb_method_visibility_t visi, VALUE defined_class)
 {
     rb_method_entry_t *newme;
-    RB_VM_LOCKING() {
-        newme = rb_method_entry_make(klass, mid, defined_class, visi,
-                me->def->type, me->def, 0, NULL);
-        if (newme == me) {
-            me->def->no_redef_warning = TRUE;
-            METHOD_ENTRY_FLAGS_SET(newme, visi, FALSE);
-        }
+    newme = rb_method_entry_make(klass, mid, defined_class, visi,
+                                 me->def->type, me->def, 0, NULL);
+    if (newme == me) {
+        me->def->no_redef_warning = TRUE;
+        METHOD_ENTRY_FLAGS_SET(newme, visi, FALSE);
     }
 
     method_added(klass, mid);

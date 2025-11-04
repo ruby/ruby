@@ -24,6 +24,7 @@
 #include "internal/object.h"
 #include "internal/ractor.h"
 #include "internal/variable.h"
+#include "vm_sync.h"
 #include "regint.h"
 #include "ruby/encoding.h"
 #include "ruby/re.h"

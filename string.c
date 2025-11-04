@@ -12671,7 +12671,9 @@ Init_String(void)
 {
     rb_cString  = rb_define_class("String", rb_cObject);
 
-    rb_concurrent_set_foreach_with_replace(fstring_table_obj, fstring_set_class_i, NULL);
+    RB_VM_LOCKING() {
+        rb_concurrent_set_foreach_with_replace(fstring_table_obj, fstring_set_class_i, NULL);
+    }
 
     rb_include_module(rb_cString, rb_mComparable);
     rb_define_alloc_func(rb_cString, empty_str_alloc);
