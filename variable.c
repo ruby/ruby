@@ -1010,18 +1010,21 @@ rb_gvar_set(ID id, VALUE val)
     VALUE retval;
     struct rb_global_entry *entry;
     const rb_namespace_t *ns = rb_current_namespace();
+    bool use_namespace_tbl = false;
 
     RB_VM_LOCKING() {
         entry = rb_global_entry(id);
 
         if (USE_NAMESPACE_GVAR_TBL(ns, entry)) {
+            use_namespace_tbl = true;
             rb_hash_aset(ns->gvar_tbl, rb_id2sym(entry->id), val);
             retval = val;
             // TODO: think about trace
         }
-        else {
-            retval = rb_gvar_set_entry(entry, val);
-        }
+    }
+
+    if (!use_namespace_tbl) {
+        retval = rb_gvar_set_entry(entry, val);
     }
     return retval;
 }
@@ -1037,28 +1040,36 @@ rb_gvar_get(ID id)
 {
     VALUE retval, gvars, key;
     const rb_namespace_t *ns = rb_current_namespace();
+    bool use_namespace_tbl = false;
+    struct rb_global_entry *entry;
+    struct rb_global_variable *var;
     // TODO: use lock-free rb_id_table when it's available for use (doesn't yet exist)
     RB_VM_LOCKING() {
-        struct rb_global_entry *entry = rb_global_entry(id);
-        struct rb_global_variable *var = entry->var;
+        entry = rb_global_entry(id);
+        var = entry->var;
 
         if (USE_NAMESPACE_GVAR_TBL(ns, entry)) {
+            use_namespace_tbl = true;
             gvars = ns->gvar_tbl;
             key = rb_id2sym(entry->id);
             if (RTEST(rb_hash_has_key(gvars, key))) { // this gvar is already cached
                 retval = rb_hash_aref(gvars, key);
             }
             else {
-                retval = (*var->getter)(entry->id, var->data);
-                if (rb_obj_respond_to(retval, rb_intern("clone"), 1)) {
-                    retval = rb_funcall(retval, rb_intern("clone"), 0);
+                RB_VM_UNLOCK();
+                {
+                    retval = (*var->getter)(entry->id, var->data);
+                    if (rb_obj_respond_to(retval, rb_intern("clone"), 1)) {
+                        retval = rb_funcall(retval, rb_intern("clone"), 0);
+                    }
                 }
+                RB_VM_LOCK();
                 rb_hash_aset(gvars, key, retval);
             }
         }
-        else {
-            retval = (*var->getter)(entry->id, var->data);
-        }
+    }
+    if (!use_namespace_tbl) {
+        retval = (*var->getter)(entry->id, var->data);
     }
     return retval;
 }
@@ -1159,6 +1170,7 @@ rb_alias_variable(ID name1, ID name2)
         else if ((entry1 = (struct rb_global_entry *)data1)->var != entry2->var) {
             struct rb_global_variable *var = entry1->var;
             if (var->block_trace) {
+                RB_VM_UNLOCK();
                 rb_raise(rb_eRuntimeError, "can't alias in tracer");
             }
             var->counter--;
