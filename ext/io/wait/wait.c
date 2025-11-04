@@ -14,32 +14,6 @@
 #include "ruby.h"
 #include "ruby/io.h"
 
-#include <sys/types.h>
-#if defined(HAVE_UNISTD_H) && (defined(__sun))
-#include <unistd.h>
-#endif
-#if defined(HAVE_SYS_IOCTL_H)
-#include <sys/ioctl.h>
-#endif
-#if defined(FIONREAD_HEADER)
-#include FIONREAD_HEADER
-#endif
-
-#ifdef HAVE_RB_W32_IOCTLSOCKET
-#define ioctl ioctlsocket
-#define ioctl_arg u_long
-#define ioctl_arg2num(i) ULONG2NUM(i)
-#else
-#define ioctl_arg int
-#define ioctl_arg2num(i) INT2NUM(i)
-#endif
-
-#ifdef HAVE_RB_W32_IS_SOCKET
-#define FIONREAD_POSSIBLE_P(fd) rb_w32_is_socket(fd)
-#else
-#define FIONREAD_POSSIBLE_P(fd) ((void)(fd),Qtrue)
-#endif
-
 #ifndef HAVE_RB_IO_WAIT
 static struct timeval *
 get_timeout(int argc, VALUE *argv, struct timeval *timerec)
@@ -66,41 +40,6 @@ wait_for_single_fd(rb_io_t *fptr, int events, struct timeval *tv)
 }
 #endif
 
-/*
- * call-seq:
- *   io.nread -> int
- *
- * Returns number of bytes that can be read without blocking.
- * Returns zero if no information available.
- *
- * You must require 'io/wait' to use this method.
- */
-
-static VALUE
-io_nread(VALUE io)
-{
-    rb_io_t *fptr;
-    int len;
-    ioctl_arg n;
-
-    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "IO#nread is deprecated; use wait_readable instead");
-    GetOpenFile(io, fptr);
-    rb_io_check_char_readable(fptr);
-    len = rb_io_read_pending(fptr);
-    if (len > 0) return INT2FIX(len);
-
-#ifdef HAVE_RB_IO_DESCRIPTOR
-    int fd = rb_io_descriptor(io);
-#else
-    int fd = fptr->fd;
-#endif
-
-    if (!FIONREAD_POSSIBLE_P(fd)) return INT2FIX(0);
-    if (ioctl(fd, FIONREAD, &n)) return INT2FIX(0);
-    if (n > 0) return ioctl_arg2num(n);
-    return INT2FIX(0);
-}
-
 #ifdef HAVE_RB_IO_WAIT
 static VALUE
 io_wait_event(VALUE io, int event, VALUE timeout, int return_io)
@@ -124,36 +63,6 @@ io_wait_event(VALUE io, int event, VALUE timeout, int return_io)
     }
 }
 #endif
-
-/*
- * call-seq:
- *   io.ready? -> truthy or falsy
- *
- * Returns a truthy value if input available without blocking, or a
- * falsy value.
- *
- * You must require 'io/wait' to use this method.
- */
-
-static VALUE
-io_ready_p(VALUE io)
-{
-    rb_io_t *fptr;
-#ifndef HAVE_RB_IO_WAIT
-    struct timeval tv = {0, 0};
-#endif
-
-    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "IO#ready? is deprecated; use wait_readable instead");
-    GetOpenFile(io, fptr);
-    rb_io_check_char_readable(fptr);
-    if (rb_io_read_pending(fptr)) return Qtrue;
-
-#ifndef HAVE_RB_IO_WAIT
-    return wait_for_single_fd(fptr, RB_WAITFD_IN, &tv) ? Qtrue : Qfalse;
-#else
-    return io_wait_event(io, RUBY_IO_READABLE, RB_INT2NUM(0), 1);
-#endif
-}
 
 /* Ruby 3.2+ can define these methods. This macro indicates that case. */
 #ifndef RUBY_IO_WAIT_METHODS
@@ -423,9 +332,6 @@ Init_wait(void)
 #ifdef HAVE_RB_EXT_RACTOR_SAFE
     RB_EXT_RACTOR_SAFE(true);
 #endif
-
-    rb_define_method(rb_cIO, "nread", io_nread, 0);
-    rb_define_method(rb_cIO, "ready?", io_ready_p, 0);
 
 #ifndef RUBY_IO_WAIT_METHODS
     rb_define_method(rb_cIO, "wait", io_wait, -1);
