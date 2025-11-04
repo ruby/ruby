@@ -172,8 +172,10 @@ pub fn gen_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError>
     let mut asm = Assembler::new();
     gen_entry_prologue(&mut asm);
 
-    // Jump to the first block using a call instruction
-    asm.ccall_reg(C_ARG_OPNDS[2]);
+    // Jump to the first block using a call instruction. This trampoline is used
+    // as rb_zjit_func_t in jit_exec(), which takes (EC, CFP, rb_jit_func_t).
+    // So C_ARG_OPNDS[2] is rb_jit_func_t, which is (EC, CFP) -> VALUE.
+    asm.ccall_reg(C_ARG_OPNDS[2], VALUE_BITS);
 
     // Restore registers for CFP, EC, and SP after use
     asm_comment!(asm, "return to the interpreter");

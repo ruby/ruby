@@ -5,7 +5,7 @@ use std::panic;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use crate::codegen::local_size_and_idx_to_ep_offset;
-use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE_BITS, vm_stack_canary};
+use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::SideExitReason;
 use crate::options::{TraceExits, debug, get_option};
 use crate::cruby::VALUE;
@@ -1998,9 +1998,9 @@ impl Assembler {
     }
 
     /// Call a C function stored in a register
-    pub fn ccall_reg(&mut self, fptr: Opnd) -> Opnd {
+    pub fn ccall_reg(&mut self, fptr: Opnd, num_bits: u8) -> Opnd {
         assert!(matches!(fptr, Opnd::Reg(_)), "ccall_reg must be called with Opnd::Reg: {fptr:?}");
-        let out = self.new_vreg(VALUE_BITS);
+        let out = self.new_vreg(num_bits);
         self.push_insn(Insn::CCall { fptr, opnds: vec![], start_marker: None, end_marker: None, out });
         out
     }
