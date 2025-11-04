@@ -964,10 +964,10 @@ strio_each_byte(VALUE self)
 
 /*
  * call-seq:
- *   getc -> character or nil
+ *   getc -> character, byte, or nil
  *
- * Reads and returns the next character from the stream;
- * see {Character IO}[rdoc-ref:IO@Character+IO].
+ * :include: stringio/getc.rdoc
+ *
  */
 static VALUE
 strio_getc(VALUE self)
