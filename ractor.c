@@ -1973,12 +1973,11 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     rb_gc_writebarrier_remember(data->replacement);
 
     void rb_replace_generic_ivar(VALUE clone, VALUE obj); // variable.c
-
-    rb_gc_obj_id_moved(data->replacement);
-
     if (UNLIKELY(rb_obj_exivar_p(obj))) {
         rb_replace_generic_ivar(data->replacement, obj);
     }
+
+    rb_gc_obj_id_moved(data->replacement);
 
     VALUE flags = T_OBJECT | FL_FREEZE | (RBASIC(obj)->flags & FL_PROMOTED);
 
