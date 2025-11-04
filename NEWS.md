@@ -203,7 +203,7 @@ The following default gems are updated.
 * stringio 3.1.8.dev
 * strscan 3.1.6.dev
 * timeout 0.4.4
-* uri 1.1.0
+* uri 1.1.1
 * weakref 0.1.4
 * zlib 3.2.2
 
