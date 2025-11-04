@@ -484,6 +484,10 @@ class TestPathname < Test::Unit::TestCase
     assert_equal('a', p1.to_s)
     p2 = Pathname.new(p1)
     assert_equal(p1, p2)
+
+    obj = Object.new
+    def obj.to_str; "a/b"; end
+    assert_equal("a/b", Pathname.new(obj).to_s)
   end
 
   def test_initialize_nul

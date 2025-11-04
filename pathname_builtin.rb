@@ -217,7 +217,8 @@ class Pathname
   def initialize(path)
     unless String === path
       path = path.to_path if path.respond_to? :to_path
-      raise TypeError unless String === path
+      path = path.to_str if path.respond_to? :to_str
+      raise TypeError, "Pathname.new requires a String, #to_path or #to_str" unless String === path
     end
 
     if path.include?("\0")
