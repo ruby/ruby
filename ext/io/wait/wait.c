@@ -83,6 +83,7 @@ io_nread(VALUE io)
     int len;
     ioctl_arg n;
 
+    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "IO#nread is deprecated; use wait_readable instead");
     GetOpenFile(io, fptr);
     rb_io_check_char_readable(fptr);
     len = rb_io_read_pending(fptr);
@@ -142,6 +143,7 @@ io_ready_p(VALUE io)
     struct timeval tv = {0, 0};
 #endif
 
+    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "IO#ready? is deprecated; use wait_readable instead");
     GetOpenFile(io, fptr);
     rb_io_check_char_readable(fptr);
     if (rb_io_read_pending(fptr)) return Qtrue;
