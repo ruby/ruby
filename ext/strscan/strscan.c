@@ -96,7 +96,6 @@ static VALUE strscan_init_copy _((VALUE vself, VALUE vorig));
 
 static VALUE strscan_s_mustc _((VALUE self));
 static VALUE strscan_terminate _((VALUE self));
-static VALUE strscan_clear _((VALUE self));
 static VALUE strscan_get_string _((VALUE self));
 static VALUE strscan_set_string _((VALUE self, VALUE str));
 static VALUE strscan_concat _((VALUE self, VALUE str));
@@ -118,15 +117,11 @@ static VALUE strscan_search_full _((VALUE self, VALUE re,
 static void adjust_registers_to_matched _((struct strscanner *p));
 static VALUE strscan_getch _((VALUE self));
 static VALUE strscan_get_byte _((VALUE self));
-static VALUE strscan_getbyte _((VALUE self));
 static VALUE strscan_peek _((VALUE self, VALUE len));
-static VALUE strscan_peep _((VALUE self, VALUE len));
 static VALUE strscan_scan_base10_integer _((VALUE self));
 static VALUE strscan_unscan _((VALUE self));
 static VALUE strscan_bol_p _((VALUE self));
 static VALUE strscan_eos_p _((VALUE self));
-static VALUE strscan_empty_p _((VALUE self));
-static VALUE strscan_rest_p _((VALUE self));
 static VALUE strscan_matched_p _((VALUE self));
 static VALUE strscan_matched _((VALUE self));
 static VALUE strscan_matched_size _((VALUE self));
@@ -382,21 +377,6 @@ strscan_terminate(VALUE self)
     p->curr = S_LEN(p);
     CLEAR_MATCH_STATUS(p);
     return self;
-}
-
-/*
- * call-seq:
- *   clear -> self
- *
- * This method is obsolete; use the equivalent method StringScanner#terminate.
- */
-
- /* :nodoc: */
-static VALUE
-strscan_clear(VALUE self)
-{
-    rb_warning("StringScanner#clear is obsolete; use #terminate instead");
-    return strscan_terminate(self);
 }
 
 /*
@@ -1218,22 +1198,6 @@ strscan_get_byte(VALUE self)
 }
 
 /*
- * call-seq:
- *   getbyte
- *
- * Equivalent to #get_byte.
- * This method is obsolete; use #get_byte instead.
- */
-
- /* :nodoc: */
-static VALUE
-strscan_getbyte(VALUE self)
-{
-    rb_warning("StringScanner#getbyte is obsolete; use #get_byte instead");
-    return strscan_get_byte(self);
-}
-
-/*
  * :markup: markdown
  * :include: strscan/link_refs.txt
  *
@@ -1266,22 +1230,6 @@ strscan_peek(VALUE self, VALUE vlen)
 
     len = minl(len, S_RESTLEN(p));
     return extract_beg_len(p, p->curr, len);
-}
-
-/*
- * call-seq:
- *   peep
- *
- * Equivalent to #peek.
- * This method is obsolete; use #peek instead.
- */
-
- /* :nodoc: */
-static VALUE
-strscan_peep(VALUE self, VALUE vlen)
-{
-    rb_warning("StringScanner#peep is obsolete; use #peek instead");
-    return strscan_peek(self, vlen);
 }
 
 static VALUE
@@ -1521,45 +1469,6 @@ strscan_eos_p(VALUE self)
 
     GET_SCANNER(self, p);
     return EOS_P(p) ? Qtrue : Qfalse;
-}
-
-/*
- * call-seq:
- *   empty?
- *
- * Equivalent to #eos?.
- * This method is obsolete, use #eos? instead.
- */
-
- /* :nodoc: */
-static VALUE
-strscan_empty_p(VALUE self)
-{
-    rb_warning("StringScanner#empty? is obsolete; use #eos? instead");
-    return strscan_eos_p(self);
-}
-
-/*
- * call-seq:
- *   rest?
- *
- * Returns true if and only if there is more data in the string.  See #eos?.
- * This method is obsolete; use #eos? instead.
- *
- *   s = StringScanner.new('test string')
- *   # These two are opposites
- *   s.eos? # => false
- *   s.rest? # => true
- */
-
- /* :nodoc: */
-static VALUE
-strscan_rest_p(VALUE self)
-{
-    struct strscanner *p;
-
-    GET_SCANNER(self, p);
-    return EOS_P(p) ? Qfalse : Qtrue;
 }
 
 /*
@@ -2052,22 +1961,6 @@ strscan_rest_size(VALUE self)
     return INT2FIX(i);
 }
 
-/*
- * call-seq:
- *   restsize
- *
- * <tt>s.restsize</tt> is equivalent to <tt>s.rest_size</tt>.
- * This method is obsolete; use #rest_size instead.
- */
-
- /* :nodoc: */
-static VALUE
-strscan_restsize(VALUE self)
-{
-    rb_warning("StringScanner#restsize is obsolete; use #rest_size instead");
-    return strscan_rest_size(self);
-}
-
 #define INSPECT_LENGTH 5
 
 /*
@@ -2308,7 +2201,6 @@ Init_strscan(void)
     rb_define_singleton_method(StringScanner, "must_C_version", strscan_s_mustc, 0);
     rb_define_method(StringScanner, "reset",       strscan_reset,       0);
     rb_define_method(StringScanner, "terminate",   strscan_terminate,   0);
-    rb_define_method(StringScanner, "clear",       strscan_clear,       0);
     rb_define_method(StringScanner, "string",      strscan_get_string,  0);
     rb_define_method(StringScanner, "string=",     strscan_set_string,  1);
     rb_define_method(StringScanner, "concat",      strscan_concat,      1);
@@ -2333,11 +2225,9 @@ Init_strscan(void)
 
     rb_define_method(StringScanner, "getch",       strscan_getch,       0);
     rb_define_method(StringScanner, "get_byte",    strscan_get_byte,    0);
-    rb_define_method(StringScanner, "getbyte",     strscan_getbyte,     0);
     rb_define_method(StringScanner, "scan_byte",   strscan_scan_byte,   0);
     rb_define_method(StringScanner, "peek",        strscan_peek,        1);
     rb_define_method(StringScanner, "peek_byte",   strscan_peek_byte,   0);
-    rb_define_method(StringScanner, "peep",        strscan_peep,        1);
 
     rb_define_private_method(StringScanner, "scan_base10_integer", strscan_scan_base10_integer, 0);
     rb_define_private_method(StringScanner, "scan_base16_integer", strscan_scan_base16_integer, 0);
@@ -2347,8 +2237,6 @@ Init_strscan(void)
     rb_define_method(StringScanner, "beginning_of_line?", strscan_bol_p, 0);
     rb_alias(StringScanner, rb_intern("bol?"), rb_intern("beginning_of_line?"));
     rb_define_method(StringScanner, "eos?",        strscan_eos_p,       0);
-    rb_define_method(StringScanner, "empty?",      strscan_empty_p,     0);
-    rb_define_method(StringScanner, "rest?",       strscan_rest_p,      0);
 
     rb_define_method(StringScanner, "matched?",    strscan_matched_p,   0);
     rb_define_method(StringScanner, "matched",     strscan_matched,     0);
@@ -2362,7 +2250,6 @@ Init_strscan(void)
 
     rb_define_method(StringScanner, "rest",        strscan_rest,        0);
     rb_define_method(StringScanner, "rest_size",   strscan_rest_size,   0);
-    rb_define_method(StringScanner, "restsize",    strscan_restsize,    0);
 
     rb_define_method(StringScanner, "inspect",     strscan_inspect,     0);
 
