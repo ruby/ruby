@@ -5,7 +5,7 @@
 
 use std::ptr::NonNull;
 use crate::cruby::*;
-use crate::stats::zjit_alloc_size;
+use crate::stats::zjit_alloc_bytes;
 
 pub type VirtualMem = VirtualMemory<sys::SystemAllocator>;
 
@@ -199,7 +199,7 @@ impl<A: Allocator> VirtualMemory<A> {
             // Ignore zjit_alloc_size() if self.memory_limit_bytes is None for testing
             let mut required_region_bytes = page_addr + page_size - start as usize;
             if self.memory_limit_bytes.is_some() {
-                required_region_bytes += zjit_alloc_size();
+                required_region_bytes += zjit_alloc_bytes();
             }
 
             assert!((start..=whole_region_end).contains(&mapped_region_end));

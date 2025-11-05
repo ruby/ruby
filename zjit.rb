@@ -208,6 +208,9 @@ class << RubyVM::ZJIT
       :guard_type_exit_ratio,
 
       :code_region_bytes,
+      :zjit_alloc_bytes,
+      :total_mem_bytes,
+
       :side_exit_count,
       :total_insn_count,
       :vm_insn_count,
