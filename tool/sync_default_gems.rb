@@ -381,7 +381,7 @@ module SyncDefaultGems
     end
 
     porcelain_status().each do |line|
-      /\A(?<x>.)(?<y>.) (?<path>.*)\z/ =~ line or raise
+      /\A(?:.)(?:.) (?<path>.*)\z/ =~ line or raise
       if config.excluded?(path)
         puts "Restoring excluded file: #{path}"
         IO.popen(%W"git checkout --" + [path], "rb", &:read)
@@ -553,7 +553,7 @@ module SyncDefaultGems
   end
 
   def collect_cacheinfo(tree)
-    cacheinfo = pipe_readlines(%W"git ls-tree -r -t -z #{tree}").filter_map do |line|
+    pipe_readlines(%W"git ls-tree -r -t -z #{tree}").filter_map do |line|
       fields, path = line.split("\t", 2)
       mode, type, object = fields.split(" ", 3)
       next unless type == "blob"
@@ -640,12 +640,11 @@ module SyncDefaultGems
   end
 
   def rewrite_commit(gem, sha)
-    config = REPOSITORIES[gem]
     author, message = make_commit_info(gem, sha)
     new_blobs = collect_cacheinfo("#{sha}")
     new_rewritten, new_ignored = rewrite_cacheinfo(gem, new_blobs)
 
-    headers, orig_message = IO.popen(%W[git cat-file commit #{sha}], "rb", &:read).split("\n\n", 2)
+    headers, _ = IO.popen(%W[git cat-file commit #{sha}], "rb", &:read).split("\n\n", 2)
     first_parent = headers[/^parent (.{40})$/, 1]
     unless first_parent
       # Root commit, first time to sync this repo
@@ -674,8 +673,6 @@ module SyncDefaultGems
   end
 
   def pickup_commit(gem, sha, edit)
-    config = REPOSITORIES[gem]
-
     rewritten = rewrite_commit(gem, sha)
 
     # No changes remaining after rewriting
