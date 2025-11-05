@@ -579,7 +579,7 @@ pub enum SendFallbackReason {
     BmethodNonIseqProc,
     /// The call has at least one feature on the caller or callee side that the optimizer does not
     /// support.
-    FancyFeatureUse,
+    ComplexArgPass,
     /// Initial fallback reason for every instruction, which should be mutated to
     /// a more actionable reason when an attempt to specialize the instruction fails.
     NotOptimizedInstruction(ruby_vminsn_type),
@@ -1417,12 +1417,12 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     };
 
     use Counter::*;
-    if unsafe { rb_get_iseq_flags_has_rest(iseq) }    { count_failure(fancy_arg_pass_param_rest) }
-    if unsafe { rb_get_iseq_flags_has_opt(iseq) }     { count_failure(fancy_arg_pass_param_opt) }
-    if unsafe { rb_get_iseq_flags_has_kw(iseq) }      { count_failure(fancy_arg_pass_param_kw) }
-    if unsafe { rb_get_iseq_flags_has_kwrest(iseq) }  { count_failure(fancy_arg_pass_param_kwrest) }
-    if unsafe { rb_get_iseq_flags_has_block(iseq) }   { count_failure(fancy_arg_pass_param_block) }
-    if unsafe { rb_get_iseq_flags_forwardable(iseq) } { count_failure(fancy_arg_pass_param_forwardable) }
+    if unsafe { rb_get_iseq_flags_has_rest(iseq) }    { count_failure(complex_arg_pass_param_rest) }
+    if unsafe { rb_get_iseq_flags_has_opt(iseq) }     { count_failure(complex_arg_pass_param_opt) }
+    if unsafe { rb_get_iseq_flags_has_kw(iseq) }      { count_failure(complex_arg_pass_param_kw) }
+    if unsafe { rb_get_iseq_flags_has_kwrest(iseq) }  { count_failure(complex_arg_pass_param_kwrest) }
+    if unsafe { rb_get_iseq_flags_has_block(iseq) }   { count_failure(complex_arg_pass_param_block) }
+    if unsafe { rb_get_iseq_flags_forwardable(iseq) } { count_failure(complex_arg_pass_param_forwardable) }
 
     can_send
 }
@@ -2153,16 +2153,16 @@ impl Function {
         self.push_insn(block, Insn::GuardType { val, guard_type, state })
     }
 
-    fn count_fancy_call_features(&mut self, block: BlockId, ci_flags: c_uint) {
+    fn count_complex_call_features(&mut self, block: BlockId, ci_flags: c_uint) {
         use Counter::*;
-        if 0 != ci_flags & VM_CALL_ARGS_SPLAT     { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_splat));      }
-        if 0 != ci_flags & VM_CALL_ARGS_BLOCKARG  { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_blockarg));   }
-        if 0 != ci_flags & VM_CALL_KWARG          { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_kwarg));      }
-        if 0 != ci_flags & VM_CALL_KW_SPLAT       { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_kw_splat));   }
-        if 0 != ci_flags & VM_CALL_TAILCALL       { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_tailcall));   }
-        if 0 != ci_flags & VM_CALL_SUPER          { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_super));      }
-        if 0 != ci_flags & VM_CALL_ZSUPER         { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_zsuper));     }
-        if 0 != ci_flags & VM_CALL_FORWARDING     { self.push_insn(block, Insn::IncrCounter(fancy_arg_pass_caller_forwarding)); }
+        if 0 != ci_flags & VM_CALL_ARGS_SPLAT     { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_splat));      }
+        if 0 != ci_flags & VM_CALL_ARGS_BLOCKARG  { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_blockarg));   }
+        if 0 != ci_flags & VM_CALL_KWARG          { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_kwarg));      }
+        if 0 != ci_flags & VM_CALL_KW_SPLAT       { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_kw_splat));   }
+        if 0 != ci_flags & VM_CALL_TAILCALL       { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_tailcall));   }
+        if 0 != ci_flags & VM_CALL_SUPER          { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_super));      }
+        if 0 != ci_flags & VM_CALL_ZSUPER         { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_zsuper));     }
+        if 0 != ci_flags & VM_CALL_FORWARDING     { self.push_insn(block, Insn::IncrCounter(complex_arg_pass_caller_forwarding)); }
     }
 
     fn try_rewrite_fixnum_op(&mut self, block: BlockId, orig_insn_id: InsnId, f: &dyn Fn(InsnId, InsnId) -> Insn, bop: u32, left: InsnId, right: InsnId, state: InsnId) {
@@ -2314,7 +2314,7 @@ impl Function {
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                             if !can_direct_send(self, block, iseq) {
-                                self.set_dynamic_send_reason(insn_id, FancyFeatureUse);
+                                self.set_dynamic_send_reason(insn_id, ComplexArgPass);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
@@ -2340,7 +2340,7 @@ impl Function {
                             let iseq = unsafe { *capture.code.iseq.as_ref() };
 
                             if !can_direct_send(self, block, iseq) {
-                                self.set_dynamic_send_reason(insn_id, FancyFeatureUse);
+                                self.set_dynamic_send_reason(insn_id, ComplexArgPass);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             // Can't pass a block to a block for now
@@ -2876,7 +2876,7 @@ impl Function {
 
                     // Filter for simple call sites (i.e. no splats etc.)
                     if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
-                        fun.count_fancy_call_features(block, ci_flags);
+                        fun.count_complex_call_features(block, ci_flags);
                         return Err(());
                     }
 
@@ -2948,7 +2948,7 @@ impl Function {
                     // func(int argc, VALUE *argv, VALUE recv)
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
                     if ci_flags & VM_CALL_ARGS_SIMPLE == 0 {
-                        fun.count_fancy_call_features(block, ci_flags);
+                        fun.count_complex_call_features(block, ci_flags);
                     } else {
                         fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
 

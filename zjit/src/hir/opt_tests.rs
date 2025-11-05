@@ -2549,7 +2549,7 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          IncrCounter fancy_arg_pass_param_opt
+          IncrCounter complex_arg_pass_param_opt
           v12:BasicObject = SendWithoutBlock v6, :foo, v10
           CheckInterrupts
           Return v12
@@ -2633,7 +2633,7 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          IncrCounter fancy_arg_pass_param_rest
+          IncrCounter complex_arg_pass_param_rest
           v12:BasicObject = SendWithoutBlock v6, :foo, v10
           CheckInterrupts
           Return v12
@@ -2940,9 +2940,9 @@ mod hir_opt_tests {
           v12:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Hash@0x1008, new@0x1010, cme:0x1018)
           v43:HashExact = ObjectAllocClass Hash:VALUE(0x1008)
-          IncrCounter fancy_arg_pass_param_opt
-          IncrCounter fancy_arg_pass_param_kw
-          IncrCounter fancy_arg_pass_param_block
+          IncrCounter complex_arg_pass_param_opt
+          IncrCounter complex_arg_pass_param_kw
+          IncrCounter complex_arg_pass_param_block
           v18:BasicObject = SendWithoutBlock v43, :initialize
           CheckInterrupts
           CheckInterrupts
@@ -7222,7 +7222,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn counting_fancy_feature_use_for_fallback() {
+    fn counting_complex_feature_use_for_fallback() {
         eval("
             define_method(:fancy) { |_a, *_b, kw: 100, **kw_rest, &block| }
             def test = fancy(1)
@@ -7239,10 +7239,10 @@ mod hir_opt_tests {
           Jump bb2(v4)
         bb2(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          IncrCounter fancy_arg_pass_param_rest
-          IncrCounter fancy_arg_pass_param_kw
-          IncrCounter fancy_arg_pass_param_kwrest
-          IncrCounter fancy_arg_pass_param_block
+          IncrCounter complex_arg_pass_param_rest
+          IncrCounter complex_arg_pass_param_kw
+          IncrCounter complex_arg_pass_param_kwrest
+          IncrCounter complex_arg_pass_param_block
           v12:BasicObject = SendWithoutBlock v6, :fancy, v10
           CheckInterrupts
           Return v12
@@ -7266,7 +7266,7 @@ mod hir_opt_tests {
           EntryPoint JIT(0)
           Jump bb2(v4)
         bb2(v6:BasicObject):
-          IncrCounter fancy_arg_pass_param_forwardable
+          IncrCounter complex_arg_pass_param_forwardable
           v11:BasicObject = SendWithoutBlock v6, :forwardable
           CheckInterrupts
           Return v11
