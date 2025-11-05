@@ -1477,7 +1477,6 @@ strscan_eos_p(VALUE self)
  *   rest?
  *
  * Returns true if and only if there is more data in the string.  See #eos?.
- * This method is obsolete; use #eos? instead.
  *
  *   s = StringScanner.new('test string')
  *   # These two are opposites
